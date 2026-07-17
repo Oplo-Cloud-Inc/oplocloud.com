@@ -1,229 +1,318 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-oplo-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Oplo Productivity — One suite. Roxan throughout.</title>
-<meta name="description" content="ODocs, OSheets, OMails, OMaps, OSurf, OPhotos and OCanvas — seven apps that share one account, one design, and Roxan at the heart of the work.">
-<meta name="theme-color" content="#FCFCFD">
+<title>Oplo Productivity — One material. Seven angles.</title>
+<meta name="description" content="Seven apps is the wrong way to count. Oplo Productivity is one material — turn it, and it becomes what you need. Roxan is the fire carried through every facet.">
+<meta name="theme-color" content="#0A0B0F">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='o' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%239BE8CE'/%3E%3Cstop offset='.4' stop-color='%239CC3FF'/%3E%3Cstop offset='.7' stop-color='%23D4B3FF'/%3E%3Cstop offset='1' stop-color='%23FFD2B3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23o)'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&family=Instrument+Sans:ital,wght@0,400..700&family=Spline+Sans+Mono:wght@400..600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wght@0,400..700;1,400..600&family=Spline+Sans+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/oplo-shell.css">
 <style>
-  /* ---------- Page primitives ---------- */
-  .section { padding-block: clamp(72px, 9vw, 128px); }
-  .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 12.5px; font-weight: 500;
-    letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--slate);
-  }
-  .section-head { max-width: 680px; margin-bottom: clamp(40px, 5vw, 64px); }
-  .section-head.center { margin-inline: auto; text-align: center; }
-  .section-head .eyebrow { margin-bottom: 16px; }
-  .section-title {
-    font-family: var(--font-display);
-    font-size: clamp(30px, 4.4vw, 54px);
-    font-weight: 600; line-height: 1.06; letter-spacing: -0.03em;
-    text-wrap: balance;
-  }
-  .section-title .soft { color: var(--ink-soft); }
-  .lede { margin-top: 20px; font-size: clamp(17px, 2vw, 20px); color: var(--slate); line-height: 1.55; text-wrap: balance; }
+  :root {
+    --void:    #0A0B0F;
+    --velvet:  #101218;
+    --velvet-2:#15171F;
+    --raise:   #1B1E27;
+    --chalk:   #F4F5FA;
+    --haze:    #9195A6;
+    --haze-2:  #6C7080;
+    --line:    rgba(255,255,255,0.09);
+    --line-2:  rgba(255,255,255,0.16);
 
-  /* ---------- Hero ---------- */
-  .hub-hero {
-    position: relative;
-    text-align: center;
-    padding-top: clamp(124px, 15vh, 176px);
-    padding-bottom: clamp(40px, 6vw, 72px);
-    overflow: hidden;
-  }
-  .hub-hero .glow {
-    position: absolute; left: 50%; top: clamp(150px, 20vh, 240px);
-    width: min(920px, 120vw); aspect-ratio: 2 / 1;
-    transform: translateX(-50%);
-    background: radial-gradient(60% 60% at 50% 40%,
-      rgba(156,195,255,0.32), rgba(212,179,255,0.22) 42%, rgba(255,210,179,0.14) 66%, transparent 78%);
-    filter: blur(20px);
-    z-index: 0; pointer-events: none;
-  }
-  .hub-hero .container { position: relative; z-index: 1; }
-  .hub-hero h1 {
-    font-family: var(--font-display);
-    font-size: clamp(40px, 6.6vw, 82px);
-    font-weight: 600; line-height: 1.03; letter-spacing: -0.04em;
-    max-width: 16ch; margin: 18px auto 0; text-wrap: balance;
-  }
-  .hub-hero .lede { max-width: 52ch; margin-inline: auto; }
-  .hero-actions {
-    display: flex; justify-content: center; flex-wrap: wrap;
-    gap: 14px 26px; margin-top: clamp(28px, 4vw, 40px);
-  }
-  .hero-actions .btn-pill { padding: 12px 26px; font-size: 15px; }
+    --mint: #9BE8CE;
+    --sky:  #9CC3FF;
+    --lilac:#D4B3FF;
+    --peach:#FFD2B3;
+    --opal: conic-gradient(from 210deg, #9BE8CE, #9CC3FF 90deg, #D4B3FF 180deg, #FFD2B3 270deg, #9BE8CE 360deg);
 
-  /* Floating app-icon cluster */
-  .hero-apps {
-    display: flex; justify-content: center; align-items: flex-end;
-    gap: clamp(10px, 1.6vw, 22px);
-    margin-top: clamp(48px, 6vw, 84px);
-  }
-  .hero-apps .app-ic { width: clamp(52px, 7vw, 84px); height: clamp(52px, 7vw, 84px); border-radius: 28%; animation: bob 6s ease-in-out infinite; }
-  .hero-apps .hero-app:nth-child(odd) .app-ic { transform: translateY(10px); animation-delay: -1.5s; }
-  .hero-apps .hero-app:nth-child(1) .app-ic { animation-delay: -0.2s; }
-  .hero-apps .hero-app:nth-child(3) .app-ic { animation-delay: -0.9s; }
-  .hero-apps .hero-app:nth-child(5) .app-ic { animation-delay: -2.1s; }
-  .hero-apps .hero-app:nth-child(7) .app-ic { animation-delay: -2.7s; }
-  @keyframes bob { 0%,100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+    --serif: "Instrument Serif", Georgia, serif;
+    --sans:  "Instrument Sans", system-ui, sans-serif;
+    --mono:  "Spline Sans Mono", ui-monospace, monospace;
 
-  /* ---------- App icons ---------- */
-  .app-ic {
-    width: 56px; height: 56px; border-radius: 30%;
-    display: grid; place-items: center; flex: none;
-    background: linear-gradient(150deg, var(--c1), var(--c2));
-    box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--c2) 65%, transparent),
-                inset 0 1px 0 rgba(255,255,255,0.35);
-  }
-  .app-ic .ic-glyph { width: 54%; height: 54%; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .ic-odocs   { --c1:#5A93FF; --c2:#2E6FE6; }
-  .ic-osheets { --c1:#33CE92; --c2:#12A06E; }
-  .ic-omails  { --c1:#FF7A6D; --c2:#EF4A3C; }
-  .ic-omaps   { --c1:#1CC3D0; --c2:#0E96A8; }
-  .ic-osurf   { --c1:#9CC3FF; --c2:#D4B3FF; background: conic-gradient(from 210deg,#9BE8CE,#9CC3FF,#D4B3FF,#FFD2B3,#9BE8CE); }
-  .ic-osurf .ic-glyph { stroke: #3A3D45; }
-  .ic-ophotos { --c1:#FFBE4D; --c2:#F59300; }
-  .ic-ocanvas { --c1:#B57BFF; --c2:#8B45F0; }
+    --container: 1180px;
+    --gutter: clamp(20px, 4vw, 44px);
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* ---------- App grid ---------- */
-  .app-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: clamp(14px, 1.6vw, 20px);
+    /* set live by the turning stone */
+    --fire: #9CC3FF;
+    --fire-soft: rgba(156,195,255,0.5);
   }
-  .app-card {
-    display: flex; flex-direction: column; align-items: flex-start;
-    padding: clamp(24px, 2.4vw, 32px);
-    border: 1px solid var(--hairline); border-radius: var(--radius);
-    background: var(--porcelain);
-    transition: transform .35s var(--ease-out), box-shadow .35s var(--ease-out), border-color .35s;
-  }
-  .app-card:hover { transform: translateY(-4px); box-shadow: 0 26px 52px -32px rgba(11,12,15,0.3); border-color: #DBDCE0; }
-  .app-card .app-ic { width: 54px; height: 54px; margin-bottom: 20px; }
-  .app-card h3 {
-    font-family: var(--font-display);
-    font-size: 24px; font-weight: 600; letter-spacing: -0.02em;
-    display: flex; align-items: baseline; gap: 9px;
-  }
-  .app-card h3 .tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); font-weight: 500; }
-  .app-card p { margin: 10px 0 20px; color: var(--slate); font-size: 15.5px; line-height: 1.5; }
-  .app-card .link-arrow { margin-top: auto; font-size: 14.5px; }
 
-  /* ---------- Pillars ---------- */
-  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(24px, 3.4vw, 48px); }
-  .pillar .app-ic { width: 46px; height: 46px; border-radius: 26%; margin-bottom: 20px; }
-  .pillar h3 { font-family: var(--font-display); font-size: clamp(20px, 2.1vw, 25px); font-weight: 600; letter-spacing: -0.02em; }
-  .pillar p { margin-top: 10px; color: var(--slate); font-size: 15.5px; line-height: 1.55; max-width: 36ch; }
-  .ic-ai { background: var(--opal); }
-  .ic-ai .ic-glyph { stroke: #3A3D45; }
-  .ic-cloud { --c1:#7FB0FF; --c2:#4C8DFF; }
-  .ic-shield { --c1:#5ED6AE; --c2:#17A374; }
-  @media (max-width: 760px) { .pillars { grid-template-columns: 1fr; gap: 30px; } }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--sans);
+    font-size: 17px; line-height: 1.6;
+    color: var(--chalk);
+    background: var(--void);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--lilac); color: #0A0B0F; }
+  :focus-visible { outline: 2px solid var(--chalk); outline-offset: 3px; border-radius: 3px; }
+  a { color: inherit; text-decoration: none; }
+  img { max-width: 100%; display: block; }
 
-  /* ---------- Roxan panel ---------- */
-  .roxan-wrap { padding-block: clamp(20px, 4vw, 48px); }
-  .roxan-panel {
+  .wrap { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* soft grain + ambient fire so the void never reads as flat black */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(60% 40% at 50% -6%, var(--fire-soft), transparent 60%),
+      radial-gradient(50% 30% at 88% 8%, rgba(212,179,255,0.10), transparent 66%);
+    opacity: .55; transition: background 1s var(--ease);
+  }
+  body > * { position: relative; z-index: 1; }
+
+  /* eyebrow / label utility */
+  .label {
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--haze); font-weight: 500;
+  }
+
+  /* ------------------------------------------------ Nav */
+  .nav { position: fixed; inset: 0 0 auto 0; z-index: 100; transition: background .4s var(--ease), border-color .4s var(--ease); border-bottom: 1px solid transparent; }
+  .nav.scrolled { background: rgba(10,11,15,0.66); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4); border-bottom-color: var(--line); }
+  .nav-inner { display: flex; align-items: center; height: 64px; gap: 22px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--sans); font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
+  .brand .stone-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--opal); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14); flex: none; animation: spin 26s linear infinite; }
+  .brand small { font-family: var(--serif); font-size: 20px; font-style: italic; font-weight: 400; color: var(--haze); margin-left: 2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; margin-left: auto; }
+  .nav-links a { font-size: 14px; color: var(--haze); transition: color .2s; }
+  .nav-links a:hover { color: var(--chalk); }
+  #oplo-actions { display: inline-flex; align-items: center; }
+  .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; flex-direction: column; gap: 4px; }
+  .nav-toggle span { width: 20px; height: 2px; background: var(--chalk); border-radius: 2px; }
+
+  /* ------------------------------------------------ Bands */
+  .band { padding-block: clamp(90px, 12vw, 168px); position: relative; }
+  .band-head { max-width: 660px; }
+  .band-head.center { margin-inline: auto; text-align: center; }
+  .kicker { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .kicker .tick { width: 26px; height: 1px; background: var(--line-2); }
+  .h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(34px, 5.4vw, 68px); line-height: 1.04; letter-spacing: -0.01em; text-wrap: balance; }
+  .h2 em { font-style: italic; color: var(--fire); transition: color .8s var(--ease); }
+  .lede { margin-top: 22px; font-size: clamp(17px, 1.9vw, 20px); color: var(--haze); line-height: 1.55; max-width: 52ch; text-wrap: balance; }
+
+  /* ------------------------------------------------ Hero */
+  .hero { text-align: center; padding-top: clamp(98px, 12vh, 144px); padding-bottom: clamp(36px, 5vw, 60px); }
+  .hero-thesis {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(38px, 6.8vw, 92px); line-height: 0.98; letter-spacing: -0.015em;
+    max-width: 15ch; margin: clamp(22px,3vw,36px) auto 0; text-wrap: balance;
+  }
+  .hero-thesis em { font-style: italic; color: var(--fire); transition: color .8s var(--ease); }
+  .hero-sub { max-width: 44ch; margin: 26px auto 0; color: var(--haze); font-size: clamp(17px, 2vw, 20px); line-height: 1.55; text-wrap: balance; }
+  .hero-sub b { color: var(--chalk); font-weight: 600; }
+
+  /* the stone */
+  .stone-wrap { --sz: clamp(186px, 23vw, 286px); width: var(--sz); margin: 0 auto clamp(22px, 2.8vw, 34px); position: relative; }
+  .stone { position: relative; width: var(--sz); height: var(--sz); border-radius: 50%; --spin: 0deg; }
+  .stone .body { position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07), inset 0 -34px 66px -22px rgba(0,0,0,0.66), 0 60px 130px -46px var(--fire-soft); }
+  .stone .body::before {
+    content: ""; position: absolute; inset: -26%; border-radius: 50%;
+    background:
+      radial-gradient(38% 38% at 30% 26%, var(--mint)  0%, transparent 60%),
+      radial-gradient(42% 42% at 72% 30%, var(--sky)   0%, transparent 58%),
+      radial-gradient(46% 46% at 66% 74%, var(--lilac) 0%, transparent 60%),
+      radial-gradient(44% 44% at 26% 72%, var(--peach) 0%, transparent 60%),
+      var(--opal);
+    filter: blur(15px) saturate(1.18);
+    transform: rotate(var(--spin));
+    transition: transform 1.3s var(--ease);
+  }
+  .stone .bloom { position: absolute; inset: 0; border-radius: 50%; mix-blend-mode: screen; pointer-events: none;
+    background: radial-gradient(58% 58% at var(--bx,64%) var(--by,32%), var(--fire) 0%, transparent 56%);
+    opacity: .95; transition: background 1s var(--ease); }
+  .stone .gloss { --px:0px; --py:0px; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+    background:
+      radial-gradient(58% 52% at calc(34% + var(--px)) calc(24% + var(--py)), rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.28) 26%, transparent 55%),
+      radial-gradient(closest-side, transparent 68%, rgba(255,255,255,0.14) 90%, transparent 100%);
+    transition: background .16s linear; }
+  .stone .facet-ring { position: absolute; inset: -9%; border-radius: 50%; border: 1px dashed var(--line-2); opacity: .5; }
+
+  /* hero caption — reads like a jeweller's loupe note */
+  .caption { display: inline-flex; align-items: baseline; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 4px; min-height: 30px; }
+  .caption .coord { font-family: var(--mono); font-size: 13px; color: var(--haze-2); letter-spacing: 0.04em; }
+  .caption .angle-name { font-family: var(--serif); font-style: italic; font-size: clamp(22px, 3vw, 30px); color: var(--fire); transition: color .7s var(--ease); }
+  .caption .angle-verb { font-size: 14px; color: var(--haze); }
+
+  /* facet selector — the seven angles as a dial you can turn */
+  .facets { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: clamp(22px, 2.6vw, 30px); }
+  .facet {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em;
+    color: var(--haze); background: transparent;
+    border: 1px solid var(--line); border-radius: 100px;
+    padding: 8px 15px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: color .2s, border-color .3s, background .3s, transform .2s var(--ease);
+  }
+  .facet .fdot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; box-shadow: 0 0 0 0 var(--c); transition: box-shadow .3s; }
+  .facet:hover { color: var(--chalk); border-color: var(--line-2); transform: translateY(-1px); }
+  .facet[aria-pressed="true"] { color: #0A0B0F; background: var(--c); border-color: var(--c); }
+  .facet[aria-pressed="true"] .fdot { background: rgba(10,11,15,0.5); }
+
+  .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px 26px; margin-top: clamp(24px, 3vw, 34px); }
+
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; gap: 9px; font-family: var(--sans); font-weight: 600; font-size: 15px; padding: 13px 26px; border-radius: 100px; border: 1px solid transparent; cursor: pointer; transition: transform .25s var(--ease), background .25s, border-color .25s; }
+  .btn-fire { background: var(--chalk); color: #0A0B0F; }
+  .btn-fire:hover { transform: translateY(-2px); }
+  .btn-ghost { background: transparent; color: var(--chalk); border-color: var(--line-2); }
+  .btn-ghost:hover { border-color: var(--chalk); transform: translateY(-2px); }
+  .arrow { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 15px; color: var(--chalk); }
+  .arrow .chev { transition: transform .25s var(--ease); }
+  .arrow:hover .chev { transform: translateX(4px); }
+  .arrow.muted { color: var(--haze); } .arrow.muted:hover { color: var(--chalk); }
+
+  /* ------------------------------------------------ The seven angles */
+  .angles { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(12px, 1.4vw, 18px); }
+  .angle {
     position: relative; overflow: hidden;
-    background: var(--ink); color: var(--porcelain);
-    border-radius: clamp(24px, 3vw, 40px);
-    padding: clamp(36px, 5vw, 72px);
-    display: grid; grid-template-columns: 1.05fr 0.95fr; gap: clamp(32px, 4vw, 60px);
-    align-items: center;
+    grid-column: span 4; min-height: 260px;
+    display: flex; flex-direction: column;
+    padding: clamp(24px, 2.4vw, 32px);
+    border: 1px solid var(--line); border-radius: 24px;
+    background: linear-gradient(180deg, var(--velvet), var(--void));
+    transition: transform .4s var(--ease), border-color .4s, box-shadow .4s var(--ease);
   }
-  .roxan-panel::before {
-    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-    background: radial-gradient(70% 90% at 88% 12%, rgba(156,195,255,0.25), transparent 60%),
-               radial-gradient(60% 80% at 8% 96%, rgba(212,179,255,0.22), transparent 62%);
-  }
-  .roxan-panel > * { position: relative; z-index: 1; }
-  .roxan-panel .eyebrow { color: #B9BCC6; }
-  .roxan-panel h2 {
-    font-family: var(--font-display);
-    font-size: clamp(28px, 3.6vw, 46px); font-weight: 600;
-    line-height: 1.06; letter-spacing: -0.03em; margin: 14px 0 18px; text-wrap: balance;
-  }
-  .roxan-panel p { color: #C4C7D0; font-size: clamp(16px, 1.7vw, 18px); line-height: 1.55; max-width: 46ch; }
-  .cap-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 26px; }
-  .cap-chips span {
-    font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.02em;
-    padding: 7px 13px; border-radius: 100px;
-    border: 1px solid rgba(252,252,253,0.16); color: #E7E8EC;
-  }
-  /* stylized doc + Roxan popover */
-  .win { background: #fff; border-radius: 16px; box-shadow: 0 40px 80px -30px rgba(0,0,0,0.5); overflow: hidden; color: var(--ink); }
-  .win-bar { display: flex; gap: 6px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--hairline); }
-  .win-bar i { width: 10px; height: 10px; border-radius: 50%; background: #E1E3E7; display: block; }
-  .win-bar .win-name { font-family: var(--font-mono); font-size: 11px; color: var(--slate); margin-left: 8px; letter-spacing: .04em; }
-  .win-body { padding: 22px 22px 26px; position: relative; }
-  .dl { height: 10px; border-radius: 5px; background: #EDEEF1; margin-bottom: 13px; }
-  .dl.w1 { width: 92%; } .dl.w2 { width: 78%; } .dl.w3 { width: 85%; } .dl.w4 { width: 64%; }
-  .dl.hl { background: linear-gradient(90deg, #DCE9FF, #EAF0FF); }
-  .roxan-pop {
-    margin-top: 20px; border: 1px solid var(--hairline); border-radius: 14px;
-    padding: 14px 16px; box-shadow: 0 16px 30px -18px rgba(11,12,15,0.28); background: #fff;
-  }
-  .roxan-pop .rp-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
-  .roxan-pop .spark { width: 16px; height: 16px; border-radius: 50%; background: var(--opal); flex: none; }
-  .roxan-pop .rp-opts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
-  .roxan-pop .rp-opts b {
-    font-weight: 500; font-size: 13px; color: var(--slate);
-    padding: 6px 11px; border-radius: 8px; background: var(--panel);
-  }
-  .roxan-pop .rp-opts b.on { background: var(--ink); color: var(--porcelain); }
+  .angle:hover { transform: translateY(-5px); border-color: var(--line-2); box-shadow: 0 40px 80px -50px var(--c); }
+  .angle::after { content: ""; position: absolute; right: -30%; top: -30%; width: 70%; aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(closest-side, var(--c) 0%, transparent 70%); opacity: .16; transition: opacity .4s; filter: blur(6px); }
+  .angle:hover::after { opacity: .34; }
+  .angle.lg { grid-column: span 6; }
+  .angle .a-top { display: flex; align-items: center; justify-content: space-between; }
+  .angle .coord { font-family: var(--mono); font-size: 12.5px; color: var(--haze-2); letter-spacing: 0.04em; }
+  .angle .ic { width: 40px; height: 40px; border-radius: 30%; display: grid; place-items: center; flex: none;
+    background: linear-gradient(150deg, color-mix(in srgb, var(--c) 88%, white 12%), var(--c));
+    box-shadow: 0 8px 20px -10px var(--c), inset 0 1px 0 rgba(255,255,255,0.4); }
+  .angle .ic svg { width: 54%; height: 54%; stroke: #10121a; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .angle h3 { font-family: var(--serif); font-weight: 400; font-size: clamp(26px, 2.8vw, 34px); line-height: 1.06; letter-spacing: -0.01em; margin-top: auto; }
+  .angle h3 .nm { font-family: var(--sans); font-weight: 600; font-size: 13px; letter-spacing: 0.03em; color: var(--c); display: block; margin-bottom: 8px; text-transform: uppercase; }
+  .angle p { color: var(--haze); font-size: 14.5px; line-height: 1.5; margin-top: 12px; }
+  .angle .go { margin-top: 18px; font-size: 13.5px; color: var(--chalk); display: inline-flex; align-items: center; gap: 6px; opacity: .0; transform: translateY(4px); transition: opacity .3s, transform .3s var(--ease); }
+  .angle:hover .go { opacity: 1; transform: none; }
 
-  /* ---------- Feature (collaboration) ---------- */
-  .feature { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 5vw, 72px); align-items: center; }
-  .feature .win-body .cursor { position: relative; }
-  .caret-tag {
-    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
-    color: #fff; padding: 2px 8px; border-radius: 6px; margin-left: 6px; vertical-align: middle;
+  /* ------------------------------------------------ Roxan — the fire */
+  .fire-band { position: relative; }
+  .fire-panel {
+    position: relative; overflow: hidden;
+    border: 1px solid var(--line); border-radius: 32px;
+    padding: clamp(40px, 6vw, 88px) clamp(28px, 5vw, 76px);
+    background: radial-gradient(120% 140% at 12% 0%, var(--raise), var(--void) 62%);
+    text-align: center;
   }
-  .caret-tag.a { background: #2E6FE6; } .caret-tag.b { background: #12A06E; } .caret-tag.c { background: #8B45F0; }
+  .fire-thread { display: flex; justify-content: center; gap: clamp(6px,1.2vw,14px); margin-bottom: clamp(34px,4vw,52px); }
+  .fire-thread i { width: clamp(24px,4vw,44px); height: 4px; border-radius: 4px; opacity: .5; animation: pulse 3.4s var(--ease) infinite; }
+  .fire-thread i:nth-child(1){ background: var(--mint);  animation-delay: 0s; }
+  .fire-thread i:nth-child(2){ background: var(--mint);  animation-delay: .2s; }
+  .fire-thread i:nth-child(3){ background: var(--sky);   animation-delay: .4s; }
+  .fire-thread i:nth-child(4){ background: var(--sky);   animation-delay: .6s; }
+  .fire-thread i:nth-child(5){ background: var(--lilac); animation-delay: .8s; }
+  .fire-thread i:nth-child(6){ background: var(--lilac); animation-delay: 1s; }
+  .fire-thread i:nth-child(7){ background: var(--peach); animation-delay: 1.2s; }
+  @keyframes pulse { 0%,100%{ opacity:.28; transform: scaleX(.8);} 50%{ opacity:1; transform: scaleX(1);} }
+  .fire-panel h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 5vw, 62px); line-height: 1.05; letter-spacing: -0.01em; max-width: 20ch; margin-inline: auto; text-wrap: balance; }
+  .fire-panel h2 em { font-style: italic; background: var(--opal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .fire-panel p { max-width: 48ch; margin: 22px auto 0; color: var(--haze); font-size: clamp(16px,1.8vw,19px); line-height: 1.55; }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; margin-top: 30px; }
+  .chips span { font-family: var(--mono); font-size: 12.5px; color: var(--chalk); padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 100px; }
 
-  /* ---------- Mini bento ---------- */
-  .mini-bento { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(14px, 1.6vw, 20px); }
-  .mb-card {
-    padding: 28px; border: 1px solid var(--hairline); border-radius: 22px; background: var(--panel);
-    display: flex; flex-direction: column; gap: 10px; min-height: 168px;
+  /* ------------------------------------------------ Daylight (the deliberate break) */
+  .daylight {
+    --void: #FCFCFD; --chalk: #0B0C0F; --haze: #5F636E; --line: #E6E7EA; --line-2: #D9DAE0;
+    background: var(--void); color: var(--chalk);
+    border-block: 1px solid var(--line);
   }
-  .mb-card .mb-k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate); }
-  .mb-card h4 { font-family: var(--font-display); font-size: 21px; font-weight: 600; letter-spacing: -0.02em; margin-top: auto; }
-  .mb-card p { color: var(--slate); font-size: 14px; line-height: 1.5; }
+  .daylight .split { display: grid; grid-template-columns: 1.02fr 0.98fr; gap: clamp(32px, 5vw, 76px); align-items: center; }
+  .daylight .h2 { color: var(--chalk); }
+  .daylight .h2 em { color: #2E6FE6; }
+  .daylight .lede { color: var(--haze); }
+  .daylight .label { color: var(--haze); }
+  .daylight .arrow { color: var(--chalk); }
+  .daylight .kicker .tick { background: var(--line-2); }
+  /* a real app moment, in daylight */
+  .pane { border: 1px solid var(--line); border-radius: 20px; overflow: hidden; background: #fff; box-shadow: 0 50px 90px -50px rgba(11,12,15,0.35); }
+  .pane-bar { display: flex; align-items: center; gap: 7px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .pane-bar i { width: 10px; height: 10px; border-radius: 50%; background: #E1E3E7; }
+  .pane-bar .nm { font-family: var(--mono); font-size: 11px; color: var(--haze); margin-left: 10px; }
+  .pane-body { padding: 26px 26px 30px; }
+  .dl { height: 11px; border-radius: 6px; background: #EDEEF1; margin-bottom: 14px; }
+  .dl.w1{width:94%} .dl.w2{width:80%} .dl.w3{width:88%} .dl.w4{width:62%}
+  .dl.hl{ background: linear-gradient(90deg,#DCE9FF,#EFE6FF); }
+  .pop { margin-top: 22px; border: 1px solid var(--line); border-radius: 14px; padding: 15px 16px; box-shadow: 0 18px 34px -20px rgba(11,12,15,0.3); }
+  .pop .ph { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 14px; color: #0B0C0F; }
+  .pop .spark { width: 16px; height: 16px; border-radius: 50%; background: var(--opal); flex: none; }
+  .pop .opts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+  .pop .opts b { font-weight: 500; font-size: 13px; color: #5F636E; padding: 7px 12px; border-radius: 9px; background: #F4F5F7; }
+  .pop .opts b.on { background: #0B0C0F; color: #fff; }
 
-  /* ---------- CTA ---------- */
-  .hub-cta { text-align: center; padding-block: clamp(88px, 12vw, 152px); }
-  .hub-cta h2 {
-    font-family: var(--font-display); font-size: clamp(32px, 5.4vw, 68px);
-    font-weight: 600; line-height: 1.04; letter-spacing: -0.035em; text-wrap: balance;
-  }
-  .hub-cta p { max-width: 42ch; margin: 20px auto 0; color: var(--slate); font-size: clamp(16px, 2vw, 19px); }
-  .hub-cta .hero-actions { margin-top: 34px; }
+  /* ------------------------------------------------ Continuity strip */
+  .keeps { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px,1.4vw,18px); }
+  .keep { padding: 26px; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(180deg, var(--velvet), var(--void)); min-height: 178px; display: flex; flex-direction: column; }
+  .keep .k { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--haze-2); }
+  .keep h4 { font-family: var(--serif); font-weight: 400; font-size: 25px; margin-top: auto; }
+  .keep p { color: var(--haze); font-size: 14px; line-height: 1.5; margin-top: 8px; }
 
-  @media (max-width: 900px) {
-    .roxan-panel { grid-template-columns: 1fr; }
-    .feature { grid-template-columns: 1fr; }
-    .feature .feature-media { order: -1; }
-    .mini-bento { grid-template-columns: repeat(2, 1fr); }
+  /* ------------------------------------------------ CTA */
+  .cta { text-align: center; }
+  .cta .h2 { margin-inline: auto; max-width: 16ch; }
+  .cta p { max-width: 40ch; margin: 22px auto 0; color: var(--haze); font-size: clamp(16px,2vw,19px); }
+  .cta .hero-actions { margin-top: 34px; }
+
+  /* ------------------------------------------------ Footer */
+  .foot { border-top: 1px solid var(--line); padding-block: clamp(56px, 6vw, 84px) 40px; }
+  .foot-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 40px 28px; }
+  .foot-lead .brand { font-size: 20px; }
+  .foot-lead p { color: var(--haze); font-size: 14.5px; line-height: 1.55; margin-top: 16px; max-width: 34ch; }
+  .foot-col h6 { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--haze-2); margin-bottom: 16px; font-weight: 500; }
+  .foot-col ul { list-style: none; display: grid; gap: 11px; }
+  .foot-col a { font-size: 14.5px; color: var(--haze); transition: color .2s; }
+  .foot-col a:hover { color: var(--chalk); }
+  .foot-base { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-top: clamp(44px,6vw,68px); padding-top: 26px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; color: var(--haze-2); }
+  .foot-base a { color: var(--haze-2); } .foot-base a:hover { color: var(--haze); }
+
+  /* ------------------------------------------------ Reveal */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ------------------------------------------------ Responsive */
+  @media (max-width: 960px) {
+    .angle, .angle.lg { grid-column: span 6; }
+    .daylight .split { grid-template-columns: 1fr; }
+    .daylight .pane { order: -1; }
+    .keeps { grid-template-columns: 1fr 1fr; }
+    .foot-grid { grid-template-columns: 1fr 1fr; }
   }
-  @media (max-width: 560px) {
-    .hero-apps { flex-wrap: wrap; gap: 12px; }
-    .mini-bento { grid-template-columns: 1fr; }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .nav-links.open { display: flex; position: absolute; inset: 64px 0 auto 0; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px var(--gutter) 24px; background: rgba(10,11,15,0.97); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: 1px solid var(--line); margin-left: 0; }
+    .nav-links.open a { font-size: 16px; padding: 8px 0; }
+    #oplo-actions { margin-left: auto; }
+    .nav-toggle { display: inline-flex; }
+    .angle, .angle.lg { grid-column: 1 / -1; }
+    .keeps { grid-template-columns: 1fr; }
+    .foot-grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .stone .body::before, .stone .bloom, .caption .angle-name, .h2 em { transition: none; }
   }
 </style>
 </head>
 <body>
 
-<!-- Icon glyph sprite -->
+<!-- glyph sprite -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <symbol id="g-odocs" viewBox="0 0 24 24"><path d="M7 3.5h7L18 8v12.5H7z"/><path d="M13.5 3.5V8H18"/><path d="M9.5 12.5h6M9.5 15.5h6"/></symbol>
   <symbol id="g-osheets" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/><path d="M4.5 10h15M4.5 14.5h15M11 4.5v15"/></symbol>
@@ -232,403 +321,323 @@
   <symbol id="g-osurf" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M15.2 8.8l-2 4.4-4.4 2 2-4.4z"/></symbol>
   <symbol id="g-ophotos" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M5 17l4.5-4 3 2.6L16.5 11l2.5 2.4"/></symbol>
   <symbol id="g-ocanvas" viewBox="0 0 24 24"><path d="M4.5 19.5l3.2-1L17 9.2l-2.2-2.2L5.5 16.3z"/><path d="M14.2 7l2.8 2.8"/></symbol>
-  <symbol id="g-ai" viewBox="0 0 24 24"><path d="M12 3.4c.7 3.9 1.9 5.1 5.8 5.8-3.9.7-5.1 1.9-5.8 5.8-.7-3.9-1.9-5.1-5.8-5.8 3.9-.7 5.1-1.9 5.8-5.8z"/><path d="M18 15.2c.3 1.6.8 2.1 2.4 2.4-1.6.3-2.1.8-2.4 2.4-.3-1.6-.8-2.1-2.4-2.4 1.6-.3 2.1-.8 2.4-2.4z"/></symbol>
-  <symbol id="g-cloud" viewBox="0 0 24 24"><path d="M7.4 18h8.8a3.4 3.4 0 0 0 .3-6.8 4.8 4.8 0 0 0-9.2-1.3A3.7 3.7 0 0 0 7.4 18z"/></symbol>
-  <symbol id="g-shield" viewBox="0 0 24 24"><path d="M12 3.4l6.2 2.3v5.2c0 4.3-2.9 7.2-6.2 10-3.3-2.8-6.2-5.7-6.2-10V5.7z"/><path d="M9.2 12.1l2.1 2.1 3.5-3.8"/></symbol>
 </defs></svg>
 
 <nav class="nav" id="nav" aria-label="Main">
-  <div class="container nav-inner">
-    <a class="wordmark" href="/" aria-label="Oplo home">
-      <span class="opal-dot" aria-hidden="true"></span>Oplo
-    </a>
+  <div class="wrap nav-inner">
+    <a class="brand" href="/"><span class="stone-dot" aria-hidden="true"></span>Oplo <small>Productivity</small></a>
     <ul class="nav-links" id="navLinks">
-      <li class="nav-item" id="productsItem">
-        <button class="nav-trigger" id="productsTrigger" aria-expanded="false" aria-controls="productsMenu" aria-haspopup="true">
-          Products <span class="caret" aria-hidden="true"></span>
-        </button>
-        <div class="megamenu" id="productsMenu" role="region" aria-label="Products">
-          <div class="megamenu-inner">
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot roxan" aria-hidden="true"></span>Roxan · AI</p>
-              <ul>
-                <li><a href="/roxan/">Meet Roxan<span class="sub">The model at the center</span></a></li>
-                <li><a href="/roxan/#capabilities">Capabilities<span class="sub">What Roxan can do</span></a></li>
-                <li><a href="/roxan/#developers">For developers<span class="sub">Build on the API</span></a></li>
-                <li><a href="/roxan/#safety">Safety &amp; privacy<span class="sub">On-device by default</span></a></li>
-              </ul>
-            </div>
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot productivity" aria-hidden="true"></span>Productivity</p>
-              <ul>
-                <li><a href="/odocs/">ODocs<span class="sub">Documents</span></a></li>
-                <li><a href="/osheets/">OSheets<span class="sub">Spreadsheets</span></a></li>
-                <li><a href="/omails/">OMails<span class="sub">Email</span></a></li>
-                <li><a href="/omaps/">OMaps<span class="sub">Maps</span></a></li>
-                <li><a href="/osurf/">OSurf<span class="sub">Browser</span></a></li>
-                <li><a href="/ophotos/">OPhotos<span class="sub">Photos</span></a></li>
-                <li><a href="/ocanvas/">OCanvas<span class="sub">Creative canvas</span></a></li>
-              </ul>
-            </div>
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot oedu" aria-hidden="true"></span>OEdu · Education</p>
-              <ul>
-                <li><a href="/oedu/">For teachers<span class="sub">Give time back to teaching</span></a></li>
-                <li><a href="/oedu/#schools">For schools<span class="sub">Whole-campus tools</span></a></li>
-                <li><a href="/oedu/#students">For students<span class="sub">Learning, human-first</span></a></li>
-                <li><a href="/oedu/#research">Research<span class="sub">The pedagogy behind it</span></a></li>
-              </ul>
-            </div>
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot platforms" aria-hidden="true"></span>Platforms</p>
-              <ul>
-                <li><a href="/#lineup">Halo<span class="sub">For people</span></a></li>
-                <li><a href="/#lineup">Slate<span class="sub">For companies</span></a></li>
-                <li><a href="/#lineup">Meridian<span class="sub">For nations</span></a></li>
-                <li><a href="/#platform">The platform<span class="sub">Silicon to service</span></a></li>
-              </ul>
-            </div>
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot explore" aria-hidden="true"></span>Explore</p>
-              <ul>
-                <li><a href="/#lineup">All products</a></li>
-                <li><a href="/soon/">What's new</a></li>
-                <li><a href="/soon/">Compare</a></li>
-                <li><a href="/soon/">Store</a></li>
-              </ul>
-            </div>
-          </div>
-          <div class="megamenu-foot">
-            <a class="link-arrow" href="/#lineup">Explore the full lineup <span class="chev" aria-hidden="true">→</span></a>
-            <div class="mm-quick">
-              <a href="/roxan/">Roxan</a>
-              <a href="/productivity/">Productivity</a>
-              <a href="/oedu/">OEdu</a>
-              <a href="/soon/">Support</a>
-            </div>
-          </div>
-        </div>
-      </li>
-      <li><a href="/#scale">Scale</a></li>
-      <li><a href="/#platform">Platform</a></li>
-      <li><a href="/#company">Company</a></li>
-      <li><a class="btn-pill" href="#get">Get started</a></li>
+      <li><a href="#angles">The angles</a></li>
+      <li><a href="#material">One material</a></li>
+      <li><a href="/roxan/">Roxan</a></li>
+      <li><a href="#start">Start</a></li>
     </ul>
     <div id="oplo-actions"></div>
-    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </div>
 </nav>
-<div class="nav-scrim" id="navScrim" aria-hidden="true"></div>
 
-<main id="top">
+<!-- ============================================ Hero -->
+<header class="hero wrap">
+  <div class="stone-wrap">
+    <div class="stone" id="stone" aria-hidden="true">
+      <span class="facet-ring"></span>
+      <div class="body"></div>
+      <div class="bloom"></div>
+      <div class="gloss" id="gloss"></div>
+    </div>
+  </div>
 
-  <!-- Hero -->
-  <header class="hub-hero">
-    <div class="glow" aria-hidden="true"></div>
-    <div class="container">
-      <p class="eyebrow">Oplo Productivity</p>
-      <h1>One suite. Every idea. Roxan throughout.</h1>
-      <p class="lede">Seven apps that share one account, one design, and one intelligence — so your work moves with you, and thinks with you.</p>
-      <div class="hero-actions">
-        <a class="btn-pill" href="#get">Get started <span aria-hidden="true">→</span></a>
-        <a class="link-arrow muted" href="#apps">Take the tour <span class="chev" aria-hidden="true">→</span></a>
-      </div>
-      <div class="hero-apps" aria-hidden="true">
-        <div class="hero-app"><div class="app-ic ic-odocs"><svg class="ic-glyph"><use href="#g-odocs"></use></svg></div></div>
-        <div class="hero-app"><div class="app-ic ic-osheets"><svg class="ic-glyph"><use href="#g-osheets"></use></svg></div></div>
-        <div class="hero-app"><div class="app-ic ic-omails"><svg class="ic-glyph"><use href="#g-omails"></use></svg></div></div>
-        <div class="hero-app"><div class="app-ic ic-osurf"><svg class="ic-glyph"><use href="#g-osurf"></use></svg></div></div>
-        <div class="hero-app"><div class="app-ic ic-omaps"><svg class="ic-glyph"><use href="#g-omaps"></use></svg></div></div>
-        <div class="hero-app"><div class="app-ic ic-ophotos"><svg class="ic-glyph"><use href="#g-ophotos"></use></svg></div></div>
-        <div class="hero-app"><div class="app-ic ic-ocanvas"><svg class="ic-glyph"><use href="#g-ocanvas"></use></svg></div></div>
-      </div>
-    </div>
-  </header>
+  <p class="label">Oplo Productivity</p>
+  <h1 class="hero-thesis">Seven apps is the <em>wrong</em> way to count.</h1>
+  <p class="hero-sub">It's <b>one material</b> — turn it, and it becomes what you need. The same fire, catching a different face.</p>
 
-  <!-- App grid -->
-  <section class="section container" id="apps">
-    <div class="section-head reveal">
-      <p class="eyebrow">The apps</p>
-      <h2 class="section-title">Seven apps, <span class="soft">one suite.</span></h2>
-      <p class="lede">Each one is its own craft. Together they're a single place to think, make, and share — with Roxan in every one.</p>
-    </div>
-    <div class="app-grid">
-      <a class="app-card reveal" href="/odocs/">
-        <div class="app-ic ic-odocs"><svg class="ic-glyph"><use href="#g-odocs"></use></svg></div>
-        <h3>ODocs <span class="tag">Documents</span></h3>
-        <p>Write with Roxan drafting, editing, and researching right alongside you.</p>
-        <span class="link-arrow">Open ODocs <span class="chev" aria-hidden="true">→</span></span>
-      </a>
-      <a class="app-card reveal reveal-d1" href="/osheets/">
-        <div class="app-ic ic-osheets"><svg class="ic-glyph"><use href="#g-osheets"></use></svg></div>
-        <h3>OSheets <span class="tag">Spreadsheets</span></h3>
-        <p>Models, formulas, and analysis you can simply ask for in plain words.</p>
-        <span class="link-arrow">Open OSheets <span class="chev" aria-hidden="true">→</span></span>
-      </a>
-      <a class="app-card reveal reveal-d2" href="/omails/">
-        <div class="app-ic ic-omails"><svg class="ic-glyph"><use href="#g-omails"></use></svg></div>
-        <h3>OMails <span class="tag">Email</span></h3>
-        <p>An inbox that triages, drafts replies, and clears the noise for you.</p>
-        <span class="link-arrow">Open OMails <span class="chev" aria-hidden="true">→</span></span>
-      </a>
-      <a class="app-card reveal" href="/omaps/">
-        <div class="app-ic ic-omaps"><svg class="ic-glyph"><use href="#g-omaps"></use></svg></div>
-        <h3>OMaps <span class="tag">Maps</span></h3>
-        <p>Find your way — and everything worth stopping for along it.</p>
-        <span class="link-arrow">Open OMaps <span class="chev" aria-hidden="true">→</span></span>
-      </a>
-      <a class="app-card reveal reveal-d1" href="/osurf/">
-        <div class="app-ic ic-osurf"><svg class="ic-glyph"><use href="#g-osurf"></use></svg></div>
-        <h3>OSurf <span class="tag">Browser</span></h3>
-        <p>The web, faster and quieter, with Roxan reading along beside you.</p>
-        <span class="link-arrow">Open OSurf <span class="chev" aria-hidden="true">→</span></span>
-      </a>
-      <a class="app-card reveal reveal-d2" href="/ophotos/">
-        <div class="app-ic ic-ophotos"><svg class="ic-glyph"><use href="#g-ophotos"></use></svg></div>
-        <h3>OPhotos <span class="tag">Photos</span></h3>
-        <p>Every memory, organized on its own and effortless to find again.</p>
-        <span class="link-arrow">Open OPhotos <span class="chev" aria-hidden="true">→</span></span>
-      </a>
-      <a class="app-card reveal" href="/ocanvas/">
-        <div class="app-ic ic-ocanvas"><svg class="ic-glyph"><use href="#g-ocanvas"></use></svg></div>
-        <h3>OCanvas <span class="tag">Creative canvas</span></h3>
-        <p>An open space to sketch, design, and think out loud with your team.</p>
-        <span class="link-arrow">Open OCanvas <span class="chev" aria-hidden="true">→</span></span>
-      </a>
-    </div>
-  </section>
+  <div class="caption" id="caption" aria-live="polite">
+    <span class="coord" id="capCoord">facet 00 · 0°</span>
+    <span class="angle-name" id="capName">ODocs</span>
+    <span class="angle-verb" id="capVerb">— where words find their edge</span>
+  </div>
 
-  <!-- Pillars -->
-  <section class="section container">
-    <div class="section-head reveal">
-      <p class="eyebrow">Why the suite</p>
-      <h2 class="section-title">All the apps you need — <span class="soft">and a few you'll be glad you have.</span></h2>
-    </div>
-    <div class="pillars">
-      <div class="pillar reveal">
-        <div class="app-ic ic-ai"><svg class="ic-glyph"><use href="#g-ai"></use></svg></div>
-        <h3>Personalized AI, built in</h3>
-        <p>Do your best work faster. Roxan brings the context of what you're working on right to where you are.</p>
-      </div>
-      <div class="pillar reveal reveal-d1">
-        <div class="app-ic ic-cloud"><svg class="ic-glyph"><use href="#g-cloud"></use></svg></div>
-        <h3>Born in the cloud</h3>
-        <p>Collaborate in real time, from any device, across apps that stay current on their own.</p>
-      </div>
-      <div class="pillar reveal reveal-d2">
-        <div class="app-ic ic-shield"><svg class="ic-glyph"><use href="#g-shield"></use></svg></div>
-        <h3>Security, by construction</h3>
-        <p>Protect your mail, files, and everything you make with AI-powered controls that verify every layer.</p>
-      </div>
-    </div>
-  </section>
+  <div class="facets" id="facets" role="group" aria-label="Turn the stone to an angle"></div>
 
-  <!-- Roxan in everything -->
-  <section class="roxan-wrap container">
-    <div class="roxan-panel reveal">
-      <div class="roxan-copy">
-        <p class="eyebrow">Intelligence</p>
-        <h2>Roxan is in everything you open.</h2>
-        <p>The same model, everywhere. Draft a document, build a formula, answer a mail, or plan a route — Roxan is one keystroke away, and it already has the context of what you're working on.</p>
-        <div class="cap-chips">
-          <span>Draft</span><span>Summarize</span><span>Build a table</span><span>Reply</span><span>Translate</span><span>Explain</span>
-        </div>
-      </div>
-      <div class="roxan-media">
-        <div class="win">
-          <div class="win-bar"><i></i><i></i><i></i><span class="win-name">ODocs — Proposal.odoc</span></div>
-          <div class="win-body">
-            <div class="dl w1"></div>
-            <div class="dl w3"></div>
-            <div class="dl w2 hl"></div>
-            <div class="dl w4"></div>
-            <div class="roxan-pop">
-              <div class="rp-head"><span class="spark" aria-hidden="true"></span> Roxan</div>
-              <div class="rp-opts"><b class="on">Rewrite clearer</b><b>Summarize</b><b>Make a table</b><b>Continue</b></div>
-            </div>
+  <div class="hero-actions">
+    <a class="btn btn-fire" href="#start">Turn it yourself <span aria-hidden="true">→</span></a>
+    <a class="arrow muted" href="#angles">See all seven angles <span class="chev" aria-hidden="true">→</span></a>
+  </div>
+</header>
+
+<!-- ============================================ The seven angles -->
+<section class="band wrap" id="angles">
+  <div class="band-head reveal">
+    <div class="kicker"><span class="tick"></span><span class="label">The cut</span></div>
+    <h2 class="h2">Seven faces, <em>one stone.</em></h2>
+    <p class="lede">Each app is an angle on the same material — its own craft where it meets the light, the same fire underneath. Turn to the one you need.</p>
+  </div>
+
+  <div class="angles">
+    <a class="angle lg" href="/odocs/" style="--c:#5A93FF">
+      <div class="a-top"><span class="coord">facet 00 · 0°</span><span class="ic"><svg><use href="#g-odocs"></use></svg></span></div>
+      <h3><span class="nm">ODocs</span>Where words find their edge.</h3>
+      <p>Draft, sharpen, and restructure — Roxan writes alongside you and never takes the pen.</p>
+      <span class="go">Open ODocs <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="angle" href="/osheets/" style="--c:#33CE92">
+      <div class="a-top"><span class="coord">facet 01 · 51°</span><span class="ic"><svg><use href="#g-osheets"></use></svg></span></div>
+      <h3><span class="nm">OSheets</span>Numbers that hold their shape.</h3>
+      <p>Ask for the model in plain words; get formulas you can read.</p>
+      <span class="go">Open OSheets <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="angle" href="/omails/" style="--c:#FF7A6D">
+      <div class="a-top"><span class="coord">facet 02 · 103°</span><span class="ic"><svg><use href="#g-omails"></use></svg></span></div>
+      <h3><span class="nm">OMails</span>The inbox goes quiet.</h3>
+      <p>Triage, drafts, and the noise cleared before you arrive.</p>
+      <span class="go">Open OMails <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="angle" href="/omaps/" style="--c:#1CC3D0">
+      <div class="a-top"><span class="coord">facet 03 · 154°</span><span class="ic"><svg><use href="#g-omaps"></use></svg></span></div>
+      <h3><span class="nm">OMaps</span>The way makes itself known.</h3>
+      <p>Where to go, and everything worth the stop along it.</p>
+      <span class="go">Open OMaps <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="angle" href="/osurf/" style="--c:#B49BFF">
+      <div class="a-top"><span class="coord">facet 04 · 206°</span><span class="ic"><svg><use href="#g-osurf"></use></svg></span></div>
+      <h3><span class="nm">OSurf</span>The web, read with you.</h3>
+      <p>Faster, quieter pages, with Roxan reading over your shoulder.</p>
+      <span class="go">Open OSurf <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="angle" href="/ophotos/" style="--c:#FFBE4D">
+      <div class="a-top"><span class="coord">facet 05 · 257°</span><span class="ic"><svg><use href="#g-ophotos"></use></svg></span></div>
+      <h3><span class="nm">OPhotos</span>Every moment, kept in order.</h3>
+      <p>Memories that sort themselves and surface when you look.</p>
+      <span class="go">Open OPhotos <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="angle lg" href="/ocanvas/" style="--c:#B57BFF">
+      <div class="a-top"><span class="coord">facet 06 · 309°</span><span class="ic"><svg><use href="#g-ocanvas"></use></svg></span></div>
+      <h3><span class="nm">OCanvas</span>Ideas take up space.</h3>
+      <p>An open surface to sketch, arrange, and think out loud — together, in real time, with room to be wrong before you're right.</p>
+      <span class="go">Open OCanvas <span aria-hidden="true">→</span></span>
+    </a>
+  </div>
+</section>
+
+<!-- ============================================ Roxan — the fire -->
+<section class="band fire-band wrap" id="material">
+  <div class="fire-panel reveal">
+    <div class="fire-thread" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <h2>Roxan is the <em>fire carried</em> through every facet.</h2>
+    <p>Not seven assistants — one. It already knows the document you left, the sheet you're building, the thread you haven't answered. Move between angles and the context moves with you.</p>
+    <div class="chips"><span>Draft</span><span>Reason</span><span>Clear</span><span>Summarize</span><span>Translate</span><span>Remember</span></div>
+  </div>
+</section>
+
+<!-- ============================================ Daylight break -->
+<section class="band daylight" id="daylight">
+  <div class="wrap split">
+    <div class="reveal">
+      <div class="kicker"><span class="tick"></span><span class="label">Held to the light</span></div>
+      <h2 class="h2">The fire is real <em>in daylight,</em> too.</h2>
+      <p class="lede">Turn away from the drama and it still holds. One account, every device, work that stays exactly where you left it — with Roxan a single keystroke away, wherever you are.</p>
+      <p style="margin-top:26px"><a class="arrow" href="#start">Open a workspace <span class="chev" aria-hidden="true">→</span></a></p>
+    </div>
+    <div class="reveal">
+      <div class="pane">
+        <div class="pane-bar"><i></i><i></i><i></i><span class="nm">ODocs — Proposal.odoc</span></div>
+        <div class="pane-body">
+          <div class="dl w1"></div>
+          <div class="dl w3"></div>
+          <div class="dl w2 hl"></div>
+          <div class="dl w4"></div>
+          <div class="pop">
+            <div class="ph"><span class="spark" aria-hidden="true"></span> Roxan</div>
+            <div class="opts"><b class="on">Sharpen this line</b><b>Summarize</b><b>Make a table</b><b>Continue</b></div>
           </div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Collaboration -->
-  <section class="section container">
-    <div class="feature">
-      <div class="feature-copy reveal">
-        <p class="eyebrow">Together</p>
-        <h2 class="section-title">Made to be made <span class="soft">with other people.</span></h2>
-        <p class="lede">Share anything with a link. Everyone edits at once, sees the same version, and Roxan keeps track of what changed while you were away.</p>
-        <p style="margin-top:26px"><a class="link-arrow" href="#get">Start a shared space <span class="chev" aria-hidden="true">→</span></a></p>
-      </div>
-      <div class="feature-media reveal reveal-d1">
-        <div class="win">
-          <div class="win-bar"><i></i><i></i><i></i><span class="win-name">OCanvas — Q3 Launch</span></div>
-          <div class="win-body">
-            <div class="dl w1"></div>
-            <div class="dl w2">
-            </div>
-            <div class="dl w3"></div>
-            <p style="font-size:13px;color:var(--slate);margin:14px 0 4px">Editing now
-              <span class="caret-tag a">Ada</span>
-              <span class="caret-tag b">Ken</span>
-              <span class="caret-tag c">Mira</span>
-            </p>
-            <div class="dl w4"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+<!-- ============================================ Continuity -->
+<section class="band wrap">
+  <div class="band-head reveal">
+    <div class="kicker"><span class="tick"></span><span class="label">What stays</span></div>
+    <h2 class="h2">Yours, and it <em>keeps.</em></h2>
+  </div>
+  <div class="keeps">
+    <div class="keep reveal"><span class="k">Account</span><h4>One sign-in</h4><p>Every angle, every device, one Oplo account.</p></div>
+    <div class="keep reveal"><span class="k">Continuity</span><h4>Any device</h4><p>Begin on your phone, land on your desk — nothing to carry over.</p></div>
+    <div class="keep reveal"><span class="k">Privacy</span><h4>On-device Roxan</h4><p>The everyday fire runs on your hardware, not ours.</p></div>
+    <div class="keep reveal"><span class="k">Offline</span><h4>Still works</h4><p>Keep going with no signal; it syncs the moment you're back.</p></div>
+  </div>
+</section>
 
-  <!-- Continuity / privacy -->
-  <section class="section container">
-    <div class="section-head reveal">
-      <p class="eyebrow">Yours</p>
-      <h2 class="section-title">Everywhere you are. <span class="soft">Private by design.</span></h2>
-    </div>
-    <div class="mini-bento">
-      <div class="mb-card reveal">
-        <span class="mb-k">Account</span>
-        <h4>One sign-in</h4>
-        <p>Every app, every device, one Oplo account.</p>
-      </div>
-      <div class="mb-card reveal reveal-d1">
-        <span class="mb-k">Continuity</span>
-        <h4>Every device</h4>
-        <p>Start on your phone, finish on your desk — nothing to move.</p>
-      </div>
-      <div class="mb-card reveal reveal-d2">
-        <span class="mb-k">Privacy</span>
-        <h4>On-device Roxan</h4>
-        <p>The everyday intelligence runs on your hardware, not ours.</p>
-      </div>
-      <div class="mb-card reveal reveal-d2">
-        <span class="mb-k">Reliability</span>
-        <h4>Works offline</h4>
-        <p>Keep writing and editing with no signal; it syncs when you're back.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="hub-cta container" id="get">
-    <h2>Get the whole suite.</h2>
-    <p>Start free, and bring your team along whenever you're ready.</p>
+<!-- ============================================ CTA -->
+<section class="band cta wrap" id="start">
+  <div class="reveal">
+    <h2 class="h2">Stop counting apps. <em>Start turning.</em></h2>
+    <p>One material, free to begin. Bring your team along whenever you're ready.</p>
     <div class="hero-actions">
-      <a class="btn-pill" href="/oplo-accounts/demo/">Get started <span aria-hidden="true">→</span></a>
-      <a class="link-arrow muted" href="#apps">Compare apps <span class="chev" aria-hidden="true">→</span></a>
+      <a class="btn btn-fire" href="/oplo-accounts/demo/">Turn it yourself <span aria-hidden="true">→</span></a>
+      <a class="btn btn-ghost" href="#angles">Compare the angles</a>
     </div>
-  </section>
+  </div>
+</section>
 
-</main>
-
-<!-- Footer -->
-<footer class="footer" id="company">
-  <div class="container">
-    <div class="footer-lines">
-      <a class="line-card roxan" href="/roxan/">
-        <span class="line-name"><span class="line-dot" aria-hidden="true"></span>Roxan</span>
-        <p class="line-aud">Artificial intelligence</p>
-        <p class="line-desc">The model woven through every Oplo product — private, on-device by default.</p>
-        <span class="line-go">Explore Roxan <span aria-hidden="true">→</span></span>
-      </a>
-      <a class="line-card productivity" href="/productivity/">
-        <span class="line-name"><span class="line-dot" aria-hidden="true"></span>Oplo Productivity</span>
-        <p class="line-aud">Apps</p>
-        <p class="line-desc">ODocs, OSheets, OMails, OMaps and more — with AI at the heart of the work.</p>
-        <span class="line-go">Explore the apps <span aria-hidden="true">→</span></span>
-      </a>
-      <a class="line-card oedu" href="/oedu/">
-        <span class="line-name"><span class="line-dot" aria-hidden="true"></span>OEdu</span>
-        <p class="line-aud">Education</p>
-        <p class="line-desc">Elevating educators, empowering learners — with tools driven by human connection.</p>
-        <span class="line-go">Explore OEdu <span aria-hidden="true">→</span></span>
-      </a>
+<!-- ============================================ Footer -->
+<footer class="foot wrap">
+  <div class="foot-grid">
+    <div class="foot-lead">
+      <a class="brand" href="/"><span class="stone-dot" aria-hidden="true"></span>Oplo <small>Productivity</small></a>
+      <p>One material, seven angles. The fire is Roxan — carried, private, always the same underneath.</p>
     </div>
-    <div class="footer-grid">
-      <div class="footer-col">
-        <h6>Productivity</h6>
-        <ul>
-          <li><a href="/odocs/">ODocs</a></li>
-          <li><a href="/osheets/">OSheets</a></li>
-          <li><a href="/omails/">OMails</a></li>
-          <li><a href="/omaps/">OMaps</a></li>
-          <li><a href="/osurf/">OSurf</a></li>
-          <li><a href="/ophotos/">OPhotos</a></li>
-          <li><a href="/ocanvas/">OCanvas</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h6>Roxan · AI</h6>
-        <ul>
-          <li><a href="/roxan/">Meet Roxan</a></li>
-          <li><a href="/roxan/#capabilities">Capabilities</a></li>
-          <li><a href="/roxan/#developers">For developers</a></li>
-          <li><a href="/roxan/#safety">Safety &amp; privacy</a></li>
-          <li><a href="/roxan/#research">Research</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h6>Platforms</h6>
-        <ul>
-          <li><a href="/#lineup">Halo · people</a></li>
-          <li><a href="/#lineup">Slate · companies</a></li>
-          <li><a href="/#lineup">Meridian · nations</a></li>
-          <li><a href="/#platform">Silicon</a></li>
-          <li><a href="/#platform">Cloud</a></li>
-          <li><a href="/#platform">Security</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h6>OEdu · Education</h6>
-        <ul>
-          <li><a href="/oedu/">For teachers</a></li>
-          <li><a href="/oedu/#schools">For schools</a></li>
-          <li><a href="/oedu/#students">For students</a></li>
-          <li><a href="/oedu/#research">Research</a></li>
-          <li><a href="/oedu/">Get OEdu</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h6>Company</h6>
-        <ul>
-          <li><a href="/#company">About</a></li>
-          <li><a href="/soon/">Newsroom</a></li>
-          <li><a href="/soon/">Careers</a></li>
-          <li><a href="/soon/">Investors</a></li>
-          <li><a href="/soon/">Sustainability</a></li>
-          <li><a href="/#contact">Contact</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h6>Support</h6>
-        <ul>
-          <li><a href="/soon/">Help center</a></li>
-          <li><a href="/soon/">Documentation</a></li>
-          <li><a href="/soon/">System status</a></li>
-          <li><a href="/soon/">Community</a></li>
-          <li><a href="/soon/">Downloads</a></li>
-          <li><a href="/soon/">Contact us</a></li>
-        </ul>
-      </div>
+    <div class="foot-col">
+      <h6>The angles</h6>
+      <ul>
+        <li><a href="/odocs/">ODocs</a></li>
+        <li><a href="/osheets/">OSheets</a></li>
+        <li><a href="/omails/">OMails</a></li>
+        <li><a href="/omaps/">OMaps</a></li>
+        <li><a href="/osurf/">OSurf</a></li>
+        <li><a href="/ophotos/">OPhotos</a></li>
+        <li><a href="/ocanvas/">OCanvas</a></li>
+      </ul>
     </div>
-    <div class="footer-base">
-      <a class="wordmark" href="/"><span class="opal-dot" aria-hidden="true"></span>Oplo</a>
-      <div class="footer-legal">
-        <span>© 2026 Oplo, Inc.</span>
-        <a href="/soon/">Privacy</a>
-        <a href="/soon/">Terms</a>
-        <a href="/soon/">Cookies</a>
-        <span class="region"><span aria-hidden="true">◎</span> Global · English</span>
-      </div>
+    <div class="foot-col">
+      <h6>The material</h6>
+      <ul>
+        <li><a href="/roxan/">Meet Roxan</a></li>
+        <li><a href="#material">One fire</a></li>
+        <li><a href="/oplo-accounts/demo/">One account</a></li>
+        <li><a href="#daylight">In daylight</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h6>Oplo</h6>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/oedu/">OEdu</a></li>
+        <li><a href="/soon/">Support</a></li>
+        <li><a href="/soon/">What's new</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-base">
+    <span>© 2026 Oplo, Inc.</span>
+    <div style="display:flex;gap:18px;flex-wrap:wrap">
+      <a href="/soon/">Privacy</a><a href="/soon/">Terms</a><a href="/soon/">Cookies</a>
+      <span>◎ One material · seven angles</span>
     </div>
   </div>
 </footer>
 
-<script src="/assets/js/site.js"></script>
+<script>
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- the seven angles: facet coordinate + colour + verb ----
+  var ANGLES = [
+    { n:'ODocs',   deg:0,   c:'#5A93FF', bx:'64%', by:'30%', v:'— where words find their edge' },
+    { n:'OSheets', deg:51,  c:'#33CE92', bx:'74%', by:'40%', v:'— numbers that hold their shape' },
+    { n:'OMails',  deg:103, c:'#FF7A6D', bx:'66%', by:'66%', v:'— the inbox goes quiet' },
+    { n:'OMaps',   deg:154, c:'#1CC3D0', bx:'40%', by:'70%', v:'— the way makes itself known' },
+    { n:'OSurf',   deg:206, c:'#B49BFF', bx:'28%', by:'54%', v:'— the web, read with you' },
+    { n:'OPhotos', deg:257, c:'#FFBE4D', bx:'34%', by:'30%', v:'— every moment, kept in order' },
+    { n:'OCanvas', deg:309, c:'#B57BFF', bx:'56%', by:'24%', v:'— ideas take up space' }
+  ];
+  var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+
+  var root = document.documentElement;
+  var stone = document.getElementById('stone');
+  var bloom = stone.querySelector('.bloom');
+  var capCoord = document.getElementById('capCoord');
+  var capName = document.getElementById('capName');
+  var capVerb = document.getElementById('capVerb');
+  var facetsEl = document.getElementById('facets');
+  var cur = 0, timer = null;
+
+  // build the facet dial
+  ANGLES.forEach(function (a, i) {
+    var b = document.createElement('button');
+    b.className = 'facet'; b.type = 'button';
+    b.style.setProperty('--c', a.c);
+    b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    b.setAttribute('aria-label', a.n + ', facet at ' + a.deg + ' degrees');
+    b.innerHTML = '<span class="fdot"></span>' + a.n;
+    b.addEventListener('click', function () { turn(i, true); });
+    b.addEventListener('mouseenter', function () { turn(i, true); });
+    facetsEl.appendChild(b);
+  });
+  var btns = facetsEl.querySelectorAll('.facet');
+
+  function turn(i, user) {
+    cur = i;
+    var a = ANGLES[i];
+    root.style.setProperty('--fire', a.c);
+    root.style.setProperty('--fire-soft', hexA(a.c, 0.42));
+    stone.style.setProperty('--spin', a.deg + 'deg');
+    bloom.style.setProperty('--bx', a.bx);
+    bloom.style.setProperty('--by', a.by);
+    capCoord.textContent = 'facet ' + pad2(i) + ' · ' + a.deg + '°';
+    capName.textContent = a.n;
+    capVerb.textContent = a.v;
+    for (var k = 0; k < btns.length; k++) btns[k].setAttribute('aria-pressed', k === i ? 'true' : 'false');
+    if (user) { restart(); }
+  }
+  function hexA(hex, alpha) {
+    var m = hex.replace('#', '');
+    var r = parseInt(m.substring(0,2),16), g = parseInt(m.substring(2,4),16), b = parseInt(m.substring(4,6),16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+  }
+  function advance() { turn((cur + 1) % ANGLES.length, false); }
+  function restart() { if (timer) clearInterval(timer); if (!reduce) timer = setInterval(advance, 3600); }
+
+  turn(0, false);
+  restart();
+  // pause the auto-turn when the tab is hidden
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { if (timer) clearInterval(timer); } else { restart(); }
+  });
+
+  // ---- pointer parallax on the stone highlight ----
+  var gloss = document.getElementById('gloss');
+  if (gloss && !reduce && matchMedia('(pointer: fine)').matches) {
+    var raf = null;
+    window.addEventListener('pointermove', function (e) {
+      if (raf) return;
+      raf = requestAnimationFrame(function () {
+        var r = stone.getBoundingClientRect();
+        var dx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width/2)) / (innerWidth/2)));
+        var dy = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height/2)) / (innerHeight/2)));
+        gloss.style.setProperty('--px', (dx*16) + 'px');
+        gloss.style.setProperty('--py', (dy*13) + 'px');
+        raf = null;
+      });
+    }, { passive: true });
+  }
+
+  // ---- nav: translucent on scroll + mobile toggle ----
+  var nav = document.getElementById('nav');
+  var onScroll = function () { nav.classList.toggle('scrolled', scrollY > 8); };
+  onScroll(); addEventListener('scroll', onScroll, { passive: true });
+  var toggle = document.getElementById('navToggle'), links = document.getElementById('navLinks');
+  toggle.addEventListener('click', function () {
+    var open = links.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+  links.addEventListener('click', function (e) { if (e.target.closest('a')) { links.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); } });
+
+  // ---- reveal on scroll ----
+  var reveals = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    reveals.forEach(function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (ents) {
+      ents.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { threshold: 0.14, rootMargin: '0px 0px -8% 0px' });
+    reveals.forEach(function (el) { io.observe(el); });
+  }
+})();
+</script>
 <script src="/assets/js/oplo-shell.js" defer></script>
 </body>
 </html>

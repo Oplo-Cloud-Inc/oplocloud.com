@@ -63,6 +63,19 @@
 .oplo-waffle-glyph { display: block; }
 .oplo-waffle-glyph circle { fill: currentColor; }
 
+/* Dark surfaces: a page sets data-oplo-theme="dark" on <html> and the cluster
+   inverts. The popovers stay light on purpose — they read as panels of daylight
+   laid over the page, the same way the launcher does on any dark app. */
+[data-oplo-theme="dark"] .oplo-iconbtn { color: #C4C7D0; }
+[data-oplo-theme="dark"] .oplo-iconbtn:hover,
+[data-oplo-theme="dark"] .oplo-iconbtn[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+[data-oplo-theme="dark"] .oplo-chip:hover { background: rgba(255, 255, 255, 0.12); }
+[data-oplo-theme="dark"] .oplo-iconbtn:focus-visible,
+[data-oplo-theme="dark"] .oplo-chip:focus-visible { outline-color: #fff; }
+
 /* account chip */
 .oplo-chip {
   display: inline-flex;
