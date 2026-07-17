@@ -283,6 +283,52 @@
   .foot-base { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-top: clamp(44px,6vw,68px); padding-top: 26px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; color: var(--haze-2); }
   .foot-base a { color: var(--haze-2); } .foot-base a:hover { color: var(--haze); }
 
+  /* ------------------------------------------------ App spotlights */
+  .spot { border-top: 1px solid var(--line); }
+  .spot .spot-in { display: grid; grid-template-columns: 1.03fr 0.97fr; gap: clamp(30px,5vw,78px); align-items: center; }
+  .spot.rev .s-copy { order: 2; }
+  .s-eyebrow { display: inline-flex; align-items: center; gap: 11px; margin-bottom: 20px; }
+  .s-eyebrow .s-ic { width: 36px; height: 36px; border-radius: 28%; display: grid; place-items: center; flex: none;
+    background: linear-gradient(150deg, color-mix(in srgb, var(--c) 84%, #fff), var(--c));
+    box-shadow: 0 8px 18px -10px var(--c), inset 0 1px 0 rgba(255,255,255,0.42); }
+  .s-eyebrow .s-ic svg { width: 54%; height: 54%; stroke: #10121a; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .s-eyebrow .s-name { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c); }
+  .spot h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(30px,4.2vw,52px); line-height: 1.03; letter-spacing: -0.01em; text-wrap: balance; }
+  .spot .s-intro { margin-top: 18px; color: var(--haze); font-size: clamp(16px,1.8vw,18px); line-height: 1.55; max-width: 46ch; }
+  .spot .s-link { margin-top: 18px; }
+  .spot .s-feats { margin-top: clamp(26px,3vw,36px); display: grid; gap: 20px; }
+  .spot .feat { padding-left: 17px; border-left: 2px solid var(--c); }
+  .spot .feat b { display: block; font-family: var(--sans); font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em; }
+  .spot .feat span { display: block; margin-top: 4px; color: var(--haze); font-size: 14.5px; line-height: 1.5; }
+  .spot.light { --chalk: #0B0C0F; --haze: #5F636E; --line: #E6E7EA; background: #FCFCFD; color: #0B0C0F; }
+  .spot.light .arrow { color: #0B0C0F; }
+  .s-media { --line: #E6E7EA; }
+  /* mockup extras (reuse .pane / .dl / .pop) */
+  .grid-mock { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: #E6E7EA; border: 1px solid #E6E7EA; border-radius: 9px; overflow: hidden; margin-bottom: 14px; }
+  .grid-mock i { background: #fff; height: 30px; }
+  .grid-mock i.h { background: #F4F5F7; }
+  .grid-mock i.on { background: color-mix(in srgb, var(--c,#12A06E) 20%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c,#12A06E) 55%, #fff); }
+  .mrow { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid #EDEEF1; }
+  .mrow .mdot { width: 8px; height: 8px; border-radius: 50%; background: var(--c,#EF4A3C); flex: none; }
+  .mrow .ml { flex: 1; }
+  .mrow .ml .l1 { height: 9px; width: 58%; border-radius: 5px; background: #E4E6EA; margin-bottom: 6px; }
+  .mrow .ml .l2 { height: 8px; width: 86%; border-radius: 5px; background: #EDEEF1; }
+
+  /* ------------------------------------------------ FAQ */
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq details:first-of-type { border-top: 1px solid var(--line); }
+  .faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 22px;
+    padding: 24px 2px; font-family: var(--serif); font-size: clamp(19px,2.3vw,25px); color: var(--chalk); }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary .plus { position: relative; width: 18px; height: 18px; flex: none; }
+  .faq summary .plus::before, .faq summary .plus::after { content: ""; position: absolute; inset: 0; margin: auto; background: var(--haze); border-radius: 2px; }
+  .faq summary .plus::before { width: 16px; height: 2px; }
+  .faq summary .plus::after { width: 2px; height: 16px; transition: transform .3s var(--ease), opacity .3s; }
+  .faq details[open] summary .plus::after { transform: rotate(90deg); opacity: 0; }
+  .faq details[open] summary { color: var(--fire); transition: color .5s var(--ease); }
+  .faq .fa { padding: 0 2px 26px; color: var(--haze); font-size: 16px; line-height: 1.6; max-width: 70ch; }
+  .faq details:not([open]) > .fa { display: none; }   /* collapse answers when closed */
+
   /* ------------------------------------------------ Reveal */
   .reveal { opacity: 0; transform: translateY(24px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
   .reveal.in { opacity: 1; transform: none; }
@@ -290,8 +336,9 @@
   /* ------------------------------------------------ Responsive */
   @media (max-width: 960px) {
     .angle, .angle.lg { grid-column: span 6; }
-    .daylight .split { grid-template-columns: 1fr; }
-    .daylight .pane { order: -1; }
+    .spot .spot-in { grid-template-columns: 1fr; gap: 38px; }
+    .spot.rev .s-copy { order: 0; }
+    .spot .s-media { order: -1; }
     .keeps { grid-template-columns: 1fr 1fr; }
     .foot-grid { grid-template-columns: 1fr 1fr; }
   }
@@ -351,7 +398,7 @@
 
   <p class="label">Oplo Productivity</p>
   <h1 class="hero-thesis">Seven apps, <em>one</em> intelligence.</h1>
-  <p class="hero-sub">Docs, Sheets, Mail and more — sharing one account and one design, with <b>Roxan built into every app.</b></p>
+  <p class="hero-sub">The apps you need for everything you do — write in ODocs, model in OSheets, clear your inbox in OMails, and more. One account, one design, and <b>Roxan in every one.</b></p>
 
   <div class="caption" id="caption" aria-live="polite">
     <span class="coord" id="capCoord">Documents</span>
@@ -431,26 +478,93 @@
   </div>
 </section>
 
-<!-- ============================================ Daylight break -->
-<section class="band daylight" id="daylight">
-  <div class="wrap split">
-    <div class="reveal">
-      <div class="kicker"><span class="tick"></span><span class="label">Roxan in context</span></div>
-      <h2 class="h2">Right where <em>you're working.</em></h2>
-      <p class="lede">Select any line and Roxan can rewrite, summarize, or continue it — in Docs, Sheets, Mail, and every other app. One account, every device, always within reach.</p>
-      <p style="margin-top:26px"><a class="arrow" href="#start">Open a workspace <span class="chev" aria-hidden="true">→</span></a></p>
+<!-- ============================================ Spotlight · ODocs -->
+<section class="band spot" style="--c:#5A93FF">
+  <div class="wrap spot-in">
+    <div class="s-copy reveal">
+      <div class="s-eyebrow"><span class="s-ic"><svg><use href="#g-odocs"></use></svg></span><span class="s-name">ODocs · Documents</span></div>
+      <h2>The document that writes with you.</h2>
+      <p class="s-intro">Draft, edit, and restructure with a model that understands the whole document — and never takes the pen.</p>
+      <a class="arrow s-link" href="/odocs/">Open ODocs <span class="chev" aria-hidden="true">→</span></a>
+      <div class="s-feats">
+        <div class="feat"><b>Rewrite anything, in place.</b><span>Select a line and ask Roxan to sharpen it, shorten it, or shift the tone — without leaving the page.</span></div>
+        <div class="feat"><b>Research without the tabs.</b><span>Pull facts and quotes straight into your draft, each one cited and easy to check.</span></div>
+        <div class="feat"><b>Structure that keeps up.</b><span>Headings, summaries, and a live outline that reorganize as your thinking does.</span></div>
+      </div>
     </div>
-    <div class="reveal">
+    <div class="s-media reveal">
       <div class="pane">
-        <div class="pane-bar"><i></i><i></i><i></i><span class="nm">ODocs — Proposal.odoc</span></div>
+        <div class="pane-bar"><i></i><i></i><i></i><span class="nm">ODocs — Brief.odoc</span></div>
         <div class="pane-body">
-          <div class="dl w1"></div>
-          <div class="dl w3"></div>
-          <div class="dl w2 hl"></div>
-          <div class="dl w4"></div>
+          <div class="dl w1"></div><div class="dl w3"></div><div class="dl w2 hl"></div><div class="dl w4"></div>
           <div class="pop">
             <div class="ph"><span class="spark" aria-hidden="true"></span> Roxan</div>
-            <div class="opts"><b class="on">Sharpen this line</b><b>Summarize</b><b>Make a table</b><b>Continue</b></div>
+            <div class="opts"><b class="on">Sharpen this line</b><b>Summarize</b><b>Cite a source</b><b>Continue</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ Spotlight · OSheets (light break) -->
+<section class="band spot light rev" style="--c:#12A06E">
+  <div class="wrap spot-in">
+    <div class="s-copy reveal">
+      <div class="s-eyebrow"><span class="s-ic"><svg><use href="#g-osheets"></use></svg></span><span class="s-name">OSheets · Spreadsheets</span></div>
+      <h2>Spreadsheets you can just ask.</h2>
+      <p class="s-intro">Describe the model in plain words and get formulas you can read, on data you can trust.</p>
+      <a class="arrow s-link" href="/osheets/">Open OSheets <span class="chev" aria-hidden="true">→</span></a>
+      <div class="s-feats">
+        <div class="feat"><b>Formulas from a sentence.</b><span>Say what you want to calculate; Roxan writes the formula and explains it.</span></div>
+        <div class="feat"><b>Analysis on demand.</b><span>Ask a question of your data and get a chart, a pivot, or a plain-English answer.</span></div>
+        <div class="feat"><b>Fill in the gaps.</b><span>Roxan completes patterns and suggests values from the data already in your sheet.</span></div>
+      </div>
+    </div>
+    <div class="s-media reveal">
+      <div class="pane">
+        <div class="pane-bar"><i></i><i></i><i></i><span class="nm">OSheets — Q3 Model.osheet</span></div>
+        <div class="pane-body">
+          <div class="grid-mock">
+            <i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i>
+            <i></i><i></i><i class="on"></i><i></i>
+            <i></i><i></i><i></i><i></i>
+            <i></i><i class="on"></i><i></i><i></i>
+          </div>
+          <div class="pop">
+            <div class="ph"><span class="spark" aria-hidden="true"></span> Roxan</div>
+            <div class="opts"><b class="on">Write the formula</b><b>Chart this</b><b>Explain</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ Spotlight · OMails -->
+<section class="band spot" style="--c:#FF7A6D">
+  <div class="wrap spot-in">
+    <div class="s-copy reveal">
+      <div class="s-eyebrow"><span class="s-ic"><svg><use href="#g-omails"></use></svg></span><span class="s-name">OMails · Email</span></div>
+      <h2>An inbox that clears itself.</h2>
+      <p class="s-intro">Roxan triages, drafts, and summarizes — so you open your mail to a plan, not a pile.</p>
+      <a class="arrow s-link" href="/omails/">Open OMails <span class="chev" aria-hidden="true">→</span></a>
+      <div class="s-feats">
+        <div class="feat"><b>Sorted before you arrive.</b><span>Important mail rises to the top; the rest is grouped and kept quiet.</span></div>
+        <div class="feat"><b>Replies, ready to send.</b><span>Drafts written in your voice that you approve with a glance.</span></div>
+        <div class="feat"><b>The whole thread, in a line.</b><span>Long back-and-forths summarized so you catch up in seconds.</span></div>
+      </div>
+    </div>
+    <div class="s-media reveal">
+      <div class="pane">
+        <div class="pane-bar"><i></i><i></i><i></i><span class="nm">OMails — Inbox</span></div>
+        <div class="pane-body" style="padding-top:10px">
+          <div class="mrow"><span class="mdot"></span><div class="ml"><div class="l1"></div><div class="l2"></div></div></div>
+          <div class="mrow"><span class="mdot" style="background:#C9CDD6"></span><div class="ml"><div class="l1"></div><div class="l2"></div></div></div>
+          <div class="mrow"><span class="mdot" style="background:#C9CDD6"></span><div class="ml"><div class="l1"></div><div class="l2"></div></div></div>
+          <div class="pop">
+            <div class="ph"><span class="spark" aria-hidden="true"></span> Roxan</div>
+            <div class="opts"><b class="on">Draft a reply</b><b>Summarize thread</b><b>Unsubscribe</b></div>
           </div>
         </div>
       </div>
@@ -484,6 +598,40 @@
   </div>
 </section>
 
+<!-- ============================================ FAQ -->
+<section class="band faq wrap">
+  <div class="band-head reveal">
+    <div class="kicker"><span class="tick"></span><span class="label">Good to know</span></div>
+    <h2 class="h2">Questions, <em>answered.</em></h2>
+  </div>
+  <div class="reveal">
+    <details>
+      <summary>What's included in Oplo Productivity?<span class="plus" aria-hidden="true"></span></summary>
+      <div class="fa">Seven apps under one account: ODocs, OSheets, OMails, OMaps, OSurf, OPhotos, and OCanvas — with Roxan built into every one.</div>
+    </details>
+    <details>
+      <summary>Is Roxan in every app?<span class="plus" aria-hidden="true"></span></summary>
+      <div class="fa">Yes. The same Roxan works across all seven apps and carries your context from one to the next, so you never start from scratch.</div>
+    </details>
+    <details>
+      <summary>Where does my data live?<span class="plus" aria-hidden="true"></span></summary>
+      <div class="fa">Your everyday Roxan runs on your device. Your files sync privately across the devices you sign in on, and nothing trains a model without your say.</div>
+    </details>
+    <details>
+      <summary>Can I use it with my team?<span class="plus" aria-hidden="true"></span></summary>
+      <div class="fa">Yes. Share anything with a link and work together in real time — everyone sees the same version, and Roxan tracks what changed while you were away.</div>
+    </details>
+    <details>
+      <summary>Does it work offline?<span class="plus" aria-hidden="true"></span></summary>
+      <div class="fa">Yes. Keep writing and editing with no signal; your work syncs the moment you're back online.</div>
+    </details>
+    <details>
+      <summary>Do I need all seven apps?<span class="plus" aria-hidden="true"></span></summary>
+      <div class="fa">No. Use only the ones you need — they simply work better together, under one account and one design.</div>
+    </details>
+  </div>
+</section>
+
 <!-- ============================================ Footer -->
 <footer class="foot wrap">
   <div class="foot-grid">
@@ -509,7 +657,7 @@
         <li><a href="/roxan/">Meet Roxan</a></li>
         <li><a href="#material">In every app</a></li>
         <li><a href="/oplo-accounts/demo/">Your account</a></li>
-        <li><a href="#daylight">How it works</a></li>
+        <li><a href="#material">How it works</a></li>
       </ul>
     </div>
     <div class="foot-col">
