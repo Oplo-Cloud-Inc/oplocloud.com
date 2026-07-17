@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Local agent memory & logs — not part of the site
+.remember/
+**/.remember/
+
+# Dependencies, builds, logs
+node_modules/
+**/node_modules/
+*.log
+
+# Secrets — never commit real credentials
+.env
+**/.env
+oplo-accounts/.env

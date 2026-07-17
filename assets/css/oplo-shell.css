@@ -1,0 +1,241 @@
+/* ==========================================================================
+   Oplo — ecosystem shell (waffle app-launcher + account chip)
+   Injected on every page by oplo-shell.js. Self-contained: defines its own
+   tokens so it renders identically on the marketing site AND inside apps
+   (OEdu Teacher) that carry their own, different design systems.
+   Everything is namespaced under .oplo- and floats above page z-index.
+   ========================================================================== */
+
+.oplo-scope {
+  --oplo-porcelain: #FCFCFD;
+  --oplo-panel: #F4F5F7;
+  --oplo-ink: #0B0C0F;
+  --oplo-slate: #5F636E;
+  --oplo-hairline: #E6E7EA;
+  --oplo-ink-soft: #9A9DA6;
+  --oplo-opal: conic-gradient(from 210deg,
+    #9BE8CE 0deg, #9CC3FF 90deg, #D4B3FF 180deg, #FFD2B3 270deg, #9BE8CE 360deg);
+  --oplo-font-display: "Schibsted Grotesk", system-ui, sans-serif;
+  --oplo-font-body: "Instrument Sans", system-ui, sans-serif;
+  --oplo-font-mono: "Spline Sans Mono", ui-monospace, monospace;
+  --oplo-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ------------------------------------------------ Actions cluster */
+.oplo-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* When the shell has no host bar to sit in, it floats top-right. */
+.oplo-cluster.oplo-floating {
+  position: fixed;
+  top: 12px;
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 2147482000;
+  padding: 5px;
+  border-radius: 100px;
+  background: rgba(252, 252, 253, 0.72);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  box-shadow: 0 10px 30px -16px rgba(11, 12, 15, 0.35);
+}
+
+.oplo-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--oplo-slate);
+  cursor: pointer;
+  transition: background .18s var(--oplo-ease), color .18s, transform .18s var(--oplo-ease);
+}
+.oplo-iconbtn:hover { background: rgba(11, 12, 15, 0.06); color: var(--oplo-ink); }
+.oplo-iconbtn:active { transform: scale(0.94); }
+.oplo-iconbtn[aria-expanded="true"] { background: rgba(11, 12, 15, 0.08); color: var(--oplo-ink); }
+.oplo-iconbtn:focus-visible { outline: 2px solid var(--oplo-ink); outline-offset: 2px; }
+
+/* the 9-dot waffle glyph */
+.oplo-waffle-glyph { display: block; }
+.oplo-waffle-glyph circle { fill: currentColor; }
+
+/* account chip */
+.oplo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 3px;
+  border: none;
+  border-radius: 100px;
+  background: transparent;
+  cursor: pointer;
+  transition: background .18s var(--oplo-ease), transform .18s var(--oplo-ease);
+}
+.oplo-chip:hover { background: rgba(11, 12, 15, 0.06); }
+.oplo-chip:active { transform: scale(0.96); }
+.oplo-chip:focus-visible { outline: 2px solid var(--oplo-ink); outline-offset: 2px; }
+.oplo-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--oplo-opal);
+  box-shadow: inset 0 0 0 1px rgba(11, 12, 15, 0.08);
+  font-family: var(--oplo-font-display);
+  font-weight: 700; font-size: 15px; color: #2b2d33;
+  overflow: hidden; flex: none;
+}
+.oplo-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ------------------------------------------------ Popovers (shared) */
+.oplo-pop {
+  position: fixed;
+  z-index: 2147483000;
+  background: var(--oplo-porcelain);
+  border: 1px solid var(--oplo-hairline);
+  border-radius: 22px;
+  box-shadow: 0 40px 80px -30px rgba(11, 12, 15, 0.35),
+              0 12px 24px -18px rgba(11, 12, 15, 0.28);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top right;
+  visibility: hidden;
+  transition: opacity .2s var(--oplo-ease), transform .2s var(--oplo-ease), visibility .2s;
+  font-family: var(--oplo-font-body);
+  color: var(--oplo-ink);
+}
+.oplo-pop.oplo-open { opacity: 1; transform: none; visibility: visible; }
+
+/* backdrop for mobile / focus */
+.oplo-scrim {
+  position: fixed; inset: 0;
+  z-index: 2147482500;
+  background: rgba(11, 12, 15, 0.18);
+  opacity: 0; visibility: hidden;
+  transition: opacity .2s var(--oplo-ease), visibility .2s;
+}
+.oplo-scrim.oplo-open { opacity: 1; visibility: visible; }
+
+/* ------------------------------------------------ App launcher */
+.oplo-launcher { width: 316px; padding: 16px 14px 10px; }
+.oplo-launcher-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8px 12px;
+}
+.oplo-launcher-head .oplo-eyebrow {
+  font-family: var(--oplo-font-mono);
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--oplo-slate);
+}
+.oplo-launcher-head a {
+  font-size: 12.5px; font-weight: 600; color: var(--oplo-ink);
+  text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+}
+.oplo-launcher-head a:hover { color: var(--oplo-slate); }
+
+.oplo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+.oplo-tile {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 12px 6px 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--oplo-ink);
+  transition: background .16s var(--oplo-ease), transform .16s var(--oplo-ease);
+}
+.oplo-tile:hover { background: rgba(11, 12, 15, 0.05); transform: translateY(-1px); }
+.oplo-tile:focus-visible { outline: 2px solid var(--oplo-ink); outline-offset: -2px; }
+.oplo-tile .oplo-app-ic {
+  width: 46px; height: 46px; border-radius: 30%;
+  display: grid; place-items: center; flex: none;
+  background: linear-gradient(150deg, var(--c1), var(--c2));
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--c2, #888) 70%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.oplo-tile .oplo-app-ic svg { width: 54%; height: 54%; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.oplo-tile.oplo-dark-glyph .oplo-app-ic svg { stroke: #3A3D45; }
+.oplo-tile .oplo-app-name {
+  font-size: 12.5px; font-weight: 600; letter-spacing: -0.01em;
+  text-align: center; line-height: 1.15;
+}
+.oplo-tile .oplo-soon {
+  position: absolute; top: 6px; right: 8px;
+  font-family: var(--oplo-font-mono);
+  font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--oplo-slate);
+  background: var(--oplo-panel);
+  border: 1px solid var(--oplo-hairline);
+  padding: 1px 5px; border-radius: 100px;
+}
+.oplo-launcher-foot {
+  margin-top: 6px; padding: 12px 8px 4px;
+  border-top: 1px solid var(--oplo-hairline);
+  display: flex; align-items: center; gap: 8px;
+}
+.oplo-launcher-foot .oplo-dot {
+  width: 11px; height: 11px; border-radius: 50%; background: var(--oplo-opal);
+  box-shadow: inset 0 0 0 1px rgba(11, 12, 15, 0.08); flex: none;
+}
+.oplo-launcher-foot a { font-size: 12.5px; color: var(--oplo-slate); text-decoration: none; }
+.oplo-launcher-foot a:hover { color: var(--oplo-ink); }
+
+/* ------------------------------------------------ Account menu */
+.oplo-acct { width: 300px; padding: 8px; }
+.oplo-acct-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 14px;
+  border-radius: 16px;
+  background: var(--oplo-panel);
+}
+.oplo-acct-head .oplo-avatar { width: 46px; height: 46px; font-size: 19px; }
+.oplo-acct-head .oplo-name { font-family: var(--oplo-font-display); font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+.oplo-acct-head .oplo-mail { color: var(--oplo-slate); font-size: 12.5px; font-family: var(--oplo-font-mono); word-break: break-all; margin-top: 1px; }
+.oplo-acct-actions { display: grid; gap: 2px; padding: 8px 4px 4px; }
+.oplo-acct-actions a, .oplo-acct-actions button {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border: none; border-radius: 12px;
+  background: transparent;
+  font-family: var(--oplo-font-body); font-size: 14px; font-weight: 500;
+  color: var(--oplo-ink); text-align: left; text-decoration: none;
+  cursor: pointer;
+  transition: background .16s var(--oplo-ease);
+}
+.oplo-acct-actions a:hover, .oplo-acct-actions button:hover { background: rgba(11, 12, 15, 0.05); }
+.oplo-acct-actions svg { width: 18px; height: 18px; stroke: var(--oplo-slate); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.oplo-acct-primary {
+  margin: 6px 4px 4px;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 12px 18px;
+  border-radius: 100px;
+  background: var(--oplo-ink); color: var(--oplo-porcelain) !important;
+  font-weight: 600; font-size: 14px; text-decoration: none;
+}
+.oplo-acct-primary:hover { background: #23252B !important; }
+.oplo-acct-primary .oplo-dot { width: 15px; height: 15px; border-radius: 50%; background: var(--oplo-opal); flex: none; }
+.oplo-acct-foot {
+  margin-top: 6px; padding: 12px 12px 6px;
+  border-top: 1px solid var(--oplo-hairline);
+  display: flex; gap: 16px;
+}
+.oplo-acct-foot a { font-size: 11.5px; color: var(--oplo-ink-soft); text-decoration: none; }
+.oplo-acct-foot a:hover { color: var(--oplo-slate); }
+
+/* ------------------------------------------------ Responsive */
+@media (max-width: 480px) {
+  .oplo-pop { left: 12px !important; right: 12px !important; width: auto !important; }
+  .oplo-launcher, .oplo-acct { width: auto; }
+  .oplo-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oplo-pop, .oplo-scrim, .oplo-iconbtn, .oplo-chip, .oplo-tile { transition: none; }
+}

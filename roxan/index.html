@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roxan — Intelligence at the center of Oplo</title>
+<meta name="description" content="Roxan is Oplo's family of AI models — reasoning, writing, seeing, speaking, and acting across every Oplo product. Private by default.">
+<meta name="theme-color" content="#0A0B0E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='o' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%239BE8CE'/%3E%3Cstop offset='.4' stop-color='%239CC3FF'/%3E%3Cstop offset='.7' stop-color='%23D4B3FF'/%3E%3Cstop offset='1' stop-color='%23FFD2B3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23o)'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..800&family=Instrument+Sans:wght@400..700&family=Spline+Sans+Mono:wght@400..600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0B0E; --bg2:#111318; --card:#15171D; --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.16);
+    --text:#F5F6F8; --muted:#A2A6B0; --dim:#71757F;
+    --mint:#9BE8CE; --sky:#9CC3FF; --lilac:#D4B3FF; --peach:#FFD2B3;
+    --opal:conic-gradient(from 210deg,#9BE8CE,#9CC3FF 90deg,#D4B3FF 180deg,#FFD2B3 270deg,#9BE8CE);
+    --fd:"Schibsted Grotesk",system-ui,sans-serif; --fb:"Instrument Sans",system-ui,sans-serif; --fm:"Spline Sans Mono",monospace;
+    --container:1200px; --gutter:clamp(20px,4vw,44px); --ease:cubic-bezier(.16,1,.3,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--fb);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--lilac);color:#111}
+  :focus-visible{outline:2px solid var(--sky);outline-offset:3px;border-radius:4px}
+  .wrap{max-width:var(--container);margin-inline:auto;padding-inline:var(--gutter)}
+  section{position:relative}
+  .eyebrow{font-family:var(--fm);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .h2{font-family:var(--fd);font-size:clamp(28px,4vw,46px);font-weight:600;line-height:1.05;letter-spacing:-.03em;text-wrap:balance}
+  .soft{color:var(--dim)}
+  .lead{color:var(--muted);font-size:clamp(16px,1.8vw,19px);line-height:1.55;max-width:60ch}
+
+  /* Nav */
+  .nav{position:fixed;inset:0 0 auto 0;z-index:100;transition:background .4s var(--ease),border-color .4s var(--ease),backdrop-filter .4s}
+  .nav.scrolled{background:rgba(10,11,14,.72);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--line)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:inline-flex;align-items:center;gap:9px;font-family:var(--fd);font-weight:700;font-size:20px;letter-spacing:-.03em}
+  .brand .odot{width:13px;height:13px;border-radius:50%;background:var(--opal);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+  .brand small{font-weight:500;font-size:13px;color:var(--muted);font-family:var(--fm);letter-spacing:.02em;margin-left:2px}
+  .nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+  .nav-links a{font-size:14px;font-weight:500;color:var(--muted);transition:color .2s}
+  .nav-links a:hover{color:var(--text)}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--fb);font-weight:600;font-size:14px;padding:9px 18px;border-radius:100px;background:var(--text);color:#0A0B0E;border:none;cursor:pointer;transition:transform .2s var(--ease),background .2s}
+  .pill:hover{transform:translateY(-1px);background:#fff}
+  .pill.ghost{background:transparent;color:var(--text);border:1px solid var(--line2)}
+  .pill.ghost:hover{background:rgba(255,255,255,.06)}
+  @media(max-width:820px){ .nav-links{display:none} .nav-hide-sm{display:none!important} }
+
+  /* Hero */
+  .hero{padding:clamp(150px,20vh,220px) 0 clamp(60px,8vw,110px);text-align:center;overflow:hidden}
+  .hero-glow{position:absolute;top:2%;left:50%;transform:translateX(-50%);width:min(900px,130vw);aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle at 50% 45%,rgba(156,195,255,.28),rgba(212,179,255,.16) 38%,transparent 66%);filter:blur(30px);pointer-events:none;z-index:0}
+  .hero .wrap{position:relative;z-index:1}
+  .core{width:clamp(150px,26vw,240px);aspect-ratio:1;border-radius:50%;margin:0 auto clamp(30px,4vw,48px);position:relative;
+    background:radial-gradient(38% 38% at 36% 30%,rgba(255,255,255,.9),transparent 60%),var(--opal);
+    box-shadow:0 0 90px 8px rgba(156,195,255,.4),inset 0 0 50px rgba(255,255,255,.28);
+    animation:float 8s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+  .hero h1{font-family:var(--fd);font-size:clamp(40px,7.2vw,88px);font-weight:600;line-height:1.0;letter-spacing:-.04em;max-width:15ch;margin:0 auto;text-wrap:balance}
+  .hero .lead{margin:22px auto 0;text-align:center}
+  .hero-cta{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-top:34px}
+  .hero-cta .pill{padding:12px 24px;font-size:15px}
+
+  /* Carousel */
+  .rail-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:26px}
+  .rail-nav{display:flex;gap:8px}
+  .rail-nav button{width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--text);cursor:pointer;font-size:18px;transition:background .2s,border-color .2s}
+  .rail-nav button:hover{background:#1d1f27;border-color:var(--line2)}
+  .rail{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding-bottom:8px;scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+  .mcard{scroll-snap-align:start;flex:0 0 clamp(280px,32vw,380px);background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;transition:transform .35s var(--ease),border-color .35s}
+  .mcard:hover{transform:translateY(-4px);border-color:var(--line2)}
+  .mcover{height:180px;position:relative;overflow:hidden}
+  .mcover::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 20% 15%,rgba(255,255,255,.35),transparent 55%)}
+  .mbody{padding:22px 22px 24px;display:flex;flex-direction:column;flex:1}
+  .mbody h3{font-family:var(--fd);font-size:22px;font-weight:600;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+  .tagpill{font-family:var(--fm);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#0A0B0E;background:var(--sky);padding:2px 7px;border-radius:6px}
+  .mbody p{color:var(--muted);font-size:14.5px;margin:8px 0 18px;flex:1}
+  .mlinks{display:flex;gap:16px;font-size:13.5px;font-weight:600}
+  .mlinks a{display:inline-flex;align-items:center;gap:4px}
+  .mlinks a.try{color:var(--sky)}
+  .arrow{transition:transform .25s var(--ease)}
+  .mlinks a:hover .arrow{transform:translateX(3px)}
+
+  /* Capabilities */
+  .caps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .cap{background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:26px;transition:border-color .3s,transform .3s var(--ease)}
+  .cap:hover{border-color:var(--line2);transform:translateY(-3px)}
+  .cap .ci{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;margin-bottom:16px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+  .cap .ci svg{width:22px;height:22px;stroke:var(--sky);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .cap h3{font-family:var(--fd);font-size:19px;font-weight:600;letter-spacing:-.01em}
+  .cap p{color:var(--muted);font-size:14px;margin-top:7px}
+
+  /* In every app */
+  .apps-band{background:var(--bg2);border-block:1px solid var(--line)}
+  .app-chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+  .app-chip{display:inline-flex;align-items:center;gap:10px;padding:11px 16px 11px 12px;border:1px solid var(--line);border-radius:100px;background:var(--card);font-weight:600;font-size:14.5px;transition:transform .25s var(--ease),border-color .25s}
+  .app-chip:hover{transform:translateY(-2px);border-color:var(--line2)}
+  .app-chip .d{width:22px;height:22px;border-radius:7px;flex:none}
+
+  /* Split */
+  .split{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,64px);align-items:center}
+  .code{background:#0E0F14;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 30px 60px -30px #000}
+  .code .bar{display:flex;gap:6px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .code .bar i{width:10px;height:10px;border-radius:50%;background:#2a2d36}
+  .code pre{margin:0;padding:20px;font-family:var(--fm);font-size:13px;line-height:1.7;color:#C7CAD3;overflow-x:auto}
+  .code .k{color:#D4B3FF}.code .s{color:#9BE8CE}.code .c{color:#71757F}.code .f{color:#9CC3FF}
+  .safe-list{display:grid;gap:14px;margin-top:26px}
+  .safe-list li{list-style:none;display:flex;gap:12px;color:var(--muted);font-size:15px}
+  .safe-list .ck{width:22px;height:22px;border-radius:50%;background:rgba(155,232,206,.14);color:var(--mint);display:grid;place-items:center;flex:none;font-size:12px}
+
+  /* Research grid */
+  .news{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .ncard{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:transform .35s var(--ease),border-color .35s}
+  .ncard:hover{transform:translateY(-4px);border-color:var(--line2)}
+  .ncover{height:130px;position:relative}
+  .ncard .np{padding:20px;display:flex;flex-direction:column;flex:1}
+  .nmeta{font-family:var(--fm);font-size:11px;letter-spacing:.06em;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
+  .ncard h3{font-family:var(--fd);font-size:18px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
+  .ncard .more{margin-top:16px;font-size:13.5px;font-weight:600;color:var(--sky);display:inline-flex;gap:5px}
+
+  /* Newsletter */
+  .news-band{background:linear-gradient(180deg,var(--bg2),var(--bg))}
+  .signup{max-width:520px}
+  .field{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+  .field input{flex:1;min-width:200px;background:var(--card);border:1px solid var(--line2);border-radius:100px;padding:13px 18px;color:var(--text);font-family:var(--fb);font-size:15px}
+  .field input::placeholder{color:var(--dim)}
+  .field input:focus{outline:2px solid var(--sky);outline-offset:0}
+  .ok{color:var(--mint);font-size:14px;margin-top:12px;display:none}
+  .ok.show{display:block}
+  .fine{color:var(--dim);font-size:12px;margin-top:12px}
+
+  /* Footer */
+  .foot{border-top:1px solid var(--line);padding-top:clamp(50px,6vw,80px);margin-top:clamp(40px,6vw,80px)}
+  .foot-statement{font-family:var(--fd);font-size:clamp(28px,5vw,60px);font-weight:600;letter-spacing:-.035em;line-height:1.03;max-width:16ch;text-wrap:balance}
+  .foot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px 24px;margin-top:clamp(44px,6vw,72px)}
+  .foot-col h6{font-family:var(--fm);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:15px}
+  .foot-col ul{list-style:none;display:grid;gap:10px}
+  .foot-col a{font-size:14px;color:var(--muted);transition:color .2s}
+  .foot-col a:hover{color:var(--text)}
+  .foot-base{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:clamp(44px,5vw,64px);padding:26px 0 40px;border-top:1px solid var(--line);font-family:var(--fm);font-size:12.5px;color:var(--dim)}
+  .foot-base a{color:var(--dim)}.foot-base a:hover{color:var(--muted)}
+
+  .section-pad{padding-block:clamp(64px,9vw,120px)}
+  @media(max-width:860px){ .caps{grid-template-columns:1fr 1fr}.news{grid-template-columns:1fr 1fr}.split{grid-template-columns:1fr}.foot-grid{grid-template-columns:1fr 1fr} }
+  @media(max-width:560px){ .caps{grid-template-columns:1fr}.news{grid-template-columns:1fr}.foot-statement{font-size:30px} }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;scroll-behavior:auto} }
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="/"><span class="odot" aria-hidden="true"></span>Oplo<small>Roxan</small></a>
+    <ul class="nav-links">
+      <li><a href="#capabilities">Capabilities</a></li>
+      <li><a href="#models">Models</a></li>
+      <li><a href="#developers">Developers</a></li>
+      <li><a href="#safety">Safety</a></li>
+      <li><a href="#research">Research</a></li>
+    </ul>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a class="pill ghost nav-hide-sm" href="/productivity/">All products</a>
+      <a class="pill" href="/oplo-accounts/demo/">Try Roxan</a>
+      <div id="oplo-actions"></div>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="core" aria-hidden="true"></div>
+    <p class="eyebrow">Roxan · Oplo intelligence</p>
+    <h1>Intelligence at the center of everything.</h1>
+    <p class="lead">Roxan is Oplo's family of AI models — it reasons, writes, sees, listens, speaks, and acts across every Oplo product. Frontier capability, private by default.</p>
+    <div class="hero-cta">
+      <a class="pill" href="/oplo-accounts/demo/">Try Roxan <span aria-hidden="true">→</span></a>
+      <a class="pill ghost" href="#models">Explore the models</a>
+    </div>
+  </div>
+</header>
+
+<section class="section-pad" id="models">
+  <div class="wrap">
+    <div class="rail-head">
+      <div>
+        <p class="eyebrow">The family</p>
+        <h2 class="h2" style="margin-top:12px">One Roxan, <span class="soft">many minds.</span></h2>
+      </div>
+      <div class="rail-nav">
+        <button id="railPrev" aria-label="Previous">‹</button>
+        <button id="railNext" aria-label="Next">›</button>
+      </div>
+    </div>
+    <div class="rail" id="rail">
+      <article class="mcard">
+        <div class="mcover" style="background:conic-gradient(from 210deg,#9BE8CE,#9CC3FF,#D4B3FF,#FFD2B3,#9BE8CE)"></div>
+        <div class="mbody"><h3>Roxan <span class="tagpill">Flagship</span></h3>
+          <p>Frontier reasoning that can plan and take action across your apps and data.</p>
+          <div class="mlinks"><a href="#capabilities">Learn more <span class="arrow">→</span></a><a class="try" href="/oplo-accounts/demo/">Try <span class="arrow">→</span></a></div></div>
+      </article>
+      <article class="mcard">
+        <div class="mcover" style="background:linear-gradient(140deg,#9CC3FF,#5A93FF)"></div>
+        <div class="mbody"><h3>Roxan Flash</h3>
+          <p>Our fastest, most efficient model — instant answers at the lowest cost.</p>
+          <div class="mlinks"><a href="#capabilities">Learn more <span class="arrow">→</span></a><a class="try" href="/oplo-accounts/demo/">Try <span class="arrow">→</span></a></div></div>
+      </article>
+      <article class="mcard">
+        <div class="mcover" style="background:linear-gradient(140deg,#D4B3FF,#8B45F0)"></div>
+        <div class="mbody"><h3>Roxan Vision</h3>
+          <p>See and reason over images, documents, screens, and the world around you.</p>
+          <div class="mlinks"><a href="#capabilities">Learn more <span class="arrow">→</span></a><a class="try" href="/oplo-accounts/demo/">Try <span class="arrow">→</span></a></div></div>
+      </article>
+      <article class="mcard">
+        <div class="mcover" style="background:linear-gradient(140deg,#FFD2B3,#FF9E6B)"></div>
+        <div class="mbody"><h3>Roxan Voice</h3>
+          <p>Real-time, natural speech — listen, translate, and talk back live.</p>
+          <div class="mlinks"><a href="#capabilities">Learn more <span class="arrow">→</span></a><a class="try" href="/oplo-accounts/demo/">Try <span class="arrow">→</span></a></div></div>
+      </article>
+      <article class="mcard">
+        <div class="mcover" style="background:linear-gradient(140deg,#9BE8CE,#17A374)"></div>
+        <div class="mbody"><h3>Roxan Code</h3>
+          <p>Built to build with — writes, reviews, and runs code across your stack.</p>
+          <div class="mlinks"><a href="#developers">Learn more <span class="arrow">→</span></a><a class="try" href="/oplo-accounts/demo/">Try <span class="arrow">→</span></a></div></div>
+      </article>
+      <article class="mcard">
+        <div class="mcover" style="background:radial-gradient(120% 120% at 30% 20%,#3a3d46,#15171d)"></div>
+        <div class="mbody"><h3>Roxan Nano</h3>
+          <p>On-device and private by default — runs on your own Oplo hardware.</p>
+          <div class="mlinks"><a href="#safety">Learn more <span class="arrow">→</span></a><a class="try" href="/oplo-accounts/demo/">Try <span class="arrow">→</span></a></div></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section-pad" id="capabilities">
+  <div class="wrap">
+    <p class="eyebrow">Capabilities</p>
+    <h2 class="h2" style="margin:12px 0 14px">Everything a mind should do.</h2>
+    <p class="lead" style="margin-bottom:44px">A single model with one context of your work — so every capability builds on the last.</p>
+    <div class="caps">
+      <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 1 5 5c0 1.7-.8 3-2 4v2H9v-2c-1.2-1-2-2.3-2-4a5 5 0 0 1 5-5z"/><path d="M9 18h6M10 21h4"/></svg></div><h3>Reason &amp; plan</h3><p>Break down hard problems, weigh options, and decide the next step.</p></div>
+      <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h10"/><path d="M15 19l2 2 4-4"/></svg></div><h3>Write &amp; edit</h3><p>Draft, rewrite, summarize, and translate in your voice, anywhere you type.</p></div>
+      <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="2.6"/></svg></div><h3>See</h3><p>Understand images, charts, documents, and whatever's on your screen.</p></div>
+      <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><path d="M12 4v16M8 8v8M4 11v2M16 7v10M20 10v4"/></svg></div><h3>Listen &amp; speak</h3><p>Real-time voice — transcribe, translate, and reply in natural speech.</p></div>
+      <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Analyze</h3><p>Turn spreadsheets and data into models, insight, and answers on request.</p></div>
+      <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg></div><h3>Act</h3><p>Agents that use your apps — sending, scheduling, and finishing the task.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section-pad apps-band">
+  <div class="wrap">
+    <p class="eyebrow">Everywhere</p>
+    <h2 class="h2" style="margin:12px 0 14px">Roxan is already inside.</h2>
+    <p class="lead">You don't "go to" Roxan — it's built into every Oplo app, one keystroke away, already holding the context of your work.</p>
+    <div class="app-chips">
+      <a class="app-chip" href="/odocs/"><span class="d" style="background:linear-gradient(150deg,#5A93FF,#2E6FE6)"></span>ODocs</a>
+      <a class="app-chip" href="/osheets/"><span class="d" style="background:linear-gradient(150deg,#33CE92,#12A06E)"></span>OSheets</a>
+      <a class="app-chip" href="/omails/"><span class="d" style="background:linear-gradient(150deg,#FF7A6D,#EF4A3C)"></span>OMails</a>
+      <a class="app-chip" href="/omaps/"><span class="d" style="background:linear-gradient(150deg,#1CC3D0,#0E96A8)"></span>OMaps</a>
+      <a class="app-chip" href="/osurf/"><span class="d" style="background:var(--opal)"></span>OSurf</a>
+      <a class="app-chip" href="/ophotos/"><span class="d" style="background:linear-gradient(150deg,#FFBE4D,#F59300)"></span>OPhotos</a>
+      <a class="app-chip" href="/ocanvas/"><span class="d" style="background:linear-gradient(150deg,#B57BFF,#8B45F0)"></span>OCanvas</a>
+    </div>
+  </div>
+</section>
+
+<section class="section-pad" id="developers">
+  <div class="wrap split">
+    <div>
+      <p class="eyebrow">For developers</p>
+      <h2 class="h2" style="margin:12px 0 16px">Build on Roxan.</h2>
+      <p class="lead">One SDK, every model. Call Roxan from anything with a few lines — streaming, tools, vision, and voice included. Runs in the Oplo cloud or on-device.</p>
+      <div class="hero-cta" style="justify-content:flex-start;margin-top:28px">
+        <a class="pill" href="/soon/">Get an API key <span aria-hidden="true">→</span></a>
+        <a class="pill ghost" href="/soon/">Read the docs</a>
+      </div>
+    </div>
+    <div class="code" aria-hidden="true">
+      <div class="bar"><i></i><i></i><i></i></div>
+      <pre><span class="c"># pip install oplo</span>
+<span class="k">from</span> oplo <span class="k">import</span> Roxan
+
+roxan = Roxan(model=<span class="s">"roxan-flash"</span>)
+
+reply = roxan.<span class="f">chat</span>(
+    <span class="s">"Summarize this quarter and draft the email."</span>,
+    tools=[odocs, osheets, omails],
+)
+<span class="f">print</span>(reply.text)</pre>
+    </div>
+  </div>
+</section>
+
+<section class="section-pad apps-band" id="safety">
+  <div class="wrap split">
+    <div>
+      <p class="eyebrow">Safety &amp; privacy</p>
+      <h2 class="h2" style="margin:12px 0 16px">Powerful, and responsible.</h2>
+      <p class="lead">Intelligence you can trust with your life's work. The everyday model runs on your own device, and nothing trains on your data without your say.</p>
+      <ul class="safe-list">
+        <li><span class="ck">✓</span> On-device by default — Roxan Nano runs on your hardware, not ours.</li>
+        <li><span class="ck">✓</span> Your data is never used to train models unless you opt in.</li>
+        <li><span class="ck">✓</span> Every action an agent takes is logged, reversible, and yours to approve.</li>
+        <li><span class="ck">✓</span> Independent safety evaluations before every release.</li>
+      </ul>
+    </div>
+    <div class="core" style="position:relative;margin:0 auto;width:min(300px,70vw);box-shadow:0 0 80px 4px rgba(212,179,255,.3),inset 0 0 40px rgba(255,255,255,.25)" aria-hidden="true"></div>
+  </div>
+</section>
+
+<section class="section-pad" id="research">
+  <div class="wrap">
+    <div class="rail-head" style="align-items:center">
+      <div><p class="eyebrow">Research</p><h2 class="h2" style="margin-top:12px">From the Roxan lab.</h2></div>
+      <a class="pill ghost" href="/soon/">View all</a>
+    </div>
+    <div class="news">
+      <a class="ncard" href="/soon/"><div class="ncover" style="background:conic-gradient(from 200deg,#9BE8CE,#9CC3FF,#D4B3FF,#FFD2B3,#9BE8CE)"></div><div class="np"><p class="nmeta">Models · Jul 2026</p><h3>Roxan Flash: frontier reasoning at a fraction of the cost</h3><span class="more">Learn more →</span></div></a>
+      <a class="ncard" href="/soon/"><div class="ncover" style="background:linear-gradient(140deg,#D4B3FF,#8B45F0)"></div><div class="np"><p class="nmeta">Research · Jun 2026</p><h3>Teaching Roxan to act: agents that finish the task</h3><span class="more">Learn more →</span></div></a>
+      <a class="ncard" href="/soon/"><div class="ncover" style="background:linear-gradient(140deg,#9BE8CE,#17A374)"></div><div class="np"><p class="nmeta">Safety · Jun 2026</p><h3>On-device intelligence: privacy without compromise</h3><span class="more">Learn more →</span></div></a>
+      <a class="ncard" href="/soon/"><div class="ncover" style="background:linear-gradient(140deg,#9CC3FF,#2E6FE6)"></div><div class="np"><p class="nmeta">Models · May 2026</p><h3>Roxan Voice brings real-time translation to OMails</h3><span class="more">Learn more →</span></div></a>
+      <a class="ncard" href="/soon/"><div class="ncover" style="background:linear-gradient(140deg,#FFD2B3,#FF9E6B)"></div><div class="np"><p class="nmeta">Company · May 2026</p><h3>How Roxan is built: the Oplo intelligence stack</h3><span class="more">Learn more →</span></div></a>
+      <a class="ncard" href="/soon/"><div class="ncover" style="background:radial-gradient(120% 120% at 30% 20%,#3a3d46,#15171d)"></div><div class="np"><p class="nmeta">Research · Apr 2026</p><h3>Evaluating Roxan: the benchmarks that matter</h3><span class="more">Learn more →</span></div></a>
+    </div>
+  </div>
+</section>
+
+<section class="section-pad news-band">
+  <div class="wrap">
+    <div class="signup">
+      <p class="eyebrow">Follow the frontier</p>
+      <h2 class="h2" style="margin:12px 0 12px">Get Roxan updates.</h2>
+      <p class="lead">New models, research, and releases — occasionally, in your inbox.</p>
+      <form class="field" id="signup">
+        <input type="email" required placeholder="you@oplo.com" aria-label="Email">
+        <button class="pill" type="submit">Sign up</button>
+      </form>
+      <p class="ok" id="ok">✓ You're on the list. (Demo — no email is actually sent yet.)</p>
+      <p class="fine">By signing up you agree to Oplo's Terms and Privacy Policy.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <p class="foot-statement">Intelligence, in service of people.</p>
+    <div class="foot-grid">
+      <div class="foot-col"><h6>Models</h6><ul>
+        <li><a href="#models">Roxan</a></li><li><a href="#models">Roxan Flash</a></li><li><a href="#models">Roxan Vision</a></li>
+        <li><a href="#models">Roxan Voice</a></li><li><a href="#models">Roxan Code</a></li><li><a href="#models">Roxan Nano</a></li></ul></div>
+      <div class="foot-col"><h6>Build</h6><ul>
+        <li><a href="#developers">Overview</a></li><li><a href="/soon/">API</a></li><li><a href="/soon/">SDK &amp; docs</a></li>
+        <li><a href="/soon/">Pricing</a></li><li><a href="#capabilities">Capabilities</a></li></ul></div>
+      <div class="foot-col"><h6>In the apps</h6><ul>
+        <li><a href="/odocs/">ODocs</a></li><li><a href="/omails/">OMails</a></li><li><a href="/osheets/">OSheets</a></li>
+        <li><a href="/ocanvas/">OCanvas</a></li><li><a href="/productivity/">All apps</a></li></ul></div>
+      <div class="foot-col"><h6>Company</h6><ul>
+        <li><a href="#research">Research</a></li><li><a href="#safety">Safety</a></li><li><a href="/soon/">News</a></li>
+        <li><a href="/soon/">Careers</a></li><li><a href="/">About Oplo</a></li></ul></div>
+    </div>
+    <div class="foot-base">
+      <a class="brand" href="/" style="font-size:17px"><span class="odot" aria-hidden="true"></span>Oplo</a>
+      <span>© 2026 Oplo, Inc. &nbsp;·&nbsp; <a href="/soon/">Privacy</a> &nbsp;·&nbsp; <a href="/soon/">Terms</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  var nav = document.getElementById('nav');
+  var onScroll = function(){ nav.classList.toggle('scrolled', window.scrollY > 8); };
+  onScroll(); addEventListener('scroll', onScroll, {passive:true});
+
+  var rail = document.getElementById('rail');
+  var step = function(){ var c = rail.querySelector('.mcard'); return c ? c.offsetWidth + 18 : 320; };
+  document.getElementById('railNext').onclick = function(){ rail.scrollBy({left: step(), behavior:'smooth'}); };
+  document.getElementById('railPrev').onclick = function(){ rail.scrollBy({left: -step(), behavior:'smooth'}); };
+
+  document.getElementById('signup').addEventListener('submit', function(e){
+    e.preventDefault(); document.getElementById('ok').classList.add('show'); this.reset();
+  });
+</script>
+<script src="/assets/js/oplo-shell.js" defer></script>
+</body>
+</html>

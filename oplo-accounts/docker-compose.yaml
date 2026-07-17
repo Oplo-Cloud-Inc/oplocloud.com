@@ -1,0 +1,63 @@
+# Oplo Accounts — local ZITADEL identity provider (prototype)
+# Mirrors ZITADEL's official self-hosting example, tuned for local HTTP dev.
+# Docs: https://zitadel.com/docs/self-hosting/deploy/compose
+#
+# Run:   docker compose up --detach
+# Console: http://localhost:8080/ui/console
+# Stop:  docker compose down            (add -v to also wipe the database)
+
+services:
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    restart: unless-stopped
+    command: 'start-from-init --masterkey "${ZITADEL_MASTERKEY}" --tlsMode disabled'
+    environment:
+      # --- served over plain HTTP on localhost (prototype only) ---
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_EXTERNALDOMAIN: "localhost"
+      ZITADEL_EXTERNALPORT: "8080"
+      ZITADEL_TLS_ENABLED: "false"
+      # --- database connection ---
+      ZITADEL_DATABASE_POSTGRES_HOST: "db"
+      ZITADEL_DATABASE_POSTGRES_PORT: "5432"
+      ZITADEL_DATABASE_POSTGRES_DATABASE: "zitadel"
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: "zitadel"
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: "zitadel"
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: "disable"
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: "root"
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: "postgres"
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: "disable"
+      # --- first admin user (change before any real use) ---
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: "root"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: "${ZITADEL_ADMIN_PASSWORD}"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks:
+      - zitadel
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "root"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "zitadel"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d zitadel -U root"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - zitadel-db:/var/lib/postgresql/data
+    networks:
+      - zitadel
+
+networks:
+  zitadel:
+
+volumes:
+  zitadel-db:

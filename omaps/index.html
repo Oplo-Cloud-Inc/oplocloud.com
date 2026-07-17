@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OMaps — Coming soon · Oplo</title>
+<meta name="description" content="OMaps is coming to Oplo. Find your way — and everything worth stopping for.">
+<meta name="theme-color" content="#FCFCFD">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='o' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%239BE8CE'/%3E%3Cstop offset='.4' stop-color='%239CC3FF'/%3E%3Cstop offset='.7' stop-color='%23D4B3FF'/%3E%3Cstop offset='1' stop-color='%23FFD2B3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23o)'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..800&family=Instrument+Sans:wght@400..700&family=Spline+Sans+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css">
+<style>
+  .soon-nav{position:fixed;inset:0 0 auto 0;z-index:10}
+  .soon-nav .inner{max-width:var(--container);margin-inline:auto;padding:0 var(--gutter);height:62px;display:flex;align-items:center;justify-content:space-between}
+  .soon-nav .links{display:flex;align-items:center;gap:22px;font-size:14px;font-weight:500;color:var(--slate)}
+  .soon-nav .links a:not(.btn-pill){transition:color .2s}
+  .soon-nav .links a:not(.btn-pill):hover{color:var(--ink)}
+  .soon-wrap{min-height:100vh;display:grid;place-items:center;padding:104px 24px 64px;text-align:center;position:relative;overflow:hidden}
+  .soon-glow{position:absolute;top:18%;left:50%;width:min(760px,120vw);aspect-ratio:2/1;transform:translateX(-50%);
+    background:radial-gradient(60% 60% at 50% 40%,rgba(156,195,255,.28),rgba(212,179,255,.18) 45%,transparent 72%);filter:blur(18px);pointer-events:none}
+  .soon-inner{position:relative;max-width:560px}
+  .ic{width:88px;height:88px;border-radius:28%;display:grid;place-items:center;margin:0 auto 30px;
+    box-shadow:0 18px 40px -16px rgba(11,12,15,.30),inset 0 1px 0 rgba(255,255,255,.35)}
+  .ic .g{width:52%;height:52%;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ic .g.gd{stroke:#3A3D45}
+  .soon-eyebrow{font-family:var(--font-mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--slate);margin-bottom:14px}
+  .soon-inner h1{font-family:var(--font-display);font-size:clamp(40px,7vw,68px);font-weight:600;letter-spacing:-.035em;line-height:1.02}
+  .soon-inner p.tag{font-size:clamp(17px,2.2vw,21px);color:var(--slate);margin:16px auto 0;max-width:34ch;line-height:1.5}
+  .soon-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:14px 22px;margin-top:34px}
+</style>
+</head>
+<body>
+  <nav class="soon-nav">
+    <div class="inner">
+      <a class="wordmark" href="/"><span class="opal-dot" aria-hidden="true"></span>Oplo</a>
+      <div class="links"><a href="/productivity/">Products</a><span id="oplo-actions"></span></div>
+    </div>
+  </nav>
+  <main class="soon-wrap">
+    <div class="soon-glow" aria-hidden="true"></div>
+    <div class="soon-inner">
+      <div class="ic" style="background:linear-gradient(150deg,#1CC3D0,#0E96A8)"><svg viewBox="0 0 24 24" class="g "><path d="M12 21s-6-5.1-6-10a6 6 0 1 1 12 0c0 4.9-6 10-6 10z"/><circle cx="12" cy="11" r="2.3"/></svg></div>
+      <p class="soon-eyebrow">Coming soon</p>
+      <h1>OMaps</h1>
+      <p class="tag">Find your way — and everything worth stopping for.</p>
+      <div class="soon-actions">
+        <a class="btn-pill" href="/productivity/">Explore the suite <span aria-hidden="true">&rarr;</span></a>
+        <a class="link-arrow muted" href="/">Back to Oplo <span class="chev" aria-hidden="true">&rarr;</span></a>
+      </div>
+    </div>
+  </main>
+<script src="/assets/js/oplo-shell.js" defer></script>
+</body>
+</html>

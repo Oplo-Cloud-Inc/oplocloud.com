@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signing you in… — Oplo Accounts</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#FCFCFD;color:#0B0C0F;min-height:100vh;
+    display:grid;place-items:center;margin:0;padding:24px;text-align:center}
+  .spin{width:34px;height:34px;border-radius:50%;margin:0 auto 16px;
+    background:conic-gradient(from 210deg,#9BE8CE,#9CC3FF,#D4B3FF,#FFD2B3,#9BE8CE);
+    -webkit-mask:radial-gradient(farthest-side,transparent 60%,#000 62%);
+    mask:radial-gradient(farthest-side,transparent 60%,#000 62%);animation:s 1s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .err{color:#8a2b2b;max-width:420px;font-size:14px;line-height:1.5}
+  code{font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+  <div>
+    <div class="spin" id="spin"></div>
+    <p id="msg">Completing sign-in…</p>
+  </div>
+<script type="module">
+  import { userManager } from "./app.js";
+  userManager.signinCallback()
+    .then(() => { location.replace("./"); })
+    .catch((e) => {
+      document.getElementById("spin").style.display = "none";
+      document.getElementById("msg").className = "err";
+      document.getElementById("msg").innerHTML =
+        "Sign-in couldn't be completed:<br><code>" + (e && e.message ? e.message : e) +
+        "</code><br><br><a href='./'>← Back</a>";
+    });
+</script>
+</body>
+</html>
