@@ -89,6 +89,8 @@
   .nav-links a { font-size: 14px; color: var(--haze); transition: color .2s; }
   .nav-links a:hover { color: var(--chalk); }
   #oplo-actions { display: inline-flex; align-items: center; }
+  /* hide the ecosystem app-launcher (9-dot waffle) on this page — keep the account chip */
+  #oplo-actions .oplo-iconbtn { display: none; }
   .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; flex-direction: column; gap: 4px; }
   .nav-toggle span { width: 20px; height: 2px; background: var(--chalk); border-radius: 2px; }
 
