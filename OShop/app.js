@@ -504,26 +504,29 @@ function screenProduct(sku){
           <p>${esc(p.desc)}</p>
           <span class="ret">${icon('return')} Free 30-day returns</span>
         </div>
+      </div>
+    </div>
 
-        <div class="card-shell" style="margin-top:14px">
-          <h4>Ratings & reviews</h4>
-          <div class="rev-summary">
-            <div class="rev-score">
-              <div class="big">${p.rating.toFixed(1)}</div>
-              <div class="rating big">${stars(p.rating,true)}</div>
-              <div class="cnt">${p.ratingCount.toLocaleString()} ratings</div>
-            </div>
-            <div class="rev-bars">${[5,4,3,2,1].map(st=>{
-              const w = st===Math.round(p.rating)?70 : st===Math.round(p.rating)+1||st===Math.round(p.rating)-1?22:6;
-              return `<div class="rev-bar"><span>${st}</span><span class="track"><span class="fill" style="width:${w}%"></span></span></div>`;
-            }).join('')}</div>
+    <section class="pd-reviews">
+      <div class="card-shell">
+        <h4>Ratings &amp; reviews</h4>
+        <div class="rev-summary">
+          <div class="rev-score">
+            <div class="big">${p.rating.toFixed(1)}</div>
+            <div class="rating big">${stars(p.rating,true)}</div>
+            <div class="cnt">${p.ratingCount.toLocaleString()} ratings</div>
           </div>
+          <div class="rev-bars">${[5,4,3,2,1].map(st=>{
+            const w = st===Math.round(p.rating)?70 : st===Math.round(p.rating)+1||st===Math.round(p.rating)-1?22:6;
+            return `<div class="rev-bar"><span>${st}</span><span class="track"><span class="fill" style="width:${w}%"></span></span></div>`;
+          }).join('')}</div>
           <div class="rev-ai">
             <div class="h">${icon('sparkles')} Review Summary</div>
             <p>${summary}</p>
           </div>
         </div>
-
+      </div>
+      <div class="review-grid">
         ${reviews.map(r=>`<div class="card-shell review">
           <div class="r-head">
             <div class="r-av">${r[0].split(' ').map(w=>w[0]).slice(0,2).join('')}</div>
@@ -535,7 +538,7 @@ function screenProduct(sku){
           <div class="r-body">${esc(r[3])}</div>
         </div>`).join('')}
       </div>
-    </div>
+    </section>
 
     ${related.length ? rail('You might also like', null, related) : ''}
   </div>`;
