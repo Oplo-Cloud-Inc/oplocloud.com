@@ -392,16 +392,6 @@ function screenHome(){
     </section>
 
     <section class="block reveal">
-      ${sectionHead('Shop by category', null, '#/browse')}
-      <div class="cat-launchers">
-        ${CATEGORIES.map(c=>`<a class="cat-launch" href="#/browse/${c.id}">
-          <span class="cl-tile">${icon(ICON[c.symbol]||'package')}</span>
-          <span class="cl-name">${c.name}</span>
-        </a>`).join('')}
-      </div>
-    </section>
-
-    <section class="block reveal">
       ${sectionHead('The edit','A few pieces worth a closer look','#/browse/toprated')}
       <div class="gallery-wall">
         ${plate(wallFeature, true)}
