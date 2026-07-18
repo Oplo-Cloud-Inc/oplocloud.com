@@ -263,44 +263,103 @@ function rail(title, sub, list, seeAllHref){
 }
 
 /* ============================================================
-   HERO carousel
+   SPATIAL HERO ("In focus") + gallery plate
    ============================================================ */
-const HERO = [
-  {eyebrow:'LIMITED TIME', title:'Up to 40% off audio', sub:'Headphones, speakers & more — today only', cta:'Shop the sale', symbol:'headphones', cat:'audio'},
-  {eyebrow:'NEW SEASON',   title:'Tech that keeps up',   sub:'Laptops & wearables built to last',       cta:'Explore tech',  symbol:'laptopcomputer', cat:'tech'},
-  {eyebrow:'REFRESH YOUR SPACE', title:'Home, elevated',  sub:'Lighting & essentials with a designer touch', cta:'Discover home', symbol:'lamp.desk', cat:'home'},
-];
-function heroHTML(){
-  return `<section class="block hero" id="hero">
-    <div class="hero-track">
-      ${HERO.map((s,i)=>`
-        <a class="hero-slide${i===0?' on':''}" data-hslide="${i}" href="#/browse/${s.cat}">
-          <span class="motif">${prodIcon(s.symbol)}</span>
-          <span class="h-eyebrow">${s.eyebrow}</span>
-          <h3>${s.title}</h3>
-          <p>${s.sub}</p>
-          <span class="h-cta">${s.cta} ${icon('arrow-right')}</span>
-        </a>`).join('')}
+const FEATURED = ['aero-pro-wireless-headphones','lumen-14-ultrabook','aroma-precision-espresso','orbit-mechanical-keyboard','auric-air-buds','atlas-leather-weekender'];
+let heroIndex = 0;
+
+function heroPieceHTML(p){
+  return `<div class="hero-fade" id="heroFade">
+    <div class="hero-plate-col">
+      <div class="hero-plate-float">
+        <div class="hero-plate">
+          ${p.discount?`<span class="badge-discount">-${p.discount}%</span>`:''}
+          ${p.image?`<img src="assets/${p.image}.jpg" alt="${esc(p.name)}">`:prodIcon(p.symbol)}
+        </div>
+        <div class="hero-contact"></div>
+      </div>
     </div>
-    <div class="hero-dots">${HERO.map((_,i)=>`<button data-hdot="${i}" class="${i===0?'on':''}" aria-label="Slide ${i+1}"></button>`).join('')}</div>
-  </section>`;
+    <div class="hero-placard">
+      <div class="hp-eyebrow">${esc(p.brand)} · ${esc(category(p.category).name)}</div>
+      <div class="hp-name">${esc(p.name)}</div>
+      <div class="hp-row">${priceHTML(p,'lg')} ${ratingHTML(p)}</div>
+      <p class="hp-desc">${esc(p.desc)}</p>
+      <div class="hp-actions">
+        <a class="btn btn-pill" href="#/product/${p.sku}">View piece ${icon('arrow-right')}</a>
+        <button class="btn btn-secondary" style="width:auto;padding:0 22px" data-add="${p.sku}">${icon('cart')} Add to Cart</button>
+      </div>
+      <div class="hero-nav">
+        <span class="hn-count">${String(heroIndex+1).padStart(2,'0')} / ${String(FEATURED.length).padStart(2,'0')}</span>
+        <span class="hn-btns">
+          <button data-hero-nav="prev" aria-label="Previous piece">${icon('chevron-left')}</button>
+          <button data-hero-nav="next" aria-label="Next piece">${icon('chevron-right')}</button>
+        </span>
+      </div>
+    </div>
+  </div>`;
 }
-let heroTimer=null, heroIndex=0;
-function mountHero(){
-  clearInterval(heroTimer);
-  const track = document.querySelector('#hero'); if(!track) return;
-  heroIndex = 0;
-  const go = i => {
-    heroIndex = (i+HERO.length)%HERO.length;
-    track.querySelectorAll('[data-hslide]').forEach((el,k)=>el.classList.toggle('on',k===heroIndex));
-    track.querySelectorAll('[data-hdot]').forEach((el,k)=>el.classList.toggle('on',k===heroIndex));
+
+/* a product presented as a floating tile with a label beneath (gallery wall) */
+function plate(p, feature){
+  return `<article class="plate${feature?' plate--feature':''}">
+    <div class="plate-tile">
+      ${p.discount?`<span class="badge-discount">-${p.discount}%</span>`:''}
+      ${p.image?`<img src="assets/${p.image}.jpg" alt="${esc(p.name)}">`:prodIcon(p.symbol)}
+      <a class="tile-link" href="#/product/${p.sku}" aria-label="${esc(p.name)}"></a>
+      <button class="fav${isSaved(p.sku)?' on':''}" data-fav="${p.sku}" aria-label="Save ${esc(p.name)}">${icon('heart')}</button>
+    </div>
+    <div class="plate-label">
+      <span class="pl-eyebrow">${esc(p.brand)} · ${esc(category(p.category).name)}</span>
+      <a class="pl-name" href="#/product/${p.sku}">${esc(p.name)}</a>
+      <div class="pl-row">${priceHTML(p)} ${ratingHTML(p)}</div>
+      ${feature?`<p class="pl-desc">${esc(p.desc)}</p><a class="btn btn-pill" href="#/product/${p.sku}" style="margin-top:8px">View piece ${icon('arrow-right')}</a>`:''}
+    </div>
+  </article>`;
+}
+
+function cycleHero(dir){
+  heroIndex = (heroIndex + dir + FEATURED.length) % FEATURED.length;
+  const stage = document.getElementById('heroStage'); if(!stage) return;
+  const fade = document.getElementById('heroFade');
+  const swap = () => {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = heroPieceHTML(BY_SKU[FEATURED[heroIndex]]);
+    const old = document.getElementById('heroFade');
+    if(old) stage.replaceChild(wrap.firstElementChild, old);
   };
-  track.querySelectorAll('[data-hdot]').forEach(d=>d.addEventListener('click',e=>{e.preventDefault();go(+d.dataset.hdot);reset();}));
+  if(fade && !matchMedia('(prefers-reduced-motion:reduce)').matches){
+    fade.classList.add('out'); setTimeout(swap, 220);
+  } else swap();
+}
+
+function mountSpatialHome(){
+  // scroll reveal — sections settle into place
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { rootMargin:'0px 0px -6% 0px', threshold:.06 });
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  // hero parallax — custom props set on the stage inherit to the plate,
+  // so they survive the plate being re-rendered on cycle.
+  const stage = document.getElementById('heroStage');
   const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
-  function reset(){ clearInterval(heroTimer); if(!reduce) heroTimer=setInterval(()=>go(heroIndex+1),4500); }
-  track.addEventListener('mouseenter',()=>clearInterval(heroTimer));
-  track.addEventListener('mouseleave',reset);
-  reset();
+  const fine = matchMedia('(pointer:fine)').matches;
+  if(stage && !reduce && fine){
+    let raf;
+    stage.addEventListener('pointermove', e=>{
+      const r = stage.getBoundingClientRect();
+      const px = (e.clientX-r.left)/r.width - 0.5;
+      const py = (e.clientY-r.top)/r.height - 0.5;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(()=>{
+        stage.style.setProperty('--hx', (px*12).toFixed(2)+'deg');
+        stage.style.setProperty('--hy', (-py*9).toFixed(2)+'deg');
+      });
+    });
+    stage.addEventListener('pointerleave', ()=>{
+      stage.style.setProperty('--hx','0deg'); stage.style.setProperty('--hy','0deg');
+    });
+  }
 }
 
 /* ============================================================
@@ -315,63 +374,55 @@ function greeting(){
    SCREENS
    ============================================================ */
 function screenHome(){
-  const first = PROFILE.name.split(' ')[0];
-  const picked = TOP_RATED;
-  const featured = PRODUCTS.find(p=>p.brand==='Auric');
+  const heroPiece = BY_SKU[FEATURED[heroIndex]];
+  const wallFeature = BY_SKU['terawave-warmth-relaxation-wand'];
+  const wallPicks = TOP_RATED.filter(p => !FEATURED.includes(p.sku) && p.sku !== wallFeature.sku).slice(0, 4);
+
   return `
-  <div class="view-enter">
-    <div class="greet">
-      <h1>${greeting()},<span class="soft">${first}</span></h1>
-    </div>
+  <div class="view-enter home-spatial">
+    <header class="sp-head reveal">
+      <p class="eyebrow">OShopping</p>
+      <h1>In focus.</h1>
+      <p class="sp-sub">A small, well-chosen catalogue — met one piece at a time, or browsed all at once.</p>
+    </header>
 
-    <button class="top-search" id="homeSearch" style="display:flex;width:100%;max-width:none;margin-top:18px" aria-label="Search">
-      ${icon('search')}<span>Search OShopping</span><span style="margin-left:auto;color:var(--accent)">${icon('mic')}</span>
-    </button>
+    <section class="hero-stage reveal" id="heroStage">
+      <div class="hero-field"></div>
+      ${heroPieceHTML(heroPiece)}
+    </section>
 
-    <div class="block" style="margin-top:20px"><div class="cat-rail">
-      ${CATEGORIES.map(c=>`<a class="chip" href="#/browse/${c.id}">${icon(ICON[c.symbol]||'package')}${c.name}</a>`).join('')}
-    </div></div>
-
-    ${heroHTML()}
-
-    ${rail('Picked for you','Curated for you', picked, '#/browse/toprated')}
-
-    <section class="block">
-      <div class="spotlight">
-        <a class="spotlight-top" href="#/product/${featured.sku}">
-          ${pimg(featured)}
-          <div class="sp-body">
-            <span class="sp-eyebrow">FEATURED</span>
-            <span class="sp-name">${esc(featured.name)}</span>
-            ${ratingHTML(featured)}
-            ${priceHTML(featured,'lg')}
-          </div>
-        </a>
-        <button class="btn btn-pill" style="width:100%" data-add="${featured.sku}">${icon('bag')} Add to Bag</button>
+    <section class="block reveal">
+      ${sectionHead('Shop by category', null, '#/browse')}
+      <div class="cat-launchers">
+        ${CATEGORIES.map(c=>`<a class="cat-launch" href="#/browse/${c.id}">
+          <span class="cl-tile">${icon(ICON[c.symbol]||'package')}</span>
+          <span class="cl-name">${c.name}</span>
+        </a>`).join('')}
       </div>
     </section>
 
-    ${rail('Deals of the day','Limited-time savings', DEALS, '#/browse/deals')}
+    <section class="block reveal">
+      ${sectionHead('The edit','A few pieces worth a closer look','#/browse/toprated')}
+      <div class="gallery-wall">
+        ${plate(wallFeature, true)}
+        ${wallPicks.map(p=>plate(p)).join('')}
+      </div>
+    </section>
 
-    <section class="block"><div class="benefits">
-      <div class="benefit">${icon('box')}<span class="b-t">Free delivery</span><span class="b-d">Orders over $50</span></div>
-      <div class="benefit">${icon('return')}<span class="b-t">Easy returns</span><span class="b-d">30-day window</span></div>
-      <div class="benefit">${icon('shield')}<span class="b-t">Secure</span><span class="b-d">Protected pay</span></div>
-    </div></section>
+    <div class="reveal">${rail('Trending now',"What everyone's buying", TRENDING, '#/browse/trending')}</div>
 
-    <section class="block"><div class="editorial">
+    <section class="block reveal"><div class="editorial">
       <h2>Thoughtfully chosen.<br>Beautifully delivered.</h2>
       <p>Every product, curated for the way you live.</p>
     </div></section>
 
-    <section class="block">
-      ${sectionHead('Top rated','Loved by the community','#/browse/toprated')}
-      <div class="pgrid">${TOP_RATED.slice(0,8).map(productCard).join('')}</div>
-    </section>
+    <div class="reveal">${rail('Deals of the day','Limited-time savings', DEALS, '#/browse/deals')}</div>
 
-    ${rail('Trending now',"What everyone's buying", TRENDING, '#/browse/trending')}
-
-    ${store.recent.length ? rail('Recently viewed', null, store.recent.map(s=>BY_SKU[s]).filter(Boolean)) : ''}
+    <section class="block reveal"><div class="benefits">
+      <div class="benefit">${icon('box')}<span class="b-t">Free delivery</span><span class="b-d">Orders over $50</span></div>
+      <div class="benefit">${icon('return')}<span class="b-t">Easy returns</span><span class="b-d">30-day window</span></div>
+      <div class="benefit">${icon('shield')}<span class="b-t">Secure checkout</span><span class="b-d">Protected pay</span></div>
+    </div></section>
 
     <div class="home-footer">
       <div class="hf-mark">OShopping</div>
@@ -803,7 +854,7 @@ function setActiveTab(tab){
 }
 
 function mounted(route){
-  if(route==='home' || route==='' ) mountHero();
+  if(route==='home' || route==='' ) mountSpatialHome();
   if(route==='search'){
     const inp = document.getElementById('searchInput');
     if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length);
@@ -863,6 +914,9 @@ document.addEventListener('click', e => {
     document.querySelectorAll('.pay-opt').forEach(o=>{ const on=o.dataset.pay===coPayment;
       o.classList.toggle('sel',on); o.querySelector('.radio').innerHTML = icon(on?'check-circle':'circle'); });
     return; }
+
+  const heroNav = e.target.closest('[data-hero-nav]');
+  if(heroNav){ cycleHero(heroNav.dataset.heroNav==='next' ? 1 : -1); return; }
 
   const place = e.target.closest('[data-place]');
   if(place){ placeOrder(); return; }
