@@ -418,12 +418,6 @@ function screenHome(){
 
     <div class="reveal">${rail('Deals of the day','Limited-time savings', DEALS, '#/browse/deals')}</div>
 
-    <section class="block reveal"><div class="benefits">
-      <div class="benefit">${icon('box')}<span class="b-t">Free delivery</span><span class="b-d">Orders over $50</span></div>
-      <div class="benefit">${icon('return')}<span class="b-t">Easy returns</span><span class="b-d">30-day window</span></div>
-      <div class="benefit">${icon('shield')}<span class="b-t">Secure checkout</span><span class="b-d">Protected pay</span></div>
-    </div></section>
-
     <div class="home-footer">
       <div class="hf-mark">OShopping</div>
       <div class="hf-sub">Designed for you · Delivered with care</div>

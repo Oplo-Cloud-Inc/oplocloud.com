@@ -623,8 +623,9 @@ input{font-family:inherit}
 .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,140%);z-index:130;
   background:var(--accent);color:var(--on-accent);border-radius:var(--r-pill);
   padding:13px 20px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);
-  font-size:14px;font-weight:500;transition:transform .4s var(--spring);max-width:92vw}
-.toast.on{transform:translate(-50%,0)}
+  font-size:14px;font-weight:500;max-width:92vw;opacity:0;visibility:hidden;pointer-events:none;
+  transition:transform .4s var(--spring),opacity .3s var(--ease),visibility .3s}
+.toast.on{transform:translate(-50%,0);opacity:1;visibility:visible;pointer-events:auto}
 .toast .t-ic{width:22px;height:22px;border-radius:50%;background:color-mix(in srgb,var(--on-accent) 20%,transparent);
   display:grid;place-items:center;flex:0 0 auto}
 .toast .t-ic .ic{width:13px;height:13px;stroke-width:2.6}
