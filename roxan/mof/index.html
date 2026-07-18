@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Roxan for Ministry of Finance — the sovereign finance advisor</title>
+<meta name="description" content="Roxan for Ministry of Finance is Oplo's AI advisor for public finance leaders — analyze the economy, simulate policy, find lost revenue, and grow, in one command cockpit. Prototype with illustrative data.">
+<meta name="theme-color" content="#fbfbfd">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='o' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%239BE8CE'/%3E%3Cstop offset='.4' stop-color='%239CC3FF'/%3E%3Cstop offset='.7' stop-color='%23D4B3FF'/%3E%3Cstop offset='1' stop-color='%23FFD2B3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23o)'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#fbfbfd; --surface:#ffffff; --panel:#f5f5f7; --panel-2:#eef0f3;
+    --ink:#1d1d1f; --muted:#6e6e73; --faint:#86868b;
+    --hairline:#d2d2d7; --hairline-soft:#e8e8ed;
+    --opal:conic-gradient(from 210deg,#9BE8CE 0deg,#9CC3FF 90deg,#D4B3FF 180deg,#FFD2B3 270deg,#9BE8CE 360deg);
+    --mint:#9BE8CE; --sky:#9CC3FF; --lilac:#D4B3FF; --peach:#FFD2B3;
+    --pos:#1f9d55; --neg:#c2410c; --neg-bg:#fff6ee; --neg-br:#ffddc2;
+    --blue:#3f7fd0;
+    --fd:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --fm:ui-monospace,"SF Mono","SFMono-Regular",Menlo,Monaco,"Cascadia Mono",monospace;
+    --ease:cubic-bezier(.16,1,.3,1);
+    --rail:300px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--fd);background:var(--bg);color:var(--ink);
+    font-size:16px;line-height:1.5;letter-spacing:-.011em;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    height:100dvh;overflow:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;color:inherit;background:none;border:none}
+  ::selection{background:var(--lilac);color:var(--ink)}
+  :focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:6px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  .app{display:flex;flex-direction:column;height:100dvh}
+
+  /* ── Top bar ── */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:0 18px;height:56px;flex:0 0 auto;
+    border-bottom:1px solid var(--hairline-soft);
+    background:rgba(251,251,253,.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);z-index:20}
+  .tb-left{display:flex;align-items:center;gap:12px;min-width:0}
+  .back{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:13px;padding:6px 10px 6px 6px;border-radius:20px;transition:background .2s}
+  .back:hover{background:var(--panel)}
+  .back svg{width:15px;height:15px}
+  .brand{display:flex;align-items:center;gap:9px;min-width:0}
+  .dot{width:18px;height:18px;border-radius:50%;background:var(--opal);flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.04)}
+  .brand b{font-weight:600;font-size:15px;letter-spacing:-.02em}
+  .brand .div{width:1px;height:16px;background:var(--hairline);margin:0 2px}
+  .brand .ctx{color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tb-right{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+  .proto{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);
+    border:1px solid var(--hairline);border-radius:20px;padding:5px 11px;background:var(--surface);white-space:nowrap}
+  .proto i{width:6px;height:6px;border-radius:50%;background:var(--peach);display:inline-block}
+  .acct{width:30px;height:30px;border-radius:50%;background:var(--panel);border:1px solid var(--hairline);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--muted)}
+
+  /* ── Body split ── */
+  .split{display:grid;grid-template-columns:var(--rail) 1fr;flex:1 1 auto;min-height:0}
+
+  /* ── Chat rail ── */
+  .rail{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--hairline-soft);background:var(--surface)}
+  .rail-scroll{flex:1 1 auto;overflow-y:auto;padding:20px 16px 8px;scroll-behavior:smooth}
+  .rail-scroll::-webkit-scrollbar{width:8px}.rail-scroll::-webkit-scrollbar-thumb{background:var(--hairline);border-radius:8px;border:2px solid var(--surface)}
+  .rlabel{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin:0 4px 14px}
+  .msg{max-width:92%;font-size:14px;line-height:1.55;padding:11px 13px;border-radius:16px;margin-bottom:12px;animation:pop .34s var(--ease) both}
+  .msg b{font-weight:600}
+  .msg.user{background:var(--ink);color:#fff;margin-left:auto;border-bottom-right-radius:6px}
+  .msg.bot{background:var(--panel);color:var(--ink);border-bottom-left-radius:6px}
+  .msg.bot .bh{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+  .msg.bot .bh i{width:12px;height:12px;border-radius:50%;background:var(--opal)}
+  @keyframes pop{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .think{display:inline-flex;gap:5px;padding:4px 2px}
+  .think span{width:7px;height:7px;border-radius:50%;background:var(--opal);opacity:.5;animation:blink 1.1s infinite}
+  .think span:nth-child(2){animation-delay:.18s}.think span:nth-child(3){animation-delay:.36s}
+  @keyframes blink{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
+  .caret::after{content:"";display:inline-block;width:2px;height:1.05em;background:var(--ink);vertical-align:-2px;margin-left:1px;animation:cb .8s step-end infinite}
+  @keyframes cb{50%{opacity:0}}
+
+  .rail-foot{flex:0 0 auto;border-top:1px solid var(--hairline-soft);padding:12px 16px 16px;background:var(--surface)}
+  .sg{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin-bottom:9px}
+  .chips{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+  .chip-p{text-align:left;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--hairline);
+    border-radius:13px;padding:9px 12px;transition:border-color .2s,background .2s,transform .1s;line-height:1.35}
+  .chip-p:hover{border-color:var(--sky);background:#f7fbff}
+  .chip-p:active{transform:scale(.99)}
+  .chip-p:disabled{opacity:.5;cursor:default}
+  .composer{display:flex;align-items:center;gap:8px;border:1px solid var(--hairline);border-radius:15px;
+    padding:7px 8px 7px 14px;background:var(--surface);transition:border-color .2s,box-shadow .2s}
+  .composer:focus-within{border-color:var(--sky);box-shadow:0 0 0 4px rgba(156,195,255,.18)}
+  .composer input{flex:1 1 auto;border:none;outline:none;font:inherit;font-size:14px;background:none;color:var(--ink);min-width:0}
+  .composer input::placeholder{color:var(--faint)}
+  .send{flex:0 0 auto;width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:15px;transition:transform .15s,opacity .2s}
+  .send:hover{transform:translateY(-1px)}
+  .send:disabled{opacity:.4;transform:none;cursor:default}
+
+  /* ── Canvas ── */
+  .canvas{position:relative;overflow-y:auto;overflow-x:clip;min-height:0;padding:0}
+  .canvas::-webkit-scrollbar{width:10px}.canvas::-webkit-scrollbar-thumb{background:var(--hairline);border-radius:10px;border:3px solid var(--bg)}
+  .cwrap{max-width:1080px;margin:0 auto;padding:26px clamp(18px,3vw,34px) 60px}
+  .cglow{position:absolute;top:-150px;right:0;width:500px;height:500px;border-radius:50%;
+    background:var(--opal);filter:blur(120px);opacity:.10;pointer-events:none;z-index:0}
+  .chead{position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .ct{font-size:clamp(24px,3vw,32px);font-weight:600;letter-spacing:-.03em;line-height:1.05}
+  .cs{font-size:13px;color:var(--muted);margin-top:6px}
+  .tabs{display:flex;gap:5px;background:var(--panel);border:1px solid var(--hairline-soft);border-radius:22px;padding:4px}
+  .tab{font-size:12.5px;color:var(--muted);padding:7px 14px;border-radius:18px;transition:all .2s;white-space:nowrap}
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.06);font-weight:500}
+
+  .blocks{position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,1fr);gap:14px;align-items:start}
+  .b{grid-column:1/-1}
+  .b.half{grid-column:span 1}
+  .reveal{opacity:0;transform:translateY(10px)}
+  .reveal.in{opacity:1;transform:none;transition:opacity .5s var(--ease),transform .5s var(--ease)}
+
+  .card{background:var(--surface);border:1px solid var(--hairline-soft);border-radius:18px;padding:16px 17px}
+  .cardt{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;margin-bottom:14px}
+  .cardt .q{font-weight:400;color:var(--faint);font-size:11.5px;margin-left:auto}
+  .cardt i.rd{width:13px;height:13px;border-radius:50%;background:var(--opal);flex:0 0 auto}
+
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .kpi{background:var(--surface);border:1px solid var(--hairline-soft);border-radius:16px;padding:14px 14px 13px}
+  .kpi.warn{background:var(--neg-bg);border-color:var(--neg-br)}
+  .kpi .kl{font-size:11.5px;color:var(--muted);margin-bottom:9px}
+  .kpi .kv{font-size:26px;font-weight:600;letter-spacing:-.03em;display:flex;align-items:baseline;gap:5px}
+  .kpi .kv .ar{font-size:12px;font-weight:600}
+  .ar.pos{color:var(--pos)}.ar.neg{color:var(--neg)}.ar.warn{color:var(--neg)}
+  .kpi .kk{font-size:11px;color:var(--faint);margin-top:7px}
+
+  /* chart */
+  .chart{width:100%;height:190px;display:block;overflow:visible}
+  .chart .gl{stroke:var(--hairline-soft);stroke-width:1}
+  .chart .axl{fill:var(--faint);font-size:10px;font-family:var(--fm)}
+  .legend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+  .legend span::before{content:"";width:11px;height:3px;border-radius:2px;background:var(--lg,currentColor)}
+  .legend span.dash::before{background:repeating-linear-gradient(90deg,var(--lg) 0 4px,transparent 4px 7px)}
+
+  /* read card */
+  .read p{font-size:13.5px;line-height:1.6;color:var(--muted);margin-bottom:10px}
+  .read p b{color:var(--ink);font-weight:600}
+  .read p.flag{color:var(--ink)}
+  .flagt{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;
+    color:var(--neg);background:var(--neg-bg);border:1px solid var(--neg-br);border-radius:6px;padding:2px 7px;margin-right:7px}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .act{font-size:12.5px;color:var(--ink);border:1px solid var(--hairline);border-radius:20px;padding:7px 13px;
+    background:var(--surface);transition:border-color .2s,background .2s}
+  .act:hover{border-color:var(--sky);background:#f7fbff}
+
+  /* projection rows */
+  .proj{display:grid;gap:2px}
+  .prow{display:grid;grid-template-columns:1.5fr 1fr auto;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--hairline-soft)}
+  .prow:last-child{border-bottom:none}
+  .prow .pl{font-size:13.5px;font-weight:500}
+  .prow .pl small{display:block;font-weight:400;color:var(--faint);font-size:11.5px;margin-top:2px}
+  .prow .pm{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .prow .pm .to{color:var(--ink);font-weight:600}
+  .pbadge{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;padding:4px 9px;border-radius:16px;white-space:nowrap}
+  .pbadge.pos{color:var(--pos);background:#eef8f1}
+  .pbadge.neg{color:var(--neg);background:var(--neg-bg)}
+
+  /* leakage list */
+  .ltot{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+  .ltot b{font-size:30px;font-weight:600;letter-spacing:-.03em}
+  .ltot span{font-size:12.5px;color:var(--muted)}
+  .list{display:grid;gap:2px;margin-top:8px}
+  .lrow{display:grid;grid-template-columns:26px 1fr auto;gap:12px;align-items:center;padding:13px 4px;border-top:1px solid var(--hairline-soft)}
+  .lrow .rk{width:24px;height:24px;border-radius:50%;background:var(--panel);border:1px solid var(--hairline);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--muted)}
+  .lrow .lt{font-size:13.5px;font-weight:500}
+  .lrow .ln{font-size:12px;color:var(--faint);margin-top:2px}
+  .lbar{height:5px;border-radius:4px;background:var(--panel-2);margin-top:8px;overflow:hidden}
+  .lbar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--sky),var(--lilac));width:0;transition:width 1s var(--ease)}
+  .lrow .lv{text-align:right}
+  .lrow .lv b{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+  .lrow .lv .fe{font-size:10.5px;color:var(--muted);margin-top:3px;display:block}
+  .fe.hi{color:var(--pos)}
+
+  /* sectors */
+  .sectors{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .sec{border:1px solid var(--hairline-soft);border-radius:16px;padding:15px;background:var(--surface)}
+  .sec .sn{font-size:15px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+  .sec .st{font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:13px;min-height:54px}
+  .sec .smetrics{display:flex;gap:14px;border-top:1px solid var(--hairline-soft);padding-top:11px}
+  .sec .sm{flex:1}
+  .sec .sm .v{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+  .sec .sm .l{font-size:10.5px;color:var(--faint);margin-top:2px}
+
+  /* brief card */
+  .brief{display:flex;flex-direction:column;gap:14px}
+  .brief .bt{font-size:15px;font-weight:600}
+  .brief .bd{font-size:13px;color:var(--muted);line-height:1.55}
+  .brief-doc{border:1px solid var(--hairline);border-radius:12px;background:var(--panel);padding:14px;position:relative;overflow:hidden}
+  .brief-doc .stamp{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint)}
+  .brief-doc h5{font-size:13px;font-weight:600;margin:5px 0 3px}
+  .brief-doc p{font-size:12px;color:var(--muted);line-height:1.5}
+  .brief-doc .fade{position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(transparent,var(--panel))}
+  .openbrief{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;
+    color:#fff;background:var(--ink);border-radius:20px;padding:9px 16px;transition:transform .15s}
+  .openbrief:hover{transform:translateY(-1px)}
+
+  /* artifact slide-over */
+  .scrim{position:fixed;inset:0;background:rgba(20,20,25,.28);opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;z-index:40}
+  .scrim.open{opacity:1;visibility:visible}
+  .artifact{position:fixed;top:0;right:0;height:100dvh;width:min(560px,94vw);background:var(--surface);
+    border-left:1px solid var(--hairline);box-shadow:-30px 0 60px -30px rgba(0,0,0,.3);
+    transform:translateX(100%);transition:transform .38s var(--ease);z-index:41;display:flex;flex-direction:column}
+  .artifact.open{transform:none}
+  .ahead{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:16px 20px;border-bottom:1px solid var(--hairline-soft)}
+  .ahead .at{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600}
+  .ahead .at i{width:14px;height:14px;border-radius:50%;background:var(--opal)}
+  .ahead .actions{display:flex;align-items:center;gap:8px}
+  .abtn{font-size:12.5px;color:var(--muted);border:1px solid var(--hairline);border-radius:16px;padding:6px 12px;transition:all .2s}
+  .abtn:hover{border-color:var(--ink);color:var(--ink)}
+  .aclose{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted);transition:background .2s}
+  .aclose:hover{background:var(--panel)}
+  .abody{flex:1 1 auto;overflow-y:auto;padding:26px 30px 40px}
+  .memo{font-size:14px;line-height:1.62;color:var(--ink)}
+  .memo .mh{border-bottom:1px solid var(--hairline);padding-bottom:16px;margin-bottom:18px}
+  .memo .mh .mt{font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1.2;margin-bottom:10px}
+  .memo .meta{font-size:12.5px;color:var(--muted);font-family:var(--fm);line-height:1.7}
+  .memo h4{font-size:13px;font-weight:600;margin:20px 0 6px;letter-spacing:-.01em}
+  .memo h4 span{color:var(--faint);font-weight:400;margin-right:7px}
+  .memo p{color:var(--muted);margin-bottom:4px}
+  .memo p b{color:var(--ink);font-weight:600}
+  .memo .mfoot{margin-top:26px;padding-top:14px;border-top:1px solid var(--hairline-soft);font-size:11.5px;color:var(--faint)}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:#fff;
+    font-size:13px;padding:11px 18px;border-radius:22px;opacity:0;visibility:hidden;transition:all .3s var(--ease);z-index:60;box-shadow:0 12px 30px -10px rgba(0,0,0,.4);max-width:88vw;text-align:center}
+  .toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+
+  /* responsive */
+  @media(max-width:860px){
+    body{height:auto;overflow:auto}
+    .app{height:auto;min-height:100dvh}
+    .split{grid-template-columns:1fr;flex:1 1 auto}
+    .canvas{overflow:visible}
+    .rail{border-right:none;border-bottom:1px solid var(--hairline-soft);order:2}
+    .rail-scroll{max-height:none}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .sectors{grid-template-columns:1fr}
+    .b.half{grid-column:1/-1}
+  }
+  @media(max-width:520px){
+    .brand .ctx,.back span{display:none}
+    .prow{grid-template-columns:1fr auto}
+    .prow .pm{display:none}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+    .reveal{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<h1 class="sr-only">Roxan for Ministry of Finance — an AI advisor command cockpit for public finance leaders. Prototype with illustrative data.</h1>
+<div class="app">
+
+  <header class="topbar">
+    <div class="tb-left">
+      <a class="back" href="/roxan/" aria-label="Back to Roxan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <span>Roxan</span>
+      </a>
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <b>Roxan</b><span class="div" aria-hidden="true"></span>
+        <span class="ctx">Ministry of Finance</span>
+      </div>
+    </div>
+    <div class="tb-right">
+      <span class="proto" title="This is a design prototype. All figures are illustrative sample data for a fictional country — not real official statistics. Nothing is sent anywhere.">
+        <i aria-hidden="true"></i>Illustrative data · Prototype
+      </span>
+      <div class="acct" title="Minister (demo account)" aria-hidden="true">MF</div>
+    </div>
+  </header>
+
+  <div class="split">
+    <!-- Chat rail -->
+    <aside class="rail" aria-label="Conversation with Roxan">
+      <div class="rail-scroll" id="stream" role="log" aria-live="polite" aria-atomic="false">
+        <div class="rlabel">Session · this morning</div>
+      </div>
+      <div class="rail-foot">
+        <div class="sg">Suggested briefings</div>
+        <div class="chips" id="chips"></div>
+        <form class="composer" id="composer" autocomplete="off">
+          <input id="input" type="text" placeholder="Ask Roxan about the economy…" aria-label="Ask Roxan">
+          <button class="send" id="send" type="submit" aria-label="Send" title="Send">↑</button>
+        </form>
+      </div>
+    </aside>
+
+    <!-- Canvas -->
+    <main class="canvas" id="canvas" aria-label="Analysis canvas" aria-live="polite">
+      <div class="cglow" aria-hidden="true"></div>
+      <div class="cwrap" id="cwrap"></div>
+    </main>
+  </div>
+</div>
+
+<!-- Artifact slide-over -->
+<div class="scrim" id="scrim"></div>
+<section class="artifact" id="artifact" aria-label="Cabinet memo" aria-hidden="true">
+  <div class="ahead">
+    <div class="at"><i aria-hidden="true"></i>Cabinet memo — draft</div>
+    <div class="actions">
+      <button class="abtn" id="copyMemo">Copy</button>
+      <button class="aclose" id="closeArtifact" aria-label="Close">×</button>
+    </div>
+  </div>
+  <div class="abody" id="memoBody"></div>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+  var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var $ = function(s,r){return (r||document).querySelector(s)};
+  var esc = function(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+
+  /* ── Scenario data (illustrative — fictional Republic of Meridia) ── */
+  var SCENARIOS = {
+    economy:{
+      tab:"pulse",
+      prompt:"Give me the state of the economy",
+      match:["state of the economy","pulse","how is the economy","economy doing","overview","gdp"],
+      reply:"Here's your Q2 pulse. Growth is holding at **+3.2%**, inflation is easing to **4.1%**, and jobs are up. The one thing that needs a decision is the **deficit** — it's widened to −2.8% of GDP on energy subsidies. Full read on the canvas.",
+      title:"Economy Pulse",
+      sub:"Republic of Meridia · Q2 FY2026 · illustrative sample data",
+      blocks:[
+        {t:"kpis",items:[
+          {kl:"GDP growth", pre:"+",num:3.2,suf:"%",dec:1, ar:"up",tone:"pos", kk:"YoY · +0.4 vs Q1"},
+          {kl:"Inflation", num:4.1,suf:"%",dec:1, ar:"down",tone:"pos", kk:"easing · target 3.0%"},
+          {kl:"Unemployment", num:5.6,suf:"%",dec:1, ar:"down",tone:"pos", kk:"−0.3 vs Q1"},
+          {kl:"Fiscal balance", pre:"−",num:2.8,suf:"%",dec:1, ar:"down",tone:"warn", kk:"of GDP · watch", warn:true},
+          {kl:"Debt / GDP", num:54.3,suf:"%",dec:1, ar:null,tone:"neutral", kk:"stable"}
+        ]},
+        {t:"chart", half:true, title:"Real GDP growth", q:"8 quarters",
+          ymin:0,ymax:4, xlabels:["Q3","Q4","Q1","Q2","Q3","Q4","Q1","Q2"],
+          series:[{name:"GDP growth %",color:"#3f7fd0",area:true,points:[2.1,2.4,2.2,2.6,2.5,2.9,3.0,3.2]}]},
+        {t:"read", half:true, title:"Roxan's read", paras:[
+          {html:"Growth is <b>broad-based</b> — services (+4.1%) and construction (+3.6%) lead; agriculture lags at +1.2% after a dry season."},
+          {html:"Inflation is drifting toward target, giving the central bank room. <b>Real wages turned positive</b> this quarter."},
+          {flag:"Watch", html:"The deficit widened to <b>−2.8% of GDP</b>, driven by energy subsidies (1.9% of GDP). On this path, debt crosses <b>58% by 2028</b>."}
+        ], acts:[{label:"Simulate a subsidy taper →",go:"policy"},{label:"Draft the cabinet brief →",go:"growth"}]}
+      ]
+    },
+
+    policy:{
+      tab:"simulate",
+      prompt:"Simulate cutting VAT to 12%",
+      match:["vat","cut vat","simulate","policy","what if","tax cut","lower vat"],
+      reply:"Cutting VAT from **15% to 12%** trades revenue now for demand and growth. Here's the modeled two-year impact. The headline: it's pro-growth and lowers prices, but it **widens the deficit** unless you pair it with a base-broadening measure.",
+      title:"Policy Simulator",
+      sub:"Standard VAT 15% → 12% · 24-month horizon · illustrative model",
+      blocks:[
+        {t:"proj", title:"Modeled impact · 24 months", rows:[
+          {pl:"VAT revenue", sub:"lost consumption-tax take", from:"6.8%",to:"5.9%", badge:"−0.9pp GDP", sent:"neg"},
+          {pl:"Fiscal balance", sub:"headline deficit", from:"−2.8%",to:"−3.5%", badge:"−0.7pp GDP", sent:"neg"},
+          {pl:"Real GDP", sub:"cumulative over 2 years", from:null,to:null, badge:"+0.5pp", sent:"pos"},
+          {pl:"Household consumption", sub:"demand uplift", from:null,to:null, badge:"+1.9pp", sent:"pos"},
+          {pl:"Headline inflation", sub:"lower shelf prices", from:null,to:null, badge:"−0.6pp", sent:"pos"},
+          {pl:"Employment", sub:"jobs supported", from:null,to:null, badge:"+38,000", sent:"pos"}
+        ]},
+        {t:"chart", half:true, title:"Deficit path", q:"% of GDP",
+          ymin:-4,ymax:-2, xlabels:["'26","'27","'28","'29"],
+          series:[
+            {name:"Baseline",color:"#9aa0aa",dash:true,points:[-2.8,-2.9,-3.0,-3.1]},
+            {name:"VAT cut, un-offset",color:"#c2410c",points:[-2.8,-3.5,-3.6,-3.4]}
+          ]},
+        {t:"read", half:true, title:"Tradeoffs & risks", paras:[
+          {html:"The cut is <b>pro-growth and pro-consumption</b>, and it visibly lowers prices — politically valuable. But it costs about <b>0.9% of GDP</b> in revenue."},
+          {flag:"Risk", html:"Un-offset, this pushes debt toward <b>60% by 2028</b>. Removing two zero-rating exemptions recovers ~0.5% of GDP and keeps the deficit near −3.0%."}
+        ], acts:[{label:"Find offsetting revenue →",go:"leakage"},{label:"Build the growth plan →",go:"growth"}]}
+      ]
+    },
+
+    leakage:{
+      tab:"recover",
+      prompt:"Where are we losing money?",
+      match:["losing money","leakage","revenue gap","tax gap","waste","recover","where are we losing"],
+      reply:"I scanned collections, subsidies, and program performance. Four areas stand out — together about **R 9.4B recoverable**, roughly **1.6% of GDP**. Ranked by size and how feasible each is to act on.",
+      title:"Revenue & Leakage Finder",
+      sub:"Annualized · ranked by recoverable amount · illustrative estimates",
+      blocks:[
+        {t:"list", total:{pre:"R ",num:9.4,suf:"B",dec:1}, totalNote:"recoverable per year · ≈ 1.6% of GDP · ≈ funds the rural-clinics program twice over",
+          items:[
+            {title:"VAT compliance gap", note:"Under-reporting in wholesale & digital services. E-invoicing closes ~60%.", amt:{pre:"R ",num:3.8,suf:"B",dec:1}, feas:"Feasibility: medium", bar:100},
+            {title:"Energy subsidy leakage", note:"A flat fuel subsidy is captured mostly by the top 40% of households. Target via cash transfer.", amt:{pre:"R ",num:2.9,suf:"B",dec:1}, feas:"Feasibility: high", feasHi:true, bar:76},
+            {title:"Customs undervaluation", note:"Mis-declared import values concentrated on three tariff lines.", amt:{pre:"R ",num:1.6,suf:"B",dec:1}, feas:"Feasibility: medium", bar:42},
+            {title:"Dormant SOE dividends", note:"Three state enterprises holding retained earnings past policy.", amt:{pre:"R ",num:1.1,suf:"B",dec:1}, feas:"Feasibility: high", feasHi:true, bar:29}
+          ]},
+        {t:"read", title:"Roxan's read", paras:[
+          {html:"Start with <b>energy-subsidy targeting</b> and <b>dormant SOE dividends</b> — highest feasibility, about <b>R 4.0B</b>, and minimal new legislation."},
+          {html:"The VAT gap is the biggest prize but needs the e-invoicing rollout to land first — sequence it for year two."}
+        ], acts:[{label:"Turn recoveries into a plan →",go:"growth"},{label:"Back to the pulse →",go:"economy"}]}
+      ]
+    },
+
+    growth:{
+      tab:"grow",
+      prompt:"Which sectors should we back — and draft the cabinet memo",
+      match:["sectors","grow","invest","growth plan","cabinet memo","which sectors","back","draft"],
+      reply:"Given Meridia's cost base and export mix, three sectors give the best jobs-per-dollar and export upside — about **127,000 jobs** over three years. I've drafted the cabinet memo too; open it on the right.",
+      title:"Growth & Investment",
+      sub:"3-year priority horizon · projected impact · illustrative",
+      blocks:[
+        {t:"sectors", items:[
+          {sn:"Agri-processing", st:"Move up the value chain from raw exports to processed goods.", jobs:"+52k", roi:"2.4×", capex:"R 1.8B"},
+          {sn:"Renewables & grid", st:"Cut both the subsidy bill and the imported-fuel bill.", jobs:"+34k", roi:"1.9×", capex:"R 3.1B"},
+          {sn:"Digital services & BPO", st:"Young, English-capable workforce; low capital intensity.", jobs:"+41k", roi:"3.1×", capex:"R 0.7B"}
+        ]},
+        {t:"chart", half:true, title:"Projected jobs", q:"cumulative, 3 yrs",
+          bars:true, ymin:0,ymax:60, xlabels:["Agri","Energy","Digital"],
+          series:[{name:"jobs (000s)",color:"#3f7fd0",points:[52,34,41]}]},
+        {t:"brief", half:true, title:"Cabinet memo — draft ready",
+          desc:"Roxan compiled your recommendation, fiscal impact, risks, and the ask into a cabinet-ready memo.",
+          teaser:[
+            {h:"1 · Recommendation", p:"Approve a phased R 5.6B capital program across three priority sectors and stand up a Delivery Unit…"},
+            {h:"2 · Rationale", p:"Growth is holding at 3.2% but concentrated. These sectors offer the strongest jobs-per-dollar…"}
+          ]}
+      ]
+    }
+  };
+
+  var MEMO = {
+    title:"MEMORANDUM — Growth & Investment Priorities, FY2026–2029",
+    meta:["To:  Cabinet Economic Committee","From:  Ministry of Finance","Prepared with:  Roxan (draft for review)","Classification:  Draft · illustrative"],
+    sections:[
+      {n:"1", h:"Recommendation", p:"Approve a phased <b>R 5.6B capital program</b> across three priority sectors — agri-processing, renewables & grid, and digital services — projected to create <b>~127,000 jobs</b> over three years, and establish a <b>Delivery Unit</b> in the Ministry to sequence and track execution."},
+      {n:"2", h:"Rationale", p:"Meridia's growth is holding at 3.2% but remains concentrated in services and construction. The three sectors offer the strongest jobs-per-dollar (2.4–3.1×), reduce exposure to imported fuel, and move exports up the value chain."},
+      {n:"3", h:"Fiscal impact", p:"Phase-1 capex of R 5.6B (~1.0% of GDP) is <b>partially self-funded</b>: about R 4.0B in near-term recoveries — subsidy targeting and dormant SOE dividends — offsets the majority of first-year outlays, holding the deficit path near <b>−3.0% of GDP</b>."},
+      {n:"4", h:"Risks", p:"Execution capacity and procurement speed are the binding constraints, not financing. Renewables depends on grid upgrades landing on schedule. Recommend <b>milestone-based disbursement</b>."},
+      {n:"5", h:"The ask", p:"(i) Approve the phase-1 allocation; (ii) authorize the Delivery Unit; (iii) mandate quarterly reporting to this Committee."}
+    ],
+    foot:"Drafted by Roxan · review before circulation · illustrative prototype — figures are sample data, not official statistics.",
+    plain:"MEMORANDUM — Growth & Investment Priorities, FY2026–2029\n\nTo: Cabinet Economic Committee\nFrom: Ministry of Finance\nPrepared with: Roxan (draft for review)\nClassification: Draft · illustrative\n\n1. Recommendation\nApprove a phased R 5.6B capital program across three priority sectors — agri-processing, renewables & grid, and digital services — projected to create ~127,000 jobs over three years, and establish a Delivery Unit in the Ministry to sequence and track execution.\n\n2. Rationale\nMeridia's growth is holding at 3.2% but remains concentrated in services and construction. The three sectors offer the strongest jobs-per-dollar (2.4–3.1×), reduce exposure to imported fuel, and move exports up the value chain.\n\n3. Fiscal impact\nPhase-1 capex of R 5.6B (~1.0% of GDP) is partially self-funded: about R 4.0B in near-term recoveries offsets the majority of first-year outlays, holding the deficit path near −3.0% of GDP.\n\n4. Risks\nExecution capacity and procurement speed are the binding constraints, not financing. Recommend milestone-based disbursement.\n\n5. The ask\n(i) Approve the phase-1 allocation; (ii) authorize the Delivery Unit; (iii) mandate quarterly reporting.\n\nDrafted by Roxan · review before circulation · illustrative prototype."
+  };
+
+  var ORDER = ["economy","policy","leakage","recover","grow"];
+  var TABS = [
+    {k:"pulse", label:"Pulse", go:"economy"},
+    {k:"simulate", label:"Simulate", go:"policy"},
+    {k:"recover", label:"Recover", go:"leakage"},
+    {k:"grow", label:"Grow", go:"growth"}
+  ];
+
+  /* ── DOM refs ── */
+  var stream=$("#stream"), chips=$("#chips"), cwrap=$("#cwrap"), canvas=$("#canvas");
+  var composer=$("#composer"), input=$("#input"), send=$("#send");
+  var scrim=$("#scrim"), artifact=$("#artifact"), memoBody=$("#memoBody");
+  var busy=false;
+
+  /* ── Suggested chips ── */
+  (function(){
+    ["economy","policy","leakage","growth"].forEach(function(k){
+      var b=document.createElement("button");
+      b.className="chip-p"; b.type="button"; b.textContent=SCENARIOS[k].prompt;
+      b.addEventListener("click",function(){ run(k); });
+      chips.appendChild(b);
+    });
+  })();
+
+  /* ── Toast ── */
+  var toastEl=$("#toast"), toastT;
+  function toast(msg){ toastEl.textContent=msg; toastEl.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove("show")},2600); }
+
+  /* ── Rail messages ── */
+  function addUser(text){
+    var d=document.createElement("div"); d.className="msg user"; d.textContent=text;
+    stream.appendChild(d); scrollRail();
+  }
+  function addThinking(){
+    var d=document.createElement("div"); d.className="msg bot"; d.id="thinking";
+    d.innerHTML='<div class="bh"><i></i>Roxan</div><div class="think"><span></span><span></span><span></span></div>';
+    stream.appendChild(d); scrollRail(); return d;
+  }
+  function scrollRail(){ stream.scrollTop=stream.scrollHeight; }
+
+  // Parse **bold** markdown into tokens for streaming
+  function tokenize(md){
+    var parts=md.split("**"), toks=[], bold=false;
+    parts.forEach(function(seg){
+      seg.split(/(\s+)/).forEach(function(w){ if(w!=="") toks.push({w:w,b:bold}); });
+      bold=!bold;
+    });
+    return toks;
+  }
+  function renderTokens(toks){
+    return toks.map(function(t){ return t.b?("<b>"+esc(t.w)+"</b>"):esc(t.w); }).join("");
+  }
+  function streamReply(md, done){
+    var t=$("#thinking"); if(t) t.remove();
+    var d=document.createElement("div"); d.className="msg bot";
+    d.innerHTML='<div class="bh"><i></i>Roxan</div><div class="bt"></div>';
+    stream.appendChild(d);
+    var body=$(".bt",d); var toks=tokenize(md);
+    if(RM){ body.innerHTML=renderTokens(toks); scrollRail(); done&&done(); return; }
+    body.classList.add("caret");
+    var i=0;
+    (function tick(){
+      if(i>=toks.length){ body.classList.remove("caret"); scrollRail(); done&&done(); return; }
+      i++; body.innerHTML=renderTokens(toks.slice(0,i));
+      scrollRail();
+      setTimeout(tick, 22+Math.random()*30);
+    })();
+  }
+
+  /* ── Number formatting / count-up ── */
+  function fmt(spec,v){ return (spec.pre||"")+v.toFixed(spec.dec||0)+(spec.suf||""); }
+  function countUp(el,spec){
+    if(RM){ el.textContent=fmt(spec,spec.num); return; }
+    var dur=900, t0=null;
+    function step(ts){ if(!t0)t0=ts; var p=Math.min(1,(ts-t0)/dur); p=1-Math.pow(1-p,3);
+      el.textContent=fmt(spec, spec.num*p); if(p<1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  }
+
+  /* ── Canvas rendering ── */
+  function run(key){
+    if(busy) return;
+    var sc=SCENARIOS[key]; if(!sc) return;
+    busy=true; setChips(false);
+    addUser(sc.prompt);
+    addThinking();
+    setTimeout(function(){
+      streamReply(sc.reply, function(){ busy=false; setChips(true); });
+      renderCanvas(sc);
+    }, 620);
+  }
+  function setChips(on){
+    Array.prototype.forEach.call(chips.children,function(c){c.disabled=!on});
+    send.disabled=!on;
+  }
+
+  function renderCanvas(sc){
+    canvas.scrollTop=0;
+    cwrap.innerHTML="";
+    // header
+    var head=document.createElement("div"); head.className="chead";
+    head.innerHTML='<div><div class="ct">'+esc(sc.title)+'</div><div class="cs">'+esc(sc.sub)+'</div></div>';
+    var tabs=document.createElement("div"); tabs.className="tabs"; tabs.setAttribute("role","tablist");
+    TABS.forEach(function(t){
+      var b=document.createElement("button"); b.className="tab"+(t.k===sc.tab?" on":"");
+      b.textContent=t.label; b.setAttribute("role","tab"); b.setAttribute("aria-selected",t.k===sc.tab);
+      b.addEventListener("click",function(){ if(t.go && SCENARIOS[t.go]) run(t.go); });
+      tabs.appendChild(b);
+    });
+    head.appendChild(tabs); cwrap.appendChild(head);
+
+    var wrap=document.createElement("div"); wrap.className="blocks"; cwrap.appendChild(wrap);
+    var revealEls=[];
+    sc.blocks.forEach(function(b){
+      var el=buildBlock(b);
+      if(el){ el.classList.add("reveal"); if(b.half) el.classList.add("half"); wrap.appendChild(el); revealEls.push({el:el,b:b}); }
+    });
+    // staggered reveal + animations
+    revealEls.forEach(function(o,idx){
+      var delay=RM?0:120+idx*110;
+      setTimeout(function(){ o.el.classList.add("in"); animateBlock(o.el,o.b); }, delay);
+    });
+  }
+
+  function buildBlock(b){
+    if(b.t==="kpis") return blockKpis(b);
+    if(b.t==="chart") return blockChart(b);
+    if(b.t==="read") return blockRead(b);
+    if(b.t==="proj") return blockProj(b);
+    if(b.t==="list") return blockList(b);
+    if(b.t==="sectors") return blockSectors(b);
+    if(b.t==="brief") return blockBrief(b);
+    return null;
+  }
+
+  function blockKpis(b){
+    var wrap=document.createElement("div"); wrap.className="b";
+    var g=document.createElement("div"); g.className="kpis"; wrap.appendChild(g);
+    b.items.forEach(function(k){
+      var c=document.createElement("div"); c.className="kpi"+(k.warn?" warn":"");
+      var ar=k.ar?('<span class="ar '+(k.tone)+'">'+(k.ar==="up"?"▲":"▼")+'</span>'):"";
+      c.innerHTML='<div class="kl">'+esc(k.kl)+'</div><div class="kv"><span class="num" data-num="1">0</span>'+ar+'</div><div class="kk">'+esc(k.kk)+'</div>';
+      c._spec={pre:k.pre,num:k.num,suf:k.suf,dec:k.dec};
+      g.appendChild(c);
+    });
+    wrap._kpis=g; return wrap;
+  }
+
+  function blockRead(b){
+    var wrap=document.createElement("div"); wrap.className="b";
+    var c=document.createElement("div"); c.className="card read"; wrap.appendChild(c);
+    var h='<div class="cardt"><i class="rd"></i>'+esc(b.title)+'</div>';
+    b.paras.forEach(function(p){
+      if(p.flag) h+='<p class="flag"><span class="flagt">'+esc(p.flag)+'</span>'+p.html+'</p>';
+      else h+='<p>'+p.html+'</p>';
+    });
+    if(b.acts&&b.acts.length){
+      h+='<div class="acts">'+b.acts.map(function(a){return '<button class="act" data-go="'+esc(a.go)+'">'+esc(a.label)+'</button>'}).join("")+'</div>';
+    }
+    c.innerHTML=h;
+    Array.prototype.forEach.call(c.querySelectorAll(".act"),function(btn){
+      btn.addEventListener("click",function(){ var g=btn.getAttribute("data-go"); if(SCENARIOS[g]) run(g); });
+    });
+    return wrap;
+  }
+
+  function blockProj(b){
+    var wrap=document.createElement("div"); wrap.className="b";
+    var c=document.createElement("div"); c.className="card"; wrap.appendChild(c);
+    var h='<div class="cardt">'+esc(b.title)+'<span class="q">before → after</span></div><div class="proj">';
+    b.rows.forEach(function(r){
+      var mid = (r.from!=null) ? ('<div class="pm">'+esc(r.from)+' <span style="color:var(--faint)">→</span> <span class="to">'+esc(r.to)+'</span></div>') : '<div class="pm"></div>';
+      h+='<div class="prow"><div class="pl">'+esc(r.pl)+'<small>'+esc(r.sub)+'</small></div>'+mid+'<div class="pbadge '+r.sent+'">'+esc(r.badge)+'</div></div>';
+    });
+    h+='</div>'; c.innerHTML=h; return wrap;
+  }
+
+  function blockList(b){
+    var wrap=document.createElement("div"); wrap.className="b";
+    var c=document.createElement("div"); c.className="card"; wrap.appendChild(c);
+    var h='<div class="cardt">Recoverable revenue<span class="q">annualized</span></div>';
+    h+='<div class="ltot"><b><span class="tnum" data-num="1">0</span></b><span>'+esc(b.totalNote)+'</span></div>';
+    h+='<div class="list">';
+    b.items.forEach(function(it,i){
+      h+='<div class="lrow"><div class="rk">'+(i+1)+'</div>'+
+         '<div><div class="lt">'+esc(it.title)+'</div><div class="ln">'+esc(it.note)+'</div>'+
+         '<div class="lbar"><i data-bar="'+it.bar+'"></i></div></div>'+
+         '<div class="lv"><b><span class="anum" data-num="1">0</span></b><span class="fe'+(it.feasHi?" hi":"")+'">'+esc(it.feas)+'</span></div></div>';
+    });
+    h+='</div>'; c.innerHTML=h;
+    c._total=b.total; c._amts=b.items.map(function(it){return it.amt});
+    return wrap;
+  }
+
+  function blockSectors(b){
+    var wrap=document.createElement("div"); wrap.className="b";
+    var g=document.createElement("div"); g.className="sectors"; wrap.appendChild(g);
+    b.items.forEach(function(s){
+      var c=document.createElement("div"); c.className="sec";
+      c.innerHTML='<div class="sn">'+esc(s.sn)+'</div><div class="st">'+esc(s.st)+'</div>'+
+        '<div class="smetrics"><div class="sm"><div class="v">'+esc(s.jobs)+'</div><div class="l">jobs / 3yr</div></div>'+
+        '<div class="sm"><div class="v">'+esc(s.roi)+'</div><div class="l">return</div></div>'+
+        '<div class="sm"><div class="v">'+esc(s.capex)+'</div><div class="l">capex</div></div></div>';
+      g.appendChild(c);
+    });
+    return wrap;
+  }
+
+  function blockBrief(b){
+    var wrap=document.createElement("div"); wrap.className="b";
+    var c=document.createElement("div"); c.className="card brief"; wrap.appendChild(c);
+    var teaser=b.teaser.map(function(t){return '<h5>'+esc(t.h)+'</h5><p>'+esc(t.p)+'</p>'}).join("");
+    c.innerHTML='<div class="bt">'+esc(b.title)+'</div><div class="bd">'+esc(b.desc)+'</div>'+
+      '<div class="brief-doc"><div class="stamp">Draft · illustrative</div>'+teaser+'<div class="fade"></div></div>'+
+      '<button class="openbrief">Open the full memo →</button>';
+    $(".openbrief",c).addEventListener("click",openArtifact);
+    return wrap;
+  }
+
+  /* ── Chart (inline SVG, no library) ── */
+  function blockChart(b){
+    var wrap=document.createElement("div"); wrap.className="b";
+    var c=document.createElement("div"); c.className="card"; wrap.appendChild(c);
+    var W=520,H=190,padL=8,padR=8,padT=14,padB=22;
+    var n=b.xlabels.length;
+    var xat=function(i){ return padL + (n<=1?0:i/(n-1))*(W-padL-padR); };
+    var yat=function(v){ return padT + (1-(v-b.ymin)/(b.ymax-b.ymin))*(H-padT-padB); };
+    var svg='<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="'+esc(b.title)+' chart">';
+    // gridlines (3)
+    for(var gi=0;gi<=2;gi++){ var gy=padT+gi/2*(H-padT-padB); svg+='<line class="gl" x1="0" y1="'+gy.toFixed(1)+'" x2="'+W+'" y2="'+gy.toFixed(1)+'"/>'; }
+    // x labels
+    for(var xi=0;xi<n;xi++){ svg+='<text class="axl" x="'+xat(xi).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(b.xlabels[xi])+'</text>'; }
+    // series
+    b.series.forEach(function(s,si){
+      if(b.bars){
+        var bw=(W-padL-padR)/n*0.42;
+        s.points.forEach(function(v,i){
+          var x=xat(i), y=yat(v), h=(H-padB)-y;
+          svg+='<rect class="cbar" data-h="'+h.toFixed(1)+'" x="'+(x-bw/2).toFixed(1)+'" y="'+(H-padB).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="0" rx="4" fill="'+s.color+'"/>';
+          svg+='<text class="axl" x="'+x.toFixed(1)+'" y="'+(y-6).toFixed(1)+'" text-anchor="middle" fill="'+s.color+'" style="font-weight:600">'+v+'</text>';
+        });
+      } else {
+        var d="";
+        s.points.forEach(function(v,i){ d+=(i?" L":"M")+xat(i).toFixed(1)+","+yat(v).toFixed(1); });
+        if(s.area){
+          var af=d+" L"+xat(n-1).toFixed(1)+","+(H-padB)+" L"+xat(0).toFixed(1)+","+(H-padB)+" Z";
+          svg+='<defs><linearGradient id="ag'+si+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+s.color+'" stop-opacity=".22"/><stop offset="1" stop-color="'+s.color+'" stop-opacity="0"/></linearGradient></defs>';
+          svg+='<path class="carea" d="'+af+'" fill="url(#ag'+si+')" opacity="0"/>';
+        }
+        svg+='<path class="cline" pathLength="1" d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"'+(s.dash?' stroke-dasharray="5 5"':'')+' style="stroke-dashoffset:1;stroke-dasharray:1"/>';
+        var lx=xat(n-1), ly=yat(s.points[n-1]);
+        svg+='<circle class="cpt" cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="4" fill="'+s.color+'" stroke="#fff" stroke-width="2" opacity="0"/>';
+      }
+    });
+    svg+='</svg>';
+    var legend="";
+    if(b.series.length>1 || !b.bars){
+      legend='<div class="legend">'+b.series.map(function(s){return '<span class="'+(s.dash?"dash":"")+'" style="--lg:'+s.color+'">'+esc(s.name)+'</span>'}).join("")+'</div>';
+    }
+    c.innerHTML='<div class="cardt">'+esc(b.title)+'<span class="q">'+esc(b.q||"")+'</span></div>'+svg+legend;
+    return wrap;
+  }
+
+  /* ── Per-block entrance animations ── */
+  function animateBlock(el,b){
+    if(b.t==="kpis"){
+      Array.prototype.forEach.call(el.querySelectorAll(".kpi"),function(c){ if(c._spec) countUp($(".num",c),c._spec); });
+    }
+    if(b.t==="list"){
+      var card=$(".card",el);
+      if(card._total) countUp($(".tnum",el),card._total);
+      var anums=el.querySelectorAll(".anum");
+      card._amts.forEach(function(sp,i){ if(anums[i]) countUp(anums[i],sp); });
+      Array.prototype.forEach.call(el.querySelectorAll(".lbar i"),function(bar){
+        var w=bar.getAttribute("data-bar"); setTimeout(function(){ bar.style.width=w+"%"; }, RM?0:120);
+      });
+    }
+    if(b.t==="chart"){
+      // draw lines
+      Array.prototype.forEach.call(el.querySelectorAll(".cline"),function(p){
+        if(RM){ p.style.strokeDashoffset="0"; if(p.getAttribute("stroke-dasharray")==="5 5") p.style.strokeDasharray="5 5"; return; }
+        p.style.transition="stroke-dashoffset 1s var(--ease)";
+        // preserve dashed style visually after draw
+        requestAnimationFrame(function(){ p.style.strokeDashoffset="0"; });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll(".carea"),function(a){ setTimeout(function(){a.style.transition="opacity .6s ease";a.style.opacity="1"},RM?0:400); });
+      Array.prototype.forEach.call(el.querySelectorAll(".cpt"),function(pt){ setTimeout(function(){pt.style.transition="opacity .4s ease";pt.style.opacity="1"},RM?0:900); });
+      // bars
+      Array.prototype.forEach.call(el.querySelectorAll(".cbar"),function(r){
+        var h=parseFloat(r.getAttribute("data-h"));var y0=parseFloat(r.getAttribute("y"));
+        if(RM){ r.setAttribute("height",h); r.setAttribute("y",(y0-h)); return; }
+        r.style.transition="all .8s var(--ease)";
+        requestAnimationFrame(function(){ r.setAttribute("height",h); r.setAttribute("y",(y0-h)); });
+      });
+    }
+  }
+
+  /* ── Artifact ── */
+  function openArtifact(){
+    if(!memoBody.innerHTML.trim()){
+      var h='<div class="memo"><div class="mh"><div class="mt">'+esc(MEMO.title)+'</div><div class="meta">'+MEMO.meta.map(esc).join("<br>")+'</div></div>';
+      MEMO.sections.forEach(function(s){ h+='<h4><span>'+esc(s.n)+'</span>'+esc(s.h)+'</h4><p>'+s.p+'</p>'; });
+      h+='<div class="mfoot">'+esc(MEMO.foot)+'</div></div>';
+      memoBody.innerHTML=h;
+    }
+    scrim.classList.add("open"); artifact.classList.add("open"); artifact.setAttribute("aria-hidden","false");
+  }
+  function closeArtifact(){ scrim.classList.remove("open"); artifact.classList.remove("open"); artifact.setAttribute("aria-hidden","true"); }
+  scrim.addEventListener("click",closeArtifact);
+  $("#closeArtifact").addEventListener("click",closeArtifact);
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeArtifact(); });
+  $("#copyMemo").addEventListener("click",function(){
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(MEMO.plain).then(function(){toast("Memo copied to clipboard")},function(){toast("Copy unavailable in this browser")}); }
+    else toast("Copy unavailable in this browser");
+  });
+
+  /* ── Composer ── */
+  composer.addEventListener("submit",function(e){
+    e.preventDefault();
+    if(busy) return;
+    var q=input.value.trim(); if(!q) return;
+    input.value="";
+    var key=matchScenario(q);
+    if(key){ run(key); return; }
+    // graceful fallback
+    busy=true; setChips(false);
+    addUser(q); addThinking();
+    setTimeout(function(){
+      streamReply("In the live product I'd pull that from your ministry's data in real time. For this prototype I've prepared four briefings — try one of the **suggested** prompts, or ask about the economy, VAT, revenue leakage, or growth.", function(){ busy=false; setChips(true); });
+    },600);
+  });
+  function matchScenario(q){
+    var s=q.toLowerCase();
+    for(var i=0;i<["economy","policy","leakage","growth"].length;i++){
+      var k=["economy","policy","leakage","growth"][i];
+      var m=SCENARIOS[k].match;
+      for(var j=0;j<m.length;j++){ if(s.indexOf(m[j])!==-1) return k; }
+    }
+    return null;
+  }
+
+  /* ── Initial state: greet + preload Economy Pulse ── */
+  (function init(){
+    var greet=document.createElement("div"); greet.className="msg bot";
+    greet.innerHTML='<div class="bh"><i></i>Roxan</div><div class="bt">Good morning, Minister. I\'ve pulled your <b>Q2 pulse</b> — growth\'s holding, but the deficit needs a decision. Ask me anything, or start with a briefing below.</div>';
+    stream.appendChild(greet);
+    renderCanvas(SCENARIOS.economy);
+    input.focus({preventScroll:true});
+  })();
+
+})();
+</script>
+</body>
+</html>
