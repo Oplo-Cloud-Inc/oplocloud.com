@@ -40,6 +40,13 @@
   var ACCOUNTS_URL = "/oplo-accounts/demo/";
   var HOME_URL = "/";
 
+  // The one nav, shown identically on every Oplo marketing view.
+  var NAV_LINKS = [
+    { label: "Products", href: "/productivity/" },
+    { label: "Roxan",    href: "/roxan/" },
+    { label: "OEdu",     href: "/oedu/" }
+  ];
+
   /* -------------------------------------------------- Small helpers */
   function el(tag, cls, html) {
     var n = document.createElement(tag);
@@ -256,40 +263,89 @@
     }
   }
 
-  function mount() {
-    injectCSS();
-    var session = readSession();
-
-    cluster = el("div", "oplo-cluster oplo-scope");
-
-    var waffleBtn = el("button", "oplo-iconbtn");
-    waffleBtn.type = "button";
-    waffleBtn.setAttribute("aria-label", "Oplo apps");
-    waffleBtn.setAttribute("aria-haspopup", "dialog");
-    waffleBtn.setAttribute("aria-expanded", "false");
-    waffleBtn.innerHTML = WAFFLE;
-
+  function accountChip(session) {
     var chip = el("button", "oplo-chip");
     chip.type = "button";
     chip.setAttribute("aria-label", session ? ("Oplo account — " + session.name) : "Sign in to Oplo");
     chip.setAttribute("aria-haspopup", "dialog");
     chip.setAttribute("aria-expanded", "false");
     chip.innerHTML = '<span class="oplo-avatar">' + safeAvatar(session) + "</span>";
+    return chip;
+  }
 
+  // The unified top nav — one source, rendered on every marketing view.
+  function buildNav(session, accountPop, scrim) {
+    var nav = el("nav", "onav oplo-scope");
+    nav.setAttribute("aria-label", "Oplo");
+
+    var inner = el("div", "onav-in");
+
+    var brand = el("a", "onav-brand");
+    brand.href = HOME_URL;
+    brand.innerHTML = '<span class="onav-dot" aria-hidden="true"></span>Oplo';
+
+    var links = el("ul", "onav-links");
+    NAV_LINKS.forEach(function (l) {
+      var li = el("li");
+      var a = el("a"); a.href = l.href; a.textContent = l.label;
+      li.appendChild(a); links.appendChild(li);
+    });
+
+    var actions = el("div", "onav-actions");
+    var chip = accountChip(session);
+    actions.appendChild(chip);
+
+    var toggle = el("button", "onav-toggle");
+    toggle.type = "button";
+    toggle.setAttribute("aria-label", "Menu");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.innerHTML = "<span></span><span></span><span></span>";
+
+    inner.appendChild(brand);
+    inner.appendChild(links);
+    inner.appendChild(actions);
+    inner.appendChild(toggle);
+    nav.appendChild(inner);
+    document.body.insertBefore(nav, document.body.firstChild);
+
+    controllers.push(makeController(chip, accountPop, scrim));
+
+    var onScroll = function () { nav.classList.toggle("scrolled", window.scrollY > 8); };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    function closeDrawer() {
+      links.classList.remove("onav-open");
+      toggle.classList.remove("on");
+      toggle.setAttribute("aria-expanded", "false");
+    }
+    toggle.addEventListener("click", function () {
+      var open = links.classList.toggle("onav-open");
+      toggle.classList.toggle("on", open);
+      toggle.setAttribute("aria-expanded", String(open));
+    });
+    links.addEventListener("click", function (e) { if (e.target.closest("a")) closeDrawer(); });
+    window.addEventListener("resize", closeDrawer, { passive: true });
+  }
+
+  // Legacy cluster (waffle + chip) for the OEdu app, which carries its own bar.
+  function mountCluster(session, accountPop, scrim) {
+    cluster = el("div", "oplo-cluster oplo-scope");
+    var waffleBtn = el("button", "oplo-iconbtn");
+    waffleBtn.type = "button";
+    waffleBtn.setAttribute("aria-label", "Oplo apps");
+    waffleBtn.setAttribute("aria-haspopup", "dialog");
+    waffleBtn.setAttribute("aria-expanded", "false");
+    waffleBtn.innerHTML = WAFFLE;
+    var chip = accountChip(session);
     cluster.appendChild(waffleBtn);
     cluster.appendChild(chip);
 
-    var scrim = el("div", "oplo-scrim oplo-scope");
-    document.body.appendChild(scrim);
-
     var launcher = buildLauncher();
-    var account = buildAccount(session);
     controllers.push(makeController(waffleBtn, launcher, scrim));
-    controllers.push(makeController(chip, account, scrim));
+    controllers.push(makeController(chip, accountPop, scrim));
 
     ensureMounted();
-
-    // Keep the cluster attached to the right host as apps re-render the page.
     var pending = false;
     var mo = new MutationObserver(function () {
       if (pending) return;
@@ -297,6 +353,22 @@
       requestAnimationFrame(function () { pending = false; ensureMounted(); });
     });
     mo.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function mount() {
+    injectCSS();
+    var session = readSession();
+
+    var scrim = el("div", "oplo-scrim oplo-scope");
+    document.body.appendChild(scrim);
+    var account = buildAccount(session);
+
+    if (document.documentElement.getAttribute("data-oplo-nav") === "off") {
+      mountCluster(session, account, scrim);
+    } else {
+      document.documentElement.classList.add("oplo-navmode");
+      buildNav(session, account, scrim);
+    }
   }
 
   if (document.readyState === "loading") {

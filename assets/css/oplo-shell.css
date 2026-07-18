@@ -103,6 +103,86 @@
 }
 .oplo-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
+/* ------------------------------------------------ Unified top nav
+   Rendered by oplo-shell.js on every marketing view, so the bar is identical
+   everywhere. Light by default; inverts on [data-oplo-theme="dark"] pages. */
+
+/* Retire each page's own top nav once the unified one is active. */
+html.oplo-navmode nav:not(.onav) { display: none !important; }
+
+.onav {
+  position: fixed; inset: 0 0 auto 0;
+  z-index: 2147481000;
+  border-bottom: 1px solid transparent;
+  transition: background .4s var(--oplo-ease), border-color .4s var(--oplo-ease);
+}
+.onav.scrolled {
+  background: rgba(252, 252, 253, 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom-color: var(--oplo-hairline);
+}
+.onav-in {
+  max-width: 1180px; margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 44px);
+  height: 62px; display: flex; align-items: center; gap: 22px;
+}
+.onav-brand {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--oplo-font-display);
+  font-weight: 700; font-size: 20px; letter-spacing: -0.03em;
+  color: var(--oplo-ink); text-decoration: none;
+}
+.onav-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--oplo-opal);
+  box-shadow: inset 0 0 0 1px rgba(11, 12, 15, 0.08);
+  flex: none; animation: onav-spin 24s linear infinite;
+}
+@keyframes onav-spin { to { transform: rotate(360deg); } }
+.onav-links {
+  display: flex; align-items: center; gap: 28px;
+  margin: 0 0 0 auto; padding: 0; list-style: none;
+}
+.onav-links a {
+  font-size: 14px; font-weight: 500; color: var(--oplo-slate);
+  text-decoration: none; transition: color .2s;
+}
+.onav-links a:hover { color: var(--oplo-ink); }
+.onav-actions { display: inline-flex; align-items: center; }
+.onav-toggle {
+  display: none; flex-direction: column; gap: 4px;
+  background: none; border: none; cursor: pointer; padding: 8px;
+}
+.onav-toggle span { width: 20px; height: 2px; background: var(--oplo-ink); border-radius: 2px; transition: transform .3s var(--oplo-ease), opacity .2s; }
+.onav-toggle.on span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.onav-toggle.on span:nth-child(2) { opacity: 0; }
+.onav-toggle.on span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* dark pages */
+[data-oplo-theme="dark"] .onav.scrolled { background: rgba(10, 11, 15, 0.66); border-bottom-color: rgba(255, 255, 255, 0.09); }
+[data-oplo-theme="dark"] .onav-brand { color: #F4F5FA; }
+[data-oplo-theme="dark"] .onav-links a { color: #9195A6; }
+[data-oplo-theme="dark"] .onav-links a:hover { color: #F4F5FA; }
+[data-oplo-theme="dark"] .onav-toggle span { background: #F4F5FA; }
+
+/* mobile drawer */
+@media (max-width: 720px) {
+  .onav-links { display: none; }
+  .onav-links.onav-open {
+    display: flex; position: fixed; inset: 62px 0 auto 0;
+    flex-direction: column; align-items: stretch; gap: 2px;
+    padding: 14px clamp(20px, 4vw, 44px) 22px;
+    background: rgba(252, 252, 253, 0.98);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--oplo-hairline);
+  }
+  .onav-links.onav-open a { font-size: 16px; padding: 10px 0; }
+  [data-oplo-theme="dark"] .onav-links.onav-open { background: rgba(10, 11, 15, 0.98); border-bottom-color: rgba(255, 255, 255, 0.09); }
+  .onav-actions { margin-left: auto; }
+  .onav-toggle { display: flex; }
+}
+
 /* ------------------------------------------------ Popovers (shared) */
 .oplo-pop {
   position: fixed;
