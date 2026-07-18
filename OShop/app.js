@@ -237,8 +237,13 @@ function pimg(p, cls=''){
   return `<div class="pimg ${cls}">${badge}${inner}</div>`;
 }
 function productCard(p){
-  return `<a class="card" href="#/product/${p.sku}">
-    ${pimg(p)}
+  return `<div class="card">
+    <div class="pimg">
+      ${p.discount?`<span class="badge-discount">-${p.discount}%</span>`:''}
+      ${p.image?`<img src="assets/${p.image}.jpg" alt="${esc(p.name)}" loading="lazy">`:prodIcon(p.symbol)}
+      <button class="quick-add" data-add="${p.sku}" aria-label="Add ${esc(p.name)} to cart">${icon('cart')} Add to Cart</button>
+    </div>
+    <a class="tile-link" href="#/product/${p.sku}" aria-label="${esc(p.name)}"></a>
     <button class="fav${isSaved(p.sku)?' on':''}" data-fav="${p.sku}" aria-label="Save ${esc(p.name)}">${icon('heart')}</button>
     <div class="card-info">
       <span class="brand">${esc(p.brand)}</span>
@@ -247,7 +252,7 @@ function productCard(p){
       ${priceHTML(p)}
       <span class="badge-express" style="align-self:flex-start;margin-top:4px">${icon('bolt')}EXPRESS</span>
     </div>
-  </a>`;
+  </div>`;
 }
 function sectionHead(title, sub, seeAllHref){
   return `<div class="section-head">
@@ -421,16 +426,41 @@ const BROWSE_LISTS = {
   toprated:['Top rated', ()=>TOP_RATED],
   all:['Everything', ()=>PRODUCTS],
 };
+let browseSort = 'featured';
+let currentList = [];
+const SORT_OPTS = [['featured','Featured'],['price-asc','Price: Low to High'],['price-desc','Price: High to Low'],['rating','Top rated'],['reviews','Most reviewed']];
+function applySort(list){
+  const l = [...list];
+  switch(browseSort){
+    case 'price-asc':  return l.sort((a,b)=>a.price-b.price);
+    case 'price-desc': return l.sort((a,b)=>b.price-a.price);
+    case 'rating':     return l.sort((a,b)=>b.rating-a.rating);
+    case 'reviews':    return l.sort((a,b)=>b.ratingCount-a.ratingCount);
+    default:           return l;
+  }
+}
+function sortBar(count){
+  return `<div class="sort-bar">
+    <span class="sort-count">${count} item${count===1?'':'s'}</span>
+    <label class="sort-ctl">Sort by
+      <select data-sort>${SORT_OPTS.map(o=>`<option value="${o[0]}"${browseSort===o[0]?' selected':''}>${o[1]}</option>`).join('')}</select>
+    </label>
+  </div>`;
+}
+function productGrid(list){ return `<div class="pgrid" id="browseGrid">${applySort(list).map(productCard).join('')}</div>`; }
+
 function screenBrowse(key){
   let title, list;
   if(BROWSE_LISTS[key]){ title = BROWSE_LISTS[key][0]; list = BROWSE_LISTS[key][1](); }
   else { const c = category(key); title = c.name; list = productsIn(key); }
+  browseSort = 'featured'; currentList = list;
   return `<div class="page view-enter">
     <div class="page-head">
       <a class="back-btn" href="#/" aria-label="Back">${icon('chevron-left')}</a>
-      <div><div class="page-title">${title}</div><div class="page-sub">${list.length} item${list.length===1?'':'s'}</div></div>
+      <div><div class="page-title">${title}</div></div>
     </div>
-    <div class="pgrid" style="margin-top:8px">${list.map(productCard).join('')}</div>
+    ${sortBar(list.length)}
+    ${productGrid(list)}
   </div>`;
 }
 
@@ -448,15 +478,16 @@ function screenCategories(){
 }
 
 /* ---- Product detail ---- */
-let pdColor = 0;
+let pdColor = 0, pdQty = 1;
 function screenProduct(sku){
   const p = BY_SKU[sku];
   if(!p) return notFound();
   recordView(sku);
-  pdColor = 0;
+  pdColor = 0; pdQty = 1;
   const reviews = p.name.toLowerCase().includes('air buds') ? EARBUD_REVIEWS : GENERIC_REVIEWS;
   const seller = SELLERS[p.brand];
   const ship = new Date(Date.now()+86400*1000*2).toLocaleDateString('en-US',{month:'long',day:'numeric'});
+  const arrives = new Date(Date.now()+86400*1000*2).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   const related = productsIn(p.category).filter(x=>x.sku!==sku).slice(0,8);
   const two = p.highlights.slice(0,2);
   const praise = two.length===0 ? 'the overall quality and value' : two.length===1 ? two[0] : `${two[0]} and ${two[1]}`;
@@ -487,7 +518,20 @@ function screenProduct(sku){
 
         <div class="pd-price-row">
           ${priceHTML(p,'lg')}
-          <button class="btn btn-pill" data-add="${sku}" data-usecolor="1">${icon('cart')} Add to Cart</button>
+          <div class="pd-actions">
+            <span class="qty pd-qty">
+              <button data-pdqty="dec" disabled aria-label="Decrease quantity">${icon('minus')}</button>
+              <span class="n" id="pdQtyN">1</span>
+              <button data-pdqty="inc" aria-label="Increase quantity">${icon('plus')}</button>
+            </span>
+            <button class="btn btn-pill" data-add="${sku}" data-usecolor="1">${icon('cart')} Add to Cart</button>
+          </div>
+        </div>
+
+        <div class="pd-trust">
+          <div class="pd-trust-row">${icon('box')}<span>Free delivery. <b>Arrives ${arrives}</b></span></div>
+          <div class="pd-trust-row">${icon('return')}<span>Free 30-day returns</span></div>
+          <div class="pd-trust-row">${icon('shield')}<span>Secure checkout · protected payment</span></div>
         </div>
 
         <div class="pd-info-row">
@@ -756,7 +800,8 @@ function searchResults(q){
   }
   const res = PRODUCTS.filter(p => (p.name+' '+p.brand+' '+category(p.category).name+' '+p.highlights.join(' ')).toLowerCase().includes(q));
   if(!res.length) return `<div class="empty"><div class="e-ic">${icon('search')}</div><h3>No results for “${esc(q)}”</h3><p>Try another term or browse the categories.</p></div>`;
-  return `<div class="page-sub" style="margin:4px 0 12px">${res.length} result${res.length===1?'':'s'}</div><div class="pgrid">${res.map(productCard).join('')}</div>`;
+  currentList = res;
+  return `${sortBar(res.length)}${productGrid(res)}`;
 }
 
 /* ---- Saved ---- */
@@ -862,11 +907,17 @@ document.addEventListener('click', e => {
   const add = e.target.closest('[data-add]');
   if(add){ e.preventDefault();
     const sku = add.dataset.add;
-    let color = null;
-    if(add.dataset.usecolor){ const p=BY_SKU[sku]; color = p.colorways.length ? p.colorways[pdColor].name : null; }
-    addToCart(sku, color);
+    let color = null, qty = 1;
+    if(add.dataset.usecolor){ const p=BY_SKU[sku]; color = p.colorways.length ? p.colorways[pdColor].name : null; qty = pdQty; }
+    addToCart(sku, color, qty);
     flashAdded(add);
-    toast(`${BY_SKU[sku].name} added to Cart`, 'View Cart', ()=>location.hash='#/cart');
+    toast(`${BY_SKU[sku].name}${qty>1?` (×${qty})`:''} added to Cart`, 'View Cart', ()=>location.hash='#/cart');
+    return; }
+
+  const pq = e.target.closest('[data-pdqty]');
+  if(pq){ pdQty = Math.max(1, Math.min(20, pdQty + (pq.dataset.pdqty==='inc'?1:-1)));
+    const n=document.getElementById('pdQtyN'); if(n) n.textContent=pdQty;
+    const dec=document.querySelector('.pd-qty [data-pdqty="dec"]'); if(dec) dec.toggleAttribute('disabled', pdQty<=1);
     return; }
 
   const col = e.target.closest('[data-color]');
@@ -913,6 +964,15 @@ document.addEventListener('click', e => {
 
 document.addEventListener('keydown', e => {
   if(e.key==='Enter' && e.target.id==='promoInput'){ applyPromo(e.target.value); }
+});
+
+document.addEventListener('change', e => {
+  const s = e.target.closest('[data-sort]');
+  if(s){
+    browseSort = s.value;
+    const grid = document.getElementById('browseGrid');
+    if(grid) grid.innerHTML = applySort(currentList).map(productCard).join('');
+  }
 });
 
 /* interaction helpers */
