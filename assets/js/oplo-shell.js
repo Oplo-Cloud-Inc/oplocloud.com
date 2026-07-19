@@ -31,7 +31,9 @@
     { id: "roxan",   name: "Roxan",   href: "/roxan/",   opal: true, dark: true, ready: true,
       glyph: '<path d="M12 3.4c.7 3.9 1.9 5.1 5.8 5.8-3.9.7-5.1 1.9-5.8 5.8-.7-3.9-1.9-5.1-5.8-5.8 3.9-.7 5.1-1.9 5.8-5.8z"/><path d="M18 15.2c.3 1.6.8 2.1 2.4 2.4-1.6.3-2.1.8-2.4 2.4-.3-1.6-.8-2.1-2.4-2.4 1.6-.3 2.1-.8 2.4-2.4z"/>' },
     { id: "oedu",    name: "OEdu",    href: "/oedu/teacher/", c1: "#7EE3C6", c2: "#28B894", ready: true,
-      glyph: '<path d="M12 5l9 4-9 4-9-4z"/><path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/>' }
+      glyph: '<path d="M12 5l9 4-9 4-9-4z"/><path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/>' },
+    { id: "oteams",  name: "OTeams",  href: "/oteams/",  c1: "#8FB4FF", c2: "#C79FF0", ready: true,
+      glyph: '<circle cx="8.5" cy="14" r="3"/><circle cx="16" cy="9.5" r="2.6"/><path d="M11 12.7l2.7-1.6"/>' }
   ];
 
   // Convenience so pages/console can inspect the ecosystem.
