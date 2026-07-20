@@ -164,11 +164,14 @@
   }
 
   /* -------------------------------------------------- Mutable state */
-  var messages, read, starred, collapsed, current, history = [], hIndex = -1;
+  var messages, read, starred, collapsed, pinned, current, history = [], hIndex = -1;
   var memberOpen = false, theme = "light", replyingTo = null, typingTimer = null, typingHideTimer = null;
+  var viewMode = null, editingId = null;
   function freshState(){
     messages = seedMessages();
-    read = {}; starred = {}; collapsed = {};
+    read = {}; starred = {}; collapsed = {}; pinned = {};
+    var lq = messages["launch-q3"] || [], rox = lq.filter(function(x){ return x.user==="roxan"; })[0];
+    if (rox) pinned["launch-q3"] = [rox.id];
   }
   function loadState(){
     freshState();
@@ -181,12 +184,16 @@
         if (d.starred) starred = d.starred;
         if (d.collapsed) collapsed = d.collapsed;
         if (d.presence) U.me.presence = d.presence;
+        if (d.pinned) pinned = d.pinned;
+        if (d.status != null) STATUS.me = d.status;
+        if (d.channels) d.channels.forEach(function(c){ if (!convo(c.id)) CHANNELS.push(c); });
       }
     } catch(e){}
   }
   function save(){
     try { localStorage.setItem(LSKEY, JSON.stringify({
-      messages:messages, read:read, starred:starred, collapsed:collapsed, presence:U.me.presence
+      messages:messages, read:read, starred:starred, collapsed:collapsed, presence:U.me.presence,
+      pinned:pinned, status:STATUS.me, channels:CHANNELS.filter(function(c){ return c.custom; })
     })); } catch(e){}
   }
 
@@ -315,6 +322,16 @@
     return ids.slice(0,4).map(function(id){ return avatar(user(id)); }).join("");
   }
   function renderHeader(){
+    if (viewMode){
+      var vt = { threads:["Threads",'<path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.7L3 21l1.8-5.8A8.5 8.5 0 1 1 21 11.5z"/>'],
+        mentions:["Mentions & reactions",'<circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1"/>'],
+        pinned:["Pinned · "+convoName(convo(current)),'<path d="M9 3h6l-1 7 3 3v2h-4v6l-1 1-1-1v-6H6v-2l3-3z"/>'],
+        activity:["Activity",'<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>'] }[viewMode];
+      $("#chanHead").innerHTML = '<div class="view-title"><svg viewBox="0 0 24 24">'+vt[1]+'</svg>'+esc(vt[0])+'</div>'+
+        '<div class="chan-actions"><button class="ch-btn" data-act="close-view"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>Close</button></div>';
+      document.title = "OTeams · " + vt[0];
+      return;
+    }
     var c = convo(current);
     var title = c.section==="channels"
       ? '<span class="chan-title">'+(c.private?'<svg class="lock" viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>':'<span class="h">#</span>')+esc(c.name)+
@@ -323,10 +340,12 @@
     var topic = c.section==="channels" ? '<div class="chan-topic" data-act="topic">'+esc(c.topic)+'</div>' : '<div class="chan-topic">'+(c.users.length===1?esc(user(c.users[0]).title):"Group message")+'</div>';
     var catchup = '<button class="ch-btn roxan-mini" data-act="catchup" title="Catch me up with Roxan"><svg viewBox="0 0 24 24"><path d="M12 3.4c.7 3.9 1.9 5.1 5.8 5.8-3.9.7-5.1 1.9-5.8 5.8-.7-3.9-1.9-5.1-5.8-5.8 3.9-.7 5.1-1.9 5.8-5.8z"/></svg>Catch me up</button>';
     var hud = '<button class="ch-btn hud" data-act="huddle"><svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></svg>Huddle</button>';
+    var pins = (pinned[c.id]||[]).length;
+    var pinBtn = pins ? '<button class="ch-btn" data-act="open-pinned" title="Pinned messages"><svg viewBox="0 0 24 24"><path d="M9 3h6l-1 7 3 3v2h-4v6l-1 1-1-1v-6H6v-2l3-3z"/></svg>'+pins+'</button>' : "";
     var actions = c.section==="channels"
       ? catchup +
         '<div class="chan-faces" data-act="members" title="Show members">'+headFaces(c)+'<span class="cnt">'+memberCount(c)+'</span></div>'+
-        hud +
+        hud + pinBtn +
         '<button class="ch-btn'+(memberOpen?" on":"")+'" data-act="members" title="Members"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.6c2 .4 3.5 1.8 3.5 4.4"/></svg></button>'
       : catchup + hud;
     $("#chanHead").innerHTML = title + topic + '<div class="chan-actions">'+actions+'</div>';
@@ -384,8 +403,12 @@
     var gutter = compact
       ? '<div class="stamp-mini">'+fmtTime(msg.ts).replace(/ (AM|PM)/,"")+'</div>'
       : '<div class="gutter">'+avatar(u)+'</div>';
-    var content = msg.voice ? voiceHTML(msg) : ('<div class="text">'+md(msg.text)+'</div>');
-    var body = '<div class="content">'+head+ quoteHTML(msg) + content +
+    var isPinned = pinned[current] && pinned[current].indexOf(msg.id)>-1;
+    var pinFlag = isPinned ? '<div class="pin-flag"><svg viewBox="0 0 24 24"><path d="M9 3h6l-1 7 3 3v2h-4v6l-1 1-1-1v-6H6v-2l3-3z"/></svg>Pinned</div>' : "";
+    var content;
+    if (editingId===msg.id && msg.user==="me" && !msg.voice) content = editBoxHTML(msg);
+    else content = msg.voice ? voiceHTML(msg) : ('<div class="text">'+md(msg.text)+(msg.edited?'<span class="edited">(edited)</span>':"")+'</div>');
+    var body = '<div class="content">'+head+ pinFlag + quoteHTML(msg) + content +
       (msg.file?fileHTML(msg.file):"")+ reactionsHTML(msg) + threadLinkHTML(msg) + '</div>';
     var tools = '<div class="msg-tools">'+
       '<button data-act="react-quick" data-msg="'+msg.id+'" data-em="👍" title="React"><span class="em">👍</span></button>'+
@@ -411,6 +434,7 @@
       '<div class="meta"><span class="chip">'+memberCount(c)+' members</span><span class="chip">Created by Rhea Patel</span></div></div>';
   }
   function renderMessages(){
+    if (viewMode){ renderView(); return; }
     var c = convo(current), list = messages[current] || [];
     var html = introHTML(c), lastDay = null, prev = null;
     for (var i=0;i<list.length;i++){
@@ -426,6 +450,16 @@
       prev = msg;
     }
     var box = $("#msgs"); box.innerHTML = html; box.scrollTop = box.scrollHeight;
+    if (editingId){
+      var eta = box.querySelector(".edit-ta");
+      if (eta){ eta.style.height="auto"; eta.style.height=eta.scrollHeight+"px"; eta.focus(); eta.selectionStart = eta.value.length;
+        eta.addEventListener("input", function(){ this.style.height="auto"; this.style.height=this.scrollHeight+"px"; });
+        eta.addEventListener("keydown", function(e){
+          if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); saveEdit(editingId, eta.value); }
+          else if (e.key==="Escape"){ e.preventDefault(); editingId=null; renderMessages(); }
+        });
+      }
+    }
   }
 
   /* ==================================================================
@@ -469,11 +503,12 @@
       ta.style.height="auto"; ta.style.height=Math.min(ta.scrollHeight,220)+"px";
       var has = ta.value.trim().length>0; send.classList.toggle("ready", has);
     }
-    ta.addEventListener("input", function(){ sync(); mentionWatch(ta); });
+    ta.addEventListener("input", function(){ sync(); mentionWatch(ta); if (kind==="main") slashWatch(ta); });
     ta.addEventListener("focus", function(){ cx.classList.add("focus"); });
     ta.addEventListener("blur", function(){ cx.classList.remove("focus"); });
     ta.addEventListener("keydown", function(e){
       if (mentionKeydown(e, ta)) return;
+      if (kind==="main" && slashKeydown(e, ta)) return;
       if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); doSend(kind, ta); }
     });
     $(".cx-toolbar", root).addEventListener("click", function(e){
@@ -506,6 +541,11 @@
   }
   function doSend(kind, ta){
     var text = ta.value.trim(); if(!text) return;
+    if (kind==="main" && text.charAt(0)==="/"){
+      ta.value=""; ta.style.height="auto"; closeSlash();
+      var sb=$(".cx-send", ta.closest(".composer")); if(sb) sb.classList.remove("ready");
+      runSlash(text); return;
+    }
     if (kind==="thread"){
       var pm = messages[current] && messages[current].filter(function(x){return x.id===threadMsgId;})[0];
       if (pm){ pm.replies.push({ id:"r"+Date.now(), user:"me", ts:Date.now(), text:text }); save(); renderThread(); renderMessages(); }
@@ -570,6 +610,7 @@
   function openConvo(id, fromHistory){
     if (!convo(id)) return;
     current = id; read[id]=true; replyingTo = null;
+    viewMode = null; editingId = null; $(".main").classList.remove("viewing");
     if (!fromHistory){ history = history.slice(0,hIndex+1); history.push(id); hIndex=history.length-1; }
     closeThread();
     renderSidebar(); renderHeader(); renderMessages(); renderComposer();
@@ -685,8 +726,21 @@
     ].filter(function(a){ return !q || a.label.toLowerCase().indexOf(q)>-1; });
     if (chans.length) groups.push({ label:"Channels", items:chans });
     if (people.length) groups.push({ label:"People & DMs", items:people });
+    if (q.length>=2){
+      var msgs = [];
+      eachMessage(function(mm,c){
+        if (mm.voice) return; var t = mm.text||""; var i = t.toLowerCase().indexOf(q);
+        if (i>-1) msgs.push({ type:"msg", conv:c.id, msgid:mm.id, label:user(mm.user).name+" · "+convoName(c), av:user(mm.user), subHTML:excerpt(t,i,q.length) });
+      });
+      if (msgs.length) groups.push({ label:"Messages", items:msgs.slice(0,6) });
+    }
     if (actions.length) groups.push({ label:"Actions", items:actions });
     return groups;
+  }
+  function excerpt(t, i, len){
+    var start = Math.max(0, i-22);
+    var pre = (start>0?"…":"") + t.slice(start, i), mid = t.slice(i, i+len), post = t.slice(i+len, i+len+42) + (i+len+42<t.length?"…":"");
+    return esc(pre.replace(/\n/g," ")) + "<em>" + esc(mid) + "</em>" + esc(post.replace(/\n/g," "));
   }
   function openPalette(){
     pal.open=true; pal.sel=0; $("#paletteScrim").hidden=false;
@@ -701,8 +755,9 @@
         var idx=flat.length; flat.push(it);
         var pic = it.av ? '<span class="pic av '+it.av.av+'">'+esc(it.av.initials)+'</span>'
           : '<span class="pic">'+palIcon(it.icon)+'</span>';
+        var subhtml = it.subHTML ? it.subHTML : (it.sub ? esc(it.sub) : "");
         html += '<div class="pal-item'+(idx===pal.sel?" sel":"")+'" data-i="'+idx+'">'+pic+
-          '<span class="pt"><b>'+esc(it.label)+'</b>'+(it.sub?'<span>'+esc(it.sub)+'</span>':"")+'</span>'+
+          '<span class="pt"><b>'+esc(it.label)+'</b>'+(subhtml?'<span>'+subhtml+'</span>':"")+'</span>'+
           (it.k?'<kbd>'+it.k+'</kbd>':"")+'</div>';
       });
     });
@@ -721,9 +776,10 @@
   }
   function palActivate(it){
     if(!it) return;
-    if (it.type==="channel"||it.type==="dm"){ closePalette(); openConvo(it.id); return; }
+    if (it.type==="channel"||it.type==="dm"){ closePalette(); if(viewMode) closeView(); openConvo(it.id); return; }
+    if (it.type==="msg"){ closePalette(); if(viewMode) closeView(); openConvo(it.conv); setTimeout(function(){ scrollToMsg(it.msgid); }, 70); return; }
     closePalette();
-    if (it.id==="a-threads") toast("Threads view is a demo stub","🧵");
+    if (it.id==="a-threads") openView("threads");
     else if (it.id==="a-away"){ U.me.presence=U.me.presence==="active"?"away":"active"; save(); renderRail(); toast("You're now "+U.me.presence, U.me.presence==="active"?"🟢":"🌙"); }
     else if (it.id==="a-shortcuts") openShortcuts();
     else if (it.id==="a-site") location.href="/oteams/";
@@ -789,11 +845,14 @@
      ================================================================== */
   function onDocClick(e){
     var hr = e.target.closest("[data-hreact]"); if (hr){ floatReaction(hr.getAttribute("data-hreact")); return; }
+    var mm = e.target.closest("[data-mm]"); if (mm){ msgAction(mm.getAttribute("data-mm"), mm.getAttribute("data-msg")); return; }
     var a = e.target.closest("[data-act]");
     // close transient popovers when clicking outside them
     if (!e.target.closest(".emoji-pop") && !e.target.closest(".mention-pop") && !(a&&/react-open|react-quick|emoji/.test(a.getAttribute("data-act")||""))) closePops();
     if (!e.target.closest(".pop") && !e.target.closest("#wsMenu") && !e.target.closest("#railMe") && !e.target.closest("#tbAvatar")) closeMenus();
     if (!e.target.closest(".assist-pop") && !e.target.closest('[data-cbtn="roxan"]')) closeAssist();
+    if (!e.target.closest(".msg-menu") && !(a&&a.getAttribute("data-act")==="msg-more")) closeMsgMenu();
+    if (!e.target.closest(".slash-pop") && !e.target.closest(".cx-input")) closeSlash();
     if (!a) return;
     var act = a.getAttribute("data-act");
     switch(act){
@@ -807,7 +866,21 @@
       case "react-quick": { var msg=findMsg(a.getAttribute("data-msg")); if(msg){ toggleReaction(msg.id, a.getAttribute("data-em")); } break; }
       case "react-open": { var mid=a.getAttribute("data-msg"); openEmojiPop(a, function(em){ toggleReaction(mid, em); }); break; }
       case "thread": openThread(a.getAttribute("data-msg")); break;
-      case "msg-more": toast("Message actions: pin, copy link, forward…","•••"); break;
+      case "msg-more": openMsgMenu(a, a.getAttribute("data-msg")); break;
+      case "open-pinned": openView("pinned"); break;
+      case "close-view": closeView(); break;
+      case "view-open": {
+        var conv=a.getAttribute("data-conv"), mid=a.getAttribute("data-msg"), knd=a.getAttribute("data-kind");
+        closeView(); openConvo(conv);
+        if (knd==="thread") setTimeout(function(){ openThread(mid); }, 60); else setTimeout(function(){ scrollToMsg(mid); }, 70);
+        break;
+      }
+      case "edit-save": { var box=a.closest(".edit-box"); saveEdit(a.getAttribute("data-msg"), box?box.querySelector(".edit-ta").value:""); break; }
+      case "edit-cancel": editingId=null; renderMessages(); break;
+      case "close-mini": closeMini(); break;
+      case "save-status": saveStatus(); break;
+      case "status-preset": applyStatusPreset(a.getAttribute("data-preset")); break;
+      case "create-channel": createChannel(); break;
       case "star": { var cc=convo(current); starred[cc.id]=!starred[cc.id]; save(); renderHeader(); toast(starred[cc.id]?"Added to starred":"Removed from starred", starred[cc.id]?"⭐":"☆"); break; }
       case "huddle": huddleFromChannel(); break;
       case "voice": joinVoice(a.getAttribute("data-id")); break;
@@ -828,11 +901,12 @@
       case "menu-invite": toast("Invite flow — demo stub","✉️"); closeMenus(); break;
       case "menu-prefs": openShortcuts(); closeMenus(); break;
       case "menu-admin": toast("Admin console — demo stub","🛡️"); closeMenus(); break;
-      case "menu-status": toast("Set a status — demo stub","💬"); closeMenus(); break;
+      case "menu-status": openStatus(); break;
       case "menu-profile": toast("Your profile — demo stub","👤"); closeMenus(); break;
       default:
         if (/^huddle-/.test(act)) huddleControl(act);
-        else if (/^add-/.test(act)) toast("Create "+(act==="add-channels"?"a channel":act==="add-dms"?"a direct message":act==="add-voice"?"a voice channel":"an app")+" — demo stub","＋");
+        else if (act==="add-channels") openCreateChannel();
+        else if (/^add-/.test(act)) toast("Create "+(act==="add-dms"?"a direct message":act==="add-voice"?"a voice channel":"an app")+" — demo stub","＋");
     }
   }
   function user2ws(id){ var w=WORKSPACES.filter(function(x){return x.id===id;})[0]; return w?w.name:"That workspace"; }
@@ -843,13 +917,18 @@
     if (meta && e.key==="/"){ e.preventDefault(); openShortcuts(); return; }
     if (e.key==="Escape"){
       if (assistPop){ closeAssist(); return; }
+      if (msgMenu){ closeMsgMenu(); return; }
+      if (slashState){ closeSlash(); return; }
       if (emojiPop||mentionPop){ closePops(); return; }
+      if (miniEl){ closeMini(); return; }
       if (!$("#wsPop").hidden||!$("#mePop").hidden){ closeMenus(); return; }
       if (!$("#shortcutsScrim").hidden){ $("#shortcutsScrim").hidden=true; return; }
       if (pal.open){ closePalette(); return; }
       if (!$("#huddleStage").hidden){ minimizeHuddle(); return; }
+      if (editingId){ editingId=null; renderMessages(); return; }
       if (replyingTo){ clearReply(); return; }
       if (!$("#threadPane").hidden){ closeThread(); return; }
+      if (viewMode){ closeView(); return; }
       closeMobileNav();
       return;
     }
@@ -878,7 +957,7 @@
     $("#tbHelp").addEventListener("click", openShortcuts);
     $("#themeToggle").addEventListener("click", toggleTheme);
     $("#threadSummarize").addEventListener("click", summarizeThread);
-    $("#tbNotif").addEventListener("click", function(){ toast("You're all caught up","🎉"); });
+    $("#tbNotif").addEventListener("click", function(){ openView("activity"); });
     $("#railAdd").addEventListener("click", function(){ toast("Add a workspace — demo stub","＋"); });
     $("#composeNew").addEventListener("click", function(){ openPalette(); });
     $("#navBack").addEventListener("click", navBack);
@@ -886,7 +965,7 @@
     $("#menuBtn").addEventListener("click", function(){ document.getElementById("app").classList.toggle("nav-open"); });
     $("#mobileScrim").addEventListener("click", closeMobileNav);
     $("#sbFoot").addEventListener("click", function(){ toast("Enterprise Key Management · SOC 2 · GDPR · HIPAA-ready","🔒"); });
-    document.querySelector(".sb-quick").addEventListener("click", function(e){ var b=e.target.closest(".q-item"); if(b) toast(b.textContent.trim()+" — demo stub","🔎"); });
+    document.querySelector(".sb-quick").addEventListener("click", function(e){ var b=e.target.closest(".q-item"); if(!b) return; var v=b.getAttribute("data-view"); if(v==="threads") openView("threads"); else if(v==="mentions") openView("mentions"); else toast("Drafts — nothing saved yet","📝"); });
     window.addEventListener("resize", function(){ closePops(); });
   }
 
@@ -1182,6 +1261,200 @@
     else if (act==="huddle-expand"){ openHuddleStage(); }
     else if (act==="huddle-leave"){ leaveHuddle(); }
     else if (act==="huddle-settings"){ toast("Huddle settings — demo stub","⚙️"); }
+  }
+
+  /* ==================================================================
+     Ship-ready: views, message actions, slash, status, create channel
+     ================================================================== */
+  function postMine(text){
+    var id = "u"+Date.now();
+    (messages[current] = messages[current]||[]).push({ id:id, user:"me", ts:Date.now(), text:text, reactions:{}, replies:[], receipt:"sent" });
+    save(); if (!viewMode) renderMessages(); progressReceipt(id);
+  }
+  function eachMessage(cb){ allConvos().forEach(function(c){ (messages[c.id]||[]).forEach(function(mm){ if (!mm.system) cb(mm, c); }); }); }
+  function lastTs(m){ return (m.replies && m.replies.length) ? m.replies[m.replies.length-1].ts : m.ts; }
+  function byRecent(a,b){ return lastTs(b.msg) - lastTs(a.msg); }
+
+  /* ---- Views (Threads / Mentions / Pinned / Activity) ---- */
+  var VIEW_EMPTY = {
+    threads:['<path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.7L3 21l1.8-5.8A8.5 8.5 0 1 1 21 11.5z"/>',"No threads yet","When you reply in a thread, it collects here so you can follow every conversation in one place."],
+    mentions:['<circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1"/>',"No mentions yet","When someone @mentions you or reacts to your message, you'll see it here."],
+    pinned:['<path d="M9 3h6l-1 7 3 3v2h-4v6l-1 1-1-1v-6H6v-2l3-3z"/>',"Nothing pinned here","Hover a message, open ⋯, and pin it to keep what matters one click away."],
+    activity:['<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',"You're all caught up","Mentions, reactions, and replies to you will land here as they happen."]
+  };
+  function threadsData(){ var out=[]; eachMessage(function(mm,c){ if (mm.replies&&mm.replies.length) out.push({msg:mm,conv:c,kind:"thread"}); }); return out.sort(byRecent); }
+  function mentionsData(){ var out=[]; eachMessage(function(mm,c){
+    if (mm.user!=="me" && /@You\b/.test(mm.text||"")) out.push({msg:mm,conv:c,kind:"mention"});
+    else if (mm.user==="me" && Object.keys(mm.reactions||{}).length) out.push({msg:mm,conv:c,kind:"reaction"});
+  }); return out.sort(byRecent); }
+  function activityData(){ var out=mentionsData(); eachMessage(function(mm,c){ if (mm.user==="me" && mm.replies && mm.replies.length) out.push({msg:mm,conv:c,kind:"reply"}); }); return out.sort(byRecent); }
+  function pinnedData(){ var ids=pinned[current]||[], out=[]; (messages[current]||[]).forEach(function(mm){ if (ids.indexOf(mm.id)>-1) out.push({msg:mm,conv:convo(current),kind:"pinned"}); }); return out; }
+  function viewData(){ return viewMode==="threads"?threadsData():viewMode==="mentions"?mentionsData():viewMode==="pinned"?pinnedData():activityData(); }
+  function openView(mode){ viewMode=mode; editingId=null; closeThread(); $(".main").classList.add("viewing"); renderHeader(); renderMessages(); closeMobileNav(); }
+  function closeView(){ viewMode=null; $(".main").classList.remove("viewing"); renderHeader(); renderMessages(); renderComposer(); }
+  function renderView(){
+    var box=$("#msgs"), data=viewData(), e=VIEW_EMPTY[viewMode];
+    if (!data.length){ box.innerHTML='<div class="view-empty"><div class="mesh"><svg viewBox="0 0 24 24">'+e[0]+'</svg></div><h3>'+esc(e[1])+'</h3><p>'+esc(e[2])+'</p></div>'; return; }
+    box.innerHTML='<div class="view-list">'+data.map(actRow).join("")+'</div>'; box.scrollTop=0;
+  }
+  function actRow(it){
+    var m=it.msg, c=it.conv, u=user(m.user);
+    var verb = it.kind==="thread" ? (m.replies.length+" repl"+(m.replies.length>1?"ies":"y")) :
+      it.kind==="mention" ? "mentioned you" : it.kind==="reaction" ? "reacted to your message" :
+      it.kind==="reply" ? "replied in your thread" : "pinned";
+    var em = it.kind==="reaction" ? '<span class="ar-em">'+(Object.keys(m.reactions)[0]||"👍")+'</span>' : "";
+    var t=lastTs(m), snip = m.voice ? "🎤 Voice message" : (m.text||"");
+    return '<div class="act-row" data-act="view-open" data-conv="'+c.id+'" data-msg="'+m.id+'" data-kind="'+it.kind+'">'+avatar(u)+
+      '<div class="ar-b"><div class="ar-top"><span class="ar-who" style="color:'+roleColor(m.user)+'">'+esc(u.name)+'</span><span class="ar-verb">'+verb+'</span><span class="ar-ch">'+esc(convoName(c))+'</span><span class="ar-time">'+fmtTime(t)+'</span></div>'+
+      '<div class="ar-txt">'+em+mdInline(snip.replace(/\n/g," ").slice(0,150))+'</div></div></div>';
+  }
+
+  /* ---- Message action menu ---- */
+  var msgMenu=null;
+  function openMsgMenu(anchor, msgId){
+    closeMsgMenu();
+    var m=findMsg(msgId); if(!m) return;
+    var mine=m.user==="me", isP=pinned[current]&&pinned[current].indexOf(msgId)>-1;
+    var rows=[
+      {a:"pin", ic:'<path d="M9 3h6l-1 7 3 3v2h-4v6l-1 1-1-1v-6H6v-2l3-3z"/>', label:isP?"Unpin from channel":"Pin to channel"},
+      {a:"quote", ic:'<path d="M10 9V5l-7 7 7 7v-4c5 0 8 1.5 10 5 0-7-3-11-10-11z"/>', label:"Reply"},
+      {a:"copylink", ic:'<path d="M9 15l6-6M10 6l1-1a3.5 3.5 0 0 1 5 5l-1 1M14 18l-1 1a3.5 3.5 0 0 1-5-5l1-1"/>', label:"Copy link", kk:"⌘L"},
+      {a:"forward", ic:'<path d="M14 5l7 7-7 7M21 12H4"/>', label:"Forward"}
+    ];
+    if (mine && !m.voice) rows.push({a:"edit", ic:'<path d="M4 20l1.2-4.2L16 5a2 2 0 0 1 3 3L8.2 18.8z"/>', label:"Edit message"});
+    if (mine){ rows.push({sep:1}); rows.push({a:"delete", ic:'<path d="M5 7h14M9 7V4h6v3M6 7l1 13h10l1-13"/>', label:"Delete message", danger:1}); }
+    var p=document.createElement("div"); p.className="msg-menu";
+    p.innerHTML=rows.map(function(r){ if(r.sep) return '<div class="sep"></div>'; return '<button class="'+(r.danger?"danger":"")+'" data-mm="'+r.a+'" data-msg="'+msgId+'"><svg viewBox="0 0 24 24">'+r.ic+'</svg>'+r.label+(r.kk?'<span class="kk">'+r.kk+'</span>':"")+'</button>'; }).join("");
+    document.body.appendChild(p);
+    var r=anchor.getBoundingClientRect(), top=r.bottom+6, left=Math.min(r.left-160, window.innerWidth-p.offsetWidth-12);
+    if (top+p.offsetHeight>window.innerHeight-10) top=r.top-p.offsetHeight-6;
+    p.style.top=top+"px"; p.style.left=Math.max(12,left)+"px"; msgMenu=p;
+  }
+  function closeMsgMenu(){ if(msgMenu){ msgMenu.remove(); msgMenu=null; } }
+  function msgAction(a, msgId){
+    closeMsgMenu();
+    if (a==="pin") togglePin(msgId);
+    else if (a==="quote") startReply(msgId);
+    else if (a==="copylink"){ copyText(location.origin+"/oteams/app/#"+current+"/"+msgId); toast("Link copied to clipboard","🔗"); }
+    else if (a==="forward") toast("Forwarding — pick a channel (demo)","↪️");
+    else if (a==="edit"){ editingId=msgId; renderMessages(); }
+    else if (a==="delete") deleteMsg(msgId);
+  }
+  function togglePin(msgId){
+    pinned[current]=pinned[current]||[]; var i=pinned[current].indexOf(msgId);
+    if (i>-1){ pinned[current].splice(i,1); toast("Unpinned","📌"); } else { pinned[current].push(msgId); toast("Pinned to channel","📌"); }
+    if (!pinned[current].length) delete pinned[current];
+    save(); renderHeader(); if (viewMode==="pinned") renderView(); else if (!viewMode) renderMessages();
+  }
+  function deleteMsg(msgId){
+    var list=messages[current]||[]; for (var i=0;i<list.length;i++){ if(list[i].id===msgId){ list.splice(i,1); break; } }
+    if (pinned[current]){ var pi=pinned[current].indexOf(msgId); if(pi>-1) pinned[current].splice(pi,1); if(!pinned[current].length) delete pinned[current]; }
+    editingId=null; save(); renderMessages(); renderHeader(); toast("Message deleted","🗑️");
+  }
+  function saveEdit(msgId, text){
+    text=(text||"").trim(); var m=findMsg(msgId); if(!m) return;
+    if (!text){ deleteMsg(msgId); editingId=null; return; }
+    m.text=text; m.edited=true; editingId=null; save(); renderMessages();
+  }
+  function editBoxHTML(m){ return '<div class="edit-box"><textarea class="edit-ta" rows="1">'+esc(m.text)+'</textarea><div class="edit-actions"><button class="save" data-act="edit-save" data-msg="'+m.id+'">Save changes</button><button class="cancel" data-act="edit-cancel">Cancel</button><span class="hint">esc to cancel · ↵ to save</span></div></div>'; }
+  function copyText(t){ try { navigator.clipboard && navigator.clipboard.writeText(t); } catch(e){} }
+
+  /* ---- Slash commands ---- */
+  var SLASH=[
+    {c:"/shrug",  d:"Append ¯\\_(ツ)_/¯"}, {c:"/me", d:"Display an action"},
+    {c:"/status", d:"Set your status"},    {c:"/huddle", d:"Start a huddle"},
+    {c:"/remind", d:"Set a reminder"},      {c:"/gif", d:"Post a GIF"},
+    {c:"/away",   d:"Toggle away / active"},{c:"/pin", d:"Pin the last message"}
+  ];
+  var slashPop=null, slashState=null;
+  function slashWatch(ta){
+    var v=ta.value;
+    if (v.charAt(0)!=="/" || /\s/.test(v)){ closeSlash(); return; }
+    var q=v.toLowerCase(), hits=SLASH.filter(function(s){ return s.c.indexOf(q)===0; });
+    if (!hits.length){ closeSlash(); return; }
+    if (!slashPop){ slashPop=document.createElement("div"); slashPop.className="slash-pop"; document.body.appendChild(slashPop); }
+    slashState={ ta:ta, sel:0, hits:hits }; drawSlash();
+    var r=ta.getBoundingClientRect(); slashPop.style.left=(r.left+12)+"px"; slashPop.style.top=(r.top-slashPop.offsetHeight-6)+"px";
+  }
+  function drawSlash(){
+    if (!slashPop||!slashState) return;
+    slashPop.innerHTML='<div class="sc-h">Commands</div>'+slashState.hits.map(function(s,i){ return '<button class="'+(i===slashState.sel?"sel":"")+'" data-cmd="'+s.c+'"><span class="cmd">'+s.c+'</span><span class="desc">'+esc(s.d)+'</span></button>'; }).join("");
+    Array.prototype.forEach.call(slashPop.querySelectorAll("[data-cmd]"), function(b){ b.addEventListener("mousedown", function(e){ e.preventDefault(); pickSlash(b.getAttribute("data-cmd")); }); });
+  }
+  function pickSlash(cmd){ var ta=slashState?slashState.ta:$("#composerWrap .cx-input"); closeSlash(); if(!ta) return; if(cmd==="/me"||cmd==="/remind"||cmd==="/gif"){ ta.value=cmd+" "; ta.focus(); } else { ta.value=""; runSlash(cmd); } }
+  function slashKeydown(e, ta){
+    if (!slashState) return false;
+    if (e.key==="ArrowDown"){ e.preventDefault(); slashState.sel=(slashState.sel+1)%slashState.hits.length; drawSlash(); return true; }
+    if (e.key==="ArrowUp"){ e.preventDefault(); slashState.sel=(slashState.sel-1+slashState.hits.length)%slashState.hits.length; drawSlash(); return true; }
+    if (e.key==="Tab"){ e.preventDefault(); ta.value=slashState.hits[slashState.sel].c+" "; closeSlash(); return true; }
+    if (e.key==="Escape"){ closeSlash(); return true; }
+    return false;
+  }
+  function closeSlash(){ if(slashPop){ slashPop.remove(); slashPop=null; } slashState=null; }
+  function runSlash(text){
+    var sp=text.indexOf(" "), cmd=(sp>-1?text.slice(0,sp):text).toLowerCase(), rest=sp>-1?text.slice(sp+1).trim():"";
+    switch(cmd){
+      case "/shrug": postMine((rest?rest+" ":"")+"¯\\_(ツ)_/¯"); break;
+      case "/me": if(rest) postMine("_"+rest+"_"); else toast("Add an action after /me","💬"); break;
+      case "/status": openStatus(); break;
+      case "/huddle": huddleFromChannel(); break;
+      case "/remind": toast(rest?("Reminder set: “"+rest+"”"):"Reminder set (demo)","⏰"); break;
+      case "/gif": postMine("🎞️ "+(rest||"gif")); break;
+      case "/away": U.me.presence=U.me.presence==="active"?"away":"active"; save(); renderRail(); if(memberOpen)renderMembers(); toast("You're now "+U.me.presence, U.me.presence==="active"?"🟢":"🌙"); break;
+      case "/pin": { var list=messages[current]||[]; for(var i=list.length-1;i>=0;i--){ if(!list[i].system){ togglePin(list[i].id); break; } } break; }
+      default: toast("Unknown command: "+cmd,"❓");
+    }
+  }
+
+  /* ---- Generic mini modal, custom status, create channel ---- */
+  var miniEl=null;
+  function openMini(title, bodyHTML){
+    closeMini();
+    var s=document.createElement("div"); s.className="modal-scrim"; s.id="miniScrim";
+    s.innerHTML='<div class="modal mini"><header class="modal-head"><b>'+esc(title)+'</b><button class="tb-ico" data-act="close-mini" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header><div class="mm-body">'+bodyHTML+'</div></div>';
+    document.body.appendChild(s);
+    s.addEventListener("mousedown", function(e){ if(e.target===s) closeMini(); });
+    miniEl=s;
+  }
+  function closeMini(){ if(miniEl){ miniEl.remove(); miniEl=null; } }
+  function openStatus(){
+    closeMenus();
+    var cur=STATUS.me||"", mtc=cur.match(/^(\S+)\s+([\s\S]*)$/), em=mtc?mtc[1]:"💬", txt=mtc?mtc[2]:"";
+    var presets=[["🏠","Working remotely"],["📅","In a meeting"],["🎯","Focusing — heads down"],["🌴","On vacation"],["🤒","Out sick"],["☕️","Coffee break"]];
+    var body='<div class="mm-label">Your status</div><div class="status-row"><button class="semoji" id="semoji" type="button">'+em+'</button><input id="statusInput" maxlength="60" placeholder="What\'s your status?" value="'+esc(txt)+'" autocomplete="off"></div>'+
+      '<div class="status-presets">'+presets.map(function(p){ return '<button data-act="status-preset" data-preset="'+p[0]+'|'+esc(p[1])+'"><span style="font-size:17px">'+p[0]+'</span>'+esc(p[1])+'</button>'; }).join("")+
+      (cur?'<button class="clear" data-act="status-preset" data-preset="|"><span style="font-size:17px">✖️</span>Clear status</button>':"")+'</div>'+
+      '<div class="mm-foot"><button class="ghost" data-act="close-mini">Cancel</button><button class="primary" data-act="save-status">Save</button></div>';
+    openMini("Set a status", body);
+    var si=$("#statusInput"); if(si){ si.focus(); si.selectionStart=si.value.length; si.addEventListener("keydown", function(e){ if(e.key==="Enter") saveStatus(); }); }
+    var se=$("#semoji"); if(se) se.addEventListener("click", function(){ openEmojiPop(se, function(x){ se.textContent=x; }); });
+  }
+  function saveStatus(){
+    var si=$("#statusInput"), se=$("#semoji"); if(!si) return;
+    var txt=si.value.trim(); STATUS.me = txt ? (se.textContent+" "+txt) : "";
+    save(); closeMini(); renderRail(); if(memberOpen) renderMembers();
+    toast(STATUS.me?"Status updated":"Status cleared", STATUS.me?"💬":"✖️");
+  }
+  function applyStatusPreset(val){
+    var parts=val.split("|"), em=parts[0], txt=parts[1]||"";
+    var se=$("#semoji"), si=$("#statusInput");
+    if (se && em) se.textContent=em; if (si) si.value=txt;
+    if (!em && !txt) saveStatus();
+  }
+  function slugify(s){ return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,32); }
+  function openCreateChannel(){
+    closeMenus();
+    var body='<div class="mm-label">Channel name</div><div class="mm-field"><span class="h">#</span><input id="chName" maxlength="40" placeholder="new-project" autocomplete="off" spellcheck="false"></div><div class="mm-hint">Channels organize conversations by topic, team, or project. Names are lowercase with dashes.</div><div class="mm-foot"><button class="ghost" data-act="close-mini">Cancel</button><button class="primary" data-act="create-channel">Create channel</button></div>';
+    openMini("Create a channel", body);
+    var i=$("#chName"); if(i){ i.focus(); i.addEventListener("keydown", function(e){ if(e.key==="Enter") createChannel(); }); }
+  }
+  function createChannel(){
+    var i=$("#chName"); if(!i) return; var name=slugify(i.value);
+    if (!name){ toast("Enter a channel name","＃"); return; }
+    if (convo(name)){ closeMini(); openConvo(name); return; }
+    CHANNELS.push({ id:name, name:name, topic:"", section:"channels", custom:true });
+    messages[name]=[{ id:"cs"+Date.now(), system:true, text:"You created this channel · today" }];
+    save(); closeMini(); openConvo(name); toast("Created #"+name,"🎉");
   }
 
   /* ==================================================================
