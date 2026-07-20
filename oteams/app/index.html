@@ -69,6 +69,7 @@
         <kbd>⌘K</kbd>
       </button>
       <div class="tb-right">
+        <button class="tb-ico" id="themeToggle" title="Toggle theme" aria-label="Toggle theme"></button>
         <button class="tb-ico" id="tbNotif" title="Activity" aria-label="Activity"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i class="badge-dot"></i></button>
         <button class="tb-ico" id="tbHelp" title="Help" aria-label="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 3.9"/><circle cx="12" cy="17.4" r=".2"/></svg></button>
         <button class="tb-avatar" id="tbAvatar" title="You" aria-label="You"></button>
@@ -85,11 +86,16 @@
       <aside class="thread" id="threadPane" hidden>
         <header class="thread-head">
           <div><b>Thread</b><span class="thread-sub" id="threadSub"></span></div>
-          <button class="tb-ico" id="threadClose" title="Close" aria-label="Close thread"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <div style="display:flex;gap:4px">
+            <button class="ch-btn roxan-mini" id="threadSummarize" title="Summarize with Roxan"><svg viewBox="0 0 24 24"><path d="M12 3.4c.7 3.9 1.9 5.1 5.8 5.8-3.9.7-5.1 1.9-5.8 5.8-.7-3.9-1.9-5.1-5.8-5.8 3.9-.7 5.1-1.9 5.8-5.8z"/></svg>Summarize</button>
+            <button class="tb-ico" id="threadClose" title="Close" aria-label="Close thread"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
         </header>
         <div class="thread-body" id="threadBody"></div>
         <div class="composer thread-composer" id="threadComposerWrap"></div>
       </aside>
+
+      <aside class="members" id="members" hidden></aside>
     </div>
   </main>
 
@@ -122,6 +128,10 @@
   <div class="pop" id="wsPop" hidden></div>
   <!-- ============ Profile menu ============ -->
   <div class="pop" id="mePop" hidden></div>
+
+  <!-- ============ Huddle (Zoom/Discord) ============ -->
+  <div class="huddle-stage" id="huddleStage" hidden></div>
+  <div class="huddle-bar" id="huddleBar" hidden></div>
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
   <div class="mobile-scrim" id="mobileScrim" hidden></div>
