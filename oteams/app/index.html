@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" data-oplo-nav="off">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>OTeams · Northwind</title>
+<meta name="description" content="OTeams workspace — the connected canvas for work.">
+<meta name="theme-color" content="#0C0E13">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='o' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%239CC3FF'/%3E%3Cstop offset='1' stop-color='%23D4B3FF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='11' cy='16' r='6' fill='url(%23o)'/%3E%3Ccircle cx='21' cy='16' r='6' fill='url(%23o)' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..600&family=Spline+Sans+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ============ Workspace rail ============ -->
+  <nav class="rail" aria-label="Workspaces">
+    <div class="rail-ws" id="railWs"></div>
+    <button class="rail-add" id="railAdd" title="Add a workspace" aria-label="Add a workspace">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <div class="rail-spacer"></div>
+    <button class="rail-help" id="railHelp" title="Keyboard shortcuts (⌘/)" aria-label="Help">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 3.9"/><circle cx="12" cy="17.4" r=".2"/></svg>
+    </button>
+    <button class="rail-me" id="railMe" title="You — Active" aria-label="Your profile"></button>
+  </nav>
+
+  <!-- ============ Channel sidebar ============ -->
+  <aside class="sidebar" id="sidebar" aria-label="Channels">
+    <header class="ws-head" id="wsHead">
+      <button class="ws-name" id="wsMenu">
+        <span class="ws-title" id="wsTitle">Northwind</span>
+        <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <button class="ws-compose" id="composeNew" title="New message" aria-label="New message">
+        <svg viewBox="0 0 24 24"><path d="M4 20l1.2-4.2L16 5a2 2 0 0 1 3 3L8.2 18.8z"/><path d="M14 7l3 3"/></svg>
+      </button>
+    </header>
+
+    <div class="sb-quick">
+      <button class="q-item" data-view="threads"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.7L3 21l1.8-5.8A8.5 8.5 0 1 1 21 11.5z"/></svg>Threads</button>
+      <button class="q-item" data-view="mentions"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1"/></svg>Mentions &amp; reactions</button>
+      <button class="q-item" data-view="drafts"><svg viewBox="0 0 24 24"><path d="M4 4h11l5 5v11H4z"/><path d="M9 13h6M9 16h4"/></svg>Drafts &amp; sent</button>
+    </div>
+
+    <div class="sb-scroll" id="channelNav"></div>
+
+    <footer class="sb-foot" id="sbFoot">
+      <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      <span>Enterprise Key Management · SOC 2</span>
+    </footer>
+  </aside>
+
+  <!-- ============ Main ============ -->
+  <main class="main">
+    <header class="topbar">
+      <div class="tb-nav">
+        <button class="tb-ico" id="navBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button class="tb-ico" id="navFwd" title="Forward" aria-label="Forward"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button class="tb-ico only-mobile" id="menuBtn" title="Menu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      </div>
+      <button class="tb-search" id="openPalette">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <span>Search Northwind</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <div class="tb-right">
+        <button class="tb-ico" id="tbNotif" title="Activity" aria-label="Activity"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i class="badge-dot"></i></button>
+        <button class="tb-ico" id="tbHelp" title="Help" aria-label="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 3.9"/><circle cx="12" cy="17.4" r=".2"/></svg></button>
+        <button class="tb-avatar" id="tbAvatar" title="You" aria-label="You"></button>
+      </div>
+    </header>
+
+    <div class="main-body">
+      <section class="chan" id="chan">
+        <header class="chan-head" id="chanHead"></header>
+        <div class="msgs" id="msgs" role="log" aria-live="polite"></div>
+        <div class="composer" id="composerWrap"></div>
+      </section>
+
+      <aside class="thread" id="threadPane" hidden>
+        <header class="thread-head">
+          <div><b>Thread</b><span class="thread-sub" id="threadSub"></span></div>
+          <button class="tb-ico" id="threadClose" title="Close" aria-label="Close thread"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </header>
+        <div class="thread-body" id="threadBody"></div>
+        <div class="composer thread-composer" id="threadComposerWrap"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ============ Command palette ============ -->
+  <div class="palette-scrim" id="paletteScrim" hidden>
+    <div class="palette" role="dialog" aria-label="Search and jump to">
+      <div class="pal-field">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="palInput" type="text" placeholder="Jump to a channel, person, or action…" autocomplete="off" spellcheck="false">
+        <kbd>esc</kbd>
+      </div>
+      <div class="pal-results" id="palResults"></div>
+      <div class="pal-foot">
+        <span><kbd>↑</kbd><kbd>↓</kbd> to navigate</span>
+        <span><kbd>↵</kbd> to open</span>
+        <span class="pal-brand"><i></i> OTeams</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Shortcuts modal ============ -->
+  <div class="modal-scrim" id="shortcutsScrim" hidden>
+    <div class="modal" role="dialog" aria-label="Keyboard shortcuts">
+      <header class="modal-head"><b>Keyboard shortcuts</b><button class="tb-ico" id="shortcutsClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+      <div class="modal-body" id="shortcutsBody"></div>
+    </div>
+  </div>
+
+  <!-- ============ Workspace menu ============ -->
+  <div class="pop" id="wsPop" hidden></div>
+  <!-- ============ Profile menu ============ -->
+  <div class="pop" id="mePop" hidden></div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="mobile-scrim" id="mobileScrim" hidden></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
