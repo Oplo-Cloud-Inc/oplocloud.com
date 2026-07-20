@@ -4,6 +4,8 @@
    ============================================================ */
 (function () {
   "use strict";
+  /* Auth gate — the app lives behind the sign-in portal. */
+  try { if (!localStorage.getItem("oteams.session")) { location.replace("/oteams/signin/"); return; } } catch(e){ location.replace("/oteams/signin/"); return; }
   var LSKEY = "oteams.northwind.v2";
   var now = Date.now();
   var MIN = 60000, HOUR = 3600000, DAY = 86400000;
@@ -822,7 +824,7 @@
       case "file": toast("Opening file preview — demo stub","📄"); break;
       case "send": { var kind=a.getAttribute("data-kind"); var ta = kind==="thread"?$("#threadComposerWrap .cx-input"):$("#composerWrap .cx-input"); doSend(kind, ta); break; }
       case "pres": { U.me.presence=a.getAttribute("data-p"); save(); renderRail(); closeMenus(); toast("Status set to "+U.me.presence, U.me.presence==="active"?"🟢":U.me.presence==="dnd"?"⛔":"🌙"); break; }
-      case "signout": location.href="/oteams/"; break;
+      case "signout": try { localStorage.removeItem("oteams.session"); } catch(e){} location.href="/oteams/signin/"; break;
       case "menu-invite": toast("Invite flow — demo stub","✉️"); closeMenus(); break;
       case "menu-prefs": openShortcuts(); closeMenus(); break;
       case "menu-admin": toast("Admin console — demo stub","🛡️"); closeMenus(); break;

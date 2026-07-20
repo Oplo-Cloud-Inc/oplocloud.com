@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Sign in · OTeams</title>
+<meta name="description" content="Sign in to your OTeams workspace.">
+<meta name="theme-color" content="#07060E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='o' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%239CC3FF'/%3E%3Cstop offset='1' stop-color='%23D4B3FF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='11' cy='16' r='6' fill='url(%23o)'/%3E%3Ccircle cx='21' cy='16' r='6' fill='url(%23o)' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wght@0,400..700&family=Spline+Sans+Mono:wght@400..600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky:#9CC3FF; --lilac:#D4B3FF; --mint:#9BE8CE; --peach:#FFD2B3;
+    --chalk:#F5F6FA; --haze:#9AA0B4; --haze-2:#6C7080;
+    --serif:"Instrument Serif",Georgia,serif; --sans:"Instrument Sans",system-ui,sans-serif; --mono:"Spline Sans Mono",ui-monospace,monospace;
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; }
+  body { font-family:var(--sans); background:#07060E; color:var(--chalk); overflow:hidden; -webkit-font-smoothing:antialiased; }
+  a { color:inherit; text-decoration:none; }
+  ::selection { background:rgba(156,195,255,.35); }
+
+  /* ===== Cosmic scene ===== */
+  .scene { position:fixed; inset:0; transition:transform 1.05s var(--ease), filter 1.05s var(--ease), opacity 1.05s var(--ease); }
+  body.warp .scene { transform:scale(1.14); filter:blur(7px); opacity:0; }
+  .space {
+    position:absolute; inset:0;
+    background:
+      radial-gradient(130% 100% at 50% -20%, #241a45 0%, #120f24 42%, #08060f 72%),
+      #06050c;
+  }
+  .aurora { position:absolute; inset:-20%; pointer-events:none; filter:blur(60px); opacity:.8; }
+  .aurora span { position:absolute; border-radius:50%; mix-blend-mode:screen; will-change:transform; }
+  .a1 { width:52vw; height:52vw; left:-6vw; top:-8vw; background:radial-gradient(circle, rgba(156,195,255,.55), transparent 66%); animation:drift1 26s var(--ease) infinite alternate; }
+  .a2 { width:46vw; height:46vw; right:-8vw; top:4vw; background:radial-gradient(circle, rgba(212,179,255,.5), transparent 66%); animation:drift2 30s var(--ease) infinite alternate; }
+  .a3 { width:44vw; height:44vw; left:22vw; bottom:-16vw; background:radial-gradient(circle, rgba(155,232,206,.36), transparent 66%); animation:drift3 34s var(--ease) infinite alternate; }
+  .a4 { width:34vw; height:34vw; right:14vw; bottom:-10vw; background:radial-gradient(circle, rgba(255,210,179,.32), transparent 66%); animation:drift1 28s var(--ease) infinite alternate-reverse; }
+  @keyframes drift1 { to { transform:translate(6vw,5vw) scale(1.15); } }
+  @keyframes drift2 { to { transform:translate(-5vw,7vw) scale(1.1); } }
+  @keyframes drift3 { to { transform:translate(4vw,-6vw) scale(1.2); } }
+  #stars { position:absolute; inset:0; width:100%; height:100%; }
+  .grain { position:absolute; inset:0; opacity:.5; pointer-events:none; background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px); background-size:3px 3px; }
+  .vignette { position:absolute; inset:0; pointer-events:none; background:radial-gradient(120% 100% at 50% 40%, transparent 55%, rgba(4,3,10,.72)); }
+
+  .flash { position:fixed; inset:0; z-index:60; pointer-events:none; opacity:0; transition:opacity 1.05s var(--ease);
+    background:radial-gradient(circle at 50% 50%, rgba(212,179,255,.95), rgba(156,195,255,.7) 38%, #08060f 78%); }
+  body.warp .flash { opacity:1; }
+
+  /* ===== Center stack ===== */
+  .stack { position:fixed; inset:0; display:grid; place-items:center; padding:24px; z-index:10; }
+  .stack-in { width:min(430px,94vw); }
+
+  /* crest — the OTeams constellation */
+  .crest { width:104px; height:104px; margin:0 auto 22px; position:relative; }
+  .crest .ring { position:absolute; inset:0; border-radius:50%; background:conic-gradient(from 210deg,#9BE8CE,#9CC3FF 90deg,#D4B3FF 180deg,#FFD2B3 270deg,#9BE8CE 360deg); filter:blur(.5px); animation:spin 18s linear infinite; opacity:.9;
+    -webkit-mask:radial-gradient(circle, transparent 60%, #000 61%); mask:radial-gradient(circle, transparent 60%, #000 61%); }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .crest .orb { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
+  .crest svg { width:56px; height:56px; display:block; filter:drop-shadow(0 0 14px rgba(156,195,255,.6)); }
+  .crest .dot { position:absolute; width:7px; height:7px; border-radius:50%; background:#fff; box-shadow:0 0 10px 2px rgba(212,179,255,.9); top:-3.5px; left:calc(50% - 3.5px); transform-origin:3.5px 55px; animation:spin 9s linear infinite; }
+
+  .brand { text-align:center; }
+  .brand .wm { font-family:var(--serif); font-size:34px; letter-spacing:-.01em; }
+  .brand .wm b { font-style:normal; background:linear-gradient(120deg,#9CC3FF,#D4B3FF); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .brand .tag { font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--haze); margin-top:8px; }
+
+  /* glass card */
+  .card { position:relative; margin-top:26px; border-radius:26px; padding:34px 32px 28px;
+    background:rgba(16,14,30,.52); backdrop-filter:blur(28px) saturate(1.5); -webkit-backdrop-filter:blur(28px) saturate(1.5);
+    box-shadow:0 40px 110px -34px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.08); }
+  .card::before { content:""; position:absolute; inset:0; border-radius:26px; padding:1px;
+    background:linear-gradient(140deg, rgba(156,195,255,.7), rgba(212,179,255,.5) 42%, rgba(155,232,206,.32) 72%, rgba(255,210,179,.5));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+  .card.shake { animation:shake .45s var(--ease); }
+  @keyframes shake { 10%,90%{transform:translateX(-2px)} 20%,80%{transform:translateX(4px)} 30%,50%,70%{transform:translateX(-9px)} 40%,60%{transform:translateX(9px)} }
+
+  .hi { font-family:var(--serif); font-size:26px; line-height:1.1; letter-spacing:-.01em; }
+  .sub { color:var(--haze); font-size:14px; margin-top:6px; }
+
+  form { margin-top:22px; display:flex; flex-direction:column; gap:12px; }
+  .lbl { font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--haze); margin:6px 0 -4px 2px; }
+  .field { display:flex; align-items:center; gap:11px; height:52px; padding:0 14px; border-radius:13px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
+    transition:border-color .2s, box-shadow .2s, background .2s; }
+  .field:focus-within { border-color:rgba(156,195,255,.75); box-shadow:0 0 0 4px rgba(156,195,255,.14); background:rgba(255,255,255,.07); }
+  .field.bad { border-color:rgba(255,120,110,.7); box-shadow:0 0 0 4px rgba(255,120,110,.13); }
+  .field .ic { width:19px; height:19px; flex:none; color:var(--haze); }
+  .field .ic svg { width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .field input { flex:1; min-width:0; background:none; border:none; outline:none; color:var(--chalk); font-size:15px; font-family:var(--sans); }
+  .field input::placeholder { color:#71748a; }
+  .field .eye { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; color:var(--haze); background:none; border:0; cursor:pointer; flex:none; }
+  .field .eye:hover { color:var(--chalk); background:rgba(255,255,255,.06); }
+  .field .eye svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.7; }
+
+  .rowline { display:flex; align-items:center; justify-content:space-between; margin:2px 2px 4px; }
+  .remember { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--haze); cursor:pointer; user-select:none; }
+  .remember input { position:absolute; opacity:0; width:0; height:0; }
+  .remember .box { width:18px; height:18px; border-radius:6px; border:1.5px solid rgba(255,255,255,.24); display:grid; place-items:center; transition:.15s; }
+  .remember input:checked + .box { background:linear-gradient(120deg,#9CC3FF,#D4B3FF); border-color:transparent; }
+  .remember .box svg { width:12px; height:12px; stroke:#0d0b18; fill:none; stroke-width:2.6; opacity:0; transition:opacity .15s; }
+  .remember input:checked + .box svg { opacity:1; }
+  .forgot { font-size:13px; color:var(--sky); }
+  .forgot:hover { color:#fff; }
+
+  .error { display:none; align-items:center; gap:8px; font-size:13px; color:#FFB4AD; background:rgba(255,90,80,.09); border:1px solid rgba(255,90,80,.24); border-radius:11px; padding:9px 12px; margin-top:2px; }
+  .error.show { display:flex; animation:fadein .25s var(--ease); }
+  @keyframes fadein { from{opacity:0; transform:translateY(-4px)} to{opacity:1} }
+  .error svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.9; flex:none; }
+
+  .btn { margin-top:6px; width:100%; height:53px; border:0; border-radius:13px; cursor:pointer;
+    background:linear-gradient(120deg,#9CC3FF,#B7B0FF 52%,#D4B3FF); color:#0d0b18; font-family:var(--sans); font-weight:640; font-size:15.5px; letter-spacing:-.01em;
+    display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 16px 38px -14px rgba(156,195,255,.6);
+    transition:transform .2s var(--ease), box-shadow .2s, filter .2s; }
+  .btn:hover { transform:translateY(-2px); box-shadow:0 22px 48px -14px rgba(180,160,255,.7); }
+  .btn:active { transform:translateY(0); }
+  .btn:disabled { cursor:default; filter:saturate(.6) brightness(1.02); }
+  .btn .arw { transition:transform .3s var(--ease); }
+  .btn:hover .arw { transform:translateX(4px); }
+  .btn .spin { width:19px; height:19px; border:2.4px solid rgba(13,11,24,.35); border-top-color:#0d0b18; border-radius:50%; animation:sp .7s linear infinite; display:none; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .btn.loading .spin { display:block; } .btn.loading .arw { display:none; }
+
+  .sso { margin-top:14px; }
+  .divider { display:flex; align-items:center; gap:12px; color:var(--haze); font-size:11px; font-family:var(--mono); letter-spacing:.1em; margin:16px 0; }
+  .divider::before,.divider::after { content:""; flex:1; height:1px; background:rgba(255,255,255,.1); }
+  .sso-btn { width:100%; height:48px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); color:var(--chalk); font-size:14px; font-weight:520; display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer; transition:background .18s, transform .18s; }
+  .sso-btn:hover { background:rgba(255,255,255,.09); transform:translateY(-1px); }
+  .sso-btn .d { width:16px; height:16px; border-radius:50%; background:conic-gradient(from 210deg,#9BE8CE,#9CC3FF,#D4B3FF,#FFD2B3,#9BE8CE); }
+
+  .demo { margin-top:18px; text-align:center; }
+  .demo button { font-family:var(--mono); font-size:11.5px; letter-spacing:.02em; color:var(--haze); background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.16); border-radius:999px; padding:6px 14px; cursor:pointer; transition:.18s; }
+  .demo button:hover { color:var(--chalk); border-color:rgba(156,195,255,.5); background:rgba(156,195,255,.08); }
+  .demo button b { color:var(--sky); font-weight:600; }
+
+  .foot { text-align:center; margin-top:20px; font-size:13px; color:var(--haze); }
+  .foot a { color:var(--chalk); } .foot a:hover { color:var(--sky); }
+  .backhome { position:fixed; top:22px; left:24px; z-index:12; display:inline-flex; align-items:center; gap:8px; font-size:13.5px; color:var(--haze); padding:8px 12px; border-radius:10px; transition:.18s; }
+  .backhome:hover { color:var(--chalk); background:rgba(255,255,255,.05); }
+  .backhome svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; }
+
+  @media (prefers-reduced-motion:reduce){ *{animation:none !important;} .scene{transition:none} }
+  @media (max-width:480px){ .card{padding:28px 22px 24px} .crest{width:88px;height:88px} }
+</style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <div class="space"></div>
+    <div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span><span class="a4"></span></div>
+    <canvas id="stars"></canvas>
+    <div class="grain"></div>
+    <div class="vignette"></div>
+  </div>
+  <div class="flash"></div>
+
+  <a class="backhome" href="/oteams/"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg> Back to OTeams</a>
+
+  <main class="stack">
+    <div class="stack-in" id="stackIn">
+      <div class="crest" data-par="1.4">
+        <div class="ring"></div>
+        <div class="dot"></div>
+        <span class="orb"><svg viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9CC3FF"/><stop offset="1" stop-color="#D4B3FF"/></linearGradient></defs><circle cx="11" cy="16" r="6.5" fill="url(#g)"/><circle cx="21" cy="16" r="5.4" fill="url(#g)" opacity=".72"/></svg></span>
+      </div>
+
+      <div class="brand" data-par="0.7">
+        <div class="wm"><b>OTeams</b></div>
+        <div class="tag">The connected canvas for work</div>
+      </div>
+
+      <div class="card" id="card" data-par="0.35">
+        <h1 class="hi">Welcome back.</h1>
+        <p class="sub">Sign in to your <b style="color:var(--chalk)">Northwind</b> workspace.</p>
+
+        <form id="form" autocomplete="off" novalidate>
+          <div class="lbl">Username</div>
+          <div class="field" id="fUser">
+            <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span>
+            <input id="user" type="text" placeholder="you@oplo" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off">
+          </div>
+
+          <div class="lbl">Password</div>
+          <div class="field" id="fPass">
+            <span class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+            <input id="pass" type="password" placeholder="••••••••" autocomplete="off">
+            <button type="button" class="eye" id="eye" aria-label="Show password"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+
+          <div class="rowline">
+            <label class="remember"><input type="checkbox" id="remember" checked><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></svg></span>Keep me signed in</label>
+            <a class="forgot" href="#" id="forgot">Forgot password?</a>
+          </div>
+
+          <div class="error" id="error"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="errorTxt">Those credentials don't match.</span></div>
+
+          <button type="submit" class="btn" id="submit">
+            <span class="spin"></span>
+            <span class="txt">Enter workspace</span>
+            <span class="arw" aria-hidden="true">→</span>
+          </button>
+
+          <div class="sso">
+            <div class="divider">or</div>
+            <button type="button" class="sso-btn" id="ssoBtn"><span class="d"></span>Continue with Oplo Accounts</button>
+          </div>
+        </form>
+
+        <div class="demo">
+          <button type="button" id="demoFill">Demo access — <b>saswatc@oplo</b> · <b>oplo</b></button>
+        </div>
+      </div>
+
+      <div class="foot" data-par="0.2">New to Oplo? <a href="/oteams/" id="createLink">Create your workspace</a></div>
+    </div>
+  </main>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var $ = function(s){ return document.querySelector(s); };
+
+  /* If already signed in, go straight to the app. */
+  try { if (localStorage.getItem("oteams.session")) { location.replace("/oteams/app/"); return; } } catch(e){}
+
+  /* ---------- Starfield ---------- */
+  var canvas = $("#stars"), ctx = canvas.getContext("2d"), stars = [], shooters = [], W, H, DPR = Math.min(devicePixelRatio||1, 2);
+  var mx = 0, my = 0;
+  function resize(){
+    W = canvas.width = innerWidth * DPR; H = canvas.height = innerHeight * DPR;
+    canvas.style.width = innerWidth+"px"; canvas.style.height = innerHeight+"px";
+    var n = Math.min(240, Math.round(innerWidth*innerHeight/7000));
+    stars = [];
+    for (var i=0;i<n;i++) stars.push({
+      x:Math.random()*W, y:Math.random()*H, z:Math.random()*.8+.2,
+      r:(Math.random()*1.3+.3)*DPR, a:Math.random(), tw:Math.random()*.02+.004,
+      c: Math.random()<.18 ? (Math.random()<.5?"#B7C7FF":"#E6C9FF") : "#ffffff"
+    });
+  }
+  function tick(){
+    ctx.clearRect(0,0,W,H);
+    for (var i=0;i<stars.length;i++){
+      var s = stars[i];
+      s.a += s.tw; var al = .35 + Math.abs(Math.sin(s.a))*.65;
+      var px = s.x + mx*24*s.z*DPR, py = s.y + my*24*s.z*DPR;
+      ctx.globalAlpha = al * s.z;
+      ctx.fillStyle = s.c;
+      ctx.beginPath(); ctx.arc(px, py, s.r, 0, 6.2832); ctx.fill();
+      if (s.r > DPR){ ctx.globalAlpha = al*.25*s.z; ctx.beginPath(); ctx.arc(px, py, s.r*2.4, 0, 6.2832); ctx.fill(); }
+    }
+    // shooting stars
+    for (var j=shooters.length-1;j>=0;j--){
+      var sh = shooters[j]; sh.x += sh.vx; sh.y += sh.vy; sh.life -= 1;
+      var grad = ctx.createLinearGradient(sh.x, sh.y, sh.x - sh.vx*10, sh.y - sh.vy*10);
+      grad.addColorStop(0, "rgba(212,179,255,"+(sh.life/sh.max)+")"); grad.addColorStop(1, "rgba(212,179,255,0)");
+      ctx.globalAlpha = 1; ctx.strokeStyle = grad; ctx.lineWidth = 2*DPR; ctx.beginPath();
+      ctx.moveTo(sh.x, sh.y); ctx.lineTo(sh.x - sh.vx*10, sh.y - sh.vy*10); ctx.stroke();
+      if (sh.life<=0 || sh.x>W+50 || sh.y>H+50) shooters.splice(j,1);
+    }
+    if (Math.random() < .004 && shooters.length < 2){
+      var ang = Math.random()*.5+.15, sp = (7+Math.random()*5)*DPR;
+      shooters.push({ x:Math.random()*W*.6, y:Math.random()*H*.3, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, life:60, max:60 });
+    }
+    ctx.globalAlpha = 1;
+    raf = requestAnimationFrame(tick);
+  }
+  var raf = null;
+  resize(); addEventListener("resize", resize, { passive:true });
+  if (reduce){ tick(); cancelAnimationFrame(raf); ctx.globalAlpha=1; /* one static frame */ }
+  else tick();
+
+  /* ---------- Pointer parallax ---------- */
+  if (!reduce && matchMedia("(pointer:fine)").matches){
+    var pars = [].slice.call(document.querySelectorAll("[data-par]")), praf = null;
+    addEventListener("pointermove", function(e){
+      mx = e.clientX/innerWidth - .5; my = e.clientY/innerHeight - .5;
+      if (praf) return;
+      praf = requestAnimationFrame(function(){
+        pars.forEach(function(el){ var d = parseFloat(el.getAttribute("data-par"))*18; el.style.transform = "translate3d("+(mx*d)+"px,"+(my*d)+"px,0)"; });
+        praf = null;
+      });
+    }, { passive:true });
+  }
+
+  /* ---------- Form ---------- */
+  // Demo access gate — front-end only, not real authentication.
+  var CRED = { user:"saswatc@oplo", pass:"oplo" };
+  var form = $("#form"), userEl = $("#user"), passEl = $("#pass"), submit = $("#submit"),
+      error = $("#error"), errorTxt = $("#errorTxt"), card = $("#card");
+
+  $("#eye").addEventListener("click", function(){
+    var show = passEl.type === "password"; passEl.type = show ? "text" : "password";
+    this.innerHTML = show
+      ? '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.4 5.2A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.8 4.4M6.2 6.2A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 3-.5"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+    passEl.focus();
+  });
+
+  $("#demoFill").addEventListener("click", function(){ userEl.value = CRED.user; passEl.value = CRED.pass; clearErr(); passEl.focus(); });
+  $("#ssoBtn").addEventListener("click", function(){ flash("Single sign-on isn't wired in this demo — use the credentials below.", true); });
+  $("#forgot").addEventListener("click", function(e){ e.preventDefault(); flash("Password recovery is a demo stub. Hint: it's very short.", false); });
+
+  function clearErr(){ error.classList.remove("show"); $("#fUser").classList.remove("bad"); $("#fPass").classList.remove("bad"); }
+  function flash(msg, bad){ errorTxt.textContent = msg; error.classList.add("show"); if(bad){ $("#fUser").classList.add("bad"); $("#fPass").classList.add("bad"); } }
+  userEl.addEventListener("input", clearErr); passEl.addEventListener("input", clearErr);
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var u = userEl.value.trim().toLowerCase(), p = passEl.value;
+    if (!u || !p){ flash("Enter your username and password.", true); shake(); return; }
+    if (u !== CRED.user || p !== CRED.pass){
+      flash("Those credentials don't match. Try the demo access below.", true);
+      shake(); passEl.value = ""; passEl.focus();
+      return;
+    }
+    // success
+    clearErr();
+    submit.classList.add("loading"); submit.disabled = true; submit.querySelector(".txt").textContent = "Entering workspace";
+    try {
+      localStorage.setItem("oteams.session", JSON.stringify({ user:CRED.user, name:"Saswat C", ts:Date.now() }));
+    } catch(err){}
+    setTimeout(function(){
+      document.body.classList.add("warp");
+      setTimeout(function(){ location.href = "/oteams/app/"; }, reduce ? 60 : 1000);
+    }, 520);
+  });
+
+  function shake(){ card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake"); }
+
+  userEl.focus();
+})();
+</script>
+</body>
+</html>
