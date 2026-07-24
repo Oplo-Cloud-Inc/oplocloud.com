@@ -1,0 +1,90 @@
+# OTeams — full self-hosted stack.
+#
+#   cp .env.example .env      # then edit the secrets
+#   docker compose up -d
+#   docker compose logs -f api
+#
+# Services
+#   api     the OTeams REST + WebSocket server        :8787
+#   db      Postgres 17 (OTeams data, not ZITADEL's)  :5433 -> 5432
+#   minio   S3-compatible file storage                :9000 (api) / :9001 (console)
+#   turn    coturn, so WebRTC huddles traverse NAT    :3478
+#
+# Oplo Accounts (ZITADEL) runs separately — see ../../oplo-accounts/docker-compose.yaml.
+# Point OIDC_ISSUER at it.
+
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://oteams:${POSTGRES_PASSWORD:-oteams}@db:5432/oteams
+      S3_ENDPOINT: http://minio:9000
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "8787:8787"
+    networks: [oteams]
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: oteams
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oteams}
+      POSTGRES_DB: oteams
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oteams -d oteams"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - oteams-db:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"      # host port 5433 so it can't clash with ZITADEL's Postgres
+    networks: [oteams]
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-oteams}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env}
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    volumes:
+      - oteams-files:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks: [oteams]
+
+  # WebRTC relay. Without this, huddles fail for people behind strict NATs.
+  turn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    network_mode: host          # coturn needs the real host ports for media relay
+    command: >
+      -n --listening-port=3478
+      --fingerprint --lt-cred-mech
+      --user=${TURN_USER:-oteams}:${TURN_PASSWORD:?set TURN_PASSWORD in .env}
+      --realm=oteams
+      --no-tls --no-dtls
+      --min-port=49160 --max-port=49200
+
+networks:
+  oteams:
+
+volumes:
+  oteams-db:
+  oteams-files:

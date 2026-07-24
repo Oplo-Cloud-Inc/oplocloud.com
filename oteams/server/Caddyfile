@@ -1,0 +1,33 @@
+# Production TLS termination for the OTeams API.
+#   docker run -d --name caddy --network host \
+#     -v $PWD/Caddyfile:/etc/caddy/Caddyfile -v caddy_data:/data caddy:2
+#
+# Caddy gets and renews Let's Encrypt certificates automatically.
+# Replace the hostname with yours before using.
+
+api.oteams.oplocloud.com {
+	encode zstd gzip
+
+	# WebSocket upgrade and REST share one origin.
+	reverse_proxy 127.0.0.1:8787 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/oteams.log
+	}
+}
+
+# Presigned file links are served straight from MinIO.
+files.oteams.oplocloud.com {
+	reverse_proxy 127.0.0.1:9000
+}

@@ -1,0 +1,27 @@
+{
+  "name": "oteams-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "OTeams backend — real-time team communication API for the Oplo ecosystem.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "migrate": "node src/migrate.js",
+    "seed": "node src/seed.js",
+    "healthcheck": "node -e \"fetch('http://127.0.0.1:'+(process.env.PORT||8787)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.0",
+    "@aws-sdk/s3-request-presigner": "^3.658.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "jose": "^5.9.3",
+    "pg": "^8.13.0",
+    "pino": "^9.4.0",
+    "pino-http": "^10.3.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  }
+}
