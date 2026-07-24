@@ -61,26 +61,9 @@
     padding-inline: var(--gutter);
   }
 
-  /* ------------------------------------------------ Nav */
-  .nav {
-    position: fixed;
-    inset: 0 0 auto 0;
-    z-index: 100;
-    border-bottom: 1px solid transparent;
-    transition: background .4s var(--ease-out), border-color .4s var(--ease-out);
-  }
-  .nav.scrolled {
-    background: rgba(252, 252, 253, 0.72);
-    -webkit-backdrop-filter: blur(20px) saturate(1.6);
-    backdrop-filter: blur(20px) saturate(1.6);
-    border-bottom-color: var(--hairline);
-  }
-  .nav-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 62px;
-  }
+  /* ------------------------------------------------ Shared bits
+     The top nav is rendered site-wide by /assets/js/oplo-shell.js; these are
+     the pieces the page itself still uses (footer wordmark + closing CTA). */
   .wordmark {
     display: inline-flex;
     align-items: center;
@@ -100,25 +83,6 @@
   }
   @keyframes dot-spin { to { transform: rotate(360deg); } }
 
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 30px;
-    list-style: none;
-  }
-  .nav-links a {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--slate);
-    transition: color .2s;
-  }
-  .nav-links a:hover { color: var(--ink); }
-
-  /* Ecosystem actions slot (waffle + account chip, filled by oplo-shell.js) */
-  .nav-links { margin-left: auto; }
-  #oplo-actions { display: inline-flex; align-items: center; }
-  @media (max-width: 720px) { #oplo-actions { margin-left: auto; } }
-
   .btn-pill {
     display: inline-flex;
     align-items: center;
@@ -135,129 +99,6 @@
     transition: transform .25s var(--ease-out), background .25s;
   }
   .btn-pill:hover { background: #23252B; transform: translateY(-1px); }
-  .nav-toggle { display: none; }
-
-  /* Products trigger (button styled like a nav link) */
-  .nav-item { position: static; }
-  .nav-trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-body);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--slate);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: color .2s;
-  }
-  .nav-trigger:hover, .nav-item.open .nav-trigger { color: var(--ink); }
-  .nav-trigger .caret {
-    width: 7px; height: 7px;
-    border-right: 1.6px solid currentColor;
-    border-bottom: 1.6px solid currentColor;
-    transform: rotate(45deg) translateY(-1px);
-    transition: transform .3s var(--ease-out);
-    opacity: .7;
-  }
-  .nav-item.open .nav-trigger .caret { transform: rotate(225deg) translateY(-1px); }
-
-  /* Keep nav solid while the menu is open */
-  .nav.menu-open {
-    background: var(--porcelain);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    border-bottom-color: transparent;
-  }
-
-  /* Page dim behind the flyout */
-  .nav-scrim {
-    position: fixed;
-    inset: 62px 0 0 0;
-    z-index: 90;
-    background: rgba(11, 12, 15, 0.28);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity .35s var(--ease-out), visibility .35s;
-  }
-  .nav-scrim.show { opacity: 1; visibility: visible; }
-
-  /* ------------------------------------------------ Mega-menu */
-  .megamenu {
-    position: absolute;
-    top: 100%; left: 0; right: 0;
-    z-index: 101;
-    background: var(--porcelain);
-    border-bottom: 1px solid var(--hairline);
-    box-shadow: 0 30px 60px -30px rgba(11,12,15,0.22);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: opacity .3s var(--ease-out), transform .3s var(--ease-out), visibility .3s;
-  }
-  .nav-item.open .megamenu { opacity: 1; visibility: visible; transform: none; }
-  .megamenu-inner {
-    max-width: var(--container);
-    margin-inline: auto;
-    padding: clamp(28px, 3vw, 44px) var(--gutter) clamp(24px, 2.4vw, 36px);
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: clamp(20px, 2.2vw, 36px);
-  }
-  .mm-col .mm-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    letter-spacing: 0.11em;
-    text-transform: uppercase;
-    color: var(--slate);
-    margin-bottom: 18px;
-  }
-  .mm-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  .mm-dot.roxan { background: var(--opal); }
-  .mm-dot.productivity { background: var(--sky); }
-  .mm-dot.oedu { background: var(--mint); }
-  .mm-dot.platforms { background: var(--lilac); }
-  .mm-dot.explore { background: var(--peach); }
-  .mm-col ul { list-style: none; display: grid; gap: 3px; }
-  .mm-col li a {
-    display: block;
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--ink);
-    padding: 7px 10px;
-    margin-inline: -10px;
-    border-radius: 9px;
-    transition: background .18s, color .18s, transform .18s var(--ease-out);
-  }
-  .mm-col li a:hover { background: rgba(11,12,15,0.045); transform: translateX(2px); }
-  .mm-col li a .sub {
-    display: block;
-    font-size: 12.5px;
-    font-weight: 400;
-    color: var(--ink-soft);
-    margin-top: 1px;
-  }
-  .megamenu-foot {
-    max-width: var(--container);
-    margin-inline: auto;
-    padding: 16px var(--gutter);
-    border-top: 1px solid var(--hairline);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px 24px;
-  }
-  .megamenu-foot .mm-quick { display: flex; gap: 22px; flex-wrap: wrap; }
-  .megamenu-foot .mm-quick a {
-    font-size: 13.5px; color: var(--slate); transition: color .2s;
-  }
-  .megamenu-foot .mm-quick a:hover { color: var(--ink); }
 
   /* ------------------------------------------------ Arrow link */
   .link-arrow {
@@ -660,7 +501,6 @@
 
   /* ------------------------------------------------ Responsive */
   @media (max-width: 1060px) {
-    .megamenu-inner { grid-template-columns: repeat(3, 1fr); row-gap: 34px; }
     .ql { grid-template-columns: repeat(2, 1fr); }
     .ql.three { grid-template-columns: repeat(3, 1fr); }
   }
@@ -668,51 +508,6 @@
     .dir-head { grid-template-columns: 1fr; align-items: start; }
     .dir-head .link-arrow { padding-bottom: 0; }
     .ql, .ql.three { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 720px) {
-    .nav-links { display: none; }
-    .nav-links.open {
-      display: flex;
-      position: absolute;
-      inset: 62px 0 auto 0;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 2px;
-      padding: 14px var(--gutter) 24px;
-      background: rgba(252,252,253,0.97);
-      -webkit-backdrop-filter: blur(20px);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--hairline);
-      max-height: calc(100vh - 62px);
-      overflow-y: auto;
-    }
-    .nav-links.open a { font-size: 17px; padding: 9px 0; }
-    .nav-links.open .btn-pill { margin-top: 12px; justify-content: center; }
-    .nav-toggle {
-      display: inline-flex; flex-direction: column; gap: 4px;
-      background: none; border: none; cursor: pointer; padding: 8px;
-    }
-    .nav-toggle span { width: 20px; height: 2px; background: var(--ink); border-radius: 2px; }
-
-    /* Products becomes an inline accordion */
-    .nav-item { width: 100%; }
-    .nav-trigger { width: 100%; justify-content: space-between; font-size: 17px; padding: 9px 0; color: var(--ink); }
-    .nav-scrim { display: none; }
-    .megamenu {
-      position: static;
-      opacity: 1; transform: none; visibility: visible;
-      display: none;
-      background: transparent;
-      -webkit-backdrop-filter: none; backdrop-filter: none;
-      border: none; box-shadow: none;
-      transition: none;
-    }
-    .nav-item.open .megamenu { display: block; }
-    .megamenu-inner { grid-template-columns: 1fr; padding: 4px 0 8px; gap: 22px; }
-    .mm-col .mm-eyebrow { margin-bottom: 10px; }
-    .mm-col li a { padding: 8px 0; margin-inline: 0; }
-    .mm-col li a:hover { background: none; transform: none; }
-    .megamenu-foot { flex-direction: column; align-items: flex-start; padding: 14px 0 0; }
   }
   @media (max-width: 560px) {
     .ql, .ql.three, .ql.two { grid-template-columns: 1fr; }
@@ -726,90 +521,6 @@
 </style>
 </head>
 <body>
-
-<nav class="nav" id="nav" aria-label="Main">
-  <div class="container nav-inner">
-    <a class="wordmark" href="#top" aria-label="Oplo home">
-      <span class="opal-dot" aria-hidden="true"></span>Oplo
-    </a>
-    <ul class="nav-links" id="navLinks">
-      <li class="nav-item" id="productsItem">
-        <button class="nav-trigger" id="productsTrigger" aria-expanded="false" aria-controls="productsMenu" aria-haspopup="true">
-          Products <span class="caret" aria-hidden="true"></span>
-        </button>
-        <div class="megamenu" id="productsMenu" role="region" aria-label="Products">
-          <div class="megamenu-inner">
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot roxan" aria-hidden="true"></span>Roxan · AI</p>
-              <ul>
-                <li><a href="/roxan/">Meet Roxan<span class="sub">The model at the center</span></a></li>
-                <li><a href="/roxan/#capabilities">Capabilities<span class="sub">What Roxan can do</span></a></li>
-                <li><a href="/roxan/mof/">For Ministry of Finance<span class="sub">The AI advisor cockpit</span></a></li>
-                <li><a href="/roxan/#developers">For developers<span class="sub">Build on the API</span></a></li>
-              </ul>
-            </div>
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot productivity" aria-hidden="true"></span>Productivity</p>
-              <ul>
-                <li><a href="/odocs/">ODocs<span class="sub">Documents</span></a></li>
-                <li><a href="/osheets/">OSheets<span class="sub">Spreadsheets</span></a></li>
-                <li><a href="/omails/">OMails<span class="sub">Email</span></a></li>
-                <li><a href="/omaps/">OMaps<span class="sub">Maps</span></a></li>
-                <li><a href="/osurf/">OSurf<span class="sub">Browser</span></a></li>
-                <li><a href="/ophotos/">OPhotos<span class="sub">Photos</span></a></li>
-                <li><a href="/ocanvas/">OCanvas<span class="sub">Creative canvas</span></a></li>
-              </ul>
-            </div>
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot oedu" aria-hidden="true"></span>OEdu · Education</p>
-              <ul>
-                <li><a href="/oedu/">For teachers<span class="sub">Give time back to teaching</span></a></li>
-                <li><a href="/oedu/#schools">For schools<span class="sub">Whole-campus tools</span></a></li>
-                <li><a href="/oedu/#students">For students<span class="sub">Learning, human-first</span></a></li>
-                <li><a href="/oteams/">OTeams<span class="sub">Team communication</span></a></li>
-              </ul>
-            </div>
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot platforms" aria-hidden="true"></span>Platforms</p>
-              <ul>
-                <li><a href="#platforms">Halo<span class="sub">For people</span></a></li>
-                <li><a href="#platforms">Slate<span class="sub">For companies</span></a></li>
-                <li><a href="#platforms">Meridian<span class="sub">For nations</span></a></li>
-                <li><a href="/soon/">Compare platforms<span class="sub">Find the right fit</span></a></li>
-              </ul>
-            </div>
-            <div class="mm-col">
-              <p class="mm-eyebrow"><span class="mm-dot explore" aria-hidden="true"></span>Explore</p>
-              <ul>
-                <li><a href="/ocrd/">Research (OCRD)</a></li>
-                <li><a href="/OShop/">OShop</a></li>
-                <li><a href="/OLaws/">Lodestar · legal</a></li>
-                <li><a href="/oplo-accounts/demo/">Oplo Accounts</a></li>
-              </ul>
-            </div>
-          </div>
-          <div class="megamenu-foot">
-            <a class="link-arrow" href="#intelligence">Explore the full ecosystem <span class="chev" aria-hidden="true">→</span></a>
-            <div class="mm-quick">
-              <a href="/roxan/">Roxan</a>
-              <a href="/productivity/">Productivity</a>
-              <a href="/oteams/">OTeams</a>
-              <a href="/ocrd/">Research</a>
-            </div>
-          </div>
-        </div>
-      </li>
-      <li><a href="#intelligence">Ecosystem</a></li>
-      <li><a href="#platforms">Platforms</a></li>
-      <li><a href="#company">Company</a></li>
-    </ul>
-    <div id="oplo-actions"></div>
-    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</nav>
-<div class="nav-scrim" id="navScrim" aria-hidden="true"></div>
 
 <main id="top">
 
@@ -1208,59 +919,6 @@
 </footer>
 
 <script>
-  // Nav: translucent on scroll
-  const nav = document.getElementById('nav');
-  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
-  onScroll();
-  window.addEventListener('scroll', onScroll, { passive: true });
-
-  // Products mega-menu
-  const productsItem = document.getElementById('productsItem');
-  const productsTrigger = document.getElementById('productsTrigger');
-  const scrim = document.getElementById('navScrim');
-  const isMobile = () => window.matchMedia('(max-width: 720px)').matches;
-  let hoverTimer = null;
-
-  function openMenu() {
-    clearTimeout(hoverTimer);
-    productsItem.classList.add('open');
-    productsTrigger.setAttribute('aria-expanded', 'true');
-    if (!isMobile()) { nav.classList.add('menu-open'); scrim.classList.add('show'); }
-  }
-  function closeMenu() {
-    productsItem.classList.remove('open');
-    productsTrigger.setAttribute('aria-expanded', 'false');
-    nav.classList.remove('menu-open');
-    scrim.classList.remove('show');
-  }
-
-  productsTrigger.addEventListener('click', e => {
-    e.stopPropagation();
-    productsItem.classList.contains('open') ? closeMenu() : openMenu();
-  });
-  productsItem.addEventListener('mouseenter', () => { if (!isMobile()) openMenu(); });
-  productsItem.addEventListener('mouseleave', () => { if (!isMobile()) hoverTimer = setTimeout(closeMenu, 160); });
-  scrim.addEventListener('click', closeMenu);
-  document.addEventListener('click', e => { if (!productsItem.contains(e.target)) closeMenu(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
-
-  // Mobile hamburger
-  const toggle = document.getElementById('navToggle');
-  const links = document.getElementById('navLinks');
-  toggle.addEventListener('click', () => {
-    const open = links.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', String(open));
-    if (!open) closeMenu();
-  });
-  links.addEventListener('click', e => {
-    if (e.target.closest('a')) {
-      links.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-      closeMenu();
-    }
-  });
-  window.addEventListener('resize', closeMenu, { passive: true });
-
   // Reveal on scroll
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const reveals = document.querySelectorAll('.reveal');

@@ -332,3 +332,244 @@ html.oplo-navmode nav:not(.onav) { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .oplo-pop, .oplo-scrim, .oplo-iconbtn, .oplo-chip, .oplo-tile { transition: none; }
 }
+
+/* ==========================================================================
+   Mega-menu — Products / Solutions / Industries
+   Two-pane (category rail + detail pane) for Products and Solutions; a flat
+   grid for Industries. Desktop: full-width dropdown under the bar.
+   Mobile: the same DOM collapses into accordions inside the drawer.
+   ========================================================================== */
+
+.onav-item { position: static; }
+.onav-trigger {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--oplo-font-body);
+  font-size: 14px; font-weight: 500; color: var(--oplo-slate);
+  background: none; border: none; padding: 0; cursor: pointer;
+  transition: color .2s;
+}
+.onav-trigger:hover, .onav-item.is-open .onav-trigger { color: var(--oplo-ink); }
+.onav-caret {
+  width: 6px; height: 6px;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg) translateY(-1px); opacity: .7;
+  transition: transform .3s var(--oplo-ease);
+}
+.onav-item.is-open .onav-caret { transform: rotate(225deg) translateY(-1px); }
+
+/* Keep the bar opaque while a menu is open */
+.onav.menu-open {
+  background: var(--oplo-porcelain);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  border-bottom-color: transparent;
+}
+[data-oplo-theme="dark"] .onav.menu-open { background: #0A0B0E; }
+
+/* Sign-in pill */
+.onav-signin {
+  display: inline-flex; align-items: center;
+  font-family: var(--oplo-font-body);
+  font-size: 14px; font-weight: 600;
+  padding: 8px 17px; margin-right: 10px;
+  border-radius: 100px;
+  background: var(--oplo-ink); color: var(--oplo-porcelain);
+  text-decoration: none; white-space: nowrap;
+  transition: transform .2s var(--oplo-ease), background .2s;
+}
+.onav-signin:hover { background: #23252B; transform: translateY(-1px); }
+[data-oplo-theme="dark"] .onav-signin { background: #F5F6F8; color: #0A0B0E; }
+[data-oplo-theme="dark"] .onav-signin:hover { background: #fff; }
+
+/* Scrim behind an open menu */
+.onav-scrim {
+  position: fixed; inset: 62px 0 0 0;
+  z-index: 2147480900;
+  background: rgba(11, 12, 15, .28);
+  opacity: 0; visibility: hidden;
+  transition: opacity .35s var(--oplo-ease), visibility .35s;
+}
+.onav-scrim.is-on { opacity: 1; visibility: visible; }
+
+/* ---------------------------------------------- The panel */
+.omega {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--oplo-porcelain);
+  border-bottom: 1px solid var(--oplo-hairline);
+  box-shadow: 0 30px 60px -30px rgba(11, 12, 15, .22);
+  opacity: 0; visibility: hidden; transform: translateY(-10px);
+  transition: opacity .28s var(--oplo-ease), transform .28s var(--oplo-ease), visibility .28s;
+}
+.onav-item.is-open .omega { opacity: 1; visibility: visible; transform: none; }
+[data-oplo-theme="dark"] .omega {
+  background: #0E1014; border-bottom-color: rgba(255, 255, 255, .10);
+}
+.omega-in {
+  max-width: 1180px; margin-inline: auto;
+  padding: clamp(24px, 2.6vw, 36px) clamp(20px, 4vw, 44px) clamp(22px, 2.2vw, 30px);
+  display: grid; gap: clamp(20px, 2.4vw, 40px);
+  grid-template-columns: 216px minmax(0, 1fr) 250px;
+  align-items: start;
+}
+.omega[data-panel="grid"] .omega-in { grid-template-columns: minmax(0, 1fr) 250px; }
+
+/* Category rail */
+.omega-rail { display: grid; gap: 2px; align-content: start; }
+.omega-tab {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; text-align: left;
+  font-family: var(--oplo-font-body);
+  font-size: 14.5px; font-weight: 500; color: var(--oplo-ink);
+  background: none; border: none; cursor: pointer;
+  padding: 9px 12px; border-radius: 9px;
+  transition: background .18s, color .18s;
+}
+.omega-tab .ot-chev {
+  width: 6px; height: 6px; opacity: 0;
+  border-right: 1.6px solid currentColor; border-top: 1.6px solid currentColor;
+  transform: rotate(45deg);
+  transition: opacity .18s;
+}
+.omega-tab:hover { background: rgba(11, 12, 15, .045); }
+.omega-tab.is-on { background: rgba(11, 12, 15, .06); font-weight: 600; }
+.omega-tab.is-on .ot-chev { opacity: .45; }
+[data-oplo-theme="dark"] .omega-tab { color: #F4F5FA; }
+[data-oplo-theme="dark"] .omega-tab:hover { background: rgba(255, 255, 255, .06); }
+[data-oplo-theme="dark"] .omega-tab.is-on { background: rgba(255, 255, 255, .09); }
+
+/* Detail pane */
+.omega-pane { display: none; }
+.omega-pane.is-on { display: block; }
+.omega-blurb {
+  font-family: var(--oplo-font-mono);
+  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--oplo-ink-soft); margin: 0 0 14px;
+}
+.omega-items {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 14px;
+}
+.omega-item {
+  display: block; text-decoration: none;
+  padding: 8px 10px; margin-inline: -10px; border-radius: 9px;
+  transition: background .18s, transform .18s var(--oplo-ease);
+}
+.omega-item:hover { background: rgba(11, 12, 15, .045); transform: translateX(2px); }
+[data-oplo-theme="dark"] .omega-item:hover { background: rgba(255, 255, 255, .06); }
+.oi-name {
+  display: block; font-size: 14.5px; font-weight: 600;
+  color: var(--oplo-ink); letter-spacing: -.01em;
+}
+.oi-desc {
+  display: block; font-size: 12.5px; line-height: 1.4;
+  color: var(--oplo-ink-soft); margin-top: 1px;
+}
+[data-oplo-theme="dark"] .oi-name { color: #F4F5FA; }
+[data-oplo-theme="dark"] .oi-desc { color: #8A8E99; }
+.oi-soon {
+  display: inline-block; margin-left: 6px; vertical-align: middle;
+  font-family: var(--oplo-font-mono); font-size: 9px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--oplo-ink-soft); background: rgba(11, 12, 15, .06);
+  border-radius: 4px; padding: 1px 5px;
+}
+[data-oplo-theme="dark"] .oi-soon { background: rgba(255, 255, 255, .09); color: #8A8E99; }
+
+/* Industries — flat grid */
+.omega-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px 14px;
+}
+
+/* Promo card */
+.omega-feature {
+  display: block; text-decoration: none;
+  border: 1px solid var(--oplo-hairline); border-radius: 16px;
+  overflow: hidden; background: var(--oplo-porcelain);
+  transition: transform .3s var(--oplo-ease), box-shadow .3s var(--oplo-ease);
+}
+.omega-feature:hover { transform: translateY(-3px); box-shadow: 0 22px 44px -28px rgba(11, 12, 15, .38); }
+[data-oplo-theme="dark"] .omega-feature { background: #15171D; border-color: rgba(255, 255, 255, .10); }
+.of-cover { display: block; height: 78px; position: relative; }
+.of-cover::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(120% 100% at 18% 12%, rgba(255, 255, 255, .55), transparent 58%);
+}
+.of-body { display: block; padding: 14px 16px 16px; }
+.of-tag {
+  display: block;
+  font-family: var(--oplo-font-mono); font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--oplo-ink-soft);
+}
+.of-title {
+  display: block; font-family: var(--oplo-font-display);
+  font-size: 16px; font-weight: 600; letter-spacing: -.02em;
+  color: var(--oplo-ink); margin-top: 6px;
+}
+.of-desc { display: block; font-size: 12.5px; line-height: 1.45; color: var(--oplo-slate); margin-top: 5px; }
+[data-oplo-theme="dark"] .of-title { color: #F4F5FA; }
+[data-oplo-theme="dark"] .of-desc { color: #9195A6; }
+
+/* Panel footer */
+.omega-foot {
+  grid-column: 1 / -1;
+  margin-top: 4px; padding-top: 16px;
+  border-top: 1px solid var(--oplo-hairline);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px 24px;
+}
+[data-oplo-theme="dark"] .omega-foot { border-top-color: rgba(255, 255, 255, .10); }
+.omega-foot a { font-size: 13.5px; color: var(--oplo-slate); text-decoration: none; transition: color .2s; }
+.omega-foot a:hover { color: var(--oplo-ink); }
+.omega-foot .of-lead { font-weight: 600; color: var(--oplo-ink); }
+[data-oplo-theme="dark"] .omega-foot a { color: #9195A6; }
+[data-oplo-theme="dark"] .omega-foot a:hover, [data-oplo-theme="dark"] .omega-foot .of-lead { color: #F4F5FA; }
+.omega-foot .of-quick { display: flex; flex-wrap: wrap; gap: 20px; }
+
+/* ---------------------------------------------- Mobile: accordions */
+@media (max-width: 900px) {
+  .omega-in { grid-template-columns: 200px minmax(0, 1fr); }
+  .omega-feature { display: none; }
+  .omega[data-panel="grid"] .omega-in { grid-template-columns: minmax(0, 1fr); }
+  .omega-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .onav-scrim { display: none; }
+  /* The drawer now holds full menus, so it has to scroll on its own — it is
+     position:fixed, so without this everything below the fold is unreachable. */
+  .onav-links.onav-open {
+    max-height: calc(100dvh - 62px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+  .onav-item { width: 100%; }
+  .onav-trigger {
+    width: 100%; justify-content: space-between;
+    font-size: 16px; padding: 10px 0; color: var(--oplo-ink);
+  }
+  [data-oplo-theme="dark"] .onav-trigger { color: #F4F5FA; }
+  .onav-signin { margin-right: 8px; padding: 7px 14px; font-size: 13px; }
+
+  .omega {
+    position: static; display: none;
+    opacity: 1; visibility: visible; transform: none;
+    background: transparent; border: none; box-shadow: none; transition: none;
+  }
+  .onav-item.is-open .omega { display: block; }
+  .omega-in { grid-template-columns: 1fr; padding: 2px 0 10px; gap: 14px; }
+  .omega[data-panel="grid"] .omega-in { grid-template-columns: 1fr; }
+  /* the rail becomes inline section headings; every pane shows at once */
+  .omega-rail { display: none; }
+  .omega-pane { display: block; }
+  .omega-pane + .omega-pane { margin-top: 14px; }
+  .omega-blurb { margin-bottom: 8px; }
+  .omega-items, .omega-grid { grid-template-columns: 1fr; }
+  .omega-item { padding: 8px 0; margin-inline: 0; }
+  .omega-item:hover { background: none; transform: none; }
+  .omega-foot { flex-direction: column; align-items: flex-start; padding-top: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .omega, .omega-item, .omega-feature, .onav-caret, .onav-signin, .onav-scrim { transition: none; }
+}

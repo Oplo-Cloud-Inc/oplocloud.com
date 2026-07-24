@@ -42,11 +42,130 @@
   var ACCOUNTS_URL = "/oplo-accounts/demo/";
   var HOME_URL = "/";
 
-  // The one nav, shown identically on every Oplo marketing view.
-  var NAV_LINKS = [
-    { label: "Products", href: "/productivity/" },
-    { label: "Roxan",    href: "/roxan/" },
-    { label: "OEdu",     href: "/oedu/" }
+  /* -------------------------------------------------- Nav taxonomy
+     The one nav, shown identically on every Oplo marketing view:
+       Logo · Products · Solutions · Industries · Sign in
+     Products/Solutions use a two-pane panel (category rail + detail list);
+     Industries is a flat grid. Editing this array is the ONLY thing needed to
+     change the menu — the renderer derives everything else from it. */
+  var OPAL_COVER = "conic-gradient(from 210deg,#9BE8CE,#9CC3FF 90deg,#D4B3FF 180deg,#FFD2B3 270deg,#9BE8CE)";
+
+  var NAV_MENUS = [
+    {
+      id: "products", label: "Products", panel: "rail",
+      groups: [
+        { name: "Artificial intelligence", blurb: "Roxan — the model family at the center of Oplo", items: [
+          { name: "Roxan",        href: "/roxan/",             desc: "The flagship model" },
+          { name: "Roxan Flash",  href: "/roxan/#models",      desc: "Fastest and most efficient" },
+          { name: "Roxan Vision", href: "/roxan/#models",      desc: "See and reason over anything" },
+          { name: "Roxan Voice",  href: "/roxan/#models",      desc: "Real-time speech and translation" },
+          { name: "Roxan Code",   href: "/roxan/#models",      desc: "Built to build with" },
+          { name: "Roxan Nano",   href: "/roxan/#models",      desc: "On-device, private by default" },
+          { name: "Roxan API",    href: "/roxan/#developers",  desc: "One SDK, every model" },
+          { name: "Plans and pricing", href: "/roxan/#plans",  desc: "Free through Ultra" }
+        ]},
+        { name: "Productivity", blurb: "The O apps — one workspace, one account", items: [
+          { name: "Oplo Hub", href: "/productivity/", desc: "All seven apps together" },
+          { name: "ODocs",    href: "/odocs/",    desc: "Documents",       soon: true },
+          { name: "OSheets",  href: "/osheets/",  desc: "Spreadsheets",    soon: true },
+          { name: "OMails",   href: "/omails/",   desc: "Email",           soon: true },
+          { name: "OMaps",    href: "/omaps/",    desc: "Maps",            soon: true },
+          { name: "OSurf",    href: "/osurf/",    desc: "Browser",         soon: true },
+          { name: "OPhotos",  href: "/ophotos/",  desc: "Photos",          soon: true },
+          { name: "OCanvas",  href: "/ocanvas/",  desc: "Creative canvas", soon: true }
+        ]},
+        { name: "Communication", blurb: "Where a team thinks together", items: [
+          { name: "OTeams",           href: "/oteams/",     desc: "Channels, huddles, and canvas" },
+          { name: "Open the workspace", href: "/oteams/app/", desc: "Step into the live app" }
+        ]},
+        { name: "Education", blurb: "Elevating educators, empowering learners", items: [
+          { name: "OEdu",              href: "/oedu/",         desc: "Tools for the classroom" },
+          { name: "OEdu for teachers", href: "/oedu/teacher/", desc: "The teacher platform" }
+        ]},
+        { name: "Platforms", blurb: "One stack, cut to three scales", items: [
+          { name: "Halo",     href: "/soon/", desc: "For people",   soon: true },
+          { name: "Slate",    href: "/soon/", desc: "For business", soon: true },
+          { name: "Meridian", href: "/soon/", desc: "Sovereign cloud for government", soon: true }
+        ]},
+        { name: "Store and accounts", blurb: "Buy it, and sign in to it", items: [
+          { name: "OShop",         href: "/OShop/",              desc: "The Oplo storefront" },
+          { name: "Oplo Accounts", href: "/oplo-accounts/demo/", desc: "One sign-in for the ecosystem" }
+        ]}
+      ],
+      feature: { tag: "Featured", title: "Roxan", desc: "The intelligence already inside every Oplo product.", href: "/roxan/", cover: OPAL_COVER },
+      foot: { lead: { label: "Explore the full ecosystem", href: "/" },
+              quick: [ { label: "Roxan", href: "/roxan/" }, { label: "Oplo Hub", href: "/productivity/" },
+                       { label: "OTeams", href: "/oteams/" }, { label: "Research", href: "/ocrd/" } ] }
+    },
+
+    {
+      id: "solutions", label: "Solutions", panel: "rail",
+      groups: [
+        { name: "Artificial intelligence", blurb: "Put Roxan to work", items: [
+          { name: "Overview",           href: "/roxan/",             desc: "What Roxan can do" },
+          { name: "Agentic AI",         href: "/roxan/#capabilities",desc: "Agents that reason, plan, and act" },
+          { name: "Conversational AI",  href: "/roxan/#capabilities",desc: "Natural speech, in real time" },
+          { name: "Vision AI",          href: "/roxan/#experience",  desc: "Understand images, documents, screens" },
+          { name: "On-device AI",       href: "/roxan/#safety",      desc: "Private by default" },
+          { name: "Developer platform", href: "/roxan/#developers",  desc: "Build on the Roxan API" }
+        ]},
+        { name: "Work and collaboration", blurb: "The everyday workday", items: [
+          { name: "Overview",            href: "/productivity/", desc: "Seven apps, one workspace" },
+          { name: "Documents and data",  href: "/odocs/",        desc: "Write, edit, and cite" },
+          { name: "Team communication",  href: "/oteams/",       desc: "Channels and huddles" },
+          { name: "Email and scheduling",href: "/omails/",       desc: "An inbox that triages" },
+          { name: "Creative work",       href: "/ocanvas/",      desc: "Design on the canvas" }
+        ]},
+        { name: "Data and analytics", blurb: "Turn data into an answer", items: [
+          { name: "Overview",              href: "/osheets/",           desc: "Spreadsheets, rebuilt" },
+          { name: "Modeling and forecasts",href: "/roxan/mof/",         desc: "Simulate before you decide" },
+          { name: "Reporting and insight", href: "/roxan/#capabilities",desc: "Ask, and get the read" }
+        ]},
+        { name: "Security and identity", blurb: "Who gets in, and what they see", items: [
+          { name: "Overview",            href: "/oplo-accounts/demo/", desc: "Oplo Accounts" },
+          { name: "Single sign-on",      href: "/oplo-accounts/demo/", desc: "One identity, every app" },
+          { name: "Privacy and safety",  href: "/roxan/#safety",       desc: "On-device, opt-in, reversible" }
+        ]},
+        { name: "Sovereign cloud", blurb: "Infrastructure that stays home", items: [
+          { name: "Overview",         href: "/soon/",      desc: "Meridian", soon: true },
+          { name: "Data residency",   href: "/soon/",      desc: "Inside your own borders", soon: true },
+          { name: "Public-sector compliance", href: "/roxan/mof/", desc: "Built for ministries" }
+        ]},
+        { name: "Research", blurb: "The work behind the products", items: [
+          { name: "Overview",     href: "/ocrd/",           desc: "Oplo Center for Research & Discovery" },
+          { name: "Publications", href: "/ocrd/",           desc: "What we've learned, published" },
+          { name: "Roxan lab",    href: "/roxan/#research", desc: "Model and safety research" }
+        ]}
+      ],
+      feature: { tag: "Solution spotlight", title: "Agentic AI", desc: "Agents that finish the task, not just the sentence.", href: "/roxan/#capabilities", cover: "linear-gradient(140deg,#9CC3FF,#D4B3FF)" },
+      foot: { lead: { label: "Talk to our team", href: "/soon/" },
+              quick: [ { label: "For developers", href: "/roxan/#developers" }, { label: "For business", href: "/oteams/" },
+                       { label: "For government", href: "/roxan/mof/" }, { label: "For education", href: "/oedu/" } ] }
+    },
+
+    {
+      id: "industries", label: "Industries", panel: "grid",
+      groups: [
+        { name: "Industries", blurb: "Who we build for", items: [
+          { name: "Government and public sector", href: "/roxan/mof/",  desc: "Roxan for Ministry of Finance" },
+          { name: "Financial services",           href: "/roxan/mof/",  desc: "Analysis, policy, and forecasting" },
+          { name: "Education",                    href: "/oedu/",       desc: "Classrooms and campuses" },
+          { name: "Higher education and research",href: "/ocrd/",       desc: "Labs and research computing" },
+          { name: "Legal",                        href: "/OLaws/",      desc: "Lodestar litigation platform" },
+          { name: "Retail and commerce",          href: "/OShop/",      desc: "Storefronts and marketplaces" },
+          { name: "Media and creative",           href: "/ocanvas/",    desc: "Design and production" },
+          { name: "Healthcare and life sciences", href: "/soon/",       desc: "Care and discovery", soon: true },
+          { name: "Manufacturing and industrial", href: "/soon/",       desc: "The factory floor",  soon: true },
+          { name: "Telecommunications",           href: "/soon/",       desc: "Networks at scale",  soon: true },
+          { name: "Energy",                       href: "/soon/",       desc: "Grid and generation", soon: true },
+          { name: "Small business",               href: "/soon/",       desc: "Everything in one place", soon: true }
+        ]}
+      ],
+      feature: { tag: "Industry spotlight", title: "Ministry of Finance", desc: "An AI advisor that reads the economy and drafts the memo.", href: "/roxan/mof/", cover: "linear-gradient(140deg,#9BE8CE,#9CC3FF)" },
+      foot: { lead: { label: "See all customer stories", href: "/soon/" },
+              quick: [ { label: "Public sector", href: "/roxan/mof/" }, { label: "Education", href: "/oedu/" },
+                       { label: "Legal", href: "/OLaws/" }, { label: "Research", href: "/ocrd/" } ] }
+    }
   ];
 
   /* -------------------------------------------------- Small helpers */
@@ -275,6 +394,106 @@
     return chip;
   }
 
+  /* -------------------------------------------------- Mega-menu panel */
+  function itemHTML(it) {
+    return '<a class="omega-item" href="' + escHtml(it.href) + '">' +
+      '<span class="oi-name">' + escHtml(it.name) +
+        (it.soon ? '<span class="oi-soon">Soon</span>' : "") + "</span>" +
+      '<span class="oi-desc">' + escHtml(it.desc || "") + "</span></a>";
+  }
+
+  function buildPanel(menu) {
+    var panel = el("div", "omega");
+    panel.id = "omega-" + menu.id;
+    panel.setAttribute("data-panel", menu.panel);
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-label", menu.label);
+
+    var inner = el("div", "omega-in");
+    var rail = null;
+
+    // Two-pane menus get a category rail; flat ones render every item at once.
+    if (menu.panel === "rail") {
+      rail = el("div", "omega-rail");
+      rail.setAttribute("role", "tablist");
+      rail.setAttribute("aria-orientation", "vertical");
+      rail.setAttribute("aria-label", menu.label + " categories");
+      inner.appendChild(rail);
+    }
+
+    var panes = el("div", "omega-panes");
+    menu.groups.forEach(function (g, i) {
+      if (rail) {
+        var tab = el("button", "omega-tab" + (i === 0 ? " is-on" : ""),
+          "<span>" + escHtml(g.name) + '</span><span class="ot-chev" aria-hidden="true"></span>');
+        tab.type = "button";
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-selected", i === 0 ? "true" : "false");
+        tab.setAttribute("aria-controls", "omega-" + menu.id + "-" + i);
+        tab.tabIndex = i === 0 ? 0 : -1;
+        rail.appendChild(tab);
+      }
+      var pane = el("div", "omega-pane" + (i === 0 ? " is-on" : ""));
+      pane.id = "omega-" + menu.id + "-" + i;
+      if (rail) pane.setAttribute("role", "tabpanel");
+      pane.innerHTML =
+        '<p class="omega-blurb">' + escHtml(g.blurb || g.name) + "</p>" +
+        '<div class="' + (menu.panel === "grid" ? "omega-grid" : "omega-items") + '">' +
+        g.items.map(itemHTML).join("") + "</div>";
+      panes.appendChild(pane);
+    });
+    inner.appendChild(panes);
+
+    if (menu.feature) {
+      var f = menu.feature;
+      inner.appendChild(el("a", "omega-feature",
+        '<span class="of-cover" style="background:' + f.cover + '"></span>' +
+        '<span class="of-body"><span class="of-tag">' + escHtml(f.tag) + "</span>" +
+        '<span class="of-title">' + escHtml(f.title) + "</span>" +
+        '<span class="of-desc">' + escHtml(f.desc) + "</span></span>")).href = f.href;
+    }
+
+    if (menu.foot) {
+      var foot = el("div", "omega-foot",
+        '<a class="of-lead" href="' + escHtml(menu.foot.lead.href) + '">' +
+          escHtml(menu.foot.lead.label) + " &rarr;</a>" +
+        '<span class="of-quick">' + menu.foot.quick.map(function (q) {
+          return '<a href="' + escHtml(q.href) + '">' + escHtml(q.label) + "</a>";
+        }).join("") + "</span>");
+      inner.appendChild(foot);
+    }
+
+    panel.appendChild(inner);
+
+    // Rail behaviour: switch the visible pane, with roving focus + arrow keys.
+    if (rail) {
+      var tabs = [].slice.call(rail.children);
+      var paneEls = [].slice.call(panes.children);
+      function select(i, focus) {
+        tabs.forEach(function (t, n) {
+          var on = n === i;
+          t.classList.toggle("is-on", on);
+          t.setAttribute("aria-selected", String(on));
+          t.tabIndex = on ? 0 : -1;
+          paneEls[n].classList.toggle("is-on", on);
+        });
+        if (focus) tabs[i].focus();
+      }
+      tabs.forEach(function (t, i) {
+        t.addEventListener("click", function () { select(i); });
+        t.addEventListener("mouseenter", function () { select(i); });
+        t.addEventListener("keydown", function (e) {
+          if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); select((i + 1) % tabs.length, true); }
+          else if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); select((i - 1 + tabs.length) % tabs.length, true); }
+          else if (e.key === "Home") { e.preventDefault(); select(0, true); }
+          else if (e.key === "End") { e.preventDefault(); select(tabs.length - 1, true); }
+        });
+      });
+      panel.__reset = function () { select(0); };
+    }
+    return panel;
+  }
+
   // The unified top nav — one source, rendered on every marketing view.
   function buildNav(session, accountPop, scrim) {
     var nav = el("nav", "onav oplo-scope");
@@ -286,14 +505,78 @@
     brand.href = HOME_URL;
     brand.innerHTML = '<span class="onav-dot" aria-hidden="true"></span>Oplo';
 
+    // Products / Solutions / Industries — each a trigger + its panel.
+    var menuScrim = el("div", "onav-scrim oplo-scope");
+    document.body.appendChild(menuScrim);
+
     var links = el("ul", "onav-links");
-    NAV_LINKS.forEach(function (l) {
-      var li = el("li");
-      var a = el("a"); a.href = l.href; a.textContent = l.label;
-      li.appendChild(a); links.appendChild(li);
+    var openItem = null, hoverTimer = null;
+    var isSmall = function () { return window.matchMedia("(max-width: 720px)").matches; };
+
+    function closeMenus() {
+      if (!openItem) return;
+      openItem.classList.remove("is-open");
+      openItem.__trigger.setAttribute("aria-expanded", "false");
+      openItem = null;
+      nav.classList.remove("menu-open");
+      menuScrim.classList.remove("is-on");
+    }
+    function openMenu(li) {
+      clearTimeout(hoverTimer);
+      if (openItem === li) return;
+      if (openItem) {
+        openItem.classList.remove("is-open");
+        openItem.__trigger.setAttribute("aria-expanded", "false");
+      }
+      li.classList.add("is-open");
+      li.__trigger.setAttribute("aria-expanded", "true");
+      if (li.__panel.__reset) li.__panel.__reset();
+      openItem = li;
+      if (!isSmall()) { nav.classList.add("menu-open"); menuScrim.classList.add("is-on"); }
+    }
+
+    NAV_MENUS.forEach(function (menu) {
+      var li = el("li", "onav-item");
+      var trigger = el("button", "onav-trigger",
+        "<span>" + escHtml(menu.label) + '</span><span class="onav-caret" aria-hidden="true"></span>');
+      trigger.type = "button";
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.setAttribute("aria-haspopup", "true");
+      trigger.setAttribute("aria-controls", "omega-" + menu.id);
+
+      var panel = buildPanel(menu);
+      li.__trigger = trigger;
+      li.__panel = panel;
+
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        li.classList.contains("is-open") ? closeMenus() : openMenu(li);
+      });
+      li.addEventListener("mouseenter", function () { if (!isSmall()) openMenu(li); });
+      li.addEventListener("mouseleave", function () {
+        if (!isSmall()) hoverTimer = setTimeout(closeMenus, 160);
+      });
+
+      li.appendChild(trigger);
+      li.appendChild(panel);
+      links.appendChild(li);
+    });
+
+    menuScrim.addEventListener("click", closeMenus);
+    document.addEventListener("click", function (e) {
+      if (openItem && !openItem.contains(e.target)) closeMenus();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && openItem) { var t = openItem.__trigger; closeMenus(); t.focus(); }
     });
 
     var actions = el("div", "onav-actions");
+    if (!session) {
+      var signin = el("a", "onav-signin");
+      signin.href = ACCOUNTS_URL;
+      signin.textContent = "Sign in";
+      actions.appendChild(signin);
+    }
     var chip = accountChip(session);
     actions.appendChild(chip);
 
@@ -320,12 +603,15 @@
       links.classList.remove("onav-open");
       toggle.classList.remove("on");
       toggle.setAttribute("aria-expanded", "false");
+      closeMenus();
     }
     toggle.addEventListener("click", function () {
       var open = links.classList.toggle("onav-open");
       toggle.classList.toggle("on", open);
       toggle.setAttribute("aria-expanded", String(open));
+      if (!open) closeMenus();
     });
+    // Following any link closes both the drawer and the open menu.
     links.addEventListener("click", function (e) { if (e.target.closest("a")) closeDrawer(); });
     window.addEventListener("resize", closeDrawer, { passive: true });
   }
