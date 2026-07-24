@@ -5,8 +5,8 @@ surface together the way Google ties Gmail, Docs and Maps together: **one shared
 shell** — the same app-launcher and account chip on every page — over a family of
 apps that each keep their own product colour.
 
-> *Technology at every order of magnitude* — engineered for a single person, ten
-> thousand people, and entire nations.
+> *Technology for people, business, and government* — hardware, software, and
+> cloud, engineered as one system.
 
 ## What's in here
 
