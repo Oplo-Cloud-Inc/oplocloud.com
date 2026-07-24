@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Oplo — Technology at every order of magnitude</title>
-<meta name="description" content="Oplo builds hardware, software, and cloud infrastructure for one person, ten thousand people, and entire nations.">
+<meta name="description" content="Oplo builds hardware, software, and cloud infrastructure for one person, ten thousand people, and entire nations — with Roxan intelligence woven through all of it.">
 <meta name="theme-color" content="#FCFCFD">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='o' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%239BE8CE'/%3E%3Cstop offset='.4' stop-color='%239CC3FF'/%3E%3Cstop offset='.7' stop-color='%23D4B3FF'/%3E%3Cstop offset='1' stop-color='%23FFD2B3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23o)'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -267,25 +267,67 @@
     font-weight: 600;
     font-size: 15px;
     color: var(--ink);
+    white-space: nowrap;
   }
   .link-arrow .chev { transition: transform .25s var(--ease-out); }
   .link-arrow:hover .chev { transform: translateX(4px); }
   .link-arrow.muted { color: var(--slate); }
   .link-arrow.muted:hover { color: var(--ink); }
 
-  /* ------------------------------------------------ Hero */
-  .hero {
-    position: relative;
+  /* ------------------------------------------------ Masthead / ribbon */
+  .masthead {
+    padding-top: clamp(92px, 12vh, 138px);
+    padding-bottom: clamp(56px, 7vw, 96px);
     text-align: center;
-    padding-top: clamp(128px, 17vh, 200px);
-    padding-bottom: clamp(64px, 8vw, 108px);
+    position: relative;
   }
+  .ribbon {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 100%;
+    padding: 7px 8px 7px 16px;
+    border: 1px solid var(--hairline);
+    border-radius: 100px;
+    background: var(--porcelain);
+    box-shadow: 0 12px 30px -22px rgba(11,12,15,0.5);
+    font-size: 13.5px;
+    margin-bottom: clamp(34px, 5vw, 58px);
+    transition: border-color .25s, transform .25s var(--ease-out);
+  }
+  .ribbon:hover { border-color: #D5D7DC; transform: translateY(-1px); }
+  .ribbon .flare {
+    width: 20px; height: 20px; border-radius: 50%; flex: none;
+    background: var(--opal);
+    box-shadow: inset 0 0 0 1px rgba(11,12,15,0.06);
+  }
+  .ribbon .tag {
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--slate);
+  }
+  .ribbon b { font-weight: 600; }
+  .ribbon .go {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-weight: 600; color: var(--ink);
+    background: var(--panel);
+    padding: 5px 13px; border-radius: 100px;
+    white-space: nowrap;
+  }
+  .ribbon .go .chev { transition: transform .25s var(--ease-out); }
+  .ribbon:hover .go .chev { transform: translateX(3px); }
+  .ribbon .rsep { color: var(--hairline); }
+  @media (max-width: 620px) {
+    .ribbon .rsep, .ribbon .tag { display: none; }
+    .ribbon { font-size: 13px; padding-left: 12px; }
+  }
+
   .hero-opal {
     --px: 0px; --py: 0px;
     position: relative;
-    width: clamp(168px, 24vw, 248px);
+    width: clamp(150px, 21vw, 216px);
     aspect-ratio: 1;
-    margin: 0 auto clamp(40px, 5vw, 66px);
+    margin: 0 auto clamp(34px, 4.5vw, 56px);
     animation: float 9s ease-in-out infinite;
   }
   @keyframes float {
@@ -302,7 +344,7 @@
       inset 0 -18px 40px -20px rgba(11,12,15,0.25),
       0 40px 80px -30px rgba(120,128,164,0.55);
   }
-  .opal-body::before {   /* soft opal color field, blurred inside the clip */
+  .opal-body::before {
     content: "";
     position: absolute;
     inset: -22%;
@@ -314,7 +356,7 @@
       var(--opal);
     filter: blur(14px) saturate(1.12);
   }
-  .opal-gloss {   /* pointer-parallax highlight */
+  .opal-gloss {
     position: absolute;
     inset: 0;
     border-radius: 50%;
@@ -334,9 +376,9 @@
     background: radial-gradient(closest-side, rgba(120,128,164,0.30), transparent);
   }
 
-  .hero h1 {
+  .masthead h1 {
     font-family: var(--font-display);
-    font-size: clamp(44px, 7.4vw, 94px);
+    font-size: clamp(42px, 7vw, 90px);
     font-weight: 600;
     line-height: 1.02;
     letter-spacing: -0.04em;
@@ -344,139 +386,198 @@
     margin-inline: auto;
     text-wrap: balance;
   }
-  .hero-sub {
-    max-width: 46ch;
-    margin: clamp(22px, 3vw, 30px) auto 0;
+  .masthead-sub {
+    max-width: 50ch;
+    margin: clamp(20px, 2.6vw, 28px) auto 0;
     font-size: clamp(17px, 2vw, 20px);
     color: var(--slate);
     line-height: 1.55;
     text-wrap: balance;
   }
-  .hero-actions {
+
+  /* Directory index chips (table of contents for the front page) */
+  .index {
     display: flex;
-    justify-content: center;
     flex-wrap: wrap;
-    gap: 14px 30px;
+    justify-content: center;
+    gap: 9px;
     margin-top: clamp(30px, 4vw, 42px);
   }
-
-  /* ------------------------------------------------ Section scaffold */
-  .section { padding-block: clamp(72px, 9vw, 128px); }
-  .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 12.5px;
+  .index a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
     font-weight: 500;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--slate);
-  }
-  .section-head {
-    max-width: 640px;
-    margin-bottom: clamp(38px, 5vw, 60px);
-  }
-  .section-head .eyebrow { margin-bottom: 16px; }
-  .section-title {
-    font-family: var(--font-display);
-    font-size: clamp(30px, 4.4vw, 54px);
-    font-weight: 600;
-    line-height: 1.06;
-    letter-spacing: -0.03em;
-    text-wrap: balance;
-  }
-  .section-title .soft { color: var(--ink-soft); }
-
-  /* ------------------------------------------------ Lineup bento */
-  .bento {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(16px, 1.8vw, 22px);
-  }
-  .product-card {
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--radius);
-    padding: clamp(30px, 3.6vw, 52px);
-    min-height: 380px;
-    display: flex;
-    flex-direction: column;
-    isolation: isolate;
+    padding: 8px 15px 8px 12px;
     border: 1px solid var(--hairline);
-    transition: transform .4s var(--ease-out), box-shadow .4s var(--ease-out);
+    border-radius: 100px;
+    background: var(--porcelain);
+    transition: color .2s, border-color .2s, transform .2s var(--ease-out);
   }
-  .product-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 30px 60px -34px rgba(11,12,15,0.28);
+  .index a:hover { color: var(--ink); border-color: #D5D7DC; transform: translateY(-1px); }
+  .index a i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .idot-roxan { background: var(--opal); }
+  .idot-sky { background: var(--sky); }
+  .idot-lilac { background: var(--lilac); }
+  .idot-mint { background: var(--mint); }
+  .idot-peach { background: var(--peach); }
+  .idot-ink { background: var(--ink); }
+
+  /* ------------------------------------------------ Directory sections */
+  .dir {
+    padding-block: clamp(52px, 6.4vw, 92px);
+    border-top: 1px solid var(--hairline);
+    scroll-margin-top: 78px;
   }
-  .product-card.wide { grid-column: 1 / -1; min-height: 440px; }
-  .product-card .card-head { position: relative; z-index: 2; max-width: 22ch; }
-  .product-card .kicker {
+  .dir-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 20px 40px;
+    margin-bottom: clamp(30px, 3.4vw, 44px);
+  }
+  .dir-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
     font-family: var(--font-mono);
     font-size: 12px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--slate);
+    margin-bottom: 15px;
   }
-  .product-card h3 {
+  .dir-eyebrow i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .dir-title {
     font-family: var(--font-display);
-    font-size: clamp(30px, 3.6vw, 46px);
+    font-size: clamp(27px, 3.5vw, 42px);
     font-weight: 600;
+    line-height: 1.07;
     letter-spacing: -0.03em;
-    line-height: 1.02;
-    margin: 12px 0 10px;
+    max-width: 20ch;
+    text-wrap: balance;
   }
-  .product-card .tagline {
-    font-size: clamp(16px, 1.7vw, 19px);
+  .dir-title .soft { color: var(--ink-soft); }
+  .dir-dek {
+    margin-top: 14px;
+    max-width: 54ch;
     color: var(--slate);
-    line-height: 1.5;
+    font-size: clamp(15.5px, 1.7vw, 18px);
+    line-height: 1.55;
   }
-  .product-card .card-foot {
-    position: relative;
-    z-index: 2;
-    margin-top: auto;
-    padding-top: 26px;
-  }
-  /* pastel washes — the opal, refracted per product */
-  .product-card.halo     { background: linear-gradient(150deg, #FFF6EE 0%, #FFE7D2 100%); }
-  .product-card.slate    { background: linear-gradient(160deg, #F5EFFF 0%, #E7D8FF 100%); }
-  .product-card.meridian { background: linear-gradient(160deg, #EDF3FF 0%, #DCEAFF 55%, #DFF6EC 100%); }
+  .dir-head .link-arrow { padding-bottom: 6px; }
 
-  /* product glyphs (pure CSS, ambient) */
-  .glyph { position: absolute; z-index: 1; pointer-events: none; }
-  .glyph.halo {
-    right: clamp(-40px, -3vw, -20px); top: 50%;
-    width: clamp(220px, 30vw, 360px); aspect-ratio: 1;
-    transform: translateY(-50%);
-    border-radius: 50%;
-    background:
-      radial-gradient(closest-side, transparent 58%, rgba(255,167,97,0.55) 62%, rgba(255,167,97,0) 76%),
-      radial-gradient(closest-side, transparent 70%, rgba(255,210,179,0.9) 74%, transparent 86%);
+  /* Quick-links card grid (NVIDIA "Quick Links") */
+  .ql {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(14px, 1.5vw, 20px);
   }
-  .glyph.slate {
-    right: -60px; bottom: -60px;
-    width: 260px; height: 200px;
-    border-radius: 30px;
-    background: linear-gradient(150deg, rgba(212,179,255,0.85), rgba(156,195,255,0.4));
+  .ql.three { grid-template-columns: repeat(3, 1fr); }
+  .ql.two   { grid-template-columns: repeat(2, 1fr); }
+  .ql-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--hairline);
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--porcelain);
+    transition: transform .35s var(--ease-out), box-shadow .35s var(--ease-out), border-color .35s;
+  }
+  .ql-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 26px 50px -32px rgba(11,12,15,0.34);
+    border-color: #DBDCE0;
+  }
+  .ql-cover {
+    height: 104px;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(11,12,15,0.05);
+  }
+  .ql-cover::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(120% 100% at 18% 12%, rgba(255,255,255,0.6), transparent 55%);
+  }
+  .ql-cover .facet {
+    position: absolute;
+    right: -22px; bottom: -30px;
+    width: 108px; height: 108px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.28);
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
-    transform: rotate(-16deg);
-    opacity: 0.9;
   }
-  .glyph.meridian {
-    right: -70px; bottom: -70px;
-    width: 260px; height: 260px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(156,195,255,0.8);
-    background:
-      radial-gradient(closest-side, transparent 62%, rgba(155,232,206,0.35) 100%);
+  .cov-opal  { background: var(--opal); }
+  .cov-sky   { background: linear-gradient(145deg, #EAF1FF, #9CC3FF); }
+  .cov-lilac { background: linear-gradient(145deg, #F3ECFF, #D4B3FF); }
+  .cov-mint  { background: linear-gradient(145deg, #E7FAF2, #9BE8CE); }
+  .cov-peach { background: linear-gradient(145deg, #FFF1E6, #FFD2B3); }
+  .cov-ink   { background: linear-gradient(145deg, #23252C, #0B0C0F); }
+  .cov-skylilac { background: linear-gradient(140deg, #9CC3FF, #D4B3FF); }
+  .cov-mintsky  { background: linear-gradient(140deg, #9BE8CE, #9CC3FF); }
+
+  .ql-body {
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
   }
-  .glyph.meridian::before, .glyph.meridian::after {
-    content: ""; position: absolute; inset: 0;
-    border-radius: 50%;
-    border: 1.5px solid rgba(156,195,255,0.55);
+  .ql-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-bottom: 9px;
   }
-  .glyph.meridian::before { transform: scaleX(0.5); }
-  .glyph.meridian::after  { transform: scaleY(0.5); }
+  .ql-body h3 {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .ql-dek {
+    color: var(--slate);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-top: 8px;
+    flex: 1;
+  }
+  .ql-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 16px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .ql-more .chev { transition: transform .25s var(--ease-out); }
+  .ql-card:hover .ql-more .chev { transform: translateX(4px); }
+  .ql-badge {
+    display: inline-block;
+    margin-left: 7px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    vertical-align: middle;
+    color: #1C7A57;
+    background: rgba(155,232,206,0.34);
+    border-radius: 5px;
+    padding: 2px 6px;
+  }
 
   /* ------------------------------------------------ Scale (orders of magnitude) */
+  .scale {
+    padding-block: clamp(64px, 8vw, 116px);
+    border-top: 1px solid var(--hairline);
+    background: var(--panel);
+  }
   .scale-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -512,64 +613,10 @@
   .scale-item:nth-child(2) .tick { background: var(--lilac); }
   .scale-item:nth-child(3) .tick { background: var(--sky); }
 
-  /* ------------------------------------------------ Platform bento */
-  .platform-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: clamp(14px, 1.6vw, 20px);
-    grid-auto-rows: minmax(150px, auto);
-  }
-  .cap {
-    border: 1px solid var(--hairline);
-    border-radius: 22px;
-    padding: 26px 28px;
-    background: var(--panel);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: background .3s, border-color .3s;
-  }
-  .cap:hover { background: #EFF0F3; border-color: #DBDCE0; }
-  .cap .cap-tag {
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--slate);
-  }
-  .cap h5 {
-    font-family: var(--font-display);
-    font-size: clamp(19px, 2vw, 24px);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    margin-top: 12px;
-  }
-  .cap p { color: var(--slate); font-size: 14.5px; line-height: 1.5; margin-top: 8px; }
-  .cap.big { grid-column: span 3; }
-  .cap.mid { grid-column: span 3; }
-  .cap.third { grid-column: span 2; }
-  .cap.feature {
-    background: var(--ink);
-    border-color: var(--ink);
-    color: var(--porcelain);
-  }
-  .cap.feature .cap-tag { color: rgba(252,252,253,0.6); }
-  .cap.feature p { color: rgba(252,252,253,0.66); }
-  .cap.feature .dots {
-    display: flex; gap: 7px; margin-top: 4px;
-  }
-  .cap.feature .dots i {
-    width: 10px; height: 10px; border-radius: 50%; display: block;
-  }
-  .cap.feature .dots i:nth-child(1){ background: var(--mint); }
-  .cap.feature .dots i:nth-child(2){ background: var(--sky); }
-  .cap.feature .dots i:nth-child(3){ background: var(--lilac); }
-  .cap.feature .dots i:nth-child(4){ background: var(--peach); }
-
   /* ------------------------------------------------ Closing */
   .closing {
     text-align: center;
-    padding-block: clamp(96px, 13vw, 168px);
+    padding-block: clamp(92px, 12vw, 160px);
   }
   .closing h2 {
     font-family: var(--font-display);
@@ -655,11 +702,13 @@
   /* ------------------------------------------------ Responsive */
   @media (max-width: 1060px) {
     .megamenu-inner { grid-template-columns: repeat(3, 1fr); row-gap: 34px; }
+    .ql { grid-template-columns: repeat(2, 1fr); }
+    .ql.three { grid-template-columns: repeat(3, 1fr); }
   }
-  @media (max-width: 900px) {
-    .platform-grid { grid-template-columns: repeat(4, 1fr); }
-    .cap.big, .cap.mid { grid-column: span 4; }
-    .cap.third { grid-column: span 2; }
+  @media (max-width: 860px) {
+    .dir-head { grid-template-columns: 1fr; align-items: start; }
+    .dir-head .link-arrow { padding-bottom: 0; }
+    .ql, .ql.three { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 720px) {
     .nav-links { display: none; }
@@ -705,16 +754,10 @@
     .mm-col li a { padding: 8px 0; margin-inline: 0; }
     .mm-col li a:hover { background: none; transform: none; }
     .megamenu-foot { flex-direction: column; align-items: flex-start; padding: 14px 0 0; }
-
-    .bento { grid-template-columns: 1fr; }
-    .product-card.wide, .product-card { grid-column: 1 / -1; min-height: 340px; }
     .scale-grid { grid-template-columns: 1fr; }
-    .platform-grid { grid-template-columns: 1fr 1fr; }
-    .cap.big, .cap.mid, .cap.third { grid-column: span 2; }
   }
-  @media (max-width: 460px) {
-    .cap.big, .cap.mid, .cap.third { grid-column: 1 / -1; }
-    .platform-grid { grid-template-columns: 1fr; }
+  @media (max-width: 560px) {
+    .ql, .ql.three, .ql.two { grid-template-columns: 1fr; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -743,8 +786,8 @@
               <ul>
                 <li><a href="/roxan/">Meet Roxan<span class="sub">The model at the center</span></a></li>
                 <li><a href="/roxan/#capabilities">Capabilities<span class="sub">What Roxan can do</span></a></li>
+                <li><a href="/roxan/mof/">For Ministry of Finance<span class="sub">The AI advisor cockpit</span></a></li>
                 <li><a href="/roxan/#developers">For developers<span class="sub">Build on the API</span></a></li>
-                <li><a href="/roxan/#safety">Safety &amp; privacy<span class="sub">On-device by default</span></a></li>
               </ul>
             </div>
             <div class="mm-col">
@@ -765,41 +808,41 @@
                 <li><a href="/oedu/">For teachers<span class="sub">Give time back to teaching</span></a></li>
                 <li><a href="/oedu/#schools">For schools<span class="sub">Whole-campus tools</span></a></li>
                 <li><a href="/oedu/#students">For students<span class="sub">Learning, human-first</span></a></li>
-                <li><a href="/oedu/#research">Research<span class="sub">The pedagogy behind it</span></a></li>
+                <li><a href="/oteams/">OTeams<span class="sub">Team communication</span></a></li>
               </ul>
             </div>
             <div class="mm-col">
               <p class="mm-eyebrow"><span class="mm-dot platforms" aria-hidden="true"></span>Platforms</p>
               <ul>
-                <li><a href="#lineup">Halo<span class="sub">For people</span></a></li>
-                <li><a href="#lineup">Slate<span class="sub">For companies</span></a></li>
-                <li><a href="#lineup">Meridian<span class="sub">For nations</span></a></li>
-                <li><a href="#platform">The platform<span class="sub">Silicon to service</span></a></li>
+                <li><a href="#platforms">Halo<span class="sub">For people</span></a></li>
+                <li><a href="#platforms">Slate<span class="sub">For companies</span></a></li>
+                <li><a href="#platforms">Meridian<span class="sub">For nations</span></a></li>
+                <li><a href="#scale">Orders of magnitude<span class="sub">How we think about scale</span></a></li>
               </ul>
             </div>
             <div class="mm-col">
               <p class="mm-eyebrow"><span class="mm-dot explore" aria-hidden="true"></span>Explore</p>
               <ul>
-                <li><a href="#lineup">All products</a></li>
-                <li><a href="/soon/">What's new</a></li>
-                <li><a href="/soon/">Compare</a></li>
-                <li><a href="/soon/">Store</a></li>
+                <li><a href="/ocrd/">Research (OCRD)</a></li>
+                <li><a href="/OShop/">OShop</a></li>
+                <li><a href="/OLaws/">Lodestar · legal</a></li>
+                <li><a href="/oplo-accounts/demo/">Oplo Accounts</a></li>
               </ul>
             </div>
           </div>
           <div class="megamenu-foot">
-            <a class="link-arrow" href="#lineup">Explore the full lineup <span class="chev" aria-hidden="true">→</span></a>
+            <a class="link-arrow" href="#intelligence">Explore the full ecosystem <span class="chev" aria-hidden="true">→</span></a>
             <div class="mm-quick">
               <a href="/roxan/">Roxan</a>
               <a href="/productivity/">Productivity</a>
-              <a href="/oedu/">OEdu</a>
-              <a href="/soon/">Support</a>
+              <a href="/oteams/">OTeams</a>
+              <a href="/ocrd/">Research</a>
             </div>
           </div>
         </div>
       </li>
-      <li><a href="#scale">Scale</a></li>
-      <li><a href="#platform">Platform</a></li>
+      <li><a href="#intelligence">Ecosystem</a></li>
+      <li><a href="#platforms">Platforms</a></li>
       <li><a href="#company">Company</a></li>
     </ul>
     <div id="oplo-actions"></div>
@@ -812,125 +855,327 @@
 
 <main id="top">
 
-  <!-- Hero -->
-  <header class="hero container">
+  <!-- Masthead -->
+  <header class="masthead container">
+    <a class="ribbon" href="/roxan/mof/">
+      <span class="flare" aria-hidden="true"></span>
+      <span class="tag">New</span>
+      <span class="rsep" aria-hidden="true">·</span>
+      <span><b>Roxan for Ministry of Finance</b> is live.</span>
+      <span class="go">See the cockpit <span class="chev" aria-hidden="true">→</span></span>
+    </a>
+
     <div class="hero-opal" id="heroOpal" aria-hidden="true">
       <div class="opal-body"></div>
       <div class="opal-gloss" id="opalGloss"></div>
       <div class="opal-shadow"></div>
     </div>
+
     <h1>Technology at every order of magnitude.</h1>
-    <p class="hero-sub">One idea, engineered for a single person, ten thousand people, and entire nations.</p>
-    <div class="hero-actions">
-      <a class="link-arrow" href="#lineup">Explore the lineup <span class="chev" aria-hidden="true">→</span></a>
-      <a class="link-arrow muted" href="#scale">How we think about scale <span class="chev" aria-hidden="true">→</span></a>
+    <p class="masthead-sub">Hardware, software, and cloud — engineered for a single person, ten thousand people, and entire nations. With Roxan intelligence woven through all of it.</p>
+
+    <div class="index" role="navigation" aria-label="Explore the ecosystem">
+      <a href="#intelligence"><i class="idot-roxan" aria-hidden="true"></i>Intelligence</a>
+      <a href="#productivity"><i class="idot-sky" aria-hidden="true"></i>Productivity</a>
+      <a href="#teams"><i aria-hidden="true" style="background:linear-gradient(140deg,var(--sky),var(--lilac))"></i>Teams</a>
+      <a href="#education"><i class="idot-mint" aria-hidden="true"></i>Education</a>
+      <a href="#platforms"><i class="idot-lilac" aria-hidden="true"></i>Platforms</a>
+      <a href="#more"><i class="idot-peach" aria-hidden="true"></i>More</a>
     </div>
   </header>
 
-  <!-- Lineup -->
-  <section class="section container" id="lineup">
-    <div class="section-head reveal">
-      <p class="eyebrow">The lineup</p>
-      <h2 class="section-title">Three products, cut from <span class="soft">one material.</span></h2>
+  <!-- Directory: Intelligence -->
+  <section class="dir container reveal" id="intelligence">
+    <div class="dir-head">
+      <div>
+        <p class="dir-eyebrow"><i style="background:var(--opal)" aria-hidden="true"></i>Intelligence · Roxan</p>
+        <h2 class="dir-title">The model woven through <span class="soft">everything we make.</span></h2>
+        <p class="dir-dek">Roxan is one family of AI that reasons, writes, sees, listens, and acts. It isn't an app you open — it's the intelligence already inside the ones you use.</p>
+      </div>
+      <a class="link-arrow" href="/roxan/">Explore Roxan <span class="chev" aria-hidden="true">→</span></a>
     </div>
-    <div class="bento">
-      <article class="product-card wide halo reveal">
-        <div class="glyph halo" aria-hidden="true"></div>
-        <div class="card-head">
-          <span class="kicker">Halo · For people</span>
-          <h3>Personal computing that stays out of the way.</h3>
-          <p class="tagline">Devices and software for the home that quiet down so you can focus on everything else.</p>
+    <div class="ql">
+      <a class="ql-card" href="/roxan/">
+        <div class="ql-cover cov-opal"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Flagship · Model</p>
+          <h3>Meet Roxan</h3>
+          <p class="ql-dek">One family of models that reasons, writes, sees, and acts across every Oplo product.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
         </div>
-        <div class="card-foot">
-          <a class="link-arrow" href="/soon/">Learn more <span class="chev" aria-hidden="true">→</span></a>
+      </a>
+      <a class="ql-card" href="/roxan/mof/">
+        <div class="ql-cover cov-skylilac"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Public finance · Cockpit</p>
+          <h3>Roxan for Ministry of Finance</h3>
+          <p class="ql-dek">An AI advisor that reads the economy, simulates policy, and drafts the cabinet memo.</p>
+          <span class="ql-more">Open the cockpit <span class="chev" aria-hidden="true">→</span></span>
         </div>
-      </article>
+      </a>
+      <a class="ql-card" href="/productivity/">
+        <div class="ql-cover cov-sky"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Everywhere</p>
+          <h3>Already inside your apps</h3>
+          <p class="ql-dek">You don't go to Roxan — it's one keystroke away in ODocs, OMails, and the rest.</p>
+          <span class="ql-more">See the suite <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      <a class="ql-card" href="/roxan/#developers">
+        <div class="ql-cover cov-ink"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Developers · API</p>
+          <h3>Build on Roxan</h3>
+          <p class="ql-dek">One SDK, every model — streaming, tools, vision, and voice in a few lines of code.</p>
+          <span class="ql-more">Read the docs <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+    </div>
+  </section>
 
-      <article class="product-card slate reveal">
-        <div class="glyph slate" aria-hidden="true"></div>
-        <div class="card-head">
-          <span class="kicker">Slate · For companies</span>
-          <h3>The operating system for a company.</h3>
-          <p class="tagline">One place to run the tools, data, and people behind a growing business.</p>
+  <!-- Directory: Productivity -->
+  <section class="dir container reveal" id="productivity">
+    <div class="dir-head">
+      <div>
+        <p class="dir-eyebrow"><i style="background:var(--sky)" aria-hidden="true"></i>Productivity · The O apps</p>
+        <h2 class="dir-title">Your work, rebuilt <span class="soft">AI-first.</span></h2>
+        <p class="dir-dek">Seven apps that share one place, one account, and one intelligence — so your documents, data, and mail finally know about each other.</p>
+      </div>
+      <a class="link-arrow" href="/productivity/">Open Oplo Hub <span class="chev" aria-hidden="true">→</span></a>
+    </div>
+    <div class="ql">
+      <a class="ql-card" href="/productivity/">
+        <div class="ql-cover cov-sky"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Suite · Overview</p>
+          <h3>Oplo Hub</h3>
+          <p class="ql-dek">Seven apps, one workspace, Roxan in all of them — a single home for the workday.</p>
+          <span class="ql-more">Explore the hub <span class="chev" aria-hidden="true">→</span></span>
         </div>
-        <div class="card-foot">
-          <a class="link-arrow" href="/soon/">Learn more <span class="chev" aria-hidden="true">→</span></a>
+      </a>
+      <a class="ql-card" href="/odocs/">
+        <div class="ql-cover cov-sky"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Documents</p>
+          <h3>ODocs</h3>
+          <p class="ql-dek">Writing that drafts, edits, and cites alongside you — in your own voice.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
         </div>
-      </article>
+      </a>
+      <a class="ql-card" href="/osheets/">
+        <div class="ql-cover cov-mint"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Spreadsheets</p>
+          <h3>OSheets</h3>
+          <p class="ql-dek">Data that turns into models, charts, and answers the moment you ask.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      <a class="ql-card" href="/omails/">
+        <div class="ql-cover cov-peach"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Mail</p>
+          <h3>OMails</h3>
+          <p class="ql-dek">An inbox that triages, drafts, and never loses the thread.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+    </div>
+  </section>
 
-      <article class="product-card meridian reveal reveal-d1">
-        <div class="glyph meridian" aria-hidden="true"></div>
-        <div class="card-head">
-          <span class="kicker">Meridian · For nations</span>
-          <h3>Sovereign cloud, built to stay home.</h3>
-          <p class="tagline">Infrastructure that keeps a country's data inside its own borders and its own laws.</p>
+  <!-- Directory: Teams -->
+  <section class="dir container reveal" id="teams">
+    <div class="dir-head">
+      <div>
+        <p class="dir-eyebrow"><i style="background:linear-gradient(140deg,var(--sky),var(--lilac))" aria-hidden="true"></i>Teams · OTeams</p>
+        <h2 class="dir-title">One canvas where the <span class="soft">whole workday connects.</span></h2>
+        <p class="dir-dek">Channels, huddles, canvas, and Roxan on a single surface — the place a team thinks together, live.</p>
+      </div>
+      <a class="link-arrow" href="/oteams/">Explore OTeams <span class="chev" aria-hidden="true">→</span></a>
+    </div>
+    <div class="ql three">
+      <a class="ql-card" href="/oteams/">
+        <div class="ql-cover cov-skylilac"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Communication</p>
+          <h3>Meet OTeams</h3>
+          <p class="ql-dek">Channels, huddles, canvas, and Roxan on one connected surface for your team.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
         </div>
-        <div class="card-foot">
-          <a class="link-arrow" href="/soon/">Learn more <span class="chev" aria-hidden="true">→</span></a>
+      </a>
+      <a class="ql-card" href="/oteams/app/">
+        <div class="ql-cover cov-lilac"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">App · Live</p>
+          <h3>Open the workspace<span class="ql-badge">Try it</span></h3>
+          <p class="ql-dek">Step into a real OTeams workspace — messages, huddles, search, and slash commands.</p>
+          <span class="ql-more">Launch the app <span class="chev" aria-hidden="true">→</span></span>
         </div>
-      </article>
+      </a>
+      <a class="ql-card" href="/oteams/">
+        <div class="ql-cover cov-sky"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Real-time</p>
+          <h3>Huddles &amp; live chat</h3>
+          <p class="ql-dek">Drop into audio in a click, share your screen, and bring Roxan into the room.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Directory: Education -->
+  <section class="dir container reveal" id="education">
+    <div class="dir-head">
+      <div>
+        <p class="dir-eyebrow"><i style="background:var(--mint)" aria-hidden="true"></i>Education · OEdu</p>
+        <h2 class="dir-title">Elevating educators. <span class="soft">Empowering learners.</span></h2>
+        <p class="dir-dek">Human-first tools for the classroom, built to give time back to teaching — with Roxan handling the busywork, not the teaching.</p>
+      </div>
+      <a class="link-arrow" href="/oedu/">Explore OEdu <span class="chev" aria-hidden="true">→</span></a>
+    </div>
+    <div class="ql two">
+      <a class="ql-card" href="/oedu/teacher/">
+        <div class="ql-cover cov-mint"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Teacher platform</p>
+          <h3>For teachers<span class="ql-badge">Try it</span></h3>
+          <p class="ql-dek">Planning, grading, and feedback with Roxan — a dashboard built around the school day.</p>
+          <span class="ql-more">Open the platform <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      <a class="ql-card" href="/oedu/">
+        <div class="ql-cover cov-mintsky"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Education</p>
+          <h3>For schools &amp; students</h3>
+          <p class="ql-dek">Whole-campus tools and learning that stays human — the pedagogy comes first.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Directory: Platforms -->
+  <section class="dir container reveal" id="platforms">
+    <div class="dir-head">
+      <div>
+        <p class="dir-eyebrow"><i style="background:var(--lilac)" aria-hidden="true"></i>Platforms · Halo / Slate / Meridian</p>
+        <h2 class="dir-title">One material, cut for <span class="soft">a person, a company, a nation.</span></h2>
+        <p class="dir-dek">The same stack — silicon to service — shaped to three scales. Each platform holds the same clarity, whether it serves one account or a hundred million.</p>
+      </div>
+      <a class="link-arrow" href="#scale">How we think about scale <span class="chev" aria-hidden="true">→</span></a>
+    </div>
+    <div class="ql three">
+      <a class="ql-card" href="/soon/">
+        <div class="ql-cover cov-peach"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">For people · 10⁰</p>
+          <h3>Halo</h3>
+          <p class="ql-dek">Personal computing that quiets down so you can focus on everything else.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      <a class="ql-card" href="/soon/">
+        <div class="ql-cover cov-lilac"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">For companies · 10⁴</p>
+          <h3>Slate</h3>
+          <p class="ql-dek">The operating system for a growing business — tools, data, and people in one place.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      <a class="ql-card" href="/soon/">
+        <div class="ql-cover cov-mintsky"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">For nations · 10⁸</p>
+          <h3>Meridian</h3>
+          <p class="ql-dek">Sovereign cloud that keeps a country's data inside its own borders and its own laws.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Directory: More from Oplo -->
+  <section class="dir container reveal" id="more">
+    <div class="dir-head">
+      <div>
+        <p class="dir-eyebrow"><i style="background:var(--peach)" aria-hidden="true"></i>More from Oplo</p>
+        <h2 class="dir-title">The rest of <span class="soft">the ecosystem.</span></h2>
+        <p class="dir-dek">Research, legal, marketplace, and the accounts that tie it all together — the connective tissue behind everything above.</p>
+      </div>
+      <a class="link-arrow" href="/ocrd/">Visit the research center <span class="chev" aria-hidden="true">→</span></a>
+    </div>
+    <div class="ql">
+      <a class="ql-card" href="/ocrd/">
+        <div class="ql-cover cov-ink"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Research</p>
+          <h3>OCRD</h3>
+          <p class="ql-dek">The Oplo Center for Research &amp; Discovery — from the transistor to society, published openly.</p>
+          <span class="ql-more">Read the research <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      <a class="ql-card" href="/OLaws/">
+        <div class="ql-cover cov-lilac"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Legal · Lodestar</p>
+          <h3>Lodestar</h3>
+          <p class="ql-dek">The litigation operating system that holds the whole case as one connected structure.</p>
+          <span class="ql-more">Learn more <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      <a class="ql-card" href="/OShop/">
+        <div class="ql-cover cov-peach"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Marketplace</p>
+          <h3>OShop</h3>
+          <p class="ql-dek">The Oplo storefront — hardware, software, and everything in between.</p>
+          <span class="ql-more">Browse OShop <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      <a class="ql-card" href="/oplo-accounts/demo/">
+        <div class="ql-cover cov-opal"><span class="facet" aria-hidden="true"></span></div>
+        <div class="ql-body">
+          <p class="ql-tag">Identity</p>
+          <h3>Oplo Accounts</h3>
+          <p class="ql-dek">One sign-in for the whole ecosystem — private by default, yours to control.</p>
+          <span class="ql-more">See how it works <span class="chev" aria-hidden="true">→</span></span>
+        </div>
+      </a>
     </div>
   </section>
 
   <!-- Scale -->
-  <section class="section container" id="scale">
-    <div class="section-head reveal">
-      <p class="eyebrow">Scale</p>
-      <h2 class="section-title">Built to hold its shape at any size.</h2>
-    </div>
-    <div class="scale-grid">
-      <div class="scale-item reveal">
-        <div class="scale-fig">10<sup>0</sup></div>
-        <h4>A person</h4>
-        <p>The smallest unit we design for, and the one everything else has to serve.</p>
-        <span class="tick" aria-hidden="true"></span>
-      </div>
-      <div class="scale-item reveal reveal-d1">
-        <div class="scale-fig">10<sup>4</sup></div>
-        <h4>A company</h4>
-        <p>Ten thousand people who need the same clarity as one, without the chaos.</p>
-        <span class="tick" aria-hidden="true"></span>
-      </div>
-      <div class="scale-item reveal reveal-d2">
-        <div class="scale-fig">10<sup>8</sup></div>
-        <h4>A nation</h4>
-        <p>Hundreds of millions, served with the same care we give a single account.</p>
-        <span class="tick" aria-hidden="true"></span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Platform -->
-  <section class="section container" id="platform">
-    <div class="section-head reveal">
-      <p class="eyebrow">Platform</p>
-      <h2 class="section-title">One stack, from silicon to service.</h2>
-    </div>
-    <div class="platform-grid">
-      <div class="cap feature big reveal">
-        <span class="cap-tag">Foundation</span>
+  <section class="scale" id="scale">
+    <div class="container">
+      <div class="dir-head reveal" style="margin-bottom:clamp(30px,3.4vw,44px)">
         <div>
-          <h5>Designed together, down to the atom.</h5>
-          <p>Chips, operating system, and cloud built as one system — so the whole thing feels like it was made on purpose.</p>
+          <p class="dir-eyebrow"><i style="background:var(--ink)" aria-hidden="true"></i>Orders of magnitude</p>
+          <h2 class="dir-title">Built to hold its shape <span class="soft">at any size.</span></h2>
         </div>
-        <div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       </div>
-      <div class="cap mid reveal reveal-d1">
-        <span class="cap-tag">Security</span>
-        <h5>Private by construction.</h5>
-        <p>Every layer verifies the one beneath it, from first boot to last request.</p>
-      </div>
-      <div class="cap third reveal">
-        <span class="cap-tag">Silicon</span>
-        <h5>Custom compute.</h5>
-      </div>
-      <div class="cap third reveal reveal-d1">
-        <span class="cap-tag">Developers</span>
-        <h5>One SDK, everywhere.</h5>
-      </div>
-      <div class="cap third reveal reveal-d2">
-        <span class="cap-tag">Energy</span>
-        <h5>Carbon-aware by default.</h5>
+      <div class="scale-grid">
+        <div class="scale-item reveal">
+          <div class="scale-fig">10<sup>0</sup></div>
+          <h4>A person</h4>
+          <p>The smallest unit we design for, and the one everything else has to serve.</p>
+          <span class="tick" aria-hidden="true"></span>
+        </div>
+        <div class="scale-item reveal">
+          <div class="scale-fig">10<sup>4</sup></div>
+          <h4>A company</h4>
+          <p>Ten thousand people who need the same clarity as one, without the chaos.</p>
+          <span class="tick" aria-hidden="true"></span>
+        </div>
+        <div class="scale-item reveal">
+          <div class="scale-fig">10<sup>8</sup></div>
+          <h4>A nation</h4>
+          <p>Hundreds of millions, served with the same care we give a single account.</p>
+          <span class="tick" aria-hidden="true"></span>
+        </div>
       </div>
     </div>
   </section>
@@ -965,6 +1210,7 @@
         <ul>
           <li><a href="/roxan/">Roxan</a></li>
           <li><a href="/productivity/">Productivity</a></li>
+          <li><a href="/oteams/">OTeams</a></li>
           <li><a href="/oedu/">OEdu</a></li>
           <li><a href="/OShop/">OShop</a></li>
           <li><a href="/ocrd/">Research &amp; Discovery</a></li>
@@ -974,12 +1220,11 @@
       <div class="gf-col">
         <h6>Platforms</h6>
         <ul>
-          <li><a href="#lineup">Halo · people</a></li>
-          <li><a href="#lineup">Slate · companies</a></li>
-          <li><a href="#lineup">Meridian · nations</a></li>
-          <li><a href="#platform">Silicon</a></li>
-          <li><a href="#platform">Cloud</a></li>
-          <li><a href="#platform">Security</a></li>
+          <li><a href="#platforms">Halo · people</a></li>
+          <li><a href="#platforms">Slate · companies</a></li>
+          <li><a href="#platforms">Meridian · nations</a></li>
+          <li><a href="#scale">Orders of magnitude</a></li>
+          <li><a href="/OLaws/">Lodestar · legal</a></li>
         </ul>
       </div>
       <div class="gf-col">
@@ -1097,15 +1342,13 @@
     reveals.forEach(el => el.classList.add('in'));
   } else {
     const io = new IntersectionObserver((entries) => {
-      entries.forEach((en, i) => {
+      entries.forEach((en) => {
         if (en.isIntersecting) {
-          const d = en.target.classList.contains('reveal-d2') ? 140
-                  : en.target.classList.contains('reveal-d1') ? 70 : 0;
-          setTimeout(() => en.target.classList.add('in'), d);
+          en.target.classList.add('in');
           io.unobserve(en.target);
         }
       });
-    }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
     reveals.forEach(el => io.observe(el));
   }
 

@@ -31,29 +31,36 @@
   .h2{font-family:var(--fd);font-size:clamp(28px,4vw,46px);font-weight:600;line-height:1.05;letter-spacing:-.03em;text-wrap:balance}
   .soft{color:var(--dim)}
   .lead{color:var(--muted);font-size:clamp(16px,1.8vw,19px);line-height:1.55;max-width:60ch}
+  .section-pad{padding-block:clamp(64px,9vw,120px)}
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+  .reveal.in{opacity:1;transform:none}
 
-  /* Nav */
-  .nav{position:fixed;inset:0 0 auto 0;z-index:100;transition:background .4s var(--ease),border-color .4s var(--ease),backdrop-filter .4s}
-  .nav.scrolled{background:rgba(10,11,14,.72);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--line)}
-  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
-  .brand{display:inline-flex;align-items:center;gap:9px;font-family:var(--fd);font-weight:700;font-size:20px;letter-spacing:-.03em}
-  .brand .odot{width:13px;height:13px;border-radius:50%;background:var(--opal);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
-  .brand small{font-weight:500;font-size:13px;color:var(--muted);font-family:var(--fm);letter-spacing:.02em;margin-left:2px}
-  .nav-links{display:flex;align-items:center;gap:28px;list-style:none}
-  .nav-links a{font-size:14px;font-weight:500;color:var(--muted);transition:color .2s}
-  .nav-links a:hover{color:var(--text)}
   .pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--fb);font-weight:600;font-size:14px;padding:9px 18px;border-radius:100px;background:var(--text);color:#0A0B0E;border:none;cursor:pointer;transition:transform .2s var(--ease),background .2s}
   .pill:hover{transform:translateY(-1px);background:#fff}
   .pill.ghost{background:transparent;color:var(--text);border:1px solid var(--line2)}
   .pill.ghost:hover{background:rgba(255,255,255,.06)}
-  @media(max-width:820px){ .nav-links{display:none} .nav-hide-sm{display:none!important} }
+  .arrow{transition:transform .25s var(--ease)}
+  a:hover .arrow{transform:translateX(3px)}
+
+  /* Section sub-nav (NVIDIA-style) — sticks under the unified onav */
+  .subnav{position:sticky;top:64px;margin-top:64px;z-index:60;background:rgba(10,11,14,.72);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--line)}
+  .subnav-in{display:flex;align-items:center;gap:22px;height:52px;overflow-x:auto;scrollbar-width:none}
+  .subnav-in::-webkit-scrollbar{display:none}
+  .subnav .label{font-family:var(--fm);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--text);display:inline-flex;align-items:center;gap:8px;flex:none;padding-right:6px;border-right:1px solid var(--line);margin-right:2px}
+  .subnav .label .odot{width:12px;height:12px;border-radius:50%;background:var(--opal)}
+  .subnav a{flex:none;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;padding:4px 0;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+  .subnav a:hover{color:var(--text)}
+  .subnav a.active{color:var(--text);border-bottom-color:var(--sky)}
+  .subnav .grow{flex:1}
+  .subnav .try{flex:none;color:var(--sky);font-weight:600}
+  @media(max-width:640px){ .subnav .label{display:none} .subnav .try{display:none} }
 
   /* Hero */
-  .hero{padding:clamp(150px,20vh,220px) 0 clamp(60px,8vw,110px);text-align:center;overflow:hidden}
-  .hero-glow{position:absolute;top:2%;left:50%;transform:translateX(-50%);width:min(900px,130vw);aspect-ratio:1;border-radius:50%;
-    background:radial-gradient(circle at 50% 45%,rgba(156,195,255,.28),rgba(212,179,255,.16) 38%,transparent 66%);filter:blur(30px);pointer-events:none;z-index:0}
+  .hero{padding:clamp(52px,7vh,92px) 0 clamp(40px,6vw,72px);text-align:center;position:relative;overflow:hidden}
+  .hero-glow{position:absolute;top:-2%;left:50%;transform:translateX(-50%);width:min(920px,132vw);aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle at 50% 42%,rgba(156,195,255,.30),rgba(212,179,255,.16) 38%,transparent 66%);filter:blur(30px);pointer-events:none;z-index:0}
   .hero .wrap{position:relative;z-index:1}
-  .core{width:clamp(150px,26vw,240px);aspect-ratio:1;border-radius:50%;margin:0 auto clamp(30px,4vw,48px);position:relative;
+  .core{width:clamp(150px,26vw,240px);aspect-ratio:1;border-radius:50%;margin:0 auto clamp(28px,4vw,44px);position:relative;
     background:radial-gradient(38% 38% at 36% 30%,rgba(255,255,255,.9),transparent 60%),var(--opal);
     box-shadow:0 0 90px 8px rgba(156,195,255,.4),inset 0 0 50px rgba(255,255,255,.28);
     animation:float 8s ease-in-out infinite}
@@ -63,7 +70,7 @@
   .hero-cta{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-top:34px}
   .hero-cta .pill{padding:12px 24px;font-size:15px}
 
-  /* Carousel */
+  /* Carousel / highlights gallery */
   .rail-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:26px}
   .rail-nav{display:flex;gap:8px}
   .rail-nav button{width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--text);cursor:pointer;font-size:18px;transition:background .2s,border-color .2s}
@@ -81,8 +88,6 @@
   .mlinks{display:flex;gap:16px;font-size:13.5px;font-weight:600}
   .mlinks a{display:inline-flex;align-items:center;gap:4px}
   .mlinks a.try{color:var(--sky)}
-  .arrow{transition:transform .25s var(--ease)}
-  .mlinks a:hover .arrow{transform:translateX(3px)}
 
   /* Capabilities */
   .caps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
@@ -93,14 +98,76 @@
   .cap h3{font-family:var(--fd);font-size:19px;font-weight:600;letter-spacing:-.01em}
   .cap p{color:var(--muted);font-size:14px;margin-top:7px}
 
-  /* In every app */
-  .apps-band{background:var(--bg2);border-block:1px solid var(--line)}
-  .app-chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
-  .app-chip{display:inline-flex;align-items:center;gap:10px;padding:11px 16px 11px 12px;border:1px solid var(--line);border-radius:100px;background:var(--card);font-weight:600;font-size:14.5px;transition:transform .25s var(--ease),border-color .25s}
-  .app-chip:hover{transform:translateY(-2px);border-color:var(--line2)}
-  .app-chip .d{width:22px;height:22px;border-radius:7px;flex:none}
+  /* Feature stories (Apple-style alternating) */
+  .story{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,5vw,72px);align-items:center}
+  .story + .story{margin-top:clamp(56px,8vw,110px)}
+  .story.rev .story-copy{order:2}
+  .story-copy .eyebrow{display:inline-flex;align-items:center;gap:9px}
+  .story-copy .dot{width:10px;height:10px;border-radius:50%}
+  .story-copy h3{font-family:var(--fd);font-size:clamp(24px,3vw,36px);font-weight:600;letter-spacing:-.025em;line-height:1.08;margin:14px 0 14px}
+  .story-copy p{color:var(--muted);font-size:clamp(15px,1.7vw,18px);line-height:1.55;max-width:46ch}
+  .story-copy .st-link{margin-top:22px;display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--sky)}
+  .mock{position:relative;border-radius:22px;border:1px solid var(--line);background:linear-gradient(180deg,#14161C,#0E0F14);box-shadow:0 40px 80px -44px #000;overflow:hidden;padding:22px}
+  .mock-glow{position:absolute;inset:0;background:radial-gradient(80% 60% at 78% 12%,rgba(156,195,255,.18),transparent 60%);pointer-events:none}
+  .mock-bar{display:flex;gap:6px;margin-bottom:16px;position:relative}
+  .mock-bar i{width:10px;height:10px;border-radius:50%;background:#2a2d36}
+  /* Vision mock */
+  .vz{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);height:150px;background:
+      linear-gradient(120deg,#1a1d24,#20242e);}
+  .vz .chart{position:absolute;inset:auto 16px 18px 16px;height:78px;display:flex;align-items:flex-end;gap:8px}
+  .vz .chart span{flex:1;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--sky),rgba(156,195,255,.3))}
+  .vz .scan{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--sky),transparent);animation:scan 3.4s var(--ease) infinite}
+  @keyframes scan{0%{top:6%;opacity:0}20%{opacity:1}80%{opacity:1}100%{top:92%;opacity:0}}
+  .rox-bubble{display:flex;gap:10px;align-items:flex-start;margin-top:16px;position:relative}
+  .rox-bubble .ro{width:26px;height:26px;border-radius:50%;background:var(--opal);flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+  .rox-bubble .rb{background:var(--bg2);border:1px solid var(--line);border-radius:12px;border-top-left-radius:3px;padding:10px 13px;font-size:13.5px;color:var(--text)}
+  /* Agent mock */
+  .steps{display:grid;gap:10px;position:relative}
+  .step{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .step .tick{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:12px}
+  .step.done .tick{background:rgba(155,232,206,.16);color:var(--mint)}
+  .step.run .tick{background:rgba(156,195,255,.16);color:var(--sky)}
+  .step.todo .tick{background:rgba(255,255,255,.05);color:var(--dim);border:1px solid var(--line)}
+  .step .sx{font-size:14px}
+  .step .sx small{display:block;color:var(--dim);font-size:12px;font-family:var(--fm)}
+  .step.run{border-color:rgba(156,195,255,.4)}
+  .spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(156,195,255,.35);border-top-color:var(--sky);animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
 
-  /* Split */
+  /* Surfaces (Apple compatibility grid) */
+  .surfaces{background:var(--bg2);border-block:1px solid var(--line)}
+  .surf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+  .surf{display:flex;align-items:center;gap:13px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--card);transition:transform .25s var(--ease),border-color .25s}
+  .surf:hover{transform:translateY(-3px);border-color:var(--line2)}
+  .surf .si{width:38px;height:38px;border-radius:11px;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+  .surf .sn{font-weight:600;font-size:15px}
+  .surf .sn small{display:block;font-family:var(--fm);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+  .surf-note{margin-top:22px;color:var(--dim);font-size:13.5px}
+
+  /* Plans (Gemini-style tiers) */
+  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:36px;align-items:start}
+  .plan{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 24px;position:relative;transition:border-color .3s,transform .3s var(--ease)}
+  .plan:hover{border-color:var(--line2);transform:translateY(-3px)}
+  .plan.feat{border-color:rgba(156,195,255,.55);box-shadow:0 30px 70px -44px rgba(156,195,255,.5)}
+  .plan .flag{position:absolute;top:-11px;left:24px;font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#0A0B0E;background:var(--sky);padding:4px 10px;border-radius:100px}
+  .plan h3{font-family:var(--fd);font-size:21px;font-weight:600;letter-spacing:-.01em}
+  .plan .pdesc{color:var(--muted);font-size:13.5px;margin-top:6px;min-height:38px}
+  .plan .price{font-family:var(--fd);font-size:34px;font-weight:600;letter-spacing:-.02em;margin:14px 0 2px}
+  .plan .price small{font-size:14px;font-weight:500;color:var(--dim);font-family:var(--fb)}
+  .plan .pcta{margin:18px 0 20px}
+  .plan .pcta .pill{width:100%;justify-content:center}
+  .plan ul{list-style:none;display:grid;gap:11px}
+  .plan li{display:flex;gap:9px;font-size:13.5px;color:var(--muted);line-height:1.4}
+  .plan li .ck{width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:10px;background:rgba(155,232,206,.14);color:var(--mint);margin-top:1px}
+  .plan .pinc{font-family:var(--fm);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+
+  /* Footnotes (Apple-style) */
+  .footnotes{border-top:1px solid var(--line);margin-top:clamp(40px,6vw,72px);padding-top:26px}
+  .footnotes ol{list-style:none;counter-reset:fn;display:grid;gap:9px;max-width:70ch}
+  .footnotes li{counter-increment:fn;position:relative;padding-left:26px;color:var(--dim);font-size:12.5px;line-height:1.5}
+  .footnotes li::before{content:counter(fn);position:absolute;left:0;top:0;font-family:var(--fm);font-size:11px;color:var(--muted)}
+
+  /* Developers split */
   .split{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,64px);align-items:center}
   .code{background:#0E0F14;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 30px 60px -30px #000}
   .code .bar{display:flex;gap:6px;padding:13px 16px;border-bottom:1px solid var(--line)}
@@ -143,33 +210,32 @@
   .foot-base{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:clamp(44px,5vw,64px);padding:26px 0 40px;border-top:1px solid var(--line);font-family:var(--fm);font-size:12.5px;color:var(--dim)}
   .foot-base a{color:var(--dim)}.foot-base a:hover{color:var(--muted)}
 
-  .section-pad{padding-block:clamp(64px,9vw,120px)}
-  @media(max-width:860px){ .caps{grid-template-columns:1fr 1fr}.news{grid-template-columns:1fr 1fr}.split{grid-template-columns:1fr}.foot-grid{grid-template-columns:1fr 1fr} }
-  @media(max-width:560px){ .caps{grid-template-columns:1fr}.news{grid-template-columns:1fr}.foot-statement{font-size:30px} }
-  @media (prefers-reduced-motion: reduce){ *{animation:none!important;scroll-behavior:auto} }
+  @media(max-width:980px){ .surf-grid{grid-template-columns:repeat(3,1fr)} .plans{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:860px){ .caps{grid-template-columns:1fr 1fr}.news{grid-template-columns:1fr 1fr}.split{grid-template-columns:1fr}.foot-grid{grid-template-columns:1fr 1fr}
+    .story{grid-template-columns:1fr;gap:26px}.story.rev .story-copy{order:0} }
+  @media(max-width:560px){ .caps{grid-template-columns:1fr}.news{grid-template-columns:1fr}.foot-statement{font-size:30px}
+    .surf-grid{grid-template-columns:1fr 1fr}.plans{grid-template-columns:1fr} }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;scroll-behavior:auto}.reveal{opacity:1;transform:none} }
 </style>
 </head>
 <body>
 
-<nav class="nav" id="nav">
-  <div class="wrap nav-in">
-    <a class="brand" href="/"><span class="odot" aria-hidden="true"></span>Oplo<small>Roxan</small></a>
-    <ul class="nav-links">
-      <li><a href="#capabilities">Capabilities</a></li>
-      <li><a href="#models">Models</a></li>
-      <li><a href="#developers">Developers</a></li>
-      <li><a href="#safety">Safety</a></li>
-      <li><a href="#research">Research</a></li>
-    </ul>
-    <div style="display:flex;gap:10px;align-items:center">
-      <a class="pill ghost nav-hide-sm" href="/productivity/">All products</a>
-      <a class="pill" href="/oplo-accounts/demo/">Try Roxan</a>
-      <div id="oplo-actions"></div>
-    </div>
+<!-- Section sub-nav -->
+<div class="subnav" id="subnav" role="navigation" aria-label="On this page">
+  <div class="wrap subnav-in">
+    <span class="label"><span class="odot" aria-hidden="true"></span>Roxan</span>
+    <a href="#top" data-spy="top" class="active">Overview</a>
+    <a href="#capabilities" data-spy="capabilities">Capabilities</a>
+    <a href="#experience" data-spy="experience">Experience</a>
+    <a href="#surfaces" data-spy="surfaces">Surfaces</a>
+    <a href="#plans" data-spy="plans">Plans</a>
+    <a href="#research" data-spy="research">Research</a>
+    <span class="grow"></span>
+    <a href="/oplo-accounts/demo/" class="try">Try Roxan →</a>
   </div>
-</nav>
+</div>
 
-<header class="hero">
+<header class="hero" id="top">
   <div class="hero-glow" aria-hidden="true"></div>
   <div class="wrap">
     <div class="core" aria-hidden="true"></div>
@@ -177,15 +243,16 @@
     <h1>Intelligence at the center of everything.</h1>
     <p class="lead">Roxan is Oplo's family of AI models — it reasons, writes, sees, listens, speaks, and acts across every Oplo product. Frontier capability, private by default.</p>
     <div class="hero-cta">
-      <a class="pill" href="/oplo-accounts/demo/">Try Roxan <span aria-hidden="true">→</span></a>
+      <a class="pill" href="/oplo-accounts/demo/">Try Roxan <span class="arrow" aria-hidden="true">→</span></a>
       <a class="pill ghost" href="#models">Explore the models</a>
     </div>
   </div>
 </header>
 
+<!-- The family -->
 <section class="section-pad" id="models">
   <div class="wrap">
-    <div class="rail-head">
+    <div class="rail-head reveal">
       <div>
         <p class="eyebrow">The family</p>
         <h2 class="h2" style="margin-top:12px">One Roxan, <span class="soft">many minds.</span></h2>
@@ -212,7 +279,7 @@
         <div class="mcover" style="background:linear-gradient(140deg,#D4B3FF,#8B45F0)"></div>
         <div class="mbody"><h3>Roxan Vision</h3>
           <p>See and reason over images, documents, screens, and the world around you.</p>
-          <div class="mlinks"><a href="#capabilities">Learn more <span class="arrow">→</span></a><a class="try" href="/oplo-accounts/demo/">Try <span class="arrow">→</span></a></div></div>
+          <div class="mlinks"><a href="#experience">Learn more <span class="arrow">→</span></a><a class="try" href="/oplo-accounts/demo/">Try <span class="arrow">→</span></a></div></div>
       </article>
       <article class="mcard">
         <div class="mcover" style="background:linear-gradient(140deg,#FFD2B3,#FF9E6B)"></div>
@@ -236,12 +303,15 @@
   </div>
 </section>
 
+<!-- Capabilities -->
 <section class="section-pad" id="capabilities">
   <div class="wrap">
-    <p class="eyebrow">Capabilities</p>
-    <h2 class="h2" style="margin:12px 0 14px">Everything a mind should do.</h2>
-    <p class="lead" style="margin-bottom:44px">A single model with one context of your work — so every capability builds on the last.</p>
-    <div class="caps">
+    <div class="reveal">
+      <p class="eyebrow">Capabilities</p>
+      <h2 class="h2" style="margin:12px 0 14px">Everything a mind should do.</h2>
+      <p class="lead" style="margin-bottom:44px">A single model with one context of your work — so every capability builds on the last.</p>
+    </div>
+    <div class="caps reveal">
       <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 1 5 5c0 1.7-.8 3-2 4v2H9v-2c-1.2-1-2-2.3-2-4a5 5 0 0 1 5-5z"/><path d="M9 18h6M10 21h4"/></svg></div><h3>Reason &amp; plan</h3><p>Break down hard problems, weigh options, and decide the next step.</p></div>
       <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h10"/><path d="M15 19l2 2 4-4"/></svg></div><h3>Write &amp; edit</h3><p>Draft, rewrite, summarize, and translate in your voice, anywhere you type.</p></div>
       <div class="cap"><div class="ci"><svg viewBox="0 0 24 24"><path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="2.6"/></svg></div><h3>See</h3><p>Understand images, charts, documents, and whatever's on your screen.</p></div>
@@ -252,35 +322,174 @@
   </div>
 </section>
 
-<section class="section-pad apps-band">
+<!-- Experience / feature stories -->
+<section class="section-pad" id="experience">
   <div class="wrap">
-    <p class="eyebrow">Everywhere</p>
-    <h2 class="h2" style="margin:12px 0 14px">Roxan is already inside.</h2>
-    <p class="lead">You don't "go to" Roxan — it's built into every Oplo app, one keystroke away, already holding the context of your work.</p>
-    <div class="app-chips">
-      <a class="app-chip" href="/odocs/"><span class="d" style="background:linear-gradient(150deg,#5A93FF,#2E6FE6)"></span>ODocs</a>
-      <a class="app-chip" href="/osheets/"><span class="d" style="background:linear-gradient(150deg,#33CE92,#12A06E)"></span>OSheets</a>
-      <a class="app-chip" href="/omails/"><span class="d" style="background:linear-gradient(150deg,#FF7A6D,#EF4A3C)"></span>OMails</a>
-      <a class="app-chip" href="/omaps/"><span class="d" style="background:linear-gradient(150deg,#1CC3D0,#0E96A8)"></span>OMaps</a>
-      <a class="app-chip" href="/osurf/"><span class="d" style="background:var(--opal)"></span>OSurf</a>
-      <a class="app-chip" href="/ophotos/"><span class="d" style="background:linear-gradient(150deg,#FFBE4D,#F59300)"></span>OPhotos</a>
-      <a class="app-chip" href="/ocanvas/"><span class="d" style="background:linear-gradient(150deg,#B57BFF,#8B45F0)"></span>OCanvas</a>
+    <div class="reveal" style="margin-bottom:clamp(40px,5vw,64px)">
+      <p class="eyebrow">In the moment</p>
+      <h2 class="h2" style="margin-top:12px">See it. Do it. <span class="soft">Say it.</span></h2>
+      <p class="lead" style="margin-top:14px">The same intelligence, shown three ways it shows up in your day.</p>
+    </div>
+
+    <!-- Vision story -->
+    <div class="story reveal">
+      <div class="story-copy">
+        <p class="eyebrow"><span class="dot" style="background:var(--lilac)" aria-hidden="true"></span>Vision</p>
+        <h3>Understands what's on your screen.</h3>
+        <p>Point Roxan at a chart, a receipt, or a page and ask. It reads the image, pulls out what matters, and puts the answer where you're already working.</p>
+        <a class="st-link" href="/oplo-accounts/demo/">Try Roxan Vision <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="mock-glow"></div>
+        <div class="mock-bar"><i></i><i></i><i></i></div>
+        <div class="vz">
+          <div class="scan"></div>
+          <div class="chart"><span style="height:38%"></span><span style="height:62%"></span><span style="height:48%"></span><span style="height:80%"></span><span style="height:66%"></span><span style="height:94%"></span></div>
+        </div>
+        <div class="rox-bubble">
+          <span class="ro"></span>
+          <span class="rb">Revenue is up <b>18%</b> this quarter — Q4 is the outlier. Want the drivers?</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent story -->
+    <div class="story rev reveal">
+      <div class="story-copy">
+        <p class="eyebrow"><span class="dot" style="background:var(--sky)" aria-hidden="true"></span>Agents</p>
+        <h3>Finishes the task, not just the sentence.</h3>
+        <p>Ask once and Roxan plans the steps, uses your apps, and does the work — drafting, pulling numbers, and sending — with every action logged and yours to approve.</p>
+        <a class="st-link" href="#capabilities">See what agents can do <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="mock-glow"></div>
+        <div class="mock-bar"><i></i><i></i><i></i></div>
+        <div class="steps">
+          <div class="step done"><span class="tick">✓</span><span class="sx">Read the quarter in OSheets<small>revenue, costs, headcount</small></span></div>
+          <div class="step done"><span class="tick">✓</span><span class="sx">Draft the board update in ODocs<small>3 paragraphs · your tone</small></span></div>
+          <div class="step run"><span class="tick"><span class="spin"></span></span><span class="sx">Send to the team in OMails<small>attaching the summary…</small></span></div>
+          <div class="step todo"><span class="tick">3</span><span class="sx">Schedule the review in OTeams<small>waiting on your approval</small></span></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
+<!-- Surfaces (compatibility grid) -->
+<section class="section-pad surfaces" id="surfaces">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="eyebrow">Everywhere</p>
+      <h2 class="h2" style="margin:12px 0 14px">Roxan is already inside.</h2>
+      <p class="lead">You don't "go to" Roxan — it's built into every Oplo product, one keystroke away, already holding the context of your work.</p>
+    </div>
+    <div class="surf-grid reveal">
+      <a class="surf" href="/odocs/"><span class="si" style="background:linear-gradient(150deg,#5A93FF,#2E6FE6)"></span><span class="sn">ODocs<small>In documents</small></span></a>
+      <a class="surf" href="/osheets/"><span class="si" style="background:linear-gradient(150deg,#33CE92,#12A06E)"></span><span class="sn">OSheets<small>In spreadsheets</small></span></a>
+      <a class="surf" href="/omails/"><span class="si" style="background:linear-gradient(150deg,#FF7A6D,#EF4A3C)"></span><span class="sn">OMails<small>In your inbox</small></span></a>
+      <a class="surf" href="/omaps/"><span class="si" style="background:linear-gradient(150deg,#1CC3D0,#0E96A8)"></span><span class="sn">OMaps<small>In navigation</small></span></a>
+      <a class="surf" href="/osurf/"><span class="si" style="background:var(--opal)"></span><span class="sn">OSurf<small>In the browser</small></span></a>
+      <a class="surf" href="/ophotos/"><span class="si" style="background:linear-gradient(150deg,#FFBE4D,#F59300)"></span><span class="sn">OPhotos<small>In your library</small></span></a>
+      <a class="surf" href="/ocanvas/"><span class="si" style="background:linear-gradient(150deg,#B57BFF,#8B45F0)"></span><span class="sn">OCanvas<small>On the canvas</small></span></a>
+      <a class="surf" href="/oteams/"><span class="si" style="background:linear-gradient(150deg,#8FB4FF,#C79FF0)"></span><span class="sn">OTeams<small>In the huddle</small></span></a>
+    </div>
+    <p class="surf-note">Plus a dedicated cockpit for public finance — <a href="/roxan/mof/" style="color:var(--sky);font-weight:600">Roxan for Ministry of Finance →</a></p>
+  </div>
+</section>
+
+<!-- Plans -->
+<section class="section-pad" id="plans">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="eyebrow">Plans</p>
+      <h2 class="h2" style="margin:12px 0 14px">Find the right amount of Roxan.</h2>
+      <p class="lead">Everyone gets Roxan for free in every Oplo app. Upgrade when you want more power, higher limits, and the newest models first.</p>
+    </div>
+    <div class="plans reveal">
+      <div class="plan">
+        <h3>Free</h3>
+        <p class="pdesc">Everyday intelligence, in every Oplo app.</p>
+        <div class="price">$0<small> / month</small></div>
+        <div class="pcta"><a class="pill ghost" href="/oplo-accounts/demo/">Get started</a></div>
+        <p class="pinc">Includes</p>
+        <ul>
+          <li><span class="ck">✓</span>Roxan Flash for fast answers</li>
+          <li><span class="ck">✓</span>On-device Roxan Nano</li>
+          <li><span class="ck">✓</span>Image generation &amp; editing</li>
+          <li><span class="ck">✓</span>Roxan across the Oplo suite</li>
+          <li><span class="ck">✓</span>15 GB of Oplo storage</li>
+        </ul>
+      </div>
+
+      <div class="plan feat">
+        <span class="flag">Most popular</span>
+        <h3>Plus</h3>
+        <p class="pdesc">More power for the way you work daily.</p>
+        <div class="price">$9<small> / month</small></div>
+        <div class="pcta"><a class="pill" href="/oplo-accounts/demo/">Upgrade to Plus</a></div>
+        <p class="pinc">Everything in Free, plus</p>
+        <ul>
+          <li><span class="ck">✓</span>Roxan flagship model</li>
+          <li><span class="ck">✓</span>Vision, Voice &amp; Canvas</li>
+          <li><span class="ck">✓</span>2× higher usage limits<sup style="color:var(--dim)">1</sup></li>
+          <li><span class="ck">✓</span>Deep Research</li>
+          <li><span class="ck">✓</span>400 GB of Oplo storage</li>
+        </ul>
+      </div>
+
+      <div class="plan">
+        <h3>Pro</h3>
+        <p class="pdesc">For people who build with Roxan.</p>
+        <div class="price">$24<small> / month</small></div>
+        <div class="pcta"><a class="pill ghost" href="/oplo-accounts/demo/">Go Pro</a></div>
+        <p class="pinc">Everything in Plus, plus</p>
+        <ul>
+          <li><span class="ck">✓</span>Agents that take action</li>
+          <li><span class="ck">✓</span>Roxan Code</li>
+          <li><span class="ck">✓</span>4× higher usage limits<sup style="color:var(--dim)">1</sup></li>
+          <li><span class="ck">✓</span>Early access to new models</li>
+          <li><span class="ck">✓</span>2 TB of Oplo storage</li>
+        </ul>
+      </div>
+
+      <div class="plan">
+        <h3>Ultra</h3>
+        <p class="pdesc">The highest level of Roxan.</p>
+        <div class="price">$99<small> / month</small></div>
+        <div class="pcta"><a class="pill ghost" href="/oplo-accounts/demo/">Get Ultra</a></div>
+        <p class="pinc">Everything in Pro, plus</p>
+        <ul>
+          <li><span class="ck">✓</span>Roxan Max reasoning</li>
+          <li><span class="ck">✓</span>Highest usage limits<sup style="color:var(--dim)">1</sup></li>
+          <li><span class="ck">✓</span>On-device fine-tunes</li>
+          <li><span class="ck">✓</span>Priority &amp; admin controls</li>
+          <li><span class="ck">✓</span>8 TB of Oplo storage</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footnotes reveal">
+      <ol>
+        <li>Usage limits are compute-based and refresh on a rolling window; they factor in the model, features, and length of your conversation.</li>
+        <li>Prices, tiers, and limits shown here are illustrative for this prototype. Roxan is a fictional Oplo product — no account is created and no payment is taken.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- Developers -->
 <section class="section-pad" id="developers">
   <div class="wrap split">
-    <div>
+    <div class="reveal">
       <p class="eyebrow">For developers</p>
       <h2 class="h2" style="margin:12px 0 16px">Build on Roxan.</h2>
       <p class="lead">One SDK, every model. Call Roxan from anything with a few lines — streaming, tools, vision, and voice included. Runs in the Oplo cloud or on-device.</p>
       <div class="hero-cta" style="justify-content:flex-start;margin-top:28px">
-        <a class="pill" href="/soon/">Get an API key <span aria-hidden="true">→</span></a>
+        <a class="pill" href="/soon/">Get an API key <span class="arrow" aria-hidden="true">→</span></a>
         <a class="pill ghost" href="/soon/">Read the docs</a>
       </div>
     </div>
-    <div class="code" aria-hidden="true">
+    <div class="code reveal" aria-hidden="true">
       <div class="bar"><i></i><i></i><i></i></div>
       <pre><span class="c"># pip install oplo</span>
 <span class="k">from</span> oplo <span class="k">import</span> Roxan
@@ -296,9 +505,10 @@ reply = roxan.<span class="f">chat</span>(
   </div>
 </section>
 
-<section class="section-pad apps-band" id="safety">
+<!-- Safety -->
+<section class="section-pad surfaces" id="safety">
   <div class="wrap split">
-    <div>
+    <div class="reveal">
       <p class="eyebrow">Safety &amp; privacy</p>
       <h2 class="h2" style="margin:12px 0 16px">Powerful, and responsible.</h2>
       <p class="lead">Intelligence you can trust with your life's work. The everyday model runs on your own device, and nothing trains on your data without your say.</p>
@@ -309,17 +519,18 @@ reply = roxan.<span class="f">chat</span>(
         <li><span class="ck">✓</span> Independent safety evaluations before every release.</li>
       </ul>
     </div>
-    <div class="core" style="position:relative;margin:0 auto;width:min(300px,70vw);box-shadow:0 0 80px 4px rgba(212,179,255,.3),inset 0 0 40px rgba(255,255,255,.25)" aria-hidden="true"></div>
+    <div class="core reveal" style="position:relative;margin:0 auto;width:min(300px,70vw);box-shadow:0 0 80px 4px rgba(212,179,255,.3),inset 0 0 40px rgba(255,255,255,.25)" aria-hidden="true"></div>
   </div>
 </section>
 
+<!-- Research -->
 <section class="section-pad" id="research">
   <div class="wrap">
-    <div class="rail-head" style="align-items:center">
+    <div class="rail-head reveal" style="align-items:center">
       <div><p class="eyebrow">Research</p><h2 class="h2" style="margin-top:12px">From the Roxan lab.</h2></div>
-      <a class="pill ghost" href="/soon/">View all</a>
+      <a class="pill ghost" href="/ocrd/">View all</a>
     </div>
-    <div class="news">
+    <div class="news reveal">
       <a class="ncard" href="/soon/"><div class="ncover" style="background:conic-gradient(from 200deg,#9BE8CE,#9CC3FF,#D4B3FF,#FFD2B3,#9BE8CE)"></div><div class="np"><p class="nmeta">Models · Jul 2026</p><h3>Roxan Flash: frontier reasoning at a fraction of the cost</h3><span class="more">Learn more →</span></div></a>
       <a class="ncard" href="/soon/"><div class="ncover" style="background:linear-gradient(140deg,#D4B3FF,#8B45F0)"></div><div class="np"><p class="nmeta">Research · Jun 2026</p><h3>Teaching Roxan to act: agents that finish the task</h3><span class="more">Learn more →</span></div></a>
       <a class="ncard" href="/soon/"><div class="ncover" style="background:linear-gradient(140deg,#9BE8CE,#17A374)"></div><div class="np"><p class="nmeta">Safety · Jun 2026</p><h3>On-device intelligence: privacy without compromise</h3><span class="more">Learn more →</span></div></a>
@@ -330,9 +541,10 @@ reply = roxan.<span class="f">chat</span>(
   </div>
 </section>
 
+<!-- Newsletter -->
 <section class="section-pad news-band">
   <div class="wrap">
-    <div class="signup">
+    <div class="signup reveal">
       <p class="eyebrow">Follow the frontier</p>
       <h2 class="h2" style="margin:12px 0 12px">Get Roxan updates.</h2>
       <p class="lead">New models, research, and releases — occasionally, in your inbox.</p>
@@ -355,26 +567,22 @@ reply = roxan.<span class="f">chat</span>(
         <li><a href="#models">Roxan Voice</a></li><li><a href="#models">Roxan Code</a></li><li><a href="#models">Roxan Nano</a></li></ul></div>
       <div class="foot-col"><h6>Build</h6><ul>
         <li><a href="#developers">Overview</a></li><li><a href="/soon/">API</a></li><li><a href="/soon/">SDK &amp; docs</a></li>
-        <li><a href="/soon/">Pricing</a></li><li><a href="#capabilities">Capabilities</a></li></ul></div>
+        <li><a href="#plans">Pricing</a></li><li><a href="#capabilities">Capabilities</a></li></ul></div>
       <div class="foot-col"><h6>In the apps</h6><ul>
-        <li><a href="/odocs/">ODocs</a></li><li><a href="/omails/">OMails</a></li><li><a href="/osheets/">OSheets</a></li>
-        <li><a href="/ocanvas/">OCanvas</a></li><li><a href="/productivity/">All apps</a></li></ul></div>
+        <li><a href="/odocs/">ODocs</a></li><li><a href="/omails/">OMails</a></li><li><a href="/oteams/">OTeams</a></li>
+        <li><a href="/roxan/mof/">For Ministry of Finance</a></li><li><a href="/productivity/">All apps</a></li></ul></div>
       <div class="foot-col"><h6>Company</h6><ul>
-        <li><a href="#research">Research</a></li><li><a href="#safety">Safety</a></li><li><a href="/soon/">News</a></li>
+        <li><a href="#research">Research</a></li><li><a href="#safety">Safety</a></li><li><a href="/ocrd/">OCRD</a></li>
         <li><a href="/soon/">Careers</a></li><li><a href="/">About Oplo</a></li></ul></div>
     </div>
     <div class="foot-base">
-      <a class="brand" href="/" style="font-size:17px"><span class="odot" aria-hidden="true"></span>Oplo</a>
+      <a class="brand" href="/" style="font-size:17px;display:inline-flex;align-items:center;gap:8px"><span style="width:13px;height:13px;border-radius:50%;background:var(--opal);display:inline-block" aria-hidden="true"></span>Oplo</a>
       <span>© 2026 Oplo, Inc. &nbsp;·&nbsp; <a href="/soon/">Privacy</a> &nbsp;·&nbsp; <a href="/soon/">Terms</a></span>
     </div>
   </div>
 </footer>
 
 <script>
-  var nav = document.getElementById('nav');
-  var onScroll = function(){ nav.classList.toggle('scrolled', window.scrollY > 8); };
-  onScroll(); addEventListener('scroll', onScroll, {passive:true});
-
   var rail = document.getElementById('rail');
   var step = function(){ var c = rail.querySelector('.mcard'); return c ? c.offsetWidth + 18 : 320; };
   document.getElementById('railNext').onclick = function(){ rail.scrollBy({left: step(), behavior:'smooth'}); };
@@ -383,6 +591,31 @@ reply = roxan.<span class="f">chat</span>(
   document.getElementById('signup').addEventListener('submit', function(e){
     e.preventDefault(); document.getElementById('ok').classList.add('show'); this.reset();
   });
+
+  // Reveal on scroll
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reveals = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    reveals.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(en){ en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold:.12, rootMargin:'0px 0px -8% 0px' });
+    reveals.forEach(function(el){ io.observe(el); });
+  }
+
+  // Sub-nav scroll-spy
+  var spyLinks = Array.prototype.slice.call(document.querySelectorAll('.subnav a[data-spy]'));
+  var spyMap = {};
+  spyLinks.forEach(function(a){ spyMap[a.getAttribute('data-spy')] = a; });
+  var spyIds = Object.keys(spyMap);
+  var spyEls = spyIds.map(function(id){ return document.getElementById(id); }).filter(Boolean);
+  function setActive(id){ spyLinks.forEach(function(a){ a.classList.toggle('active', a.getAttribute('data-spy') === id); }); }
+  if ('IntersectionObserver' in window && spyEls.length) {
+    var current = 'top';
+    var spy = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if (e.isIntersecting) { current = e.target.id; setActive(current); } });
+    }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+    spyEls.forEach(function(el){ spy.observe(el); });
+  }
 </script>
 <script src="/assets/js/oplo-shell.js" defer></script>
 </body>
