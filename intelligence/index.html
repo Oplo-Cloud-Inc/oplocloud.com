@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Intelligence — Oplo</title>
-<meta name="description" content="Oplo builds models that run on your device rather than in a data centre.">
+<meta name="description" content="Oplo Intelligence: models that run on your device rather than in a data centre.">
 <meta name="theme-color" content="#ffffff">
 <link rel="canonical" href="https://oplocloud.com/intelligence/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Oplo">
 <meta property="og:title" content="Intelligence — Oplo">
-<meta property="og:description" content="Oplo builds models that run on your device rather than in a data centre.">
+<meta property="og:description" content="Oplo Intelligence: models that run on your device rather than in a data centre.">
 <meta property="og:url" content="https://oplocloud.com/intelligence/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='84.13 107.80 206.73 194.91'%3E%3Cg transform='translate(73.919875, 252.710833)'%3E%3Cpath fill='%23000' d='M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,8 +25,6 @@
 </script>
 <style>body { padding-top: 44px; }</style>
 <style>
-  /* Ambient field behind the opening. Three soft lights on slow drift —
-     GPU-cheap, no canvas, and it settles rather than loops visibly. */
   .aurora {
     position: absolute; inset: -25%; z-index: 0; pointer-events: none;
     background:
@@ -37,42 +35,97 @@
     animation: aurora 30s ease-in-out infinite alternate;
   }
   @keyframes aurora {
-    from { transform: translate3d(-3%, -2%, 0) scale(1.02); }
-    to   { transform: translate3d(3%, 3%, 0)  scale(1.12); }
+    from { transform: translate3d(-3%,-2%,0) scale(1.02); }
+    to   { transform: translate3d(3%,3%,0)  scale(1.12); }
   }
-  .band.opening .aurora { opacity: .9; }
 
-  /* The round trip. Two lanes, same distance on screen, one of which has to
-     go somewhere and come back. */
-  .trip { width: min(100%, 720px); margin: 34px auto 0; display: grid; gap: 14px; }
+  /* Status label. Every capability on this page carries one, because none of
+     them have shipped and a page that hides that is a lie. */
+  .chip {
+    display: inline-block; align-self: flex-start;
+    font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 100px; color: var(--ink-lt-2);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.24);
+  }
+  .band:not(.dark) .chip { color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule); }
+
+  /* Highlights gallery: a scroll-snapped rail, the way a feature tour reads
+     on a phone without becoming a wall of stacked cards. */
+  .gallery {
+    display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    margin-top: 34px; padding: 4px max(var(--gutter), calc((100vw - 1000px) / 2)) 10px;
+  }
+  .gallery::-webkit-scrollbar { display: none; }
+  .gcard {
+    flex: none; width: min(80vw, 320px); scroll-snap-align: center;
+    display: flex; flex-direction: column; gap: 9px;
+    min-height: 306px; padding: 26px 24px 28px; border-radius: 20px;
+    text-align: left;
+    background: rgba(255,255,255,.055);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
+  }
+  .gcard .gnum { font-size: 12px; letter-spacing: .06em; color: var(--ink-lt-2); }
+  .gcard h3 { font-family: var(--font); font-size: 23px; font-weight: 600; letter-spacing: -.01em; }
+  .gcard p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); flex: 1; }
+
+  /* The round trip: the page's argument, drawn. */
+  .trip { width: min(100%, 720px); margin: 32px auto 0; display: grid; gap: 14px; }
   .lane {
     position: relative; display: flex; align-items: center; gap: 14px;
-    padding: 0 18px; height: 76px;
-    border-radius: 16px;
+    padding: 0 18px; height: 76px; border-radius: 16px;
     background: rgba(255,255,255,.045);
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
   }
   .lane-tag {
-    position: absolute; top: -9px; left: 18px;
-    font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-    color: var(--ink-lt-2); background: #000; padding: 0 8px;
+    position: absolute; top: -9px; left: 18px; padding: 0 8px; background: #000;
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-lt-2);
   }
   .node { flex: none; display: grid; place-items: center; color: var(--ink-lt-2); }
   .node svg { width: 26px; height: 26px; }
   .node.far { opacity: .75; }
-  .wire { position: relative; flex: 1; height: 2px; border-radius: 2px;
-          background: rgba(255,255,255,.14); }
+  .wire { position: relative; flex: 1; height: 2px; border-radius: 2px; background: rgba(255,255,255,.14); }
   .dot {
-    position: absolute; top: 50%; left: 0;
-    width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
-    border-radius: 50%; background: #2997ff;
+    position: absolute; top: 50%; left: 0; width: 11px; height: 11px;
+    margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: #2997ff;
     box-shadow: 0 0 16px 4px rgba(41,151,255,.65);
   }
   .lane.remote .dot { animation: trip 2.6s cubic-bezier(.5,0,.5,1) infinite; }
-  .lane.local  .dot { left: 0; animation: here 2.6s ease-in-out infinite; }
+  .lane.local  .dot { animation: here 2.6s ease-in-out infinite; }
   @keyframes trip { 0% { left: 0 } 44% { left: 100% } 56% { left: 100% } 100% { left: 0 } }
   @keyframes here { 0%,100% { opacity: .35; transform: scale(.9) } 8%,40% { opacity: 1; transform: scale(1.15) } }
   .lane-note { flex: none; font-size: 12px; color: var(--ink-lt-2); min-width: 8ch; text-align: right; }
+
+  .fact { display: block; margin: 32px auto 0; text-align: center; }
+  .fact b {
+    display: block; font-family: var(--font); font-weight: 600;
+    font-size: clamp(52px, 11vw, 108px); line-height: 1; letter-spacing: -.03em; color: var(--ink-lt);
+  }
+  .fact span { display: block; margin-top: 12px; font-size: 14px; color: var(--ink-lt-2); }
+
+  /* Three guarantees, stated so they can be checked rather than admired. */
+  .guarantees {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    width: min(100%, 940px); margin: 32px auto 0;
+  }
+  .guarantees div {
+    padding: 26px 22px; border-radius: 16px; text-align: left;
+    background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.09);
+  }
+  .guarantees h3 { font-family: var(--font); font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .guarantees p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); }
+
+  /* Open problems, listed the way a research index lists papers. */
+  .rlist { width: min(100%, 940px); margin: 30px auto 0; text-align: left; }
+  .rrow {
+    display: grid; grid-template-columns: 168px 1fr; gap: 22px;
+    padding: 22px 2px; border-top: 1px solid rgba(255,255,255,.15);
+  }
+  .rrow:last-child { border-bottom: 1px solid rgba(255,255,255,.15); }
+  .rrow .cat { font-size: 12px; color: var(--ink-lt-2); padding-top: 4px; }
+  .rrow h3 { font-family: var(--font); font-size: 19px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 5px; }
+  .rrow p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); }
+
   @media (prefers-reduced-motion: reduce) {
     .aurora, .lane .dot { animation: none; }
     .lane.remote .dot { left: 50%; }
@@ -80,26 +133,10 @@
   @media (max-width: 734px) {
     .lane { height: 68px; padding: 0 14px; gap: 10px; }
     .lane-note { display: none; }
+    .guarantees { grid-template-columns: 1fr; }
+    .rrow { grid-template-columns: 1fr; gap: 6px; }
+    .gcard { min-height: 280px; }
   }
-
-  /* Three-up grid of what never leaves. */
-  .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap);
-          width: min(100%, 1000px); margin: 30px auto 0; }
-  .trio > div { padding: 30px 24px; border-radius: 16px;
-                background: rgba(255,255,255,.05);
-                box-shadow: inset 0 0 0 1px rgba(255,255,255,.09); text-align: left; }
-  .trio h3 { font-family: var(--font); font-size: 19px; font-weight: 600; margin-bottom: 7px; }
-  .trio p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); }
-  @media (max-width: 734px) { .trio { grid-template-columns: 1fr; } }
-
-  /* One figure, given room. */
-  .fact { display: block; margin: 30px auto 0; text-align: center; }
-  .fact b {
-    display: block; font-family: var(--font);
-    font-size: clamp(52px, 11vw, 108px); line-height: 1; font-weight: 600;
-    letter-spacing: -.03em; color: var(--ink-lt);
-  }
-  .fact span { display: block; margin-top: 12px; font-size: 14px; color: var(--ink-lt-2); }
 </style>
 </head>
 <body>
@@ -125,7 +162,7 @@
 <div class="chapter">
   <div class="chapter-in">
     <a class="chapter-name" href="../intelligence/">Intelligence</a>
-    <nav class="chapter-links" aria-label="Intelligence sections"><a href="#on-device">On device</a><a href="#speed">Speed</a><a href="#privacy">Privacy</a><a href="#research">Research</a><a href="#build">Build</a></nav>
+    <nav class="chapter-links" aria-label="Intelligence sections"><a href="#highlights">Highlights</a><a href="#on-device">On device</a><a href="#speed">Speed</a><a href="#privacy">Privacy</a><a href="#research">Research</a><a href="#build">Build</a></nav>
   </div>
 </div>
 <main>
@@ -134,14 +171,60 @@
   <div class="well">
     <p class="eyebrow reveal">Oplo Intelligence</p>
     <h1 class="t-mega balance reveal">Intelligence,<br class="br-wide">where you are.</h1>
-    <p class="t-sub muted balance reveal d1">Models that run on the device in your hand, on silicon designed to carry them.</p>
+    <p class="t-sub muted balance reveal d1">A model that runs on your device, knows your context, and keeps both to itself.</p>
+    <p class="t-fine muted reveal d2" style="margin-top:20px">In development. Nothing on this page has shipped.<sup>1</sup></p>
+  </div>
+</section>
+<section class="band dark" id="highlights">
+  <div class="well">
+    <p class="eyebrow reveal">Highlights</p>
+    <h2 class="t-hero balance reveal">What we are building it to do.</h2>
+    <p class="t-lead muted balance reveal d1">Six things a personal model should be good at. Each is a statement of intent, and each is labelled as one.</p>
+  </div>
+  <div class="gallery reveal d1">
+    <article class="gcard" id="highlight-1">
+      <span class="gnum">01</span>
+      <h3>Reasoning, locally</h3>
+      <p>Work through a problem with a model that runs on the machine in front of you, with no request leaving it.</p>
+      <span class="chip">In development</span>
+    </article>
+    <article class="gcard" id="highlight-2">
+      <span class="gnum">02</span>
+      <h3>Your context</h3>
+      <p>Answers grounded in your own mail, notes and files — read on the device, not uploaded to be read.</p>
+      <span class="chip">In development</span>
+    </article>
+    <article class="gcard" id="highlight-3">
+      <span class="gnum">03</span>
+      <h3>Voice</h3>
+      <p>Speech understood on the device, so being understood does not cost you a recording.</p>
+      <span class="chip">In development</span>
+    </article>
+    <article class="gcard" id="highlight-4">
+      <span class="gnum">04</span>
+      <h3>What's on screen</h3>
+      <p>Ask about whatever you are looking at, without shipping a screenshot to a server.</p>
+      <span class="chip">In development</span>
+    </article>
+    <article class="gcard" id="highlight-5">
+      <span class="gnum">05</span>
+      <h3>Writing</h3>
+      <p>Draft and revise in your own voice, with the model close enough to keep up with typing.</p>
+      <span class="chip">In development</span>
+    </article>
+    <article class="gcard" id="highlight-6">
+      <span class="gnum">06</span>
+      <h3>Actions</h3>
+      <p>Ask for something to be done across your apps, and have it done rather than described.</p>
+      <span class="chip">In development</span>
+    </article>
   </div>
 </section>
 <section class="band dark" id="on-device">
   <div class="well">
     <p class="eyebrow reveal">On device</p>
     <h2 class="t-hero balance reveal">Where the model runs<br class="br-wide">changes everything about it.</h2>
-    <p class="t-lead muted balance reveal d1">Speed, privacy and whether it works at all on a train are not three separate features. They are one decision, made once, about which building the thinking happens in.</p>
+    <p class="t-lead muted balance reveal d1">Speed, privacy, and whether it works at all on a train are not three features. They are one decision, made once, about which building the thinking happens in.</p>
   </div>
 </section>
 <section class="band dark" id="speed">
@@ -149,7 +232,6 @@
     <p class="eyebrow reveal">Speed</p>
     <h2 class="t-hero balance reveal">The fastest network<br class="br-wide">is no network.</h2>
     <p class="t-lead muted balance reveal d1">A question sent to a data centre has to physically get there and back before the answer can begin. That trip has a floor set by physics, not by engineering.</p>
-
     <div class="trip reveal d1">
       <div class="lane local">
         <span class="lane-tag">On device</span>
@@ -165,10 +247,9 @@
         <span class="lane-note">there and back</span>
       </div>
     </div>
-
     <p class="fact reveal d2">
       <b>186,000</b>
-      <span>miles per second — the speed of light, and the hard ceiling on how fast any answer can come back from somewhere else.<sup>1</sup></span>
+      <span>miles per second — the speed of light, and the hard ceiling on how fast any answer can return from somewhere else.<sup>2</sup></span>
     </p>
   </div>
 </section>
@@ -177,36 +258,45 @@
   <div class="well">
     <p class="eyebrow reveal">Privacy</p>
     <h2 class="t-hero balance reveal">What never leaves<br class="br-wide">cannot be collected.</h2>
-    <p class="t-lead muted balance reveal d1">Running the model locally is a performance decision that happens to settle the privacy question too. Data that stays on the device is not protected by a policy — it is protected by never having moved.</p>
-    <div class="trio reveal d1">
-      <div><h3>Your voice</h3><p>Speech understood on the device, so a recording is not the price of being understood.</p></div>
-      <div><h3>Your screen</h3><p>What you are looking at is context for the model, not material for a server log.</p></div>
-      <div><h3>Your files</h3><p>Documents can be read and reasoned over without first being uploaded somewhere.</p></div>
+    <p class="t-lead muted balance reveal d1">Running locally settles the privacy question as a side effect of settling the speed one. These are the three commitments that follow, written so you can hold us to them.</p>
+    <div class="guarantees reveal d1">
+      <div><h3>Processed on your device</h3><p>Personal context is read where it already lives. Being understood should not require uploading yourself first.</p></div>
+      <div><h3>Not kept, not trained on</h3><p>What you ask is not retained to improve a model. If that ever needs an exception, it will be asked for, not assumed.</p></div>
+      <div><h3>Told when it leaves</h3><p>If a request genuinely cannot be answered on the device, you will be told before it goes anywhere — and able to decline.</p></div>
     </div>
     <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Read our position on privacy</a></p>
   </div>
 </section>
-<section class="band dark">
-  <div class="well">
-    <p class="eyebrow reveal">Silicon</p>
-    <h2 class="t-hero balance reveal">A model this close<br class="br-wide">needs the chip to agree.</h2>
-    <p class="t-lead muted balance reveal d1">Running capable models on a device you can hold is a hardware problem before it is a software one. Designing both is the only way to stop each side blaming the other.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="../hardware/#silicon">See the hardware</a></p>
-  </div>
-</section>
-<section class="band grey" id="research">
+<section class="band dark" id="research">
   <div class="well">
     <p class="eyebrow reveal">Research</p>
-    <h2 class="t-hero balance reveal">Small enough to fit.<br class="br-wide">Not small enough to be dull.</h2>
-    <p class="t-lead muted balance reveal d1">Compressing a model until it runs on a phone is easy. Doing it without hollowing out what made it worth running is the whole problem, and it is where most of our effort goes.</p>
-    <p class="t-lead muted balance reveal d2">We will publish what turns out to be useful, when it is ready to be argued with.</p>
+    <h2 class="t-hero balance reveal">The open problems.</h2>
+    <p class="t-lead muted balance reveal d1">We have published nothing yet, so this is not a list of papers. It is what we are actually stuck on, which is the more useful thing to say.</p>
+    <div class="rlist reveal d1">
+      <div class="rrow">
+        <div class="cat">Efficiency</div>
+        <div><h3>Capable models that fit in a pocket</h3><p>Compressing a model until it runs on a handheld device is easy. Doing it without hollowing out what made it worth running is the actual problem.</p></div>
+      </div>
+      <div class="rrow">
+        <div class="cat">Silicon</div>
+        <div><h3>Designing the chip around the model</h3><p>General-purpose parts force general-purpose software. We are working on what changes when the silicon is shaped to the thing it has to run.</p></div>
+      </div>
+      <div class="rrow">
+        <div class="cat">Privacy</div>
+        <div><h3>Personal context without collection</h3><p>Grounding answers in someone's own material, while ensuring that material never becomes a dataset — including ours.</p></div>
+      </div>
+      <div class="rrow">
+        <div class="cat">Evaluation</div>
+        <div><h3>Measuring usefulness, not benchmark scores</h3><p>A model that tops a leaderboard and irritates the person using it has failed. We are more interested in the second measurement.</p></div>
+      </div>
+    </div>
   </div>
 </section>
 <section class="band" id="build">
   <div class="well">
     <p class="eyebrow reveal">Developers</p>
     <h2 class="t-hero balance reveal">Build on it.</h2>
-    <p class="t-lead muted balance reveal d1">One surface across the hardware, the software and the models — so the platform is learned once rather than once per device.</p>
+    <p class="t-lead muted balance reveal d1">One surface across the hardware, the software and the models — learned once, rather than once per device. A model that runs on the device means features that work offline and cost nothing per request.</p>
     <p class="cta-row reveal d2">
       <a class="cta" href="../developers/">Developer resources</a>
       <a class="cta" href="../contact/">Talk to us</a>
@@ -214,7 +304,7 @@
   </div>
 </section>
 </main>
-<div class="notes"><ol><li>Light travels 186,282 miles per second in a vacuum, and rather slower through glass fibre. The figure is quoted as the physical limit on a network round trip, not as a measurement of any Oplo product.</li><li>Oplo Intelligence is in development. Model capability, availability and on-device performance are not final and will vary by device.</li><li>Descriptions of on-device processing describe design intent. Nothing on this page describes a shipping product.</li></ol></div>
+<div class="notes"><ol><li>Oplo Intelligence is in development. Every capability described on this page is an intention rather than a shipping feature, and each is labelled as such. Availability, capability and on-device performance are not final and will vary by device.</li><li>Light travels 186,282 miles per second in a vacuum, and slower through glass fibre. The figure is quoted as the physical limit on a network round trip, not as a measurement of any Oplo product.</li><li>The privacy commitments describe how Oplo intends to build. The binding document is the privacy policy, which is in preparation.</li></ol></div>
 <footer class="foot" aria-label="Oplo footer">
   <div class="foot-in">
     <div class="foot-note">
