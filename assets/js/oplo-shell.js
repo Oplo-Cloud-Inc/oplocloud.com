@@ -599,14 +599,19 @@
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
 
+    // The bar's backdrop-filter makes it the containing block for anything
+    // position:fixed inside it, which would collapse the drawer to bar height.
+    // `drawer-open` drops the filter for as long as the drawer is down.
     function closeDrawer() {
       links.classList.remove("onav-open");
+      nav.classList.remove("drawer-open");
       toggle.classList.remove("on");
       toggle.setAttribute("aria-expanded", "false");
       closeMenus();
     }
     toggle.addEventListener("click", function () {
       var open = links.classList.toggle("onav-open");
+      nav.classList.toggle("drawer-open", open);
       toggle.classList.toggle("on", open);
       toggle.setAttribute("aria-expanded", String(open));
       if (!open) closeMenus();

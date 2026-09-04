@@ -104,8 +104,10 @@
 .oplo-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ------------------------------------------------ Unified top nav
-   Rendered by oplo-shell.js on every marketing view, so the bar is identical
-   everywhere. Light by default; inverts on [data-oplo-theme="dark"] pages. */
+   The global bar: 44px tall, translucent, and identical on every surface.
+   It never competes with the page — 12px type, no borders, no shadow — so
+   the product underneath is the only thing with weight. Light by default;
+   inverts on [data-oplo-theme="dark"] pages. */
 
 /* Retire each page's own top nav once the unified one is active. */
 html.oplo-navmode nav:not(.onav) { display: none !important; }
@@ -113,74 +115,95 @@ html.oplo-navmode nav:not(.onav) { display: none !important; }
 .onav {
   position: fixed; inset: 0 0 auto 0;
   z-index: 2147481000;
-  border-bottom: 1px solid transparent;
-  transition: background .4s var(--oplo-ease), border-color .4s var(--oplo-ease);
-}
-.onav.scrolled {
-  background: rgba(252, 252, 253, 0.72);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  backdrop-filter: blur(20px) saturate(1.6);
-  border-bottom-color: var(--oplo-hairline);
+  height: 44px;
+  background: rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  transition: background .4s var(--oplo-ease);
 }
 .onav-in {
-  max-width: 1180px; margin-inline: auto;
-  padding-inline: clamp(20px, 4vw, 44px);
-  height: 62px; display: flex; align-items: center; gap: 22px;
+  max-width: 1024px; margin-inline: auto;
+  padding-inline: 22px;
+  height: 44px; display: flex; align-items: center; gap: 0;
 }
 .onav-brand {
-  display: inline-flex; align-items: center; gap: 9px;
+  display: inline-flex; align-items: center; gap: 7px;
   font-family: var(--oplo-font-display);
-  font-weight: 700; font-size: 20px; letter-spacing: -0.03em;
-  color: var(--oplo-ink); text-decoration: none;
+  font-weight: 600; font-size: 15px; letter-spacing: -0.02em;
+  color: var(--oplo-nav-ink, #1d1d1f); text-decoration: none;
+  flex: none; opacity: .92;
+  transition: opacity .2s;
 }
+.onav-brand:hover { opacity: 1; }
 .onav-dot {
-  width: 13px; height: 13px; border-radius: 50%;
+  width: 12px; height: 12px; border-radius: 50%;
   background: var(--oplo-opal);
   box-shadow: inset 0 0 0 1px rgba(11, 12, 15, 0.08);
   flex: none; animation: onav-spin 24s linear infinite;
 }
 @keyframes onav-spin { to { transform: rotate(360deg); } }
+
+/* The words spread evenly across the bar, the way a shelf of products would. */
 .onav-links {
-  display: flex; align-items: center; gap: 28px;
-  margin: 0 0 0 auto; padding: 0; list-style: none;
+  display: flex; align-items: center;
+  flex: 1 1 auto;
+  justify-content: space-evenly;
+  margin: 0; padding: 0 12px; list-style: none;
+  height: 44px;
 }
-.onav-links a {
-  font-size: 14px; font-weight: 500; color: var(--oplo-slate);
-  text-decoration: none; transition: color .2s;
+.onav-links a,
+.onav-trigger {
+  font-family: var(--oplo-font-body);
+  font-size: 12px; line-height: 1; font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--oplo-nav-ink, #1d1d1f);
+  opacity: .8;
+  text-decoration: none;
+  transition: opacity .2s;
 }
-.onav-links a:hover { color: var(--oplo-ink); }
-.onav-actions { display: inline-flex; align-items: center; }
+.onav-links a:hover, .onav-trigger:hover { opacity: 1; }
+.onav-actions { display: inline-flex; align-items: center; gap: 14px; flex: none; }
+/* The account chip scales down to bar size — 44px leaves no room for 34. */
+.onav .oplo-avatar { width: 24px; height: 24px; font-size: 11px; }
+.onav .oplo-chip { padding: 2px; }
+.onav .oplo-chip:hover { background: rgba(0,0,0,.06); }
+[data-oplo-theme="dark"] .onav .oplo-chip:hover { background: rgba(255,255,255,.12); }
 .onav-toggle {
   display: none; flex-direction: column; gap: 4px;
   background: none; border: none; cursor: pointer; padding: 8px;
 }
-.onav-toggle span { width: 20px; height: 2px; background: var(--oplo-ink); border-radius: 2px; transition: transform .3s var(--oplo-ease), opacity .2s; }
-.onav-toggle.on span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.onav-toggle span {
+  width: 18px; height: 1.5px; border-radius: 2px;
+  background: var(--oplo-nav-ink, #1d1d1f); opacity: .8;
+  transition: transform .3s var(--oplo-ease), opacity .2s;
+}
+.onav-toggle.on span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
 .onav-toggle.on span:nth-child(2) { opacity: 0; }
-.onav-toggle.on span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+.onav-toggle.on span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
 
 /* dark pages */
-[data-oplo-theme="dark"] .onav.scrolled { background: rgba(10, 11, 15, 0.66); border-bottom-color: rgba(255, 255, 255, 0.09); }
-[data-oplo-theme="dark"] .onav-brand { color: #F4F5FA; }
-[data-oplo-theme="dark"] .onav-links a { color: #9195A6; }
-[data-oplo-theme="dark"] .onav-links a:hover { color: #F4F5FA; }
-[data-oplo-theme="dark"] .onav-toggle span { background: #F4F5FA; }
+[data-oplo-theme="dark"] .onav { background: rgba(22, 22, 23, 0.8); }
+[data-oplo-theme="dark"] { --oplo-nav-ink: #f5f5f7; }
 
 /* mobile drawer */
-@media (max-width: 720px) {
+@media (max-width: 833px) {
+  .onav:has(.onav-open) {
+    background: #fff;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
   .onav-links { display: none; }
   .onav-links.onav-open {
-    display: flex; position: fixed; inset: 62px 0 auto 0;
-    flex-direction: column; align-items: stretch; gap: 2px;
-    padding: 14px clamp(20px, 4vw, 44px) 22px;
-    background: rgba(252, 252, 253, 0.98);
-    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--oplo-hairline);
+    display: flex; position: fixed; inset: 44px 0 0 0;
+    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    gap: 0; height: auto; overflow-y: auto;
+    padding: 8px 22px 40px;
+    background: #fff;
   }
-  .onav-links.onav-open a { font-size: 16px; padding: 10px 0; }
-  [data-oplo-theme="dark"] .onav-links.onav-open { background: rgba(10, 11, 15, 0.98); border-bottom-color: rgba(255, 255, 255, 0.09); }
+  .onav-links.onav-open a { font-size: 17px; font-weight: 600; padding: 12px 0; opacity: 1; }
+  [data-oplo-theme="dark"] .onav-links.onav-open { background: #161617; }
+  .onav-links { margin-left: 0; }
   .onav-actions { margin-left: auto; }
-  .onav-toggle { display: flex; }
+  .onav-toggle { display: flex; margin-left: 4px; }
 }
 
 /* ------------------------------------------------ Popovers (shared) */
@@ -340,190 +363,178 @@ html.oplo-navmode nav:not(.onav) { display: none !important; }
    Mobile: the same DOM collapses into accordions inside the drawer.
    ========================================================================== */
 
-.onav-item { position: static; }
+.onav-item { position: static; display: flex; align-items: center; height: 44px; }
 .onav-trigger {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 5px;
   font-family: var(--oplo-font-body);
-  font-size: 14px; font-weight: 500; color: var(--oplo-slate);
+  font-size: 12px; line-height: 1; font-weight: 400; letter-spacing: -0.01em;
+  color: var(--oplo-nav-ink, #1d1d1f); opacity: .8;
   background: none; border: none; padding: 0; cursor: pointer;
-  transition: color .2s;
+  transition: opacity .2s;
 }
-.onav-trigger:hover, .onav-item.is-open .onav-trigger { color: var(--oplo-ink); }
-.onav-caret {
-  width: 6px; height: 6px;
-  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
-  transform: rotate(45deg) translateY(-1px); opacity: .7;
-  transition: transform .3s var(--oplo-ease);
-}
-.onav-item.is-open .onav-caret { transform: rotate(225deg) translateY(-1px); }
+.onav-trigger:hover, .onav-item.is-open .onav-trigger { opacity: 1; }
+/* No caret in the global bar — the sheet opening is the affordance. */
+.onav-caret { display: none; }
 
-/* Keep the bar opaque while a menu is open */
-.onav.menu-open {
-  background: var(--oplo-porcelain);
+/* The bar goes solid while a sheet is down, so the two read as one surface. */
+.onav.menu-open,
+.onav.drawer-open {
+  background: #fff;
   -webkit-backdrop-filter: none; backdrop-filter: none;
-  border-bottom-color: transparent;
 }
-[data-oplo-theme="dark"] .onav.menu-open { background: #0A0B0E; }
+[data-oplo-theme="dark"] .onav.menu-open,
+[data-oplo-theme="dark"] .onav.drawer-open { background: #161617; }
 
-/* Sign-in pill */
+/* Sign in — a word on the bar, not a button. */
 .onav-signin {
   display: inline-flex; align-items: center;
   font-family: var(--oplo-font-body);
-  font-size: 14px; font-weight: 600;
-  padding: 8px 17px; margin-right: 10px;
-  border-radius: 100px;
-  background: var(--oplo-ink); color: var(--oplo-porcelain);
-  text-decoration: none; white-space: nowrap;
-  transition: transform .2s var(--oplo-ease), background .2s;
+  font-size: 12px; line-height: 1; font-weight: 400; letter-spacing: -0.01em;
+  padding: 0; margin: 0;
+  color: var(--oplo-nav-ink, #1d1d1f); opacity: .8;
+  background: none; text-decoration: none; white-space: nowrap;
+  transition: opacity .2s;
 }
-.onav-signin:hover { background: #23252B; transform: translateY(-1px); }
-[data-oplo-theme="dark"] .onav-signin { background: #F5F6F8; color: #0A0B0E; }
-[data-oplo-theme="dark"] .onav-signin:hover { background: #fff; }
+.onav-signin:hover { opacity: 1; background: none; transform: none; }
 
-/* Scrim behind an open menu */
+/* Scrim behind an open sheet */
 .onav-scrim {
-  position: fixed; inset: 62px 0 0 0;
+  position: fixed; inset: 44px 0 0 0;
   z-index: 2147480900;
-  background: rgba(11, 12, 15, .28);
+  background: rgba(0, 0, 0, .48);
   opacity: 0; visibility: hidden;
   transition: opacity .35s var(--oplo-ease), visibility .35s;
 }
 .onav-scrim.is-on { opacity: 1; visibility: visible; }
 
-/* ---------------------------------------------- The panel */
+/* ---------------------------------------------- The panel
+   Apple's dropdown: a full-width sheet that unrolls from under the bar. No
+   card, no shadow, no radius — it *is* the bar, extended. */
 .omega {
   position: absolute; top: 100%; left: 0; right: 0;
-  background: var(--oplo-porcelain);
-  border-bottom: 1px solid var(--oplo-hairline);
-  box-shadow: 0 30px 60px -30px rgba(11, 12, 15, .22);
-  opacity: 0; visibility: hidden; transform: translateY(-10px);
-  transition: opacity .28s var(--oplo-ease), transform .28s var(--oplo-ease), visibility .28s;
+  background: #fff;
+  opacity: 0; visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity .22s var(--oplo-ease), transform .32s var(--oplo-ease), visibility .32s;
 }
 .onav-item.is-open .omega { opacity: 1; visibility: visible; transform: none; }
-[data-oplo-theme="dark"] .omega {
-  background: #0E1014; border-bottom-color: rgba(255, 255, 255, .10);
-}
+[data-oplo-theme="dark"] .omega { background: #161617; }
+
 .omega-in {
-  max-width: 1180px; margin-inline: auto;
-  padding: clamp(24px, 2.6vw, 36px) clamp(20px, 4vw, 44px) clamp(22px, 2.2vw, 30px);
-  display: grid; gap: clamp(20px, 2.4vw, 40px);
-  grid-template-columns: 216px minmax(0, 1fr) 250px;
+  max-width: 1024px; margin-inline: auto;
+  padding: 22px 22px 40px;
+  display: grid; gap: 8px 40px;
+  grid-template-columns: 190px minmax(0, 1fr) 250px;
   align-items: start;
 }
 .omega[data-panel="grid"] .omega-in { grid-template-columns: minmax(0, 1fr) 250px; }
 
 /* Category rail */
-.omega-rail { display: grid; gap: 2px; align-content: start; }
+.omega-rail { display: grid; gap: 0; align-content: start; }
 .omega-tab {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   width: 100%; text-align: left;
   font-family: var(--oplo-font-body);
-  font-size: 14.5px; font-weight: 500; color: var(--oplo-ink);
+  font-size: 14px; line-height: 1.45; font-weight: 400;
+  color: var(--oplo-nav-ink, #1d1d1f); opacity: .8;
   background: none; border: none; cursor: pointer;
-  padding: 9px 12px; border-radius: 9px;
-  transition: background .18s, color .18s;
+  padding: 6px 0; border-radius: 0;
+  transition: opacity .18s, color .18s;
 }
 .omega-tab .ot-chev {
-  width: 6px; height: 6px; opacity: 0;
-  border-right: 1.6px solid currentColor; border-top: 1.6px solid currentColor;
+  width: 5px; height: 5px; opacity: 0;
+  border-right: 1.4px solid currentColor; border-top: 1.4px solid currentColor;
   transform: rotate(45deg);
   transition: opacity .18s;
 }
-.omega-tab:hover { background: rgba(11, 12, 15, .045); }
-.omega-tab.is-on { background: rgba(11, 12, 15, .06); font-weight: 600; }
-.omega-tab.is-on .ot-chev { opacity: .45; }
-[data-oplo-theme="dark"] .omega-tab { color: #F4F5FA; }
-[data-oplo-theme="dark"] .omega-tab:hover { background: rgba(255, 255, 255, .06); }
-[data-oplo-theme="dark"] .omega-tab.is-on { background: rgba(255, 255, 255, .09); }
+.omega-tab:hover { opacity: 1; background: none; }
+.omega-tab.is-on { opacity: 1; font-weight: 600; background: none; }
+.omega-tab.is-on .ot-chev { opacity: .4; }
+[data-oplo-theme="dark"] .omega-tab { color: #f5f5f7; }
+[data-oplo-theme="dark"] .omega-tab:hover, [data-oplo-theme="dark"] .omega-tab.is-on { background: none; }
 
 /* Detail pane */
 .omega-pane { display: none; }
 .omega-pane.is-on { display: block; }
 .omega-blurb {
-  font-family: var(--oplo-font-mono);
-  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--oplo-ink-soft); margin: 0 0 14px;
+  font-family: var(--oplo-font-body);
+  font-size: 12px; line-height: 1.33; letter-spacing: -.01em;
+  text-transform: none;
+  color: #6e6e73; margin: 0 0 14px;
 }
+[data-oplo-theme="dark"] .omega-blurb { color: #a1a1a6; }
 .omega-items {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px 14px;
+  gap: 2px 32px;
 }
 .omega-item {
   display: block; text-decoration: none;
-  padding: 8px 10px; margin-inline: -10px; border-radius: 9px;
-  transition: background .18s, transform .18s var(--oplo-ease);
+  padding: 5px 0; margin-inline: 0; border-radius: 0;
+  transition: none;
 }
-.omega-item:hover { background: rgba(11, 12, 15, .045); transform: translateX(2px); }
-[data-oplo-theme="dark"] .omega-item:hover { background: rgba(255, 255, 255, .06); }
+.omega-item:hover { background: none; transform: none; }
+.omega-item:hover .oi-name { color: var(--oplo-blue, #0066cc); }
+[data-oplo-theme="dark"] .omega-item:hover { background: none; }
+[data-oplo-theme="dark"] .omega-item:hover .oi-name { color: #2997ff; }
 .oi-name {
-  display: block; font-size: 14.5px; font-weight: 600;
-  color: var(--oplo-ink); letter-spacing: -.01em;
+  display: block; font-size: 14px; line-height: 1.42; font-weight: 600;
+  color: var(--oplo-nav-ink, #1d1d1f); letter-spacing: -.016em;
+  transition: color .18s;
 }
 .oi-desc {
-  display: block; font-size: 12.5px; line-height: 1.4;
-  color: var(--oplo-ink-soft); margin-top: 1px;
+  display: block; font-size: 12px; line-height: 1.33;
+  color: #6e6e73; margin-top: 1px; letter-spacing: -.01em;
 }
-[data-oplo-theme="dark"] .oi-name { color: #F4F5FA; }
-[data-oplo-theme="dark"] .oi-desc { color: #8A8E99; }
+[data-oplo-theme="dark"] .oi-name { color: #f5f5f7; }
+[data-oplo-theme="dark"] .oi-desc { color: #a1a1a6; }
 .oi-soon {
   display: inline-block; margin-left: 6px; vertical-align: middle;
-  font-family: var(--oplo-font-mono); font-size: 9px;
-  letter-spacing: .06em; text-transform: uppercase;
-  color: var(--oplo-ink-soft); background: rgba(11, 12, 15, .06);
-  border-radius: 4px; padding: 1px 5px;
+  font-family: var(--oplo-font-body); font-size: 9px;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: #86868b; border: 1px solid rgba(0,0,0,.14);
+  border-radius: 4px; padding: 1px 5px; line-height: 1.5;
 }
-[data-oplo-theme="dark"] .oi-soon { background: rgba(255, 255, 255, .09); color: #8A8E99; }
+[data-oplo-theme="dark"] .oi-soon { border-color: rgba(255,255,255,.2); color: #a1a1a6; }
 
-/* Industries — flat grid */
-.omega-grid {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px 14px;
-}
-
-/* Promo card */
+/* Featured card at the right of the sheet */
 .omega-feature {
   display: block; text-decoration: none;
-  border: 1px solid var(--oplo-hairline); border-radius: 16px;
-  overflow: hidden; background: var(--oplo-porcelain);
-  transition: transform .3s var(--oplo-ease), box-shadow .3s var(--oplo-ease);
+  border-radius: 14px; overflow: hidden;
+  background: #f5f5f7;
+  transition: transform .3s var(--oplo-ease);
 }
-.omega-feature:hover { transform: translateY(-3px); box-shadow: 0 22px 44px -28px rgba(11, 12, 15, .38); }
-[data-oplo-theme="dark"] .omega-feature { background: #15171D; border-color: rgba(255, 255, 255, .10); }
-.of-cover { display: block; height: 78px; position: relative; }
-.of-cover::after {
-  content: ""; position: absolute; inset: 0;
-  background: radial-gradient(120% 100% at 18% 12%, rgba(255, 255, 255, .55), transparent 58%);
-}
-.of-body { display: block; padding: 14px 16px 16px; }
-.of-tag {
+.omega-feature:hover { transform: translateY(-2px); }
+[data-oplo-theme="dark"] .omega-feature { background: #1d1d1f; }
+.omega-feature .of-cover { display: block; aspect-ratio: 16 / 10; }
+.omega-feature .of-body { display: block; padding: 14px 16px 18px; }
+.omega-feature .of-tag {
   display: block;
-  font-family: var(--oplo-font-mono); font-size: 10px;
-  letter-spacing: .1em; text-transform: uppercase; color: var(--oplo-ink-soft);
+  font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  color: #86868b; margin: 0 0 4px;
 }
-.of-title {
-  display: block; font-family: var(--oplo-font-display);
-  font-size: 16px; font-weight: 600; letter-spacing: -.02em;
-  color: var(--oplo-ink); margin-top: 6px;
+.omega-feature .of-title {
+  display: block;
+  font-family: var(--oplo-font-display);
+  font-size: 19px; font-weight: 600; letter-spacing: -.02em;
+  color: var(--oplo-nav-ink, #1d1d1f); margin: 0;
 }
-.of-desc { display: block; font-size: 12.5px; line-height: 1.45; color: var(--oplo-slate); margin-top: 5px; }
-[data-oplo-theme="dark"] .of-title { color: #F4F5FA; }
-[data-oplo-theme="dark"] .of-desc { color: #9195A6; }
+.omega-feature .of-desc { display: block; font-size: 12px; line-height: 1.4; color: #6e6e73; margin: 4px 0 0; }
+[data-oplo-theme="dark"] .omega-feature .of-title { color: #f5f5f7; }
+[data-oplo-theme="dark"] .omega-feature .of-desc { color: #a1a1a6; }
 
-/* Panel footer */
+/* Sheet footer */
 .omega-foot {
   grid-column: 1 / -1;
-  margin-top: 4px; padding-top: 16px;
-  border-top: 1px solid var(--oplo-hairline);
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 10px 24px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px;
+  margin-top: 18px; padding-top: 16px;
+  border-top: 1px solid rgba(0,0,0,.08);
+  font-size: 12px;
 }
-[data-oplo-theme="dark"] .omega-foot { border-top-color: rgba(255, 255, 255, .10); }
-.omega-foot a { font-size: 13.5px; color: var(--oplo-slate); text-decoration: none; transition: color .2s; }
-.omega-foot a:hover { color: var(--oplo-ink); }
-.omega-foot .of-lead { font-weight: 600; color: var(--oplo-ink); }
-[data-oplo-theme="dark"] .omega-foot a { color: #9195A6; }
-[data-oplo-theme="dark"] .omega-foot a:hover, [data-oplo-theme="dark"] .omega-foot .of-lead { color: #F4F5FA; }
-.omega-foot .of-quick { display: flex; flex-wrap: wrap; gap: 20px; }
+[data-oplo-theme="dark"] .omega-foot { border-top-color: rgba(255,255,255,.12); }
+.omega-foot a { color: #6e6e73; text-decoration: none; transition: color .18s; }
+.omega-foot a:hover { color: var(--oplo-blue, #0066cc); }
+.omega-foot .of-lead { color: var(--oplo-blue, #0066cc); font-weight: 400; }
+.omega-foot .of-quick { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-left: auto; }
 
 /* ---------------------------------------------- Mobile: accordions */
 @media (max-width: 900px) {
@@ -532,24 +543,31 @@ html.oplo-navmode nav:not(.onav) { display: none !important; }
   .omega[data-panel="grid"] .omega-in { grid-template-columns: minmax(0, 1fr); }
   .omega-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 720px) {
+@media (max-width: 833px) {
   .onav-scrim { display: none; }
   /* The drawer now holds full menus, so it has to scroll on its own — it is
      position:fixed, so without this everything below the fold is unreachable. */
   .onav-links.onav-open {
-    max-height: calc(100dvh - 62px);
+    max-height: calc(100dvh - 44px);
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     padding-bottom: max(28px, env(safe-area-inset-bottom));
   }
   .onav-item { width: 100%; }
+  .onav-item { display: block; width: 100%; height: auto; }
   .onav-trigger {
     width: 100%; justify-content: space-between;
-    font-size: 16px; padding: 10px 0; color: var(--oplo-ink);
+    font-size: 17px; font-weight: 600; padding: 12px 0; opacity: 1;
   }
-  [data-oplo-theme="dark"] .onav-trigger { color: #F4F5FA; }
-  .onav-signin { margin-right: 8px; padding: 7px 14px; font-size: 13px; }
+  .onav-trigger::after {
+    content: ""; width: 6px; height: 6px; opacity: .5;
+    border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform .25s var(--oplo-ease);
+  }
+  .onav-item.is-open .onav-trigger::after { transform: rotate(225deg) translateY(-2px); }
+  .onav-signin { margin-right: 0; font-size: 12px; }
 
   .omega {
     position: static; display: none;
