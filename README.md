@@ -86,23 +86,19 @@ This repo is set up to publish to **GitHub Pages** at the apex domain
 
 ## Design system
 
-A quiet canvas, one accent blue, an enormous type scale, and the product as the
-only ornament — the front page and the global chrome are built to that rule.
+Near-monochrome, one accent, an enormous type scale. There is no illustration
+anywhere: a drawn product reads as worse than no product, so the words and the
+space are the design.
 
-- **Canvas** — `#fff`, `#f5f5f7` for grey bands, `#000` for dark ones. Tiles sit
-  on the page ground with a 12px gutter between them; a tile is never pure white.
-- **Ink** — `#1d1d1f` for text, `#6e6e73` secondary, `#86868b` tertiary.
-- **Accent** — one blue: `#0066cc` for links, `#0071e3` for buttons, `#2997ff` on
-  dark. Nothing else is coloured.
-- **Type** — SF Pro where it exists, Inter everywhere else. Six sizes, two
-  weights: `.t-hero`, `.t-display`, `.t-title`, `.t-head`, `.t-sub`, `.t-lead`,
-  plus `.t-body` and `.t-fine`. The size does the talking.
-- **Measure** — a 980px copy well; tile grids stop at 1680px.
-- **Chrome** — a 44px translucent bar on every page, its dropdowns opaque
-  full-width sheets, and a 12px fine-print footer.
-- **Motion** — one reveal: rise 28px and resolve over 1s. Nothing bounces.
+- **Ground** — `#fff`, `#f5f5f7`, and `#000`. Nothing else.
+- **Ink** — `#1d1d1f`, `#6e6e73` secondary, `#86868b` tertiary.
+- **Accent** — one blue, `#0066cc` on light and `#2997ff` on dark, and it is
+  only ever used on a link. Buttons are reserved for commerce.
+- **Type** — SF Pro where it exists, Inter everywhere else. `.t-mega` down
+  through `.t-hero`, `.t-display`, `.t-title`, `.t-sub`, `.t-lead`, `.t-fine`.
+- **Hierarchy** — a `.band` is a tall full-bleed statement; a `.card` is half
+  as tall and comes in pairs. That size difference *is* the hierarchy, and
+  flattening it into one repeating tile is what made the first attempt fail.
+- **Colour is spent once** — a single soft `.bloom` behind the dark band. The
+  rest of the site is black, white, and grey.
 
-The **opal** (a mint → sky → lilac → peach conic gradient) stays as the mark for
-Roxan and for Oplo itself; product apps keep their own icon gradients. Every
-product on the front page — the notebook, the handset, the O1 die, the rack, the
-app dock — is drawn in CSS and SVG, so the page ships no images.
