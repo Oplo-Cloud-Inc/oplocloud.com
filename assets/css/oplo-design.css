@@ -134,7 +134,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav-brand:hover { opacity: 1; }
 /* The mark sits at the optical size Apple gives its own: small enough that the
    bar stays furniture, large enough that the knockout still reads. */
-.nav-brand .mark { width: 19px; height: 19px; display: block; }
+/* The mark is slightly wider than tall (206.7 x 194.9), so it is sized by
+   height and lets its own ratio set the width. Never set both. */
+.nav-brand .mark { height: 19px; width: auto; display: block; }
 .nav-links {
   flex: 1 1 auto; display: flex; justify-content: space-evenly;
   padding: 0 24px; margin: 0;
