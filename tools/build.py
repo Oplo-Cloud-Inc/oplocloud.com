@@ -385,6 +385,73 @@ PAGES.append(("developers/index.html", section_page(
 # ==========================================================================
 
 INTEL_CSS = '''<style>
+
+  /* News strip — the "latest release" line those sites run above the fold. */
+  .newsbar {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    flex-wrap: wrap; padding: 11px var(--gutter);
+    background: rgba(255,255,255,.06);
+    border-bottom: 1px solid rgba(255,255,255,.10);
+    font-size: 13px; color: var(--ink-lt-2); text-align: center;
+  }
+  .newsbar b { color: var(--ink-lt); font-weight: 600; }
+  .newsbar .cta { font-size: 13px; }
+
+  /* Use-case tabs with a worked example. The example carries what it reads
+     and where it stays, so the on-device claim is shown, not asserted. */
+  .tabs { width: min(100%, 900px); margin: 30px auto 0; }
+  .tablist {
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+    padding-bottom: 4px; justify-content: flex-start;
+  }
+  .tablist::-webkit-scrollbar { display: none; }
+  .tablist button {
+    flex: none; padding: 9px 18px; border-radius: 100px;
+    font-size: 14px; color: var(--ink-lt-2);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+    transition: color .2s, background .2s, box-shadow .2s;
+  }
+  .tablist button:hover { color: var(--ink-lt); }
+  .tablist button[aria-selected="true"] {
+    color: #000; background: var(--ink-lt); box-shadow: none; font-weight: 500;
+  }
+  .tabpanel { display: none; margin-top: 16px; text-align: left; }
+  .tabpanel.on { display: block; }
+  .ask {
+    border-radius: 18px; padding: 26px 26px 20px;
+    background: rgba(255,255,255,.05);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.11);
+  }
+  .ask .lbl { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-lt-2); }
+  .ask q {
+    display: block; margin: 12px 0 20px; quotes: none;
+    font-family: var(--font); font-size: clamp(19px, 2.4vw, 27px);
+    line-height: 1.3; font-weight: 500; letter-spacing: -.01em; color: var(--ink-lt);
+  }
+  .ask .meta { display: flex; flex-wrap: wrap; gap: 8px 10px; padding-top: 16px;
+               border-top: 1px solid rgba(255,255,255,.12); }
+  .tag {
+    font-size: 12px; padding: 4px 10px; border-radius: 100px; color: var(--ink-lt-2);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+  }
+  .tag.stay { color: #2997ff; box-shadow: inset 0 0 0 1px rgba(41,151,255,.45); }
+
+  /* Where it runs — tiered cards with capability bullets. */
+  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+           width: min(100%, 1000px); margin: 32px auto 0; }
+  .tier {
+    display: flex; flex-direction: column; gap: 10px; text-align: left;
+    padding: 28px 24px; border-radius: 18px;
+    background: rgba(255,255,255,.05);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
+  }
+  .tier h3 { font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
+  .tier p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); flex: 1; }
+  .tier .bul { font-size: 12px; color: var(--ink-lt-2); }
+  .tier .bul span { white-space: nowrap; }
+  .tier .bul i { font-style: normal; opacity: .5; padding: 0 7px; }
+  @media (max-width: 833px) { .tiers { grid-template-columns: 1fr; } }
+
   .aurora {
     position: absolute; inset: -25%; z-index: 0; pointer-events: none;
     background:
@@ -528,16 +595,124 @@ OPEN_PROBLEMS = [
 ]
 
 
+NEWSBAR = '''<div class="newsbar">
+  <span><b>Oplo Intelligence</b> — the design direction, written up in full.</span>
+  <a class="cta" href="../newsroom/">Read it</a>
+</div>
+'''
+
+TABS = [
+    ("Write", "Draft a reply to Sam that picks up the three pricing points from Tuesday's notes.",
+     ["Notes", "Mail"]),
+    ("Plan", "Work out what actually has to happen before Thursday, given what is already in my calendar.",
+     ["Calendar", "Reminders"]),
+    ("Find", "Find the photo from the roof in Lisbon — it was raining, and it was the evening.",
+     ["Photos"]),
+    ("Read", "Tell me what changed in this contract since the version they sent last month.",
+     ["Files"]),
+    ("Debug", "Explain why the build got slower after the commit I pushed on Friday.",
+     ["Projects"]),
+]
+
+TIERS = [
+    ("On device", "The default. The model lives on the machine you are holding and answers without a network.",
+     ["Works offline", "Nothing leaves", "No per-request cost"]),
+    ("On your desk", "A larger model on a machine with more room, for work that needs more than a handheld can hold.",
+     ["Longer context", "Heavier reasoning", "Still yours"]),
+    ("Asked first", "If something genuinely cannot be answered locally, you are told before it goes — and can say no.",
+     ["Explicit consent", "Not retained", "Declinable"]),
+]
+
+
+def tabs_block():
+    btns = "".join(
+        f'<button type="button" role="tab" id="tab-{i}" aria-controls="panel-{i}" '
+        f'aria-selected="{"true" if i == 0 else "false"}">{name}</button>'
+        for i, (name, _, _) in enumerate(TABS))
+    panels = ""
+    for i, (name, prompt, reads) in enumerate(TABS):
+        tags = "".join(f'<span class="tag">Reads {r}</span>' for r in reads)
+        panels += f'''      <div class="tabpanel{' on' if i == 0 else ''}" id="panel-{i}" role="tabpanel" aria-labelledby="tab-{i}">
+        <div class="ask">
+          <span class="lbl">Example — {name.lower()}</span>
+          <q>{prompt}</q>
+          <div class="meta">{tags}<span class="tag stay">Stays on device</span></div>
+        </div>
+      </div>
+'''
+    return f'''<section class="band dark" id="ask">
+  <div class="well">
+    <p class="eyebrow reveal">In use</p>
+    <h2 class="t-hero balance reveal">What you would actually ask it.</h2>
+    <p class="t-lead muted balance reveal d1">Illustrations, not transcripts — nothing here has shipped. Each one shows what the model would need to read, and where that reading happens.</p>
+    <div class="tabs reveal d1">
+      <div class="tablist" role="tablist" aria-label="Example requests">{btns}</div>
+{panels}    </div>
+  </div>
+</section>
+'''
+
+
+def tiers_block():
+    cards = ""
+    for name, desc, bullets in TIERS:
+        bul = "<i>•</i>".join(f"<span>{b}</span>" for b in bullets)
+        cards += f'''      <div class="tier">
+        <h3>{name}</h3>
+        <p>{desc}</p>
+        <p class="bul">{bul}</p>
+      </div>
+'''
+    return f'''<section class="band dark" id="where">
+  <div class="well">
+    <p class="eyebrow reveal">Where it runs</p>
+    <h2 class="t-hero balance reveal">One family.<br class="br-wide">Three places it lives.</h2>
+    <p class="t-lead muted balance reveal d1">On-device is the default rather than the marketing. The other two exist so the default never has to be quietly broken.</p>
+    <div class="tiers reveal d1">
+{cards}    </div>
+  </div>
+</section>
+'''
+
+TABS_JS = '''<script>
+  (function () {
+    var list = document.querySelector(".tablist");
+    if (!list) return;
+    var tabs = [].slice.call(list.querySelectorAll("button"));
+    function show(i) {
+      tabs.forEach(function (t, n) {
+        t.setAttribute("aria-selected", String(n === i));
+        var p = document.getElementById("panel-" + n);
+        if (p) p.classList.toggle("on", n === i);
+      });
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener("click", function () { show(i); });
+      t.addEventListener("keydown", function (e) {
+        var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        var n = (i + d + tabs.length) % tabs.length;
+        tabs[n].focus(); show(n);
+      });
+    });
+  })();
+</script>
+'''
+
+
 def intelligence_page():
     depth = 1
-    links = [("Highlights", "#highlights"), ("On device", "#on-device"), ("Speed", "#speed"),
-             ("Privacy", "#privacy"), ("Research", "#research"), ("Build", "#build")]
+    links = [("Highlights", "#highlights"), ("In use", "#ask"), ("On device", "#on-device"),
+             ("Speed", "#speed"), ("Where it runs", "#where"), ("Privacy", "#privacy"),
+             ("Research", "#research"), ("Build", "#build")]
     out = head(depth, "Intelligence — Oplo",
                "Oplo Intelligence: models that run on your device rather than in a data centre.",
                "intelligence/", INTEL_CSS)
     out += nav(depth, "intelligence/")
     out += chapter(depth, "Intelligence", links, "intelligence/")
     out += "<main>\n"
+    out += NEWSBAR
 
     out += '''<section class="band dark opening">
   <span class="aurora" aria-hidden="true"></span>
@@ -568,6 +743,8 @@ def intelligence_page():
 {cards}  </div>
 </section>
 '''
+
+    out += tabs_block()
 
     out += '''<section class="band dark" id="on-device">
   <div class="well">
@@ -605,6 +782,8 @@ def intelligence_page():
   </div>
 </section>
 '''
+
+    out += tiers_block()
 
     out += '''<section class="band dark" id="privacy">
   <span class="bloom" aria-hidden="true"></span>
@@ -661,7 +840,7 @@ def intelligence_page():
         "The privacy commitments describe how Oplo intends to build. The binding document is the "
         "privacy policy, which is in preparation.",
     ]
-    return ("intelligence/index.html", out + footer(depth, notes))
+    return ("intelligence/index.html", out + TABS_JS + footer(depth, notes))
 
 PAGES.append(intelligence_page())
 
