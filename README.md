@@ -35,8 +35,16 @@ every page:
 - **`assets/css/oplo-shell.css`** — self-contained styles for the launcher and
   account menu (its own design tokens, so it renders identically inside apps that
   carry a different design system, like OEdu Teacher).
-- **`assets/css/site.css`** + **`assets/js/site.js`** — the marketing-site chrome
-  (nav, mega-menu, footer, scroll reveals) shared by the landing and hub pages.
+- **`assets/css/oplo-design.css`** — the **design system**: tokens, the type
+  ladder, links and buttons, the full-bleed "unit" bands and tile grid, the
+  fine-print footer, and the one scroll reveal everything uses. Load this on any
+  page that should look like the front page.
+- **`assets/js/oplo-motion.js`** — the reveal-on-scroll, the footer's mobile
+  disclosure rows, and the pointer-tracked highlight. Fails open: content is
+  visible until the script arms the animation, so nothing can be left blank.
+- **`assets/css/site.css`** + **`assets/js/site.js`** — the older marketing
+  chrome still used by the suite "coming soon" pages, being retired in favour of
+  `oplo-design.css`.
 
 Each page just needs `<div id="oplo-actions"></div>` where the cluster should sit
 and `<script src="/assets/js/oplo-shell.js" defer></script>`. If no slot exists, the
@@ -78,7 +86,23 @@ This repo is set up to publish to **GitHub Pages** at the apex domain
 
 ## Design system
 
-The opal signature (a mint → sky → lilac → peach conic gradient), Schibsted Grotesk
-for display, Instrument Sans for body, Spline Sans Mono for labels. Product apps
-each get their own icon gradient; the shell and marketing chrome stay neutral so the
-ecosystem reads as one system.
+A quiet canvas, one accent blue, an enormous type scale, and the product as the
+only ornament — the front page and the global chrome are built to that rule.
+
+- **Canvas** — `#fff`, `#f5f5f7` for grey bands, `#000` for dark ones. Tiles sit
+  on the page ground with a 12px gutter between them; a tile is never pure white.
+- **Ink** — `#1d1d1f` for text, `#6e6e73` secondary, `#86868b` tertiary.
+- **Accent** — one blue: `#0066cc` for links, `#0071e3` for buttons, `#2997ff` on
+  dark. Nothing else is coloured.
+- **Type** — SF Pro where it exists, Inter everywhere else. Six sizes, two
+  weights: `.t-hero`, `.t-display`, `.t-title`, `.t-head`, `.t-sub`, `.t-lead`,
+  plus `.t-body` and `.t-fine`. The size does the talking.
+- **Measure** — a 980px copy well; tile grids stop at 1680px.
+- **Chrome** — a 44px translucent bar on every page, its dropdowns opaque
+  full-width sheets, and a 12px fine-print footer.
+- **Motion** — one reveal: rise 28px and resolve over 1s. Nothing bounces.
+
+The **opal** (a mint → sky → lilac → peach conic gradient) stays as the mark for
+Roxan and for Oplo itself; product apps keep their own icon gradients. Every
+product on the front page — the notebook, the handset, the O1 die, the rack, the
+app dock — is drawn in CSS and SVG, so the page ships no images.
