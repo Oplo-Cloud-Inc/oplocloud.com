@@ -4,26 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Oplo</title>
-<meta name="description" content="Oplo builds hardware, software, and cloud infrastructure for people, business, and government — with Roxan intelligence woven through all of it.">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Oplo builds hardware, software, and intelligence designed around one person at a time.">
+<meta name="theme-color" content="#ffffff">
 <link rel="canonical" href="https://oplocloud.com/">
-
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Oplo">
 <meta property="og:title" content="Oplo">
-<meta property="og:description" content="Hardware, software, and cloud, engineered as one system.">
+<meta property="og:description" content="Hardware, software, and intelligence, designed around one person at a time.">
 <meta property="og:url" content="https://oplocloud.com/">
-
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='o' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%239BE8CE'/%3E%3Cstop offset='.4' stop-color='%239CC3FF'/%3E%3Cstop offset='.7' stop-color='%23D4B3FF'/%3E%3Cstop offset='1' stop-color='%23FFD2B3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='14' fill='url(%23o)'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%231d1d1f'/%3E%3C/svg%3E">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/oplo-design.css">
-<!-- Arm the scroll reveals before first paint, so nothing flashes in and out.
-     Without JavaScript the class never lands and the page just renders; if the
-     motion script fails to arrive, the arming is undone and it renders anyway. -->
+
+<!-- Arm the reveals before first paint so nothing flashes. If the motion
+     script never arrives, the arming undoes itself and the page just renders. -->
 <script>
   (function (r) {
     r.classList.add("oplo-motion");
@@ -32,734 +29,149 @@
 </script>
 
 <style>
-/* ==========================================================================
-   Homepage art
-   Every product on this page is drawn in CSS and SVG — no photography, no
-   image weight. The design system supplies type, colour and layout; this
-   file supplies the hardware.
-   ========================================================================== */
-
-body { padding-top: 44px; }
-
-/* ------------------------------------------------------------- Promo strip */
-.promo {
-  background: var(--canvas);
-  text-align: center;
-  padding: 14px var(--gutter);
-}
-.promo p { font-size: 14px; line-height: 1.42859; letter-spacing: -.016em; color: var(--ink-2); }
-.promo b { font-weight: 600; color: var(--ink); }
-.promo a { color: var(--blue); white-space: nowrap; }
-.promo a:hover { text-decoration: underline; }
-.promo .dot {
-  display: inline-block; vertical-align: -2px;
-  width: 14px; height: 14px; margin-right: 7px; border-radius: 50%;
-  background: conic-gradient(from 210deg,#9BE8CE,#9CC3FF 90deg,#D4B3FF 180deg,#FFD2B3 270deg,#9BE8CE);
-}
-
-/* ================================================================== HALO
-   The hardware family: a notebook, with a handset standing in front of it. */
-.family {
-  position: relative;
-  width: min(84%, 760px, 78vh);
-  margin: 0 auto;
-  padding-bottom: clamp(20px, 3vw, 40px);
-}
-
-/* ---- Notebook ----
-   Built the way the machine is: an aluminium shell, a black bezel inside it,
-   the display inside that, and a deck below. The notch belongs to the bezel. */
-.book { filter: drop-shadow(0 50px 60px rgba(0,0,0,.55)); }
-.on-white .book, .on-grey .book { filter: drop-shadow(0 40px 55px rgba(60,66,90,.28)); }
-
-.book-lid {
-  position: relative;
-  border-radius: 15px 15px 5px 5px;
-  padding: 5px 5px 6px;
-  background: linear-gradient(158deg, #7b7c85 0%, #3a3b41 15%, #232429 52%, #4a4b52 88%, #2a2b30 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.18),
-    inset 0 -1px 0 rgba(255,255,255,.08);
-}
-.book-bezel {
-  position: relative;
-  aspect-ratio: 16 / 10.3;
-  border-radius: 11px 11px 2px 2px;
-  padding: 2.2% 1.5% 2.8%;
-  background: #08080a;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
-}
-.book-notch {
-  position: absolute; z-index: 2;
-  top: 0; left: 50%; transform: translateX(-50%);
-  width: 15%; height: 3.1%;
-  min-height: 9px;
-  border-radius: 0 0 7px 7px;
-  background: #08080a;
-}
-.book-screen {
-  position: relative;
-  height: 100%;
-  border-radius: 2px;
-  overflow: hidden;
-  background: #05060a;
-}
-/* The wallpaper: the opal, blurred into light, with the edges falling away. */
-.book-screen::before {
-  content: "";
-  position: absolute; inset: -18%;
-  background:
-    radial-gradient(40% 46% at 24% 28%, #7FE3C2 0%, transparent 68%),
-    radial-gradient(44% 50% at 74% 24%, #7AB2FF 0%, transparent 66%),
-    radial-gradient(48% 52% at 66% 80%, #C79BFF 0%, transparent 68%),
-    radial-gradient(44% 48% at 22% 78%, #FFC49B 0%, transparent 68%),
-    conic-gradient(from 210deg,#7FE3C2,#7AB2FF 90deg,#C79BFF 180deg,#FFC49B 270deg,#7FE3C2);
-  filter: blur(20px) saturate(1.5) brightness(1.02);
-  animation: drift 22s ease-in-out infinite alternate;
-}
-/* Glass: one diagonal reflection, and the vignette every panel has. */
-.book-screen::after {
-  content: "";
-  position: absolute; inset: 0;
-  background:
-    linear-gradient(112deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.05) 26%, transparent 46%),
-    radial-gradient(120% 120% at 50% 46%, transparent 42%, rgba(4,6,12,.42) 100%);
-}
-@keyframes drift {
-  from { transform: translate3d(-2%, -1%, 0) scale(1.02); }
-  to   { transform: translate3d(2%, 2%, 0) scale(1.06); }
-}
-.book-base {
-  position: relative;
-  height: 13px;
-  width: 108%;
-  margin-left: -4%;
-  border-radius: 2px 2px 10px 10px;
-  background: linear-gradient(180deg, #c9ccd3 0%, #9a9da5 32%, #74777f 62%, #45474e 100%);
-  box-shadow: 0 16px 26px -14px rgba(0,0,0,.72);
-}
-.book-base::after {
-  content: "";
-  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 13%; height: 4px;
-  border-radius: 0 0 6px 6px;
-  background: linear-gradient(180deg, rgba(50,52,58,.9) 0%, rgba(90,93,101,0) 100%);
-}
-
-/* ---- Handset ---- */
-.handset {
-  position: absolute;
-  right: 4%;
-  bottom: clamp(4px, 1.4vw, 18px);
-  width: clamp(74px, 11%, 132px);
-  aspect-ratio: 9 / 19;
-  border-radius: 16%/8%;
-  padding: 3px;
-  background: linear-gradient(150deg, #dfe1e6 0%, #9b9ea6 22%, #55575e 55%, #b9bcc3 82%, #6c6f77 100%);
-  box-shadow: 0 26px 40px -18px rgba(0,0,0,.65), inset 0 0 0 .5px rgba(255,255,255,.4);
-}
-.handset-screen {
-  position: relative;
-  height: 100%;
-  border-radius: 15%/7.4%;
-  overflow: hidden;
-  background: #04050a;
-}
-.handset-screen::before {
-  content: "";
-  position: absolute; inset: -20%;
-  background:
-    radial-gradient(52% 32% at 30% 20%, #9CC3FF 0%, transparent 70%),
-    radial-gradient(56% 34% at 70% 60%, #D4B3FF 0%, transparent 68%),
-    radial-gradient(52% 32% at 40% 90%, #9BE8CE 0%, transparent 70%),
-    conic-gradient(from 200deg,#9CC3FF,#D4B3FF 120deg,#9BE8CE 240deg,#9CC3FF);
-  filter: blur(10px) saturate(1.3);
-}
-.handset-screen::after {
-  content: "";
-  position: absolute; top: 3.6%; left: 50%; transform: translateX(-50%);
-  width: 42%; height: 4.6%;
-  min-height: 6px;
-  border-radius: 100px;
-  background: #06070b;
-}
-
-/* ================================================================== ROXAN
-   The opal: the mark that stands in for the model everywhere on the site. */
-.opal {
-  --px: 0px; --py: 0px;
-  position: relative;
-  width: clamp(190px, 27vw, 340px);
-  aspect-ratio: 1;
-  animation: float 9s ease-in-out infinite;
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-16px); }
-}
-.opal-body {
-  position: absolute; inset: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  box-shadow:
-    inset 0 0 0 1px rgba(11,12,15,.07),
-    inset 0 -30px 54px -24px rgba(38,42,68,.42),
-    inset 0 14px 30px -18px rgba(255,255,255,.5),
-    0 50px 90px -34px rgba(120,128,164,.6);
-}
-.opal-body::before {
-  content: "";
-  position: absolute; inset: -22%;
-  background:
-    radial-gradient(36% 36% at 27% 25%, #4FD6AC 0%, transparent 64%),
-    radial-gradient(40% 40% at 75% 29%, #5EA0FF 0%, transparent 62%),
-    radial-gradient(44% 44% at 69% 77%, #B683FF 0%, transparent 64%),
-    radial-gradient(42% 42% at 23% 75%, #FFAE74 0%, transparent 64%),
-    conic-gradient(from 210deg,#7FE3C2,#7AB2FF 90deg,#C79BFF 180deg,#FFC49B 270deg,#7FE3C2);
-  filter: blur(13px) saturate(1.3) contrast(1.04);
-  animation: opal-turn 40s linear infinite;
-}
-@keyframes opal-turn { to { transform: rotate(360deg); } }
-.opal-gloss {
-  position: absolute; inset: 0;
-  border-radius: 50%;
-  pointer-events: none;
-  background:
-    radial-gradient(44% 40% at calc(32% + var(--px)) calc(23% + var(--py)),
-      rgba(255,255,255,.8) 0%, rgba(255,255,255,.2) 26%, rgba(255,255,255,0) 54%),
-    radial-gradient(closest-side, transparent 74%, rgba(255,255,255,.3) 92%, transparent 100%);
-  transition: background .18s linear;
-}
-.opal-cast {
-  position: absolute; left: 50%; top: calc(100% + 22px);
-  width: 62%; height: 16px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(120,128,164,.3), transparent);
-}
-
-/* =================================================================== O1
-   The chip: a package, a die, a lattice of cores, and a sweep of light. */
-.chip {
-  position: relative;
-  width: min(58%, 300px);
-  aspect-ratio: 1;
-}
-.chip-glow {
-  position: absolute; inset: -34%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(156,195,255,.5) 0%, rgba(212,179,255,.3) 42%, transparent 70%);
-  filter: blur(34px);
-}
-.chip-pkg {
-  position: absolute; inset: 0;
-  border-radius: 15%;
-  padding: 13%;
-  background: linear-gradient(148deg, #55565e 0%, #2a2b30 38%, #17181c 72%, #33343a 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.15),
-    0 34px 60px -22px rgba(0,0,0,.85);
-}
-/* Contact pads around all four edges of the substrate. */
-.chip-pkg::before {
-  content: "";
-  position: absolute; inset: 5.5%;
-  border-radius: 10%;
-  background:
-    repeating-linear-gradient(90deg, rgba(198,204,216,.6) 0 3px, transparent 3px 10px) top    / 100% 3px no-repeat,
-    repeating-linear-gradient(90deg, rgba(198,204,216,.6) 0 3px, transparent 3px 10px) bottom / 100% 3px no-repeat,
-    repeating-linear-gradient(0deg,  rgba(198,204,216,.6) 0 3px, transparent 3px 10px) left   / 3px 100% no-repeat,
-    repeating-linear-gradient(0deg,  rgba(198,204,216,.6) 0 3px, transparent 3px 10px) right  / 3px 100% no-repeat;
-}
-.chip-die {
-  position: relative;
-  height: 100%;
-  border-radius: 5%;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(6,8,14,.4), rgba(6,8,14,.62)),
-    conic-gradient(from 210deg,#7FE3C2,#7AB2FF 90deg,#C79BFF 180deg,#FFC49B 270deg,#7FE3C2);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
-}
-/* The floorplan: core clusters, a cache stripe, and the interconnect fabric. */
-.chip-die::before {
-  content: "";
-  position: absolute; inset: 0;
-  background:
-    linear-gradient(rgba(255,255,255,.17), rgba(255,255,255,.17))  7%  8% / 40% 30% no-repeat,
-    linear-gradient(rgba(255,255,255,.17), rgba(255,255,255,.17)) 93%  8% / 40% 30% no-repeat,
-    linear-gradient(rgba(255,255,255,.09), rgba(255,255,255,.09))  50% 50% / 86% 13% no-repeat,
-    linear-gradient(rgba(255,255,255,.13), rgba(255,255,255,.13))  7% 92% / 40% 24% no-repeat,
-    linear-gradient(rgba(255,255,255,.13), rgba(255,255,255,.13)) 93% 92% / 40% 24% no-repeat,
-    repeating-linear-gradient(90deg, rgba(255,255,255,.13) 0 1px, transparent 1px 4.6%),
-    repeating-linear-gradient(0deg,  rgba(255,255,255,.13) 0 1px, transparent 1px 4.6%);
-}
-/* One slow sweep of light across the wafer. */
-.chip-die::after {
-  content: "";
-  position: absolute; inset: -60%;
-  background: conic-gradient(from 0deg,
-    transparent 0 42%, rgba(255,255,255,.4) 50%, transparent 58% 100%);
-  animation: sweep 7s linear infinite;
-}
-@keyframes sweep { to { transform: rotate(360deg); } }
-.chip-mark {
-  position: absolute; inset: 0; z-index: 3;
-  display: grid; place-items: center;
-  font-family: var(--font);
-  font-size: clamp(26px, 4.4vw, 44px);
-  font-weight: 600;
-  letter-spacing: .02em;
-  color: #fff;
-  text-shadow: 0 0 22px rgba(140,190,255,.7), 0 1px 2px rgba(6,8,14,.6);
-}
-
-/* ============================================================== MERIDIAN
-   The rack: sovereign cloud, seen at an angle. */
-.rack {
-  width: min(58%, 250px);
-  display: grid;
-  gap: 8px;
-  transform: perspective(900px) rotateY(-22deg) rotateX(9deg);
-  filter: drop-shadow(0 34px 44px rgba(0,0,0,.7));
-}
-.rack-u {
-  height: clamp(26px, 4.4vw, 36px);
-  border-radius: 5px;
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(180deg, #4a4c55 0%, #2b2d34 40%, #1b1c22 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    inset 0 0 0 1px rgba(255,255,255,.14);
-}
-.rack-u .vent {
-  flex: 1;
-  height: 52%;
-  border-radius: 2px;
-  background: repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 2px, rgba(0,0,0,.35) 2px 5px);
-}
-.rack-u .led {
-  width: 6px; height: 6px; border-radius: 50%; flex: none;
-  background: #4be28f;
-  box-shadow: 0 0 10px 1px rgba(75,226,143,.95);
-  animation: pulse 2.6s ease-in-out infinite;
-}
-.rack-u .led.b { background: #8ec2ff; box-shadow: 0 0 10px 1px rgba(142,194,255,.95); }
-.rack-u:nth-child(2) .led { animation-delay: .5s; }
-.rack-u:nth-child(3) .led { animation-delay: 1s; }
-.rack-u:nth-child(4) .led { animation-delay: 1.5s; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
-
-/* ================================================================== HUB
-   The dock: seven apps, one shelf. */
-.dock {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: clamp(12px, 2vw, 18px);
-  width: min(74%, 300px);
-}
-.dock-i {
-  aspect-ratio: 1;
-  border-radius: 23%;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  box-shadow: 0 12px 22px -10px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.35);
-  transition: transform .35s var(--ease-out);
-}
-.dock-i svg { width: 54%; height: 54%; }
-.dock:hover .dock-i { transform: translateY(-3px); }
-.dock-i:hover { transform: translateY(-8px) scale(1.04); }
-
-/* ================================================================ OTEAMS
-   The window: an abstract of the workspace, not a screenshot. */
-.win {
-  width: min(86%, 440px);
-  border-radius: 13px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 34px 60px -26px rgba(24,28,44,.34), 0 0 0 1px rgba(0,0,0,.06);
-}
-.win-bar {
-  height: 32px;
-  display: flex; align-items: center; gap: 6px;
-  padding: 0 12px;
-  background: #f5f5f7;
-  border-bottom: 1px solid rgba(0,0,0,.06);
-}
-.win-bar i { width: 9px; height: 9px; border-radius: 50%; background: #d8d9de; }
-.win-body { display: grid; grid-template-columns: 84px 1fr; min-height: 178px; }
-.win-side {
-  background: #fafafa;
-  border-right: 1px solid rgba(0,0,0,.06);
-  padding: 12px 10px;
-  display: grid; gap: 9px; align-content: start;
-}
-.win-side i { display: block; height: 7px; border-radius: 4px; background: rgba(0,0,0,.1); }
-.win-side i.on { background: linear-gradient(90deg,#9CC3FF,#D4B3FF); }
-.win-msgs { padding: 14px; display: grid; gap: 12px; align-content: start; }
-.msg { display: flex; gap: 9px; }
-.msg > b { width: 22px; height: 22px; border-radius: 50%; flex: none; }
-.msg > span { flex: 1; display: grid; gap: 5px; padding-top: 3px; }
-.msg > span i { display: block; height: 6px; border-radius: 4px; background: rgba(0,0,0,.09); }
-.msg.ai > span i { background: linear-gradient(90deg, rgba(156,195,255,.55), rgba(212,179,255,.4)); }
-
-/* ------------------------------------------------------------ SVG artwork
-   Lodestar, OCRD, OEdu and Accounts are line drawings — a system diagram in
-   each case, sized to the tile. */
-.art { width: min(78%, 370px); height: auto; }
-.art .stroke { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
-.art .thin   { fill: none; stroke: currentColor; stroke-width: 1; opacity: .3; }
-.art .fill   { fill: currentColor; }
-.art .soft   { fill: currentColor; opacity: .07; }
-.art .paper  { fill: #fff; }
-.unit.on-dark .art .paper { fill: #111114; }
-.unit.on-dark .art { color: #f5f5f7; }
-.unit .art { color: var(--ink); }
-.art .accent { stroke: #0071e3; stroke-width: 2; }
-.unit.on-dark .art .accent { stroke: #2997ff; }
-
-/* ------------------------------------------------------------ Tile heading
-   Tiles carry an eyebrow (the product), a headline, and one or two links. */
-.tile-copy { padding-bottom: clamp(20px, 3vw, 32px); }
-.tile-copy .t-eyebrow { color: inherit; }
-.tile-copy .t-display { margin-top: 4px; }
-
-/* The wordmark that closes the page. */
-.sig {
-  display: inline-flex; align-items: center; gap: 10px;
-  font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: -.02em;
-  color: var(--ink);
-}
-.sig i {
-  width: 15px; height: 15px; border-radius: 50%;
-  background: conic-gradient(from 210deg,#9BE8CE,#9CC3FF 90deg,#D4B3FF 180deg,#FFD2B3 270deg,#9BE8CE);
-  box-shadow: inset 0 0 0 1px rgba(11,12,15,.08);
-}
-
-@media (max-width: 734px) {
-  .family { width: 92%; }
-  .handset { right: 2%; width: clamp(60px, 13%, 96px); }
-  .chip { width: min(66%, 240px); }
-  .rack { width: min(74%, 260px); transform: perspective(900px) rotateY(-14deg) rotateX(6deg); }
-}
+  body { padding-top: 44px; }
 </style>
 </head>
 <body>
 
-<main id="main">
+<nav class="nav" id="nav" aria-label="Oplo">
+  <div class="nav-in">
+    <a class="nav-brand" href="/">Oplo</a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#hardware">Hardware</a></li>
+      <li><a href="#software">Software</a></li>
+      <li><a href="#intelligence">Intelligence</a></li>
+      <li><a href="#privacy">Privacy</a></li>
+      <li><a href="/soon/">Company</a></li>
+      <li><a href="/soon/">Support</a></li>
+    </ul>
+    <div class="nav-end"><a href="/soon/">Sign in</a></div>
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
 
-  <!-- ============================================================ Promo -->
-  <div class="promo">
-    <p>
-      <span class="dot" aria-hidden="true"></span>
-      <b>Roxan for Ministry of Finance</b> is live.
-      <a href="/roxan/mof/">See the cockpit&nbsp;&rsaquo;</a>
+<main>
+
+  <!-- ================================================== The company -->
+  <section class="band opening well" aria-labelledby="h-oplo">
+    <h1 class="t-mega reveal" id="h-oplo">Oplo</h1>
+    <p class="t-sub muted measure-wide reveal d1">
+      Hardware, software, and intelligence — designed around one person at a time.
     </p>
+    <p class="cta-row reveal d2">
+      <a class="cta" href="#hardware">See what we build</a>
+      <a class="cta" href="/soon/">About Oplo</a>
+    </p>
+  </section>
+
+  <!-- ================================================== Intelligence -->
+  <section class="band dark tall" id="intelligence" aria-labelledby="h-ai">
+    <span class="bloom" aria-hidden="true"></span>
+    <div class="well">
+      <p class="eyebrow reveal">Intelligence</p>
+      <h2 class="t-hero measure reveal" id="h-ai">Close to you.<br>Not to a data centre.</h2>
+      <p class="t-lead muted measure-wide reveal d1">
+        Models that run on the device in your hand, on silicon designed to carry them.
+      </p>
+      <p class="cta-row reveal d2"><a class="cta" href="/soon/">Learn more</a></p>
+    </div>
+  </section>
+
+  <!-- ===================================================== Hardware -->
+  <section class="band grey tall" id="hardware" aria-labelledby="h-hw">
+    <div class="well">
+      <p class="eyebrow reveal">Hardware</p>
+      <h2 class="t-hero measure reveal" id="h-hw">We make the machine and everything on it.</h2>
+      <p class="t-lead muted measure-wide reveal d1">
+        One team from the silicon to the last pixel, so neither side has to compromise for the other.
+      </p>
+      <p class="cta-row reveal d2"><a class="cta" href="/soon/">Learn more</a></p>
+    </div>
+  </section>
+
+  <!-- ======================================================== Cards -->
+  <div class="cards">
+    <section class="card" id="software" aria-labelledby="h-sw">
+      <p class="eyebrow reveal">Software</p>
+      <h2 class="t-display reveal" id="h-sw">Built for a person,<br>not an org chart.</h2>
+      <p class="t-lead muted reveal d1">Tools that assume one user with taste, not a procurement department.</p>
+      <p class="cta-row reveal d2"><a class="cta" href="/soon/">Learn more</a></p>
+    </section>
+
+    <section class="card dark" id="privacy" aria-labelledby="h-pv">
+      <p class="eyebrow reveal">Privacy</p>
+      <h2 class="t-display reveal" id="h-pv">Yours stays yours.</h2>
+      <p class="t-lead muted reveal d1">Personal computing only means something if the personal part stays private.</p>
+      <p class="cta-row reveal d2"><a class="cta" href="/soon/">Learn more</a></p>
+    </section>
+
+    <section class="card" aria-labelledby="h-dev">
+      <p class="eyebrow reveal">Developers</p>
+      <h2 class="t-display reveal" id="h-dev">Build on Oplo.</h2>
+      <p class="t-lead muted reveal d1">One set of tools across the hardware, the software, and the models.</p>
+      <p class="cta-row reveal d2"><a class="cta" href="/soon/">Read the docs</a></p>
+    </section>
+
+    <section class="card" aria-labelledby="h-co">
+      <p class="eyebrow reveal">Company</p>
+      <h2 class="t-display reveal" id="h-co">Where we're going.</h2>
+      <p class="t-lead muted reveal d1">What we're building next, who's building it, and how to join.</p>
+      <p class="cta-row reveal d2">
+        <a class="cta" href="/soon/">Careers</a>
+        <a class="cta" href="/soon/">Newsroom</a>
+      </p>
+    </section>
   </div>
-
-  <!-- ============================================================= Halo
-       The hardware flagship opens the page, the way a product should. -->
-  <section class="unit on-dark tall" aria-labelledby="halo-h">
-    <div class="unit-copy reveal">
-      <h1 class="t-hero" id="halo-h">Halo</h1>
-      <p class="t-sub">The personal computer that finally gets out of your way.</p>
-      <p class="cta-row">
-        <a class="cta" href="/soon/">Learn more</a>
-        <a class="cta" href="/OShop/">Buy</a>
-      </p>
-    </div>
-    <div class="unit-stage">
-      <div class="family reveal d1">
-        <div class="book">
-          <div class="book-lid">
-            <div class="book-bezel">
-              <span class="book-notch"></span>
-              <div class="book-screen"></div>
-            </div>
-          </div>
-          <div class="book-base"></div>
-        </div>
-        <div class="handset" aria-hidden="true">
-          <div class="handset-screen"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ Roxan -->
-  <section class="unit on-white full" aria-labelledby="roxan-h">
-    <div class="unit-copy reveal">
-      <h2 class="t-hero" id="roxan-h">Roxan</h2>
-      <p class="t-sub">Intelligence, woven through everything we make.</p>
-      <p class="cta-row">
-        <a class="cta" href="/roxan/">Learn more</a>
-        <a class="cta" href="/roxan/#developers">Build on the API</a>
-      </p>
-    </div>
-    <div class="unit-stage">
-      <div class="opal reveal d1" id="opal" aria-hidden="true">
-        <div class="opal-body"></div>
-        <div class="opal-gloss" id="opalGloss"></div>
-        <div class="opal-cast"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ Tiles -->
-  <div class="bleed">
-    <div class="stack">
-
-      <!-- Row 1 — silicon and the suite -->
-      <div class="tiles">
-        <section class="unit on-dark half" aria-labelledby="o1-h">
-          <div class="unit-copy tile-copy reveal">
-            <p class="t-eyebrow">O1</p>
-            <h2 class="t-display" id="o1-h">Our silicon.<br>Our whole stack.</h2>
-            <p class="t-lead muted">Designed for Roxan, from the transistor up.</p>
-            <p class="cta-row"><a class="cta" href="/ocrd/">Learn more</a></p>
-          </div>
-          <div class="unit-stage">
-            <div class="chip reveal d1" aria-hidden="true">
-              <span class="chip-glow"></span>
-              <div class="chip-pkg">
-                <div class="chip-die"></div>
-              </div>
-              <span class="chip-mark">O1</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="unit on-grey half" aria-labelledby="hub-h">
-          <div class="unit-copy tile-copy reveal">
-            <p class="t-eyebrow">Oplo Hub</p>
-            <h2 class="t-display" id="hub-h">Seven apps.<br>One workspace.</h2>
-            <p class="t-lead muted">Documents, data and mail that finally know about each other.</p>
-            <p class="cta-row"><a class="cta" href="/productivity/">Explore the hub</a></p>
-          </div>
-          <div class="unit-stage">
-            <div class="dock reveal d1" aria-hidden="true">
-              <span class="dock-i" style="background:linear-gradient(150deg,#5A93FF,#2E6FE6)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7L18 8v12.5H7z"/><path d="M13.5 3.5V8H18"/><path d="M9.5 12.5h6M9.5 15.5h6"/></svg></span>
-              <span class="dock-i" style="background:linear-gradient(150deg,#33CE92,#12A06E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/><path d="M4.5 10h15M4.5 14.5h15M11 4.5v15"/></svg></span>
-              <span class="dock-i" style="background:linear-gradient(150deg,#FF7A6D,#EF4A3C)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="2.2"/><path d="M5 8l7 5 7-5"/></svg></span>
-              <span class="dock-i" style="background:linear-gradient(150deg,#1CC3D0,#0E96A8)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.1-6-10a6 6 0 1 1 12 0c0 4.9-6 10-6 10z"/><circle cx="12" cy="11" r="2.3"/></svg></span>
-              <span class="dock-i" style="background:conic-gradient(from 210deg,#9BE8CE,#9CC3FF 90deg,#D4B3FF 180deg,#FFD2B3 270deg,#9BE8CE)"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(20,22,30,.75)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M15.2 8.8l-2 4.4-4.4 2 2-4.4z"/></svg></span>
-              <span class="dock-i" style="background:linear-gradient(150deg,#FFBE4D,#F59300)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M5 17l4.5-4 3 2.6L16.5 11l2.5 2.4"/></svg></span>
-              <span class="dock-i" style="background:linear-gradient(150deg,#B57BFF,#8B45F0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5l3.2-1L17 9.2l-2.2-2.2L5.5 16.3z"/><path d="M14.2 7l2.8 2.8"/></svg></span>
-              <span class="dock-i" style="background:linear-gradient(150deg,#8FB4FF,#C79FF0)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="14" r="3"/><circle cx="16" cy="9.5" r="2.6"/><path d="M11 12.7l2.7-1.6"/></svg></span>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- Row 2 — the team surface and the sovereign cloud -->
-      <div class="tiles">
-        <section class="unit on-grey half" aria-labelledby="teams-h">
-          <div class="unit-copy tile-copy reveal">
-            <p class="t-eyebrow">OTeams</p>
-            <h2 class="t-display" id="teams-h">Where the workday<br>connects.</h2>
-            <p class="t-lead muted">Channels, huddles and canvas on one surface.</p>
-            <p class="cta-row">
-              <a class="cta" href="/oteams/">Learn more</a>
-              <a class="cta" href="/oteams/app/">Open the workspace</a>
-            </p>
-          </div>
-          <div class="unit-stage">
-            <div class="win reveal d1" aria-hidden="true">
-              <div class="win-bar"><i></i><i></i><i></i></div>
-              <div class="win-body">
-                <div class="win-side">
-                  <i style="width:80%"></i><i class="on" style="width:100%"></i>
-                  <i style="width:66%"></i><i style="width:88%"></i><i style="width:54%"></i>
-                </div>
-                <div class="win-msgs">
-                  <div class="msg"><b style="background:linear-gradient(140deg,#9CC3FF,#5A93FF)"></b><span><i style="width:44%"></i><i style="width:84%"></i></span></div>
-                  <div class="msg"><b style="background:linear-gradient(140deg,#FFD2B3,#FF9F6D)"></b><span><i style="width:36%"></i><i style="width:66%"></i></span></div>
-                  <div class="msg ai"><b style="background:conic-gradient(from 210deg,#9BE8CE,#9CC3FF 90deg,#D4B3FF 180deg,#FFD2B3 270deg,#9BE8CE)"></b><span><i style="width:52%"></i><i style="width:92%"></i><i style="width:72%"></i></span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="unit on-dark half" aria-labelledby="meridian-h">
-          <div class="unit-copy tile-copy reveal">
-            <p class="t-eyebrow">Meridian</p>
-            <h2 class="t-display" id="meridian-h">Sovereign cloud.<br>Inside your borders.</h2>
-            <p class="t-lead muted">A nation's data, under a nation's own laws.</p>
-            <p class="cta-row"><a class="cta" href="/soon/">Learn more</a></p>
-          </div>
-          <div class="unit-stage">
-            <div class="rack reveal d1" aria-hidden="true">
-              <div class="rack-u"><span class="led"></span><span class="vent"></span><span class="led b"></span></div>
-              <div class="rack-u"><span class="led"></span><span class="vent"></span><span class="led b"></span></div>
-              <div class="rack-u"><span class="led"></span><span class="vent"></span><span class="led b"></span></div>
-              <div class="rack-u"><span class="led"></span><span class="vent"></span><span class="led b"></span></div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- Row 3 — classroom and courtroom -->
-      <div class="tiles">
-        <section class="unit on-grey half" aria-labelledby="oedu-h">
-          <div class="unit-copy tile-copy reveal">
-            <p class="t-eyebrow">OEdu</p>
-            <h2 class="t-display" id="oedu-h">Elevating educators.<br>Empowering learners.</h2>
-            <p class="t-lead muted">Roxan handles the busywork. Teachers keep the teaching.</p>
-            <p class="cta-row">
-              <a class="cta" href="/oedu/">Learn more</a>
-              <a class="cta" href="/oedu/teacher/">Open the platform</a>
-            </p>
-          </div>
-          <div class="unit-stage">
-            <svg class="art reveal d1" viewBox="0 0 300 190" aria-hidden="true">
-              <rect class="soft" x="30" y="42" width="206" height="132" rx="13"/>
-              <rect class="paper" x="44" y="30" width="206" height="132" rx="13"/>
-              <rect class="thin"  x="44" y="30" width="206" height="132" rx="13"/>
-              <rect class="paper" x="58" y="18" width="206" height="132" rx="13"/>
-              <rect class="stroke" x="58" y="18" width="206" height="132" rx="13"/>
-              <path class="stroke accent" d="M78 54h104M78 76h150M78 98h122"/>
-              <path class="thin" d="M78 120h96"/>
-              <circle class="paper" cx="228" cy="122" r="20"/>
-              <circle class="stroke accent" cx="228" cy="122" r="20"/>
-              <path class="stroke accent" d="M219 122l6 6 11-13"/>
-            </svg>
-          </div>
-        </section>
-
-        <section class="unit on-grey half" aria-labelledby="lodestar-h">
-          <div class="unit-copy tile-copy reveal">
-            <p class="t-eyebrow">Lodestar</p>
-            <h2 class="t-display" id="lodestar-h">The whole case,<br>as one structure.</h2>
-            <p class="t-lead muted">The litigation operating system.</p>
-            <p class="cta-row"><a class="cta" href="/OLaws/">Learn more</a></p>
-          </div>
-          <div class="unit-stage">
-            <svg class="art reveal d1" viewBox="0 0 300 190" aria-hidden="true">
-              <path class="stroke" d="M150 40v24M150 82L86 116M150 82l64 34M86 130v18M214 130v18M150 96v52"/>
-              <path class="stroke accent" d="M150 82L86 116M86 130v18"/>
-              <circle class="fill" cx="150" cy="30" r="11"/>
-              <circle class="soft" cx="150" cy="74" r="17"/>
-              <circle class="stroke" cx="150" cy="74" r="10"/>
-              <circle class="fill accent" style="fill:#0071e3;stroke:none" cx="86" cy="120" r="9"/>
-              <circle class="stroke" cx="214" cy="120" r="9"/>
-              <rect class="soft"   x="58" y="148" width="56" height="28" rx="6"/>
-              <rect class="stroke" x="58" y="148" width="56" height="28" rx="6"/>
-              <rect class="stroke" x="122" y="148" width="56" height="28" rx="6"/>
-              <rect class="stroke" x="186" y="148" width="56" height="28" rx="6"/>
-              <path class="thin" d="M72 162h28M136 162h28M200 162h28"/>
-            </svg>
-          </div>
-        </section>
-      </div>
-
-      <!-- Row 4 — research and identity -->
-      <div class="tiles">
-        <section class="unit on-dark half" aria-labelledby="ocrd-h">
-          <div class="unit-copy tile-copy reveal">
-            <p class="t-eyebrow">Research &amp; Discovery</p>
-            <h2 class="t-display" id="ocrd-h">From the transistor<br>to society.</h2>
-            <p class="t-lead muted">What we learn, published openly.</p>
-            <p class="cta-row"><a class="cta" href="/ocrd/">Read the research</a></p>
-          </div>
-          <div class="unit-stage">
-            <svg class="art reveal d1" viewBox="0 0 300 190" aria-hidden="true">
-              <path class="stroke" d="M40 162h224M40 162V24"/>
-              <path class="thin" d="M40 128h224M40 94h224M40 60h224"/>
-              <path class="stroke accent" d="M40 150c34 0 44-40 68-40s34 48 62 48 30-76 52-76 22 28 42 28"/>
-              <circle class="fill" cx="108" cy="110" r="4.5"/>
-              <circle class="fill" cx="170" cy="156" r="4.5"/>
-              <circle class="fill" cx="222" cy="84" r="4.5"/>
-            </svg>
-          </div>
-        </section>
-
-        <section class="unit on-grey half" aria-labelledby="acct-h">
-          <div class="unit-copy tile-copy reveal">
-            <p class="t-eyebrow">Oplo Accounts</p>
-            <h2 class="t-display" id="acct-h">One sign-in.<br>Yours to control.</h2>
-            <p class="t-lead muted">Private by default, across the whole ecosystem.</p>
-            <p class="cta-row"><a class="cta" href="/oplo-accounts/demo/">See how it works</a></p>
-          </div>
-          <div class="unit-stage">
-            <svg class="art reveal d1" viewBox="0 0 300 190" aria-hidden="true">
-              <path class="soft"   d="M150 18l66 26v54c0 42-30 66-66 76-36-10-66-34-66-76V44z"/>
-              <path class="stroke" d="M150 18l66 26v54c0 42-30 66-66 76-36-10-66-34-66-76V44z"/>
-              <path class="thin"   d="M150 36l48 19v42c0 31-21 48-48 56-27-8-48-25-48-56V55z"/>
-              <circle class="stroke accent" cx="150" cy="92" r="17"/>
-              <path class="stroke accent" d="M150 109v28M150 126h14"/>
-            </svg>
-          </div>
-        </section>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ========================================================== Closing -->
-  <section class="unit on-white" style="min-height:0">
-    <div class="unit-copy reveal" style="padding-block: clamp(64px,9vw,120px)">
-      <p class="sig"><i aria-hidden="true"></i>Oplo</p>
-      <h2 class="t-display" style="margin-top:14px">Technology for people,<br>business, and government.</h2>
-      <p class="t-lead muted">Hardware, software, and cloud, engineered as one system.</p>
-      <p class="cta-row" style="margin-top:26px">
-        <a class="btn" href="/soon/">Contact sales</a>
-        <a class="btn ghost" href="/productivity/">Explore the ecosystem</a>
-      </p>
-    </div>
-  </section>
 
 </main>
 
-<!-- ============================================================== Footer -->
 <footer class="foot" aria-label="Oplo footer">
   <div class="foot-in">
 
     <div class="foot-note">
-      <p>1. Halo is not yet available for purchase. Product pages describe planned capability and are subject to change.</p>
-      <p>2. Roxan availability varies by region and plan. Some capabilities require an Oplo Account. <a href="/roxan/">Learn more about Roxan</a>.</p>
-      <p>3. Meridian sovereign cloud deployments are sold through Oplo Enterprise. <a href="/soon/">Contact sales</a>.</p>
+      <p>Oplo products described on this page are in development. Availability, capability, and specifications are subject to change.</p>
+      <p>To contact Oplo, <a href="/soon/">find your country or region</a>.</p>
     </div>
 
     <div class="foot-rule"></div>
 
     <div class="foot-cols">
       <div class="foot-col">
-        <h3>Products</h3>
+        <h3>Hardware</h3>
         <ul>
-          <li><a href="/odocs/">ODocs</a></li>
-          <li><a href="/osheets/">OSheets</a></li>
-          <li><a href="/omails/">OMails</a></li>
-          <li><a href="/omaps/">OMaps</a></li>
-          <li><a href="/osurf/">OSurf</a></li>
-          <li><a href="/ophotos/">OPhotos</a></li>
-          <li><a href="/ocanvas/">OCanvas</a></li>
+          <li><a href="/soon/">Overview</a></li>
+          <li><a href="/soon/">Silicon</a></li>
+          <li><a href="/soon/">Devices</a></li>
+          <li><a href="/soon/">Accessories</a></li>
         </ul>
       </div>
       <div class="foot-col">
-        <h3>Platforms</h3>
+        <h3>Software</h3>
         <ul>
-          <li><a href="/soon/">Halo · for people</a></li>
-          <li><a href="/soon/">Slate · for business</a></li>
-          <li><a href="/soon/">Meridian · for government</a></li>
-          <li><a href="/soon/">Compare platforms</a></li>
-          <li><a href="/OLaws/">Lodestar · legal</a></li>
+          <li><a href="/soon/">Overview</a></li>
+          <li><a href="/soon/">Apps</a></li>
+          <li><a href="/soon/">Updates</a></li>
+          <li><a href="/soon/">Downloads</a></li>
         </ul>
       </div>
       <div class="foot-col">
-        <h3>Ecosystem</h3>
+        <h3>Intelligence</h3>
         <ul>
-          <li><a href="/roxan/">Roxan</a></li>
-          <li><a href="/productivity/">Oplo Hub</a></li>
-          <li><a href="/oteams/">OTeams</a></li>
-          <li><a href="/oedu/">OEdu</a></li>
-          <li><a href="/OShop/">OShop</a></li>
-          <li><a href="/ocrd/">Research &amp; Discovery</a></li>
-          <li><a href="/oplo-accounts/demo/">Oplo Accounts</a></li>
+          <li><a href="/soon/">Overview</a></li>
+          <li><a href="/soon/">On-device AI</a></li>
+          <li><a href="/soon/">Privacy</a></li>
+          <li><a href="/soon/">Research</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Developers</h3>
+        <ul>
+          <li><a href="/soon/">Documentation</a></li>
+          <li><a href="/soon/">SDKs</a></li>
+          <li><a href="/soon/">Design resources</a></li>
+          <li><a href="/soon/">Support</a></li>
         </ul>
       </div>
       <div class="foot-col">
@@ -768,20 +180,7 @@ body { padding-top: 44px; }
           <li><a href="/soon/">About Oplo</a></li>
           <li><a href="/soon/">Newsroom</a></li>
           <li><a href="/soon/">Careers</a></li>
-          <li><a href="/soon/">Investors</a></li>
-          <li><a href="/soon/">Sustainability</a></li>
-          <li><a href="/soon/">Contact us</a></li>
-        </ul>
-      </div>
-      <div class="foot-col">
-        <h3>Resources</h3>
-        <ul>
-          <li><a href="/soon/">Help center</a></li>
-          <li><a href="/soon/">Documentation</a></li>
-          <li><a href="/soon/">System status</a></li>
-          <li><a href="/soon/">Community</a></li>
-          <li><a href="/soon/">Downloads</a></li>
-          <li><a href="/soon/">Brand guidelines</a></li>
+          <li><a href="/soon/">Contact</a></li>
         </ul>
       </div>
     </div>
@@ -793,38 +192,33 @@ body { padding-top: 44px; }
       <span class="foot-legal">
         <a href="/soon/">Privacy Policy</a>
         <a href="/soon/">Terms of Use</a>
-        <a href="/soon/">Sales and Refunds</a>
         <a href="/soon/">Legal</a>
         <a href="/sitemap.xml">Site Map</a>
       </span>
-      <span class="foot-region">Global</span>
+      <span class="foot-region">United States</span>
     </div>
 
   </div>
 </footer>
 
 <script src="assets/js/oplo-motion.js" defer></script>
-<script src="assets/js/oplo-shell.js" defer></script>
 <script>
-/* The opal's highlight follows the pointer — the one piece of interactivity
-   on the page, and only where a pointer actually exists. */
-(function () {
-  var orb = document.getElementById("opal");
-  var gloss = document.getElementById("opalGloss");
-  if (!orb || !gloss) return;
-  if (!window.matchMedia("(hover: hover)").matches) return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  (function () {
+    var nav = document.getElementById("nav");
+    var links = document.getElementById("navLinks");
+    var toggle = document.getElementById("navToggle");
+    if (!nav || !links || !toggle) return;
 
-  window.addEventListener("pointermove", function (e) {
-    var r = orb.getBoundingClientRect();
-    var cx = r.left + r.width / 2;
-    var cy = r.top + r.height / 2;
-    var dx = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)));
-    var dy = Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight / 2)));
-    orb.style.setProperty("--px", (dx * 16).toFixed(1) + "px");
-    orb.style.setProperty("--py", (dy * 12).toFixed(1) + "px");
-  }, { passive: true });
-})();
+    function set(open) {
+      links.classList.toggle("open", open);
+      nav.classList.toggle("open", open);
+      toggle.classList.toggle("on", open);
+      toggle.setAttribute("aria-expanded", String(open));
+    }
+    toggle.addEventListener("click", function () { set(!links.classList.contains("open")); });
+    links.addEventListener("click", function (e) { if (e.target.closest("a")) set(false); });
+    window.addEventListener("resize", function () { set(false); });
+  })();
 </script>
 
 </body>
