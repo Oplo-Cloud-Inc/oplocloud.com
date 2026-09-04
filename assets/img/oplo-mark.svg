@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 12 76 76" role="img" aria-label="Oplo">
+  <!-- Two equal circles, offset on the diagonal by roughly one radius, filled
+       with the even-odd rule so the overlap knocks out to nothing. The mark is
+       the negative space as much as the positive. currentColor so it inverts
+       on a dark ground without a second file. -->
+  <path fill="currentColor" fill-rule="evenodd"
+        d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0
+           M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
+</svg>

@@ -127,9 +127,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   height: var(--nav); display: flex; align-items: center;
 }
 .nav-brand {
-  font-family: var(--font); font-size: 17px; font-weight: 600;
-  letter-spacing: -.02em; color: var(--ink); flex: none;
+  display: flex; align-items: center;
+  color: var(--ink); flex: none;
+  opacity: .9; transition: opacity .2s;
 }
+.nav-brand:hover { opacity: 1; }
+/* The mark sits at the optical size Apple gives its own: small enough that the
+   bar stays furniture, large enough that the knockout still reads. */
+.nav-brand .mark { width: 19px; height: 19px; display: block; }
 .nav-links {
   flex: 1 1 auto; display: flex; justify-content: space-evenly;
   padding: 0 24px; margin: 0;
