@@ -53,7 +53,12 @@ body {
   background: var(--paper);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  /* The default blue flash on tap reads as a web page, not a product. */
+  -webkit-tap-highlight-color: transparent;
 }
+/* Body is fixed while the menu is open; this preserves the scroll position. */
+body.locked { position: fixed; width: 100%; overflow: hidden; }
 
 h1, h2, h3, h4, p, ul, ol, figure { margin: 0; padding: 0; }
 ul, ol { list-style: none; }
@@ -110,7 +115,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .btn.sm { font-size: 14px; padding: 8px 16px; }
 
 /* -------------------------------------------------------------- Layout */
-.well { max-width: var(--well); margin-inline: auto; padding-inline: var(--gutter); }
+.well {
+  max-width: var(--well); margin-inline: auto;
+  padding-left:  max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
 .center { text-align: center; }
 
 /* ---------------------------------------------------------------- Nav */
@@ -123,7 +132,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   backdrop-filter: saturate(180%) blur(20px);
 }
 .nav-in {
-  max-width: 1024px; margin-inline: auto; padding-inline: var(--gutter);
+  max-width: 1024px; margin-inline: auto;
+  padding-left:  max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
   height: var(--nav); display: flex; align-items: center;
 }
 .nav-brand {
@@ -153,11 +164,21 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .nav-links.open {
     display: flex; flex-direction: column; justify-content: flex-start;
     position: fixed; inset: var(--nav) 0 0 0;
-    background: #fff; padding: 10px var(--gutter) 40px;
+    background: #fff;
+    padding: 10px max(var(--gutter), env(safe-area-inset-left))
+             max(40px, env(safe-area-inset-bottom));
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
-  .nav-links.open a { font-size: 17px; font-weight: 600; opacity: 1; padding: 13px 0; }
+  .nav-links.open a {
+    font-size: 17px; font-weight: 600; opacity: 1;
+    padding: 14px 0; min-height: 44px; display: flex; align-items: center;
+  }
   .nav.open { background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  /* Half the blur radius costs the compositor far less per frame and is
+     indistinguishable behind a 44px bar. */
+  .nav { -webkit-backdrop-filter: saturate(180%) blur(10px); backdrop-filter: saturate(180%) blur(10px); }
+  .nav-toggle { min-width: 44px; min-height: 44px; justify-content: center; align-items: flex-end; }
   .nav-toggle {
     display: flex; flex-direction: column; gap: 4px;
     margin-left: auto; padding: 8px 0 8px 16px;
@@ -254,7 +275,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .foot-col li { margin-bottom: 9px; }
 .foot-col a:hover { color: var(--ink); text-decoration: underline; }
 
-.foot-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 15px 0 24px; }
+.foot-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 15px 0 max(24px, env(safe-area-inset-bottom)); }
 .foot-legal { display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .foot-legal a { position: relative; padding-right: 11px; }
 .foot-legal a::after { content: ""; position: absolute; right: 5px; top: 2px; bottom: 2px; width: 1px; background: var(--rule); }
@@ -298,6 +320,118 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .reveal.d2 { transition-delay: .18s; }
 @media (prefers-reduced-motion: reduce) {
   .reveal, .oplo-motion .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+
+/* ------------------------------------------------------- Chapter bar
+   The section-page sub-bar: page name left, its own sections right. Sticks
+   under the global bar so you always know which page you are inside. */
+.chapter {
+  position: sticky; top: var(--nav); z-index: 800;
+  background: rgba(255,255,255,.78);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+.chapter-in {
+  max-width: 1024px; margin-inline: auto;
+  padding-left:  max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+  height: 52px; display: flex; align-items: center; gap: 20px;
+}
+.chapter-name { font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: .011em; }
+.chapter-links { margin-left: auto; display: flex; align-items: center; gap: 26px; }
+.chapter-links a { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.chapter-links a:hover { color: var(--ink); }
+@media (max-width: 833px) {
+  .chapter-in { height: 48px; }
+  .chapter-links { gap: 18px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .chapter-links::-webkit-scrollbar { display: none; }
+  .chapter-name { font-size: 17px; flex: none; }
+}
+
+/* ------------------------------------------------------------- Rows
+   Alternating text blocks inside a section page. Content sets the height. */
+.rows { display: grid; gap: var(--gap); padding: var(--gap); max-width: 1680px; margin-inline: auto; }
+.row {
+  padding: clamp(56px, 9vw, 104px) clamp(24px, 5vw, 64px);
+  border-radius: 18px;
+  background: var(--canvas);
+  text-align: center;
+}
+.row.dark { background: var(--void); color: var(--ink-lt); }
+.row.dark .muted, .row.dark .eyebrow { color: var(--ink-lt-2); }
+.row.dark .cta { color: var(--blue-dark); }
+.row .eyebrow { margin-bottom: 12px; }
+.row .t-lead { margin-top: 15px; max-width: 56ch; margin-inline: auto; }
+.row .cta-row { margin-top: 18px; }
+@media (max-width: 734px) { .row { border-radius: 16px; padding: clamp(44px, 12vw, 68px) clamp(22px, 6vw, 40px); } }
+
+/* ------------------------------------------------------------- Notes
+   Numbered endnotes, the way a spec-bearing page closes. */
+.notes { background: var(--canvas); padding: 26px 0 6px; }
+.notes ol { max-width: 1024px; margin-inline: auto; padding: 0 var(--gutter); counter-reset: n; }
+.notes li { counter-increment: n; font-size: 12px; line-height: 1.4; color: var(--ink-2); margin-bottom: 9px; max-width: 92ch; }
+.notes li::before { content: counter(n) ". "; }
+
+/* -------------------------------------------------------------- Doc
+   Legal and support pages: one column, long-form, nothing else. */
+.doc { max-width: 692px; margin-inline: auto; padding: clamp(48px, 8vw, 88px) var(--gutter) clamp(56px, 8vw, 96px); }
+.doc .t-hero { margin-bottom: 10px; }
+.doc .dateline { font-size: 14px; color: var(--ink-3); margin-bottom: 36px; }
+.doc h2 { font-family: var(--font); font-size: clamp(21px, 2.4vw, 26px); font-weight: 600; margin: 38px 0 12px; letter-spacing: -.01em; }
+.doc p, .doc li { font-size: 17px; line-height: 1.55; color: var(--ink); margin-bottom: 14px; }
+.doc ul { list-style: disc; padding-left: 1.25em; margin-bottom: 16px; }
+.doc li { margin-bottom: 8px; }
+.doc a { color: var(--blue); }
+.doc a:hover { text-decoration: underline; }
+
+/* ==========================================================================
+   Phones
+   Every clamp above bottoms out around 600px, so a 320px phone and a 430px
+   phone were being served identical type — the small one cramped, the large
+   one under-set. Below 734px the scale is driven by vw so it actually tracks
+   the device, with floors that hold at 320px and ceilings that stop it
+   colliding with the tablet scale.
+   ========================================================================== */
+@media (max-width: 734px) {
+  .t-mega    { font-size: clamp(46px, 14.5vw, 76px); line-height: 1;    letter-spacing: -0.025em; }
+  .t-hero    { font-size: clamp(30px, 8.4vw, 42px);  line-height: 1.08; letter-spacing: -0.02em; }
+  .t-display { font-size: clamp(26px, 7.2vw, 36px);  line-height: 1.1;  letter-spacing: -0.015em; }
+  .t-title   { font-size: clamp(22px, 6vw, 30px);    line-height: 1.12; }
+  .t-sub     { font-size: clamp(17px, 4.4vw, 21px);  line-height: 1.26; }
+  .t-lead    { font-size: clamp(15px, 4vw, 17px);    line-height: 1.45; }
+  .eyebrow   { font-size: clamp(13px, 3.6vw, 16px); }
+  .cta       { font-size: clamp(16px, 4.2vw, 19px); min-height: 44px; align-items: center; }
+
+  /* Measures are set in ch, which shrinks with the font — on a phone that
+     left the lines far too short. Let them use the width available. */
+  .band .measure, .band .measure-wide { max-width: 100%; }
+  .card .t-lead { max-width: 100%; }
+
+  /* Tall bands were reserving most of a screen for three lines of text.
+     Let the content and its padding decide instead. */
+  .band { padding: clamp(56px, 9vh, 88px) 0; }
+  .band.tall { min-height: 0; }
+  .card { min-height: 0; padding: clamp(48px, 13vw, 72px) clamp(22px, 6vw, 40px); border-radius: 16px; }
+  .cards { gap: 10px; padding: 10px; }
+
+  /* Shorter travel reads as quicker on a small screen. */
+  .oplo-motion .reveal { transform: translateY(14px); transition-duration: .65s; }
+  .reveal.d1 { transition-delay: .06s; }
+  .reveal.d2 { transition-delay: .12s; }
+}
+
+/* Forced breaks are set for the desktop measure; on a phone they strand
+   words on their own line. Let the browser wrap instead. */
+@media (max-width: 734px) { .br-wide { display: none; } }
+
+/* Landscape phones: a viewport-height opener leaves no room for the content
+   it holds, so height stops being the driver. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .band.opening, .band.tall { min-height: 0; }
+  .band { padding: 44px 0; }
+  .t-mega { font-size: clamp(40px, 9vh, 64px); }
 }
 
 .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
