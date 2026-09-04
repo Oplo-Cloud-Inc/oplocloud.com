@@ -56,7 +56,7 @@ def rel(depth, target):
     return (up + target) if target else (up + "index.html")
 
 
-def head(depth, title, desc, canonical):
+def head(depth, title, desc, canonical, extra=""):
     a = rel(depth, "assets/")
     fav = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='" + MARK_VB +
            "'%3E%3Cg transform='translate(" + MARK_TR + ")'%3E%3Cpath fill='%23000' d='" +
@@ -87,6 +87,7 @@ def head(depth, title, desc, canonical):
   }})(document.documentElement);
 </script>
 <style>body {{ padding-top: 44px; }}</style>
+{extra}
 </head>
 <body>
 '''
@@ -342,20 +343,6 @@ PAGES.append(("software/index.html", section_page(
       [("Follow what ships", "newsroom/")])],
     ["Oplo software is in development. Availability, capability and system requirements are not final."])))
 
-PAGES.append(("intelligence/index.html", section_page(
-    "intelligence/", 1, "Intelligence — Oplo",
-    "Oplo builds models that run close to the person using them, on silicon designed to carry them.",
-    "Intelligence", "Close to you. Not to a data centre.",
-    "Models that run on the device in your hand, on silicon designed to carry them.",
-    [("dark", "on-device", "On-device AI", "The model comes to you.",
-      "Intelligence that runs locally is faster, works without a connection, and does not require handing your life to a server to get an answer. That is a design decision before it is a privacy one — but it is both.",
-      [("What that means for your data", "privacy/")]),
-     ("", "research", "Research", "What we are working on.",
-      "Making models small enough to run on a personal device without making them stupid is the central problem, and most of our effort goes there. We will publish what is useful when it is ready to be judged.",
-      [("Build on it", "developers/")])],
-    ["Model capability, availability and on-device performance are in development and will vary by device.",
-     "Nothing on this page describes a shipping product."])))
-
 PAGES.append(("privacy/index.html", section_page(
     "privacy/", 1, "Privacy — Oplo",
     "Oplo's position on personal data: personal computing only means something if the personal part stays private.",
@@ -387,6 +374,229 @@ PAGES.append(("developers/index.html", section_page(
       "Until there is a forum worth having, developer questions reach us the same way everything else does.",
       [("Get in touch", "contact/")])],
     ["No developer programme is open yet. This page describes what is planned, not what is available."])))
+
+
+# ==========================================================================
+# Intelligence — the flagship page.
+# Dark, long-form, and built so the page's argument is the thing you look at
+# rather than something written beside a decoration. The only hard number on
+# it is the speed of light, which is a fact about the universe rather than a
+# claim about a product that does not exist yet.
+# ==========================================================================
+
+INTEL_CSS = '''<style>
+  /* Ambient field behind the opening. Three soft lights on slow drift —
+     GPU-cheap, no canvas, and it settles rather than loops visibly. */
+  .aurora {
+    position: absolute; inset: -25%; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(38% 44% at 22% 30%, rgba(41,151,255,.34), transparent 62%),
+      radial-gradient(34% 40% at 76% 24%, rgba(126,92,255,.26), transparent 62%),
+      radial-gradient(44% 48% at 60% 78%, rgba(20,180,190,.20), transparent 64%);
+    filter: blur(46px);
+    animation: aurora 30s ease-in-out infinite alternate;
+  }
+  @keyframes aurora {
+    from { transform: translate3d(-3%, -2%, 0) scale(1.02); }
+    to   { transform: translate3d(3%, 3%, 0)  scale(1.12); }
+  }
+  .band.opening .aurora { opacity: .9; }
+
+  /* The round trip. Two lanes, same distance on screen, one of which has to
+     go somewhere and come back. */
+  .trip { width: min(100%, 720px); margin: 34px auto 0; display: grid; gap: 14px; }
+  .lane {
+    position: relative; display: flex; align-items: center; gap: 14px;
+    padding: 0 18px; height: 76px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.045);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
+  }
+  .lane-tag {
+    position: absolute; top: -9px; left: 18px;
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-lt-2); background: #000; padding: 0 8px;
+  }
+  .node { flex: none; display: grid; place-items: center; color: var(--ink-lt-2); }
+  .node svg { width: 26px; height: 26px; }
+  .node.far { opacity: .75; }
+  .wire { position: relative; flex: 1; height: 2px; border-radius: 2px;
+          background: rgba(255,255,255,.14); }
+  .dot {
+    position: absolute; top: 50%; left: 0;
+    width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
+    border-radius: 50%; background: #2997ff;
+    box-shadow: 0 0 16px 4px rgba(41,151,255,.65);
+  }
+  .lane.remote .dot { animation: trip 2.6s cubic-bezier(.5,0,.5,1) infinite; }
+  .lane.local  .dot { left: 0; animation: here 2.6s ease-in-out infinite; }
+  @keyframes trip { 0% { left: 0 } 44% { left: 100% } 56% { left: 100% } 100% { left: 0 } }
+  @keyframes here { 0%,100% { opacity: .35; transform: scale(.9) } 8%,40% { opacity: 1; transform: scale(1.15) } }
+  .lane-note { flex: none; font-size: 12px; color: var(--ink-lt-2); min-width: 8ch; text-align: right; }
+  @media (prefers-reduced-motion: reduce) {
+    .aurora, .lane .dot { animation: none; }
+    .lane.remote .dot { left: 50%; }
+  }
+  @media (max-width: 734px) {
+    .lane { height: 68px; padding: 0 14px; gap: 10px; }
+    .lane-note { display: none; }
+  }
+
+  /* Three-up grid of what never leaves. */
+  .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap);
+          width: min(100%, 1000px); margin: 30px auto 0; }
+  .trio > div { padding: 30px 24px; border-radius: 16px;
+                background: rgba(255,255,255,.05);
+                box-shadow: inset 0 0 0 1px rgba(255,255,255,.09); text-align: left; }
+  .trio h3 { font-family: var(--font); font-size: 19px; font-weight: 600; margin-bottom: 7px; }
+  .trio p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); }
+  @media (max-width: 734px) { .trio { grid-template-columns: 1fr; } }
+
+  /* One figure, given room. */
+  .fact { display: block; margin: 30px auto 0; text-align: center; }
+  .fact b {
+    display: block; font-family: var(--font);
+    font-size: clamp(52px, 11vw, 108px); line-height: 1; font-weight: 600;
+    letter-spacing: -.03em; color: var(--ink-lt);
+  }
+  .fact span { display: block; margin-top: 12px; font-size: 14px; color: var(--ink-lt-2); }
+</style>'''
+
+DEVICE_SVG = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" '
+              'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+              '<rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 5.6h3"/></svg>')
+RACK_SVG = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" '
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            '<rect x="3" y="4" width="18" height="5" rx="1.5"/><rect x="3" y="11" width="18" height="5" rx="1.5"/>'
+            '<rect x="3" y="18" width="18" height="3.4" rx="1.2"/><path d="M6.4 6.5h.01M6.4 13.5h.01"/></svg>')
+
+
+def intelligence_page():
+    depth = 1
+    links = [("On device", "#on-device"), ("Speed", "#speed"), ("Privacy", "#privacy"),
+             ("Research", "#research"), ("Build", "#build")]
+    out = head(depth, "Intelligence — Oplo",
+               "Oplo builds models that run on your device rather than in a data centre.",
+               "intelligence/", INTEL_CSS)
+    out += nav(depth, "intelligence/")
+    out += chapter(depth, "Intelligence", links, "intelligence/")
+    out += '<main>\n'
+
+    # Opening
+    out += '''<section class="band dark opening">
+  <span class="aurora" aria-hidden="true"></span>
+  <div class="well">
+    <p class="eyebrow reveal">Oplo Intelligence</p>
+    <h1 class="t-mega balance reveal">Intelligence,<br class="br-wide">where you are.</h1>
+    <p class="t-sub muted balance reveal d1">Models that run on the device in your hand, on silicon designed to carry them.</p>
+  </div>
+</section>
+'''
+
+    # The thesis
+    out += '''<section class="band dark" id="on-device">
+  <div class="well">
+    <p class="eyebrow reveal">On device</p>
+    <h2 class="t-hero balance reveal">Where the model runs<br class="br-wide">changes everything about it.</h2>
+    <p class="t-lead muted balance reveal d1">Speed, privacy and whether it works at all on a train are not three separate features. They are one decision, made once, about which building the thinking happens in.</p>
+  </div>
+</section>
+'''
+
+    # The round trip — the argument, drawn
+    out += f'''<section class="band dark" id="speed">
+  <div class="well">
+    <p class="eyebrow reveal">Speed</p>
+    <h2 class="t-hero balance reveal">The fastest network<br class="br-wide">is no network.</h2>
+    <p class="t-lead muted balance reveal d1">A question sent to a data centre has to physically get there and back before the answer can begin. That trip has a floor set by physics, not by engineering.</p>
+
+    <div class="trip reveal d1">
+      <div class="lane local">
+        <span class="lane-tag">On device</span>
+        <span class="node">{DEVICE_SVG}</span>
+        <span class="wire"><span class="dot"></span></span>
+        <span class="lane-note">no trip</span>
+      </div>
+      <div class="lane remote">
+        <span class="lane-tag">Round trip</span>
+        <span class="node">{DEVICE_SVG}</span>
+        <span class="wire"><span class="dot"></span></span>
+        <span class="node far">{RACK_SVG}</span>
+        <span class="lane-note">there and back</span>
+      </div>
+    </div>
+
+    <p class="fact reveal d2">
+      <b>186,000</b>
+      <span>miles per second — the speed of light, and the hard ceiling on how fast any answer can come back from somewhere else.<sup>1</sup></span>
+    </p>
+  </div>
+</section>
+'''
+
+    # Privacy
+    out += '''<section class="band dark" id="privacy">
+  <span class="bloom" aria-hidden="true"></span>
+  <div class="well">
+    <p class="eyebrow reveal">Privacy</p>
+    <h2 class="t-hero balance reveal">What never leaves<br class="br-wide">cannot be collected.</h2>
+    <p class="t-lead muted balance reveal d1">Running the model locally is a performance decision that happens to settle the privacy question too. Data that stays on the device is not protected by a policy — it is protected by never having moved.</p>
+    <div class="trio reveal d1">
+      <div><h3>Your voice</h3><p>Speech understood on the device, so a recording is not the price of being understood.</p></div>
+      <div><h3>Your screen</h3><p>What you are looking at is context for the model, not material for a server log.</p></div>
+      <div><h3>Your files</h3><p>Documents can be read and reasoned over without first being uploaded somewhere.</p></div>
+    </div>
+    <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Read our position on privacy</a></p>
+  </div>
+</section>
+'''
+
+    # Silicon
+    out += '''<section class="band dark">
+  <div class="well">
+    <p class="eyebrow reveal">Silicon</p>
+    <h2 class="t-hero balance reveal">A model this close<br class="br-wide">needs the chip to agree.</h2>
+    <p class="t-lead muted balance reveal d1">Running capable models on a device you can hold is a hardware problem before it is a software one. Designing both is the only way to stop each side blaming the other.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="../hardware/#silicon">See the hardware</a></p>
+  </div>
+</section>
+'''
+
+    # Research
+    out += '''<section class="band grey" id="research">
+  <div class="well">
+    <p class="eyebrow reveal">Research</p>
+    <h2 class="t-hero balance reveal">Small enough to fit.<br class="br-wide">Not small enough to be dull.</h2>
+    <p class="t-lead muted balance reveal d1">Compressing a model until it runs on a phone is easy. Doing it without hollowing out what made it worth running is the whole problem, and it is where most of our effort goes.</p>
+    <p class="t-lead muted balance reveal d2">We will publish what turns out to be useful, when it is ready to be argued with.</p>
+  </div>
+</section>
+'''
+
+    # Developers + close
+    out += '''<section class="band" id="build">
+  <div class="well">
+    <p class="eyebrow reveal">Developers</p>
+    <h2 class="t-hero balance reveal">Build on it.</h2>
+    <p class="t-lead muted balance reveal d1">One surface across the hardware, the software and the models — so the platform is learned once rather than once per device.</p>
+    <p class="cta-row reveal d2">
+      <a class="cta" href="../developers/">Developer resources</a>
+      <a class="cta" href="../contact/">Talk to us</a>
+    </p>
+  </div>
+</section>
+</main>
+'''
+    notes = [
+        "Light travels 186,282 miles per second in a vacuum, and rather slower through glass fibre. "
+        "The figure is quoted as the physical limit on a network round trip, not as a measurement of any Oplo product.",
+        "Oplo Intelligence is in development. Model capability, availability and on-device performance are "
+        "not final and will vary by device.",
+        "Descriptions of on-device processing describe design intent. Nothing on this page describes a shipping product.",
+    ]
+    return ("intelligence/index.html", out + footer(depth, notes))
+
+PAGES.append(intelligence_page())
 
 # ----------------------------------------------------- Company & utility
 def simple(slug, depth, title, desc, eyebrow, heading, lead, rows_html=""):
