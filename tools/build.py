@@ -385,266 +385,191 @@ PAGES.append(("developers/index.html", section_page(
 # ==========================================================================
 
 INTEL_CSS = '''<style>
+  /* Black, space and type. No panels, no glass borders, no badges — a section
+     is separated from the next by air, and the only rule on the page is a
+     hairline where a list genuinely needs one. */
 
-  /* News strip — the "latest release" line those sites run above the fold. */
-  .newsbar {
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    flex-wrap: wrap; padding: 11px var(--gutter);
-    background: rgba(255,255,255,.06);
-    border-bottom: 1px solid rgba(255,255,255,.10);
-    font-size: 13px; color: var(--ink-lt-2); text-align: center;
+  .ipage .band { padding: clamp(96px, 15vh, 190px) 0; }
+  .ipage .band.opening { padding-top: clamp(80px, 12vh, 150px); }
+  .ipage .lede { max-width: 30ch; margin-inline: auto; }
+  .ipage .kicker {
+    font-family: var(--font); font-size: clamp(17px, 1.6vw, 21px);
+    font-weight: 600; letter-spacing: .011em; color: var(--ink-lt-2);
+    margin-bottom: 16px;
   }
-  .newsbar b { color: var(--ink-lt); font-weight: 600; }
-  .newsbar .cta { font-size: 13px; }
+  .ipage .stat { margin-top: clamp(56px, 8vw, 96px); }
+  .ipage .stat b {
+    display: block; font-family: var(--font); font-weight: 600;
+    font-size: clamp(66px, 14vw, 168px); line-height: .92;
+    letter-spacing: -.04em; color: var(--ink-lt);
+  }
+  .ipage .stat span {
+    display: block; margin: 18px auto 0; max-width: 42ch;
+    font-size: 14px; line-height: 1.5; color: var(--ink-lt-2);
+  }
 
-  /* Use-case tabs with a worked example. The example carries what it reads
-     and where it stays, so the on-device claim is shown, not asserted. */
-  .tabs { width: min(100%, 900px); margin: 30px auto 0; }
-  .tablist {
-    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
-    padding-bottom: 4px; justify-content: flex-start;
-  }
-  .tablist::-webkit-scrollbar { display: none; }
+  /* The round trip. Two wires on black — no frame around them. */
+  .trip { width: min(100%, 660px); margin: clamp(48px, 7vw, 80px) auto 0; }
+  .lane { display: grid; grid-template-columns: 92px 1fr auto; align-items: center;
+          gap: 20px; padding: 26px 0; }
+  .lane + .lane { border-top: 1px solid rgba(255,255,255,.16); }
+  .lane .who { font-size: 13px; color: var(--ink-lt-2); text-align: left; }
+  .wire { position: relative; height: 1px; background: rgba(255,255,255,.24); }
+  .dot { position: absolute; top: 50%; left: 0; width: 9px; height: 9px;
+         margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #2997ff; }
+  .lane.remote .dot { animation: trip 2.8s cubic-bezier(.5,0,.5,1) infinite; }
+  .lane.local  .dot { animation: here 2.8s ease-in-out infinite; }
+  @keyframes trip { 0% { left: 0 } 44% { left: 100% } 56% { left: 100% } 100% { left: 0 } }
+  @keyframes here { 0%,100% { opacity: .3 } 10%,42% { opacity: 1 } }
+  .lane .end { font-size: 13px; color: var(--ink-lt-2); text-align: right; min-width: 9ch; }
+
+  /* Feature statements: a text grid, held apart by hairlines rather than boxes. */
+  .feats { width: min(100%, 940px); margin: clamp(48px, 7vw, 84px) auto 0;
+           display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 clamp(40px, 6vw, 88px); }
+  .feats > div { padding: 30px 0; border-top: 1px solid rgba(255,255,255,.16); text-align: left; }
+  .feats h3 { font-family: var(--font); font-size: clamp(19px, 2vw, 24px); font-weight: 600;
+              letter-spacing: -.01em; margin-bottom: 8px; }
+  .feats p { font-size: 15px; line-height: 1.55; color: var(--ink-lt-2); max-width: 40ch; }
+
+  /* Examples. Tabs are words, not pills; the request is the only thing with size. */
+  .tabs { width: min(100%, 860px); margin: clamp(40px, 6vw, 72px) auto 0; }
+  .tablist { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 30px; }
   .tablist button {
-    flex: none; padding: 9px 18px; border-radius: 100px;
-    font-size: 14px; color: var(--ink-lt-2);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
-    transition: color .2s, background .2s, box-shadow .2s;
+    padding: 6px 0 9px; font-size: 15px; color: var(--ink-lt-2);
+    border-bottom: 1px solid transparent; transition: color .2s, border-color .2s;
   }
   .tablist button:hover { color: var(--ink-lt); }
-  .tablist button[aria-selected="true"] {
-    color: #000; background: var(--ink-lt); box-shadow: none; font-weight: 500;
-  }
-  .tabpanel { display: none; margin-top: 16px; text-align: left; }
+  .tablist button[aria-selected="true"] { color: var(--ink-lt); border-bottom-color: var(--ink-lt); }
+  .tabpanel { display: none; }
   .tabpanel.on { display: block; }
-  .ask {
-    border-radius: 18px; padding: 26px 26px 20px;
-    background: rgba(255,255,255,.05);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.11);
-  }
-  .ask .lbl { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-lt-2); }
   .ask q {
-    display: block; margin: 12px 0 20px; quotes: none;
-    font-family: var(--font); font-size: clamp(19px, 2.4vw, 27px);
-    line-height: 1.3; font-weight: 500; letter-spacing: -.01em; color: var(--ink-lt);
+    display: block; quotes: none;
+    margin: clamp(34px, 5vw, 54px) auto 0; max-width: 24ch;
+    font-family: var(--font); font-size: clamp(26px, 3.6vw, 46px);
+    line-height: 1.16; font-weight: 600; letter-spacing: -.018em; color: var(--ink-lt);
   }
-  .ask .meta { display: flex; flex-wrap: wrap; gap: 8px 10px; padding-top: 16px;
-               border-top: 1px solid rgba(255,255,255,.12); }
-  .tag {
-    font-size: 12px; padding: 4px 10px; border-radius: 100px; color: var(--ink-lt-2);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
-  }
-  .tag.stay { color: #2997ff; box-shadow: inset 0 0 0 1px rgba(41,151,255,.45); }
+  .ask .src { margin-top: 26px; font-size: 13px; color: var(--ink-lt-2); }
+  .ask .src em { font-style: normal; color: #2997ff; }
 
-  /* Where it runs — tiered cards with capability bullets. */
-  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-           width: min(100%, 1000px); margin: 32px auto 0; }
-  .tier {
-    display: flex; flex-direction: column; gap: 10px; text-align: left;
-    padding: 28px 24px; border-radius: 18px;
-    background: rgba(255,255,255,.05);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
-  }
-  .tier h3 { font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
-  .tier p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); flex: 1; }
-  .tier .bul { font-size: 12px; color: var(--ink-lt-2); }
-  .tier .bul span { white-space: nowrap; }
-  .tier .bul i { font-style: normal; opacity: .5; padding: 0 7px; }
-  @media (max-width: 833px) { .tiers { grid-template-columns: 1fr; } }
+  /* Three tiers as columns of text. */
+  .tiers { width: min(100%, 960px); margin: clamp(48px, 7vw, 84px) auto 0;
+           display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 clamp(32px, 4vw, 60px); }
+  .tiers > div { padding: 28px 0 0; border-top: 1px solid rgba(255,255,255,.16); text-align: left; }
+  .tiers h3 { font-family: var(--font); font-size: 21px; font-weight: 600;
+              letter-spacing: -.01em; margin-bottom: 9px; }
+  .tiers p { font-size: 15px; line-height: 1.55; color: var(--ink-lt-2); }
+  .tiers .terse { margin-top: 12px; font-size: 13px; color: var(--ink-lt-2); }
 
-  .aurora {
-    position: absolute; inset: -25%; z-index: 0; pointer-events: none;
-    background:
-      radial-gradient(38% 44% at 22% 30%, rgba(41,151,255,.34), transparent 62%),
-      radial-gradient(34% 40% at 76% 24%, rgba(126,92,255,.26), transparent 62%),
-      radial-gradient(44% 48% at 60% 78%, rgba(20,180,190,.20), transparent 64%);
-    filter: blur(46px);
-    animation: aurora 30s ease-in-out infinite alternate;
-  }
-  @keyframes aurora {
-    from { transform: translate3d(-3%,-2%,0) scale(1.02); }
-    to   { transform: translate3d(3%,3%,0)  scale(1.12); }
-  }
-
-  /* Status label. Every capability on this page carries one, because none of
-     them have shipped and a page that hides that is a lie. */
-  .chip {
-    display: inline-block; align-self: flex-start;
-    font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
-    padding: 4px 10px; border-radius: 100px; color: var(--ink-lt-2);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.24);
-  }
-  .band:not(.dark) .chip { color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule); }
-
-  /* Highlights gallery: a scroll-snapped rail, the way a feature tour reads
-     on a phone without becoming a wall of stacked cards. */
-  .gallery {
-    display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
-    scrollbar-width: none; -webkit-overflow-scrolling: touch;
-    margin-top: 34px; padding: 4px max(var(--gutter), calc((100vw - 1000px) / 2)) 10px;
-  }
-  .gallery::-webkit-scrollbar { display: none; }
-  .gcard {
-    flex: none; width: min(80vw, 320px); scroll-snap-align: center;
-    display: flex; flex-direction: column; gap: 9px;
-    min-height: 306px; padding: 26px 24px 28px; border-radius: 20px;
-    text-align: left;
-    background: rgba(255,255,255,.055);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
-  }
-  .gcard .gnum { font-size: 12px; letter-spacing: .06em; color: var(--ink-lt-2); }
-  .gcard h3 { font-family: var(--font); font-size: 23px; font-weight: 600; letter-spacing: -.01em; }
-  .gcard p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); flex: 1; }
-
-  /* The round trip: the page's argument, drawn. */
-  .trip { width: min(100%, 720px); margin: 32px auto 0; display: grid; gap: 14px; }
-  .lane {
-    position: relative; display: flex; align-items: center; gap: 14px;
-    padding: 0 18px; height: 76px; border-radius: 16px;
-    background: rgba(255,255,255,.045);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
-  }
-  .lane-tag {
-    position: absolute; top: -9px; left: 18px; padding: 0 8px; background: #000;
-    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-lt-2);
-  }
-  .node { flex: none; display: grid; place-items: center; color: var(--ink-lt-2); }
-  .node svg { width: 26px; height: 26px; }
-  .node.far { opacity: .75; }
-  .wire { position: relative; flex: 1; height: 2px; border-radius: 2px; background: rgba(255,255,255,.14); }
-  .dot {
-    position: absolute; top: 50%; left: 0; width: 11px; height: 11px;
-    margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: #2997ff;
-    box-shadow: 0 0 16px 4px rgba(41,151,255,.65);
-  }
-  .lane.remote .dot { animation: trip 2.6s cubic-bezier(.5,0,.5,1) infinite; }
-  .lane.local  .dot { animation: here 2.6s ease-in-out infinite; }
-  @keyframes trip { 0% { left: 0 } 44% { left: 100% } 56% { left: 100% } 100% { left: 0 } }
-  @keyframes here { 0%,100% { opacity: .35; transform: scale(.9) } 8%,40% { opacity: 1; transform: scale(1.15) } }
-  .lane-note { flex: none; font-size: 12px; color: var(--ink-lt-2); min-width: 8ch; text-align: right; }
-
-  .fact { display: block; margin: 32px auto 0; text-align: center; }
-  .fact b {
-    display: block; font-family: var(--font); font-weight: 600;
-    font-size: clamp(52px, 11vw, 108px); line-height: 1; letter-spacing: -.03em; color: var(--ink-lt);
-  }
-  .fact span { display: block; margin-top: 12px; font-size: 14px; color: var(--ink-lt-2); }
-
-  /* Three guarantees, stated so they can be checked rather than admired. */
-  .guarantees {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-    width: min(100%, 940px); margin: 32px auto 0;
-  }
-  .guarantees div {
-    padding: 26px 22px; border-radius: 16px; text-align: left;
-    background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.09);
-  }
-  .guarantees h3 { font-family: var(--font); font-size: 17px; font-weight: 600; margin-bottom: 6px; }
-  .guarantees p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); }
-
-  /* Open problems, listed the way a research index lists papers. */
-  .rlist { width: min(100%, 940px); margin: 30px auto 0; text-align: left; }
-  .rrow {
-    display: grid; grid-template-columns: 168px 1fr; gap: 22px;
-    padding: 22px 2px; border-top: 1px solid rgba(255,255,255,.15);
-  }
-  .rrow:last-child { border-bottom: 1px solid rgba(255,255,255,.15); }
-  .rrow .cat { font-size: 12px; color: var(--ink-lt-2); padding-top: 4px; }
-  .rrow h3 { font-family: var(--font); font-size: 19px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 5px; }
-  .rrow p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); }
+  /* Open problems: a plain index. */
+  .rlist { width: min(100%, 880px); margin: clamp(44px, 6vw, 76px) auto 0; text-align: left; }
+  .rrow { display: grid; grid-template-columns: 160px 1fr; gap: 24px;
+          padding: 26px 0; border-top: 1px solid rgba(255,255,255,.16); }
+  .rrow:last-child { border-bottom: 1px solid rgba(255,255,255,.16); }
+  .rrow .cat { font-size: 13px; color: var(--ink-lt-2); }
+  .rrow h3 { font-family: var(--font); font-size: clamp(19px, 2vw, 23px); font-weight: 600;
+             letter-spacing: -.01em; margin-bottom: 7px; }
+  .rrow p { font-size: 15px; line-height: 1.55; color: var(--ink-lt-2); max-width: 52ch; }
 
   @media (prefers-reduced-motion: reduce) {
-    .aurora, .lane .dot { animation: none; }
-    .lane.remote .dot { left: 50%; }
+    .lane .dot { animation: none; }
+    .lane.remote .dot { left: 100%; }
   }
   @media (max-width: 734px) {
-    .lane { height: 68px; padding: 0 14px; gap: 10px; }
-    .lane-note { display: none; }
-    .guarantees { grid-template-columns: 1fr; }
+    .feats, .tiers { grid-template-columns: 1fr; gap: 0; }
     .rrow { grid-template-columns: 1fr; gap: 6px; }
-    .gcard { min-height: 280px; }
+    .lane { grid-template-columns: 76px 1fr; gap: 14px; }
+    .lane .end { display: none; }
+    .tablist { gap: 4px 20px; }
   }
 </style>'''
 
-DEVICE_SVG = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" '
-              'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-              '<rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 5.6h3"/></svg>')
-RACK_SVG = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" '
-            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-            '<rect x="3" y="4" width="18" height="5" rx="1.5"/><rect x="3" y="11" width="18" height="5" rx="1.5"/>'
-            '<rect x="3" y="18" width="18" height="3.4" rx="1.2"/><path d="M6.4 6.5h.01M6.4 13.5h.01"/></svg>')
-
 HIGHLIGHTS = [
-    ("Reasoning, locally", "Work through a problem with a model that runs on the machine in front of you, with no request leaving it."),
-    ("Your context", "Answers grounded in your own mail, notes and files — read on the device, not uploaded to be read."),
+    ("Reasoning, locally", "Work a problem through with a model running on the machine in front of you, with no request leaving it."),
+    ("Your own context", "Answers grounded in your mail, notes and files — read where they already are, not uploaded to be read."),
     ("Voice", "Speech understood on the device, so being understood does not cost you a recording."),
-    ("What's on screen", "Ask about whatever you are looking at, without shipping a screenshot to a server."),
-    ("Writing", "Draft and revise in your own voice, with the model close enough to keep up with typing."),
+    ("What is on screen", "Ask about whatever you are looking at, without a screenshot going anywhere."),
+    ("Writing", "Draft and revise in your own voice, close enough to keep up with typing."),
     ("Actions", "Ask for something to be done across your apps, and have it done rather than described."),
 ]
 
-OPEN_PROBLEMS = [
-    ("Efficiency", "Capable models that fit in a pocket",
-     "Compressing a model until it runs on a handheld device is easy. Doing it without hollowing out what made it worth running is the actual problem."),
-    ("Silicon", "Designing the chip around the model",
-     "General-purpose parts force general-purpose software. We are working on what changes when the silicon is shaped to the thing it has to run."),
-    ("Privacy", "Personal context without collection",
-     "Grounding answers in someone's own material, while ensuring that material never becomes a dataset — including ours."),
-    ("Evaluation", "Measuring usefulness, not benchmark scores",
-     "A model that tops a leaderboard and irritates the person using it has failed. We are more interested in the second measurement."),
-]
-
-
-NEWSBAR = '''<div class="newsbar">
-  <span><b>Oplo Intelligence</b> — the design direction, written up in full.</span>
-  <a class="cta" href="../newsroom/">Read it</a>
-</div>
-'''
-
 TABS = [
-    ("Write", "Draft a reply to Sam that picks up the three pricing points from Tuesday's notes.",
-     ["Notes", "Mail"]),
-    ("Plan", "Work out what actually has to happen before Thursday, given what is already in my calendar.",
-     ["Calendar", "Reminders"]),
-    ("Find", "Find the photo from the roof in Lisbon — it was raining, and it was the evening.",
-     ["Photos"]),
-    ("Read", "Tell me what changed in this contract since the version they sent last month.",
-     ["Files"]),
-    ("Debug", "Explain why the build got slower after the commit I pushed on Friday.",
-     ["Projects"]),
+    ("Write", "Reply to Sam, using the three pricing points from Tuesday's notes.", "Notes, Mail"),
+    ("Plan", "What actually has to happen before Thursday, given what is already booked?", "Calendar"),
+    ("Find", "The photo from the roof in Lisbon. It was raining, and it was evening.", "Photos"),
+    ("Read", "What changed in this contract since the version they sent last month?", "Files"),
+    ("Debug", "Why did the build get slower after Friday's commit?", "Projects"),
 ]
 
 TIERS = [
     ("On device", "The default. The model lives on the machine you are holding and answers without a network.",
-     ["Works offline", "Nothing leaves", "No per-request cost"]),
-    ("On your desk", "A larger model on a machine with more room, for work that needs more than a handheld can hold.",
-     ["Longer context", "Heavier reasoning", "Still yours"]),
-    ("Asked first", "If something genuinely cannot be answered locally, you are told before it goes — and can say no.",
-     ["Explicit consent", "Not retained", "Declinable"]),
+     "Works offline. Nothing leaves. No cost per request."),
+    ("On your desk", "A larger model where there is room for one, for work a handheld cannot hold.",
+     "Longer context. Heavier reasoning. Still yours."),
+    ("Asked first", "If a request genuinely cannot be answered locally, you are told before it goes, and you can say no.",
+     "Explicit consent. Not retained. Declinable."),
 ]
 
+OPEN_PROBLEMS = [
+    ("Efficiency", "Capable models that fit in a pocket",
+     "Compressing a model until it runs on a handheld is easy. Doing it without hollowing out what made it worth running is the actual problem."),
+    ("Silicon", "Designing the chip around the model",
+     "General-purpose parts force general-purpose software. What changes when the silicon is shaped to the thing it has to run."),
+    ("Privacy", "Personal context without collection",
+     "Grounding answers in someone's own material while ensuring that material never becomes a dataset, including ours."),
+    ("Evaluation", "Usefulness, not benchmark scores",
+     "A model that tops a leaderboard and irritates the person using it has failed. The second measurement is the interesting one."),
+]
 
-def tabs_block():
+DEVICE_SVG = RACK_SVG = ""
+
+
+def intelligence_page():
+    depth = 1
+    links = [("Overview", "#top"), ("In use", "#ask"), ("Speed", "#speed"),
+             ("Where it runs", "#where"), ("Privacy", "#privacy"), ("Research", "#research")]
+    out = head(depth, "Intelligence — Oplo",
+               "Oplo Intelligence: a model that runs on your device rather than in a data centre.",
+               "intelligence/", INTEL_CSS)
+    out += nav(depth, "intelligence/")
+    out += chapter(depth, "Intelligence", links, "intelligence/")
+    out += '<main class="ipage" id="top">\n'
+
+    out += '''<section class="band dark opening">
+  <div class="well">
+    <h1 class="t-mega balance reveal">Intelligence,<br class="br-wide">where you are.</h1>
+    <p class="t-sub muted lede reveal d1">A model that runs on your device, knows your context, and keeps both to itself.</p>
+    <p class="t-fine muted reveal d2" style="margin-top:26px">In development. Nothing described here has shipped.<sup>1</sup></p>
+  </div>
+</section>
+'''
+
+    feats = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in HIGHLIGHTS)
+    out += f'''<section class="band dark" id="on-device">
+  <div class="well">
+    <p class="kicker reveal">What it is for</p>
+    <h2 class="t-hero balance lede reveal">Six things a personal model should be good at.</h2>
+    <div class="feats reveal d1">
+{feats}    </div>
+  </div>
+</section>
+'''
+
     btns = "".join(
         f'<button type="button" role="tab" id="tab-{i}" aria-controls="panel-{i}" '
-        f'aria-selected="{"true" if i == 0 else "false"}">{name}</button>'
-        for i, (name, _, _) in enumerate(TABS))
-    panels = ""
-    for i, (name, prompt, reads) in enumerate(TABS):
-        tags = "".join(f'<span class="tag">Reads {r}</span>' for r in reads)
-        panels += f'''      <div class="tabpanel{' on' if i == 0 else ''}" id="panel-{i}" role="tabpanel" aria-labelledby="tab-{i}">
+        f'aria-selected="{"true" if i == 0 else "false"}">{n}</button>'
+        for i, (n, _, _) in enumerate(TABS))
+    panels = "".join(
+        f'''      <div class="tabpanel{' on' if i == 0 else ''}" id="panel-{i}" role="tabpanel" aria-labelledby="tab-{i}">
         <div class="ask">
-          <span class="lbl">Example — {name.lower()}</span>
-          <q>{prompt}</q>
-          <div class="meta">{tags}<span class="tag stay">Stays on device</span></div>
+          <q>{p}</q>
+          <p class="src">Reads {s} &nbsp;·&nbsp; <em>stays on the device</em></p>
         </div>
       </div>
-'''
-    return f'''<section class="band dark" id="ask">
+''' for i, (n, p, s) in enumerate(TABS))
+    out += f'''<section class="band dark" id="ask">
   <div class="well">
-    <p class="eyebrow reveal">In use</p>
-    <h2 class="t-hero balance reveal">What you would actually ask it.</h2>
-    <p class="t-lead muted balance reveal d1">Illustrations, not transcripts — nothing here has shipped. Each one shows what the model would need to read, and where that reading happens.</p>
+    <p class="kicker reveal">In use</p>
+    <h2 class="t-hero balance lede reveal">What you would actually ask it.</h2>
     <div class="tabs reveal d1">
       <div class="tablist" role="tablist" aria-label="Example requests">{btns}</div>
 {panels}    </div>
@@ -652,27 +577,96 @@ def tabs_block():
 </section>
 '''
 
-
-def tiers_block():
-    cards = ""
-    for name, desc, bullets in TIERS:
-        bul = "<i>•</i>".join(f"<span>{b}</span>" for b in bullets)
-        cards += f'''      <div class="tier">
-        <h3>{name}</h3>
-        <p>{desc}</p>
-        <p class="bul">{bul}</p>
-      </div>
-'''
-    return f'''<section class="band dark" id="where">
+    out += '''<section class="band dark" id="speed">
   <div class="well">
-    <p class="eyebrow reveal">Where it runs</p>
-    <h2 class="t-hero balance reveal">One family.<br class="br-wide">Three places it lives.</h2>
-    <p class="t-lead muted balance reveal d1">On-device is the default rather than the marketing. The other two exist so the default never has to be quietly broken.</p>
-    <div class="tiers reveal d1">
-{cards}    </div>
+    <p class="kicker reveal">Speed</p>
+    <h2 class="t-hero balance lede reveal">The fastest network is no network.</h2>
+    <div class="trip reveal d1">
+      <div class="lane local">
+        <span class="who">On device</span>
+        <span class="wire"><span class="dot"></span></span>
+        <span class="end">no trip</span>
+      </div>
+      <div class="lane remote">
+        <span class="who">Round trip</span>
+        <span class="wire"><span class="dot"></span></span>
+        <span class="end">there and back</span>
+      </div>
+    </div>
+    <p class="stat reveal d2">
+      <b>186,000</b>
+      <span>Miles per second. The speed of light, and the ceiling on how fast any answer can return from somewhere else.<sup>2</sup></span>
+    </p>
   </div>
 </section>
 '''
+
+    tiers = "".join(f'      <div><h3>{n}</h3><p>{d}</p><p class="terse">{t}</p></div>\n'
+                    for n, d, t in TIERS)
+    out += f'''<section class="band dark" id="where">
+  <div class="well">
+    <p class="kicker reveal">Where it runs</p>
+    <h2 class="t-hero balance lede reveal">One family. Three places it lives.</h2>
+    <div class="tiers reveal d1">
+{tiers}    </div>
+  </div>
+</section>
+'''
+
+    out += '''<section class="band dark" id="privacy">
+  <div class="well">
+    <p class="kicker reveal">Privacy</p>
+    <h2 class="t-hero balance lede reveal">What never leaves cannot be collected.</h2>
+    <div class="tiers reveal d1">
+      <div><h3>Processed where you are</h3><p>Personal context is read on the device it already lives on. Being understood should not require uploading yourself first.</p></div>
+      <div><h3>Not kept, not trained on</h3><p>What you ask is not retained to improve a model. If that ever needs an exception, it gets asked for.</p></div>
+      <div><h3>Told before it leaves</h3><p>If something genuinely cannot be answered locally, you hear about it first, and you can decline.</p></div>
+    </div>
+    <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Read our position on privacy</a></p>
+  </div>
+</section>
+'''
+
+    rows = "".join(f'''      <div class="rrow">
+        <div class="cat">{c}</div>
+        <div><h3>{t}</h3><p>{d}</p></div>
+      </div>
+''' for c, t, d in OPEN_PROBLEMS)
+    out += f'''<section class="band dark" id="research">
+  <div class="well">
+    <p class="kicker reveal">Research</p>
+    <h2 class="t-hero balance lede reveal">The open problems.</h2>
+    <p class="t-lead muted lede reveal d1" style="margin-top:18px">We have published nothing yet, so this is not a list of papers. It is what we are stuck on.</p>
+    <div class="rlist reveal d1">
+{rows}    </div>
+  </div>
+</section>
+'''
+
+    out += '''<section class="band">
+  <div class="well">
+    <p class="kicker reveal" style="color:var(--ink-2)">Developers</p>
+    <h2 class="t-hero balance lede reveal">Build on it.</h2>
+    <p class="t-lead muted lede reveal d1" style="margin-top:18px">One surface across the hardware, the software and the models. A model on the device means features that work offline and cost nothing per request.</p>
+    <p class="cta-row reveal d2">
+      <a class="cta" href="../developers/">Developer resources</a>
+      <a class="cta" href="../contact/">Talk to us</a>
+    </p>
+  </div>
+</section>
+</main>
+'''
+    notes = [
+        "Oplo Intelligence is in development. Everything described on this page is an intention "
+        "rather than a shipping feature. Availability, capability and on-device performance are "
+        "not final and will vary by device.",
+        "Light travels 186,282 miles per second in a vacuum, and slower through glass fibre. The "
+        "figure is the physical limit on a network round trip, not a measurement of an Oplo product.",
+        "Example requests are illustrations of intended use, not recordings of a working system.",
+        "The privacy commitments describe how Oplo intends to build. The binding document is the "
+        "privacy policy, which is in preparation.",
+    ]
+    return ("intelligence/index.html", out + TABS_JS + footer(depth, notes))
 
 TABS_JS = '''<script>
   (function () {
@@ -700,147 +694,6 @@ TABS_JS = '''<script>
 </script>
 '''
 
-
-def intelligence_page():
-    depth = 1
-    links = [("Highlights", "#highlights"), ("In use", "#ask"), ("On device", "#on-device"),
-             ("Speed", "#speed"), ("Where it runs", "#where"), ("Privacy", "#privacy"),
-             ("Research", "#research"), ("Build", "#build")]
-    out = head(depth, "Intelligence — Oplo",
-               "Oplo Intelligence: models that run on your device rather than in a data centre.",
-               "intelligence/", INTEL_CSS)
-    out += nav(depth, "intelligence/")
-    out += chapter(depth, "Intelligence", links, "intelligence/")
-    out += "<main>\n"
-    out += NEWSBAR
-
-    out += '''<section class="band dark opening">
-  <span class="aurora" aria-hidden="true"></span>
-  <div class="well">
-    <p class="eyebrow reveal">Oplo Intelligence</p>
-    <h1 class="t-mega balance reveal">Intelligence,<br class="br-wide">where you are.</h1>
-    <p class="t-sub muted balance reveal d1">A model that runs on your device, knows your context, and keeps both to itself.</p>
-    <p class="t-fine muted reveal d2" style="margin-top:20px">In development. Nothing on this page has shipped.<sup>1</sup></p>
-  </div>
-</section>
-'''
-
-    cards = "".join(
-        f'''    <article class="gcard" id="highlight-{i+1}">
-      <span class="gnum">{i+1:02d}</span>
-      <h3>{t}</h3>
-      <p>{d}</p>
-      <span class="chip">In development</span>
-    </article>
-''' for i, (t, d) in enumerate(HIGHLIGHTS))
-    out += f'''<section class="band dark" id="highlights">
-  <div class="well">
-    <p class="eyebrow reveal">Highlights</p>
-    <h2 class="t-hero balance reveal">What we are building it to do.</h2>
-    <p class="t-lead muted balance reveal d1">Six things a personal model should be good at. Each is a statement of intent, and each is labelled as one.</p>
-  </div>
-  <div class="gallery reveal d1">
-{cards}  </div>
-</section>
-'''
-
-    out += tabs_block()
-
-    out += '''<section class="band dark" id="on-device">
-  <div class="well">
-    <p class="eyebrow reveal">On device</p>
-    <h2 class="t-hero balance reveal">Where the model runs<br class="br-wide">changes everything about it.</h2>
-    <p class="t-lead muted balance reveal d1">Speed, privacy, and whether it works at all on a train are not three features. They are one decision, made once, about which building the thinking happens in.</p>
-  </div>
-</section>
-'''
-
-    out += f'''<section class="band dark" id="speed">
-  <div class="well">
-    <p class="eyebrow reveal">Speed</p>
-    <h2 class="t-hero balance reveal">The fastest network<br class="br-wide">is no network.</h2>
-    <p class="t-lead muted balance reveal d1">A question sent to a data centre has to physically get there and back before the answer can begin. That trip has a floor set by physics, not by engineering.</p>
-    <div class="trip reveal d1">
-      <div class="lane local">
-        <span class="lane-tag">On device</span>
-        <span class="node">{DEVICE_SVG}</span>
-        <span class="wire"><span class="dot"></span></span>
-        <span class="lane-note">no trip</span>
-      </div>
-      <div class="lane remote">
-        <span class="lane-tag">Round trip</span>
-        <span class="node">{DEVICE_SVG}</span>
-        <span class="wire"><span class="dot"></span></span>
-        <span class="node far">{RACK_SVG}</span>
-        <span class="lane-note">there and back</span>
-      </div>
-    </div>
-    <p class="fact reveal d2">
-      <b>186,000</b>
-      <span>miles per second — the speed of light, and the hard ceiling on how fast any answer can return from somewhere else.<sup>2</sup></span>
-    </p>
-  </div>
-</section>
-'''
-
-    out += tiers_block()
-
-    out += '''<section class="band dark" id="privacy">
-  <span class="bloom" aria-hidden="true"></span>
-  <div class="well">
-    <p class="eyebrow reveal">Privacy</p>
-    <h2 class="t-hero balance reveal">What never leaves<br class="br-wide">cannot be collected.</h2>
-    <p class="t-lead muted balance reveal d1">Running locally settles the privacy question as a side effect of settling the speed one. These are the three commitments that follow, written so you can hold us to them.</p>
-    <div class="guarantees reveal d1">
-      <div><h3>Processed on your device</h3><p>Personal context is read where it already lives. Being understood should not require uploading yourself first.</p></div>
-      <div><h3>Not kept, not trained on</h3><p>What you ask is not retained to improve a model. If that ever needs an exception, it will be asked for, not assumed.</p></div>
-      <div><h3>Told when it leaves</h3><p>If a request genuinely cannot be answered on the device, you will be told before it goes anywhere — and able to decline.</p></div>
-    </div>
-    <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Read our position on privacy</a></p>
-  </div>
-</section>
-'''
-
-    rows = "".join(f'''      <div class="rrow">
-        <div class="cat">{c}</div>
-        <div><h3>{t}</h3><p>{d}</p></div>
-      </div>
-''' for c, t, d in OPEN_PROBLEMS)
-    out += f'''<section class="band dark" id="research">
-  <div class="well">
-    <p class="eyebrow reveal">Research</p>
-    <h2 class="t-hero balance reveal">The open problems.</h2>
-    <p class="t-lead muted balance reveal d1">We have published nothing yet, so this is not a list of papers. It is what we are actually stuck on, which is the more useful thing to say.</p>
-    <div class="rlist reveal d1">
-{rows}    </div>
-  </div>
-</section>
-'''
-
-    out += '''<section class="band" id="build">
-  <div class="well">
-    <p class="eyebrow reveal">Developers</p>
-    <h2 class="t-hero balance reveal">Build on it.</h2>
-    <p class="t-lead muted balance reveal d1">One surface across the hardware, the software and the models — learned once, rather than once per device. A model that runs on the device means features that work offline and cost nothing per request.</p>
-    <p class="cta-row reveal d2">
-      <a class="cta" href="../developers/">Developer resources</a>
-      <a class="cta" href="../contact/">Talk to us</a>
-    </p>
-  </div>
-</section>
-</main>
-'''
-    notes = [
-        "Oplo Intelligence is in development. Every capability described on this page is an "
-        "intention rather than a shipping feature, and each is labelled as such. Availability, "
-        "capability and on-device performance are not final and will vary by device.",
-        "Light travels 186,282 miles per second in a vacuum, and slower through glass fibre. The "
-        "figure is quoted as the physical limit on a network round trip, not as a measurement of "
-        "any Oplo product.",
-        "The privacy commitments describe how Oplo intends to build. The binding document is the "
-        "privacy policy, which is in preparation.",
-    ]
-    return ("intelligence/index.html", out + TABS_JS + footer(depth, notes))
 
 PAGES.append(intelligence_page())
 

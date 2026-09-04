@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Intelligence — Oplo</title>
-<meta name="description" content="Oplo Intelligence: models that run on your device rather than in a data centre.">
+<meta name="description" content="Oplo Intelligence: a model that runs on your device rather than in a data centre.">
 <meta name="theme-color" content="#ffffff">
 <link rel="canonical" href="https://oplocloud.com/intelligence/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Oplo">
 <meta property="og:title" content="Intelligence — Oplo">
-<meta property="og:description" content="Oplo Intelligence: models that run on your device rather than in a data centre.">
+<meta property="og:description" content="Oplo Intelligence: a model that runs on your device rather than in a data centre.">
 <meta property="og:url" content="https://oplocloud.com/intelligence/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='84.13 107.80 206.73 194.91'%3E%3Cg transform='translate(73.919875, 252.710833)'%3E%3Cpath fill='%23000' d='M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,184 +25,101 @@
 </script>
 <style>body { padding-top: 44px; }</style>
 <style>
+  /* Black, space and type. No panels, no glass borders, no badges — a section
+     is separated from the next by air, and the only rule on the page is a
+     hairline where a list genuinely needs one. */
 
-  /* News strip — the "latest release" line those sites run above the fold. */
-  .newsbar {
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    flex-wrap: wrap; padding: 11px var(--gutter);
-    background: rgba(255,255,255,.06);
-    border-bottom: 1px solid rgba(255,255,255,.10);
-    font-size: 13px; color: var(--ink-lt-2); text-align: center;
+  .ipage .band { padding: clamp(96px, 15vh, 190px) 0; }
+  .ipage .band.opening { padding-top: clamp(80px, 12vh, 150px); }
+  .ipage .lede { max-width: 30ch; margin-inline: auto; }
+  .ipage .kicker {
+    font-family: var(--font); font-size: clamp(17px, 1.6vw, 21px);
+    font-weight: 600; letter-spacing: .011em; color: var(--ink-lt-2);
+    margin-bottom: 16px;
   }
-  .newsbar b { color: var(--ink-lt); font-weight: 600; }
-  .newsbar .cta { font-size: 13px; }
+  .ipage .stat { margin-top: clamp(56px, 8vw, 96px); }
+  .ipage .stat b {
+    display: block; font-family: var(--font); font-weight: 600;
+    font-size: clamp(66px, 14vw, 168px); line-height: .92;
+    letter-spacing: -.04em; color: var(--ink-lt);
+  }
+  .ipage .stat span {
+    display: block; margin: 18px auto 0; max-width: 42ch;
+    font-size: 14px; line-height: 1.5; color: var(--ink-lt-2);
+  }
 
-  /* Use-case tabs with a worked example. The example carries what it reads
-     and where it stays, so the on-device claim is shown, not asserted. */
-  .tabs { width: min(100%, 900px); margin: 30px auto 0; }
-  .tablist {
-    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
-    padding-bottom: 4px; justify-content: flex-start;
-  }
-  .tablist::-webkit-scrollbar { display: none; }
+  /* The round trip. Two wires on black — no frame around them. */
+  .trip { width: min(100%, 660px); margin: clamp(48px, 7vw, 80px) auto 0; }
+  .lane { display: grid; grid-template-columns: 92px 1fr auto; align-items: center;
+          gap: 20px; padding: 26px 0; }
+  .lane + .lane { border-top: 1px solid rgba(255,255,255,.16); }
+  .lane .who { font-size: 13px; color: var(--ink-lt-2); text-align: left; }
+  .wire { position: relative; height: 1px; background: rgba(255,255,255,.24); }
+  .dot { position: absolute; top: 50%; left: 0; width: 9px; height: 9px;
+         margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #2997ff; }
+  .lane.remote .dot { animation: trip 2.8s cubic-bezier(.5,0,.5,1) infinite; }
+  .lane.local  .dot { animation: here 2.8s ease-in-out infinite; }
+  @keyframes trip { 0% { left: 0 } 44% { left: 100% } 56% { left: 100% } 100% { left: 0 } }
+  @keyframes here { 0%,100% { opacity: .3 } 10%,42% { opacity: 1 } }
+  .lane .end { font-size: 13px; color: var(--ink-lt-2); text-align: right; min-width: 9ch; }
+
+  /* Feature statements: a text grid, held apart by hairlines rather than boxes. */
+  .feats { width: min(100%, 940px); margin: clamp(48px, 7vw, 84px) auto 0;
+           display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 clamp(40px, 6vw, 88px); }
+  .feats > div { padding: 30px 0; border-top: 1px solid rgba(255,255,255,.16); text-align: left; }
+  .feats h3 { font-family: var(--font); font-size: clamp(19px, 2vw, 24px); font-weight: 600;
+              letter-spacing: -.01em; margin-bottom: 8px; }
+  .feats p { font-size: 15px; line-height: 1.55; color: var(--ink-lt-2); max-width: 40ch; }
+
+  /* Examples. Tabs are words, not pills; the request is the only thing with size. */
+  .tabs { width: min(100%, 860px); margin: clamp(40px, 6vw, 72px) auto 0; }
+  .tablist { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 30px; }
   .tablist button {
-    flex: none; padding: 9px 18px; border-radius: 100px;
-    font-size: 14px; color: var(--ink-lt-2);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
-    transition: color .2s, background .2s, box-shadow .2s;
+    padding: 6px 0 9px; font-size: 15px; color: var(--ink-lt-2);
+    border-bottom: 1px solid transparent; transition: color .2s, border-color .2s;
   }
   .tablist button:hover { color: var(--ink-lt); }
-  .tablist button[aria-selected="true"] {
-    color: #000; background: var(--ink-lt); box-shadow: none; font-weight: 500;
-  }
-  .tabpanel { display: none; margin-top: 16px; text-align: left; }
+  .tablist button[aria-selected="true"] { color: var(--ink-lt); border-bottom-color: var(--ink-lt); }
+  .tabpanel { display: none; }
   .tabpanel.on { display: block; }
-  .ask {
-    border-radius: 18px; padding: 26px 26px 20px;
-    background: rgba(255,255,255,.05);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.11);
-  }
-  .ask .lbl { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-lt-2); }
   .ask q {
-    display: block; margin: 12px 0 20px; quotes: none;
-    font-family: var(--font); font-size: clamp(19px, 2.4vw, 27px);
-    line-height: 1.3; font-weight: 500; letter-spacing: -.01em; color: var(--ink-lt);
+    display: block; quotes: none;
+    margin: clamp(34px, 5vw, 54px) auto 0; max-width: 24ch;
+    font-family: var(--font); font-size: clamp(26px, 3.6vw, 46px);
+    line-height: 1.16; font-weight: 600; letter-spacing: -.018em; color: var(--ink-lt);
   }
-  .ask .meta { display: flex; flex-wrap: wrap; gap: 8px 10px; padding-top: 16px;
-               border-top: 1px solid rgba(255,255,255,.12); }
-  .tag {
-    font-size: 12px; padding: 4px 10px; border-radius: 100px; color: var(--ink-lt-2);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
-  }
-  .tag.stay { color: #2997ff; box-shadow: inset 0 0 0 1px rgba(41,151,255,.45); }
+  .ask .src { margin-top: 26px; font-size: 13px; color: var(--ink-lt-2); }
+  .ask .src em { font-style: normal; color: #2997ff; }
 
-  /* Where it runs — tiered cards with capability bullets. */
-  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-           width: min(100%, 1000px); margin: 32px auto 0; }
-  .tier {
-    display: flex; flex-direction: column; gap: 10px; text-align: left;
-    padding: 28px 24px; border-radius: 18px;
-    background: rgba(255,255,255,.05);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
-  }
-  .tier h3 { font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
-  .tier p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); flex: 1; }
-  .tier .bul { font-size: 12px; color: var(--ink-lt-2); }
-  .tier .bul span { white-space: nowrap; }
-  .tier .bul i { font-style: normal; opacity: .5; padding: 0 7px; }
-  @media (max-width: 833px) { .tiers { grid-template-columns: 1fr; } }
+  /* Three tiers as columns of text. */
+  .tiers { width: min(100%, 960px); margin: clamp(48px, 7vw, 84px) auto 0;
+           display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 clamp(32px, 4vw, 60px); }
+  .tiers > div { padding: 28px 0 0; border-top: 1px solid rgba(255,255,255,.16); text-align: left; }
+  .tiers h3 { font-family: var(--font); font-size: 21px; font-weight: 600;
+              letter-spacing: -.01em; margin-bottom: 9px; }
+  .tiers p { font-size: 15px; line-height: 1.55; color: var(--ink-lt-2); }
+  .tiers .terse { margin-top: 12px; font-size: 13px; color: var(--ink-lt-2); }
 
-  .aurora {
-    position: absolute; inset: -25%; z-index: 0; pointer-events: none;
-    background:
-      radial-gradient(38% 44% at 22% 30%, rgba(41,151,255,.34), transparent 62%),
-      radial-gradient(34% 40% at 76% 24%, rgba(126,92,255,.26), transparent 62%),
-      radial-gradient(44% 48% at 60% 78%, rgba(20,180,190,.20), transparent 64%);
-    filter: blur(46px);
-    animation: aurora 30s ease-in-out infinite alternate;
-  }
-  @keyframes aurora {
-    from { transform: translate3d(-3%,-2%,0) scale(1.02); }
-    to   { transform: translate3d(3%,3%,0)  scale(1.12); }
-  }
-
-  /* Status label. Every capability on this page carries one, because none of
-     them have shipped and a page that hides that is a lie. */
-  .chip {
-    display: inline-block; align-self: flex-start;
-    font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
-    padding: 4px 10px; border-radius: 100px; color: var(--ink-lt-2);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.24);
-  }
-  .band:not(.dark) .chip { color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule); }
-
-  /* Highlights gallery: a scroll-snapped rail, the way a feature tour reads
-     on a phone without becoming a wall of stacked cards. */
-  .gallery {
-    display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
-    scrollbar-width: none; -webkit-overflow-scrolling: touch;
-    margin-top: 34px; padding: 4px max(var(--gutter), calc((100vw - 1000px) / 2)) 10px;
-  }
-  .gallery::-webkit-scrollbar { display: none; }
-  .gcard {
-    flex: none; width: min(80vw, 320px); scroll-snap-align: center;
-    display: flex; flex-direction: column; gap: 9px;
-    min-height: 306px; padding: 26px 24px 28px; border-radius: 20px;
-    text-align: left;
-    background: rgba(255,255,255,.055);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
-  }
-  .gcard .gnum { font-size: 12px; letter-spacing: .06em; color: var(--ink-lt-2); }
-  .gcard h3 { font-family: var(--font); font-size: 23px; font-weight: 600; letter-spacing: -.01em; }
-  .gcard p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); flex: 1; }
-
-  /* The round trip: the page's argument, drawn. */
-  .trip { width: min(100%, 720px); margin: 32px auto 0; display: grid; gap: 14px; }
-  .lane {
-    position: relative; display: flex; align-items: center; gap: 14px;
-    padding: 0 18px; height: 76px; border-radius: 16px;
-    background: rgba(255,255,255,.045);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
-  }
-  .lane-tag {
-    position: absolute; top: -9px; left: 18px; padding: 0 8px; background: #000;
-    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-lt-2);
-  }
-  .node { flex: none; display: grid; place-items: center; color: var(--ink-lt-2); }
-  .node svg { width: 26px; height: 26px; }
-  .node.far { opacity: .75; }
-  .wire { position: relative; flex: 1; height: 2px; border-radius: 2px; background: rgba(255,255,255,.14); }
-  .dot {
-    position: absolute; top: 50%; left: 0; width: 11px; height: 11px;
-    margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: #2997ff;
-    box-shadow: 0 0 16px 4px rgba(41,151,255,.65);
-  }
-  .lane.remote .dot { animation: trip 2.6s cubic-bezier(.5,0,.5,1) infinite; }
-  .lane.local  .dot { animation: here 2.6s ease-in-out infinite; }
-  @keyframes trip { 0% { left: 0 } 44% { left: 100% } 56% { left: 100% } 100% { left: 0 } }
-  @keyframes here { 0%,100% { opacity: .35; transform: scale(.9) } 8%,40% { opacity: 1; transform: scale(1.15) } }
-  .lane-note { flex: none; font-size: 12px; color: var(--ink-lt-2); min-width: 8ch; text-align: right; }
-
-  .fact { display: block; margin: 32px auto 0; text-align: center; }
-  .fact b {
-    display: block; font-family: var(--font); font-weight: 600;
-    font-size: clamp(52px, 11vw, 108px); line-height: 1; letter-spacing: -.03em; color: var(--ink-lt);
-  }
-  .fact span { display: block; margin-top: 12px; font-size: 14px; color: var(--ink-lt-2); }
-
-  /* Three guarantees, stated so they can be checked rather than admired. */
-  .guarantees {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-    width: min(100%, 940px); margin: 32px auto 0;
-  }
-  .guarantees div {
-    padding: 26px 22px; border-radius: 16px; text-align: left;
-    background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.09);
-  }
-  .guarantees h3 { font-family: var(--font); font-size: 17px; font-weight: 600; margin-bottom: 6px; }
-  .guarantees p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); }
-
-  /* Open problems, listed the way a research index lists papers. */
-  .rlist { width: min(100%, 940px); margin: 30px auto 0; text-align: left; }
-  .rrow {
-    display: grid; grid-template-columns: 168px 1fr; gap: 22px;
-    padding: 22px 2px; border-top: 1px solid rgba(255,255,255,.15);
-  }
-  .rrow:last-child { border-bottom: 1px solid rgba(255,255,255,.15); }
-  .rrow .cat { font-size: 12px; color: var(--ink-lt-2); padding-top: 4px; }
-  .rrow h3 { font-family: var(--font); font-size: 19px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 5px; }
-  .rrow p { font-size: 14px; line-height: 1.5; color: var(--ink-lt-2); }
+  /* Open problems: a plain index. */
+  .rlist { width: min(100%, 880px); margin: clamp(44px, 6vw, 76px) auto 0; text-align: left; }
+  .rrow { display: grid; grid-template-columns: 160px 1fr; gap: 24px;
+          padding: 26px 0; border-top: 1px solid rgba(255,255,255,.16); }
+  .rrow:last-child { border-bottom: 1px solid rgba(255,255,255,.16); }
+  .rrow .cat { font-size: 13px; color: var(--ink-lt-2); }
+  .rrow h3 { font-family: var(--font); font-size: clamp(19px, 2vw, 23px); font-weight: 600;
+             letter-spacing: -.01em; margin-bottom: 7px; }
+  .rrow p { font-size: 15px; line-height: 1.55; color: var(--ink-lt-2); max-width: 52ch; }
 
   @media (prefers-reduced-motion: reduce) {
-    .aurora, .lane .dot { animation: none; }
-    .lane.remote .dot { left: 50%; }
+    .lane .dot { animation: none; }
+    .lane.remote .dot { left: 100%; }
   }
   @media (max-width: 734px) {
-    .lane { height: 68px; padding: 0 14px; gap: 10px; }
-    .lane-note { display: none; }
-    .guarantees { grid-template-columns: 1fr; }
+    .feats, .tiers { grid-template-columns: 1fr; gap: 0; }
     .rrow { grid-template-columns: 1fr; gap: 6px; }
-    .gcard { min-height: 280px; }
+    .lane { grid-template-columns: 76px 1fr; gap: 14px; }
+    .lane .end { display: none; }
+    .tablist { gap: 4px 20px; }
   }
 </style>
 </head>
@@ -229,214 +146,145 @@
 <div class="chapter">
   <div class="chapter-in">
     <a class="chapter-name" href="../intelligence/">Intelligence</a>
-    <nav class="chapter-links" aria-label="Intelligence sections"><a href="#highlights">Highlights</a><a href="#ask">In use</a><a href="#on-device">On device</a><a href="#speed">Speed</a><a href="#where">Where it runs</a><a href="#privacy">Privacy</a><a href="#research">Research</a><a href="#build">Build</a></nav>
+    <nav class="chapter-links" aria-label="Intelligence sections"><a href="#top">Overview</a><a href="#ask">In use</a><a href="#speed">Speed</a><a href="#where">Where it runs</a><a href="#privacy">Privacy</a><a href="#research">Research</a></nav>
   </div>
 </div>
-<main>
-<div class="newsbar">
-  <span><b>Oplo Intelligence</b> — the design direction, written up in full.</span>
-  <a class="cta" href="../newsroom/">Read it</a>
-</div>
+<main class="ipage" id="top">
 <section class="band dark opening">
-  <span class="aurora" aria-hidden="true"></span>
   <div class="well">
-    <p class="eyebrow reveal">Oplo Intelligence</p>
     <h1 class="t-mega balance reveal">Intelligence,<br class="br-wide">where you are.</h1>
-    <p class="t-sub muted balance reveal d1">A model that runs on your device, knows your context, and keeps both to itself.</p>
-    <p class="t-fine muted reveal d2" style="margin-top:20px">In development. Nothing on this page has shipped.<sup>1</sup></p>
-  </div>
-</section>
-<section class="band dark" id="highlights">
-  <div class="well">
-    <p class="eyebrow reveal">Highlights</p>
-    <h2 class="t-hero balance reveal">What we are building it to do.</h2>
-    <p class="t-lead muted balance reveal d1">Six things a personal model should be good at. Each is a statement of intent, and each is labelled as one.</p>
-  </div>
-  <div class="gallery reveal d1">
-    <article class="gcard" id="highlight-1">
-      <span class="gnum">01</span>
-      <h3>Reasoning, locally</h3>
-      <p>Work through a problem with a model that runs on the machine in front of you, with no request leaving it.</p>
-      <span class="chip">In development</span>
-    </article>
-    <article class="gcard" id="highlight-2">
-      <span class="gnum">02</span>
-      <h3>Your context</h3>
-      <p>Answers grounded in your own mail, notes and files — read on the device, not uploaded to be read.</p>
-      <span class="chip">In development</span>
-    </article>
-    <article class="gcard" id="highlight-3">
-      <span class="gnum">03</span>
-      <h3>Voice</h3>
-      <p>Speech understood on the device, so being understood does not cost you a recording.</p>
-      <span class="chip">In development</span>
-    </article>
-    <article class="gcard" id="highlight-4">
-      <span class="gnum">04</span>
-      <h3>What's on screen</h3>
-      <p>Ask about whatever you are looking at, without shipping a screenshot to a server.</p>
-      <span class="chip">In development</span>
-    </article>
-    <article class="gcard" id="highlight-5">
-      <span class="gnum">05</span>
-      <h3>Writing</h3>
-      <p>Draft and revise in your own voice, with the model close enough to keep up with typing.</p>
-      <span class="chip">In development</span>
-    </article>
-    <article class="gcard" id="highlight-6">
-      <span class="gnum">06</span>
-      <h3>Actions</h3>
-      <p>Ask for something to be done across your apps, and have it done rather than described.</p>
-      <span class="chip">In development</span>
-    </article>
-  </div>
-</section>
-<section class="band dark" id="ask">
-  <div class="well">
-    <p class="eyebrow reveal">In use</p>
-    <h2 class="t-hero balance reveal">What you would actually ask it.</h2>
-    <p class="t-lead muted balance reveal d1">Illustrations, not transcripts — nothing here has shipped. Each one shows what the model would need to read, and where that reading happens.</p>
-    <div class="tabs reveal d1">
-      <div class="tablist" role="tablist" aria-label="Example requests"><button type="button" role="tab" id="tab-0" aria-controls="panel-0" aria-selected="true">Write</button><button type="button" role="tab" id="tab-1" aria-controls="panel-1" aria-selected="false">Plan</button><button type="button" role="tab" id="tab-2" aria-controls="panel-2" aria-selected="false">Find</button><button type="button" role="tab" id="tab-3" aria-controls="panel-3" aria-selected="false">Read</button><button type="button" role="tab" id="tab-4" aria-controls="panel-4" aria-selected="false">Debug</button></div>
-      <div class="tabpanel on" id="panel-0" role="tabpanel" aria-labelledby="tab-0">
-        <div class="ask">
-          <span class="lbl">Example — write</span>
-          <q>Draft a reply to Sam that picks up the three pricing points from Tuesday's notes.</q>
-          <div class="meta"><span class="tag">Reads Notes</span><span class="tag">Reads Mail</span><span class="tag stay">Stays on device</span></div>
-        </div>
-      </div>
-      <div class="tabpanel" id="panel-1" role="tabpanel" aria-labelledby="tab-1">
-        <div class="ask">
-          <span class="lbl">Example — plan</span>
-          <q>Work out what actually has to happen before Thursday, given what is already in my calendar.</q>
-          <div class="meta"><span class="tag">Reads Calendar</span><span class="tag">Reads Reminders</span><span class="tag stay">Stays on device</span></div>
-        </div>
-      </div>
-      <div class="tabpanel" id="panel-2" role="tabpanel" aria-labelledby="tab-2">
-        <div class="ask">
-          <span class="lbl">Example — find</span>
-          <q>Find the photo from the roof in Lisbon — it was raining, and it was the evening.</q>
-          <div class="meta"><span class="tag">Reads Photos</span><span class="tag stay">Stays on device</span></div>
-        </div>
-      </div>
-      <div class="tabpanel" id="panel-3" role="tabpanel" aria-labelledby="tab-3">
-        <div class="ask">
-          <span class="lbl">Example — read</span>
-          <q>Tell me what changed in this contract since the version they sent last month.</q>
-          <div class="meta"><span class="tag">Reads Files</span><span class="tag stay">Stays on device</span></div>
-        </div>
-      </div>
-      <div class="tabpanel" id="panel-4" role="tabpanel" aria-labelledby="tab-4">
-        <div class="ask">
-          <span class="lbl">Example — debug</span>
-          <q>Explain why the build got slower after the commit I pushed on Friday.</q>
-          <div class="meta"><span class="tag">Reads Projects</span><span class="tag stay">Stays on device</span></div>
-        </div>
-      </div>
-    </div>
+    <p class="t-sub muted lede reveal d1">A model that runs on your device, knows your context, and keeps both to itself.</p>
+    <p class="t-fine muted reveal d2" style="margin-top:26px">In development. Nothing described here has shipped.<sup>1</sup></p>
   </div>
 </section>
 <section class="band dark" id="on-device">
   <div class="well">
-    <p class="eyebrow reveal">On device</p>
-    <h2 class="t-hero balance reveal">Where the model runs<br class="br-wide">changes everything about it.</h2>
-    <p class="t-lead muted balance reveal d1">Speed, privacy, and whether it works at all on a train are not three features. They are one decision, made once, about which building the thinking happens in.</p>
+    <p class="kicker reveal">What it is for</p>
+    <h2 class="t-hero balance lede reveal">Six things a personal model should be good at.</h2>
+    <div class="feats reveal d1">
+      <div><h3>Reasoning, locally</h3><p>Work a problem through with a model running on the machine in front of you, with no request leaving it.</p></div>
+      <div><h3>Your own context</h3><p>Answers grounded in your mail, notes and files — read where they already are, not uploaded to be read.</p></div>
+      <div><h3>Voice</h3><p>Speech understood on the device, so being understood does not cost you a recording.</p></div>
+      <div><h3>What is on screen</h3><p>Ask about whatever you are looking at, without a screenshot going anywhere.</p></div>
+      <div><h3>Writing</h3><p>Draft and revise in your own voice, close enough to keep up with typing.</p></div>
+      <div><h3>Actions</h3><p>Ask for something to be done across your apps, and have it done rather than described.</p></div>
+    </div>
+  </div>
+</section>
+<section class="band dark" id="ask">
+  <div class="well">
+    <p class="kicker reveal">In use</p>
+    <h2 class="t-hero balance lede reveal">What you would actually ask it.</h2>
+    <div class="tabs reveal d1">
+      <div class="tablist" role="tablist" aria-label="Example requests"><button type="button" role="tab" id="tab-0" aria-controls="panel-0" aria-selected="true">Write</button><button type="button" role="tab" id="tab-1" aria-controls="panel-1" aria-selected="false">Plan</button><button type="button" role="tab" id="tab-2" aria-controls="panel-2" aria-selected="false">Find</button><button type="button" role="tab" id="tab-3" aria-controls="panel-3" aria-selected="false">Read</button><button type="button" role="tab" id="tab-4" aria-controls="panel-4" aria-selected="false">Debug</button></div>
+      <div class="tabpanel on" id="panel-0" role="tabpanel" aria-labelledby="tab-0">
+        <div class="ask">
+          <q>Reply to Sam, using the three pricing points from Tuesday's notes.</q>
+          <p class="src">Reads Notes, Mail &nbsp;·&nbsp; <em>stays on the device</em></p>
+        </div>
+      </div>
+      <div class="tabpanel" id="panel-1" role="tabpanel" aria-labelledby="tab-1">
+        <div class="ask">
+          <q>What actually has to happen before Thursday, given what is already booked?</q>
+          <p class="src">Reads Calendar &nbsp;·&nbsp; <em>stays on the device</em></p>
+        </div>
+      </div>
+      <div class="tabpanel" id="panel-2" role="tabpanel" aria-labelledby="tab-2">
+        <div class="ask">
+          <q>The photo from the roof in Lisbon. It was raining, and it was evening.</q>
+          <p class="src">Reads Photos &nbsp;·&nbsp; <em>stays on the device</em></p>
+        </div>
+      </div>
+      <div class="tabpanel" id="panel-3" role="tabpanel" aria-labelledby="tab-3">
+        <div class="ask">
+          <q>What changed in this contract since the version they sent last month?</q>
+          <p class="src">Reads Files &nbsp;·&nbsp; <em>stays on the device</em></p>
+        </div>
+      </div>
+      <div class="tabpanel" id="panel-4" role="tabpanel" aria-labelledby="tab-4">
+        <div class="ask">
+          <q>Why did the build get slower after Friday's commit?</q>
+          <p class="src">Reads Projects &nbsp;·&nbsp; <em>stays on the device</em></p>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 <section class="band dark" id="speed">
   <div class="well">
-    <p class="eyebrow reveal">Speed</p>
-    <h2 class="t-hero balance reveal">The fastest network<br class="br-wide">is no network.</h2>
-    <p class="t-lead muted balance reveal d1">A question sent to a data centre has to physically get there and back before the answer can begin. That trip has a floor set by physics, not by engineering.</p>
+    <p class="kicker reveal">Speed</p>
+    <h2 class="t-hero balance lede reveal">The fastest network is no network.</h2>
     <div class="trip reveal d1">
       <div class="lane local">
-        <span class="lane-tag">On device</span>
-        <span class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 5.6h3"/></svg></span>
+        <span class="who">On device</span>
         <span class="wire"><span class="dot"></span></span>
-        <span class="lane-note">no trip</span>
+        <span class="end">no trip</span>
       </div>
       <div class="lane remote">
-        <span class="lane-tag">Round trip</span>
-        <span class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 5.6h3"/></svg></span>
+        <span class="who">Round trip</span>
         <span class="wire"><span class="dot"></span></span>
-        <span class="node far"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"/><rect x="3" y="11" width="18" height="5" rx="1.5"/><rect x="3" y="18" width="18" height="3.4" rx="1.2"/><path d="M6.4 6.5h.01M6.4 13.5h.01"/></svg></span>
-        <span class="lane-note">there and back</span>
+        <span class="end">there and back</span>
       </div>
     </div>
-    <p class="fact reveal d2">
+    <p class="stat reveal d2">
       <b>186,000</b>
-      <span>miles per second — the speed of light, and the hard ceiling on how fast any answer can return from somewhere else.<sup>2</sup></span>
+      <span>Miles per second. The speed of light, and the ceiling on how fast any answer can return from somewhere else.<sup>2</sup></span>
     </p>
   </div>
 </section>
 <section class="band dark" id="where">
   <div class="well">
-    <p class="eyebrow reveal">Where it runs</p>
-    <h2 class="t-hero balance reveal">One family.<br class="br-wide">Three places it lives.</h2>
-    <p class="t-lead muted balance reveal d1">On-device is the default rather than the marketing. The other two exist so the default never has to be quietly broken.</p>
+    <p class="kicker reveal">Where it runs</p>
+    <h2 class="t-hero balance lede reveal">One family. Three places it lives.</h2>
     <div class="tiers reveal d1">
-      <div class="tier">
-        <h3>On device</h3>
-        <p>The default. The model lives on the machine you are holding and answers without a network.</p>
-        <p class="bul"><span>Works offline</span><i>•</i><span>Nothing leaves</span><i>•</i><span>No per-request cost</span></p>
-      </div>
-      <div class="tier">
-        <h3>On your desk</h3>
-        <p>A larger model on a machine with more room, for work that needs more than a handheld can hold.</p>
-        <p class="bul"><span>Longer context</span><i>•</i><span>Heavier reasoning</span><i>•</i><span>Still yours</span></p>
-      </div>
-      <div class="tier">
-        <h3>Asked first</h3>
-        <p>If something genuinely cannot be answered locally, you are told before it goes — and can say no.</p>
-        <p class="bul"><span>Explicit consent</span><i>•</i><span>Not retained</span><i>•</i><span>Declinable</span></p>
-      </div>
+      <div><h3>On device</h3><p>The default. The model lives on the machine you are holding and answers without a network.</p><p class="terse">Works offline. Nothing leaves. No cost per request.</p></div>
+      <div><h3>On your desk</h3><p>A larger model where there is room for one, for work a handheld cannot hold.</p><p class="terse">Longer context. Heavier reasoning. Still yours.</p></div>
+      <div><h3>Asked first</h3><p>If a request genuinely cannot be answered locally, you are told before it goes, and you can say no.</p><p class="terse">Explicit consent. Not retained. Declinable.</p></div>
     </div>
   </div>
 </section>
 <section class="band dark" id="privacy">
-  <span class="bloom" aria-hidden="true"></span>
   <div class="well">
-    <p class="eyebrow reveal">Privacy</p>
-    <h2 class="t-hero balance reveal">What never leaves<br class="br-wide">cannot be collected.</h2>
-    <p class="t-lead muted balance reveal d1">Running locally settles the privacy question as a side effect of settling the speed one. These are the three commitments that follow, written so you can hold us to them.</p>
-    <div class="guarantees reveal d1">
-      <div><h3>Processed on your device</h3><p>Personal context is read where it already lives. Being understood should not require uploading yourself first.</p></div>
-      <div><h3>Not kept, not trained on</h3><p>What you ask is not retained to improve a model. If that ever needs an exception, it will be asked for, not assumed.</p></div>
-      <div><h3>Told when it leaves</h3><p>If a request genuinely cannot be answered on the device, you will be told before it goes anywhere — and able to decline.</p></div>
+    <p class="kicker reveal">Privacy</p>
+    <h2 class="t-hero balance lede reveal">What never leaves cannot be collected.</h2>
+    <div class="tiers reveal d1">
+      <div><h3>Processed where you are</h3><p>Personal context is read on the device it already lives on. Being understood should not require uploading yourself first.</p></div>
+      <div><h3>Not kept, not trained on</h3><p>What you ask is not retained to improve a model. If that ever needs an exception, it gets asked for.</p></div>
+      <div><h3>Told before it leaves</h3><p>If something genuinely cannot be answered locally, you hear about it first, and you can decline.</p></div>
     </div>
     <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Read our position on privacy</a></p>
   </div>
 </section>
 <section class="band dark" id="research">
   <div class="well">
-    <p class="eyebrow reveal">Research</p>
-    <h2 class="t-hero balance reveal">The open problems.</h2>
-    <p class="t-lead muted balance reveal d1">We have published nothing yet, so this is not a list of papers. It is what we are actually stuck on, which is the more useful thing to say.</p>
+    <p class="kicker reveal">Research</p>
+    <h2 class="t-hero balance lede reveal">The open problems.</h2>
+    <p class="t-lead muted lede reveal d1" style="margin-top:18px">We have published nothing yet, so this is not a list of papers. It is what we are stuck on.</p>
     <div class="rlist reveal d1">
       <div class="rrow">
         <div class="cat">Efficiency</div>
-        <div><h3>Capable models that fit in a pocket</h3><p>Compressing a model until it runs on a handheld device is easy. Doing it without hollowing out what made it worth running is the actual problem.</p></div>
+        <div><h3>Capable models that fit in a pocket</h3><p>Compressing a model until it runs on a handheld is easy. Doing it without hollowing out what made it worth running is the actual problem.</p></div>
       </div>
       <div class="rrow">
         <div class="cat">Silicon</div>
-        <div><h3>Designing the chip around the model</h3><p>General-purpose parts force general-purpose software. We are working on what changes when the silicon is shaped to the thing it has to run.</p></div>
+        <div><h3>Designing the chip around the model</h3><p>General-purpose parts force general-purpose software. What changes when the silicon is shaped to the thing it has to run.</p></div>
       </div>
       <div class="rrow">
         <div class="cat">Privacy</div>
-        <div><h3>Personal context without collection</h3><p>Grounding answers in someone's own material, while ensuring that material never becomes a dataset — including ours.</p></div>
+        <div><h3>Personal context without collection</h3><p>Grounding answers in someone's own material while ensuring that material never becomes a dataset, including ours.</p></div>
       </div>
       <div class="rrow">
         <div class="cat">Evaluation</div>
-        <div><h3>Measuring usefulness, not benchmark scores</h3><p>A model that tops a leaderboard and irritates the person using it has failed. We are more interested in the second measurement.</p></div>
+        <div><h3>Usefulness, not benchmark scores</h3><p>A model that tops a leaderboard and irritates the person using it has failed. The second measurement is the interesting one.</p></div>
       </div>
     </div>
   </div>
 </section>
-<section class="band" id="build">
+<section class="band">
   <div class="well">
-    <p class="eyebrow reveal">Developers</p>
-    <h2 class="t-hero balance reveal">Build on it.</h2>
-    <p class="t-lead muted balance reveal d1">One surface across the hardware, the software and the models — learned once, rather than once per device. A model that runs on the device means features that work offline and cost nothing per request.</p>
+    <p class="kicker reveal" style="color:var(--ink-2)">Developers</p>
+    <h2 class="t-hero balance lede reveal">Build on it.</h2>
+    <p class="t-lead muted lede reveal d1" style="margin-top:18px">One surface across the hardware, the software and the models. A model on the device means features that work offline and cost nothing per request.</p>
     <p class="cta-row reveal d2">
       <a class="cta" href="../developers/">Developer resources</a>
       <a class="cta" href="../contact/">Talk to us</a>
@@ -468,7 +316,7 @@
     });
   })();
 </script>
-<div class="notes"><ol><li>Oplo Intelligence is in development. Every capability described on this page is an intention rather than a shipping feature, and each is labelled as such. Availability, capability and on-device performance are not final and will vary by device.</li><li>Light travels 186,282 miles per second in a vacuum, and slower through glass fibre. The figure is quoted as the physical limit on a network round trip, not as a measurement of any Oplo product.</li><li>The privacy commitments describe how Oplo intends to build. The binding document is the privacy policy, which is in preparation.</li></ol></div>
+<div class="notes"><ol><li>Oplo Intelligence is in development. Everything described on this page is an intention rather than a shipping feature. Availability, capability and on-device performance are not final and will vary by device.</li><li>Light travels 186,282 miles per second in a vacuum, and slower through glass fibre. The figure is the physical limit on a network round trip, not a measurement of an Oplo product.</li><li>Example requests are illustrations of intended use, not recordings of a working system.</li><li>The privacy commitments describe how Oplo intends to build. The binding document is the privacy policy, which is in preparation.</li></ol></div>
 <footer class="foot" aria-label="Oplo footer">
   <div class="foot-in">
     <div class="foot-note">
