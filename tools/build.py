@@ -697,6 +697,170 @@ TABS_JS = '''<script>
 
 PAGES.append(intelligence_page())
 
+
+# ==========================================================================
+# Sign in.
+# Composed the way an account screen should be: one column, centred, almost
+# nothing on it. Deliberately NOT a working credential form — Oplo has no
+# accounts, and a live public page with a functioning-looking password box
+# that authenticates nothing is the exact shape of a phishing page. People
+# type real passwords into those. So: no password field exists at all, the
+# form transmits nothing, and pressing continue says so plainly.
+# ==========================================================================
+
+SIGNIN_CSS = '''<style>
+  .signin {
+    min-height: calc(100vh - 44px); min-height: calc(100svh - 44px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: clamp(48px, 9vh, 96px) var(--gutter) clamp(40px, 7vh, 72px);
+    text-align: center;
+  }
+  .signin .mark { width: 40px; height: 38px; color: var(--ink); margin-bottom: clamp(26px, 4vh, 40px); }
+  .signin h1 {
+    font-family: var(--font); font-size: clamp(28px, 3.6vw, 40px); line-height: 1.1;
+    font-weight: 600; letter-spacing: -.015em;
+  }
+  .signin .sub {
+    margin: 14px auto 0; max-width: 34ch;
+    font-size: 17px; line-height: 1.47; color: var(--ink-2);
+  }
+
+  /* Status, stated before the field rather than after it. */
+  .signin .status {
+    margin: clamp(26px, 4vh, 38px) auto 0; max-width: 40ch;
+    padding: 13px 18px; border-radius: 12px;
+    background: var(--canvas); color: var(--ink-2);
+    font-size: 14px; line-height: 1.45;
+  }
+  .signin .status b { color: var(--ink); font-weight: 600; }
+
+  .form { width: 100%; max-width: 340px; margin: clamp(24px, 3.6vh, 34px) auto 0; }
+
+  /* One field, with the action inside its right edge. */
+  .field { position: relative; }
+  .field input {
+    width: 100%; height: 56px;
+    padding: 20px 54px 6px 16px;
+    font: inherit; font-size: 17px; color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 12px;
+    outline: none;
+    transition: border-color .18s ease, box-shadow .18s ease;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field input:hover { border-color: #b8b8bf; }
+  .field input:focus {
+    border-color: #0071e3;
+    box-shadow: 0 0 0 4px rgba(0,113,227,.16);
+  }
+  .field label {
+    position: absolute; left: 17px; top: 50%; transform: translateY(-50%);
+    transform-origin: left center; pointer-events: none;
+    font-size: 17px; color: var(--ink-3);
+    transition: transform .18s ease, color .18s ease;
+  }
+  .field input:focus + label,
+  .field input:not(:placeholder-shown) + label {
+    transform: translateY(-19px) scale(.72); color: var(--ink-2);
+  }
+  .field .go {
+    position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+    width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink-3);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+  }
+  .field input:not(:placeholder-shown) ~ .go {
+    background: #0071e3; color: #fff; box-shadow: none;
+  }
+  .field .go svg { width: 15px; height: 15px; }
+
+  .keep {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 20px; font-size: 14px; color: var(--ink-2); cursor: pointer;
+  }
+  .keep input { width: 15px; height: 15px; accent-color: #0071e3; }
+
+  /* Where the honest answer appears, in place, on submit. */
+  .said {
+    margin-top: 18px; font-size: 14px; line-height: 1.45; color: var(--ink);
+    min-height: 1.45em;
+  }
+  .said a { color: var(--blue); }
+  .said a:hover { text-decoration: underline; }
+
+  .signin .after {
+    margin-top: clamp(30px, 4.6vh, 44px); padding-top: clamp(24px, 3.4vh, 32px);
+    border-top: 1px solid var(--rule);
+    width: 100%; max-width: 340px;
+    font-size: 14px; line-height: 1.5; color: var(--ink-2);
+  }
+  .signin .after a { color: var(--blue); }
+  .signin .after a:hover { text-decoration: underline; }
+
+  @media (max-width: 734px) {
+    .signin { justify-content: flex-start; padding-top: clamp(38px, 7vh, 64px); }
+    .signin .sub { font-size: 16px; }
+  }
+</style>'''
+
+
+def signin_page():
+    depth = 1
+    mark = (f'<svg class="mark" viewBox="{MARK_VB}" aria-hidden="true" focusable="false">'
+            f'<g transform="translate({MARK_TR})"><path fill="currentColor" d="{MARK_D}"/></g></svg>')
+    out = head(depth, "Sign in — Oplo", "Sign in to your Oplo account.", "sign-in/", SIGNIN_CSS)
+    out += nav(depth, "sign-in/")
+    out += f'''<main class="signin">
+  {mark}
+  <h1 class="balance">Sign in to Oplo</h1>
+  <p class="sub">One account for your device, your software, and the model that runs on it.</p>
+
+  <p class="status"><b>Accounts aren&rsquo;t open yet.</b> This is the sign-in we are building. Nothing you type here is sent anywhere or stored.</p>
+
+  <form class="form" id="signinForm" novalidate autocomplete="off">
+    <div class="field">
+      <input id="oploid" name="oploid" type="email" placeholder=" "
+             autocomplete="off" autocapitalize="none" spellcheck="false"
+             aria-describedby="said">
+      <label for="oploid">Email or Oplo&nbsp;ID</label>
+      <button class="go" type="submit" aria-label="Continue">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 2.5 10.5 8 5 13.5"/>
+        </svg>
+      </button>
+    </div>
+    <label class="keep"><input type="checkbox" name="keep"> Keep me signed in</label>
+    <p class="said" id="said" role="status" aria-live="polite"></p>
+  </form>
+
+  <p class="after">
+    There is no password field on this page, and there will not be one until
+    accounts actually work. <a href="../newsroom/">We will say when they do.</a>
+  </p>
+</main>
+
+<script>
+  (function () {{
+    var form = document.getElementById("signinForm");
+    var said = document.getElementById("said");
+    if (!form || !said) return;
+    form.addEventListener("submit", function (e) {{
+      // Nothing is transmitted. The page has no endpoint and never will
+      // until there is a real account system behind it.
+      e.preventDefault();
+      said.innerHTML = 'Oplo accounts aren\\u2019t open yet, so there is nothing to sign in to. ' +
+                       'Nothing was sent. <a href="../newsroom/">Hear when they open</a>.';
+    }});
+  }})();
+</script>
+'''
+    out += footer(depth)
+    return ("sign-in/index.html", out)
+
+
 # ----------------------------------------------------- Company & utility
 def simple(slug, depth, title, desc, eyebrow, heading, lead, rows_html=""):
     out = head(depth, title, desc, slug) + nav(depth, slug) + "<main>\n"
@@ -753,13 +917,7 @@ PAGES.append(simple("support/", 1, "Support — Oplo", "Getting help with Oplo h
         "Developer questions are handled alongside everything else while the platform is still being built.",
         [("Developer resources", "developers/")], 1) + '</div>\n'))
 
-PAGES.append(simple("sign-in/", 1, "Sign in — Oplo", "Oplo accounts are not open yet.",
-    "Account", "Accounts aren't open yet.",
-    "There is no Oplo account to sign in to at this stage. When accounts open, this is where you will do it.",
-    '<div class="rows">\n' +
-    row("", "when", "In the meantime", "Nothing is being collected.",
-        "We are not running a waitlist or gathering addresses on this page. When there is something to sign in to, we will say so plainly.",
-        [("What we're building", "company/")], 1) + '</div>\n'))
+PAGES.append(signin_page())
 
 # ----------------------------------------------------------- Legal pages
 DRAFT = ('<p><strong>This document is being prepared.</strong> Oplo has no shipping product and '
