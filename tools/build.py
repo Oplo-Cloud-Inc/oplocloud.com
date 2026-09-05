@@ -30,7 +30,7 @@ MARK_D  = ("M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.64843
            "M 130.378906 -138.132812")
 
 NAV = [("Hardware", "hardware/"), ("Software", "software/"), ("Intelligence", "intelligence/"),
-       ("Privacy", "privacy/"), ("Company", "company/"), ("Support", "support/")]
+       ("Privacy", "privacy/"), ("Oplo+", "plus/"), ("Company", "company/"), ("Support", "support/")]
 
 FOOTER = [
     ("Hardware", [("Overview", "hardware/"), ("Silicon", "hardware/#silicon"),
@@ -41,6 +41,8 @@ FOOTER = [
                       ("Privacy", "privacy/"), ("Research", "intelligence/#research")]),
     ("Developers", [("Documentation", "developers/#docs"), ("SDKs", "developers/#sdks"),
                     ("Design resources", "developers/#design"), ("Support", "developers/#support")]),
+    ("Membership", [("Oplo+", "plus/"), ("Plans", "plus/#plans"),
+                    ("Compare tiers", "plus/#compare"), ("Questions", "plus/#faq")]),
     ("Company", [("About Oplo", "company/"), ("Newsroom", "newsroom/"),
                  ("Careers", "careers/"), ("Contact", "contact/")]),
 ]
@@ -860,6 +862,284 @@ def signin_page():
     out += footer(depth)
     return ("sign-in/index.html", out)
 
+
+
+# ==========================================================================
+# Oplo+ — the membership page, on the iCloud+ architecture: tier cards, a
+# feature matrix, an FAQ, footnotes.
+#
+# Prices are deliberately not invented. This is a commerce page on a live
+# domain; a number printed here reads as a commitment, and Oplo has not set
+# one. Every price slot renders PRICE_AT_LAUNCH in the exact position and
+# weight a figure will occupy, so dropping real numbers in is a one-line
+# change to PRICING below and nothing about the layout moves.
+# ==========================================================================
+
+PRICE_AT_LAUNCH = "Priced at&nbsp;launch"
+
+PRICING = [
+    # (tier, price slot, allowance, blurb, is the emphasised column)
+    ("Oplo", "Free", "With every device",
+     "The on-device model, encrypted sync for your essentials, and everything that makes the machine work.", False),
+    ("Oplo+", PRICE_AT_LAUNCH, "For one person",
+     "The larger model, room for a real library, and the privacy features that need somewhere to run.", True),
+    ("Oplo+ Family", PRICE_AT_LAUNCH, "Up to six people",
+     "Everything in Oplo+, shared across a household, with each person's material kept separate.", False),
+]
+
+MATRIX_HEAD = ["Oplo", "Oplo+", "Family"]
+MATRIX = [
+    ("On-device model", "The model that runs on the machine in your hand.", ["Standard", "Extended", "Extended"]),
+    ("Desk model", "A larger model for work a handheld cannot hold.", ["—", "yes", "yes"]),
+    ("Encrypted sync", "Your files and settings, carried between your own devices.", ["Essentials", "Full library", "Full library"]),
+    ("Device backup", "A complete restore point, encrypted before it leaves.", ["—", "yes", "yes"]),
+    ("Browsing relay", "Traffic routed so sites cannot build a profile from your address.", ["—", "yes", "yes"]),
+    ("Disposable addresses", "Single-use email that forwards to you and can be cut off.", ["—", "yes", "yes"]),
+    ("Household sharing", "One membership across the people you live with.", ["—", "—", "Six people"]),
+    ("Direct support", "A person who works here, rather than a queue.", ["—", "yes", "yes"]),
+]
+
+FAQ = [
+    ("What is Oplo+?",
+     "A single membership covering the parts of Oplo that need somewhere to run or somewhere to live — "
+     "the larger model, encrypted sync and backup, and the privacy features. The device and its on-device "
+     "model work without it."),
+    ("Do I need it for the AI to work?",
+     "No. The on-device model is part of the machine, not part of the membership. Oplo+ adds the larger "
+     "model for work that will not fit on a handheld."),
+    ("What happens to my things if I stop paying?",
+     "They stay yours. Anything held in sync remains downloadable, and nothing is deleted as a lever to "
+     "make you resubscribe. The exact window will be written into the terms before anyone is charged."),
+    ("Can a household share one membership?",
+     "That is what the Family tier is for. Each person keeps their own material; sharing the membership "
+     "does not mean sharing a library."),
+    ("Is my data used to train models?",
+     "No. That commitment does not change between tiers, and paying more does not buy more privacy — "
+     "the floor is the same for everyone."),
+    ("When can I subscribe?",
+     "Not yet. Oplo has no shipping product for a membership to attach to. This page describes what is "
+     "being built."),
+]
+
+PLUS_CSS = '''<style>
+  /* Tier cards. A pricing page is the one place discrete boxes are correct —
+     the tiers are separate things you choose between. Kept to a hairline and
+     white ground; no shadow, no gradient, no lift. */
+  .tiers-price {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap);
+    width: min(100%, 1020px); margin: clamp(36px, 5vw, 56px) auto 0;
+  }
+  .tier-card {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: clamp(28px, 3vw, 38px) clamp(22px, 2.4vw, 30px);
+    border: 1px solid var(--rule); border-radius: 18px;
+    background: var(--paper); text-align: left;
+  }
+  .tier-card.lead { border-color: var(--ink); }
+  .tier-card .name { font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
+  .tier-card .price {
+    font-family: var(--font); font-size: clamp(26px, 2.8vw, 34px); font-weight: 600;
+    line-height: 1.1; letter-spacing: -.02em; margin-top: 4px;
+  }
+  .tier-card .allow { font-size: 14px; color: var(--ink-2); }
+  .tier-card .blurb { font-size: 15px; line-height: 1.5; color: var(--ink-2); flex: 1; margin-top: 6px; }
+  .tier-card .act { margin-top: 18px; }
+  @media (max-width: 833px) { .tiers-price { grid-template-columns: 1fr; } }
+
+  .includes {
+    width: min(100%, 700px); margin: clamp(26px, 3.4vw, 38px) auto 0;
+    font-size: 15px; line-height: 1.55; color: var(--ink-2);
+  }
+
+  /* Feature matrix. Hairlines only, and it scrolls sideways on a phone
+     rather than crushing eight rows into a column. */
+  .compare-wrap { width: min(100%, 1020px); margin: clamp(34px, 4.6vw, 52px) auto 0; overflow-x: auto; }
+  table.compare { width: 100%; min-width: 640px; border-collapse: collapse; text-align: left; }
+  table.compare th, table.compare td {
+    padding: 18px 14px; border-top: 1px solid var(--rule); vertical-align: top;
+    font-size: 14px; line-height: 1.45;
+  }
+  table.compare thead th {
+    border-top: 0; border-bottom: 1px solid var(--ink);
+    font-family: var(--font); font-size: 15px; font-weight: 600; color: var(--ink);
+  }
+  table.compare thead th:first-child { font-weight: 400; color: var(--ink-2); }
+  table.compare td.f { color: var(--ink); }
+  table.compare td.f b { display: block; font-weight: 600; font-size: 15px; margin-bottom: 3px; }
+  table.compare td.f span { color: var(--ink-2); }
+  table.compare td.v { color: var(--ink); text-align: center; white-space: nowrap; }
+  table.compare td.v.no { color: var(--ink-3); }
+  table.compare td.v .tick { display: inline-block; width: 15px; height: 15px; color: var(--ink); }
+
+  /* FAQ. Native disclosure, so it works with no script at all. */
+  .faq { width: min(100%, 760px); margin: clamp(30px, 4vw, 46px) auto 0; text-align: left; }
+  .faq details { border-top: 1px solid var(--rule); }
+  .faq details:last-child { border-bottom: 1px solid var(--rule); }
+  .faq summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    padding: 21px 2px; cursor: pointer; list-style: none;
+    font-family: var(--font); font-size: clamp(17px, 1.8vw, 19px); font-weight: 600;
+    letter-spacing: -.01em;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: ""; flex: none; width: 9px; height: 9px;
+    border-right: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2);
+    transform: translateY(-3px) rotate(45deg);
+    transition: transform .22s var(--ease);
+  }
+  .faq details[open] summary::after { transform: translateY(2px) rotate(225deg); }
+  .faq .a { padding: 0 2px 22px; font-size: 16px; line-height: 1.6; color: var(--ink-2); max-width: 64ch; }
+
+  .plus-status {
+    width: min(100%, 46ch); margin: clamp(22px, 3vw, 32px) auto 0;
+    padding: 14px 20px; border-radius: 12px; background: var(--canvas);
+    font-size: 14px; line-height: 1.5; color: var(--ink-2);
+  }
+  .plus-status b { color: var(--ink); font-weight: 600; }
+</style>'''
+
+TICK = ('<svg class="tick" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" '
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5"/></svg>')
+
+
+def plus_page():
+    depth = 1
+    links = [("Overview", "#top"), ("Plans", "#plans"), ("What you get", "#features"),
+             ("Compare", "#compare"), ("Questions", "#faq")]
+    out = head(depth, "Oplo+ — Oplo",
+               "Oplo+ is the membership covering the larger model, encrypted sync and backup, and Oplo's privacy features.",
+               "plus/", PLUS_CSS)
+    out += nav(depth, "plus/")
+    out += chapter(depth, "Oplo+", links, "plus/")
+    out += '<main id="top">\n'
+
+    out += '''<section class="band on-white">
+  <div class="well">
+    <h1 class="t-hero balance reveal">Oplo+</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:14px">One membership for everything that needs somewhere to run.</p>
+    <p class="t-lead muted reveal d1" style="max-width:58ch;margin:20px auto 0">
+      Your device and the model on it work on their own. Oplo+ adds the parts that need more room than a
+      pocket allows &mdash; the larger model, encrypted sync and backup, and the privacy features that have
+      to live somewhere. It is one price, shareable with a household, and it buys capability rather than
+      the removal of an obstacle.
+    </p>
+    <p class="plus-status reveal d2"><b>Not available yet.</b> Oplo has no shipping product for a membership to attach to. Nothing here can be bought, and no price has been set.<sup>1</sup></p>
+  </div>
+</section>
+'''
+
+    cards = ""
+    for name, price, allow, blurb, lead in PRICING:
+        cards += f'''      <div class="tier-card{' lead' if lead else ''}">
+        <span class="name">{name}</span>
+        <span class="price">{price}</span>
+        <span class="allow">{allow}</span>
+        <p class="blurb">{blurb}</p>
+        <p class="act"><a class="cta" href="../newsroom/">Hear when it opens</a></p>
+      </div>
+'''
+    out += f'''<section class="band on-grey" id="plans">
+  <div class="well">
+    <p class="eyebrow reveal">Plans</p>
+    <h2 class="t-display balance reveal">Three tiers. One of them free.</h2>
+    <div class="tiers-price reveal d1">
+{cards}    </div>
+    <p class="includes reveal d2">
+      Every tier, including the free one, gets the on-device model, encrypted sync for your essentials,
+      and the same privacy floor. Paying more buys capability &mdash; it does not buy back something that
+      was withheld.
+    </p>
+  </div>
+</section>
+'''
+
+    out += '''<section class="band on-white" id="features">
+  <div class="well">
+    <p class="eyebrow reveal">What you get</p>
+    <h2 class="t-display balance reveal">Room, not permission.</h2>
+  </div>
+  <div class="rows">
+    <section class="row">
+      <p class="eyebrow reveal">The larger model</p>
+      <h3 class="t-title balance reveal">For work that will not fit in a pocket.</h3>
+      <p class="t-lead muted balance reveal d1">The on-device model handles the everyday. Some work needs more context and more room to think, and that is what the desk model is for.</p>
+      <p class="cta-row reveal d2"><a class="cta" href="../intelligence/#where">How the tiers work</a></p>
+    </section>
+    <section class="row dark">
+      <p class="eyebrow reveal">Sync and backup</p>
+      <h3 class="t-title balance reveal">Encrypted before it leaves.</h3>
+      <p class="t-lead muted balance reveal d1">Your files and settings carried between your own machines, and a complete restore point if one of them is lost. Encrypted on the device, so what is stored is not readable by us.</p>
+    </section>
+    <section class="row">
+      <p class="eyebrow reveal">Privacy features</p>
+      <h3 class="t-title balance reveal">The ones that need somewhere to run.</h3>
+      <p class="t-lead muted balance reveal d1">A browsing relay so sites cannot build a profile from your address, and disposable addresses you can hand out and cut off. Both need infrastructure, which is the honest reason they sit behind a membership.</p>
+      <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Our position on privacy</a></p>
+    </section>
+    <section class="row">
+      <p class="eyebrow reveal">Household</p>
+      <h3 class="t-title balance reveal">Shared, but not pooled.</h3>
+      <p class="t-lead muted balance reveal d1">One membership across up to six people, with each person's material kept separate. Sharing what you pay for should not mean sharing what you keep.</p>
+    </section>
+  </div>
+</section>
+'''
+
+    head_cells = "".join(f"<th scope=\"col\">{h}</th>" for h in MATRIX_HEAD)
+    body = ""
+    for feat, desc, vals in MATRIX:
+        cells = ""
+        for v in vals:
+            if v == "yes":
+                cells += f'<td class="v">{TICK}<span class="sr">Included</span></td>'
+            elif v == "—":
+                cells += '<td class="v no">&mdash;<span class="sr">Not included</span></td>'
+            else:
+                cells += f'<td class="v">{v}</td>'
+        body += f'      <tr><td class="f"><b>{feat}</b><span>{desc}</span></td>{cells}</tr>\n'
+    out += f'''<section class="band on-grey" id="compare">
+  <div class="well">
+    <p class="eyebrow reveal">Compare</p>
+    <h2 class="t-display balance reveal">What is in each tier.</h2>
+    <div class="compare-wrap reveal d1">
+      <table class="compare">
+        <caption class="sr">Oplo+ tiers compared</caption>
+        <thead><tr><th scope="col">Feature</th>{head_cells}</tr></thead>
+        <tbody>
+{body}        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+'''
+
+    faq = "".join(f'''      <details>
+        <summary>{q}</summary>
+        <div class="a">{a}</div>
+      </details>
+''' for q, a in FAQ)
+    out += f'''<section class="band on-white" id="faq">
+  <div class="well">
+    <p class="eyebrow reveal">Questions</p>
+    <h2 class="t-display balance reveal">Answers.</h2>
+    <div class="faq reveal d1">
+{faq}    </div>
+    <p class="cta-row reveal d2"><a class="cta" href="../contact/">Ask us something else</a></p>
+  </div>
+</section>
+</main>
+'''
+    notes = [
+        "Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the "
+        "tiers describe what is planned rather than what exists.",
+        "Feature descriptions state design intent. Capability, allowances and availability are not final.",
+        "The commitment that personal material is not used to train models is the same at every tier, "
+        "including the free one. See the privacy policy, which is in preparation.",
+    ]
+    return ("plus/index.html", out + footer(depth, notes))
+
+PAGES.append(plus_page())
 
 # ----------------------------------------------------- Company & utility
 def simple(slug, depth, title, desc, eyebrow, heading, lead, rows_html=""):
