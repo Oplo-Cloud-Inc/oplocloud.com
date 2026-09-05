@@ -330,30 +330,181 @@
   }
 
   /* ------------------------------------------------------------- Course */
+  /* ============================================================ Course page
+     A rail of units that stays put, a legend, a map of where you are, then
+     the units themselves. Mastery states are derived from real progress —
+     nothing shows a colour it has not earned. */
+
+  var STATE_LABEL = {
+    master: ["Mastered", "sq-master"],
+    prof:   ["Proficient", "sq-prof"],
+    fam:    ["Familiar", "sq-fam"],
+    att:    ["Attempted", "sq-att"],
+    none:   ["Not started", "sq-none"]
+  };
+
+  // Flatten either shape — a list of unit objects, or semesters of titles —
+  // into one numbered list the page can render without caring which it was.
+  function unitsOf(c) {
+    if (c.units) {
+      return c.units.map(function (u, i) {
+        return { n: i + 1, t: u.t, sub: u.s, play: !!u.play };
+      });
+    }
+    var out = [], n = 0;
+    (c.parts || []).forEach(function (part) {
+      part.units.forEach(function (t) { n++; out.push({ n: n, t: t, part: part.name }); });
+    });
+    return out;
+  }
+
+  function unitState(u) {
+    if (!u.play) return "none";
+    var d = S.done, total = PROBLEMS.length;
+    if (d >= total) return "master";
+    if (d >= total * 0.6) return "prof";
+    if (d > 0) return "fam";
+    return "none";
+  }
+
+  function unitPct(u) {
+    return u.play ? Math.round(S.done / PROBLEMS.length * 100) : 0;
+  }
+
+  function icon(kind) {
+    var d = kind === "practice"
+      ? '<path d="M3 17.3V21h3.7L17.6 10.1l-3.7-3.7z"/><path d="M14.7 4.2l3.7 3.7"/>'
+      : kind === "video"
+      ? '<path d="M4 4.5h16v15H4z"/><path d="M10 8.7l5.2 3.3-5.2 3.3z"/>'
+      : '<path d="M6 3.5h8L18 7v13.5H6z"/><path d="M13.5 3.5V7H18"/><path d="M9 12h6M9 15.5h4"/>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+           'stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+  }
+
   function openCourse(c) {
     S.course = c;
-    $("#courseTitle").textContent = c.t;
-    $("#courseLede").textContent = c.lede || c.d;
     var body = $("#courseBody");
     body.innerHTML = "";
 
-    var playable = (c.units || []).some(function (u) { return u.play; });
-    var pct = playable ? Math.round(S.done / PROBLEMS.length * 100) : 0;
+    var units = unitsOf(c);
+    var playable = units.some(function (u) { return u.play; });
+    var pct = playable ? Math.round(S.done / PROBLEMS.length * 100 / units.length) : 0;
 
-    if (playable) {
-      var m = el("div", "lx-meta");
-      m.style.cssText = "max-width:340px;margin:18px 0 6px";
-      m.innerHTML = '<span class="lx-track' + (pct === 100 ? " done" : "") +
-                    '"><i style="width:' + pct + '%"></i></span><span>' + pct + '%</span>';
-      body.appendChild(m);
-    } else if (c.tag) {
-      var t = el("p", "lx-meta");
-      t.style.cssText = "margin:18px 0 6px";
-      t.innerHTML = '<span class="lx-tag">' + c.tag + '</span>' +
-                    '<span>' + countUnits(c) + ' units</span>';
-      body.appendChild(t);
+    /* ------------------------------------------------------------ Rail */
+    var rail = el("aside", "lx-rail-nav");
+    rail.setAttribute("aria-label", c.t + " units");
+    rail.appendChild(el("div", "lx-rail-card",
+      '<span class="lx-glyph" style="background:' + c.hue + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+        'stroke-linecap="round" stroke-linejoin="round">' + c.glyph + '</svg></span>' +
+      '<span><b>' + c.t + '</b><span>' + units.length + ' units</span></span>'));
+
+    var ol = el("ol");
+    units.forEach(function (u, i) {
+      var li = el("li");
+      var a = el("a", null,
+        '<span class="u">Unit ' + u.n + '</span><span class="n">' + u.t + '</span>');
+      a.href = "#unit-" + u.n;
+      if (i === 0) a.setAttribute("aria-current", "true");
+      a.addEventListener("click", function () {
+        [].forEach.call(ol.querySelectorAll("a"), function (x) { x.removeAttribute("aria-current"); });
+        a.setAttribute("aria-current", "true");
+      });
+      li.appendChild(a);
+      ol.appendChild(li);
+    });
+    rail.appendChild(ol);
+
+    var ch = el("div", "lx-challenge",
+      '<span class="k">Course challenge</span>' +
+      '<p>Test everything in this course at once, rather than a unit at a time.</p>');
+    var chb = el("button", null, "Start course challenge");
+    chb.type = "button";
+    chb.addEventListener("click", function () {
+      flash(playable ? "Course challenge — not written yet" : "Opens once the units are written");
+    });
+    ch.appendChild(chb);
+    rail.appendChild(ch);
+    body.appendChild(rail);
+
+    /* ------------------------------------------------------------ Main */
+    var main = el("div", "lx-main");
+
+    var crumb = el("div", "lx-crumb");
+    var bLearn = el("button", null, "Learn");
+    bLearn.type = "button";
+    bLearn.addEventListener("click", function () { drawExplore(); show("explore"); });
+    var sub = SUBJECTS.filter(function (x) { return x.n === c.subject; })[0];
+    crumb.appendChild(bLearn);
+    crumb.appendChild(el("span", "sep", "&rsaquo;"));
+    if (sub) {
+      var bSub = el("button", null, sub.n);
+      bSub.type = "button";
+      bSub.addEventListener("click", function () { openSubject(sub); });
+      crumb.appendChild(bSub);
     }
+    main.appendChild(crumb);
 
+    main.appendChild(el("h1", "lx-h1", c.t));
+    main.appendChild(el("p", "lx-lede", c.lede || c.d));
+    main.appendChild(el("p", "lx-mastery",
+      "Course mastery: <b>" + pct + "%</b>" +
+      (playable ? "" : " &middot; lessons still being written")));
+
+    var leg = el("div", "lx-legend");
+    ["master", "prof", "fam", "att", "none"].forEach(function (k) {
+      leg.appendChild(el("span", null,
+        '<i class="' + STATE_LABEL[k][1] + '"></i>' + STATE_LABEL[k][0]));
+    });
+    main.appendChild(leg);
+
+    /* A square per unit: the whole course readable in one glance. */
+    var map = el("div", "lx-map");
+    units.forEach(function (u) {
+      var st = unitState(u);
+      var row = el("div", "lx-map-row" + (u.play && S.done < PROBLEMS.length ? " next" : ""));
+      row.innerHTML =
+        '<span class="lbl">Unit ' + u.n + '</span>' +
+        '<span class="sqs"><i class="' + STATE_LABEL[st][1] + '" title="' + STATE_LABEL[st][0] + '"></i></span>' +
+        (u.play && S.done < PROBLEMS.length ? '<span class="up">Up next</span>' : "") +
+        '<span class="pc">' + (u.play ? unitPct(u) + "%" : "&mdash;") + '</span>';
+      map.appendChild(row);
+    });
+    main.appendChild(map);
+
+    /* ----------------------------------------------------- Unit sections */
+    var lastPart = null;
+    units.forEach(function (u) {
+      if (u.part && u.part !== lastPart) {
+        lastPart = u.part;
+        main.appendChild(el("p", "lx-part", u.part));
+      }
+      var sec = el("section", "lx-unitsec");
+      sec.id = "unit-" + u.n;
+      sec.appendChild(el("header", null,
+        '<h2>Unit ' + u.n + ': ' + u.t + '</h2>' +
+        '<span class="um">' + (u.play ? "Unit mastery: " + unitPct(u) + "%" : "Not started") + '</span>'));
+
+      if (u.play) {
+        var grid = el("div", "lx-lessons");
+        var grp = el("div", "grp", "<h3>Practice</h3>");
+        var b = el("button", null,
+          '<span class="ic play">' + icon("practice") + '</span>' +
+          '<span>Counting in shapes</span>' +
+          '<span class="soon">' + PROBLEMS.length + ' problems</span>');
+        b.type = "button";
+        b.addEventListener("click", startLesson);
+        grp.appendChild(b);
+        grid.appendChild(grp);
+        sec.appendChild(grid);
+      } else {
+        sec.appendChild(el("div", "lx-pending",
+          "The syllabus for this unit is set. The lessons and practice behind it are still being written."));
+      }
+      main.appendChild(sec);
+    });
+
+    /* ------------------------------------------------------------ About */
     if (c.objectives) {
       var o = el("section", "lx-sec", "<h2>What you will be able to do</h2>");
       var ul = el("ul", "lx-obj");
@@ -364,31 +515,8 @@
           '<span>' + x + '</span>'));
       });
       o.appendChild(ul);
-      body.appendChild(o);
+      main.appendChild(o);
     }
-
-    var sec = el("section", "lx-sec", "<h2>Contents</h2>");
-    if (c.units && c.units.length) {
-      sec.appendChild(unitList(c.units, true));
-    } else {
-      var n = 0;
-      c.parts.forEach(function (part) {
-        if (part.name) sec.appendChild(el("p", "lx-part", part.name));
-        var wrap = el("div", "lx-units");
-        part.units.forEach(function (u) {
-          n++;
-          var b = el("button", "lx-unit");
-          b.type = "button";
-          b.innerHTML = '<span class="lx-step">' + n + '</span>' +
-                        '<span class="t"><b>' + u + '</b></span>' +
-                        '<span class="lx-tag">Soon</span>';
-          b.addEventListener("click", function () { flash(u + " — not written yet"); });
-          wrap.appendChild(b);
-        });
-        sec.appendChild(wrap);
-      });
-    }
-    body.appendChild(sec);
 
     if (c.grading) {
       var g = el("section", "lx-sec", "<h2>Assessment</h2>");
@@ -403,12 +531,12 @@
       var sc = el("div", "lx-scale");
       SCALE.forEach(function (x) { sc.appendChild(el("span", null, "<b>" + x[0] + "</b> " + x[1])); });
       g.appendChild(sc);
-      body.appendChild(g);
+      main.appendChild(g);
     }
 
-    if (c.textbook) {
-      body.appendChild(el("p", "lx-credit", "Textbook: " + c.textbook));
-    }
+    if (c.textbook) main.appendChild(el("p", "lx-credit", "Textbook: " + c.textbook));
+
+    body.appendChild(main);
     show("course");
   }
 
