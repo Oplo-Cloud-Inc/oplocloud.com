@@ -140,7 +140,7 @@
 
   var COURSES = [
     {
-      id: "seeing", t: "Seeing numbers", hue: "#0071e3",
+      id: "seeing", t: "Seeing numbers", hue: "#0071e3", subject: "Mathematics",
       d: "Arithmetic you can look at. Arrays, areas and patterns, done by noticing rather than calculating.",
       lede: "Most arithmetic is taught as a procedure. This course does it as a picture — once you can see why a rule works, you stop needing to remember it.",
       units: [
@@ -151,7 +151,7 @@
       glyph: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'
     },
     {
-      id: "media", t: "Media Arts", hue: "#8f5cff",
+      id: "media", t: "Media Arts", hue: "#8f5cff", subject: "Arts and Design",
       d: "Design, photography, video, animation and sound \u2014 the media you use every day, taken apart.",
       lede: "Media arts are everywhere, which is exactly why they go unnoticed. This course covers the history and the practice: design principles, digital media and the web, photography, video, animation and audio production.",
       tag: "Arts and Design",
@@ -168,7 +168,7 @@
       glyph: '<circle cx="12" cy="12" r="3.4"/><path d="M3 8.5h3.5L8.5 6h7l2 2.5H21v10H3z"/>'
     },
     {
-      id: "biz", t: "Introduction to Business", hue: "#12915a",
+      id: "biz", t: "Introduction to Business", hue: "#12915a", subject: "Business",
       d: "Planning and launching something real \u2014 economics, structure, money and the plan that holds it together.",
       lede: "What it actually takes to plan and launch a product or service. Economics, costs and profit, business types, money and taxes, financing, and how a business sits inside the society around it \u2014 built toward writing a plan you could hand to somebody.",
       tag: "Two semesters",
@@ -187,6 +187,7 @@
   ];
 
   /* -------------------------------------------------------------- State */
+  var FILTER = null;
   var S = { course: null, unit: 0, i: 0, picked: null, checked: false, right: 0, first: 0, tries: 0, done: 0 };
 
   function show(v) {
@@ -195,6 +196,7 @@
     });
     $("#back").hidden = (v === "home");
     $("#barProg").hidden = (v !== "lesson");
+    $("#subjWrap").hidden = (v === "lesson");
     $("#barName").textContent =
       v === "lesson" ? "Counting in shapes" : v === "course" && S.course ? S.course.t : "Oplo Learn";
     window.scrollTo(0, 0);
@@ -209,8 +211,18 @@
       '<button class="lx-btn" id="resumeGo">' + (S.done ? "Keep going" : "Start") + '</button>';
     $("#resumeGo").addEventListener("click", function () { openCourse(COURSES[0]); startLesson(); });
 
+    var head = $("#filterHead");
+    if (FILTER) {
+      head.hidden = false;
+      head.innerHTML = '<h2>' + FILTER + '</h2><button type="button" id="clearFilter">Show all courses</button>';
+      $("#clearFilter").addEventListener("click", function () { FILTER = null; drawHome(); drawSubjects(); });
+    } else {
+      head.hidden = true;
+      head.innerHTML = "";
+    }
+
     var box = $("#courses"); box.innerHTML = "";
-    COURSES.forEach(function (c) {
+    COURSES.filter(function (c) { return !FILTER || c.subject === FILTER; }).forEach(function (c) {
       var p = c.id === "seeing" ? pct : 0;
       var b = el("button", "lx-card");
       b.type = "button";
@@ -225,6 +237,68 @@
       box.appendChild(b);
     });
   }
+
+  /* ----------------------------------------------------------- Subjects */
+  function subjects() {
+    var seen = [], map = {};
+    COURSES.forEach(function (c) {
+      if (!map[c.subject]) { map[c.subject] = { n: c.subject, hue: c.hue, count: 0 }; seen.push(map[c.subject]); }
+      map[c.subject].count++;
+    });
+    return seen;
+  }
+
+  function drawSubjects() {
+    var m = $("#subjMenu");
+    m.innerHTML = "";
+    var all = document.createElement("button");
+    all.type = "button";
+    all.setAttribute("role", "menuitem");
+    all.setAttribute("aria-current", String(!FILTER));
+    all.innerHTML = '<span class="n">All courses</span><span class="c">' + COURSES.length + '</span>';
+    all.addEventListener("click", function () { pick(null); });
+    m.appendChild(all);
+    m.appendChild(document.createElement("hr"));
+    subjects().forEach(function (sub) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("role", "menuitem");
+      b.setAttribute("aria-current", String(FILTER === sub.n));
+      b.innerHTML = '<span class="sw" style="background:' + sub.hue + '"></span>' +
+                    '<span class="n">' + sub.n + '</span><span class="c">' + sub.count + '</span>';
+      b.addEventListener("click", function () { pick(sub.n); });
+      m.appendChild(b);
+    });
+  }
+
+  function pick(name) {
+    FILTER = name;
+    closeMenu();
+    drawSubjects();
+    drawHome();
+    show("home");
+  }
+  function openMenu() {
+    $("#subjMenu").hidden = false;
+    $("#subjBtn").setAttribute("aria-expanded", "true");
+  }
+  function closeMenu() {
+    $("#subjMenu").hidden = true;
+    $("#subjBtn").setAttribute("aria-expanded", "false");
+  }
+  $("#subjBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if ($("#subjMenu").hidden) openMenu(); else closeMenu();
+  });
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest("#subjWrap")) closeMenu();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeMenu();
+  });
+  $("#user").addEventListener("click", function () {
+    flash("Signed in as Saswat Ji — demo account, nothing is stored");
+  });
 
   /* ------------------------------------------------------------- Course */
   function openCourse(c) {
@@ -491,6 +565,7 @@
     else { drawHome(); show("home"); }
   });
 
+  drawSubjects();
   drawHome();
   show("home");
 })();

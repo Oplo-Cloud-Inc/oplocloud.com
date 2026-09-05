@@ -25,12 +25,24 @@
       <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
     </svg>
     <span class="lx-name" id="barName">Oplo Learn</span>
+
+    <div class="lx-subj" id="subjWrap">
+      <button type="button" id="subjBtn" aria-expanded="false" aria-haspopup="true" aria-controls="subjMenu">
+        <span>Subjects</span><span class="car" aria-hidden="true"></span>
+      </button>
+      <div class="lx-menu" id="subjMenu" role="menu" hidden></div>
+    </div>
+
     <div class="lx-prog" id="barProg" hidden><i style="width:0%"></i></div>
     <span class="lx-spacer"></span>
     <span class="lx-streak" title="Days in a row">
       <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1.5s3.4 3 3.4 6.1A3.4 3.4 0 0 1 8 11a3.4 3.4 0 0 1-3.4-3.4C4.6 4.5 8 1.5 8 1.5z"/><path d="M8 14.5c2.6 0 4.6-1.6 4.6-3.9 0 0-1.3 1.4-2.8 1.4-1.9 0-1.6-2.4-1.6-2.4S6 11 6 12.6c0 .8.3 1.4.7 1.8-1.4-.5-2.3-1.6-2.3-3.1 0 0-1 1-1 2.1 0 .4.1.7.2 1z"/></svg>
       <span id="streak">4</span>
     </span>
+    <button class="lx-user" type="button" id="user" title="Signed in as Saswat Ji">
+      <span class="av" aria-hidden="true">SJ</span>
+      <span class="nm">Saswat Ji</span>
+    </button>
   </div>
 </header>
 
@@ -43,6 +55,7 @@
 
     <div class="lx-resume" id="resume"></div>
 
+    <div class="lx-filter" id="filterHead" hidden></div>
     <h2 class="lx-h2">Courses</h2>
     <div class="lx-grid" id="courses"></div>
 
