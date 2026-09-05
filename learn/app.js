@@ -138,167 +138,196 @@
   var SCALE = [["A", "90\u2013100"], ["B", "80\u201389"], ["C", "70\u201379"],
                ["D", "60\u201369"], ["F", "under 59"]];
 
-  var COURSES = [
-    {
-      id: "seeing", t: "Seeing numbers", hue: "#0071e3", subject: "Mathematics",
-      d: "Arithmetic you can look at. Arrays, areas and patterns, done by noticing rather than calculating.",
-      lede: "Most arithmetic is taught as a procedure. This course does it as a picture — once you can see why a rule works, you stop needing to remember it.",
-      units: [
-        { t: "Counting in shapes", s: "5 problems &middot; about 5 minutes", play: true },
-        { t: "Areas without formulas", s: "Opens after the unit above", play: false },
-        { t: "Patterns that grow", s: "Opens after the unit above", play: false }
-      ],
-      glyph: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'
-    },
-    {
-      id: "media", t: "Media Arts", hue: "#8f5cff", subject: "Arts and Design",
-      d: "Design, photography, video, animation and sound \u2014 the media you use every day, taken apart.",
-      lede: "Media arts are everywhere, which is exactly why they go unnoticed. This course covers the history and the practice: design principles, digital media and the web, photography, video, animation and audio production.",
-      tag: "Arts and Design",
-      objectives: [
-        "Briefly describe the history of print, design and media.",
-        "Explain the five key principles of design and how they are used.",
-        "Describe the fundamentals and applications of digital media and web design.",
-        "List and describe the applications of various web-based tools used in blogs and wikis.",
-        "Describe the history and application of photography, video, animation and audio/video production."
-      ],
-      parts: [{ name: null, units: MEDIA_UNITS }],
-      grading: [["Quizzes", 35], ["Assignments", 35], ["Mid-term and final exams", 30]],
-      textbook: "EHS Media Arts \u2014 \u00A9 Excel Education Systems, Inc., 2021.",
-      glyph: '<circle cx="12" cy="12" r="3.4"/><path d="M3 8.5h3.5L8.5 6h7l2 2.5H21v10H3z"/>'
-    },
-    {
-      id: "biz", t: "Introduction to Business", hue: "#12915a", subject: "Business",
-      d: "Planning and launching something real \u2014 economics, structure, money and the plan that holds it together.",
-      lede: "What it actually takes to plan and launch a product or service. Economics, costs and profit, business types, money and taxes, financing, and how a business sits inside the society around it \u2014 built toward writing a plan you could hand to somebody.",
-      tag: "Two semesters",
-      objectives: [
-        "Understand basic economic principles.",
-        "Develop workplace communication skills.",
-        "Describe how businesses are structured and operated.",
-        "Design a business plan.",
-        "Weigh financial risks and rewards."
-      ],
-      parts: [{ name: "Semester A", units: BIZ_A }, { name: "Semester B", units: BIZ_B }],
-      grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
-      textbook: "Introduction to Business \u2014 Boundless, CC\u00A0BY-SA\u00A04.0.",
-      glyph: '<path d="M3 20h18M6 20V9l6-4 6 4v11"/><path d="M10 20v-5h4v5"/>'
-    }
+  var SEEING = {
+    id: "seeing", t: "Seeing numbers", hue: "#0071e3", subject: "Math", level: "Beginner",
+    d: "Arithmetic you can look at. Arrays, areas and patterns, done by noticing rather than calculating.",
+    lede: "Most arithmetic is taught as a procedure. This course does it as a picture — once you can see why a rule works, you stop needing to remember it.",
+    enrolled: true,
+    units: [
+      { t: "Counting in shapes", s: "5 problems · about 5 minutes", play: true },
+      { t: "Areas without formulas", s: "Opens after the unit above", play: false },
+      { t: "Patterns that grow", s: "Opens after the unit above", play: false }
+    ],
+    glyph: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'
+  };
+
+  var MEDIA = {
+    id: "media", t: "Media Arts", hue: "#8f5cff", subject: "English", level: "Introductory",
+    d: "Design, photography, video, animation and sound — the media you use every day, taken apart.",
+    lede: "Media arts are everywhere, which is exactly why they go unnoticed. This course covers the history and the practice: design principles, digital media and the web, photography, video, animation and audio production.",
+    tag: "Arts and Design", enrolled: true,
+    objectives: [
+      "Briefly describe the history of print, design and media.",
+      "Explain the five key principles of design and how they are used.",
+      "Describe the fundamentals and applications of digital media and web design.",
+      "List and describe the applications of various web-based tools used in blogs and wikis.",
+      "Describe the history and application of photography, video, animation and audio/video production."
+    ],
+    parts: [{ name: null, units: MEDIA_UNITS }],
+    grading: [["Quizzes", 35], ["Assignments", 35], ["Mid-term and final exams", 30]],
+    textbook: "EHS Media Arts — © Excel Education Systems, Inc., 2021.",
+    glyph: '<circle cx="12" cy="12" r="3.4"/><path d="M3 8.5h3.5L8.5 6h7l2 2.5H21v10H3z"/>'
+  };
+
+  var BIZ = {
+    id: "biz", t: "Introduction to Business", hue: "#e8a317", subject: "Social Studies", level: "Introductory",
+    d: "Planning and launching something real — economics, structure, money and the plan that holds it together.",
+    lede: "What it actually takes to plan and launch a product or service. Economics, costs and profit, business types, money and taxes, financing, and how a business sits inside the society around it — built toward writing a plan you could hand to somebody.",
+    tag: "Two semesters", enrolled: true,
+    objectives: [
+      "Understand basic economic principles.",
+      "Develop workplace communication skills.",
+      "Describe how businesses are structured and operated.",
+      "Design a business plan.",
+      "Weigh financial risks and rewards."
+    ],
+    parts: [{ name: "Semester A", units: BIZ_A }, { name: "Semester B", units: BIZ_B }],
+    grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
+    textbook: "Introduction to Business — Boundless, CC BY-SA 4.0.",
+    glyph: '<path d="M3 20h18M6 20V9l6-4 6 4v11"/><path d="M10 20v-5h4v5"/>'
+  };
+
+  // Titles with no syllabus behind them yet. Listed so the catalogue has a
+  // shape, and marked so nobody mistakes a title for a course.
+  function stub(id, t, subject, hue, d, glyph) {
+    return { id: id, t: t, subject: subject, hue: hue, d: d, glyph: glyph,
+             level: "Introductory", stub: true };
+  }
+  var BOOK  = '<path d="M4 4.5h6.5A2.5 2.5 0 0 1 13 7v12a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-6.5A2.5 2.5 0 0 0 11 7v12a2 2 0 0 1 2-2h7z"/>';
+  var FLASK = '<path d="M9.5 3v6.2L4.6 18a2 2 0 0 0 1.7 3h11.4a2 2 0 0 0 1.7-3l-4.9-8.8V3"/><path d="M8 3h8M7.4 15h9.2"/>';
+  var GLOBE = '<circle cx="12" cy="12" r="9"/><path d="M3.2 9.5h17.6M3.2 14.5h17.6"/><path d="M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18"/>';
+  var SIGMA = '<path d="M17 5H7l6 7-6 7h10"/>';
+
+  var SUBJECTS = [
+    { n: "English", hue: "#8f5cff",
+      d: "Reading closely, writing clearly, and the media doing both around you.",
+      courses: [MEDIA,
+        stub("read",  "Reading Closely", "English", "#8f5cff", "How a text works, and how to say what it is doing without guessing.", BOOK),
+        stub("write", "Writing to Be Understood", "English", "#8f5cff", "Sentences that survive being read once. Structure, evidence, revision.", BOOK)] },
+    { n: "Math", hue: "#0071e3",
+      d: "Arithmetic, algebra and geometry, done by seeing why rather than remembering how.",
+      courses: [SEEING,
+        stub("alg", "Algebra I", "Math", "#0071e3", "Variables, equations, and the habit of doing the same thing to both sides.", SIGMA),
+        stub("geo", "Geometry",  "Math", "#0071e3", "Proof as an argument you could win, not a form to fill in.", SIGMA)] },
+    { n: "Science", hue: "#12915a",
+      d: "Method first: what would have to be true, and how would you find out.",
+      courses: [
+        stub("bio",  "Biology",   "Science", "#12915a", "Cells, inheritance and ecosystems — systems that keep themselves going.", FLASK),
+        stub("chem", "Chemistry", "Science", "#12915a", "Why substances behave as they do, from the structure up.", FLASK),
+        stub("phys", "Physics",   "Science", "#12915a", "Motion, force and energy, with the algebra kept in service of the idea.", FLASK)] },
+    { n: "Social Studies", hue: "#e8a317",
+      d: "How societies organise themselves — economies, institutions, and the past that shaped them.",
+      courses: [BIZ,
+        stub("hist", "World History", "Social Studies", "#e8a317", "Causes and consequences, argued from sources rather than recited.", GLOBE),
+        stub("civ",  "Civics",        "Social Studies", "#e8a317", "How power is arranged, checked, and used where you live.", GLOBE)] }
   ];
 
+  function allCourses() {
+    return SUBJECTS.reduce(function (a, s) { return a.concat(s.courses); }, []);
+  }
+  function enrolled() {
+    return allCourses().filter(function (c) { return c.enrolled; });
+  }
+
   /* -------------------------------------------------------------- State */
-  var FILTER = null;
-  var S = { course: null, unit: 0, i: 0, picked: null, checked: false, right: 0, first: 0, tries: 0, done: 0 };
+  var S = { subject: null, course: null, unit: 0, i: 0, picked: null, checked: false, right: 0, first: 0, tries: 0, done: 0 };
 
   function show(v) {
-    ["home", "course", "lesson", "done"].forEach(function (n) {
+    ["my", "explore", "subject", "course", "lesson", "done"].forEach(function (n) {
       $("#v-" + n).classList.toggle("on", n === v);
     });
-    $("#back").hidden = (v === "home");
+    $("#back").hidden = (v === "my" || v === "explore");
     $("#barProg").hidden = (v !== "lesson");
-    $("#subjWrap").hidden = (v === "lesson");
-    $("#barName").textContent =
-      v === "lesson" ? "Counting in shapes" : v === "course" && S.course ? S.course.t : "Oplo Learn";
+    $("#subbar").hidden = (v === "lesson");
+    [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
+      b.setAttribute("aria-current", String(b.dataset.view === v));
+    });
+    if (v !== "subject") { S.subject = null; drawSubjectNav(); }
     window.scrollTo(0, 0);
   }
 
-  /* --------------------------------------------------------------- Home */
-  function drawHome() {
+  /* --------------------------------------------------------- Course card */
+  function card(c) {
+    var playable = (c.units || []).some(function (u) { return u.play; });
+    var pct = playable ? Math.round(S.done / PROBLEMS.length * 100) : 0;
+    var units = c.parts ? c.parts.reduce(function (n, p) { return n + p.units.length; }, 0)
+                        : (c.units ? c.units.length : 0);
+    var b = el("button", "lx-card");
+    b.type = "button";
+    b.innerHTML =
+      '<span class="lx-glyph" style="background:' + c.hue + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+        'stroke-linecap="round" stroke-linejoin="round">' + c.glyph + '</svg></span>' +
+      '<b>' + c.t + '</b><span class="d">' + c.d + '</span>' +
+      '<span class="lx-meta">' +
+      (playable
+        ? '<span class="lx-track' + (pct === 100 ? " done" : "") + '"><i style="width:' + pct + '%"></i></span><span>' + pct + '%</span>'
+        : '<span class="lx-badge' + (c.stub ? " soon" : "") + '">' +
+          (c.stub ? "Not written yet" : units + " units") + '</span>' +
+          '<span style="flex:1"></span><span>' + c.level + '</span>') +
+      '</span>';
+    b.addEventListener("click", function () {
+      if (c.stub) flash(c.t + " — syllabus not written yet");
+      else openCourse(c);
+    });
+    return b;
+  }
+
+  /* ---------------------------------------------------------- Subject bar */
+  function drawSubjectNav() {
+    var nav = $("#subjectNav");
+    nav.innerHTML = "";
+    SUBJECTS.forEach(function (sub) {
+      var b = el("button", null, '<span class="sw" style="background:' + sub.hue + '"></span>' + sub.n);
+      b.type = "button";
+      b.setAttribute("aria-current", String(S.subject === sub.n));
+      b.addEventListener("click", function () { openSubject(sub); });
+      nav.appendChild(b);
+    });
+  }
+
+  /* ----------------------------------------------------------- My courses */
+  function drawMy() {
     var pct = Math.round(S.done / PROBLEMS.length * 100);
     $("#resume").innerHTML =
       '<div class="t"><span class="k">Continue</span><b>Counting in shapes</b>' +
-      '<p>Seeing numbers &middot; ' + (S.done ? S.done + " of " + PROBLEMS.length + " done" : "5 problems, about 5 minutes") + '</p></div>' +
-      '<button class="lx-btn" id="resumeGo">' + (S.done ? "Keep going" : "Start") + '</button>';
-    $("#resumeGo").addEventListener("click", function () { openCourse(COURSES[0]); startLesson(); });
+      '<p>Seeing numbers · ' +
+      (S.done ? S.done + " of " + PROBLEMS.length + " done" : "5 problems, about 5 minutes") +
+      '</p></div><button class="lx-btn" id="resumeGo">' + (S.done ? "Keep going" : "Start") + '</button>';
+    $("#resumeGo").addEventListener("click", function () { S.course = SEEING; startLesson(); });
+    var g = $("#myCourses"); g.innerHTML = "";
+    enrolled().forEach(function (c) { g.appendChild(card(c)); });
+  }
 
-    var head = $("#filterHead");
-    if (FILTER) {
-      head.hidden = false;
-      head.innerHTML = '<h2>' + FILTER + '</h2><button type="button" id="clearFilter">Show all courses</button>';
-      $("#clearFilter").addEventListener("click", function () { FILTER = null; drawHome(); drawSubjects(); });
-    } else {
-      head.hidden = true;
-      head.innerHTML = "";
-    }
-
-    var box = $("#courses"); box.innerHTML = "";
-    COURSES.filter(function (c) { return !FILTER || c.subject === FILTER; }).forEach(function (c) {
-      var p = c.id === "seeing" ? pct : 0;
-      var b = el("button", "lx-card");
-      b.type = "button";
-      b.innerHTML =
-        '<span class="lx-glyph" style="background:' + c.hue + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + c.glyph + '</svg>' +
-        '</span>' +
-        '<b>' + c.t + '</b><span class="d">' + c.d + '</span>' +
-        '<span class="lx-meta"><span class="lx-track' + (p === 100 ? " done" : "") + '"><i style="width:' + p + '%"></i></span>' +
-        '<span>' + (c.units ? p + "%" : countUnits(c) + " units") + '</span></span>';
-      b.addEventListener("click", function () { openCourse(c); });
-      box.appendChild(b);
+  /* -------------------------------------------------------------- Explore */
+  function drawExplore() {
+    var box = $("#shelves"); box.innerHTML = "";
+    SUBJECTS.forEach(function (sub) {
+      var sh = el("section", "lx-shelf");
+      var head = el("div", "lx-shelf-head",
+        '<h2>' + sub.n + '</h2><span class="c">' + sub.courses.length + ' courses</span>');
+      var more = el("button", null, "See all");
+      more.type = "button";
+      more.addEventListener("click", function () { openSubject(sub); });
+      head.appendChild(more);
+      sh.appendChild(head);
+      var rail = el("div", "lx-rail");
+      sub.courses.forEach(function (c) { rail.appendChild(card(c)); });
+      sh.appendChild(rail);
+      box.appendChild(sh);
     });
   }
 
-  /* ----------------------------------------------------------- Subjects */
-  function subjects() {
-    var seen = [], map = {};
-    COURSES.forEach(function (c) {
-      if (!map[c.subject]) { map[c.subject] = { n: c.subject, hue: c.hue, count: 0 }; seen.push(map[c.subject]); }
-      map[c.subject].count++;
-    });
-    return seen;
+  /* -------------------------------------------------------------- Subject */
+  function openSubject(sub) {
+    $("#subjTitle").textContent = sub.n;
+    $("#subjLede").textContent = sub.d;
+    var g = $("#subjGrid"); g.innerHTML = "";
+    sub.courses.forEach(function (c) { g.appendChild(card(c)); });
+    show("subject");
+    S.subject = sub.n;
+    drawSubjectNav();
   }
-
-  function drawSubjects() {
-    var m = $("#subjMenu");
-    m.innerHTML = "";
-    var all = document.createElement("button");
-    all.type = "button";
-    all.setAttribute("role", "menuitem");
-    all.setAttribute("aria-current", String(!FILTER));
-    all.innerHTML = '<span class="n">All courses</span><span class="c">' + COURSES.length + '</span>';
-    all.addEventListener("click", function () { pick(null); });
-    m.appendChild(all);
-    m.appendChild(document.createElement("hr"));
-    subjects().forEach(function (sub) {
-      var b = document.createElement("button");
-      b.type = "button";
-      b.setAttribute("role", "menuitem");
-      b.setAttribute("aria-current", String(FILTER === sub.n));
-      b.innerHTML = '<span class="sw" style="background:' + sub.hue + '"></span>' +
-                    '<span class="n">' + sub.n + '</span><span class="c">' + sub.count + '</span>';
-      b.addEventListener("click", function () { pick(sub.n); });
-      m.appendChild(b);
-    });
-  }
-
-  function pick(name) {
-    FILTER = name;
-    closeMenu();
-    drawSubjects();
-    drawHome();
-    show("home");
-  }
-  function openMenu() {
-    $("#subjMenu").hidden = false;
-    $("#subjBtn").setAttribute("aria-expanded", "true");
-  }
-  function closeMenu() {
-    $("#subjMenu").hidden = true;
-    $("#subjBtn").setAttribute("aria-expanded", "false");
-  }
-  $("#subjBtn").addEventListener("click", function (e) {
-    e.stopPropagation();
-    if ($("#subjMenu").hidden) openMenu(); else closeMenu();
-  });
-  document.addEventListener("click", function (e) {
-    if (!e.target.closest("#subjWrap")) closeMenu();
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") closeMenu();
-  });
-  $("#user").addEventListener("click", function () {
-    flash("Signed in as Saswat Ji — demo account, nothing is stored");
-  });
 
   /* ------------------------------------------------------------- Course */
   function openCourse(c) {
@@ -559,13 +588,35 @@
 
   /* ------------------------------------------------------------- Wiring */
   $("#check").addEventListener("click", check);
-  $("#doneNext").addEventListener("click", function () { openCourse(S.course || COURSES[0]); });
-  $("#back").addEventListener("click", function () {
-    if ($("#v-lesson").classList.contains("on") || $("#v-done").classList.contains("on")) openCourse(S.course || COURSES[0]);
-    else { drawHome(); show("home"); }
+  $("#doneNext").addEventListener("click", function () { openCourse(S.course || SEEING); });
+
+  [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
+    b.addEventListener("click", function () {
+      if (b.dataset.view === "my") { drawMy(); show("my"); }
+      else { drawExplore(); show("explore"); }
+    });
   });
 
-  drawSubjects();
-  drawHome();
-  show("home");
+  // Back climbs one level: a lesson returns to its course, a course to the
+  // subject it came from, and a subject to the catalogue.
+  $("#back").addEventListener("click", function () {
+    if ($("#v-lesson").classList.contains("on") || $("#v-done").classList.contains("on")) {
+      openCourse(S.course || SEEING);
+    } else if ($("#v-course").classList.contains("on")) {
+      var sub = SUBJECTS.filter(function (x) {
+        return S.course && x.n === S.course.subject;
+      })[0];
+      if (sub) openSubject(sub); else { drawExplore(); show("explore"); }
+    } else {
+      drawExplore(); show("explore");
+    }
+  });
+
+  $("#user").addEventListener("click", function () {
+    flash("Signed in as Saswat Ji — demo account, nothing is stored");
+  });
+
+  drawSubjectNav();
+  drawMy();
+  show("my");
 })();

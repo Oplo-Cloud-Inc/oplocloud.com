@@ -24,14 +24,12 @@
     <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
       <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
     </svg>
-    <span class="lx-name" id="barName">Oplo Learn</span>
+    <span class="lx-name">Oplo Learn</span>
 
-    <div class="lx-subj" id="subjWrap">
-      <button type="button" id="subjBtn" aria-expanded="false" aria-haspopup="true" aria-controls="subjMenu">
-        <span>Subjects</span><span class="car" aria-hidden="true"></span>
-      </button>
-      <div class="lx-menu" id="subjMenu" role="menu" hidden></div>
-    </div>
+    <nav class="lx-top" id="topNav" aria-label="Sections">
+      <button type="button" data-view="my" aria-current="true">My courses</button>
+      <button type="button" data-view="explore">Explore</button>
+    </nav>
 
     <div class="lx-prog" id="barProg" hidden><i style="width:0%"></i></div>
     <span class="lx-spacer"></span>
@@ -44,25 +42,40 @@
       <span class="nm">Saswat Ji</span>
     </button>
   </div>
+  <div class="lx-subbar" id="subbar">
+    <nav class="lx-subbar-in" id="subjectNav" aria-label="Subjects"></nav>
+  </div>
 </header>
 
 <main class="lx-wrap">
 
   <!-- ============================================================== Home -->
-  <section class="lx-view on" id="v-home">
-    <h1 class="lx-h1">Learn by solving.</h1>
-    <p class="lx-lede">Short lessons built around problems you work through, not videos you sit behind. Each one takes a few minutes and only moves on once you have it.</p>
-
+  <!-- ========================================================= My courses -->
+  <section class="lx-view on" id="v-my">
+    <h1 class="lx-h1">My courses</h1>
+    <p class="lx-lede">Everything you are enrolled in. Pick up where you stopped.</p>
     <div class="lx-resume" id="resume"></div>
-
-    <div class="lx-filter" id="filterHead" hidden></div>
-    <h2 class="lx-h2">Courses</h2>
-    <div class="lx-grid" id="courses"></div>
-
+    <h2 class="lx-h2">Enrolled</h2>
+    <div class="lx-grid" id="myCourses"></div>
     <p class="lx-note">
-      <b>Demo.</b> One course is playable end to end &mdash; Seeing numbers. The rest are placeholders.
-      Nothing is saved and nothing leaves this page. <a href="../edu/">About Oplo Edu &rsaquo;</a>
+      <b>Demo.</b> One course is playable end to end &mdash; Seeing numbers. The rest carry a real
+      syllabus with the lessons still to be written. Nothing is saved and nothing leaves this page.
+      <a href="../edu/">About Oplo Edu &rsaquo;</a>
     </p>
+  </section>
+
+  <!-- ============================================================ Explore -->
+  <section class="lx-view" id="v-explore">
+    <h1 class="lx-h1">Explore</h1>
+    <p class="lx-lede">Every course Oplo has written, by subject. All curriculum is our own.</p>
+    <div id="shelves"></div>
+  </section>
+
+  <!-- ============================================================ Subject -->
+  <section class="lx-view" id="v-subject">
+    <h1 class="lx-h1" id="subjTitle">Subject</h1>
+    <p class="lx-lede" id="subjLede"></p>
+    <div class="lx-grid" id="subjGrid" style="margin-top:30px"></div>
   </section>
 
   <!-- ============================================================ Course -->
