@@ -444,6 +444,10 @@ INTEL_CSS = '''<style>
   .tablist button[aria-selected="true"] { color: var(--ink-lt); border-bottom-color: var(--ink-lt); }
   .tabpanel { display: none; }
   .tabpanel.on { display: block; }
+  @media (prefers-reduced-motion: no-preference) {
+    .tabpanel.on { animation: panel .3s cubic-bezier(.32,.08,.24,1) both; }
+    @keyframes panel { from { opacity: 0; transform: translateY(7px); } }
+  }
   .ask q {
     display: block; quotes: none;
     margin: clamp(34px, 5vw, 54px) auto 0; max-width: 24ch;
@@ -1033,7 +1037,10 @@ PLUS_CSS = '''<style>
     border: 1px solid var(--rule); border-radius: 18px;
     background: var(--paper); text-align: left;
   }
+  .tier-card { transition: border-color .2s var(--ease); }
+  .tier-card:hover { border-color: var(--ink-3); }
   .tier-card.lead { border-color: var(--ink); }
+  .tier-card.lead:hover { border-color: var(--ink); }
   .tier-card .name { font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
   .tier-card .price {
     font-family: var(--font); font-size: clamp(26px, 2.8vw, 34px); font-weight: 600;
@@ -1082,6 +1089,13 @@ PLUS_CSS = '''<style>
   }
   .faq details[open] summary::after { transform: translateY(2px) rotate(225deg); }
   .faq .a { padding: 0 2px 22px; font-size: 16px; line-height: 1.6; color: var(--ink-2); max-width: 64ch; }
+  .faq summary { transition: color .2s var(--ease); }
+  .faq summary:hover { color: var(--blue); }
+  .faq summary:hover::after { border-color: var(--blue); }
+  @media (prefers-reduced-motion: no-preference) {
+    .faq details[open] .a { animation: answer .28s cubic-bezier(.32,.08,.24,1) both; }
+    @keyframes answer { from { opacity: 0; transform: translateY(-4px); } }
+  }
 
   .plus-status {
     width: min(100%, 46ch); margin: clamp(22px, 3vw, 32px) auto 0;

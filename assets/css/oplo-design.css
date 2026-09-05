@@ -100,8 +100,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   letter-spacing: .011em;
   white-space: nowrap;
 }
-.cta::after { content: "\203A"; font-size: 1.15em; line-height: 0; position: relative; top: .06em; }
+.cta::after {
+  content: "\203A"; font-size: 1.15em; line-height: 0;
+  position: relative; top: .06em;
+  transition: transform .25s var(--ease);
+}
 .cta:hover { text-decoration: underline; }
+.cta:hover::after { transform: translateX(3px); }
 .cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 34px; margin-top: 20px; }
 
 .btn {
@@ -112,6 +117,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   transition: background .2s var(--ease);
 }
 .btn:hover { background: #0077ed; }
+.btn:active { transform: scale(.985); }
 .btn.sm { font-size: 14px; padding: 8px 16px; }
 
 /* -------------------------------------------------------------- Layout */
@@ -306,6 +312,27 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .foot-region { margin-left: 0; }
 }
 @media (min-width: 735px) { .foot-col h3 button { pointer-events: none; } .foot-col h3 button::after { display: none; } }
+
+/* -------------------------------------------------- Between documents
+   A multi-page site cuts to white on every navigation. One short crossfade
+   removes that, and naming the bar holds it still while the page beneath it
+   changes — so the furniture stays put and only the content moves.
+
+   Opt-in rather than opt-out: wrapped in no-preference, so anyone who has
+   asked for less motion keeps the instant cut. Unsupported browsers ignore
+   the whole block and behave exactly as they do now. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: .3s;
+    animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+  }
+  /* The bar is identical on every page, so give it its own name and it stops
+     being part of the crossfade. */
+  .nav { view-transition-name: oplo-nav; }
+}
 
 /* ------------------------------------------------------ Anchor offset
    The bar is fixed, and section pages carry a chapter bar under it. Without

@@ -82,6 +82,10 @@
   .tablist button[aria-selected="true"] { color: var(--ink-lt); border-bottom-color: var(--ink-lt); }
   .tabpanel { display: none; }
   .tabpanel.on { display: block; }
+  @media (prefers-reduced-motion: no-preference) {
+    .tabpanel.on { animation: panel .3s cubic-bezier(.32,.08,.24,1) both; }
+    @keyframes panel { from { opacity: 0; transform: translateY(7px); } }
+  }
   .ask q {
     display: block; quotes: none;
     margin: clamp(34px, 5vw, 54px) auto 0; max-width: 24ch;
