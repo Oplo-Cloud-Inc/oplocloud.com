@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Oplo Learn</title>
+<meta name="description" content="Oplo Learn — short, visual lessons you work through by solving, not watching.">
+<meta name="theme-color" content="#f5f5f7">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='12 12 76 76'%3E%3Cpath fill='%231d1d1f' fill-rule='evenodd' d='M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="lx-bar">
+  <div class="lx-bar-in">
+    <button class="lx-back" id="back" hidden>
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+      Back
+    </button>
+    <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
+      <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
+    </svg>
+    <span class="lx-name" id="barName">Oplo Learn</span>
+    <div class="lx-prog" id="barProg" hidden><i style="width:0%"></i></div>
+    <span class="lx-spacer"></span>
+    <span class="lx-streak" title="Days in a row">
+      <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1.5s3.4 3 3.4 6.1A3.4 3.4 0 0 1 8 11a3.4 3.4 0 0 1-3.4-3.4C4.6 4.5 8 1.5 8 1.5z"/><path d="M8 14.5c2.6 0 4.6-1.6 4.6-3.9 0 0-1.3 1.4-2.8 1.4-1.9 0-1.6-2.4-1.6-2.4S6 11 6 12.6c0 .8.3 1.4.7 1.8-1.4-.5-2.3-1.6-2.3-3.1 0 0-1 1-1 2.1 0 .4.1.7.2 1z"/></svg>
+      <span id="streak">4</span>
+    </span>
+  </div>
+</header>
+
+<main class="lx-wrap">
+
+  <!-- ============================================================== Home -->
+  <section class="lx-view on" id="v-home">
+    <h1 class="lx-h1">Learn by solving.</h1>
+    <p class="lx-lede">Short lessons built around problems you work through, not videos you sit behind. Each one takes a few minutes and only moves on once you have it.</p>
+
+    <div class="lx-resume" id="resume"></div>
+
+    <h2 class="lx-h2">Courses</h2>
+    <div class="lx-grid" id="courses"></div>
+
+    <p class="lx-note">
+      <b>Demo.</b> One course is playable end to end &mdash; Seeing numbers. The rest are placeholders.
+      Nothing is saved and nothing leaves this page. <a href="../edu/">About Oplo Edu &rsaquo;</a>
+    </p>
+  </section>
+
+  <!-- ============================================================ Course -->
+  <section class="lx-view" id="v-course">
+    <h1 class="lx-h1" id="courseTitle">Course</h1>
+    <p class="lx-lede" id="courseLede"></p>
+    <div class="lx-meta" style="max-width:340px;margin:18px 0 30px">
+      <div class="lx-track" id="courseTrack"><i style="width:0%"></i></div>
+      <span id="coursePct">0%</span>
+    </div>
+    <div class="lx-units" id="units"></div>
+  </section>
+
+  <!-- ============================================================ Lesson -->
+  <section class="lx-view" id="v-lesson">
+    <div class="lx-stage">
+      <p class="lx-ask" id="ask"></p>
+      <p class="lx-hint" id="hint"></p>
+      <div class="lx-figure" id="figure" hidden></div>
+      <div id="answer"></div>
+      <div id="verdict"></div>
+    </div>
+    <div class="lx-foot">
+      <div class="lx-foot-in">
+        <span class="lx-spacer"></span>
+        <button class="lx-btn lg" id="check" disabled>Check</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== Done -->
+  <section class="lx-view" id="v-done">
+    <div class="lx-done">
+      <svg class="lx-ring" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="52" fill="none" stroke="#dededf" stroke-width="9"/>
+        <circle id="ringArc" cx="60" cy="60" r="52" fill="none" stroke="#12915a" stroke-width="9"
+                stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="327"
+                transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s cubic-bezier(.32,.08,.24,1)"/>
+        <text id="ringPct" x="60" y="67" text-anchor="middle" font-size="26" font-weight="600" fill="#1d1d1f"
+              font-family="-apple-system, Inter, sans-serif">0%</text>
+      </svg>
+      <h1 class="lx-h1" style="margin-top:0" id="doneTitle">Unit complete.</h1>
+      <p class="lx-lede" style="margin-inline:auto" id="doneLede"></p>
+      <div class="lx-score">
+        <div><b id="sRight">0</b><span>correct</span></div>
+        <div><b id="sTotal">0</b><span>problems</span></div>
+        <div><b id="sFirst">0</b><span>first try</span></div>
+      </div>
+      <button class="lx-btn lg" id="doneNext">Back to the course</button>
+    </div>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
