@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Oplo Edu Learn — online school</title>
+<meta name="description" content="Oplo Edu Learn is a single console for online school: live lessons, coursework, adaptive practice and live tutoring.">
+<meta name="theme-color" content="#ffffff">
+<link rel="canonical" href="https://oplocloud.com/edu/learn/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Oplo">
+<meta property="og:title" content="Oplo Edu Learn — online school">
+<meta property="og:description" content="Oplo Edu Learn is a single console for online school: live lessons, coursework, adaptive practice and live tutoring.">
+<meta property="og:url" content="https://oplocloud.com/edu/learn/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='84.13 107.80 206.73 194.91'%3E%3Cg transform='translate(73.919875, 252.710833)'%3E%3Cpath fill='%23000' d='M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/oplo-design.css">
+<script>
+  (function (r) {
+    r.classList.add("oplo-motion");
+    setTimeout(function () { if (!window.__oploMotion) r.classList.remove("oplo-motion"); }, 4000);
+  })(document.documentElement);
+</script>
+<style>body { padding-top: 44px; }</style>
+<style>
+  .console {
+    /* One knob. Every measurement below is em, so the console scales whole. */
+    font-size: clamp(4.4px, 1.16vw, 11px);
+    width: min(100%, 1040px); margin: clamp(40px, 5.6vw, 72px) auto 0;
+    display: grid;
+    grid-template-columns: 3.4em repeat(3, 1fr);
+    grid-template-rows: 21em 13em;
+    gap: 1em;
+    padding: 1.2em;
+    border-radius: 2.2em;
+    background: #141517;
+    box-shadow: inset 0 0 0 .22em rgba(255,255,255,.5), 0 3em 6em -2em rgba(0,0,0,.8);
+  }
+  .console > div {
+    background: #2b2c30; border-radius: 1.2em; padding: 1.1em;
+    display: flex; flex-direction: column; gap: .8em; min-width: 0;
+  }
+  .console .cx-rail {
+    grid-row: 1 / 3; align-items: center; gap: .7em; padding: 1.1em .6em;
+    border-radius: 1.6em;
+  }
+  .console .cx-stage  { grid-column: 2 / 4; }
+  .console .cx-roster { grid-column: 4; }
+
+  /* Wireframe vocabulary: a bar, a dot, a field, a void. */
+  .cx-bar  { height: 1.5em; border-radius: 1em; background: #c9cacd; }
+  .cx-bar.cx-dim{ background: #4a4b50; }
+  .cx-dot  { width: 1.9em; height: 1.9em; border-radius: 50%; background: #c9cacd; flex: none; }
+  .cx-dot.cx-sm{ width: 1.2em; height: 1.2em; }
+  .cx-dot.cx-dim{ background: #4a4b50; }
+  .cx-void { flex: 1; border-radius: .8em; background: #1e1f22; min-height: 0; }
+  .cx-row  { display: flex; align-items: center; gap: .7em; }
+  .cx-row .cx-grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .45em; }
+  .cx-stack { display: flex; flex-direction: column; gap: .55em; }
+
+  .console .cx-rail .cx-dot { width: 1.6em; height: 1.6em; }
+  .console .cx-rail .cx-key { width: 1.9em; height: 1.5em; border-radius: .5em; background: #4a4b50; }
+  .console .cx-rail .cx-key.cx-on { background: #c9cacd; }
+
+  .console .cx-tabs { display: flex; gap: .55em; margin-left: auto; }
+  .console .cx-tabs span { width: 2.6em; height: 1.4em; border-radius: .8em; background: #c9cacd; }
+
+  /* The selected row in the roster — the one lit element on the whole board. */
+  .console .cx-pick { background: #c9cacd; border-radius: 1em; padding: .5em .7em; }
+  .console .cx-pick .cx-dot { background: #6d6e73; }
+  .console .cx-pick .cx-bar { background: #8e8f94; }
+
+  .console .cx-field { height: 2.4em; border-radius: 1em; background: #c9cacd; }
+  .console .cx-ctrls { display: flex; align-items: center; justify-content: center; gap: .7em; }
+  .console .cx-ctrls .cx-big { width: 2.6em; height: 2.6em; border-radius: 50%; background: #c9cacd; }
+
+  .cx-cap {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px 26px; width: min(100%, 900px); margin: 26px auto 0;
+    font-size: 13px; line-height: 1.45; color: var(--ink-lt-2); text-align: left;
+  }
+  .cx-cap b { display: block; color: var(--ink-lt); font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  @media (max-width: 734px) { .cx-cap { grid-template-columns: 1fr; gap: 12px; } }
+
+  /* Four capability blocks, hairline-separated, no panels. */
+  .cx-quad {
+    width: min(100%, 940px); margin: clamp(40px, 5.4vw, 64px) auto 0;
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 0 clamp(36px, 5vw, 76px); text-align: left;
+  }
+  .cx-quad > div { padding: 30px 0; border-top: 1px solid var(--rule); }
+  .band.dark .cx-quad > div { border-top-color: rgba(255,255,255,.2); }
+  .cx-quad h3 {
+    font-family: var(--font); font-size: clamp(19px, 2vw, 23px); font-weight: 600;
+    letter-spacing: -.01em; margin-bottom: 8px;
+  }
+  .cx-quad p { font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 42ch; }
+  .band.dark .cx-quad p { color: var(--ink-lt-2); }
+  @media (max-width: 734px) { .cx-quad { grid-template-columns: 1fr; gap: 0; } }
+</style>
+</head>
+<body>
+<nav class="nav" id="nav" aria-label="Oplo">
+  <div class="nav-in">
+    <a class="nav-brand" href="../../index.html" aria-label="Oplo home">
+      <svg class="mark" viewBox="84.13 107.80 206.73 194.91" aria-hidden="true" focusable="false"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></svg>
+    </a>
+    <ul class="nav-links" id="navLinks">
+        <li><a href="../../hardware/">Hardware</a></li>
+        <li><a href="../../software/">Software</a></li>
+        <li><a href="../../intelligence/">Intelligence</a></li>
+        <li><a href="../../privacy/">Privacy</a></li>
+        <li><a href="../../edu/" aria-current="page">Edu</a></li>
+        <li><a href="../../plus/">Oplo+</a></li>
+        <li><a href="../../company/">Company</a></li>
+        <li><a href="../../support/">Support</a></li>
+    </ul>
+    <div class="nav-end"><a href="../../sign-in/">Sign in</a></div>
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="chapter">
+  <div class="chapter-in">
+    <a class="chapter-name" href="../../edu/learn/">Edu Learn</a>
+    <nav class="chapter-links" aria-label="Edu Learn sections"><a href="#top">Overview</a><a href="#console">The console</a><a href="#does">What it does</a><a href="#teachers">For teachers</a></nav>
+  </div>
+</div>
+<main id="top">
+<section class="band dark" id="console">
+  <div class="well">
+    <p class="eyebrow reveal">Oplo Edu Learn</p>
+    <h1 class="t-hero balance reveal" style="max-width:17ch;margin-inline:auto">School that was built to be online.</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:40ch;margin-inline:auto">Not a video call bolted to a homework folder. One room where the lesson, the work and the help all live.</p>
+    <div class="console reveal d1" role="img"
+         aria-label="Wireframe of the Oplo Edu lesson console: an icon rail, a lesson stage, a class roster, and panels for coursework, mastery and tutors.">
+      <div class="cx-rail">
+        <span class="cx-dot"></span>
+        <span class="cx-key cx-on"></span><span class="cx-key"></span><span class="cx-key"></span>
+        <span class="cx-key"></span><span class="cx-key"></span><span class="cx-key"></span>
+        <span style="flex:1"></span>
+        <span class="cx-dot"></span>
+      </div>
+
+      <div class="cx-stage">
+        <div class="cx-row">
+          <span class="cx-bar" style="width:8em"></span>
+          <span class="cx-tabs"><span></span><span></span><span></span><span></span></span>
+        </div>
+        <div class="cx-void"></div>
+        <div class="cx-row">
+          <span class="cx-bar" style="width:6em"></span>
+          <span style="flex:1"></span>
+          <span class="cx-dot s d"></span><span class="cx-dot s d"></span>
+        </div>
+      </div>
+
+      <div class="cx-roster">
+        <span class="cx-bar" style="width:5.5em"></span>
+        <div class="cx-stack">
+          <div class="cx-row"><span class="cx-dot"></span><span class="cx-grow"><span class="cx-bar" style="width:60%"></span><span class="cx-bar cx-dim" style="width:40%"></span></span><span class="cx-dot s d"></span></div>
+          <div class="cx-row"><span class="cx-dot"></span><span class="cx-grow"><span class="cx-bar" style="width:52%"></span><span class="cx-bar cx-dim" style="width:34%"></span></span><span class="cx-dot s d"></span></div>
+          <div class="cx-row cx-pick"><span class="cx-dot"></span><span class="cx-grow"><span class="cx-bar" style="width:72%"></span></span></div>
+          <div class="cx-row"><span class="cx-dot"></span><span class="cx-grow"><span class="cx-bar" style="width:56%"></span><span class="cx-bar cx-dim" style="width:38%"></span></span><span class="cx-dot s d"></span></div>
+        </div>
+        <span style="flex:1"></span>
+        <span class="cx-field"></span>
+      </div>
+
+      <div class="cx-tile">
+        <span class="cx-bar" style="width:5em"></span>
+        <div class="cx-void"></div>
+        <div class="cx-row"><span class="cx-bar" style="width:6em"></span><span style="flex:1"></span><span class="cx-bar cx-dim" style="width:4em"></span></div>
+      </div>
+
+      <div class="cx-tile">
+        <span class="cx-bar" style="width:5.5em"></span>
+        <div class="cx-void"></div>
+        <div class="cx-row" style="background:#3a3b40;border-radius:1em;padding:.45em .7em">
+          <span class="cx-bar" style="width:4em"></span><span style="flex:1"></span><span class="cx-dot cx-sm"></span>
+        </div>
+        <span class="cx-field"></span>
+      </div>
+
+      <div class="cx-tile">
+        <div class="cx-row"><span class="cx-bar" style="width:5em"></span><span style="flex:1"></span><span class="cx-dot cx-sm"></span></div>
+        <div class="cx-void"></div>
+        <div class="cx-ctrls">
+          <span class="cx-dot cx-sm"></span><span class="cx-dot cx-sm"></span>
+          <span class="cx-big"></span>
+          <span class="cx-dot cx-sm"></span><span class="cx-dot cx-sm"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cx-cap reveal d2">
+      <div><b>The stage</b>Whoever is speaking, whatever is being shown, and the board everyone can draw on.</div>
+      <div><b>The roster</b>Who is here, who is following, and who has quietly stopped.</div>
+      <div><b>Underneath</b>Coursework, the mastery map, and a tutor a click away.</div>
+    </div>
+    <p class="cta-row reveal d2" style="margin-top:26px"><a class="cta" href="../../olearn/">Open the working demo</a></p>
+    <p class="t-fine muted reveal d2" style="margin-top:18px">Wireframe above; the demo is a running build with sample data. Neither is shipping software.<sup>1</sup></p>
+  </div>
+</section>
+<section class="band on-white" id="does">
+  <div class="well">
+    <p class="eyebrow reveal">What it does</p>
+    <h2 class="t-display balance reveal" style="max-width:19ch;margin-inline:auto">Four tools that stopped being four tabs.</h2>
+    <div class="cx-quad reveal d1">
+      <div><h3>The room</h3><p>A live lesson that opens in the browser with no install and no meeting id to paste. Video, a shared board, breakout groups and a hand to raise &mdash; and the teacher can see who has stopped following before anyone admits it.</p></div>
+      <div><h3>Coursework</h3><p>Set work once and send it to a class, a group or one person. Submissions come back in one place, grading carries a rubric, and the marks land in the record without anyone retyping them.</p></div>
+      <div><h3>Mastery</h3><p>Practice that adapts. Learners move through a skill tree at their own pace, and a topic stays shut until the one under it is genuinely understood &mdash; so a gap gets closed rather than carried.</p></div>
+      <div><h3>A person, when it stops working</h3><p>When the tracking sees somebody stuck, it offers a vetted tutor for a live one-to-one rather than another video. Booked inside the lesson, in the same window, at the moment it would help.</p></div>
+    </div>
+  </div>
+</section>
+<section class="band dark scene" id="teachers">
+  <div class="well">
+    <p class="moment reveal">For teachers</p>
+    <q class="reveal">The class is thirty. The attention is not.</q>
+    <p class="body balance reveal d1">In a room you can read a face. On a call you get a grid of muted squares and a feeling. The console watches the things a screen hides &mdash; who has stopped answering, who is guessing, who has been on the same step for eleven minutes &mdash; and tells the one person who can do something about it.</p>
+    <p class="cta-row reveal d2">
+      <a class="cta" href="../../olearn/">Try OLearn</a>
+      <a class="cta" href="../../contact/">Talk to us</a>
+    </p>
+  </div>
+</section>
+</main>
+<div class="notes"><ol><li>Oplo Edu Learn is in development. The console shown is a wireframe of the interface being designed, not a screenshot of working software. Capabilities described state design intent; availability and feature scope are not final.</li><li>Live tutoring would connect learners with independent tutors. Vetting standards, availability and pricing will be published before the marketplace opens.</li></ol></div>
+<footer class="foot" aria-label="Oplo footer">
+  <div class="foot-in">
+    <div class="foot-note">
+      <p>Oplo is building its first hardware, software and intelligence products. Pages on this site describe intent and direction; availability and capability are not final.</p>
+      <p>Questions about any of it? <a href="../../contact/">Get in touch</a>.</p>
+    </div>
+    <div class="foot-rule"></div>
+    <div class="foot-cols">
+      <div class="foot-col">
+        <h3>Hardware</h3>
+        <ul>
+          <li><a href="../../hardware/">Overview</a></li>
+          <li><a href="../../hardware/#silicon">Silicon</a></li>
+          <li><a href="../../hardware/#devices">Devices</a></li>
+          <li><a href="../../hardware/#accessories">Accessories</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Software</h3>
+        <ul>
+          <li><a href="../../software/">Overview</a></li>
+          <li><a href="../../software/#apps">Apps</a></li>
+          <li><a href="../../software/#updates">Updates</a></li>
+          <li><a href="../../software/#downloads">Downloads</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Intelligence</h3>
+        <ul>
+          <li><a href="../../intelligence/">Overview</a></li>
+          <li><a href="../../intelligence/#on-device">On-device AI</a></li>
+          <li><a href="../../privacy/">Privacy</a></li>
+          <li><a href="../../intelligence/#research">Research</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Developers</h3>
+        <ul>
+          <li><a href="../../developers/#docs">Documentation</a></li>
+          <li><a href="../../developers/#sdks">SDKs</a></li>
+          <li><a href="../../developers/#design">Design resources</a></li>
+          <li><a href="../../developers/#support">Support</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Education</h3>
+        <ul>
+          <li><a href="../../edu/">Oplo Edu</a></li>
+          <li><a href="../../olearn/">OLearn demo</a></li>
+          <li><a href="../../edu/learn/">Edu Learn</a></li>
+          <li><a href="../../edu/#who">Who it is for</a></li>
+          <li><a href="../../contact/">Contact</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Membership</h3>
+        <ul>
+          <li><a href="../../plus/">Oplo+</a></li>
+          <li><a href="../../plus/#plans">Plans</a></li>
+          <li><a href="../../plus/#compare">Compare tiers</a></li>
+          <li><a href="../../plus/#faq">Questions</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="../../company/">About Oplo</a></li>
+          <li><a href="../../newsroom/">Newsroom</a></li>
+          <li><a href="../../careers/">Careers</a></li>
+          <li><a href="../../contact/">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-rule"></div>
+    <div class="foot-bar">
+      <span>Copyright &copy; 2026 Oplo, Inc. All rights reserved.</span>
+      <span class="foot-legal">
+        <a href="../../legal/privacy-policy/">Privacy Policy</a>
+        <a href="../../legal/terms/">Terms of Use</a>
+        <a href="../../legal/">Legal</a>
+        <a href="../../sitemap.xml">Site Map</a>
+      </span>
+      <span class="foot-region">United States</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../../assets/js/oplo-motion.js" defer></script>
+<script>
+  (function () {
+    var nav = document.getElementById("nav");
+    var links = document.getElementById("navLinks");
+    var toggle = document.getElementById("navToggle");
+    if (!nav || !links || !toggle) return;
+    var held = 0;
+    function set(open) {
+      if (open === links.classList.contains("open")) return;
+      if (open) {
+        held = window.scrollY;
+        document.body.style.top = (-held) + "px";
+        document.body.classList.add("locked");
+      } else {
+        document.body.classList.remove("locked");
+        document.body.style.top = "";
+        window.scrollTo(0, held);
+      }
+      links.classList.toggle("open", open);
+      nav.classList.toggle("open", open);
+      toggle.classList.toggle("on", open);
+      toggle.setAttribute("aria-expanded", String(open));
+    }
+    toggle.addEventListener("click", function () { set(!links.classList.contains("open")); });
+    links.addEventListener("click", function (e) { if (e.target.closest("a")) set(false); });
+    window.addEventListener("resize", function () { if (links.classList.contains("open")) set(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") set(false); });
+  })();
+</script>
+
+</body>
+</html>
