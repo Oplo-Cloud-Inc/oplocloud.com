@@ -30,7 +30,7 @@ MARK_D  = ("M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.64843
            "M 130.378906 -138.132812")
 
 NAV = [("Hardware", "hardware/"), ("Software", "software/"), ("Intelligence", "intelligence/"),
-       ("Privacy", "privacy/"), ("Oplo+", "plus/"), ("Company", "company/"), ("Support", "support/")]
+       ("Privacy", "privacy/"), ("Edu", "edu/"), ("Oplo+", "plus/"), ("Company", "company/"), ("Support", "support/")]
 
 FOOTER = [
     ("Hardware", [("Overview", "hardware/"), ("Silicon", "hardware/#silicon"),
@@ -41,6 +41,8 @@ FOOTER = [
                       ("Privacy", "privacy/"), ("Research", "intelligence/#research")]),
     ("Developers", [("Documentation", "developers/#docs"), ("SDKs", "developers/#sdks"),
                     ("Design resources", "developers/#design"), ("Support", "developers/#support")]),
+    ("Education", [("Oplo Edu", "edu/"), ("The platform", "edu/#platform"),
+                   ("Who it is for", "edu/#who"), ("Contact", "contact/")]),
     ("Membership", [("Oplo+", "plus/"), ("Plans", "plus/#plans"),
                     ("Compare tiers", "plus/#compare"), ("Questions", "plus/#faq")]),
     ("Company", [("About Oplo", "company/"), ("Newsroom", "newsroom/"),
@@ -1303,6 +1305,174 @@ def plus_page():
     return ("plus/index.html", out + footer(depth, notes))
 
 PAGES.append(plus_page())
+
+
+# ==========================================================================
+# Oplo Edu.
+# Content and structure supplied by Oplo — the mission, the fragmentation
+# argument, the four pillars, the two audiences, the vision. Substance kept
+# whole; register tuned to match the rest of the site, which is plainer than
+# the source draft.
+# ==========================================================================
+
+PILLARS = [
+    ("Institutional rigour",
+     "Structured pathways and professional certifications built to the standards corporate training and "
+     "academic credit actually have to meet &mdash; not a library of videos with a quiz at the end."),
+    ("Adaptive mastery",
+     "Learners move at their own pace through skill trees, and nothing unlocks until the thing before it "
+     "is genuinely understood. Proficiency is the gate, not attendance."),
+    ("Expert mentorship, on demand",
+     "When tracking sees someone stuck, it connects them to a vetted one-to-one tutor rather than letting "
+     "them stall. The automation knows its own limits."),
+    ("One workflow",
+     "Assignments, progress, templates and grading from a single console, so the administrative load stops "
+     "being the price of running a course."),
+]
+
+AUDIENCES = [
+    ("K&#8209;12 and higher education",
+     "Secure, LTI&#8209;compliant infrastructure that sits inside what a school already runs. It takes "
+     "administrative weight off teachers and gives students support at the hour they actually get stuck, "
+     "which is rarely during the lesson."),
+    ("Enterprise and corporate training",
+     "Scalable upskilling pathways with transparent skill&#8209;gap analytics for the people planning "
+     "headcount, and hands-on training backed by live coaching for the people doing the work."),
+]
+
+EDU_CSS = '''<style>
+  /* The fragmentation, shown: four things that do not touch, then one that
+     does. Type-led, because the argument is about arrangement, not imagery. */
+  .split { width: min(100%, 720px); margin: clamp(40px, 5.4vw, 64px) auto 0; }
+  .split .four {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .split .four span {
+    padding: 18px 8px; font-size: 13px; line-height: 1.35;
+    color: var(--ink-lt-2); text-align: center;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
+    border-radius: 10px;
+  }
+  .split .verdict {
+    margin-top: 18px; font-size: 13px; color: var(--ink-lt-2);
+  }
+  .split .one {
+    margin-top: 26px; padding: 22px 8px; border-radius: 10px;
+    background: var(--ink-lt); color: #000;
+    font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -.01em;
+  }
+  @media (max-width: 600px) {
+    .split .four { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Pillars and audiences: text held apart by hairlines, no panels. */
+  .pillars {
+    width: min(100%, 940px); margin: clamp(40px, 5.4vw, 64px) auto 0;
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 0 clamp(36px, 5vw, 76px); text-align: left;
+  }
+  .pillars > div { padding: 30px 0; border-top: 1px solid var(--rule); }
+  .pillars h3 {
+    font-family: var(--font); font-size: clamp(19px, 2vw, 23px); font-weight: 600;
+    letter-spacing: -.01em; margin-bottom: 8px;
+  }
+  .pillars p { font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 42ch; }
+  .band.dark .pillars > div { border-top-color: rgba(255,255,255,.2); }
+  .band.dark .pillars p { color: var(--ink-lt-2); }
+  @media (max-width: 734px) { .pillars { grid-template-columns: 1fr; gap: 0; } }
+
+  .serve { width: min(100%, 900px); margin: clamp(38px, 5vw, 58px) auto 0;
+           display: grid; gap: clamp(30px, 4vw, 46px); text-align: left; }
+  .serve > div { padding-top: 28px; border-top: 1px solid var(--rule); }
+  .serve h3 {
+    font-family: var(--font); font-size: clamp(21px, 2.4vw, 28px); font-weight: 600;
+    letter-spacing: -.014em; margin-bottom: 10px;
+  }
+  .serve p { font-size: clamp(16px, 1.5vw, 18px); line-height: 1.6; color: var(--ink-2); max-width: 58ch; }
+</style>'''
+
+
+def edu_page():
+    depth = 1
+    links = [("Overview", "#top"), ("The problem", "#problem"), ("The platform", "#platform"),
+             ("Who it is for", "#who"), ("Vision", "#vision")]
+    out = head(depth, "Oplo Edu",
+               "Oplo Edu brings structured curriculum, adaptive practice, live expert coaching and classroom administration into one workspace.",
+               "edu/", EDU_CSS)
+    out += nav(depth, "edu/")
+    out += chapter(depth, "Oplo Edu", links, "edu/")
+    out += '<main id="top">\n'
+
+    out += '''<section class="band on-white">
+  <div class="well">
+    <p class="eyebrow reveal">Oplo Edu</p>
+    <h1 class="t-hero balance reveal" style="max-width:19ch;margin-inline:auto">Automated where it helps. Human where it counts.</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:42ch;margin-inline:auto">Structured curriculum, practice that adapts, live experts, and the administration underneath &mdash; in one workspace.</p>
+    <p class="t-fine muted reveal d2" style="margin-top:22px">In development.<sup>1</sup></p>
+  </div>
+</section>
+'''
+
+    out += '''<section class="band dark scene" id="problem">
+  <div class="well">
+    <p class="moment reveal">The problem</p>
+    <q class="reveal">One tool for the lecture. Another for the exercises. A third for homework. A fourth to find a tutor.</q>
+    <div class="split reveal d1">
+      <div class="four" aria-hidden="true">
+        <span>Lectures</span><span>Practice</span><span>Assignments</span><span>Tutoring</span>
+      </div>
+      <p class="verdict">Four logins. Four sets of data. Nobody holding the whole picture of how a learner is actually doing.</p>
+      <div class="one" aria-hidden="true">One workspace</div>
+    </div>
+    <p class="body balance reveal d1">The overhead lands on staff, the gaps land on learners, and completion rates fall for reasons no single system can see. Fragmentation is not an inconvenience &mdash; it is the reason the numbers look the way they do.</p>
+  </div>
+</section>
+'''
+
+    pill = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in PILLARS)
+    out += f'''<section class="band on-white" id="platform">
+  <div class="well">
+    <p class="eyebrow reveal">The platform</p>
+    <h2 class="t-display balance reveal" style="max-width:20ch;margin-inline:auto">Four things that usually live apart.</h2>
+    <div class="pillars reveal d1">
+{pill}    </div>
+  </div>
+</section>
+'''
+
+    serve = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in AUDIENCES)
+    out += f'''<section class="band on-grey" id="who">
+  <div class="well">
+    <p class="eyebrow reveal">Who it is for</p>
+    <h2 class="t-display balance reveal">Schools and organisations.</h2>
+    <div class="serve reveal d1">
+{serve}    </div>
+  </div>
+</section>
+'''
+
+    out += '''<section class="band dark scene" id="vision">
+  <div class="well">
+    <p class="moment reveal">Our vision</p>
+    <q class="reveal">Technology should carry the load. Not the relationship.</q>
+    <p class="body balance reveal d1">Every school and every organisation on the same infrastructure, with automation and human guidance each doing the part it is actually good at. The machine handles the tracking, the marking and the scheduling. A person does the teaching.</p>
+    <p class="cta-row reveal d2">
+      <a class="cta" href="../contact/">Talk to us</a>
+      <a class="cta" href="../company/">About Oplo</a>
+    </p>
+  </div>
+</section>
+</main>
+'''
+    notes = [
+        "Oplo Edu is in development. Capabilities described on this page state design intent; availability, "
+        "integrations and certification scope are not final.",
+        "LTI compliance and any accreditation or certification claims will be stated specifically, with the "
+        "standard and version named, before the platform is offered to an institution.",
+    ]
+    return ("edu/index.html", out + footer(depth, notes))
+
+PAGES.append(edu_page())
 
 # ----------------------------------------------------- Company & utility
 def simple(slug, depth, title, desc, eyebrow, heading, lead, rows_html=""):

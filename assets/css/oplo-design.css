@@ -383,6 +383,16 @@ body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(
   .chapter-links::-webkit-scrollbar { display: none; }
   .chapter-name { font-size: 17px; flex: none; }
 }
+/* Below 734px the section list always outruns the bar, so it was being cut
+   mid-word with nothing to say it could be scrolled. Fade the right edge and
+   leave room past the last item, so the clip reads as "more this way". */
+@media (max-width: 734px) {
+  .chapter-links {
+    padding-right: 26px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 30px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 30px), transparent);
+  }
+}
 
 /* ------------------------------------------------------------- Rows
    Alternating text blocks inside a section page. Content sets the height. */

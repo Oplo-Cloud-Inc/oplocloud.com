@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hardware — Oplo</title>
-<meta name="description" content="Oplo designs the machine and the software that runs on it, from the silicon up.">
+<title>Oplo Edu</title>
+<meta name="description" content="Oplo Edu brings structured curriculum, adaptive practice, live expert coaching and classroom administration into one workspace.">
 <meta name="theme-color" content="#ffffff">
-<link rel="canonical" href="https://oplocloud.com/hardware/">
+<link rel="canonical" href="https://oplocloud.com/edu/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Oplo">
-<meta property="og:title" content="Hardware — Oplo">
-<meta property="og:description" content="Oplo designs the machine and the software that runs on it, from the silicon up.">
-<meta property="og:url" content="https://oplocloud.com/hardware/">
+<meta property="og:title" content="Oplo Edu">
+<meta property="og:description" content="Oplo Edu brings structured curriculum, adaptive practice, live expert coaching and classroom administration into one workspace.">
+<meta property="og:url" content="https://oplocloud.com/edu/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='84.13 107.80 206.73 194.91'%3E%3Cg transform='translate(73.919875, 252.710833)'%3E%3Cpath fill='%23000' d='M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +24,56 @@
   })(document.documentElement);
 </script>
 <style>body { padding-top: 44px; }</style>
+<style>
+  /* The fragmentation, shown: four things that do not touch, then one that
+     does. Type-led, because the argument is about arrangement, not imagery. */
+  .split { width: min(100%, 720px); margin: clamp(40px, 5.4vw, 64px) auto 0; }
+  .split .four {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .split .four span {
+    padding: 18px 8px; font-size: 13px; line-height: 1.35;
+    color: var(--ink-lt-2); text-align: center;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
+    border-radius: 10px;
+  }
+  .split .verdict {
+    margin-top: 18px; font-size: 13px; color: var(--ink-lt-2);
+  }
+  .split .one {
+    margin-top: 26px; padding: 22px 8px; border-radius: 10px;
+    background: var(--ink-lt); color: #000;
+    font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -.01em;
+  }
+  @media (max-width: 600px) {
+    .split .four { grid-template-columns: repeat(2, 1fr); }
+  }
 
+  /* Pillars and audiences: text held apart by hairlines, no panels. */
+  .pillars {
+    width: min(100%, 940px); margin: clamp(40px, 5.4vw, 64px) auto 0;
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 0 clamp(36px, 5vw, 76px); text-align: left;
+  }
+  .pillars > div { padding: 30px 0; border-top: 1px solid var(--rule); }
+  .pillars h3 {
+    font-family: var(--font); font-size: clamp(19px, 2vw, 23px); font-weight: 600;
+    letter-spacing: -.01em; margin-bottom: 8px;
+  }
+  .pillars p { font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 42ch; }
+  .band.dark .pillars > div { border-top-color: rgba(255,255,255,.2); }
+  .band.dark .pillars p { color: var(--ink-lt-2); }
+  @media (max-width: 734px) { .pillars { grid-template-columns: 1fr; gap: 0; } }
+
+  .serve { width: min(100%, 900px); margin: clamp(38px, 5vw, 58px) auto 0;
+           display: grid; gap: clamp(30px, 4vw, 46px); text-align: left; }
+  .serve > div { padding-top: 28px; border-top: 1px solid var(--rule); }
+  .serve h3 {
+    font-family: var(--font); font-size: clamp(21px, 2.4vw, 28px); font-weight: 600;
+    letter-spacing: -.014em; margin-bottom: 10px;
+  }
+  .serve p { font-size: clamp(16px, 1.5vw, 18px); line-height: 1.6; color: var(--ink-2); max-width: 58ch; }
+</style>
 </head>
 <body>
 <nav class="nav" id="nav" aria-label="Oplo">
@@ -33,11 +82,11 @@
       <svg class="mark" viewBox="84.13 107.80 206.73 194.91" aria-hidden="true" focusable="false"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></svg>
     </a>
     <ul class="nav-links" id="navLinks">
-        <li><a href="../hardware/" aria-current="page">Hardware</a></li>
+        <li><a href="../hardware/">Hardware</a></li>
         <li><a href="../software/">Software</a></li>
         <li><a href="../intelligence/">Intelligence</a></li>
         <li><a href="../privacy/">Privacy</a></li>
-        <li><a href="../edu/">Edu</a></li>
+        <li><a href="../edu/" aria-current="page">Edu</a></li>
         <li><a href="../plus/">Oplo+</a></li>
         <li><a href="../company/">Company</a></li>
         <li><a href="../support/">Support</a></li>
@@ -50,37 +99,68 @@
 </nav>
 <div class="chapter">
   <div class="chapter-in">
-    <a class="chapter-name" href="../hardware/">Hardware</a>
-    <nav class="chapter-links" aria-label="Hardware sections"><a href="#silicon">Silicon</a><a href="#devices">Devices</a><a href="#accessories">Accessories</a></nav>
+    <a class="chapter-name" href="../edu/">Oplo Edu</a>
+    <nav class="chapter-links" aria-label="Oplo Edu sections"><a href="#top">Overview</a><a href="#problem">The problem</a><a href="#platform">The platform</a><a href="#who">Who it is for</a><a href="#vision">Vision</a></nav>
   </div>
 </div>
-<main>
-<section class="band opening well">
-  <h1 class="t-hero balance reveal">The machine, made whole.</h1>
-  <p class="t-sub muted balance reveal d1">One team from the silicon to the last pixel, so neither side has to compromise for the other.</p>
+<main id="top">
+<section class="band on-white">
+  <div class="well">
+    <p class="eyebrow reveal">Oplo Edu</p>
+    <h1 class="t-hero balance reveal" style="max-width:19ch;margin-inline:auto">Automated where it helps. Human where it counts.</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:42ch;margin-inline:auto">Structured curriculum, practice that adapts, live experts, and the administration underneath &mdash; in one workspace.</p>
+    <p class="t-fine muted reveal d2" style="margin-top:22px">In development.<sup>1</sup></p>
+  </div>
 </section>
-<div class="rows">
-  <section class="row dark" id="silicon">
-    <p class="eyebrow reveal">Silicon</p>
-    <h2 class="t-display balance reveal">Designed for the software that runs on it.</h2>
-    <p class="t-lead muted balance reveal d1">General-purpose parts force general-purpose software. Designing our own means the intelligence, the operating system and the chip are shaped to each other rather than negotiated between vendors.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="../software/">How that shapes the software</a></p>
-  </section>
-  <section class="row " id="devices">
-    <p class="eyebrow reveal">Devices</p>
-    <h2 class="t-display balance reveal">Personal, in the original sense.</h2>
-    <p class="t-lead muted balance reveal d1">A machine that belongs to the person holding it: quiet when it should be, ready when it is needed, and not quietly working for someone else.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Read our position on privacy</a></p>
-  </section>
-  <section class="row " id="accessories">
-    <p class="eyebrow reveal">Accessories</p>
-    <h2 class="t-display balance reveal">The parts around the machine.</h2>
-    <p class="t-lead muted balance reveal d1">Everything that attaches to a device is part of the experience of owning it. Nothing here is finished, and we would rather ship it late than ship it thoughtless.</p>
-    
-  </section>
-</div>
+<section class="band dark scene" id="problem">
+  <div class="well">
+    <p class="moment reveal">The problem</p>
+    <q class="reveal">One tool for the lecture. Another for the exercises. A third for homework. A fourth to find a tutor.</q>
+    <div class="split reveal d1">
+      <div class="four" aria-hidden="true">
+        <span>Lectures</span><span>Practice</span><span>Assignments</span><span>Tutoring</span>
+      </div>
+      <p class="verdict">Four logins. Four sets of data. Nobody holding the whole picture of how a learner is actually doing.</p>
+      <div class="one" aria-hidden="true">One workspace</div>
+    </div>
+    <p class="body balance reveal d1">The overhead lands on staff, the gaps land on learners, and completion rates fall for reasons no single system can see. Fragmentation is not an inconvenience &mdash; it is the reason the numbers look the way they do.</p>
+  </div>
+</section>
+<section class="band on-white" id="platform">
+  <div class="well">
+    <p class="eyebrow reveal">The platform</p>
+    <h2 class="t-display balance reveal" style="max-width:20ch;margin-inline:auto">Four things that usually live apart.</h2>
+    <div class="pillars reveal d1">
+      <div><h3>Institutional rigour</h3><p>Structured pathways and professional certifications built to the standards corporate training and academic credit actually have to meet &mdash; not a library of videos with a quiz at the end.</p></div>
+      <div><h3>Adaptive mastery</h3><p>Learners move at their own pace through skill trees, and nothing unlocks until the thing before it is genuinely understood. Proficiency is the gate, not attendance.</p></div>
+      <div><h3>Expert mentorship, on demand</h3><p>When tracking sees someone stuck, it connects them to a vetted one-to-one tutor rather than letting them stall. The automation knows its own limits.</p></div>
+      <div><h3>One workflow</h3><p>Assignments, progress, templates and grading from a single console, so the administrative load stops being the price of running a course.</p></div>
+    </div>
+  </div>
+</section>
+<section class="band on-grey" id="who">
+  <div class="well">
+    <p class="eyebrow reveal">Who it is for</p>
+    <h2 class="t-display balance reveal">Schools and organisations.</h2>
+    <div class="serve reveal d1">
+      <div><h3>K&#8209;12 and higher education</h3><p>Secure, LTI&#8209;compliant infrastructure that sits inside what a school already runs. It takes administrative weight off teachers and gives students support at the hour they actually get stuck, which is rarely during the lesson.</p></div>
+      <div><h3>Enterprise and corporate training</h3><p>Scalable upskilling pathways with transparent skill&#8209;gap analytics for the people planning headcount, and hands-on training backed by live coaching for the people doing the work.</p></div>
+    </div>
+  </div>
+</section>
+<section class="band dark scene" id="vision">
+  <div class="well">
+    <p class="moment reveal">Our vision</p>
+    <q class="reveal">Technology should carry the load. Not the relationship.</q>
+    <p class="body balance reveal d1">Every school and every organisation on the same infrastructure, with automation and human guidance each doing the part it is actually good at. The machine handles the tracking, the marking and the scheduling. A person does the teaching.</p>
+    <p class="cta-row reveal d2">
+      <a class="cta" href="../contact/">Talk to us</a>
+      <a class="cta" href="../company/">About Oplo</a>
+    </p>
+  </div>
+</section>
 </main>
-<div class="notes"><ol><li>Oplo hardware is in development. Nothing on this page is an offer of sale or a commitment to a specification.</li><li>Descriptions of silicon and device behaviour describe design intent and are subject to change.</li></ol></div>
+<div class="notes"><ol><li>Oplo Edu is in development. Capabilities described on this page state design intent; availability, integrations and certification scope are not final.</li><li>LTI compliance and any accreditation or certification claims will be stated specifically, with the standard and version named, before the platform is offered to an institution.</li></ol></div>
 <footer class="foot" aria-label="Oplo footer">
   <div class="foot-in">
     <div class="foot-note">
