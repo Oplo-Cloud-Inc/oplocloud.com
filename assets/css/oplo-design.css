@@ -307,6 +307,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 @media (min-width: 735px) { .foot-col h3 button { pointer-events: none; } .foot-col h3 button::after { display: none; } }
 
+/* ------------------------------------------------------ Anchor offset
+   The bar is fixed, and section pages carry a chapter bar under it. Without
+   this, every in-page link scrolls its target to y=0 — i.e. underneath 96px
+   of furniture — and the heading you clicked for is the one thing hidden. */
+:where(section, div, main)[id] { scroll-margin-top: calc(var(--nav) + 16px); }
+body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(--nav) + 68px); }
+
 /* -------------------------------------------------------------- Motion
    Visible by default; hidden only once the script arms the reveal, so no
    failure can leave the page blank. */

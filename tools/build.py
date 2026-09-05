@@ -929,6 +929,7 @@ SCENES = [
 
 MATRIX_HEAD = ["Oplo", "Oplo+", "Family"]
 MATRIX = [
+    ("Discounted deals", "Restaurants, spas, activities and travel at member rates.", ["—", "yes", "yes"]),
     ("On-device model", "The model that runs on the machine in your hand.", ["Standard", "Extended", "Extended"]),
     ("Desk model", "A larger model for work a handheld cannot hold.", ["—", "yes", "yes"]),
     ("Encrypted sync", "Your files and settings, carried between your own devices.", ["Essentials", "Full library", "Full library"]),
@@ -962,6 +963,25 @@ FAQ = [
 ]
 
 PLUS_CSS = '''<style>
+  /* Perks. Glyph, name, one line. No boxes, no rules — space does the
+     separating, which is the whole point of the format. */
+  .perks {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: clamp(38px, 4.6vw, 60px) clamp(26px, 3.4vw, 46px);
+    width: min(100%, 1020px); margin: clamp(40px, 5.4vw, 66px) auto 0;
+    text-align: left;
+  }
+  .perk svg { width: 25px; height: 25px; color: var(--ink); }
+  .band.dark .perk svg { color: var(--ink-lt); }
+  .perk h3 {
+    font-family: var(--font); font-size: 17px; font-weight: 600;
+    letter-spacing: -.01em; margin: 15px 0 5px;
+  }
+  .perk p { font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  .band.dark .perk p { color: var(--ink-lt-2); }
+  @media (max-width: 1068px) { .perks { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 833px)  { .perks { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px)  { .perks { grid-template-columns: 1fr; gap: 30px; } }
   /* Scenes. Each moment gets a whole band and the sentence gets the size —
      the scene is the illustration, since there is no photograph to carry it. */
   .scene { padding: clamp(88px, 14vh, 170px) 0; }
@@ -1081,10 +1101,79 @@ CROSS = '''    <div class="cross reveal d1" aria-hidden="true">
 '''
 
 
+# Perk glyphs. 24x24, single stroke, no fill — they sit at text weight so the
+# line under each one stays the thing you read.
+ICONS = {
+ "tag":   '<path d="M3 11.5V4a1 1 0 0 1 1-1h7.5L21 12.5 12.5 21z"/><circle cx="7.5" cy="7.5" r="1.4"/>',
+ "desk":  '<rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M9 20.5h6M12 16.5v4"/>',
+ "sync":  '<path d="M3.5 12a8.5 8.5 0 0 1 14.5-6M20.5 12a8.5 8.5 0 0 1-14.5 6"/><path d="M18 2.5V6h-3.5M6 21.5V18h3.5"/>',
+ "vault": '<path d="M12 2.8 20 6v6c0 5-3.4 7.9-8 9.2C7.4 19.9 4 17 4 12V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+ "relay": '<path d="M2.5 8h5l3 8h5"/><path d="M16.5 5.5 20.5 8l-4 2.5M16.5 13.5l4 2.5-4 2.5"/>',
+ "mail":  '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M3.5 7.5 12 13.5 20.5 7.5"/>',
+ "home":  '<circle cx="8.5" cy="9" r="3"/><circle cx="16.5" cy="10.5" r="2.4"/><path d="M2.5 19.5c.7-3.2 3-4.8 6-4.8s5.3 1.6 6 4.8M15 14.8c2.4.2 4.1 1.7 4.6 4.7"/>',
+ "talk":  '<path d="M20.5 12.5c0 4-3.8 7-8.5 7a10 10 0 0 1-2.7-.35L4 21l1.3-3.6A6.6 6.6 0 0 1 3.5 12.5c0-3.9 3.8-7 8.5-7s8.5 3.1 8.5 7z"/>',
+}
+
+# name, glyph, the single line under it
+PERKS = [
+    ("Discounted deals",   "tag",   "Restaurants, spas, activities, travel &mdash; for less.<sup>2</sup>"),
+    ("The desk model",     "desk",  "A larger model for work a pocket cannot hold."),
+    ("Encrypted sync",     "sync",  "Your things, carried between your own machines."),
+    ("Device backup",      "vault", "A full restore point, encrypted before it leaves."),
+    ("Browsing relay",     "relay", "Sites cannot build a profile from your address."),
+    ("Disposable addresses","mail", "Hand one out. Cut it off whenever you like."),
+    ("Household sharing",  "home",  "Up to six people, and six separate libraries."),
+    ("Direct support",     "talk",  "A person who works here, not a queue."),
+]
+
+PERKS_CSS = '''
+  /* Perks. Glyph, name, one line. No boxes, no rules — space does the
+     separating, which is the whole point of the format. */
+  .perks {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: clamp(38px, 4.6vw, 60px) clamp(26px, 3.4vw, 46px);
+    width: min(100%, 1020px); margin: clamp(40px, 5.4vw, 66px) auto 0;
+    text-align: left;
+  }
+  .perk svg { width: 25px; height: 25px; color: var(--ink); }
+  .band.dark .perk svg { color: var(--ink-lt); }
+  .perk h3 {
+    font-family: var(--font); font-size: 17px; font-weight: 600;
+    letter-spacing: -.01em; margin: 15px 0 5px;
+  }
+  .perk p { font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  .band.dark .perk p { color: var(--ink-lt-2); }
+  @media (max-width: 1068px) { .perks { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 833px)  { .perks { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px)  { .perks { grid-template-columns: 1fr; gap: 30px; } }
+'''
+
+
+def perks_block():
+    cells = ""
+    for name, glyph, line in PERKS:
+        cells += f'''      <div class="perk">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS[glyph]}</svg>
+        <h3>{name}</h3>
+        <p>{line}</p>
+      </div>
+'''
+    return f'''<section class="band on-white" id="perks">
+  <div class="well">
+    <p class="eyebrow reveal">Included</p>
+    <h2 class="t-display balance reveal">Everything in one membership.</h2>
+    <div class="perks reveal d1">
+{cells}    </div>
+  </div>
+</section>
+'''
+
+
 def plus_page():
     depth = 1
-    links = [("Overview", "#top"), ("Moments", "#handoff"), ("Plans", "#plans"),
-             ("Compare", "#compare"), ("Questions", "#faq")]
+    links = [("Overview", "#top"), ("Moments", "#handoff"), ("Included", "#perks"),
+             ("Plans", "#plans"), ("Compare", "#compare"), ("Questions", "#faq")]
     out = head(depth, "Oplo+ — Oplo",
                "Oplo+ is the membership for the moments your machine outgrows its own pocket.",
                "plus/", PLUS_CSS)
@@ -1114,6 +1203,8 @@ def plus_page():
   </div>
 </section>
 '''
+
+    out += perks_block()
 
     cards = ""
     for name, price, allow, blurb, lead in PRICING:
@@ -1187,6 +1278,8 @@ def plus_page():
     notes = [
         "Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the tiers "
         "describe what is planned rather than what exists.",
+        "Discounted deals would be offered by third-party merchants, not by Oplo. Availability, pricing and "
+        "the terms of any offer would be set by the merchant and vary by region.",
         "The scenes on this page illustrate what the membership is intended to do. They are written as "
         "examples, not as recordings of a working system.",
         "Feature descriptions state design intent. Capability, allowances and availability are not final.",
