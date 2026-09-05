@@ -112,6 +112,32 @@
     }
   ];
 
+
+  var MEDIA_UNITS = [
+    "What are Media Arts?", "The Basics of Design", "Digital Media and Web Design",
+    "The \u201CWeb 2.0\u201D", "Waves and Sound", "Intro to Photography",
+    "Video Basics", "Intro to Animation", "Audio/Video Production"
+  ];
+
+  var BIZ_A = [
+    "Introduction to Business", "Economics and Business",
+    "Business Ethics and Social Responsibility", "International Business",
+    "Business Writing", "Types of Business Ownership",
+    "Small Business and Entrepreneurship", "Management",
+    "Organizational Structure", "Operations Management",
+    "Motivation Theories and Applications"
+  ];
+  var BIZ_B = [
+    "Human Resource Management", "Organized Labor Relations",
+    "Marketing and the Customer", "Product and Pricing Strategies",
+    "Product Distribution", "Marketing Communications",
+    "Financial Statements", "Financial Management",
+    "Managing Information Technology", "Functions of Money and Banking"
+  ];
+
+  var SCALE = [["A", "90\u2013100"], ["B", "80\u201389"], ["C", "70\u201379"],
+               ["D", "60\u201369"], ["F", "under 59"]];
+
   var COURSES = [
     {
       id: "seeing", t: "Seeing numbers", hue: "#0071e3",
@@ -125,19 +151,38 @@
       glyph: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'
     },
     {
-      id: "chance", t: "Chance and choice", hue: "#12915a",
-      d: "Probability by playing with it — dice, draws and the traps your intuition sets.",
-      units: [], glyph: '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="16" r="3"/><path d="M8 11v5h5"/>'
+      id: "media", t: "Media Arts", hue: "#8f5cff",
+      d: "Design, photography, video, animation and sound \u2014 the media you use every day, taken apart.",
+      lede: "Media arts are everywhere, which is exactly why they go unnoticed. This course covers the history and the practice: design principles, digital media and the web, photography, video, animation and audio production.",
+      tag: "Arts and Design",
+      objectives: [
+        "Briefly describe the history of print, design and media.",
+        "Explain the five key principles of design and how they are used.",
+        "Describe the fundamentals and applications of digital media and web design.",
+        "List and describe the applications of various web-based tools used in blogs and wikis.",
+        "Describe the history and application of photography, video, animation and audio/video production."
+      ],
+      parts: [{ name: null, units: MEDIA_UNITS }],
+      grading: [["Quizzes", 35], ["Assignments", 35], ["Mid-term and final exams", 30]],
+      textbook: "EHS Media Arts \u2014 \u00A9 Excel Education Systems, Inc., 2021.",
+      glyph: '<circle cx="12" cy="12" r="3.4"/><path d="M3 8.5h3.5L8.5 6h7l2 2.5H21v10H3z"/>'
     },
     {
-      id: "code", t: "How code thinks", hue: "#8f5cff",
-      d: "Loops, conditions and recursion, traced by hand until the machine stops being mysterious.",
-      units: [], glyph: '<path d="M9 6 4 12l5 6M15 6l5 6-5 6"/>'
-    },
-    {
-      id: "data", t: "Reading data", hue: "#e8a317",
-      d: "What a chart is telling you, and the several things it is quietly not.",
-      units: [], glyph: '<path d="M4 20V9M10 20V4M16 20v-7M22 20V11"/>'
+      id: "biz", t: "Introduction to Business", hue: "#12915a",
+      d: "Planning and launching something real \u2014 economics, structure, money and the plan that holds it together.",
+      lede: "What it actually takes to plan and launch a product or service. Economics, costs and profit, business types, money and taxes, financing, and how a business sits inside the society around it \u2014 built toward writing a plan you could hand to somebody.",
+      tag: "Two semesters",
+      objectives: [
+        "Understand basic economic principles.",
+        "Develop workplace communication skills.",
+        "Describe how businesses are structured and operated.",
+        "Design a business plan.",
+        "Weigh financial risks and rewards."
+      ],
+      parts: [{ name: "Semester A", units: BIZ_A }, { name: "Semester B", units: BIZ_B }],
+      grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
+      textbook: "Introduction to Business \u2014 Boundless, CC\u00A0BY-SA\u00A04.0.",
+      glyph: '<path d="M3 20h18M6 20V9l6-4 6 4v11"/><path d="M10 20v-5h4v5"/>'
     }
   ];
 
@@ -175,7 +220,7 @@
         '</span>' +
         '<b>' + c.t + '</b><span class="d">' + c.d + '</span>' +
         '<span class="lx-meta"><span class="lx-track' + (p === 100 ? " done" : "") + '"><i style="width:' + p + '%"></i></span>' +
-        '<span>' + (c.units.length ? p + "%" : "Soon") + '</span></span>';
+        '<span>' + (c.units ? p + "%" : countUnits(c) + " units") + '</span></span>';
       b.addEventListener("click", function () { openCourse(c); });
       box.appendChild(b);
     });
@@ -183,30 +228,129 @@
 
   /* ------------------------------------------------------------- Course */
   function openCourse(c) {
-    if (!c.units.length) { drawHome(); return; }
     S.course = c;
     $("#courseTitle").textContent = c.t;
-    $("#courseLede").textContent = c.lede;
-    var pct = Math.round(S.done / PROBLEMS.length * 100);
-    $("#courseTrack").firstElementChild.style.width = pct + "%";
-    $("#courseTrack").classList.toggle("done", pct === 100);
-    $("#coursePct").textContent = pct + "%";
+    $("#courseLede").textContent = c.lede || c.d;
+    var body = $("#courseBody");
+    body.innerHTML = "";
 
-    var box = $("#units"); box.innerHTML = "";
-    c.units.forEach(function (u, i) {
+    var playable = (c.units || []).some(function (u) { return u.play; });
+    var pct = playable ? Math.round(S.done / PROBLEMS.length * 100) : 0;
+
+    if (playable) {
+      var m = el("div", "lx-meta");
+      m.style.cssText = "max-width:340px;margin:18px 0 6px";
+      m.innerHTML = '<span class="lx-track' + (pct === 100 ? " done" : "") +
+                    '"><i style="width:' + pct + '%"></i></span><span>' + pct + '%</span>';
+      body.appendChild(m);
+    } else if (c.tag) {
+      var t = el("p", "lx-meta");
+      t.style.cssText = "margin:18px 0 6px";
+      t.innerHTML = '<span class="lx-tag">' + c.tag + '</span>' +
+                    '<span>' + countUnits(c) + ' units</span>';
+      body.appendChild(t);
+    }
+
+    if (c.objectives) {
+      var o = el("section", "lx-sec", "<h2>What you will be able to do</h2>");
+      var ul = el("ul", "lx-obj");
+      c.objectives.forEach(function (x) {
+        ul.appendChild(el("li", null,
+          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.5 12 13 4.5"/></svg>' +
+          '<span>' + x + '</span>'));
+      });
+      o.appendChild(ul);
+      body.appendChild(o);
+    }
+
+    var sec = el("section", "lx-sec", "<h2>Contents</h2>");
+    if (c.units && c.units.length) {
+      sec.appendChild(unitList(c.units, true));
+    } else {
+      var n = 0;
+      c.parts.forEach(function (part) {
+        if (part.name) sec.appendChild(el("p", "lx-part", part.name));
+        var wrap = el("div", "lx-units");
+        part.units.forEach(function (u) {
+          n++;
+          var b = el("button", "lx-unit");
+          b.type = "button";
+          b.innerHTML = '<span class="lx-step">' + n + '</span>' +
+                        '<span class="t"><b>' + u + '</b></span>' +
+                        '<span class="lx-tag">Soon</span>';
+          b.addEventListener("click", function () { flash(u + " — not written yet"); });
+          wrap.appendChild(b);
+        });
+        sec.appendChild(wrap);
+      });
+    }
+    body.appendChild(sec);
+
+    if (c.grading) {
+      var g = el("section", "lx-sec", "<h2>Assessment</h2>");
+      var box = el("div", "lx-grade");
+      c.grading.forEach(function (row) {
+        box.appendChild(el("div", "g",
+          '<span>' + row[0] + '</span>' +
+          '<span class="bar"><i style="width:' + row[1] + '%"></i></span>' +
+          '<b>' + row[1] + '%</b>'));
+      });
+      g.appendChild(box);
+      var sc = el("div", "lx-scale");
+      SCALE.forEach(function (x) { sc.appendChild(el("span", null, "<b>" + x[0] + "</b> " + x[1])); });
+      g.appendChild(sc);
+      body.appendChild(g);
+    }
+
+    if (c.textbook) {
+      body.appendChild(el("p", "lx-credit", "Textbook: " + c.textbook));
+    }
+    show("course");
+  }
+
+  function countUnits(c) {
+    return (c.parts || []).reduce(function (n, p) { return n + p.units.length; }, 0);
+  }
+
+  function unitList(units, live) {
+    var wrap = el("div", "lx-units");
+    var pct = Math.round(S.done / PROBLEMS.length * 100);
+    units.forEach(function (u, i) {
       var state = !u.play ? "" : pct === 100 ? "done" : "now";
       var b = el("button", "lx-unit " + state);
       b.type = "button";
       if (!u.play) b.disabled = true;
-      b.innerHTML =
-        '<span class="lx-step">' + (state === "done" ? "&#10003;" : (i + 1)) + '</span>' +
-        '<span class="t"><b>' + u.t + '</b><span>' + u.s + '</span></span>' +
-        '<span class="lx-tag' + (state ? " " + state : "") + '">' +
-        (state === "done" ? "Mastered" : state === "now" ? (S.done ? "In progress" : "Start") : "Locked") + '</span>';
+      b.innerHTML = '<span class="lx-step">' + (state === "done" ? "&#10003;" : (i + 1)) + '</span>' +
+                    '<span class="t"><b>' + u.t + '</b><span>' + u.s + '</span></span>' +
+                    '<span class="lx-tag' + (state ? " " + state : "") + '">' +
+                    (state === "done" ? "Mastered" : state === "now" ? (S.done ? "In progress" : "Start") : "Locked") +
+                    '</span>';
       if (u.play) b.addEventListener("click", startLesson);
-      box.appendChild(b);
+      wrap.appendChild(b);
     });
-    show("course");
+    return wrap;
+  }
+
+  var flashTimer;
+  function flash(msg) {
+    var n = document.getElementById("lxFlash") || (function () {
+      var d = el("div", null, "");
+      d.id = "lxFlash";
+      d.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(12px);" +
+        "background:#1d1d1f;color:#fff;font-size:14px;padding:11px 20px;border-radius:100px;" +
+        "opacity:0;transition:opacity .2s,transform .2s;z-index:60;pointer-events:none";
+      document.body.appendChild(d);
+      return d;
+    })();
+    n.textContent = msg;
+    n.style.opacity = "1";
+    n.style.transform = "translateX(-50%) translateY(0)";
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(function () {
+      n.style.opacity = "0";
+      n.style.transform = "translateX(-50%) translateY(12px)";
+    }, 2000);
   }
 
   /* ------------------------------------------------------------- Lesson */
