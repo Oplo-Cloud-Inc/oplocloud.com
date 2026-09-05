@@ -875,16 +875,56 @@ def signin_page():
 # change to PRICING below and nothing about the layout moves.
 # ==========================================================================
 
+# ==========================================================================
+# Oplo+ — told as scenes rather than listed as features.
+#
+# The membership only makes sense at the edges: the moment work outgrows a
+# pocket, the moment a machine is lost, the moment someone wants your address
+# before they will help you. So the page walks those moments in the second
+# person and lets the tier tables come after, once you already know what they
+# are for. Prices are still not invented — see PRICING.
+# ==========================================================================
+
 PRICE_AT_LAUNCH = "Priced at&nbsp;launch"
 
 PRICING = [
-    # (tier, price slot, allowance, blurb, is the emphasised column)
     ("Oplo", "Free", "With every device",
      "The on-device model, encrypted sync for your essentials, and everything that makes the machine work.", False),
     ("Oplo+", PRICE_AT_LAUNCH, "For one person",
      "The larger model, room for a real library, and the privacy features that need somewhere to run.", True),
     ("Oplo+ Family", PRICE_AT_LAUNCH, "Up to six people",
      "Everything in Oplo+, shared across a household, with each person's material kept separate.", False),
+]
+
+# (band class, anchor, moment, scene line, body, what it needs)
+SCENES = [
+    ("dark", "handoff", "The handoff",
+     "You start it on the train. You finish it at your desk, and it is already open.",
+     "The draft, the tabs, the half-finished thought — carried between your own machines and encrypted "
+     "before any of it leaves the one in your hand. You do not send it to yourself. It is simply there.",
+     "Encrypted sync"),
+    ("", "toobig", "The job that will not fit",
+     "A year of receipts, and one question about them.",
+     "The model in your pocket handles the day. Some questions need more room than a pocket has — the whole "
+     "year at once, held in mind while it works. That is what the desk model is for, and it is the only "
+     "reason most people will want this.",
+     "Desk model"),
+    ("dark", "lost", "The machine you lost",
+     "The laptop goes in the river. Nothing else does.",
+     "A complete restore point, encrypted on the device before it is stored, so what sits on our side is "
+     "not readable by us. The new machine wakes up as the old one, and the worst day of your week costs "
+     "you an afternoon instead of a year.",
+     "Device backup"),
+    ("", "address", "The address you did not want to give",
+     "They want your email before they will show you the price.",
+     "Give them one that is not yours. It forwards to you until the day you decide it should not, and then "
+     "it stops — without you changing the address that your friends use.",
+     "Disposable addresses"),
+    ("dark", "household", "The household",
+     "Six people. One bill. Six libraries that never touch.",
+     "Sharing what you pay for should not mean sharing what you keep. Everyone in the house gets the whole "
+     "membership and their own material, and nobody can see anybody else's.",
+     "Family"),
 ]
 
 MATRIX_HEAD = ["Oplo", "Oplo+", "Family"]
@@ -901,30 +941,68 @@ MATRIX = [
 
 FAQ = [
     ("What is Oplo+?",
-     "A single membership covering the parts of Oplo that need somewhere to run or somewhere to live — "
-     "the larger model, encrypted sync and backup, and the privacy features. The device and its on-device "
-     "model work without it."),
+     "A single membership covering the parts of Oplo that need somewhere to run or somewhere to live — the "
+     "larger model, encrypted sync and backup, and the privacy features. The device and its on-device model "
+     "work without it."),
     ("Do I need it for the AI to work?",
      "No. The on-device model is part of the machine, not part of the membership. Oplo+ adds the larger "
      "model for work that will not fit on a handheld."),
     ("What happens to my things if I stop paying?",
-     "They stay yours. Anything held in sync remains downloadable, and nothing is deleted as a lever to "
-     "make you resubscribe. The exact window will be written into the terms before anyone is charged."),
+     "They stay yours. Anything held in sync remains downloadable, and nothing is deleted as a lever to make "
+     "you resubscribe. The exact window will be written into the terms before anyone is charged."),
     ("Can a household share one membership?",
-     "That is what the Family tier is for. Each person keeps their own material; sharing the membership "
-     "does not mean sharing a library."),
+     "That is what the Family tier is for. Each person keeps their own material; sharing the membership does "
+     "not mean sharing a library."),
     ("Is my data used to train models?",
-     "No. That commitment does not change between tiers, and paying more does not buy more privacy — "
-     "the floor is the same for everyone."),
+     "No. That commitment does not change between tiers, and paying more does not buy more privacy — the "
+     "floor is the same for everyone."),
     ("When can I subscribe?",
-     "Not yet. Oplo has no shipping product for a membership to attach to. This page describes what is "
-     "being built."),
+     "Not yet. Oplo has no shipping product for a membership to attach to. This page describes what is being "
+     "built."),
 ]
 
 PLUS_CSS = '''<style>
-  /* Tier cards. A pricing page is the one place discrete boxes are correct —
-     the tiers are separate things you choose between. Kept to a hairline and
-     white ground; no shadow, no gradient, no lift. */
+  /* Scenes. Each moment gets a whole band and the sentence gets the size —
+     the scene is the illustration, since there is no photograph to carry it. */
+  .scene { padding: clamp(88px, 14vh, 170px) 0; }
+  .scene .moment {
+    font-family: var(--font); font-size: clamp(15px, 1.5vw, 19px); font-weight: 600;
+    letter-spacing: .011em; color: var(--ink-2); margin-bottom: 18px;
+  }
+  .scene.dark .moment { color: var(--ink-lt-2); }
+  .scene q {
+    display: block; quotes: none; max-width: 22ch; margin: 0 auto;
+    font-family: var(--font); font-size: clamp(30px, 5vw, 62px); line-height: 1.1;
+    font-weight: 600; letter-spacing: -.022em;
+  }
+  .scene .body {
+    max-width: 46ch; margin: clamp(26px, 3.4vw, 38px) auto 0;
+    font-size: clamp(16px, 1.5vw, 19px); line-height: 1.6; color: var(--ink-2);
+  }
+  .scene.dark .body { color: var(--ink-lt-2); }
+  .scene .needs {
+    display: inline-block; margin-top: 26px;
+    font-size: 13px; color: var(--ink-2);
+    padding-top: 14px; border-top: 1px solid var(--rule);
+  }
+  .scene.dark .needs { color: var(--ink-lt-2); border-top-color: rgba(255,255,255,.24); }
+
+  /* The handoff, drawn: one piece of work crossing between two machines. */
+  .cross { width: min(100%, 480px); margin: clamp(40px, 5vw, 62px) auto 0; }
+  .cross .track { position: relative; height: 1px; background: rgba(255,255,255,.24); }
+  .cross .pip {
+    position: absolute; top: 50%; left: 0; width: 9px; height: 9px;
+    margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #2997ff;
+    animation: cross 3.4s cubic-bezier(.55,0,.45,1) infinite;
+  }
+  @keyframes cross { 0%,10% { left: 0 } 60%,100% { left: 100% } }
+  .cross .ends {
+    display: flex; justify-content: space-between; margin-top: 14px;
+    font-size: 13px; color: var(--ink-lt-2);
+  }
+  @media (prefers-reduced-motion: reduce) { .cross .pip { animation: none; left: 100%; } }
+
+  /* Tier cards. A pricing page is the one place discrete boxes are correct. */
   .tiers-price {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap);
     width: min(100%, 1020px); margin: clamp(36px, 5vw, 56px) auto 0;
@@ -951,8 +1029,6 @@ PLUS_CSS = '''<style>
     font-size: 15px; line-height: 1.55; color: var(--ink-2);
   }
 
-  /* Feature matrix. Hairlines only, and it scrolls sideways on a phone
-     rather than crushing eight rows into a column. */
   .compare-wrap { width: min(100%, 1020px); margin: clamp(34px, 4.6vw, 52px) auto 0; overflow-x: auto; }
   table.compare { width: 100%; min-width: 640px; border-collapse: collapse; text-align: left; }
   table.compare th, table.compare td {
@@ -964,29 +1040,25 @@ PLUS_CSS = '''<style>
     font-family: var(--font); font-size: 15px; font-weight: 600; color: var(--ink);
   }
   table.compare thead th:first-child { font-weight: 400; color: var(--ink-2); }
-  table.compare td.f { color: var(--ink); }
   table.compare td.f b { display: block; font-weight: 600; font-size: 15px; margin-bottom: 3px; }
   table.compare td.f span { color: var(--ink-2); }
-  table.compare td.v { color: var(--ink); text-align: center; white-space: nowrap; }
+  table.compare td.v { text-align: center; white-space: nowrap; }
   table.compare td.v.no { color: var(--ink-3); }
-  table.compare td.v .tick { display: inline-block; width: 15px; height: 15px; color: var(--ink); }
+  table.compare td.v .tick { display: inline-block; width: 15px; height: 15px; }
 
-  /* FAQ. Native disclosure, so it works with no script at all. */
   .faq { width: min(100%, 760px); margin: clamp(30px, 4vw, 46px) auto 0; text-align: left; }
   .faq details { border-top: 1px solid var(--rule); }
   .faq details:last-child { border-bottom: 1px solid var(--rule); }
   .faq summary {
     display: flex; align-items: center; justify-content: space-between; gap: 18px;
     padding: 21px 2px; cursor: pointer; list-style: none;
-    font-family: var(--font); font-size: clamp(17px, 1.8vw, 19px); font-weight: 600;
-    letter-spacing: -.01em;
+    font-family: var(--font); font-size: clamp(17px, 1.8vw, 19px); font-weight: 600; letter-spacing: -.01em;
   }
   .faq summary::-webkit-details-marker { display: none; }
   .faq summary::after {
     content: ""; flex: none; width: 9px; height: 9px;
     border-right: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2);
-    transform: translateY(-3px) rotate(45deg);
-    transition: transform .22s var(--ease);
+    transform: translateY(-3px) rotate(45deg); transition: transform .22s var(--ease);
   }
   .faq details[open] summary::after { transform: translateY(2px) rotate(225deg); }
   .faq .a { padding: 0 2px 22px; font-size: 16px; line-height: 1.6; color: var(--ink-2); max-width: 64ch; }
@@ -1002,13 +1074,19 @@ PLUS_CSS = '''<style>
 TICK = ('<svg class="tick" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" '
         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5"/></svg>')
 
+CROSS = '''    <div class="cross reveal d1" aria-hidden="true">
+      <div class="track"><span class="pip"></span></div>
+      <div class="ends"><span>the train</span><span>your desk</span></div>
+    </div>
+'''
+
 
 def plus_page():
     depth = 1
-    links = [("Overview", "#top"), ("Plans", "#plans"), ("What you get", "#features"),
+    links = [("Overview", "#top"), ("Moments", "#handoff"), ("Plans", "#plans"),
              ("Compare", "#compare"), ("Questions", "#faq")]
     out = head(depth, "Oplo+ — Oplo",
-               "Oplo+ is the membership covering the larger model, encrypted sync and backup, and Oplo's privacy features.",
+               "Oplo+ is the membership for the moments your machine outgrows its own pocket.",
                "plus/", PLUS_CSS)
     out += nav(depth, "plus/")
     out += chapter(depth, "Oplo+", links, "plus/")
@@ -1016,15 +1094,23 @@ def plus_page():
 
     out += '''<section class="band on-white">
   <div class="well">
-    <h1 class="t-hero balance reveal">Oplo+</h1>
-    <p class="t-sub muted balance reveal d1" style="margin-top:14px">One membership for everything that needs somewhere to run.</p>
-    <p class="t-lead muted reveal d1" style="max-width:58ch;margin:20px auto 0">
-      Your device and the model on it work on their own. Oplo+ adds the parts that need more room than a
-      pocket allows &mdash; the larger model, encrypted sync and backup, and the privacy features that have
-      to live somewhere. It is one price, shareable with a household, and it buys capability rather than
-      the removal of an obstacle.
-    </p>
+    <p class="eyebrow reveal">Oplo+</p>
+    <h1 class="t-hero balance reveal" style="max-width:20ch;margin-inline:auto">Most of what you do fits in your pocket.</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:32ch;margin-inline:auto">This is for the rest of it.</p>
     <p class="plus-status reveal d2"><b>Not available yet.</b> Oplo has no shipping product for a membership to attach to. Nothing here can be bought, and no price has been set.<sup>1</sup></p>
+  </div>
+</section>
+'''
+
+    for cls, ident, moment, line, body, needs in SCENES:
+        band = f"band scene {cls}".strip()
+        extra = CROSS if ident == "handoff" else ""
+        out += f'''<section class="{band}" id="{ident}">
+  <div class="well">
+    <p class="moment reveal">{moment}</p>
+    <q class="reveal">{line}</q>
+{extra}    <p class="body balance reveal d1">{body}</p>
+    <p><span class="needs reveal d2">{needs}</span></p>
   </div>
 </section>
 '''
@@ -1046,48 +1132,16 @@ def plus_page():
     <div class="tiers-price reveal d1">
 {cards}    </div>
     <p class="includes reveal d2">
-      Every tier, including the free one, gets the on-device model, encrypted sync for your essentials,
-      and the same privacy floor. Paying more buys capability &mdash; it does not buy back something that
-      was withheld.
+      Every tier, including the free one, gets the on-device model, encrypted sync for your essentials, and
+      the same privacy floor. Paying more buys capability &mdash; it does not buy back something that was
+      withheld.
     </p>
   </div>
 </section>
 '''
 
-    out += '''<section class="band on-white" id="features">
-  <div class="well">
-    <p class="eyebrow reveal">What you get</p>
-    <h2 class="t-display balance reveal">Room, not permission.</h2>
-  </div>
-  <div class="rows">
-    <section class="row">
-      <p class="eyebrow reveal">The larger model</p>
-      <h3 class="t-title balance reveal">For work that will not fit in a pocket.</h3>
-      <p class="t-lead muted balance reveal d1">The on-device model handles the everyday. Some work needs more context and more room to think, and that is what the desk model is for.</p>
-      <p class="cta-row reveal d2"><a class="cta" href="../intelligence/#where">How the tiers work</a></p>
-    </section>
-    <section class="row dark">
-      <p class="eyebrow reveal">Sync and backup</p>
-      <h3 class="t-title balance reveal">Encrypted before it leaves.</h3>
-      <p class="t-lead muted balance reveal d1">Your files and settings carried between your own machines, and a complete restore point if one of them is lost. Encrypted on the device, so what is stored is not readable by us.</p>
-    </section>
-    <section class="row">
-      <p class="eyebrow reveal">Privacy features</p>
-      <h3 class="t-title balance reveal">The ones that need somewhere to run.</h3>
-      <p class="t-lead muted balance reveal d1">A browsing relay so sites cannot build a profile from your address, and disposable addresses you can hand out and cut off. Both need infrastructure, which is the honest reason they sit behind a membership.</p>
-      <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Our position on privacy</a></p>
-    </section>
-    <section class="row">
-      <p class="eyebrow reveal">Household</p>
-      <h3 class="t-title balance reveal">Shared, but not pooled.</h3>
-      <p class="t-lead muted balance reveal d1">One membership across up to six people, with each person's material kept separate. Sharing what you pay for should not mean sharing what you keep.</p>
-    </section>
-  </div>
-</section>
-'''
-
-    head_cells = "".join(f"<th scope=\"col\">{h}</th>" for h in MATRIX_HEAD)
-    body = ""
+    head_cells = "".join(f'<th scope="col">{h}</th>' for h in MATRIX_HEAD)
+    body_rows = ""
     for feat, desc, vals in MATRIX:
         cells = ""
         for v in vals:
@@ -1097,8 +1151,8 @@ def plus_page():
                 cells += '<td class="v no">&mdash;<span class="sr">Not included</span></td>'
             else:
                 cells += f'<td class="v">{v}</td>'
-        body += f'      <tr><td class="f"><b>{feat}</b><span>{desc}</span></td>{cells}</tr>\n'
-    out += f'''<section class="band on-grey" id="compare">
+        body_rows += f'      <tr><td class="f"><b>{feat}</b><span>{desc}</span></td>{cells}</tr>\n'
+    out += f'''<section class="band on-white" id="compare">
   <div class="well">
     <p class="eyebrow reveal">Compare</p>
     <h2 class="t-display balance reveal">What is in each tier.</h2>
@@ -1107,7 +1161,7 @@ def plus_page():
         <caption class="sr">Oplo+ tiers compared</caption>
         <thead><tr><th scope="col">Feature</th>{head_cells}</tr></thead>
         <tbody>
-{body}        </tbody>
+{body_rows}        </tbody>
       </table>
     </div>
   </div>
@@ -1119,7 +1173,7 @@ def plus_page():
         <div class="a">{a}</div>
       </details>
 ''' for q, a in FAQ)
-    out += f'''<section class="band on-white" id="faq">
+    out += f'''<section class="band on-grey" id="faq">
   <div class="well">
     <p class="eyebrow reveal">Questions</p>
     <h2 class="t-display balance reveal">Answers.</h2>
@@ -1131,8 +1185,10 @@ def plus_page():
 </main>
 '''
     notes = [
-        "Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the "
-        "tiers describe what is planned rather than what exists.",
+        "Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the tiers "
+        "describe what is planned rather than what exists.",
+        "The scenes on this page illustrate what the membership is intended to do. They are written as "
+        "examples, not as recordings of a working system.",
         "Feature descriptions state design intent. Capability, allowances and availability are not final.",
         "The commitment that personal material is not used to train models is the same at every tier, "
         "including the free one. See the privacy policy, which is in preparation.",

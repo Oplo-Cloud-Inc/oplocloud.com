@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Oplo+ — Oplo</title>
-<meta name="description" content="Oplo+ is the membership covering the larger model, encrypted sync and backup, and Oplo's privacy features.">
+<meta name="description" content="Oplo+ is the membership for the moments your machine outgrows its own pocket.">
 <meta name="theme-color" content="#ffffff">
 <link rel="canonical" href="https://oplocloud.com/plus/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Oplo">
 <meta property="og:title" content="Oplo+ — Oplo">
-<meta property="og:description" content="Oplo+ is the membership covering the larger model, encrypted sync and backup, and Oplo's privacy features.">
+<meta property="og:description" content="Oplo+ is the membership for the moments your machine outgrows its own pocket.">
 <meta property="og:url" content="https://oplocloud.com/plus/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='84.13 107.80 206.73 194.91'%3E%3Cg transform='translate(73.919875, 252.710833)'%3E%3Cpath fill='%23000' d='M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,9 +25,47 @@
 </script>
 <style>body { padding-top: 44px; }</style>
 <style>
-  /* Tier cards. A pricing page is the one place discrete boxes are correct —
-     the tiers are separate things you choose between. Kept to a hairline and
-     white ground; no shadow, no gradient, no lift. */
+  /* Scenes. Each moment gets a whole band and the sentence gets the size —
+     the scene is the illustration, since there is no photograph to carry it. */
+  .scene { padding: clamp(88px, 14vh, 170px) 0; }
+  .scene .moment {
+    font-family: var(--font); font-size: clamp(15px, 1.5vw, 19px); font-weight: 600;
+    letter-spacing: .011em; color: var(--ink-2); margin-bottom: 18px;
+  }
+  .scene.dark .moment { color: var(--ink-lt-2); }
+  .scene q {
+    display: block; quotes: none; max-width: 22ch; margin: 0 auto;
+    font-family: var(--font); font-size: clamp(30px, 5vw, 62px); line-height: 1.1;
+    font-weight: 600; letter-spacing: -.022em;
+  }
+  .scene .body {
+    max-width: 46ch; margin: clamp(26px, 3.4vw, 38px) auto 0;
+    font-size: clamp(16px, 1.5vw, 19px); line-height: 1.6; color: var(--ink-2);
+  }
+  .scene.dark .body { color: var(--ink-lt-2); }
+  .scene .needs {
+    display: inline-block; margin-top: 26px;
+    font-size: 13px; color: var(--ink-2);
+    padding-top: 14px; border-top: 1px solid var(--rule);
+  }
+  .scene.dark .needs { color: var(--ink-lt-2); border-top-color: rgba(255,255,255,.24); }
+
+  /* The handoff, drawn: one piece of work crossing between two machines. */
+  .cross { width: min(100%, 480px); margin: clamp(40px, 5vw, 62px) auto 0; }
+  .cross .track { position: relative; height: 1px; background: rgba(255,255,255,.24); }
+  .cross .pip {
+    position: absolute; top: 50%; left: 0; width: 9px; height: 9px;
+    margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #2997ff;
+    animation: cross 3.4s cubic-bezier(.55,0,.45,1) infinite;
+  }
+  @keyframes cross { 0%,10% { left: 0 } 60%,100% { left: 100% } }
+  .cross .ends {
+    display: flex; justify-content: space-between; margin-top: 14px;
+    font-size: 13px; color: var(--ink-lt-2);
+  }
+  @media (prefers-reduced-motion: reduce) { .cross .pip { animation: none; left: 100%; } }
+
+  /* Tier cards. A pricing page is the one place discrete boxes are correct. */
   .tiers-price {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap);
     width: min(100%, 1020px); margin: clamp(36px, 5vw, 56px) auto 0;
@@ -54,8 +92,6 @@
     font-size: 15px; line-height: 1.55; color: var(--ink-2);
   }
 
-  /* Feature matrix. Hairlines only, and it scrolls sideways on a phone
-     rather than crushing eight rows into a column. */
   .compare-wrap { width: min(100%, 1020px); margin: clamp(34px, 4.6vw, 52px) auto 0; overflow-x: auto; }
   table.compare { width: 100%; min-width: 640px; border-collapse: collapse; text-align: left; }
   table.compare th, table.compare td {
@@ -67,29 +103,25 @@
     font-family: var(--font); font-size: 15px; font-weight: 600; color: var(--ink);
   }
   table.compare thead th:first-child { font-weight: 400; color: var(--ink-2); }
-  table.compare td.f { color: var(--ink); }
   table.compare td.f b { display: block; font-weight: 600; font-size: 15px; margin-bottom: 3px; }
   table.compare td.f span { color: var(--ink-2); }
-  table.compare td.v { color: var(--ink); text-align: center; white-space: nowrap; }
+  table.compare td.v { text-align: center; white-space: nowrap; }
   table.compare td.v.no { color: var(--ink-3); }
-  table.compare td.v .tick { display: inline-block; width: 15px; height: 15px; color: var(--ink); }
+  table.compare td.v .tick { display: inline-block; width: 15px; height: 15px; }
 
-  /* FAQ. Native disclosure, so it works with no script at all. */
   .faq { width: min(100%, 760px); margin: clamp(30px, 4vw, 46px) auto 0; text-align: left; }
   .faq details { border-top: 1px solid var(--rule); }
   .faq details:last-child { border-bottom: 1px solid var(--rule); }
   .faq summary {
     display: flex; align-items: center; justify-content: space-between; gap: 18px;
     padding: 21px 2px; cursor: pointer; list-style: none;
-    font-family: var(--font); font-size: clamp(17px, 1.8vw, 19px); font-weight: 600;
-    letter-spacing: -.01em;
+    font-family: var(--font); font-size: clamp(17px, 1.8vw, 19px); font-weight: 600; letter-spacing: -.01em;
   }
   .faq summary::-webkit-details-marker { display: none; }
   .faq summary::after {
     content: ""; flex: none; width: 9px; height: 9px;
     border-right: 1.5px solid var(--ink-2); border-bottom: 1.5px solid var(--ink-2);
-    transform: translateY(-3px) rotate(45deg);
-    transition: transform .22s var(--ease);
+    transform: translateY(-3px) rotate(45deg); transition: transform .22s var(--ease);
   }
   .faq details[open] summary::after { transform: translateY(2px) rotate(225deg); }
   .faq .a { padding: 0 2px 22px; font-size: 16px; line-height: 1.6; color: var(--ink-2); max-width: 64ch; }
@@ -126,21 +158,60 @@
 <div class="chapter">
   <div class="chapter-in">
     <a class="chapter-name" href="../plus/">Oplo+</a>
-    <nav class="chapter-links" aria-label="Oplo+ sections"><a href="#top">Overview</a><a href="#plans">Plans</a><a href="#features">What you get</a><a href="#compare">Compare</a><a href="#faq">Questions</a></nav>
+    <nav class="chapter-links" aria-label="Oplo+ sections"><a href="#top">Overview</a><a href="#handoff">Moments</a><a href="#plans">Plans</a><a href="#compare">Compare</a><a href="#faq">Questions</a></nav>
   </div>
 </div>
 <main id="top">
 <section class="band on-white">
   <div class="well">
-    <h1 class="t-hero balance reveal">Oplo+</h1>
-    <p class="t-sub muted balance reveal d1" style="margin-top:14px">One membership for everything that needs somewhere to run.</p>
-    <p class="t-lead muted reveal d1" style="max-width:58ch;margin:20px auto 0">
-      Your device and the model on it work on their own. Oplo+ adds the parts that need more room than a
-      pocket allows &mdash; the larger model, encrypted sync and backup, and the privacy features that have
-      to live somewhere. It is one price, shareable with a household, and it buys capability rather than
-      the removal of an obstacle.
-    </p>
+    <p class="eyebrow reveal">Oplo+</p>
+    <h1 class="t-hero balance reveal" style="max-width:20ch;margin-inline:auto">Most of what you do fits in your pocket.</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:32ch;margin-inline:auto">This is for the rest of it.</p>
     <p class="plus-status reveal d2"><b>Not available yet.</b> Oplo has no shipping product for a membership to attach to. Nothing here can be bought, and no price has been set.<sup>1</sup></p>
+  </div>
+</section>
+<section class="band scene dark" id="handoff">
+  <div class="well">
+    <p class="moment reveal">The handoff</p>
+    <q class="reveal">You start it on the train. You finish it at your desk, and it is already open.</q>
+    <div class="cross reveal d1" aria-hidden="true">
+      <div class="track"><span class="pip"></span></div>
+      <div class="ends"><span>the train</span><span>your desk</span></div>
+    </div>
+    <p class="body balance reveal d1">The draft, the tabs, the half-finished thought — carried between your own machines and encrypted before any of it leaves the one in your hand. You do not send it to yourself. It is simply there.</p>
+    <p><span class="needs reveal d2">Encrypted sync</span></p>
+  </div>
+</section>
+<section class="band scene" id="toobig">
+  <div class="well">
+    <p class="moment reveal">The job that will not fit</p>
+    <q class="reveal">A year of receipts, and one question about them.</q>
+    <p class="body balance reveal d1">The model in your pocket handles the day. Some questions need more room than a pocket has — the whole year at once, held in mind while it works. That is what the desk model is for, and it is the only reason most people will want this.</p>
+    <p><span class="needs reveal d2">Desk model</span></p>
+  </div>
+</section>
+<section class="band scene dark" id="lost">
+  <div class="well">
+    <p class="moment reveal">The machine you lost</p>
+    <q class="reveal">The laptop goes in the river. Nothing else does.</q>
+    <p class="body balance reveal d1">A complete restore point, encrypted on the device before it is stored, so what sits on our side is not readable by us. The new machine wakes up as the old one, and the worst day of your week costs you an afternoon instead of a year.</p>
+    <p><span class="needs reveal d2">Device backup</span></p>
+  </div>
+</section>
+<section class="band scene" id="address">
+  <div class="well">
+    <p class="moment reveal">The address you did not want to give</p>
+    <q class="reveal">They want your email before they will show you the price.</q>
+    <p class="body balance reveal d1">Give them one that is not yours. It forwards to you until the day you decide it should not, and then it stops — without you changing the address that your friends use.</p>
+    <p><span class="needs reveal d2">Disposable addresses</span></p>
+  </div>
+</section>
+<section class="band scene dark" id="household">
+  <div class="well">
+    <p class="moment reveal">The household</p>
+    <q class="reveal">Six people. One bill. Six libraries that never touch.</q>
+    <p class="body balance reveal d1">Sharing what you pay for should not mean sharing what you keep. Everyone in the house gets the whole membership and their own material, and nobody can see anybody else's.</p>
+    <p><span class="needs reveal d2">Family</span></p>
   </div>
 </section>
 <section class="band on-grey" id="plans">
@@ -171,43 +242,13 @@
       </div>
     </div>
     <p class="includes reveal d2">
-      Every tier, including the free one, gets the on-device model, encrypted sync for your essentials,
-      and the same privacy floor. Paying more buys capability &mdash; it does not buy back something that
-      was withheld.
+      Every tier, including the free one, gets the on-device model, encrypted sync for your essentials, and
+      the same privacy floor. Paying more buys capability &mdash; it does not buy back something that was
+      withheld.
     </p>
   </div>
 </section>
-<section class="band on-white" id="features">
-  <div class="well">
-    <p class="eyebrow reveal">What you get</p>
-    <h2 class="t-display balance reveal">Room, not permission.</h2>
-  </div>
-  <div class="rows">
-    <section class="row">
-      <p class="eyebrow reveal">The larger model</p>
-      <h3 class="t-title balance reveal">For work that will not fit in a pocket.</h3>
-      <p class="t-lead muted balance reveal d1">The on-device model handles the everyday. Some work needs more context and more room to think, and that is what the desk model is for.</p>
-      <p class="cta-row reveal d2"><a class="cta" href="../intelligence/#where">How the tiers work</a></p>
-    </section>
-    <section class="row dark">
-      <p class="eyebrow reveal">Sync and backup</p>
-      <h3 class="t-title balance reveal">Encrypted before it leaves.</h3>
-      <p class="t-lead muted balance reveal d1">Your files and settings carried between your own machines, and a complete restore point if one of them is lost. Encrypted on the device, so what is stored is not readable by us.</p>
-    </section>
-    <section class="row">
-      <p class="eyebrow reveal">Privacy features</p>
-      <h3 class="t-title balance reveal">The ones that need somewhere to run.</h3>
-      <p class="t-lead muted balance reveal d1">A browsing relay so sites cannot build a profile from your address, and disposable addresses you can hand out and cut off. Both need infrastructure, which is the honest reason they sit behind a membership.</p>
-      <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Our position on privacy</a></p>
-    </section>
-    <section class="row">
-      <p class="eyebrow reveal">Household</p>
-      <h3 class="t-title balance reveal">Shared, but not pooled.</h3>
-      <p class="t-lead muted balance reveal d1">One membership across up to six people, with each person's material kept separate. Sharing what you pay for should not mean sharing what you keep.</p>
-    </section>
-  </div>
-</section>
-<section class="band on-grey" id="compare">
+<section class="band on-white" id="compare">
   <div class="well">
     <p class="eyebrow reveal">Compare</p>
     <h2 class="t-display balance reveal">What is in each tier.</h2>
@@ -229,7 +270,7 @@
     </div>
   </div>
 </section>
-<section class="band on-white" id="faq">
+<section class="band on-grey" id="faq">
   <div class="well">
     <p class="eyebrow reveal">Questions</p>
     <h2 class="t-display balance reveal">Answers.</h2>
@@ -263,7 +304,7 @@
   </div>
 </section>
 </main>
-<div class="notes"><ol><li>Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the tiers describe what is planned rather than what exists.</li><li>Feature descriptions state design intent. Capability, allowances and availability are not final.</li><li>The commitment that personal material is not used to train models is the same at every tier, including the free one. See the privacy policy, which is in preparation.</li></ol></div>
+<div class="notes"><ol><li>Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the tiers describe what is planned rather than what exists.</li><li>The scenes on this page illustrate what the membership is intended to do. They are written as examples, not as recordings of a working system.</li><li>Feature descriptions state design intent. Capability, allowances and availability are not final.</li><li>The commitment that personal material is not used to train models is the same at every tier, including the free one. See the privacy policy, which is in preparation.</li></ol></div>
 <footer class="foot" aria-label="Oplo footer">
   <div class="foot-in">
     <div class="foot-note">
