@@ -377,11 +377,25 @@ body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(
 .chapter-links { margin-left: auto; display: flex; align-items: center; gap: 26px; }
 .chapter-links a { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 .chapter-links a:hover { color: var(--ink); }
+/* The action lives outside the scrolling link list, so it stays put on a
+   phone instead of being pushed off the end with the section anchors. */
+.chapter-cta {
+  flex: none; margin-left: 20px;
+  font-size: 12px; line-height: 1; white-space: nowrap;
+  padding: 8px 15px; border-radius: 100px;
+  background: #0071e3; color: #fff;
+  transition: background .2s var(--ease);
+}
+.chapter-cta:hover { background: #0077ed; }
+.chapter-links + .chapter-cta { margin-left: 20px; }
+.chapter-links:not(:has(a)) + .chapter-cta,
+.chapter-name + .chapter-cta { margin-left: auto; }
 @media (max-width: 833px) {
   .chapter-in { height: 48px; }
   .chapter-links { gap: 18px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .chapter-links::-webkit-scrollbar { display: none; }
   .chapter-name { font-size: 17px; flex: none; }
+  .chapter-cta { margin-left: 12px; padding: 7px 13px; }
 }
 /* Below 734px the section list always outruns the bar, so it was being cut
    mid-word with nothing to say it could be scrolled. Fade the right edge and

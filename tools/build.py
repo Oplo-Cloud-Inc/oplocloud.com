@@ -121,12 +121,18 @@ def nav(depth, active=""):
 '''
 
 
-def chapter(depth, name, links, home):
+def chapter(depth, name, links, home, cta=None):
+    """cta is (label, target); it sits outside the scrolling link list so a
+    phone cannot push the one actionable thing off the end of the bar."""
     ls = "".join(f'<a href="{l[1]}">{l[0]}</a>' for l in links)
+    action = ""
+    if cta:
+        action = f'<a class="chapter-cta" href="{rel(depth, cta[1])}">{cta[0]}</a>'
     return f'''<div class="chapter">
   <div class="chapter-in">
     <a class="chapter-name" href="{rel(depth, home)}">{name}</a>
     <nav class="chapter-links" aria-label="{name} sections">{ls}</nav>
+    {action}
   </div>
 </div>
 '''
@@ -1400,7 +1406,7 @@ def edu_page():
                "Oplo Edu brings structured curriculum, adaptive practice, live expert coaching and classroom administration into one workspace.",
                "edu/", EDU_CSS)
     out += nav(depth, "edu/")
-    out += chapter(depth, "Oplo Edu", links, "edu/")
+    out += chapter(depth, "Oplo Edu", links, "edu/", ("Try OEdu", "olearn/"))
     out += '<main id="top">\n'
 
     out += '''<section class="band on-white">
@@ -1654,7 +1660,7 @@ def learn_page():
                "Oplo Edu Learn is a single console for online school: live lessons, coursework, adaptive practice and live tutoring.",
                "edu/learn/", LEARN_CSS)
     out += nav(depth, "edu/")
-    out += chapter(depth, "Edu Learn", links, "edu/learn/")
+    out += chapter(depth, "Edu Learn", links, "edu/learn/", ("Try OEdu", "olearn/"))
     out += '<main id="top">\n'
 
     out += f'''<section class="band dark" id="console">
