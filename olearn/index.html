@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OLearn</title>
-<meta name="description" content="OLearn — the Oplo Edu lesson console. A live classroom, coursework, adaptive practice and tutoring in one place.">
+<meta name="description" content="OLearn — the Oplo Edu console. Courses, announcements, assignments and your tutor in one dashboard.">
 <meta name="theme-color" content="#000000">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='12 12 76 76'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0'/%3E%3C/svg%3E">
@@ -19,7 +19,7 @@
 
   <div class="ol-demo">
     <b>OLearn demo.</b>
-    <span>Sample class, sample people. Nothing here is real and nothing is saved.</span>
+    <span>Sample courses, sample people. Nothing here is real and nothing is saved.</span>
     <a href="../edu/">About Oplo Edu &rsaquo;</a>
   </div>
 
@@ -30,11 +30,11 @@
         <path fill="currentColor" fill-rule="evenodd"
               d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
       </svg>
-      <button data-go="class" aria-current="true" title="Class" aria-label="Class">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2.5"/><path d="M8 20.5h8"/></svg>
+      <button data-go="dash" aria-current="true" title="Dashboard" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8"/></svg>
       </button>
-      <button data-go="work" title="Coursework" aria-label="Coursework">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h8L19 7v14.5H6z"/><path d="M13.5 2.5V7H19"/><path d="M9 12h7M9 16h5"/></svg>
+      <button data-go="class" title="Live class" aria-label="Live class">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2.5"/><path d="M8 20.5h8"/></svg>
       </button>
       <button data-go="mastery" title="Mastery" aria-label="Mastery">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 21 8l-9 5-9-5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>
@@ -43,11 +43,50 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.4"/><path d="M2.8 20c.7-3.5 3.2-5.2 6.2-5.2s5.5 1.7 6.2 5.2"/><circle cx="17.5" cy="10.5" r="2.6"/><path d="M16 15.4c2.6.1 4.4 1.7 5 4.6"/></svg>
       </button>
       <span class="sp"></span>
-      <span class="ol-avatar" title="Signed in as the demo teacher">MR</span>
+      <span class="ol-avatar" title="Signed in as the demo student">AO</span>
     </nav>
 
-    <!-- ============================================================ Class -->
-    <section class="ol-view on" id="v-class">
+    <!-- ======================================================== Dashboard
+         Four boxes, identical size: courses, announcements, assignments,
+         tutor. -->
+    <section class="ol-view on" id="v-dash">
+
+      <div class="card">
+        <header>
+          <h2>Courses</h2>
+          <span class="right"><span class="chip" id="courseCount">&mdash;</span></span>
+        </header>
+        <div class="rows" id="courses"></div>
+      </div>
+
+      <div class="card">
+        <header>
+          <h2>Announcements</h2>
+          <span class="right"><span class="chip" id="unreadCount">&mdash;</span></span>
+        </header>
+        <div class="rows" id="notes"></div>
+      </div>
+
+      <div class="card">
+        <header>
+          <h2>Assignments</h2>
+          <span class="right"><span class="chip" id="dueCount">&mdash;</span></span>
+        </header>
+        <div class="rows" id="assignments"></div>
+      </div>
+
+      <div class="card">
+        <header>
+          <h2>Your tutor</h2>
+          <span class="right"><span class="chip">Assigned</span></span>
+        </header>
+        <div class="tutorcard" id="tutorCard"></div>
+      </div>
+
+    </section>
+
+    <!-- ======================================================= Live class -->
+    <section class="ol-view" id="v-class">
       <div class="card stage">
         <header>
           <h2>Algebra II</h2>
@@ -68,51 +107,22 @@
           <button class="pill" data-act="next">Next step</button>
           <button class="pill" data-act="reset">Restart</button>
           <span class="sp"></span>
-          <button class="pill" data-act="share">Share board</button>
-          <button class="pill go" data-act="ask-all">Ask the class</button>
+          <button class="pill go" data-act="hand">Raise hand</button>
         </div>
       </div>
 
       <div class="card roster">
         <header>
-          <h2>Roster</h2>
+          <h2>Class</h2>
           <span class="right"><span class="chip" id="hereCount">&mdash;</span></span>
         </header>
-        <div class="people" id="people" role="listbox" aria-label="Students"></div>
+        <div class="people" id="people" role="listbox" aria-label="Classmates"></div>
         <div class="ask">
-          <input id="msg" placeholder="Message the class" aria-label="Message the class">
+          <input id="msg" placeholder="Ask the class" aria-label="Ask the class">
           <button data-act="send" aria-label="Send">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h11M9 4l4 4-4 4"/></svg>
           </button>
         </div>
-      </div>
-
-      <div class="card">
-        <header><h2>Coursework</h2><span class="right"><button class="pill sm" data-go="work">Open</button></span></header>
-        <div class="rows" id="workMini"></div>
-      </div>
-
-      <div class="card">
-        <header><h2>Mastery</h2><span class="right"><button class="pill sm" data-go="mastery">Open</button></span></header>
-        <div class="rows" id="masteryMini"></div>
-      </div>
-
-      <div class="card">
-        <header><h2>Selected</h2></header>
-        <div id="detail" class="detail" style="flex:1;min-height:0;display:flex;flex-direction:column">
-          <div class="empty">Pick someone in the roster to see how they are doing.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ======================================================= Coursework -->
-    <section class="ol-view" id="v-work">
-      <div class="card">
-        <header>
-          <h2>Coursework</h2><span class="sub">Algebra II &middot; Period 3</span>
-          <span class="right"><button class="pill go" data-act="assign">Set new work</button></span>
-        </header>
-        <div class="rows" id="workList"></div>
       </div>
     </section>
 
@@ -130,9 +140,7 @@
     <!-- =========================================================== Tutors -->
     <section class="ol-view" id="v-tutors">
       <div class="card">
-        <header>
-          <h2>Tutors</h2><span class="sub">Available now for quadratics</span>
-        </header>
+        <header><h2>Tutors</h2><span class="sub">Available now for quadratics</span></header>
         <div class="rows" id="tutorList"></div>
       </div>
     </section>

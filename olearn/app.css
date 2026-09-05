@@ -76,14 +76,21 @@ a { color: inherit; text-decoration: none; }
 .ol-view { min-height: 0; display: none; }
 .ol-view.on { display: grid; }
 
-/* Class view: stage + roster over three tiles, per the reference. */
-#v-class {
-  grid-template-columns: 1fr 1fr 310px;
-  grid-template-rows: minmax(0, 1.55fr) minmax(0, 1fr);
+/* Dashboard: four boxes, identical size. Equal fr on both axes and
+   minmax(0,1fr) so a long list scrolls inside its box instead of stretching
+   the row it sits in — that is what keeps them the same size. */
+#v-dash {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
-#v-class .stage  { grid-column: 1 / 3; }
-#v-class .roster { grid-column: 3; grid-row: 1 / 2; }
+
+/* Class view: the live lesson — stage with the roster beside it. */
+#v-class {
+  grid-template-columns: minmax(0, 1fr) 310px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 10px;
+}
 
 .card {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
@@ -235,9 +242,8 @@ a { color: inherit; text-decoration: none; }
    rail becomes a bottom bar, because a 60px rail beside a 320px screen is
    a fifth of the width spent on navigation. */
 @media (max-width: 900px) {
-  #v-class { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(240px,1fr) auto auto; }
-  #v-class .stage { grid-column: 1 / 3; }
-  #v-class .roster { grid-column: 1 / 3; grid-row: auto; min-height: 260px; }
+  #v-dash { grid-template-rows: repeat(2, minmax(230px, 1fr)); }
+  #v-class { grid-template-columns: 1fr; grid-template-rows: minmax(260px,1fr) minmax(240px,auto); }
   .ol-view.on { overflow-y: auto; }
 }
 @media (max-width: 640px) {
@@ -249,9 +255,36 @@ a { color: inherit; text-decoration: none; }
   }
   .ol-mark, .ol-rail .sp, .ol-rail .ol-avatar { display: none; }
   .ol-body > .ol-view { grid-row: 1; }
-  #v-class { grid-template-columns: 1fr; grid-template-rows: minmax(220px,auto) auto auto auto auto; }
-  #v-class .stage, #v-class .roster { grid-column: 1; }
+  #v-dash { grid-template-columns: 1fr; grid-template-rows: repeat(4, minmax(215px, auto)); }
+  #v-class { grid-template-columns: 1fr; grid-template-rows: minmax(230px,auto) minmax(230px,auto); }
   .ol-demo { font-size: 11px; padding: 7px 11px; }
   .ol-demo a { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---------------------------------------------------- Announcements */
+.note {
+  display: flex; gap: 11px; width: 100%; text-align: left;
+  padding: 10px 11px; border-radius: 10px; transition: background .16s;
+}
+.note:hover { background: rgba(255,255,255,.055); }
+.note .unread { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; margin-top: 6px; }
+.note .unread.read { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); }
+.note .t { flex: 1; min-width: 0; }
+.note .t b { display: block; font-size: 13px; font-weight: 600; }
+.note .t span { display: block; font-size: 11.5px; color: var(--ink-3); }
+.note .when { font-size: 11px; color: var(--ink-3); flex: none; white-space: nowrap; }
+
+/* ----------------------------------------------------------- Tutor */
+.tutorcard { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+.tutorcard .top { display: flex; align-items: center; gap: 12px; }
+.tutorcard .top .face { width: 46px; height: 46px; font-size: 15px; }
+.tutorcard .top b { display: block; font-family: var(--disp); font-size: 16px; font-weight: 600; }
+.tutorcard .top span { display: block; font-size: 12px; color: var(--ink-3); }
+.tutorcard .next {
+  border-radius: 10px; background: var(--panel-2); padding: 12px 13px;
+  display: flex; align-items: center; gap: 10px;
+}
+.tutorcard .next .lbl { font-size: 11px; color: var(--ink-3); display: block; }
+.tutorcard .next b { font-size: 13.5px; font-weight: 600; }
+.tutorcard .acts { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }
