@@ -106,6 +106,26 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://oplocloud.com/privacy/control/</loc>
+    <lastmod>2026-09-06</lastmod>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://oplocloud.com/privacy/features/</loc>
+    <lastmod>2026-09-06</lastmod>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://oplocloud.com/privacy/labels/</loc>
+    <lastmod>2026-09-06</lastmod>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://oplocloud.com/privacy/transparency/</loc>
+    <lastmod>2026-09-06</lastmod>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://oplocloud.com/sign-in/</loc>
     <lastmod>2026-09-06</lastmod>
     <priority>0.6</priority>

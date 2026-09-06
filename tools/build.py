@@ -354,19 +354,6 @@ PAGES.append(("software/index.html", section_page(
       [("Follow what ships", "newsroom/")])],
     ["Oplo software is in development. Availability, capability and system requirements are not final."])))
 
-PAGES.append(("privacy/index.html", section_page(
-    "privacy/", 1, "Privacy — Oplo",
-    "Oplo's position on personal data: personal computing only means something if the personal part stays private.",
-    "Privacy", "Yours stays yours.",
-    "Personal computing only means something if the personal part stays private.",
-    [("dark", "control", "Control", "The default should be the private one.",
-      "A setting that protects you only if you find it is not protection, it is paperwork. What is private should be private before anyone touches a switch.",
-      None),
-     ("", "data", "Your data", "Kept where it is useful, which is with you.",
-      "Running intelligence on the device rather than in a data centre means most of what you do never has to leave it. Where something does need to leave, we intend to say so plainly and let you decline.",
-      [("How on-device models work", "intelligence/"), ("Read the privacy policy", "legal/privacy-policy/")])],
-    ["This page describes Oplo's design position. The binding document is the privacy policy."])))
-
 PAGES.append(("developers/index.html", section_page(
     "developers/", 1, "Developers — Oplo",
     "Documentation, SDKs and design resources for building on Oplo.",
@@ -1182,7 +1169,7 @@ def perks_block():
         <p>{line}</p>
       </div>
 '''
-    return f'''<section class="band on-white" id="perks">
+    return f'''<section class="band" id="perks">
   <div class="well">
     <p class="eyebrow reveal">Included</p>
     <h2 class="t-display balance reveal">Everything in one membership.</h2>
@@ -1204,7 +1191,7 @@ def plus_page():
     out += chapter(depth, "Oplo+", links, "plus/")
     out += '<main id="top">\n'
 
-    out += '''<section class="band on-white">
+    out += '''<section class="band">
   <div class="well">
     <p class="eyebrow reveal">Oplo+</p>
     <h1 class="t-hero balance reveal" style="max-width:20ch;margin-inline:auto">Most of what you do fits in your pocket.</h1>
@@ -1239,7 +1226,7 @@ def plus_page():
         <p class="act"><a class="cta" href="../newsroom/">Hear when it opens</a></p>
       </div>
 '''
-    out += f'''<section class="band on-grey" id="plans">
+    out += f'''<section class="band grey" id="plans">
   <div class="well">
     <p class="eyebrow reveal">Plans</p>
     <h2 class="t-display balance reveal">Three tiers. One of them free.</h2>
@@ -1266,7 +1253,7 @@ def plus_page():
             else:
                 cells += f'<td class="v">{v}</td>'
         body_rows += f'      <tr><td class="f"><b>{feat}</b><span>{desc}</span></td>{cells}</tr>\n'
-    out += f'''<section class="band on-white" id="compare">
+    out += f'''<section class="band" id="compare">
   <div class="well">
     <p class="eyebrow reveal">Compare</p>
     <h2 class="t-display balance reveal">What is in each tier.</h2>
@@ -1287,7 +1274,7 @@ def plus_page():
         <div class="a">{a}</div>
       </details>
 ''' for q, a in FAQ)
-    out += f'''<section class="band on-grey" id="faq">
+    out += f'''<section class="band grey" id="faq">
   <div class="well">
     <p class="eyebrow reveal">Questions</p>
     <h2 class="t-display balance reveal">Answers.</h2>
@@ -1410,7 +1397,7 @@ def edu_page():
     out += chapter(depth, "Oplo Edu", links, "edu/", ("Try OEdu", "learn/"))
     out += '<main id="top">\n'
 
-    out += '''<section class="band on-white">
+    out += '''<section class="band">
   <div class="well">
     <p class="eyebrow reveal">Oplo Edu</p>
     <h1 class="t-hero balance reveal" style="max-width:19ch;margin-inline:auto">Automated where it helps. Human where it counts.</h1>
@@ -1441,7 +1428,7 @@ def edu_page():
 '''
 
     pill = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in PILLARS)
-    out += f'''<section class="band on-white" id="platform">
+    out += f'''<section class="band" id="platform">
   <div class="well">
     <p class="eyebrow reveal">The platform</p>
     <h2 class="t-display balance reveal" style="max-width:20ch;margin-inline:auto">Four things that usually live apart.</h2>
@@ -1452,7 +1439,7 @@ def edu_page():
 '''
 
     serve = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in AUDIENCES)
-    out += f'''<section class="band on-grey" id="who">
+    out += f'''<section class="band grey" id="who">
   <div class="well">
     <p class="eyebrow reveal">Who it is for</p>
     <h2 class="t-display balance reveal">Schools and organisations.</h2>
@@ -1682,7 +1669,7 @@ def learn_page():
 '''
 
     quad = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in QUAD)
-    out += f'''<section class="band on-white" id="does">
+    out += f'''<section class="band" id="does">
   <div class="well">
     <p class="eyebrow reveal">What it does</p>
     <h2 class="t-display balance reveal" style="max-width:19ch;margin-inline:auto">Four tools that stopped being four tabs.</h2>
@@ -1840,7 +1827,7 @@ _cards = "".join(
 
 PAGES.append(ir_page("investor/", 1, "Investor Relations — Oplo",
     "Oplo is a privately held company. Leadership, governance, filings and investor contact.",
-    "", f'''<section class="band on-white">
+    "", f'''<section class="band">
   <div class="well">
     <p class="eyebrow reveal">Investor Relations</p>
     <h1 class="t-hero balance reveal" style="max-width:16ch;margin-inline:auto">Who runs Oplo, and on what terms.</h1>
@@ -1874,13 +1861,13 @@ _docs = "".join(f'      <li><span>{t}</span><em>{st}</em></li>\n' for t, st in [
 
 PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — Oplo",
     "Oplo's leadership, the state of its board, and its governance documents.",
-    "leadership/", f'''<section class="band on-white">
+    "leadership/", f'''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Leadership and Governance</h1>
   </div>
 </section>
 
-<section class="band on-grey" id="executives">
+<section class="band grey" id="executives">
   <div class="well">
     <p class="eyebrow reveal">Executive profiles</p>
     <h2 class="t-display balance reveal">The people accountable for it.</h2>
@@ -1902,7 +1889,7 @@ PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — O
   </div>
 </section>
 
-<section class="band on-white" id="board">
+<section class="band" id="board">
   <div class="well">
     <p class="eyebrow reveal">Board of Directors</p>
     <h2 class="t-display balance reveal">Not yet constituted.</h2>
@@ -1913,7 +1900,7 @@ PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — O
   </div>
 </section>
 
-<section class="band on-grey" id="charters">
+<section class="band grey" id="charters">
   <div class="well">
     <p class="eyebrow reveal">Charters and policies</p>
     <h2 class="t-display balance reveal">Every document, with its real status.</h2>
@@ -1936,7 +1923,7 @@ PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — O
 # ------------------------------------------------------------------- Filings
 PAGES.append(ir_page("investor/filings/", 2, "Filings — Oplo",
     "Oplo is privately held and has made no filings with the SEC.",
-    "filings/", '''<section class="band on-white">
+    "filings/", '''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Filings</h1>
     <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:40ch;margin-inline:auto">
@@ -1945,7 +1932,7 @@ PAGES.append(ir_page("investor/filings/", 2, "Filings — Oplo",
   </div>
 </section>
 
-<section class="band on-grey">
+<section class="band grey">
   <div class="well">
     <p class="eyebrow reveal">Status</p>
     <h2 class="t-display balance reveal">Nothing has been filed.</h2>
@@ -1967,7 +1954,7 @@ PAGES.append(ir_page("investor/filings/", 2, "Filings — Oplo",
 # ---------------------------------------------------------------- Our Values
 PAGES.append(ir_page("investor/values/", 2, "Our Values — Oplo",
     "The positions Oplo has published and can be held to.",
-    "values/", '''<section class="band on-white">
+    "values/", '''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Our Values</h1>
     <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:44ch;margin-inline:auto">
@@ -1977,7 +1964,7 @@ PAGES.append(ir_page("investor/values/", 2, "Our Values — Oplo",
   </div>
 </section>
 
-<section class="band on-grey">
+<section class="band grey">
   <div class="well">
     <div class="pillars reveal d1" style="max-width:940px">
       <div><h3>Processing stays with the person</h3>
@@ -2030,7 +2017,7 @@ _faq = "".join(f'''      <details>
 ])
 PAGES.append(ir_page("investor/faq/", 2, "Investor FAQ — Oplo",
     "Common investor questions about Oplo, answered plainly.",
-    "faq/", f'''<section class="band on-white">
+    "faq/", f'''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Questions</h1>
     <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:38ch;margin-inline:auto">
@@ -2047,7 +2034,7 @@ PAGES.append(ir_page("investor/faq/", 2, "Investor FAQ — Oplo",
 # ---------------------------------------------------------------- IR contact
 PAGES.append(ir_page("investor/contact/", 2, "Investor Contact — Oplo",
     "How to reach Oplo about investment, governance or the company's structure.",
-    "contact/", '''<section class="band on-white">
+    "contact/", '''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Contact</h1>
     <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:44ch;margin-inline:auto">
@@ -2057,7 +2044,7 @@ PAGES.append(ir_page("investor/contact/", 2, "Investor Contact — Oplo",
   </div>
 </section>
 
-<section class="band on-grey">
+<section class="band grey">
   <div class="well">
     <div class="serve reveal d1" style="max-width:760px">
       <div><h3>Investment and structure</h3>
@@ -2121,6 +2108,474 @@ template. Each is published here when it has been reviewed.</p>
 <h2>Trademarks</h2>
 <p>The Oplo name and mark are the property of Oplo, Inc. Other names may be trademarks of their
 respective owners.</p>''')))
+
+# ==================================================================== Privacy
+# Structured the way Apple structures privacy: a section with its own bar
+# rather than one page. Overview, then the features, the controls, the labels
+# and the transparency report, with the binding policy sitting in /legal/.
+#
+# Apple's page can compare its products against someone else's because it has
+# products. Oplo does not, so the comparison table is replaced by a commitment
+# beside the thing it rules out — which can be checked later, and is the only
+# honest version of the same idea.
+
+PRIVACY_NAV = [
+    ("Overview", ""),
+    ("Features", "features/"),
+    ("Control", "control/"),
+    ("Labels", "labels/"),
+    ("Transparency Report", "transparency/"),
+]
+
+PRIVACY_NOTE = (
+    "These pages state how Oplo intends to build and what it has committed to. They are not the binding "
+    "document; the privacy policy is, and it is in preparation. Where a protection is not built yet, it "
+    "is labelled as such rather than described in the present tense."
+)
+
+
+def privacy_links(depth):
+    """Sibling links, plus the policy, which lives with the other legal documents."""
+    up = "../" if depth == 2 else ""
+    ls = [(label, (up + slug) if slug else (up or "./")) for label, slug in PRIVACY_NAV]
+    ls.append(("Privacy Policy", ("../" * depth) + "legal/privacy-policy/"))
+    return ls
+
+
+def privacy_page(slug, depth, title, desc, body, notes=None):
+    out = head(depth, title, desc, slug)
+    out += nav(depth, "privacy/")
+    out += chapter(depth, "Privacy", privacy_links(depth), "privacy/")
+    out += '<main id="top">\n' + body + "</main>\n"
+    return (slug + "index.html", out + footer(depth, (notes or []) + [PRIVACY_NOTE]))
+
+
+def pledge(rows):
+    body = "".join(
+        f'        <tr><td class="c">{c}</td><td class="r">{r}</td></tr>\n' for c, r in rows)
+    return f'''    <div class="pledge reveal d1">
+      <table>
+        <thead><tr>
+          <th scope="col">What Oplo has committed to</th>
+          <th scope="col">What that rules out</th>
+        </tr></thead>
+        <tbody>
+{body}        </tbody>
+      </table>
+    </div>
+'''
+
+
+def minds(rows):
+    return '    <div class="minds reveal d1">\n' + "".join(
+        f'      <div><b>{k}</b><span>{v}</span></div>\n' for k, v in rows) + "    </div>\n"
+
+
+def protect(rows):
+    return '    <div class="protect reveal d1">\n' + "".join(
+        f'      <div><h3>{h}</h3><p>{p}<span class="when">{w}</span></p></div>\n'
+        for h, p, w in rows) + "    </div>\n"
+
+
+def register(groups, cls=""):
+    out = (f'    <div class="docs{cls} reveal d1"'
+           ' style="text-align:left;max-width:640px;margin-inline:auto">\n')
+    for title, items in groups:
+        out += f"      <h3>{title}</h3>\n      <ul>\n"
+        out += "".join(f'        <li><span>{a}</span><em>{b}</em></li>\n' for a, b in items)
+        out += "      </ul>\n"
+    return out + "    </div>\n"
+
+
+# ----------------------------------------------------------------- Overview
+_p_cards = "".join(
+    f'      <a class="index-card" href="{slug}"><b>{label}</b><span>{blurb}</span></a>\n'
+    for label, slug, blurb in [
+        ("Features", "features/",
+         "The protections themselves, each labelled with whether it exists yet."),
+        ("Control", "control/",
+         "What a setting has to do before it counts as a control, and what you can ask us for."),
+        ("Labels", "labels/",
+         "The disclosure every Oplo app publishes before it ships, in one fixed format."),
+        ("Transparency Report", "transparency/",
+         "Requests from governments for your data. The number so far is zero."),
+        ("Privacy Policy", "../legal/privacy-policy/",
+         "The binding document. In preparation, and dated when it is published."),
+    ])
+
+PAGES.append(privacy_page("privacy/", 1, "Privacy — Oplo",
+    "Oplo's position on personal data: personal computing only means something if the personal part stays private.",
+    f'''<section class="band">
+  <div class="well">
+    <p class="eyebrow reveal">Privacy</p>
+    <h1 class="t-hero balance reveal" style="max-width:13ch;margin-inline:auto">Yours stays yours.</h1>
+    <p class="t-sub muted balance reveal d1" style="max-width:32ch;margin-inline:auto">
+      Personal computing only means something if the personal part stays private.
+    </p>
+    <p class="notice reveal d1" style="margin-inline:auto;text-align:left">
+      <b>Oplo has not shipped a product yet</b> &mdash; which is the reason to publish this now. A privacy
+      position written before there is anything to collect is a constraint on what gets built. Written
+      afterwards, it is a press release.<sup>1</sup>
+    </p>
+  </div>
+</section>
+
+<section class="band grey" id="commitments">
+  <div class="well">
+    <p class="eyebrow reveal">The commitments</p>
+    <h2 class="t-display balance reveal">Every promise costs something.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      A privacy claim is only worth reading if it closes a door the company would otherwise like to keep
+      open. Here is each one, next to what it gives up.
+    </p>
+{pledge([
+    ("Intelligence runs on your device.",
+     "No copy of your files, messages and requests sitting on our servers &mdash; nothing to mine, nothing "
+     "to subpoena, nothing to leak."),
+    ("No advertising business, ever.",
+     "The most reliable way to make money from a personal device is closed to us. Everything Oplo earns has "
+     "to come from selling the product."),
+    ("Your content is never training data.",
+     "The cheapest source of training data on earth is off the table, and there is no opt-out to bury in "
+     "settings because there is nothing to opt out of."),
+    ("A feature collects what it needs and nothing adjacent.",
+     "No data kept for a use we have not thought of yet. When a feature is removed, what it held goes with "
+     "it."),
+    ("Nothing leaves the device silently.",
+     "No quiet upload you would have to read a changelog to find out about. If a request has to travel, you "
+     "are told while it happens, not afterwards in a policy."),
+    ("What we cannot read, we cannot hand over.",
+     "No support tool that can open your library, and no way for us to be helpful to anyone who demands it "
+     "&mdash; including you, if you lose the key."),
+])}  </div>
+</section>
+
+<section class="band dark" id="on-device">
+  <div class="well">
+    <p class="eyebrow reveal">On-device intelligence</p>
+    <h2 class="t-display balance reveal">The model comes to your data.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:58ch;margin:18px auto 0">
+      Every assistant faces the same problem: to be useful it has to see your life, and seeing your life
+      normally means copying it somewhere else. Running the model on the hardware you own removes the
+      second half of that sentence.
+    </p>
+{minds([
+    ("On the device",
+     "Everything a local model can answer, it answers locally &mdash; which is most of it. Your files, "
+     "messages and calendar are read where they already are."),
+    ("Off the device",
+     "Only when a request genuinely exceeds what the hardware can do, and only the part that has to travel. "
+     "Said plainly at the moment it happens, with the option to stop."),
+    ("Never",
+     "Retained after the answer, attached to your account, sold, or used to train the next model."),
+])}    <p class="cta-row reveal d2"><a class="cta" href="../intelligence/">How Oplo intelligence works</a></p>
+  </div>
+</section>
+
+<section class="band" id="more">
+  <div class="well">
+    <p class="eyebrow reveal">Read further</p>
+    <h2 class="t-display balance reveal">The rest of it.</h2>
+    <div class="index-cards reveal d1">
+{_p_cards}    </div>
+  </div>
+</section>
+'''))
+
+
+# ----------------------------------------------------------------- Features
+PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
+    "The protections Oplo is building, each labelled with whether it exists yet.",
+    f'''<section class="band">
+  <div class="well">
+    <h1 class="t-hero balance reveal">Built in, not switched on.</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:36ch;margin-inline:auto">
+      A protection that depends on you finding it is not a protection.
+    </p>
+  </div>
+</section>
+
+<section class="band grey" id="protections">
+  <div class="well">
+    <p class="eyebrow reveal">Protections</p>
+    <h2 class="t-display balance reveal">What each one actually does.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      Each is marked with where it really stands. Most of Oplo is in development, and a page that wrote all
+      of this in the present tense would be describing a company that does not exist yet.<sup>1</sup>
+    </p>
+{protect([
+    ("On-device intelligence",
+     "The model that reads your messages, files and calendar runs on your hardware. It has access because "
+     "the device is yours &mdash; not because it uploaded anything to earn it.",
+     "In development"),
+    ("Minimum collection",
+     "A feature asks for what it needs to work and nothing next to it. Location for the map, not location "
+     "for everything else that happens to be running.",
+     "A design rule from the start"),
+    ("No silent departures",
+     "When something has to leave the device, the interface says so as it happens and the request can be "
+     "refused without the feature pretending to be broken.",
+     "In development"),
+    ("No advertising profile",
+     "Oplo has no ad business. There is no profile to assemble, and therefore no commercial reason to keep "
+     "what you did last week.",
+     "In effect now"),
+    ("Ephemeral by default",
+     "Requests are answered and dropped. A history exists because you asked for one, and deleting it "
+     "deletes it rather than hiding it.",
+     "In development"),
+    ("Your content is not training data",
+     "What you write, store and say to Oplo is not used to train models &mdash; not anonymised, not "
+     "aggregated, not sampled.",
+     "In effect now"),
+    ("Sign in without spreading out",
+     "One account used to reach your own things, rather than an identity handed to every site that would "
+     "like to know who you are.",
+     "In development"),
+    ("Encrypted sync and backup",
+     "Content encrypted on the device before it syncs, with the keys staying on your hardware. It is the "
+     "reason we would be unable to read it, not merely unwilling.",
+     "In development, an Oplo+ capability"),
+])}  </div>
+</section>
+
+<section class="band" id="missing">
+  <div class="well">
+    <p class="eyebrow reveal">Not here yet</p>
+    <h2 class="t-display balance reveal">The parts we cannot claim.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      These are the things that turn a stated intention into something you can verify. None of them exists
+      today, and listing them is the only way to be held to them.
+    </p>
+{minds([
+    ("Independent audit",
+     "No third party has reviewed any of this. When one has, the report is published here whole, not "
+     "summarised."),
+    ("Published threat model",
+     "What Oplo defends against, and what it does not, written down. Not written yet."),
+    ("Security bounty",
+     "No programme, so no way for a researcher to be paid for finding us wrong. In preparation."),
+    ("Shipping code",
+     "Nearly everything above is a design decision rather than a running system. Ship dates are not set."),
+])}    <p class="cta-row reveal d2"><a class="cta" href="../control/">How control is meant to work</a></p>
+  </div>
+</section>
+'''))
+
+
+# ------------------------------------------------------------------ Control
+PAGES.append(privacy_page("privacy/control/", 2, "Privacy Control — Oplo",
+    "What a setting has to do before it counts as a control, and what you can ask Oplo for.",
+    f'''<section class="band">
+  <div class="well">
+    <h1 class="t-hero balance reveal">The default should be the private one.</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:40ch;margin-inline:auto">
+      A setting that protects you only if you find it is not protection. It is paperwork.
+    </p>
+  </div>
+</section>
+
+<section class="band grey" id="test">
+  <div class="well">
+    <p class="eyebrow reveal">The test</p>
+    <h2 class="t-display balance reveal">Four things, or it is not a control.</h2>
+{minds([
+    ("Private first",
+     "The state you get before touching anything is the protective one. Convenience is the thing you opt "
+     "into, not the thing you have to opt out of."),
+    ("Reversible",
+     "What can be turned on can be turned off, and off means stopped rather than paused until the next "
+     "update decides otherwise."),
+    ("Findable",
+     "One place, in the words a person would actually use to look for it. Not nested three screens down "
+     "under a heading nobody would think to open."),
+    ("Complete",
+     "Withdrawing a permission withdraws what it collected. Deleting something deletes the copy as well as "
+     "the original."),
+])}  </div>
+</section>
+
+<section class="band" id="rights">
+  <div class="well">
+    <p class="eyebrow reveal">What you can ask for</p>
+    <h2 class="t-display balance reveal">Requests we intend to answer.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      There is no product and no account holding your data today, so none of this can be exercised yet.
+      Each is listed with when it becomes real.<sup>1</sup>
+    </p>
+{register([
+    ("Your data", [
+        ("See everything held about you", "At launch"),
+        ("Export a copy in a format another program can read", "At launch"),
+        ("Correct what is wrong", "At launch"),
+        ("Delete your account and everything in it", "At launch"),
+    ]),
+    ("Permissions", [
+        ("Withdraw a permission you granted", "At launch"),
+        ("Refuse a request that would leave the device", "At launch"),
+        ("Turn off history without turning off the feature", "In development"),
+    ]),
+])}  </div>
+</section>
+
+<section class="band grey" id="ask">
+  <div class="well">
+    <p class="eyebrow reveal">Ask us</p>
+    <h2 class="t-display balance reveal">A person reads it.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:52ch;margin:18px auto 0">
+      Oplo is small enough that privacy questions reach the people who decide these things. Write to
+      <a href="mailto:hello@oplocloud.com">hello@oplocloud.com</a> and say what you want to know.
+    </p>
+    <p class="cta-row reveal d2">
+      <a class="cta" href="../../legal/privacy-policy/">Read the privacy policy</a>
+      <a class="cta" href="../labels/">See the label format</a>
+    </p>
+  </div>
+</section>
+'''))
+
+
+# ------------------------------------------------------------------- Labels
+PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — Oplo",
+    "The disclosure every Oplo app publishes before it ships, in one fixed format.",
+    f'''<section class="band">
+  <div class="well">
+    <h1 class="t-hero balance reveal">Every app says what it takes.</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:40ch;margin-inline:auto">
+      Before you install it, in the same four categories, in the same words.
+    </p>
+  </div>
+</section>
+
+<section class="band grey" id="format">
+  <div class="well">
+    <p class="eyebrow reveal">The format</p>
+    <h2 class="t-display balance reveal">Four categories, no prose.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      A label is not a policy. It is a short, comparable answer to one question &mdash; what does this
+      program take from me &mdash; and it reads the same way on every Oplo app so the differences between
+      them are visible at a glance.
+    </p>
+{minds([
+    ("Used to track you",
+     "Data shared with other companies to follow you across their apps and sites. Oplo has committed that "
+     "this category is empty on every one of its apps."),
+    ("Linked to you",
+     "Data tied to your account or device. Named individually rather than as a category, and each one has "
+     "to justify itself against a feature."),
+    ("Not linked to you",
+     "Data collected without a route back to you. Listed anyway, because a claim of anonymity is worth "
+     "checking rather than trusting."),
+    ("Not collected",
+     "The categories the app does not touch at all. Stated explicitly, since an absence is the part a "
+     "reader cannot otherwise confirm."),
+])}  </div>
+</section>
+
+<section class="band" id="register">
+  <div class="well">
+    <p class="eyebrow reveal">The register</p>
+    <h2 class="t-display balance reveal">Nothing has shipped, so nothing is labelled.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      This page is published empty on purpose. The rule is that the label goes up with the app, not after
+      someone asks for it &mdash; and the only way to keep that rule visible is to leave the shelf here
+      where the absence can be seen.<sup>1</sup>
+    </p>
+{register([
+    ("In development", [
+        ("Oplo intelligence", "Label published at ship"),
+        ("Oplo Edu", "Label published at ship"),
+        ("Oplo Learn", "Label published at ship"),
+        ("Oplo account and sign-in", "Label published at ship"),
+    ]),
+    ("This site", [
+        ("oplocloud.com", "No account required, no advertising, no cross-site tracking"),
+    ]),
+])}  </div>
+</section>
+'''))
+
+
+# ------------------------------------------------------- Transparency Report
+PAGES.append(privacy_page("privacy/transparency/", 2, "Transparency Report — Oplo",
+    "Requests from governments and law enforcement for Oplo user data. The number so far is zero.",
+    f'''<section class="band">
+  <div class="well">
+    <p class="eyebrow reveal">Transparency Report</p>
+    <h1 class="t-hero balance reveal" style="max-width:15ch;margin-inline:auto">Zero is a number worth publishing.</h1>
+    <p class="t-sub muted balance reveal d1" style="max-width:38ch;margin-inline:auto">
+      Oplo has received no request from any government for anyone&rsquo;s data.
+    </p>
+  </div>
+</section>
+
+<section class="band grey" id="figures">
+  <div class="well">
+    <p class="eyebrow reveal">Period covered</p>
+    <h2 class="t-display balance reveal">Since incorporation, to date.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      Oplo has no users and holds no personal data, which is why every figure below is zero. Publishing it
+      now sets the baseline: the first report that is not zero can be read against this one.<sup>1</sup>
+    </p>
+{register([
+    ("Requests received", [
+        ("Government requests for account data", "0"),
+        ("Government requests for device data", "0"),
+        ("Emergency requests", "0"),
+        ("National security requests", "0"),
+        ("Requests to remove content", "0"),
+        ("Preservation requests", "0"),
+    ]),
+    ("Responses", [
+        ("Accounts affected", "0"),
+        ("Requests where data was produced", "0"),
+        ("People notified", "0 &mdash; none to notify"),
+    ]),
+], " counts")}  </div>
+</section>
+
+<section class="band" id="how">
+  <div class="well">
+    <p class="eyebrow reveal">How a request would be handled</p>
+    <h2 class="t-display balance reveal">Written down before the first one arrives.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      Deciding this in advance is easy. Deciding it while a demand is on the desk is not, which is the
+      reason to do it now.
+    </p>
+{minds([
+    ("Require legal process",
+     "A valid order for the specific data sought. A request by letter, phone call or relationship is "
+     "refused."),
+    ("Narrow it",
+     "Produce the least that answers the order, and challenge one that reaches further than the law lets "
+     "it."),
+    ("Tell you",
+     "The person is notified before anything is produced, unless a court has forbidden it &mdash; and then "
+     "as soon as that expires."),
+    ("Hand over what exists",
+     "Content encrypted with keys held on your device cannot be produced. That is a property of the design, "
+     "not a position we could be argued out of."),
+    ("Count it here",
+     "Every request appears in the next report, including the ones refused."),
+])}  </div>
+</section>
+
+<section class="band grey" id="cadence">
+  <div class="well">
+    <p class="eyebrow reveal">Cadence</p>
+    <h2 class="t-display balance reveal">Twice a year, and on the day it changes.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:54ch;margin:18px auto 0">
+      This report is updated every six months once Oplo has users. If a request arrives before then, this
+      page changes when the report on it can lawfully be published, rather than waiting for a schedule.
+    </p>
+    <p class="cta-row reveal d2">
+      <a class="cta" href="../">Back to privacy</a>
+      <a class="cta" href="../../legal/privacy-policy/">Read the privacy policy</a>
+    </p>
+  </div>
+</section>
+'''))
+
 
 # ------------------------------------------------------------------ Emit
 if __name__ == "__main__":

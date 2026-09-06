@@ -51,31 +51,86 @@
 <div class="chapter">
   <div class="chapter-in">
     <a class="chapter-name" href="../privacy/">Privacy</a>
-    <nav class="chapter-links" aria-label="Privacy sections"><a href="#control">Control</a><a href="#data">Your data</a></nav>
+    <nav class="chapter-links" aria-label="Privacy sections"><a href="./">Overview</a><a href="features/">Features</a><a href="control/">Control</a><a href="labels/">Labels</a><a href="transparency/">Transparency Report</a><a href="../legal/privacy-policy/">Privacy Policy</a></nav>
     
   </div>
 </div>
-<main>
-<section class="band opening well">
-  <h1 class="t-hero balance reveal">Yours stays yours.</h1>
-  <p class="t-sub muted balance reveal d1">Personal computing only means something if the personal part stays private.</p>
+<main id="top">
+<section class="band">
+  <div class="well">
+    <p class="eyebrow reveal">Privacy</p>
+    <h1 class="t-hero balance reveal" style="max-width:13ch;margin-inline:auto">Yours stays yours.</h1>
+    <p class="t-sub muted balance reveal d1" style="max-width:32ch;margin-inline:auto">
+      Personal computing only means something if the personal part stays private.
+    </p>
+    <p class="notice reveal d1" style="margin-inline:auto;text-align:left">
+      <b>Oplo has not shipped a product yet</b> &mdash; which is the reason to publish this now. A privacy
+      position written before there is anything to collect is a constraint on what gets built. Written
+      afterwards, it is a press release.<sup>1</sup>
+    </p>
+  </div>
 </section>
-<div class="rows">
-  <section class="row dark" id="control">
-    <p class="eyebrow reveal">Control</p>
-    <h2 class="t-display balance reveal">The default should be the private one.</h2>
-    <p class="t-lead muted balance reveal d1">A setting that protects you only if you find it is not protection, it is paperwork. What is private should be private before anyone touches a switch.</p>
-    
-  </section>
-  <section class="row " id="data">
-    <p class="eyebrow reveal">Your data</p>
-    <h2 class="t-display balance reveal">Kept where it is useful, which is with you.</h2>
-    <p class="t-lead muted balance reveal d1">Running intelligence on the device rather than in a data centre means most of what you do never has to leave it. Where something does need to leave, we intend to say so plainly and let you decline.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="../intelligence/">How on-device models work</a><a class="cta" href="../legal/privacy-policy/">Read the privacy policy</a></p>
-  </section>
-</div>
+
+<section class="band grey" id="commitments">
+  <div class="well">
+    <p class="eyebrow reveal">The commitments</p>
+    <h2 class="t-display balance reveal">Every promise costs something.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
+      A privacy claim is only worth reading if it closes a door the company would otherwise like to keep
+      open. Here is each one, next to what it gives up.
+    </p>
+    <div class="pledge reveal d1">
+      <table>
+        <thead><tr>
+          <th scope="col">What Oplo has committed to</th>
+          <th scope="col">What that rules out</th>
+        </tr></thead>
+        <tbody>
+        <tr><td class="c">Intelligence runs on your device.</td><td class="r">No copy of your files, messages and requests sitting on our servers &mdash; nothing to mine, nothing to subpoena, nothing to leak.</td></tr>
+        <tr><td class="c">No advertising business, ever.</td><td class="r">The most reliable way to make money from a personal device is closed to us. Everything Oplo earns has to come from selling the product.</td></tr>
+        <tr><td class="c">Your content is never training data.</td><td class="r">The cheapest source of training data on earth is off the table, and there is no opt-out to bury in settings because there is nothing to opt out of.</td></tr>
+        <tr><td class="c">A feature collects what it needs and nothing adjacent.</td><td class="r">No data kept for a use we have not thought of yet. When a feature is removed, what it held goes with it.</td></tr>
+        <tr><td class="c">Nothing leaves the device silently.</td><td class="r">No quiet upload you would have to read a changelog to find out about. If a request has to travel, you are told while it happens, not afterwards in a policy.</td></tr>
+        <tr><td class="c">What we cannot read, we cannot hand over.</td><td class="r">No support tool that can open your library, and no way for us to be helpful to anyone who demands it &mdash; including you, if you lose the key.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="band dark" id="on-device">
+  <div class="well">
+    <p class="eyebrow reveal">On-device intelligence</p>
+    <h2 class="t-display balance reveal">The model comes to your data.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:58ch;margin:18px auto 0">
+      Every assistant faces the same problem: to be useful it has to see your life, and seeing your life
+      normally means copying it somewhere else. Running the model on the hardware you own removes the
+      second half of that sentence.
+    </p>
+    <div class="minds reveal d1">
+      <div><b>On the device</b><span>Everything a local model can answer, it answers locally &mdash; which is most of it. Your files, messages and calendar are read where they already are.</span></div>
+      <div><b>Off the device</b><span>Only when a request genuinely exceeds what the hardware can do, and only the part that has to travel. Said plainly at the moment it happens, with the option to stop.</span></div>
+      <div><b>Never</b><span>Retained after the answer, attached to your account, sold, or used to train the next model.</span></div>
+    </div>
+    <p class="cta-row reveal d2"><a class="cta" href="../intelligence/">How Oplo intelligence works</a></p>
+  </div>
+</section>
+
+<section class="band" id="more">
+  <div class="well">
+    <p class="eyebrow reveal">Read further</p>
+    <h2 class="t-display balance reveal">The rest of it.</h2>
+    <div class="index-cards reveal d1">
+      <a class="index-card" href="features/"><b>Features</b><span>The protections themselves, each labelled with whether it exists yet.</span></a>
+      <a class="index-card" href="control/"><b>Control</b><span>What a setting has to do before it counts as a control, and what you can ask us for.</span></a>
+      <a class="index-card" href="labels/"><b>Labels</b><span>The disclosure every Oplo app publishes before it ships, in one fixed format.</span></a>
+      <a class="index-card" href="transparency/"><b>Transparency Report</b><span>Requests from governments for your data. The number so far is zero.</span></a>
+      <a class="index-card" href="../legal/privacy-policy/"><b>Privacy Policy</b><span>The binding document. In preparation, and dated when it is published.</span></a>
+    </div>
+  </div>
+</section>
 </main>
-<div class="notes"><ol><li>This page describes Oplo's design position. The binding document is the privacy policy.</li></ol></div>
+<div class="notes"><ol><li>These pages state how Oplo intends to build and what it has committed to. They are not the binding document; the privacy policy is, and it is in preparation. Where a protection is not built yet, it is labelled as such rather than described in the present tense.</li></ol></div>
 <footer class="foot" aria-label="Oplo footer">
   <div class="foot-in">
     <div class="foot-note">
