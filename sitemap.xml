@@ -66,6 +66,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://oplocloud.com/investor/</loc>
+    <lastmod>2026-09-05</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://oplocloud.com/contact/</loc>
     <lastmod>2026-09-05</lastmod>
     <priority>0.6</priority>

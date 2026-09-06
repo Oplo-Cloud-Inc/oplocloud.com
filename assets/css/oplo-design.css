@@ -493,3 +493,50 @@ body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(
 }
 
 .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ------------------------------------------------------------ People
+   Leadership cards: portrait, name, role. Sized so one person does not look
+   like a mistake and twenty would still tile. */
+.people {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: clamp(24px, 3vw, 38px); margin-top: clamp(30px, 4vw, 44px);
+}
+.person { text-align: left; }
+.person .shot {
+  position: relative;
+  width: 100%; aspect-ratio: 1; border-radius: 16px; overflow: hidden;
+  background: var(--canvas); display: grid; place-items: center; margin-bottom: 14px;
+}
+/* The monogram sits underneath. A portrait covers it when one exists; if the
+   file is missing the image removes itself and the monogram is what shows,
+   rather than a broken-image icon. */
+.person .shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.person .mono {
+  font-family: var(--font); font-size: clamp(30px, 4vw, 44px); font-weight: 600;
+  letter-spacing: -.02em; color: var(--ink-3);
+}
+.person b { display: block; font-family: var(--font); font-size: 19px; font-weight: 600; letter-spacing: -.012em; }
+.person span { display: block; font-size: 14px; line-height: 1.45; color: var(--ink-2); margin-top: 3px; }
+.person p { margin-top: 9px; font-size: 14px; line-height: 1.55; color: var(--ink-2); max-width: 34ch; }
+
+/* Governance documents: a plain index, states shown rather than implied. */
+.docs { margin-top: 24px; }
+.docs h3 {
+  font-family: var(--font); font-size: 15px; font-weight: 600; color: var(--ink);
+  margin: 26px 0 4px;
+}
+.docs ul { border-top: 1px solid var(--rule); }
+.docs li {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 13px 2px; border-bottom: 1px solid var(--rule); font-size: 15px;
+}
+.docs li span { flex: 1; }
+.docs li em { font-style: normal; font-size: 13px; color: var(--ink-3); flex: none; }
+
+/* A stated fact that the page depends on the reader not missing. */
+.notice {
+  margin-top: clamp(26px, 3.4vw, 36px); padding: 20px 24px; border-radius: 14px;
+  background: var(--canvas); font-size: 15px; line-height: 1.6; color: var(--ink-2);
+  max-width: 68ch;
+}
+.notice b { color: var(--ink); font-weight: 600; }
