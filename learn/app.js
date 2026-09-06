@@ -144,9 +144,20 @@
     lede: "Most arithmetic is taught as a procedure. This course does it as a picture — once you can see why a rule works, you stop needing to remember it.",
     enrolled: true,
     units: [
-      { t: "Counting in shapes", s: "5 problems · about 5 minutes", play: true },
-      { t: "Areas without formulas", s: "Opens after the unit above", play: false },
-      { t: "Patterns that grow", s: "Opens after the unit above", play: false }
+      { t: "Counting in shapes", s: "5 problems · about 5 minutes", play: true,
+        desc: "Counting things without counting them one at a time. Arrays that turn one big " +
+              "count into two small ones, shapes read by what is missing rather than what is " +
+              "there, and patterns that tell you the next number before you work it out.",
+        groups: [{
+          t: "Arrays, areas and patterns",
+          practice: [{ t: "Counting in shapes", meta: PROBLEMS.length + " problems", play: true }]
+        }] },
+      { t: "Areas without formulas", s: "Opens after the unit above", play: false,
+        desc: "Area as covering rather than as a formula to recall — why the rules you were " +
+              "given are the shapes they came from." },
+      { t: "Patterns that grow", s: "Opens after the unit above", play: false,
+        desc: "Sequences read by their differences, and what happens when the differences " +
+              "themselves form a pattern." }
     ],
     glyph: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'
   };
@@ -230,13 +241,14 @@
   }
 
   /* -------------------------------------------------------------- State */
-  var S = { subject: null, course: null, unit: 0, i: 0, picked: null, checked: false, right: 0, first: 0, tries: 0, done: 0 };
+  var S = { subject: null, course: null, unit: null, unit: 0, i: 0, picked: null, checked: false, right: 0, first: 0, tries: 0, done: 0 };
 
   function show(v) {
-    ["my", "explore", "subject", "course", "lesson", "done"].forEach(function (n) {
+    ["my", "explore", "subject", "course", "unit", "lesson", "done"].forEach(function (n) {
       $("#v-" + n).classList.toggle("on", n === v);
     });
     $("#back").hidden = (v === "my" || v === "explore");
+    $("#subbar").hidden = (v === "lesson");
     $("#barProg").hidden = (v !== "lesson");
     $("#subbar").hidden = (v === "lesson");
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
@@ -330,6 +342,134 @@
   }
 
   /* ------------------------------------------------------------- Course */
+  /* ============================================================== Unit page
+     Everything in one unit: its groups, its items, and a way to the units
+     either side of it without going back up first. */
+  function openUnit(c, u) {
+    S.course = c;
+    S.unit = u;
+    var units = unitsOf(c);
+    var body = $("#unitBody");
+    body.innerHTML = "";
+
+    body.appendChild(buildRail(c, units, u.n));
+
+    var main = el("div", "lx-main");
+
+    var crumb = el("div", "lx-crumb");
+    var bLearn = el("button", null, "Learn");
+    bLearn.type = "button";
+    bLearn.addEventListener("click", function () { drawExplore(); show("explore"); });
+    crumb.appendChild(bLearn);
+    var sub = SUBJECTS.filter(function (x) { return x.n === c.subject; })[0];
+    if (sub) {
+      crumb.appendChild(el("span", "sep", "&rsaquo;"));
+      var bSub = el("button", null, sub.n);
+      bSub.type = "button";
+      bSub.addEventListener("click", function () { openSubject(sub); });
+      crumb.appendChild(bSub);
+    }
+    crumb.appendChild(el("span", "sep", "&rsaquo;"));
+    var bCourse = el("button", null, c.t);
+    bCourse.type = "button";
+    bCourse.addEventListener("click", function () { openCourse(c); });
+    crumb.appendChild(bCourse);
+    main.appendChild(crumb);
+
+    main.appendChild(el("h1", "lx-h1", "Unit " + u.n + ": " + u.t));
+    main.appendChild(el("p", "lx-mastery",
+      u.play ? "Unit mastery: <b>" + unitPct(u) + "%</b>"
+             : "Not started &middot; lessons still being written"));
+    main.appendChild(legendRow());
+
+    /* One square per thing there is to do. Units with nothing to do get no
+       strip rather than a row of placeholders. */
+    var todo = (u.groups || []).reduce(function (n, g) { return n + (g.practice || []).length; }, 0);
+    if (todo) {
+      var strip = el("div", "lx-strip");
+      var st = unitState(u);
+      for (var k = 0; k < todo; k++) {
+        strip.appendChild(el("i", STATE_LABEL[st][1], ""));
+      }
+      main.appendChild(strip);
+    }
+
+    if (u.desc) {
+      main.appendChild(el("section", "lx-panel",
+        "<h2>About this unit</h2><p class=\"about\">" + u.desc + "</p>"));
+    }
+
+    if (u.groups && u.groups.length) {
+      u.groups.forEach(function (g) {
+        var panel = el("section", "lx-panel");
+        var head = "";
+        if (g.practice && g.practice.some(function (x) { return x.play; })) {
+          head = '<span class="lx-rec">' +
+            '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">' +
+            '<path d="M8 1l1.6 4.2L14 6.6l-3.4 2.7L11.4 14 8 11.6 4.6 14l.8-4.7L2 6.6l4.4-1.4z"/></svg>' +
+            'Start here</span>';
+        }
+        panel.innerHTML = head + "<h2>" + g.t + "</h2>";
+
+        var learn = (g.learn || []);
+        var practice = (g.practice || []);
+        var cols = el("div", "lx-cols" + (learn.length && practice.length ? "" : " one"));
+
+        if (learn.length) {
+          var lc = el("div", null, "<h3>Learn</h3>");
+          learn.forEach(function (it) {
+            var b = el("button", "lx-item");
+            b.type = "button";
+            b.disabled = !it.play;
+            b.innerHTML = '<span class="ic">' + icon(it.kind || "article") + '</span>' +
+                          '<span class="t">' + it.t + '</span>';
+            lc.appendChild(b);
+          });
+          cols.appendChild(lc);
+        }
+
+        if (practice.length) {
+          var pc = el("div", null, "<h3>Practice</h3>");
+          practice.forEach(function (it) {
+            var b = el("button", "lx-practice");
+            b.type = "button";
+            b.disabled = !it.play;
+            var stt = it.play ? unitState(u) : "none";
+            b.innerHTML =
+              '<span class="t"><b>' + it.t + '</b><span>' +
+              (it.play ? STATE_LABEL[stt][0] + " &middot; " + it.meta : it.meta) + '</span></span>' +
+              '<span class="st ' + STATE_LABEL[stt][1] + '"></span>';
+            if (it.play) b.addEventListener("click", startLesson);
+            pc.appendChild(b);
+          });
+          cols.appendChild(pc);
+        }
+        panel.appendChild(cols);
+        main.appendChild(panel);
+      });
+    } else {
+      main.appendChild(el("section", "lx-panel",
+        "<h2>Contents</h2><p class=\"about\">The syllabus places this unit. Its lessons, " +
+        "readings and practice are still being written &mdash; when they exist they appear here.</p>"));
+    }
+
+    var i = units.map(function (x) { return x.n; }).indexOf(u.n);
+    var pager = el("div", "lx-pager");
+    [["Previous", units[i - 1]], ["Next", units[i + 1]]].forEach(function (pair, k) {
+      var b = el("button", k ? "next" : null,
+        '<span class="k">' + pair[0] + '</span><span class="n">' +
+        (pair[1] ? "Unit " + pair[1].n + " &middot; " + pair[1].t : "&mdash;") + '</span>');
+      b.type = "button";
+      if (!pair[1]) b.disabled = true;
+      else b.addEventListener("click", function () { openUnit(c, pair[1]); });
+      pager.appendChild(b);
+    });
+    main.appendChild(pager);
+
+    body.appendChild(main);
+    show("unit");
+  }
+
   /* ============================================================ Course page
      A rail of units that stays put, a legend, a map of where you are, then
      the units themselves. Mastery states are derived from real progress —
@@ -348,7 +488,10 @@
   function unitsOf(c) {
     if (c.units) {
       return c.units.map(function (u, i) {
-        return { n: i + 1, t: u.t, sub: u.s, play: !!u.play };
+        // Carry lessons through — rebuilding the object without them is what
+        // made a unit with real content render as an empty one.
+        return { n: i + 1, t: u.t, sub: u.s, play: !!u.play,
+                 desc: u.desc, groups: u.groups };
       });
     }
     var out = [], n = 0;
@@ -381,16 +524,7 @@
            'stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
   }
 
-  function openCourse(c) {
-    S.course = c;
-    var body = $("#courseBody");
-    body.innerHTML = "";
-
-    var units = unitsOf(c);
-    var playable = units.some(function (u) { return u.play; });
-    var pct = playable ? Math.round(S.done / PROBLEMS.length * 100 / units.length) : 0;
-
-    /* ------------------------------------------------------------ Rail */
+  function buildRail(c, units, activeN) {
     var rail = el("aside", "lx-rail-nav");
     rail.setAttribute("aria-label", c.t + " units");
     rail.appendChild(el("div", "lx-rail-card",
@@ -400,16 +534,12 @@
       '<span><b>' + c.t + '</b><span>' + units.length + ' units</span></span>'));
 
     var ol = el("ol");
-    units.forEach(function (u, i) {
+    units.forEach(function (u) {
       var li = el("li");
-      var a = el("a", null,
-        '<span class="u">Unit ' + u.n + '</span><span class="n">' + u.t + '</span>');
-      a.href = "#unit-" + u.n;
-      if (i === 0) a.setAttribute("aria-current", "true");
-      a.addEventListener("click", function () {
-        [].forEach.call(ol.querySelectorAll("a"), function (x) { x.removeAttribute("aria-current"); });
-        a.setAttribute("aria-current", "true");
-      });
+      var a = el("a", null, '<span class="u">Unit ' + u.n + '</span><span class="n">' + u.t + '</span>');
+      a.href = "#";
+      if (u.n === activeN) a.setAttribute("aria-current", "true");
+      a.addEventListener("click", function (e) { e.preventDefault(); openUnit(c, u); });
       li.appendChild(a);
       ol.appendChild(li);
     });
@@ -420,24 +550,41 @@
       '<p>Test everything in this course at once, rather than a unit at a time.</p>');
     var chb = el("button", null, "Start course challenge");
     chb.type = "button";
-    chb.addEventListener("click", function () {
-      flash(playable ? "Course challenge — not written yet" : "Opens once the units are written");
-    });
+    chb.addEventListener("click", function () { flash("Course challenge — not written yet"); });
     ch.appendChild(chb);
     rail.appendChild(ch);
-    body.appendChild(rail);
+    return rail;
+  }
 
-    /* ------------------------------------------------------------ Main */
+  function legendRow() {
+    var leg = el("div", "lx-legend");
+    ["master", "prof", "fam", "att", "none"].forEach(function (k) {
+      leg.appendChild(el("span", null, '<i class="' + STATE_LABEL[k][1] + '"></i>' + STATE_LABEL[k][0]));
+    });
+    return leg;
+  }
+
+  function openCourse(c) {
+    S.course = c;
+    var body = $("#courseBody");
+    body.innerHTML = "";
+
+    var units = unitsOf(c);
+    var playable = units.some(function (u) { return u.play; });
+    var pct = playable ? Math.round(S.done / PROBLEMS.length * 100 / units.length) : 0;
+
+    body.appendChild(buildRail(c, units, null));
+
     var main = el("div", "lx-main");
 
     var crumb = el("div", "lx-crumb");
     var bLearn = el("button", null, "Learn");
     bLearn.type = "button";
     bLearn.addEventListener("click", function () { drawExplore(); show("explore"); });
-    var sub = SUBJECTS.filter(function (x) { return x.n === c.subject; })[0];
     crumb.appendChild(bLearn);
-    crumb.appendChild(el("span", "sep", "&rsaquo;"));
+    var sub = SUBJECTS.filter(function (x) { return x.n === c.subject; })[0];
     if (sub) {
+      crumb.appendChild(el("span", "sep", "&rsaquo;"));
       var bSub = el("button", null, sub.n);
       bSub.type = "button";
       bSub.addEventListener("click", function () { openSubject(sub); });
@@ -451,58 +598,47 @@
       "Course mastery: <b>" + pct + "%</b>" +
       (playable ? "" : " &middot; lessons still being written")));
 
-    var leg = el("div", "lx-legend");
-    ["master", "prof", "fam", "att", "none"].forEach(function (k) {
-      leg.appendChild(el("span", null,
-        '<i class="' + STATE_LABEL[k][1] + '"></i>' + STATE_LABEL[k][0]));
-    });
-    main.appendChild(leg);
+    main.appendChild(legendRow());
 
     /* A square per unit: the whole course readable in one glance. */
     var map = el("div", "lx-map");
     units.forEach(function (u) {
       var st = unitState(u);
-      var row = el("div", "lx-map-row" + (u.play && S.done < PROBLEMS.length ? " next" : ""));
+      var row = el("button", "lx-map-row" + (u.play && S.done < PROBLEMS.length ? " next" : ""));
       row.innerHTML =
         '<span class="lbl">Unit ' + u.n + '</span>' +
         '<span class="sqs"><i class="' + STATE_LABEL[st][1] + '" title="' + STATE_LABEL[st][0] + '"></i></span>' +
         (u.play && S.done < PROBLEMS.length ? '<span class="up">Up next</span>' : "") +
         '<span class="pc">' + (u.play ? unitPct(u) + "%" : "&mdash;") + '</span>';
+      row.type = "button";
+      row.style.width = "100%";
+      row.addEventListener("click", function () { openUnit(c, u); });
       map.appendChild(row);
     });
     main.appendChild(map);
 
-    /* ----------------------------------------------------- Unit sections */
+    /* --------------------------------------------------------- Unit rows
+       A unit is a door here. Its contents live on its own page. */
     var lastPart = null;
+    var listWrap = el("section", "lx-sec", "<h2>Units</h2>");
     units.forEach(function (u) {
       if (u.part && u.part !== lastPart) {
         lastPart = u.part;
-        main.appendChild(el("p", "lx-part", u.part));
+        listWrap.appendChild(el("p", "lx-part", u.part));
       }
-      var sec = el("section", "lx-unitsec");
-      sec.id = "unit-" + u.n;
-      sec.appendChild(el("header", null,
-        '<h2>Unit ' + u.n + ': ' + u.t + '</h2>' +
-        '<span class="um">' + (u.play ? "Unit mastery: " + unitPct(u) + "%" : "Not started") + '</span>'));
-
-      if (u.play) {
-        var grid = el("div", "lx-lessons");
-        var grp = el("div", "grp", "<h3>Practice</h3>");
-        var b = el("button", null,
-          '<span class="ic play">' + icon("practice") + '</span>' +
-          '<span>Counting in shapes</span>' +
-          '<span class="soon">' + PROBLEMS.length + ' problems</span>');
-        b.type = "button";
-        b.addEventListener("click", startLesson);
-        grp.appendChild(b);
-        grid.appendChild(grp);
-        sec.appendChild(grid);
-      } else {
-        sec.appendChild(el("div", "lx-pending",
-          "The syllabus for this unit is set. The lessons and practice behind it are still being written."));
-      }
-      main.appendChild(sec);
+      var st = unitState(u);
+      var cls = st === "master" ? " done" : (u.play ? " now" : "");
+      var b = el("button", "lx-unitrow" + cls);
+      b.type = "button";
+      b.innerHTML =
+        '<span class="num">' + (st === "master" ? "&#10003;" : u.n) + '</span>' +
+        '<span class="t"><b>' + u.t + '</b><span>' +
+          (u.play ? "Unit mastery " + unitPct(u) + "%" : "Lessons in production") +
+        '</span></span><span class="chev" aria-hidden="true"></span>';
+      b.addEventListener("click", function () { openUnit(c, u); });
+      listWrap.appendChild(b);
     });
+    main.appendChild(listWrap);
 
     /* ------------------------------------------------------------ About */
     if (c.objectives) {
@@ -729,6 +865,8 @@
   // subject it came from, and a subject to the catalogue.
   $("#back").addEventListener("click", function () {
     if ($("#v-lesson").classList.contains("on") || $("#v-done").classList.contains("on")) {
+      if (S.unit) openUnit(S.course || SEEING, S.unit); else openCourse(S.course || SEEING);
+    } else if ($("#v-unit").classList.contains("on")) {
       openCourse(S.course || SEEING);
     } else if ($("#v-course").classList.contains("on")) {
       var sub = SUBJECTS.filter(function (x) {

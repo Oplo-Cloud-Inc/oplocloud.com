@@ -494,3 +494,119 @@ a { color: inherit; text-decoration: none; }
   .lx-rail-nav .n { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; }
   .lx-lessons { grid-template-columns: 1fr; }
 }
+
+/* ---------------------------------------------------------- Unit rows
+   On the course page a unit is a door, not a heading: one row, its state,
+   and a chevron. The contents live on the unit's own page. */
+.lx-unitrow {
+  display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
+  padding: 16px 18px; border-radius: 14px;
+  background: var(--paper); border: 1px solid var(--line);
+  transition: border-color .15s, transform .15s;
+}
+.lx-unitrow + .lx-unitrow { margin-top: 8px; }
+.lx-unitrow:hover { border-color: #c8c8cc; transform: translateY(-1px); }
+.lx-unitrow .num {
+  width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: var(--sunk); color: var(--ink-2); font-size: 14px; font-weight: 600;
+}
+.lx-unitrow.now .num { background: var(--blue); color: #fff; }
+.lx-unitrow.done .num { background: var(--green); color: #fff; }
+.lx-unitrow .t { flex: 1; min-width: 0; }
+.lx-unitrow .t b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.005em; }
+.lx-unitrow .t span { display: block; font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.lx-unitrow .chev {
+  flex: none; width: 8px; height: 8px; border-right: 1.8px solid var(--ink-3);
+  border-top: 1.8px solid var(--ink-3); transform: rotate(45deg);
+}
+
+/* ---------------------------------------------------------- Unit page */
+.lx-unitkicker {
+  font-size: 13px; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ink-3); margin: 26px 0 6px;
+}
+.lx-unitwrap { max-width: 780px; }
+
+.lx-group { margin-top: 34px; }
+.lx-group > h2 {
+  font-family: var(--disp); font-size: 17px; font-weight: 600; letter-spacing: -.01em;
+  margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+}
+.lx-item {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  padding: 13px 12px; margin-left: -12px; border-radius: 10px;
+  font-size: 15.5px; transition: background .14s;
+}
+.lx-item:hover:not([disabled]) { background: var(--paper); }
+.lx-item[disabled] { cursor: default; color: var(--ink-3); }
+.lx-item .ic {
+  width: 26px; height: 26px; border-radius: 7px; flex: none; display: grid; place-items: center;
+  border: 1.5px solid var(--line); color: var(--ink-2);
+}
+.lx-item .ic svg { width: 14px; height: 14px; }
+.lx-item .ic.play { border-color: var(--blue); color: var(--blue); background: #f2f8ff; }
+.lx-item .t { flex: 1; min-width: 0; }
+.lx-item .meta { flex: none; font-size: 13px; color: var(--ink-3); }
+
+.lx-pager { display: flex; gap: 10px; margin-top: 44px; padding-top: 22px; border-top: 1px solid var(--line); }
+.lx-pager button {
+  flex: 1; min-width: 0; text-align: left; padding: 15px 18px; border-radius: 14px;
+  background: var(--paper); border: 1px solid var(--line);
+  transition: border-color .15s;
+}
+.lx-pager button:hover:not([disabled]) { border-color: #c8c8cc; }
+.lx-pager button[disabled] { opacity: .45; cursor: default; }
+.lx-pager .k { display: block; font-size: 12px; color: var(--ink-3); }
+.lx-pager .n { display: block; font-size: 15px; font-weight: 600; margin-top: 3px; }
+.lx-pager .next { text-align: right; }
+@media (max-width: 600px) { .lx-pager { flex-direction: column; } }
+
+/* ==================================================== Unit page, panelled
+   The unit keeps the course rail beside it, so you never lose the shape of
+   the course while you are inside one part of it. Each group of material is
+   a panel: what there is to read on the left, what there is to do on the
+   right. A column that has nothing in it is left out rather than shown empty.
+   ========================================================================== */
+.lx-strip { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 4px; }
+.lx-strip i { width: 19px; height: 19px; border-radius: 4px; display: block; }
+.lx-strip .qz, .lx-strip .ut {
+  width: 19px; height: 19px; display: grid; place-items: center; color: var(--ink-3);
+}
+.lx-strip .qz svg, .lx-strip .ut svg { width: 14px; height: 14px; }
+
+.lx-panel {
+  margin-top: 20px; padding: 24px 26px; border-radius: 16px;
+  background: var(--paper); border: 1px solid var(--line);
+}
+.lx-panel > h2 {
+  font-family: var(--disp); font-size: 19px; font-weight: 600; letter-spacing: -.012em;
+  margin: 0 0 6px;
+}
+.lx-panel > p.about { margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); }
+
+.lx-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 40px; margin-top: 16px; }
+.lx-cols.one { grid-template-columns: minmax(0, 1fr); }
+.lx-cols h3 {
+  font-size: 14px; font-weight: 500; color: var(--ink-2); margin: 0 0 8px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--line);
+}
+
+.lx-practice {
+  padding: 15px 16px; border-radius: 12px; background: var(--canvas);
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  transition: background .14s;
+}
+.lx-practice:hover:not([disabled]) { background: var(--sunk); }
+.lx-practice[disabled] { cursor: default; opacity: .7; }
+.lx-practice .t { flex: 1; min-width: 0; }
+.lx-practice .t b { display: block; font-size: 15px; font-weight: 600; }
+.lx-practice .t span { display: block; font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.lx-practice .st { flex: none; width: 20px; height: 20px; border-radius: 5px; }
+
+.lx-rec {
+  float: right; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--ink-2);
+}
+.lx-rec svg { width: 14px; height: 14px; color: var(--blue); }
+
+@media (max-width: 700px) { .lx-cols { grid-template-columns: minmax(0, 1fr); } }
