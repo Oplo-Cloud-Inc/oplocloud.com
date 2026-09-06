@@ -113,7 +113,7 @@ def nav(depth, active=""):
     </a>
     <ul class="nav-links" id="navLinks">{items}
     </ul>
-    <div class="nav-end"><a href="{rel(depth, "sign-in/")}">Sign in</a></div>
+    <div class="nav-end">{"" if active == "sign-in/" else f'<a href="{rel(depth, "sign-in/")}">Sign in</a>'}</div>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
     </button>
@@ -125,7 +125,9 @@ def nav(depth, active=""):
 def chapter(depth, name, links, home, cta=None):
     """cta is (label, target); it sits outside the scrolling link list so a
     phone cannot push the one actionable thing off the end of the bar."""
-    ls = "".join(f'<a href="{l[1]}">{l[0]}</a>' for l in links)
+    ls = "".join(
+        f'<a href="{l[1]}"' + (f' class="{l[2]}"' if len(l) > 2 else "") + f'>{l[0]}</a>'
+        for l in links)
     action = ""
     if cta:
         action = f'<a class="chapter-cta" href="{rel(depth, cta[1])}">{cta[0]}</a>'
@@ -142,7 +144,11 @@ def chapter(depth, name, links, home, cta=None):
 def footer(depth, notes=None):
     note_html = ""
     if notes:
-        note_html = "<div class=\"notes\"><ol>" + "".join(f"<li>{n}</li>" for n in notes) + "</ol></div>"
+        # A <details> that ships open: with no JavaScript the notes read exactly
+        # as they always have. oplo-motion folds them on a phone only.
+        note_html = ('<div class="notes"><details class="notes-d" open>'
+                     '<summary>Notes</summary><ol>'
+                     + "".join(f"<li>{n}</li>" for n in notes) + "</ol></details></div>")
     cols = ""
     for title, links in FOOTER:
         li = "".join(f'\n          <li><a href="{rel(depth, h)}">{l}</a></li>' for l, h in links)
@@ -212,6 +218,12 @@ def footer(depth, notes=None):
 # Written to what Oplo has actually said it is: hardware, software and AI,
 # built around the person. It names no product that does not exist and quotes
 # no specification. Where something is not built yet, the page says so.
+
+def mo(text):
+    """Wrap an elaborating clause so a phone drops it. What is left has to be a
+    complete sentence on its own — this trims, it does not truncate."""
+    return f'<span class="more">{text}</span>'
+
 
 def band(cls, inner, ident=""):
     i = f' id="{ident}"' if ident else ""
@@ -486,12 +498,12 @@ INTEL_CSS = '''<style>
 </style>'''
 
 HIGHLIGHTS = [
-    ("Reasoning, locally", "Work a problem through with a model running on the machine in front of you, with no request leaving it."),
-    ("Your own context", "Answers grounded in your mail, notes and files — read where they already are, not uploaded to be read."),
-    ("Voice", "Speech understood on the device, so being understood does not cost you a recording."),
+    ("Reasoning, locally", "Work a problem through with a model running on the machine in front of you" + mo(", with no request leaving it") + "."),
+    ("Your own context", "Answers grounded in your mail, notes and files" + mo(" — read where they already are, not uploaded to be read") + "."),
+    ("Voice", "Speech understood on the device" + mo(", so being understood does not cost you a recording") + "."),
     ("What is on screen", "Ask about whatever you are looking at, without a screenshot going anywhere."),
     ("Writing", "Draft and revise in your own voice, close enough to keep up with typing."),
-    ("Actions", "Ask for something to be done across your apps, and have it done rather than described."),
+    ("Actions", "Ask for something to be done across your apps" + mo(", and have it done rather than described") + "."),
 ]
 
 TABS = [
@@ -503,23 +515,23 @@ TABS = [
 ]
 
 TIERS = [
-    ("On device", "The default. The model lives on the machine you are holding and answers without a network.",
+    ("On device", "The model lives on the machine you are holding and answers without a network.",
      "Works offline. Nothing leaves. No cost per request."),
     ("On your desk", "A larger model where there is room for one, for work a handheld cannot hold.",
      "Longer context. Heavier reasoning. Still yours."),
-    ("Asked first", "If a request genuinely cannot be answered locally, you are told before it goes, and you can say no.",
+    ("Asked first", "If a request genuinely cannot be answered locally, you are told before it goes" + mo(", and you can say no") + ".",
      "Explicit consent. Not retained. Declinable."),
 ]
 
 OPEN_PROBLEMS = [
     ("Efficiency", "Capable models that fit in a pocket",
-     "Compressing a model until it runs on a handheld is easy. Doing it without hollowing out what made it worth running is the actual problem."),
+     "Compressing a model until it runs on a handheld is easy." + mo(" Doing it without hollowing out what made it worth running is the actual problem.")),
     ("Silicon", "Designing the chip around the model",
-     "General-purpose parts force general-purpose software. What changes when the silicon is shaped to the thing it has to run."),
+     "General-purpose parts force general-purpose software." + mo(" What changes when the silicon is shaped to the thing it has to run.")),
     ("Privacy", "Personal context without collection",
      "Grounding answers in someone's own material while ensuring that material never becomes a dataset, including ours."),
     ("Evaluation", "Usefulness, not benchmark scores",
-     "A model that tops a leaderboard and irritates the person using it has failed. The second measurement is the interesting one."),
+     "A model that tops a leaderboard and irritates the person using it has failed." + mo(" The second measurement is the interesting one.")),
 ]
 
 DEVICE_SVG = RACK_SVG = ""
@@ -583,7 +595,7 @@ def intelligence_page():
   <div class="well">
     <p class="kicker reveal">Speed</p>
     <h2 class="t-hero balance lede reveal">The fastest network is no network.</h2>
-    <div class="trip reveal d1">
+    <div class="trip reveal d1 phone-hide">
       <div class="lane local">
         <span class="who">On device</span>
         <span class="wire"><span class="dot"></span></span>
@@ -597,7 +609,7 @@ def intelligence_page():
     </div>
     <p class="stat reveal d2">
       <b>186,000</b>
-      <span>Miles per second. The speed of light, and the ceiling on how fast any answer can return from somewhere else.<sup>2</sup></span>
+      <span>Miles per second.<span class="more"> The speed of light, and the ceiling on how fast any answer can return from somewhere else.</span><sup>2</sup></span>
     </p>
   </div>
 </section>
@@ -620,9 +632,9 @@ def intelligence_page():
     <p class="kicker reveal">Privacy</p>
     <h2 class="t-hero balance lede reveal">What never leaves cannot be collected.</h2>
     <div class="tiers reveal d1">
-      <div><h3>Processed where you are</h3><p>Personal context is read on the device it already lives on. Being understood should not require uploading yourself first.</p></div>
-      <div><h3>Not kept, not trained on</h3><p>What you ask is not retained to improve a model. If that ever needs an exception, it gets asked for.</p></div>
-      <div><h3>Told before it leaves</h3><p>If something genuinely cannot be answered locally, you hear about it first, and you can decline.</p></div>
+      <div><h3>Processed where you are</h3><p>Personal context is read on the device it already lives on.<span class="more"> Being understood should not require uploading yourself first.</span></p></div>
+      <div><h3>Not kept, not trained on</h3><p>What you ask is not retained to improve a model.<span class="more"> If that ever needs an exception, it gets asked for.</span></p></div>
+      <div><h3>Told before it leaves</h3><p>If something genuinely cannot be answered locally, you hear about it first<span class="more">, and you can decline</span>.</p></div>
     </div>
     <p class="cta-row reveal d2"><a class="cta" href="../privacy/">Read our position on privacy</a></p>
   </div>
@@ -638,7 +650,7 @@ def intelligence_page():
   <div class="well">
     <p class="kicker reveal">Research</p>
     <h2 class="t-hero balance lede reveal">The open problems.</h2>
-    <p class="t-lead muted lede reveal d1" style="margin-top:18px">We have published nothing yet, so this is not a list of papers. It is what we are stuck on.</p>
+    <p class="t-lead muted lede reveal d1" style="margin-top:18px">We have published nothing yet, so this is not a list of papers.<span class="more"> It is what we are stuck on.</span></p>
     <div class="rlist reveal d1">
 {rows}    </div>
   </div>
@@ -649,7 +661,7 @@ def intelligence_page():
   <div class="well">
     <p class="kicker reveal" style="color:var(--ink-2)">Developers</p>
     <h2 class="t-hero balance lede reveal">Build on it.</h2>
-    <p class="t-lead muted lede reveal d1" style="margin-top:18px">One surface across the hardware, the software and the models. A model on the device means features that work offline and cost nothing per request.</p>
+    <p class="t-lead muted lede reveal d1" style="margin-top:18px">One surface across the hardware, the software and the models.<span class="more"> A model on the device means features that work offline and cost nothing per request.</span></p>
     <p class="cta-row reveal d2">
       <a class="cta" href="../developers/">Developer resources</a>
       <a class="cta" href="../contact/">Talk to us</a>
@@ -801,9 +813,23 @@ SIGNIN_CSS = '''<style>
   .signin .after a { color: var(--blue); }
   .signin .after a:hover { text-decoration: underline; }
 
+  /* On a phone the account screen is the whole screen. The eight-column
+     site footer under it is furniture from another page, so it goes and the
+     legal bar stays — which is all an account screen has ever needed. */
   @media (max-width: 734px) {
-    .signin { justify-content: flex-start; padding-top: clamp(38px, 7vh, 64px); }
-    .signin .sub { font-size: 16px; }
+    .signin {
+      justify-content: flex-start;
+      padding: clamp(30px, 6vh, 52px) var(--gutter) 28px;
+      min-height: calc(100svh - 44px - 86px);
+    }
+    .signin .mark { width: 34px; height: 32px; margin-bottom: 22px; }
+    .signin h1 { font-size: 27px; }
+    .signin .sub { font-size: 16px; max-width: 28ch; }
+    .signin .status { margin-top: 22px; padding: 12px 15px; font-size: 13.5px; }
+    .form { margin-top: 22px; }
+    .signin .after { margin-top: 26px; padding-top: 20px; font-size: 13px; }
+    .foot-note, .foot-cols, .foot-rule { display: none; }
+    .foot-bar { padding-top: 20px; border-top: 1px solid var(--rule); }
   }
 </style>'''
 
@@ -817,9 +843,9 @@ def signin_page():
     out += f'''<main class="signin">
   {mark}
   <h1 class="balance">Sign in to Oplo</h1>
-  <p class="sub">One account for your device, your software, and the model that runs on it.</p>
+  <p class="sub">One account for your device, your software<span class="more">,</span> and the model that runs on it.</p>
 
-  <p class="status"><b>Accounts aren&rsquo;t open yet.</b> This is the sign-in we are building. Nothing you type here is sent anywhere or stored.</p>
+  <p class="status"><b>Accounts aren&rsquo;t open yet.</b><span class="more"> This is the sign-in we are building.</span> Nothing you type here is sent anywhere or stored.</p>
 
   <form class="form" id="signinForm" novalidate autocomplete="off">
     <div class="field">
@@ -839,8 +865,8 @@ def signin_page():
   </form>
 
   <p class="after">
-    There is no password field on this page, and there will not be one until
-    accounts actually work. <a href="../newsroom/">We will say when they do.</a>
+    There is no password field on this page<span class="more">, and there will not be one until
+    accounts actually work</span>. <a href="../newsroom/">Hear when accounts open.</a>
   </p>
 </main>
 
@@ -901,29 +927,30 @@ SCENES = [
     ("dark", "handoff", "The handoff",
      "You start it on the train. You finish it at your desk, and it is already open.",
      "The draft, the tabs, the half-finished thought — carried between your own machines and encrypted "
-     "before any of it leaves the one in your hand. You do not send it to yourself. It is simply there.",
+     "before any of it leaves the one in your hand." + mo(" You do not send it to yourself. It is simply "
+     "there."),
      "Encrypted sync"),
     ("", "toobig", "The job that will not fit",
      "A year of receipts, and one question about them.",
-     "The model in your pocket handles the day. Some questions need more room than a pocket has — the whole "
-     "year at once, held in mind while it works. That is what the desk model is for, and it is the only "
-     "reason most people will want this.",
+     "The model in your pocket handles the day. Some questions need more room than a pocket has — the "
+     "whole year at once, held in mind while it works." + mo(" That is what the desk model is for, and it "
+     "is the only reason most people will want this."),
      "Desk model"),
     ("dark", "lost", "The machine you lost",
      "The laptop goes in the river. Nothing else does.",
      "A complete restore point, encrypted on the device before it is stored, so what sits on our side is "
-     "not readable by us. The new machine wakes up as the old one, and the worst day of your week costs "
-     "you an afternoon instead of a year.",
+     "not readable by us." + mo(" The new machine wakes up as the old one, and the worst day of your week "
+     "costs you an afternoon instead of a year."),
      "Device backup"),
     ("", "address", "The address you did not want to give",
      "They want your email before they will show you the price.",
-     "Give them one that is not yours. It forwards to you until the day you decide it should not, and then "
-     "it stops — without you changing the address that your friends use.",
+     "Give them one that is not yours. It forwards to you until the day you decide it should not, and "
+     "then it stops." + mo(" Without you changing the address that your friends use."),
      "Disposable addresses"),
     ("dark", "household", "The household",
      "Six people. One bill. Six libraries that never touch.",
-     "Sharing what you pay for should not mean sharing what you keep. Everyone in the house gets the whole "
-     "membership and their own material, and nobody can see anybody else's.",
+     "Sharing what you pay for should not mean sharing what you keep." + mo(" Everyone in the house gets "
+     "the whole membership and their own material, and nobody can see anybody else\u2019s."),
      "Family"),
 ]
 
@@ -943,23 +970,24 @@ MATRIX = [
 FAQ = [
     ("What is Oplo+?",
      "A single membership covering the parts of Oplo that need somewhere to run or somewhere to live — the "
-     "larger model, encrypted sync and backup, and the privacy features. The device and its on-device model "
-     "work without it."),
+     "larger model, encrypted sync and backup, and the privacy features." + mo(" The device and its "
+     "on-device model work without it.")),
     ("Do I need it for the AI to work?",
-     "No. The on-device model is part of the machine, not part of the membership. Oplo+ adds the larger "
-     "model for work that will not fit on a handheld."),
+     "No. The on-device model is part of the machine, not part of the membership." + mo(" Oplo+ adds the "
+     "larger model for work that will not fit on a handheld.")),
     ("What happens to my things if I stop paying?",
-     "They stay yours. Anything held in sync remains downloadable, and nothing is deleted as a lever to make "
-     "you resubscribe. The exact window will be written into the terms before anyone is charged."),
+     "They stay yours. Anything held in sync remains downloadable, and nothing is deleted as a lever to "
+     "make you resubscribe." + mo(" The exact window will be written into the terms before anyone is "
+     "charged.")),
     ("Can a household share one membership?",
-     "That is what the Family tier is for. Each person keeps their own material; sharing the membership does "
-     "not mean sharing a library."),
+     "That is what the Family tier is for." + mo(" Each person keeps their own material; sharing the "
+     "membership does not mean sharing a library.")),
     ("Is my data used to train models?",
-     "No. That commitment does not change between tiers, and paying more does not buy more privacy — the "
-     "floor is the same for everyone."),
+     "No. That commitment does not change between tiers, and paying more does not buy more privacy." + mo(
+     " The floor is the same for everyone.")),
     ("When can I subscribe?",
-     "Not yet. Oplo has no shipping product for a membership to attach to. This page describes what is being "
-     "built."),
+     "Not yet. Oplo has no shipping product for a membership to attach to." + mo(" This page describes "
+     "what is being built.")),
 ]
 
 PLUS_CSS = '''<style>
@@ -981,7 +1009,10 @@ PLUS_CSS = '''<style>
   .band.dark .perk p { color: var(--ink-lt-2); }
   @media (max-width: 1068px) { .perks { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 833px)  { .perks { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 500px)  { .perks { grid-template-columns: 1fr; gap: 30px; } }
+  /* Two columns all the way down: a glyph, a name and one line do not need
+     the full width, and eight single-file rows is a scroll nobody finishes. */
+  @media (max-width: 500px)  { .perks { gap: 28px 20px; } .perk h3 { font-size: 15px; margin: 11px 0 4px; }
+                               .perk p { font-size: 13.5px; } .perk svg { width: 22px; height: 22px; } }
   /* Scenes. Each moment gets a whole band and the sentence gets the size —
      the scene is the illustration, since there is no photograph to carry it. */
   .scene { padding: clamp(88px, 14vh, 170px) 0; }
@@ -1155,7 +1186,10 @@ PERKS_CSS = '''
   .band.dark .perk p { color: var(--ink-lt-2); }
   @media (max-width: 1068px) { .perks { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 833px)  { .perks { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 500px)  { .perks { grid-template-columns: 1fr; gap: 30px; } }
+  /* Two columns all the way down: a glyph, a name and one line do not need
+     the full width, and eight single-file rows is a scroll nobody finishes. */
+  @media (max-width: 500px)  { .perks { gap: 28px 20px; } .perk h3 { font-size: 15px; margin: 11px 0 4px; }
+                               .perk p { font-size: 13.5px; } .perk svg { width: 22px; height: 22px; } }
 '''
 
 
@@ -1183,7 +1217,7 @@ def perks_block():
 def plus_page():
     depth = 1
     links = [("Overview", "#top"), ("Moments", "#handoff"), ("Included", "#perks"),
-             ("Plans", "#plans"), ("Compare", "#compare"), ("Questions", "#faq")]
+             ("Plans", "#plans"), ("Compare", "#compare", "phone-hide"), ("Questions", "#faq")]
     out = head(depth, "Oplo+ — Oplo",
                "Oplo+ is the membership for the moments your machine outgrows its own pocket.",
                "plus/", PLUS_CSS)
@@ -1253,7 +1287,7 @@ def plus_page():
             else:
                 cells += f'<td class="v">{v}</td>'
         body_rows += f'      <tr><td class="f"><b>{feat}</b><span>{desc}</span></td>{cells}</tr>\n'
-    out += f'''<section class="band" id="compare">
+    out += f'''<section class="band phone-hide" id="compare">
   <div class="well">
     <p class="eyebrow reveal">Compare</p>
     <h2 class="t-display balance reveal">What is in each tier.</h2>
@@ -1312,26 +1346,26 @@ PAGES.append(plus_page())
 PILLARS = [
     ("Institutional rigour",
      "Structured pathways and professional certifications built to the standards corporate training and "
-     "academic credit actually have to meet &mdash; not a library of videos with a quiz at the end."),
+     "academic credit actually have to meet." + mo(" Not a library of videos with a quiz at the end.")),
     ("Adaptive mastery",
      "Learners move at their own pace through skill trees, and nothing unlocks until the thing before it "
-     "is genuinely understood. Proficiency is the gate, not attendance."),
+     "is genuinely understood." + mo(" Proficiency is the gate, not attendance.")),
     ("Expert mentorship, on demand",
      "When tracking sees someone stuck, it connects them to a vetted one-to-one tutor rather than letting "
-     "them stall. The automation knows its own limits."),
+     "them stall." + mo(" The automation knows its own limits.")),
     ("One workflow",
-     "Assignments, progress, templates and grading from a single console, so the administrative load stops "
-     "being the price of running a course."),
+     "Assignments, progress, templates and grading from a single console" + mo(", so the administrative "
+     "load stops being the price of running a course") + "."),
 ]
 
 AUDIENCES = [
     ("K&#8209;12 and higher education",
-     "Secure, LTI&#8209;compliant infrastructure that sits inside what a school already runs. It takes "
-     "administrative weight off teachers and gives students support at the hour they actually get stuck, "
-     "which is rarely during the lesson."),
+     "Secure, LTI&#8209;compliant infrastructure that sits inside what a school already runs." + mo(" It "
+     "takes administrative weight off teachers and gives students support at the hour they actually get "
+     "stuck, which is rarely during the lesson.")),
     ("Enterprise and corporate training",
      "Scalable upskilling pathways with transparent skill&#8209;gap analytics for the people planning "
-     "headcount, and hands-on training backed by live coaching for the people doing the work."),
+     "headcount" + mo(", and hands-on training backed by live coaching for the people doing the work") + "."),
 ]
 
 EDU_CSS = '''<style>
@@ -1422,7 +1456,7 @@ def edu_page():
       <p class="verdict">Four logins. Four sets of data. Nobody holding the whole picture of how a learner is actually doing.</p>
       <div class="one" aria-hidden="true">One workspace</div>
     </div>
-    <p class="body balance reveal d1">The overhead lands on staff, the gaps land on learners, and completion rates fall for reasons no single system can see. Fragmentation is not an inconvenience &mdash; it is the reason the numbers look the way they do.</p>
+    <p class="body balance reveal d1">The overhead lands on staff, the gaps land on learners, and completion rates fall for reasons no single system can see.<span class="more"> Fragmentation is not an inconvenience &mdash; it is the reason the numbers look the way they do.</span></p>
   </div>
 </section>
 '''
@@ -1453,7 +1487,7 @@ def edu_page():
   <div class="well">
     <p class="moment reveal">Our vision</p>
     <q class="reveal">Technology should carry the load. Not the relationship.</q>
-    <p class="body balance reveal d1">Every school and every organisation on the same infrastructure, with automation and human guidance each doing the part it is actually good at. The machine handles the tracking, the marking and the scheduling. A person does the teaching.</p>
+    <p class="body balance reveal d1"><span class="more">Every school and every organisation on the same infrastructure, with automation and human guidance each doing the part it is actually good at. </span>The machine handles the tracking, the marking and the scheduling. A person does the teaching.</p>
     <p class="cta-row reveal d2">
       <a class="cta" href="learn/">See Edu Learn</a>
       <a class="cta" href="../contact/">Talk to us</a>
@@ -1836,7 +1870,7 @@ PAGES.append(ir_page("investor/", 1, "Investor Relations — Oplo",
       Securities and Exchange Commission. Nothing on these pages is an offer to sell or a solicitation of
       an offer to buy any security.<sup>1</sup>
     </p>
-    <div class="index-cards reveal d1">
+    <div class="index-cards reveal d1 phone-hide">
 {_cards}    </div>
   </div>
 </section>
@@ -2226,27 +2260,27 @@ PAGES.append(privacy_page("privacy/", 1, "Privacy — Oplo",
     <h2 class="t-display balance reveal">Every promise costs something.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
       A privacy claim is only worth reading if it closes a door the company would otherwise like to keep
-      open. Here is each one, next to what it gives up.
+      open.<span class="more"> Here is each one, next to what it gives up.</span>
     </p>
 {pledge([
     ("Intelligence runs on your device.",
-     "No copy of your files, messages and requests sitting on our servers &mdash; nothing to mine, nothing "
-     "to subpoena, nothing to leak."),
+     "No copy of your files, messages and requests sitting on our servers." + mo(" Nothing to mine, "
+     "nothing to subpoena, nothing to leak.")),
     ("No advertising business, ever.",
-     "The most reliable way to make money from a personal device is closed to us. Everything Oplo earns has "
-     "to come from selling the product."),
+     "The most reliable way to make money from a personal device is closed to us." + mo(" Everything Oplo "
+     "earns has to come from selling the product.")),
     ("Your content is never training data.",
-     "The cheapest source of training data on earth is off the table, and there is no opt-out to bury in "
-     "settings because there is nothing to opt out of."),
+     "The cheapest source of training data on earth is off the table." + mo(" There is no opt-out to bury "
+     "in settings, because there is nothing to opt out of.")),
     ("A feature collects what it needs and nothing adjacent.",
-     "No data kept for a use we have not thought of yet. When a feature is removed, what it held goes with "
-     "it."),
+     "No data kept for a use we have not thought of yet." + mo(" When a feature is removed, what it held "
+     "goes with it.")),
     ("Nothing leaves the device silently.",
-     "No quiet upload you would have to read a changelog to find out about. If a request has to travel, you "
-     "are told while it happens, not afterwards in a policy."),
+     "No quiet upload you would have to read a changelog to find out about." + mo(" If a request has to "
+     "travel, you are told while it happens, not afterwards in a policy.")),
     ("What we cannot read, we cannot hand over.",
-     "No support tool that can open your library, and no way for us to be helpful to anyone who demands it "
-     "&mdash; including you, if you lose the key."),
+     "No support tool that can open your library, and no way for us to be helpful to anyone who demands "
+     "it." + mo(" Including you, if you lose the key.")),
 ])}  </div>
 </section>
 
@@ -2261,18 +2295,18 @@ PAGES.append(privacy_page("privacy/", 1, "Privacy — Oplo",
     </p>
 {minds([
     ("On the device",
-     "Everything a local model can answer, it answers locally &mdash; which is most of it. Your files, "
-     "messages and calendar are read where they already are."),
+     "Everything a local model can answer, it answers locally &mdash; which is most of it." + mo(" Your "
+     "files, messages and calendar are read where they already are.")),
     ("Off the device",
-     "Only when a request genuinely exceeds what the hardware can do, and only the part that has to travel. "
-     "Said plainly at the moment it happens, with the option to stop."),
+     "Only when a request genuinely exceeds what the hardware can do, and only the part that has to "
+     "travel." + mo(" Said plainly at the moment it happens, with the option to stop.")),
     ("Never",
      "Retained after the answer, attached to your account, sold, or used to train the next model."),
 ])}    <p class="cta-row reveal d2"><a class="cta" href="../intelligence/">How Oplo intelligence works</a></p>
   </div>
 </section>
 
-<section class="band" id="more">
+<section class="band phone-hide" id="more">
   <div class="well">
     <p class="eyebrow reveal">Read further</p>
     <h2 class="t-display balance reveal">The rest of it.</h2>
@@ -2300,41 +2334,42 @@ PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
     <p class="eyebrow reveal">Protections</p>
     <h2 class="t-display balance reveal">What each one actually does.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      Each is marked with where it really stands. Most of Oplo is in development, and a page that wrote all
-      of this in the present tense would be describing a company that does not exist yet.<sup>1</sup>
+      Each is marked with where it really stands.<span class="more"> Most of Oplo is in development, and a
+      page that wrote all of this in the present tense would be describing a company that does not exist
+      yet.</span><sup>1</sup>
     </p>
 {protect([
     ("On-device intelligence",
-     "The model that reads your messages, files and calendar runs on your hardware. It has access because "
-     "the device is yours &mdash; not because it uploaded anything to earn it.",
+     "The model that reads your messages, files and calendar runs on your hardware." + mo(" It has access "
+     "because the device is yours &mdash; not because it uploaded anything to earn it."),
      "In development"),
     ("Minimum collection",
-     "A feature asks for what it needs to work and nothing next to it. Location for the map, not location "
-     "for everything else that happens to be running.",
+     "A feature asks for what it needs to work and nothing next to it." + mo(" Location for the map, not "
+     "location for everything else that happens to be running."),
      "A design rule from the start"),
     ("No silent departures",
-     "When something has to leave the device, the interface says so as it happens and the request can be "
-     "refused without the feature pretending to be broken.",
+     "When something has to leave the device, the interface says so as it happens" + mo(" and the request "
+     "can be refused without the feature pretending to be broken") + ".",
      "In development"),
     ("No advertising profile",
-     "Oplo has no ad business. There is no profile to assemble, and therefore no commercial reason to keep "
-     "what you did last week.",
+     "Oplo has no ad business, so there is no profile to assemble" + mo(" and no commercial reason to keep "
+     "what you did last week") + ".",
      "In effect now"),
     ("Ephemeral by default",
-     "Requests are answered and dropped. A history exists because you asked for one, and deleting it "
-     "deletes it rather than hiding it.",
+     "Requests are answered and dropped." + mo(" A history exists because you asked for one, and deleting "
+     "it deletes it rather than hiding it."),
      "In development"),
     ("Your content is not training data",
-     "What you write, store and say to Oplo is not used to train models &mdash; not anonymised, not "
-     "aggregated, not sampled.",
+     "What you write, store and say to Oplo is not used to train models" + mo(" &mdash; not anonymised, "
+     "not aggregated, not sampled") + ".",
      "In effect now"),
     ("Sign in without spreading out",
-     "One account used to reach your own things, rather than an identity handed to every site that would "
-     "like to know who you are.",
+     "One account used to reach your own things" + mo(", rather than an identity handed to every site that "
+     "would like to know who you are") + ".",
      "In development"),
     ("Encrypted sync and backup",
-     "Content encrypted on the device before it syncs, with the keys staying on your hardware. It is the "
-     "reason we would be unable to read it, not merely unwilling.",
+     "Content encrypted on the device before it syncs, with the keys staying on your hardware." + mo(" It "
+     "is the reason we would be unable to read it, not merely unwilling."),
      "In development, an Oplo+ capability"),
 ])}  </div>
 </section>
@@ -2344,13 +2379,13 @@ PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
     <p class="eyebrow reveal">Not here yet</p>
     <h2 class="t-display balance reveal">The parts we cannot claim.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      These are the things that turn a stated intention into something you can verify. None of them exists
-      today, and listing them is the only way to be held to them.
+      These are the things that turn a stated intention into something you can verify.<span class="more">
+      None of them exists today, and listing them is the only way to be held to them.</span>
     </p>
 {minds([
     ("Independent audit",
-     "No third party has reviewed any of this. When one has, the report is published here whole, not "
-     "summarised."),
+     "No third party has reviewed any of this." + mo(" When one has, the report is published here whole, "
+     "not summarised.")),
     ("Published threat model",
      "What Oplo defends against, and what it does not, written down. Not written yet."),
     ("Security bounty",
@@ -2381,17 +2416,17 @@ PAGES.append(privacy_page("privacy/control/", 2, "Privacy Control — Oplo",
     <h2 class="t-display balance reveal">Four things, or it is not a control.</h2>
 {minds([
     ("Private first",
-     "The state you get before touching anything is the protective one. Convenience is the thing you opt "
-     "into, not the thing you have to opt out of."),
+     "The state you get before touching anything is the protective one." + mo(" Convenience is the thing "
+     "you opt into, not the thing you have to opt out of.")),
     ("Reversible",
-     "What can be turned on can be turned off, and off means stopped rather than paused until the next "
-     "update decides otherwise."),
+     "What can be turned on can be turned off, and off means stopped" + mo(" rather than paused until the "
+     "next update decides otherwise") + "."),
     ("Findable",
-     "One place, in the words a person would actually use to look for it. Not nested three screens down "
-     "under a heading nobody would think to open."),
+     "One place, in the words a person would actually use to look for it." + mo(" Not nested three screens "
+     "down under a heading nobody would think to open.")),
     ("Complete",
-     "Withdrawing a permission withdraws what it collected. Deleting something deletes the copy as well as "
-     "the original."),
+     "Withdrawing a permission withdraws what it collected." + mo(" Deleting something deletes the copy as "
+     "well as the original.")),
 ])}  </div>
 </section>
 
@@ -2400,8 +2435,8 @@ PAGES.append(privacy_page("privacy/control/", 2, "Privacy Control — Oplo",
     <p class="eyebrow reveal">What you can ask for</p>
     <h2 class="t-display balance reveal">Requests we intend to answer.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      There is no product and no account holding your data today, so none of this can be exercised yet.
-      Each is listed with when it becomes real.<sup>1</sup>
+      There is no product and no account holding your data today, so none of this can be exercised
+      yet.<span class="more"> Each is listed with when it becomes real.</span><sup>1</sup>
     </p>
 {register([
     ("Your data", [
@@ -2423,8 +2458,9 @@ PAGES.append(privacy_page("privacy/control/", 2, "Privacy Control — Oplo",
     <p class="eyebrow reveal">Ask us</p>
     <h2 class="t-display balance reveal">A person reads it.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:52ch;margin:18px auto 0">
-      Oplo is small enough that privacy questions reach the people who decide these things. Write to
-      <a href="mailto:hello@oplocloud.com">hello@oplocloud.com</a> and say what you want to know.
+      <span class="more">Oplo is small enough that privacy questions reach the people who decide these
+      things. </span>Write to <a href="mailto:hello@oplocloud.com">hello@oplocloud.com</a> and say what you
+      want to know.
     </p>
     <p class="cta-row reveal d2">
       <a class="cta" href="../../legal/privacy-policy/">Read the privacy policy</a>
@@ -2453,22 +2489,22 @@ PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — Oplo",
     <h2 class="t-display balance reveal">Four categories, no prose.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
       A label is not a policy. It is a short, comparable answer to one question &mdash; what does this
-      program take from me &mdash; and it reads the same way on every Oplo app so the differences between
-      them are visible at a glance.
+      program take from me.<span class="more"> It reads the same way on every Oplo app, so the differences
+      between them are visible at a glance.</span>
     </p>
 {minds([
     ("Used to track you",
-     "Data shared with other companies to follow you across their apps and sites. Oplo has committed that "
-     "this category is empty on every one of its apps."),
+     "Data shared with other companies to follow you across their apps and sites." + mo(" Oplo has "
+     "committed that this category is empty on every one of its apps.")),
     ("Linked to you",
-     "Data tied to your account or device. Named individually rather than as a category, and each one has "
-     "to justify itself against a feature."),
+     "Data tied to your account or device." + mo(" Named individually rather than as a category, and each "
+     "one has to justify itself against a feature.")),
     ("Not linked to you",
-     "Data collected without a route back to you. Listed anyway, because a claim of anonymity is worth "
-     "checking rather than trusting."),
+     "Data collected without a route back to you." + mo(" Listed anyway, because a claim of anonymity is "
+     "worth checking rather than trusting.")),
     ("Not collected",
-     "The categories the app does not touch at all. Stated explicitly, since an absence is the part a "
-     "reader cannot otherwise confirm."),
+     "The categories the app does not touch at all." + mo(" Stated explicitly, since an absence is the "
+     "part a reader cannot otherwise confirm.")),
 ])}  </div>
 </section>
 
@@ -2477,9 +2513,9 @@ PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — Oplo",
     <p class="eyebrow reveal">The register</p>
     <h2 class="t-display balance reveal">Nothing has shipped, so nothing is labelled.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      This page is published empty on purpose. The rule is that the label goes up with the app, not after
-      someone asks for it &mdash; and the only way to keep that rule visible is to leave the shelf here
-      where the absence can be seen.<sup>1</sup>
+      This page is published empty on purpose. The label goes up with the app, not after someone asks
+      for it.<span class="more"> The only way to keep that rule visible is to leave the shelf here, where
+      the absence can be seen.</span><sup>1</sup>
     </p>
 {register([
     ("In development", [
@@ -2514,8 +2550,9 @@ PAGES.append(privacy_page("privacy/transparency/", 2, "Transparency Report — O
     <p class="eyebrow reveal">Period covered</p>
     <h2 class="t-display balance reveal">Since incorporation, to date.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      Oplo has no users and holds no personal data, which is why every figure below is zero. Publishing it
-      now sets the baseline: the first report that is not zero can be read against this one.<sup>1</sup>
+      Oplo has no users and holds no personal data, which is why every figure below is zero.<span
+      class="more"> Publishing it now sets the baseline: the first report that is not zero can be read
+      against this one.</span><sup>1</sup>
     </p>
 {register([
     ("Requests received", [
@@ -2539,22 +2576,22 @@ PAGES.append(privacy_page("privacy/transparency/", 2, "Transparency Report — O
     <p class="eyebrow reveal">How a request would be handled</p>
     <h2 class="t-display balance reveal">Written down before the first one arrives.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      Deciding this in advance is easy. Deciding it while a demand is on the desk is not, which is the
-      reason to do it now.
+      Deciding this in advance is easy.<span class="more"> Deciding it while a demand is on the desk is
+      not, which is the reason to do it now.</span>
     </p>
 {minds([
     ("Require legal process",
-     "A valid order for the specific data sought. A request by letter, phone call or relationship is "
-     "refused."),
+     "A valid order for the specific data sought." + mo(" A request by letter, phone call or relationship "
+     "is refused.")),
     ("Narrow it",
-     "Produce the least that answers the order, and challenge one that reaches further than the law lets "
-     "it."),
+     "Produce the least that answers the order" + mo(", and challenge one that reaches further than the "
+     "law lets it") + "."),
     ("Tell you",
-     "The person is notified before anything is produced, unless a court has forbidden it &mdash; and then "
-     "as soon as that expires."),
+     "The person is notified before anything is produced, unless a court has forbidden it" + mo(" &mdash; "
+     "and then as soon as that expires") + "."),
     ("Hand over what exists",
-     "Content encrypted with keys held on your device cannot be produced. That is a property of the design, "
-     "not a position we could be argued out of."),
+     "Content encrypted with keys held on your device cannot be produced." + mo(" That is a property of "
+     "the design, not a position we could be argued out of.")),
     ("Count it here",
      "Every request appears in the next report, including the ones refused."),
 ])}  </div>
@@ -2565,8 +2602,9 @@ PAGES.append(privacy_page("privacy/transparency/", 2, "Transparency Report — O
     <p class="eyebrow reveal">Cadence</p>
     <h2 class="t-display balance reveal">Twice a year, and on the day it changes.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:54ch;margin:18px auto 0">
-      This report is updated every six months once Oplo has users. If a request arrives before then, this
-      page changes when the report on it can lawfully be published, rather than waiting for a schedule.
+      This report is updated every six months once Oplo has users.<span class="more"> If a request
+      arrives before then, this page changes when the report on it can lawfully be published, rather than
+      waiting for a schedule.</span>
     </p>
     <p class="cta-row reveal d2">
       <a class="cta" href="../">Back to privacy</a>

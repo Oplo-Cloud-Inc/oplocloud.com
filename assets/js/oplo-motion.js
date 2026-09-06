@@ -79,6 +79,26 @@
     });
   }
 
+  /* ---------------------------------------------------- Endnote folding
+     The notes ship with `open` set, so a reader without JavaScript gets them
+     in full. On a phone they are the smallest and longest thing on the page,
+     so fold them shut — and open them again if the window grows, rather than
+     leaving a desktop reader with a collapsed block. */
+  function notes() {
+    var d = document.querySelector(".notes-d");
+    if (!d) return;
+    var phone = window.matchMedia("(max-width: 734px)");
+    var touched = false;
+    d.addEventListener("toggle", function () { touched = true; });
+    function sync() {
+      if (touched) return;
+      d.open = !phone.matches;
+    }
+    sync();
+    if (phone.addEventListener) phone.addEventListener("change", sync);
+    else if (phone.addListener) phone.addListener(sync);
+  }
+
   /* ------------------------------------------------ Pointer-tracked sheen
      Elements marked [data-tilt] get --mx/--my in the 0–1 range so their
      highlight can follow the cursor. Purely decorative. */
@@ -99,7 +119,7 @@
     });
   }
 
-  function start() { reveals(); footer(); tilt(); }
+  function start() { reveals(); footer(); notes(); tilt(); }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", start);
   } else { start(); }

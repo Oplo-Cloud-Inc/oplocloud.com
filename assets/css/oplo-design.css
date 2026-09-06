@@ -166,20 +166,50 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav-toggle { display: none; }
 
 @media (max-width: 833px) {
-  .nav-links { display: none; }
-  .nav-links.open {
+  /* The drawer is present at all times and hidden by visibility, so opening
+     it can be animated. `display: none` cannot transition. */
+  .nav-links {
     display: flex; flex-direction: column; justify-content: flex-start;
     position: fixed; inset: var(--nav) 0 0 0;
-    background: #fff;
-    padding: 10px max(var(--gutter), env(safe-area-inset-left))
+    background: var(--paper);
+    padding: 4px max(var(--gutter), env(safe-area-inset-left))
              max(40px, env(safe-area-inset-bottom));
     overflow-y: auto;
     overscroll-behavior: contain;
+    visibility: hidden; opacity: 0;
+    transition: opacity .2s var(--ease), visibility 0s linear .2s;
   }
-  .nav-links.open a {
-    font-size: 17px; font-weight: 600; opacity: 1;
-    padding: 14px 0; min-height: 44px; display: flex; align-items: center;
+  .nav-links.open {
+    visibility: visible; opacity: 1;
+    transition: opacity .2s var(--ease);
   }
+  .nav-links li { border-bottom: 1px solid var(--rule); }
+  .nav-links li:last-child { border-bottom: 0; }
+  .nav-links a {
+    font-size: 17px; font-weight: 600; opacity: 0; color: var(--ink);
+    padding: 15px 2px; min-height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    transform: translateY(-7px);
+    transition: opacity .32s var(--ease), transform .32s var(--ease);
+  }
+  /* A chevron, so a row reads as somewhere to go rather than a heading. */
+  .nav-links a::after {
+    content: ""; width: 7px; height: 7px; margin-right: 3px;
+    border-top: 1.5px solid var(--ink-3); border-right: 1.5px solid var(--ink-3);
+    transform: rotate(45deg);
+  }
+  .nav-links.open a { opacity: 1; transform: none; }
+  /* Staggered, because eight rows arriving at once reads as a page load. */
+  .nav-links.open li:nth-child(1) a { transition-delay: 20ms; }
+  .nav-links.open li:nth-child(2) a { transition-delay: 42ms; }
+  .nav-links.open li:nth-child(3) a { transition-delay: 64ms; }
+  .nav-links.open li:nth-child(4) a { transition-delay: 86ms; }
+  .nav-links.open li:nth-child(5) a { transition-delay: 108ms; }
+  .nav-links.open li:nth-child(6) a { transition-delay: 130ms; }
+  .nav-links.open li:nth-child(7) a { transition-delay: 152ms; }
+  .nav-links.open li:nth-child(8) a { transition-delay: 174ms; }
+  /* You are already here; the row stays reachable but stops competing. */
+  .nav-links a[aria-current="page"] { color: var(--ink-3); }
   .nav.open { background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; }
   /* Half the blur radius costs the compositor far less per frame and is
      indistinguishable behind a 44px bar. */
@@ -187,13 +217,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .nav-toggle { min-width: 44px; min-height: 44px; justify-content: center; align-items: flex-end; }
   .nav-toggle {
     display: flex; flex-direction: column; gap: 4px;
-    margin-left: auto; padding: 8px 0 8px 16px;
+    order: 3; padding: 8px 0 8px 18px;
   }
   .nav-toggle span { width: 17px; height: 1.5px; background: var(--ink); opacity: .8; transition: transform .3s var(--ease), opacity .2s; }
   .nav-toggle.on span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
   .nav-toggle.on span:nth-child(2) { opacity: 0; }
   .nav-toggle.on span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
-  .nav-end { order: 3; }
+  .nav-end { order: 2; margin-left: auto; }
 }
 
 /* -------------------------------------------------------------- Bands
@@ -666,3 +696,51 @@ body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(
 .band.dark .protect > div { border-top-color: var(--rule-dark); }
 .band.dark .protect p { color: var(--ink-lt-2); }
 @media (max-width: 734px) { .protect { grid-template-columns: 1fr; gap: 0; } }
+
+/* ====================================================== Phone: less of it
+   A phone is not a small desktop. It is a screen someone is reading one
+   thumb-width at a time, so the page keeps every idea and drops the second
+   sentence that only restates it.
+
+   .more  — an elaborating clause. Cut on a phone; the sentence still stands.
+   .phone-hide — a whole section that repeats something already on the page
+                 (a card grid duplicating the section bar above it).
+   Neither ever holds the only copy of something. */
+@media (max-width: 734px) {
+  .more { display: none; }
+  .phone-hide { display: none !important; }
+  /* The feature names carry it; the gloss under each one already appeared
+     in Included, one screen up. */
+  .compare .f span { display: none; }
+  .foot-note { padding: 16px 0 6px; }
+}
+@media (min-width: 735px) { .phone-only { display: none !important; } }
+
+/* Endnotes are the smallest, longest thing on the page. On a phone they fold
+   away behind their own heading; with no JavaScript they stay open. */
+.notes-d > summary { list-style: none; }
+.notes-d > summary::-webkit-details-marker { display: none; }
+@media (min-width: 735px) { .notes-d > summary { display: none; } }
+@media (max-width: 734px) {
+  .notes { padding: 2px 0 4px; }
+  .notes-d > summary {
+    max-width: 1024px; margin-inline: auto;
+    padding: 13px var(--gutter);
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--font); font-size: 12px; font-weight: 600;
+    color: var(--ink); cursor: pointer; min-height: 44px;
+  }
+  .notes-d > summary::after {
+    content: ""; width: 7px; height: 7px; margin-right: 4px;
+    border-right: 1px solid var(--ink-2); border-bottom: 1px solid var(--ink-2);
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform .25s var(--ease);
+  }
+  .notes-d[open] > summary::after { transform: translateY(2px) rotate(225deg); }
+  .notes-d > ol { padding-bottom: 14px; }
+  .notes li { font-size: 12.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-links, .nav-links a { transition: none !important; }
+}

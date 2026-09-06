@@ -43,7 +43,10 @@
   .band.dark .perk p { color: var(--ink-lt-2); }
   @media (max-width: 1068px) { .perks { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 833px)  { .perks { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 500px)  { .perks { grid-template-columns: 1fr; gap: 30px; } }
+  /* Two columns all the way down: a glyph, a name and one line do not need
+     the full width, and eight single-file rows is a scroll nobody finishes. */
+  @media (max-width: 500px)  { .perks { gap: 28px 20px; } .perk h3 { font-size: 15px; margin: 11px 0 4px; }
+                               .perk p { font-size: 13.5px; } .perk svg { width: 22px; height: 22px; } }
   /* Scenes. Each moment gets a whole band and the sentence gets the size —
      the scene is the illustration, since there is no photograph to carry it. */
   .scene { padding: clamp(88px, 14vh, 170px) 0; }
@@ -188,7 +191,7 @@
 <div class="chapter">
   <div class="chapter-in">
     <a class="chapter-name" href="../plus/">Oplo+</a>
-    <nav class="chapter-links" aria-label="Oplo+ sections"><a href="#top">Overview</a><a href="#handoff">Moments</a><a href="#perks">Included</a><a href="#plans">Plans</a><a href="#compare">Compare</a><a href="#faq">Questions</a></nav>
+    <nav class="chapter-links" aria-label="Oplo+ sections"><a href="#top">Overview</a><a href="#handoff">Moments</a><a href="#perks">Included</a><a href="#plans">Plans</a><a href="#compare" class="phone-hide">Compare</a><a href="#faq">Questions</a></nav>
     
   </div>
 </div>
@@ -209,7 +212,7 @@
       <div class="track"><span class="pip"></span></div>
       <div class="ends"><span>the train</span><span>your desk</span></div>
     </div>
-    <p class="body balance reveal d1">The draft, the tabs, the half-finished thought — carried between your own machines and encrypted before any of it leaves the one in your hand. You do not send it to yourself. It is simply there.</p>
+    <p class="body balance reveal d1">The draft, the tabs, the half-finished thought — carried between your own machines and encrypted before any of it leaves the one in your hand.<span class="more"> You do not send it to yourself. It is simply there.</span></p>
     <p><span class="needs reveal d2">Encrypted sync</span></p>
   </div>
 </section>
@@ -217,7 +220,7 @@
   <div class="well">
     <p class="moment reveal">The job that will not fit</p>
     <q class="reveal">A year of receipts, and one question about them.</q>
-    <p class="body balance reveal d1">The model in your pocket handles the day. Some questions need more room than a pocket has — the whole year at once, held in mind while it works. That is what the desk model is for, and it is the only reason most people will want this.</p>
+    <p class="body balance reveal d1">The model in your pocket handles the day. Some questions need more room than a pocket has — the whole year at once, held in mind while it works.<span class="more"> That is what the desk model is for, and it is the only reason most people will want this.</span></p>
     <p><span class="needs reveal d2">Desk model</span></p>
   </div>
 </section>
@@ -225,7 +228,7 @@
   <div class="well">
     <p class="moment reveal">The machine you lost</p>
     <q class="reveal">The laptop goes in the river. Nothing else does.</q>
-    <p class="body balance reveal d1">A complete restore point, encrypted on the device before it is stored, so what sits on our side is not readable by us. The new machine wakes up as the old one, and the worst day of your week costs you an afternoon instead of a year.</p>
+    <p class="body balance reveal d1">A complete restore point, encrypted on the device before it is stored, so what sits on our side is not readable by us.<span class="more"> The new machine wakes up as the old one, and the worst day of your week costs you an afternoon instead of a year.</span></p>
     <p><span class="needs reveal d2">Device backup</span></p>
   </div>
 </section>
@@ -233,7 +236,7 @@
   <div class="well">
     <p class="moment reveal">The address you did not want to give</p>
     <q class="reveal">They want your email before they will show you the price.</q>
-    <p class="body balance reveal d1">Give them one that is not yours. It forwards to you until the day you decide it should not, and then it stops — without you changing the address that your friends use.</p>
+    <p class="body balance reveal d1">Give them one that is not yours. It forwards to you until the day you decide it should not, and then it stops.<span class="more"> Without you changing the address that your friends use.</span></p>
     <p><span class="needs reveal d2">Disposable addresses</span></p>
   </div>
 </section>
@@ -241,7 +244,7 @@
   <div class="well">
     <p class="moment reveal">The household</p>
     <q class="reveal">Six people. One bill. Six libraries that never touch.</q>
-    <p class="body balance reveal d1">Sharing what you pay for should not mean sharing what you keep. Everyone in the house gets the whole membership and their own material, and nobody can see anybody else's.</p>
+    <p class="body balance reveal d1">Sharing what you pay for should not mean sharing what you keep.<span class="more"> Everyone in the house gets the whole membership and their own material, and nobody can see anybody else’s.</span></p>
     <p><span class="needs reveal d2">Family</span></p>
   </div>
 </section>
@@ -335,7 +338,7 @@
     </p>
   </div>
 </section>
-<section class="band" id="compare">
+<section class="band phone-hide" id="compare">
   <div class="well">
     <p class="eyebrow reveal">Compare</p>
     <h2 class="t-display balance reveal">What is in each tier.</h2>
@@ -365,34 +368,34 @@
     <div class="faq reveal d1">
       <details>
         <summary>What is Oplo+?</summary>
-        <div class="a">A single membership covering the parts of Oplo that need somewhere to run or somewhere to live — the larger model, encrypted sync and backup, and the privacy features. The device and its on-device model work without it.</div>
+        <div class="a">A single membership covering the parts of Oplo that need somewhere to run or somewhere to live — the larger model, encrypted sync and backup, and the privacy features.<span class="more"> The device and its on-device model work without it.</span></div>
       </details>
       <details>
         <summary>Do I need it for the AI to work?</summary>
-        <div class="a">No. The on-device model is part of the machine, not part of the membership. Oplo+ adds the larger model for work that will not fit on a handheld.</div>
+        <div class="a">No. The on-device model is part of the machine, not part of the membership.<span class="more"> Oplo+ adds the larger model for work that will not fit on a handheld.</span></div>
       </details>
       <details>
         <summary>What happens to my things if I stop paying?</summary>
-        <div class="a">They stay yours. Anything held in sync remains downloadable, and nothing is deleted as a lever to make you resubscribe. The exact window will be written into the terms before anyone is charged.</div>
+        <div class="a">They stay yours. Anything held in sync remains downloadable, and nothing is deleted as a lever to make you resubscribe.<span class="more"> The exact window will be written into the terms before anyone is charged.</span></div>
       </details>
       <details>
         <summary>Can a household share one membership?</summary>
-        <div class="a">That is what the Family tier is for. Each person keeps their own material; sharing the membership does not mean sharing a library.</div>
+        <div class="a">That is what the Family tier is for.<span class="more"> Each person keeps their own material; sharing the membership does not mean sharing a library.</span></div>
       </details>
       <details>
         <summary>Is my data used to train models?</summary>
-        <div class="a">No. That commitment does not change between tiers, and paying more does not buy more privacy — the floor is the same for everyone.</div>
+        <div class="a">No. That commitment does not change between tiers, and paying more does not buy more privacy.<span class="more"> The floor is the same for everyone.</span></div>
       </details>
       <details>
         <summary>When can I subscribe?</summary>
-        <div class="a">Not yet. Oplo has no shipping product for a membership to attach to. This page describes what is being built.</div>
+        <div class="a">Not yet. Oplo has no shipping product for a membership to attach to.<span class="more"> This page describes what is being built.</span></div>
       </details>
     </div>
     <p class="cta-row reveal d2"><a class="cta" href="../contact/">Ask us something else</a></p>
   </div>
 </section>
 </main>
-<div class="notes"><ol><li>Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the tiers describe what is planned rather than what exists.</li><li>Discounted deals would be offered by third-party merchants, not by Oplo. Availability, pricing and the terms of any offer would be set by the merchant and vary by region.</li><li>The scenes on this page illustrate what the membership is intended to do. They are written as examples, not as recordings of a working system.</li><li>Feature descriptions state design intent. Capability, allowances and availability are not final.</li><li>The commitment that personal material is not used to train models is the same at every tier, including the free one. See the privacy policy, which is in preparation.</li></ol></div>
+<div class="notes"><details class="notes-d" open><summary>Notes</summary><ol><li>Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the tiers describe what is planned rather than what exists.</li><li>Discounted deals would be offered by third-party merchants, not by Oplo. Availability, pricing and the terms of any offer would be set by the merchant and vary by region.</li><li>The scenes on this page illustrate what the membership is intended to do. They are written as examples, not as recordings of a working system.</li><li>Feature descriptions state design intent. Capability, allowances and availability are not final.</li><li>The commitment that personal material is not used to train models is the same at every tier, including the free one. See the privacy policy, which is in preparation.</li></ol></details></div>
 <footer class="foot" aria-label="Oplo footer">
   <div class="foot-in">
     <div class="foot-note">

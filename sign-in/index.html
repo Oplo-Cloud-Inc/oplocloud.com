@@ -115,9 +115,23 @@
   .signin .after a { color: var(--blue); }
   .signin .after a:hover { text-decoration: underline; }
 
+  /* On a phone the account screen is the whole screen. The eight-column
+     site footer under it is furniture from another page, so it goes and the
+     legal bar stays — which is all an account screen has ever needed. */
   @media (max-width: 734px) {
-    .signin { justify-content: flex-start; padding-top: clamp(38px, 7vh, 64px); }
-    .signin .sub { font-size: 16px; }
+    .signin {
+      justify-content: flex-start;
+      padding: clamp(30px, 6vh, 52px) var(--gutter) 28px;
+      min-height: calc(100svh - 44px - 86px);
+    }
+    .signin .mark { width: 34px; height: 32px; margin-bottom: 22px; }
+    .signin h1 { font-size: 27px; }
+    .signin .sub { font-size: 16px; max-width: 28ch; }
+    .signin .status { margin-top: 22px; padding: 12px 15px; font-size: 13.5px; }
+    .form { margin-top: 22px; }
+    .signin .after { margin-top: 26px; padding-top: 20px; font-size: 13px; }
+    .foot-note, .foot-cols, .foot-rule { display: none; }
+    .foot-bar { padding-top: 20px; border-top: 1px solid var(--rule); }
   }
 </style>
 </head>
@@ -137,7 +151,7 @@
         <li><a href="../company/">Company</a></li>
         <li><a href="../support/">Support</a></li>
     </ul>
-    <div class="nav-end"><a href="../sign-in/">Sign in</a></div>
+    <div class="nav-end"></div>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
     </button>
@@ -146,9 +160,9 @@
 <main class="signin">
   <svg class="mark" viewBox="84.13 107.80 206.73 194.91" aria-hidden="true" focusable="false"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></svg>
   <h1 class="balance">Sign in to Oplo</h1>
-  <p class="sub">One account for your device, your software, and the model that runs on it.</p>
+  <p class="sub">One account for your device, your software<span class="more">,</span> and the model that runs on it.</p>
 
-  <p class="status"><b>Accounts aren&rsquo;t open yet.</b> This is the sign-in we are building. Nothing you type here is sent anywhere or stored.</p>
+  <p class="status"><b>Accounts aren&rsquo;t open yet.</b><span class="more"> This is the sign-in we are building.</span> Nothing you type here is sent anywhere or stored.</p>
 
   <form class="form" id="signinForm" novalidate autocomplete="off">
     <div class="field">
@@ -168,8 +182,8 @@
   </form>
 
   <p class="after">
-    There is no password field on this page, and there will not be one until
-    accounts actually work. <a href="../newsroom/">We will say when they do.</a>
+    There is no password field on this page<span class="more">, and there will not be one until
+    accounts actually work</span>. <a href="../newsroom/">Hear when accounts open.</a>
   </p>
 </main>
 
