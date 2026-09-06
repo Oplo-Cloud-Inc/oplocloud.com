@@ -4,10 +4,19 @@ import io, os, re, sys
 from urllib.parse import urldefrag
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PAGES = ["index.html", "hardware/index.html", "software/index.html", "intelligence/index.html",
-         "privacy/index.html", "developers/index.html", "company/index.html", "newsroom/index.html",
-         "careers/index.html", "contact/index.html", "support/index.html", "sign-in/index.html",
-         "legal/index.html", "legal/privacy-policy/index.html", "legal/terms/index.html"]
+# Discover pages rather than list them. A hardcoded list silently stops
+# checking whatever was added since it was written — which is exactly the
+# moment a link check matters.
+OLD_SITE = {"OLaws", "OShop", "ocanvas", "ocrd", "odocs", "oedu", "omails", "omaps",
+            "ophotos", "oplo-accounts", "osheets", "osurf", "oteams", "productivity",
+            "roxan", "soon", "docs", "learn"}
+PAGES = sorted(
+    os.path.relpath(os.path.join(r, "index.html"), ROOT).replace(os.sep, "/")
+    for r, _d, f in os.walk(ROOT)
+    if "index.html" in f
+    and ".git" not in r
+    and not (os.path.relpath(r, ROOT).split(os.sep)[0] in OLD_SITE)
+)
 
 ids = {}
 for p in PAGES:

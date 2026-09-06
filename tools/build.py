@@ -1777,20 +1777,92 @@ PAGES.append(signin_page())
 
 
 # ==========================================================================
-# Investor Relations.
-# Apple's structure; Oplo's actual facts. Nothing here is invented: no board
-# that does not exist, no filings that were never made, no governance
-# documents that have not been written. An investor page is the one place
-# where a plausible-looking fabrication does real damage.
+# Investor Relations — a section of sibling pages sharing one sub-navigation,
+# the way a corporate IR site is arranged rather than one page with anchors.
+#
+# Every fact here is Oplo's. There is no board, so no board is listed; there
+# are no filings, so none are implied; documents carry their real status. An
+# invented director is a false statement about a person and an invented filing
+# a false statement about a regulator, so neither appears.
 # ==========================================================================
 
-CHARTERS = [
+IR_NAV = [
+    ("Overview", ""),
+    ("Leadership and Governance", "leadership/"),
+    ("Filings", "filings/"),
+    ("Our Values", "values/"),
+    ("FAQ", "faq/"),
+    ("Contact", "contact/"),
+]
+
+IR_DISCLAIMER = (
+    "Oplo, Inc. is a private company. These pages are published for transparency, not as disclosure "
+    "required of a public issuer. Nothing here is an offer to sell or a solicitation of an offer to buy "
+    "any security, and nothing here is investment advice."
+)
+
+
+def ir_links(depth):
+    """Sibling links, resolved for a page one or two levels deep."""
+    up = "../" if depth == 2 else ""
+    return [(label, (up + slug) if slug else (up or "./")) for label, slug in IR_NAV]
+
+
+def ir_page(slug, depth, title, desc, active, body, notes=None):
+    out = head(depth, title, desc, slug)
+    out += nav(depth)
+    # chapter() relativises its own home link, so this takes the root-relative
+    # slug. Passing "../" here applied the offset twice and sent every depth-2
+    # page's home link above the repo root.
+    out += chapter(depth, "Investor Relations", ir_links(depth), "investor/")
+    out += '<main id="top">\n' + body + "</main>\n"
+    base = [IR_DISCLAIMER,
+            "A document marked in preparation has not been written or reviewed. Nothing on these pages "
+            "should be relied on as a governing instrument until it is published here as a document.",
+            "Descriptions of products in development state intent. They are not commitments, and what "
+            "ships may differ or may not ship."]
+    return (slug + "index.html", out + footer(depth, (notes or []) + base))
+
+
+# ------------------------------------------------------------------ Overview
+_cards = "".join(
+    f'''      <a class="index-card" href="{slug}"><b>{label}</b><span>{blurb}</span></a>\n'''
+    for label, slug, blurb in [
+        ("Leadership and Governance", "leadership/",
+         "Who runs Oplo, the state of its board, and every governance document with its real status."),
+        ("Filings", "filings/",
+         "Oplo is private and has made no filings. What would appear here, and when."),
+        ("Our Values", "values/",
+         "The positions Oplo has published and can be held to."),
+        ("FAQ", "faq/", "The questions investors actually ask, answered plainly."),
+        ("Contact", "contact/", "Investor enquiries, and who reads them."),
+    ])
+
+PAGES.append(ir_page("investor/", 1, "Investor Relations — Oplo",
+    "Oplo is a privately held company. Leadership, governance, filings and investor contact.",
+    "", f'''<section class="band on-white">
+  <div class="well">
+    <p class="eyebrow reveal">Investor Relations</p>
+    <h1 class="t-hero balance reveal" style="max-width:16ch;margin-inline:auto">Who runs Oplo, and on what terms.</h1>
+    <p class="notice reveal d1" style="margin-inline:auto;text-align:left">
+      <b>Oplo is privately held.</b> There is no public listing, no ticker symbol, and no filings with the
+      Securities and Exchange Commission. Nothing on these pages is an offer to sell or a solicitation of
+      an offer to buy any security.<sup>1</sup>
+    </p>
+    <div class="index-cards reveal d1">
+{_cards}    </div>
+  </div>
+</section>
+'''))
+
+
+# -------------------------------------------------- Leadership and Governance
+_charters = "".join(f'      <li><span>{t}</span><em>{st}</em></li>\n' for t, st in [
     ("Audit Committee Charter", "On formation of the board"),
     ("Compensation Committee Charter", "On formation of the board"),
     ("Nominating and Governance Committee Charter", "On formation of the board"),
-]
-
-GOV_DOCS = [
+])
+_docs = "".join(f'      <li><span>{t}</span><em>{st}</em></li>\n' for t, st in [
     ("Certificate of Incorporation", "Available on request"),
     ("Bylaws", "In preparation"),
     ("Code of Business Conduct", "In preparation"),
@@ -1798,140 +1870,208 @@ GOV_DOCS = [
     ("Related Party Transactions Policy", "In preparation"),
     ("Human Rights Policy", "In preparation"),
     ("Insider Trading Policy", "Not applicable while private"),
-]
+])
 
-INVESTOR_CSS = ""
-
-
-def investor_page():
-    depth = 1
-    links = [("Leadership", "#leadership"), ("Board", "#board"),
-             ("Governance", "#governance"), ("Financials", "#financials"),
-             ("Contact", "#contact")]
-    out = head(depth, "Investor Relations — Oplo",
-               "Oplo is a privately held company. Leadership, governance and investor contact.",
-               "investor/")
-    out += nav(depth)
-    out += chapter(depth, "Investor Relations", links, "investor/")
-    out += '<main id="top">\n'
-
-    out += '''<section class="band on-white">
+PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — Oplo",
+    "Oplo's leadership, the state of its board, and its governance documents.",
+    "leadership/", f'''<section class="band on-white">
   <div class="well">
-    <p class="eyebrow reveal">Investor Relations</p>
-    <h1 class="t-hero balance reveal" style="max-width:16ch;margin-inline:auto">Who runs Oplo, and on what terms.</h1>
-    <p class="notice reveal d1" style="margin-inline:auto;text-align:left">
-      <b>Oplo is privately held.</b> There is no public listing, no ticker symbol, and no filings with the
-      Securities and Exchange Commission. Nothing on this page is an offer to sell or a solicitation of an
-      offer to buy any security.<sup>1</sup>
-    </p>
+    <h1 class="t-hero balance reveal">Leadership and Governance</h1>
   </div>
 </section>
-'''
 
-    out += '''<section class="band on-grey" id="leadership">
+<section class="band on-grey" id="executives">
   <div class="well">
-    <p class="eyebrow reveal">Leadership</p>
+    <p class="eyebrow reveal">Executive profiles</p>
     <h2 class="t-display balance reveal">The people accountable for it.</h2>
     <div class="people reveal d1">
       <div class="person">
         <span class="shot">
           <span class="mono" aria-hidden="true">SJ</span>
-          <img src="../assets/img/saswat-ji.jpg" alt="Saswat Ji" loading="lazy"
-               onerror="this.remove()">
+          <img src="../../assets/img/saswat-ji.jpg" alt="Saswat Ji" loading="lazy" onerror="this.remove()">
         </span>
         <b>Saswat Ji</b>
         <span>Founder</span>
-        <p>Directs Oplo&rsquo;s hardware, software and intelligence work, and everything published
-           under the Oplo name.</p>
+        <p>Directs Oplo&rsquo;s hardware, software and intelligence work, and everything published under
+           the Oplo name.</p>
       </div>
     </div>
     <p class="t-fine muted reveal d2" style="margin-top:30px;max-width:60ch">
-      Oplo is a small company and this list is short because it is accurate. It grows here as it grows
-      in fact.
+      This list is short because it is accurate. It grows here as it grows in fact.
     </p>
   </div>
 </section>
-'''
 
-    out += '''<section class="band on-white" id="board">
+<section class="band on-white" id="board">
   <div class="well">
     <p class="eyebrow reveal">Board of Directors</p>
     <h2 class="t-display balance reveal">Not yet constituted.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      Oplo has no board of directors. When one is formed, its members, their affiliations and the
-      charters of its committees will be published on this page before they take effect &mdash; not
-      after.
+      Oplo has no board of directors. When one is formed, its members, their affiliations and the charters
+      of its committees are published here before they take effect &mdash; not after.
     </p>
   </div>
 </section>
-'''
 
-    charters = "".join(
-        f'      <li><span>{t}</span><em>{st}</em></li>\n' for t, st in CHARTERS)
-    docs = "".join(
-        f'      <li><span>{t}</span><em>{st}</em></li>\n' for t, st in GOV_DOCS)
-    out += f'''<section class="band on-grey" id="governance">
+<section class="band on-grey" id="charters">
   <div class="well">
-    <p class="eyebrow reveal">Governance</p>
-    <h2 class="t-display balance reveal">Documents, and where each one stands.</h2>
+    <p class="eyebrow reveal">Charters and policies</p>
+    <h2 class="t-display balance reveal">Every document, with its real status.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:58ch;margin:18px auto 0">
-      Listed with their real status rather than as links that go nowhere. Each is published here when it
-      has been written and reviewed.<sup>2</sup>
+      Listed with where each one actually stands rather than as links that go nowhere.<sup>2</sup>
     </p>
     <div class="docs reveal d1" style="text-align:left;max-width:640px;margin-inline:auto">
       <h3>Committee charters</h3>
       <ul>
-{charters}      </ul>
+{_charters}      </ul>
       <h3>Governance documents</h3>
       <ul>
-{docs}      </ul>
+{_docs}      </ul>
     </div>
   </div>
 </section>
-'''
+'''))
 
-    out += '''<section class="band on-white" id="financials">
+
+# ------------------------------------------------------------------- Filings
+PAGES.append(ir_page("investor/filings/", 2, "Filings — Oplo",
+    "Oplo is privately held and has made no filings with the SEC.",
+    "filings/", '''<section class="band on-white">
   <div class="well">
-    <p class="eyebrow reveal">Financials and filings</p>
-    <h2 class="t-display balance reveal">Nothing to report, stated plainly.</h2>
+    <h1 class="t-hero balance reveal">Filings</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:40ch;margin-inline:auto">
+      There are none, and this page says so rather than showing an empty archive.
+    </p>
+  </div>
+</section>
+
+<section class="band on-grey">
+  <div class="well">
+    <p class="eyebrow reveal">Status</p>
+    <h2 class="t-display balance reveal">Nothing has been filed.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:58ch;margin:18px auto 0">
-      Oplo does not publish financial statements, has made no filings with the SEC, and has issued no
-      securities to the public. If that changes, the filings appear here and the change is announced in
-      the newsroom before it is described anywhere else.
+      Oplo has issued no securities to the public, publishes no financial statements, and has made no
+      filings with the Securities and Exchange Commission. A private company is not required to, and Oplo
+      is not going to imply otherwise by leaving a search box here.
     </p>
-    <p class="cta-row reveal d2"><a class="cta" href="../newsroom/">Newsroom</a></p>
+    <p class="t-lead muted balance reveal d2" style="max-width:58ch;margin:16px auto 0">
+      If that changes, filings appear on this page and the change is announced in the newsroom before it is
+      described anywhere else on this site.
+    </p>
+    <p class="cta-row reveal d2"><a class="cta" href="../../newsroom/">Newsroom</a></p>
   </div>
 </section>
-'''
+'''))
 
-    out += '''<section class="band on-grey" id="contact">
+
+# ---------------------------------------------------------------- Our Values
+PAGES.append(ir_page("investor/values/", 2, "Our Values — Oplo",
+    "The positions Oplo has published and can be held to.",
+    "values/", '''<section class="band on-white">
   <div class="well">
-    <p class="eyebrow reveal">Contact</p>
-    <h2 class="t-display balance reveal">Talk to us directly.</h2>
-    <p class="t-lead muted balance reveal d1" style="max-width:54ch;margin:18px auto 0">
-      Investor enquiries reach a person who works here, because at this size there is no one else for
-      them to reach.
-    </p>
-    <p class="cta-row reveal d2">
-      <a class="cta" href="mailto:investors@oplocloud.com">investors@oplocloud.com</a>
-      <a class="cta" href="../contact/">Other enquiries</a>
+    <h1 class="t-hero balance reveal">Our Values</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:44ch;margin-inline:auto">
+      Positions Oplo has published elsewhere on this site, gathered here because an investor is entitled
+      to see what the company has committed to.
     </p>
   </div>
 </section>
-</main>
-'''
-    notes = [
-        "Oplo, Inc. is a private company. This page is published for transparency, not as a disclosure "
-        "required of a public issuer. It is not an offer to sell or a solicitation of an offer to buy any "
-        "security, and it is not investment advice.",
-        "A document marked in preparation has not been written or reviewed. Nothing on this page should be "
-        "relied on as a governing instrument until it appears here as a published document.",
-        "Forward-looking statements elsewhere on this site describe intent and are not commitments. "
-        "Products in development may change or may not ship.",
-    ]
-    return ("investor/index.html", out + footer(depth, notes))
 
-PAGES.append(investor_page())
+<section class="band on-grey">
+  <div class="well">
+    <div class="pillars reveal d1" style="max-width:940px">
+      <div><h3>Processing stays with the person</h3>
+        <p>Oplo builds models that run on the device rather than in a data centre. That is a design
+           decision first and a privacy one second, and it constrains what the company can build.</p></div>
+      <div><h3>Personal material is not training data</h3>
+        <p>What someone asks is not retained to improve a model. This does not vary by what they pay;
+           the floor is the same on the free tier as the paid one.</p></div>
+      <div><h3>Unshipped is said out loud</h3>
+        <p>Every product page on this site states that what it describes is in development. Nothing is
+           presented as shipping until it ships.</p></div>
+      <div><h3>Documents carry their real status</h3>
+        <p>A policy that has not been written is listed as not written. Governance is not implied by
+           publishing a link.</p></div>
+    </div>
+    <p class="cta-row reveal d2" style="margin-top:34px">
+      <a class="cta" href="../../privacy/">Our position on privacy</a>
+      <a class="cta" href="../../company/">About Oplo</a>
+    </p>
+  </div>
+</section>
+'''))
+
+
+# -------------------------------------------------------------------- FAQ
+_faq = "".join(f'''      <details>
+        <summary>{q}</summary>
+        <div class="a">{a}</div>
+      </details>
+''' for q, a in [
+    ("Is Oplo publicly traded?",
+     "No. Oplo is privately held. There is no ticker symbol, no listing on any exchange, and no public "
+     "market for its shares."),
+    ("Can I invest in Oplo?",
+     "There is no public offering. Enquiries about investment reach us at the address on the contact "
+     "page and are answered by a person rather than a form."),
+    ("Who runs the company?",
+     "Saswat Ji, Founder. There is no board of directors yet; the leadership page says so directly and "
+     "commits to publishing one before it takes effect."),
+    ("What does Oplo make?",
+     "Hardware, software, and AI models designed to run on the device rather than in a data centre. "
+     "Everything is in development, and every product page on this site states as much."),
+    ("When do products ship?",
+     "No shipping date has been announced. When one is, it appears in the newsroom first."),
+    ("Does Oplo publish financial statements?",
+     "No. A private company is not required to, and Oplo does not."),
+    ("Where do governance documents live?",
+     "On the leadership and governance page, each listed with its real status &mdash; in preparation, "
+     "available on request, or not applicable while private."),
+])
+PAGES.append(ir_page("investor/faq/", 2, "Investor FAQ — Oplo",
+    "Common investor questions about Oplo, answered plainly.",
+    "faq/", f'''<section class="band on-white">
+  <div class="well">
+    <h1 class="t-hero balance reveal">Questions</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:38ch;margin-inline:auto">
+      Answered plainly, including the ones where the answer is no.
+    </p>
+    <div class="faq reveal d1">
+{_faq}    </div>
+    <p class="cta-row reveal d2"><a class="cta" href="../contact/">Ask something else</a></p>
+  </div>
+</section>
+'''))
+
+
+# ---------------------------------------------------------------- IR contact
+PAGES.append(ir_page("investor/contact/", 2, "Investor Contact — Oplo",
+    "How to reach Oplo about investment, governance or the company's structure.",
+    "contact/", '''<section class="band on-white">
+  <div class="well">
+    <h1 class="t-hero balance reveal">Contact</h1>
+    <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:44ch;margin-inline:auto">
+      Investor enquiries reach a person who works here, because at this size there is nobody else for them
+      to reach.
+    </p>
+  </div>
+</section>
+
+<section class="band on-grey">
+  <div class="well">
+    <div class="serve reveal d1" style="max-width:760px">
+      <div><h3>Investment and structure</h3>
+        <p>Questions about investment, ownership or how the company is organised:
+           <a class="cta" href="mailto:investors@oplocloud.com">investors@oplocloud.com</a></p></div>
+      <div><h3>Everything else</h3>
+        <p>Product, press, partnerships and general enquiries go through the main contact page, which
+           reaches the same people.</p>
+        <p class="cta-row" style="justify-content:flex-start;margin-top:14px">
+          <a class="cta" href="../../contact/">Contact Oplo</a></p></div>
+    </div>
+  </div>
+</section>
+'''))
 
 # ----------------------------------------------------------- Legal pages
 DRAFT = ('<p><strong>This document is being prepared.</strong> Oplo has no shipping product and '
