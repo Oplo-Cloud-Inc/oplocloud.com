@@ -1808,7 +1808,6 @@ PAGES.append(signin_page())
 # ==========================================================================
 
 IR_NAV = [
-    ("Overview", ""),
     ("Leadership and Governance", "leadership/"),
     ("Filings", "filings/"),
     ("Our Values", "values/"),
@@ -1823,10 +1822,12 @@ IR_DISCLAIMER = (
 )
 
 
-def ir_links(depth):
-    """Sibling links, resolved for a page one or two levels deep."""
+def ir_links(depth, active=""):
+    """Sibling links, resolved for a page one or two levels deep. The bar has no
+    Overview entry — "Investor Relations" is the way back, as it is on Apple's."""
     up = "../" if depth == 2 else ""
-    return [(label, (up + slug) if slug else (up or "./")) for label, slug in IR_NAV]
+    return [(label, up + slug) + (("on",) if slug == active else ())
+            for label, slug in IR_NAV]
 
 
 def ir_page(slug, depth, title, desc, active, body, notes=None):
@@ -1835,7 +1836,7 @@ def ir_page(slug, depth, title, desc, active, body, notes=None):
     # chapter() relativises its own home link, so this takes the root-relative
     # slug. Passing "../" here applied the offset twice and sent every depth-2
     # page's home link above the repo root.
-    out += chapter(depth, "Investor Relations", ir_links(depth), "investor/")
+    out += chapter(depth, "Investor Relations", ir_links(depth, active), "investor/")
     out += '<main id="top">\n' + body + "</main>\n"
     base = [IR_DISCLAIMER,
             "A document marked in preparation has not been written or reviewed. Nothing on these pages "
@@ -1845,19 +1846,39 @@ def ir_page(slug, depth, title, desc, active, body, notes=None):
     return (slug + "index.html", out + footer(depth, (notes or []) + base))
 
 
-# ------------------------------------------------------------------ Overview
-_cards = "".join(
-    f'''      <a class="index-card" href="{slug}"><b>{label}</b><span>{blurb}</span></a>\n'''
-    for label, slug, blurb in [
-        ("Leadership and Governance", "leadership/",
-         "Who runs Oplo, the state of its board, and every governance document with its real status."),
-        ("Filings", "filings/",
-         "Oplo is private and has made no filings. What would appear here, and when."),
-        ("Our Values", "values/",
-         "The positions Oplo has published and can be held to."),
-        ("FAQ", "faq/", "The questions investors actually ask, answered plainly."),
-        ("Contact", "contact/", "Investor enquiries, and who reads them."),
-    ])
+# ------------------------------------------------------------------ Landing
+# Apple's IR landing page is two sections: News and Results, then Financial
+# Data. Oplo has neither results nor financial data, so the same two sections
+# carry what it does have — the company's actual status — and then name every
+# report that would sit there, with why it does not.
+
+def _fin(groups):
+    out = ('    <div class="docs reveal d1"'
+           ' style="text-align:left;max-width:660px;margin-inline:auto">\n')
+    for title, items in groups:
+        out += f"      <h3>{title}</h3>\n      <ul>\n"
+        out += "".join(f'        <li><span>{a}</span><em>{b}</em></li>\n' for a, b in items)
+        out += "      </ul>\n"
+    return out + "    </div>\n"
+
+
+_FINANCIALS = _fin([
+    ("Quarterly earnings reports", [
+        ("Earnings press release", "None issued"),
+        ("Consolidated financial statements", "Not published"),
+        ("Form 10&#8209;Q", "Not applicable while private"),
+    ]),
+    ("Annual reports", [
+        ("Form 10&#8209;K", "Not applicable while private"),
+        ("Annual report to shareholders", "Not published"),
+    ]),
+    ("Additional reports", [
+        ("Net sales by category", "No sales to report"),
+        ("Dividend history", "No dividend has been declared"),
+        ("Capital return history", "No capital has been returned"),
+        ("Green bond report", "No bonds issued"),
+    ]),
+])
 
 PAGES.append(ir_page("investor/", 1, "Investor Relations — Oplo",
     "Oplo is a privately held company. Leadership, governance, filings and investor contact.",
@@ -1866,12 +1887,50 @@ PAGES.append(ir_page("investor/", 1, "Investor Relations — Oplo",
     <p class="eyebrow reveal">Investor Relations</p>
     <h1 class="t-hero balance reveal" style="max-width:16ch;margin-inline:auto">Who runs Oplo, and on what terms.</h1>
     <p class="notice reveal d1" style="margin-inline:auto;text-align:left">
-      <b>Oplo is privately held.</b> There is no public listing, no ticker symbol, and no filings with the
-      Securities and Exchange Commission. Nothing on these pages is an offer to sell or a solicitation of
-      an offer to buy any security.<sup>1</sup>
+      <b>Oplo is privately held.</b> There is no public listing, no ticker symbol, no stock price<span
+      class="more">, and no filings with the Securities and Exchange Commission</span>. Nothing on these
+      pages is an offer to sell or a solicitation of an offer to buy any security.<sup>1</sup>
     </p>
-    <div class="index-cards reveal d1 phone-hide">
-{_cards}    </div>
+  </div>
+</section>
+
+<section class="band grey" id="news">
+  <div class="well">
+    <p class="eyebrow reveal">News and Results</p>
+    <h2 class="t-display balance reveal">Where the company actually is.</h2>
+    <div class="updates reveal d1">
+      <div>
+        <p class="kick">Investor updates</p>
+        <h3>Private, pre&#8209;launch, and building.</h3>
+        <p>Oplo is developing its first hardware, software and intelligence products. It has not shipped,
+           has reported no results, and has disclosed no financing.<span class="more"> There is no quarter
+           to report on yet, and this page will say so until there is.</span></p>
+        <p class="cta-row"><a class="cta" href="../company/">About Oplo</a></p>
+      </div>
+      <div>
+        <p class="kick">Newsroom</p>
+        <h3>Nothing announced yet.</h3>
+        <p>Announcements appear in the newsroom first, dated and attributable.<span class="more"> Anything
+           that would matter to an investor is repeated here rather than left in a feed.</span></p>
+        <p class="cta-row"><a class="cta" href="../newsroom/">More from Newsroom</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="financial">
+  <div class="well">
+    <p class="eyebrow reveal">Financial Data</p>
+    <h2 class="t-display balance reveal">Nothing is published, and here is each thing that is not.</h2>
+    <p class="t-lead muted balance reveal d1" style="max-width:58ch;margin:18px auto 0">
+      A private company files none of this and is not required to. Every figure below is absent because
+      it does not exist, not because it has been withheld.<span class="more"> Naming the reports and saying
+      why each one is missing is more use than an empty archive with a search box over it.</span>
+    </p>
+{_FINANCIALS}    <p class="cta-row reveal d2">
+      <a class="cta" href="filings/">More on filings</a>
+      <a class="cta" href="contact/">Investor contact</a>
+    </p>
   </div>
 </section>
 '''))
