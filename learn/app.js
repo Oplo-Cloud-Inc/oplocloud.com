@@ -1,888 +1,1219 @@
 /* ==========================================================================
-   Oplo Learn — demo.
-   One course is playable end to end. No backend, no storage, no network:
-   progress lives in memory for the length of the visit and then is gone.
+   Oplo Learn.
+
+   Two halves that answer different questions. The course side — subjects,
+   units, practice — asks "do you understand this?" The study side —
+   flashcards, Learn, Match, Test — asks "do you know it cold?" Neither one
+   substitutes for the other, which is why both are here.
+
+   No backend, no storage, no network. Progress lives in memory for the
+   length of the visit and is gone when the tab closes; the page says so.
    ========================================================================== */
 (function () {
   "use strict";
 
+  var D = window.OPLO;
   var $ = function (s) { return document.querySelector(s); };
-  var el = function (t, c, h) {
-    var n = document.createElement(t);
-    if (c) n.className = c;
-    if (h != null) n.innerHTML = h;
+  function el(tag, cls, html) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (html != null) n.innerHTML = html;
     return n;
-  };
-
-  /* ------------------------------------------------------------ Figures */
-  function grid(cols, rows) {
-    var s = '<svg viewBox="0 0 ' + (cols * 40) + ' ' + (rows * 40) + '">';
-    for (var y = 0; y < rows; y++)
-      for (var x = 0; x < cols; x++)
-        s += '<circle cx="' + (x * 40 + 20) + '" cy="' + (y * 40 + 20) + '" r="11" fill="#0071e3"/>';
-    return s + "</svg>";
   }
-  function rects() {
-    return '<svg viewBox="0 0 360 150">' +
-      '<rect x="8" y="20" width="120" height="110" rx="5" fill="#0071e3" opacity=".9"/>' +
-      '<text x="68" y="145" text-anchor="middle" font-size="15" fill="#6e6e73" font-family="Inter,sans-serif">A</text>' +
-      '<rect x="196" y="45" width="156" height="85" rx="5" fill="#12915a" opacity=".9"/>' +
-      '<text x="274" y="145" text-anchor="middle" font-size="15" fill="#6e6e73" font-family="Inter,sans-serif">B</text>' +
-      '</svg>';
-  }
-  function ell() {
-    var s = '<svg viewBox="0 0 260 220">', cells = [];
-    for (var y = 0; y < 5; y++) for (var x = 0; x < 5; x++) if (x < 2 || y > 2) cells.push([x, y]);
-    cells.forEach(function (c) {
-      s += '<rect x="' + (10 + c[0] * 40) + '" y="' + (10 + c[1] * 40) + '" width="40" height="40" ' +
-           'fill="#e7f1fd" stroke="#0071e3" stroke-width="1.6"/>';
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
     });
-    return s + "</svg>";
   }
-  function tri() {
-    var s = '<svg viewBox="0 0 380 120">', xs = [0, 74, 172, 296], counts = [1, 3, 6, 10];
-    counts.forEach(function (n, i) {
-      var r = 0, placed = 0, row = 0;
-      for (r = 1; placed < n; r++) {
-        for (var k = 0; k < r && placed < n; k++, placed++)
-          s += '<circle cx="' + (xs[i] + 20 + k * 17 - (r - 1) * 8.5 + 24) + '" cy="' + (16 + row * 18) + '" r="6.5" fill="#0071e3"/>';
-        row++;
-      }
-      s += '<text x="' + (xs[i] + 44) + '" y="110" text-anchor="middle" font-size="14" fill="#6e6e73" font-family="Inter,sans-serif">' + n + '</text>';
-    });
-    return s + "</svg>";
-  }
-
-  /* ------------------------------------------------------------ Content */
-  var PROBLEMS = [
-    {
-      ask: "How many dots are here?",
-      hint: "Try not to count them one at a time.",
-      fig: grid(6, 4),
-      type: "choice",
-      opts: ["20", "22", "24", "26"],
-      right: 2,
-      why: "Six across and four down. Rather than counting 24 things, you count 6 and 4 and multiply — " +
-           "which is what multiplication is for. An array turns counting into two much smaller counts."
-    },
-    {
-      ask: "Which rectangle covers more?",
-      hint: "A is 3 wide and 11 tall. B is 6 wide and 5 tall. Same unit either way.",
-      fig: rects(),
-      type: "choice",
-      opts: ["A", "B", "They are equal"],
-      right: 0,
-      why: "A is 3 &times; 11 = 33 units. B is 6 &times; 5 = 30. B looks wider and squatter, which reads as " +
-           "bigger — but width is only half the story. The taller sliver wins by three."
-    },
-    {
-      ask: "How many unit squares make this shape?",
-      hint: "There is a faster way than counting each square.",
-      fig: ell(),
-      type: "number",
-      right: 16,
-      why: "The full 5 &times; 5 square is 25. The missing corner is 3 &times; 3 = 9. So 25 &minus; 9 = 16. " +
-           "Subtracting what is absent is often quicker than adding what is present."
-    },
-    {
-      ask: "The pattern grows 1, 3, 6, 10. What comes next?",
-      hint: "Look at what gets added each time, not the totals.",
-      fig: tri(),
-      type: "choice",
-      opts: ["13", "14", "15", "16"],
-      right: 2,
-      why: "The gaps are 2, then 3, then 4 — so the next gap is 5, giving 15. Each step adds one more " +
-           "row than the last. These are the triangular numbers, and they turn up everywhere once you " +
-           "know the shape."
-    },
-    {
-      ask: "A 6 &times; 4 rectangle is cut once, straight through the middle. What is true of the two pieces?",
-      hint: "Think about it before picturing a particular cut.",
-      type: "choice",
-      opts: [
-        "They have equal area only if the cut is horizontal",
-        "They have equal area only if the cut is vertical",
-        "They have equal area for any straight cut through the centre",
-        "It depends where the centre is"
-      ],
-      right: 2,
-      why: "Any straight line through the centre of a rectangle splits it into two equal halves. The " +
-           "rectangle has rotational symmetry about that point, so each piece maps exactly onto the " +
-           "other — the angle of the cut never matters."
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
     }
-  ];
-
-
-  var MEDIA_UNITS = [
-    "What are Media Arts?", "The Basics of Design", "Digital Media and Web Design",
-    "The \u201CWeb 2.0\u201D", "Waves and Sound", "Intro to Photography",
-    "Video Basics", "Intro to Animation", "Audio/Video Production"
-  ];
-
-  var BIZ_A = [
-    "Introduction to Business", "Economics and Business",
-    "Business Ethics and Social Responsibility", "International Business",
-    "Business Writing", "Types of Business Ownership",
-    "Small Business and Entrepreneurship", "Management",
-    "Organizational Structure", "Operations Management",
-    "Motivation Theories and Applications"
-  ];
-  var BIZ_B = [
-    "Human Resource Management", "Organized Labor Relations",
-    "Marketing and the Customer", "Product and Pricing Strategies",
-    "Product Distribution", "Marketing Communications",
-    "Financial Statements", "Financial Management",
-    "Managing Information Technology", "Functions of Money and Banking"
-  ];
-
-  var SCALE = [["A", "90\u2013100"], ["B", "80\u201389"], ["C", "70\u201379"],
-               ["D", "60\u201369"], ["F", "under 59"]];
-
-  var SEEING = {
-    id: "seeing", t: "Seeing numbers", hue: "#0071e3", subject: "Math", level: "Beginner",
-    d: "Arithmetic you can look at. Arrays, areas and patterns, done by noticing rather than calculating.",
-    lede: "Most arithmetic is taught as a procedure. This course does it as a picture — once you can see why a rule works, you stop needing to remember it.",
-    enrolled: true,
-    units: [
-      { t: "Counting in shapes", s: "5 problems · about 5 minutes", play: true,
-        desc: "Counting things without counting them one at a time. Arrays that turn one big " +
-              "count into two small ones, shapes read by what is missing rather than what is " +
-              "there, and patterns that tell you the next number before you work it out.",
-        groups: [{
-          t: "Arrays, areas and patterns",
-          practice: [{ t: "Counting in shapes", meta: PROBLEMS.length + " problems", play: true }]
-        }] },
-      { t: "Areas without formulas", s: "Opens after the unit above", play: false,
-        desc: "Area as covering rather than as a formula to recall — why the rules you were " +
-              "given are the shapes they came from." },
-      { t: "Patterns that grow", s: "Opens after the unit above", play: false,
-        desc: "Sequences read by their differences, and what happens when the differences " +
-              "themselves form a pattern." }
-    ],
-    glyph: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'
-  };
-
-  var MEDIA = {
-    id: "media", t: "Media Arts", hue: "#8f5cff", subject: "English", level: "Introductory",
-    d: "Design, photography, video, animation and sound — the media you use every day, taken apart.",
-    lede: "Media arts are everywhere, which is exactly why they go unnoticed. This course covers the history and the practice: design principles, digital media and the web, photography, video, animation and audio production.",
-    tag: "Arts and Design", enrolled: true,
-    objectives: [
-      "Briefly describe the history of print, design and media.",
-      "Explain the five key principles of design and how they are used.",
-      "Describe the fundamentals and applications of digital media and web design.",
-      "List and describe the applications of various web-based tools used in blogs and wikis.",
-      "Describe the history and application of photography, video, animation and audio/video production."
-    ],
-    parts: [{ name: null, units: MEDIA_UNITS }],
-    grading: [["Quizzes", 35], ["Assignments", 35], ["Mid-term and final exams", 30]],
-    textbook: "EHS Media Arts — © Excel Education Systems, Inc., 2021.",
-    glyph: '<circle cx="12" cy="12" r="3.4"/><path d="M3 8.5h3.5L8.5 6h7l2 2.5H21v10H3z"/>'
-  };
-
-  var BIZ = {
-    id: "biz", t: "Introduction to Business", hue: "#e8a317", subject: "Social Studies", level: "Introductory",
-    d: "Planning and launching something real — economics, structure, money and the plan that holds it together.",
-    lede: "What it actually takes to plan and launch a product or service. Economics, costs and profit, business types, money and taxes, financing, and how a business sits inside the society around it — built toward writing a plan you could hand to somebody.",
-    tag: "Two semesters", enrolled: true,
-    objectives: [
-      "Understand basic economic principles.",
-      "Develop workplace communication skills.",
-      "Describe how businesses are structured and operated.",
-      "Design a business plan.",
-      "Weigh financial risks and rewards."
-    ],
-    parts: [{ name: "Semester A", units: BIZ_A }, { name: "Semester B", units: BIZ_B }],
-    grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
-    textbook: "Introduction to Business — Boundless, CC BY-SA 4.0.",
-    glyph: '<path d="M3 20h18M6 20V9l6-4 6 4v11"/><path d="M10 20v-5h4v5"/>'
-  };
-
-  // Titles with no syllabus behind them yet. Listed so the catalogue has a
-  // shape, and marked so nobody mistakes a title for a course.
-  function stub(id, t, subject, hue, d, glyph) {
-    return { id: id, t: t, subject: subject, hue: hue, d: d, glyph: glyph,
-             level: "Introductory", stub: true };
+    return a;
   }
-  var BOOK  = '<path d="M4 4.5h6.5A2.5 2.5 0 0 1 13 7v12a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-6.5A2.5 2.5 0 0 0 11 7v12a2 2 0 0 1 2-2h7z"/>';
-  var FLASK = '<path d="M9.5 3v6.2L4.6 18a2 2 0 0 0 1.7 3h11.4a2 2 0 0 0 1.7-3l-4.9-8.8V3"/><path d="M8 3h8M7.4 15h9.2"/>';
-  var GLOBE = '<circle cx="12" cy="12" r="9"/><path d="M3.2 9.5h17.6M3.2 14.5h17.6"/><path d="M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18"/>';
-  var SIGMA = '<path d="M17 5H7l6 7-6 7h10"/>';
+  function norm(s) {
+    return String(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
 
-  var SUBJECTS = [
-    { n: "English", hue: "#8f5cff",
-      d: "Reading closely, writing clearly, and the media doing both around you.",
-      courses: [MEDIA,
-        stub("read",  "Reading Closely", "English", "#8f5cff", "How a text works, and how to say what it is doing without guessing.", BOOK),
-        stub("write", "Writing to Be Understood", "English", "#8f5cff", "Sentences that survive being read once. Structure, evidence, revision.", BOOK)] },
-    { n: "Math", hue: "#0071e3",
-      d: "Arithmetic, algebra and geometry, done by seeing why rather than remembering how.",
-      courses: [SEEING,
-        stub("alg", "Algebra I", "Math", "#0071e3", "Variables, equations, and the habit of doing the same thing to both sides.", SIGMA),
-        stub("geo", "Geometry",  "Math", "#0071e3", "Proof as an argument you could win, not a form to fill in.", SIGMA)] },
-    { n: "Science", hue: "#12915a",
-      d: "Method first: what would have to be true, and how would you find out.",
-      courses: [
-        stub("bio",  "Biology",   "Science", "#12915a", "Cells, inheritance and ecosystems — systems that keep themselves going.", FLASK),
-        stub("chem", "Chemistry", "Science", "#12915a", "Why substances behave as they do, from the structure up.", FLASK),
-        stub("phys", "Physics",   "Science", "#12915a", "Motion, force and energy, with the algebra kept in service of the idea.", FLASK)] },
-    { n: "Social Studies", hue: "#e8a317",
-      d: "How societies organise themselves — economies, institutions, and the past that shaped them.",
-      courses: [BIZ,
-        stub("hist", "World History", "Social Studies", "#e8a317", "Causes and consequences, argued from sources rather than recited.", GLOBE),
-        stub("civ",  "Civics",        "Social Studies", "#e8a317", "How power is arranged, checked, and used where you live.", GLOBE)] }
-  ];
+  /* ---------------------------------------------------------------- State */
+  var S = {
+    view: "my",
+    stack: [],            // where Back goes, innermost last
+    course: null, unit: null, unitIx: 0,
+    setId: null, set: null,
+    mastery: {},          // "courseId:unitIndex" -> 0..3
+    sets: {},             // setId -> { level: {}, star: {}, best: null }
+    p: {}                 // the practice run in flight
+  };
 
+  function setState(id) {
+    if (!S.sets[id]) S.sets[id] = { level: {}, star: {}, best: null };
+    return S.sets[id];
+  }
+  function setMastered(id) {
+    var st = setState(id), n = 0;
+    for (var k in st.level) if (st.level[k] >= 3) n++;
+    return n;
+  }
+
+  /* ---------------------------------------------------------------- Icons */
+  var I = {
+    play:  '<path d="M8 5.5 18 12 8 18.5z"/>',
+    cards: '<rect x="3" y="6" width="14" height="12" rx="2"/><path d="M7 4h11a2 2 0 0 1 2 2v10"/>',
+    learn: '<path d="M12 3 3 7.5l9 4.5 9-4.5z"/><path d="M6 10v5.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V10"/>',
+    match: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>',
+    test:  '<path d="M6 3.5h8L18 7v13.5H6z"/><path d="M13.5 3.5V7H18"/><path d="M9 12.5h6M9 16h4"/>',
+    doc:   '<path d="M6 3.5h8L18 7v13.5H6z"/><path d="M13.5 3.5V7H18"/><path d="M9 12h6M9 15.5h4"/>',
+    chev:  '<path d="M9 5l6 6.5L9 18"/>',
+    star:  '<path d="M12 3.5l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.8z"/>'
+  };
+  function svg(d, stroke) {
+    return '<svg viewBox="0 0 24 24" fill="' + (stroke ? "none" : "currentColor") + '" ' +
+           'stroke="' + (stroke ? "currentColor" : "none") + '" stroke-width="1.7" ' +
+           'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + "</svg>";
+  }
+
+  /* --------------------------------------------------------------- Router */
+  var LABEL = {
+    my: "My courses", explore: "Explore", subject: "Subject", course: "Course",
+    unit: "Unit", set: "Study set", cards: "Flashcards", learn: "Learn",
+    match: "Match", test: "Test", practice: "Practice", result: "Results",
+    account: "Account"
+  };
+
+  function show(view, push) {
+    if (push !== false && S.view !== view) S.stack.push(S.view);
+    S.view = view;
+    [].forEach.call(document.querySelectorAll(".lx-view"), function (v) {
+      v.classList.toggle("on", v.id === "v-" + view);
+    });
+    var home = view === "my" || view === "explore";
+    $("#back").hidden = home;
+    if (!home) $("#backLabel").textContent = LABEL[S.stack[S.stack.length - 1]] || "Back";
+    $("#subbar").hidden = !home && view !== "subject";
+    $("#wrap").classList.toggle("wide", view === "match");
+    [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
+      b.setAttribute("aria-current", String(b.dataset.view === view));
+    });
+    window.scrollTo(0, 0);
+  }
+
+  function goBack() {
+    // A result screen is not a place you navigate back through: the run that
+    // produced it is over, so Back goes wherever the result points.
+    if (S.view === "result" && S.resultBack) {
+      S.stack.pop();
+      var f = S.resultBack; S.resultBack = null; f();
+      return;
+    }
+    var to = S.stack.pop() || "my";
+    // Rebuild the destination rather than revealing a stale one.
+    var draw = {
+      my: drawMy, explore: drawExplore,
+      subject: function () { openSubject(S.subject, false); },
+      course: function () { openCourse(S.course, false); },
+      unit: function () { openUnit(S.course, S.unitIx, false); },
+      set: function () { openSet(S.setId, false); }
+    }[to];
+    if (draw) draw(); else show(to, false);
+  }
+
+  function foot(msg, label, on, handler) {
+    var f = $("#foot"), b = $("#footBtn");
+    f.hidden = false;
+    $("#footMsg").innerHTML = msg || "";
+    b.textContent = label;
+    b.disabled = !on;
+    b.onclick = handler;
+  }
+  function noFoot() { $("#foot").hidden = true; $("#footBtn").onclick = null; }
+  function progress(pct) {
+    var p = $("#barProg");
+    p.hidden = pct == null;
+    if (pct != null) p.firstElementChild.style.width = pct + "%";
+  }
+
+  var toastT;
+  function toast(msg) {
+    var t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { t.classList.remove("on"); }, 2200);
+  }
+
+  /* ------------------------------------------------------------ Catalogue */
   function allCourses() {
-    return SUBJECTS.reduce(function (a, s) { return a.concat(s.courses); }, []);
+    return D.SUBJECTS.reduce(function (a, s) { return a.concat(s.courses); }, []);
   }
   function enrolled() {
     return allCourses().filter(function (c) { return c.enrolled; });
   }
-
-  /* -------------------------------------------------------------- State */
-  var S = { subject: null, course: null, unit: null, unit: 0, i: 0, picked: null, checked: false, right: 0, first: 0, tries: 0, done: 0 };
-
-  function show(v) {
-    ["my", "explore", "subject", "course", "unit", "lesson", "done"].forEach(function (n) {
-      $("#v-" + n).classList.toggle("on", n === v);
-    });
-    $("#back").hidden = (v === "my" || v === "explore");
-    $("#subbar").hidden = (v === "lesson");
-    $("#barProg").hidden = (v !== "lesson");
-    $("#subbar").hidden = (v === "lesson");
-    [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
-      b.setAttribute("aria-current", String(b.dataset.view === v));
-    });
-    if (v !== "subject") { S.subject = null; drawSubjectNav(); }
-    window.scrollTo(0, 0);
-  }
-
-  /* --------------------------------------------------------- Course card */
-  function card(c) {
-    var playable = (c.units || []).some(function (u) { return u.play; });
-    var pct = playable ? Math.round(S.done / PROBLEMS.length * 100) : 0;
-    var units = c.parts ? c.parts.reduce(function (n, p) { return n + p.units.length; }, 0)
-                        : (c.units ? c.units.length : 0);
-    var b = el("button", "lx-card");
-    b.type = "button";
-    b.innerHTML =
-      '<span class="lx-glyph" style="background:' + c.hue + '">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
-        'stroke-linecap="round" stroke-linejoin="round">' + c.glyph + '</svg></span>' +
-      '<b>' + c.t + '</b><span class="d">' + c.d + '</span>' +
-      '<span class="lx-meta">' +
-      (playable
-        ? '<span class="lx-track' + (pct === 100 ? " done" : "") + '"><i style="width:' + pct + '%"></i></span><span>' + pct + '%</span>'
-        : '<span class="lx-badge' + (c.stub ? " soon" : "") + '">' +
-          (c.stub ? "Not written yet" : units + " units") + '</span>' +
-          '<span style="flex:1"></span><span>' + c.level + '</span>') +
-      '</span>';
-    b.addEventListener("click", function () {
-      if (c.stub) flash(c.t + " — syllabus not written yet");
-      else openCourse(c);
-    });
-    return b;
-  }
-
-  /* ---------------------------------------------------------- Subject bar */
-  function drawSubjectNav() {
-    var nav = $("#subjectNav");
-    nav.innerHTML = "";
-    SUBJECTS.forEach(function (sub) {
-      var b = el("button", null, '<span class="sw" style="background:' + sub.hue + '"></span>' + sub.n);
-      b.type = "button";
-      b.setAttribute("aria-current", String(S.subject === sub.n));
-      b.addEventListener("click", function () { openSubject(sub); });
-      nav.appendChild(b);
-    });
-  }
-
-  /* ----------------------------------------------------------- My courses */
-  function drawMy() {
-    var pct = Math.round(S.done / PROBLEMS.length * 100);
-    $("#resume").innerHTML =
-      '<div class="t"><span class="k">Continue</span><b>Counting in shapes</b>' +
-      '<p>Seeing numbers · ' +
-      (S.done ? S.done + " of " + PROBLEMS.length + " done" : "5 problems, about 5 minutes") +
-      '</p></div><button class="lx-btn" id="resumeGo">' + (S.done ? "Keep going" : "Start") + '</button>';
-    $("#resumeGo").addEventListener("click", function () { S.course = SEEING; startLesson(); });
-    var g = $("#myCourses"); g.innerHTML = "";
-    enrolled().forEach(function (c) { g.appendChild(card(c)); });
-  }
-
-  /* -------------------------------------------------------------- Explore */
-  function drawExplore() {
-    var box = $("#shelves"); box.innerHTML = "";
-    SUBJECTS.forEach(function (sub) {
-      var sh = el("section", "lx-shelf");
-      var head = el("div", "lx-shelf-head",
-        '<h2>' + sub.n + '</h2><span class="c">' + sub.courses.length + ' courses</span>');
-      var more = el("button", null, "See all");
-      more.type = "button";
-      more.addEventListener("click", function () { openSubject(sub); });
-      head.appendChild(more);
-      sh.appendChild(head);
-      var rail = el("div", "lx-rail");
-      sub.courses.forEach(function (c) { rail.appendChild(card(c)); });
-      sh.appendChild(rail);
-      box.appendChild(sh);
-    });
-  }
-
-  /* -------------------------------------------------------------- Subject */
-  function openSubject(sub) {
-    $("#subjTitle").textContent = sub.n;
-    $("#subjLede").textContent = sub.d;
-    var g = $("#subjGrid"); g.innerHTML = "";
-    sub.courses.forEach(function (c) { g.appendChild(card(c)); });
-    show("subject");
-    S.subject = sub.n;
-    drawSubjectNav();
-  }
-
-  /* ------------------------------------------------------------- Course */
-  /* ============================================================== Unit page
-     Everything in one unit: its groups, its items, and a way to the units
-     either side of it without going back up first. */
-  function openUnit(c, u) {
-    S.course = c;
-    S.unit = u;
-    var units = unitsOf(c);
-    var body = $("#unitBody");
-    body.innerHTML = "";
-
-    body.appendChild(buildRail(c, units, u.n));
-
-    var main = el("div", "lx-main");
-
-    var crumb = el("div", "lx-crumb");
-    var bLearn = el("button", null, "Learn");
-    bLearn.type = "button";
-    bLearn.addEventListener("click", function () { drawExplore(); show("explore"); });
-    crumb.appendChild(bLearn);
-    var sub = SUBJECTS.filter(function (x) { return x.n === c.subject; })[0];
-    if (sub) {
-      crumb.appendChild(el("span", "sep", "&rsaquo;"));
-      var bSub = el("button", null, sub.n);
-      bSub.type = "button";
-      bSub.addEventListener("click", function () { openSubject(sub); });
-      crumb.appendChild(bSub);
-    }
-    crumb.appendChild(el("span", "sep", "&rsaquo;"));
-    var bCourse = el("button", null, c.t);
-    bCourse.type = "button";
-    bCourse.addEventListener("click", function () { openCourse(c); });
-    crumb.appendChild(bCourse);
-    main.appendChild(crumb);
-
-    main.appendChild(el("h1", "lx-h1", "Unit " + u.n + ": " + u.t));
-    main.appendChild(el("p", "lx-mastery",
-      u.play ? "Unit mastery: <b>" + unitPct(u) + "%</b>"
-             : "Not started &middot; lessons still being written"));
-    main.appendChild(legendRow());
-
-    /* One square per thing there is to do. Units with nothing to do get no
-       strip rather than a row of placeholders. */
-    var todo = (u.groups || []).reduce(function (n, g) { return n + (g.practice || []).length; }, 0);
-    if (todo) {
-      var strip = el("div", "lx-strip");
-      var st = unitState(u);
-      for (var k = 0; k < todo; k++) {
-        strip.appendChild(el("i", STATE_LABEL[st][1], ""));
-      }
-      main.appendChild(strip);
-    }
-
-    if (u.desc) {
-      main.appendChild(el("section", "lx-panel",
-        "<h2>About this unit</h2><p class=\"about\">" + u.desc + "</p>"));
-    }
-
-    if (u.groups && u.groups.length) {
-      u.groups.forEach(function (g) {
-        var panel = el("section", "lx-panel");
-        var head = "";
-        if (g.practice && g.practice.some(function (x) { return x.play; })) {
-          head = '<span class="lx-rec">' +
-            '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">' +
-            '<path d="M8 1l1.6 4.2L14 6.6l-3.4 2.7L11.4 14 8 11.6 4.6 14l.8-4.7L2 6.6l4.4-1.4z"/></svg>' +
-            'Start here</span>';
-        }
-        panel.innerHTML = head + "<h2>" + g.t + "</h2>";
-
-        var learn = (g.learn || []);
-        var practice = (g.practice || []);
-        var cols = el("div", "lx-cols" + (learn.length && practice.length ? "" : " one"));
-
-        if (learn.length) {
-          var lc = el("div", null, "<h3>Learn</h3>");
-          learn.forEach(function (it) {
-            var b = el("button", "lx-item");
-            b.type = "button";
-            b.disabled = !it.play;
-            b.innerHTML = '<span class="ic">' + icon(it.kind || "article") + '</span>' +
-                          '<span class="t">' + it.t + '</span>';
-            lc.appendChild(b);
-          });
-          cols.appendChild(lc);
-        }
-
-        if (practice.length) {
-          var pc = el("div", null, "<h3>Practice</h3>");
-          practice.forEach(function (it) {
-            var b = el("button", "lx-practice");
-            b.type = "button";
-            b.disabled = !it.play;
-            var stt = it.play ? unitState(u) : "none";
-            b.innerHTML =
-              '<span class="t"><b>' + it.t + '</b><span>' +
-              (it.play ? STATE_LABEL[stt][0] + " &middot; " + it.meta : it.meta) + '</span></span>' +
-              '<span class="st ' + STATE_LABEL[stt][1] + '"></span>';
-            if (it.play) b.addEventListener("click", startLesson);
-            pc.appendChild(b);
-          });
-          cols.appendChild(pc);
-        }
-        panel.appendChild(cols);
-        main.appendChild(panel);
-      });
-    } else {
-      main.appendChild(el("section", "lx-panel",
-        "<h2>Contents</h2><p class=\"about\">The syllabus places this unit. Its lessons, " +
-        "readings and practice are still being written &mdash; when they exist they appear here.</p>"));
-    }
-
-    var i = units.map(function (x) { return x.n; }).indexOf(u.n);
-    var pager = el("div", "lx-pager");
-    [["Previous", units[i - 1]], ["Next", units[i + 1]]].forEach(function (pair, k) {
-      var b = el("button", k ? "next" : null,
-        '<span class="k">' + pair[0] + '</span><span class="n">' +
-        (pair[1] ? "Unit " + pair[1].n + " &middot; " + pair[1].t : "&mdash;") + '</span>');
-      b.type = "button";
-      if (!pair[1]) b.disabled = true;
-      else b.addEventListener("click", function () { openUnit(c, pair[1]); });
-      pager.appendChild(b);
-    });
-    main.appendChild(pager);
-
-    body.appendChild(main);
-    show("unit");
-  }
-
-  /* ============================================================ Course page
-     A rail of units that stays put, a legend, a map of where you are, then
-     the units themselves. Mastery states are derived from real progress —
-     nothing shows a colour it has not earned. */
-
-  var STATE_LABEL = {
-    master: ["Mastered", "sq-master"],
-    prof:   ["Proficient", "sq-prof"],
-    fam:    ["Familiar", "sq-fam"],
-    att:    ["Attempted", "sq-att"],
-    none:   ["Not started", "sq-none"]
-  };
-
-  // Flatten either shape — a list of unit objects, or semesters of titles —
-  // into one numbered list the page can render without caring which it was.
   function unitsOf(c) {
     if (c.units) {
       return c.units.map(function (u, i) {
-        // Carry lessons through — rebuilding the object without them is what
-        // made a unit with real content render as an empty one.
-        return { n: i + 1, t: u.t, sub: u.s, play: !!u.play,
-                 desc: u.desc, groups: u.groups };
+        return { n: i + 1, t: u.t, desc: u.desc, play: !!u.play, set: u.set };
       });
     }
     var out = [], n = 0;
     (c.parts || []).forEach(function (part) {
-      part.units.forEach(function (t) { n++; out.push({ n: n, t: t, part: part.name }); });
+      part.units.forEach(function (t) {
+        n++;
+        out.push({ n: n, t: t, part: part.name, set: (c.sets || {})[n] });
+      });
     });
     return out;
   }
-
-  function unitState(u) {
-    if (!u.play) return "none";
-    var d = S.done, total = PROBLEMS.length;
-    if (d >= total) return "master";
-    if (d >= total * 0.6) return "prof";
-    if (d > 0) return "fam";
-    return "none";
+  function unitKey(c, n) { return c.id + ":" + n; }
+  function mastery(c, n) { return S.mastery[unitKey(c, n)] || 0; }
+  function bump(c, n, level) {
+    var k = unitKey(c, n);
+    if ((S.mastery[k] || 0) < level) S.mastery[k] = level;
+  }
+  function coursePct(c) {
+    var us = unitsOf(c);
+    if (!us.length) return 0;
+    var sum = us.reduce(function (a, u) { return a + mastery(c, u.n); }, 0);
+    return Math.round(sum / (us.length * 3) * 100);
   }
 
-  function unitPct(u) {
-    return u.play ? Math.round(S.done / PROBLEMS.length * 100) : 0;
-  }
-
-  function icon(kind) {
-    var d = kind === "practice"
-      ? '<path d="M3 17.3V21h3.7L17.6 10.1l-3.7-3.7z"/><path d="M14.7 4.2l3.7 3.7"/>'
-      : kind === "video"
-      ? '<path d="M4 4.5h16v15H4z"/><path d="M10 8.7l5.2 3.3-5.2 3.3z"/>'
-      : '<path d="M6 3.5h8L18 7v13.5H6z"/><path d="M13.5 3.5V7H18"/><path d="M9 12h6M9 15.5h4"/>';
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
-           'stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
-  }
-
-  function buildRail(c, units, activeN) {
-    var rail = el("aside", "lx-rail-nav");
-    rail.setAttribute("aria-label", c.t + " units");
-    rail.appendChild(el("div", "lx-rail-card",
-      '<span class="lx-glyph" style="background:' + c.hue + '">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
-        'stroke-linecap="round" stroke-linejoin="round">' + c.glyph + '</svg></span>' +
-      '<span><b>' + c.t + '</b><span>' + units.length + ' units</span></span>'));
-
-    var ol = el("ol");
-    units.forEach(function (u) {
-      var li = el("li");
-      var a = el("a", null, '<span class="u">Unit ' + u.n + '</span><span class="n">' + u.t + '</span>');
-      a.href = "#";
-      if (u.n === activeN) a.setAttribute("aria-current", "true");
-      a.addEventListener("click", function (e) { e.preventDefault(); openUnit(c, u); });
-      li.appendChild(a);
-      ol.appendChild(li);
+  /* ------------------------------------------------------------ My courses */
+  function courseCard(c) {
+    var b = el("button", "lx-card");
+    b.type = "button";
+    var ic = el("span", "ic");
+    ic.style.background = c.hue + "1a";
+    ic.style.color = c.hue;
+    ic.innerHTML = svg(c.glyph, true);
+    b.appendChild(ic);
+    b.appendChild(el("h3", null, esc(c.t)));
+    b.appendChild(el("p", null, esc(c.d)));
+    var pct = coursePct(c);
+    var f = el("div", "foot");
+    f.innerHTML = '<span class="lx-tag">' + esc(c.subject) + "</span>" +
+      (c.stub ? '<span class="lx-tag soon">Not written yet</span>'
+              : '<span class="lx-tag live">' + unitsOf(c).length + " units</span>") +
+      (pct ? '<span style="margin-left:auto">' + pct + "%</span>" : "");
+    b.appendChild(f);
+    b.addEventListener("click", function () {
+      if (c.stub) { toast("“" + c.t + "” has no syllabus behind it yet."); return; }
+      openCourse(c);
     });
-    rail.appendChild(ol);
-
-    var ch = el("div", "lx-challenge",
-      '<span class="k">Course challenge</span>' +
-      '<p>Test everything in this course at once, rather than a unit at a time.</p>');
-    var chb = el("button", null, "Start course challenge");
-    chb.type = "button";
-    chb.addEventListener("click", function () { flash("Course challenge — not written yet"); });
-    ch.appendChild(chb);
-    rail.appendChild(ch);
-    return rail;
+    return b;
   }
 
-  function legendRow() {
-    var leg = el("div", "lx-legend");
-    ["master", "prof", "fam", "att", "none"].forEach(function (k) {
-      leg.appendChild(el("span", null, '<i class="' + STATE_LABEL[k][1] + '"></i>' + STATE_LABEL[k][0]));
+  function drawMy() {
+    var v = $("#v-my");
+    v.innerHTML = "";
+    v.appendChild(el("h1", "lx-h1", "My courses"));
+    v.appendChild(el("p", "lx-lede", "Everything you are enrolled in. Pick up where you stopped."));
+
+    var c = D.SEEING, u = unitsOf(c)[0], m = mastery(c, 1);
+    var r = el("div", "lx-resume");
+    r.innerHTML =
+      '<div style="flex:1;min-width:230px">' +
+      '<p class="k">' + (m ? "Continue" : "Start here") + "</p>" +
+      "<h3>" + esc(c.t) + " · " + esc(u.t) + "</h3>" +
+      "<p>" + (m >= 3
+        ? "You have finished this unit. The study set is still there when you want it again."
+        : "Five problems, about five minutes. Then a study set of ten terms to make it stick.") + "</p></div>";
+    var go = el("button", "lx-btn lg", m ? "Continue" : "Start");
+    go.type = "button";
+    go.addEventListener("click", function () { openUnit(c, 1); });
+    r.appendChild(go);
+    v.appendChild(r);
+
+    v.appendChild(el("h2", "lx-h2", "Enrolled"));
+    var g = el("div", "lx-grid");
+    enrolled().forEach(function (x) { g.appendChild(courseCard(x)); });
+    v.appendChild(g);
+
+    v.appendChild(el("p", "lx-note",
+      "<b>Demo.</b> One unit is playable end to end — Seeing numbers, Counting in shapes — and five " +
+      "study sets are complete. The rest carry a real syllabus with the lessons still to be written. " +
+      'Nothing is saved and nothing leaves this page. <a href="../edu/">About Oplo Edu &rsaquo;</a>'));
+  }
+
+  /* --------------------------------------------------------------- Explore */
+  function drawExplore() {
+    var v = $("#v-explore");
+    v.innerHTML = "";
+    v.appendChild(el("h1", "lx-h1", "Explore"));
+    v.appendChild(el("p", "lx-lede",
+      "Every course Oplo has written, by subject. All curriculum is our own."));
+    D.SUBJECTS.forEach(function (s) {
+      var sh = el("section", "lx-shelf");
+      var head = el("div", "lx-shelf-head");
+      head.innerHTML = "<h2>" + esc(s.n) + "</h2><p>" + esc(s.d) + "</p>";
+      sh.appendChild(head);
+      var g = el("div", "lx-grid");
+      s.courses.forEach(function (c) { g.appendChild(courseCard(c)); });
+      sh.appendChild(g);
+      v.appendChild(sh);
     });
-    return leg;
   }
 
-  function openCourse(c) {
+  function drawSubjectNav() {
+    var n = $("#subjectNav");
+    n.innerHTML = "";
+    var all = el("button", null, "All");
+    all.type = "button";
+    all.addEventListener("click", function () { drawExplore(); show("explore"); });
+    n.appendChild(all);
+    D.SUBJECTS.forEach(function (s) {
+      var b = el("button", null, esc(s.n));
+      b.type = "button";
+      b.addEventListener("click", function () { openSubject(s); });
+      n.appendChild(b);
+    });
+  }
+  function markSubjectNav(name) {
+    [].forEach.call($("#subjectNav").children, function (b) {
+      b.setAttribute("aria-current", String(b.textContent === (name || "All")));
+    });
+  }
+
+  function openSubject(s, push) {
+    if (!s) { drawExplore(); show("explore", push); return; }
+    S.subject = s;
+    var v = $("#v-subject");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", "Subject"));
+    v.appendChild(el("h1", "lx-h1", esc(s.n)));
+    v.appendChild(el("p", "lx-lede", esc(s.d)));
+    var g = el("div", "lx-grid");
+    g.style.marginTop = "30px";
+    s.courses.forEach(function (c) { g.appendChild(courseCard(c)); });
+    v.appendChild(g);
+    markSubjectNav(s.n);
+    show("subject", push);
+  }
+
+  /* ---------------------------------------------------------------- Course */
+  function openCourse(c, push) {
+    if (!c) return;
     S.course = c;
-    var body = $("#courseBody");
-    body.innerHTML = "";
-
+    var v = $("#v-course");
+    v.innerHTML = "";
     var units = unitsOf(c);
-    var playable = units.some(function (u) { return u.play; });
-    var pct = playable ? Math.round(S.done / PROBLEMS.length * 100 / units.length) : 0;
 
-    body.appendChild(buildRail(c, units, null));
+    var hero = el("header", "lx-hero");
+    var row = el("div", "row");
+    var ic = el("span", "ic");
+    ic.style.background = c.hue + "1a"; ic.style.color = c.hue;
+    ic.innerHTML = svg(c.glyph, true);
+    row.appendChild(ic);
+    var htxt = el("div");
+    htxt.innerHTML = '<p class="lx-eyebrow">' + esc(c.subject) + "</p>" +
+                     '<h1 class="lx-h1">' + esc(c.t) + "</h1>";
+    row.appendChild(htxt);
+    hero.appendChild(row);
+    hero.appendChild(el("p", "lx-lede", esc(c.lede || c.d)));
+    var meta = el("div", "meta");
+    meta.innerHTML = '<span class="lx-tag">' + units.length + " units</span>" +
+      '<span class="lx-tag">' + esc(c.level) + "</span>" +
+      (c.tag ? '<span class="lx-tag">' + esc(c.tag) + "</span>" : "") +
+      '<span class="lx-tag live">' +
+      units.filter(function (u) { return u.set; }).length + " study sets</span>";
+    hero.appendChild(meta);
+    v.appendChild(hero);
 
-    var main = el("div", "lx-main");
+    var two = el("div", "lx-two");
+    var main = el("div");
 
-    var crumb = el("div", "lx-crumb");
-    var bLearn = el("button", null, "Learn");
-    bLearn.type = "button";
-    bLearn.addEventListener("click", function () { drawExplore(); show("explore"); });
-    crumb.appendChild(bLearn);
-    var sub = SUBJECTS.filter(function (x) { return x.n === c.subject; })[0];
-    if (sub) {
-      crumb.appendChild(el("span", "sep", "&rsaquo;"));
-      var bSub = el("button", null, sub.n);
-      bSub.type = "button";
-      bSub.addEventListener("click", function () { openSubject(sub); });
-      crumb.appendChild(bSub);
-    }
-    main.appendChild(crumb);
+    var pct = coursePct(c);
+    var mast = el("div", "lx-panel");
+    mast.style.marginBottom = "22px";
+    var bars = units.map(function (u) {
+      var m = mastery(c, u.n);
+      return '<i class="' + (m >= 3 ? "master" : m === 2 ? "prof" : m === 1 ? "fam" : "") + '"></i>';
+    }).join("");
+    mast.innerHTML = "<h3>Course mastery — " + pct + "%</h3>" +
+      '<div class="lx-mastery">' + bars + "</div>" +
+      '<div class="lx-legend"><span><i></i>Not started</span><span><i class="fam"></i>Familiar</span>' +
+      '<span><i class="prof"></i>Proficient</span><span><i class="master"></i>Mastered</span></div>';
+    main.appendChild(mast);
 
-    main.appendChild(el("h1", "lx-h1", c.t));
-    main.appendChild(el("p", "lx-lede", c.lede || c.d));
-    main.appendChild(el("p", "lx-mastery",
-      "Course mastery: <b>" + pct + "%</b>" +
-      (playable ? "" : " &middot; lessons still being written")));
-
-    main.appendChild(legendRow());
-
-    /* A square per unit: the whole course readable in one glance. */
-    var map = el("div", "lx-map");
+    var list = el("div", "lx-units");
+    var part = null;
     units.forEach(function (u) {
-      var st = unitState(u);
-      var row = el("button", "lx-map-row" + (u.play && S.done < PROBLEMS.length ? " next" : ""));
-      row.innerHTML =
-        '<span class="lbl">Unit ' + u.n + '</span>' +
-        '<span class="sqs"><i class="' + STATE_LABEL[st][1] + '" title="' + STATE_LABEL[st][0] + '"></i></span>' +
-        (u.play && S.done < PROBLEMS.length ? '<span class="up">Up next</span>' : "") +
-        '<span class="pc">' + (u.play ? unitPct(u) + "%" : "&mdash;") + '</span>';
-      row.type = "button";
-      row.style.width = "100%";
-      row.addEventListener("click", function () { openUnit(c, u); });
-      map.appendChild(row);
-    });
-    main.appendChild(map);
-
-    /* --------------------------------------------------------- Unit rows
-       A unit is a door here. Its contents live on its own page. */
-    var lastPart = null;
-    var listWrap = el("section", "lx-sec", "<h2>Units</h2>");
-    units.forEach(function (u) {
-      if (u.part && u.part !== lastPart) {
-        lastPart = u.part;
-        listWrap.appendChild(el("p", "lx-part", u.part));
+      if (u.part && u.part !== part) {
+        part = u.part;
+        list.appendChild(el("p", "lx-part", esc(part)));
       }
-      var st = unitState(u);
-      var cls = st === "master" ? " done" : (u.play ? " now" : "");
-      var b = el("button", "lx-unitrow" + cls);
+      var b = el("button", "lx-unit" + (mastery(c, u.n) >= 3 ? " done" : ""));
       b.type = "button";
-      b.innerHTML =
-        '<span class="num">' + (st === "master" ? "&#10003;" : u.n) + '</span>' +
-        '<span class="t"><b>' + u.t + '</b><span>' +
-          (u.play ? "Unit mastery " + unitPct(u) + "%" : "Lessons in production") +
-        '</span></span><span class="chev" aria-hidden="true"></span>';
-      b.addEventListener("click", function () { openUnit(c, u); });
-      listWrap.appendChild(b);
+      var bits = [];
+      if (u.play) bits.push("Practice");
+      if (u.set) bits.push(D.SETS[u.set].cards.length + " terms");
+      if (!bits.length) bits.push("Syllabus only");
+      b.innerHTML = '<span class="n">' + u.n + "</span>" +
+        '<span class="txt"><b>' + esc(u.t) + "</b><span>" + bits.join(" · ") + "</span></span>" +
+        '<span class="go">' + svg(I.chev, true) + "</span>";
+      b.addEventListener("click", function () { openUnit(c, u.n); });
+      list.appendChild(b);
     });
-    main.appendChild(listWrap);
+    main.appendChild(list);
+    two.appendChild(main);
 
-    /* ------------------------------------------------------------ About */
+    var side = el("aside", "lx-side");
     if (c.objectives) {
-      var o = el("section", "lx-sec", "<h2>What you will be able to do</h2>");
-      var ul = el("ul", "lx-obj");
-      c.objectives.forEach(function (x) {
-        ul.appendChild(el("li", null,
-          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" ' +
-          'stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.5 12 13 4.5"/></svg>' +
-          '<span>' + x + '</span>'));
-      });
-      o.appendChild(ul);
-      main.appendChild(o);
+      var o = el("div", "lx-panel");
+      o.innerHTML = "<h3>What you will be able to do</h3><ul>" +
+        c.objectives.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>";
+      side.appendChild(o);
     }
-
     if (c.grading) {
-      var g = el("section", "lx-sec", "<h2>Assessment</h2>");
-      var box = el("div", "lx-grade");
-      c.grading.forEach(function (row) {
-        box.appendChild(el("div", "g",
-          '<span>' + row[0] + '</span>' +
-          '<span class="bar"><i style="width:' + row[1] + '%"></i></span>' +
-          '<b>' + row[1] + '%</b>'));
-      });
-      g.appendChild(box);
-      var sc = el("div", "lx-scale");
-      SCALE.forEach(function (x) { sc.appendChild(el("span", null, "<b>" + x[0] + "</b> " + x[1])); });
-      g.appendChild(sc);
-      main.appendChild(g);
+      var g = el("div", "lx-panel");
+      g.innerHTML = "<h3>How it is graded</h3><ul>" +
+        c.grading.map(function (r) {
+          return "<li><b>" + esc(r[0]) + "</b><span>" + r[1] + "%</span></li>";
+        }).join("") + "</ul>";
+      side.appendChild(g);
+    }
+    if (c.textbook) {
+      var t = el("div", "lx-panel");
+      t.innerHTML = "<h3>Text</h3><p>" + esc(c.textbook) + "</p>";
+      side.appendChild(t);
+    }
+    two.appendChild(side);
+    v.appendChild(two);
+
+    markSubjectNav(c.subject);
+    noFoot(); progress(null);
+    show("course", push);
+  }
+
+  /* ------------------------------------------------------------------ Unit */
+  function openUnit(c, n, push) {
+    S.course = c; S.unitIx = n;
+    var u = unitsOf(c).filter(function (x) { return x.n === n; })[0];
+    if (!u) return;
+    S.unit = u;
+
+    var v = $("#v-unit");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", esc(c.t) + " · Unit " + n));
+    v.appendChild(el("h1", "lx-h1", esc(u.t)));
+    if (u.desc) v.appendChild(el("p", "lx-lede", esc(u.desc)));
+
+    var any = false;
+
+    if (u.play) {
+      any = true;
+      var b1 = el("div", "lx-block");
+      b1.appendChild(el("h2", null, "Practice"));
+      var pb = el("button", "lx-item");
+      pb.type = "button";
+      pb.innerHTML = '<span class="ic">' + svg(I.play) + "</span>" +
+        '<span class="txt"><b>' + esc(u.t) + "</b><span>" + D.PROBLEMS.length +
+        " problems · about 5 minutes</span></span>" +
+        '<span class="ic">' + svg(I.chev, true) + "</span>";
+      pb.addEventListener("click", startPractice);
+      b1.appendChild(pb);
+      v.appendChild(b1);
     }
 
-    if (c.textbook) main.appendChild(el("p", "lx-credit", "Textbook: " + c.textbook));
+    if (u.set) {
+      any = true;
+      var set = D.SETS[u.set];
+      var b2 = el("div", "lx-block");
+      b2.appendChild(el("h2", null, "Study set"));
+      var sb = el("button", "lx-item");
+      sb.type = "button";
+      var done = setMastered(u.set);
+      sb.innerHTML = '<span class="ic">' + svg(I.cards, true) + "</span>" +
+        '<span class="txt"><b>' + esc(set.t) + "</b><span>" + set.cards.length + " terms" +
+        (done ? " · " + done + " mastered" : " · flashcards, Learn, Match and Test") + "</span></span>" +
+        '<span class="ic">' + svg(I.chev, true) + "</span>";
+      sb.addEventListener("click", function () { openSet(u.set); });
+      b2.appendChild(sb);
+      v.appendChild(b2);
+    }
 
-    body.appendChild(main);
-    show("course");
+    if (!any) {
+      var p = el("div", "lx-pending");
+      p.innerHTML = "<b>Not written yet</b><p>This unit is on the syllabus and its lessons are still " +
+        "being made. The units that are finished are marked on the course page.</p>";
+      v.appendChild(p);
+    }
+
+    noFoot(); progress(null);
+    show("unit", push);
   }
 
-  function countUnits(c) {
-    return (c.parts || []).reduce(function (n, p) { return n + p.units.length; }, 0);
-  }
+  /* ================================================================= Sets */
+  function openSet(id, push) {
+    S.setId = id; S.set = D.SETS[id];
+    var st = setState(id), cards = S.set.cards;
+    var v = $("#v-set");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", "Study set"));
+    v.appendChild(el("h1", "lx-h1", esc(S.set.t)));
+    v.appendChild(el("p", "lx-lede", cards.length + " terms · " + setMastered(id) +
+      " mastered" + (st.best ? " · best match " + st.best.toFixed(1) + "s" : "")));
 
-  function unitList(units, live) {
-    var wrap = el("div", "lx-units");
-    var pct = Math.round(S.done / PROBLEMS.length * 100);
-    units.forEach(function (u, i) {
-      var state = !u.play ? "" : pct === 100 ? "done" : "now";
-      var b = el("button", "lx-unit " + state);
+    var modes = el("div", "lx-modes");
+    [["Flashcards", "Flip through them", I.cards, startCards],
+     ["Learn", "Drilled until they stick", I.learn, startLearn],
+     ["Match", "Pair them against a clock", I.match, startMatch],
+     ["Test", "One graded run", I.test, startTest]
+    ].forEach(function (m) {
+      var b = el("button", "lx-mode");
       b.type = "button";
-      if (!u.play) b.disabled = true;
-      b.innerHTML = '<span class="lx-step">' + (state === "done" ? "&#10003;" : (i + 1)) + '</span>' +
-                    '<span class="t"><b>' + u.t + '</b><span>' + u.s + '</span></span>' +
-                    '<span class="lx-tag' + (state ? " " + state : "") + '">' +
-                    (state === "done" ? "Mastered" : state === "now" ? (S.done ? "In progress" : "Start") : "Locked") +
-                    '</span>';
-      if (u.play) b.addEventListener("click", startLesson);
-      wrap.appendChild(b);
+      b.innerHTML = svg(m[2], true) + "<b>" + m[0] + "</b><span>" + m[1] + "</span>";
+      b.addEventListener("click", m[3]);
+      modes.appendChild(b);
     });
-    return wrap;
+    v.appendChild(modes);
+
+    var terms = el("div", "lx-terms");
+    cards.forEach(function (c, i) {
+      var row = el("div", "lx-term");
+      row.innerHTML = "<b>" + esc(c[0]) + "</b><p>" + esc(c[1]) + "</p>";
+      var star = el("button", "star" + (st.star[i] ? " on" : ""));
+      star.type = "button";
+      star.setAttribute("aria-label", "Star " + c[0]);
+      star.setAttribute("aria-pressed", String(!!st.star[i]));
+      star.innerHTML = svg(I.star, !st.star[i]);
+      star.addEventListener("click", function () {
+        st.star[i] = !st.star[i];
+        star.classList.toggle("on", st.star[i]);
+        star.setAttribute("aria-pressed", String(!!st.star[i]));
+        star.innerHTML = svg(I.star, !st.star[i]);
+      });
+      row.appendChild(star);
+      terms.appendChild(row);
+    });
+    v.appendChild(terms);
+
+    noFoot(); progress(null);
+    show("set", push);
   }
 
-  var flashTimer;
-  function flash(msg) {
-    var n = document.getElementById("lxFlash") || (function () {
-      var d = el("div", null, "");
-      d.id = "lxFlash";
-      d.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(12px);" +
-        "background:#1d1d1f;color:#fff;font-size:14px;padding:11px 20px;border-radius:100px;" +
-        "opacity:0;transition:opacity .2s,transform .2s;z-index:60;pointer-events:none";
-      document.body.appendChild(d);
-      return d;
-    })();
-    n.textContent = msg;
-    n.style.opacity = "1";
-    n.style.transform = "translateX(-50%) translateY(0)";
-    clearTimeout(flashTimer);
-    flashTimer = setTimeout(function () {
-      n.style.opacity = "0";
-      n.style.transform = "translateX(-50%) translateY(12px)";
-    }, 2000);
+  /* ----------------------------------------------------------- Flashcards */
+  function startCards() {
+    var cards = S.set.cards, order = cards.map(function (_, i) { return i; });
+    var i = 0, flipped = false, shuffled = false;
+    var known = {}, learning = {};
+
+    var v = $("#v-cards");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", esc(S.set.t)));
+    v.appendChild(el("h1", "lx-h1", "Flashcards"));
+
+    var deck = el("div", "lx-deck");
+    var flip = el("div", "lx-flip");
+    flip.tabIndex = 0;
+    flip.setAttribute("role", "button");
+    flip.setAttribute("aria-label", "Flip card");
+    flip.innerHTML =
+      '<div class="lx-face a"><span class="kind">Term</span><p id="cFront"></p></div>' +
+      '<div class="lx-face b"><span class="kind">Definition</span><p id="cBack"></p></div>';
+    deck.appendChild(flip);
+    v.appendChild(deck);
+
+    var bar = el("div", "lx-deck-bar");
+    var prev = el("button", "lx-round");
+    prev.type = "button"; prev.setAttribute("aria-label", "Previous card");
+    prev.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 9 11.5 15 18"/></svg>';
+    var count = el("span", "lx-count");
+    var next = el("button", "lx-round");
+    next.type = "button"; next.setAttribute("aria-label", "Next card");
+    next.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l6 6.5L9 18"/></svg>';
+    bar.appendChild(prev); bar.appendChild(count); bar.appendChild(next);
+    v.appendChild(bar);
+
+    var side = el("div", "lx-deck-side");
+    var still = el("button", "lx-pill warm", "Still learning");
+    still.type = "button";
+    var got = el("button", "lx-pill cool", "Know it");
+    got.type = "button";
+    var shuf = el("button", "lx-pill", "Shuffle");
+    shuf.type = "button"; shuf.setAttribute("aria-pressed", "false");
+    side.appendChild(still); side.appendChild(got); side.appendChild(shuf);
+    v.appendChild(side);
+
+    var tally = el("p", "lx-lede");
+    tally.style.cssText = "text-align:center;margin-top:18px;font-size:14px";
+    v.appendChild(tally);
+
+    function draw() {
+      var c = cards[order[i]];
+      flipped = false;
+      flip.classList.remove("back");
+      $("#cFront").textContent = c[0];
+      $("#cBack").textContent = c[1];
+      count.textContent = (i + 1) + " / " + order.length;
+      prev.disabled = i === 0;
+      next.disabled = i === order.length - 1;
+      var k = Object.keys(known).length, l = Object.keys(learning).length;
+      tally.textContent = (k || l)
+        ? k + " known · " + l + " still learning"
+        : "Tap the card to flip it. Arrow keys move.";
+    }
+    function step(d) {
+      i = Math.min(order.length - 1, Math.max(0, i + d));
+      draw();
+    }
+    function sort(pile) {
+      pile[order[i]] = true;
+      var other = pile === known ? learning : known;
+      delete other[order[i]];
+      if (pile === known) setState(S.setId).level[order[i]] = 3;
+      if (i === order.length - 1) { draw(); toast("End of the deck."); }
+      else step(1);
+    }
+
+    flip.addEventListener("click", function () {
+      flipped = !flipped;
+      flip.classList.toggle("back", flipped);
+    });
+    flip.addEventListener("keydown", function (e) {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip.click(); }
+    });
+    prev.addEventListener("click", function () { step(-1); });
+    next.addEventListener("click", function () { step(1); });
+    still.addEventListener("click", function () { sort(learning); });
+    got.addEventListener("click", function () { sort(known); });
+    shuf.addEventListener("click", function () {
+      shuffled = !shuffled;
+      shuf.setAttribute("aria-pressed", String(shuffled));
+      order = shuffled ? shuffle(cards.map(function (_, k) { return k; }))
+                       : cards.map(function (_, k) { return k; });
+      i = 0; draw();
+      toast(shuffled ? "Shuffled." : "Back in order.");
+    });
+
+    S.keys = function (e) {
+      if (e.key === "ArrowRight") step(1);
+      else if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === " ") { e.preventDefault(); flip.click(); }
+    };
+
+    draw();
+    noFoot(); progress(null);
+    show("cards");
+    setTimeout(function () { flip.focus(); }, 80);
   }
 
-  /* ------------------------------------------------------------- Lesson */
-  function startLesson() {
-    S.i = 0; S.right = 0; S.first = 0; S.tries = 0; S.done = 0;
-    show("lesson"); drawProblem();
-  }
+  /* ---------------------------------------------------------------- Learn
+     Three passes over each term, each harder than the last: recognise it,
+     recognise it backwards, then produce it from nothing. A wrong answer
+     sends the term back to the start of the queue rather than to the end
+     of the session — the ones you miss are the ones you see most. */
+  function startLearn() {
+    var cards = S.set.cards, st = setState(S.setId);
+    var level = {}, queue = [];
+    cards.forEach(function (_, i) { level[i] = 0; queue.push(i); });
+    queue = shuffle(queue);
+    var cur = null, picked = null, checked = false, correct = 0, asked = 0;
 
-  function drawProblem() {
-    var p = PROBLEMS[S.i];
-    S.picked = null; S.checked = false; S.tries = 0;
-    $("#barProg").firstElementChild.style.width = (S.i / PROBLEMS.length * 100) + "%";
-    $("#ask").innerHTML = p.ask;
-    $("#hint").innerHTML = p.hint || "";
-    $("#hint").hidden = !p.hint;
-    var fig = $("#figure");
-    fig.hidden = !p.fig;
-    fig.innerHTML = p.fig || "";
-    $("#verdict").innerHTML = "";
+    var v = $("#v-learn");
 
-    var a = $("#answer"); a.innerHTML = "";
-    if (p.type === "choice") {
+    function mastered() {
+      return cards.filter(function (_, i) { return level[i] >= 3; }).length;
+    }
+
+    function nextQ() {
+      if (!queue.length) return done();
+      cur = queue.shift();
+      picked = null; checked = false;
+      progress(Math.round(mastered() / cards.length * 100));
+      draw();
+    }
+
+    function distractors(ix, which) {
+      var pool = cards.map(function (_, i) { return i; }).filter(function (i) { return i !== ix; });
+      return shuffle(pool).slice(0, Math.min(3, pool.length)).map(function (i) { return cards[i][which]; });
+    }
+
+    function draw() {
+      var c = cards[cur], lv = level[cur];
+      v.innerHTML = "";
+      v.appendChild(el("p", "lx-eyebrow", esc(S.set.t) + " · " + mastered() + " of " + cards.length + " mastered"));
+
+      var stage = el("div", "lx-stage");
+      if (lv === 0) {
+        stage.appendChild(el("p", "lx-ask", "Which term is this?"));
+        stage.appendChild(el("div", "lx-prompt", esc(c[1])));
+        stage.appendChild(choices(shuffle([c[0]].concat(distractors(cur, 0))), c[0]));
+      } else if (lv === 1) {
+        stage.appendChild(el("p", "lx-ask", esc(c[0])));
+        stage.appendChild(el("p", "lx-hint", "Which definition belongs to it?"));
+        stage.appendChild(choices(shuffle([c[1]].concat(distractors(cur, 1))), c[1]));
+      } else {
+        stage.appendChild(el("p", "lx-ask", "Type the term."));
+        stage.appendChild(el("div", "lx-prompt", esc(c[1])));
+        var w = el("div", "lx-numwrap");
+        var inp = el("input", "lx-num");
+        inp.type = "text"; inp.id = "learnIn"; inp.autocomplete = "off";
+        inp.setAttribute("aria-label", "The term");
+        inp.addEventListener("input", function () {
+          picked = inp.value.trim();
+          $("#footBtn").disabled = !picked;
+        });
+        inp.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !$("#footBtn").disabled) submit();
+        });
+        w.appendChild(inp);
+        stage.appendChild(w);
+        setTimeout(function () { inp.focus(); }, 60);
+      }
+      stage.appendChild(el("div", null, "")).id = "learnVerdict";
+      v.appendChild(stage);
+      // Always starts disabled: with it live, Check could be pressed on an
+      // unanswered question and marked wrong for you.
+      foot("", "Check", false, submit);
+    }
+
+    function choices(opts, right) {
       var wrap = el("div", "lx-opts");
-      p.opts.forEach(function (o, i) {
+      opts.forEach(function (o, i) {
         var b = el("button", "lx-opt");
         b.type = "button";
         b.setAttribute("aria-pressed", "false");
-        b.innerHTML = '<span class="lx-key">' + "ABCD"[i] + '</span><span>' + o + '</span>';
+        b.innerHTML = '<span class="lx-key">' + "ABCD"[i] + "</span><span>" + esc(o) + "</span>";
         b.addEventListener("click", function () {
-          if (S.checked) return;
-          S.picked = i;
-          [].forEach.call(wrap.children, function (c, j) { c.setAttribute("aria-pressed", String(i === j)); });
-          $("#check").disabled = false;
+          if (checked) return;
+          picked = o;
+          [].forEach.call(wrap.children, function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+          $("#footBtn").disabled = false;
         });
         wrap.appendChild(b);
       });
-      a.appendChild(wrap);
-    } else {
-      var w = el("div", "lx-numwrap");
-      var inp = el("input", "lx-num");
-      inp.type = "text"; inp.inputMode = "numeric"; inp.id = "numIn";
-      inp.setAttribute("aria-label", "Your answer");
-      inp.addEventListener("input", function () {
-        S.picked = inp.value.trim();
-        $("#check").disabled = !S.picked;
+      wrap.dataset.right = right;
+      return wrap;
+    }
+
+    function submit() {
+      var c = cards[cur], lv = level[cur];
+      if (checked) { nextQ(); return; }
+      checked = true; asked++;
+      var right = lv === 0 ? c[0] : lv === 1 ? c[1] : c[0];
+      var ok = lv === 2 ? norm(picked) === norm(c[0]) : picked === right;
+      if (ok) { correct++; level[cur] = lv + 1; if (level[cur] >= 3) st.level[cur] = 3; }
+      else { level[cur] = 0; }
+
+      var opts = v.querySelectorAll(".lx-opt");
+      if (opts.length) {
+        [].forEach.call(opts, function (b) {
+          b.disabled = true;
+          var t = b.lastElementChild.textContent;
+          if (t === right) b.classList.add("right");
+          else if (t === picked) b.classList.add("wrong");
+        });
+      } else {
+        var inp = $("#learnIn");
+        inp.disabled = true;
+        inp.classList.add(ok ? "right" : "wrong");
+      }
+      var vd = document.getElementById("learnVerdict");
+      vd.innerHTML = '<div class="lx-verdict ' + (ok ? "right" : "wrong") + '"><b>' +
+        (ok ? "Correct" : "The answer is " + esc(right)) + "</b><p>" +
+        (ok ? (level[cur] >= 3 ? "Mastered. It will not come round again."
+                               : "It comes back once more, harder.")
+            : "Back to the start of the queue for this one.") + "</p></div>";
+
+      if (!ok || level[cur] < 3) queue.unshift(cur);
+      foot(mastered() + " of " + cards.length + " mastered", queue.length ? "Continue" : "Finish", true, submit);
+    }
+
+    function done() {
+      progress(null);
+      result({
+        title: "Set mastered.",
+        lede: "Every term answered three ways: recognised, reversed, and typed from nothing.",
+        pct: 100,
+        stats: [[cards.length, "terms"], [correct, "correct"], [asked, "questions"]],
+        back: function () { openSet(S.setId); }
       });
-      inp.addEventListener("keydown", function (e) { if (e.key === "Enter" && !$("#check").disabled) check(); });
-      w.appendChild(inp);
-      a.appendChild(w);
-      setTimeout(function () { inp.focus(); }, 60);
     }
-    $("#check").disabled = true;
-    $("#check").textContent = "Check";
+
+    show("learn");
+    nextQ();
   }
 
-  function check() {
-    var p = PROBLEMS[S.i];
+  /* ----------------------------------------------------------------- Match */
+  function startMatch() {
+    var st = setState(S.setId);
+    var pick = shuffle(S.set.cards).slice(0, Math.min(6, S.set.cards.length));
+    var tiles = [];
+    pick.forEach(function (c, i) {
+      tiles.push({ id: i, txt: c[0], term: true });
+      tiles.push({ id: i, txt: c[1], term: false });
+    });
+    tiles = shuffle(tiles);
 
-    if (S.checked) {                       // second press = advance
-      S.i++;
-      if (S.i >= PROBLEMS.length) finish(); else drawProblem();
-      return;
+    var v = $("#v-match");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", esc(S.set.t)));
+    var head = el("div");
+    head.style.cssText = "display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap";
+    head.innerHTML = '<h1 class="lx-h1">Match</h1><p class="lx-timer" id="mTime">0.0s</p>';
+    v.appendChild(head);
+    v.appendChild(el("p", "lx-lede", "Pair every term with its definition. The clock is the whole game." +
+      (st.best ? " Your best is " + st.best.toFixed(1) + "s." : "")));
+
+    var grid = el("div", "lx-match");
+    var nodes = tiles.map(function (t) {
+      var b = el("button", "lx-tile" + (t.term ? " term" : ""));
+      b.type = "button";
+      b.textContent = t.txt;
+      b.dataset.id = t.id;
+      b.dataset.term = String(t.term);
+      grid.appendChild(b);
+      return b;
+    });
+    v.appendChild(grid);
+
+    var start = performance.now(), left = pick.length, sel = null, lock = false, timer;
+    function tick() {
+      $("#mTime").textContent = ((performance.now() - start) / 1000).toFixed(1) + "s";
     }
+    timer = setInterval(tick, 100);
 
-    S.tries++;
-    var ok = p.type === "choice"
-      ? S.picked === p.right
-      : String(S.picked).replace(/\s/g, "") === String(p.right);
-
-    if (!ok && S.tries === 1) {            // one free retry, then the answer
-      markWrong(p);
-      $("#verdict").innerHTML =
-        '<div class="lx-verdict wrong"><b>Not quite</b><p>Have another look &mdash; you get one more try.</p></div>';
-      return;
-    }
-
-    S.checked = true;
-    S.done++;
-    if (ok) { S.right++; if (S.tries === 1) S.first++; }
-    reveal(p, ok);
-    $("#check").disabled = false;
-    $("#check").textContent = S.i === PROBLEMS.length - 1 ? "Finish" : "Next";
-    $("#barProg").firstElementChild.style.width = ((S.i + 1) / PROBLEMS.length * 100) + "%";
-  }
-
-  function markWrong(p) {
-    if (p.type === "choice") {
-      var opts = $("#answer").querySelectorAll(".lx-opt");
-      opts[S.picked].classList.add("wrong");
-      opts[S.picked].setAttribute("aria-pressed", "false");
-      S.picked = null;
-      $("#check").disabled = true;
-    } else {
-      $("#numIn").classList.add("wrong");
-    }
-  }
-
-  function reveal(p, ok) {
-    if (p.type === "choice") {
-      var opts = $("#answer").querySelectorAll(".lx-opt");
-      [].forEach.call(opts, function (o, i) {
-        o.disabled = true;
-        if (i === p.right) o.classList.add("right");
+    nodes.forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (lock || b.classList.contains("gone") || b === sel) return;
+        if (!sel) { sel = b; b.classList.add("pick"); return; }
+        var hit = sel.dataset.id === b.dataset.id && sel.dataset.term !== b.dataset.term;
+        if (hit) {
+          var a = sel; sel = null;
+          a.classList.remove("pick");
+          a.classList.add("hit"); b.classList.add("hit");
+          setTimeout(function () { a.classList.add("gone"); b.classList.add("gone"); }, 190);
+          if (--left === 0) finish();
+        } else {
+          lock = true;
+          var a2 = sel; sel = null;
+          a2.classList.remove("pick");
+          a2.classList.add("miss"); b.classList.add("miss");
+          setTimeout(function () {
+            a2.classList.remove("miss"); b.classList.remove("miss");
+            lock = false;
+          }, 380);
+        }
       });
-    } else {
-      var n = $("#numIn");
-      n.classList.remove("wrong");
-      n.classList.add(ok ? "right" : "wrong");
-      n.disabled = true;
-      if (!ok) n.value = p.right;
+    });
+
+    function finish() {
+      clearInterval(timer);
+      var secs = (performance.now() - start) / 1000;
+      var best = st.best == null || secs < st.best;
+      if (best) st.best = secs;
+      setTimeout(function () {
+        result({
+          title: secs.toFixed(1) + " seconds.",
+          lede: best ? "That is your best run on this set."
+                     : "Your best on this set is still " + st.best.toFixed(1) + "s.",
+          pct: 100,
+          stats: [[pick.length, "pairs"], [secs.toFixed(1), "seconds"],
+                  [(secs / pick.length).toFixed(1), "per pair"]],
+          back: function () { openSet(S.setId); },
+          again: startMatch
+        });
+      }, 420);
     }
-    $("#verdict").innerHTML =
-      '<div class="lx-verdict ' + (ok ? "right" : "wrong") + '">' +
-      '<b>' + (ok ? "That's it" : "The answer is " + (p.type === "choice" ? p.opts[p.right] : p.right)) + '</b>' +
-      '<p>' + p.why + '</p></div>';
+
+    noFoot(); progress(null);
+    show("match");
   }
 
-  function finish() {
-    var pct = Math.round(S.right / PROBLEMS.length * 100);
-    $("#sRight").textContent = S.right;
-    $("#sTotal").textContent = PROBLEMS.length;
-    $("#sFirst").textContent = S.first;
-    $("#ringPct").textContent = pct + "%";
-    $("#doneLede").textContent = pct === 100
-      ? "Every one. The next unit would open here."
-      : "The ones you missed come back later, spaced out, until they stop being misses.";
-    show("done");
+  /* ------------------------------------------------------------------ Test
+     Every question on one page, answered in any order, graded once — the
+     point of a test rather than a drill. */
+  function startTest() {
+    var cards = S.set.cards;
+    var n = Math.min(10, cards.length);
+    var pick = shuffle(cards.map(function (_, i) { return i; })).slice(0, n);
+    var qs = pick.map(function (ix, k) {
+      var kind = k % 5 === 4 ? "tf" : k % 2 === 0 ? "choice" : "written";
+      var c = cards[ix];
+      if (kind === "choice") {
+        var pool = cards.map(function (_, i) { return i; }).filter(function (i) { return i !== ix; });
+        var opts = shuffle([c[0]].concat(shuffle(pool).slice(0, 3).map(function (i) { return cards[i][0]; })));
+        return { kind: kind, ix: ix, q: c[1], opts: opts, right: c[0] };
+      }
+      if (kind === "tf") {
+        var lie = Math.random() < 0.5;
+        var other = cards[shuffle(cards.map(function (_, i) { return i; })
+                    .filter(function (i) { return i !== ix; }))[0]];
+        return { kind: kind, ix: ix, q: "<b>" + esc(c[0]) + "</b> — " + esc(lie ? other[1] : c[1]),
+                 right: lie ? "False" : "True" };
+      }
+      return { kind: kind, ix: ix, q: c[1], right: c[0] };
+    });
+    var answers = {};
+
+    var v = $("#v-test");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", esc(S.set.t)));
+    v.appendChild(el("h1", "lx-h1", "Test"));
+    v.appendChild(el("p", "lx-lede", n + " questions — written, multiple choice and true or false. " +
+      "Answer them in any order; nothing is marked until you submit."));
+
+    var form = el("div");
+    form.style.marginTop = "10px";
+    qs.forEach(function (q, i) {
+      var box = el("div", "lx-q");
+      box.innerHTML = '<p class="qn">Question ' + (i + 1) + " of " + n + " · " +
+        (q.kind === "written" ? "Written" : q.kind === "tf" ? "True or false" : "Multiple choice") +
+        '</p><p class="qt">' + (q.kind === "tf" ? q.q : esc(q.q)) + "</p>";
+
+      if (q.kind === "written") {
+        var w = el("div", "lx-numwrap");
+        var inp = el("input", "lx-num");
+        inp.type = "text"; inp.autocomplete = "off";
+        inp.setAttribute("aria-label", "Question " + (i + 1));
+        inp.placeholder = "The term";
+        inp.addEventListener("input", function () { answers[i] = inp.value.trim(); count(); });
+        w.appendChild(inp);
+        box.appendChild(w);
+      } else {
+        var opts = q.kind === "tf" ? ["True", "False"] : q.opts;
+        var wrap = el("div", q.kind === "tf" ? "lx-tf" : "lx-opts");
+        opts.forEach(function (o, j) {
+          var b = el("button", "lx-opt");
+          b.type = "button";
+          b.setAttribute("aria-pressed", "false");
+          b.innerHTML = '<span class="lx-key">' + (q.kind === "tf" ? "TF"[j] : "ABCD"[j]) +
+                        "</span><span>" + esc(o) + "</span>";
+          b.addEventListener("click", function () {
+            answers[i] = o;
+            [].forEach.call(wrap.children, function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+            count();
+          });
+          wrap.appendChild(b);
+        });
+        box.appendChild(wrap);
+      }
+      form.appendChild(box);
+    });
+    v.appendChild(form);
+
+    function count() {
+      var done = Object.keys(answers).filter(function (k) { return answers[k]; }).length;
+      foot(done + " of " + n + " answered", "Submit test", done > 0, grade);
+    }
+
+    function grade() {
+      var right = 0;
+      var review = qs.map(function (q, i) {
+        var a = answers[i] || "";
+        var ok = norm(a) === norm(q.right);
+        if (ok) right++;
+        return { q: q, a: a, ok: ok };
+      });
+      var pct = Math.round(right / n * 100);
+      var st = setState(S.setId);
+      review.forEach(function (r) { if (r.ok) st.level[r.q.ix] = Math.max(st.level[r.q.ix] || 0, 2); });
+      if (S.course && S.unitIx) bump(S.course, S.unitIx, pct >= 90 ? 3 : pct >= 60 ? 2 : 1);
+
+      result({
+        title: pct + "% — " + right + " of " + n + ".",
+        lede: pct === 100 ? "Every one. Nothing left to review on this set."
+                          : "The ones below are worth another pass.",
+        pct: pct,
+        stats: [[right, "correct"], [n - right, "missed"], [n, "questions"]],
+        back: function () { openSet(S.setId); },
+        again: startTest,
+        review: review.map(function (r) {
+          return { ok: r.ok, term: cards[r.q.ix][0], yours: r.a,
+                   def: r.q.kind === "tf" ? cards[r.q.ix][1] : r.q.q };
+        })
+      });
+    }
+
+    count();
+    show("test");
+  }
+
+  /* -------------------------------------------------------------- Practice */
+  function startPractice() {
+    var P = D.PROBLEMS;
+    S.p = { i: 0, right: 0, first: 0, tries: 0, picked: null, checked: false };
+
+    var v = $("#v-practice");
+    v.innerHTML = '<div class="lx-stage">' +
+      '<p class="lx-ask" id="ask"></p><p class="lx-hint" id="hint"></p>' +
+      '<div class="lx-figure" id="figure" hidden></div>' +
+      '<div id="answer"></div><div id="verdict"></div></div>';
+
+    function drawQ() {
+      var p = P[S.p.i];
+      S.p.picked = null; S.p.checked = false; S.p.tries = 0;
+      progress(Math.round(S.p.i / P.length * 100));
+      $("#ask").innerHTML = p.ask;
+      $("#hint").innerHTML = p.hint || "";
+      $("#hint").hidden = !p.hint;
+      var fig = $("#figure");
+      fig.hidden = !p.fig; fig.innerHTML = p.fig || "";
+      $("#verdict").innerHTML = "";
+
+      var a = $("#answer"); a.innerHTML = "";
+      if (p.type === "choice") {
+        var wrap = el("div", "lx-opts");
+        p.opts.forEach(function (o, i) {
+          var b = el("button", "lx-opt");
+          b.type = "button";
+          b.setAttribute("aria-pressed", "false");
+          b.innerHTML = '<span class="lx-key">' + "ABCD"[i] + "</span><span>" + o + "</span>";
+          b.addEventListener("click", function () {
+            if (S.p.checked) return;
+            S.p.picked = i;
+            [].forEach.call(wrap.children, function (x, j) { x.setAttribute("aria-pressed", String(i === j)); });
+            $("#footBtn").disabled = false;
+          });
+          wrap.appendChild(b);
+        });
+        a.appendChild(wrap);
+      } else {
+        var w = el("div", "lx-numwrap");
+        var inp = el("input", "lx-num");
+        inp.type = "text"; inp.inputMode = "numeric"; inp.id = "numIn";
+        inp.setAttribute("aria-label", "Your answer");
+        inp.addEventListener("input", function () {
+          S.p.picked = inp.value.trim();
+          $("#footBtn").disabled = !S.p.picked;
+        });
+        inp.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !$("#footBtn").disabled) go();
+        });
+        w.appendChild(inp);
+        a.appendChild(w);
+        setTimeout(function () { inp.focus(); }, 60);
+      }
+      foot("Problem " + (S.p.i + 1) + " of " + P.length, "Check", false, go);
+    }
+
+    function go() {
+      var p = P[S.p.i];
+      if (S.p.checked) {
+        S.p.i++;
+        if (S.p.i >= P.length) return finish();
+        return drawQ();
+      }
+      S.p.tries++;
+      var ok = p.type === "choice"
+        ? S.p.picked === p.right
+        : String(S.p.picked).replace(/\s/g, "") === String(p.right);
+
+      if (!ok && S.p.tries === 1) {          // one free retry, then the answer
+        if (p.type === "choice") {
+          var opts = $("#answer").querySelectorAll(".lx-opt");
+          opts[S.p.picked].classList.add("wrong");
+          opts[S.p.picked].setAttribute("aria-pressed", "false");
+          S.p.picked = null;
+          $("#footBtn").disabled = true;
+        } else { $("#numIn").classList.add("wrong"); }
+        $("#verdict").innerHTML =
+          '<div class="lx-verdict wrong"><b>Not quite</b><p>Have another look — you get one more try.</p></div>';
+        return;
+      }
+
+      S.p.checked = true;
+      if (ok) { S.p.right++; if (S.p.tries === 1) S.p.first++; }
+
+      if (p.type === "choice") {
+        var os = $("#answer").querySelectorAll(".lx-opt");
+        [].forEach.call(os, function (o, i) {
+          o.disabled = true;
+          if (i === p.right) o.classList.add("right");
+        });
+      } else {
+        var nn = $("#numIn");
+        nn.classList.remove("wrong");
+        nn.classList.add(ok ? "right" : "wrong");
+        nn.disabled = true;
+        if (!ok) nn.value = p.right;
+      }
+      $("#verdict").innerHTML = '<div class="lx-verdict ' + (ok ? "right" : "wrong") + '"><b>' +
+        (ok ? "That's it" : "The answer is " + (p.type === "choice" ? p.opts[p.right] : p.right)) +
+        "</b><p>" + p.why + "</p></div>";
+      progress(Math.round((S.p.i + 1) / P.length * 100));
+      foot("Problem " + (S.p.i + 1) + " of " + P.length,
+           S.p.i === P.length - 1 ? "Finish" : "Next", true, go);
+    }
+
+    function finish() {
+      var pct = Math.round(S.p.right / P.length * 100);
+      bump(S.course, S.unitIx, pct >= 90 ? 3 : pct >= 60 ? 2 : 1);
+      progress(null);
+      var u = S.unit;
+      result({
+        title: pct === 100 ? "Every one." : pct + "% of the way.",
+        lede: pct === 100
+          ? "Nothing left to redo here. The study set is the other half of this unit."
+          : "The ones you missed come back later, spaced out, until they stop being misses.",
+        pct: pct,
+        stats: [[S.p.right, "correct"], [P.length, "problems"], [S.p.first, "first try"]],
+        back: function () { openUnit(S.course, S.unitIx); },
+        again: startPractice,
+        next: u && u.set ? { label: "Study the terms", go: function () { openSet(u.set); } } : null
+      });
+    }
+
+    show("practice");
+    drawQ();
+  }
+
+  /* ---------------------------------------------------------------- Result */
+  function result(o) {
+    var v = $("#v-result");
+    v.innerHTML = "";
+    var d = el("div", "lx-done");
+    var circ = 2 * Math.PI * 52;
+    d.innerHTML =
+      '<svg class="lx-ring" viewBox="0 0 120 120" aria-hidden="true">' +
+      '<circle cx="60" cy="60" r="52" fill="none" stroke="#e6e6e8" stroke-width="9"/>' +
+      '<circle id="ringArc" cx="60" cy="60" r="52" fill="none" stroke="#12915a" stroke-width="9" ' +
+      'stroke-linecap="round" stroke-dasharray="' + circ.toFixed(0) + '" stroke-dashoffset="' + circ.toFixed(0) + '" ' +
+      'transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .9s cubic-bezier(.32,.08,.24,1)"/>' +
+      '<text x="60" y="67" text-anchor="middle" font-size="25" font-weight="600" fill="#1d1d1f">' +
+      o.pct + "%</text></svg>" +
+      '<h1 class="lx-h1">' + esc(o.title) + "</h1>" +
+      '<p class="lx-lede" style="margin-inline:auto">' + esc(o.lede) + "</p>";
+
+    var sc = el("div", "lx-score");
+    o.stats.forEach(function (s) {
+      sc.innerHTML += "<div><b>" + s[0] + "</b><span>" + s[1] + "</span></div>";
+    });
+    d.appendChild(sc);
+
+    var row = el("div");
+    row.style.cssText = "display:flex;gap:10px;justify-content:center;flex-wrap:wrap";
+    if (o.next) {
+      var nb = el("button", "lx-btn lg", o.next.label);
+      nb.type = "button";
+      nb.addEventListener("click", o.next.go);
+      row.appendChild(nb);
+    }
+    if (o.again) {
+      var ab = el("button", "lx-btn lg quiet", "Again");
+      ab.type = "button";
+      ab.addEventListener("click", o.again);
+      row.appendChild(ab);
+    }
+    var bb = el("button", "lx-btn lg" + (o.next || o.again ? " quiet" : ""), "Back");
+    bb.type = "button";
+    bb.addEventListener("click", o.back);
+    row.appendChild(bb);
+    d.appendChild(row);
+
+    if (o.review) {
+      var rv = el("div", "lx-review");
+      o.review.forEach(function (r) {
+        var box = el("div", "lx-rev" + (r.ok ? "" : " bad"));
+        box.innerHTML = "<b>" + esc(r.term) + "</b><p>" + esc(r.def) + "</p>" +
+          (r.ok ? "" : '<p class="yours">You wrote: ' + (r.yours ? esc(r.yours) : "nothing") + "</p>");
+        rv.appendChild(box);
+      });
+      d.appendChild(rv);
+    }
+
+    v.appendChild(d);
+    S.resultBack = o.back;
+    noFoot();
+    show("result");
+    $("#backLabel").textContent = "Back";
     setTimeout(function () {
-      $("#ringArc").style.strokeDashoffset = String(327 - 327 * pct / 100);
-    }, 120);
+      var arc = document.getElementById("ringArc");
+      if (arc) arc.style.strokeDashoffset = String(circ - circ * o.pct / 100);
+    }, 130);
   }
 
-  /* ------------------------------------------------------------- Wiring */
-  $("#check").addEventListener("click", check);
-  $("#doneNext").addEventListener("click", function () { openCourse(S.course || SEEING); });
+  /* --------------------------------------------------------------- Account */
+  function openAccount() {
+    var A = D.ACCOUNT;
+    var v = $("#v-account");
+    v.innerHTML = "";
 
+    var head = el("div", "lx-acct-head");
+    head.innerHTML = '<span class="av">' + esc(A.initials) + "</span><div>" +
+      '<p class="lx-eyebrow" style="margin-bottom:4px">Student account</p>' +
+      '<h1 class="lx-h1">' + esc(A.student) + "</h1></div>";
+    v.appendChild(head);
+
+    var prog = el("div", "lx-panel");
+    prog.style.marginTop = "26px";
+    var stars = "";
+    for (var i = 0; i < 5; i++) stars += svg(I.star, i >= Math.round(A.rating));
+    prog.innerHTML = "<h3 style=\"font-size:17px\">" + esc(A.program) + "</h3>" +
+      '<div class="lx-stars">' + stars + "<span>" + A.rating + " · " + A.ratings + " ratings</span>" +
+      '<span class="lx-tag" style="margin-left:6px">' + esc(A.status) + "</span></div>" +
+      '<div class="lx-mastery" style="margin-top:16px"><i></i><i></i><i></i><i></i><i></i>' +
+      "<i></i><i></i><i></i><i></i><i></i></div>" +
+      '<p style="margin-top:10px">Program progress is ' + A.progress + "%. It is calculated from completed " +
+      "course credits — courses passed, with or without a grade — against the credits required to graduate.</p>";
+    v.appendChild(prog);
+
+    var row = el("div", "lx-stat-row");
+    A.stats.forEach(function (s) {
+      row.innerHTML += '<div class="lx-stat"><b>' + esc(s[1]) + "</b><span>" + esc(s[0]) + "</span></div>";
+    });
+    v.appendChild(row);
+
+    A.detail.forEach(function (group) {
+      v.appendChild(el("h2", "lx-h2", esc(group[0])));
+      var f = el("div", "lx-fields");
+      group[1].forEach(function (r) {
+        f.innerHTML += "<div><b>" + esc(r[0]) + "</b><span>" + esc(r[1]) + "</span></div>";
+      });
+      v.appendChild(f);
+    });
+
+    var bal = el("div", "lx-bal");
+    bal.innerHTML = '<div><p class="k">Tuition balance due</p><p class="amt">$1,755.00</p></div>';
+    var pay = el("button", "lx-btn lg", "Make a payment");
+    pay.type = "button";
+    pay.style.marginLeft = "auto";
+    pay.addEventListener("click", function () {
+      toast("Demo account — there is no payment system behind this button.");
+    });
+    bal.appendChild(pay);
+    v.appendChild(bal);
+
+    v.appendChild(el("h2", "lx-h2", "Courses"));
+    var cg = el("div", "lx-units");
+    A.courses.forEach(function (name) {
+      var b = el("button", "lx-unit");
+      b.type = "button";
+      b.innerHTML = '<span class="n">1</span><span class="txt"><b>' + esc(name) +
+        "</b><span>In progress · no grade recorded</span></span>" +
+        '<span class="go">' + svg(I.chev, true) + "</span>";
+      b.addEventListener("click", function () { openCourse(D.MEDIA); });
+      cg.appendChild(b);
+    });
+    v.appendChild(cg);
+
+    v.appendChild(el("p", "lx-note",
+      "<b>Demo record.</b> These figures are here to show the shape of an enrolment page. Nothing is " +
+      "submitted, no payment can be taken, and none of it is stored — reloading the page resets it."));
+
+    noFoot(); progress(null);
+    show("account");
+  }
+
+  /* ---------------------------------------------------------------- Wiring */
   [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
     b.addEventListener("click", function () {
-      if (b.dataset.view === "my") { drawMy(); show("my"); }
-      else { drawExplore(); show("explore"); }
+      S.stack = [];
+      markSubjectNav(null);
+      if (b.dataset.view === "my") { drawMy(); show("my", false); }
+      else { drawExplore(); show("explore", false); }
+      noFoot(); progress(null);
     });
   });
+  $("#back").addEventListener("click", goBack);
+  $("#user").addEventListener("click", openAccount);
 
-  // Back climbs one level: a lesson returns to its course, a course to the
-  // subject it came from, and a subject to the catalogue.
-  $("#back").addEventListener("click", function () {
-    if ($("#v-lesson").classList.contains("on") || $("#v-done").classList.contains("on")) {
-      if (S.unit) openUnit(S.course || SEEING, S.unit); else openCourse(S.course || SEEING);
-    } else if ($("#v-unit").classList.contains("on")) {
-      openCourse(S.course || SEEING);
-    } else if ($("#v-course").classList.contains("on")) {
-      var sub = SUBJECTS.filter(function (x) {
-        return S.course && x.n === S.course.subject;
-      })[0];
-      if (sub) openSubject(sub); else { drawExplore(); show("explore"); }
-    } else {
-      drawExplore(); show("explore");
-    }
-  });
-
-  $("#user").addEventListener("click", function () {
-    flash("Signed in as Saswat Ji — demo account, nothing is stored");
+  document.addEventListener("keydown", function (e) {
+    if (S.view === "cards" && S.keys) S.keys(e);
   });
 
   drawSubjectNav();
   drawMy();
-  show("my");
+  show("my", false);
 })();
