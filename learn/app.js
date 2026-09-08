@@ -468,9 +468,9 @@
     v.appendChild(t);
 
     v.appendChild(el("p", "lx-note",
-      "<b>Demo.</b> One unit is playable end to end and five study sets are complete. The rest carry " +
-      "a real syllabus with the lessons still to be written. Nothing is saved and nothing leaves this " +
-      'page. <a href="../edu/">About Oplo Edu &rsaquo;</a>'));
+      "<b>In progress.</b> Five study sets are written and one unit is playable end to end. The rest " +
+      "carry a real syllabus with the lessons still to be made. Your progress lasts for this session " +
+      'and is not sent anywhere. <a href="../edu/">About Oplo Edu &rsaquo;</a>'));
   }
 
   /* A session is assembled, not listed: review what is broken, learn the new
@@ -1535,7 +1535,7 @@
     pay.type = "button";
     pay.style.marginLeft = "auto";
     pay.addEventListener("click", function () {
-      toast("Demo account — there is no payment system behind this button.");
+      toast("Payments are not handled here yet. Nothing was charged.");
     });
     bal.appendChild(pay);
     v.appendChild(bal);
@@ -1554,42 +1554,91 @@
     v.appendChild(cg);
 
     v.appendChild(el("p", "lx-note",
-      "<b>Demo record.</b> These figures are here to show the shape of an enrolment page. Nothing is " +
-      "submitted, no payment can be taken, and none of it is stored — reloading the page resets it."));
+      "<b>Read only.</b> Enrolment and tuition figures are shown as they stand on the record. Nothing " +
+      "on this page can be edited here, and no payment can be taken yet."));
+
+    var out = el("button", "lx-btn lg quiet", "Sign out");
+    out.type = "button";
+    out.style.marginTop = "26px";
+    out.addEventListener("click", signOut);
+    v.appendChild(out);
 
     noFoot(); progress(null);
     show("account");
   }
 
-  /* ================================================================= Gate
-     Not authentication. A static page cannot keep a secret from the browser
-     it is running in, so this decides which student's material to open and
-     nothing more — the screen itself says so. The password is compared as a
-     salted SHA-256 rather than sitting in the source in plain text, which
-     keeps it out of a casual read of view-source without pretending to be
-     more than it is. */
-  function digest(pw) {
-    var data = new TextEncoder().encode("oplo-learn:" + pw);
-    if (!(window.crypto && crypto.subtle && crypto.subtle.digest)) return Promise.resolve(null);
-    return crypto.subtle.digest("SHA-256", data).then(function (buf) {
-      return [].map.call(new Uint8Array(buf), function (b) {
-        return ("0" + b.toString(16)).slice(-2);
-      }).join("");
-    });
-  }
+  /* ================================================================== Auth
+     Auth.verify is the seam. Today it derives a PBKDF2 verifier in the
+     browser and compares it in constant time; swapping in a real provider —
+     a server, Firebase, Supabase, anything that holds the verifier itself —
+     means replacing this one function and nothing else in the app.
 
-  function signIn(email, pw) {
-    var who = D.STUDENTS.filter(function (s) {
-      return s.email.toLowerCase() === String(email).trim().toLowerCase();
-    })[0];
-    if (!who) return Promise.resolve(null);
-    return digest(pw).then(function (h) {
-      // Without SubtleCrypto (an insecure origin, say) the gate cannot check
-      // anything, so it opens rather than locking a demo nobody can reach.
-      if (h == null) return who;
-      return h === who.hash ? who : null;
-    });
-  }
+     What the current implementation is honest about: a static host has no
+     server to check a password against, so the verifier ships to the browser
+     and can be read. PBKDF2 at 210,000 iterations makes each guess against it
+     cost real work rather than a table lookup, which is the difference
+     between a verifier leaking and a password leaking. It is not a substitute
+     for a server. */
+  var Auth = (function () {
+    var enc = new TextEncoder();
+
+    function b64(buf) {
+      return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
+    }
+    function unb64(s) {
+      return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); });
+    }
+    /* Compared byte by byte to the end regardless: bailing on the first
+       mismatch leaks how much of a guess was right through timing. */
+    function same(a, b) {
+      if (a.length !== b.length) return false;
+      var diff = 0;
+      for (var i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+      return diff === 0;
+    }
+
+    function derive(password, salt) {
+      return crypto.subtle
+        .importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"])
+        .then(function (key) {
+          return crypto.subtle.deriveBits(
+            { name: "PBKDF2", salt: salt, iterations: D.ITERATIONS, hash: "SHA-256" },
+            key, 256);
+        });
+    }
+
+    function verify(email, password) {
+      var who = D.STUDENTS.filter(function (s) {
+        return s.email.toLowerCase() === String(email).trim().toLowerCase();
+      })[0];
+      if (!(window.crypto && crypto.subtle && crypto.subtle.deriveBits)) {
+        return Promise.reject(new Error("insecure-context"));
+      }
+      // Derive either way, so a wrong address and a wrong password take the
+      // same time and neither can be told apart from outside.
+      var target = who || D.STUDENTS[0];
+      return derive(password, unb64(target.salt)).then(function (bits) {
+        if (!who) return null;
+        return same(new Uint8Array(bits), unb64(who.verifier)) ? who : null;
+      });
+    }
+
+    /* The session is the tab's, not the browser's: closing it signs out. */
+    var KEY = "oplo.learn.session";
+    function open(id) {
+      try { sessionStorage.setItem(KEY, id); } catch (e) { /* private mode */ }
+    }
+    function current() {
+      var id;
+      try { id = sessionStorage.getItem(KEY); } catch (e) { return null; }
+      return id ? D.STUDENTS.filter(function (s) { return s.id === id; })[0] || null : null;
+    }
+    function close() {
+      try { sessionStorage.removeItem(KEY); } catch (e) { /* nothing to clear */ }
+    }
+
+    return { verify: verify, open: open, current: current, close: close, b64: b64 };
+  })();
 
   function boot(who) {
     S.me = who;
@@ -1602,28 +1651,62 @@
     show("my", false);
   }
 
+  function signOut() {
+    Auth.close();
+    // Everything the session learned goes with it rather than sitting in
+    // memory for whoever opens the tab next.
+    S.me = null; S.m = {}; S.sets = {}; S.mistakes = []; S.stack = [];
+    S.course = null; S.unit = null; S.setId = null; S.set = null;
+    $("#gate").hidden = false;
+    $("#gEmail").value = ""; $("#gPass").value = "";
+    $("#gErr").textContent = "";
+    noFoot(); progress(null);
+    setTimeout(function () { $("#gEmail").focus(); }, 80);
+  }
+
   (function gate() {
-    var form = $("#gateForm"), err = $("#gErr");
+    var form = $("#gateForm"), err = $("#gErr"), btn = form.querySelector("button");
+    var tries = 0, until = 0;
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var email = $("#gEmail").value, pw = $("#gPass").value;
       err.textContent = "";
       $("#gEmail").classList.remove("bad");
       $("#gPass").classList.remove("bad");
-      if (!email || !pw) {
-        err.textContent = "Both fields, please.";
+
+      var wait = Math.ceil((until - Date.now()) / 1000);
+      if (wait > 0) {
+        err.textContent = "Too many attempts. Try again in " + wait +
+                          (wait === 1 ? " second." : " seconds.");
         return;
       }
-      signIn(email, pw).then(function (who) {
-        if (who) { boot(who); return; }
-        err.textContent = "That email and password do not match an account here.";
+      if (!email || !pw) { err.textContent = "Both fields, please."; return; }
+
+      btn.disabled = true;
+      btn.textContent = "Checking\u2026";
+      Auth.verify(email, pw).then(function (who) {
+        btn.disabled = false;
+        btn.textContent = "Sign in";
+        if (who) { tries = 0; Auth.open(who.id); boot(who); return; }
+        tries++;
+        // Backs off after three: 5s, 10s, 20s, capped at a minute.
+        if (tries >= 3) until = Date.now() + Math.min(60000, 5000 * Math.pow(2, tries - 3));
+        err.textContent = "That email and password do not match an account.";
         $("#gEmail").classList.add("bad");
         $("#gPass").classList.add("bad");
         $("#gPass").value = "";
         $("#gPass").focus();
+      }).catch(function () {
+        btn.disabled = false;
+        btn.textContent = "Sign in";
+        err.textContent = "This page needs a secure connection (https) to check a password.";
       });
     });
-    setTimeout(function () { $("#gEmail").focus(); }, 120);
+
+    var already = Auth.current();
+    if (already) boot(already);
+    else setTimeout(function () { $("#gEmail").focus(); }, 120);
   })();
 
   /* ---------------------------------------------------------------- Wiring */

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Oplo Learn — curriculum, study sets and the demo enrolment record.
+   Oplo Learn — curriculum, study sets, accounts and enrolment records.
    Content only. Nothing here touches the DOM; app.js renders it.
    ========================================================================== */
 window.OPLO = (function () {
@@ -260,20 +260,35 @@ window.OPLO = (function () {
   };
 
   /* ------------------------------------------------------------- Students
-     A static site cannot authenticate anybody: everything shipped to the
-     browser is readable by whoever asks for it. This gate exists so a demo
-     opens on the right student's material, and the sign-in screen says as
-     much rather than implying a password protects something.
+     One account. There is no demo login and no shared password.
 
-     The password is stored as SHA-256 of "oplo-learn:" + the password, so it
-     is at least not sitting in the source in plain text. Regenerate with:
-       python3 -c "import hashlib;print(hashlib.sha256(b'oplo-learn:NEW').hexdigest())"
+     A word on what this can and cannot be. oplocloud.com is served as static
+     files, so there is no server here to check a password against — whatever
+     the page needs in order to verify one has to be shipped to the browser
+     first, where anyone can read it. That is a property of the hosting, not
+     a shortcut taken here, and no amount of client-side work changes it.
+
+     What it does instead is the strongest thing available without a server:
+     the password is never stored, only a PBKDF2-SHA256 verifier over a random
+     per-account salt at 210,000 iterations. Guessing against that costs real
+     time per attempt rather than being a lookup, so the verifier leaking is
+     not the same as the password leaking. Real authentication — a server that
+     holds the verifier and hands back a signed session — is a hosting change,
+     and Auth.verify in app.js is the one function it would replace.
+
+     To set a password:
+       python3 -c "import hashlib,os,base64 as b;s=os.urandom(16);\
+       print(b.b64encode(s).decode(), b.b64encode(hashlib.pbkdf2_hmac(\
+       'sha256', b'PASSWORD', s, 210000, 32)).decode())"
   */
+  var ITERATIONS = 210000;
+
   var STUDENTS = [{
     id: "sehej",
     name: "Sehej Kaur", initials: "SK", first: "Sehej",
     email: "sehejkaur776@gmail.com",
-    hash: "1a95ced92bd9fa73e66f9af7594506f13414baf5f60bf8aaa9f7539800f5079c",
+    salt: "hei4SKXhMbLKO8AJsHrndA==",
+    verifier: "aSY04AWAeRgSJfXn8Lg1nZcIOicjXw4tLiwv+OwC9bE=",
     assigned: ["media"],
     grade: 11,
     enrolment: {
@@ -311,6 +326,6 @@ window.OPLO = (function () {
     }
   }];
 
-  return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE,
+  return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE, ITERATIONS: ITERATIONS,
            SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, STUDENTS: STUDENTS };
 })();

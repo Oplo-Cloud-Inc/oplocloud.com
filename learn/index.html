@@ -36,9 +36,10 @@
       <p class="err" id="gErr" role="alert"></p>
     </form>
     <p class="fine">
-      This is a demo. A page like this one cannot really authenticate anybody — everything it sends to
-      your browser can be read by whoever asks for it — so treat this as a way of opening the right
-      student&rsquo;s courses, not as a lock. Nothing behind it is private, saved, or sent anywhere.
+      Your password is never stored or sent anywhere &mdash; it is checked against a
+      PBKDF2&nbsp;verifier in your own browser. Because this site is served as static files, that check
+      happens on your device rather than on a server, so treat it as a lock on the door rather than a
+      safe. Your session ends when you close the tab.
     </p>
   </div>
 </div>
@@ -68,8 +69,8 @@
       <span id="streak">4</span>
     </span>
     <button class="lx-user" type="button" id="user">
-      <span class="av" aria-hidden="true">SJ</span>
-      <span class="nm">Saswat Ji</span>
+      <span class="av" aria-hidden="true"></span>
+      <span class="nm"></span>
     </button>
   </div>
   <div class="lx-subbar" id="subbar">
