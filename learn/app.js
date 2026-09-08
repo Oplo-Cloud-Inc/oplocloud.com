@@ -40,7 +40,8 @@
   var S = {
     me: null,             // the signed-in student
     view: "my",
-    stack: [],            // where Back goes, innermost last
+    here: null,           // the place you are, with a closure that rebuilds it
+    hist: [],             // the places behind you, innermost last
     course: null, unit: null, unitIx: 0,
     setId: null, set: null,
     m: {},                // "courseId:unit" -> {u,p,r,a} as percentages
@@ -77,24 +78,45 @@
            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + "</svg>";
   }
 
-  /* --------------------------------------------------------------- Router */
-  var LABEL = {
-    my: "Home", explore: "Explore", subject: "Subject", course: "Course",
-    unit: "Unit", set: "Study set", cards: "Flashcards", learn: "Learn",
-    match: "Match", test: "Test", practice: "Practice", result: "Results",
-    account: "Account", mistakes: "Mistake book"
-  };
+  /* --------------------------------------------------------------- Router
+     History is a stack of places, not of view names. Each entry carries a
+     closure that rebuilds that exact screen — this course, this unit, this
+     set — so Back retraces the path you actually took rather than re-running
+     whichever course happens to be in state now. It also carries a label, so
+     the button names where you are going instead of saying "Back". */
 
-  function show(view, push) {
-    if (push !== false && S.view !== view) S.stack.push(S.view);
+  function trim(t, n) {
+    t = String(t);
+    return t.length > (n || 20) ? t.slice(0, (n || 20) - 1).trim() + "\u2026" : t;
+  }
+
+  function enter(key, label, restore, replace) {
+    if (S.here && S.here.key === key) { S.here.restore = restore; return; }
+    // A finished run is not a place to go back into, so the screen that
+    // reports it replaces the run rather than stacking on top of it.
+    if (!replace && S.here) {
+      S.hist.push(S.here);
+      if (S.hist.length > 40) S.hist.shift();
+    }
+    S.here = { key: key, label: label, restore: restore };
+  }
+
+  function root(key, label, restore) {
+    S.hist = [];
+    S.here = { key: key, label: label, restore: restore };
+  }
+
+  function show(view) {
     S.view = view;
     [].forEach.call(document.querySelectorAll(".lx-view"), function (v) {
       v.classList.toggle("on", v.id === "v-" + view);
     });
-    var home = view === "my" || view === "explore";
-    $("#back").hidden = home;
-    if (!home) $("#backLabel").textContent = LABEL[S.stack[S.stack.length - 1]] || "Back";
-    $("#subbar").hidden = !home && view !== "subject";
+    var prev = S.hist[S.hist.length - 1];
+    $("#back").hidden = !prev;
+    if (prev) $("#backLabel").textContent = prev.label;
+    // The subject bar belongs to browsing. The home screen is a personal
+    // command centre, and a catalogue across the top of it is just noise.
+    $("#subbar").hidden = !(view === "explore" || view === "subject");
     $("#wrap").classList.toggle("wide", view === "match");
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
       b.setAttribute("aria-current", String(b.dataset.view === view));
@@ -103,23 +125,21 @@
   }
 
   function goBack() {
-    // A result screen is not a place you navigate back through: the run that
-    // produced it is over, so Back goes wherever the result points.
-    if (S.view === "result" && S.resultBack) {
-      S.stack.pop();
-      var f = S.resultBack; S.resultBack = null; f();
-      return;
-    }
-    var to = S.stack.pop() || "my";
-    // Rebuild the destination rather than revealing a stale one.
-    var draw = {
-      my: drawMy, explore: drawExplore,
-      subject: function () { openSubject(S.subject, false); },
-      course: function () { openCourse(S.course, false); },
-      unit: function () { openUnit(S.course, S.unitIx, false); },
-      set: function () { openSet(S.setId, false); }
-    }[to];
-    if (draw) draw(); else show(to, false);
+    var prev = S.hist.pop();
+    if (!prev) { home(); return; }
+    S.here = prev;
+    prev.restore();
+  }
+
+  function home() {
+    root("my", "Home", home);
+    drawMy();
+    show("my");
+  }
+  function explore() {
+    root("explore", "Explore", explore);
+    drawExplore();
+    show("explore");
   }
 
   function foot(msg, label, on, handler) {
@@ -450,7 +470,7 @@
       var mb = el("button", "lx-btn", "Practise my mistakes");
       mb.type = "button";
       mb.style.marginTop = "14px";
-      mb.addEventListener("click", openMistakes);
+      mb.addEventListener("click", function () { openMistakes(); });
       v.appendChild(mb);
     }
 
@@ -479,7 +499,7 @@
     var out = [];
     if (S.mistakes.length) {
       out.push({ t: "Review what you missed", d: S.mistakes.length + " to go back over",
-                 mins: 5, icon: I.learn, go: openMistakes });
+                 mins: 5, icon: I.learn, go: function () { openMistakes(); } });
     }
     if (!step) return out;
     var c = step.course, u = step.weak
@@ -501,7 +521,8 @@
   }
 
   /* ------------------------------------------------------- Mistake book */
-  function openMistakes() {
+  function openMistakes(silent) {
+    if (!silent) enter("mistakes", "Mistake book", function () { openMistakes(true); });
     var v = $("#v-mistakes");
     v.innerHTML = "";
     v.appendChild(el("p", "lx-eyebrow", "Mistake book"));
@@ -583,7 +604,7 @@
     n.innerHTML = "";
     var all = el("button", null, "All");
     all.type = "button";
-    all.addEventListener("click", function () { drawExplore(); show("explore"); });
+    all.addEventListener("click", explore);
     n.appendChild(all);
     D.SUBJECTS.forEach(function (s) {
       var b = el("button", null, esc(s.n));
@@ -598,8 +619,9 @@
     });
   }
 
-  function openSubject(s, push) {
-    if (!s) { drawExplore(); show("explore", push); return; }
+  function openSubject(s, silent) {
+    if (!s) { explore(); return; }
+    if (!silent) enter("subject:" + s.n, s.n, function () { openSubject(s, true); });
     S.subject = s;
     var v = $("#v-subject");
     v.innerHTML = "";
@@ -611,12 +633,13 @@
     s.courses.forEach(function (c) { g.appendChild(courseCard(c)); });
     v.appendChild(g);
     markSubjectNav(s.n);
-    show("subject", push);
+    show("subject");
   }
 
   /* ---------------------------------------------------------------- Course */
-  function openCourse(c, push) {
+  function openCourse(c, silent) {
     if (!c) return;
+    if (!silent) enter("course:" + c.id, trim(c.t), function () { openCourse(c, true); });
     S.course = c;
     var v = $("#v-course");
     v.innerHTML = "";
@@ -719,15 +742,15 @@
 
     markSubjectNav(c.subject);
     noFoot(); progress(null);
-    show("course", push);
+    show("course");
   }
 
   /* ------------------------------------------------------------------ Unit */
-  function openUnit(c, n, push) {
-    S.course = c; S.unitIx = n;
+  function openUnit(c, n, silent) {
     var u = unitsOf(c).filter(function (x) { return x.n === n; })[0];
     if (!u) return;
-    S.unit = u;
+    if (!silent) enter("unit:" + c.id + ":" + n, trim(u.t), function () { openUnit(c, n, true); });
+    S.course = c; S.unitIx = n; S.unit = u;
 
     var v = $("#v-unit");
     v.innerHTML = "";
@@ -747,7 +770,7 @@
         '<span class="txt"><b>' + esc(u.t) + "</b><span>" + D.PROBLEMS.length +
         " problems · about 5 minutes</span></span>" +
         '<span class="ic">' + svg(I.chev, true) + "</span>";
-      pb.addEventListener("click", startPractice);
+      pb.addEventListener("click", function () { startPractice(); });
       b1.appendChild(pb);
       v.appendChild(b1);
     }
@@ -777,11 +800,12 @@
     }
 
     noFoot(); progress(null);
-    show("unit", push);
+    show("unit");
   }
 
   /* ================================================================= Sets */
-  function openSet(id, push) {
+  function openSet(id, silent) {
+    if (!silent) enter("set:" + id, trim(D.SETS[id].t), function () { openSet(id, true); });
     S.setId = id; S.set = D.SETS[id];
     var st = setState(id), cards = S.set.cards;
     var v = $("#v-set");
@@ -800,7 +824,7 @@
       var b = el("button", "lx-mode");
       b.type = "button";
       b.innerHTML = svg(m[2], true) + "<b>" + m[0] + "</b><span>" + m[1] + "</span>";
-      b.addEventListener("click", m[3]);
+      b.addEventListener("click", function () { m[3](); });
       modes.appendChild(b);
     });
     v.appendChild(modes);
@@ -826,11 +850,12 @@
     v.appendChild(terms);
 
     noFoot(); progress(null);
-    show("set", push);
+    show("set");
   }
 
   /* ----------------------------------------------------------- Flashcards */
-  function startCards() {
+  function startCards(again) {
+    enter("cards:" + S.setId, "Flashcards", function () { startCards(true); }, again);
     var cards = S.set.cards, order = cards.map(function (_, i) { return i; });
     var i = 0, flipped = false, shuffled = false;
     var known = {}, learning = {};
@@ -946,7 +971,8 @@
      recognise it backwards, then produce it from nothing. A wrong answer
      sends the term back to the start of the queue rather than to the end
      of the session — the ones you miss are the ones you see most. */
-  function startLearn() {
+  function startLearn(again) {
+    enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again);
     var cards = S.set.cards, st = setState(S.setId);
     var level = {}, queue = [];
     cards.forEach(function (_, i) { level[i] = 0; queue.push(i); });
@@ -1085,7 +1111,8 @@
   }
 
   /* ----------------------------------------------------------------- Match */
-  function startMatch() {
+  function startMatch(again) {
+    enter("match:" + S.setId, "Match", function () { startMatch(true); }, again);
     var st = setState(S.setId);
     var pick = shuffle(S.set.cards).slice(0, Math.min(6, S.set.cards.length));
     var tiles = [];
@@ -1173,7 +1200,8 @@
   /* ------------------------------------------------------------------ Test
      Every question on one page, answered in any order, graded once — the
      point of a test rather than a drill. */
-  function startTest() {
+  function startTest(again) {
+    enter("test:" + S.setId, "Test", function () { startTest(true); }, again);
     var cards = S.set.cards;
     var n = Math.min(10, cards.length);
     var pick = shuffle(cards.map(function (_, i) { return i; })).slice(0, n);
@@ -1288,7 +1316,9 @@
   }
 
   /* -------------------------------------------------------------- Practice */
-  function startPractice() {
+  function startPractice(again) {
+    enter("practice:" + S.course.id + ":" + S.unitIx, "Practice",
+          function () { startPractice(true); }, again);
     var P = D.PROBLEMS;
     S.p = { i: 0, right: 0, first: 0, tries: 0, picked: null, checked: false };
 
@@ -1456,7 +1486,7 @@
     if (o.again) {
       var ab = el("button", "lx-btn lg quiet", "Again");
       ab.type = "button";
-      ab.addEventListener("click", o.again);
+      ab.addEventListener("click", function () { o.again(true); });
       row.appendChild(ab);
     }
     var bb = el("button", "lx-btn lg" + (o.next || o.again ? " quiet" : ""), "Back");
@@ -1477,10 +1507,9 @@
     }
 
     v.appendChild(d);
-    S.resultBack = o.back;
+    enter("result", "Results", function () { result(o); }, true);
     noFoot();
     show("result");
-    $("#backLabel").textContent = "Back";
     setTimeout(function () {
       var arc = document.getElementById("ringArc");
       if (arc) arc.style.strokeDashoffset = String(circ - circ * o.pct / 100);
@@ -1488,7 +1517,8 @@
   }
 
   /* --------------------------------------------------------------- Account */
-  function openAccount() {
+  function openAccount(silent) {
+    if (!silent) enter("account", "Account", function () { openAccount(true); });
     var A = S.me.enrolment;
     A.student = S.me.name; A.initials = S.me.initials;
     var v = $("#v-account");
@@ -1647,15 +1677,15 @@
     document.querySelector(".lx-user .nm").textContent = who.name;
     $("#user").title = "Signed in as " + who.name;
     drawSubjectNav();
-    drawMy();
-    show("my", false);
+    home();
   }
 
   function signOut() {
     Auth.close();
     // Everything the session learned goes with it rather than sitting in
     // memory for whoever opens the tab next.
-    S.me = null; S.m = {}; S.sets = {}; S.mistakes = []; S.stack = [];
+    S.me = null; S.m = {}; S.sets = {}; S.mistakes = [];
+    S.here = null; S.hist = [];
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     $("#gate").hidden = false;
     $("#gEmail").value = ""; $("#gPass").value = "";
@@ -1712,15 +1742,13 @@
   /* ---------------------------------------------------------------- Wiring */
   [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
     b.addEventListener("click", function () {
-      S.stack = [];
       markSubjectNav(null);
-      if (b.dataset.view === "my") { drawMy(); show("my", false); }
-      else { drawExplore(); show("explore", false); }
       noFoot(); progress(null);
+      if (b.dataset.view === "my") home(); else explore();
     });
   });
   $("#back").addEventListener("click", goBack);
-  $("#user").addEventListener("click", openAccount);
+  $("#user").addEventListener("click", function () { openAccount(); });
 
   document.addEventListener("keydown", function (e) {
     if (S.view === "cards" && S.keys) S.keys(e);
