@@ -571,3 +571,135 @@ svg { display: block; }
   .lx-flip { min-height: 220px; aspect-ratio: 3 / 2; }
   .lx-face { padding: 24px; }
 }
+
+/* ============================================================== Sign in
+   A gate, not authentication. Everything a static page ships is readable by
+   whoever asks for it, so the screen says what it is instead of implying a
+   password is protecting something. */
+.lx-gate {
+  position: fixed; inset: 0; z-index: 90; background: var(--canvas);
+  display: grid; place-items: center; padding: 24px;
+  overflow-y: auto;
+}
+.lx-gate-in { width: min(100%, 380px); text-align: center; }
+.lx-gate .lx-mark { width: 38px; height: 38px; margin: 0 auto 26px; }
+.lx-gate h1 { font-family: var(--font); font-size: 28px; font-weight: 600; letter-spacing: -.018em; }
+.lx-gate .sub { margin-top: 10px; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+.lx-form { margin-top: 26px; display: grid; gap: 10px; text-align: left; }
+.lx-field label {
+  display: block; margin-bottom: 6px;
+  font-family: var(--font); font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+}
+.lx-field input {
+  width: 100%; height: 48px; padding: 0 15px; border-radius: 12px;
+  border: 1.5px solid var(--hair); background: var(--paper); color: var(--ink);
+  font-size: 16px; outline: none; -webkit-appearance: none; appearance: none;
+  transition: border-color .14s var(--ease), box-shadow .14s var(--ease);
+}
+.lx-field input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0,113,227,.14); }
+.lx-field input.bad { border-color: var(--red); }
+.lx-gate .lx-btn { width: 100%; margin-top: 6px; }
+.lx-gate .err {
+  margin-top: 12px; font-size: 13.5px; color: var(--red); min-height: 1.3em;
+}
+.lx-gate .fine {
+  margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--hair);
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-3);
+}
+
+/* ============================================== Home: command centre */
+.lx-hello { font-size: 15px; color: var(--ink-2); }
+.lx-next {
+  margin-top: 20px; padding: 24px 26px; border-radius: 18px;
+  background: var(--ink); color: #fff;
+}
+.lx-next .k { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.5); }
+.lx-next h2 {
+  font-family: var(--font); font-size: clamp(22px, 3vw, 28px); font-weight: 600;
+  letter-spacing: -.018em; margin-top: 6px;
+}
+.lx-next .why { margin-top: 8px; font-size: 14.5px; line-height: 1.5; color: rgba(255,255,255,.68); max-width: 54ch; }
+.lx-next .lx-btn { margin-top: 18px; background: #fff; color: var(--ink); }
+.lx-next .lx-btn:hover { background: #e8e8ea; }
+.lx-next .warn {
+  margin-top: 14px; padding: 12px 15px; border-radius: 11px;
+  background: rgba(255,255,255,.08); font-size: 13.5px; line-height: 1.5;
+  color: rgba(255,255,255,.8);
+}
+.lx-next .warn b { color: #fff; font-weight: 600; }
+
+/* Session plan */
+.lx-plan { display: grid; gap: 8px; margin-top: 15px; }
+.lx-step {
+  display: flex; align-items: center; gap: 13px; width: 100%; text-align: left;
+  padding: 13px 16px; border-radius: 12px; background: var(--paper);
+  border: 1px solid var(--hair);
+  transition: border-color .15s var(--ease), transform .15s var(--ease);
+}
+.lx-step:hover { border-color: var(--rule); transform: translateX(2px); }
+.lx-step .ic { width: 20px; height: 20px; flex: none; color: var(--blue); }
+.lx-step .txt { flex: 1; min-width: 0; }
+.lx-step .txt b { display: block; font-size: 14.5px; font-weight: 500; }
+.lx-step .txt span { display: block; margin-top: 1px; font-size: 12.5px; color: var(--ink-3); }
+.lx-step .mins { flex: none; font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lx-step.done { opacity: .55; }
+.lx-step.done .txt b { text-decoration: line-through; }
+
+/* Subject progress */
+.lx-bars { display: grid; gap: 13px; margin-top: 15px; }
+.lx-barrow { display: grid; grid-template-columns: 118px 1fr 44px; gap: 14px; align-items: center; }
+.lx-barrow b { font-family: var(--font); font-size: 14px; font-weight: 500; }
+.lx-barrow .track { height: 8px; border-radius: 100px; background: var(--sunk); overflow: hidden; }
+.lx-barrow .track i { display: block; height: 100%; border-radius: 100px; background: var(--blue);
+                      transition: width .7s var(--ease); }
+.lx-barrow .pc { font-size: 13px; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .lx-barrow { grid-template-columns: 92px 1fr 40px; gap: 10px; } }
+
+/* ================================================ Mastery, four ways */
+.lx-dims { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 16px; }
+@media (max-width: 620px) { .lx-dims { grid-template-columns: repeat(2, 1fr); } }
+.lx-dim { text-align: center; }
+.lx-dim svg { width: 62px; height: 62px; margin: 0 auto 8px; }
+.lx-dim b { display: block; font-family: var(--font); font-size: 13px; font-weight: 600; }
+.lx-dim span { display: block; margin-top: 2px; font-size: 11.5px; color: var(--ink-3); }
+
+/* ==================================================== Knowledge map */
+.lx-map { margin-top: 16px; overflow-x: auto; padding-bottom: 6px; }
+.lx-map svg { min-width: 520px; }
+.lx-map .node { cursor: pointer; }
+.lx-map .node rect { transition: stroke .15s var(--ease); }
+.lx-map .node:hover rect { stroke: var(--ink); }
+
+/* ==================================================== Mistake book */
+.lx-mistakes { display: grid; gap: 9px; margin-top: 15px; }
+.lx-mistake {
+  display: flex; align-items: flex-start; gap: 13px;
+  padding: 14px 17px; border-radius: 12px; background: var(--paper);
+  border: 1px solid var(--hair); border-left: 3px solid var(--red);
+}
+.lx-mistake .txt { flex: 1; min-width: 0; }
+.lx-mistake b { display: block; font-family: var(--font); font-size: 14.5px; font-weight: 600; }
+.lx-mistake p { margin-top: 3px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.lx-mistake .n {
+  flex: none; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums;
+}
+.lx-empty {
+  margin-top: 15px; padding: 22px; border-radius: 13px; background: var(--paper);
+  border: 1px dashed var(--rule); text-align: center; font-size: 14px; color: var(--ink-2);
+}
+
+/* ======================================================== AI tutor */
+.lx-tutor {
+  margin-top: 26px; padding: 22px 24px; border-radius: 16px;
+  background: var(--paper); border: 1px solid var(--hair);
+}
+.lx-tutor-head { display: flex; align-items: center; gap: 11px; }
+.lx-tutor-head svg { width: 20px; height: 20px; color: var(--blue); }
+.lx-tutor-head b { font-family: var(--font); font-size: 15px; font-weight: 600; }
+.lx-tutor p { margin-top: 10px; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); max-width: 58ch; }
+.lx-modes-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 15px; }
+.lx-modes-row span {
+  display: inline-flex; align-items: center; height: 27px; padding: 0 11px;
+  border-radius: 100px; background: var(--canvas); color: var(--ink-2);
+  font-size: 12.5px; font-weight: 500;
+}

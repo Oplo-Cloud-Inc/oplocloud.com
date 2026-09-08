@@ -162,7 +162,7 @@ window.OPLO = (function () {
     "Functions of Money and Banking"];
 
   var SEEING = {
-    id: "seeing", t: "Seeing numbers", hue: BLUE, subject: "Math", level: "Beginner", enrolled: true,
+    id: "seeing", t: "Seeing numbers", hue: BLUE, subject: "Math", level: "Beginner",
     d: "Arithmetic you can look at. Arrays, areas and patterns, done by noticing rather than calculating.",
     lede: "Most arithmetic is taught as a procedure. This course does it as a picture — once you can see why a rule works, you stop needing to remember it.",
     glyph: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
@@ -178,7 +178,7 @@ window.OPLO = (function () {
 
   var MEDIA = {
     id: "media", t: "Media Arts", hue: "#8f5cff", subject: "English", level: "Introductory",
-    enrolled: true, tag: "Arts and Design",
+    tag: "Arts and Design",
     d: "Design, photography, video, animation and sound — the media you use every day, taken apart.",
     lede: "Media arts are everywhere, which is exactly why they go unnoticed. This course covers the history and the practice: design principles, digital media and the web, photography, video, animation and audio production.",
     glyph: '<circle cx="12" cy="12" r="3.4"/><path d="M3 8.5h3.5L8.5 6h7l2 2.5H21v10H3z"/>',
@@ -197,7 +197,7 @@ window.OPLO = (function () {
 
   var BIZ = {
     id: "biz", t: "Introduction to Business", hue: "#e8a317", subject: "Social Studies",
-    level: "Introductory", enrolled: true, tag: "Two semesters",
+    level: "Introductory", tag: "Two semesters",
     d: "Planning and launching something real — economics, structure, money and the plan that holds it together.",
     lede: "What it actually takes to plan and launch a product or service. Economics, costs and profit, business types, money and taxes, financing, and how a business sits inside the society around it — built toward writing a plan you could hand to somebody.",
     glyph: '<path d="M3 20h18M6 20V9l6-4 6 4v11"/><path d="M10 20v-5h4v5"/>',
@@ -248,44 +248,69 @@ window.OPLO = (function () {
         stub("civ",  "Civics",        "Social Studies", "#e8a317", "How power is arranged, checked, and used where you live.", GLOBE)] }
   ];
 
-  /* --------------------------------------------------------- Enrolment
-     The account record, in the shape a student information system actually
-     presents one. Demo data on a demo page: nothing here is submitted, and
-     the payment control says so rather than pretending to take money. */
-  var ACCOUNT = {
-    student: "Saswat Ji", initials: "SJ",
-    program: "High School Silver Program (Full Year)",
-    rating: 4.8, ratings: 45,
-    status: "New/Unprocessed", progress: 0,
-    stats: [
-      ["Credits earned", "0.00 / 21.50"],
-      ["Weighted GPA", "N/A"],
-      ["Unweighted GPA", "0.00"],
-      ["Current grade level", "11"],
-      ["Documents received", "No"]
-    ],
-    detail: [
-      ["Enrollment", [
-        ["Enrollment ID", "EHS-en26-6695e"],
-        ["Program ID", "pgm-23-003b"],
-        ["Enrollment date", "August 28, 2026"],
-        ["Expiration date", "August 28, 2027"],
-        ["Last date of attendance", "September 8, 2026"],
-        ["Records release", "N/A"],
-        ["Date of birth", "August 20, 2010"]
-      ]],
-      ["Tuition", [
-        ["Program cost", "$1,950.00"],
-        ["Tuition balance due", "$1,755.00"],
-        ["Additional fees due", "$0.00"],
-        ["Total installments", "10"],
-        ["Installments remaining", "9"],
-        ["Next payment due", "September 29, 2026"]
-      ]]
-    ],
-    courses: ["Media Arts EHS"]
+  /* ------------------------------------------------------- Prerequisites
+     Which unit has to be understood before another one makes sense. The
+     knowledge map draws this, and "your next step" walks it — a unit whose
+     ground has not been laid is not the next thing to do, however far down
+     the list you are. */
+  var PRE = {
+    media: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [2], 7: [6], 8: [6], 9: [5, 7] },
+    seeing: { 1: [], 2: [1], 3: [2] },
+    biz: {}
   };
 
-  return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P,
-           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, ACCOUNT: ACCOUNT };
+  /* ------------------------------------------------------------- Students
+     A static site cannot authenticate anybody: everything shipped to the
+     browser is readable by whoever asks for it. This gate exists so a demo
+     opens on the right student's material, and the sign-in screen says as
+     much rather than implying a password protects something.
+
+     The password is stored as SHA-256 of "oplo-learn:" + the password, so it
+     is at least not sitting in the source in plain text. Regenerate with:
+       python3 -c "import hashlib;print(hashlib.sha256(b'oplo-learn:NEW').hexdigest())"
+  */
+  var STUDENTS = [{
+    id: "sehej",
+    name: "Sehej Kaur", initials: "SK", first: "Sehej",
+    email: "sehejkaur776@gmail.com",
+    hash: "1a95ced92bd9fa73e66f9af7594506f13414baf5f60bf8aaa9f7539800f5079c",
+    assigned: ["media"],
+    grade: 11,
+    enrolment: {
+      program: "High School Silver Program (Full Year)",
+      rating: 4.8, ratings: 45,
+      status: "New/Unprocessed", progress: 0,
+      stats: [
+        ["Credits earned", "0.00 / 21.50"],
+        ["Weighted GPA", "N/A"],
+        ["Unweighted GPA", "0.00"],
+        ["Current grade level", "11"],
+        ["Documents received", "No"]
+      ],
+      detail: [
+        ["Enrollment", [
+          ["Enrollment ID", "EHS-en26-6695e"],
+          ["Program ID", "pgm-23-003b"],
+          ["Enrollment date", "August 28, 2026"],
+          ["Expiration date", "August 28, 2027"],
+          ["Last date of attendance", "September 8, 2026"],
+          ["Records release", "N/A"],
+          ["Date of birth", "August 20, 2010"]
+        ]],
+        ["Tuition", [
+          ["Program cost", "$1,950.00"],
+          ["Tuition balance due", "$1,755.00"],
+          ["Additional fees due", "$0.00"],
+          ["Total installments", "10"],
+          ["Installments remaining", "9"],
+          ["Next payment due", "September 29, 2026"]
+        ]]
+      ],
+      balance: "$1,755.00",
+      courses: ["Media Arts EHS"]
+    }
+  }];
+
+  return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE,
+           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, STUDENTS: STUDENTS };
 })();

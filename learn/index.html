@@ -15,6 +15,34 @@
 </head>
 <body>
 
+<div class="lx-gate" id="gate">
+  <div class="lx-gate-in">
+    <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
+      <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
+    </svg>
+    <h1>Sign in to Oplo Learn</h1>
+    <p class="sub">Your courses, your pace, your own path through them.</p>
+    <form class="lx-form" id="gateForm" novalidate>
+      <div class="lx-field">
+        <label for="gEmail">Email</label>
+        <input id="gEmail" name="email" type="email" autocomplete="username"
+               autocapitalize="none" spellcheck="false" required>
+      </div>
+      <div class="lx-field">
+        <label for="gPass">Password</label>
+        <input id="gPass" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="lx-btn lg" type="submit">Sign in</button>
+      <p class="err" id="gErr" role="alert"></p>
+    </form>
+    <p class="fine">
+      This is a demo. A page like this one cannot really authenticate anybody — everything it sends to
+      your browser can be read by whoever asks for it — so treat this as a way of opening the right
+      student&rsquo;s courses, not as a lock. Nothing behind it is private, saved, or sent anywhere.
+    </p>
+  </div>
+</div>
+
 <header class="lx-bar">
   <div class="lx-bar-in">
     <button class="lx-back" id="back" type="button" hidden>
@@ -28,7 +56,7 @@
     <span class="lx-name">Oplo Learn</span>
 
     <nav class="lx-top" id="topNav" aria-label="Sections">
-      <button type="button" data-view="my" aria-current="true">My courses</button>
+      <button type="button" data-view="my" aria-current="true">Home</button>
       <button type="button" data-view="explore">Explore</button>
     </nav>
 
@@ -63,6 +91,7 @@
   <section class="lx-view" id="v-practice"></section>
   <section class="lx-view" id="v-result"></section>
   <section class="lx-view" id="v-account"></section>
+  <section class="lx-view" id="v-mistakes"></section>
 </main>
 
 <div class="lx-foot" id="foot" hidden>

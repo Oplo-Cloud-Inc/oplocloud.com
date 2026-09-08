@@ -38,12 +38,15 @@
 
   /* ---------------------------------------------------------------- State */
   var S = {
+    me: null,             // the signed-in student
     view: "my",
     stack: [],            // where Back goes, innermost last
     course: null, unit: null, unitIx: 0,
     setId: null, set: null,
-    mastery: {},          // "courseId:unitIndex" -> 0..3
+    m: {},                // "courseId:unit" -> {u,p,r,a} as percentages
     sets: {},             // setId -> { level: {}, star: {}, best: null }
+    mistakes: [],         // every wrong answer, kept and practisable
+    doneToday: {},        // which planned steps have been finished
     p: {}                 // the practice run in flight
   };
 
@@ -76,10 +79,10 @@
 
   /* --------------------------------------------------------------- Router */
   var LABEL = {
-    my: "My courses", explore: "Explore", subject: "Subject", course: "Course",
+    my: "Home", explore: "Explore", subject: "Subject", course: "Course",
     unit: "Unit", set: "Study set", cards: "Flashcards", learn: "Learn",
     match: "Match", test: "Test", practice: "Practice", result: "Results",
-    account: "Account"
+    account: "Account", mistakes: "Mistake book"
   };
 
   function show(view, push) {
@@ -148,7 +151,8 @@
     return D.SUBJECTS.reduce(function (a, s) { return a.concat(s.courses); }, []);
   }
   function enrolled() {
-    return allCourses().filter(function (c) { return c.enrolled; });
+    var mine = (S.me && S.me.assigned) || [];
+    return allCourses().filter(function (c) { return mine.indexOf(c.id) > -1; });
   }
   function unitsOf(c) {
     if (c.units) {
@@ -165,17 +169,156 @@
     });
     return out;
   }
+  /* Mastery is four different questions, and a single percentage answers
+     none of them well. Understanding and Practice come from working problems;
+     Recall from Learn and flashcards; Application from a graded test. A unit
+     is only scored on the dimensions it can actually offer. */
+  var DIMS = [["u", "Understanding"], ["p", "Practice"], ["r", "Recall"], ["a", "Application"]];
+
   function unitKey(c, n) { return c.id + ":" + n; }
-  function mastery(c, n) { return S.mastery[unitKey(c, n)] || 0; }
-  function bump(c, n, level) {
+  function dims(c, n) {
     var k = unitKey(c, n);
-    if ((S.mastery[k] || 0) < level) S.mastery[k] = level;
+    if (!S.m[k]) S.m[k] = { u: 0, p: 0, r: 0, a: 0 };
+    return S.m[k];
+  }
+  function offers(u) {
+    return { u: !!u.play, p: !!u.play, r: !!u.set, a: !!u.set };
+  }
+  function raise(c, n, dim, pct) {
+    var d = dims(c, n);
+    if (pct > d[dim]) d[dim] = Math.round(pct);
+  }
+  function mastery(c, n) {          // 0-100 across whatever this unit offers
+    var u = unitsOf(c).filter(function (x) { return x.n === n; })[0];
+    if (!u) return 0;
+    var av = offers(u), d = dims(c, n), sum = 0, count = 0;
+    DIMS.forEach(function (x) { if (av[x[0]]) { sum += d[x[0]]; count++; } });
+    return count ? Math.round(sum / count) : 0;
+  }
+  function band(pct) {              // for the mastery strip and the map
+    return pct >= 85 ? "master" : pct >= 50 ? "prof" : pct > 0 ? "fam" : "";
   }
   function coursePct(c) {
-    var us = unitsOf(c);
+    var us = unitsOf(c).filter(function (u) { return u.play || u.set; });
     if (!us.length) return 0;
-    var sum = us.reduce(function (a, u) { return a + mastery(c, u.n); }, 0);
-    return Math.round(sum / (us.length * 3) * 100);
+    return Math.round(us.reduce(function (a, u) { return a + mastery(c, u.n); }, 0) / us.length);
+  }
+  function subjectPct(name) {
+    var cs = enrolled().filter(function (c) { return c.subject === name; });
+    if (!cs.length) return null;
+    return Math.round(cs.reduce(function (a, c) { return a + coursePct(c); }, 0) / cs.length);
+  }
+
+  /* -------------------------------------------------------- Mistake book
+     Every wrong answer is kept, deduplicated, and counted. Getting the same
+     thing wrong three times is the most useful signal the platform has. */
+  function slip(kind, key, title, note) {
+    var hit = S.mistakes.filter(function (m) { return m.key === key; })[0];
+    if (hit) { hit.n++; hit.at = Date.now(); return; }
+    S.mistakes.push({ kind: kind, key: key, title: title, note: note, n: 1, at: Date.now() });
+  }
+
+  /* --------------------------------------------------------- Next step
+     Walks the prerequisite graph rather than the list order: a unit whose
+     ground has not been laid is not the next thing to do. */
+  function nextStep() {
+    var courses = enrolled(), best = null;
+    courses.forEach(function (c) {
+      var pre = (D.PRE || {})[c.id] || {};
+      unitsOf(c).forEach(function (u) {
+        if (!(u.play || u.set)) return;
+        var m = mastery(c, u.n);
+        if (m >= 85 || best) return;
+        var weak = (pre[u.n] || []).map(function (k) {
+          return { n: k, m: mastery(c, k) };
+        }).filter(function (x) { return x.m < 50; })[0];
+        best = { course: c, unit: u, pct: m, weak: weak };
+      });
+    });
+    return best;
+  }
+
+  /* Four dials rather than one bar. A dimension a unit cannot offer is not
+     drawn, because averaging in a zero nobody can earn is just a lie. */
+  function dimRow(c, units) {
+    var live = units.filter(function (u) { return u.play || u.set; });
+    if (!live.length) return "";
+    var out = '<div class="lx-dims">';
+    DIMS.forEach(function (dim) {
+      var able = live.filter(function (u) { return offers(u)[dim[0]]; });
+      var pct = able.length
+        ? Math.round(able.reduce(function (a, u) { return a + dims(c, u.n)[dim[0]]; }, 0) / able.length)
+        : null;
+      var circ = 2 * Math.PI * 26;
+      out += '<div class="lx-dim"><svg viewBox="0 0 64 64" aria-hidden="true">' +
+        '<circle cx="32" cy="32" r="26" fill="none" stroke="#e6e6e8" stroke-width="6"/>' +
+        (pct == null ? "" :
+          '<circle cx="32" cy="32" r="26" fill="none" stroke="' + c.hue + '" stroke-width="6" ' +
+          'stroke-linecap="round" stroke-dasharray="' + circ.toFixed(0) + '" stroke-dashoffset="' +
+          (circ - circ * pct / 100).toFixed(1) + '" transform="rotate(-90 32 32)"/>') +
+        '<text x="32" y="37" text-anchor="middle" font-size="15" font-weight="600" fill="#1d1d1f">' +
+        (pct == null ? "—" : pct) + "</text></svg><b>" + dim[1] + "</b><span>" +
+        (pct == null ? "not offered" : able.length + (able.length === 1 ? " unit" : " units")) +
+        "</span></div>";
+    });
+    return out + "</div>";
+  }
+
+  /* The prerequisite graph, drawn. Columns are depth, so an arrow always
+     points forward and the weak link is visible without reading anything. */
+  function mapFor(c, units) {
+    var pre = (D.PRE || {})[c.id];
+    if (!pre || !Object.keys(pre).length) return "";
+    var depth = {}, order = Object.keys(pre).map(Number).sort(function (a, b) { return a - b; });
+    order.forEach(function (k) {
+      depth[k] = (pre[k] || []).reduce(function (a, p) {
+        return Math.max(a, (depth[p] == null ? 0 : depth[p]) + 1);
+      }, 0);
+    });
+    var cols = {}, maxD = 0;
+    order.forEach(function (k) {
+      (cols[depth[k]] = cols[depth[k]] || []).push(k);
+      maxD = Math.max(maxD, depth[k]);
+    });
+    var colW = 132, rowH = 62, pad = 8;
+    var rows = Math.max.apply(null, Object.keys(cols).map(function (d) { return cols[d].length; }));
+    var w = (maxD + 1) * colW + pad, h = rows * rowH + pad;
+    var at = {};
+    Object.keys(cols).forEach(function (d) {
+      cols[d].forEach(function (k, i) {
+        at[k] = { x: +d * colW + pad, y: i * rowH + pad,
+                  cy: i * rowH + pad + 20, w: colW - 26 };
+      });
+    });
+    var edges = "", nodes = "";
+    var byN = {};
+    units.forEach(function (u) { byN[u.n] = u; });
+    order.forEach(function (k) {
+      (pre[k] || []).forEach(function (p) {
+        if (!at[p] || !at[k]) return;
+        var x1 = at[p].x + at[p].w, y1 = at[p].cy, x2 = at[k].x, y2 = at[k].cy;
+        edges += '<path d="M' + x1 + " " + y1 + " C" + (x1 + 14) + " " + y1 + " " +
+          (x2 - 14) + " " + y2 + " " + x2 + " " + y2 +
+          '" fill="none" stroke="#d2d2d7" stroke-width="1.4"/>';
+      });
+    });
+    var TONE = { master: c.hue, prof: "#61a8ee", fam: "#b8d8f7", "": "#ececee" };
+    order.forEach(function (k) {
+      var u = byN[k], a = at[k], m = mastery(c, k), b = band(m);
+      var live = u && (u.play || u.set);
+      nodes += '<g class="node" data-n="' + k + '" role="button" tabindex="0">' +
+        '<rect x="' + a.x + '" y="' + a.y + '" width="' + a.w + '" height="40" rx="9" ' +
+        'fill="#fff" stroke="#e6e6e8" stroke-width="1.2"/>' +
+        '<rect x="' + a.x + '" y="' + a.y + '" width="4" height="40" rx="2" fill="' +
+        (live ? TONE[b] : "#ececee") + '"/>' +
+        '<text x="' + (a.x + 13) + '" y="' + (a.y + 17) + '" font-size="11" font-weight="600" ' +
+        'fill="#1d1d1f">' + esc(String(u ? u.t : k).slice(0, 15)) +
+        (u && u.t.length > 15 ? "…" : "") + "</text>" +
+        '<text x="' + (a.x + 13) + '" y="' + (a.y + 31) + '" font-size="10" fill="#86868b">' +
+        (live ? m + "%" : "not written") + "</text></g>";
+    });
+    return '<div class="lx-map"><svg viewBox="0 0 ' + w + " " + h + '" width="' + w +
+           '" height="' + h + '">' + edges + nodes + "</svg></div>";
   }
 
   /* ------------------------------------------------------------ My courses */
@@ -203,36 +346,217 @@
     return b;
   }
 
+  function greeting() {
+    var h = new Date().getHours();
+    return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  }
+
   function drawMy() {
     var v = $("#v-my");
     v.innerHTML = "";
-    v.appendChild(el("h1", "lx-h1", "My courses"));
-    v.appendChild(el("p", "lx-lede", "Everything you are enrolled in. Pick up where you stopped."));
+    v.appendChild(el("p", "lx-hello", greeting() + ", " + esc(S.me.first) + "."));
+    v.appendChild(el("h1", "lx-h1", "Here is where you are."));
 
-    var c = D.SEEING, u = unitsOf(c)[0], m = mastery(c, 1);
-    var r = el("div", "lx-resume");
-    r.innerHTML =
-      '<div style="flex:1;min-width:230px">' +
-      '<p class="k">' + (m ? "Continue" : "Start here") + "</p>" +
-      "<h3>" + esc(c.t) + " · " + esc(u.t) + "</h3>" +
-      "<p>" + (m >= 3
-        ? "You have finished this unit. The study set is still there when you want it again."
-        : "Five problems, about five minutes. Then a study set of ten terms to make it stick.") + "</p></div>";
-    var go = el("button", "lx-btn lg", m ? "Continue" : "Start");
-    go.type = "button";
-    go.addEventListener("click", function () { openUnit(c, 1); });
-    r.appendChild(go);
-    v.appendChild(r);
+    /* ---- Your next step ------------------------------------------- */
+    var step = nextStep();
+    var next = el("div", "lx-next");
+    if (!step) {
+      next.innerHTML = '<p class="k">Nothing outstanding</p>' +
+        "<h2>You are on top of everything assigned.</h2>" +
+        '<p class="why">Every unit with material behind it is at mastery. Review keeps it there — ' +
+        "the study sets do not expire.</p>";
+    } else {
+      var target = step.weak
+        ? unitsOf(step.course).filter(function (x) { return x.n === step.weak.n; })[0]
+        : step.unit;
+      next.innerHTML = '<p class="k">Your next step</p>' +
+        "<h2>" + esc(step.course.t) + " · " + esc(target.t) + "</h2>" +
+        '<p class="why">' + (step.pct
+          ? "You are at " + step.pct + "% on this one. "
+          : "You have not started this one. ") +
+        esc(target.desc || "Work through it, then drill the terms until they stick.") + "</p>";
+      if (step.weak) {
+        next.appendChild(el("div", "warn",
+          "<b>First, factoring in the ground under it.</b> Unit " + step.weak.n + " is at " +
+          step.weak.m + "%, and " + esc(step.unit.t) + " leans on it. Strengthening that first is " +
+          "faster than pushing on and coming back."));
+      }
+      var go = el("button", "lx-btn lg", step.pct ? "Continue" : "Start");
+      go.type = "button";
+      go.addEventListener("click", function () { openUnit(step.course, target.n); });
+      next.appendChild(go);
+    }
+    v.appendChild(next);
 
-    v.appendChild(el("h2", "lx-h2", "Enrolled"));
+    /* ---- Today's session ------------------------------------------ */
+    var plan = session(step);
+    if (plan.length) {
+      v.appendChild(el("h2", "lx-h2", "Today"));
+      v.appendChild(el("p", "lx-lede",
+        "About " + plan.reduce(function (a, x) { return a + x.mins; }, 0) +
+        " minutes, in the order that gets the most out of them."));
+      var pl = el("div", "lx-plan");
+      plan.forEach(function (st) {
+        var b = el("button", "lx-step" + (st.done ? " done" : ""));
+        b.type = "button";
+        b.innerHTML = '<span class="ic">' + svg(st.icon, true) + "</span>" +
+          '<span class="txt"><b>' + esc(st.t) + "</b><span>" + esc(st.d) + "</span></span>" +
+          '<span class="mins">' + st.mins + " min</span>";
+        b.addEventListener("click", st.go);
+        pl.appendChild(b);
+      });
+      v.appendChild(pl);
+    }
+
+    /* ---- Progress by subject -------------------------------------- */
+    var subs = [];
+    D.SUBJECTS.forEach(function (sub) {
+      var pct = subjectPct(sub.n);
+      if (pct != null) subs.push([sub.n, pct]);
+    });
+    if (subs.length) {
+      v.appendChild(el("h2", "lx-h2", "Your progress"));
+      var bars = el("div", "lx-bars");
+      subs.forEach(function (r) {
+        var row = el("div", "lx-barrow");
+        row.innerHTML = "<b>" + esc(r[0]) + '</b><span class="track"><i style="width:' +
+          r[1] + '%"></i></span><span class="pc">' + r[1] + "%</span>";
+        bars.appendChild(row);
+      });
+      v.appendChild(bars);
+    }
+
+    /* ---- Courses --------------------------------------------------- */
+    v.appendChild(el("h2", "lx-h2", "Assigned to you"));
     var g = el("div", "lx-grid");
     enrolled().forEach(function (x) { g.appendChild(courseCard(x)); });
     v.appendChild(g);
 
+    /* ---- Mistakes -------------------------------------------------- */
+    v.appendChild(el("h2", "lx-h2", "What you keep getting wrong"));
+    if (!S.mistakes.length) {
+      v.appendChild(el("div", "lx-empty",
+        "Nothing yet. Every question you miss is kept here, so the things that trip you up " +
+        "can be practised on their own rather than found again by accident."));
+    } else {
+      var mm = el("div", "lx-mistakes");
+      S.mistakes.slice(0, 4).forEach(function (m) {
+        var row = el("div", "lx-mistake");
+        row.innerHTML = '<span class="txt"><b>' + esc(m.title) + "</b><p>" + esc(m.note) + "</p></span>" +
+          '<span class="n">' + m.n + (m.n === 1 ? " miss" : " misses") + "</span>";
+        mm.appendChild(row);
+      });
+      v.appendChild(mm);
+      var mb = el("button", "lx-btn", "Practise my mistakes");
+      mb.type = "button";
+      mb.style.marginTop = "14px";
+      mb.addEventListener("click", openMistakes);
+      v.appendChild(mb);
+    }
+
+    /* ---- Tutor ------------------------------------------------------ */
+    var t = el("div", "lx-tutor");
+    t.innerHTML = '<div class="lx-tutor-head">' + svg(I.learn, true) +
+      "<b>Tutor</b></div>" +
+      "<p>The plan above is worked out from what you have actually answered — which units lean on " +
+      "which, and what you have missed more than once. A tutor that can talk you through a wrong " +
+      "answer, rather than just count it, is the next thing being built.</p>" +
+      '<div class="lx-modes-row"><span>Tutor</span><span>Socratic</span><span>Hints</span>' +
+      "<span>Practice</span><span>Exam</span><span>Review</span><span>Challenge</span></div>" +
+      '<p style="margin-top:14px;font-size:13px;color:var(--ink-3)">In development. Nothing here ' +
+      "answers you yet, and the page will not pretend otherwise.</p>";
+    v.appendChild(t);
+
     v.appendChild(el("p", "lx-note",
-      "<b>Demo.</b> One unit is playable end to end — Seeing numbers, Counting in shapes — and five " +
-      "study sets are complete. The rest carry a real syllabus with the lessons still to be written. " +
-      'Nothing is saved and nothing leaves this page. <a href="../edu/">About Oplo Edu &rsaquo;</a>'));
+      "<b>Demo.</b> One unit is playable end to end and five study sets are complete. The rest carry " +
+      "a real syllabus with the lessons still to be written. Nothing is saved and nothing leaves this " +
+      'page. <a href="../edu/">About Oplo Edu &rsaquo;</a>'));
+  }
+
+  /* A session is assembled, not listed: review what is broken, learn the new
+     thing, practise it, then prove it without help. */
+  function session(step) {
+    var out = [];
+    if (S.mistakes.length) {
+      out.push({ t: "Review what you missed", d: S.mistakes.length + " to go back over",
+                 mins: 5, icon: I.learn, go: openMistakes });
+    }
+    if (!step) return out;
+    var c = step.course, u = step.weak
+      ? unitsOf(c).filter(function (x) { return x.n === step.weak.n; })[0] : step.unit;
+    var d = dims(c, u.n);
+    if (u.play) {
+      out.push({ t: "Work through " + u.t, d: "Practice problems, with the answer explained",
+                 mins: 10, icon: I.play, done: d.p >= 85,
+                 go: function () { openUnit(c, u.n); } });
+    }
+    if (u.set) {
+      out.push({ t: "Learn the terms", d: D.SETS[u.set].cards.length + " terms, drilled three ways",
+                 mins: 10, icon: I.cards, done: d.r >= 85,
+                 go: function () { openSet(u.set); } });
+      out.push({ t: "Prove it", d: "A graded test, no hints", mins: 5, icon: I.test,
+                 done: d.a >= 85, go: function () { openSet(u.set); } });
+    }
+    return out;
+  }
+
+  /* ------------------------------------------------------- Mistake book */
+  function openMistakes() {
+    var v = $("#v-mistakes");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", "Mistake book"));
+    v.appendChild(el("h1", "lx-h1", "What you keep getting wrong."));
+    v.appendChild(el("p", "lx-lede",
+      "Every question you have missed, kept and counted. Getting the same thing wrong three times " +
+      "is the most useful thing this page knows about you."));
+
+    if (!S.mistakes.length) {
+      v.appendChild(el("div", "lx-empty", "Nothing in here yet."));
+    } else {
+      var mm = el("div", "lx-mistakes");
+      S.mistakes.slice().sort(function (a, b) { return b.n - a.n || b.at - a.at; })
+        .forEach(function (m) {
+          var row = el("div", "lx-mistake");
+          row.innerHTML = '<span class="txt"><b>' + esc(m.title) + "</b><p>" + esc(m.note) +
+            "</p></span>" + '<span class="n">' + m.n + (m.n === 1 ? " miss" : " misses") + "</span>";
+          mm.appendChild(row);
+        });
+      v.appendChild(mm);
+
+      var terms = S.mistakes.filter(function (m) { return m.kind === "term"; });
+      var row2 = el("div");
+      row2.style.cssText = "display:flex;gap:10px;flex-wrap:wrap;margin-top:20px";
+      if (terms.length >= 2) {
+        var b = el("button", "lx-btn lg", "Practise these " + terms.length + " terms");
+        b.type = "button";
+        b.addEventListener("click", function () { drillMistakes(terms); });
+        row2.appendChild(b);
+      }
+      var clr = el("button", "lx-btn lg quiet", "Clear the book");
+      clr.type = "button";
+      clr.addEventListener("click", function () {
+        S.mistakes = []; toast("Mistake book cleared."); openMistakes();
+      });
+      row2.appendChild(clr);
+      v.appendChild(row2);
+      if (terms.length < 2) {
+        v.appendChild(el("p", "lx-lede",
+          "Practice problems are reviewed inside their own unit. Two or more missed terms unlock a " +
+          "targeted drill here."));
+      }
+    }
+    noFoot(); progress(null);
+    show("mistakes");
+  }
+
+  /* A Learn run built only from what was missed. */
+  function drillMistakes(terms) {
+    var cards = terms.map(function (m) { return m.card; }).filter(Boolean);
+    if (cards.length < 2) { toast("Not enough missed terms to drill yet."); return; }
+    S.setId = "__mistakes";
+    S.set = { t: "Your mistakes", cards: cards };
+    D.SETS.__mistakes = S.set;
+    startLearn();
   }
 
   /* --------------------------------------------------------------- Explore */
@@ -326,14 +650,27 @@
     var mast = el("div", "lx-panel");
     mast.style.marginBottom = "22px";
     var bars = units.map(function (u) {
-      var m = mastery(c, u.n);
-      return '<i class="' + (m >= 3 ? "master" : m === 2 ? "prof" : m === 1 ? "fam" : "") + '"></i>';
+      return '<i class="' + band(mastery(c, u.n)) + '"></i>';
     }).join("");
     mast.innerHTML = "<h3>Course mastery — " + pct + "%</h3>" +
       '<div class="lx-mastery">' + bars + "</div>" +
       '<div class="lx-legend"><span><i></i>Not started</span><span><i class="fam"></i>Familiar</span>' +
-      '<span><i class="prof"></i>Proficient</span><span><i class="master"></i>Mastered</span></div>';
+      '<span><i class="prof"></i>Proficient</span><span><i class="master"></i>Mastered</span></div>' +
+      dimRow(c, units);
     main.appendChild(mast);
+
+    var map = mapFor(c, units);
+    if (map) {
+      var mp = el("div", "lx-panel");
+      mp.style.marginBottom = "22px";
+      mp.innerHTML = "<h3>Knowledge map</h3>" +
+        '<p style="margin-bottom:4px">What each unit rests on. A unit is only worth opening once ' +
+        "the ones feeding into it hold up.</p>" + map;
+      mp.querySelectorAll(".node").forEach(function (g) {
+        g.addEventListener("click", function () { openUnit(c, +g.dataset.n); });
+      });
+      main.appendChild(mp);
+    }
 
     var list = el("div", "lx-units");
     var part = null;
@@ -342,7 +679,7 @@
         part = u.part;
         list.appendChild(el("p", "lx-part", esc(part)));
       }
-      var b = el("button", "lx-unit" + (mastery(c, u.n) >= 3 ? " done" : ""));
+      var b = el("button", "lx-unit" + (mastery(c, u.n) >= 85 ? " done" : ""));
       b.type = "button";
       var bits = [];
       if (u.play) bits.push("Practice");
@@ -561,7 +898,13 @@
       pile[order[i]] = true;
       var other = pile === known ? learning : known;
       delete other[order[i]];
-      if (pile === known) setState(S.setId).level[order[i]] = 3;
+      if (pile === known) {
+        setState(S.setId).level[order[i]] = 3;
+        if (S.course && S.unitIx) {
+          raise(S.course, S.unitIx, "r",
+                Math.round(Object.keys(known).length / cards.length * 100));
+        }
+      }
       if (i === order.length - 1) { draw(); toast("End of the deck."); }
       else step(1);
     }
@@ -694,7 +1037,12 @@
       var right = lv === 0 ? c[0] : lv === 1 ? c[1] : c[0];
       var ok = lv === 2 ? norm(picked) === norm(c[0]) : picked === right;
       if (ok) { correct++; level[cur] = lv + 1; if (level[cur] >= 3) st.level[cur] = 3; }
-      else { level[cur] = 0; }
+      else {
+        level[cur] = 0;
+        var m = S.mistakes.filter(function (x) { return x.key === S.setId + ":" + cur; })[0];
+        slip("term", S.setId + ":" + cur, c[0], c[1]);
+        (m || S.mistakes[S.mistakes.length - 1]).card = c;
+      }
 
       var opts = v.querySelectorAll(".lx-opt");
       if (opts.length) {
@@ -722,6 +1070,7 @@
 
     function done() {
       progress(null);
+      if (S.course && S.unitIx) raise(S.course, S.unitIx, "r", 100);
       result({
         title: "Set mastered.",
         lede: "Every term answered three ways: recognised, reversed, and typed from nothing.",
@@ -908,8 +1257,16 @@
       });
       var pct = Math.round(right / n * 100);
       var st = setState(S.setId);
-      review.forEach(function (r) { if (r.ok) st.level[r.q.ix] = Math.max(st.level[r.q.ix] || 0, 2); });
-      if (S.course && S.unitIx) bump(S.course, S.unitIx, pct >= 90 ? 3 : pct >= 60 ? 2 : 1);
+      review.forEach(function (r) {
+        if (r.ok) st.level[r.q.ix] = Math.max(st.level[r.q.ix] || 0, 2);
+        else {
+          var card = cards[r.q.ix];
+          var m = S.mistakes.filter(function (x) { return x.key === S.setId + ":" + r.q.ix; })[0];
+          slip("term", S.setId + ":" + r.q.ix, card[0], card[1]);
+          (m || S.mistakes[S.mistakes.length - 1]).card = card;
+        }
+      });
+      if (S.course && S.unitIx) raise(S.course, S.unitIx, "a", pct);
 
       result({
         title: pct + "% — " + right + " of " + n + ".",
@@ -1015,6 +1372,11 @@
 
       S.p.checked = true;
       if (ok) { S.p.right++; if (S.p.tries === 1) S.p.first++; }
+      else {
+        slip("problem", S.course.id + ":" + S.unitIx + ":q" + S.p.i,
+             String(p.ask).replace(/<[^>]*>/g, ""),
+             "Missed in " + S.unit.t + ". " + String(p.why).replace(/<[^>]*>/g, "").slice(0, 130) + "…");
+      }
 
       if (p.type === "choice") {
         var os = $("#answer").querySelectorAll(".lx-opt");
@@ -1039,7 +1401,8 @@
 
     function finish() {
       var pct = Math.round(S.p.right / P.length * 100);
-      bump(S.course, S.unitIx, pct >= 90 ? 3 : pct >= 60 ? 2 : 1);
+      raise(S.course, S.unitIx, "p", pct);
+      raise(S.course, S.unitIx, "u", Math.round(S.p.first / P.length * 100));
       progress(null);
       var u = S.unit;
       result({
@@ -1126,7 +1489,8 @@
 
   /* --------------------------------------------------------------- Account */
   function openAccount() {
-    var A = D.ACCOUNT;
+    var A = S.me.enrolment;
+    A.student = S.me.name; A.initials = S.me.initials;
     var v = $("#v-account");
     v.innerHTML = "";
 
@@ -1165,7 +1529,8 @@
     });
 
     var bal = el("div", "lx-bal");
-    bal.innerHTML = '<div><p class="k">Tuition balance due</p><p class="amt">$1,755.00</p></div>';
+    bal.innerHTML = '<div><p class="k">Tuition balance due</p><p class="amt">' +
+      esc(A.balance) + "</p></div>";
     var pay = el("button", "lx-btn lg", "Make a payment");
     pay.type = "button";
     pay.style.marginLeft = "auto";
@@ -1196,6 +1561,71 @@
     show("account");
   }
 
+  /* ================================================================= Gate
+     Not authentication. A static page cannot keep a secret from the browser
+     it is running in, so this decides which student's material to open and
+     nothing more — the screen itself says so. The password is compared as a
+     salted SHA-256 rather than sitting in the source in plain text, which
+     keeps it out of a casual read of view-source without pretending to be
+     more than it is. */
+  function digest(pw) {
+    var data = new TextEncoder().encode("oplo-learn:" + pw);
+    if (!(window.crypto && crypto.subtle && crypto.subtle.digest)) return Promise.resolve(null);
+    return crypto.subtle.digest("SHA-256", data).then(function (buf) {
+      return [].map.call(new Uint8Array(buf), function (b) {
+        return ("0" + b.toString(16)).slice(-2);
+      }).join("");
+    });
+  }
+
+  function signIn(email, pw) {
+    var who = D.STUDENTS.filter(function (s) {
+      return s.email.toLowerCase() === String(email).trim().toLowerCase();
+    })[0];
+    if (!who) return Promise.resolve(null);
+    return digest(pw).then(function (h) {
+      // Without SubtleCrypto (an insecure origin, say) the gate cannot check
+      // anything, so it opens rather than locking a demo nobody can reach.
+      if (h == null) return who;
+      return h === who.hash ? who : null;
+    });
+  }
+
+  function boot(who) {
+    S.me = who;
+    $("#gate").hidden = true;
+    document.querySelector(".lx-user .av").textContent = who.initials;
+    document.querySelector(".lx-user .nm").textContent = who.name;
+    $("#user").title = "Signed in as " + who.name;
+    drawSubjectNav();
+    drawMy();
+    show("my", false);
+  }
+
+  (function gate() {
+    var form = $("#gateForm"), err = $("#gErr");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var email = $("#gEmail").value, pw = $("#gPass").value;
+      err.textContent = "";
+      $("#gEmail").classList.remove("bad");
+      $("#gPass").classList.remove("bad");
+      if (!email || !pw) {
+        err.textContent = "Both fields, please.";
+        return;
+      }
+      signIn(email, pw).then(function (who) {
+        if (who) { boot(who); return; }
+        err.textContent = "That email and password do not match an account here.";
+        $("#gEmail").classList.add("bad");
+        $("#gPass").classList.add("bad");
+        $("#gPass").value = "";
+        $("#gPass").focus();
+      });
+    });
+    setTimeout(function () { $("#gEmail").focus(); }, 120);
+  })();
+
   /* ---------------------------------------------------------------- Wiring */
   [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
     b.addEventListener("click", function () {
@@ -1213,7 +1643,4 @@
     if (S.view === "cards" && S.keys) S.keys(e);
   });
 
-  drawSubjectNav();
-  drawMy();
-  show("my", false);
 })();
