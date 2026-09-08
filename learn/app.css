@@ -703,3 +703,265 @@ svg { display: block; }
   border-radius: 100px; background: var(--canvas); color: var(--ink-2);
   font-size: 12.5px; font-weight: 500;
 }
+
+/* ==================================================================== Read
+   The reading view. Apple News sets an article the way a magazine does — a
+   kicker, a headline with real size to it, a standfirst in a lighter weight,
+   then a narrow, generous column of body text. Everything below follows that,
+   including the rule that a definition or a pulled quote gets its own shape
+   rather than being a paragraph in bold. */
+.rd {
+  --measure: 34em;
+  max-width: 760px; margin-inline: auto;
+  font-size: 19px; line-height: 1.62; letter-spacing: -.013em;
+}
+.rd-kicker {
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  letter-spacing: .004em; color: var(--blue);
+}
+.rd-kicker .num {
+  display: inline-flex; align-items: center; height: 21px; padding: 0 8px;
+  border-radius: 100px; background: rgba(0,113,227,.1); font-size: 12px;
+}
+.rd h1 {
+  margin-top: 14px;
+  font-family: var(--font); font-size: clamp(34px, 5vw, 50px); font-weight: 600;
+  line-height: 1.05; letter-spacing: -.024em;
+}
+.rd-stand {
+  margin-top: 18px; font-size: clamp(19px, 2.1vw, 23px); line-height: 1.45;
+  letter-spacing: -.017em; color: var(--ink-2);
+}
+.rd-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  margin-top: 24px; padding: 15px 0; border-block: 1px solid var(--hair);
+  font-size: 13.5px; color: var(--ink-3);
+}
+.rd-meta b { font-family: var(--font); font-weight: 600; color: var(--ink-2); }
+.rd-obj { margin-top: 18px; padding-left: 0; }
+.rd-obj li {
+  position: relative; padding-left: 22px; margin-bottom: 6px;
+  font-size: 15px; line-height: 1.5; color: var(--ink-2);
+}
+.rd-obj li::before {
+  content: ""; position: absolute; left: 4px; top: .62em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--blue);
+}
+
+.rd-body { margin-top: 34px; }
+.rd-body > * { max-width: var(--measure); }
+.rd-body p { margin-bottom: 1.05em; }
+.rd-body p em { font-style: italic; }
+.rd-body h2 {
+  margin: 2em 0 .7em;
+  font-family: var(--font); font-size: 25px; font-weight: 600;
+  letter-spacing: -.018em; line-height: 1.2;
+}
+.rd-body h2:first-child { margin-top: 0; }
+
+/* A definition is a thing, not a sentence in bold. */
+.rd-def {
+  max-width: var(--measure);
+  margin: 1.7em 0; padding: 20px 22px; border-radius: 15px;
+  background: var(--paper); border: 1px solid var(--hair);
+}
+.rd-def b {
+  display: block; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.012em; margin-bottom: 5px;
+}
+.rd-def p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+
+/* Pulled out, and set at the size the sentence deserves. */
+.rd-quote {
+  max-width: var(--measure);
+  margin: 2.1em 0; padding-left: 22px; border-left: 3px solid var(--ink);
+}
+.rd-quote p {
+  margin: 0; font-family: var(--font);
+  font-size: clamp(23px, 2.6vw, 29px); font-weight: 600;
+  line-height: 1.22; letter-spacing: -.021em;
+}
+.rd-quote span {
+  display: block; margin-top: 10px; font-size: 15.5px; line-height: 1.5;
+  color: var(--ink-2); letter-spacing: -.01em;
+}
+
+/* A number worth stopping on. */
+.rd-stat {
+  max-width: var(--measure);
+  margin: 2em 0; padding: 24px 0; border-block: 1px solid var(--hair);
+  text-align: center;
+}
+.rd-stat b {
+  display: block; font-family: var(--font);
+  font-size: clamp(38px, 5.4vw, 54px); font-weight: 600;
+  line-height: 1; letter-spacing: -.028em;
+}
+.rd-stat span {
+  display: block; margin: 12px auto 0; max-width: 40ch;
+  font-size: 15px; line-height: 1.5; color: var(--ink-2);
+}
+
+.rd-list { max-width: var(--measure); margin: 1.7em 0; }
+.rd-list > b {
+  display: block; font-family: var(--font); font-size: 13px; font-weight: 600;
+  color: var(--ink-3); margin-bottom: 4px;
+}
+.rd-list li {
+  display: grid; grid-template-columns: 190px 1fr; gap: 18px;
+  padding: 14px 0; border-bottom: 1px solid var(--hair);
+  font-size: 16px; line-height: 1.5;
+}
+.rd-list li:last-child { border-bottom: 0; }
+.rd-list li b { font-family: var(--font); font-weight: 600; }
+.rd-list li span { color: var(--ink-2); }
+@media (max-width: 640px) { .rd-list li { grid-template-columns: 1fr; gap: 3px; } }
+
+/* An aside the course text calls a side note. */
+.rd-note {
+  max-width: var(--measure);
+  margin: 1.7em 0; padding: 17px 20px; border-radius: 14px;
+  background: var(--canvas); font-size: 16px; line-height: 1.55; color: var(--ink-2);
+}
+.rd-note::before {
+  content: "Side note"; display: block;
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  color: var(--ink-3); margin-bottom: 5px;
+}
+
+.rd-video {
+  margin: 26px 0 0; border-radius: 16px; overflow: hidden;
+  background: #000; border: 1px solid var(--hair);
+}
+.rd-video video { display: block; width: 100%; height: auto; }
+.rd-cap { margin-top: 9px; font-size: 13px; color: var(--ink-3); }
+
+/* The check at the end of a section. */
+.rd-check {
+  max-width: var(--measure);
+  margin: 3em 0 0; padding: 26px; border-radius: 18px;
+  background: var(--paper); border: 1px solid var(--hair);
+}
+.rd-check .k {
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  color: var(--ink-3); margin-bottom: 9px;
+}
+.rd-check .q {
+  font-family: var(--font); font-size: 19px; font-weight: 600;
+  letter-spacing: -.014em; line-height: 1.3;
+}
+.rd-check .lx-opts { margin-top: 18px; }
+.rd-check .lx-verdict { margin-top: 18px; }
+
+.rd-next {
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  max-width: var(--measure); margin: 3em 0 0; padding-top: 26px;
+  border-top: 1px solid var(--hair);
+}
+.rd-next .t { font-size: 13px; color: var(--ink-3); }
+.rd-next b {
+  display: block; margin-top: 3px;
+  font-family: var(--font); font-size: 19px; font-weight: 600; letter-spacing: -.014em;
+}
+
+/* Reading progress, as a hairline under the bar. */
+.rd-rail {
+  position: fixed; left: 0; right: 0; top: var(--bar); height: 2px;
+  background: transparent; z-index: 39; pointer-events: none;
+}
+.rd-rail i { display: block; height: 100%; width: 0; background: var(--blue); }
+
+/* ============================================================ Annotation
+   Select any run of text and it can be highlighted or annotated. Highlights
+   wrap the text nodes inside the range rather than the range itself, so a
+   selection crossing a paragraph boundary still works. */
+.rd-body ::selection { background: rgba(0,113,227,.16); }
+mark.hl {
+  background: rgba(255,214,10,.42); color: inherit;
+  border-radius: 3px; padding: .06em 0; cursor: pointer;
+  transition: background .15s var(--ease);
+}
+mark.hl:hover { background: rgba(255,214,10,.62); }
+mark.hl.c2 { background: rgba(52,199,89,.28); }
+mark.hl.c2:hover { background: rgba(52,199,89,.42); }
+mark.hl.c3 { background: rgba(0,113,227,.2); }
+mark.hl.c3:hover { background: rgba(0,113,227,.32); }
+mark.hl.c4 { background: rgba(255,69,58,.2); }
+mark.hl.c4:hover { background: rgba(255,69,58,.32); }
+mark.hl.noted { box-shadow: inset 0 -2px 0 rgba(0,0,0,.28); }
+
+.rd-tools {
+  position: absolute; z-index: 70; display: none;
+  align-items: center; gap: 3px; padding: 5px;
+  border-radius: 100px; background: var(--ink);
+  box-shadow: 0 8px 26px rgba(0,0,0,.24);
+  transform: translate(-50%, -100%);
+}
+.rd-tools.on { display: flex; }
+.rd-tools button {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  transition: transform .12s var(--ease);
+}
+.rd-tools button:hover { transform: scale(1.14); }
+.rd-tools .sw { width: 19px; height: 19px; border-radius: 50%; display: block; }
+.rd-tools .sw.c1 { background: #ffd60a; }
+.rd-tools .sw.c2 { background: #34c759; }
+.rd-tools .sw.c3 { background: #4da3ff; }
+.rd-tools .sw.c4 { background: #ff453a; }
+.rd-tools .sep { width: 1px; height: 18px; background: rgba(255,255,255,.22); margin: 0 3px; }
+.rd-tools .act { color: #fff; }
+.rd-tools .act svg { width: 16px; height: 16px; }
+
+/* The note editor, anchored under a highlight. */
+.rd-pop {
+  position: absolute; z-index: 71; display: none;
+  width: 300px; padding: 14px; border-radius: 14px;
+  background: var(--paper); border: 1px solid var(--rule);
+  box-shadow: 0 14px 40px rgba(0,0,0,.16);
+  transform: translate(-50%, 12px);
+}
+.rd-pop.on { display: block; }
+.rd-pop textarea {
+  width: 100%; min-height: 76px; resize: vertical;
+  padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--hair); background: var(--canvas); color: var(--ink);
+  font: inherit; font-size: 14.5px; line-height: 1.5; outline: none;
+}
+.rd-pop textarea:focus { border-color: var(--blue); }
+.rd-pop .row { display: flex; gap: 8px; margin-top: 10px; }
+.rd-pop .row button { flex: 1; height: 32px; border-radius: 100px; font-size: 13.5px; font-weight: 500; }
+.rd-pop .save { background: var(--blue); color: #fff; }
+.rd-pop .del { background: var(--canvas); color: var(--red); }
+
+/* The margin list of everything marked in this section. */
+.rd-marks { margin-top: 40px; max-width: var(--measure); }
+.rd-marks .lx-h2 { margin-top: 0; }
+.rd-mark {
+  display: flex; gap: 13px; align-items: flex-start; width: 100%; text-align: left;
+  padding: 14px 16px; border-radius: 12px; background: var(--paper);
+  border: 1px solid var(--hair); margin-bottom: 8px;
+  transition: border-color .15s var(--ease);
+}
+.rd-mark:hover { border-color: var(--rule); }
+.rd-mark .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 7px; background: #ffd60a; }
+.rd-mark .dot.c2 { background: #34c759; } .rd-mark .dot.c3 { background: #4da3ff; }
+.rd-mark .dot.c4 { background: #ff453a; }
+.rd-mark q { display: block; font-size: 14.5px; line-height: 1.5; font-style: normal; }
+.rd-mark .note {
+  display: block; margin-top: 5px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2);
+}
+
+/* The section index down the side of the unit. */
+.rd-toc { display: grid; gap: 6px; }
+.rd-toc button {
+  display: flex; align-items: baseline; gap: 11px; width: 100%; text-align: left;
+  padding: 9px 11px; border-radius: 10px; font-size: 13.5px; color: var(--ink-2);
+  transition: background .14s var(--ease), color .14s var(--ease);
+}
+.rd-toc button:hover { background: var(--canvas); color: var(--ink); }
+.rd-toc button[aria-current="true"] { background: var(--sunk); color: var(--ink); font-weight: 500; }
+.rd-toc .n { flex: none; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.rd-toc button[aria-current="true"] .n { color: var(--blue); }
+.rd-toc .tick { margin-left: auto; color: var(--green); flex: none; }

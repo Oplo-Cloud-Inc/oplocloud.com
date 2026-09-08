@@ -121,6 +121,28 @@ window.OPLO = (function () {
       ["Proximity", "Related things placed near one another, so that the grouping is understood before it is read."],
       ["Colour theory", "How colours relate on the wheel — complementary, analogous, triadic — and what each relationship does to a design."]
     ]},
+    "media-5": { t: "Waves and Sound", cards: [
+      ["Pinna", "The auricle — the visible part of the ear on each side of the head. Made of cartilage, it collects sound vibrations and guides them into the ear canal."],
+      ["Tympanic membrane", "The eardrum. A thin, cone-shaped membrane separating the outer ear from the middle ear, which converts vibration in air into vibration in fluid."],
+      ["Ossicles", "The three tiny bones of the middle ear — malleus, incus and stapes, or hammer, anvil and stirrup."],
+      ["Cochlea", "The hearing part of the inner ear: a snail-shaped bony structure filled with two fluids, the endolymph and the perilymph."],
+      ["Eustachian tube", "A narrow passage from the pharynx to the middle ear that equalises pressure on each side of the eardrum and drains the middle ear space."],
+      ["Longitudinal wave", "A compression wave that alternates pressure around the equilibrium. Sound always travels this way, and it needs a medium."],
+      ["Amplitude", "The height of a wave, measured vertically peak-to-peak — from crest to trough."],
+      ["Wavelength", "The distance over which a wave's shape repeats, measured horizontally between two corresponding points of the same phase."],
+      ["Frequency", "How many complete vibrational cycles happen per unit of time, measured in Hertz. One Hz is one cycle per second."],
+      ["Pitch", "The sensation of detecting frequency. Higher frequency is heard as higher pitch."],
+      ["Infrasound", "Any sound below 20 Hz — beneath the human hearing floor. Elephants detect it down to about 5 Hz."],
+      ["Ultrasound", "Any sound above 20,000 Hz. Dogs reach 45,000 Hz and bats 120,000 Hz."],
+      ["Ambient noise", "The background sound of a location, sometimes called atmospheric sound. It is what typically fights the dialogue on a track."],
+      ["Foley", "The reproduction of everyday sound effects, performed with objects and added to picture — celery for breaking bone, corn starch for snow."],
+      ["Omnidirectional", "A microphone that records from all directions with equal gain, its polar plot a full circle."],
+      ["Cardioid", "A microphone with a heart-shaped pickup range: high gain from the front and sides, poor from the rear."],
+      ["Bidirectional", "A figure-of-eight microphone, sensitive front and back and poor at the sides. Built for interviews and Q&A."],
+      ["XLR", "The professional connector used in audio, video and stage lighting. Circular, three to seven pins, and usually needs an adapter for a laptop."],
+      ["Hard sell", "A direct, forceful advertisement with a loud slogan, heavy on product information and rational argument."],
+      ["Soft sell", "An indirect advertisement aimed at emotion, creating a mood or image the buyer wants rather than pressing a case."]
+    ]},
     "media-6": { t: "Intro to Photography", cards: [
       ["Aperture", "The opening that lets light through the lens, measured in f-stops. A wider opening admits more light and blurs the background more."],
       ["Shutter speed", "How long the sensor is exposed. Fast freezes motion; slow lets it blur."],
@@ -190,7 +212,7 @@ window.OPLO = (function () {
       "Describe the history and application of photography, video, animation and audio/video production."
     ],
     parts: [{ name: null, units: MEDIA_UNITS }],
-    sets: { 1: "media-1", 2: "media-2", 6: "media-6" },
+    sets: { 1: "media-1", 2: "media-2", 5: "media-5", 6: "media-6" },
     grading: [["Quizzes", 35], ["Assignments", 35], ["Mid-term and final exams", 30]],
     textbook: "EHS Media Arts — © Excel Education Systems, Inc., 2021."
   };

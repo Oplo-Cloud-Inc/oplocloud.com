@@ -47,6 +47,8 @@
     m: {},                // "courseId:unit" -> {u,p,r,a} as percentages
     sets: {},             // setId -> { level: {}, star: {}, best: null }
     mistakes: [],         // every wrong answer, kept and practisable
+    marks: [],            // highlights and notes made while reading
+    readIx: 0, readDone: {},
     doneToday: {},        // which planned steps have been finished
     p: {}                 // the practice run in flight
   };
@@ -70,7 +72,9 @@
     test:  '<path d="M6 3.5h8L18 7v13.5H6z"/><path d="M13.5 3.5V7H18"/><path d="M9 12.5h6M9 16h4"/>',
     doc:   '<path d="M6 3.5h8L18 7v13.5H6z"/><path d="M13.5 3.5V7H18"/><path d="M9 12h6M9 15.5h4"/>',
     chev:  '<path d="M9 5l6 6.5L9 18"/>',
-    star:  '<path d="M12 3.5l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.8z"/>'
+    star:  '<path d="M12 3.5l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.8z"/>',
+    tick:  '<path d="M4 12.5 9 17.5 20 6.5"/>',
+    read:  '<path d="M4 5.5h6.5A2.5 2.5 0 0 1 13 8v11a2 2 0 0 0-2-2H4z"/><path d="M20 5.5h-6.5A2.5 2.5 0 0 0 11 8v11a2 2 0 0 1 2-2h7z"/>'
   };
   function svg(d, stroke) {
     return '<svg viewBox="0 0 24 24" fill="' + (stroke ? "none" : "currentColor") + '" ' +
@@ -118,6 +122,7 @@
     // command centre, and a catalogue across the top of it is just noise.
     $("#subbar").hidden = !(view === "explore" || view === "subject");
     $("#wrap").classList.toggle("wide", view === "match");
+    if (view !== "read") { railOff(); if (S.hideAnn) S.hideAnn(); }
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
       b.setAttribute("aria-current", String(b.dataset.view === view));
     });
@@ -775,6 +780,23 @@
       v.appendChild(b1);
     }
 
+    if (c.id === "media" && n === 5 && window.OPLO_UNIT5) {
+      any = true;
+      var b0 = el("div", "lx-block");
+      b0.appendChild(el("h2", null, "Sections"));
+      window.OPLO_UNIT5.forEach(function (sec, k) {
+        var rb = el("button", "lx-item");
+        rb.type = "button";
+        rb.innerHTML = '<span class="ic">' + svg(S.readDone[sec.n] ? I.tick : I.read, true) + "</span>" +
+          '<span class="txt"><b>' + esc(sec.n) + "  " + esc(sec.t) + "</b><span>" +
+          esc(sec.kicker) + " \u00b7 " + sec.mins + " min" + (sec.video ? " \u00b7 video" : "") +
+          "</span></span>" + '<span class="ic">' + svg(I.chev, true) + "</span>";
+        rb.addEventListener("click", function () { openRead(k); });
+        b0.appendChild(rb);
+      });
+      v.appendChild(b0);
+    }
+
     if (u.set) {
       any = true;
       var set = D.SETS[u.set];
@@ -1313,6 +1335,356 @@
 
     count();
     show("test");
+  }
+
+
+  /* ================================================================= Read
+     A section of the unit, set as an article. Everything is rendered from
+     typed blocks so a definition, a pulled quote and a statistic each get
+     the shape they deserve rather than all arriving as paragraphs. */
+  var U5 = window.OPLO_UNIT5 || [];
+
+  function sectionAt(i) { return U5[i]; }
+
+  function openRead(i, silent) {
+    var sec = sectionAt(i);
+    if (!sec) return;
+    if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true); });
+    S.readIx = i;
+
+    var v = $("#v-read");
+    v.innerHTML = "";
+
+    var two = el("div", "lx-two");
+    var art = el("article", "rd");
+
+    var kick = el("div", "rd-kicker");
+    kick.innerHTML = '<span class="num">' + esc(sec.n) + "</span><span>" + esc(sec.kicker) + "</span>";
+    art.appendChild(kick);
+    art.appendChild(el("h1", null, esc(sec.t)));
+    art.appendChild(el("p", "rd-stand", esc(sec.stand)));
+
+    var meta = el("div", "rd-meta");
+    meta.innerHTML = "<b>Media Arts</b><span>Unit 5 · Waves and Sound</span>" +
+      "<span>" + sec.mins + " min read</span>" +
+      (sec.video ? "<span>Includes video</span>" : "");
+    art.appendChild(meta);
+
+    if (sec.objectives && sec.objectives.length) {
+      var ob = el("ul", "rd-obj");
+      sec.objectives.forEach(function (o) { ob.innerHTML += "<li>" + esc(o) + "</li>"; });
+      art.appendChild(ob);
+    }
+
+    if (sec.video) {
+      var vid = el("div", "rd-video");
+      vid.innerHTML = '<video controls preload="metadata" playsinline src="' + sec.video + '"></video>';
+      art.appendChild(vid);
+      art.appendChild(el("p", "rd-cap", "Section video — " + esc(sec.t) + "."));
+    }
+
+    var body = el("div", "rd-body");
+    body.id = "rdBody";
+    sec.body.forEach(function (b) {
+      if (b.k === "p") body.appendChild(el("p", null, b.t));
+      else if (b.k === "h") body.appendChild(el("h2", null, esc(b.t)));
+      else if (b.k === "def") {
+        body.appendChild(el("div", "rd-def", "<b>" + esc(b.t) + "</b><p>" + b.d + "</p>"));
+      } else if (b.k === "quote") {
+        body.appendChild(el("blockquote", "rd-quote",
+          "<p>" + esc(b.t) + "</p>" + (b.s ? "<span>" + esc(b.s) + "</span>" : "")));
+      } else if (b.k === "stat") {
+        body.appendChild(el("div", "rd-stat", "<b>" + esc(b.n) + "</b><span>" + esc(b.d) + "</span>"));
+      } else if (b.k === "note") {
+        body.appendChild(el("aside", "rd-note", b.t));
+      } else if (b.k === "list") {
+        var ul = el("div", "rd-list", "<b>" + esc(b.t) + "</b>");
+        var inner = el("ul");
+        b.items.forEach(function (it) {
+          inner.innerHTML += "<li><b>" + it[0] + "</b><span>" + it[1] + "</span></li>";
+        });
+        ul.appendChild(inner);
+        body.appendChild(ul);
+      }
+    });
+    art.appendChild(body);
+
+    if (sec.check) art.appendChild(checkBlock(sec, i));
+
+    var nxt = sectionAt(i + 1);
+    var next = el("div", "rd-next");
+    next.innerHTML = nxt
+      ? '<div><span class="t">Next in this unit</span><b>' + esc(nxt.n) + " " + esc(nxt.t) + "</b></div>"
+      : '<div><span class="t">End of the unit</span><b>Study the terms</b></div>';
+    var nb = el("button", "lx-btn", nxt ? "Continue" : "Study set");
+    nb.type = "button";
+    nb.addEventListener("click", function () {
+      if (nxt) openRead(i + 1); else openSet("media-5");
+    });
+    next.appendChild(nb);
+    art.appendChild(next);
+
+    var marks = el("div", "rd-marks");
+    marks.id = "rdMarks";
+    art.appendChild(marks);
+
+    two.appendChild(art);
+
+    /* ---- the side index ---- */
+    var side = el("aside", "lx-side");
+    var toc = el("div", "lx-panel");
+    toc.innerHTML = "<h3>Unit 5 · Waves and Sound</h3>";
+    var list = el("div", "rd-toc");
+    U5.forEach(function (x, k) {
+      var b = el("button");
+      b.type = "button";
+      b.setAttribute("aria-current", String(k === i));
+      b.innerHTML = '<span class="n">' + esc(x.n) + "</span><span>" + esc(x.t) + "</span>" +
+        (S.readDone[x.n] ? '<span class="tick">' + svg(I.tick, true) + "</span>" : "");
+      b.addEventListener("click", function () { openRead(k); });
+      list.appendChild(b);
+    });
+    toc.appendChild(list);
+    side.appendChild(toc);
+
+    var help = el("div", "lx-panel");
+    help.innerHTML = "<h3>Marking up</h3><p>Select any run of text to highlight it, and add a " +
+      "note to a highlight if you want to say why. Everything you mark is collected at the foot " +
+      "of the section.</p>";
+    side.appendChild(help);
+    two.appendChild(side);
+
+    v.appendChild(two);
+
+    noFoot(); progress(null);
+    show("read");
+    armAnnotation(body, sec.n);
+    drawMarks(sec.n);
+    railWatch();
+  }
+
+  function checkBlock(sec, i) {
+    var c = sec.check, done = false;
+    var box = el("div", "rd-check");
+    box.innerHTML = '<p class="k">Check your understanding</p><p class="q">' + esc(c.q) + "</p>";
+    var wrap = el("div", "lx-opts");
+    var verdict = el("div");
+    c.opts.forEach(function (o, j) {
+      var b = el("button", "lx-opt");
+      b.type = "button";
+      b.innerHTML = '<span class="lx-key">' + "ABCD"[j] + "</span><span>" + esc(o) + "</span>";
+      b.addEventListener("click", function () {
+        if (done) return;
+        done = true;
+        var ok = j === c.right;
+        [].forEach.call(wrap.children, function (x, k) {
+          x.disabled = true;
+          if (k === c.right) x.classList.add("right");
+          else if (k === j) x.classList.add("wrong");
+        });
+        verdict.innerHTML = '<div class="lx-verdict ' + (ok ? "right" : "wrong") + '"><b>' +
+          (ok ? "That's it" : "Not quite") + "</b><p>" + c.why + "</p></div>";
+        S.readDone[sec.n] = true;
+        var pct = Math.round(Object.keys(S.readDone).length / U5.length * 100);
+        raise(D.MEDIA, 5, "u", pct);
+        if (ok) raise(D.MEDIA, 5, "p", pct);
+        else slip("problem", "u5:" + sec.n, sec.t, "Missed the check in section " + sec.n + ".");
+      });
+      wrap.appendChild(b);
+    });
+    box.appendChild(wrap);
+    box.appendChild(verdict);
+    return box;
+  }
+
+  /* Reading progress as a hairline under the bar. */
+  function railWatch() {
+    var rail = $("#rdRail");
+    if (!rail) return;
+    rail.hidden = false;
+    if (S.railFn) window.removeEventListener("scroll", S.railFn);
+    S.railFn = function () {
+      var h = document.documentElement.scrollHeight - window.innerHeight;
+      rail.firstElementChild.style.width =
+        (h > 0 ? Math.min(100, Math.max(0, window.scrollY / h * 100)) : 0) + "%";
+    };
+    window.addEventListener("scroll", S.railFn, { passive: true });
+    S.railFn();
+  }
+  function railOff() {
+    var rail = $("#rdRail");
+    if (rail) rail.hidden = true;
+    if (S.railFn) { window.removeEventListener("scroll", S.railFn); S.railFn = null; }
+  }
+
+  /* ========================================================== Annotation
+     Wrapping the Range itself breaks the moment a selection crosses an
+     element boundary — which is most of the time in a real article. So the
+     text nodes inside the range are collected first and wrapped one at a
+     time, which survives paragraphs, definitions and lists alike. */
+  function textNodesIn(range) {
+    var root = range.commonAncestorContainer;
+    if (root.nodeType === 3) return [root];
+    var walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        if (!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        return range.intersectsNode(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var out = [], n;
+    while ((n = walk.nextNode())) out.push(n);
+    return out;
+  }
+
+  function paintRange(range, id, colour) {
+    var nodes = textNodesIn(range);
+    if (!nodes.length) return false;
+    nodes.forEach(function (node, k) {
+      var from = (node === range.startContainer) ? range.startOffset : 0;
+      var to = (node === range.endContainer) ? range.endOffset : node.nodeValue.length;
+      if (to <= from) return;
+      var mid = node;
+      if (to < node.nodeValue.length) mid.splitText(to);
+      if (from > 0) mid = mid.splitText(from);
+      var m = document.createElement("mark");
+      m.className = "hl" + (colour > 1 ? " c" + colour : "");
+      m.dataset.id = id;
+      mid.parentNode.replaceChild(m, mid);
+      m.appendChild(mid);
+    });
+    return true;
+  }
+
+  function armAnnotation(body, sectionId) {
+    var tools = $("#rdTools"), pop = $("#rdPop");
+    var pending = null, active = null;
+
+    function hideAll() {
+      tools.classList.remove("on");
+      pop.classList.remove("on");
+      active = null;
+    }
+    S.hideAnn = hideAll;
+
+    // Positioned in page coordinates now that these live outside the view.
+    function place(node, rect) {
+      node.style.left = (rect.left + rect.width / 2 + window.scrollX) + "px";
+      node.style.top = (rect.top + window.scrollY - 8) + "px";
+    }
+
+    body.addEventListener("mouseup", function () {
+      setTimeout(function () {
+        var sel = window.getSelection();
+        if (!sel || sel.isCollapsed || !sel.rangeCount) { if (!active) hideAll(); return; }
+        var range = sel.getRangeAt(0);
+        if (!body.contains(range.commonAncestorContainer)) return;
+        if (!String(sel).trim()) return;
+        pending = range.cloneRange();
+        active = null;
+        pop.classList.remove("on");
+        place(tools, range.getBoundingClientRect());
+        tools.classList.add("on");
+      }, 10);
+    });
+
+    [].forEach.call(tools.querySelectorAll("[data-colour]"), function (b) {
+      b.onclick = function () {
+        if (!pending) return;
+        var id = "m" + Date.now() + Math.floor(Math.random() * 999);
+        var colour = +b.dataset.colour;
+        var said = String(pending).trim().replace(/\s+/g, " ");
+        if (paintRange(pending, id, colour)) {
+          S.marks.push({ id: id, sec: sectionId, colour: colour, text: said, note: "" });
+          drawMarks(sectionId);
+        }
+        window.getSelection().removeAllRanges();
+        pending = null;
+        hideAll();
+      };
+    });
+
+    tools.querySelector("[data-act=note]").onclick = function () {
+      if (!pending) return;
+      var id = "m" + Date.now() + Math.floor(Math.random() * 999);
+      var said = String(pending).trim().replace(/\s+/g, " ");
+      if (paintRange(pending, id, 1)) {
+        S.marks.push({ id: id, sec: sectionId, colour: 1, text: said, note: "" });
+        drawMarks(sectionId);
+        var m = body.querySelector('mark[data-id="' + id + '"]');
+        window.getSelection().removeAllRanges();
+        pending = null;
+        tools.classList.remove("on");
+        openNote(m, id);
+      }
+    };
+
+    function openNote(node, id) {
+      var mark = S.marks.filter(function (x) { return x.id === id; })[0];
+      if (!mark) return;
+      active = id;
+      place(pop, node.getBoundingClientRect());
+      pop.classList.add("on");
+      var ta = pop.querySelector("textarea");
+      ta.value = mark.note || "";
+      ta.focus();
+      pop.querySelector(".save").onclick = function () {
+        mark.note = ta.value.trim();
+        [].forEach.call(body.querySelectorAll('mark[data-id="' + id + '"]'), function (n) {
+          n.classList.toggle("noted", !!mark.note);
+        });
+        drawMarks(sectionId);
+        hideAll();
+      };
+      pop.querySelector(".del").onclick = function () {
+        [].forEach.call(body.querySelectorAll('mark[data-id="' + id + '"]'), function (n) {
+          var parent = n.parentNode;
+          while (n.firstChild) parent.insertBefore(n.firstChild, n);
+          parent.removeChild(n);
+          parent.normalize();
+        });
+        S.marks = S.marks.filter(function (x) { return x.id !== id; });
+        drawMarks(sectionId);
+        hideAll();
+      };
+    }
+    S.openNote = openNote;
+
+    body.addEventListener("click", function (e) {
+      var m = e.target.closest("mark.hl");
+      if (!m) return;
+      e.stopPropagation();
+      tools.classList.remove("on");
+      openNote(m, m.dataset.id);
+    });
+
+    document.addEventListener("mousedown", function (e) {
+      if (tools.contains(e.target) || pop.contains(e.target)) return;
+      if (e.target.closest("mark.hl")) return;
+      hideAll();
+    });
+  }
+
+  function drawMarks(sectionId) {
+    var box = $("#rdMarks");
+    if (!box) return;
+    var mine = S.marks.filter(function (m) { return m.sec === sectionId; });
+    box.innerHTML = "";
+    if (!mine.length) return;
+    box.appendChild(el("h2", "lx-h2", "What you marked"));
+    mine.forEach(function (m) {
+      var b = el("button", "rd-mark");
+      b.type = "button";
+      b.innerHTML = '<span class="dot' + (m.colour > 1 ? " c" + m.colour : "") + '"></span>' +
+        "<span><q>" + esc(m.text) + "</q>" +
+        (m.note ? '<span class="note">' + esc(m.note) + "</span>" : "") + "</span>";
+      b.addEventListener("click", function () {
+        var node = document.querySelector('#rdBody mark[data-id="' + m.id + '"]');
+        if (!node) return;
+        node.scrollIntoView({ block: "center", behavior: "smooth" });
+        setTimeout(function () { if (S.openNote) S.openNote(node, m.id); }, 320);
+      });
+      box.appendChild(b);
+    });
   }
 
   /* -------------------------------------------------------------- Practice */

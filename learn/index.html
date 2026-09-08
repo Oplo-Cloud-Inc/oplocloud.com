@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="app.css?v=c37918c7">
 </head>
 <body>
 
@@ -73,6 +73,7 @@
       <span class="nm"></span>
     </button>
   </div>
+  <div class="rd-rail" id="rdRail" hidden><i></i></div>
   <div class="lx-subbar" id="subbar">
     <nav class="lx-subbar-in" id="subjectNav" aria-label="Subjects"></nav>
   </div>
@@ -93,6 +94,7 @@
   <section class="lx-view" id="v-result"></section>
   <section class="lx-view" id="v-account"></section>
   <section class="lx-view" id="v-mistakes"></section>
+  <section class="lx-view" id="v-read"></section>
 </main>
 
 <div class="lx-foot" id="foot" hidden>
@@ -103,9 +105,29 @@
   </div>
 </div>
 
+  <div class="rd-tools" id="rdTools" role="toolbar" aria-label="Mark up this passage">
+    <button type="button" data-colour="1" aria-label="Highlight yellow"><span class="sw c1"></span></button>
+    <button type="button" data-colour="2" aria-label="Highlight green"><span class="sw c2"></span></button>
+    <button type="button" data-colour="3" aria-label="Highlight blue"><span class="sw c3"></span></button>
+    <button type="button" data-colour="4" aria-label="Highlight red"><span class="sw c4"></span></button>
+    <span class="sep"></span>
+    <button type="button" class="act" data-act="note" aria-label="Add a note">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+       stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v10H9l-5 4z"/></svg>
+    </button>
+  </div>
+  <div class="rd-pop" id="rdPop">
+    <textarea placeholder="What did you want to say about this?" aria-label="Note"></textarea>
+    <div class="row">
+    <button type="button" class="save">Save</button>
+    <button type="button" class="del">Remove</button>
+    </div>
+  </div>
+
 <div class="lx-toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="data.js"></script>
-<script src="app.js"></script>
+<script src="data.js?v=9ef6cc39"></script>
+<script src="unit5.js?v=7848350b"></script>
+<script src="app.js?v=734cb6a5"></script>
 </body>
 </html>
