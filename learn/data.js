@@ -282,7 +282,8 @@ window.OPLO = (function () {
   };
 
   /* ------------------------------------------------------------- Students
-     One account. There is no demo login and no shared password.
+     Two accounts, one student and one administrator. There is no demo login and
+     no shared password.
 
      A word on what this can and cannot be. oplocloud.com is served as static
      files, so there is no server here to check a password against — whatever
@@ -305,10 +306,26 @@ window.OPLO = (function () {
   */
   var ITERATIONS = 210000;
 
+  /* Roles. A student sees their own work; an admin sees everyone's, and can
+     read alongside them. The role is the only thing that gates anything —
+     there is no second app for staff. */
   var STUDENTS = [{
+    id: "saswat",
+    name: "Saswat Ji", initials: "SJ", first: "Saswat",
+    email: "chensaswat@gmail.com",
+    role: "admin", title: "Administrator",
+    hue: "#0071e3",
+    salt: "bURh/NR4SxfnRUl3PGkdmw==",
+    verifier: "bWaElG0IMCKsXUtuy9R/gMU4iCj6J4onir2vqg3Ywc0=",
+    assigned: ["media", "seeing", "biz"],
+    contactable: true
+  }, {
     id: "sehej",
     name: "Sehej Kaur", initials: "SK", first: "Sehej",
     email: "sehejkaur776@gmail.com",
+    role: "student", title: "High School Silver Program",
+    hue: "#8f5cff",
+    contactable: true,
     salt: "hei4SKXhMbLKO8AJsHrndA==",
     verifier: "aSY04AWAeRgSJfXn8Lg1nZcIOicjXw4tLiwv+OwC9bE=",
     assigned: ["media"],
@@ -348,6 +365,18 @@ window.OPLO = (function () {
     }
   }];
 
+  /* ------------------------------------------------------------ OploContacts
+     The directory a reading room is invited from. It is deliberately the same
+     shape a real contacts service would return — id, name, initials, a hue for
+     the avatar, and what they are — so pointing this at an API later is a
+     change of source and not a change of screen. */
+  function contacts() {
+    return STUDENTS.filter(function (p) { return p.contactable; }).map(function (p) {
+      return { id: p.id, name: p.name, initials: p.initials, first: p.first,
+               email: p.email, hue: p.hue, role: p.role, title: p.title };
+    });
+  }
+
   return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE, ITERATIONS: ITERATIONS,
-           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, STUDENTS: STUDENTS };
+           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, STUDENTS: STUDENTS, CONTACTS: contacts };
 })();

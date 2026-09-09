@@ -23,6 +23,8 @@ window.OPLO_UNIT5 = (function () {
     stand: "Air, bone, fluid, brain — in that order. Every system in the body keeps a balance, " +
            "and hearing depends on a chain of events that has to work in sequence.",
     mins: 7,
+    // The file is not committed — 70MB is too much to carry in the history.
+    // Drop it into learn/media/, or set this to a URL. See learn/media/README.
     video: "media/mediaart5_1.mp4",
     objectives: ["Identify the major parts of the human ear and their functions"],
     body: [

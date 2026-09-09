@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=c37918c7">
+<link rel="stylesheet" href="app.css?v=95658ac9">
 </head>
 <body>
 
@@ -59,6 +59,7 @@
     <nav class="lx-top" id="topNav" aria-label="Sections">
       <button type="button" data-view="my" aria-current="true">Home</button>
       <button type="button" data-view="explore">Explore</button>
+      <button type="button" data-view="admin" id="navAdmin" hidden>Students</button>
     </nav>
 
     <div class="lx-prog" id="barProg" hidden><i></i></div>
@@ -68,12 +69,14 @@
       <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1.5s3.4 3 3.4 6.1A3.4 3.4 0 0 1 8 11a3.4 3.4 0 0 1-3.4-3.4C4.6 4.5 8 1.5 8 1.5z"/><path d="M8 14.5c2.6 0 4.6-1.6 4.6-3.9 0 0-1.3 1.4-2.8 1.4-1.9 0-1.6-2.4-1.6-2.4S6 11 6 12.6c0 .8.3 1.4.7 1.8-1.4-.5-2.3-1.6-2.3-3.1 0 0-1 1-1 2.1 0 .4.1.7.2 1z"/></svg>
       <span id="streak">4</span>
     </span>
+    <span class="lx-presence" id="presence" hidden></span>
     <button class="lx-user" type="button" id="user">
       <span class="av" aria-hidden="true"></span>
       <span class="nm"></span>
     </button>
   </div>
   <div class="rd-rail" id="rdRail" hidden><i></i></div>
+  <div class="fb" id="followBar" hidden></div>
   <div class="lx-subbar" id="subbar">
     <nav class="lx-subbar-in" id="subjectNav" aria-label="Subjects"></nav>
   </div>
@@ -95,6 +98,8 @@
   <section class="lx-view" id="v-account"></section>
   <section class="lx-view" id="v-mistakes"></section>
   <section class="lx-view" id="v-read"></section>
+  <section class="lx-view" id="v-notes"></section>
+  <section class="lx-view" id="v-admin"></section>
 </main>
 
 <div class="lx-foot" id="foot" hidden>
@@ -105,29 +110,67 @@
   </div>
 </div>
 
-  <div class="rd-tools" id="rdTools" role="toolbar" aria-label="Mark up this passage">
-    <button type="button" data-colour="1" aria-label="Highlight yellow"><span class="sw c1"></span></button>
-    <button type="button" data-colour="2" aria-label="Highlight green"><span class="sw c2"></span></button>
-    <button type="button" data-colour="3" aria-label="Highlight blue"><span class="sw c3"></span></button>
-    <button type="button" data-colour="4" aria-label="Highlight red"><span class="sw c4"></span></button>
-    <span class="sep"></span>
-    <button type="button" class="act" data-act="note" aria-label="Add a note">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-       stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v10H9l-5 4z"/></svg>
-    </button>
-  </div>
-  <div class="rd-pop" id="rdPop">
-    <textarea placeholder="What did you want to say about this?" aria-label="Note"></textarea>
-    <div class="row">
-    <button type="button" class="save">Save</button>
-    <button type="button" class="del">Remove</button>
+  <!-- Both are filled by annotate.js's taxonomy rather than written out here,
+       so adding a reading pass is one line in one file. -->
+  <div class="rd-tools" id="rdTools" role="toolbar" aria-label="Mark up this passage"></div>
+  <div class="rd-pop" id="rdPop" role="dialog" aria-label="Annotation"></div>
+
+<!-- The tutor. Bottom right, out of the way until it is wanted. -->
+<button class="tt-open" id="ttOpen" type="button" aria-label="Open the tutor" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 3 3 7.5l9 4.5 9-4.5z"/><path d="M6 10v5.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V10"/>
+  </svg>
+  <span>Tutor</span>
+</button>
+
+<section class="tt" id="tt" aria-label="Oplo Tutor" hidden>
+  <header class="tt-head">
+    <span class="tt-dot" id="ttDot" title="Not connected"></span>
+    <div class="tt-title">
+      <b>Tutor</b>
+      <span id="ttWhere">Oplo Learn</span>
     </div>
+    <button class="tt-icon" id="ttReset" type="button" title="Start again" aria-label="Start again">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 1 2.6 6.1"/><path d="M3.5 19v-5h5"/></svg>
+    </button>
+    <button class="tt-icon" id="ttClose" type="button" title="Close" aria-label="Close the tutor">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+
+  <div class="tt-ladder" id="ttLadder" hidden>
+    <span class="rungs" id="ttRungs"></span>
+    <span class="lbl" id="ttRungName">Ask back</span>
   </div>
+
+  <div class="tt-log" id="ttLog"></div>
+
+  <div class="tt-ask">
+    <div class="tt-quick" id="ttQuick">
+      <button type="button" data-ask="think">Think</button>
+      <button type="button" data-ask="hint">Hint</button>
+      <button type="button" data-ask="explain">Explain</button>
+    </div>
+    <form class="tt-form" id="ttForm">
+      <textarea id="ttIn" rows="1" placeholder="What are you stuck on?" aria-label="Ask the tutor"></textarea>
+      <button class="tt-send" id="ttSend" type="submit" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+      </button>
+    </form>
+  </div>
+</section>
 
 <div class="lx-toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="data.js?v=9ef6cc39"></script>
-<script src="unit5.js?v=7848350b"></script>
-<script src="app.js?v=734cb6a5"></script>
+<script src="data.js?v=ae9c861f"></script>
+<script src="unit5.js?v=57aa3e10"></script>
+<script src="annotate.js?v=b070675b"></script>
+<script src="collab.js?v=45bea90d"></script>
+<script src="tutor.js?v=e36b13da"></script>
+<script src="app.js?v=a7905075"></script>
 </body>
 </html>

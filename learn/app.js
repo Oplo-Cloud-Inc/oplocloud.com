@@ -50,6 +50,7 @@
     marks: [],            // highlights and notes made while reading
     readIx: 0, readDone: {},
     doneToday: {},        // which planned steps have been finished
+    citeStyle: "mla",     // what a copied quotation comes out as
     p: {}                 // the practice run in flight
   };
 
@@ -72,9 +73,19 @@
     test:  '<path d="M6 3.5h8L18 7v13.5H6z"/><path d="M13.5 3.5V7H18"/><path d="M9 12.5h6M9 16h4"/>',
     doc:   '<path d="M6 3.5h8L18 7v13.5H6z"/><path d="M13.5 3.5V7H18"/><path d="M9 12h6M9 15.5h4"/>',
     chev:  '<path d="M9 5l6 6.5L9 18"/>',
+    book:  '<path d="M4 4.5h6.5A2.5 2.5 0 0 1 13 7v12a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-6.5A2.5 2.5 0 0 0 11 7v12a2 2 0 0 1 2-2h7z"/>',
     star:  '<path d="M12 3.5l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.8z"/>',
     tick:  '<path d="M4 12.5 9 17.5 20 6.5"/>',
-    read:  '<path d="M4 5.5h6.5A2.5 2.5 0 0 1 13 8v11a2 2 0 0 0-2-2H4z"/><path d="M20 5.5h-6.5A2.5 2.5 0 0 0 11 8v11a2 2 0 0 1 2-2h7z"/>'
+    read:  '<path d="M4 5.5h6.5A2.5 2.5 0 0 1 13 8v11a2 2 0 0 0-2-2H4z"/><path d="M20 5.5h-6.5A2.5 2.5 0 0 0 11 8v11a2 2 0 0 1 2-2h7z"/>',
+    pen:   '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
+    copy:  '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 5.5h-11a1 1 0 0 0-1 1v11"/>',
+    point: '<path d="M5 4.5 19 11l-6 1.8L11 19z"/>',
+    link:  '<path d="M10 13.5a4 4 0 0 0 5.7 0l2.8-2.8a4 4 0 1 0-5.7-5.7L11.6 6.3"/><path d="M14 10.5a4 4 0 0 0-5.7 0l-2.8 2.8a4 4 0 1 0 5.7 5.7l1.2-1.2"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    trash: '<path d="M4.5 6.5h15M9.5 6.5V4.8a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3v1.7"/><path d="M6.5 6.5 7.6 20a1.3 1.3 0 0 0 1.3 1.2h6.2a1.3 1.3 0 0 0 1.3-1.2L17.5 6.5"/>',
+    people:'<path d="M9.5 11.5a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8z"/><path d="M2.8 20a6.7 6.7 0 0 1 13.4 0"/><path d="M16.2 5.2a3.4 3.4 0 0 1 0 6.6"/><path d="M17.6 14.2A6.7 6.7 0 0 1 21.2 20"/>',
+    arrow: '<path d="M4.5 12h14"/><path d="M13 6.5 18.5 12 13 17.5"/>',
+    grid:  '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>'
   };
   function svg(d, stroke) {
     return '<svg viewBox="0 0 24 24" fill="' + (stroke ? "none" : "currentColor") + '" ' +
@@ -121,12 +132,15 @@
     // The subject bar belongs to browsing. The home screen is a personal
     // command centre, and a catalogue across the top of it is just noise.
     $("#subbar").hidden = !(view === "explore" || view === "subject");
-    $("#wrap").classList.toggle("wide", view === "match");
+    $("#wrap").classList.toggle("wide", view === "match" || view === "read");
     if (view !== "read") { railOff(); if (S.hideAnn) S.hideAnn(); }
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
       b.setAttribute("aria-current", String(b.dataset.view === view));
     });
     window.scrollTo(0, 0);
+    // Tutor is declared later in this scope; hoisting makes it undefined
+    // until the panel is built, which is exactly the case to skip.
+    if (typeof Tutor !== "undefined" && Tutor && Tutor.where) Tutor.where();
   }
 
   function goBack() {
@@ -1338,14 +1352,921 @@
   }
 
 
+  /* ============================================================ Read together
+     The surface over collab.js. Three things, and the discipline is in what
+     is left out: no video, no cursors chasing each other, no chat sitting
+     where the text should be. Two people, one passage, and the ability to
+     point at it.
+
+       PRESENCE  who is here and which section they are in
+       MARGIN    their annotations arriving beside yours, attributed, and
+                 yours theirs — kept apart until someone chooses to keep one
+       FOLLOW    your page moving because theirs did
+
+     Reach is stated plainly in the panel rather than implied by the design.
+     A room joins every tab of this site in this browser today; a relay makes
+     it join two laptops, and `Room.transport` in collab.js is where that
+     goes. */
+  var Room = (function () {
+    var R = window.OPLO_ROOM;
+    var room = null, code = null, panelEl = null;
+
+    function live() { return !!(room && room.id); }
+    function count() { return room ? room.peerCount() : 0; }
+
+    function me() {
+      return S.me ? { id: S.me.id, name: S.me.name, first: S.me.first,
+                      initials: S.me.initials, hue: S.me.hue || "#6e6e73",
+                      role: S.me.role } : null;
+    }
+
+    function make() {
+      if (room || !R || !S.me) return room;
+      room = new R.Room(me());
+      room.on("change", function () { paintPresence(); if (panelEl) fillPanel(); });
+      room.on("joined", function (who) {
+        toast(who.first + " joined the room.");
+        // Everything already on this page, so they arrive to a marked-up copy
+        // rather than a blank one.
+        Ann.here().forEach(function (m) { room.share(m); });
+      });
+      room.on("mark", function (e) { Ann.receive(e.by, e.mark); });
+      room.on("unmark", function (e) { Ann.retract(e.id); });
+      room.on("point", function (e) {
+        var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+        if (!sec || sec.n !== e.at.sec) { toast(e.by.first + " pointed at something in " + e.at.sec + "."); return; }
+        toast(e.by.first + " is pointing at this.");
+        Ann.flash(e.at.anchor);
+      });
+      room.on("lead", function (at) { followTo(at); });
+      room.on("follow", function () { paintFollow(); });
+      return room;
+    }
+
+    /* Following: their section, then their scroll. The section change has to
+       finish rendering before the scroll means anything, hence the wait. */
+    var settling = false;
+    function followTo(at) {
+      if (settling) return;
+      var U = window.OPLO_UNIT5 || [];
+      var here = U[S.readIx];
+      if (at.sec && (!here || here.n !== at.sec)) {
+        var ix = -1;
+        U.forEach(function (x, k) { if (x.n === at.sec) ix = k; });
+        if (ix > -1) {
+          settling = true;
+          openRead(ix);
+          setTimeout(function () {
+            if (at.y != null) window.scrollTo({ top: at.y, behavior: "auto" });
+            settling = false;
+          }, 90);
+          return;
+        }
+      }
+      if (at.y != null && Math.abs(window.scrollY - at.y) > 60) {
+        window.scrollTo({ top: at.y, behavior: "smooth" });
+      }
+    }
+
+    /* --------------------------------------------------------- The header */
+    function paintPresence() {
+      var box = $("#presence");
+      if (!box) return;
+      var list = room ? room.roster() : [];
+      box.innerHTML = "";
+      box.hidden = false;
+
+      var btn = el("button", "pr-open" + (live() ? " on" : ""));
+      btn.type = "button";
+      btn.title = live()
+        ? (list.length ? list.length + " reading with you" : "Room open — nobody else here yet")
+        : "Read together";
+      btn.setAttribute("aria-label", btn.title);
+      btn.innerHTML = svg(I.people, true);
+      if (list.length) {
+        var stack = el("span", "pr-stack");
+        list.slice(0, 3).forEach(function (p) {
+          var a = el("span", "pr-av");
+          a.style.background = (p.who && p.who.hue) || "#6e6e73";
+          a.textContent = p.who ? p.who.initials : "?";
+          a.title = p.who ? p.who.name : "";
+          stack.appendChild(a);
+        });
+        btn.appendChild(stack);
+      } else if (live()) {
+        btn.appendChild(el("span", "pr-dot"));
+      }
+      btn.addEventListener("click", panel);
+      box.appendChild(btn);
+
+      var c = $("#roomCount");
+      if (c) c.textContent = list.length || "";
+    }
+
+    function paintFollow() {
+      var bar = $("#followBar");
+      if (!bar) return;
+      var who = room && room.following
+        ? (room.peers[room.following] || {}).who : null;
+      if (!who) { bar.hidden = true; return; }
+      bar.hidden = false;
+      bar.innerHTML = "";
+      var av = el("span", "fb-av");
+      av.style.background = who.hue || "#6e6e73";
+      av.textContent = who.initials;
+      bar.appendChild(av);
+      bar.appendChild(el("span", "fb-say", "Following <b>" + esc(who.name) +
+        "</b> — your page moves when theirs does"));
+      var stop = el("button", "fb-stop", "Stop");
+      stop.type = "button";
+      stop.addEventListener("click", function () { room.follow(null); });
+      bar.appendChild(stop);
+    }
+
+    /* ---------------------------------------------------------- The panel */
+    function panel() {
+      make();
+      if (panelEl) { close(); return; }
+      panelEl = el("div", "rm");
+      panelEl.setAttribute("role", "dialog");
+      panelEl.setAttribute("aria-label", "Read together");
+      document.body.appendChild(panelEl);
+      fillPanel();
+      setTimeout(function () { document.addEventListener("mousedown", away); }, 0);
+      document.addEventListener("keydown", esckey);
+    }
+    function close() {
+      if (!panelEl) return;
+      panelEl.remove();
+      panelEl = null;
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esckey);
+    }
+    function away(e) {
+      if (panelEl && !panelEl.contains(e.target) && !e.target.closest(".pr-open") &&
+          !e.target.closest("#roomOpen")) close();
+    }
+    function esckey(e) { if (e.key === "Escape") close(); }
+
+    function fillPanel() {
+      if (!panelEl) return;
+      panelEl.innerHTML = "";
+
+      var head = el("header", "rm-head");
+      head.innerHTML = "<b>Read together</b>";
+      var x = el("button", "rm-x");
+      x.type = "button";
+      x.setAttribute("aria-label", "Close");
+      x.innerHTML = svg(I.close, true);
+      x.addEventListener("click", close);
+      head.appendChild(x);
+      panelEl.appendChild(head);
+
+      if (!live()) {
+        panelEl.appendChild(el("p", "rm-say",
+          "Open a room and whoever joins reads the same section beside you — their " +
+          "marks land in your margin, yours in theirs, and either of you can point at a line."));
+        var start = el("button", "rm-go", "Open a room");
+        start.type = "button";
+        start.addEventListener("click", function () {
+          code = code || Math.random().toString(36).slice(2, 7);
+          make().open("oplo-" + code);
+          var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+          if (sec) room.where(sec.n, window.scrollY);
+          fillPanel();
+          paintPresence();
+        });
+        panelEl.appendChild(start);
+      } else {
+        /* Who is here. */
+        var list = room.roster();
+        var who = el("div", "rm-here");
+        var mineRow = person(me(), "You", null);
+        mineRow.classList.add("me");
+        who.appendChild(mineRow);
+        list.forEach(function (p) {
+          who.appendChild(person(p.who, p.sec ? "Reading " + p.sec : "Here", p));
+        });
+        if (!list.length) {
+          who.appendChild(el("p", "rm-none",
+            "Nobody else yet. Send them the link below — it opens Learn straight into this room."));
+        }
+        panelEl.appendChild(who);
+
+        /* The link. */
+        var link = location.origin + location.pathname + "?room=" + code;
+        var lk = el("div", "rm-link");
+        var inp = el("input");
+        inp.type = "text";
+        inp.readOnly = true;
+        inp.value = link;
+        inp.setAttribute("aria-label", "Room link");
+        inp.addEventListener("focus", function () { inp.select(); });
+        lk.appendChild(inp);
+        var cp = el("button", "rm-copy", "Copy");
+        cp.type = "button";
+        cp.addEventListener("click", function () { copy(link); toast("Room link copied."); });
+        lk.appendChild(cp);
+        panelEl.appendChild(lk);
+
+        var out = el("button", "rm-leave", "Leave the room");
+        out.type = "button";
+        out.addEventListener("click", function () {
+          room.leave();
+          Ann.forget();
+          fillPanel(); paintPresence(); paintFollow();
+        });
+        panelEl.appendChild(out);
+      }
+
+      /* ------------------------------------------------------ OploContacts */
+      var dir = el("div", "rm-dir");
+      dir.appendChild(el("h4", null, "OploContacts"));
+      var contacts = (D.CONTACTS ? D.CONTACTS() : []).filter(function (c) {
+        return !S.me || c.id !== S.me.id;
+      });
+      if (!contacts.length) dir.appendChild(el("p", "rm-none", "No one else in your directory yet."));
+      contacts.forEach(function (c) {
+        var inRoom = live() && room.roster().some(function (p) { return p.id === c.id; });
+        var r = el("div", "rm-person");
+        var av = el("span", "rm-av");
+        av.style.background = c.hue || "#6e6e73";
+        av.textContent = c.initials;
+        r.appendChild(av);
+        r.appendChild(el("div", "rm-nm", "<b>" + esc(c.name) + "</b><span>" +
+          esc(c.title || c.role || "") + "</span>"));
+        var b = el("button", "rm-inv");
+        b.type = "button";
+        if (inRoom) { b.textContent = "Here"; b.disabled = true; b.classList.add("in"); }
+        else {
+          b.textContent = "Invite";
+          b.addEventListener("click", function () {
+            if (!live()) {
+              code = code || Math.random().toString(36).slice(2, 7);
+              make().open("oplo-" + code);
+              var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+              if (sec) room.where(sec.n, window.scrollY);
+            }
+            copy(location.origin + location.pathname + "?room=" + code);
+            toast("Room link copied — send it to " + c.first + ".");
+            fillPanel(); paintPresence();
+          });
+        }
+        r.appendChild(b);
+        dir.appendChild(r);
+      });
+      panelEl.appendChild(dir);
+
+      panelEl.appendChild(el("p", "rm-fine",
+        "A room reaches every tab of Oplo Learn in this browser. Reaching a second " +
+        "machine needs a relay, and this page is served as static files — there is no " +
+        "server here to be one. The transport is a single object in <code>collab.js</code>, " +
+        "so that is a swap rather than a rebuild."));
+    }
+
+    function person(who, sub, peer) {
+      var r = el("div", "rm-person");
+      var av = el("span", "rm-av");
+      av.style.background = (who && who.hue) || "#6e6e73";
+      av.textContent = who ? who.initials : "?";
+      r.appendChild(av);
+      r.appendChild(el("div", "rm-nm", "<b>" + esc(who ? who.name : "Someone") +
+        "</b><span>" + esc(sub || "") + "</span>"));
+      if (peer) {
+        var f = el("button", "rm-follow");
+        f.type = "button";
+        var on = room.following === peer.id;
+        f.textContent = on ? "Following" : "Follow";
+        f.setAttribute("aria-pressed", String(on));
+        f.addEventListener("click", function () {
+          room.follow(on ? null : peer.id);
+          fillPanel(); paintFollow();
+        });
+        r.appendChild(f);
+        if (peer.following) {
+          var tag = el("span", "rm-tag", "following you");
+          r.appendChild(tag);
+        }
+      }
+      return r;
+    }
+
+    /* ----------------------------------------------------------- Outbound */
+    function here(sec) { if (live()) room.where(sec, window.scrollY); }
+    function scrolled(y) {
+      if (live() && !room.following) {
+        var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+        room.where(sec ? sec.n : null, y);
+      }
+    }
+    function shareMark(m) { if (live()) room.share(m); }
+    function retractMark(id) { if (live()) room.retract(id); }
+    function point(at) { if (live()) room.point(at); }
+
+    /* A link with ?room= walks straight in. */
+    function fromLink() {
+      var m = /[?&]room=([a-z0-9]+)/i.exec(location.search);
+      if (!m || !S.me) return;
+      code = m[1];
+      make().open("oplo-" + code);
+      paintPresence();
+      toast("You are in a shared reading room.");
+    }
+
+    function reset() {
+      if (room) room.leave();
+      room = null; code = null;
+      close();
+      var box = $("#presence");
+      if (box) { box.innerHTML = ""; box.hidden = true; }
+      var bar = $("#followBar");
+      if (bar) bar.hidden = true;
+    }
+
+    return { panel: panel, live: live, count: count, here: here, scrolled: scrolled,
+             shareMark: shareMark, retractMark: retractMark, point: point,
+             fromLink: fromLink, presence: paintPresence, reset: reset };
+  })();
+
   /* ================================================================= Read
-     A section of the unit, set as an article. Everything is rendered from
-     typed blocks so a definition, a pulled quote and a statistic each get
-     the shape they deserve rather than all arriving as paragraphs. */
+     A section of the unit, set as an article, in three columns.
+
+       LEFT     where you are in the unit, and where you can go
+       CENTRE   the text, at a measure you can actually read
+       RIGHT    your margin — every mark you made, beside the line you made it on
+
+     The bottom right corner is left empty on purpose. That is the tutor's,
+     and a panel that opens over your own notes is a panel you close. */
   var U5 = window.OPLO_UNIT5 || [];
+  var A = window.OPLO_ANNOTATE;
+
+  /* What a quotation from this unit is a quotation from. */
+  var SOURCE = {
+    title: "Waves and Sound",
+    container: "Media Arts, Unit 5",
+    author: "Excel High School",
+    publisher: "Excel High School",
+    year: "2026"
+  };
+  var DOC = "media-u5";
 
   function sectionAt(i) { return U5[i]; }
+  function secByN(n) { return U5.filter(function (x) { return x.n === n; })[0] || null; }
 
+  /* ========================================================== Annotation
+     The controller for everything a reader leaves on the page: the selection
+     toolbar, the note editor, the margin, and the job of putting all of it
+     back where it was after a render. The mechanics — anchoring, painting,
+     storage, citation — are in annotate.js; this is the surface. */
+  var Ann = (function () {
+    var store = null;         // this reader's marks, persisted
+    var theirs = [];          // marks arriving from a room, in memory only
+    var body = null, sec = null, marginEl = null, artEl = null;
+    var filter = 0;           // 0 = every pass
+    var pending = null;       // a live selection waiting for a decision
+    var open = null;          // the mark whose editor is showing
+
+    function shop() {
+      if (!store) store = new A.Store(S.me ? S.me.id : "anon", DOC);
+      return store;
+    }
+    function reset() { store = null; theirs = []; }
+
+    function mine() { return shop().all(); }
+    function here() { return shop().inSection(sec); }
+    function theirsHere() { return theirs.filter(function (m) { return m.sec === sec; }); }
+
+    /* ------------------------------------------------------- The toolbar
+       Built rather than written into the page, so the taxonomy has exactly
+       one definition and adding a pass is a line in annotate.js. */
+    function buildTools() {
+      var t = $("#rdTools");
+      if (t.dataset.built) return t;
+      t.dataset.built = "1";
+      A.PASSES.forEach(function (p) {
+        var b = el("button");
+        b.type = "button";
+        b.dataset.pass = p.n;
+        b.title = p.name + " — " + p.k + ". " + p.what;
+        b.innerHTML = '<span class="sw" style="background:' + p.hue + '"></span>' + esc(p.short);
+        b.addEventListener("click", function () { commit(p.n); });
+        t.appendChild(b);
+      });
+      t.appendChild(el("span", "sep"));
+      [["note", "Annotate — N", I.pen],
+       ["copy", "Copy with citation — C", I.copy],
+       ["point", "Point at this for the room — P", I.point]].forEach(function (a) {
+        var b = el("button", "act");
+        b.type = "button";
+        b.dataset.act = a[0];
+        b.title = a[1];
+        b.setAttribute("aria-label", a[1]);
+        b.innerHTML = svg(a[2], true);
+        b.addEventListener("click", function () { act(a[0]); });
+        t.appendChild(b);
+      });
+      return t;
+    }
+
+    function place(node, rect, below) {
+      var w = node.offsetWidth || 320;
+      var x = rect.left + rect.width / 2 + window.scrollX;
+      x = Math.max(w / 2 + 12, Math.min(x, window.innerWidth - w / 2 - 12));
+      node.style.left = x + "px";
+      node.style.top = (below ? rect.bottom + window.scrollY + 8
+                              : rect.top + window.scrollY - 8) + "px";
+      node.classList.toggle("below", !!below);
+    }
+
+    function hideAll() {
+      $("#rdTools").classList.remove("on");
+      $("#rdPop").classList.remove("on");
+      open = null;
+      unfocus();
+    }
+    S.hideAnn = hideAll;
+
+    function grab() {
+      var s = window.getSelection();
+      if (!s || s.isCollapsed || !s.rangeCount) return null;
+      var r = s.getRangeAt(0);
+      if (!body || !body.contains(r.commonAncestorContainer)) return null;
+      if (!String(s).trim()) return null;
+      return r.cloneRange();
+    }
+
+    /* A selection becomes a mark. The anchor is taken before anything is
+       painted — painting splits text nodes, and an anchor measured after that
+       would be measuring a document that no longer exists. */
+    function commit(passN, then) {
+      var r = pending || grab();
+      if (!r) return null;
+      var a = A.anchor(body, r);
+      if (!a) { hideAll(); return null; }
+      var m = shop().add({
+        sec: sec, pass: passN,
+        text: a.exact.replace(/\s+/g, " ").trim(),
+        anchor: a,
+        by: null
+      });
+      A.paint(body, r, m);
+      window.getSelection().removeAllRanges();
+      pending = null;
+      hideAll();
+      drawMargin();
+      if (Room.live()) Room.shareMark(m);
+      if (then) then(m);
+      return m;
+    }
+
+    function act(kind) {
+      var r = pending || grab();
+      if (!r) return;
+      if (kind === "note") {
+        commit(A.PASSES[0].n, function (m) {
+          var node = body.querySelector('mark[data-id="' + m.id + '"]');
+          if (node) editor(node, m.id);
+        });
+        return;
+      }
+      if (kind === "copy") {
+        var said = String(r).trim().replace(/\s+/g, " ");
+        copy(A.quoted({ text: said, sec: sec }, SOURCE, S.citeStyle || "mla"));
+        window.getSelection().removeAllRanges();
+        pending = null; hideAll();
+        toast("Copied with the citation.");
+        return;
+      }
+      if (kind === "point") {
+        if (!Room.live()) { toast("Nobody is in the room to point for."); return; }
+        var a = A.anchor(body, r);
+        if (a) { Room.point({ sec: sec, anchor: a }); toast("Pointed at it."); }
+        window.getSelection().removeAllRanges();
+        pending = null; hideAll();
+      }
+    }
+
+    /* --------------------------------------------------------- The editor
+       Six passes, a note, tags, and — the part that makes a notebook worth
+       re-reading — a link to another mark. An objection floating on its own
+       is a mood; an objection attached to the claim it is against is an
+       argument. */
+    function editor(node, id) {
+      var m = shop().byId(id);
+      if (!m) return;
+      open = id;
+      focusMark(id);
+
+      var pop = $("#rdPop");
+      pop.innerHTML = "";
+      var p = A.pass(m.pass);
+
+      var head = el("div", "rd-pop-head");
+      head.innerHTML = '<span class="cite">' + esc(sec) + " · " + esc(secByN(sec) ? secByN(sec).t : "") +
+        "</span>";
+      var x = el("button", "rd-pop-x");
+      x.type = "button";
+      x.setAttribute("aria-label", "Close");
+      x.innerHTML = svg(I.close, true);
+      x.addEventListener("click", hideAll);
+      head.appendChild(x);
+      pop.appendChild(head);
+
+      pop.appendChild(el("blockquote", "said", esc(m.text)));
+
+      var kinds = el("div", "kinds");
+      A.PASSES.forEach(function (q) {
+        var b = el("button");
+        b.type = "button";
+        b.title = q.what;
+        b.setAttribute("aria-pressed", String(q.n === m.pass));
+        b.innerHTML = '<span class="sw" style="background:' + q.hue + '"></span>' + esc(q.short);
+        b.addEventListener("click", function () {
+          shop().update(id, { pass: q.n });
+          repaintClass(id);
+          [].forEach.call(kinds.children, function (o) {
+            o.setAttribute("aria-pressed", String(o === b));
+          });
+          prompt.textContent = q.ask;
+          ta.placeholder = q.ask;
+          drawMargin();
+          if (Room.live()) Room.shareMark(shop().byId(id));
+        });
+        kinds.appendChild(b);
+      });
+      pop.appendChild(kinds);
+
+      var prompt = el("p", "rd-pop-ask", esc(p.ask));
+      pop.appendChild(prompt);
+
+      var ta = el("textarea");
+      ta.placeholder = p.ask;
+      ta.setAttribute("aria-label", "Your note");
+      ta.value = m.note || "";
+      pop.appendChild(ta);
+
+      var tags = el("input", "tags");
+      tags.type = "text";
+      tags.placeholder = "Tags, separated by commas";
+      tags.setAttribute("aria-label", "Tags");
+      tags.value = (m.tags || []).join(", ");
+      pop.appendChild(tags);
+
+      /* Link to another mark in this unit. Claims first, because a claim is
+         what most things want to be attached to. */
+      var others = mine().filter(function (o) { return o.id !== id; })
+        .sort(function (a2, b2) { return (a2.pass === 2 ? -1 : 0) - (b2.pass === 2 ? -1 : 0); });
+      if (others.length) {
+        var link = el("div", "rd-pop-link");
+        var sel = el("select");
+        sel.setAttribute("aria-label", "Link this to another mark");
+        sel.innerHTML = '<option value="">Link this to…</option>' + others.map(function (o) {
+          var on = (m.links || []).indexOf(o.id) > -1;
+          return '<option value="' + o.id + '"' + (on ? " selected" : "") + ">" +
+            esc(A.pass(o.pass).name + " · " + o.sec + " · " + trim(o.text, 42)) + "</option>";
+        }).join("");
+        sel.addEventListener("change", function () {
+          var v = sel.value;
+          if (!v) return;
+          var links = (shop().byId(id).links || []).slice();
+          if (links.indexOf(v) < 0) links.push(v);
+          shop().update(id, { links: links });
+          drawLinks();
+          drawMargin();
+        });
+        link.appendChild(sel);
+        var linked = el("div", "rd-pop-linked");
+        link.appendChild(linked);
+        pop.appendChild(link);
+
+        var drawLinks = function () {
+          var cur = shop().byId(id);
+          linked.innerHTML = "";
+          (cur.links || []).forEach(function (lid) {
+            var o = shop().byId(lid);
+            if (!o) return;
+            var chip = el("span", "lk");
+            chip.innerHTML = '<i style="background:' + A.pass(o.pass).hue + '"></i>' +
+              esc(trim(o.text, 30));
+            var rm = el("button");
+            rm.type = "button";
+            rm.setAttribute("aria-label", "Unlink");
+            rm.textContent = "×";
+            rm.addEventListener("click", function () {
+              shop().update(id, { links: cur.links.filter(function (l) { return l !== lid; }) });
+              drawLinks(); drawMargin();
+            });
+            chip.appendChild(rm);
+            linked.appendChild(chip);
+          });
+        };
+        drawLinks();
+      }
+
+      var row = el("div", "row");
+      var save = el("button", "save", "Save");
+      save.type = "button";
+      save.addEventListener("click", function () {
+        shop().update(id, {
+          note: ta.value.trim(),
+          tags: tags.value.split(",").map(function (t) { return t.trim(); })
+                .filter(Boolean).slice(0, 8)
+        });
+        repaintClass(id);
+        drawMargin();
+        if (Room.live()) Room.shareMark(shop().byId(id));
+        hideAll();
+      });
+      var cp = el("button", "quote");
+      cp.type = "button";
+      cp.title = "Copy the quotation with its citation";
+      cp.innerHTML = svg(I.copy, true);
+      cp.addEventListener("click", function () {
+        copy(A.quoted(shop().byId(id), SOURCE, S.citeStyle || "mla"));
+        toast("Copied in " + (S.citeStyle || "mla").toUpperCase() + ".");
+      });
+      var del = el("button", "del");
+      del.type = "button";
+      del.title = "Remove this mark";
+      del.innerHTML = svg(I.trash, true);
+      del.addEventListener("click", function () { remove(id); hideAll(); });
+      row.appendChild(save); row.appendChild(cp); row.appendChild(del);
+      pop.appendChild(row);
+
+      $("#rdTools").classList.remove("on");
+      pop.classList.add("on");
+      place(pop, node.getBoundingClientRect(), true);
+      setTimeout(function () { ta.focus(); }, 40);
+    }
+    S.openNote = editor;
+
+    function repaintClass(id) {
+      var m = shop().byId(id);
+      if (!m || !body) return;
+      [].forEach.call(body.querySelectorAll('mark[data-id="' + id + '"]'), function (n) {
+        n.className = A.className(m);
+        n.dataset.pass = m.pass;
+      });
+    }
+
+    function remove(id) {
+      A.unpaint(body, id);
+      shop().remove(id);
+      drawMargin();
+      if (Room.live()) Room.retractMark(id);
+    }
+
+    function focusMark(id) {
+      unfocus();
+      if (!body) return;
+      [].forEach.call(body.querySelectorAll('mark[data-id="' + id + '"]'), function (n) {
+        n.classList.add("focus");
+      });
+      var card = marginEl && marginEl.querySelector('[data-for="' + id + '"]');
+      if (card) card.classList.add("focus");
+    }
+    function unfocus() {
+      if (body) [].forEach.call(body.querySelectorAll("mark.focus"), function (n) {
+        n.classList.remove("focus");
+      });
+      if (marginEl) [].forEach.call(marginEl.querySelectorAll(".focus"), function (n) {
+        n.classList.remove("focus");
+      });
+    }
+
+    /* ---------------------------------------------------------- The margin
+       Every mark beside the line it was made on. Cards are placed at the top
+       of their highlight and then pushed down until they stop overlapping,
+       which is what keeps the column readable when three marks land in one
+       paragraph. */
+    function card(m, isTheirs) {
+      var p = A.pass(m.pass);
+      var c = el("article", "mg" + (isTheirs ? " theirs" : ""));
+      c.dataset.for = m.id;
+      c.style.setProperty("--hue", p.hue);
+
+      var top = el("header", "mg-top");
+      top.innerHTML = '<span class="k">' + esc(p.name) + "</span>";
+      if (isTheirs && m.by) {
+        var av = el("span", "mg-who");
+        av.style.background = m.by.hue || "#6e6e73";
+        av.textContent = m.by.initials;
+        av.title = m.by.name;
+        top.appendChild(av);
+      }
+      c.appendChild(top);
+
+      c.appendChild(el("q", null, esc(trim(m.text, 120))));
+      if (m.note) c.appendChild(el("p", "mg-note", esc(m.note)));
+      if (m.tags && m.tags.length) {
+        c.appendChild(el("p", "mg-tags", m.tags.map(function (t) {
+          return "<em>" + esc(t) + "</em>";
+        }).join("")));
+      }
+      if (m.links && m.links.length) {
+        var n = m.links.filter(function (l) { return shop().byId(l); }).length;
+        if (n) c.appendChild(el("p", "mg-link", svg(I.link, true) +
+          "<span>" + n + (n === 1 ? " link" : " links") + "</span>"));
+      }
+
+      if (isTheirs) {
+        var keep = el("button", "mg-keep", "Keep this");
+        keep.type = "button";
+        keep.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var copyOf = JSON.parse(JSON.stringify(m));
+          delete copyOf.id; copyOf.by = null;
+          copyOf.note = (copyOf.note ? copyOf.note + " " : "") +
+            "(from " + (m.by ? m.by.first || m.by.name : "the room") + ")";
+          var made = shop().add(copyOf);
+          var r = A.locate(body, made.anchor);
+          if (r) A.paint(body, r, made);
+          drawMargin();
+          toast("Kept in your notebook.");
+        });
+        c.appendChild(keep);
+      }
+
+      c.addEventListener("mouseenter", function () { focusMark(m.id); });
+      c.addEventListener("mouseleave", function () { if (!open) unfocus(); });
+      c.addEventListener("click", function () {
+        var node = body.querySelector('mark[data-id="' + m.id + '"]');
+        if (!node) return;
+        node.scrollIntoView({ block: "center", behavior: "smooth" });
+        if (!isTheirs) setTimeout(function () { editor(node, m.id); }, 340);
+      });
+      return c;
+    }
+
+    function drawMargin() {
+      if (!marginEl) return;
+      var list = here().concat(theirsHere().map(function (m) { m._t = true; return m; }));
+      list = list.filter(function (m) { return !filter || m.pass === filter; });
+
+      var head = marginEl.querySelector(".mg-head");
+      var wrap = marginEl.querySelector(".mg-wrap");
+      wrap.innerHTML = "";
+
+      var all = here();
+      head.innerHTML = "";
+      var h = el("div", "mg-head-in");
+      h.innerHTML = "<b>Margin</b><span>" + all.length +
+        (all.length === 1 ? " mark" : " marks") + " here</span>";
+      head.appendChild(h);
+      if (all.length) {
+        var nb = el("button", "mg-open");
+        nb.type = "button";
+        nb.textContent = "Notebook";
+        nb.addEventListener("click", function () { openNotebook(); });
+        head.appendChild(nb);
+      }
+
+      if (!list.length) {
+        var e = el("div", "mg-empty");
+        e.innerHTML = filter
+          ? "<p>No " + esc(A.pass(filter).name.toLowerCase()) + "s in this section.</p>"
+          : "<p>Select any sentence to mark it.</p><p class=\"k\">1–6 pick the pass · N annotates · C copies with the citation</p>";
+        wrap.appendChild(e);
+        return;
+      }
+
+      // Position: each card at its highlight, then pushed clear of the one above.
+      var artTop = artEl.getBoundingClientRect().top + window.scrollY;
+      var placed = list.map(function (m) {
+        var node = body.querySelector('mark[data-id="' + m.id + '"]');
+        var y = node ? node.getBoundingClientRect().top + window.scrollY - artTop : 1e6;
+        return { m: m, y: y, orphan: !node };
+      }).sort(function (a2, b2) { return a2.y - b2.y; });
+
+      var floor = 0;
+      placed.forEach(function (x) {
+        var c = card(x.m, !!x.m._t);
+        if (x.orphan) {
+          c.classList.add("orphan");
+          c.title = "This passage has moved or changed. The note is kept.";
+        }
+        wrap.appendChild(c);
+        var top = Math.max(x.orphan ? floor : x.y, floor);
+        c.style.top = top + "px";
+        floor = top + c.offsetHeight + 10;
+      });
+      wrap.style.height = floor + "px";
+    }
+
+    /* ------------------------------------------------------------- Wiring */
+    function arm(newBody, newSec, art, margin) {
+      body = newBody; sec = newSec; artEl = art; marginEl = margin;
+      buildTools();
+
+      A.restore(body, here());
+      theirsHere().forEach(function (m) {
+        var r = A.locate(body, m.anchor);
+        if (r) A.paint(body, r, m);
+      });
+
+      body.addEventListener("mouseup", function () {
+        setTimeout(function () {
+          var r = grab();
+          if (!r) { if (!open) hideAll(); return; }
+          pending = r;
+          open = null;
+          $("#rdPop").classList.remove("on");
+          place($("#rdTools"), r.getBoundingClientRect());
+          $("#rdTools").classList.add("on");
+        }, 10);
+      });
+
+      body.addEventListener("click", function (e) {
+        var n = e.target.closest("mark.hl");
+        if (!n) return;
+        e.stopPropagation();
+        $("#rdTools").classList.remove("on");
+        var m = shop().byId(n.dataset.id);
+        if (m) editor(n, n.dataset.id);
+        else focusMark(n.dataset.id);      // someone else's — look, do not edit
+      });
+
+      // 1-6 pick a pass, N annotates, C copies, P points.
+      S.readKeys = function (e) {
+        if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName || "") || e.metaKey || e.ctrlKey) return;
+        if (e.key === "Escape") { hideAll(); return; }
+        var r = pending || grab();
+        if (!r) return;
+        var k = e.key.toLowerCase();
+        var p = A.PASSES.filter(function (x) { return x.k === k; })[0];
+        if (p) { e.preventDefault(); pending = r; commit(p.n); }
+        else if (k === "n" || k === "c" || k === "p") {
+          e.preventDefault(); pending = r; act(k === "n" ? "note" : k === "c" ? "copy" : "point");
+        }
+      };
+
+      if (S.annAway) document.removeEventListener("mousedown", S.annAway);
+      S.annAway = function (e) {
+        if ($("#rdTools").contains(e.target) || $("#rdPop").contains(e.target)) return;
+        if (e.target.closest("mark.hl") || e.target.closest(".mg")) return;
+        hideAll();
+      };
+      document.addEventListener("mousedown", S.annAway);
+
+      drawMargin();
+    }
+
+    /* A mark arriving from the room. Kept apart from this reader's own so a
+       shared session never quietly rewrites someone's notebook. */
+    function receive(who, m) {
+      m = JSON.parse(JSON.stringify(m));
+      m.by = who;
+      var was = theirs.filter(function (x) { return x.id === m.id; })[0];
+      if (was) {
+        A.unpaint(body, m.id);
+        theirs = theirs.filter(function (x) { return x.id !== m.id; });
+      }
+      theirs.push(m);
+      if (body && m.sec === sec) {
+        var r = A.locate(body, m.anchor);
+        if (r) A.paint(body, r, m);
+      }
+      drawMargin();
+    }
+    function retract(id) {
+      A.unpaint(body, id);
+      theirs = theirs.filter(function (x) { return x.id !== id; });
+      drawMargin();
+    }
+    function forget() { theirs.forEach(function (m) { A.unpaint(body, m.id); }); theirs = []; drawMargin(); }
+
+    /* A peer pointing at a passage: find it, flash it, do not keep it. */
+    function flash(a) {
+      if (!body) return;
+      var r = A.locate(body, a);
+      if (!r) return;
+      var m = { id: "point" + Date.now(), pass: 0 };
+      var span = document.createElement("span");
+      span.className = "rd-point";
+      try { r.surroundContents(span); }
+      catch (e) { return; }
+      span.scrollIntoView({ block: "center", behavior: "smooth" });
+      setTimeout(function () {
+        var parent = span.parentNode;
+        if (!parent) return;
+        while (span.firstChild) parent.insertBefore(span.firstChild, span);
+        parent.removeChild(span);
+        parent.normalize();
+      }, 2600);
+    }
+
+    function setFilter(n) { filter = n; drawMargin(); }
+    function currentFilter() { return filter; }
+
+    return {
+      arm: arm, store: shop, reset: reset, all: mine, here: here,
+      draw: drawMargin, remove: remove, editor: editor,
+      receive: receive, retract: retract, forget: forget, flash: flash,
+      setFilter: setFilter, filter: currentFilter, source: SOURCE
+    };
+  })();
+
+  /* ==================================================== The section itself */
   function openRead(i, silent) {
     var sec = sectionAt(i);
     if (!sec) return;
@@ -1355,7 +2276,7 @@
     var v = $("#v-read");
     v.innerHTML = "";
 
-    var two = el("div", "lx-two");
+    var three = el("div", "rd-three");
     var art = el("article", "rd");
 
     var kick = el("div", "rd-kicker");
@@ -1376,12 +2297,7 @@
       art.appendChild(ob);
     }
 
-    if (sec.video) {
-      var vid = el("div", "rd-video");
-      vid.innerHTML = '<video controls preload="metadata" playsinline src="' + sec.video + '"></video>';
-      art.appendChild(vid);
-      art.appendChild(el("p", "rd-cap", "Section video — " + esc(sec.t) + "."));
-    }
+    if (sec.video) art.appendChild(videoBlock(sec));
 
     var body = el("div", "rd-body");
     body.id = "rdBody";
@@ -1418,49 +2334,137 @@
       : '<div><span class="t">End of the unit</span><b>Study the terms</b></div>';
     var nb = el("button", "lx-btn", nxt ? "Continue" : "Study set");
     nb.type = "button";
-    nb.addEventListener("click", function () {
-      if (nxt) openRead(i + 1); else openSet("media-5");
-    });
+    nb.addEventListener("click", function () { if (nxt) openRead(i + 1); else openSet("media-5"); });
     next.appendChild(nb);
     art.appendChild(next);
 
-    var marks = el("div", "rd-marks");
-    marks.id = "rdMarks";
-    art.appendChild(marks);
+    three.appendChild(unitRail(i));
+    three.appendChild(art);
 
-    two.appendChild(art);
+    var margin = el("aside", "rd-margin");
+    margin.innerHTML = '<div class="mg-head"></div><div class="mg-wrap"></div>';
+    three.appendChild(margin);
 
-    /* ---- the side index ---- */
-    var side = el("aside", "lx-side");
-    var toc = el("div", "lx-panel");
-    toc.innerHTML = "<h3>Unit 5 · Waves and Sound</h3>";
+    v.appendChild(three);
+
+    noFoot(); progress(null);
+    show("read");
+    Ann.arm(body, sec.n, art, margin);
+    railWatch();
+    Room.here(sec.n);
+    if (S.marginFn) window.removeEventListener("resize", S.marginFn);
+    S.marginFn = function () { Ann.draw(); };
+    window.addEventListener("resize", S.marginFn);
+  }
+
+  /* ------------------------------------------------------------- The video
+     The placeholder is the default and the player is the upgrade, rather than
+     the other way round. A <video> pointed at a file that is not there shows
+     a broken control for as long as it takes to fail, and a broken control at
+     the top of an article is the first thing a reader sees. So the file is
+     probed off-screen first and the frame only becomes a player once the
+     browser has actually found something to play. */
+  function videoBlock(sec) {
+    var box = el("figure", "rd-video");
+    var ph = el("div", "rd-vph");
+    ph.innerHTML =
+      '<div class="rd-vph-art" aria-hidden="true"><span class="wave"></span>' +
+      '<span class="glyph">' + svg(I.play) + "</span></div>" +
+      '<div class="rd-vph-say"><span class="k">Section video · ' + esc(sec.n) + "</span>" +
+      "<b>" + esc(sec.t) + "</b>" +
+      "<p>Placeholder. The file is not carried in this build — drop " +
+      "<code>" + esc(String(sec.video).split("/").pop()) + "</code> into <code>learn/media/</code>, " +
+      "or point <code>video</code> in <code>unit5.js</code> at a URL. The player appears here on " +
+      "its own once it can find it.</p></div>";
+    box.appendChild(ph);
+    var cap = el("figcaption", "rd-cap", "Section video — " + esc(sec.t) + ".");
+    box.appendChild(cap);
+
+    var probe = document.createElement("video");
+    probe.preload = "metadata";
+    probe.muted = true;
+    probe.addEventListener("loadedmetadata", function () {
+      var tag = el("video");
+      tag.controls = true; tag.preload = "metadata"; tag.playsInline = true;
+      tag.src = sec.video;
+      box.replaceChild(tag, ph);
+      box.classList.add("live");
+    });
+    probe.src = sec.video;
+
+    return box;
+  }
+
+  /* ---------------------------------------------- The left rail: the unit
+     Where you are, what is left, and the two doors out of the article —
+     your notebook, and the room. */
+  function unitRail(i) {
+    var side = el("aside", "rd-rail-nav");
+
+    var toc = el("div", "rd-panel");
+    toc.innerHTML = '<h3>Unit 5<span>Waves and Sound</span></h3>';
     var list = el("div", "rd-toc");
     U5.forEach(function (x, k) {
       var b = el("button");
       b.type = "button";
       b.setAttribute("aria-current", String(k === i));
-      b.innerHTML = '<span class="n">' + esc(x.n) + "</span><span>" + esc(x.t) + "</span>" +
+      var n = Ann.all().filter(function (m) { return m.sec === x.n; }).length;
+      b.innerHTML = '<span class="n">' + esc(x.n) + "</span><span class=\"t\">" + esc(x.t) + "</span>" +
+        (n ? '<span class="badge">' + n + "</span>" : "") +
         (S.readDone[x.n] ? '<span class="tick">' + svg(I.tick, true) + "</span>" : "");
       b.addEventListener("click", function () { openRead(k); });
       list.appendChild(b);
     });
     toc.appendChild(list);
+
+    var done = Object.keys(S.readDone).length;
+    var prog = el("div", "rd-unitprog");
+    prog.innerHTML = '<div class="track"><i style="width:' +
+      Math.round(done / U5.length * 100) + '%"></i></div>' +
+      "<span>" + done + " of " + U5.length + " sections checked</span>";
+    toc.appendChild(prog);
     side.appendChild(toc);
 
-    var help = el("div", "lx-panel");
-    help.innerHTML = "<h3>Marking up</h3><p>Select any run of text to highlight it, and add a " +
-      "note to a highlight if you want to say why. Everything you mark is collected at the foot " +
-      "of the section.</p>";
-    side.appendChild(help);
-    two.appendChild(side);
+    /* The passes, as a legend and as a filter. Six counts tell a reader more
+       about their own reading than any progress bar does. */
+    var lens = el("div", "rd-panel rd-passes");
+    lens.innerHTML = "<h3>Passes<span>Click to filter your margin</span></h3>";
+    var all = Ann.all();
+    A.PASSES.forEach(function (p) {
+      var n = all.filter(function (m) { return m.pass === p.n; }).length;
+      var b = el("button");
+      b.type = "button";
+      b.title = p.what;
+      b.setAttribute("aria-pressed", String(Ann.filter() === p.n));
+      b.innerHTML = '<i style="background:' + p.hue + '"></i><span>' + esc(p.name) +
+        '</span><em>' + n + "</em>";
+      b.addEventListener("click", function () {
+        var now = Ann.filter() === p.n ? 0 : p.n;
+        Ann.setFilter(now);
+        [].forEach.call(lens.querySelectorAll("button"), function (o) {
+          o.setAttribute("aria-pressed", String(o === b && now));
+        });
+      });
+      lens.appendChild(b);
+    });
+    side.appendChild(lens);
 
-    v.appendChild(two);
+    var nbl = el("button", "rd-side-link");
+    nbl.type = "button";
+    nbl.innerHTML = svg(I.book, true) + "<span>Notebook</span><span class=\"c\">" +
+      Ann.all().length + "</span>";
+    nbl.addEventListener("click", function () { openNotebook(); });
+    side.appendChild(nbl);
 
-    noFoot(); progress(null);
-    show("read");
-    armAnnotation(body, sec.n);
-    drawMarks(sec.n);
-    railWatch();
+    var col = el("button", "rd-side-link");
+    col.id = "roomOpen";
+    col.type = "button";
+    col.innerHTML = svg(I.people, true) + "<span>Read together</span>" +
+      '<span class="c" id="roomCount">' + (Room.count() || "") + "</span>";
+    col.addEventListener("click", function () { Room.panel(); });
+    side.appendChild(col);
+
+    return side;
   }
 
   function checkBlock(sec, i) {
@@ -1497,16 +2501,20 @@
     return box;
   }
 
-  /* Reading progress as a hairline under the bar. */
+  /* Reading progress as a hairline under the bar — and, when following
+     someone, the thing that tells them where you are. */
   function railWatch() {
     var rail = $("#rdRail");
     if (!rail) return;
     rail.hidden = false;
     if (S.railFn) window.removeEventListener("scroll", S.railFn);
+    var beat = 0;
     S.railFn = function () {
       var h = document.documentElement.scrollHeight - window.innerHeight;
-      rail.firstElementChild.style.width =
-        (h > 0 ? Math.min(100, Math.max(0, window.scrollY / h * 100)) : 0) + "%";
+      var pct = h > 0 ? Math.min(100, Math.max(0, window.scrollY / h * 100)) : 0;
+      rail.firstElementChild.style.width = pct + "%";
+      var now = Date.now();
+      if (Room.live() && now - beat > 400) { beat = now; Room.scrolled(window.scrollY); }
     };
     window.addEventListener("scroll", S.railFn, { passive: true });
     S.railFn();
@@ -1515,176 +2523,336 @@
     var rail = $("#rdRail");
     if (rail) rail.hidden = true;
     if (S.railFn) { window.removeEventListener("scroll", S.railFn); S.railFn = null; }
+    if (S.marginFn) { window.removeEventListener("resize", S.marginFn); S.marginFn = null; }
   }
 
-  /* ========================================================== Annotation
-     Wrapping the Range itself breaks the moment a selection crosses an
-     element boundary — which is most of the time in a real article. So the
-     text nodes inside the range are collected first and wrapped one at a
-     time, which survives paragraphs, definitions and lists alike. */
-  function textNodesIn(range) {
-    var root = range.commonAncestorContainer;
-    if (root.nodeType === 3) return [root];
-    var walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: function (n) {
-        if (!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-        return range.intersectsNode(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-      }
-    });
-    var out = [], n;
-    while ((n = walk.nextNode())) out.push(n);
-    return out;
-  }
+  /* ============================================================== Notebook
+     Four ways into the same marks, because the question changes.
 
-  function paintRange(range, id, colour) {
-    var nodes = textNodesIn(range);
-    if (!nodes.length) return false;
-    nodes.forEach(function (node, k) {
-      var from = (node === range.startContainer) ? range.startOffset : 0;
-      var to = (node === range.endContainer) ? range.endOffset : node.nodeValue.length;
-      if (to <= from) return;
-      var mid = node;
-      if (to < node.nodeValue.length) mid.splitText(to);
-      if (from > 0) mid = mid.splitText(from);
-      var m = document.createElement("mark");
-      m.className = "hl" + (colour > 1 ? " c" + colour : "");
-      m.dataset.id = id;
-      mid.parentNode.replaceChild(m, mid);
-      m.appendChild(mid);
-    });
-    return true;
-  }
+       SECTIONS   what did I make of this part
+       PASSES     what kind of reader was I being
+       TAGS       what keeps coming up
+       ARGUMENT   what is actually being claimed, and does it hold
 
-  function armAnnotation(body, sectionId) {
-    var tools = $("#rdTools"), pop = $("#rdPop");
-    var pending = null, active = null;
+     The last one is the one that matters. It reassembles claims with the
+     evidence and objections a reader linked to them, which is an essay
+     outline that happens to have been written while reading. */
+  function openNotebook(silent) {
+    if (!silent) enter("notes", "Notebook", function () { openNotebook(true); });
+    var v = $("#v-notes");
+    v.innerHTML = "";
 
-    function hideAll() {
-      tools.classList.remove("on");
-      pop.classList.remove("on");
-      active = null;
-    }
-    S.hideAnn = hideAll;
+    var marks = Ann.all();
+    var prof = A.profile(marks);
 
-    // Positioned in page coordinates now that these live outside the view.
-    function place(node, rect) {
-      node.style.left = (rect.left + rect.width / 2 + window.scrollX) + "px";
-      node.style.top = (rect.top + window.scrollY - 8) + "px";
+    v.appendChild(el("p", "lx-eyebrow", "Media Arts · Unit 5"));
+    v.appendChild(el("h1", "lx-h1", "Notebook"));
+
+    if (!marks.length) {
+      v.appendChild(el("p", "lx-lede",
+        "Nothing marked yet. Select any sentence while reading — 1 to 6 for the pass, " +
+        "N to write a note — and it lands here."));
+      noFoot(); progress(null); show("notes"); return;
     }
 
-    body.addEventListener("mouseup", function () {
-      setTimeout(function () {
-        var sel = window.getSelection();
-        if (!sel || sel.isCollapsed || !sel.rangeCount) { if (!active) hideAll(); return; }
-        var range = sel.getRangeAt(0);
-        if (!body.contains(range.commonAncestorContainer)) return;
-        if (!String(sel).trim()) return;
-        pending = range.cloneRange();
-        active = null;
-        pop.classList.remove("on");
-        place(tools, range.getBoundingClientRect());
-        tools.classList.add("on");
-      }, 10);
+    v.appendChild(el("p", "lx-lede", prof.shape));
+
+    /* The reading, in numbers that mean something. */
+    var strip = el("div", "nb-prof");
+    var depth = el("div", "nb-depth");
+    depth.innerHTML = '<div class="ring" style="--v:' + prof.depth + '"><b>' + prof.depth +
+      "</b></div><span>Depth<em>How far past underlining</em></span>";
+    strip.appendChild(depth);
+    var counts = el("div", "nb-counts");
+    A.PASSES.forEach(function (p) {
+      var n = prof.count[p.key];
+      var c = el("div", "nb-count" + (n ? "" : " nil"));
+      c.innerHTML = '<i style="background:' + p.hue + '"></i><b>' + n + "</b><span>" +
+        esc(p.name) + "</span>";
+      counts.appendChild(c);
     });
+    strip.appendChild(counts);
+    var writ = el("div", "nb-count wide");
+    writ.innerHTML = "<b>" + prof.noted + "</b><span>with a note</span>";
+    counts.appendChild(writ);
+    v.appendChild(strip);
 
-    [].forEach.call(tools.querySelectorAll("[data-colour]"), function (b) {
-      b.onclick = function () {
-        if (!pending) return;
-        var id = "m" + Date.now() + Math.floor(Math.random() * 999);
-        var colour = +b.dataset.colour;
-        var said = String(pending).trim().replace(/\s+/g, " ");
-        if (paintRange(pending, id, colour)) {
-          S.marks.push({ id: id, sec: sectionId, colour: colour, text: said, note: "" });
-          drawMarks(sectionId);
-        }
-        window.getSelection().removeAllRanges();
-        pending = null;
-        hideAll();
-      };
-    });
+    /* Controls. */
+    var bar = el("div", "nb-bar");
+    var search = el("input", "nb-search");
+    search.type = "search";
+    search.placeholder = "Search your marks, notes and tags";
+    search.setAttribute("aria-label", "Search the notebook");
+    bar.appendChild(search);
 
-    tools.querySelector("[data-act=note]").onclick = function () {
-      if (!pending) return;
-      var id = "m" + Date.now() + Math.floor(Math.random() * 999);
-      var said = String(pending).trim().replace(/\s+/g, " ");
-      if (paintRange(pending, id, 1)) {
-        S.marks.push({ id: id, sec: sectionId, colour: 1, text: said, note: "" });
-        drawMarks(sectionId);
-        var m = body.querySelector('mark[data-id="' + id + '"]');
-        window.getSelection().removeAllRanges();
-        pending = null;
-        tools.classList.remove("on");
-        openNote(m, id);
-      }
-    };
-
-    function openNote(node, id) {
-      var mark = S.marks.filter(function (x) { return x.id === id; })[0];
-      if (!mark) return;
-      active = id;
-      place(pop, node.getBoundingClientRect());
-      pop.classList.add("on");
-      var ta = pop.querySelector("textarea");
-      ta.value = mark.note || "";
-      ta.focus();
-      pop.querySelector(".save").onclick = function () {
-        mark.note = ta.value.trim();
-        [].forEach.call(body.querySelectorAll('mark[data-id="' + id + '"]'), function (n) {
-          n.classList.toggle("noted", !!mark.note);
+    var mode = "section";
+    var modes = el("div", "nb-modes");
+    [["section", "Sections"], ["pass", "Passes"], ["tag", "Tags"], ["argument", "Argument"]]
+      .forEach(function (m) {
+        var b = el("button", "nb-seg");
+        b.type = "button";
+        b.textContent = m[1];
+        b.setAttribute("aria-pressed", String(m[0] === mode));
+        b.addEventListener("click", function () {
+          mode = m[0];
+          [].forEach.call(modes.children, function (x) {
+            x.setAttribute("aria-pressed", String(x === b));
+          });
+          render();
         });
-        drawMarks(sectionId);
-        hideAll();
-      };
-      pop.querySelector(".del").onclick = function () {
-        [].forEach.call(body.querySelectorAll('mark[data-id="' + id + '"]'), function (n) {
-          var parent = n.parentNode;
-          while (n.firstChild) parent.insertBefore(n.firstChild, n);
-          parent.removeChild(n);
-          parent.normalize();
-        });
-        S.marks = S.marks.filter(function (x) { return x.id !== id; });
-        drawMarks(sectionId);
-        hideAll();
-      };
-    }
-    S.openNote = openNote;
-
-    body.addEventListener("click", function (e) {
-      var m = e.target.closest("mark.hl");
-      if (!m) return;
-      e.stopPropagation();
-      tools.classList.remove("on");
-      openNote(m, m.dataset.id);
-    });
-
-    document.addEventListener("mousedown", function (e) {
-      if (tools.contains(e.target) || pop.contains(e.target)) return;
-      if (e.target.closest("mark.hl")) return;
-      hideAll();
-    });
-  }
-
-  function drawMarks(sectionId) {
-    var box = $("#rdMarks");
-    if (!box) return;
-    var mine = S.marks.filter(function (m) { return m.sec === sectionId; });
-    box.innerHTML = "";
-    if (!mine.length) return;
-    box.appendChild(el("h2", "lx-h2", "What you marked"));
-    mine.forEach(function (m) {
-      var b = el("button", "rd-mark");
-      b.type = "button";
-      b.innerHTML = '<span class="dot' + (m.colour > 1 ? " c" + m.colour : "") + '"></span>' +
-        "<span><q>" + esc(m.text) + "</q>" +
-        (m.note ? '<span class="note">' + esc(m.note) + "</span>" : "") + "</span>";
-      b.addEventListener("click", function () {
-        var node = document.querySelector('#rdBody mark[data-id="' + m.id + '"]');
-        if (!node) return;
-        node.scrollIntoView({ block: "center", behavior: "smooth" });
-        setTimeout(function () { if (S.openNote) S.openNote(node, m.id); }, 320);
+        modes.appendChild(b);
       });
-      box.appendChild(b);
+    bar.appendChild(modes);
+
+    var acts = el("div", "nb-acts");
+    var style = el("select", "nb-style");
+    style.setAttribute("aria-label", "Citation style");
+    style.innerHTML = ["mla", "apa", "chicago"].map(function (s) {
+      return '<option value="' + s + '"' + ((S.citeStyle || "mla") === s ? " selected" : "") +
+        ">" + s.toUpperCase() + "</option>";
+    }).join("");
+    style.addEventListener("change", function () { S.citeStyle = style.value; render(); });
+    acts.appendChild(style);
+
+    var exp = el("button", "lx-btn quiet", "Copy notebook");
+    exp.type = "button";
+    exp.addEventListener("click", function () {
+      copy(asMarkdown(marks));
+      toast("Notebook copied as Markdown.");
     });
+    acts.appendChild(exp);
+
+    var outl = el("button", "lx-btn quiet", "Copy outline");
+    outl.type = "button";
+    outl.title = "Claims, with their evidence and objections, as an essay skeleton";
+    outl.addEventListener("click", function () {
+      copy(asOutline(marks));
+      toast("Outline copied — claims with what holds them up.");
+    });
+    acts.appendChild(outl);
+    bar.appendChild(acts);
+    v.appendChild(bar);
+
+    var out = el("div", "nb-out");
+    v.appendChild(out);
+
+    function hits() {
+      var q = search.value.trim().toLowerCase();
+      if (!q) return marks;
+      return marks.filter(function (m) {
+        return (m.text + " " + (m.note || "") + " " + (m.tags || []).join(" "))
+          .toLowerCase().indexOf(q) > -1;
+      });
+    }
+
+    function group(title, sub, rows, go) {
+      var g = el("section", "nb-group");
+      var h = el("div", "nb-group-head");
+      h.innerHTML = "<h2>" + title + "</h2><span>" + rows.length + "</span>" +
+        (sub ? '<em class="nb-sub">' + esc(sub) + "</em>" : "");
+      if (go) {
+        var b = el("button", "lx-btn ghost", "Read");
+        b.type = "button";
+        b.addEventListener("click", go);
+        h.appendChild(b);
+      }
+      g.appendChild(h);
+      rows.forEach(function (m) { g.appendChild(row(m)); });
+      return g;
+    }
+
+    function row(m) {
+      var p = A.pass(m.pass);
+      var b = el("div", "nb-row");
+      b.style.setProperty("--hue", p.hue);
+      var main = el("div", "nb-row-main");
+      main.innerHTML = '<span class="kind">' + esc(p.name) + " · " + esc(m.sec) + "</span>" +
+        "<q>" + esc(m.text) + "</q>" +
+        (m.note ? '<p class="note">' + esc(m.note) + "</p>" : "") +
+        ((m.tags && m.tags.length)
+          ? '<p class="tags">' + m.tags.map(function (t) { return "<em>" + esc(t) + "</em>"; }).join("") + "</p>"
+          : "");
+      b.appendChild(main);
+
+      var tools = el("div", "nb-row-tools");
+      var go = el("button");
+      go.type = "button"; go.title = "Go to it in the text"; go.setAttribute("aria-label", "Go to it in the text");
+      go.innerHTML = svg(I.arrow, true);
+      go.addEventListener("click", function () {
+        var ix = U5.indexOf(secByN(m.sec));
+        if (ix < 0) return;
+        openRead(ix);
+        setTimeout(function () {
+          var node = document.querySelector('#rdBody mark[data-id="' + m.id + '"]');
+          if (node) {
+            node.scrollIntoView({ block: "center", behavior: "smooth" });
+            setTimeout(function () { Ann.editor(node, m.id); }, 340);
+          }
+        }, 120);
+      });
+      var cp = el("button");
+      cp.type = "button"; cp.title = "Copy with citation"; cp.setAttribute("aria-label", "Copy with citation");
+      cp.innerHTML = svg(I.copy, true);
+      cp.addEventListener("click", function () {
+        copy(A.quoted(m, SOURCE, S.citeStyle || "mla"));
+        toast("Copied in " + (S.citeStyle || "mla").toUpperCase() + ".");
+      });
+      var rm = el("button");
+      rm.type = "button"; rm.title = "Remove"; rm.setAttribute("aria-label", "Remove");
+      rm.innerHTML = svg(I.trash, true);
+      rm.addEventListener("click", function () {
+        Ann.remove(m.id);
+        marks = Ann.all();
+        render();
+      });
+      tools.appendChild(go); tools.appendChild(cp); tools.appendChild(rm);
+      b.appendChild(tools);
+      return b;
+    }
+
+    function render() {
+      var list = hits();
+      out.innerHTML = "";
+      if (!list.length) { out.appendChild(el("div", "lx-empty", "Nothing matches that.")); return; }
+
+      if (mode === "section") {
+        U5.forEach(function (s) {
+          var rows = list.filter(function (m) { return m.sec === s.n; });
+          if (!rows.length) return;
+          out.appendChild(group(esc(s.n) + "  " + esc(s.t), null, rows, function () {
+            openRead(U5.indexOf(s));
+          }));
+        });
+      } else if (mode === "pass") {
+        A.PASSES.forEach(function (p) {
+          var rows = list.filter(function (m) { return m.pass === p.n; });
+          if (!rows.length) return;
+          out.appendChild(group(esc(p.name) + "s", p.what, rows, null));
+        });
+      } else if (mode === "tag") {
+        var tags = {};
+        list.forEach(function (m) { (m.tags || []).forEach(function (t) { (tags[t] = tags[t] || []).push(m); }); });
+        var keys = Object.keys(tags).sort(function (a2, b2) { return tags[b2].length - tags[a2].length; });
+        if (!keys.length) {
+          out.appendChild(el("div", "lx-empty",
+            "No tags yet. Tag a mark while you write the note and the themes group themselves."));
+        }
+        keys.forEach(function (t) { out.appendChild(group(esc(t), null, tags[t], null)); });
+        var untagged = list.filter(function (m) { return !(m.tags || []).length; });
+        if (untagged.length) out.appendChild(group("Untagged", null, untagged, null));
+      } else {
+        var t = A.threads(list);
+        if (!t.threads.length) {
+          out.appendChild(el("div", "lx-empty",
+            "No claims marked yet. Mark a claim with 2, then link the evidence and objections " +
+            "to it from the note editor — this view is the argument that comes out."));
+        }
+        t.threads.forEach(function (th) {
+          var g = el("section", "nb-thread");
+          var head = el("div", "nb-claim");
+          head.style.setProperty("--hue", A.pass(2).hue);
+          head.innerHTML = '<span class="kind">Claim · ' + esc(th.claim.sec) + "</span><q>" +
+            esc(th.claim.text) + "</q>" +
+            (th.claim.note ? "<p>" + esc(th.claim.note) + "</p>" : "");
+          g.appendChild(head);
+          [["Rests on", th.evidence], ["Against it", th.objections],
+           ["Still unclear", th.questions], ["Also", th.other]].forEach(function (part) {
+            if (!part[1].length) return;
+            var col = el("div", "nb-limb");
+            col.appendChild(el("h4", null, esc(part[0])));
+            part[1].forEach(function (m) { col.appendChild(row(m)); });
+            g.appendChild(col);
+          });
+          if (!th.evidence.length && !th.objections.length) {
+            g.appendChild(el("p", "nb-bare",
+              "Nothing linked to this claim yet. What in the text holds it up?"));
+          }
+          out.appendChild(g);
+        });
+        if (t.loose.length) out.appendChild(group("Not yet in an argument", null, t.loose, null));
+      }
+    }
+
+    search.addEventListener("input", render);
+    render();
+    noFoot(); progress(null);
+    show("notes");
+  }
+
+  function asMarkdown(marks) {
+    var style = S.citeStyle || "mla";
+    var lines = ["# " + SOURCE.container + " — " + SOURCE.title, "", "## Notebook", ""];
+    U5.forEach(function (sec) {
+      var mine = marks.filter(function (m) { return m.sec === sec.n; });
+      if (!mine.length) return;
+      lines.push("### " + sec.n + "  " + sec.t, "");
+      mine.forEach(function (m) {
+        lines.push("- **" + A.pass(m.pass).name + "** — “" + m.text + "”");
+        if (m.note) lines.push("  - " + m.note);
+        if (m.tags && m.tags.length) lines.push("  - Tags: " + m.tags.join(", "));
+        lines.push("  - " + A.cite(m, SOURCE, style));
+      });
+      lines.push("");
+    });
+    return lines.join("\n");
+  }
+
+  /* The outline is the notebook read as an argument rather than as a list.
+     It is deliberately not prose: it is the skeleton a student then has to
+     put muscle on themselves. */
+  function asOutline(marks) {
+    var style = S.citeStyle || "mla";
+    var t = A.threads(marks);
+    var lines = ["# Outline — " + SOURCE.container + ", " + SOURCE.title, ""];
+    if (!t.threads.length) {
+      lines.push("_No claims marked yet. Mark the claims with 2 and link their evidence to them._");
+      return lines.join("\n");
+    }
+    t.threads.forEach(function (th, i) {
+      lines.push((i + 1) + ". **" + th.claim.text + "**");
+      if (th.claim.note) lines.push("   _" + th.claim.note + "_");
+      lines.push("   " + A.cite(th.claim, SOURCE, style));
+      if (th.evidence.length) {
+        lines.push("   - Rests on:");
+        th.evidence.forEach(function (m) {
+          lines.push("     - “" + m.text + "” — " + m.sec + (m.note ? " — " + m.note : ""));
+        });
+      }
+      if (th.objections.length) {
+        lines.push("   - Against it:");
+        th.objections.forEach(function (m) {
+          lines.push("     - " + (m.note || "“" + m.text + "”") + " — " + m.sec);
+        });
+      }
+      if (th.questions.length) {
+        lines.push("   - Still unclear:");
+        th.questions.forEach(function (m) {
+          lines.push("     - " + (m.note || "“" + m.text + "”") + " — " + m.sec);
+        });
+      }
+      lines.push("");
+    });
+    if (t.loose.length) {
+      lines.push("## Not yet placed", "");
+      t.loose.forEach(function (m) {
+        lines.push("- " + A.pass(m.pass).name + ": “" + m.text + "” — " + m.sec);
+      });
+    }
+    return lines.join("\n");
+  }
+
+  function copy(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () {});
+      return;
+    }
+    var t = document.createElement("textarea");
+    t.value = text;
+    t.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(t);
+    t.select();
+    try { document.execCommand("copy"); } catch (e) { /* nothing to fall back to */ }
+    document.body.removeChild(t);
   }
 
   /* -------------------------------------------------------------- Practice */
@@ -1969,6 +3137,162 @@
     show("account");
   }
 
+  /* ================================================================== Admin
+     What an administrator needs is not a second application. It is the same
+     one, with the ability to see whose work it is.
+
+     Everything here is read from this machine — a student's marks live in
+     their own localStorage under their own id, so this page can show them
+     when the student has used this browser and says so plainly when they
+     have not. It does not invent a roster it cannot see. */
+  function openAdmin(silent) {
+    if (!S.me || S.me.role !== "admin") return;
+    if (!silent) enter("admin", "Students", function () { openAdmin(true); });
+
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", "Administration"));
+    v.appendChild(el("h1", "lx-h1", "Students"));
+
+    var people = D.STUDENTS.filter(function (p) { return p.role !== "admin"; });
+    v.appendChild(el("p", "lx-lede", people.length === 1
+      ? "One enrolled student. Their reading and their notebook are below."
+      : people.length + " enrolled students."));
+
+    var grid = el("div", "ad-grid");
+    people.forEach(function (p) { grid.appendChild(studentCard(p)); });
+    v.appendChild(grid);
+
+    noFoot(); progress(null);
+    show("admin");
+  }
+
+  /* A student's marks, read from where the annotation store keeps them. The
+     store is the only thing that knows the shape of that key, so ask it. */
+  function marksOf(personId) {
+    try { return new A.Store(personId, "media-u5").all(); }
+    catch (e) { return []; }
+  }
+
+  function studentCard(p) {
+    var c = el("article", "ad-card");
+
+    var head = el("header", "ad-head");
+    var av = el("span", "ad-av");
+    av.style.background = p.hue || "#6e6e73";
+    av.textContent = p.initials;
+    head.appendChild(av);
+    head.appendChild(el("div", "ad-who", "<b>" + esc(p.name) + "</b><span>" +
+      esc(p.email) + "</span>"));
+    var g = el("span", "ad-grade", "Grade " + (p.grade || "—"));
+    head.appendChild(g);
+    c.appendChild(head);
+
+    if (p.enrolment) {
+      var en = el("div", "ad-en");
+      en.innerHTML = "<b>" + esc(p.enrolment.program) + "</b>" +
+        "<span>" + esc(p.enrolment.status) + " · balance " + esc(p.enrolment.balance) + "</span>";
+      c.appendChild(en);
+    }
+
+    /* What they have actually done. Marks are the honest signal here — a
+       progress bar can be moved by clicking, a margin full of objections
+       cannot. */
+    var marks = marksOf(p.id);
+    var prof = A.profile(marks);
+
+    var stats = el("div", "ad-stats");
+    [["Courses", (p.assigned || []).length],
+     ["Marks", marks.length],
+     ["With a note", prof.noted],
+     ["Depth", marks.length ? prof.depth + "%" : "—"]].forEach(function (s) {
+      var b = el("div", "ad-stat");
+      b.innerHTML = "<b>" + s[1] + "</b><span>" + s[0] + "</span>";
+      stats.appendChild(b);
+    });
+    c.appendChild(stats);
+
+    if (marks.length) {
+      var passes = el("div", "ad-passes");
+      A.PASSES.forEach(function (q) {
+        var n = prof.count[q.key];
+        if (!n) return;
+        var t = el("span", "ad-pass");
+        t.innerHTML = '<i style="background:' + q.hue + '"></i>' + n + " " + esc(q.name.toLowerCase()) +
+          (n === 1 ? "" : "s");
+        passes.appendChild(t);
+      });
+      c.appendChild(passes);
+      c.appendChild(el("p", "ad-shape", esc(prof.shape)));
+    } else {
+      c.appendChild(el("p", "ad-shape quiet",
+        "No marks on this machine. A student's notebook is stored in their own browser, " +
+        "so it is visible here only when they have read on this one."));
+    }
+
+    var acts = el("div", "ad-acts");
+    var read = el("button", "lx-btn", "Read alongside");
+    read.type = "button";
+    read.title = "Open a room and start on section 5.1";
+    read.addEventListener("click", function () {
+      openRead(0);
+      setTimeout(function () { Room.panel(); }, 200);
+    });
+    acts.appendChild(read);
+
+    if (marks.length) {
+      var nb = el("button", "lx-btn quiet", "Their notebook");
+      nb.type = "button";
+      nb.addEventListener("click", function () { openTheirNotebook(p); });
+      acts.appendChild(nb);
+    }
+    c.appendChild(acts);
+    return c;
+  }
+
+  /* Read-only. An administrator looking at a student's reading should not be
+     able to edit it by accident — a note you did not write, changed without
+     you knowing, is worse than no note at all. */
+  function openTheirNotebook(p) {
+    enter("their:" + p.id, p.first, function () { openTheirNotebook(p); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    var marks = marksOf(p.id);
+    var prof = A.profile(marks);
+
+    v.appendChild(el("p", "lx-eyebrow", esc(p.name) + " · Media Arts, Unit 5"));
+    v.appendChild(el("h1", "lx-h1", "Their notebook"));
+    v.appendChild(el("p", "lx-lede", prof.shape + " Read-only."));
+
+    var t = A.threads(marks);
+    var out = el("div", "nb-out");
+
+    U5.forEach(function (s) {
+      var rows = marks.filter(function (m) { return m.sec === s.n; });
+      if (!rows.length) return;
+      var g = el("section", "nb-group");
+      var h = el("div", "nb-group-head");
+      h.innerHTML = "<h2>" + esc(s.n) + "  " + esc(s.t) + "</h2><span>" + rows.length + "</span>";
+      g.appendChild(h);
+      rows.forEach(function (m) {
+        var q = A.pass(m.pass);
+        var r = el("div", "nb-row");
+        r.style.setProperty("--hue", q.hue);
+        r.innerHTML = '<div class="nb-row-main"><span class="kind">' + esc(q.name) +
+          " · " + esc(m.sec) + "</span><q>" + esc(m.text) + "</q>" +
+          (m.note ? '<p class="note">' + esc(m.note) + "</p>" : "") +
+          ((m.tags && m.tags.length)
+            ? '<p class="tags">' + m.tags.map(function (x) { return "<em>" + esc(x) + "</em>"; }).join("") + "</p>"
+            : "") + "</div>";
+        g.appendChild(r);
+      });
+      out.appendChild(g);
+    });
+    v.appendChild(out);
+    noFoot(); progress(null);
+    show("admin");
+  }
+
   /* ================================================================== Auth
      Auth.verify is the seam. Today it derives a PBKDF2 verifier in the
      browser and compares it in constant time; swapping in a real provider —
@@ -2045,20 +3369,31 @@
   function boot(who) {
     S.me = who;
     $("#gate").hidden = true;
-    document.querySelector(".lx-user .av").textContent = who.initials;
+    var av = document.querySelector(".lx-user .av");
+    av.textContent = who.initials;
+    av.style.background = who.hue || "";
     document.querySelector(".lx-user .nm").textContent = who.name;
     $("#user").title = "Signed in as " + who.name;
+    document.body.classList.toggle("is-admin", who.role === "admin");
+    $("#navAdmin").hidden = who.role !== "admin";
+    Ann.reset();
     drawSubjectNav();
     home();
+    Room.presence();
+    Room.fromLink();
   }
 
   function signOut() {
     Auth.close();
+    Room.reset();
+    Ann.reset();
     // Everything the session learned goes with it rather than sitting in
     // memory for whoever opens the tab next.
     S.me = null; S.m = {}; S.sets = {}; S.mistakes = [];
     S.here = null; S.hist = [];
     S.course = null; S.unit = null; S.setId = null; S.set = null;
+    document.body.classList.remove("is-admin");
+    $("#navAdmin").hidden = true;
     $("#gate").hidden = false;
     $("#gEmail").value = ""; $("#gPass").value = "";
     $("#gErr").textContent = "";
@@ -2111,12 +3446,241 @@
     else setTimeout(function () { $("#gEmail").focus(); }, 120);
   })();
 
+
+  /* ================================================================ Tutor
+     The panel. All the pedagogy lives in tutor.js; this is the surface, plus
+     the job of telling the controller where the student currently is. */
+  var T = window.OPLO_TUTOR;
+
+  var Tutor = (function () {
+    if (!T) return { note: function () {} };
+    var ctrl = new T.Controller();
+    var history = [], live = false, busy = false, checked = false;
+
+    function log() { return $("#ttLog"); }
+    function dot(state) {
+      var d = $("#ttDot");
+      d.className = "tt-dot" + (state ? " " + state : "");
+      d.title = state === "live" ? "Connected to Ollama"
+              : state === "busy" ? "Thinking" : "Not connected";
+    }
+    function rungs() {
+      var bar = $("#ttLadder");
+      if (!live) { bar.hidden = true; return; }
+      bar.hidden = false;
+      var r = ctrl.rung();
+      $("#ttRungs").innerHTML = T.LADDER.map(function (x) {
+        return '<i class="' + (x.n <= r.n ? "on" : "") + '"></i>';
+      }).join("");
+      $("#ttRungName").textContent = r.name;
+    }
+    function say(cls, html) {
+      var m = el("div", "tt-msg " + cls, html);
+      log().appendChild(m);
+      log().scrollTop = log().scrollHeight;
+      return m;
+    }
+    function clear() { log().innerHTML = ""; }
+
+    function offline() {
+      clear();
+      say("sys",
+        "<b>No model is running</b>" +
+        "Oplo Tutor runs on your own machine, so nothing you type is sent anywhere. " +
+        "To turn it on, install Ollama and pull a model:" +
+        "<br><code>brew install ollama</code><br><code>ollama pull " + T.MODEL + "</code>" +
+        "<br><code>OLLAMA_ORIGINS='*' ollama serve</code><br><br>" +
+        "Then reopen this panel. Until then it will not answer — a tutor that " +
+        "invents its confidence is worse than no tutor.");
+    }
+
+    function welcome() {
+      clear();
+      say("sys",
+        "<b>Oplo Tutor</b>I will not give you answers. I will ask you questions until you " +
+        "find them, and I will tell you when you are close. Ask me anything about what you " +
+        "are reading.");
+    }
+
+    function context() {
+      var c = { mastery: coursePct(D.MEDIA) };
+      var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+      if (S.view === "read" && sec) { c.section = "Media Arts " + sec.n; c.title = sec.t; }
+      else if (S.course) { c.section = S.course.t; c.title = S.unit && S.unit.t; }
+      var sel = String(window.getSelection() || "").trim();
+      if (sel && sel.length < 400) c.selection = sel.replace(/\s+/g, " ");
+      c.missed = S.mistakes.slice(0, 4).map(function (m) { return m.title; });
+
+      /* What they marked is better evidence of where they are than any
+         progress number. An unanswered question in the margin is the exact
+         thing a tutor should open on. */
+      if (S.view === "read" && sec) {
+        var marks = Ann.here();
+        var open = marks.filter(function (m) { return m.pass === 4 || m.pass === 5; });
+        if (open.length) {
+          c.marked = open.slice(0, 3).map(function (m) {
+            return A.pass(m.pass).name + ": “" + trim(m.text, 90) + "”" +
+                   (m.note ? " — they wrote: " + trim(m.note, 90) : "");
+          });
+        }
+        var prof = A.profile(marks);
+        if (marks.length) c.reading = prof.shape;
+      }
+      return c;
+    }
+
+    function send(text, raise) {
+      if (busy || !live || !text) return;
+      busy = true;
+      ctrl.setContext(context());
+      if (raise) ctrl.raise();
+      rungs();
+      say("me", esc(text));
+      history.push({ role: "user", content: text });
+      $("#ttIn").value = "";
+      $("#ttSend").disabled = true;
+      dot("busy");
+
+      var node = say("it", "");
+      node.classList.add("tt-caret");
+      var warned = null;
+      T.ask(ctrl, history, function (bit, acc) {
+        if (warned) { warned.remove(); warned = null; }
+        node.textContent = acc;
+        log().scrollTop = log().scrollHeight;
+      }, function () {
+        warned = say("sys", "<b>Loading the model</b>" + esc(ctrl.model || T.MODEL) +
+          " has to come off disk before it can answer. That is a one-off per session — " +
+          "something smaller answers in about a second.");
+      }).then(function (full) {
+        if (warned) warned.remove();
+        node.classList.remove("tt-caret");
+        // The validator is the point of the controller. If the model gave the
+        // game away on an activity that does not allow it, the reply is not
+        // shown — the student gets the hint they were owed instead.
+        if (T.leaks(full, ctrl.answerAllowed())) {
+          node.textContent = "";
+          node.className = "tt-msg sys";
+          node.innerHTML = "<b>Held back</b>That reply gave away the answer, and this is still " +
+            "guided practice. Try the next step yourself and tell me what you get — press " +
+            "Explain if you genuinely want it worked through.";
+          history.push({ role: "assistant", content: "(withheld: revealed the answer)" });
+        } else {
+          history.push({ role: "assistant", content: full });
+        }
+        busy = false; dot("live");
+      }).catch(function (e) {
+        node.classList.remove("tt-caret");
+        node.className = "tt-msg sys";
+        node.innerHTML = "<b>Lost the connection</b>" + esc(String(e.message || e)) +
+          ". Check that <code>ollama serve</code> is still running.";
+        busy = false; live = false; dot(null);
+      });
+    }
+
+    function connect() {
+      if (checked) { rungs(); return; }
+      checked = true;
+      dot(null);
+      T.reachable().then(function (ok) {
+        live = ok;
+        if (!ok) { offline(); rungs(); return; }
+        dot("live");
+        T.models().then(function (list) {
+          var m = T.pick(list);
+          if (m) ctrl.model = m.name;
+          $("#ttWhere").textContent = (ctrl.model || T.MODEL) + " · on this machine";
+          welcome();
+          if (T.heavy(m)) {
+            say("sys", "<b>" + esc(m.name) + " is the only model installed</b>At " +
+              (m.size / 1e9).toFixed(0) + "GB it takes minutes to say its first word, and it " +
+              "was not built for teaching. Something small and instruction-tuned is far better " +
+              "here:<br><code>ollama pull llama3.2</code><br>Reopen this panel afterwards and " +
+              "it picks the better one on its own.");
+          }
+          rungs();
+        });
+      });
+    }
+
+    function open() {
+      $("#ttOpen").classList.add("gone");
+      $("#ttOpen").setAttribute("aria-expanded", "true");
+      $("#tt").hidden = false;
+      connect();
+      where();
+      setTimeout(function () { $("#ttIn").focus(); }, 260);
+    }
+    function close() {
+      $("#tt").hidden = true;
+      $("#ttOpen").classList.remove("gone");
+      $("#ttOpen").setAttribute("aria-expanded", "false");
+    }
+    function where() {
+      if (!live) return;
+      var c = context();
+      $("#ttWhere").textContent = c.section
+        ? c.section + (c.title ? " · " + c.title : "")
+        : (ctrl.model || T.MODEL) + " · on this machine";
+    }
+
+    /* ---- wiring ---- */
+    $("#ttOpen").addEventListener("click", open);
+    $("#ttClose").addEventListener("click", close);
+    $("#ttReset").addEventListener("click", function () {
+      history = []; ctrl.reset();
+      if (live) { welcome(); rungs(); } else offline();
+    });
+
+    var input = $("#ttIn");
+    input.addEventListener("input", function () {
+      input.style.height = "auto";
+      input.style.height = Math.min(120, input.scrollHeight) + "px";
+      $("#ttSend").disabled = !input.value.trim() || !live;
+    });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#ttForm").requestSubmit(); }
+    });
+    $("#ttForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      send(input.value.trim(), false);
+      input.style.height = "auto";
+    });
+
+    [].forEach.call($("#ttQuick").children, function (b) {
+      b.addEventListener("click", function () {
+        if (!live) { toast("The tutor needs Ollama running on this machine."); return; }
+        var kind = b.dataset.ask;
+        if (kind === "think") {
+          ctrl.mode = "guided";
+          say("sys", "<b>Think first</b>Before anything else — what is the first thing you would " +
+                     "try here? Say it in one line, however unsure you are.");
+          rungs();
+          return;
+        }
+        if (kind === "explain") {
+          ctrl.mode = "explain";
+          send("I would like this explained properly now, including the answer, and then " +
+               "I will say it back to you.", true);
+          return;
+        }
+        ctrl.mode = "guided";
+        send("Give me the next hint.", true);
+      });
+    });
+
+    return { open: open, close: close, where: where,
+             note: function (text) { if (!$("#tt").hidden) say("sys", text); } };
+  })();
+
   /* ---------------------------------------------------------------- Wiring */
   [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
     b.addEventListener("click", function () {
       markSubjectNav(null);
       noFoot(); progress(null);
-      if (b.dataset.view === "my") home(); else explore();
+      if (b.dataset.view === "my") home();
+      else if (b.dataset.view === "admin") openAdmin();
+      else explore();
     });
   });
   $("#back").addEventListener("click", goBack);
@@ -2124,6 +3688,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (S.view === "cards" && S.keys) S.keys(e);
+    else if (S.view === "read" && S.readKeys) S.readKeys(e);
   });
 
 })();
