@@ -2205,3 +2205,151 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 .lx-bdg svg { width: 13px; height: 13px; color: var(--amber); }
 .lx-bdg.off { opacity: .38; }
 .lx-bdg.off svg { color: var(--ink-3); }
+
+/* ==========================================================================
+   Games.
+
+   Same restraint as everything else: one accent, a green for right and a red
+   for wrong, and no animation that outlasts the moment it explains. A game
+   here looks like the rest of the app because it is the rest of the app —
+   what it collects goes into the same record.
+   ========================================================================== */
+
+.lx-games { margin-top: 12px; }
+
+.gm { max-width: 660px; margin: 0 auto; }
+.gm-top {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 26px; min-height: 24px;
+}
+.gm-count {
+  font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums;
+  min-width: 56px;
+}
+.gm-track {
+  flex: 1; height: 4px; border-radius: 2px; background: var(--sunk); overflow: hidden;
+}
+.gm-track i {
+  display: block; height: 100%; background: var(--blue); border-radius: 2px;
+  transition: width .35s var(--ease);
+}
+.gm-streak {
+  font-size: 12.5px; color: var(--ink-3); min-width: 72px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.gm-streak.hot { color: var(--amber); font-weight: 600; }
+
+.gm-card {
+  background: var(--paper); border-radius: var(--r); padding: 30px 32px;
+  box-shadow: 0 0 0 .5px var(--hair), 0 2px 14px rgba(0,0,0,.04);
+}
+.gm-kind {
+  display: block; font-size: 10.5px; font-weight: 600; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .07em; margin-bottom: 12px;
+}
+.gm-def {
+  font-family: var(--font); font-size: 23px; line-height: 1.34;
+  letter-spacing: -.022em;
+}
+
+.gm-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+@media (max-width: 560px) { .gm-opts { grid-template-columns: 1fr; } }
+.gm-opt {
+  min-height: 54px; padding: 13px 18px; border-radius: 14px; text-align: left;
+  background: var(--paper); border: 1px solid var(--rule);
+  font-size: 15.5px; line-height: 1.35;
+  transition: border-color .15s var(--ease), background .15s var(--ease),
+              transform .1s var(--ease);
+}
+.gm-opt:not(:disabled):hover { border-color: var(--ink); }
+.gm-opt:not(:disabled):active { transform: scale(.99); }
+.gm-opt:disabled { cursor: default; }
+.gm-opt.right { border-color: var(--green); background: #eaf7f0; color: #0b6b43; font-weight: 500; }
+.gm-opt.wrong { border-color: var(--red); background: #fdeced; color: #a30010; }
+
+/* --------------------------------------------------------------- Word hunt */
+.gm-hunt { max-width: 880px; }
+.hunt-board { display: grid; grid-template-columns: minmax(0,1fr) 220px; gap: 28px; }
+@media (max-width: 780px) { .hunt-board { grid-template-columns: 1fr; } }
+.hunt-grid {
+  display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 3px;
+  background: var(--paper); padding: 12px; border-radius: var(--r);
+  box-shadow: 0 0 0 .5px var(--hair);
+}
+.hunt-cell {
+  aspect-ratio: 1; display: grid; place-items: center; border-radius: 6px;
+  font-family: var(--font); font-size: clamp(11px, 1.6vw, 15px); font-weight: 500;
+  color: var(--ink); background: transparent;
+  transition: background .12s var(--ease), color .12s var(--ease), transform .1s var(--ease);
+}
+.hunt-cell:hover { background: var(--sunk); }
+.hunt-cell.pick { background: var(--ink); color: #fff; transform: scale(1.06); }
+.hunt-cell.hit { background: #d9f0e4; color: #0b6b43; font-weight: 600; }
+.hunt-cell.hit:hover { background: #d9f0e4; }
+.hunt-cell.nope { background: #fdeced; color: var(--red); }
+
+.hunt-words b {
+  display: block; font-size: 11px; font-weight: 600; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .07em; margin-bottom: 12px;
+}
+.hunt-words li {
+  padding: 6px 0; font-size: 14.5px; border-bottom: 1px solid var(--hair);
+  transition: color .2s var(--ease);
+}
+.hunt-words li.got { color: var(--ink-3); text-decoration: line-through; }
+.hunt-say { margin-top: 16px; font-size: 12.5px; color: var(--ink-3); line-height: 1.45; }
+
+/* ----------------------------------------------------------------- Hangman */
+.gm-hang { max-width: 620px; }
+.hang-lives { display: flex; gap: 4px; align-items: center; }
+.hang-lives i {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--hair);
+  transition: background .25s var(--ease);
+}
+.hang-lives i.on { background: var(--ink); }
+
+.hang-word {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 7px;
+  margin: 34px 0 30px;
+}
+.hang-word .sl {
+  width: 30px; height: 40px; display: grid; place-items: center;
+  border-bottom: 2.5px solid var(--rule);
+  font-family: var(--font); font-size: 23px; font-weight: 600; letter-spacing: -.02em;
+  transition: border-color .2s var(--ease);
+}
+.hang-word .sl.on { border-bottom-color: var(--ink); }
+.hang-word .sp {
+  width: 16px; height: 40px; display: grid; place-items: center;
+  font-size: 21px; color: var(--ink-3);
+}
+
+.hang-keys {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(38px, 1fr));
+  gap: 7px; max-width: 470px; margin: 0 auto;
+}
+.hang-key {
+  height: 44px; border-radius: 10px; background: var(--paper);
+  border: 1px solid var(--rule); font-size: 15px; font-weight: 500;
+  transition: background .12s var(--ease), border-color .12s var(--ease),
+              transform .1s var(--ease), opacity .2s var(--ease);
+}
+.hang-key:not(:disabled):hover { border-color: var(--ink); background: var(--canvas); }
+.hang-key:not(:disabled):active { transform: scale(.95); }
+.hang-key:disabled { cursor: default; }
+.hang-key.hit { background: #eaf7f0; border-color: #a8ddc2; color: #0b6b43; }
+.hang-key.miss { opacity: .32; }
+
+.hang-help { display: flex; justify-content: center; margin-top: 22px; }
+
+.hang-end { text-align: center; margin-top: 8px; }
+.hang-end b {
+  display: block; font-family: var(--font); font-size: 26px; font-weight: 600;
+  letter-spacing: -.03em; margin-bottom: 6px;
+}
+.hang-end.won b { color: var(--green); }
+.hang-end.lost b { color: var(--red); }
+.hang-end p {
+  font-size: 14.5px; color: var(--ink-2); max-width: 420px; margin: 0 auto 20px;
+  line-height: 1.45;
+}

@@ -1076,6 +1076,27 @@
     });
     v.appendChild(modes);
 
+    /* The games sit under the study modes rather than beside them, because
+       they are not four equivalent choices — Learn is the one that teaches,
+       and a row of eight tiles would say otherwise. Each says what it is
+       actually good for, since "play a game" is not a reason to pick one. */
+    v.appendChild(el("h2", "lx-h2", "Play it"));
+    v.appendChild(el("p", "lx-lede",
+      "All three write to the same record Learn does \u2014 what you prove in a game, " +
+      "Learn stops asking you."));
+    var games = el("div", "lx-modes lx-games");
+    [["Match the card", "Definition first, term second", I.grid, startCardMatch],
+     ["Word Hunt", "Find them in the grid", I.point, startHunt],
+     ["Hangman", "Produce it from the clue", I.pen, startHangman]
+    ].forEach(function (m) {
+      var b = el("button", "lx-mode");
+      b.type = "button";
+      b.innerHTML = svg(m[2], true) + "<b>" + m[0] + "</b><span>" + m[1] + "</span>";
+      b.addEventListener("click", function () { m[3](); });
+      games.appendChild(b);
+    });
+    v.appendChild(games);
+
     var terms = el("div", "lx-terms");
     cards.forEach(function (c, i) {
       var row = el("div", "lx-term");
@@ -2241,6 +2262,387 @@
 
     noFoot(); progress(null);
     show("match");
+  }
+
+  /* ================================================================ Games
+     Three of them, drawn here and decided in games.js.
+
+     What they have in common is the thing that makes them worth building at
+     all: every one of them writes to the same student model Learn runs on.
+     A game with a private high score wastes the evidence it collects. If a
+     student can produce "cochlea" from four letters and a definition, the
+     model should know it, and Learn should stop offering them four options
+     to pick between. */
+  var GM = window.OPLO_GAMES;
+
+  /* The bridge. Everything a game learns about a student goes through here,
+     at the cognitive level the game actually demonstrates — which is why the
+     level is an argument and not a constant. Picking a term out of four is
+     recognition however much fun the wrapper is; producing it letter by
+     letter from a definition is recall, and is scored as such. */
+  function gradeFromGame(setId, term, ok, level, hints) {
+    var concepts = CN.forSet(setId, D.SETS[setId].cards);
+    var c = concepts.filter(function (x) { return x.k === term; })[0];
+    if (!c) return;
+    var store = new L.Store(S.me ? S.me.id : "anon", setId);
+    var was = L.mastery(store.get(c.k), Date.now());
+    store.grade(c.k, { level: level, right: ok, hints: hints || 0 }, Date.now());
+    Game.answer({ level: level, right: ok, hints: hints || 0, mastery: was });
+    if (!ok) slip("term", setId + ":" + c.i, c.k, c.def, { card: [c.k, c.def] });
+    var st = setState(setId);
+    concepts.forEach(function (x, i) {
+      st.level[i] = L.mastery(store.get(x.k), Date.now()) >= 0.72 ? 3 : 0;
+    });
+    keep();
+  }
+
+  /* The terms this student is worst at, weakest first. Every game builds its
+     rounds from this rather than from the deck order, so ten minutes of a
+     game is ten minutes on the ten things that need it. */
+  function weakestFirst(setId) {
+    var cards = D.SETS[setId].cards;
+    var concepts = CN.forSet(setId, cards);
+    var store = new L.Store(S.me ? S.me.id : "anon", setId);
+    var now = Date.now();
+    return concepts.map(function (c, i) { return { i: i, m: L.mastery(store.get(c.k), now) }; })
+      .sort(function (a, b) { return a.m - b.m; })
+      .map(function (x) { return x.i; });
+  }
+
+  /* ------------------------------------------------- Match the card
+     Definition on the card, terms underneath. The direction a flashcard deck
+     is worst at, and the direction an exam asks in. */
+  function startCardMatch(again) {
+    enter("cardmatch:" + S.setId, "Match the card", function () { startCardMatch(true); }, again);
+    var setId = S.setId, cards = S.set.cards;
+    var rounds = GM.cardRounds(cards, weakestFirst(setId), 10);
+    var i = 0, right = 0, streak = 0, bestStreak = 0, locked = false;
+    var v = $("#v-cardmatch");
+
+    function draw() {
+      if (i >= rounds.length) return done();
+      var q = rounds[i];
+      locked = false;
+      v.innerHTML = "";
+      var wrap = el("div", "gm");
+
+      var top = el("div", "gm-top");
+      top.innerHTML = '<span class="gm-count">' + (i + 1) + " / " + rounds.length + "</span>" +
+        '<div class="gm-track"><i style="width:' + Math.round(i / rounds.length * 100) + '%"></i></div>' +
+        '<span class="gm-streak' + (streak >= 3 ? " hot" : "") + '">' +
+        (streak >= 2 ? streak + " in a row" : "&nbsp;") + "</span>";
+      wrap.appendChild(top);
+
+      var card = el("section", "gm-card");
+      card.innerHTML = '<span class="gm-kind">Definition</span>' +
+        '<p class="gm-def">' + esc(q.def) + "</p>";
+      wrap.appendChild(card);
+
+      var opts = el("div", "gm-opts");
+      q.opts.forEach(function (o) {
+        var b = el("button", "gm-opt");
+        b.type = "button";
+        b.textContent = o;
+        b.addEventListener("click", function () { answer(b, o, q); });
+        opts.appendChild(b);
+      });
+      wrap.appendChild(opts);
+      v.appendChild(wrap);
+      show("cardmatch");
+    }
+
+    function answer(btn, given, q) {
+      if (locked) return;
+      locked = true;
+      var ok = given === q.right;
+      if (ok) { right++; streak++; bestStreak = Math.max(bestStreak, streak); }
+      else streak = 0;
+
+      [].forEach.call(v.querySelectorAll(".gm-opt"), function (b) {
+        b.disabled = true;
+        if (b.textContent === q.right) b.classList.add("right");
+        else if (b === btn) b.classList.add("wrong");
+      });
+      gradeFromGame(setId, q.right, ok, "recognise");
+
+      // Wrong answers hold longer, because the correct one has to be read.
+      setTimeout(function () { i++; draw(); }, ok ? 520 : 1500);
+    }
+
+    function done() {
+      var xp = Game.run("cardmatch", { right: right, total: rounds.length });
+      result({
+        title: right + " of " + rounds.length + ".",
+        lede: right === rounds.length
+          ? "Every definition matched. That is the harder direction, and you had all of them."
+          : "The ones you missed are in your mistake book, and Learn will bring them back.",
+        pct: Math.round(right / rounds.length * 100),
+        stats: [[right + "/" + rounds.length, "matched"],
+                [bestStreak, "best run"]].concat(xp ? [["+" + xp, "XP"]] : []),
+        back: function () { openSet(setId); },
+        again: function () { startCardMatch(true); }
+      });
+    }
+
+    noFoot(); progress(null);
+    draw();
+  }
+
+  /* ----------------------------------------------------------- Word hunt
+     Weak as a test and good as an introduction. A student who has hunted for
+     "tympanic" for ninety seconds has looked at those letters harder than any
+     amount of reading would have made them. */
+  function startHunt(again) {
+    enter("hunt:" + S.setId, "Word hunt", function () { startHunt(true); }, again);
+    var setId = S.setId, cards = S.set.cards;
+    var terms = weakestFirst(setId).map(function (ix) { return cards[ix][0]; });
+    var size = 12;
+    var hunt = GM.huntGrid(terms, size);
+    var found = 0, began = performance.now(), timer = null;
+    var anchor = null, cells = {};
+    var v = $("#v-hunt");
+
+    v.innerHTML = "";
+    var wrap = el("div", "gm gm-hunt");
+    var top = el("div", "gm-top");
+    top.innerHTML = '<span class="gm-count" id="hFound">0 / ' + hunt.words.length + "</span>" +
+      '<div class="gm-track"><i id="hBar" style="width:0%"></i></div>' +
+      '<span class="gm-streak" id="hTime">0.0s</span>';
+    wrap.appendChild(top);
+
+    var board = el("div", "hunt-board");
+    var g = el("div", "hunt-grid");
+    g.style.setProperty("--n", size);
+    for (var r = 0; r < size; r++) {
+      for (var c = 0; c < size; c++) {
+        var b = el("button", "hunt-cell");
+        b.type = "button";
+        b.textContent = hunt.grid[r][c];
+        b.dataset.r = r; b.dataset.c = c;
+        cells[r + ":" + c] = b;
+        b.addEventListener("click", (function (rr, cc) {
+          return function () { tap(rr, cc); };
+        })(r, c));
+        g.appendChild(b);
+      }
+    }
+    board.appendChild(g);
+
+    var list = el("div", "hunt-words");
+    list.innerHTML = "<b>Find these</b>";
+    var ul = el("ul");
+    hunt.words.forEach(function (p, ix) {
+      var li = el("li");
+      li.id = "hw" + ix;
+      li.innerHTML = "<span>" + esc(p.show) + "</span>";
+      ul.appendChild(li);
+    });
+    list.appendChild(ul);
+    list.appendChild(el("p", "hunt-say",
+      "Tap the first letter, then the last. Words run in any direction, " +
+      "including backwards and diagonally."));
+    board.appendChild(list);
+    wrap.appendChild(board);
+    v.appendChild(wrap);
+
+    function tap(r, c) {
+      var key = r + ":" + c;
+      if (!anchor) {
+        anchor = [r, c];
+        cells[key].classList.add("pick");
+        return;
+      }
+      cells[anchor[0] + ":" + anchor[1]].classList.remove("pick");
+      var hit = GM.huntCheck(hunt, anchor[0], anchor[1], r, c);
+      if (hit) {
+        hit.found = true;
+        found++;
+        GM.huntCells(hit).forEach(function (p) {
+          cells[p[0] + ":" + p[1]].classList.add("hit");
+        });
+        var ix = hunt.words.indexOf(hit);
+        var li = $("#hw" + ix);
+        if (li) li.classList.add("got");
+        $("#hFound").textContent = found + " / " + hunt.words.length;
+        $("#hBar").style.width = Math.round(found / hunt.words.length * 100) + "%";
+        /* Finding a word is exposure, not mastery, so it is graded at
+           recognition with a hint counted against it. Overstating what a word
+           search proves would poison the model that Learn depends on. */
+        gradeFromGame(setId, hit.show, true, "recognise", 1);
+        if (found === hunt.words.length) finish();
+      } else {
+        cells[key].classList.add("nope");
+        setTimeout(function () { cells[key].classList.remove("nope"); }, 320);
+      }
+      anchor = null;
+    }
+
+    function finish() {
+      clearInterval(timer);
+      var secs = (performance.now() - began) / 1000;
+      var xp = Game.run("hunt", { found: found });
+      Game.check("hunt", { all: found === hunt.words.length });
+      setTimeout(function () {
+        result({
+          title: "All " + found + " found.",
+          lede: "You have now looked at each of those words far more closely than reading " +
+                "them would have made you. That is the whole point of this one.",
+          pct: 100,
+          stats: [[found, "words"], [secs.toFixed(1), "seconds"]].concat(xp ? [["+" + xp, "XP"]] : []),
+          back: function () { openSet(setId); },
+          again: function () { startHunt(true); }
+        });
+      }, 420);
+    }
+
+    timer = setInterval(function () {
+      var t = $("#hTime");
+      if (!t) { clearInterval(timer); return; }
+      t.textContent = ((performance.now() - began) / 1000).toFixed(1) + "s";
+    }, 100);
+
+    noFoot(); progress(null);
+    show("hunt");
+  }
+
+  /* ------------------------------------------------------------- Hangman
+     Production under partial information — the closest thing in the app to
+     the moment in an exam where you can nearly remember a word. No gallows is
+     drawn; what is at stake is the word. */
+  function startHangman(again) {
+    enter("hangman:" + S.setId, "Hangman", function () { startHangman(true); }, again);
+    var setId = S.setId, cards = S.set.cards;
+    var queue = weakestFirst(setId).slice(0, 5);
+    var at = 0, won = 0, hinted = 0;
+    var h = null;
+    var v = $("#v-hangman");
+
+    function begin() {
+      if (at >= queue.length) return done();
+      var card = cards[queue[at]];
+      h = GM.hangman(card[0], card[1]);
+      hinted = 0;
+      draw();
+    }
+
+    function draw() {
+      v.innerHTML = "";
+      var wrap = el("div", "gm gm-hang");
+
+      var top = el("div", "gm-top");
+      top.innerHTML = '<span class="gm-count">' + (at + 1) + " / " + queue.length + "</span>" +
+        '<div class="gm-track"><i style="width:' + Math.round(at / queue.length * 100) + '%"></i></div>';
+      var lives = el("span", "hang-lives");
+      for (var i = 0; i < GM.LIVES; i++) {
+        var d = el("i", i < h.lives ? "on" : "");
+        lives.appendChild(d);
+      }
+      lives.title = h.lives + " guesses left";
+      top.appendChild(lives);
+      wrap.appendChild(top);
+
+      var card = el("section", "gm-card");
+      card.innerHTML = '<span class="gm-kind">The clue</span><p class="gm-def">' +
+        esc(h.def) + "</p>";
+      wrap.appendChild(card);
+
+      var word = el("div", "hang-word");
+      h.answer.split("").forEach(function (ch, ix) {
+        if (!/[A-Z]/.test(ch)) {
+          word.appendChild(el("span", "sp", ch === " " ? "&nbsp;" : esc(ch)));
+          return;
+        }
+        var slot = el("span", "sl" + (h.shown[ix] ? " on" : ""));
+        slot.textContent = h.shown[ix] || "";
+        word.appendChild(slot);
+      });
+      wrap.appendChild(word);
+
+      if (h.done) {
+        var end = el("div", "hang-end " + (h.won ? "won" : "lost"));
+        end.innerHTML = h.won
+          ? "<b>" + esc(h.answer) + "</b><p>" +
+            (hinted ? "With " + hinted + (hinted === 1 ? " letter" : " letters") + " given."
+                    : "Produced from the definition alone, which is the hard way.") + "</p>"
+          : "<b>" + esc(h.answer) + "</b><p>Out of guesses. It goes in the mistake book, " +
+            "and Learn will bring it back before long.</p>";
+        var nx = el("button", "lx-btn", at + 1 >= queue.length ? "See how you did" : "Next word");
+        nx.type = "button";
+        nx.addEventListener("click", function () { at++; begin(); });
+        end.appendChild(nx);
+        wrap.appendChild(end);
+      } else {
+        var keys = el("div", "hang-keys");
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(function (ch) {
+          var b = el("button", "hang-key");
+          b.type = "button";
+          b.textContent = ch;
+          if (h.guessed[ch]) {
+            b.disabled = true;
+            b.classList.add(h.answer.indexOf(ch) > -1 ? "hit" : "miss");
+          }
+          b.addEventListener("click", function () { play(ch); });
+          keys.appendChild(b);
+        });
+        wrap.appendChild(keys);
+
+        var help = el("div", "hang-help");
+        var give = el("button", "ln-hint");
+        give.type = "button";
+        give.innerHTML = svg(I.bulb, true) + "<span>Give me a letter — it costs a guess</span>";
+        give.addEventListener("click", function () {
+          if (GM.reveal(h)) { hinted++; settle(); draw(); }
+        });
+        help.appendChild(give);
+        wrap.appendChild(help);
+      }
+
+      v.appendChild(wrap);
+      show("hangman");
+    }
+
+    function play(ch) {
+      GM.guess(h, ch);
+      settle();
+      draw();
+    }
+
+    /* Graded once, when the word is over. Grading per letter would make a
+       long word worth more than a short one, which is not a thing about the
+       student. Recall, not recognition: nothing was offered to choose from. */
+    function settle() {
+      if (!h.done || h.scored) return;
+      h.scored = true;
+      if (h.won) won++;
+      gradeFromGame(setId, cards[queue[at]][0], h.won, "recall", hinted);
+      Game.run("hangman", { won: h.won, lives: h.lives });
+    }
+
+    function done() {
+      result({
+        title: won + " of " + queue.length + ".",
+        lede: won === queue.length
+          ? "Every one produced from its definition with nothing to choose from. That is recall, " +
+            "and it is the level most study apps never reach."
+          : "Producing a term cold is the hardest thing this app asks. What you missed is worth " +
+            "another look before the test.",
+        pct: Math.round(won / queue.length * 100),
+        stats: [[won + "/" + queue.length, "produced"]],
+        back: function () { openSet(setId); },
+        again: function () { startHangman(true); }
+      });
+    }
+
+    /* A physical keyboard is the natural way to play this, so it works. */
+    S.hangKeys = function (e) {
+      if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName || "")) return;
+      if (e.metaKey || e.ctrlKey || !h) return;
+      if (h.done && e.key === "Enter") { at++; begin(); return; }
+      if (/^[a-zA-Z]$/.test(e.key)) play(e.key.toUpperCase());
+    };
+
+    noFoot(); progress(null);
+    begin();
   }
 
   /* ------------------------------------------------------------------ Test
@@ -4746,6 +5148,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (S.view === "cards" && S.keys) S.keys(e);
+    else if (S.view === "hangman" && S.hangKeys) S.hangKeys(e);
     else if (S.view === "read" && S.readKeys) S.readKeys(e);
     else if (S.view === "learn" && S.learnKeys) S.learnKeys(e);
   });
