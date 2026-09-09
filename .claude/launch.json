@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4173"],
       "port": 4173
+    },
+    {
+      "name": "oplo-node",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/serve.js"],
+      "port": 8123
     }
   ]
 }

@@ -15,6 +15,3 @@ node_modules/
 .env
 **/.env
 oplo-accounts/.env
-
-# Local preview server, not part of the site
-.claude/
