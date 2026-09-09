@@ -1796,6 +1796,12 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 
 .ln-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 620px) { .ln-opts { grid-template-columns: 1fr; } }
+/* When the options are whole definitions rather than single terms, two
+   columns turn every one of them into a narrow column of broken lines. One
+   column, top-aligned, and the number stays level with the first line. */
+.ln-opts.long { grid-template-columns: 1fr; }
+.ln-opts.long .ln-opt { align-items: flex-start; padding: 15px 17px; }
+.ln-opts.long .ln-opt .n { margin-top: 1px; }
 .ln-opt {
   display: flex; align-items: center; gap: 13px; text-align: left;
   min-height: 58px; padding: 13px 17px; border-radius: 15px;

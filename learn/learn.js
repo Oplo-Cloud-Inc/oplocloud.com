@@ -94,6 +94,7 @@ window.OPLO_LEARN = (function () {
       key: key,
       recognise: 0, recall: 0, explain: 0, apply: 0, transfer: 0,
       seen: 0, right: 0, wrong: 0,
+      asks: {},              // how many times asked at each level, for phrasing
       recent: [],            // the last six outcomes, newest last
       hints: 0,              // hints taken, all time
       hinted: 0,             // questions where at least one hint was taken
@@ -144,6 +145,7 @@ window.OPLO_LEARN = (function () {
     return Math.max(0, Math.min(1, base * (1 - lean * 0.3) * held));
   }
 
+  function asked(s, lv) { return (s && s.asks && s.asks[lv]) || 0; }
   function accuracy(s) { return s.seen ? s.right / s.seen : 0; }
   function recentAccuracy(s) {
     if (!s.recent.length) return 0;
@@ -178,6 +180,11 @@ window.OPLO_LEARN = (function () {
 
     s.seen++;
     if (s.first == null) s.first = now;
+    // Counted per level, because the question builder walks its list of
+    // phrasings by this number. A concept missed four times should get four
+    // different questions, not four rolls of the same die.
+    if (!s.asks) s.asks = {};
+    s.asks[lv] = (s.asks[lv] || 0) + 1;
     s.recent.push(!!o.right);
     if (s.recent.length > 6) s.recent.shift();
     if (o.hints) { s.hints += o.hints; s.hinted++; }
@@ -433,7 +440,7 @@ window.OPLO_LEARN = (function () {
     LEVELS: LEVELS, BANDS: BANDS, GOALS: GOALS,
     level: level, band: band, fresh: fresh,
     mastery: mastery, retention: retention, strength: strength,
-    accuracy: accuracy, recentAccuracy: recentAccuracy,
+    accuracy: accuracy, recentAccuracy: recentAccuracy, asked: asked,
     hintDependency: hintDependency, calibration: calibration,
     grade: grade, nextReview: nextReview, due: due,
     next: next, levelFor: levelFor, decideGoal: decideGoal,

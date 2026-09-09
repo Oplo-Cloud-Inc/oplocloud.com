@@ -1231,6 +1231,7 @@
   */
   var L = window.OPLO_LEARN;
   var CN = window.OPLO_CONCEPTS;
+  var AK = window.OPLO_ASK;
 
   function startLearn(again) {
     enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again);
@@ -1367,42 +1368,13 @@
     }
 
     /* ------------------------------------------------------ The questions
-       One builder per cognitive level. Recognition and recall come out of the
-       pair; the rest come out of the concept, and a concept that does not
-       carry them is never asked at those levels in the first place. */
-    function distractors(c, field, n) {
-      var pool = concepts.filter(function (o) { return o.k !== c.k; });
-      return shuffle(pool).slice(0, n).map(function (o) { return o[field]; });
-    }
-
+       Built by ask.js, which owns the one rule that matters here: a concept
+       is never asked the same way twice running. What is passed in is how
+       many times this concept has already been asked at this level, because
+       that is what the phrasings are walked by — a student who misses
+       something four times gets four different questions at it. */
     function build(c, lv) {
-      if (lv === "recognise") {
-        return { kind: "choice", label: "Definition", prompt: c.def,
-                 ask: "Choose an answer",
-                 opts: shuffle([c.k].concat(distractors(c, "k", 3))),
-                 right: c.k,
-                 why: "It is the definition of " + c.k + "." };
-      }
-      if (lv === "recall") {
-        return { kind: "type", label: "Definition", prompt: c.def,
-                 ask: "Type the term", right: c.k,
-                 why: "The term is " + c.k + "." };
-      }
-      if (lv === "explain") {
-        return { kind: "free", label: c.k, prompt: "Explain it in your own words.",
-                 ask: "Write two or three sentences", look: c.say,
-                 why: null };
-      }
-      if (lv === "apply") {
-        return { kind: "choice", label: c.k + " · applied", prompt: c.apply.ask,
-                 ask: "Choose an answer",
-                 opts: c.apply.opts.slice(), right: c.apply.opts[c.apply.right],
-                 why: c.apply.why };
-      }
-      return { kind: "choice", label: c.k + " · transfer", prompt: c.xfer.ask,
-               ask: "Choose an answer",
-               opts: c.xfer.opts.slice(), right: c.xfer.opts[c.xfer.right],
-               why: c.xfer.why };
+      return AK.build(c, lv, L.asked(store.get(c.k), lv), concepts);
     }
 
     /* --------------------------------------------------------- Parking
@@ -1522,7 +1494,7 @@
 
     function answerArea() {
       if (curQ.kind === "choice") {
-        var wrap = el("div", "ln-opts");
+        var wrap = el("div", "ln-opts" + (curQ.long ? " long" : ""));
         curQ.opts.forEach(function (o, i) {
           var b = el("button", "ln-opt");
           b.type = "button";
