@@ -6,13 +6,18 @@
    flashcards, Learn, Match, Test — asks "do you know it cold?" Neither one
    substitutes for the other, which is why both are here.
 
-   No backend, no storage, no network. Progress lives in memory for the
-   length of the visit and is gone when the tab closes; the page says so.
+   No backend and no network — but progress is kept. Everything a student
+   does is written to one record in this browser (store.js), so a session
+   resumes where it was left and a streak survives closing the tab. What that
+   cannot do is follow them to another machine, and the account screen says
+   so plainly rather than implying an account that does not exist.
    ========================================================================== */
 (function () {
   "use strict";
 
   var D = window.OPLO;
+  var ST = window.OPLO_STORE;
+  var G  = window.OPLO_GAME;
   var $ = function (s) { return document.querySelector(s); };
   function el(tag, cls, html) {
     var n = document.createElement(tag);
@@ -36,7 +41,13 @@
     return String(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
 
-  /* ---------------------------------------------------------------- State */
+  /* ---------------------------------------------------------------- State
+     S is the session — where you are, what is in flight, what is on screen.
+     What is *true about you* lives in R, the record, and survives the tab.
+     The fields below that look like data (m, sets, mistakes, readDone) are
+     references into R.d, assigned at sign-in: reading them is free, and
+     writing them is followed by R.save(). */
+  var R = null;           // the persisted record; null until somebody signs in
   var S = {
     me: null,             // the signed-in student
     view: "my",
@@ -55,14 +66,136 @@
   };
 
   function setState(id) {
-    if (!S.sets[id]) S.sets[id] = { level: {}, star: {}, best: null };
-    return S.sets[id];
+    return R ? R.set(id)
+             : (S.sets[id] || (S.sets[id] = { level: {}, star: {}, best: null, runs: 0, seen: 0 }));
   }
+  /* Every write to the record funnels through here, so there is exactly one
+     place that knows saving exists and exactly one to check when it stops. */
+  function keep() { if (R) R.save(); }
   function setMastered(id) {
     var st = setState(id), n = 0;
     for (var k in st.level) if (st.level[k] >= 3) n++;
     return n;
   }
+
+  /* ----------------------------------------------------------------- Game
+     The surface over game.js. It owns three things and nothing else: paying
+     out experience, noticing a badge has been earned, and saying so quietly.
+
+     Quietly is the operative word. The rule the reading and Learn screens are
+     built on — that nothing competes with the thing the student is thinking
+     about — applies here too, so an award appears as a small line that fades,
+     never over the question, and never while an answer is still being formed. */
+  var Game = (function () {
+    var rec = null, pending = 0, timer = null;
+
+    function attach(r) { rec = r; }
+    function on() { return !!rec; }
+
+    /* Awards are batched. A run of six quick answers should read as one
+       "+48" rather than as six numbers fighting each other on the way out. */
+    function show(xp, note) {
+      if (!xp) return;
+      pending += xp;
+      var n = $("#xpPop");
+      n.innerHTML = "<b>+" + pending + "</b><span>" + esc(note || "") + "</span>";
+      n.classList.add("on");
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        n.classList.remove("on");
+        pending = 0;
+      }, 2400);
+    }
+
+    function paint() {
+      if (!rec) return;
+      var g = rec.d.game;
+      var r = G.rank(g.xp);
+      var s1 = $("#streak");
+      if (s1) s1.textContent = String(g.streak);
+      var chip = $("#rankChip");
+      if (chip) {
+        chip.hidden = false;
+        chip.innerHTML = "<b>" + esc(r.name) + "</b><i style=\"width:" + r.pct + "%\"></i>";
+        chip.title = r.name + " — " + g.xp + " XP" +
+          (r.next ? ", " + r.toGo + " to " + r.next.name : ", the top of the ladder");
+      }
+    }
+
+    /* One answer. Everything the award depends on is passed in rather than
+       looked up, so the exchange rate can be read in one place. */
+    function answer(o) {
+      if (!rec) return 0;
+      var a = G.forAnswer(o);
+      if (!a.xp) return 0;
+      rec.earn(a.xp);
+      show(a.xp, a.why);
+      paint();
+      return a.xp;
+    }
+
+    function run(kind, o) {
+      if (!rec) return 0;
+      var xp = G.forRun(kind, o);
+      if (!xp) return 0;
+      rec.earn(xp);
+      paint();
+      return xp;
+    }
+
+    /* Badges are checked rather than awarded: the caller says what just
+       happened, and this decides whether it crossed a line. Each one fires
+       once, ever, and announces itself properly — a thing earned twelve times
+       silently is not a thing anybody values. */
+    function check(what, o) {
+      if (!rec) return;
+      o = o || {};
+      var g = rec.d.game, got = [];
+      function win(k) { if (rec.badge(k)) got.push(k); }
+
+      if (what === "session") {
+        win("first");
+        if (o.asked >= 8 && !o.hints && o.right / Math.max(1, o.asked) >= 0.8) win("nohint");
+        if (o.swept) win("swept");
+      }
+      if (what === "answer" && o.right) {
+        if (o.level === "transfer") win("transfer");
+        if (o.gapDays >= 7) win("held");
+        if (o.wasFlagged && o.mastery >= 0.88) win("fixed");
+      }
+      if (what === "explain" && o.ok) win("explain");
+      if (what === "match" && o.seconds < 30) win("quick");
+      if (what === "hunt" && o.all) win("hunter");
+      if (what === "skip") {
+        g.skips = (g.skips || 0) + 1;
+        if (g.skips >= 10) win("honest");
+        rec.save();
+      }
+      if (g.streak >= 7) win("week");
+      if (g.streak >= 30) win("month");
+
+      got.forEach(function (k, i) {
+        setTimeout(function () { announce(G.badge(k)); }, 500 + i * 2600);
+      });
+      return got;
+    }
+
+    /* A badge gets a card rather than a toast, because it is the one thing
+       in this layer that is genuinely rare and genuinely earned. */
+    function announce(b) {
+      if (!b) return;
+      var n = $("#badgePop");
+      n.innerHTML = '<span class="ic">' + svg(I.star) + "</span>" +
+        "<span class=\"t\"><em>Badge earned</em><b>" + esc(b.name) + "</b><span>" +
+        esc(b.say) + "</span></span>";
+      n.classList.add("on");
+      setTimeout(function () { n.classList.remove("on"); }, 4200);
+    }
+
+    return { attach: attach, on: on, answer: answer, run: run, check: check,
+             paint: paint, announce: announce,
+             rec: function () { return rec; } };
+  })();
 
   /* ---------------------------------------------------------------- Icons */
   var I = {
@@ -218,6 +351,7 @@
 
   function unitKey(c, n) { return c.id + ":" + n; }
   function dims(c, n) {
+    if (R) return R.unit(c.id, n);
     var k = unitKey(c, n);
     if (!S.m[k]) S.m[k] = { u: 0, p: 0, r: 0, a: 0 };
     return S.m[k];
@@ -227,7 +361,7 @@
   }
   function raise(c, n, dim, pct) {
     var d = dims(c, n);
-    if (pct > d[dim]) d[dim] = Math.round(pct);
+    if (pct > d[dim]) { d[dim] = Math.round(pct); keep(); }
   }
   function mastery(c, n) {          // 0-100 across whatever this unit offers
     var u = unitsOf(c).filter(function (x) { return x.n === n; })[0];
@@ -253,7 +387,8 @@
   /* -------------------------------------------------------- Mistake book
      Every wrong answer is kept, deduplicated, and counted. Getting the same
      thing wrong three times is the most useful signal the platform has. */
-  function slip(kind, key, title, note) {
+  function slip(kind, key, title, note, extra) {
+    if (R) { R.slip(kind, key, title, note, extra); return; }
     var hit = S.mistakes.filter(function (m) { return m.key === key; })[0];
     if (hit) { hit.n++; hit.at = Date.now(); return; }
     S.mistakes.push({ kind: kind, key: key, title: title, note: note, n: 1, at: Date.now() });
@@ -397,6 +532,7 @@
     v.innerHTML = "";
     v.appendChild(el("p", "lx-hello", greeting() + ", " + esc(S.me.first) + "."));
     v.appendChild(el("h1", "lx-h1", "Here is where you are."));
+    v.appendChild(standing());
 
     /* ---- Your next step ------------------------------------------- */
     var step = nextStep();
@@ -510,8 +646,79 @@
 
     v.appendChild(el("p", "lx-note",
       "<b>In progress.</b> Five study sets are written and one unit is playable end to end. The rest " +
-      "carry a real syllabus with the lessons still to be made. Your progress lasts for this session " +
-      'and is not sent anywhere. <a href="../edu/">About Oplo Edu &rsaquo;</a>'));
+      "carry a real syllabus with the lessons still to be made. Your progress is kept in this " +
+      "browser and is not sent anywhere \u2014 which also means it does not follow you to another " +
+      'computer. <a href="../edu/">About Oplo Edu &rsaquo;</a>'));
+  }
+
+  /* ------------------------------------------------------- Your standing
+     Rank, the week, and today against the goal. This is the only screen the
+     game layer gets a large surface on, and it is the right one: the home
+     screen is where a student decides what to do, and "you are eleven points
+     short of the day" is a decision-shaped fact. Inside a session it would
+     just be noise beside a question. */
+  function standing() {
+    var wrap = el("div", "lx-standing");
+    if (!R) return wrap;
+    var g = R.d.game, r = G.rank(g.xp);
+
+    var left = el("div", "lx-stand-card");
+    left.innerHTML = '<p class="k">Your standing</p>' +
+      '<div class="lx-stand-rank"><b>' + esc(r.name) + "</b><em>" +
+      g.xp.toLocaleString() + " XP</em></div>" +
+      '<div class="lx-stand-track"><i style="width:' + r.pct + '%"></i></div>' +
+      "<p>" + (r.next
+        ? esc(r.say) + " <b>" + r.toGo + "</b> more reaches " + esc(r.next.name) + "."
+        : esc(r.say) + " There is no rung above this one.") + "</p>";
+
+    /* Badges, including the ones not yet earned. Showing the locked ones is
+       deliberate: a badge nobody knows exists cannot be aimed at, and every
+       one of these names something worth aiming at. */
+    var got = Object.keys(g.badges).length;
+    var bl = el("div", "lx-badges");
+    G.BADGES.forEach(function (b) {
+      var has = !!g.badges[b.k];
+      var t = el("span", "lx-bdg" + (has ? "" : " off"));
+      t.innerHTML = svg(has ? I.star : I.tick) + esc(b.name);
+      t.title = has ? b.say + " Earned." : b.say;
+      bl.appendChild(t);
+    });
+    left.appendChild(el("p", "k", (got ? got : "No") + " of " + G.BADGES.length +
+      " badges" + (got ? " earned" : " yet")));
+    left.appendChild(bl);
+    wrap.appendChild(left);
+
+    var right = el("div", "lx-stand-card");
+    right.innerHTML = '<p class="k">This week</p>';
+    var wk = G.week(R, ST);
+    var top = Math.max(g.goal, wk.reduce(function (a, d) { return Math.max(a, d.xp); }, 0));
+    var row = el("div", "lx-week");
+    wk.forEach(function (d, i) {
+      var cell = el("div", "lx-week-day" + (d.xp ? "" : " none") + (i === 6 ? " today" : ""));
+      cell.title = d.day + " — " + d.xp + " XP";
+      var bar = el("div", "lx-week-bar");
+      var fill = el("i");
+      fill.style.height = Math.max(d.xp ? 6 : 2, Math.round(d.xp / top * 100)) + "%";
+      bar.appendChild(fill);
+      cell.appendChild(bar);
+      cell.appendChild(el("span", null, esc(d.label)));
+      row.appendChild(cell);
+    });
+    right.appendChild(row);
+
+    var goal = el("div", "lx-goal");
+    goal.innerHTML = "<b>" + g.today + " / " + g.goal + "</b><span>" +
+      (g.today >= g.goal ? "Today\u2019s goal met"
+                         : (g.goal - g.today) + " XP to today\u2019s goal") + "</span>";
+    right.appendChild(goal);
+    right.appendChild(el("p", null,
+      g.streak
+        ? "<b>" + g.streak + (g.streak === 1 ? " day" : " days") + " running.</b> " +
+          (g.best > g.streak ? "Your longest is " + g.best + "."
+                             : "That is your longest run so far.")
+        : "No streak running. A day counts when you learn something on it, not when you open the app."));
+    wrap.appendChild(right);
+    return wrap;
   }
 
   /* A session is assembled, not listed: review what is broken, learn the new
@@ -577,7 +784,9 @@
       var clr = el("button", "lx-btn lg quiet", "Clear the book");
       clr.type = "button";
       clr.addEventListener("click", function () {
-        S.mistakes = []; toast("Mistake book cleared."); openMistakes();
+        if (R) { R.d.mistakes.length = 0; R.save(); } else S.mistakes = [];
+        S.mistakes = R ? R.d.mistakes : [];
+        toast("Mistake book cleared."); openMistakes();
       });
       row2.appendChild(clr);
       v.appendChild(row2);
@@ -878,6 +1087,7 @@
       star.innerHTML = svg(I.star, !st.star[i]);
       star.addEventListener("click", function () {
         st.star[i] = !st.star[i];
+        keep();
         star.classList.toggle("on", st.star[i]);
         star.setAttribute("aria-pressed", String(!!st.star[i]));
         star.innerHTML = svg(I.star, !st.star[i]);
@@ -963,6 +1173,7 @@
       delete other[order[i]];
       if (pile === known) {
         setState(S.setId).level[order[i]] = 3;
+        keep();
         if (S.course && S.unitIx) {
           raise(S.course, S.unitIx, "r",
                 Math.round(Object.keys(known).length / cards.length * 100));
@@ -1030,7 +1241,7 @@
     var v = $("#v-learn");
 
     var goal = null, mode = "deep", rounds = 6;
-    var round = 0, asked = 0, correct = 0, hintsUsed = 0;
+    var round = 0, asked = 0, correct = 0, hintsUsed = 0, earned = 0;
     var began = Date.now();
     var opened = {}, gained = {};      // mastery at the start, per concept
     var phase = "goal";
@@ -1194,8 +1405,51 @@
                why: c.xfer.why };
     }
 
+    /* --------------------------------------------------------- Parking
+       A session that is walked out of is kept, so that closing a laptop
+       mid-question is not the same as throwing the session away. Only what
+       cannot be recomputed is stored: the counters, the goal, and where in
+       the queue we were. The question itself is rebuilt from the concept and
+       the level, which is cheaper and cannot go stale. */
+    function park() {
+      if (!R || phase === "goal") return;
+      R.park(setId, {
+        goal: goal && goal.k, mode: mode, rounds: rounds,
+        round: round, asked: asked, correct: correct,
+        hints: hintsUsed, earned: earned, began: began, opened: opened,
+        phase: phase, diagIx: diagIx,
+        diag: diag.map(function (c) { return c.k; }),
+        cur: cur && cur.k, level: curLevel
+      });
+    }
+
+    function unpark(p) {
+      goal = L.GOALS.filter(function (g) { return g.k === p.goal; })[0] || L.GOALS[1];
+      mode = p.mode || goal.mode;
+      rounds = p.rounds || goal.rounds;
+      round = p.round || 0; asked = p.asked || 0; correct = p.correct || 0;
+      hintsUsed = p.hints || 0; earned = p.earned || 0;
+      began = Date.now() - Math.min(36e5, Date.now() - (p.began || Date.now()));
+      if (p.opened) opened = p.opened;
+      phase = p.phase || "session";
+      diagIx = p.diagIx || 0;
+      diag = (p.diag || []).map(byKey).filter(Boolean);
+      var back = p.cur && byKey(p.cur);
+      if (!back) { phase = "session"; return nextQ(); }
+      cur = back;
+      curLevel = p.level || L.levelFor(store.get(cur.k), L.ceilingLevels(goal, CN.levelsFor(cur)), mode);
+      curQ = build(cur, curLevel);
+      hintLevel = 0; answered = false; picked = null;
+      draw();
+    }
+
+    function byKey(k) {
+      return concepts.filter(function (c) { return c.k === k; })[0] || null;
+    }
+
     /* ------------------------------------------------------------- Render */
     function draw() {
+      park();
       v.innerHTML = "";
       var stage = el("div", "ln");
 
@@ -1491,13 +1745,34 @@
     }
 
     function record(ok, detail, confidence) {
+      /* What was true *before* the answer is what the award is priced on —
+         proving something you already had is worth almost nothing, and that
+         can only be known from the state as it was a moment ago. */
+      var now = Date.now();
+      var before = store.get(cur.k);
+      var wasMastery = L.mastery(before, now);
+      var wasFlagged = !!before.flagged;
+      var gapDays = before.last ? (now - before.last) / 864e5 : 0;
+
       store.grade(cur.k, { level: curLevel, right: ok, hints: hintLevel,
-                           confidence: confidence }, Date.now());
+                           confidence: confidence }, now);
+
+      earned += Game.answer({ level: curLevel, right: ok, hints: hintLevel,
+                              mastery: wasMastery, gapDays: gapDays,
+                              confidence: confidence, skipped: picked == null });
+      Game.check("answer", { right: ok, level: curLevel, gapDays: gapDays,
+                             wasFlagged: wasFlagged,
+                             mastery: L.mastery(store.get(cur.k), now) });
+      if (picked == null) Game.check("skip", {});
+
       if (!ok) {
-        slip("term", setId + ":" + cur.i, cur.k, cur.def);
+        slip("term", setId + ":" + cur.i, cur.k, cur.def, { card: [cur.k, cur.def] });
         var m = S.mistakes.filter(function (x) { return x.key === setId + ":" + cur.i; })[0];
         if (m) m.card = [cur.k, cur.def];
       }
+      /* Parked again here, not only when a question is drawn: leaving in the
+         two seconds after answering should not lose the answer's counters. */
+      park();
       // Keep the old set-level mastery in step, so the rest of the app still
       // reads the same story off the same session.
       var st = setState(setId);
@@ -1505,6 +1780,7 @@
       concepts.forEach(function (c, i) {
         st.level[i] = L.mastery(store.get(c.k), Date.now()) >= 0.72 ? 3 : 0;
       });
+      keep();
       if (S.course && S.unitIx) raise(S.course, S.unitIx, "r", Math.round(sum.mastery * 100));
     }
 
@@ -1676,7 +1952,10 @@
         if (!txt) return;
         ta.disabled = true; g.disabled = true;
         var d = scoreExplanation(txt, c.say);
+        var wasM = L.mastery(store.get(c.k), Date.now());
         store.grade(c.k, { level: "explain", right: d.ok, hints: 0 }, Date.now());
+        earned += Game.answer({ level: "explain", right: d.ok, hints: 0, mastery: wasM });
+        Game.check("explain", { ok: d.ok });
         slot.innerHTML = '<div class="ln-verdict ' + (d.ok ? "right" : "wrong") + '"><b>' +
           (d.ok ? "That will hold" : "Nearly") + "</b><p>You reached <em>" +
           (d.hit.join(", ") || "none of the key ideas yet") + "</em>." +
@@ -1695,6 +1974,7 @@
     /* ============================================================ Report */
     function finish() {
       progress(null); noFoot();
+      if (R) R.clearPark(setId);        // a finished session is not a parked one
       var now = Date.now();
       var sum = L.summary(store.all(), concepts, now);
       var mins = Math.max(1, Math.round((now - began) / 6e4));
@@ -1776,6 +2056,30 @@
       }
       wrap.appendChild(plan);
 
+      /* What the session was worth, and where that leaves the ladder. It
+         goes here rather than beside the questions, because a number moving
+         while somebody is thinking is a number stealing the thinking. */
+      if (Game.on() && earned) {
+        var rec = Game.rec();
+        var r = G.rank(rec.d.game.xp);
+        var xpBox = el("div", "ln-rep-xp");
+        xpBox.innerHTML =
+          '<div class="ln-xp-num"><b>+' + earned + "</b><span>XP this session</span></div>" +
+          '<div class="ln-xp-rank"><div class="t"><i style="width:' + r.pct + '%"></i></div>' +
+          "<p><b>" + esc(r.name) + "</b>" +
+          (r.next ? " \u00b7 " + r.toGo + " to " + esc(r.next.name)
+                  : " \u00b7 the top of the ladder") + "</p>" +
+          "<span>" + esc(r.say) + "</span></div>" +
+          '<div class="ln-xp-streak"><b>' + rec.d.game.streak + "</b><span>day" +
+          (rec.d.game.streak === 1 ? "" : "s") + " running</span></div>";
+        wrap.appendChild(xpBox);
+      }
+
+      Game.check("session", {
+        asked: asked, right: correct, hints: hintsUsed,
+        swept: sum.mastered.length === concepts.length && concepts.length > 3
+      });
+
       var acts = el("div", "ln-rep-acts");
       var again = el("button", "lx-btn", "Another round");
       again.type = "button";
@@ -1826,7 +2130,53 @@
       }
     };
 
-    askGoal();
+    /* ------------------------------------------------------- Coming back
+       A session left in the middle is offered back rather than restored
+       silently. Silently would be worse: a student who opened Learn meaning
+       to start fresh should not find themselves eleven questions into
+       Tuesday's session with no way to tell what happened. */
+    function offerResume(p) {
+      phase = "resume";
+      noFoot(); progress(null);
+      v.innerHTML = "";
+      var wrap = el("div", "ln-open");
+      wrap.appendChild(el("p", "lx-eyebrow", esc(S.set.t)));
+      wrap.appendChild(el("h1", "ln-open-h", "You were part-way through."));
+
+      var g = L.GOALS.filter(function (x) { return x.k === p.goal; })[0];
+      var mins = Math.max(1, Math.round((Date.now() - (p.at || Date.now())) / 6e4));
+      var ago = mins < 60 ? mins + (mins === 1 ? " minute" : " minutes") + " ago"
+              : mins < 1440 ? Math.round(mins / 60) + "h ago" : "yesterday";
+
+      wrap.appendChild(el("p", "ln-open-p",
+        "You left this one " + ago + ", " + (p.asked || 0) +
+        ((p.asked === 1) ? " question" : " questions") + " in" +
+        (p.asked ? ", " + (p.correct || 0) + " right" : "") +
+        (g ? ", working on \u201c" + esc(g.name.toLowerCase()) + "\u201d" : "") +
+        ". Nothing you answered was lost \u2014 every one of them is already in the " +
+        "record. This is only about whether you carry on in the same run."));
+
+      var row = el("div", "ln-resume");
+      var go = el("button", "lx-btn lg", "Pick up where I was");
+      go.type = "button";
+      go.addEventListener("click", function () { unpark(p); });
+      row.appendChild(go);
+      var fresh = el("button", "lx-btn quiet", "Start a new session");
+      fresh.type = "button";
+      fresh.addEventListener("click", function () {
+        R.clearPark(setId);
+        askGoal();
+      });
+      row.appendChild(fresh);
+      wrap.appendChild(row);
+      v.appendChild(wrap);
+      show("learn");
+      setTimeout(function () { go.focus(); }, 60);
+    }
+
+    var waiting = (!again && R) ? R.parked(setId) : null;
+    if (waiting) offerResume(waiting);
+    else askGoal();
   }
 
   /* ----------------------------------------------------------------- Match */
@@ -1898,6 +2248,10 @@
       var secs = (performance.now() - start) / 1000;
       var best = st.best == null || secs < st.best;
       if (best) st.best = secs;
+      st.runs = (st.runs || 0) + 1;
+      keep();
+      var won = Game.run("match", { seconds: secs });
+      Game.check("match", { seconds: secs });
       setTimeout(function () {
         result({
           title: secs.toFixed(1) + " seconds.",
@@ -1905,7 +2259,8 @@
                      : "Your best on this set is still " + st.best.toFixed(1) + "s.",
           pct: 100,
           stats: [[pick.length, "pairs"], [secs.toFixed(1), "seconds"],
-                  [(secs / pick.length).toFixed(1), "per pair"]],
+                  [(secs / pick.length).toFixed(1), "per pair"]].concat(
+                  won ? [["+" + won, "XP"]] : []),
           back: function () { openSet(S.setId); },
           again: startMatch
         });
@@ -2955,6 +3310,7 @@
     if (!sec) return;
     if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true); });
     S.readIx = i;
+    keep();
 
     var v = $("#v-read");
     v.innerHTML = "";
@@ -3172,6 +3528,7 @@
         verdict.innerHTML = '<div class="lx-verdict ' + (ok ? "right" : "wrong") + '"><b>' +
           (ok ? "That's it" : "Not quite") + "</b><p>" + c.why + "</p></div>";
         S.readDone[sec.n] = true;
+        keep();
         var pct = Math.round(Object.keys(S.readDone).length / U5.length * 100);
         raise(D.MEDIA, 5, "u", pct);
         if (ok) raise(D.MEDIA, 5, "p", pct);
@@ -3294,7 +3651,9 @@
       return '<option value="' + s + '"' + ((S.citeStyle || "mla") === s ? " selected" : "") +
         ">" + s.toUpperCase() + "</option>";
     }).join("");
-    style.addEventListener("change", function () { S.citeStyle = style.value; render(); });
+    style.addEventListener("change", function () {
+      S.citeStyle = style.value; keep(); render();
+    });
     acts.appendChild(style);
 
     var exp = el("button", "lx-btn quiet", "Copy notebook");
@@ -4051,6 +4410,21 @@
 
   function boot(who) {
     S.me = who;
+
+    /* The record is opened before anything is drawn, and S is pointed at it.
+       Every screen below reads S.m, S.sets, S.mistakes exactly as it always
+       did — they are simply the same objects the record holds now, so a
+       write through either name is a write to both. */
+    R = new ST.Record(who.id);
+    S.m = R.d.m;
+    S.sets = R.d.sets;
+    S.mistakes = R.d.mistakes;
+    S.readDone = R.d.readDone;
+    S.doneToday = R.d.doneToday;
+    S.readIx = R.d.readIx || 0;
+    S.citeStyle = R.d.citeStyle || "mla";
+    Game.attach(R);
+
     $("#gate").hidden = true;
     var av = document.querySelector(".lx-user .av");
     av.textContent = who.initials;
@@ -4059,7 +4433,11 @@
     $("#user").title = "Signed in as " + who.name;
     document.body.classList.toggle("is-admin", who.role === "admin");
     $("#navAdmin").hidden = who.role !== "admin";
+    if (R.broken) {
+      toast("This browser will not let the page store anything, so progress will not be kept.");
+    }
     Ann.reset();
+    Game.paint();          // the bar shows the real streak and rank from the first frame
     drawSubjectNav();
     home();
     Room.presence();
@@ -4067,6 +4445,9 @@
   }
 
   function signOut() {
+    if (R) R.flush();                 // never leave the last few answers unwritten
+    R = null;
+    Game.attach(null);
     Auth.close();
     Room.reset();
     Ann.reset();
@@ -4077,6 +4458,8 @@
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     document.body.classList.remove("is-admin");
     $("#navAdmin").hidden = true;
+    $("#rankChip").hidden = true;
+    $("#streak").textContent = "0";
     $("#gate").hidden = false;
     $("#gEmail").value = ""; $("#gPass").value = "";
     $("#gErr").textContent = "";
@@ -4367,6 +4750,14 @@
     return { open: open, close: close, where: where, ask: fromLearn,
              note: function (text) { if (!$("#tt").hidden) say("sys", text); } };
   })();
+
+  /* A tab can be closed between two debounced writes. `pagehide` is the one
+     event that fires reliably on every path out — closing, navigating,
+     backgrounding on iOS — so the last few seconds are written there. */
+  window.addEventListener("pagehide", function () { if (R) R.flush(); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden" && R) R.flush();
+  });
 
   /* ---------------------------------------------------------------- Wiring */
   [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
