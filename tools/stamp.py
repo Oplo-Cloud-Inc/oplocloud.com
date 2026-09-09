@@ -10,7 +10,7 @@ import hashlib, io, os, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGE = os.path.join(ROOT, "learn", "index.html")
-ASSETS = ["app.css", "data.js", "unit5.js", "annotate.js", "collab.js", "tutor.js", "app.js"]
+ASSETS = ["app.css", "data.js", "unit5.js", "concepts.js", "learn.js", "annotate.js", "collab.js", "tutor.js", "app.js"]
 
 html = io.open(PAGE, encoding="utf-8").read()
 for name in ASSETS:

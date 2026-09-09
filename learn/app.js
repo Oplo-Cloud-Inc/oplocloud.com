@@ -85,7 +85,9 @@
     trash: '<path d="M4.5 6.5h15M9.5 6.5V4.8a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3v1.7"/><path d="M6.5 6.5 7.6 20a1.3 1.3 0 0 0 1.3 1.2h6.2a1.3 1.3 0 0 0 1.3-1.2L17.5 6.5"/>',
     people:'<path d="M9.5 11.5a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8z"/><path d="M2.8 20a6.7 6.7 0 0 1 13.4 0"/><path d="M16.2 5.2a3.4 3.4 0 0 1 0 6.6"/><path d="M17.6 14.2A6.7 6.7 0 0 1 21.2 20"/>',
     arrow: '<path d="M4.5 12h14"/><path d="M13 6.5 18.5 12 13 17.5"/>',
-    grid:  '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>'
+    grid:  '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>',
+    bulb:  '<path d="M9 17.5h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9h5c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z"/>',
+    alert: '<path d="M12 8.5v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>'
   };
   function svg(d, stroke) {
     return '<svg viewBox="0 0 24 24" fill="' + (stroke ? "none" : "currentColor") + '" ' +
@@ -1003,147 +1005,828 @@
   }
 
   /* ---------------------------------------------------------------- Learn
-     Three passes over each term, each harder than the last: recognise it,
-     recognise it backwards, then produce it from nothing. A wrong answer
-     sends the term back to the start of the queue rather than to the end
-     of the session — the ones you miss are the ones you see most. */
+     The session. Everything that decides what to ask is in learn.js; this
+     file asks it, and then gets out of the way.
+
+     The screen is one card and nothing else. No sidebar, no streak, no
+     confetti — a question a student is thinking about does not need a second
+     thing on the page competing for the thought. What sits under the card is
+     the help, in the order a good tutor offers it: a hint before an answer,
+     and a question before a hint.
+
+       GOAL -> DIAGNOSTIC -> [ ASK -> ANSWER -> TEACH ] -> REPORT
+                                 ^                  |
+                                 +---- adapt -------+
+  */
+  var L = window.OPLO_LEARN;
+  var CN = window.OPLO_CONCEPTS;
+
   function startLearn(again) {
     enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again);
-    var cards = S.set.cards, st = setState(S.setId);
-    var level = {}, queue = [];
-    cards.forEach(function (_, i) { level[i] = 0; queue.push(i); });
-    queue = shuffle(queue);
-    var cur = null, picked = null, checked = false, correct = 0, asked = 0;
 
+    var setId = S.setId;
+    var concepts = CN.forSet(setId, S.set.cards);
+    var store = new L.Store(S.me ? S.me.id : "anon", setId);
     var v = $("#v-learn");
 
-    function mastered() {
-      return cards.filter(function (_, i) { return level[i] >= 3; }).length;
+    var goal = null, mode = "deep", rounds = 6;
+    var round = 0, asked = 0, correct = 0, hintsUsed = 0;
+    var began = Date.now();
+    var opened = {}, gained = {};      // mastery at the start, per concept
+    var phase = "goal";
+    var cur = null, curLevel = null, curQ = null;
+    var hintLevel = 0, answered = false, picked = null;
+    var diag = [], diagIx = 0;
+
+    concepts.forEach(function (c) {
+      opened[c.k] = L.mastery(store.get(c.k), Date.now());
+    });
+
+    /* ============================================================== Goal */
+    function askGoal() {
+      phase = "goal";
+      noFoot(); progress(null);
+      v.innerHTML = "";
+      var wrap = el("div", "ln-open");
+      wrap.appendChild(el("p", "lx-eyebrow", esc(S.set.t)));
+      wrap.appendChild(el("h1", "ln-open-h", "What are you trying to do?"));
+      wrap.appendChild(el("p", "ln-open-p",
+        "It changes the session, not just the words on this screen — which levels you " +
+        "are asked at, how hard the questions get, and what counts as done."));
+
+      var grid = el("div", "ln-goals");
+      L.GOALS.forEach(function (g) {
+        var b = el("button", "ln-goal");
+        b.type = "button";
+        b.innerHTML = '<span class="ic">' + svg(I[g.glyph] || I.learn, true) + "</span>" +
+          "<b>" + esc(g.name) + "</b><span class=\"s\">" + esc(g.say) + "</span>";
+        b.addEventListener("click", function () { chose(g); });
+        grid.appendChild(b);
+      });
+      wrap.appendChild(grid);
+
+      /* What is already known, so the goal is not chosen blind. */
+      var sum = L.summary(store.all(), concepts, Date.now());
+      if (sum.mastered.length || sum.weak.length || sum.developing.length) {
+        var st = el("div", "ln-known");
+        st.innerHTML = "<b>Where you are</b>";
+        var bar = el("div", "ln-known-bar");
+        [["mastered", sum.mastered.length], ["strong", sum.strong.length],
+         ["developing", sum.developing.length], ["weak", sum.weak.length],
+         ["new", sum.untouched.length]].forEach(function (p) {
+          if (!p[1]) return;
+          var i = el("i");
+          i.style.flex = p[1];
+          i.style.background = L.BANDS.filter(function (b) { return b.k === p[0]; })[0].hue;
+          i.title = p[1] + " " + p[0];
+          bar.appendChild(i);
+        });
+        st.appendChild(bar);
+        var legend = el("p", "ln-known-say",
+          sum.untouched.length === concepts.length
+            ? "Nothing seen yet — all " + concepts.length + " concepts are new."
+            : sum.mastered.length + " mastered · " + sum.strong.length + " strong · " +
+              sum.developing.length + " developing · " + sum.weak.length + " weak · " +
+              sum.untouched.length + " untouched");
+        st.appendChild(legend);
+        if (sum.flagged.length) {
+          st.appendChild(el("p", "ln-known-flag",
+            svg(I.alert, true) + "<span>" + sum.flagged.length +
+            (sum.flagged.length === 1 ? " concept you were sure about and got wrong. That is a " +
+             "misconception, and it comes first." : " concepts you were sure about and got wrong. " +
+             "Those are misconceptions, and they come first.") + "</span>"));
+        }
+        wrap.appendChild(st);
+      }
+      v.appendChild(wrap);
+      show("learn");
     }
 
-    function nextQ() {
-      if (!queue.length) return done();
-      cur = queue.shift();
-      picked = null; checked = false;
-      progress(Math.round(mastered() / cards.length * 100));
+    function chose(g) {
+      goal = g;
+      if (g.mode === "auto") {
+        goal = L.decideGoal(store.all(), concepts, Date.now());
+        toast("Diagnostic first — it will decide.");
+      }
+      mode = goal.mode; rounds = goal.rounds;
+      buildDiagnostic();
+    }
+
+    /* ======================================================== Diagnostic
+       Five to eight questions, weighted towards what has never been seen,
+       asked at the lowest level each concept supports. The point is not to
+       score anybody. It is to give the engine something to work from other
+       than zeros, so the first real question is already the right one. */
+    function buildDiagnostic() {
+      var pool = concepts.slice();
+      var unseen = pool.filter(function (c) { return !store.get(c.k).seen; });
+      var seen = pool.filter(function (c) { return store.get(c.k).seen; });
+      diag = shuffle(unseen).slice(0, 6).concat(shuffle(seen).slice(0, 2));
+      if (diag.length < 5) diag = shuffle(pool).slice(0, Math.min(5, pool.length));
+      diag = shuffle(diag).slice(0, 8);
+      diagIx = 0;
+      phase = "diagnostic";
+      nextDiag();
+    }
+
+    function nextDiag() {
+      if (diagIx >= diag.length) { phase = "session"; nextQ(); return; }
+      cur = diag[diagIx];
+      var allowed = L.ceilingLevels(goal, CN.levelsFor(cur));
+      curLevel = allowed[0];
+      curQ = build(cur, curLevel);
+      hintLevel = 0; answered = false; picked = null;
       draw();
     }
 
-    function distractors(ix, which) {
-      var pool = cards.map(function (_, i) { return i; }).filter(function (i) { return i !== ix; });
-      return shuffle(pool).slice(0, Math.min(3, pool.length)).map(function (i) { return cards[i][which]; });
+    /* =========================================================== The loop */
+    function nextQ() {
+      if (round >= rounds * Math.max(3, Math.min(8, concepts.length))) return finish();
+      var pick = L.next(store.all(), concepts, Date.now(), cur ? cur.k : null);
+      if (!pick) return finish();
+      var sum = L.summary(store.all(), concepts, Date.now());
+      if (sum.mastery >= goal.target && round > concepts.length) return finish();
+
+      cur = pick;
+      var allowed = L.ceilingLevels(goal, CN.levelsFor(cur));
+      curLevel = L.levelFor(store.get(cur.k), allowed, mode);
+      curQ = build(cur, curLevel);
+      hintLevel = 0; answered = false; picked = null;
+      draw();
     }
 
+    /* ------------------------------------------------------ The questions
+       One builder per cognitive level. Recognition and recall come out of the
+       pair; the rest come out of the concept, and a concept that does not
+       carry them is never asked at those levels in the first place. */
+    function distractors(c, field, n) {
+      var pool = concepts.filter(function (o) { return o.k !== c.k; });
+      return shuffle(pool).slice(0, n).map(function (o) { return o[field]; });
+    }
+
+    function build(c, lv) {
+      if (lv === "recognise") {
+        return { kind: "choice", label: "Definition", prompt: c.def,
+                 ask: "Choose an answer",
+                 opts: shuffle([c.k].concat(distractors(c, "k", 3))),
+                 right: c.k,
+                 why: "It is the definition of " + c.k + "." };
+      }
+      if (lv === "recall") {
+        return { kind: "type", label: "Definition", prompt: c.def,
+                 ask: "Type the term", right: c.k,
+                 why: "The term is " + c.k + "." };
+      }
+      if (lv === "explain") {
+        return { kind: "free", label: c.k, prompt: "Explain it in your own words.",
+                 ask: "Write two or three sentences", look: c.say,
+                 why: null };
+      }
+      if (lv === "apply") {
+        return { kind: "choice", label: c.k + " · applied", prompt: c.apply.ask,
+                 ask: "Choose an answer",
+                 opts: c.apply.opts.slice(), right: c.apply.opts[c.apply.right],
+                 why: c.apply.why };
+      }
+      return { kind: "choice", label: c.k + " · transfer", prompt: c.xfer.ask,
+               ask: "Choose an answer",
+               opts: c.xfer.opts.slice(), right: c.xfer.opts[c.xfer.right],
+               why: c.xfer.why };
+    }
+
+    /* ------------------------------------------------------------- Render */
     function draw() {
-      var c = cards[cur], lv = level[cur];
       v.innerHTML = "";
-      v.appendChild(el("p", "lx-eyebrow", esc(S.set.t) + " · " + mastered() + " of " + cards.length + " mastered"));
+      var stage = el("div", "ln");
 
-      var stage = el("div", "lx-stage");
-      if (lv === 0) {
-        stage.appendChild(el("p", "lx-ask", "Which term is this?"));
-        stage.appendChild(el("div", "lx-prompt", esc(c[1])));
-        stage.appendChild(choices(shuffle([c[0]].concat(distractors(cur, 0))), c[0]));
-      } else if (lv === 1) {
-        stage.appendChild(el("p", "lx-ask", esc(c[0])));
-        stage.appendChild(el("p", "lx-hint", "Which definition belongs to it?"));
-        stage.appendChild(choices(shuffle([c[1]].concat(distractors(cur, 1))), c[1]));
-      } else {
-        stage.appendChild(el("p", "lx-ask", "Type the term."));
-        stage.appendChild(el("div", "lx-prompt", esc(c[1])));
-        var w = el("div", "lx-numwrap");
-        var inp = el("input", "lx-num");
-        inp.type = "text"; inp.id = "learnIn"; inp.autocomplete = "off";
-        inp.setAttribute("aria-label", "The term");
-        inp.addEventListener("input", function () {
-          picked = inp.value.trim();
-          $("#footBtn").disabled = !picked;
-        });
-        inp.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" && !$("#footBtn").disabled) submit();
-        });
-        w.appendChild(inp);
-        stage.appendChild(w);
-        setTimeout(function () { inp.focus(); }, 60);
+      stage.appendChild(topBar());
+
+      var card = el("section", "ln-card");
+      var head = el("header", "ln-card-head");
+      head.innerHTML = '<span class="lbl">' + esc(curQ.label) + "</span>";
+      var lv = L.level(curLevel);
+      var chip = el("span", "ln-lv");
+      chip.title = lv.say;
+      chip.innerHTML = '<i class="n' + lv.n + '"></i>' + esc(lv.name);
+      head.appendChild(chip);
+      if (phase === "diagnostic") {
+        head.appendChild(el("span", "ln-diag", "Diagnostic"));
       }
-      stage.appendChild(el("div", null, "")).id = "learnVerdict";
+      card.appendChild(head);
+
+      card.appendChild(el("p", "ln-prompt", esc(curQ.prompt)));
+
+      card.appendChild(el("p", "ln-ask", esc(curQ.ask)));
+      card.appendChild(answerArea());
+
+      var verdict = el("div", "ln-verdict-slot");
+      verdict.id = "lnVerdict";
+      card.appendChild(verdict);
+
+      card.appendChild(helpRow());
+      stage.appendChild(card);
       v.appendChild(stage);
-      // Always starts disabled: with it live, Check could be pressed on an
-      // unanswered question and marked wrong for you.
-      foot("", "Check", false, submit);
+      show("learn");
+
+      if (curQ.kind === "type" || curQ.kind === "free") {
+        setTimeout(function () { var i = $("#lnIn"); if (i) i.focus(); }, 70);
+      }
     }
 
-    function choices(opts, right) {
-      var wrap = el("div", "lx-opts");
-      opts.forEach(function (o, i) {
-        var b = el("button", "lx-opt");
-        b.type = "button";
-        b.setAttribute("aria-pressed", "false");
-        b.innerHTML = '<span class="lx-key">' + "ABCD"[i] + "</span><span>" + esc(o) + "</span>";
-        b.addEventListener("click", function () {
-          if (checked) return;
-          picked = o;
-          [].forEach.call(wrap.children, function (x) { x.setAttribute("aria-pressed", String(x === b)); });
-          $("#footBtn").disabled = false;
-        });
-        wrap.appendChild(b);
+    function topBar() {
+      var sum = L.summary(store.all(), concepts, Date.now());
+      var bar = el("div", "ln-top");
+
+      var left = el("span", "ln-count", String(sum.mastered.length + sum.strong.length));
+      bar.appendChild(left);
+
+      /* Segments, one per concept, coloured by band. It is a progress bar
+         that happens to also be the whole student model at a glance. */
+      var track = el("div", "ln-track");
+      concepts.forEach(function (c) {
+        var s = store.get(c.k);
+        var m = L.mastery(s, Date.now());
+        var b = L.band(m);
+        var i = el("i");
+        i.style.background = m > 0 ? b.hue : "";
+        i.className = m > 0 ? "on" : "";
+        if (cur && c.k === cur.k) i.classList.add("here");
+        i.title = c.k + " — " + b.name;
+        track.appendChild(i);
       });
-      wrap.dataset.right = right;
-      return wrap;
+      bar.appendChild(track);
+      bar.appendChild(el("span", "ln-count end", String(concepts.length)));
+
+      var quit = el("button", "ln-quit");
+      quit.type = "button";
+      quit.setAttribute("aria-label", "End the session");
+      quit.innerHTML = svg(I.close, true);
+      quit.addEventListener("click", function () { finish(); });
+      bar.appendChild(quit);
+      return bar;
     }
 
-    function submit() {
-      var c = cards[cur], lv = level[cur];
-      if (checked) { nextQ(); return; }
-      checked = true; asked++;
-      var right = lv === 0 ? c[0] : lv === 1 ? c[1] : c[0];
-      var ok = lv === 2 ? norm(picked) === norm(c[0]) : picked === right;
-      if (ok) { correct++; level[cur] = lv + 1; if (level[cur] >= 3) st.level[cur] = 3; }
-      else {
-        level[cur] = 0;
-        var m = S.mistakes.filter(function (x) { return x.key === S.setId + ":" + cur; })[0];
-        slip("term", S.setId + ":" + cur, c[0], c[1]);
-        (m || S.mistakes[S.mistakes.length - 1]).card = c;
+    function answerArea() {
+      if (curQ.kind === "choice") {
+        var wrap = el("div", "ln-opts");
+        curQ.opts.forEach(function (o, i) {
+          var b = el("button", "ln-opt");
+          b.type = "button";
+          b.dataset.value = o;
+          b.innerHTML = '<span class="n">' + (i + 1) + "</span><span class=\"t\">" + esc(o) + "</span>";
+          b.addEventListener("click", function () { answer(o); });
+          wrap.appendChild(b);
+        });
+        return wrap;
+      }
+      if (curQ.kind === "type") {
+        var w = el("form", "ln-type");
+        var inp = el("input");
+        inp.id = "lnIn"; inp.type = "text"; inp.autocomplete = "off";
+        inp.spellcheck = false;
+        inp.placeholder = "The term";
+        inp.setAttribute("aria-label", "The term");
+        w.appendChild(inp);
+        var go = el("button", "ln-go", "Check");
+        go.type = "submit";
+        w.appendChild(go);
+        w.addEventListener("submit", function (e) {
+          e.preventDefault();
+          if (answered || !inp.value.trim()) return;
+          answer(inp.value.trim());
+        });
+        return w;
+      }
+      var f = el("form", "ln-free");
+      var ta = el("textarea");
+      ta.id = "lnIn"; ta.rows = 4;
+      ta.placeholder = "In your own words. Two or three sentences is plenty.";
+      ta.setAttribute("aria-label", "Your explanation");
+      f.appendChild(ta);
+      var g = el("button", "ln-go wide", "Check what I said");
+      g.type = "submit";
+      f.appendChild(g);
+      f.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (answered || !ta.value.trim()) return;
+        answer(ta.value.trim());
+      });
+      return f;
+    }
+
+    /* The help, in the order it should be offered. A hint before an answer,
+       and the reason it matters before either. */
+    function helpRow() {
+      var row = el("div", "ln-help");
+
+      var hint = el("button", "ln-hint");
+      hint.type = "button";
+      hint.id = "lnHint";
+      hint.innerHTML = svg(I.bulb, true) + "<span>Need a hint?</span>";
+      hint.addEventListener("click", giveHint);
+      row.appendChild(hint);
+
+      if (cur.why) {
+        var why = el("button", "ln-why");
+        why.type = "button";
+        why.innerHTML = "Why am I learning this?";
+        why.addEventListener("click", function () {
+          var box = $("#lnHelpOut");
+          box.innerHTML = '<div class="ln-note"><b>Why this matters</b><p>' + esc(cur.why) + "</p>" +
+            (cur.eg ? '<p class="eg">' + esc(cur.eg) + "</p>" : "") + "</div>";
+        });
+        row.appendChild(why);
       }
 
-      var opts = v.querySelectorAll(".lx-opt");
-      if (opts.length) {
-        [].forEach.call(opts, function (b) {
-          b.disabled = true;
-          var t = b.lastElementChild.textContent;
-          if (t === right) b.classList.add("right");
-          else if (t === picked) b.classList.add("wrong");
-        });
+      var dunno = el("button", "ln-dunno", "Don't know?");
+      dunno.type = "button";
+      dunno.addEventListener("click", function () { answer(null); });
+      row.appendChild(dunno);
+
+      var out = el("div", "ln-help-out");
+      out.id = "lnHelpOut";
+      var box = el("div");
+      box.appendChild(row);
+      box.appendChild(out);
+      return box;
+    }
+
+    /* --------------------------------------------------------- The ladder
+       Three rungs and then the explanation, and the level taken is recorded.
+       A student who reaches 90% on rung three has not done what a student who
+       reaches 90% on rung zero has done, and the model needs to know which
+       one it is looking at. */
+    function hints() {
+      var out = [];
+      if (curLevel === "recognise" || curLevel === "recall") {
+        out.push("Read the definition again and ask what kind of thing it is describing — a " +
+                 "part, a property, or a technique.");
+        if (cur.pre && cur.pre.length) {
+          out.push("It sits just after " + cur.pre.join(" and ") + " in the chain.");
+        } else if (cur.eg) {
+          out.push("Here is an instance of it: " + cur.eg);
+        } else {
+          out.push("It starts with “" + cur.k.charAt(0) + "”.");
+        }
+        out.push("The first two letters are “" + cur.k.slice(0, 2) + "”.");
+      } else if (curLevel === "explain") {
+        out.push("Start with what kind of thing it is, then what it does.");
+        out.push("A good answer usually mentions " + (cur.say || []).slice(0, 2).join(" and ") + ".");
+        out.push("Say it as though the person opposite you has never heard the word.");
       } else {
-        var inp = $("#learnIn");
-        inp.disabled = true;
-        inp.classList.add(ok ? "right" : "wrong");
+        out.push("Work out what the question is really asking about — which single idea is " +
+                 "being tested here?");
+        if (cur.miss && cur.miss.length) {
+          out.push("Watch out for this: " + cur.miss[0][0]);
+        } else {
+          out.push("Rule out the two options that are about something else entirely first.");
+        }
+        out.push(cur.why ? "Remember: " + cur.why : "Go back to the definition and read it literally.");
       }
-      var vd = document.getElementById("learnVerdict");
-      vd.innerHTML = '<div class="lx-verdict ' + (ok ? "right" : "wrong") + '"><b>' +
-        (ok ? "Correct" : "The answer is " + esc(right)) + "</b><p>" +
-        (ok ? (level[cur] >= 3 ? "Mastered. It will not come round again."
-                               : "It comes back once more, harder.")
-            : "Back to the start of the queue for this one.") + "</p></div>";
-
-      if (!ok || level[cur] < 3) queue.unshift(cur);
-      foot(mastered() + " of " + cards.length + " mastered", queue.length ? "Continue" : "Finish", true, submit);
+      return out;
     }
 
-    function done() {
-      progress(null);
-      if (S.course && S.unitIx) raise(S.course, S.unitIx, "r", 100);
-      result({
-        title: "Set mastered.",
-        lede: "Every term answered three ways: recognised, reversed, and typed from nothing.",
-        pct: 100,
-        stats: [[cards.length, "terms"], [correct, "correct"], [asked, "questions"]],
-        back: function () { openSet(S.setId); }
+    function giveHint() {
+      if (answered) return;
+      var all = hints();
+      if (hintLevel >= all.length) return;
+      var text = all[hintLevel];
+      hintLevel++;
+      hintsUsed++;
+      var box = $("#lnHelpOut");
+      var h = el("div", "ln-hintbox");
+      h.innerHTML = "<b>Hint " + hintLevel + " of " + all.length + "</b><p>" + esc(text) + "</p>";
+      box.appendChild(h);
+      var btn = $("#lnHint");
+      if (hintLevel >= all.length) {
+        btn.disabled = true;
+        btn.querySelector("span").textContent = "No more hints";
+      } else {
+        btn.querySelector("span").textContent = "Another hint";
+      }
+    }
+
+    /* -------------------------------------------------------- The answer */
+    function answer(given) {
+      if (answered) return;
+      answered = true;
+      picked = given;
+      asked++;
+      round++;
+
+      var ok = false, detail = null;
+      if (given == null) ok = false;
+      else if (curQ.kind === "free") {
+        detail = scoreExplanation(given, curQ.look);
+        ok = detail.ok;
+      } else if (curQ.kind === "type") ok = norm(given) === norm(curQ.right);
+      else ok = given === curQ.right;
+
+      if (ok) correct++;
+
+      // Mark the options before anything else moves, so the eye lands on the
+      // answer rather than on a layout change.
+      if (curQ.kind === "choice") {
+        [].forEach.call(v.querySelectorAll(".ln-opt"), function (b) {
+          b.disabled = true;
+          if (b.dataset.value === curQ.right) b.classList.add("right");
+          else if (b.dataset.value === given) b.classList.add("wrong");
+        });
+      } else if (curQ.kind === "type") {
+        var inp = $("#lnIn");
+        if (inp) { inp.disabled = true; inp.classList.add(ok ? "right" : "wrong"); }
+        var go = v.querySelector(".ln-go");
+        if (go) go.disabled = true;
+      } else {
+        var ta = $("#lnIn");
+        if (ta) ta.disabled = true;
+        var g2 = v.querySelector(".ln-go");
+        if (g2) g2.disabled = true;
+      }
+
+      /* Confidence is asked before the verdict is explained, and only when it
+         will tell us something: a hinted answer's confidence is about the
+         hint, not the knowledge. */
+      if (!hintLevel && given != null && (curLevel !== "recognise" || Math.random() < 0.4)) {
+        askConfidence(ok, detail);
+      } else {
+        record(ok, detail, null);
+        verdict(ok, detail, null);
+      }
+    }
+
+    /* Scored on the ideas a good answer contains rather than on wording. The
+       list is shown afterwards either way, because "you missed two of the five
+       things we look for, and here they are" is a lesson and a mark is not. */
+    function scoreExplanation(text, look) {
+      var t = " " + norm(text) + " ";
+      var hit = [], miss = [];
+      (look || []).forEach(function (w) {
+        if (t.indexOf(norm(w)) > -1) hit.push(w); else miss.push(w);
+      });
+      var need = Math.max(2, Math.ceil((look || []).length * 0.4));
+      return { hit: hit, miss: miss, need: need, ok: hit.length >= need,
+               words: text.trim().split(/\s+/).length };
+    }
+
+    function askConfidence(ok, detail) {
+      var slot = $("#lnVerdict");
+      slot.innerHTML = "";
+      var box = el("div", "ln-conf");
+      box.innerHTML = "<b>Before the answer — how sure were you?</b>";
+      var row = el("div", "ln-conf-row");
+      [["Guessing", 0], ["Not sure", 1], ["Fairly sure", 2], ["Certain", 3]].forEach(function (c) {
+        var b = el("button");
+        b.type = "button";
+        b.textContent = c[0];
+        b.addEventListener("click", function () {
+          record(ok, detail, c[1]);
+          verdict(ok, detail, c[1]);
+        });
+        row.appendChild(b);
+      });
+      box.appendChild(row);
+      slot.appendChild(box);
+      slot.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    function record(ok, detail, confidence) {
+      store.grade(cur.k, { level: curLevel, right: ok, hints: hintLevel,
+                           confidence: confidence }, Date.now());
+      if (!ok) {
+        slip("term", setId + ":" + cur.i, cur.k, cur.def);
+        var m = S.mistakes.filter(function (x) { return x.key === setId + ":" + cur.i; })[0];
+        if (m) m.card = [cur.k, cur.def];
+      }
+      // Keep the old set-level mastery in step, so the rest of the app still
+      // reads the same story off the same session.
+      var st = setState(setId);
+      var sum = L.summary(store.all(), concepts, Date.now());
+      concepts.forEach(function (c, i) {
+        st.level[i] = L.mastery(store.get(c.k), Date.now()) >= 0.72 ? 3 : 0;
+      });
+      if (S.course && S.unitIx) raise(S.course, S.unitIx, "r", Math.round(sum.mastery * 100));
+    }
+
+    /* ------------------------------------------------------------ Verdict
+       A wrong answer is where the teaching happens, so it gets the room. It
+       never opens with the correct answer: it opens with the part of the
+       student's thinking that was right, then the misconception, then a
+       question back. */
+    function verdict(ok, detail, confidence) {
+      var slot = $("#lnVerdict");
+      slot.innerHTML = "";
+      var s = store.get(cur.k);
+      var m = L.mastery(s, Date.now());
+      var b = L.band(m);
+
+      var box = el("div", "ln-verdict " + (ok ? "right" : picked == null ? "skip" : "wrong"));
+
+      if (ok) {
+        box.innerHTML = "<b>" + (hintLevel ? "Right, with " + hintLevel +
+          (hintLevel === 1 ? " hint" : " hints") : "Right") + "</b>";
+        if (curQ.kind === "free" && detail) {
+          box.innerHTML += "<p>You covered " + detail.hit.length + " of " +
+            (detail.hit.length + detail.miss.length) + " things a full answer has: <em>" +
+            detail.hit.join(", ") + "</em>." +
+            (detail.miss.length ? " Not mentioned: <em>" + detail.miss.join(", ") + "</em>." : "") +
+            "</p>";
+        } else if (curQ.why) {
+          box.innerHTML += "<p>" + esc(curQ.why) + "</p>";
+        }
+      } else if (picked == null) {
+        box.innerHTML = "<b>Left it</b><p>Saying you do not know is worth more than a guess — " +
+          "it goes in as unknown rather than as a coin flip. It comes back soon.</p>";
+        box.innerHTML += teachBlock();
+      } else {
+        box.appendChild(wrongTeaching(detail, confidence));
+      }
+
+      /* Where this concept now stands, and when it is next worth seeing. */
+      var state = el("div", "ln-state");
+      state.innerHTML = '<span class="dot" style="background:' + b.hue + '"></span>' +
+        "<span class=\"nm\"><b>" + esc(cur.k) + "</b> — " + esc(b.name) + "</span>" +
+        '<span class="due">back ' + esc(L.when(s, Date.now())) + "</span>";
+      box.appendChild(state);
+
+      var dims = el("div", "ln-dims");
+      L.LEVELS.forEach(function (lv) {
+        var val = Math.round(s[lv.k] * 100);
+        var d = el("div", "ln-dim" + (lv.k === curLevel ? " now" : ""));
+        d.title = lv.say;
+        d.innerHTML = "<span>" + esc(lv.name) + "</span><div class=\"t\"><i style=\"width:" +
+          val + '%"></i></div>';
+        dims.appendChild(d);
+      });
+      box.appendChild(dims);
+
+      slot.appendChild(box);
+
+      var next = el("div", "ln-next");
+      var nb = el("button", "ln-continue", "Continue");
+      nb.type = "button";
+      nb.addEventListener("click", function () { advance(); });
+      next.appendChild(nb);
+      if (!ok) {
+        var tt = el("button", "ln-talk");
+        tt.type = "button";
+        tt.innerHTML = svg(I.learn, true) + "<span>Talk it through</span>";
+        tt.addEventListener("click", function () {
+          Tutor.ask("I am working on " + cur.k + ". The question was: " + curQ.prompt +
+            (picked ? " I answered “" + picked + "” and it was wrong." : " I did not know.") +
+            " Do not tell me the answer — ask me something that helps me see it.");
+        });
+        next.appendChild(tt);
+      }
+      slot.appendChild(next);
+      setTimeout(function () { nb.focus(); }, 40);
+      slot.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    /* The Socratic move, done locally so it works with no model running. The
+       misconception data is what makes it possible: knowing the mistake
+       students actually make is what lets you name the right part of their
+       thinking before you correct the wrong part. */
+    function wrongTeaching(detail, confidence) {
+      var box = el("div");
+      var flagged = confidence != null && confidence >= 3;
+
+      if (curQ.kind === "free" && detail) {
+        box.innerHTML = "<b>Not yet — but look at what you did say</b>" +
+          (detail.hit.length
+            ? "<p>You got to <em>" + detail.hit.join(", ") + "</em>. That is the right territory.</p>"
+            : "<p>Nothing in that answer touched the ideas this one turns on yet.</p>") +
+          "<p>A full answer would also reach: <em>" + detail.miss.join(", ") + "</em>. " +
+          "Which of those could you have added?</p>";
+        return box;
+      }
+
+      var miss = (cur.miss && cur.miss.length) ? cur.miss[0] : null;
+      var head = flagged ? "You were sure — and that makes this worth stopping on"
+                         : "Not quite, and it is a close one";
+      var html = "<b>" + head + "</b>";
+      if (flagged) {
+        html += "<p>Being certain and wrong is different from not knowing. It means there is " +
+                "something you believe that is getting in the way, so this one is coming back " +
+                "sooner than the rest.</p>";
+      }
+      if (miss) {
+        html += '<p class="ln-miss"><em>' + esc(miss[0]) + "</em> " + esc(miss[1]) + "</p>";
+      }
+      html += "<p>" + (curQ.why ? esc(curQ.why) : "The answer is " + esc(curQ.right) + ".") + "</p>";
+      box.innerHTML = html;
+      return box;
+    }
+
+    function teachBlock() {
+      var out = "<p><b>" + esc(curQ.right || cur.k) + "</b> — " + esc(cur.def) + "</p>";
+      if (cur.eg) out += '<p class="eg">' + esc(cur.eg) + "</p>";
+      return out;
+    }
+
+    /* ------------------------------------------------- Teach it back
+       When a concept crosses into strong, it gets asked for once in the
+       student's own words. Retrieval and construction in one move, and the
+       only checkpoint in the session that cannot be passed by recognising
+       something. */
+    function advance() {
+      if (phase === "diagnostic") { diagIx++; nextDiag(); return; }
+      var s = store.get(cur.k);
+      var m = L.mastery(s, Date.now());
+      if (mode === "deep" && cur.say && m >= 0.72 && !s.taught && s[cur.say ? "explain" : "recall"] < 0.9) {
+        s.taught = true;
+        store.save();
+        return teachMe(cur);
+      }
+      nextQ();
+    }
+
+    function teachMe(c) {
+      v.innerHTML = "";
+      var stage = el("div", "ln");
+      stage.appendChild(topBar());
+      var card = el("section", "ln-card ln-teach");
+      card.innerHTML = '<header class="ln-card-head"><span class="lbl">Teach it back</span>' +
+        '<span class="ln-lv"><i class="n2"></i>Explain</span></header>' +
+        '<p class="ln-teach-h">' + esc(c.k) + "</p>" +
+        '<p class="ln-prompt">You have this one. Say it to someone who has never heard the ' +
+        "word — that is the test that recognition cannot fake.</p>";
+      var f = el("form", "ln-free");
+      var ta = el("textarea");
+      ta.rows = 4;
+      ta.id = "lnIn";
+      ta.placeholder = "Explain " + c.k + " in your own words.";
+      ta.setAttribute("aria-label", "Your explanation");
+      f.appendChild(ta);
+      var g = el("button", "ln-go wide", "Done");
+      g.type = "submit";
+      f.appendChild(g);
+      card.appendChild(f);
+      var slot = el("div", "ln-verdict-slot");
+      slot.id = "lnVerdict";
+      card.appendChild(slot);
+      stage.appendChild(card);
+      v.appendChild(stage);
+      show("learn");
+      setTimeout(function () { ta.focus(); }, 70);
+
+      f.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var txt = ta.value.trim();
+        if (!txt) return;
+        ta.disabled = true; g.disabled = true;
+        var d = scoreExplanation(txt, c.say);
+        store.grade(c.k, { level: "explain", right: d.ok, hints: 0 }, Date.now());
+        slot.innerHTML = '<div class="ln-verdict ' + (d.ok ? "right" : "wrong") + '"><b>' +
+          (d.ok ? "That will hold" : "Nearly") + "</b><p>You reached <em>" +
+          (d.hit.join(", ") || "none of the key ideas yet") + "</em>." +
+          (d.miss.length ? " A full answer also reaches <em>" + d.miss.join(", ") + "</em>." : "") +
+          "</p></div>";
+        var nx = el("div", "ln-next");
+        var nb = el("button", "ln-continue", "Continue");
+        nb.type = "button";
+        nb.addEventListener("click", nextQ);
+        nx.appendChild(nb);
+        slot.appendChild(nx);
+        nb.focus();
       });
     }
 
-    show("learn");
-    nextQ();
+    /* ============================================================ Report */
+    function finish() {
+      progress(null); noFoot();
+      var now = Date.now();
+      var sum = L.summary(store.all(), concepts, now);
+      var mins = Math.max(1, Math.round((now - began) / 6e4));
+
+      var moved = [], slipped = [];
+      concepts.forEach(function (c) {
+        var was = opened[c.k] || 0;
+        var is = L.mastery(store.get(c.k), now);
+        if (is - was > 0.06) moved.push([c, was, is]);
+        if (was - is > 0.06) slipped.push([c, was, is]);
+      });
+      moved.sort(function (a, b) { return (b[2] - b[1]) - (a[2] - a[1]); });
+
+      v.innerHTML = "";
+      var wrap = el("div", "ln-report");
+      wrap.appendChild(el("p", "lx-eyebrow", esc(S.set.t) + " · " + mins + " min"));
+      wrap.appendChild(el("h1", "ln-open-h",
+        sum.mastery >= goal.target ? "You hit what you came for." : "Session report"));
+      wrap.appendChild(el("p", "ln-open-p",
+        asked + (asked === 1 ? " question" : " questions") + ", " + correct + " right" +
+        (hintsUsed ? ", " + hintsUsed + (hintsUsed === 1 ? " hint" : " hints") + " taken" : "") +
+        ". " + honest(sum, correct, asked, hintsUsed)));
+
+      var cols = el("div", "ln-rep-cols");
+      [["Mastered", sum.mastered, "mastered"], ["Strong", sum.strong, "strong"],
+       ["Developing", sum.developing, "developing"], ["Still weak", sum.weak, "weak"]]
+        .forEach(function (g) {
+          if (!g[1].length) return;
+          var hue = L.BANDS.filter(function (b) { return b.k === g[2]; })[0].hue;
+          var c = el("div", "ln-rep-col");
+          c.innerHTML = '<h3><i style="background:' + hue + '"></i>' + g[0] +
+            "<em>" + g[1].length + "</em></h3>";
+          var ul = el("ul");
+          g[1].forEach(function (x) { ul.innerHTML += "<li>" + esc(x.k) + "</li>"; });
+          c.appendChild(ul);
+          cols.appendChild(c);
+        });
+      wrap.appendChild(cols);
+
+      if (moved.length) {
+        var mv = el("div", "ln-rep-moved");
+        mv.innerHTML = "<h3>What moved</h3>";
+        moved.slice(0, 6).forEach(function (m) {
+          var row = el("div", "ln-move");
+          row.innerHTML = "<span>" + esc(m[0].k) + "</span>" +
+            '<div class="t"><i class="was" style="width:' + Math.round(m[1] * 100) + '%"></i>' +
+            '<i class="is" style="width:' + Math.round(m[2] * 100) + '%"></i></div>' +
+            "<em>+" + Math.round((m[2] - m[1]) * 100) + "</em>";
+          mv.appendChild(row);
+        });
+        wrap.appendChild(mv);
+      }
+
+      if (sum.flagged.length) {
+        var fl = el("div", "ln-rep-flag");
+        fl.innerHTML = "<h3>" + svg(I.alert, true) + "Misconceptions</h3><p>You were confident " +
+          "and wrong on " + sum.flagged.map(function (c) { return "<b>" + esc(c.k) + "</b>"; })
+            .join(", ") + ". That is not a gap in what you know, it is something you believe " +
+          "that is in the way — which is why these come back first.</p>";
+        wrap.appendChild(fl);
+      }
+
+      var plan = el("div", "ln-rep-plan");
+      plan.innerHTML = "<h3>Next</h3>";
+      var soon = concepts.map(function (c) { return [c, store.get(c.k)]; })
+        .filter(function (p) { return p[1].seen; })
+        .sort(function (a, b) { return (a[1].due || 0) - (b[1].due || 0); })
+        .slice(0, 5);
+      if (soon.length) {
+        var ul = el("ul");
+        soon.forEach(function (p) {
+          ul.innerHTML += "<li><b>" + esc(p[0].k) + "</b><span>" +
+            esc(L.when(p[1], now)) + "</span></li>";
+        });
+        plan.appendChild(ul);
+        plan.appendChild(el("p", "ln-rep-say",
+          "Spacing is the point. Coming back to these on the days above is worth more than " +
+          "another hour today — the gap is what makes it stick."));
+      }
+      wrap.appendChild(plan);
+
+      var acts = el("div", "ln-rep-acts");
+      var again = el("button", "lx-btn", "Another round");
+      again.type = "button";
+      again.addEventListener("click", function () { startLearn(true); });
+      acts.appendChild(again);
+      var back = el("button", "lx-btn quiet", "Back to the set");
+      back.type = "button";
+      back.addEventListener("click", function () { openSet(setId); });
+      acts.appendChild(back);
+      wrap.appendChild(acts);
+
+      v.appendChild(wrap);
+      show("learn");
+    }
+
+    /* One sentence, and it has to be true even when the news is bad. */
+    function honest(sum, right, total, hints) {
+      var acc = total ? right / total : 0;
+      if (!total) return "Nothing answered, so nothing changed.";
+      if (hints / Math.max(1, total) > 0.6) {
+        return "Most of those came with help, so they are marked lower than they look. " +
+               "Try a round without hints and see what holds.";
+      }
+      if (sum.mastered.length >= sum.weak.length && acc > 0.8) {
+        return "Strong session. What is left is retention, and retention is a calendar problem.";
+      }
+      if (acc < 0.5) return "A hard session, which is what a useful one usually feels like.";
+      if (sum.untouched.length) return sum.untouched.length + " concepts still untouched.";
+      return "Steady. The weak ones are the ones worth coming back to.";
+    }
+
+    /* 1-4 pick an option, Enter continues, H asks for a hint. */
+    S.learnKeys = function (e) {
+      if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName || "")) return;
+      if (e.metaKey || e.ctrlKey) return;
+      if (phase === "goal") return;
+      if (e.key === "Enter") {
+        var c = v.querySelector(".ln-continue");
+        if (c) { e.preventDefault(); c.click(); }
+        return;
+      }
+      if (e.key.toLowerCase() === "h" && !answered) { e.preventDefault(); giveHint(); return; }
+      if (answered) return;
+      var n = parseInt(e.key, 10);
+      if (n >= 1 && n <= 4) {
+        var opts = v.querySelectorAll(".ln-opt");
+        if (opts[n - 1]) { e.preventDefault(); opts[n - 1].click(); }
+      }
+    };
+
+    askGoal();
   }
 
   /* ----------------------------------------------------------------- Match */
@@ -3669,7 +4352,19 @@
       });
     });
 
-    return { open: open, close: close, where: where,
+    /* Learn hands the tutor a question that has already gone wrong. It arrives
+       with the constraint attached — do not answer it — because the moment a
+       student is stuck is exactly the moment the temptation to just be told
+       is strongest, and the ladder exists for that moment. */
+    function fromLearn(text) {
+      open();
+      if (!live) { toast("The tutor needs Ollama running on this machine."); return; }
+      ctrl.mode = "guided";
+      ctrl.level = 0;
+      setTimeout(function () { send(text, false); }, 120);
+    }
+
+    return { open: open, close: close, where: where, ask: fromLearn,
              note: function (text) { if (!$("#tt").hidden) say("sys", text); } };
   })();
 
@@ -3689,6 +4384,7 @@
   document.addEventListener("keydown", function (e) {
     if (S.view === "cards" && S.keys) S.keys(e);
     else if (S.view === "read" && S.readKeys) S.readKeys(e);
+    else if (S.view === "learn" && S.learnKeys) S.learnKeys(e);
   });
 
 })();
