@@ -1,0 +1,42 @@
+# ===========================================================================
+# The Oplo platform API.
+#
+# One Worker, one database, every product. It is deliberately not part of the
+# oplocloud.com Pages project: the static site is the frontend and should stay
+# replaceable, and an identity service that lives inside one site's build is
+# an identity service that belongs to that site.
+# ===========================================================================
+name = "oplo-api"
+main = "src/index.js"
+compatibility_date = "2026-05-01"
+
+# Secrets are never in this file. Set them with:
+#   npx wrangler secret put SESSION_PEPPER
+# and they arrive as env.SESSION_PEPPER at runtime.
+
+[vars]
+ENVIRONMENT = "development"
+# Browsers that may call this API with credentials. An allowlist rather than
+# "*", because "*" and cookies are mutually exclusive for good reasons.
+ALLOWED_ORIGINS = "http://localhost:8123,http://127.0.0.1:8123,http://localhost:4173,http://127.0.0.1:4173"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "oplo-platform-db"
+database_id = "local-development-placeholder"
+
+[env.production]
+name = "oplo-api"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+ALLOWED_ORIGINS = "https://oplocloud.com,https://www.oplocloud.com"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "oplo-platform-db"
+database_id = "REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE"
+
+[env.production.routes]
+pattern = "api.oplocloud.com/*"
+zone_name = "oplocloud.com"
