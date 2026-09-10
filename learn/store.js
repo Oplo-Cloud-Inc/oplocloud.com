@@ -50,6 +50,7 @@ window.OPLO_STORE = (function () {
       sets: {},              // setId -> { level, star, best, runs, seen }
       mistakes: [],
       readIx: 0,
+      readUnit: "media:5",   // which unit's reader readIx points into
       readDone: {},
       doneToday: {},
       citeStyle: "mla",
@@ -99,6 +100,7 @@ window.OPLO_STORE = (function () {
     if (d.sets && typeof d.sets === "object") out.sets = d.sets;
     if (Array.isArray(d.mistakes)) out.mistakes = d.mistakes;
     if (typeof d.readIx === "number") out.readIx = d.readIx;
+    if (typeof d.readUnit === "string") out.readUnit = d.readUnit;
     if (d.readDone && typeof d.readDone === "object") out.readDone = d.readDone;
     if (d.doneToday && typeof d.doneToday === "object") out.doneToday = d.doneToday;
     if (typeof d.citeStyle === "string") out.citeStyle = d.citeStyle;
