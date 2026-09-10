@@ -160,7 +160,74 @@ XP=$(echo "$R" | jq_ "o.standing&&o.standing.xp")
 STREAK=$(echo "$R" | jq_ "o.standing&&o.standing.streak")
 [ "$XP" = "33" ] && ok "standing totals $XP XP from the ledger, streak $STREAK" || bad "standing" "$R"
 
-say "9. Sessions"
+say "9. Study sets — authoring and consumption, both server-backed"
+R=$(call teacher POST /study-sets "{\"code\":\"waves-$STAMP\",\"title\":\"Waves and Sound\",\"courseId\":\"$COURSE\",\"status\":\"published\",\"terms\":[{\"term\":\"Pinna\",\"definition\":\"The visible outer ear that collects sound.\",\"why\":\"It is why you can tell a sound came from behind you.\",\"example\":\"Cupping a hand behind your ear.\"},{\"term\":\"Cochlea\",\"definition\":\"The snail-shaped hearing part of the inner ear.\"},{\"term\":\"Amplitude\",\"definition\":\"The height of a wave, crest to trough.\"},{\"term\":\"Frequency\",\"definition\":\"Cycles per second, measured in Hertz.\"}]}")
+SET=$(echo "$R" | jq_ "o.studySet&&o.studySet.id")
+[ -n "$SET" ] && ok "teacher authored a set: $SET" || bad "create study set" "$R"
+
+LEVELS=$(echo "$R" | jq_ "o.studySet&&o.studySet.terms[0].levels.join('/')")
+[ "$LEVELS" = "recognise/recall/explain/apply" ] \
+  && ok "a term with a worked case reports levels: $LEVELS" || bad "levels" "$LEVELS"
+LEVELS2=$(echo "$R" | jq_ "o.studySet&&o.studySet.terms[1].levels.join('/')")
+[ "$LEVELS2" = "recognise/recall/explain" ] \
+  && ok "a term without one is honestly capped: $LEVELS2" || bad "thin term levels" "$LEVELS2"
+
+R=$(call student GET /study-sets)
+echo "$R" | grep -q "$SET" && ok "the student in that course sees it" || bad "student reads set" "$R"
+
+S=$(status other GET "/study-sets/$SET")
+[ "$S" = "403" ] && ok "a teacher outside the course cannot read it (403)" \
+  || bad "unrelated teacher MUST NOT read the set" "HTTP $S"
+
+S=$(status student PATCH "/study-sets/$SET" '{"title":"Hacked"}')
+[ "$S" = "403" ] && ok "a student cannot edit a study set (403)" \
+  || bad "student MUST NOT edit a set" "HTTP $S"
+
+S=$(status teacher POST /study-sets "{\"code\":\"tiny-$STAMP\",\"title\":\"Too small\",\"terms\":[{\"term\":\"a\",\"definition\":\"b\"}]}")
+[ "$S" = "400" ] && ok "a set of one term is refused — the games need distractors (400)" \
+  || bad "minimum term count" "HTTP $S"
+
+S=$(status teacher POST /study-sets "{\"code\":\"dupe-$STAMP\",\"title\":\"Duplicates\",\"terms\":[{\"term\":\"Pinna\",\"definition\":\"one\"},{\"term\":\"pinna\",\"definition\":\"two\"},{\"term\":\"C\",\"definition\":\"three\"},{\"term\":\"D\",\"definition\":\"four\"}]}")
+[ "$S" = "409" ] && ok "a repeated term is refused — it makes an unanswerable question (409)" \
+  || bad "duplicate term" "HTTP $S"
+
+# A draft belongs to its author until it is published.
+R=$(call teacher POST /study-sets "{\"code\":\"draft-$STAMP\",\"title\":\"Draft\",\"courseId\":\"$COURSE\",\"terms\":[{\"term\":\"A\",\"definition\":\"one\"},{\"term\":\"B\",\"definition\":\"two\"},{\"term\":\"C\",\"definition\":\"three\"},{\"term\":\"D\",\"definition\":\"four\"}]}")
+DRAFT=$(echo "$R" | jq_ "o.studySet&&o.studySet.id")
+S=$(status student GET "/study-sets/$DRAFT")
+[ "$S" = "403" ] && ok "an unpublished draft is not visible to the class (403)" \
+  || bad "draft leaked to students" "HTTP $S"
+
+call teacher PATCH "/study-sets/$DRAFT" '{"status":"published"}' >/dev/null
+S=$(status student GET "/study-sets/$DRAFT")
+[ "$S" = "200" ] && ok "publishing it makes it visible (200)" || bad "publish" "HTTP $S"
+
+say "10. Sessions"
+# A second sign-in from the "same person, different device".
+curl -s -c "$JAR/student2" -H 'content-type: application/json' \
+  -d "{\"email\":\"student$STAMP@example.com\",\"password\":\"another-long-password\"}" \
+  -X POST "$API/auth/login" >/dev/null
+R=$(call student GET /auth/sessions)
+N=$(echo "$R" | jq_ "o.sessions&&o.sessions.length")
+CUR=$(echo "$R" | jq_ "o.sessions&&o.sessions.filter(s=>s.current).length")
+[ "$N" -ge 2 ] && ok "the account can see its $N live sessions" || bad "session listing" "$R"
+[ "$CUR" = "1" ] && ok "exactly one is marked as the one asking" || bad "current session" "$R"
+
+S=$(status other GET /auth/sessions)
+R2=$(call other GET /auth/sessions)
+OTHERN=$(echo "$R2" | jq_ "o.sessions&&o.sessions.length")
+echo "$R2" | grep -q "$(echo "$R" | jq_ "o.sessions[0].id")" \
+  && bad "another account can see these sessions" "$R2" \
+  || ok "another account sees only their own ($OTHERN)"
+
+R=$(call student POST /auth/sessions/revoke)
+REV=$(echo "$R" | jq_ "o.revoked")
+[ "$REV" -ge 1 ] && ok "signed out $REV other device(s), keeping this one" || bad "revoke others" "$R"
+S=$(status student GET /me)
+[ "$S" = "200" ] && ok "the session that asked still works (200)" || bad "kept own session" "HTTP $S"
+S=$(status student2 GET /me)
+[ "$S" = "401" ] && ok "the other device is signed out (401)" || bad "other device still live" "HTTP $S"
+
 call student POST /auth/logout >/dev/null
 S=$(status student GET /me)
 [ "$S" = "401" ] && ok "after sign-out the session is dead (401)" || bad "logout" "HTTP $S"

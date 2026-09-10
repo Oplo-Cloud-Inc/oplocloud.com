@@ -77,6 +77,47 @@ export async function me(ctx) {
   return json({ account: publicAccount(actor) });
 }
 
+/* GET /api/v1/auth/sessions — every device signed in as you.
+   Shown to the account holder alone; there is no path by which anybody else
+   can ask. */
+export async function sessions(ctx) {
+  const actor = requireActor(ctx);
+  const rows = await ctx.repo.listSessions(actor.id);
+  return json({
+    sessions: rows.map((r) => ({
+      id: r.id,
+      current: r.id === actor.sessionId,
+      createdAt: r.created_at,
+      lastSeenAt: r.last_seen_at,
+      expiresAt: r.expires_at,
+      // The raw user-agent, not a parsed guess at a device name. A wrong
+      // device name is worse than a technical one: somebody deciding whether
+      // to revoke a session needs the truth, not a friendly approximation.
+      userAgent: r.user_agent
+    }))
+  });
+}
+
+/* POST /api/v1/auth/sessions/revoke — sign out everywhere else, keeping the
+   session that asked. The common case is somebody who thinks their password
+   has been seen, and signing them out of the device they are holding while
+   they deal with it would be actively unhelpful. */
+export async function revokeSessions(ctx) {
+  const actor = requireActor(ctx);
+  const body = await readJson(ctx.request).catch(() => ({}));
+  if (body && body.sessionId) {
+    const rows = await ctx.repo.listSessions(actor.id);
+    if (!rows.some((r) => r.id === body.sessionId)) {
+      throw ApiError.notFound("No such session on this account.");
+    }
+    await ctx.repo.revokeSession(body.sessionId);
+    return json({ ok: true, revoked: 1 });
+  }
+  const before = await ctx.repo.listSessions(actor.id);
+  await ctx.repo.revokeOtherSessions(actor.id, actor.sessionId);
+  return json({ ok: true, revoked: Math.max(0, before.length - 1) });
+}
+
 export async function changePassword(ctx) {
   const actor = requireActor(ctx);
   const body = await readJson(ctx.request);

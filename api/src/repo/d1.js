@@ -141,6 +141,34 @@ export class D1Repository {
     ).bind(now(), accountId).run();
   }
 
+  /* Every live session on this account. Shown to the person it belongs to so
+     "sign out everywhere" is a thing they can see the effect of rather than a
+     button they have to trust. */
+  async listSessions(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT id, created_at, last_seen_at, expires_at, user_agent
+         FROM sessions
+        WHERE account_id = ? AND revoked_at IS NULL AND expires_at > ?
+        ORDER BY last_seen_at DESC`
+    ).bind(accountId, now()).all();
+    return results || [];
+  }
+
+  async revokeOtherSessions(accountId, keepSessionId) {
+    await this.db.prepare(
+      `UPDATE sessions SET revoked_at = ?
+        WHERE account_id = ? AND id != ? AND revoked_at IS NULL`
+    ).bind(now(), accountId, keepSessionId).run();
+  }
+
+  /* Expired and revoked rows are not needed once they are past their window.
+     Left alone they grow without bound, and D1's free tier is a budget. */
+  async pruneSessions(olderThan) {
+    await this.db.prepare(
+      `DELETE FROM sessions WHERE expires_at < ? OR (revoked_at IS NOT NULL AND revoked_at < ?)`
+    ).bind(olderThan, olderThan).run();
+  }
+
   /* ---------------------------------------------------------------- Roles */
 
   async rolesFor(accountId) {
@@ -378,6 +406,123 @@ export class D1Repository {
     ).bind(gradeId, assignmentId, accountId, score, outOf ?? 100,
            feedback || null, gradedBy || null, now()).run();
     return this.findGrade(gradeId);
+  }
+
+  /* ---------------------------------------------------------- Study sets */
+
+  async listStudySets({ orgId, courseId, accountId } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, (SELECT COUNT(*) FROM learn_study_terms t WHERE t.set_id = s.id) AS term_count
+         FROM learn_study_sets s
+        WHERE s.status != 'archived'
+          AND (? IS NULL OR s.org_id = ?)
+          AND (? IS NULL OR s.course_id = ?)
+          AND (? IS NULL OR s.created_by = ?)
+        ORDER BY s.title`
+    ).bind(orgId || null, orgId || null, courseId || null, courseId || null,
+           accountId || null, accountId || null).all();
+    return results || [];
+  }
+
+  /* Every set this account can legitimately reach: the ones in their courses,
+     the ones published to their organization, and their own. Done as one
+     query rather than three round trips, because this runs on every sign-in. */
+  async listStudySetsFor(accountId, orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, (SELECT COUNT(*) FROM learn_study_terms t WHERE t.set_id = s.id) AS term_count
+         FROM learn_study_sets s
+        WHERE s.status = 'published'
+          AND (
+            s.created_by = ?
+            OR (s.visibility = 'org' AND s.org_id = ?)
+            OR (s.visibility = 'course' AND s.course_id IN (
+                  SELECT course_id FROM learn_course_memberships WHERE account_id = ?))
+          )
+        ORDER BY s.title`
+    ).bind(accountId, orgId || null, accountId).all();
+    return results || [];
+  }
+
+  async findStudySet(setId) {
+    return this.db.prepare(`SELECT * FROM learn_study_sets WHERE id = ?`)
+      .bind(setId).first();
+  }
+
+  async findStudySetByCode(orgId, code) {
+    return this.db.prepare(
+      `SELECT * FROM learn_study_sets WHERE (org_id IS ? OR org_id = ?) AND code = ?`
+    ).bind(orgId || null, orgId || null, code).first();
+  }
+
+  async listTerms(setId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_study_terms WHERE set_id = ? ORDER BY position`
+    ).bind(setId).all();
+    return results || [];
+  }
+
+  async createStudySet(data) {
+    const setId = id("set");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_study_sets
+         (id, org_id, course_id, code, title, summary, visibility, status,
+          created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(setId, data.orgId || null, data.courseId || null, data.code, data.title,
+           data.summary || null, data.visibility || "course",
+           data.status || "draft", data.createdBy || null, t, t).run();
+    return this.findStudySet(setId);
+  }
+
+  async updateStudySet(setId, patch) {
+    const fields = [], values = [];
+    const map = { title: "title", summary: "summary", courseId: "course_id",
+                  visibility: "visibility", status: "status" };
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (!fields.length) return this.findStudySet(setId);
+    values.push(now(), setId);
+    await this.db.prepare(
+      `UPDATE learn_study_sets SET ${fields.join(", ")}, updated_at = ? WHERE id = ?`
+    ).bind(...values).run();
+    return this.findStudySet(setId);
+  }
+
+  /* Terms are replaced wholesale, because that is how a set is edited: the
+     author works on the whole list and saves it. Diffing to preserve ids
+     would buy nothing — nothing references a term by id — and would cost a
+     reconciliation loop that could get it wrong.
+
+     Batched so a set is never half-replaced. A partial write here would show
+     a student a set with six of its twelve terms and no indication why. */
+  async replaceTerms(setId, terms) {
+    const t = now();
+    const statements = [
+      this.db.prepare(`DELETE FROM learn_study_terms WHERE set_id = ?`).bind(setId)
+    ];
+    terms.forEach((row, i) => {
+      statements.push(this.db.prepare(
+        `INSERT INTO learn_study_terms
+           (id, set_id, position, term, definition, why, example, hint, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id("trm"), setId, i, row.term, row.definition,
+             row.why || null, row.example || null, row.hint || null, t, t));
+    });
+    statements.push(this.db.prepare(
+      `UPDATE learn_study_sets SET updated_at = ? WHERE id = ?`
+    ).bind(t, setId));
+    await this.db.batch(statements);
+    return this.listTerms(setId);
+  }
+
+  /* Archived rather than deleted. A set a class has been studying from is not
+     something one click should be able to remove from their history. */
+  async archiveStudySet(setId) {
+    await this.db.prepare(
+      `UPDATE learn_study_sets SET status = 'archived', updated_at = ? WHERE id = ?`
+    ).bind(now(), setId).run();
   }
 
   /* ----------------------------------------------------- Progress and XP */

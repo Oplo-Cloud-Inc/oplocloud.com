@@ -19,6 +19,22 @@ import { SESSION_COOKIE, readCookie } from "../lib/cookies.js";
 export const SESSION_LIFETIME = 30 * 24 * 60 * 60 * 1000;   // 30 days
 const RENEW_AFTER = 24 * 60 * 60 * 1000;                    // slide once a day
 
+/* A session token is replaced once a week even while it is in constant use.
+
+   The reason is containment, not paranoia. A token that leaks — copied off a
+   shared machine, pulled from a proxy log — is otherwise good for its full
+   thirty days. Rotation puts a ceiling on that: the stolen token stops
+   working the next time the real user's browser rotates, and because the old
+   row is revoked rather than deleted, a token used after its rotation is a
+   signal that something is wrong rather than silence.
+
+   The window matters. Rotating on every request is the textbook answer and it
+   is wrong here: two requests in flight at once would race, one would present
+   the token the other just replaced, and the user would be signed out by
+   their own app. A week is long enough that the race effectively never
+   happens and short enough to matter. */
+const ROTATE_AFTER = 7 * 24 * 60 * 60 * 1000;
+
 export async function signIn(ctx, { email, password, userAgent }) {
   const account = await ctx.repo.findAccountByEmail(email);
 
@@ -72,6 +88,13 @@ export async function currentActor(ctx) {
     ctx.waitUntil(ctx.repo.touchSession(session.id));
   }
 
+  /* Due for rotation. The new token is handed back on this response, which
+     the router turns into a Set-Cookie — so the swap is invisible unless
+     somebody is holding a copy of the old one. */
+  if (Date.now() - session.created_at > ROTATE_AFTER) {
+    ctx.rotate = session;
+  }
+
   const [roles, orgs] = await Promise.all([
     ctx.repo.rolesFor(account.id),
     ctx.repo.membershipsFor(account.id)
@@ -109,6 +132,17 @@ export function requireActor(ctx) {
 
 export async function signOut(ctx) {
   if (ctx.actor) await ctx.repo.revokeSession(ctx.actor.sessionId);
+}
+
+/* Issues a replacement and revokes the old one. Called by the router when
+   `currentActor` flagged a session as due, so no route has to remember. */
+export async function rotateSession(ctx, old) {
+  const account = await ctx.repo.findAccountById(old.account_id);
+  if (!account) return null;
+  const issued = await issueSession(ctx, account,
+    ctx.request.headers.get("user-agent"));
+  await ctx.repo.revokeSession(old.id);
+  return issued;
 }
 
 /* ------------------------------------------------------------ Rate limiting

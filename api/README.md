@@ -4,11 +4,46 @@ Identity, organizations, and product data for Oplo. One Worker, one database,
 every product.
 
 This is **not** an Oplo Learn backend. It is the platform's, and Learn is the
-first product to consume it. The distinction shows up in one place and it is
-the important one: every product table references `account_id`, never a
-product-local user id. A person who is a teacher in Learn and a seller in
-OShopping is one row in `accounts` with two rows in `account_roles`, not two
-accounts that share an email address.
+first product to consume it.
+
+```
+                        Oplo Account
+                             │
+                       Oplo Identity
+                             │
+        ┌───────────┬────────┼────────┬───────────┐
+        │           │        │        │           │
+   Oplo Learn    OMaps   OShopping  Roxan   …future products
+        │           │        │        │           │
+   learn_*       maps_*   shopping_*  roxan_*    <product>_*
+```
+
+The distinction shows up in one place and it is the important one: every
+product table references `account_id`, never a product-local user id. A person
+who is a teacher in Learn and a seller in OShopping is one row in `accounts`
+with two rows in `account_roles`, not two accounts that share an email
+address. Signing in once is what makes them one person.
+
+Identity and organization tables are unprefixed because they belong to the
+platform. Product tables carry their product's prefix, so a second product
+adds tables rather than negotiating for space in these ones.
+
+**A product must not add its own account table, its own password column, or
+its own login page.** If a future Oplo product needs something identity-shaped
+that is not here, it belongs here — added to the platform, available to
+everything — rather than solved locally and duplicated four times.
+
+## Status
+
+| | |
+| --- | --- |
+| Proven locally | 42 assertions, `scripts/prove.sh` |
+| Deployed | **not yet** — see `LAUNCH.md` |
+| Blocking launch | email verification, password reset, durable rate limiting |
+
+`LAUNCH.md` is the honest list of what is unfinished. Nothing on it is hidden
+behind a working-looking screen; the Console's System tab shows users the same
+facts.
 
 ```
 Browser
@@ -60,20 +95,35 @@ cannot read it.
 ## Deploying it
 
 ```bash
-npx wrangler d1 create oplo-platform-db     # take the id it prints
-# paste that id into both database_id fields in wrangler.toml
-npx wrangler d1 migrations apply oplo-platform-db --remote
-npx wrangler secret put SESSION_PEPPER --env production
-npx wrangler deploy --env production
+export CLOUDFLARE_API_TOKEN=...          # D1:Edit and Workers Scripts:Edit
+./scripts/deploy.sh
 ```
+
+It creates the database if it does not exist, writes the id into
+`wrangler.toml`, applies migrations remotely, generates and stores
+`SESSION_PEPPER`, and deploys. It is idempotent — run it again after a failure
+rather than unpicking a half-done state.
+
+One step stays manual: adding the DNS record for `api.oplocloud.com` in the
+zone, because that is a change to a zone rather than to this project.
+
+Then the first administrator, and the check from outside:
+
+```bash
+./scripts/bootstrap-admin.sh 'a-long-password' 'you@example.com' 'Your Name' --remote
+./scripts/verify-production.sh you@example.com
+```
+
+`verify-production.sh` tests what only production can prove: real TLS, that
+plain HTTP does not serve, the `Secure`/`HttpOnly`/`SameSite` flags on the
+session cookie, CORS from the actual `oplocloud.com` origin, that an unknown
+origin is refused, and that identity comes from the session rather than from
+anything in the request. **Do not merge the frontend until it passes.**
 
 `SESSION_PEPPER` is mixed into session-token hashes before they are stored, so
 a leaked database cannot be turned into live sessions without also holding a
-secret that never leaves Cloudflare. Generate one with
-`openssl rand -base64 32`. It is not in this repository and must not be.
-
-The production route is `api.oplocloud.com/*`. Add that hostname to the zone
-before deploying.
+secret that never leaves Cloudflare. Do not rotate it casually: changing it
+signs out every account at once.
 
 ## What is enforced, and where
 
@@ -106,20 +156,24 @@ KDF.
 
 ## Known gaps
 
-These are real and are not hidden behind a working-looking screen.
+In `LAUNCH.md`, with what each one needs and what it blocks. The short version:
+email verification, password reset and durable rate limiting block a public
+launch; grade history, session pruning and observability block scale.
 
-- **Rate limiting is in-memory and per-isolate.** A speed bump, not a wall.
-  A limiter that actually holds needs Durable Objects or KV.
-- **No email verification and no password reset.** `email_verified` exists on
-  the accounts table and nothing sets it.
-- **Study sets are not in the database.** Learn's set authoring writes to the
-  device it runs on, and the console says so on the screen where sets are
-  written. This is the next table.
-- **No refresh-token rotation.** Sessions are long-lived opaque tokens,
-  revocable per session or per account.
-- **Progress conflict resolution is last-write-wins per scope.** Safe because
-  the scope is one study set, and because losing a write costs a few minutes
-  of drill rather than a grade.
+## Keeping the layering honest
+
+```bash
+./scripts/check-boundaries.sh
+```
+
+Fails if a route or service reaches `env.DB`, if SQL appears outside
+`src/repo/`, if a layer imports past its neighbour, if the frontend reaches the
+network outside `learn/api.js`, or if password material reappears in the
+browser. Comments are stripped before it looks, so it checks the code rather
+than the prose describing it.
+
+D1 is the current implementation, not the contract. The check is what stops
+that sentence from becoming decoration.
 
 ## Free tier
 

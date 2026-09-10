@@ -4,7 +4,12 @@
 # one and only privileged out-of-band step, and it is the correct place for it.
 set -e
 DB="oplo-platform-db"
-run() { npx wrangler d1 execute "$DB" --local --command "$1" >/dev/null 2>&1; }
+# --remote as the fourth argument targets the deployed database. Local is the
+# default so that a mistyped command cannot create an administrator in
+# production by accident.
+WHERE="--local"
+[ "${4:-}" = "--remote" ] && WHERE="--remote"
+run() { npx wrangler d1 execute "$DB" $WHERE --command "$1" >/dev/null 2>&1; }
 NOW=$(node -e 'process.stdout.write(String(Date.now()))')
 # PBKDF2-SHA256, the same derivation the Worker verifies against.
 read -r HASH SALT <<< "$(node -e '
@@ -25,4 +30,4 @@ run "INSERT INTO account_roles (id,account_id,product,role,org_id,created_at)
      VALUES ('rol_root_p','acc_root','platform','admin',NULL,$NOW)"
 run "INSERT INTO account_roles (id,account_id,product,role,org_id,created_at)
      VALUES ('rol_root_l','acc_root','learn','admin','org_oplo',$NOW)"
-echo "Seeded platform administrator: $2"
+echo "Seeded platform administrator: $2 ($WHERE)"

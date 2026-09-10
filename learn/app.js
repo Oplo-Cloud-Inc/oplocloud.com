@@ -24,8 +24,67 @@
      every screen — which is the only way an authoring tool stays honest. */
   var SC = window.OPLO_SCHOOL;
   var API = window.OPLO_API;
-  function SETS() { return SC.sets(); }
-  function SET(id) { return SC.set(id); }
+
+  /* Study sets come from two places and the screens below must not have to
+     care which. `SC.sets()` is the curriculum published with the site;
+     `dbSets` is what this school has written, fetched once at sign-in and
+     refreshed after an edit.
+
+     It is a cache of a server fetch, not a source of truth: it is filled from
+     the API, it is replaced by the API, and a set that is not in it is a set
+     this account is not allowed to study. Keeping it synchronous is what lets
+     the rest of the app — openSet, Learn, all three games — stay unchanged.
+
+     A school's own set wins over a shipped one with the same code, because a
+     school that has written its own version of a set has said what it wants. */
+  var dbSets = {};
+
+  function SETS() {
+    var out = SC.sets();
+    Object.keys(dbSets).forEach(function (k) { out[k] = dbSets[k]; });
+    return out;
+  }
+  function SET(id) { return dbSets[id] || SC.set(id); }
+
+  /* The API's shape turned into the pair-list the study screens render. The
+     richer fields ride along, so a set authored with worked cases can be
+     asked at apply and one without is honestly capped. */
+  function adoptSet(row) {
+    if (!row || !row.terms) return null;
+    return {
+      t: row.title,
+      cards: row.terms.map(function (t) { return [t.term, t.definition]; }),
+      rich: row.terms,
+      dbId: row.id,
+      code: row.code,
+      courseId: row.courseId,
+      status: row.status,
+      visibility: row.visibility,
+      createdBy: row.createdBy,
+      fromDb: true
+    };
+  }
+
+  /* Fetches the list, then the terms for each. Two round trips rather than
+     one fat endpoint, because the list is what the home screen needs and the
+     terms are what a study screen needs, and most sign-ins never open a set. */
+  function loadStudySets() {
+    if (!API || !S.me) return Promise.resolve(false);
+    return API.studySets.mine().then(function (rows) {
+      if (!rows.length) return false;
+      return Promise.all(rows.map(function (r) {
+        return API.studySets.get(r.id).then(adoptSet, function () { return null; });
+      })).then(function (full) {
+        var changed = false;
+        full.forEach(function (set) {
+          if (!set) return;
+          dbSets[set.code] = set;
+          changed = true;
+        });
+        return changed;
+      });
+    }, function () { return false; });
+  }
   var $ = function (s) { return document.querySelector(s); };
   function el(tag, cls, html) {
     var n = document.createElement(tag);
@@ -351,16 +410,9 @@
     function flushNow() {
       clearTimeout(timer);
       if (!queue.length || !API || !S.me) return;
-      // On the way out of the page, `keepalive` is the only thing that
-      // survives the tab closing.
-      try {
-        var body = JSON.stringify({ events: queue.splice(0, 50),
-                                    tzOffset: new Date().getTimezoneOffset() });
-        fetch(API.base() + "/gamification/events", {
-          method: "POST", credentials: "include", keepalive: true,
-          headers: { "content-type": "application/json" }, body: body
-        });
-      } catch (e) { /* nothing more we can do from here */ }
+      // A request that has to outlive the document. api.js owns the mechanics
+      // of that, the same as it owns every other call.
+      API.gamification.beacon(queue.splice(0, 50));
     }
 
     return { pull: pull, pushSet: pushSet, report: report, flush: flush, flushNow: flushNow };
@@ -807,6 +859,31 @@
     var g = el("div", "lx-grid");
     enrolled().forEach(function (x) { g.appendChild(courseCard(x)); });
     v.appendChild(g);
+
+    /* ---- Study sets from your teachers ------------------------------ */
+    var given = Object.keys(dbSets).map(function (k) { return [k, dbSets[k]]; });
+    if (given.length) {
+      v.appendChild(el("h2", "lx-h2", "Set by your teachers"));
+      v.appendChild(el("p", "lx-lede",
+        given.length === 1
+          ? "One study set, written for a course you are in."
+          : given.length + " study sets, written for courses you are in."));
+      var sg = el("div", "lx-grid");
+      given.forEach(function (pair) {
+        var id = pair[0], set = pair[1];
+        var card = el("button", "lx-setcard");
+        card.type = "button";
+        var deep = (set.rich || []).filter(function (t) {
+          return t.levels && t.levels.indexOf("apply") > -1;
+        }).length;
+        card.innerHTML = '<span class="ic">' + svg(I.cards, true) + "</span>" +
+          "<b>" + esc(set.t) + "</b><span>" + set.cards.length + " terms" +
+          (deep ? " · " + deep + " with a worked case" : "") + "</span>";
+        card.addEventListener("click", function () { openSet(id); });
+        sg.appendChild(card);
+      });
+      v.appendChild(sg);
+    }
 
     /* ---- Mistakes -------------------------------------------------- */
     v.appendChild(el("h2", "lx-h2", "What you keep getting wrong"));
@@ -5529,134 +5606,279 @@
   }
 
   /* ----------------------------------------------------------- Study sets
-     Authored content, and honestly labelled: study sets are not in the
-     database yet. There is no `learn_study_sets` table, so a set written here
-     is stored on this device and reaches nobody else. Saying that plainly is
-     better than a Save button that quietly does nothing for anybody but you. */
+     Written by teachers, studied by their classes, stored in the database.
+
+     Until this existed the tab carried a warning saying sets reached nobody
+     but the person who wrote them. The warning is gone because the thing it
+     described is gone — which is the only honest way for a label like that to
+     disappear. */
   function tabSets(v) {
-    v.appendChild(el("div", "ad-warn",
-      "<b>Study sets are not synchronised yet.</b><p>Courses, enrolment, work, grades " +
-      "and progress are in the database and reach every device. Study sets are not: " +
-      "there is no table for them, so a set written here is stored in this browser and " +
-      "nobody else can see it.</p><p>This is a gap, not a design. It is the next thing " +
-      "to move into the API — the shape is the same as courses, and the seam is " +
-      "already there.</p>"));
+    var node = loading(v, "study sets");
 
-    v.appendChild(el("p", "lx-lede",
-      "A set written here works in Flashcards, Learn, Match, Test and all three games " +
-      "on this device immediately. It is honestly capped at recall and explain — " +
-      "apply and transfer questions need worked cases, which are authored in concepts.js."));
+    Promise.all([
+      API.studySets.authored(),
+      API.courses.mine()
+    ]).then(function (out) {
+      var sets = out[0], courses = out[1];
+      node.remove();
 
-    var acts = el("div", "ad-acts");
-    var add = el("button", "lx-btn", "New study set");
-    add.type = "button";
-    add.addEventListener("click", function () { openSetEditor(null); });
-    acts.appendChild(add);
-    v.appendChild(acts);
-
-    var all = SETS();
-    var list = el("div", "ad-list");
-    Object.keys(all).forEach(function (id) {
-      if (id.indexOf("__") === 0) return;
-      var st = all[id];
-      var row = el("div", "ad-row");
-      row.innerHTML = '<span class="t"><b>' + esc(st.t) + "</b><span>" + esc(id) + " · " +
-        st.cards.length + " terms" + (st.added ? " · on this device only" : "") +
-        "</span></span>";
-      var edit = el("button", "lx-btn quiet", "Edit");
-      edit.type = "button";
-      edit.addEventListener("click", function () { openSetEditor(id); });
-      row.appendChild(edit);
-      list.appendChild(row);
-    });
-    v.appendChild(list);
-  }
-
-  function openSetEditor(id) {
-    var making = !id;
-    var st = id ? SET(id) : null;
-    enter("set-edit:" + (id || "new"), making ? "New set" : trim(st.t),
-          function () { openSetEditor(id); });
-    var v = $("#v-admin");
-    var rows = st ? st.cards.map(function (c) { return c.slice(); }) : [["", ""]];
-
-    function render() {
-      v.innerHTML = "";
-      v.appendChild(el("p", "lx-eyebrow", making ? "New study set" : "Study set"));
-      v.appendChild(el("h1", "lx-h1", making ? "Write a study set" : esc(st.t)));
-
-      var form = el("div", "ad-form");
-      var slug = field("Identifier", id || "", "e.g. astro-1");
-      if (!making) slug.input.disabled = true;
-      var title = field("Title", st ? st.t : "", "What this set covers");
-      [slug, title].forEach(function (f) { form.appendChild(f); });
-      v.appendChild(form);
-
-      v.appendChild(el("h2", "lx-h2", "Terms"));
       v.appendChild(el("p", "lx-lede",
-        "Every definition has to stand on its own: in Match, Test and the games it is " +
-        "shown without its term beside it."));
-
-      var table = el("div", "ad-table cards");
-      var hd = el("div", "ad-tr head");
-      hd.innerHTML = "<span>Term</span><span>Definition</span><span></span>";
-      table.appendChild(hd);
-      rows.forEach(function (r, ix) {
-        var tr = el("div", "ad-tr");
-        var term = el("input");
-        term.type = "text"; term.value = r[0]; term.placeholder = "Term";
-        term.addEventListener("input", function () { r[0] = term.value; });
-        var def = el("textarea");
-        def.rows = 2; def.value = r[1];
-        def.placeholder = "A definition that stands on its own.";
-        def.addEventListener("input", function () { r[1] = def.value; });
-        var del = el("button", "ad-x");
-        del.type = "button";
-        del.setAttribute("aria-label", "Remove this term");
-        del.innerHTML = svg(I.close, true);
-        del.addEventListener("click", function () { rows.splice(ix, 1); render(); });
-        tr.appendChild(term); tr.appendChild(def); tr.appendChild(del);
-        table.appendChild(tr);
-      });
-      v.appendChild(table);
+        "A set published to a course appears for every student in it, on every device " +
+        "they sign in on. It works in Flashcards, Learn, Match, Test and all three games."));
 
       var acts = el("div", "ad-acts");
-      var add = el("button", "lx-btn quiet", "Add a term");
+      var add = el("button", "lx-btn", "New study set");
       add.type = "button";
-      add.addEventListener("click", function () { rows.push(["", ""]); render(); });
+      add.addEventListener("click", function () { openSetEditor(null, courses); });
       acts.appendChild(add);
-
-      var save = el("button", "lx-btn lg", making ? "Create the set" : "Save");
-      save.type = "button";
-      save.addEventListener("click", function () {
-        var key = making
-          ? (slug.input.value || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "")
-          : id;
-        var cards = rows.map(function (r) { return [r[0].trim(), r[1].trim()]; })
-                        .filter(function (r) { return r[0] && r[1]; });
-        if (!key || !title.input.value.trim()) {
-          toast("A set needs an identifier and a title."); return;
-        }
-        if (cards.length < 4) {
-          toast("A set needs at least four complete terms — the games need " +
-                "something to choose between.");
-          return;
-        }
-        try {
-          SC.saveSet(S.me, key, { t: title.input.value.trim(), cards: cards });
-          toast("Saved on this device. Not yet synchronised to other devices.");
-          goBack();
-        } catch (e) { toast(e && e.message ? e.message : "That did not save."); }
-      });
-      acts.appendChild(save);
       v.appendChild(acts);
-      show("admin");
-    }
 
-    render();
+      var list = el("div", "ad-list");
+      sets.forEach(function (st) {
+        var course = courses.filter(function (c) { return c.id === st.courseId; })[0];
+        var row = el("div", "ad-row");
+        row.innerHTML = '<span class="t"><b>' + esc(st.title) + "</b><span>" +
+          st.termCount + (st.termCount === 1 ? " term" : " terms") +
+          (course ? " · " + esc(course.title) : " · not attached to a course") +
+          " · " + esc(st.status) + "</span></span>";
+        var edit = el("button", "lx-btn quiet", "Edit");
+        edit.type = "button";
+        edit.addEventListener("click", function () { openSetEditor(st.id, courses); });
+        row.appendChild(edit);
+        list.appendChild(row);
+      });
+      if (!sets.length) {
+        list.appendChild(el("div", "lx-empty",
+          "You have not written any yet. A set needs four terms to work — the games " +
+          "need something to choose between."));
+      }
+      v.appendChild(list);
+
+      /* The curriculum that ships with the site, listed so nobody wonders
+         where the built-in sets went. They are read-only here: they are
+         published content, and one school editing them would edit them for
+         everybody. */
+      var shipped = SC.sets();
+      var ids = Object.keys(shipped).filter(function (k) { return k.indexOf("__") !== 0; });
+      if (ids.length) {
+        v.appendChild(el("h2", "lx-h2", "Shipped with the site"));
+        v.appendChild(el("p", "lx-lede",
+          "Published curriculum, read-only. To make a school version of one, write a new " +
+          "set with the same terms — it will take precedence for your students."));
+        var sl = el("div", "ad-list");
+        ids.forEach(function (id) {
+          var row = el("div", "ad-row");
+          row.innerHTML = '<span class="t"><b>' + esc(shipped[id].t) + "</b><span>" +
+            esc(id) + " · " + shipped[id].cards.length + " terms</span></span>";
+          sl.appendChild(row);
+        });
+        v.appendChild(sl);
+      }
+    }, function (e) { failed(node, e, function () { openAdmin(true, "sets"); }); });
   }
 
-  /* --------------------------------------------------------------- People */
+  function openSetEditor(setId, courses) {
+    var making = !setId;
+    enter("set-edit:" + (setId || "new"), making ? "New set" : "Study set",
+          function () { openSetEditor(setId, courses); });
+    var v = $("#v-admin");
+
+    function draw(set) {
+      var rows = set && set.terms
+        ? set.terms.map(function (t) {
+            return { term: t.term, definition: t.definition,
+                     why: t.why || "", example: t.example || "" };
+          })
+        : [{ term: "", definition: "", why: "", example: "" }];
+
+      /* The header fields live out here with the rows, not inside render().
+         Adding a term redraws the whole editor, and a redraw that rebuilds
+         the title from the saved set silently discards what the author has
+         typed — so somebody who names a set, writes four terms and then adds
+         a fifth loses the name and does not notice until the save fails. */
+      var head = {
+        code: set ? set.code : "",
+        title: set ? set.title : "",
+        courseId: set ? (set.courseId || "") : "",
+        status: set ? set.status : "draft"
+      };
+
+      function render() {
+        v.innerHTML = "";
+        v.appendChild(el("p", "lx-eyebrow", making ? "New study set" : "Study set"));
+        v.appendChild(el("h1", "lx-h1", making ? "Write a study set" : esc(set.title)));
+
+        var form = el("div", "ad-form");
+        var code = field("Code", head.code, "e.g. waves-and-sound");
+        if (!making) code.input.disabled = true;
+        code.input.addEventListener("input", function () { head.code = code.input.value; });
+        var title = field("Title", head.title, "What this set covers");
+        title.input.addEventListener("input", function () { head.title = title.input.value; });
+
+        var courseF = el("label", "ad-field");
+        courseF.innerHTML = "<span>Course</span>";
+        var courseSel = el("select");
+        var none = el("option");
+        none.value = ""; none.textContent = "Not attached to a course";
+        courseSel.appendChild(none);
+        (courses || []).forEach(function (c) {
+          if (c.myRole !== "teacher" && c.myRole !== "assistant" && S.me.role !== "admin") return;
+          var o = el("option");
+          o.value = c.id; o.textContent = c.title;
+          if (head.courseId === c.id) o.selected = true;
+          courseSel.appendChild(o);
+        });
+        courseSel.addEventListener("change", function () { head.courseId = courseSel.value; });
+        courseF.appendChild(courseSel);
+
+        var statusF = el("label", "ad-field");
+        statusF.innerHTML = "<span>Who can see it</span>";
+        var statusSel = el("select");
+        [["draft", "Draft — only you, until you publish it"],
+         ["published", "Published — the course it is attached to"]].forEach(function (r) {
+          var o = el("option");
+          o.value = r[0]; o.textContent = r[1];
+          if (head.status === r[0]) o.selected = true;
+          statusSel.appendChild(o);
+        });
+        statusSel.addEventListener("change", function () { head.status = statusSel.value; });
+        statusF.appendChild(statusSel);
+
+        [code, title, courseF, statusF].forEach(function (f) { form.appendChild(f); });
+        v.appendChild(form);
+
+        v.appendChild(el("h2", "lx-h2", "Terms"));
+        v.appendChild(el("p", "lx-lede",
+          "Every definition has to stand on its own: in Match, Test and the games it is " +
+          "shown without its term beside it. A term with a reason and an example can also " +
+          "be asked as a case to work through — without them it stops at explanation."));
+
+        var depth = el("p", "ad-depth");
+        v.appendChild(depth);
+        function say() {
+          var full = rows.filter(function (r) {
+            return r.term.trim() && r.definition.trim() && r.why.trim() && r.example.trim();
+          }).length;
+          var done = rows.filter(function (r) {
+            return r.term.trim() && r.definition.trim();
+          }).length;
+          depth.textContent = done < 4
+            ? done + " of the four terms a set needs so far."
+            : done + " terms, " + full + " with a worked case" +
+              (full === done ? " — every one can be asked at apply."
+                             : ". The other " + (done - full) + " stop at explanation.");
+        }
+
+        var table = el("div", "ad-table terms");
+        var hd = el("div", "ad-tr head");
+        hd.innerHTML = "<span>Term</span><span>Definition</span>" +
+          "<span>Why it matters</span><span>An example</span><span></span>";
+        table.appendChild(hd);
+
+        rows.forEach(function (r, ix) {
+          var tr = el("div", "ad-tr");
+          function box(key, placeholder, rowsN) {
+            var i = rowsN ? el("textarea") : el("input");
+            if (rowsN) i.rows = rowsN; else i.type = "text";
+            i.value = r[key];
+            i.placeholder = placeholder;
+            i.addEventListener("input", function () { r[key] = i.value; say(); });
+            return i;
+          }
+          tr.appendChild(box("term", "Term"));
+          tr.appendChild(box("definition", "A definition that stands on its own.", 2));
+          tr.appendChild(box("why", "Optional — why this is worth knowing.", 2));
+          tr.appendChild(box("example", "Optional — one concrete instance.", 2));
+          var del = el("button", "ad-x");
+          del.type = "button";
+          del.setAttribute("aria-label", "Remove this term");
+          del.innerHTML = svg(I.close, true);
+          del.addEventListener("click", function () { rows.splice(ix, 1); render(); });
+          tr.appendChild(del);
+          table.appendChild(tr);
+        });
+        v.appendChild(table);
+        say();
+
+        var acts = el("div", "ad-acts");
+        var add = el("button", "lx-btn quiet", "Add a term");
+        add.type = "button";
+        add.addEventListener("click", function () {
+          rows.push({ term: "", definition: "", why: "", example: "" });
+          render();
+        });
+        acts.appendChild(add);
+
+        var save = el("button", "lx-btn lg", making ? "Create the set" : "Save");
+        save.type = "button";
+        save.addEventListener("click", function () {
+          var terms = rows.map(function (r) {
+            return { term: r.term.trim(), definition: r.definition.trim(),
+                     why: r.why.trim() || null, example: r.example.trim() || null };
+          }).filter(function (r) { return r.term && r.definition; });
+
+          var payload = {
+            title: head.title.trim(),
+            courseId: head.courseId || null,
+            status: head.status,
+            terms: terms
+          };
+          if (!payload.title) { toast("A set needs a title."); return; }
+
+          save.disabled = true;
+          var go = making
+            ? API.studySets.create(Object.assign(
+                { code: head.code.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""),
+                  orgId: S.me.orgId }, payload))
+            : API.studySets.update(setId, payload);
+
+          /* The cache is refilled from the server rather than patched from
+             what was typed. The server may have normalised something, and a
+             cache that diverges from the source is worse than no cache. */
+          attempt(go, function (saved) {
+            loadStudySets().then(function () {
+              toast(making
+                ? (payload.status === "published"
+                    ? "Created and published to the course."
+                    : "Created as a draft — only you can see it until you publish it.")
+                : "Saved.");
+              goBack();
+            });
+          }).then(function () { save.disabled = false; });
+        });
+        acts.appendChild(save);
+
+        if (!making) {
+          var arch = el("button", "lx-btn quiet", "Archive");
+          arch.type = "button";
+          arch.addEventListener("click", function () {
+            if (!confirm("Archive “" + set.title + "”? Students stop seeing it. " +
+                         "It is not deleted.")) return;
+            attempt(API.studySets.archive(setId), function () {
+              delete dbSets[set.code];
+              toast("Archived.");
+              goBack();
+            });
+          });
+          acts.appendChild(arch);
+        }
+        v.appendChild(acts);
+        show("admin");
+      }
+
+      render();
+    }
+
+    if (making) { draw(null); return; }
+    v.innerHTML = "";
+    var node = loading(v, "the set");
+    show("admin");
+    API.studySets.get(setId).then(function (set) { draw(set); },
+                                 function (e) { failed(node, e, function () {
+                                   openSetEditor(setId, courses); }); });
+  }
+
+  /* --------------------------------------------------------------- People */  /* --------------------------------------------------------------- People */
   function tabPeople(v) {
     var node = loading(v, "people");
     API.accounts.list(S.me.orgId).then(function (people) {
@@ -5788,7 +6010,8 @@
         "they belong to. Synchronised across devices."],
       ["Progress and XP", "Database", "Written by the student, priced by the server. " +
         "This browser keeps a cache so the app works offline; the database is the truth."],
-      ["Study sets", "This device only", "Not yet in the database. The next thing to move."],
+      ["Study sets", "Database", "Written by teachers, published to a course, and read by " +
+        "the students in it. Drafts stay with their author until published."],
       ["Course catalogue", "Shipped in the site", "The Explore tab reads published " +
         "content from the site's files. Database courses carry the enrolment and grades."],
       ["Tutor", "Local model", "Runs through Ollama on your own machine, if you have it. " +
@@ -5893,15 +6116,20 @@
     /* Enrolment is the database's answer, not a list in a file. The home
        screen is drawn twice — once immediately so the app is not a spinner,
        and again when the server says what this person is actually taking. */
-    API.courses.mine().then(function (courses) {
-      S.me.assigned = courses.filter(function (c) {
-        return !c.myRole || c.myRole === "student";
-      });
-      S.me.teaching = courses.filter(function (c) {
-        return c.myRole === "teacher" || c.myRole === "assistant";
-      });
-      if (S.view === "my") drawMy();
-    }, function () { /* offline: the home screen says so through Sync */ });
+    Promise.all([
+      API.courses.mine().then(function (courses) {
+        S.me.assigned = courses.filter(function (c) {
+          return !c.myRole || c.myRole === "student";
+        });
+        S.me.teaching = courses.filter(function (c) {
+          return c.myRole === "teacher" || c.myRole === "assistant";
+        });
+        return true;
+      }, function () { return false; }),
+      loadStudySets()
+    ]).then(function (out) {
+      if ((out[0] || out[1]) && S.view === "my") drawMy();
+    });
 
     /* The record on this device is a cache. The server is the truth, so it is
        asked as soon as there is a session, and the screens redraw when the

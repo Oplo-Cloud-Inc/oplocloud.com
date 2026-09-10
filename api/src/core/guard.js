@@ -38,6 +38,7 @@ export const ACTIONS = [
   "org.manage",
   "course.read", "course.write", "course.create", "course.enrol",
   "assignment.write",
+  "set.read", "set.write", "set.create",
   "grade.read", "grade.write",
   "progress.read", "progress.write",
   "role.grant"
@@ -132,6 +133,37 @@ export async function can(ctx, action, resource = {}) {
     case "assignment.write":
       return learnAdmin || (await teachesCourse(ctx, actor, resource.courseId));
 
+    /* ----------------------------------------------------- Study sets
+       Readable by the people it was written for: the course it belongs to,
+       the organization if it was published that way, or the author alone.
+       A draft is nobody's but its author's — an author fixing a typo should
+       not be broadcasting a half-written set to a class. */
+    case "set.read": {
+      if (resource.created_by === actor.id) return true;
+      if (resource.status !== "published") return false;
+      if (learnAdmin) return true;
+      if (resource.visibility === "org") {
+        return (actor.orgs || []).some((o) => o.org_id === resource.org_id);
+      }
+      if (resource.visibility === "course" && resource.course_id) {
+        return !!(await ctx.repo.courseMembership(resource.course_id, actor.id));
+      }
+      return false;
+    }
+
+    case "set.create":
+      return learnAdmin || hasRole(actor, "learn", "teacher") ||
+             hasRole(actor, "learn", "author");
+
+    case "set.write":
+      if (learnAdmin) return true;
+      if (resource.created_by === actor.id) return true;
+      // A teacher of the course a set is attached to can maintain it, so a
+      // set does not die with the teacher who happened to write it.
+      return resource.course_id
+        ? teachesCourse(ctx, actor, resource.course_id)
+        : false;
+
     /* ---------------------------------------------------------- Grades
        The asymmetry here is the entire point of having this file. A student
        may READ their own grade and may never WRITE one — not their own, not
@@ -174,6 +206,9 @@ const REASONS = {
   "course.create": "Only teachers, authors and administrators can create courses.",
   "course.enrol": "You can only enrol students into courses you teach.",
   "assignment.write": "You can only set work on courses you teach.",
+  "set.read": "That study set has not been shared with you.",
+  "set.create": "Only teachers, authors and administrators can write study sets.",
+  "set.write": "You can only edit study sets you wrote, or ones attached to a course you teach.",
   "grade.read": "You can only see your own grades and those of students you teach.",
   "grade.write": "You can only enter grades for courses you teach. Students cannot change grades.",
   "progress.read": "You can only see your own progress and that of students you teach.",

@@ -216,6 +216,37 @@ window.OPLO_API = (function () {
       }
     },
 
+    /* -------------------------------------------------------- Study sets
+       Authored by teachers, studied by their classes, and stored in the
+       database — which is what makes a set a teacher writes something they
+       can give to a class rather than something that lives in their browser. */
+    studySets: {
+      /* Everything this account may study: their courses' sets, sets published
+         to their organization, and their own drafts. */
+      mine: function () {
+        return get("/study-sets").then(function (r) { return r.studySets; });
+      },
+      authored: function () {
+        return get("/study-sets?mine=true").then(function (r) { return r.studySets; });
+      },
+      forCourse: function (courseId) {
+        return get("/study-sets" + q({ courseId: courseId }))
+          .then(function (r) { return r.studySets; });
+      },
+      get: function (setId) {
+        return get("/study-sets/" + setId).then(function (r) { return r.studySet; });
+      },
+      create: function (data) {
+        return post("/study-sets", data, { timeout: 20000 })
+          .then(function (r) { return r.studySet; });
+      },
+      update: function (setId, data) {
+        return patch("/study-sets/" + setId, data, { timeout: 20000 })
+          .then(function (r) { return r.studySet; });
+      },
+      archive: function (setId) { return del("/study-sets/" + setId); }
+    },
+
     /* --------------------------------------------------------- Progress
        The student's own record, synchronised across their devices. Scoped
        finely — one study set, one unit — so two devices working on different
@@ -242,6 +273,29 @@ window.OPLO_API = (function () {
       report: function (events) {
         return post("/gamification/events",
           { events: [].concat(events), tzOffset: tzOffset() });
+      },
+
+      /* The same call, on the way out of the page. `keepalive` is what lets a
+         request outlive the document, and it cannot go through `request()`
+         because that one aborts on a timeout — which is exactly the thing a
+         beacon must not do.
+
+         It lives here rather than in app.js because this file is meant to be
+         the only place that knows a backend exists, and an exception carved
+         out "just for the beacon" is how a seam stops being one. */
+      beacon: function (events) {
+        if (!events || !events.length) return false;
+        try {
+          return fetch(base + "/gamification/events", {
+            method: "POST",
+            credentials: "include",
+            keepalive: true,
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ events: [].concat(events), tzOffset: tzOffset() })
+          }), true;
+        } catch (e) {
+          return false;    // nothing more can be done from a page that is closing
+        }
       }
     }
   };

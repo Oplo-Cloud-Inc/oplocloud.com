@@ -23,13 +23,15 @@
 
 import { json, errorResponse, withCors, corsHeaders, ApiError } from "./lib/http.js";
 import { D1Repository } from "./repo/d1.js";
-import { currentActor } from "./core/auth.js";
+import { currentActor, rotateSession, SESSION_LIFETIME } from "./core/auth.js";
+import { sessionCookie } from "./lib/cookies.js";
 
 import * as auth from "./routes/auth.js";
 import * as accounts from "./routes/accounts.js";
 import * as courses from "./routes/courses.js";
 import * as grades from "./routes/grades.js";
 import * as progress from "./routes/progress.js";
+import * as studysets from "./routes/studysets.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -39,6 +41,8 @@ const ROUTES = [
   ["POST",   "/api/v1/auth/logout",    auth.logout],
   ["POST",   "/api/v1/auth/password",  auth.changePassword],
   ["GET",    "/api/v1/me",             auth.me],
+  ["GET",    "/api/v1/auth/sessions",        auth.sessions],
+  ["POST",   "/api/v1/auth/sessions/revoke", auth.revokeSessions],
 
   ["GET",    "/api/v1/accounts",             accounts.list],
   ["POST",   "/api/v1/accounts",             accounts.create],
@@ -59,6 +63,12 @@ const ROUTES = [
 
   ["GET",    "/api/v1/grades",   grades.list],
   ["PUT",    "/api/v1/grades",   grades.put],
+
+  ["GET",    "/api/v1/study-sets",         studysets.list],
+  ["POST",   "/api/v1/study-sets",         studysets.create],
+  ["GET",    "/api/v1/study-sets/:setId",  studysets.get],
+  ["PATCH",  "/api/v1/study-sets/:setId",  studysets.update],
+  ["DELETE", "/api/v1/study-sets/:setId",  studysets.remove],
 
   ["GET",    "/api/v1/progress", progress.list],
   ["PUT",    "/api/v1/progress", progress.put],
@@ -110,7 +120,8 @@ export default {
         request, env, url,
         repo: new D1Repository(env.DB),
         waitUntil: (p) => executionCtx.waitUntil(p),
-        actor: null
+        actor: null,
+        rotate: null
       };
       // Resolved once per request, from the session token alone. This is the
       // only place the caller's identity is established, and it is never read
@@ -118,6 +129,23 @@ export default {
       ctx.actor = await currentActor(ctx);
 
       const response = await found.handler(ctx, found.params);
+
+      /* A session past its rotation window is swapped here rather than in a
+         route, so every endpoint gets it and none has to know. A response
+         that already sets the cookie — sign-in, sign-out, a password change —
+         is left alone: it has just made a deliberate decision about the
+         session and this must not overwrite it. */
+      if (ctx.rotate && !response.headers.has("set-cookie")) {
+        const fresh = await rotateSession(ctx, ctx.rotate);
+        if (fresh) {
+          const headers = new Headers(response.headers);
+          headers.append("set-cookie",
+            sessionCookie(fresh.token, { maxAge: SESSION_LIFETIME, env }));
+          return withCors(new Response(response.body, {
+            status: response.status, statusText: response.statusText, headers
+          }), request, env);
+        }
+      }
       return withCors(response, request, env);
     } catch (err) {
       return withCors(errorResponse(err, env), request, env);
