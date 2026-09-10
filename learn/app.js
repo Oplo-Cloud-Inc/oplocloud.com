@@ -589,7 +589,8 @@
     (c.parts || []).forEach(function (part) {
       part.units.forEach(function (t) {
         n++;
-        out.push({ n: n, t: t, part: part.name, set: (c.sets || {})[n] });
+        out.push({ n: n, t: t, part: part.name, set: (c.sets || {})[n],
+                   read: !!readerFor(c.id, n) });
       });
     });
     return out;
@@ -608,7 +609,7 @@
     return S.m[k];
   }
   function offers(u) {
-    return { u: !!u.play, p: !!u.play, r: !!u.set, a: !!u.set };
+    return { u: !!(u.play || u.read), p: !!(u.play || u.read), r: !!u.set, a: !!u.set };
   }
   function raise(c, n, dim, pct) {
     var d = dims(c, n);
@@ -1281,18 +1282,19 @@
       v.appendChild(b1);
     }
 
-    if (c.id === "media" && n === 5 && window.OPLO_UNIT5) {
+    var reader = readerFor(c.id, n);
+    if (reader) {
       any = true;
       var b0 = el("div", "lx-block");
       b0.appendChild(el("h2", null, "Sections"));
-      window.OPLO_UNIT5.forEach(function (sec, k) {
+      reader.sections.forEach(function (sec, k) {
         var rb = el("button", "lx-item");
         rb.type = "button";
         rb.innerHTML = '<span class="ic">' + svg(S.readDone[sec.n] ? I.tick : I.read, true) + "</span>" +
           '<span class="txt"><b>' + esc(sec.n) + "  " + esc(sec.t) + "</b><span>" +
           esc(sec.kicker) + " \u00b7 " + sec.mins + " min" + (sec.video ? " \u00b7 video" : "") +
           "</span></span>" + '<span class="ic">' + svg(I.chev, true) + "</span>";
-        rb.addEventListener("click", function () { openRead(k); });
+        rb.addEventListener("click", function () { openRead(k, false, reader.key); });
         b0.appendChild(rb);
       });
       v.appendChild(b0);
@@ -3083,7 +3085,7 @@
       room.on("mark", function (e) { Ann.receive(e.by, e.mark); });
       room.on("unmark", function (e) { Ann.retract(e.id); });
       room.on("point", function (e) {
-        var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+        var sec = readSec();
         if (!sec || sec.n !== e.at.sec) { toast(e.by.first + " pointed at something in " + e.at.sec + "."); return; }
         toast(e.by.first + " is pointing at this.");
         Ann.flash(e.at.anchor);
@@ -3098,7 +3100,10 @@
     var settling = false;
     function followTo(at) {
       if (settling) return;
-      var U = window.OPLO_UNIT5 || [];
+      // Somebody being followed may be in another unit; switch to it first.
+      var hit = at.sec ? findSection(at.sec) : null;
+      if (hit && hit.reader !== RU) useReader(hit.reader);
+      var U = RU.sections;
       var here = U[S.readIx];
       if (at.sec && (!here || here.n !== at.sec)) {
         var ix = -1;
@@ -3221,7 +3226,7 @@
         start.addEventListener("click", function () {
           code = code || Math.random().toString(36).slice(2, 7);
           make().open("oplo-" + code);
-          var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+          var sec = readSec();
           if (sec) room.where(sec.n, window.scrollY);
           fillPanel();
           paintPresence();
@@ -3307,7 +3312,7 @@
             if (!live()) {
               code = code || Math.random().toString(36).slice(2, 7);
               make().open("oplo-" + code);
-              var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+              var sec = readSec();
               if (sec) room.where(sec.n, window.scrollY);
             }
             copy(location.origin + location.pathname + "?room=" + code);
@@ -3358,7 +3363,7 @@
     function here(sec) { if (live()) room.where(sec, window.scrollY); }
     function scrolled(y) {
       if (live() && !room.following) {
-        var sec = (window.OPLO_UNIT5 || [])[S.readIx];
+        var sec = readSec();
         room.where(sec ? sec.n : null, y);
       }
     }
@@ -3400,21 +3405,75 @@
 
      The bottom right corner is left empty on purpose. That is the tutor's,
      and a panel that opens over your own notes is a panel you close. */
-  var U5 = window.OPLO_UNIT5 || [];
   var A = window.OPLO_ANNOTATE;
 
-  /* What a quotation from this unit is a quotation from. */
+  /* -------------------------------------------------------------- Readers
+     Every unit written as a reader, keyed by course and unit number. The
+     reader used to be Unit 5 and nothing else — a dozen places assumed it —
+     so adding a second unit meant copying the reader. Now a unit is one entry
+     here and one content file, and the reader, the notebook, the margin, the
+     room and the tutor all follow whichever unit is open.
+
+     `doc` keys the annotation store, so each unit keeps its own notebook.
+     `set` is the study set the last section hands on to. */
+  var READERS = {
+    "media:5": { key: "media:5", course: "media", courseTitle: "Media Arts", unit: 5,
+                 title: "Waves and Sound", sections: window.OPLO_UNIT5 || [],
+                 doc: "media-u5", set: "media-5" },
+    "media:6": { key: "media:6", course: "media", courseTitle: "Media Arts", unit: 6,
+                 title: "Intro to Photography", sections: window.OPLO_UNIT6 || [],
+                 doc: "media-u6", set: "media-6" }
+  };
+  var RU = READERS["media:5"];        // the unit being read
+
+  /* Kept for the one screen that is still Unit 5 only: an administrator's
+     read-only view of a student's notebook, which says so in its heading. */
+  var U5 = READERS["media:5"].sections;
+
+  /* What a quotation from this unit is a quotation from. The same object is
+     handed to the annotation layer, so switching units updates it in place. */
   var SOURCE = {
-    title: "Waves and Sound",
-    container: "Media Arts, Unit 5",
+    title: RU.title,
+    container: RU.courseTitle + ", Unit " + RU.unit,
     author: "Excel High School",
     publisher: "Excel High School",
     year: "2026"
   };
-  var DOC = "media-u5";
+  var DOC = RU.doc;
 
-  function sectionAt(i) { return U5[i]; }
-  function secByN(n) { return U5.filter(function (x) { return x.n === n; })[0] || null; }
+  function readerFor(courseId, n) {
+    var r = READERS[courseId + ":" + n];
+    return r && r.sections && r.sections.length ? r : null;
+  }
+  function readSec() { return RU.sections[S.readIx] || null; }
+  function findSection(n) {
+    for (var k in READERS) {
+      var list = READERS[k].sections;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].n === n) return { reader: READERS[k], ix: i };
+      }
+    }
+    return null;
+  }
+  /* Sections checked in one unit. readDone is keyed by section number, and
+     "5.3" and "6.3" never collide — but counting every key would let finishing
+     Unit 5 show Unit 6 as half done. */
+  function doneIn(r) {
+    return r.sections.filter(function (x) { return S.readDone[x.n]; }).length;
+  }
+  function useReader(r) {
+    if (!r || r === RU) return;
+    RU = r;
+    DOC = r.doc;
+    SOURCE.title = r.title;
+    SOURCE.container = r.courseTitle + ", Unit " + r.unit;
+    // The annotation store is bound to one unit's document; dropping it makes
+    // the next read open the right unit's notebook.
+    if (typeof Ann !== "undefined" && Ann && Ann.reset) Ann.reset();
+  }
+
+  function sectionAt(i) { return RU.sections[i]; }
+  function secByN(n) { return RU.sections.filter(function (x) { return x.n === n; })[0] || null; }
 
   /* ========================================================== Annotation
      The controller for everything a reader leaves on the page: the selection
@@ -3970,11 +4029,16 @@
   })();
 
   /* ==================================================== The section itself */
-  function openRead(i, silent) {
+  function openRead(i, silent, rkey) {
+    if (rkey && READERS[rkey]) useReader(READERS[rkey]);
+    var r = RU;
     var sec = sectionAt(i);
     if (!sec) return;
-    if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true); });
+    if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true, r.key); });
     S.readIx = i;
+    // S.readIx is a copy, not a reference into the record, so the record has
+    // to be written directly — keep() alone saved the old position forever.
+    if (R) { R.d.readIx = i; R.d.readUnit = r.key; }
     keep();
 
     var v = $("#v-read");
@@ -3990,7 +4054,8 @@
     art.appendChild(el("p", "rd-stand", esc(sec.stand)));
 
     var meta = el("div", "rd-meta");
-    meta.innerHTML = "<b>Media Arts</b><span>Unit 5 · Waves and Sound</span>" +
+    meta.innerHTML = "<b>" + esc(r.courseTitle) + "</b><span>Unit " + r.unit + " · " +
+      esc(r.title) + "</span>" +
       "<span>" + sec.mins + " min read</span>" +
       (sec.video ? "<span>Includes video</span>" : "");
     art.appendChild(meta);
@@ -4038,7 +4103,7 @@
       : '<div><span class="t">End of the unit</span><b>Study the terms</b></div>';
     var nb = el("button", "lx-btn", nxt ? "Continue" : "Study set");
     nb.type = "button";
-    nb.addEventListener("click", function () { if (nxt) openRead(i + 1); else openSet("media-5"); });
+    nb.addEventListener("click", function () { if (nxt) openRead(i + 1); else openSet(r.set); });
     next.appendChild(nb);
     art.appendChild(next);
 
@@ -4106,9 +4171,9 @@
     var side = el("aside", "rd-rail-nav");
 
     var toc = el("div", "rd-panel");
-    toc.innerHTML = '<h3>Unit 5<span>Waves and Sound</span></h3>';
+    toc.innerHTML = "<h3>Unit " + RU.unit + "<span>" + esc(RU.title) + "</span></h3>";
     var list = el("div", "rd-toc");
-    U5.forEach(function (x, k) {
+    RU.sections.forEach(function (x, k) {
       var b = el("button");
       b.type = "button";
       b.setAttribute("aria-current", String(k === i));
@@ -4121,11 +4186,11 @@
     });
     toc.appendChild(list);
 
-    var done = Object.keys(S.readDone).length;
+    var done = doneIn(RU);
     var prog = el("div", "rd-unitprog");
     prog.innerHTML = '<div class="track"><i style="width:' +
-      Math.round(done / U5.length * 100) + '%"></i></div>' +
-      "<span>" + done + " of " + U5.length + " sections checked</span>";
+      Math.round(done / RU.sections.length * 100) + '%"></i></div>' +
+      "<span>" + done + " of " + RU.sections.length + " sections checked</span>";
     toc.appendChild(prog);
     side.appendChild(toc);
 
@@ -4172,7 +4237,7 @@
   }
 
   function checkBlock(sec, i) {
-    var c = sec.check, done = false;
+    var c = sec.check, done = false, r = RU;
     var box = el("div", "rd-check");
     box.innerHTML = '<p class="k">Check your understanding</p><p class="q">' + esc(c.q) + "</p>";
     var wrap = el("div", "lx-opts");
@@ -4194,10 +4259,12 @@
           (ok ? "That's it" : "Not quite") + "</b><p>" + c.why + "</p></div>";
         S.readDone[sec.n] = true;
         keep();
-        var pct = Math.round(Object.keys(S.readDone).length / U5.length * 100);
-        raise(D.MEDIA, 5, "u", pct);
-        if (ok) raise(D.MEDIA, 5, "p", pct);
-        else slip("problem", "u5:" + sec.n, sec.t, "Missed the check in section " + sec.n + ".");
+        var pct = Math.round(doneIn(r) / r.sections.length * 100);
+        var course = allCourses().filter(function (x) { return x.id === r.course; })[0] || D.MEDIA;
+        raise(course, r.unit, "u", pct);
+        if (ok) raise(course, r.unit, "p", pct);
+        else slip("problem", "u" + r.unit + ":" + sec.n, sec.t,
+                  "Missed the check in section " + sec.n + ".");
       });
       wrap.appendChild(b);
     });
@@ -4250,7 +4317,7 @@
     var marks = Ann.all();
     var prof = A.profile(marks);
 
-    v.appendChild(el("p", "lx-eyebrow", "Media Arts · Unit 5"));
+    v.appendChild(el("p", "lx-eyebrow", esc(RU.courseTitle) + " · Unit " + RU.unit));
     v.appendChild(el("h1", "lx-h1", "Notebook"));
 
     if (!marks.length) {
@@ -4317,7 +4384,9 @@
         ">" + s.toUpperCase() + "</option>";
     }).join("");
     style.addEventListener("change", function () {
-      S.citeStyle = style.value; keep(); render();
+      S.citeStyle = style.value;
+      if (R) R.d.citeStyle = style.value;     // a copy, so the record is written directly
+      keep(); render();
     });
     acts.appendChild(style);
 
@@ -4386,7 +4455,7 @@
       go.type = "button"; go.title = "Go to it in the text"; go.setAttribute("aria-label", "Go to it in the text");
       go.innerHTML = svg(I.arrow, true);
       go.addEventListener("click", function () {
-        var ix = U5.indexOf(secByN(m.sec));
+        var ix = RU.sections.indexOf(secByN(m.sec));
         if (ix < 0) return;
         openRead(ix);
         setTimeout(function () {
@@ -4423,11 +4492,11 @@
       if (!list.length) { out.appendChild(el("div", "lx-empty", "Nothing matches that.")); return; }
 
       if (mode === "section") {
-        U5.forEach(function (s) {
+        RU.sections.forEach(function (s) {
           var rows = list.filter(function (m) { return m.sec === s.n; });
           if (!rows.length) return;
           out.appendChild(group(esc(s.n) + "  " + esc(s.t), null, rows, function () {
-            openRead(U5.indexOf(s));
+            openRead(RU.sections.indexOf(s));
           }));
         });
       } else if (mode === "pass") {
@@ -4489,7 +4558,7 @@
   function asMarkdown(marks) {
     var style = S.citeStyle || "mla";
     var lines = ["# " + SOURCE.container + " — " + SOURCE.title, "", "## Notebook", ""];
-    U5.forEach(function (sec) {
+    RU.sections.forEach(function (sec) {
       var mine = marks.filter(function (m) { return m.sec === sec.n; });
       if (!mine.length) return;
       lines.push("### " + sec.n + "  " + sec.t, "");
@@ -6093,6 +6162,8 @@
     S.doneToday = R.d.doneToday;
     S.readIx = R.d.readIx || 0;
     S.citeStyle = R.d.citeStyle || "mla";
+    var ru = READERS[R.d.readUnit];
+    useReader(ru && ru.sections.length ? ru : READERS["media:5"]);
     Game.attach(R);
 
     $("#gate").hidden = true;
@@ -6249,6 +6320,244 @@
       }
       setTimeout(function () { $("#gEmail").focus(); }, 120);
     });
+  })();
+
+  /* ================================================================ Tutor
+     The panel. All the pedagogy lives in tutor.js; this is the surface, plus
+     the job of telling the controller where the student currently is. */
+  var T = window.OPLO_TUTOR;
+
+  var Tutor = (function () {
+    if (!T) return { note: function () {} };
+    var ctrl = new T.Controller();
+    var history = [], live = false, busy = false, checked = false;
+
+    function log() { return $("#ttLog"); }
+    function dot(state) {
+      var d = $("#ttDot");
+      d.className = "tt-dot" + (state ? " " + state : "");
+      d.title = state === "live" ? "Connected to Ollama"
+              : state === "busy" ? "Thinking" : "Not connected";
+    }
+    function rungs() {
+      var bar = $("#ttLadder");
+      if (!live) { bar.hidden = true; return; }
+      bar.hidden = false;
+      var r = ctrl.rung();
+      $("#ttRungs").innerHTML = T.LADDER.map(function (x) {
+        return '<i class="' + (x.n <= r.n ? "on" : "") + '"></i>';
+      }).join("");
+      $("#ttRungName").textContent = r.name;
+    }
+    function say(cls, html) {
+      var m = el("div", "tt-msg " + cls, html);
+      log().appendChild(m);
+      log().scrollTop = log().scrollHeight;
+      return m;
+    }
+    function clear() { log().innerHTML = ""; }
+
+    function offline() {
+      clear();
+      say("sys",
+        "<b>No model is running</b>" +
+        "Oplo Tutor runs on your own machine, so nothing you type is sent anywhere. " +
+        "To turn it on, install Ollama and pull a model:" +
+        "<br><code>brew install ollama</code><br><code>ollama pull " + T.MODEL + "</code>" +
+        "<br><code>OLLAMA_ORIGINS='*' ollama serve</code><br><br>" +
+        "Then reopen this panel. Until then it will not answer — a tutor that " +
+        "invents its confidence is worse than no tutor.");
+    }
+
+    function welcome() {
+      clear();
+      say("sys",
+        "<b>Oplo Tutor</b>I will not give you answers. I will ask you questions until you " +
+        "find them, and I will tell you when you are close. Ask me anything about what you " +
+        "are reading.");
+    }
+
+    function context() {
+      var c = { mastery: coursePct(D.MEDIA) };
+      var sec = readSec();
+      if (S.view === "read" && sec) { c.section = "Media Arts " + sec.n; c.title = sec.t; }
+      else if (S.course) { c.section = S.course.t; c.title = S.unit && S.unit.t; }
+      var sel = String(window.getSelection() || "").trim();
+      if (sel && sel.length < 400) c.selection = sel.replace(/\s+/g, " ");
+      c.missed = S.mistakes.slice(0, 4).map(function (m) { return m.title; });
+
+      /* What they marked is better evidence of where they are than any
+         progress number. An unanswered question in the margin is the exact
+         thing a tutor should open on. */
+      if (S.view === "read" && sec) {
+        var marks = Ann.here();
+        var open = marks.filter(function (m) { return m.pass === 4 || m.pass === 5; });
+        if (open.length) {
+          c.marked = open.slice(0, 3).map(function (m) {
+            return A.pass(m.pass).name + ": “" + trim(m.text, 90) + "”" +
+                   (m.note ? " — they wrote: " + trim(m.note, 90) : "");
+          });
+        }
+        var prof = A.profile(marks);
+        if (marks.length) c.reading = prof.shape;
+      }
+      return c;
+    }
+
+    function send(text, raise) {
+      if (busy || !live || !text) return;
+      busy = true;
+      ctrl.setContext(context());
+      if (raise) ctrl.raise();
+      rungs();
+      say("me", esc(text));
+      history.push({ role: "user", content: text });
+      $("#ttIn").value = "";
+      $("#ttSend").disabled = true;
+      dot("busy");
+
+      var node = say("it", "");
+      node.classList.add("tt-caret");
+      var warned = null;
+      T.ask(ctrl, history, function (bit, acc) {
+        if (warned) { warned.remove(); warned = null; }
+        node.textContent = acc;
+        log().scrollTop = log().scrollHeight;
+      }, function () {
+        warned = say("sys", "<b>Loading the model</b>" + esc(ctrl.model || T.MODEL) +
+          " has to come off disk before it can answer. That is a one-off per session — " +
+          "something smaller answers in about a second.");
+      }).then(function (full) {
+        if (warned) warned.remove();
+        node.classList.remove("tt-caret");
+        // The validator is the point of the controller. If the model gave the
+        // game away on an activity that does not allow it, the reply is not
+        // shown — the student gets the hint they were owed instead.
+        if (T.leaks(full, ctrl.answerAllowed())) {
+          node.textContent = "";
+          node.className = "tt-msg sys";
+          node.innerHTML = "<b>Held back</b>That reply gave away the answer, and this is still " +
+            "guided practice. Try the next step yourself and tell me what you get — press " +
+            "Explain if you genuinely want it worked through.";
+          history.push({ role: "assistant", content: "(withheld: revealed the answer)" });
+        } else {
+          history.push({ role: "assistant", content: full });
+        }
+        busy = false; dot("live");
+      }).catch(function (e) {
+        node.classList.remove("tt-caret");
+        node.className = "tt-msg sys";
+        node.innerHTML = "<b>Lost the connection</b>" + esc(String(e.message || e)) +
+          ". Check that <code>ollama serve</code> is still running.";
+        busy = false; live = false; dot(null);
+      });
+    }
+
+    function connect() {
+      if (checked) { rungs(); return; }
+      checked = true;
+      dot(null);
+      T.reachable().then(function (ok) {
+        live = ok;
+        if (!ok) { offline(); rungs(); return; }
+        dot("live");
+        T.models().then(function (list) {
+          var m = T.pick(list);
+          if (m) ctrl.model = m.name;
+          $("#ttWhere").textContent = (ctrl.model || T.MODEL) + " · on this machine";
+          welcome();
+          if (T.heavy(m)) {
+            say("sys", "<b>" + esc(m.name) + " is the only model installed</b>At " +
+              (m.size / 1e9).toFixed(0) + "GB it takes minutes to say its first word, and it " +
+              "was not built for teaching. Something small and instruction-tuned is far better " +
+              "here:<br><code>ollama pull llama3.2</code><br>Reopen this panel afterwards and " +
+              "it picks the better one on its own.");
+          }
+          rungs();
+        });
+      });
+    }
+
+    function open() {
+      $("#ttOpen").classList.add("gone");
+      $("#ttOpen").setAttribute("aria-expanded", "true");
+      $("#tt").hidden = false;
+      connect();
+      where();
+      setTimeout(function () { $("#ttIn").focus(); }, 260);
+    }
+    function close() {
+      $("#tt").hidden = true;
+      $("#ttOpen").classList.remove("gone");
+      $("#ttOpen").setAttribute("aria-expanded", "false");
+    }
+    function where() {
+      if (!live) return;
+      var c = context();
+      $("#ttWhere").textContent = c.section
+        ? c.section + (c.title ? " · " + c.title : "")
+        : (ctrl.model || T.MODEL) + " · on this machine";
+    }
+
+    /* ---- wiring ---- */
+    $("#ttOpen").addEventListener("click", open);
+    $("#ttClose").addEventListener("click", close);
+    $("#ttReset").addEventListener("click", function () {
+      history = []; ctrl.reset();
+      if (live) { welcome(); rungs(); } else offline();
+    });
+
+    var input = $("#ttIn");
+    input.addEventListener("input", function () {
+      input.style.height = "auto";
+      input.style.height = Math.min(120, input.scrollHeight) + "px";
+      $("#ttSend").disabled = !input.value.trim() || !live;
+    });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#ttForm").requestSubmit(); }
+    });
+    $("#ttForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      send(input.value.trim(), false);
+      input.style.height = "auto";
+    });
+
+    [].forEach.call($("#ttQuick").children, function (b) {
+      b.addEventListener("click", function () {
+        if (!live) { toast("The tutor needs Ollama running on this machine."); return; }
+        var kind = b.dataset.ask;
+        if (kind === "think") {
+          ctrl.mode = "guided";
+          say("sys", "<b>Think first</b>Before anything else — what is the first thing you would " +
+                     "try here? Say it in one line, however unsure you are.");
+          rungs();
+          return;
+        }
+        if (kind === "explain") {
+          ctrl.mode = "explain";
+          send("I would like this explained properly now, including the answer, and then " +
+               "I will say it back to you.", true);
+          return;
+        }
+        ctrl.mode = "guided";
+        send("Give me the next hint.", true);
+      });
+    });
+
+    /* Learn hands the tutor a question that has already gone wrong. It arrives
+       with the constraint attached — do not answer it — because the moment a
+       student is stuck is exactly the moment the temptation to just be told
+       is strongest, and the ladder exists for that moment. */
+    function fromLearn(text) {
+      open();
+      if (!live) { toast("The tutor needs Ollama running on this machine."); return; }
+      ctrl.mode = "guided";
+      ctrl.level = 0;
+      setTimeout(function () { send(text, false); }, 120);
+    }
+
+    return { open: open, close: close, where: where, ask: fromLearn,
+             note: function (text) { if (!$("#tt").hidden) say("sys", text); } };
   })();
 
   /* A tab can be closed between two debounced writes. `pagehide` is the one
