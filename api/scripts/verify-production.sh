@@ -21,6 +21,17 @@ set -uo pipefail
 
 API="${OPLO_API:-https://api.oplocloud.com/api/v1}"
 ORIGIN="${OPLO_ORIGIN:-https://oplocloud.com}"
+
+# A new hostname can be live and still unknown to this machine: a router that
+# cached "no such host" before the record existed may hold that for half an
+# hour. OPLO_PIN_IP=<an address from `dig api.oplocloud.com @1.1.1.1`> skips
+# only the lookup — every request still reaches Cloudflare's edge with the real
+# hostname, certificate, CORS and cookies.
+if [ -n "${OPLO_PIN_IP:-}" ]; then
+  PIN_HOST=$(echo "$API" | sed -E 's#^https?://([^/:]+).*#\1#')
+  curl() { command curl --resolve "$PIN_HOST:443:$OPLO_PIN_IP" --resolve "$PIN_HOST:80:$OPLO_PIN_IP" "$@"; }
+fi
+
 EMAIL="${1:-}"
 FULL=0
 [ "${2:-}" = "--full" ] && FULL=1
