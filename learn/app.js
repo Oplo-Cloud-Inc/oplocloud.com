@@ -4985,9 +4985,9 @@
       v.appendChild(el("div", "lx-empty",
         "No courses yet. A teacher or administrator enrols you, and they appear here."));
     } else {
-      var list = el("div", "ad-list");
+      var list = el("div", "admin-list");
       mine.forEach(function (c) {
-        var row = el("div", "ad-row");
+        var row = el("div", "admin-row");
         row.innerHTML = '<span class="t"><b>' + esc(c.t) + "</b><span>" +
           esc(c.subject || "") + "</span></span>";
         var go = el("button", "lx-btn quiet", "Open");
@@ -5005,7 +5005,7 @@
       "Changed here and nowhere else. Your password is sent once over HTTPS, hashed on " +
       "the server, and never stored in this browser. Changing it signs out every other " +
       "session."));
-    var pwForm = el("div", "ad-form");
+    var pwForm = el("div", "admin-form");
     var cur = field("Current password", "");
     cur.input.type = "password";
     cur.input.autocomplete = "current-password";
@@ -5016,7 +5016,7 @@
     pwForm.appendChild(next);
     v.appendChild(pwForm);
 
-    var pwActs = el("div", "ad-acts");
+    var pwActs = el("div", "admin-acts");
     var change = el("button", "lx-btn", "Change my password");
     change.type = "button";
     change.addEventListener("click", function () {
@@ -5040,7 +5040,7 @@
     v.appendChild(pwActs);
 
     /* ---- Sign out ------------------------------------------------------ */
-    var out = el("div", "ad-acts");
+    var out = el("div", "admin-acts");
     var so = el("button", "lx-btn quiet", "Sign out");
     so.type = "button";
     so.addEventListener("click", signOut);
@@ -5066,9 +5066,9 @@
       "marked so far. Categories with nothing in them are left out rather than counted " +
       "as zero."));
 
-    var parts = el("div", "ad-mark-parts");
+    var parts = el("div", "admin-mark-parts");
     summary.parts.forEach(function (x) {
-      var row = el("div", "ad-mark-part");
+      var row = el("div", "admin-mark-part");
       row.innerHTML = "<span>" + esc(x.category) + "</span>" +
         '<div class="t"><i style="width:' + x.percent + '%"></i></div>' +
         "<em>" + x.percent + '%</em><span class="w">' + x.weight + "% of the grade · " +
@@ -5078,10 +5078,10 @@
     v.appendChild(parts);
 
     v.appendChild(el("h2", "lx-h2", "Every mark"));
-    var list = el("div", "ad-list");
+    var list = el("div", "admin-list");
     all.filter(function (g) { return g.courseId === summary.courseId; })
       .forEach(function (g) {
-        var row = el("div", "ad-row");
+        var row = el("div", "admin-row");
         var pct = g.score != null && g.outOf ? Math.round(g.score / g.outOf * 100) : null;
         row.innerHTML = '<span class="t"><b>' + esc(g.title) + "</b><span>" +
           esc(g.category || "") + (g.feedback ? " · " + esc(g.feedback) : "") + "</span></span>" +
@@ -5168,7 +5168,7 @@
     v.appendChild(el("h1", "lx-h1", "Your path to graduation"));
     var host = el("div", "gr");
     v.appendChild(host);
-    var wait = el("div", "ad-loading", "Reading your record…");
+    var wait = el("div", "admin-loading", "Reading your record…");
     host.appendChild(wait);
     noFoot(); progress(null);
     show("grades");
@@ -5744,9 +5744,9 @@
     v.appendChild(el("p", "lx-eyebrow", S.me.role === "admin" ? "Administration" : "Teaching"));
     v.appendChild(el("h1", "lx-h1", "Console"));
 
-    var nav = el("div", "ad-tabs");
+    var nav = el("div", "admin-tabs");
     allowedTabs().forEach(function (t) {
-      var b = el("button", "ad-tab" + (t.k === S.tab ? " on" : ""));
+      var b = el("button", "admin-tab" + (t.k === S.tab ? " on" : ""));
       b.type = "button";
       b.textContent = t.name;
       b.addEventListener("click", function () { openAdmin(true, t.k); });
@@ -5754,7 +5754,7 @@
     });
     v.appendChild(nav);
 
-    var body = el("div", "ad-body");
+    var body = el("div", "admin-body");
     v.appendChild(body);
     ({ roster: tabRoster, courses: tabCourses, sets: tabSets,
        people: tabPeople, system: tabSystem }[S.tab] || tabRoster)(body);
@@ -5768,13 +5768,13 @@
      assumed. A spinner that never resolves into an error is how a broken
      backend looks like a broken app. */
   function loading(v, what) {
-    var n = el("div", "ad-loading", "Loading " + esc(what) + "…");
+    var n = el("div", "admin-loading", "Loading " + esc(what) + "…");
     v.appendChild(n);
     return n;
   }
 
   function failed(node, e, retry) {
-    node.className = "ad-failed";
+    node.className = "admin-failed";
     node.innerHTML = "";
     var offline = e && e.code === "offline";
     node.appendChild(el("b", null, offline ? "Cannot reach the Oplo API" : "That did not load"));
@@ -5799,7 +5799,7 @@
   }
 
   function field(label, value, hint) {
-    var f = el("label", "ad-field");
+    var f = el("label", "admin-field");
     f.innerHTML = "<span>" + esc(label) + "</span>";
     var i = el("input");
     i.type = "text";
@@ -5811,7 +5811,7 @@
   }
 
   function areaField(label, value, hint, rows) {
-    var f = el("label", "ad-field");
+    var f = el("label", "admin-field");
     f.innerHTML = "<span>" + esc(label) + "</span>";
     var i = el("textarea");
     i.rows = rows || 3;
@@ -5823,7 +5823,7 @@
   }
 
   function avatarFor(p) {
-    var av = el("span", "ad-av");
+    var av = el("span", "admin-av");
     av.style.background = p.hue || "#6e6e73";
     av.textContent = p.initials ||
       String(p.name || "?").split(/\s+/).map(function (w) { return w[0]; })
@@ -5863,8 +5863,8 @@
   }
 
   function courseRoster(course) {
-    var wrap = el("section", "ad-course");
-    var head = el("header", "ad-course-head");
+    var wrap = el("section", "admin-course");
+    var head = el("header", "admin-course-head");
     head.innerHTML = "<h2>" + esc(course.title) + "</h2><span>" +
       esc(course.subject || "") + " · " + esc(course.code) + "</span>";
     wrap.appendChild(head);
@@ -5885,7 +5885,7 @@
       var byStudent = {};
       (grades.summaries || []).forEach(function (sm) { /* per course, not per student */ });
 
-      var acts = el("div", "ad-acts");
+      var acts = el("div", "admin-acts");
       var addWork = el("button", "lx-btn quiet",
         assignments.length ? assignments.length + " pieces of work" : "Set some work");
       addWork.type = "button";
@@ -5904,7 +5904,7 @@
         return;
       }
 
-      var grid = el("div", "ad-grid");
+      var grid = el("div", "admin-grid");
       students.forEach(function (st) {
         grid.appendChild(studentCard(st, course, assignments));
       });
@@ -5915,16 +5915,16 @@
   }
 
   function studentCard(p, course, assignments) {
-    var c = el("article", "ad-card");
+    var c = el("article", "admin-card");
 
-    var head = el("header", "ad-head");
+    var head = el("header", "admin-head");
     head.appendChild(avatarFor(p));
-    head.appendChild(el("div", "ad-who", "<b>" + esc(p.name) + "</b><span>" +
+    head.appendChild(el("div", "admin-who", "<b>" + esc(p.name) + "</b><span>" +
       esc(p.email || "") + "</span>"));
     c.appendChild(head);
 
-    var markSlot = el("div", "ad-books");
-    markSlot.appendChild(el("p", "ad-shape quiet", "Reading their grade…"));
+    var markSlot = el("div", "admin-books");
+    markSlot.appendChild(el("p", "admin-shape quiet", "Reading their grade…"));
     c.appendChild(markSlot);
 
     /* Their mark, from the server. Asked per student rather than computed in
@@ -5933,7 +5933,7 @@
     API.grades.list({ courseId: course.id, accountId: p.id }).then(function (r) {
       markSlot.innerHTML = "";
       var sum = (r.summaries || [])[0];
-      var row = el("button", "ad-book");
+      var row = el("button", "admin-book");
       row.type = "button";
       row.innerHTML = "<b>" + esc(course.title) + "</b>" +
         (sum ? '<span class="mk"><em>' + sum.letter + "</em>" + sum.percent + "%</span>"
@@ -5941,33 +5941,33 @@
       row.addEventListener("click", function () { openGradebook(p, course, assignments); });
       markSlot.appendChild(row);
       if (sum && sum.countedWeight < sum.totalWeight) {
-        markSlot.appendChild(el("p", "ad-shape quiet",
+        markSlot.appendChild(el("p", "admin-shape quiet",
           "Over the " + sum.countedWeight + "% of the grade marked so far."));
       }
     }, function () {
       markSlot.innerHTML = "";
-      markSlot.appendChild(el("p", "ad-shape quiet", "Could not read their grade."));
+      markSlot.appendChild(el("p", "admin-shape quiet", "Could not read their grade."));
     });
 
     /* What they have actually done in the app. Progress is theirs and is
        readable by their teachers; it is not writable by anybody but them. */
-    var work = el("div", "ad-stats");
-    work.appendChild(el("div", "ad-stat", "<b>…</b><span>XP</span>"));
+    var work = el("div", "admin-stats");
+    work.appendChild(el("div", "admin-stat", "<b>…</b><span>XP</span>"));
     c.appendChild(work);
     API.gamification.standing(p.id).then(function (st) {
       work.innerHTML = "";
       [["XP", st.xp], ["Streak", st.streak], ["Rank", st.rank.name],
        ["Badges", (st.badges || []).length]].forEach(function (x) {
-        var b = el("div", "ad-stat");
+        var b = el("div", "admin-stat");
         b.innerHTML = "<b>" + esc(String(x[1])) + "</b><span>" + x[0] + "</span>";
         work.appendChild(b);
       });
     }, function () {
       work.innerHTML = "";
-      work.appendChild(el("p", "ad-shape quiet", "No activity recorded yet."));
+      work.appendChild(el("p", "admin-shape quiet", "No activity recorded yet."));
     });
 
-    var acts = el("div", "ad-acts");
+    var acts = el("div", "admin-acts");
     var grade = el("button", "lx-btn", "Grades");
     grade.type = "button";
     grade.addEventListener("click", function () { openGradebook(p, course, assignments); });
@@ -5997,10 +5997,10 @@
           "checks that relationship on every write, so this list is the permission, " +
           "not a display of it."));
 
-        var list = el("div", "ad-picklist");
+        var list = el("div", "admin-picklist");
         people.forEach(function (p) {
           if (p.id === S.me.id) return;
-          var row = el("label", "ad-pick");
+          var row = el("label", "admin-pick");
           var box = el("input");
           box.type = "checkbox";
           box.checked = inCourse[p.id] === "student";
@@ -6043,12 +6043,12 @@
           "the course sets: " + weights.map(function (w) { return w[0] + " " + w[1] + "%"; })
             .join(", ") + "."));
 
-        var list = el("div", "ad-list");
+        var list = el("div", "admin-list");
         items.forEach(function (a) {
-          var row = el("div", "ad-row");
+          var row = el("div", "admin-row");
           row.innerHTML = '<span class="t"><b>' + esc(a.title) + "</b><span>" +
             esc(a.category || "uncategorised") + " · out of " + a.outOf + "</span></span>";
-          var rm = el("button", "ad-x");
+          var rm = el("button", "admin-x");
           rm.type = "button";
           rm.setAttribute("aria-label", "Remove " + a.title);
           rm.innerHTML = svg(I.close, true);
@@ -6065,9 +6065,9 @@
         }
         v.appendChild(list);
 
-        var form = el("div", "ad-form");
+        var form = el("div", "admin-form");
         var title = field("Title", "", "Unit 5 quiz");
-        var catF = el("label", "ad-field");
+        var catF = el("label", "admin-field");
         catF.innerHTML = "<span>Category</span>";
         var cat = el("select");
         weights.forEach(function (w) {
@@ -6080,7 +6080,7 @@
         [title, catF, outOf].forEach(function (f) { form.appendChild(f); });
         v.appendChild(form);
 
-        var acts = el("div", "ad-acts");
+        var acts = el("div", "admin-acts");
         var add = el("button", "lx-btn lg", "Set this work");
         add.type = "button";
         add.addEventListener("click", function () {
@@ -6129,13 +6129,13 @@
         (data.grades || []).forEach(function (g) { byAssignment[g.assignmentId] = g; });
         var sum = (data.summaries || [])[0];
 
-        var head = el("div", "ad-mark");
+        var head = el("div", "admin-mark");
         if (sum) {
           head.innerHTML = '<div class="big"><b>' + sum.letter + "</b><span>" +
             sum.percent + "%</span></div>";
-          var parts = el("div", "ad-mark-parts");
+          var parts = el("div", "admin-mark-parts");
           sum.parts.forEach(function (x) {
-            var row = el("div", "ad-mark-part");
+            var row = el("div", "admin-mark-part");
             row.innerHTML = "<span>" + esc(x.category) + "</span>" +
               '<div class="t"><i style="width:' + x.percent + '%"></i></div>' +
               "<em>" + x.percent + '%</em><span class="w">' + x.weight +
@@ -6145,13 +6145,13 @@
           });
           head.appendChild(parts);
           if (sum.countedWeight < sum.totalWeight) {
-            head.appendChild(el("p", "ad-mark-say",
+            head.appendChild(el("p", "admin-mark-say",
               "Computed over the " + sum.countedWeight + "% of the grade that has been " +
               "marked. Categories with nothing in them are left out rather than counted " +
               "as zero — a student who has not sat the final has not failed it."));
           }
         } else {
-          head.innerHTML = '<p class="ad-shape quiet">Nothing marked yet.</p>';
+          head.innerHTML = '<p class="admin-shape quiet">Nothing marked yet.</p>';
         }
         v.appendChild(head);
 
@@ -6166,17 +6166,17 @@
           return;
         }
 
-        var table = el("div", "ad-table");
-        var hd = el("div", "ad-tr head");
+        var table = el("div", "admin-table");
+        var hd = el("div", "admin-tr head");
         hd.innerHTML = "<span>Work</span><span>Category</span><span>Score</span>" +
           "<span>Out of</span><span></span>";
         table.appendChild(hd);
 
         work.forEach(function (a) {
           var g = byAssignment[a.id];
-          var tr = el("div", "ad-tr");
-          tr.appendChild(el("span", "ad-cellname", esc(a.title)));
-          tr.appendChild(el("span", "ad-cellcat", esc(a.category || "—")));
+          var tr = el("div", "admin-tr");
+          tr.appendChild(el("span", "admin-cellname", esc(a.title)));
+          tr.appendChild(el("span", "admin-cellcat", esc(a.category || "—")));
 
           var got = el("input");
           got.type = "number"; got.min = "0"; got.step = "0.5";
@@ -6184,9 +6184,9 @@
           got.placeholder = "—";
           tr.appendChild(got);
 
-          tr.appendChild(el("span", "ad-cellout", String(a.outOf)));
+          tr.appendChild(el("span", "admin-cellout", String(a.outOf)));
 
-          var state = el("span", "ad-cellstate");
+          var state = el("span", "admin-cellstate");
           tr.appendChild(state);
 
           /* Written when the field loses focus, not on every keystroke. A
@@ -6198,15 +6198,15 @@
             last = got.value;
             var score = got.value === "" ? null : Number(got.value);
             state.textContent = "Saving…";
-            state.className = "ad-cellstate busy";
+            state.className = "admin-cellstate busy";
             API.grades.put(a.id, p.id, score, a.outOf).then(function () {
               state.textContent = "Saved";
-              state.className = "ad-cellstate ok";
+              state.className = "admin-cellstate ok";
               setTimeout(function () { state.textContent = ""; }, 1600);
               render();
             }, function (e) {
               state.textContent = "Refused";
-              state.className = "ad-cellstate bad";
+              state.className = "admin-cellstate bad";
               toast(e && e.message ? e.message : "The server refused that grade.");
             });
           });
@@ -6235,16 +6235,16 @@
         "grades. The catalogue on the Explore tab is the shipped curriculum — " +
         "published content that lives in the site's files, not in the database."));
 
-      var acts = el("div", "ad-acts");
+      var acts = el("div", "admin-acts");
       var add = el("button", "lx-btn", "New course");
       add.type = "button";
       add.addEventListener("click", function () { openCourseEditor(null); });
       acts.appendChild(add);
       v.appendChild(acts);
 
-      var list = el("div", "ad-list");
+      var list = el("div", "admin-list");
       courses.forEach(function (c) {
-        var row = el("div", "ad-row");
+        var row = el("div", "admin-row");
         row.innerHTML = '<span class="t"><b>' + esc(c.title) + "</b><span>" +
           esc(c.subject || "") + " · " + esc(c.code) + " · " + esc(c.status) +
           (c.myRole ? " · you are " + esc(c.myRole) : "") + "</span></span>";
@@ -6273,7 +6273,7 @@
     v.appendChild(el("h1", "lx-h1", making ? "Create a course" : esc(c.title)));
 
     var body = (c && c.body) || {};
-    var form = el("div", "ad-form");
+    var form = el("div", "admin-form");
     var code = field("Code", c ? c.code : "", "a short slug, e.g. media-arts");
     if (!making) code.input.disabled = true;
     var title = field("Title", c ? c.title : "", "Media Arts");
@@ -6290,7 +6290,7 @@
     });
     v.appendChild(form);
 
-    var acts = el("div", "ad-acts");
+    var acts = el("div", "admin-acts");
     var save = el("button", "lx-btn lg", making ? "Create" : "Save");
     save.type = "button";
     save.addEventListener("click", function () {
@@ -6355,17 +6355,17 @@
         "A set published to a course appears for every student in it, on every device " +
         "they sign in on. It works in Flashcards, Learn, Match, Test and all three games."));
 
-      var acts = el("div", "ad-acts");
+      var acts = el("div", "admin-acts");
       var add = el("button", "lx-btn", "New study set");
       add.type = "button";
       add.addEventListener("click", function () { openSetEditor(null, courses); });
       acts.appendChild(add);
       v.appendChild(acts);
 
-      var list = el("div", "ad-list");
+      var list = el("div", "admin-list");
       sets.forEach(function (st) {
         var course = courses.filter(function (c) { return c.id === st.courseId; })[0];
-        var row = el("div", "ad-row");
+        var row = el("div", "admin-row");
         row.innerHTML = '<span class="t"><b>' + esc(st.title) + "</b><span>" +
           st.termCount + (st.termCount === 1 ? " term" : " terms") +
           (course ? " · " + esc(course.title) : " · not attached to a course") +
@@ -6394,9 +6394,9 @@
         v.appendChild(el("p", "lx-lede",
           "Published curriculum, read-only. To make a school version of one, write a new " +
           "set with the same terms — it will take precedence for your students."));
-        var sl = el("div", "ad-list");
+        var sl = el("div", "admin-list");
         ids.forEach(function (id) {
-          var row = el("div", "ad-row");
+          var row = el("div", "admin-row");
           row.innerHTML = '<span class="t"><b>' + esc(shipped[id].t) + "</b><span>" +
             esc(id) + " · " + shipped[id].cards.length + " terms</span></span>";
           sl.appendChild(row);
@@ -6437,14 +6437,14 @@
         v.appendChild(el("p", "lx-eyebrow", making ? "New study set" : "Study set"));
         v.appendChild(el("h1", "lx-h1", making ? "Write a study set" : esc(set.title)));
 
-        var form = el("div", "ad-form");
+        var form = el("div", "admin-form");
         var code = field("Code", head.code, "e.g. waves-and-sound");
         if (!making) code.input.disabled = true;
         code.input.addEventListener("input", function () { head.code = code.input.value; });
         var title = field("Title", head.title, "What this set covers");
         title.input.addEventListener("input", function () { head.title = title.input.value; });
 
-        var courseF = el("label", "ad-field");
+        var courseF = el("label", "admin-field");
         courseF.innerHTML = "<span>Course</span>";
         var courseSel = el("select");
         var none = el("option");
@@ -6460,7 +6460,7 @@
         courseSel.addEventListener("change", function () { head.courseId = courseSel.value; });
         courseF.appendChild(courseSel);
 
-        var statusF = el("label", "ad-field");
+        var statusF = el("label", "admin-field");
         statusF.innerHTML = "<span>Who can see it</span>";
         var statusSel = el("select");
         [["draft", "Draft — only you, until you publish it"],
@@ -6482,7 +6482,7 @@
           "shown without its term beside it. A term with a reason and an example can also " +
           "be asked as a case to work through — without them it stops at explanation."));
 
-        var depth = el("p", "ad-depth");
+        var depth = el("p", "admin-depth");
         v.appendChild(depth);
         function say() {
           var full = rows.filter(function (r) {
@@ -6498,14 +6498,14 @@
                              : ". The other " + (done - full) + " stop at explanation.");
         }
 
-        var table = el("div", "ad-table terms");
-        var hd = el("div", "ad-tr head");
+        var table = el("div", "admin-table terms");
+        var hd = el("div", "admin-tr head");
         hd.innerHTML = "<span>Term</span><span>Definition</span>" +
           "<span>Why it matters</span><span>An example</span><span></span>";
         table.appendChild(hd);
 
         rows.forEach(function (r, ix) {
-          var tr = el("div", "ad-tr");
+          var tr = el("div", "admin-tr");
           function box(key, placeholder, rowsN) {
             var i = rowsN ? el("textarea") : el("input");
             if (rowsN) i.rows = rowsN; else i.type = "text";
@@ -6518,7 +6518,7 @@
           tr.appendChild(box("definition", "A definition that stands on its own.", 2));
           tr.appendChild(box("why", "Optional — why this is worth knowing.", 2));
           tr.appendChild(box("example", "Optional — one concrete instance.", 2));
-          var del = el("button", "ad-x");
+          var del = el("button", "admin-x");
           del.type = "button";
           del.setAttribute("aria-label", "Remove this term");
           del.innerHTML = svg(I.close, true);
@@ -6529,7 +6529,7 @@
         v.appendChild(table);
         say();
 
-        var acts = el("div", "ad-acts");
+        var acts = el("div", "admin-acts");
         var add = el("button", "lx-btn quiet", "Add a term");
         add.type = "button";
         add.addEventListener("click", function () {
@@ -6617,16 +6617,16 @@
         ". An Oplo Account, not a Learn account — the same sign-in carries a person " +
         "into every Oplo product they are authorised for, and roles are held per product."));
 
-      var acts = el("div", "ad-acts");
+      var acts = el("div", "admin-acts");
       var add = el("button", "lx-btn", "Add a person");
       add.type = "button";
       add.addEventListener("click", function () { openPersonEditor(null); });
       acts.appendChild(add);
       v.appendChild(acts);
 
-      var list = el("div", "ad-list");
+      var list = el("div", "admin-list");
       people.forEach(function (p) {
-        var row = el("div", "ad-row");
+        var row = el("div", "admin-row");
         row.appendChild(avatarFor(p));
         row.appendChild(el("span", "t", "<b>" + esc(p.name) + "</b><span>" +
           esc(p.email || "") + (p.title ? " · " + esc(p.title) : "") + "</span>"));
@@ -6649,13 +6649,13 @@
     v.appendChild(el("p", "lx-eyebrow", making ? "New person" : "Person"));
     v.appendChild(el("h1", "lx-h1", making ? "Add somebody" : esc(p.name)));
 
-    var form = el("div", "ad-form");
+    var form = el("div", "admin-form");
     var name = field("Full name", p ? p.name : "");
     var email = field("Email", p ? p.email : "");
     if (!making) email.input.disabled = true;
     var title = field("Title", p ? p.title : "", "High School Silver Program");
 
-    var roleF = el("label", "ad-field");
+    var roleF = el("label", "admin-field");
     roleF.innerHTML = "<span>Role in Oplo Learn</span>";
     var role = el("select");
     [["student", "Student — their own work"],
@@ -6686,7 +6686,7 @@
         "screen. An administrator cannot read or set somebody else's password."));
     }
 
-    var acts = el("div", "ad-acts");
+    var acts = el("div", "admin-acts");
     var save = el("button", "lx-btn lg", making ? "Add them" : "Save");
     save.type = "button";
     save.addEventListener("click", function () {
@@ -6728,7 +6728,7 @@
     v.appendChild(el("p", "lx-lede",
       "Where this install stands, and what is actually enforced."));
 
-    var box = el("div", "ad-sys");
+    var box = el("div", "admin-sys");
     var rows = [
       ["Platform API", API.base(), "checking…"],
       ["Identity", "Oplo Account", "One account across Oplo products. Sessions are " +
@@ -6747,7 +6747,7 @@
         "Nothing is sent to a server."]
     ];
     rows.forEach(function (r) {
-      var row = el("div", "ad-sys-row");
+      var row = el("div", "admin-sys-row");
       row.innerHTML = "<b>" + esc(r[0]) + "</b><em>" + esc(r[1]) + "</em><span>" +
         esc(r[2]) + "</span>";
       box.appendChild(row);
@@ -6755,7 +6755,7 @@
     v.appendChild(box);
 
     API.health().then(function (up) {
-      var first = box.querySelector(".ad-sys-row span");
+      var first = box.querySelector(".admin-sys-row span");
       if (first) {
         first.textContent = up
           ? "Answering. Sign-in, grades and progress are live."
@@ -6764,14 +6764,14 @@
     });
 
     v.appendChild(el("h2", "lx-h2", "Your account"));
-    var who = el("div", "ad-list");
-    var row1 = el("div", "ad-row");
+    var who = el("div", "admin-list");
+    var row1 = el("div", "admin-row");
     row1.appendChild(avatarFor(S.me));
     row1.appendChild(el("span", "t", "<b>" + esc(S.me.name) + "</b><span>" +
       esc(S.me.email) + " · " + esc(S.me.id) + "</span>"));
     who.appendChild(row1);
     (S.me.roles || []).forEach(function (r) {
-      var row = el("div", "ad-row");
+      var row = el("div", "admin-row");
       row.innerHTML = '<span class="t"><b>' + esc(r.product) + "." + esc(r.role) +
         "</b><span>" + (r.orgId ? "in " + esc(r.orgId) : "platform-wide") + "</span></span>";
       who.appendChild(row);

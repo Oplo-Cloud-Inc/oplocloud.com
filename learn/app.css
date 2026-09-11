@@ -1514,36 +1514,36 @@ mark.hl.theirs:hover { background: var(--wash); }
 }
 
 /* =================================================================== Admin */
-.ad-grid { margin-top: 26px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
-.ad-card { padding: 20px; border-radius: 18px; background: var(--paper); border: 1px solid var(--hair); }
-.ad-head { display: flex; align-items: center; gap: 12px; }
-.ad-av {
+.admin-grid { margin-top: 26px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.admin-card { padding: 20px; border-radius: 18px; background: var(--paper); border: 1px solid var(--hair); }
+.admin-head { display: flex; align-items: center; gap: 12px; }
+.admin-av {
   width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center;
   color: #fff; font-family: var(--font); font-size: 14px; font-weight: 600;
 }
-.ad-who { flex: 1; min-width: 0; }
-.ad-who b { display: block; font-family: var(--font); font-size: 16px; font-weight: 600; letter-spacing: -.012em; }
-.ad-who span { display: block; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ad-grade {
+.admin-who { flex: 1; min-width: 0; }
+.admin-who b { display: block; font-family: var(--font); font-size: 16px; font-weight: 600; letter-spacing: -.012em; }
+.admin-who span { display: block; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-grade {
   flex: none; height: 22px; padding: 0 9px; border-radius: 100px; background: var(--canvas);
   display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 500; color: var(--ink-2);
 }
-.ad-en { margin-top: 14px; padding: 11px 13px; border-radius: 11px; background: var(--canvas); }
-.ad-en b { display: block; font-size: 13.5px; font-weight: 500; }
-.ad-en span { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-3); }
-.ad-stats { display: flex; gap: 22px; margin-top: 16px; }
-.ad-stat b { display: block; font-family: var(--font); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.016em; }
-.ad-stat span { font-size: 11.5px; color: var(--ink-3); }
-.ad-passes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
-.ad-pass {
+.admin-en { margin-top: 14px; padding: 11px 13px; border-radius: 11px; background: var(--canvas); }
+.admin-en b { display: block; font-size: 13.5px; font-weight: 500; }
+.admin-en span { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-3); }
+.admin-stats { display: flex; gap: 22px; margin-top: 16px; }
+.admin-stat b { display: block; font-family: var(--font); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.016em; }
+.admin-stat span { font-size: 11.5px; color: var(--ink-3); }
+.admin-passes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.admin-pass {
   display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 100px;
   background: var(--canvas); font-size: 11.5px; color: var(--ink-2);
 }
-.ad-pass i { width: 7px; height: 7px; border-radius: 50%; }
-.ad-shape { margin-top: 12px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
-.ad-shape.quiet { color: var(--ink-3); font-size: 12.5px; }
-.ad-acts { display: flex; gap: 8px; margin-top: 16px; }
-.ad-acts .lx-btn { height: 34px; font-size: 13.5px; }
+.admin-pass i { width: 7px; height: 7px; border-radius: 50%; }
+.admin-shape { margin-top: 12px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.admin-shape.quiet { color: var(--ink-3); font-size: 12.5px; }
+.admin-acts { display: flex; gap: 8px; margin-top: 16px; }
+.admin-acts .lx-btn { height: 34px; font-size: 13.5px; }
 /* The admin's own chip says so, quietly. */
 body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--blue); }
 
@@ -2362,153 +2362,153 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
    somebody misreads.
    ========================================================================== */
 
-.ad-tabs {
+.admin-tabs {
   display: flex; gap: 4px; margin: 22px 0 26px;
   border-bottom: 1px solid var(--hair); flex-wrap: wrap;
 }
-.ad-tab {
+.admin-tab {
   padding: 9px 14px 11px; font-size: 14.5px; color: var(--ink-2);
   border-bottom: 2px solid transparent; margin-bottom: -1px;
   transition: color .15s var(--ease), border-color .15s var(--ease);
 }
-.ad-tab:hover { color: var(--ink); }
-.ad-tab.on { color: var(--ink); font-weight: 500; border-bottom-color: var(--ink); }
+.admin-tab:hover { color: var(--ink); }
+.admin-tab.on { color: var(--ink); font-weight: 500; border-bottom-color: var(--ink); }
 
-.ad-body { padding-bottom: 60px; }
+.admin-body { padding-bottom: 60px; }
 
 /* ------------------------------------------------------------------ Lists */
-.ad-list { margin-top: 18px; }
-.ad-row {
+.admin-list { margin-top: 18px; }
+.admin-row {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 4px; border-bottom: 1px solid var(--hair);
 }
-.ad-row .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ad-row .t b { font-size: 15px; font-weight: 500; letter-spacing: -.015em; }
-.ad-row .t > span { font-size: 12.5px; color: var(--ink-3); }
+.admin-row .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.admin-row .t b { font-size: 15px; font-weight: 500; letter-spacing: -.015em; }
+.admin-row .t > span { font-size: 12.5px; color: var(--ink-3); }
 
-.ad-av.sm { width: 30px; height: 30px; font-size: 11px; }
+.admin-av.sm { width: 30px; height: 30px; font-size: 11px; }
 
 /* ------------------------------------------------------------------ Forms */
-.ad-form {
+.admin-form {
   display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
   margin: 22px 0 26px;
 }
-@media (max-width: 640px) { .ad-form { grid-template-columns: 1fr; } }
-.ad-field { display: flex; flex-direction: column; gap: 6px; }
-.ad-field:has(textarea) { grid-column: 1 / -1; }
-.ad-field > span {
+@media (max-width: 640px) { .admin-form { grid-template-columns: 1fr; } }
+.admin-field { display: flex; flex-direction: column; gap: 6px; }
+.admin-field:has(textarea) { grid-column: 1 / -1; }
+.admin-field > span {
   font-size: 11px; font-weight: 600; color: var(--ink-3);
   text-transform: uppercase; letter-spacing: .07em;
 }
-.ad-field input, .ad-field textarea, .ad-field select {
+.admin-field input, .admin-field textarea, .admin-field select {
   font: inherit; font-size: 15px; color: var(--ink);
   padding: 10px 13px; border-radius: 11px;
   border: 1px solid var(--rule); background: var(--paper);
   transition: border-color .15s var(--ease);
 }
-.ad-field textarea { resize: vertical; line-height: 1.45; }
-.ad-field input:focus, .ad-field textarea:focus, .ad-field select:focus {
+.admin-field textarea { resize: vertical; line-height: 1.45; }
+.admin-field input:focus, .admin-field textarea:focus, .admin-field select:focus {
   outline: none; border-color: var(--blue);
 }
-.ad-field input:disabled, .ad-field textarea:disabled, .ad-field select:disabled {
+.admin-field input:disabled, .admin-field textarea:disabled, .admin-field select:disabled {
   background: var(--sunk); color: var(--ink-2);
 }
 
 /* ----------------------------------------------------------------- Tables */
-.ad-table { margin: 18px 0 22px; }
-.ad-tr {
+.admin-table { margin: 18px 0 22px; }
+.admin-tr {
   display: grid; grid-template-columns: 1.4fr 1fr 90px 90px 34px;
   gap: 8px; align-items: center; padding: 7px 0;
   border-bottom: 1px solid var(--hair);
 }
-.ad-table.cards .ad-tr { grid-template-columns: 1fr 2.2fr 34px; align-items: start; }
+.admin-table.cards .admin-tr { grid-template-columns: 1fr 2.2fr 34px; align-items: start; }
 @media (max-width: 700px) {
-  .ad-tr, .ad-table.cards .ad-tr { grid-template-columns: 1fr; }
-  .ad-tr.head { display: none; }
+  .admin-tr, .admin-table.cards .admin-tr { grid-template-columns: 1fr; }
+  .admin-tr.head { display: none; }
 }
-.ad-tr.head span {
+.admin-tr.head span {
   font-size: 10.5px; font-weight: 600; color: var(--ink-3);
   text-transform: uppercase; letter-spacing: .07em; padding-bottom: 4px;
 }
-.ad-tr input, .ad-tr textarea, .ad-tr select {
+.admin-tr input, .admin-tr textarea, .admin-tr select {
   font: inherit; font-size: 14.5px; width: 100%;
   padding: 8px 11px; border-radius: 9px;
   border: 1px solid var(--rule); background: var(--paper);
 }
-.ad-tr textarea { resize: vertical; line-height: 1.4; }
-.ad-tr input:focus, .ad-tr textarea:focus, .ad-tr select:focus {
+.admin-tr textarea { resize: vertical; line-height: 1.4; }
+.admin-tr input:focus, .admin-tr textarea:focus, .admin-tr select:focus {
   outline: none; border-color: var(--blue);
 }
-.ad-tr input:disabled, .ad-tr textarea:disabled, .ad-tr select:disabled {
+.admin-tr input:disabled, .admin-tr textarea:disabled, .admin-tr select:disabled {
   background: var(--sunk); color: var(--ink-2);
 }
-.ad-x {
+.admin-x {
   width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
   color: var(--ink-3); transition: background .15s var(--ease), color .15s var(--ease);
 }
-.ad-x svg { width: 15px; height: 15px; }
-.ad-x:hover { background: #fdeced; color: var(--red); }
+.admin-x svg { width: 15px; height: 15px; }
+.admin-x:hover { background: #fdeced; color: var(--red); }
 
 /* -------------------------------------------------------------- Gradebook */
-.ad-mark {
+.admin-mark {
   background: var(--paper); border-radius: var(--r); padding: 22px 24px;
   box-shadow: 0 0 0 .5px var(--hair); margin-bottom: 22px;
 }
-.ad-mark .big { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
-.ad-mark .big b {
+.admin-mark .big { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+.admin-mark .big b {
   font-family: var(--font); font-size: 40px; font-weight: 600; letter-spacing: -.04em;
   line-height: 1;
 }
-.ad-mark .big span { font-size: 17px; color: var(--ink-2); }
-.ad-mark-part {
+.admin-mark .big span { font-size: 17px; color: var(--ink-2); }
+.admin-mark-part {
   display: grid; grid-template-columns: 130px 1fr 46px; gap: 12px;
   align-items: center; padding: 7px 0;
 }
-.ad-mark-part > span:first-child { font-size: 14px; }
-.ad-mark-part .t { height: 5px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
-.ad-mark-part .t i { display: block; height: 100%; background: var(--blue); border-radius: 3px; }
-.ad-mark-part em {
+.admin-mark-part > span:first-child { font-size: 14px; }
+.admin-mark-part .t { height: 5px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.admin-mark-part .t i { display: block; height: 100%; background: var(--blue); border-radius: 3px; }
+.admin-mark-part em {
   font-style: normal; font-size: 14px; font-weight: 600; text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.ad-mark-part .w { grid-column: 1 / -1; font-size: 11.5px; color: var(--ink-3); margin-top: -4px; }
-.ad-mark-say { margin-top: 14px; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+.admin-mark-part .w { grid-column: 1 / -1; font-size: 11.5px; color: var(--ink-3); margin-top: -4px; }
+.admin-mark-say { margin-top: 14px; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
 
-.ad-books { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
-.ad-book {
+.admin-books { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
+.admin-book {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 9px 12px; border-radius: 10px; background: var(--canvas); text-align: left;
   transition: background .15s var(--ease);
 }
-.ad-book:hover { background: var(--sunk); }
-.ad-book b { font-size: 13.5px; font-weight: 500; }
-.ad-book .mk { display: flex; align-items: baseline; gap: 7px; font-size: 12.5px; color: var(--ink-2); }
-.ad-book .mk em {
+.admin-book:hover { background: var(--sunk); }
+.admin-book b { font-size: 13.5px; font-weight: 500; }
+.admin-book .mk { display: flex; align-items: baseline; gap: 7px; font-size: 12.5px; color: var(--ink-2); }
+.admin-book .mk em {
   font-style: normal; font-family: var(--font); font-size: 16px; font-weight: 600;
   color: var(--ink); letter-spacing: -.02em;
 }
-.ad-book .mk.none { color: var(--ink-3); }
+.admin-book .mk.none { color: var(--ink-3); }
 
 /* ----------------------------------------------------------- Pick lists */
-.ad-picklist { margin: 18px 0 22px; }
-.ad-pick {
+.admin-picklist { margin: 18px 0 22px; }
+.admin-pick {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 4px; border-bottom: 1px solid var(--hair); cursor: pointer;
 }
-.ad-pick input { width: 17px; height: 17px; accent-color: var(--blue); flex: none; }
-.ad-pick .t { display: flex; flex-direction: column; gap: 1px; }
-.ad-pick .t b { font-size: 14.5px; font-weight: 500; }
-.ad-pick .t > span { font-size: 12.5px; color: var(--ink-3); }
+.admin-pick input { width: 17px; height: 17px; accent-color: var(--blue); flex: none; }
+.admin-pick .t { display: flex; flex-direction: column; gap: 1px; }
+.admin-pick .t b { font-size: 14.5px; font-weight: 500; }
+.admin-pick .t > span { font-size: 12.5px; color: var(--ink-3); }
 
 /* --------------------------------------------------------------- Notices */
-.ad-warn {
+.admin-warn {
   background: #fff8ea; border-radius: var(--r); padding: 20px 22px;
   box-shadow: 0 0 0 .5px #f0dfba; margin-bottom: 30px;
 }
-.ad-warn b { display: block; font-size: 15px; margin-bottom: 8px; }
-.ad-warn p { font-size: 13.5px; color: #6b5424; line-height: 1.5; }
-.ad-warn p + p { margin-top: 10px; }
-.ad-warn code {
+.admin-warn b { display: block; font-size: 15px; margin-bottom: 8px; }
+.admin-warn p { font-size: 13.5px; color: #6b5424; line-height: 1.5; }
+.admin-warn p + p { margin-top: 10px; }
+.admin-warn code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
   background: rgba(0,0,0,.05); padding: 1px 5px; border-radius: 4px;
 }
@@ -2532,42 +2532,42 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
    network call actually has get drawn rather than assumed. A spinner that
    never resolves into an error is how a broken backend looks like a broken
    app. */
-.ad-loading, .ac-loading {
+.admin-loading, .ac-loading {
   padding: 22px 0; font-size: 14px; color: var(--ink-3);
 }
-.ad-failed {
+.admin-failed {
   background: #fdf3f3; border-radius: var(--r); padding: 20px 22px;
   box-shadow: 0 0 0 .5px #f0cfcf; margin: 18px 0;
 }
-.ad-failed b { display: block; font-size: 15px; margin-bottom: 8px; color: #8a1420; }
-.ad-failed p { font-size: 13.5px; color: #6f2b30; line-height: 1.5; margin-bottom: 14px; }
+.admin-failed b { display: block; font-size: 15px; margin-bottom: 8px; color: #8a1420; }
+.admin-failed p { font-size: 13.5px; color: #6f2b30; line-height: 1.5; margin-bottom: 14px; }
 
-.ad-course { margin: 30px 0 40px; }
-.ad-course-head { margin-bottom: 14px; }
-.ad-course-head h2 {
+.admin-course { margin: 30px 0 40px; }
+.admin-course-head { margin-bottom: 14px; }
+.admin-course-head h2 {
   font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: -.025em;
 }
-.ad-course-head span { font-size: 12.5px; color: var(--ink-3); }
+.admin-course-head span { font-size: 12.5px; color: var(--ink-3); }
 
-.ad-cellname { font-size: 14.5px; }
-.ad-cellcat, .ad-cellout { font-size: 13px; color: var(--ink-3); }
-.ad-cellstate { font-size: 11.5px; color: var(--ink-3); text-align: right; }
-.ad-cellstate.ok { color: var(--green); }
-.ad-cellstate.bad { color: var(--red); }
-.ad-cellstate.busy { color: var(--ink-3); }
+.admin-cellname { font-size: 14.5px; }
+.admin-cellcat, .admin-cellout { font-size: 13px; color: var(--ink-3); }
+.admin-cellstate { font-size: 11.5px; color: var(--ink-3); text-align: right; }
+.admin-cellstate.ok { color: var(--green); }
+.admin-cellstate.bad { color: var(--red); }
+.admin-cellstate.busy { color: var(--ink-3); }
 
 /* The System tab: what is real, and where the line is. */
-.ad-sys { margin: 20px 0 30px; }
-.ad-sys-row {
+.admin-sys { margin: 20px 0 30px; }
+.admin-sys-row {
   display: grid; grid-template-columns: 150px 160px 1fr; gap: 14px;
   padding: 13px 0; border-bottom: 1px solid var(--hair); align-items: baseline;
 }
-@media (max-width: 720px) { .ad-sys-row { grid-template-columns: 1fr; gap: 3px; } }
-.ad-sys-row b { font-size: 14px; font-weight: 500; }
-.ad-sys-row em {
+@media (max-width: 720px) { .admin-sys-row { grid-template-columns: 1fr; gap: 3px; } }
+.admin-sys-row b { font-size: 14px; font-weight: 500; }
+.admin-sys-row em {
   font-style: normal; font-size: 12.5px; color: var(--blue); font-weight: 500;
 }
-.ad-sys-row span { font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+.admin-sys-row span { font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
 
 .lx-gate .err code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
@@ -2577,14 +2577,14 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 /* The term editor: four columns, because a term's optional fields are what
    decide how hard a question can be asked about it, and hiding them behind a
    disclosure means nobody ever fills them in. */
-.ad-table.terms .ad-tr {
+.admin-table.terms .admin-tr {
   grid-template-columns: 0.9fr 1.5fr 1.2fr 1.2fr 34px;
   align-items: start;
 }
 @media (max-width: 900px) {
-  .ad-table.terms .ad-tr { grid-template-columns: 1fr; }
+  .admin-table.terms .admin-tr { grid-template-columns: 1fr; }
 }
-.ad-depth {
+.admin-depth {
   font-size: 12.5px; color: var(--ink-2); margin: 14px 0 4px;
   padding: 9px 13px; background: var(--sunk); border-radius: 9px; display: inline-block;
 }
