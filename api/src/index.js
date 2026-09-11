@@ -104,6 +104,14 @@ export default {
   async fetch(request, env, executionCtx) {
     const url = new URL(request.url);
 
+    // Nothing is served over plain HTTP. Cloudflare hands such requests to the
+    // route as they arrived, so the Worker sends them to HTTPS itself. Local
+    // development runs on http://localhost and is left alone.
+    if (url.protocol === "http:" && env.ENVIRONMENT === "production") {
+      url.protocol = "https:";
+      return Response.redirect(url.toString(), 308);
+    }
+
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(request, env) });
     }
