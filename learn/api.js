@@ -247,6 +247,32 @@ window.OPLO_API = (function () {
       archive: function (setId) { return del("/study-sets/" + setId); }
     },
 
+    /* -------------------------------------------------------- Graduation
+       Diploma progress, computed on the server so that every screen shows
+       the same numbers. The transcript behind it is read-only from here for
+       anybody who is not an administrator, and the server enforces that —
+       these methods cannot get round it and do not try. */
+    graduation: {
+      get: function (accountId) {
+        return get("/graduation" + q({ accountId: accountId }))
+          .then(function (r) { return r.graduation; });
+      },
+      setProgram: function (accountId, data) {
+        return put("/accounts/" + accountId + "/program", data)
+          .then(function (r) { return r.program; });
+      },
+      importTranscript: function (accountId, data) {
+        return post("/accounts/" + accountId + "/transcripts", data, { timeout: 30000 })
+          .then(function (r) { return r.record; });
+      },
+      updateRecord: function (recordId, data) {
+        return patch("/transcripts/" + recordId, data).then(function (r) { return r.record; });
+      },
+      decide: function (courseId, data) {
+        return patch("/transcript-courses/" + courseId, data).then(function (r) { return r.course; });
+      }
+    },
+
     /* --------------------------------------------------------- Progress
        The student's own record, synchronised across their devices. Scoped
        finely — one study set, one unit — so two devices working on different

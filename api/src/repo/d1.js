@@ -525,6 +525,130 @@ export class D1Repository {
     ).bind(now(), setId).run();
   }
 
+  /* ------------------------------------------- Programs and transfer credit */
+
+  async getProgram(accountId) {
+    return this.db.prepare(`SELECT * FROM learn_student_programs WHERE account_id = ?`)
+      .bind(accountId).first();
+  }
+
+  async upsertProgram(accountId, orgId, data) {
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_student_programs
+         (id, account_id, org_id, program, track, grade_level, enrolled_at, expected_grad,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (account_id) DO UPDATE SET
+         org_id = excluded.org_id, program = excluded.program, track = excluded.track,
+         grade_level = excluded.grade_level, enrolled_at = excluded.enrolled_at,
+         expected_grad = excluded.expected_grad, updated_at = excluded.updated_at`
+    ).bind(id("prg"), accountId, orgId || null, data.program || null, data.track,
+           data.gradeLevel ?? null, data.enrolledAt ?? null, data.expectedGrad ?? null, t, t).run();
+    return this.getProgram(accountId);
+  }
+
+  async listTransferRecords(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_transfer_records WHERE account_id = ? ORDER BY created_at`
+    ).bind(accountId).all();
+    return results || [];
+  }
+
+  async findTransferRecord(recordId) {
+    return this.db.prepare(`SELECT * FROM learn_transfer_records WHERE id = ?`).bind(recordId).first();
+  }
+
+  async listTransferCourses(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_transfer_courses WHERE account_id = ? ORDER BY record_id, position`
+    ).bind(accountId).all();
+    return results || [];
+  }
+
+  async listTransferExams(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_transfer_exams WHERE account_id = ? ORDER BY sitting, name`
+    ).bind(accountId).all();
+    return results || [];
+  }
+
+  /* A record, its courses and its exams, replacing any earlier record from
+     the same school — in one batch, so a re-import is never half applied and
+     never leaves two copies adding up to double the credit. Children are
+     deleted explicitly rather than trusting cascade to be switched on. */
+  async replaceTransferRecord({ accountId, orgId, createdBy, record, courses, exams }) {
+    const t = now();
+    const recordId = id("trx");
+    const { results: old } = await this.db.prepare(
+      `SELECT id FROM learn_transfer_records WHERE account_id = ? AND school = ?`
+    ).bind(accountId, record.school).all();
+
+    const statements = [];
+    for (const o of old || []) {
+      statements.push(this.db.prepare(`DELETE FROM learn_transfer_courses WHERE record_id = ?`).bind(o.id));
+      statements.push(this.db.prepare(`DELETE FROM learn_transfer_exams WHERE record_id = ?`).bind(o.id));
+      statements.push(this.db.prepare(`DELETE FROM learn_transfer_records WHERE id = ?`).bind(o.id));
+    }
+    statements.push(this.db.prepare(
+      `INSERT INTO learn_transfer_records
+         (id, account_id, org_id, school, authority, school_code, kind, status, credit_system,
+          printed_on, summary_json, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(recordId, accountId, orgId || null, record.school, record.authority || null,
+           record.schoolCode || null, record.kind, record.status, record.creditSystem,
+           record.printedOn || null, JSON.stringify(record.summary || {}), createdBy || null, t, t));
+    courses.forEach((c, i) => {
+      statements.push(this.db.prepare(
+        `INSERT INTO learn_transfer_courses
+           (id, record_id, account_id, position, school_year, grade_level, term, code, title, mark,
+            mark_numeric, attempted, earned, area, flags, ehs_credits, decision, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'proposed', NULL)`
+      ).bind(id("tcr"), recordId, accountId, i, c.schoolYear, c.gradeLevel, c.term, c.code, c.title,
+             c.mark, c.markNumeric, c.attempted, c.earned, c.area, c.flags || null, c.ehsCredits));
+    });
+    exams.forEach((e) => {
+      statements.push(this.db.prepare(
+        `INSERT INTO learn_transfer_exams (id, record_id, account_id, name, sitting, score, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id("tex"), recordId, accountId, e.name, e.sitting, e.score, e.status));
+    });
+    await this.db.batch(statements);
+    return this.findTransferRecord(recordId);
+  }
+
+  async updateTransferRecord(recordId, patch) {
+    const fields = [], values = [];
+    const map = { kind: "kind", status: "status", evaluatedBy: "evaluated_by", evaluatedAt: "evaluated_at" };
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (!fields.length) return this.findTransferRecord(recordId);
+    values.push(now(), recordId);
+    await this.db.prepare(
+      `UPDATE learn_transfer_records SET ${fields.join(", ")}, updated_at = ? WHERE id = ?`
+    ).bind(...values).run();
+    return this.findTransferRecord(recordId);
+  }
+
+  async findTransferCourse(courseId) {
+    return this.db.prepare(`SELECT * FROM learn_transfer_courses WHERE id = ?`).bind(courseId).first();
+  }
+
+  async updateTransferCourse(courseId, patch) {
+    const fields = [], values = [];
+    const map = { decision: "decision", area: "area", ehsCredits: "ehs_credits", note: "note" };
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (!fields.length) return this.findTransferCourse(courseId);
+    values.push(courseId);
+    await this.db.prepare(
+      `UPDATE learn_transfer_courses SET ${fields.join(", ")} WHERE id = ?`
+    ).bind(...values).run();
+    return this.findTransferCourse(courseId);
+  }
+
   /* ----------------------------------------------------- Progress and XP */
 
   async getProgress(accountId, scope) {

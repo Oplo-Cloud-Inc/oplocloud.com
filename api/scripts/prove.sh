@@ -202,7 +202,51 @@ call teacher PATCH "/study-sets/$DRAFT" '{"status":"published"}' >/dev/null
 S=$(status student GET "/study-sets/$DRAFT")
 [ "$S" = "200" ] && ok "publishing it makes it visible (200)" || bad "publish" "HTTP $S"
 
-say "10. Sessions"
+say "10. Transcripts — imported by an administrator, read by the student, changed by nobody else"
+TX='{"source":{"school":"Proof High","creditSystem":"nyc-4-term","kind":"unofficial","creditsEarned":1.75,"cumulativeAverage":77},"terms":[{"year":"2024-2025","gradeLevel":9,"term":"Term 1","average":77,"courses":[["E1","English 1A","88",0.5,0.5,"english"],["E2","English 1B","90",0.5,0.5,"english"],["M1","Algebra 1A","62",0.5,0.5,"math"],["M2","Algebra 1B","45",0.5,0,"math"],["P1","PE 1A","100",0.25,0.25,"pe","not_averaged"]]}],"exams":[["Algebra I","2025-06",70,"passed"]]}'
+S=$(status student POST "/accounts/$STUDENT/transcripts" "$TX")
+[ "$S" = "403" ] && ok "a student cannot import their own transcript (403)" || bad "student MUST NOT import a transcript" "HTTP $S"
+S=$(status teacher POST "/accounts/$STUDENT/transcripts" "$TX")
+[ "$S" = "403" ] && ok "their teacher cannot import one either (403)" || bad "teacher MUST NOT import a transcript" "HTTP $S"
+S=$(status student PUT "/accounts/$STUDENT/program" '{"track":"24"}')
+[ "$S" = "403" ] && ok "a student cannot change their own diploma track (403)" || bad "student MUST NOT set their track" "HTTP $S"
+R=$(call admin PUT "/accounts/$STUDENT/program" '{"track":"21.5","program":"Proof Program","gradeLevel":11}')
+echo "$R" | grep -q '"track":"21.5"' && ok "an administrator set the 21.5-credit track" || bad "set program" "$R"
+R=$(call admin POST "/accounts/$STUDENT/transcripts" "$TX")
+[ "$(echo "$R" | jq_ "o.record&&o.record.courses")" = "5" ] && ok "an administrator imported it: 5 courses, 1 exam" || bad "import transcript" "$R"
+R=$(call student GET /graduation)
+EST=$(echo "$R" | jq_ "o.graduation.totals.transferEstimate")
+CONS=$(echo "$R" | jq_ "o.graduation.totals.transferConservative")
+[ "$EST" = "0.875" ] && ok "the student sees 0.875 EHS credits: 1.75 earned at 0.5 per NYC credit" || bad "transfer estimate" "$EST"
+[ "$CONS" = "0.5" ] && ok "and a conservative 0.5, with partial semesters rounded down" || bad "conservative estimate" "$CONS"
+S=$(status teacher GET "/graduation?accountId=$STUDENT")
+[ "$S" = "200" ] && ok "a teacher of theirs can read it (200)" || bad "teacher reads graduation" "HTTP $S"
+S=$(status other GET "/graduation?accountId=$STUDENT")
+[ "$S" = "403" ] && ok "a teacher who does not teach them cannot (403)" || bad "unrelated teacher MUST NOT read a transcript" "HTTP $S"
+S=$(curl -s -o /dev/null -w '%{http_code}' "$API/graduation")
+[ "$S" = "401" ] && ok "signed out, it is unauthorized (401)" || bad "anonymous graduation read" "HTTP $S"
+CID=$(echo "$R" | jq_ "o.graduation.courses[0].id")
+S=$(status student PATCH "/transcript-courses/$CID" '{"ehsCredits":4}')
+[ "$S" = "403" ] && ok "a student cannot raise a transferred credit (403)" || bad "student MUST NOT edit transfer credit" "HTTP $S"
+S=$(status teacher PATCH "/transcript-courses/$CID" '{"decision":"accepted"}')
+[ "$S" = "403" ] && ok "nor can their teacher (403)" || bad "teacher MUST NOT edit transfer credit" "HTTP $S"
+call admin PATCH "/transcript-courses/$CID" '{"decision":"declined"}' >/dev/null
+EST=$(call student GET /graduation | jq_ "o.graduation.totals.transferEstimate")
+[ "$EST" = "0.625" ] && ok "a course the registrar declines stops counting: now $EST" || bad "declined course still counted" "$EST"
+BIG=$(node -e '
+const areas=["english","math","science","social_studies","health","pe","fine_art","elective"];
+const term=(n)=>({year:"2023-2024",gradeLevel:9,term:"Term "+n,average:80,
+  courses:Array.from({length:20},(_,i)=>["B"+n+"-"+i,"Course "+n+"-"+i,"80",1,1,areas[i%8]])});
+process.stdout.write(JSON.stringify({source:{school:"Big Transfer High",creditSystem:"nyc-4-term"},terms:[term(1),term(2)],exams:[]}));')
+call admin POST "/accounts/$STUDENT/transcripts" "$BIG" >/dev/null
+call admin POST "/accounts/$STUDENT/transcripts" "$BIG" >/dev/null
+R=$(call student GET /graduation)
+EST=$(echo "$R" | jq_ "o.graduation.totals.transferEstimate")
+N=$(echo "$R" | jq_ "o.graduation.courses.length")
+[ "$EST" = "16" ] && ok "20 more credits imported, but transfer stops at the 16-credit cap" || bad "transfer cap" "$EST"
+[ "$N" = "45" ] && ok "importing the same school twice replaces it rather than doubling it (45 courses)" || bad "re-import doubled" "$N"
+
+say "11. Sessions"
 # A second sign-in from the "same person, different device".
 curl -s -c "$JAR/student2" -H 'content-type: application/json' \
   -d "{\"email\":\"student$STAMP@example.com\",\"password\":\"another-long-password\"}" \

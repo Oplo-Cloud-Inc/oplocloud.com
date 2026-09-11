@@ -32,6 +32,7 @@ import * as courses from "./routes/courses.js";
 import * as grades from "./routes/grades.js";
 import * as progress from "./routes/progress.js";
 import * as studysets from "./routes/studysets.js";
+import * as graduation from "./routes/graduation.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -69,6 +70,12 @@ const ROUTES = [
   ["GET",    "/api/v1/study-sets/:setId",  studysets.get],
   ["PATCH",  "/api/v1/study-sets/:setId",  studysets.update],
   ["DELETE", "/api/v1/study-sets/:setId",  studysets.remove],
+
+  ["GET",    "/api/v1/graduation",                       graduation.get],
+  ["PUT",    "/api/v1/accounts/:accountId/program",      graduation.setProgram],
+  ["POST",   "/api/v1/accounts/:accountId/transcripts",  graduation.importTranscript],
+  ["PATCH",  "/api/v1/transcripts/:recordId",            graduation.updateRecord],
+  ["PATCH",  "/api/v1/transcript-courses/:courseId",     graduation.updateCourse],
 
   ["GET",    "/api/v1/progress", progress.list],
   ["PUT",    "/api/v1/progress", progress.put],

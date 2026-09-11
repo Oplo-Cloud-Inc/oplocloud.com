@@ -127,6 +127,26 @@ a Logpush destination, plus a request id threaded through `errorResponse`.
 
 ---
 
+### 9. Credits earned at EHS
+
+The graduation dashboard counts transferred credit and shows this year's EHS
+course grades, but finishing an EHS course does not yet award credit toward a
+requirement area. Courses carry no credit value or area, and nothing marks one
+complete. Until that exists "Earned at EHS" reads 0 and the orange segments on
+the requirement bars stay empty — the dashboard says 0 rather than guessing.
+
+**Needs:** a credit value and a requirement area on each course, a completion
+event (the final grade entered), and `ehsByArea` filled from it in
+`services/graduation.js`, which is already written to receive it.
+
+### 10. A registrar screen for transfer evaluation
+
+Importing a transcript and accepting or declining a transferred course are
+API-only today: `scripts/import-transcript.mjs` and
+`PATCH /api/v1/transcript-courses/:courseId`. Both are enforced to
+administrators. A Console tab over the same endpoints is the next step, and it
+changes nothing in the API.
+
 ## Explicitly out of scope for now
 
 Recorded so they are decisions rather than oversights.
@@ -155,6 +175,9 @@ So the list above is read as what remains, not as the whole picture.
   transparent rehash on sign-in
 - Sessions: HttpOnly cookies, hashed with a server-side pepper before storage,
   rotating, listable and revocable
-- 42 assertions in `scripts/prove.sh`, and an architecture check in
+- A graduation dashboard computed on the server: EHS's two diploma tracks, the
+  transfer cap and residency minimums, a transfer range where partial semesters
+  are at risk, and achievements earned from the record itself
+- 57 assertions in `scripts/prove.sh`, and an architecture check in
   `scripts/check-boundaries.sh` that fails the build if a route reaches D1
   directly or the frontend reaches the network outside `api.js`

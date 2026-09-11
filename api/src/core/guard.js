@@ -39,6 +39,7 @@ export const ACTIONS = [
   "course.read", "course.write", "course.create", "course.enrol",
   "assignment.write",
   "set.read", "set.write", "set.create",
+  "transcript.read", "transcript.write", "program.write",
   "grade.read", "grade.write",
   "progress.read", "progress.write",
   "role.grant"
@@ -151,6 +152,22 @@ export async function can(ctx, action, resource = {}) {
       return false;
     }
 
+    /* ------------------------------------------ Transcripts and programs
+       A previous school's record is read by the student it belongs to, by
+       the school's administrators, and by the teachers of that student's
+       courses — who need to know where a student is coming from. It is
+       written by administrators alone. Evaluating transfer credit is a
+       registrar's decision, and there is no branch here that lets a student
+       or a teacher change a transferred mark or credit. */
+    case "transcript.read":
+      if (resource.accountId === actor.id) return true;
+      if (learnAdmin) return true;
+      return teachesStudent(ctx, actor, resource.accountId);
+
+    case "transcript.write":
+    case "program.write":
+      return learnAdmin;
+
     case "set.create":
       return learnAdmin || hasRole(actor, "learn", "teacher") ||
              hasRole(actor, "learn", "author");
@@ -207,6 +224,10 @@ const REASONS = {
   "course.enrol": "You can only enrol students into courses you teach.",
   "assignment.write": "You can only set work on courses you teach.",
   "set.read": "That study set has not been shared with you.",
+  "transcript.read": "You can only see your own record and those of students you teach.",
+  "transcript.write": "Transfer credit is evaluated by the school's administrators. Students and " +
+                      "teachers can read it but not change it.",
+  "program.write": "Only administrators can change a student's diploma track.",
   "set.create": "Only teachers, authors and administrators can write study sets.",
   "set.write": "You can only edit study sets you wrote, or ones attached to a course you teach.",
   "grade.read": "You can only see your own grades and those of students you teach.",
