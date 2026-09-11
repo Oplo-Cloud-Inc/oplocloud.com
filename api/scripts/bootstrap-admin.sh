@@ -3,6 +3,10 @@
 # can create anybody, so it is made directly against the database. This is the
 # one and only privileged out-of-band step, and it is the correct place for it.
 set -e
+# wrangler finds the database through wrangler.toml, so run from api/ wherever
+# the script was called from. Every command below hides its output, so from
+# the wrong folder this used to fail without a word.
+cd "$(dirname "$0")/.."
 DB="oplo-platform-db"
 # --remote as the fourth argument targets the deployed database. Local is the
 # default so that a mistyped command cannot create an administrator in
