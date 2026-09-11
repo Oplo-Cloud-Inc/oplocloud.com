@@ -5178,9 +5178,11 @@
     }, function (e) { failed(wait, e, function () { openGrades(true); }); });
   }
 
-  function drawGrades(host, g) {
+  /* `empty` is what to say when there is nothing yet. The student is spoken to
+     in the second person; the Console, looking at somebody else, passes its own. */
+  function drawGrades(host, g, empty) {
     if (!g.transfer && !g.current.length && !g.totals.earnedTowardDiploma) {
-      host.appendChild(el("div", "lx-empty",
+      host.appendChild(el("div", "lx-empty", empty ||
         "Nothing on your record yet. When your school adds your previous transcript, or your " +
         "teachers enter grades, your path to graduation appears here."));
       return;
@@ -6630,6 +6632,10 @@
         row.appendChild(avatarFor(p));
         row.appendChild(el("span", "t", "<b>" + esc(p.name) + "</b><span>" +
           esc(p.email || "") + (p.title ? " · " + esc(p.title) : "") + "</span>"));
+        var rec = el("button", "lx-btn quiet", "Record");
+        rec.type = "button";
+        rec.addEventListener("click", function () { openRecord(p); });
+        row.appendChild(rec);
         var edit = el("button", "lx-btn quiet", "Edit");
         edit.type = "button";
         edit.addEventListener("click", function () { openPersonEditor(p); });
@@ -6638,6 +6644,100 @@
       });
       v.appendChild(list);
     }, function (e) { failed(node, e, function () { openAdmin(true, "people"); }); });
+  }
+
+  /* ------------------------------------------------------------- A record
+     One student's diploma record as the registrar sees it: the dashboard the
+     student has on their Grades tab, from the same server call, and the one
+     thing an administrator does to it here — import a previous school's
+     transcript. The file is read in this browser and sent once, over the
+     administrator's own session, so no password is typed into a terminal and
+     nothing is kept on the page. */
+  function openRecord(p) {
+    var first = p.firstName || p.name;
+    enter("record:" + p.id, first, function () { openRecord(p); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", "Diploma record"));
+    v.appendChild(el("h1", "lx-h1", esc(p.name)));
+    v.appendChild(el("p", "lx-lede",
+      "What " + esc(first) + " sees on their Grades tab, computed by the server from their record. " +
+      "A transcript from a school that is already on the record replaces it rather than adding to it."));
+
+    var acts = el("div", "admin-acts");
+    var file = el("input");
+    file.type = "file";
+    file.accept = ".json,application/json";
+    file.hidden = true;
+    var pick = el("button", "lx-btn", "Import a transcript");
+    pick.type = "button";
+    pick.addEventListener("click", function () { file.click(); });
+    acts.appendChild(pick);
+    acts.appendChild(file);
+    v.appendChild(acts);
+    var staged = el("div");
+    v.appendChild(staged);
+
+    file.addEventListener("change", function () {
+      var f = file.files && file.files[0];
+      file.value = "";
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () { stageImport(p, reader.result, staged); };
+      reader.onerror = function () { toast("That file could not be read."); };
+      reader.readAsText(f);
+    });
+
+    var host = el("div", "gr");
+    v.appendChild(host);
+    var wait = el("div", "admin-loading", "Reading the record…");
+    host.appendChild(wait);
+    noFoot(); progress(null);
+    show("admin");
+    API.graduation.get(p.id).then(function (g) {
+      wait.remove();
+      drawGrades(host, g, "Nothing on this record yet. Import the transcript from " +
+        esc(first) + "'s previous school and the path to graduation appears here.");
+    }, function (e) { failed(wait, e, function () { openRecord(p); }); });
+  }
+
+  /* The file is checked for shape here only so that a wrong file is caught
+     before it is sent. What the courses mean — areas, credit, the transfer
+     cap — is decided by the server, which refuses anything it cannot read. */
+  function stageImport(p, text, where) {
+    where.innerHTML = "";
+    var data = null;
+    try { data = JSON.parse(text); } catch (e) { /* reported below */ }
+    if (!data || !data.source || !Array.isArray(data.terms)) {
+      where.appendChild(el("div", "lx-empty",
+        "That file is not a transcript import: it needs a source and a list of terms."));
+      return;
+    }
+    var courses = data.terms.reduce(function (n, t) { return n + (t.courses || []).length; }, 0);
+    var exams = (data.exams || []).length;
+    where.appendChild(el("p", "lx-lede",
+      "<b>" + esc(data.source.school || "Unnamed school") + "</b> · " + courses + " courses in " +
+      data.terms.length + " terms · " + exams + " exams" +
+      (data.source.printedOn ? " · printed " + esc(data.source.printedOn) : "") +
+      (data.program && data.program.track ? " · " + esc(data.program.track) + "-credit track" : "")));
+    var acts = el("div", "admin-acts");
+    var go = el("button", "lx-btn", "Import into " + esc(p.firstName || p.name) + "'s record");
+    go.type = "button";
+    var no = el("button", "lx-btn quiet", "Cancel");
+    no.type = "button";
+    no.addEventListener("click", function () { where.innerHTML = ""; });
+    go.addEventListener("click", function () {
+      go.disabled = true;
+      var program = data.program ? API.graduation.setProgram(p.id, data.program) : Promise.resolve();
+      attempt(program.then(function () { return API.graduation.importTranscript(p.id, data); }),
+        function (r) {
+          toast("Imported " + r.courses + " courses and " + r.exams + " exams from " + r.school + ".");
+          openRecord(p);
+        }).then(function () { go.disabled = false; });
+    });
+    acts.appendChild(go);
+    acts.appendChild(no);
+    where.appendChild(acts);
   }
 
   function openPersonEditor(p) {
