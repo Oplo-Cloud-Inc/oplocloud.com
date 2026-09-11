@@ -23,7 +23,7 @@ ALLOWED_ORIGINS = "http://localhost:8123,http://127.0.0.1:8123,http://localhost:
 [[d1_databases]]
 binding = "DB"
 database_name = "oplo-platform-db"
-database_id = "local-development-placeholder"
+database_id = "8b220a51-b326-46af-85c7-f18c595c684d"
 
 [env.production]
 name = "oplo-api"
@@ -35,8 +35,8 @@ ALLOWED_ORIGINS = "https://oplocloud.com,https://www.oplocloud.com"
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "oplo-platform-db"
-database_id = "REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE"
+database_id = "8b220a51-b326-46af-85c7-f18c595c684d"
 
-[env.production.routes]
+[[env.production.routes]]
 pattern = "api.oplocloud.com/*"
 zone_name = "oplocloud.com"
