@@ -291,102 +291,38 @@ window.OPLO = (function () {
     biz: {}
   };
 
-  /* ------------------------------------------------------------- Students
-     Two accounts, one student and one administrator. There is no demo login and
-     no shared password.
+  /* ------------------------------------------------------------- Accounts
+     There are none here any more, and that is the point.
 
-     A word on what this can and cannot be. oplocloud.com is served as static
-     files, so there is no server here to check a password against — whatever
-     the page needs in order to verify one has to be shipped to the browser
-     first, where anyone can read it. That is a property of the hosting, not
-     a shortcut taken here, and no amount of client-side work changes it.
+     This file used to carry two accounts, each with a PBKDF2 salt and
+     verifier, and a long comment explaining that a static host has no server
+     to check a password against so the verifier had to ship to the browser.
+     The comment was true and the design was still wrong: a verifier in a
+     downloadable file is one an attacker grinds offline at their own pace and
+     on their own hardware, and an app that decides for itself who is signed
+     in cannot enforce anything against somebody with a console open.
 
-     What it does instead is the strongest thing available without a server:
-     the password is never stored, only a PBKDF2-SHA256 verifier over a random
-     per-account salt at 210,000 iterations. Guessing against that costs real
-     time per attempt rather than being a lookup, so the verifier leaking is
-     not the same as the password leaking. Real authentication — a server that
-     holds the verifier and hands back a signed session — is a hosting change,
-     and Auth.verify in app.js is the one function it would replace.
+     Identity now belongs to the Oplo platform. Accounts live in the platform
+     database, passwords are hashed and checked on the server, and this app
+     receives a session it cannot forge and an account it did not choose.
+     api.js is the only file that speaks to any of it.
 
-     To set a password:
-       python3 -c "import hashlib,os,base64 as b;s=os.urandom(16);\
-       print(b.b64encode(s).decode(), b.b64encode(hashlib.pbkdf2_hmac(\
-       'sha256', b'PASSWORD', s, 210000, 32)).decode())"
+     Nothing in this file is secret, and nothing in it decides anything about
+     access. It is curriculum.
   */
-  var ITERATIONS = 210000;
-
-  /* Roles. A student sees their own work; an admin sees everyone's, and can
-     read alongside them. The role is the only thing that gates anything —
-     there is no second app for staff. */
-  var STUDENTS = [{
-    id: "saswat",
-    name: "Saswat Ji", initials: "SJ", first: "Saswat",
-    email: "chensaswat@gmail.com",
-    role: "admin", title: "Administrator",
-    hue: "#0071e3",
-    salt: "bURh/NR4SxfnRUl3PGkdmw==",
-    verifier: "bWaElG0IMCKsXUtuy9R/gMU4iCj6J4onir2vqg3Ywc0=",
-    assigned: ["media", "seeing", "biz"],
-    contactable: true
-  }, {
-    id: "sehej",
-    name: "Sehej Kaur", initials: "SK", first: "Sehej",
-    email: "sehejkaur776@gmail.com",
-    role: "student", title: "High School Silver Program",
-    hue: "#8f5cff",
-    contactable: true,
-    salt: "hei4SKXhMbLKO8AJsHrndA==",
-    verifier: "aSY04AWAeRgSJfXn8Lg1nZcIOicjXw4tLiwv+OwC9bE=",
-    assigned: ["media"],
-    grade: 11,
-    enrolment: {
-      program: "High School Silver Program (Full Year)",
-      rating: 4.8, ratings: 45,
-      status: "New/Unprocessed", progress: 0,
-      stats: [
-        ["Credits earned", "0.00 / 21.50"],
-        ["Weighted GPA", "N/A"],
-        ["Unweighted GPA", "0.00"],
-        ["Current grade level", "11"],
-        ["Documents received", "No"]
-      ],
-      detail: [
-        ["Enrollment", [
-          ["Enrollment ID", "EHS-en26-6695e"],
-          ["Program ID", "pgm-23-003b"],
-          ["Enrollment date", "August 28, 2026"],
-          ["Expiration date", "August 28, 2027"],
-          ["Last date of attendance", "September 8, 2026"],
-          ["Records release", "N/A"],
-          ["Date of birth", "August 20, 2010"]
-        ]],
-        ["Tuition", [
-          ["Program cost", "$1,950.00"],
-          ["Tuition balance due", "$1,755.00"],
-          ["Additional fees due", "$0.00"],
-          ["Total installments", "10"],
-          ["Installments remaining", "9"],
-          ["Next payment due", "September 29, 2026"]
-        ]]
-      ],
-      balance: "$1,755.00",
-      courses: ["Media Arts EHS"]
-    }
-  }];
+  var ITERATIONS = 210000;   // kept only so older references do not throw
 
   /* ------------------------------------------------------------ OploContacts
      The directory a reading room is invited from. It is deliberately the same
      shape a real contacts service would return — id, name, initials, a hue for
      the avatar, and what they are — so pointing this at an API later is a
      change of source and not a change of screen. */
-  function contacts() {
-    return STUDENTS.filter(function (p) { return p.contactable; }).map(function (p) {
-      return { id: p.id, name: p.name, initials: p.initials, first: p.first,
-               email: p.email, hue: p.hue, role: p.role, title: p.title };
-    });
-  }
+  /* The directory a reading room is invited from. It used to be built from
+     the account list in this file; the roster is the platform's now, so this
+     returns nothing and app.js asks the API instead. Kept as a function so
+     the shape of the call site does not change. */
+  function contacts() { return []; }
 
   return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE, ITERATIONS: ITERATIONS,
-           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, STUDENTS: STUDENTS, CONTACTS: contacts };
+           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, CONTACTS: contacts };
 })();

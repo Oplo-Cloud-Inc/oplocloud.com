@@ -18,6 +18,73 @@
   var D = window.OPLO;
   var ST = window.OPLO_STORE;
   var G  = window.OPLO_GAME;
+  /* The school: courses, study sets and people, as they are *now* rather than
+     as they shipped. Everything below reads through it, so a course written
+     this morning and a course written last year are indistinguishable to
+     every screen — which is the only way an authoring tool stays honest. */
+  var SC = window.OPLO_SCHOOL;
+  var API = window.OPLO_API;
+
+  /* Study sets come from two places and the screens below must not have to
+     care which. `SC.sets()` is the curriculum published with the site;
+     `dbSets` is what this school has written, fetched once at sign-in and
+     refreshed after an edit.
+
+     It is a cache of a server fetch, not a source of truth: it is filled from
+     the API, it is replaced by the API, and a set that is not in it is a set
+     this account is not allowed to study. Keeping it synchronous is what lets
+     the rest of the app — openSet, Learn, all three games — stay unchanged.
+
+     A school's own set wins over a shipped one with the same code, because a
+     school that has written its own version of a set has said what it wants. */
+  var dbSets = {};
+
+  function SETS() {
+    var out = SC.sets();
+    Object.keys(dbSets).forEach(function (k) { out[k] = dbSets[k]; });
+    return out;
+  }
+  function SET(id) { return dbSets[id] || SC.set(id); }
+
+  /* The API's shape turned into the pair-list the study screens render. The
+     richer fields ride along, so a set authored with worked cases can be
+     asked at apply and one without is honestly capped. */
+  function adoptSet(row) {
+    if (!row || !row.terms) return null;
+    return {
+      t: row.title,
+      cards: row.terms.map(function (t) { return [t.term, t.definition]; }),
+      rich: row.terms,
+      dbId: row.id,
+      code: row.code,
+      courseId: row.courseId,
+      status: row.status,
+      visibility: row.visibility,
+      createdBy: row.createdBy,
+      fromDb: true
+    };
+  }
+
+  /* Fetches the list, then the terms for each. Two round trips rather than
+     one fat endpoint, because the list is what the home screen needs and the
+     terms are what a study screen needs, and most sign-ins never open a set. */
+  function loadStudySets() {
+    if (!API || !S.me) return Promise.resolve(false);
+    return API.studySets.mine().then(function (rows) {
+      if (!rows.length) return false;
+      return Promise.all(rows.map(function (r) {
+        return API.studySets.get(r.id).then(adoptSet, function () { return null; });
+      })).then(function (full) {
+        var changed = false;
+        full.forEach(function (set) {
+          if (!set) return;
+          dbSets[set.code] = set;
+          changed = true;
+        });
+        return changed;
+      });
+    }, function () { return false; });
+  }
   var $ = function (s) { return document.querySelector(s); };
   function el(tag, cls, html) {
     var n = document.createElement(tag);
@@ -124,9 +191,19 @@
 
     /* One answer. Everything the award depends on is passed in rather than
        looked up, so the exchange rate can be read in one place. */
+    /* The number shown is the client's estimate; the number kept is the
+       server's. game.js holds the same schedule as services/progress.js so
+       the two normally agree, and when they do not the server's answer
+       arrives a moment later and replaces this one. The alternative — waiting
+       for a round trip before telling a student they got it right — would
+       make the app feel broken to buy an accuracy nobody would notice. */
     function answer(o) {
       if (!rec) return 0;
       var a = G.forAnswer(o);
+      Sync.report({
+        kind: "answer", level: o.level, right: !!o.right, hints: o.hints || 0,
+        mastery: o.mastery || 0, gapDays: o.gapDays || 0, confidence: o.confidence
+      });
       if (!a.xp) return 0;
       rec.earn(a.xp);
       show(a.xp, a.why);
@@ -136,6 +213,7 @@
 
     function run(kind, o) {
       if (!rec) return 0;
+      Sync.report({ kind: "run", activity: kind, stats: o || {} });
       var xp = G.forRun(kind, o);
       if (!xp) return 0;
       rec.earn(xp);
@@ -174,6 +252,9 @@
       if (g.streak >= 7) win("week");
       if (g.streak >= 30) win("month");
 
+      /* Local badges are shown immediately for the ones the server cannot
+         see — a Match time, a clean session. The streak and retention badges
+         are the server's, granted from the ledger, and arrive through Sync. */
       got.forEach(function (k, i) {
         setTimeout(function () { announce(G.badge(k)); }, 500 + i * 2600);
       });
@@ -195,6 +276,146 @@
     return { attach: attach, on: on, answer: answer, run: run, check: check,
              paint: paint, announce: announce,
              rec: function () { return rec; } };
+  })();
+
+  /* ----------------------------------------------------------------- Sync
+     The local record is a cache. The database is the truth.
+
+     That sentence decides everything below it. Progress and experience are
+     written locally first so the app stays instant and works on a train, and
+     then pushed; on sign-in the server's copy is pulled and wins. What is
+     never done is the thing that would be easy and wrong — treating whatever
+     this browser happens to hold as authoritative because it is nearer.
+
+     Conflict resolution is stated rather than implied: progress is
+     last-write-wins per study set, which is safe because the scope is small
+     enough that two devices rarely touch the same one, and because losing a
+     write here costs a few minutes of drill rather than a grade. Experience
+     is not merged at all — it is an append-only ledger on the server, and the
+     local number is only ever a copy of what the server last said. */
+  var Sync = (function () {
+    var pushing = {}, queue = [], flushing = false;
+
+    /* Pull the server's view into the cache. Returns whether anything moved,
+       so a screen already on display knows to redraw. */
+    function pull() {
+      if (!R || !API) return Promise.resolve(false);
+      return Promise.all([
+        API.gamification.standing().catch(function () { return null; }),
+        API.progress.all().catch(function () { return null; })
+      ]).then(function (out) {
+        var standing = out[0], progress = out[1], changed = false;
+
+        if (standing) {
+          var g = R.d.game;
+          // The server's totals replace the local ones outright. A local XP
+          // count that disagrees with the ledger is simply wrong.
+          if (g.xp !== standing.xp || g.streak !== standing.streak) changed = true;
+          g.xp = standing.xp;
+          g.today = standing.today;
+          g.streak = standing.streak;
+          g.best = Math.max(g.best || 0, standing.longestStreak || 0);
+          (standing.days || []).forEach(function (d) { g.days[d.day] = d.xp; });
+          (standing.badges || []).forEach(function (b) { g.badges[b.key] = b.earnedAt; });
+          R.d.game.synced = Date.now();
+        }
+
+        if (progress) {
+          Object.keys(progress).forEach(function (scope) {
+            if (scope.indexOf("set:") !== 0) return;
+            var setId = scope.slice(4);
+            var remote = progress[scope];
+            var key = "oplo.learn." + S.me.id + "." + setId;
+            var localAt = 0;
+            try {
+              var raw = localStorage.getItem(key + ".at");
+              localAt = raw ? Number(raw) : 0;
+            } catch (e) { /* private mode */ }
+            // The newer of the two wins, and the timestamps are the server's
+            // on one side and this browser's on the other — so a device with
+            // a wrong clock loses rather than corrupting the record.
+            if (remote.updatedAt > localAt) {
+              try {
+                localStorage.setItem(key, JSON.stringify(remote.state));
+                localStorage.setItem(key + ".at", String(remote.updatedAt));
+                changed = true;
+              } catch (e) { /* full */ }
+            }
+          });
+        }
+
+        if (changed) R.save();
+        return changed;
+      });
+    }
+
+    /* Push one study set's concept states. Debounced per set, because a
+       session answers a question every few seconds and each one would
+       otherwise be a request. */
+    function pushSet(setId) {
+      if (!API || !S.me) return;
+      clearTimeout(pushing[setId]);
+      pushing[setId] = setTimeout(function () {
+        var key = "oplo.learn." + S.me.id + "." + setId;
+        var state;
+        try { state = JSON.parse(localStorage.getItem(key) || "{}"); }
+        catch (e) { return; }
+        API.progress.put("set:" + setId, state).then(function () {
+          try { localStorage.setItem(key + ".at", String(Date.now())); } catch (e) { /* full */ }
+        }).catch(function () { /* offline; the next push carries it */ });
+      }, 4000);
+    }
+
+    /* Experience events. Batched and retried, because a dropped award is a
+       student's work going unrecorded, which is the one thing here worth
+       being stubborn about. */
+    function report(event) {
+      if (!API || !S.me) return;
+      queue.push(event);
+      if (queue.length > 40) queue.splice(0, queue.length - 40);
+      schedule();
+    }
+
+    var timer = null;
+    function schedule() {
+      clearTimeout(timer);
+      timer = setTimeout(flush, 2500);
+    }
+
+    function flush() {
+      if (flushing || !queue.length || !API || !S.me) return;
+      flushing = true;
+      var batch = queue.splice(0, 50);
+      API.gamification.report(batch).then(function (r) {
+        flushing = false;
+        if (R && r) {
+          R.d.game.xp = r.xp;
+          R.d.game.streak = r.streak;
+          R.save();
+          Game.paint();
+          (r.badges || []).forEach(function (k, i) {
+            setTimeout(function () { Game.announce(G.badge(k)); }, 400 + i * 2600);
+          });
+        }
+        if (queue.length) schedule();
+      }).catch(function () {
+        // Put them back at the front and try again later rather than
+        // discarding somebody's work because the network blinked.
+        flushing = false;
+        queue = batch.concat(queue);
+        setTimeout(schedule, 15000);
+      });
+    }
+
+    function flushNow() {
+      clearTimeout(timer);
+      if (!queue.length || !API || !S.me) return;
+      // A request that has to outlive the document. api.js owns the mechanics
+      // of that, the same as it owns every other call.
+      API.gamification.beacon(queue.splice(0, 50));
+    }
+
+    return { pull: pull, pushSet: pushSet, report: report, flush: flush, flushNow: flushNow };
   })();
 
   /* ---------------------------------------------------------------- Icons */
@@ -372,11 +593,41 @@
 
   /* ------------------------------------------------------------ Catalogue */
   function allCourses() {
-    return D.SUBJECTS.reduce(function (a, s) { return a.concat(s.courses); }, []);
+    return SC.courses();
   }
+  /* What a student is actually enrolled in, according to the database. The
+     shipped catalogue is matched to it by code, so a database course called
+     `media` shows the written Media Arts curriculum, and one with no shipped
+     counterpart appears as itself.
+
+     Before the API answers this is empty rather than guessed. A home screen
+     that shows courses a student is not enrolled in, and then removes them a
+     second later, is worse than one that waits. */
   function enrolled() {
     var mine = (S.me && S.me.assigned) || [];
-    return allCourses().filter(function (c) { return mine.indexOf(c.id) > -1; });
+    var shipped = allCourses();
+    var out = [];
+    mine.forEach(function (row) {
+      var match = shipped.filter(function (c) { return c.id === row.code; })[0];
+      if (match) { match.dbId = row.id; out.push(match); }
+      else out.push(fromDbCourse(row));
+    });
+    return out;
+  }
+
+  /* A database course rendered in the shape the catalogue screens expect. */
+  function fromDbCourse(row) {
+    var body = row.body || {};
+    return {
+      id: row.code, dbId: row.id, t: row.title,
+      subject: row.subject || "Other", level: row.level || "Introductory",
+      hue: "#0071e3", d: row.summary || "",
+      lede: row.summary || "",
+      glyph: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+      parts: [{ name: null, units: body.units || [] }],
+      grading: body.grading || null,
+      fromDb: true
+    };
   }
   function unitsOf(c) {
     if (c.units) {
@@ -638,7 +889,7 @@
 
     /* ---- Progress by subject -------------------------------------- */
     var subs = [];
-    D.SUBJECTS.forEach(function (sub) {
+    SC.subjects().forEach(function (sub) {
       var pct = subjectPct(sub.n);
       if (pct != null) subs.push([sub.n, pct]);
     });
@@ -659,6 +910,31 @@
     var g = el("div", "lx-grid");
     enrolled().forEach(function (x) { g.appendChild(courseCard(x)); });
     v.appendChild(g);
+
+    /* ---- Study sets from your teachers ------------------------------ */
+    var given = Object.keys(dbSets).map(function (k) { return [k, dbSets[k]]; });
+    if (given.length) {
+      v.appendChild(el("h2", "lx-h2", "Set by your teachers"));
+      v.appendChild(el("p", "lx-lede",
+        given.length === 1
+          ? "One study set, written for a course you are in."
+          : given.length + " study sets, written for courses you are in."));
+      var sg = el("div", "lx-grid");
+      given.forEach(function (pair) {
+        var id = pair[0], set = pair[1];
+        var card = el("button", "lx-setcard");
+        card.type = "button";
+        var deep = (set.rich || []).filter(function (t) {
+          return t.levels && t.levels.indexOf("apply") > -1;
+        }).length;
+        card.innerHTML = '<span class="ic">' + svg(I.cards, true) + "</span>" +
+          "<b>" + esc(set.t) + "</b><span>" + set.cards.length + " terms" +
+          (deep ? " · " + deep + " with a worked case" : "") + "</span>";
+        card.addEventListener("click", function () { openSet(id); });
+        sg.appendChild(card);
+      });
+      v.appendChild(sg);
+    }
 
     /* ---- Mistakes -------------------------------------------------- */
     v.appendChild(el("h2", "lx-h2", "What you keep getting wrong"));
@@ -790,7 +1066,7 @@
                  go: function () { openUnit(c, u.n); } });
     }
     if (u.set) {
-      out.push({ t: "Learn the terms", d: D.SETS[u.set].cards.length + " terms, drilled three ways",
+      out.push({ t: "Learn the terms", d: SET(u.set).cards.length + " terms, drilled three ways",
                  mins: 10, icon: I.cards, done: d.r >= 85,
                  go: function () { openSet(u.set); } });
       out.push({ t: "Prove it", d: "A graded test, no hints", mins: 5, icon: I.test,
@@ -857,7 +1133,7 @@
     if (cards.length < 2) { toast("Not enough missed terms to drill yet."); return; }
     S.setId = "__mistakes";
     S.set = { t: "Your mistakes", cards: cards };
-    D.SETS.__mistakes = S.set;
+    SETS().__mistakes = S.set;
     startLearn();
   }
 
@@ -868,7 +1144,7 @@
     v.appendChild(el("h1", "lx-h1", "Explore"));
     v.appendChild(el("p", "lx-lede",
       "Every course Oplo has written, by subject. All curriculum is our own."));
-    D.SUBJECTS.forEach(function (s) {
+    SC.subjects().forEach(function (s) {
       var sh = el("section", "lx-shelf");
       var head = el("div", "lx-shelf-head");
       head.innerHTML = "<h2>" + esc(s.n) + "</h2><p>" + esc(s.d) + "</p>";
@@ -887,7 +1163,7 @@
     all.type = "button";
     all.addEventListener("click", explore);
     n.appendChild(all);
-    D.SUBJECTS.forEach(function (s) {
+    SC.subjects().forEach(function (s) {
       var b = el("button", null, esc(s.n));
       b.type = "button";
       b.addEventListener("click", function () { openSubject(s); });
@@ -987,7 +1263,7 @@
       b.type = "button";
       var bits = [];
       if (u.play) bits.push("Practice");
-      if (u.set) bits.push(D.SETS[u.set].cards.length + " terms");
+      if (u.set) bits.push(SET(u.set).cards.length + " terms");
       if (!bits.length) bits.push("Syllabus only");
       b.innerHTML = '<span class="n">' + u.n + "</span>" +
         '<span class="txt"><b>' + esc(u.t) + "</b><span>" + bits.join(" · ") + "</span></span>" +
@@ -1076,7 +1352,7 @@
 
     if (u.set) {
       any = true;
-      var set = D.SETS[u.set];
+      var set = SET(u.set);
       var b2 = el("div", "lx-block");
       b2.appendChild(el("h2", null, "Study set"));
       var sb = el("button", "lx-item");
@@ -1104,8 +1380,8 @@
 
   /* ================================================================= Sets */
   function openSet(id, silent) {
-    if (!silent) enter("set:" + id, trim(D.SETS[id].t), function () { openSet(id, true); });
-    S.setId = id; S.set = D.SETS[id];
+    if (!silent) enter("set:" + id, trim(SET(id).t), function () { openSet(id, true); });
+    S.setId = id; S.set = SET(id);
     var st = setState(id), cards = S.set.cards;
     var v = $("#v-set");
     v.innerHTML = "";
@@ -1818,6 +2094,7 @@
       /* Parked again here, not only when a question is drawn: leaving in the
          two seconds after answering should not lose the answer's counters. */
       park();
+      Sync.pushSet(setId);
       // Keep the old set-level mastery in step, so the rest of the app still
       // reads the same story off the same session.
       var st = setState(setId);
@@ -2333,7 +2610,7 @@
      recognition however much fun the wrapper is; producing it letter by
      letter from a definition is recall, and is scored as such. */
   function gradeFromGame(setId, term, ok, level, hints) {
-    var concepts = CN.forSet(setId, D.SETS[setId].cards);
+    var concepts = CN.forSet(setId, SET(setId).cards);
     var c = concepts.filter(function (x) { return x.k === term; })[0];
     if (!c) return;
     var store = new L.Store(S.me ? S.me.id : "anon", setId);
@@ -2346,13 +2623,14 @@
       st.level[i] = L.mastery(store.get(x.k), Date.now()) >= 0.72 ? 3 : 0;
     });
     keep();
+    Sync.pushSet(setId);
   }
 
   /* The terms this student is worst at, weakest first. Every game builds its
      rounds from this rather than from the deck order, so ten minutes of a
      game is ten minutes on the ten things that need it. */
   function weakestFirst(setId) {
-    var cards = D.SETS[setId].cards;
+    var cards = SET(setId).cards;
     var concepts = CN.forSet(setId, cards);
     var store = new L.Store(S.me ? S.me.id : "anon", setId);
     var now = Date.now();
@@ -3046,13 +3324,26 @@
         panelEl.appendChild(out);
       }
 
-      /* ------------------------------------------------------ OploContacts */
+      /* ------------------------------------------------------ OploContacts
+         The directory is the platform's roster, fetched once and cached for
+         the life of the panel. It used to be a list in data.js; who a person
+         can invite is an account question, and account questions belong to
+         the API. */
       var dir = el("div", "rm-dir");
       dir.appendChild(el("h4", null, "OploContacts"));
-      var contacts = (D.CONTACTS ? D.CONTACTS() : []).filter(function (c) {
+      var contacts = (S.directory || []).filter(function (c) {
         return !S.me || c.id !== S.me.id;
       });
-      if (!contacts.length) dir.appendChild(el("p", "rm-none", "No one else in your directory yet."));
+      if (!contacts.length) {
+        dir.appendChild(el("p", "rm-none",
+          S.directory ? "No one else in your directory yet." : "Loading your directory\u2026"));
+        if (!S.directory && API && S.me) {
+          API.accounts.list(S.me.orgId).then(function (people) {
+            S.directory = people;
+            fillPanel();
+          }, function () { S.directory = []; });
+        }
+      }
       contacts.forEach(function (c) {
         var inRoom = live() && room.roster().some(function (p) { return p.id === c.id; });
         var r = el("div", "rm-person");
@@ -4592,317 +4883,1932 @@
   }
 
   /* --------------------------------------------------------------- Account */
+  /* --------------------------------------------------------------- Account
+     A person's own record: who they are, what they are taking, and what they
+     have been graded. Every number on this screen comes from the server —
+     which is the difference between a grade a student can trust and a number
+     their browser happened to remember.
+
+     It handles an account with no enrolment record, which the previous
+     version did not: opening it as an administrator threw, because the
+     enrolment block was read unconditionally from a field only students had. */
   function openAccount(silent) {
     if (!silent) enter("account", "Account", function () { openAccount(true); });
-    var A = S.me.enrolment;
-    A.student = S.me.name; A.initials = S.me.initials;
     var v = $("#v-account");
     v.innerHTML = "";
 
     var head = el("div", "lx-acct-head");
-    head.innerHTML = '<span class="av">' + esc(A.initials) + "</span><div>" +
-      '<p class="lx-eyebrow" style="margin-bottom:4px">Student account</p>' +
-      '<h1 class="lx-h1">' + esc(A.student) + "</h1></div>";
+    var av = el("span", "av");
+    av.textContent = S.me.initials;
+    av.style.background = S.me.hue || "";
+    head.appendChild(av);
+    head.appendChild(el("div", null,
+      '<p class="lx-eyebrow" style="margin-bottom:4px">' +
+      esc(S.me.title || (S.me.role === "admin" ? "Administrator"
+                       : S.me.role === "teacher" ? "Teacher" : "Student account")) +
+      '</p><h1 class="lx-h1">' + esc(S.me.name) + "</h1>"));
     v.appendChild(head);
 
-    var prog = el("div", "lx-panel");
-    prog.style.marginTop = "26px";
-    var stars = "";
-    for (var i = 0; i < 5; i++) stars += svg(I.star, i >= Math.round(A.rating));
-    prog.innerHTML = "<h3 style=\"font-size:17px\">" + esc(A.program) + "</h3>" +
-      '<div class="lx-stars">' + stars + "<span>" + A.rating + " · " + A.ratings + " ratings</span>" +
-      '<span class="lx-tag" style="margin-left:6px">' + esc(A.status) + "</span></div>" +
-      '<div class="lx-mastery" style="margin-top:16px"><i></i><i></i><i></i><i></i><i></i>' +
-      "<i></i><i></i><i></i><i></i><i></i></div>" +
-      '<p style="margin-top:10px">Program progress is ' + A.progress + "%. It is calculated from completed " +
-      "course credits — courses passed, with or without a grade — against the credits required to graduate.</p>";
-    v.appendChild(prog);
+    v.appendChild(el("p", "lx-lede", esc(S.me.email) +
+      (S.me.orgs && S.me.orgs.length ? " · " + esc(S.me.orgs[0].name) : "")));
 
-    var row = el("div", "lx-stat-row");
-    A.stats.forEach(function (s) {
-      row.innerHTML += '<div class="lx-stat"><b>' + esc(s[1]) + "</b><span>" + esc(s[0]) + "</span></div>";
+    /* ---- Standing, from the ledger ------------------------------------ */
+    var standing = el("div", "lx-panel");
+    standing.style.marginTop = "26px";
+    standing.innerHTML = "<h3 style=\"font-size:17px\">Your standing</h3>" +
+      '<p class="ac-loading">Reading it from the server…</p>';
+    v.appendChild(standing);
+
+    API.gamification.standing().then(function (st) {
+      standing.innerHTML = "<h3 style=\"font-size:17px\">Your standing</h3>";
+      var row = el("div", "lx-stat-row");
+      [[st.rank.name, "Rank"], [st.xp.toLocaleString(), "XP"],
+       [st.streak, "Day streak"], [(st.badges || []).length, "Badges"]]
+        .forEach(function (x) {
+          row.innerHTML += '<div class="lx-stat"><b>' + esc(String(x[0])) +
+            "</b><span>" + x[1] + "</span></div>";
+        });
+      standing.appendChild(row);
+      standing.appendChild(el("p", null,
+        st.rank.next
+          ? "<b>" + st.rank.toGo + " XP</b> to " + esc(st.rank.next) + "."
+          : "You are at the top of the ladder."));
+    }, function (e) {
+      standing.innerHTML = "<h3 style=\"font-size:17px\">Your standing</h3>" +
+        '<p class="ac-loading">' + esc(e && e.code === "offline"
+          ? "Cannot reach the server, so this cannot be shown."
+          : "Could not be read.") + "</p>";
     });
-    v.appendChild(row);
 
-    A.detail.forEach(function (group) {
-      v.appendChild(el("h2", "lx-h2", esc(group[0])));
-      var f = el("div", "lx-fields");
-      group[1].forEach(function (r) {
-        f.innerHTML += "<div><b>" + esc(r[0]) + "</b><span>" + esc(r[1]) + "</span></div>";
+    /* ---- Grades ------------------------------------------------------- */
+    v.appendChild(el("h2", "lx-h2", "Your grades"));
+    var grades = el("div", "ac-grades");
+    grades.appendChild(el("p", "ac-loading", "Reading them from the server…"));
+    v.appendChild(grades);
+
+    API.grades.list().then(function (data) {
+      grades.innerHTML = "";
+      var summaries = data.summaries || [];
+      if (!summaries.length) {
+        grades.appendChild(el("div", "lx-empty",
+          "Nothing graded yet. When a teacher enters a mark it appears here — on this " +
+          "device and on every other one you sign in on."));
+        return;
+      }
+      summaries.forEach(function (sm) {
+        var row = el("div", "ac-grade");
+        row.innerHTML = '<span class="t"><b>' + esc(sm.courseTitle || "Course") +
+          "</b><span>" + sm.itemCount + (sm.itemCount === 1 ? " item" : " items") +
+          " marked · over " + sm.countedWeight + "% of the grade</span></span>" +
+          '<span class="mk"><b>' + esc(sm.letter) + "</b><span>" + sm.percent + "%</span></span>";
+        row.style.cursor = "pointer";
+        row.addEventListener("click", function () { openMyGrades(sm, data.grades); });
+        grades.appendChild(row);
       });
-      v.appendChild(f);
+      grades.appendChild(el("p", "lx-lede",
+        "Grades are entered by your teachers and stored on the Oplo platform. They are " +
+        "the same on every device you sign in on, and you cannot change them — which is " +
+        "what makes them worth something."));
+    }, function (e) {
+      grades.innerHTML = "";
+      grades.appendChild(el("div", "lx-empty", esc(
+        e && e.code === "offline"
+          ? "Cannot reach the server, so your grades cannot be shown. They are not stored " +
+            "in this browser — that is deliberate."
+          : "Your grades could not be read.")));
     });
 
-    var bal = el("div", "lx-bal");
-    bal.innerHTML = '<div><p class="k">Tuition balance due</p><p class="amt">' +
-      esc(A.balance) + "</p></div>";
-    var pay = el("button", "lx-btn lg", "Make a payment");
-    pay.type = "button";
-    pay.style.marginLeft = "auto";
-    pay.addEventListener("click", function () {
-      toast("Payments are not handled here yet. Nothing was charged.");
+    /* ---- Courses ------------------------------------------------------ */
+    v.appendChild(el("h2", "lx-h2", "Enrolled"));
+    var mine = enrolled();
+    if (!mine.length) {
+      v.appendChild(el("div", "lx-empty",
+        "No courses yet. A teacher or administrator enrols you, and they appear here."));
+    } else {
+      var list = el("div", "ad-list");
+      mine.forEach(function (c) {
+        var row = el("div", "ad-row");
+        row.innerHTML = '<span class="t"><b>' + esc(c.t) + "</b><span>" +
+          esc(c.subject || "") + "</span></span>";
+        var go = el("button", "lx-btn quiet", "Open");
+        go.type = "button";
+        go.addEventListener("click", function () { openCourse(c); });
+        row.appendChild(go);
+        list.appendChild(row);
+      });
+      v.appendChild(list);
+    }
+
+    /* ---- Password ----------------------------------------------------- */
+    v.appendChild(el("h2", "lx-h2", "Password"));
+    v.appendChild(el("p", "lx-lede",
+      "Changed here and nowhere else. Your password is sent once over HTTPS, hashed on " +
+      "the server, and never stored in this browser. Changing it signs out every other " +
+      "session."));
+    var pwForm = el("div", "ad-form");
+    var cur = field("Current password", "");
+    cur.input.type = "password";
+    cur.input.autocomplete = "current-password";
+    var next = field("New password", "", "At least 10 characters");
+    next.input.type = "password";
+    next.input.autocomplete = "new-password";
+    pwForm.appendChild(cur);
+    pwForm.appendChild(next);
+    v.appendChild(pwForm);
+
+    var pwActs = el("div", "ad-acts");
+    var change = el("button", "lx-btn", "Change my password");
+    change.type = "button";
+    change.addEventListener("click", function () {
+      if (!cur.input.value || !next.input.value) {
+        toast("Both fields, please."); return;
+      }
+      change.disabled = true;
+      change.textContent = "Changing…";
+      API.changePassword(cur.input.value, next.input.value).then(function () {
+        change.disabled = false;
+        change.textContent = "Change my password";
+        cur.input.value = ""; next.input.value = "";
+        toast("Changed. Every other session has been signed out.");
+      }, function (e) {
+        change.disabled = false;
+        change.textContent = "Change my password";
+        toast(e && e.message ? e.message : "That did not work.");
+      });
     });
-    bal.appendChild(pay);
-    v.appendChild(bal);
+    pwActs.appendChild(change);
+    v.appendChild(pwActs);
 
-    v.appendChild(el("h2", "lx-h2", "Courses"));
-    var cg = el("div", "lx-units");
-    A.courses.forEach(function (name) {
-      var b = el("button", "lx-unit");
-      b.type = "button";
-      b.innerHTML = '<span class="n">1</span><span class="txt"><b>' + esc(name) +
-        "</b><span>In progress · no grade recorded</span></span>" +
-        '<span class="go">' + svg(I.chev, true) + "</span>";
-      b.addEventListener("click", function () { openCourse(D.MEDIA); });
-      cg.appendChild(b);
-    });
-    v.appendChild(cg);
-
-    v.appendChild(el("p", "lx-note",
-      "<b>Read only.</b> Enrolment and tuition figures are shown as they stand on the record. Nothing " +
-      "on this page can be edited here, and no payment can be taken yet."));
-
-    var out = el("button", "lx-btn lg quiet", "Sign out");
-    out.type = "button";
-    out.style.marginTop = "26px";
-    out.addEventListener("click", signOut);
+    /* ---- Sign out ------------------------------------------------------ */
+    var out = el("div", "ad-acts");
+    var so = el("button", "lx-btn quiet", "Sign out");
+    so.type = "button";
+    so.addEventListener("click", signOut);
+    out.appendChild(so);
     v.appendChild(out);
 
     noFoot(); progress(null);
     show("account");
   }
 
-  /* ================================================================== Admin
-     What an administrator needs is not a second application. It is the same
-     one, with the ability to see whose work it is.
+  /* The individual marks behind one course grade. "Which piece of work brought
+     it down" is the question every student actually has, and a single
+     percentage cannot answer it. */
+  function openMyGrades(summary, all) {
+    enter("mygrades:" + summary.courseId, trim(summary.courseTitle || "Grades"),
+          function () { openMyGrades(summary, all); });
+    var v = $("#v-account");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", esc(summary.courseTitle || "Course")));
+    v.appendChild(el("h1", "lx-h1", summary.letter + " · " + summary.percent + "%"));
+    v.appendChild(el("p", "lx-lede",
+      "Computed over the " + summary.countedWeight + "% of the grade that has been " +
+      "marked so far. Categories with nothing in them are left out rather than counted " +
+      "as zero."));
 
-     Everything here is read from this machine — a student's marks live in
-     their own localStorage under their own id, so this page can show them
-     when the student has used this browser and says so plainly when they
-     have not. It does not invent a roster it cannot see. */
-  function openAdmin(silent) {
-    if (!S.me || S.me.role !== "admin") return;
-    if (!silent) enter("admin", "Students", function () { openAdmin(true); });
+    var parts = el("div", "ad-mark-parts");
+    summary.parts.forEach(function (x) {
+      var row = el("div", "ad-mark-part");
+      row.innerHTML = "<span>" + esc(x.category) + "</span>" +
+        '<div class="t"><i style="width:' + x.percent + '%"></i></div>' +
+        "<em>" + x.percent + '%</em><span class="w">' + x.weight + "% of the grade · " +
+        x.items + (x.items === 1 ? " item" : " items") + "</span>";
+      parts.appendChild(row);
+    });
+    v.appendChild(parts);
+
+    v.appendChild(el("h2", "lx-h2", "Every mark"));
+    var list = el("div", "ad-list");
+    all.filter(function (g) { return g.courseId === summary.courseId; })
+      .forEach(function (g) {
+        var row = el("div", "ad-row");
+        var pct = g.score != null && g.outOf ? Math.round(g.score / g.outOf * 100) : null;
+        row.innerHTML = '<span class="t"><b>' + esc(g.title) + "</b><span>" +
+          esc(g.category || "") + (g.feedback ? " · " + esc(g.feedback) : "") + "</span></span>" +
+          '<span class="mk">' + (g.score == null ? "—" : g.score + " / " + g.outOf) +
+          (pct != null ? " · " + pct + "%" : "") + "</span>";
+        list.appendChild(row);
+      });
+    v.appendChild(list);
+    noFoot(); progress(null);
+    show("account");
+  }
+
+  /* ================================================================= Grades
+     A student's standing, drawn so that it makes them want to keep going.
+
+     Every number on this screen is computed on the server from the record in
+     the database — the courses that transferred, EHS's diploma rules, the
+     grades teachers have entered — so it can never disagree with what an
+     administrator or a teacher sees. This file only draws it.
+
+     Two commitments shape the drawing. It is encouraging: somebody
+     two-thirds of the way to a diploma should feel two-thirds of the way
+     there, and see the next milestone within reach, before they see what is
+     left. And it is honest: an estimate is labelled an estimate, a credit
+     that may not transfer is shown as a range rather than counted, and a
+     number that comes from a judgement says so. Motivation built on a number
+     that later drops is not motivation.
+
+     Charts follow one set of rules: one big number per view, thin marks,
+     hairline grids, values on the marks rather than a legend hunt, identity
+     never carried by colour alone, and a table twin for the one line chart. */
+  var GR_NS = "http://www.w3.org/2000/svg";
+  var GR_CALM = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var GR_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" ' +
+    'height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
+  function grNode(tag, attrs) {
+    var n = document.createElementNS(GR_NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  /* Credits to three places at most, trailing zeros dropped: 15.125, 7.25, 1. */
+  function grCr(x) { return String(Math.round(Number(x || 0) * 1000) / 1000); }
+  function grCount(node, to, decimals, suffix) {
+    suffix = suffix || "";
+    if (GR_CALM) { node.textContent = to.toFixed(decimals) + suffix; return; }
+    var t0 = null;
+    function step(ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / 900);
+      p = 1 - Math.pow(1 - p, 3);
+      node.textContent = (to * p).toFixed(decimals) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  function grShortTerm(s) {
+    var m = String(s).match(/(\d{4})\D+(\d+)/);
+    return m ? "’" + m[1].slice(2) + " T" + m[2] : String(s).slice(0, 8);
+  }
+  function grMonth(s) {
+    var m = String(s || "").match(/^(\d{4})-(\d{2})/);
+    if (!m) return s || "";
+    return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m[2] - 1] +
+           " " + m[1];
+  }
+  function grArea(key, g) {
+    var hit = g.areas.filter(function (a) { return a.key === key; })[0];
+    return hit ? hit.name : ({ world_language: "World Language" }[key] || key);
+  }
+  function grHead(title, aside) {
+    var h = el("header", "gr-sec-head");
+    h.appendChild(el("h2", null, esc(title)));
+    if (aside) { var s = el("span"); s.textContent = aside; h.appendChild(s); }
+    return h;
+  }
+
+  function openGrades(silent) {
+    root("grades", "Grades", function () { openGrades(true); });
+    var v = $("#v-grades");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", "Grades" + (S.me ? " · " + esc(S.me.name) : "")));
+    v.appendChild(el("h1", "lx-h1", "Your path to graduation"));
+    var host = el("div", "gr");
+    v.appendChild(host);
+    var wait = el("div", "ad-loading", "Reading your record…");
+    host.appendChild(wait);
+    noFoot(); progress(null);
+    show("grades");
+    API.graduation.get().then(function (g) {
+      wait.remove();
+      drawGrades(host, g);
+    }, function (e) { failed(wait, e, function () { openGrades(true); }); });
+  }
+
+  function drawGrades(host, g) {
+    if (!g.transfer && !g.current.length && !g.totals.earnedTowardDiploma) {
+      host.appendChild(el("div", "lx-empty",
+        "Nothing on your record yet. When your school adds your previous transcript, or your " +
+        "teachers enter grades, your path to graduation appears here."));
+      return;
+    }
+    host.appendChild(gradHero(g));
+    host.appendChild(gradKpis(g));
+    host.appendChild(gradBadges(g));
+    host.appendChild(gradAreas(g));
+    if (g.transfer) host.appendChild(gradTransfer(g));
+    if (g.courses.length) host.appendChild(gradPerformance(g));
+    if (g.exams.length) host.appendChild(gradExams(g));
+    host.appendChild(gradCurrent(g));
+    if (g.courses.length) host.appendChild(gradHistory(g));
+    host.appendChild(gradNotes(g));
+  }
+
+  /* ------------------------------------------------------------- The hero
+     The one big number, inside a ring that separates what is expected to
+     count from what may still move. */
+  function gradHero(g) {
+    var t = g.totals, track = g.track;
+    var sec = el("section", "gr-hero");
+    var got = t.earnedTowardDiploma;
+    var sure = Math.min(got, t.transferConservative + t.ehsEarned);
+    var evaluated = g.transfer && g.transfer.status === "evaluated";
+
+    var side = el("div", "gr-ring-side");
+    var ring = el("div", "gr-ring");
+    var R = 66, C = 2 * Math.PI * R, GAP = 2;
+    var sv = grNode("svg", { viewBox: "0 0 160 160", "aria-hidden": "true" });
+    sv.appendChild(grNode("circle", { cx: 80, cy: 80, r: R, class: "gr-ring-track" }));
+    function arc(from, to, cls) {
+      if (to <= from) return;
+      var start = from * C + (from > 0 ? GAP : 0);
+      var len = Math.max(0, to * C - start);
+      var c = grNode("circle", { cx: 80, cy: 80, r: R, class: "gr-arc " + cls, transform: "rotate(-90 80 80)" });
+      c.style.strokeDashoffset = String(-start);
+      c.style.strokeDasharray = (GR_CALM ? len : 0) + " " + C;
+      sv.appendChild(c);
+      if (!GR_CALM) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { c.style.strokeDasharray = len + " " + C; });
+        });
+      }
+    }
+    arc(0, sure / track.total, "sure");
+    arc(sure / track.total, Math.min(1, got / track.total), "maybe");
+    ring.appendChild(sv);
+    var mid = el("div", "gr-ring-mid");
+    var num = el("b");
+    mid.appendChild(num);
+    mid.appendChild(el("span", null, "of your diploma"));
+    ring.appendChild(mid);
+    grCount(num, t.percent, t.percent % 1 ? 1 : 0, "%");
+    side.appendChild(ring);
+    side.appendChild(el("div", "gr-key",
+      '<span><i class="t"></i>' + (evaluated ? "Transferred" : "Expected to transfer") + "</span>" +
+      (sure < got ? '<span><i class="maybe"></i>May not transfer</span>' : "") +
+      '<span><i class="left"></i>Still to earn</span>'));
+    sec.appendChild(side);
+
+    var txt = el("div", "gr-hero-txt");
+    txt.appendChild(el("p", "gr-kicker", esc(track.name) + " · " + track.total + " credits" +
+      (g.program && g.program.name ? " · " + esc(g.program.name) : "")));
+    var who = g.account && g.account.firstName ? esc(g.account.firstName) + ", you’re " : "You’re ";
+    txt.appendChild(el("h2", null, t.percent >= 100
+      ? "Every credit is in. That’s a diploma."
+      : who + Math.floor(t.percent) + "% of the way to your diploma."));
+    txt.appendChild(el("p", "gr-lede",
+      "<b>" + grCr(got) + " of " + track.total + " credits</b> already count toward it" +
+      (sure < got ? " — between " + grCr(sure) + " and " + grCr(got) + " once EHS confirms your transfer."
+                  : ".")));
+    var togo = el("div", "gr-togo");
+    togo.innerHTML = "<b>" + grCr(t.planAtEhs) + "</b><span>credits to go at EHS</span>";
+    txt.appendChild(togo);
+
+    var miles = el("ol", "gr-miles");
+    // The stops sit at the centres of four equal columns (12.5%, 37.5%,
+    // 62.5%, 87.5%) and mark 25/50/75/100%, so the fill that starts at the
+    // first stop is exactly (percent − 25)% of the track wide.
+    miles.style.setProperty("--gr-fill", Math.max(0, Math.min(75, t.percent - 25)) + "%");
+    var next = null;
+    g.milestones.forEach(function (m) {
+      var li = el("li", m.reached ? "done" : "");
+      if (!m.reached && !next) { next = m; li.className = "next"; }
+      li.innerHTML = "<i>" + (m.reached ? svg(I.tick, true) : "") + "</i><span>" + esc(m.label) +
+        "</span><em>" + m.at + "%</em>";
+      miles.appendChild(li);
+    });
+    txt.appendChild(miles);
+    if (next) {
+      var need = Math.max(0, next.at / 100 * track.total - got);
+      txt.appendChild(el("p", "gr-next", svg(I.star, true) + "<span><b>Next up: " + esc(next.label) +
+        "</b> — " + (need > 0 ? grCr(need) + (need === 1 ? " credit" : " credits") + " away." : "within reach.") +
+        "</span>"));
+    }
+    sec.appendChild(txt);
+    return sec;
+  }
+
+  function gradKpis(g) {
+    var t = g.totals;
+    var row = el("div", "gr-kpis");
+    var taken = {}, passed = {};
+    g.exams.forEach(function (e) { taken[e.name] = true; if (e.passed) passed[e.name] = true; });
+    var nTaken = Object.keys(taken).length, nPassed = Object.keys(passed).length;
+    [[grCr(t.transferEstimate), "Transferred" + (g.transfer ? " from " + g.transfer.school : ""),
+      !g.transfer ? "None on file"
+        : t.transferConservative < t.transferEstimate
+          ? "Estimate · " + grCr(t.transferConservative) + " if partial semesters don’t count"
+          : "Estimate until EHS evaluates it"],
+     [grCr(t.planAtEhs), "Still to earn at EHS", "Including EHS’s " + g.track.minAtEhs + "-credit minimum"],
+     [g.gpa.estimate != null ? g.gpa.estimate.toFixed(2) : "—", "GPA on the EHS scale",
+      g.gpa.courses ? "Estimate from " + g.gpa.courses + " marks" : "No marks yet"],
+     [String(nPassed), "State exams passed", nTaken ? "of " + nTaken + " taken" : "None on file"]
+    ].forEach(function (k) {
+      var tile = el("div", "gr-kpi");
+      tile.appendChild(el("b", null, esc(k[0])));
+      var l = el("span"); l.textContent = k[1]; tile.appendChild(l);
+      var n = el("em"); n.textContent = k[2]; tile.appendChild(n);
+      row.appendChild(tile);
+    });
+    return row;
+  }
+
+  /* --------------------------------------------------------- Achievements
+     Each is computed from the record and carries the evidence that earned
+     it. The locked ones stay on the wall, because a badge nobody knows about
+     cannot be aimed at. */
+  function gradBadges(g) {
+    var sec = el("section", "gr-sec");
+    var got = g.achievements.filter(function (a) { return a.earned; });
+    sec.appendChild(grHead("Achievements", got.length + " of " + g.achievements.length + " earned"));
+    var grid = el("div", "gr-badges");
+    got.concat(g.achievements.filter(function (a) { return !a.earned; })).forEach(function (a, i) {
+      var b = el("article", "gr-badge " + (a.earned ? "earned" : "locked"));
+      if (a.earned && !GR_CALM) b.style.animationDelay = (i * 55) + "ms";
+      b.innerHTML = '<span class="ic">' + (a.earned ? svg(I.star) : GR_LOCK) + "</span><div><b></b><p></p></div>";
+      b.querySelector("b").textContent = a.name;
+      b.querySelector("p").textContent = a.earned ? a.detail : "Locked — " + a.detail;
+      grid.appendChild(b);
+    });
+    sec.appendChild(grid);
+    return sec;
+  }
+
+  /* ---------------------------------------------------------- Requirements */
+  function gradAreas(g) {
+    var sec = el("section", "gr-sec");
+    var done = g.areas.filter(function (a) { return a.complete; }).length;
+    sec.appendChild(grHead("Diploma requirements", done + " of " + g.areas.length + " areas complete"));
+    sec.appendChild(el("div", "gr-key",
+      '<span><i class="t"></i>Transferred' + (g.transfer ? " from " + esc(g.transfer.school) : "") + "</span>" +
+      '<span><i class="e"></i>Earned at EHS</span><span><i class="left"></i>Still to go</span>'));
+    var list = el("div", "gr-areas");
+    g.areas.forEach(function (a) {
+      var row = el("div", "gr-area" + (a.complete ? " done" : ""));
+      var fromT = Math.max(0, a.applied - a.ehs);
+      var pt = Math.min(100, fromT / a.required * 100);
+      var pe = Math.min(100 - pt, a.ehs / a.required * 100);
+      var name = el("div", "gr-area-name");
+      name.appendChild(el("b"));
+      name.firstChild.textContent = a.name;
+      name.appendChild(el("span", null, grCr(a.applied) + " / " + a.required));
+      row.appendChild(name);
+      var meter = el("div", "gr-meter");
+      meter.setAttribute("role", "img");
+      meter.setAttribute("aria-label", a.name + ": " + grCr(a.applied) + " of " + a.required + " credits");
+      if (pt > 0) {
+        var s1 = el("span", "seg t" + (pe > 0 ? "" : " end"));
+        s1.style.width = pt + "%";
+        s1.title = grCr(fromT) + " transferred";
+        meter.appendChild(s1);
+      }
+      if (pe > 0) {
+        var s2 = el("span", "seg e end");
+        s2.style.width = pe + "%";
+        s2.title = grCr(a.ehs) + " earned at EHS";
+        meter.appendChild(s2);
+      }
+      row.appendChild(meter);
+      var st = el("div", "gr-area-state");
+      st.innerHTML = a.complete ? '<span class="ok">' + svg(I.tick, true) + "Done</span>"
+                                : "<b>" + grCr(a.remaining) + "</b> to go";
+      if (a.planAtEhs > a.remaining) st.appendChild(el("em", null, "EHS asks for " + a.residencyMin + " here"));
+      if (a.fromOtherAreas > 0) st.appendChild(el("em", null, "+" + grCr(a.fromOtherAreas) + " from other areas"));
+      row.appendChild(st);
+      list.appendChild(row);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  /* -------------------------------------------------------------- Transfer */
+  function gradTransfer(g) {
+    var x = g.transfer, t = g.totals;
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("Your transfer to EHS", x.school + (x.authority ? " · " + x.authority : "")));
+    var steps = el("ol", "gr-steps");
+    x.statusSteps.forEach(function (s, i) {
+      var li = el("li", i < x.statusAt ? "done" : i === x.statusAt ? "now" : "");
+      li.innerHTML = "<i>" + (i < x.statusAt ? svg(I.tick, true) : String(i + 1)) + "</i><span></span>" +
+        (i === x.statusAt ? "<em>You are here</em>" : "");
+      li.querySelector("span").textContent = s;
+      steps.appendChild(li);
+    });
+    sec.appendChild(steps);
+
+    var grid = el("div", "gr-two");
+    var est = el("div", "gr-card");
+    est.appendChild(el("h3", null, "Estimated transfer"));
+    est.appendChild(el("p", "gr-range", t.transferConservative < t.transferEstimate
+      ? "<b>" + grCr(t.transferConservative) + "–" + grCr(t.transferEstimate) + "</b> EHS credits"
+      : "<b>" + grCr(t.transferEstimate) + "</b> EHS credits"));
+    est.appendChild(el("p", "gr-sub", "Up to " + g.track.transferCap + " can transfer on the " + g.track.total +
+      "-credit track." + (x.creditsEarned != null ? " Your record shows " + x.creditsEarned +
+      " credits earned there, in its own units." : "")));
+    if (x.conversion) { var cv = el("p", "gr-note"); cv.textContent = x.conversion; est.appendChild(cv); }
+    grid.appendChild(est);
+
+    var act = el("div", "gr-card gr-act");
+    var step = g.nextSteps.filter(function (s) { return s.kind === "transcript"; })[0];
+    act.appendChild(el("p", "gr-kicker", "Your next step"));
+    var h = el("h3"); h.textContent = step ? step.title : "Your transfer has been evaluated";
+    var p = el("p"); p.textContent = step ? step.detail
+      : "EHS has reviewed your previous school's record. The credits above are the ones that count.";
+    act.appendChild(h); act.appendChild(p);
+    grid.appendChild(act);
+    sec.appendChild(grid);
+
+    if (x.review && x.review.length) {
+      var rv = el("div", "gr-review");
+      rv.appendChild(el("h3", null, "Pieces that may not transfer"));
+      x.review.forEach(function (r) {
+        var row = el("div", "gr-review-row");
+        row.innerHTML = '<span class="ic">' + svg(I.alert, true) + "</span><div><b></b><p></p></div><em></em>";
+        row.querySelector("b").textContent = grArea(r.area, g) + " · " + r.year;
+        row.querySelector("p").textContent = r.titles.join(", ") + ". " + r.reason;
+        row.querySelector("em").textContent = grCr(r.atRisk) + " at risk";
+        rv.appendChild(row);
+      });
+      sec.appendChild(rv);
+    }
+    return sec;
+  }
+
+  /* ----------------------------------------------------------- Performance */
+  function gradPerformance(g) {
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("How you’ve been doing", "Marks from your previous school"));
+    var grid = el("div", "gr-two wide");
+    grid.appendChild(trendCard(g));
+    var col = el("div", "gr-stack");
+    col.appendChild(distCard(g));
+    col.appendChild(strengthCard(g));
+    grid.appendChild(col);
+    sec.appendChild(grid);
+    return sec;
+  }
+
+  /* One series, so no legend box: the title names it. Crosshair and
+     tooltip on hover, arrow keys on focus, and a table twin underneath. */
+  function trendCard(g) {
+    var terms = g.trend || [];
+    var card = el("section", "gr-card");
+    card.appendChild(el("h3", null, "Term averages"));
+    card.appendChild(el("p", "gr-sub", terms.length + " graded terms" +
+      (g.transfer && g.transfer.cumulativeAverage != null ? " · cumulative " + g.transfer.cumulativeAverage + "%" : "")));
+    if (!terms.length) { card.appendChild(el("p", "gr-sub", "No term averages on this record.")); return card; }
+
+    var W = 600, H = 230, m = { l: 34, r: 58, t: 14, b: 30 };
+    var vals = terms.map(function (t) { return t.average; });
+    var lo = Math.min(60, Math.floor(Math.min.apply(null, vals) / 10) * 10), hi = 100;
+    function x(i) { return m.l + (terms.length === 1 ? (W - m.l - m.r) / 2 : i * (W - m.l - m.r) / (terms.length - 1)); }
+    function y(v) { return m.t + (hi - v) * (H - m.t - m.b) / (hi - lo); }
+    var wrap = el("div", "gr-plot");
+    var sv = grNode("svg", { viewBox: "0 0 " + W + " " + H, role: "img", tabindex: "0",
+      "aria-label": "Term averages from " + vals[0] + "% to " + vals[vals.length - 1] + "%. Use the arrow keys to read each term." });
+    for (var v = lo; v <= hi; v += 10) {
+      sv.appendChild(grNode("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: v === 80 ? "gr-ref" : "gr-grid" }));
+      var tk = grNode("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", class: "gr-tick" });
+      tk.textContent = v;
+      sv.appendChild(tk);
+    }
+    var rl = grNode("text", { x: W - m.r + 6, y: y(80) + 4, class: "gr-tick" });
+    rl.textContent = "B line";
+    sv.appendChild(rl);
+    terms.forEach(function (t, i) {
+      var tx = grNode("text", { x: x(i), y: H - 8, "text-anchor": "middle", class: "gr-tick" });
+      tx.textContent = grShortTerm(t.term);
+      sv.appendChild(tx);
+    });
+    var pts = terms.map(function (t, i) { return [x(i), y(t.average)]; });
+    var d = pts.map(function (p, i) { return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+    sv.appendChild(grNode("path", { d: d + " L" + pts[pts.length - 1][0].toFixed(1) + " " + y(lo) + " L" + pts[0][0].toFixed(1) + " " + y(lo) + " Z", class: "gr-area-fill" }));
+    sv.appendChild(grNode("path", { d: d, class: "gr-line" }));
+    // Selective labels: the latest term and the best one, nothing else.
+    var best = 0;
+    vals.forEach(function (vv, i) { if (vv > vals[best]) best = i; });
+    [best, vals.length - 1].forEach(function (i, n) {
+      if (n === 1 && i === best) return;
+      sv.appendChild(grNode("circle", { cx: pts[i][0], cy: pts[i][1], r: 4.5, class: "gr-dot" }));
+      var lb = grNode("text", { x: pts[i][0] + (i === vals.length - 1 ? 10 : 0), y: pts[i][1] - (i === vals.length - 1 ? -4 : 10),
+        "text-anchor": i === vals.length - 1 ? "start" : "middle", class: "gr-endlabel" });
+      lb.textContent = vals[i] + "%" + (i === best && i !== vals.length - 1 ? " best" : "");
+      sv.appendChild(lb);
+    });
+    var cross = grNode("line", { y1: m.t, y2: H - m.b, class: "gr-cross", visibility: "hidden" });
+    var hot = grNode("circle", { r: 5, class: "gr-dot", visibility: "hidden" });
+    sv.appendChild(cross);
+    sv.appendChild(hot);
+    var tip = el("div", "gr-tip");
+    tip.hidden = true;
+    function showAt(i) {
+      var p = pts[i];
+      cross.setAttribute("x1", p[0]); cross.setAttribute("x2", p[0]); cross.setAttribute("visibility", "visible");
+      hot.setAttribute("cx", p[0]); hot.setAttribute("cy", p[1]); hot.setAttribute("visibility", "visible");
+      tip.innerHTML = "";
+      var b = el("b"); b.textContent = terms[i].average + "%";
+      var s2 = el("span"); s2.textContent = terms[i].term;
+      tip.appendChild(b); tip.appendChild(s2);
+      tip.hidden = false;
+      var r = sv.getBoundingClientRect();
+      tip.style.left = (p[0] / W * r.width) + "px";
+      tip.style.top = (p[1] / H * r.height) + "px";
+    }
+    function hide() { cross.setAttribute("visibility", "hidden"); hot.setAttribute("visibility", "hidden"); tip.hidden = true; }
+    var hit = grNode("rect", { x: m.l - 14, y: 0, width: W - m.l - m.r + 28, height: H, fill: "transparent" });
+    hit.addEventListener("pointermove", function (e) {
+      var r = sv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, bi = 0, bd = 1e9;
+      pts.forEach(function (p, i) { var dd = Math.abs(p[0] - sx); if (dd < bd) { bd = dd; bi = i; } });
+      showAt(bi);
+    });
+    hit.addEventListener("pointerleave", hide);
+    sv.appendChild(hit);
+    var ki = terms.length - 1;
+    sv.addEventListener("focus", function () { showAt(ki); });
+    sv.addEventListener("blur", hide);
+    sv.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") { ki = Math.min(terms.length - 1, ki + 1); showAt(ki); e.preventDefault(); }
+      else if (e.key === "ArrowLeft") { ki = Math.max(0, ki - 1); showAt(ki); e.preventDefault(); }
+    });
+    wrap.appendChild(sv);
+    wrap.appendChild(tip);
+    card.appendChild(wrap);
+
+    var det = document.createElement("details");
+    det.className = "gr-table";
+    det.innerHTML = "<summary>Show as a table</summary>";
+    var tb = el("table");
+    tb.innerHTML = "<thead><tr><th>Term</th><th>Average</th></tr></thead>";
+    var body = el("tbody");
+    terms.forEach(function (t) {
+      var tr = el("tr"), a = el("td"), b = el("td");
+      a.textContent = t.term; b.textContent = t.average + "%";
+      tr.appendChild(a); tr.appendChild(b); body.appendChild(tr);
+    });
+    tb.appendChild(body);
+    det.appendChild(tb);
+    card.appendChild(det);
+    return card;
+  }
+
+  function distCard(g) {
+    var card = el("section", "gr-card");
+    card.appendChild(el("h3", null, "Your marks on the EHS scale"));
+    card.appendChild(el("p", "gr-sub", g.gpa.courses + " marks · A 90+, B 80+, C 70+, D 60+"));
+    var L = ["A", "B", "C", "D", "F"], d = g.gpa.distribution;
+    var max = Math.max.apply(null, L.map(function (k) { return d[k] || 0; })) || 1;
+    var W = 300, H = 150, top = 22, base = H - 24, slot = W / L.length, bw = 22;
+    var sv = grNode("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": L.map(function (k) { return k + ": " + (d[k] || 0); }).join(", ") });
+    sv.appendChild(grNode("line", { x1: 0, x2: W, y1: base, y2: base, class: "gr-base" }));
+    L.forEach(function (k, i) {
+      var n = d[k] || 0, h = n / max * (base - top), x = i * slot + (slot - bw) / 2, yy = base - h, r = Math.min(4, h);
+      var gEl = grNode("g", { class: "gr-col" });
+      gEl.appendChild(grNode("rect", { x: i * slot, y: 0, width: slot, height: H, fill: "transparent" }));
+      if (h > 0) {
+        gEl.appendChild(grNode("path", { class: "gr-bar", d: "M" + x + " " + base + "V" + (yy + r) + "Q" + x + " " + yy +
+          " " + (x + r) + " " + yy + "H" + (x + bw - r) + "Q" + (x + bw) + " " + yy + " " + (x + bw) + " " + (yy + r) + "V" + base + "Z" }));
+      }
+      var val = grNode("text", { x: x + bw / 2, y: yy - 6, "text-anchor": "middle", class: "gr-val" });
+      val.textContent = n;
+      var lab = grNode("text", { x: x + bw / 2, y: H - 6, "text-anchor": "middle", class: "gr-tick" });
+      lab.textContent = k;
+      var tt = grNode("title", {});
+      tt.textContent = k + ": " + n + (n === 1 ? " mark" : " marks");
+      gEl.appendChild(val); gEl.appendChild(lab); gEl.appendChild(tt);
+      sv.appendChild(gEl);
+    });
+    card.appendChild(sv);
+    if (g.gpa.estimate != null) {
+      card.appendChild(el("p", "gr-gpa", "<b>" + g.gpa.estimate.toFixed(2) + "</b> estimated GPA on EHS’s 4.0 scale"));
+    }
+    return card;
+  }
+
+  function strengthCard(g) {
+    var card = el("section", "gr-card");
+    card.appendChild(el("h3", null, "Where you shine"));
+    card.appendChild(el("p", "gr-sub", "Average mark by subject"));
+    var list = el("div", "gr-hbars");
+    g.strengths.slice(0, 5).forEach(function (s) {
+      var row = el("div", "gr-hbar");
+      var name = el("span"); name.textContent = s.name;
+      var trk = el("div", "trk"), fill = el("i");
+      fill.style.width = Math.max(0, Math.min(100, s.average)) + "%";
+      trk.appendChild(fill);
+      row.appendChild(name); row.appendChild(trk); row.appendChild(el("b", null, String(s.average)));
+      row.title = s.name + ": average " + s.average + " across " + s.marks + " marks";
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+    return card;
+  }
+
+  function gradExams(g) {
+    var sec = el("section", "gr-sec");
+    var passed = g.exams.filter(function (e) { return e.passed; }).length;
+    sec.appendChild(grHead("State exams", passed + " passed"));
+    var list = el("div", "gr-exams");
+    var ST = { passed: ["ok", I.tick, "Passed"], not_passed: ["bad", I.close, "Not passed"],
+               below_65: ["warn", I.alert, "Below 65"], superseded: ["muted", I.arrow, "Retaken"] };
+    g.exams.forEach(function (e) {
+      var st = ST[e.status] || ["muted", I.alert, e.status];
+      var row = el("div", "gr-exam");
+      row.innerHTML = '<div class="n"><b></b><span></span></div>' +
+        '<div class="sc"><div class="trk"><i style="width:' + Math.max(0, Math.min(100, e.score || 0)) + '%"></i>' +
+        '<u style="left:65%" title="65"></u></div><b>' + (e.score != null ? e.score : "—") + "</b></div>" +
+        '<span class="chip ' + st[0] + '">' + svg(st[1], true) + st[2] + "</span>";
+      row.querySelector(".n b").textContent = e.name;
+      row.querySelector(".n span").textContent = grMonth(e.sitting);
+      list.appendChild(row);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  function gradCurrent(g) {
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("This year at EHS", g.current.length ? g.current.length + (g.current.length === 1 ? " course" : " courses") : ""));
+    if (!g.current.length) {
+      sec.appendChild(el("div", "lx-empty", "No EHS grades yet. As your teachers mark your work, your courses and grades appear here."));
+      return sec;
+    }
+    var list = el("div", "gr-current");
+    g.current.forEach(function (c) {
+      var row = el("div", "gr-cur");
+      row.innerHTML = '<div><b></b><span></span></div><span class="let"></span><strong></strong>';
+      row.querySelector("b").textContent = c.title;
+      row.querySelector("div span").textContent = c.itemCount + (c.itemCount === 1 ? " item" : " items") +
+        " marked · over " + c.countedWeight + "% of the grade";
+      row.querySelector(".let").textContent = c.letter;
+      row.querySelector("strong").textContent = c.percent + "%";
+      list.appendChild(row);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  function gradHistory(g) {
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("Course history", g.courses.length + " courses on your record"));
+    var avg = {};
+    (g.trend || []).forEach(function (t) { avg[t.term] = t.average; });
+    var years = [], byYear = {};
+    g.courses.forEach(function (c) {
+      var k = c.year || "Other";
+      if (!byYear[k]) { byYear[k] = { grade: c.gradeLevel, terms: [], byTerm: {} }; years.push(k); }
+      var y = byYear[k];
+      if (!y.byTerm[c.term]) { y.byTerm[c.term] = []; y.terms.push(c.term); }
+      y.byTerm[c.term].push(c);
+    });
+    years.forEach(function (k) {
+      var y = byYear[k];
+      var all = [];
+      y.terms.forEach(function (t) { all = all.concat(y.byTerm[t]); });
+      var credits = all.reduce(function (a, c) { return a + (c.decision === "declined" ? 0 : Number(c.ehsCredits || 0)); }, 0);
+      var det = document.createElement("details");
+      det.className = "gr-year";
+      var sum = document.createElement("summary");
+      sum.innerHTML = "<b></b><span></span>";
+      sum.querySelector("b").textContent = k.replace("-", "–") + (y.grade ? " · Grade " + y.grade : "");
+      sum.querySelector("span").textContent = all.length + " courses · " + grCr(credits) + " EHS credits";
+      det.appendChild(sum);
+      y.terms.forEach(function (t) {
+        var box = el("div", "gr-term");
+        var th = el("h4"); th.textContent = t + (avg[t] != null ? " · " + avg[t] + "%" : "");
+        box.appendChild(th);
+        y.byTerm[t].forEach(function (c) {
+          var row = el("div", "gr-crs" + (c.attempted > 0 && !c.earned && c.markNumeric != null ? " miss" : ""));
+          row.innerHTML = '<span class="t"></span><span class="mk"></span><span class="let"></span><span class="cr"></span><span class="fl"></span>';
+          row.querySelector(".t").textContent = c.title;
+          row.querySelector(".mk").textContent = c.mark || "";
+          row.querySelector(".let").textContent = c.letter || "";
+          row.querySelector(".cr").textContent = c.ehsCredits ? "+" + grCr(c.ehsCredits) : "";
+          var fl = row.querySelector(".fl");
+          if (c.flags.indexOf("recovered") > -1) fl.appendChild(el("em", "rec", "Recovered"));
+          if (c.flags.indexOf("weighted") > -1) fl.appendChild(el("em", null, "Weighted"));
+          if (c.attempted > 0 && !c.earned && c.markNumeric != null) fl.appendChild(el("em", "no", svg(I.close, true) + "No credit"));
+          if (c.decision === "declined") fl.appendChild(el("em", "no", "Declined by EHS"));
+          box.appendChild(row);
+        });
+        det.appendChild(box);
+      });
+      sec.appendChild(det);
+    });
+    return sec;
+  }
+
+  function gradNotes(g) {
+    var sec = el("section", "gr-notes");
+    sec.appendChild(el("h3", null, "How these numbers are worked out"));
+    var ul = el("ul");
+    g.assumptions.concat([
+      "Diploma rules follow Excel High School’s published policies: the " + g.track.total +
+      "-credit track, up to " + g.track.transferCap + " credits by transfer, at least " + g.track.minAtEhs +
+      " earned at EHS, and a 60% passing mark."
+    ]).forEach(function (a) { var li = el("li"); li.textContent = a; ul.appendChild(li); });
+    sec.appendChild(ul);
+    return sec;
+  }
+
+  /* ================================================================ Console
+     What an administrator needs is not a second application. It is this one,
+     with the ability to see whose work it is.
+
+     Everything on these screens is a call to the platform API. Nothing here
+     decides what the person in front of it is allowed to do: it asks for
+     something, and the server either does it or refuses with a sentence
+     naming the rule. Buttons are hidden from people who cannot use them as a
+     courtesy, never as a control — the same page ships with a console in it,
+     and a permission system that lives in the markup is not one.
+
+     The practical consequence is worth stating plainly: a grade entered here
+     is written to the database and is visible to that student on their own
+     laptop the next time they open Learn. That is the whole point of the
+     backend existing, and it is the one thing this console could not do
+     before it. */
+
+  var TABS = [
+    { k: "roster",  name: "Students",  roles: ["admin", "teacher"] },
+    { k: "courses", name: "Courses",   roles: ["admin", "teacher"] },
+    { k: "sets",    name: "Study sets",roles: ["admin", "teacher"] },
+    { k: "people",  name: "People",    roles: ["admin"] },
+    { k: "system",  name: "System",    roles: ["admin"] }
+  ];
+
+  function allowedTabs() {
+    if (!S.me) return [];
+    return TABS.filter(function (t) { return t.roles.indexOf(S.me.role) > -1; });
+  }
+
+  function openAdmin(silent, tab) {
+    if (!allowedTabs().length) return;
+    S.tab = tab || S.tab || allowedTabs()[0].k;
+    if (!silent) enter("admin:" + S.tab, "Console", function () { openAdmin(true, S.tab); });
 
     var v = $("#v-admin");
     v.innerHTML = "";
-    v.appendChild(el("p", "lx-eyebrow", "Administration"));
-    v.appendChild(el("h1", "lx-h1", "Students"));
+    v.appendChild(el("p", "lx-eyebrow", S.me.role === "admin" ? "Administration" : "Teaching"));
+    v.appendChild(el("h1", "lx-h1", "Console"));
 
-    var people = D.STUDENTS.filter(function (p) { return p.role !== "admin"; });
-    v.appendChild(el("p", "lx-lede", people.length === 1
-      ? "One enrolled student. Their reading and their notebook are below."
-      : people.length + " enrolled students."));
+    var nav = el("div", "ad-tabs");
+    allowedTabs().forEach(function (t) {
+      var b = el("button", "ad-tab" + (t.k === S.tab ? " on" : ""));
+      b.type = "button";
+      b.textContent = t.name;
+      b.addEventListener("click", function () { openAdmin(true, t.k); });
+      nav.appendChild(b);
+    });
+    v.appendChild(nav);
 
-    var grid = el("div", "ad-grid");
-    people.forEach(function (p) { grid.appendChild(studentCard(p)); });
-    v.appendChild(grid);
+    var body = el("div", "ad-body");
+    v.appendChild(body);
+    ({ roster: tabRoster, courses: tabCourses, sets: tabSets,
+       people: tabPeople, system: tabSystem }[S.tab] || tabRoster)(body);
 
     noFoot(); progress(null);
     show("admin");
   }
 
-  /* A student's marks, read from where the annotation store keeps them. The
-     store is the only thing that knows the shape of that key, so ask it. */
-  function marksOf(personId) {
-    try { return new A.Store(personId, "media-u5").all(); }
-    catch (e) { return []; }
+  /* Every screen here is waiting on a network call, so the three states a
+     network call has — working, failed, empty — are drawn rather than
+     assumed. A spinner that never resolves into an error is how a broken
+     backend looks like a broken app. */
+  function loading(v, what) {
+    var n = el("div", "ad-loading", "Loading " + esc(what) + "…");
+    v.appendChild(n);
+    return n;
   }
 
-  function studentCard(p) {
+  function failed(node, e, retry) {
+    node.className = "ad-failed";
+    node.innerHTML = "";
+    var offline = e && e.code === "offline";
+    node.appendChild(el("b", null, offline ? "Cannot reach the Oplo API" : "That did not load"));
+    node.appendChild(el("p", null, esc(
+      offline ? "The platform API at " + API.base() + " is not answering. Nothing here can " +
+                "be shown or changed until it is — this console reads and writes the " +
+                "database, and there is no local copy standing in for it."
+              : (e && e.message) || "The server refused that request.")));
+    if (retry) {
+      var again = el("button", "lx-btn quiet", "Try again");
+      again.type = "button";
+      again.addEventListener("click", retry);
+      node.appendChild(again);
+    }
+  }
+
+  /* An action whose failure is the server refusing, and which says so. */
+  function attempt(promise, done) {
+    return promise.then(function (r) { if (done) done(r); }, function (e) {
+      toast(e && e.message ? e.message : "The server refused that.");
+    });
+  }
+
+  function field(label, value, hint) {
+    var f = el("label", "ad-field");
+    f.innerHTML = "<span>" + esc(label) + "</span>";
+    var i = el("input");
+    i.type = "text";
+    i.value = value == null ? "" : value;
+    if (hint) i.placeholder = hint;
+    f.appendChild(i);
+    f.input = i;
+    return f;
+  }
+
+  function areaField(label, value, hint, rows) {
+    var f = el("label", "ad-field");
+    f.innerHTML = "<span>" + esc(label) + "</span>";
+    var i = el("textarea");
+    i.rows = rows || 3;
+    i.value = value == null ? "" : value;
+    if (hint) i.placeholder = hint;
+    f.appendChild(i);
+    f.input = i;
+    return f;
+  }
+
+  function avatarFor(p) {
+    var av = el("span", "ad-av");
+    av.style.background = p.hue || "#6e6e73";
+    av.textContent = p.initials ||
+      String(p.name || "?").split(/\s+/).map(function (w) { return w[0]; })
+        .join("").slice(0, 2).toUpperCase();
+    return av;
+  }
+
+  /* ------------------------------------------------------------- Students
+     For a teacher this is the students in the courses they teach — which is
+     what "their students" means on the server too, so the screen and the
+     permission agree by construction rather than by being kept in step. */
+  function tabRoster(v) {
+    var node = loading(v, "your courses");
+
+    API.courses.mine().then(function (courses) {
+      var teaching = S.me.role === "admin"
+        ? courses
+        : courses.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
+
+      if (!teaching.length) {
+        node.className = "lx-empty";
+        node.textContent = S.me.role === "admin"
+          ? "No courses yet. Create one on the Courses tab, then enrol students into it."
+          : "You are not teaching any courses yet. An administrator enrols you as a teacher, " +
+            "and the students on those courses appear here.";
+        return;
+      }
+
+      node.remove();
+      v.appendChild(el("p", "lx-lede",
+        teaching.length + (teaching.length === 1 ? " course" : " courses") +
+        ". A grade entered here is written to the database and is visible to that student " +
+        "on their own device."));
+
+      teaching.forEach(function (c) { v.appendChild(courseRoster(c)); });
+    }, function (e) { failed(node, e, function () { openAdmin(true, "roster"); }); });
+  }
+
+  function courseRoster(course) {
+    var wrap = el("section", "ad-course");
+    var head = el("header", "ad-course-head");
+    head.innerHTML = "<h2>" + esc(course.title) + "</h2><span>" +
+      esc(course.subject || "") + " · " + esc(course.code) + "</span>";
+    wrap.appendChild(head);
+
+    var body = el("div");
+    wrap.appendChild(body);
+    var node = loading(body, "the roster");
+
+    Promise.all([
+      API.courses.members(course.id),
+      API.courses.assignments(course.id),
+      API.grades.list({ courseId: course.id })
+    ]).then(function (out) {
+      var members = out[0], assignments = out[1], grades = out[2];
+      node.remove();
+
+      var students = members.filter(function (m) { return m.role === "student"; });
+      var byStudent = {};
+      (grades.summaries || []).forEach(function (sm) { /* per course, not per student */ });
+
+      var acts = el("div", "ad-acts");
+      var addWork = el("button", "lx-btn quiet",
+        assignments.length ? assignments.length + " pieces of work" : "Set some work");
+      addWork.type = "button";
+      addWork.addEventListener("click", function () { openAssignments(course); });
+      acts.appendChild(addWork);
+
+      var enrol = el("button", "lx-btn quiet", "Enrol a student");
+      enrol.type = "button";
+      enrol.addEventListener("click", function () { openEnrol(course); });
+      acts.appendChild(enrol);
+      body.appendChild(acts);
+
+      if (!students.length) {
+        body.appendChild(el("div", "lx-empty",
+          "Nobody is enrolled yet. Enrol a student and their work appears here."));
+        return;
+      }
+
+      var grid = el("div", "ad-grid");
+      students.forEach(function (st) {
+        grid.appendChild(studentCard(st, course, assignments));
+      });
+      body.appendChild(grid);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "roster"); }); });
+
+    return wrap;
+  }
+
+  function studentCard(p, course, assignments) {
     var c = el("article", "ad-card");
 
     var head = el("header", "ad-head");
-    var av = el("span", "ad-av");
-    av.style.background = p.hue || "#6e6e73";
-    av.textContent = p.initials;
-    head.appendChild(av);
+    head.appendChild(avatarFor(p));
     head.appendChild(el("div", "ad-who", "<b>" + esc(p.name) + "</b><span>" +
-      esc(p.email) + "</span>"));
-    var g = el("span", "ad-grade", "Grade " + (p.grade || "—"));
-    head.appendChild(g);
+      esc(p.email || "") + "</span>"));
     c.appendChild(head);
 
-    if (p.enrolment) {
-      var en = el("div", "ad-en");
-      en.innerHTML = "<b>" + esc(p.enrolment.program) + "</b>" +
-        "<span>" + esc(p.enrolment.status) + " · balance " + esc(p.enrolment.balance) + "</span>";
-      c.appendChild(en);
-    }
+    var markSlot = el("div", "ad-books");
+    markSlot.appendChild(el("p", "ad-shape quiet", "Reading their grade…"));
+    c.appendChild(markSlot);
 
-    /* What they have actually done. Marks are the honest signal here — a
-       progress bar can be moved by clicking, a margin full of objections
-       cannot. */
-    var marks = marksOf(p.id);
-    var prof = A.profile(marks);
-
-    var stats = el("div", "ad-stats");
-    [["Courses", (p.assigned || []).length],
-     ["Marks", marks.length],
-     ["With a note", prof.noted],
-     ["Depth", marks.length ? prof.depth + "%" : "—"]].forEach(function (s) {
-      var b = el("div", "ad-stat");
-      b.innerHTML = "<b>" + s[1] + "</b><span>" + s[0] + "</span>";
-      stats.appendChild(b);
+    /* Their mark, from the server. Asked per student rather than computed in
+       the page, so the number a teacher sees is the number the student sees —
+       there is one implementation of the weighting and it is on the server. */
+    API.grades.list({ courseId: course.id, accountId: p.id }).then(function (r) {
+      markSlot.innerHTML = "";
+      var sum = (r.summaries || [])[0];
+      var row = el("button", "ad-book");
+      row.type = "button";
+      row.innerHTML = "<b>" + esc(course.title) + "</b>" +
+        (sum ? '<span class="mk"><em>' + sum.letter + "</em>" + sum.percent + "%</span>"
+             : '<span class="mk none">no marks yet</span>');
+      row.addEventListener("click", function () { openGradebook(p, course, assignments); });
+      markSlot.appendChild(row);
+      if (sum && sum.countedWeight < sum.totalWeight) {
+        markSlot.appendChild(el("p", "ad-shape quiet",
+          "Over the " + sum.countedWeight + "% of the grade marked so far."));
+      }
+    }, function () {
+      markSlot.innerHTML = "";
+      markSlot.appendChild(el("p", "ad-shape quiet", "Could not read their grade."));
     });
-    c.appendChild(stats);
 
-    if (marks.length) {
-      var passes = el("div", "ad-passes");
-      A.PASSES.forEach(function (q) {
-        var n = prof.count[q.key];
-        if (!n) return;
-        var t = el("span", "ad-pass");
-        t.innerHTML = '<i style="background:' + q.hue + '"></i>' + n + " " + esc(q.name.toLowerCase()) +
-          (n === 1 ? "" : "s");
-        passes.appendChild(t);
+    /* What they have actually done in the app. Progress is theirs and is
+       readable by their teachers; it is not writable by anybody but them. */
+    var work = el("div", "ad-stats");
+    work.appendChild(el("div", "ad-stat", "<b>…</b><span>XP</span>"));
+    c.appendChild(work);
+    API.gamification.standing(p.id).then(function (st) {
+      work.innerHTML = "";
+      [["XP", st.xp], ["Streak", st.streak], ["Rank", st.rank.name],
+       ["Badges", (st.badges || []).length]].forEach(function (x) {
+        var b = el("div", "ad-stat");
+        b.innerHTML = "<b>" + esc(String(x[1])) + "</b><span>" + x[0] + "</span>";
+        work.appendChild(b);
       });
-      c.appendChild(passes);
-      c.appendChild(el("p", "ad-shape", esc(prof.shape)));
-    } else {
-      c.appendChild(el("p", "ad-shape quiet",
-        "No marks on this machine. A student's notebook is stored in their own browser, " +
-        "so it is visible here only when they have read on this one."));
-    }
+    }, function () {
+      work.innerHTML = "";
+      work.appendChild(el("p", "ad-shape quiet", "No activity recorded yet."));
+    });
 
     var acts = el("div", "ad-acts");
-    var read = el("button", "lx-btn", "Read alongside");
-    read.type = "button";
-    read.title = "Open a room and start on section 5.1";
-    read.addEventListener("click", function () {
-      openRead(0);
-      setTimeout(function () { Room.panel(); }, 200);
-    });
-    acts.appendChild(read);
-
-    if (marks.length) {
-      var nb = el("button", "lx-btn quiet", "Their notebook");
-      nb.type = "button";
-      nb.addEventListener("click", function () { openTheirNotebook(p); });
-      acts.appendChild(nb);
-    }
+    var grade = el("button", "lx-btn", "Grades");
+    grade.type = "button";
+    grade.addEventListener("click", function () { openGradebook(p, course, assignments); });
+    acts.appendChild(grade);
     c.appendChild(acts);
     return c;
   }
 
-  /* Read-only. An administrator looking at a student's reading should not be
-     able to edit it by accident — a note you did not write, changed without
-     you knowing, is worse than no note at all. */
-  function openTheirNotebook(p) {
-    enter("their:" + p.id, p.first, function () { openTheirNotebook(p); });
+  /* ------------------------------------------------------------ Enrolment */
+  function openEnrol(course) {
+    enter("enrol:" + course.id, trim(course.title), function () { openEnrol(course); });
     var v = $("#v-admin");
     v.innerHTML = "";
-    var marks = marksOf(p.id);
-    var prof = A.profile(marks);
+    v.appendChild(el("p", "lx-eyebrow", esc(course.title)));
+    v.appendChild(el("h1", "lx-h1", "Who is in this course"));
+    var node = loading(v, "people");
 
-    v.appendChild(el("p", "lx-eyebrow", esc(p.name) + " · Media Arts, Unit 5"));
-    v.appendChild(el("h1", "lx-h1", "Their notebook"));
-    v.appendChild(el("p", "lx-lede", prof.shape + " Read-only."));
+    Promise.all([API.accounts.list(S.me.orgId), API.courses.members(course.id)])
+      .then(function (out) {
+        var people = out[0], members = out[1];
+        node.remove();
+        var inCourse = {};
+        members.forEach(function (m) { inCourse[m.id] = m.role; });
 
-    var t = A.threads(marks);
-    var out = el("div", "nb-out");
+        v.appendChild(el("p", "lx-lede",
+          "Enrolling a student is what gives you permission to grade them. The server " +
+          "checks that relationship on every write, so this list is the permission, " +
+          "not a display of it."));
 
-    U5.forEach(function (s) {
-      var rows = marks.filter(function (m) { return m.sec === s.n; });
-      if (!rows.length) return;
-      var g = el("section", "nb-group");
-      var h = el("div", "nb-group-head");
-      h.innerHTML = "<h2>" + esc(s.n) + "  " + esc(s.t) + "</h2><span>" + rows.length + "</span>";
-      g.appendChild(h);
-      rows.forEach(function (m) {
-        var q = A.pass(m.pass);
-        var r = el("div", "nb-row");
-        r.style.setProperty("--hue", q.hue);
-        r.innerHTML = '<div class="nb-row-main"><span class="kind">' + esc(q.name) +
-          " · " + esc(m.sec) + "</span><q>" + esc(m.text) + "</q>" +
-          (m.note ? '<p class="note">' + esc(m.note) + "</p>" : "") +
-          ((m.tags && m.tags.length)
-            ? '<p class="tags">' + m.tags.map(function (x) { return "<em>" + esc(x) + "</em>"; }).join("") + "</p>"
-            : "") + "</div>";
-        g.appendChild(r);
-      });
-      out.appendChild(g);
-    });
-    v.appendChild(out);
-    noFoot(); progress(null);
+        var list = el("div", "ad-picklist");
+        people.forEach(function (p) {
+          if (p.id === S.me.id) return;
+          var row = el("label", "ad-pick");
+          var box = el("input");
+          box.type = "checkbox";
+          box.checked = inCourse[p.id] === "student";
+          box.addEventListener("change", function () {
+            box.disabled = true;
+            attempt(API.courses.enrol(course.id, p.id, "student", !box.checked), function () {
+              box.disabled = false;
+              toast(box.checked ? p.name + " enrolled." : p.name + " removed from the course.");
+            }).then(function () { box.disabled = false; });
+          });
+          row.appendChild(box);
+          row.appendChild(avatarFor(p));
+          row.appendChild(el("span", "t", "<b>" + esc(p.name) + "</b><span>" +
+            esc(p.email || "") + (inCourse[p.id] && inCourse[p.id] !== "student"
+              ? " · " + esc(inCourse[p.id]) : "") + "</span>"));
+          list.appendChild(row);
+        });
+        v.appendChild(list);
+        show("admin");
+      }, function (e) { failed(node, e, function () { openEnrol(course); }); });
     show("admin");
   }
 
-  /* ================================================================== Auth
-     Auth.verify is the seam. Today it derives a PBKDF2 verifier in the
-     browser and compares it in constant time; swapping in a real provider —
-     a server, Firebase, Supabase, anything that holds the verifier itself —
-     means replacing this one function and nothing else in the app.
+  /* ---------------------------------------------------------- Assignments */
+  function openAssignments(course) {
+    enter("work:" + course.id, "Work", function () { openAssignments(course); });
+    var v = $("#v-admin");
 
-     What the current implementation is honest about: a static host has no
-     server to check a password against, so the verifier ships to the browser
-     and can be read. PBKDF2 at 210,000 iterations makes each guess against it
-     cost real work rather than a table lookup, which is the difference
-     between a verifier leaking and a password leaking. It is not a substitute
-     for a server. */
-  var Auth = (function () {
-    var enc = new TextEncoder();
+    function render() {
+      v.innerHTML = "";
+      v.appendChild(el("p", "lx-eyebrow", esc(course.title)));
+      v.appendChild(el("h1", "lx-h1", "Work set on this course"));
+      var node = loading(v, "the list");
 
-    function b64(buf) {
-      return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
-    }
-    function unb64(s) {
-      return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); });
-    }
-    /* Compared byte by byte to the end regardless: bailing on the first
-       mismatch leaks how much of a guess was right through timing. */
-    function same(a, b) {
-      if (a.length !== b.length) return false;
-      var diff = 0;
-      for (var i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-      return diff === 0;
-    }
+      API.courses.assignments(course.id).then(function (items) {
+        node.remove();
+        var weights = (course.body && course.body.grading) || [["Work", 100]];
+        v.appendChild(el("p", "lx-lede",
+          "Each piece counts towards a category, and the categories carry the weights " +
+          "the course sets: " + weights.map(function (w) { return w[0] + " " + w[1] + "%"; })
+            .join(", ") + "."));
 
-    function derive(password, salt) {
-      return crypto.subtle
-        .importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"])
-        .then(function (key) {
-          return crypto.subtle.deriveBits(
-            { name: "PBKDF2", salt: salt, iterations: D.ITERATIONS, hash: "SHA-256" },
-            key, 256);
+        var list = el("div", "ad-list");
+        items.forEach(function (a) {
+          var row = el("div", "ad-row");
+          row.innerHTML = '<span class="t"><b>' + esc(a.title) + "</b><span>" +
+            esc(a.category || "uncategorised") + " · out of " + a.outOf + "</span></span>";
+          var rm = el("button", "ad-x");
+          rm.type = "button";
+          rm.setAttribute("aria-label", "Remove " + a.title);
+          rm.innerHTML = svg(I.close, true);
+          rm.addEventListener("click", function () {
+            if (!confirm("Remove “" + a.title + "” and every grade on it?")) return;
+            attempt(API.courses.removeAssignment(a.id), render);
+          });
+          row.appendChild(rm);
+          list.appendChild(row);
         });
+        if (!items.length) {
+          list.appendChild(el("div", "lx-empty",
+            "Nothing set yet. Add a quiz or an assignment and you can start grading it."));
+        }
+        v.appendChild(list);
+
+        var form = el("div", "ad-form");
+        var title = field("Title", "", "Unit 5 quiz");
+        var catF = el("label", "ad-field");
+        catF.innerHTML = "<span>Category</span>";
+        var cat = el("select");
+        weights.forEach(function (w) {
+          var o = el("option");
+          o.value = w[0]; o.textContent = w[0] + " (" + w[1] + "% of the grade)";
+          cat.appendChild(o);
+        });
+        catF.appendChild(cat);
+        var outOf = field("Out of", "20");
+        [title, catF, outOf].forEach(function (f) { form.appendChild(f); });
+        v.appendChild(form);
+
+        var acts = el("div", "ad-acts");
+        var add = el("button", "lx-btn lg", "Set this work");
+        add.type = "button";
+        add.addEventListener("click", function () {
+          if (!title.input.value.trim()) { toast("Give it a title."); return; }
+          add.disabled = true;
+          attempt(API.courses.addAssignment(course.id, {
+            title: title.input.value.trim(),
+            category: cat.value,
+            outOf: Number(outOf.input.value) || 100
+          }), function () { toast("Added."); render(); })
+            .then(function () { add.disabled = false; });
+        });
+        acts.appendChild(add);
+        v.appendChild(acts);
+        show("admin");
+      }, function (e) { failed(node, e, render); });
+      show("admin");
     }
 
-    function verify(email, password) {
-      var who = D.STUDENTS.filter(function (s) {
-        return s.email.toLowerCase() === String(email).trim().toLowerCase();
-      })[0];
-      if (!(window.crypto && crypto.subtle && crypto.subtle.deriveBits)) {
-        return Promise.reject(new Error("insecure-context"));
-      }
-      // Derive either way, so a wrong address and a wrong password take the
-      // same time and neither can be told apart from outside.
-      var target = who || D.STUDENTS[0];
-      return derive(password, unb64(target.salt)).then(function (bits) {
-        if (!who) return null;
-        return same(new Uint8Array(bits), unb64(who.verifier)) ? who : null;
+    render();
+  }
+
+  /* ----------------------------------------------------------- Gradebook
+     The screen the whole backend exists for. A number typed here is a PUT to
+     /api/v1/grades, checked against whether this person teaches the course,
+     and stored. The student reads it from the same table on another machine. */
+  function openGradebook(p, course, assignments) {
+    enter("grades:" + p.id + ":" + course.id, "Grades",
+          function () { openGradebook(p, course, assignments); });
+    var v = $("#v-admin");
+
+    function render() {
+      v.innerHTML = "";
+      v.appendChild(el("p", "lx-eyebrow", esc(p.name) + " · " + esc(course.title)));
+      v.appendChild(el("h1", "lx-h1", "Gradebook"));
+      var node = loading(v, "their marks");
+
+      Promise.all([
+        assignments ? Promise.resolve(assignments) : API.courses.assignments(course.id),
+        API.grades.list({ courseId: course.id, accountId: p.id })
+      ]).then(function (out) {
+        var work = out[0], data = out[1];
+        node.remove();
+
+        var byAssignment = {};
+        (data.grades || []).forEach(function (g) { byAssignment[g.assignmentId] = g; });
+        var sum = (data.summaries || [])[0];
+
+        var head = el("div", "ad-mark");
+        if (sum) {
+          head.innerHTML = '<div class="big"><b>' + sum.letter + "</b><span>" +
+            sum.percent + "%</span></div>";
+          var parts = el("div", "ad-mark-parts");
+          sum.parts.forEach(function (x) {
+            var row = el("div", "ad-mark-part");
+            row.innerHTML = "<span>" + esc(x.category) + "</span>" +
+              '<div class="t"><i style="width:' + x.percent + '%"></i></div>' +
+              "<em>" + x.percent + '%</em><span class="w">' + x.weight +
+              "% of the grade · " + x.items +
+              (x.items === 1 ? " item" : " items") + "</span>";
+            parts.appendChild(row);
+          });
+          head.appendChild(parts);
+          if (sum.countedWeight < sum.totalWeight) {
+            head.appendChild(el("p", "ad-mark-say",
+              "Computed over the " + sum.countedWeight + "% of the grade that has been " +
+              "marked. Categories with nothing in them are left out rather than counted " +
+              "as zero — a student who has not sat the final has not failed it."));
+          }
+        } else {
+          head.innerHTML = '<p class="ad-shape quiet">Nothing marked yet.</p>';
+        }
+        v.appendChild(head);
+
+        if (!work.length) {
+          v.appendChild(el("div", "lx-empty",
+            "No work has been set on this course, so there is nothing to mark."));
+          var setBtn = el("button", "lx-btn", "Set some work");
+          setBtn.type = "button";
+          setBtn.addEventListener("click", function () { openAssignments(course); });
+          v.appendChild(setBtn);
+          show("admin");
+          return;
+        }
+
+        var table = el("div", "ad-table");
+        var hd = el("div", "ad-tr head");
+        hd.innerHTML = "<span>Work</span><span>Category</span><span>Score</span>" +
+          "<span>Out of</span><span></span>";
+        table.appendChild(hd);
+
+        work.forEach(function (a) {
+          var g = byAssignment[a.id];
+          var tr = el("div", "ad-tr");
+          tr.appendChild(el("span", "ad-cellname", esc(a.title)));
+          tr.appendChild(el("span", "ad-cellcat", esc(a.category || "—")));
+
+          var got = el("input");
+          got.type = "number"; got.min = "0"; got.step = "0.5";
+          got.value = g && g.score != null ? g.score : "";
+          got.placeholder = "—";
+          tr.appendChild(got);
+
+          tr.appendChild(el("span", "ad-cellout", String(a.outOf)));
+
+          var state = el("span", "ad-cellstate");
+          tr.appendChild(state);
+
+          /* Written when the field loses focus, not on every keystroke. A
+             PUT per digit would mean "9" is briefly stored while somebody
+             types "95", and a grade that flickers is a grade a student sees. */
+          var last = got.value;
+          got.addEventListener("blur", function () {
+            if (got.value === last) return;
+            last = got.value;
+            var score = got.value === "" ? null : Number(got.value);
+            state.textContent = "Saving…";
+            state.className = "ad-cellstate busy";
+            API.grades.put(a.id, p.id, score, a.outOf).then(function () {
+              state.textContent = "Saved";
+              state.className = "ad-cellstate ok";
+              setTimeout(function () { state.textContent = ""; }, 1600);
+              render();
+            }, function (e) {
+              state.textContent = "Refused";
+              state.className = "ad-cellstate bad";
+              toast(e && e.message ? e.message : "The server refused that grade.");
+            });
+          });
+          table.appendChild(tr);
+        });
+        v.appendChild(table);
+
+        v.appendChild(el("p", "lx-lede",
+          "Saved to the database as you go. " + esc(p.first || p.name) +
+          " sees this on their own device the next time they open Learn."));
+        show("admin");
+      }, function (e) { failed(node, e, render); });
+      show("admin");
+    }
+
+    render();
+  }
+
+  /* -------------------------------------------------------------- Courses */
+  function tabCourses(v) {
+    var node = loading(v, "courses");
+    API.courses.mine().then(function (courses) {
+      node.remove();
+      v.appendChild(el("p", "lx-lede",
+        "Courses in the database. These are the ones that carry enrolment, work and " +
+        "grades. The catalogue on the Explore tab is the shipped curriculum — " +
+        "published content that lives in the site's files, not in the database."));
+
+      var acts = el("div", "ad-acts");
+      var add = el("button", "lx-btn", "New course");
+      add.type = "button";
+      add.addEventListener("click", function () { openCourseEditor(null); });
+      acts.appendChild(add);
+      v.appendChild(acts);
+
+      var list = el("div", "ad-list");
+      courses.forEach(function (c) {
+        var row = el("div", "ad-row");
+        row.innerHTML = '<span class="t"><b>' + esc(c.title) + "</b><span>" +
+          esc(c.subject || "") + " · " + esc(c.code) + " · " + esc(c.status) +
+          (c.myRole ? " · you are " + esc(c.myRole) : "") + "</span></span>";
+        var edit = el("button", "lx-btn quiet", "Edit");
+        edit.type = "button";
+        edit.addEventListener("click", function () { openCourseEditor(c); });
+        row.appendChild(edit);
+        list.appendChild(row);
       });
+      if (!courses.length) {
+        list.appendChild(el("div", "lx-empty",
+          "No courses in the database yet. Create one, enrol students, and you can " +
+          "set work and grade it."));
+      }
+      v.appendChild(list);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "courses"); }); });
+  }
+
+  function openCourseEditor(c) {
+    var making = !c;
+    enter("course-edit:" + (c ? c.id : "new"), making ? "New course" : trim(c.title),
+          function () { openCourseEditor(c); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", making ? "New course" : "Course"));
+    v.appendChild(el("h1", "lx-h1", making ? "Create a course" : esc(c.title)));
+
+    var body = (c && c.body) || {};
+    var form = el("div", "ad-form");
+    var code = field("Code", c ? c.code : "", "a short slug, e.g. media-arts");
+    if (!making) code.input.disabled = true;
+    var title = field("Title", c ? c.title : "", "Media Arts");
+    var subject = field("Subject", c ? c.subject : "", "English");
+    var level = field("Level", c ? c.level : "Introductory");
+    var summary = areaField("Summary", c ? c.summary : "", "What this course is, in a sentence.");
+    var grading = areaField("Grading",
+      (body.grading || [["Quizzes", 35], ["Assignments", 35], ["Exams", 30]])
+        .map(function (g) { return g[0] + " = " + g[1]; }).join("\n"),
+      "One category per line, as Name = percent. They should add to 100.", 5);
+    var units = areaField("Units", (body.units || []).join("\n"), "One unit per line.", 6);
+    [code, title, subject, level, summary, grading, units].forEach(function (f) {
+      form.appendChild(f);
+    });
+    v.appendChild(form);
+
+    var acts = el("div", "ad-acts");
+    var save = el("button", "lx-btn lg", making ? "Create" : "Save");
+    save.type = "button";
+    save.addEventListener("click", function () {
+      var weights = grading.input.value.split("\n").map(function (line) {
+        var bits = line.split("=");
+        if (bits.length < 2) return null;
+        var pct = Number(bits[1].trim());
+        if (!bits[0].trim() || !isFinite(pct)) return null;
+        return [bits[0].trim(), pct];
+      }).filter(Boolean);
+      var total = weights.reduce(function (a, w) { return a + w[1]; }, 0);
+      if (weights.length && Math.abs(total - 100) > 0.5) {
+        toast("The grading weights add to " + total + "%, not 100%.");
+        return;
+      }
+      var payload = {
+        title: title.input.value.trim(),
+        subject: subject.input.value.trim(),
+        level: level.input.value.trim(),
+        summary: summary.input.value.trim(),
+        status: "published",
+        body: {
+          grading: weights,
+          units: units.input.value.split("\n").map(function (x) { return x.trim(); })
+                      .filter(Boolean)
+        }
+      };
+      if (!payload.title) { toast("A course needs a title."); return; }
+      save.disabled = true;
+      var go = making
+        ? API.courses.create(Object.assign({ code: code.input.value.trim().toLowerCase(),
+                                             orgId: S.me.orgId }, payload))
+        : API.courses.update(c.id, payload);
+      attempt(go, function () {
+        toast(making ? "Course created." : "Saved.");
+        goBack();
+      }).then(function () { save.disabled = false; });
+    });
+    acts.appendChild(save);
+    v.appendChild(acts);
+    show("admin");
+  }
+
+  /* ----------------------------------------------------------- Study sets
+     Written by teachers, studied by their classes, stored in the database.
+
+     Until this existed the tab carried a warning saying sets reached nobody
+     but the person who wrote them. The warning is gone because the thing it
+     described is gone — which is the only honest way for a label like that to
+     disappear. */
+  function tabSets(v) {
+    var node = loading(v, "study sets");
+
+    Promise.all([
+      API.studySets.authored(),
+      API.courses.mine()
+    ]).then(function (out) {
+      var sets = out[0], courses = out[1];
+      node.remove();
+
+      v.appendChild(el("p", "lx-lede",
+        "A set published to a course appears for every student in it, on every device " +
+        "they sign in on. It works in Flashcards, Learn, Match, Test and all three games."));
+
+      var acts = el("div", "ad-acts");
+      var add = el("button", "lx-btn", "New study set");
+      add.type = "button";
+      add.addEventListener("click", function () { openSetEditor(null, courses); });
+      acts.appendChild(add);
+      v.appendChild(acts);
+
+      var list = el("div", "ad-list");
+      sets.forEach(function (st) {
+        var course = courses.filter(function (c) { return c.id === st.courseId; })[0];
+        var row = el("div", "ad-row");
+        row.innerHTML = '<span class="t"><b>' + esc(st.title) + "</b><span>" +
+          st.termCount + (st.termCount === 1 ? " term" : " terms") +
+          (course ? " · " + esc(course.title) : " · not attached to a course") +
+          " · " + esc(st.status) + "</span></span>";
+        var edit = el("button", "lx-btn quiet", "Edit");
+        edit.type = "button";
+        edit.addEventListener("click", function () { openSetEditor(st.id, courses); });
+        row.appendChild(edit);
+        list.appendChild(row);
+      });
+      if (!sets.length) {
+        list.appendChild(el("div", "lx-empty",
+          "You have not written any yet. A set needs four terms to work — the games " +
+          "need something to choose between."));
+      }
+      v.appendChild(list);
+
+      /* The curriculum that ships with the site, listed so nobody wonders
+         where the built-in sets went. They are read-only here: they are
+         published content, and one school editing them would edit them for
+         everybody. */
+      var shipped = SC.sets();
+      var ids = Object.keys(shipped).filter(function (k) { return k.indexOf("__") !== 0; });
+      if (ids.length) {
+        v.appendChild(el("h2", "lx-h2", "Shipped with the site"));
+        v.appendChild(el("p", "lx-lede",
+          "Published curriculum, read-only. To make a school version of one, write a new " +
+          "set with the same terms — it will take precedence for your students."));
+        var sl = el("div", "ad-list");
+        ids.forEach(function (id) {
+          var row = el("div", "ad-row");
+          row.innerHTML = '<span class="t"><b>' + esc(shipped[id].t) + "</b><span>" +
+            esc(id) + " · " + shipped[id].cards.length + " terms</span></span>";
+          sl.appendChild(row);
+        });
+        v.appendChild(sl);
+      }
+    }, function (e) { failed(node, e, function () { openAdmin(true, "sets"); }); });
+  }
+
+  function openSetEditor(setId, courses) {
+    var making = !setId;
+    enter("set-edit:" + (setId || "new"), making ? "New set" : "Study set",
+          function () { openSetEditor(setId, courses); });
+    var v = $("#v-admin");
+
+    function draw(set) {
+      var rows = set && set.terms
+        ? set.terms.map(function (t) {
+            return { term: t.term, definition: t.definition,
+                     why: t.why || "", example: t.example || "" };
+          })
+        : [{ term: "", definition: "", why: "", example: "" }];
+
+      /* The header fields live out here with the rows, not inside render().
+         Adding a term redraws the whole editor, and a redraw that rebuilds
+         the title from the saved set silently discards what the author has
+         typed — so somebody who names a set, writes four terms and then adds
+         a fifth loses the name and does not notice until the save fails. */
+      var head = {
+        code: set ? set.code : "",
+        title: set ? set.title : "",
+        courseId: set ? (set.courseId || "") : "",
+        status: set ? set.status : "draft"
+      };
+
+      function render() {
+        v.innerHTML = "";
+        v.appendChild(el("p", "lx-eyebrow", making ? "New study set" : "Study set"));
+        v.appendChild(el("h1", "lx-h1", making ? "Write a study set" : esc(set.title)));
+
+        var form = el("div", "ad-form");
+        var code = field("Code", head.code, "e.g. waves-and-sound");
+        if (!making) code.input.disabled = true;
+        code.input.addEventListener("input", function () { head.code = code.input.value; });
+        var title = field("Title", head.title, "What this set covers");
+        title.input.addEventListener("input", function () { head.title = title.input.value; });
+
+        var courseF = el("label", "ad-field");
+        courseF.innerHTML = "<span>Course</span>";
+        var courseSel = el("select");
+        var none = el("option");
+        none.value = ""; none.textContent = "Not attached to a course";
+        courseSel.appendChild(none);
+        (courses || []).forEach(function (c) {
+          if (c.myRole !== "teacher" && c.myRole !== "assistant" && S.me.role !== "admin") return;
+          var o = el("option");
+          o.value = c.id; o.textContent = c.title;
+          if (head.courseId === c.id) o.selected = true;
+          courseSel.appendChild(o);
+        });
+        courseSel.addEventListener("change", function () { head.courseId = courseSel.value; });
+        courseF.appendChild(courseSel);
+
+        var statusF = el("label", "ad-field");
+        statusF.innerHTML = "<span>Who can see it</span>";
+        var statusSel = el("select");
+        [["draft", "Draft — only you, until you publish it"],
+         ["published", "Published — the course it is attached to"]].forEach(function (r) {
+          var o = el("option");
+          o.value = r[0]; o.textContent = r[1];
+          if (head.status === r[0]) o.selected = true;
+          statusSel.appendChild(o);
+        });
+        statusSel.addEventListener("change", function () { head.status = statusSel.value; });
+        statusF.appendChild(statusSel);
+
+        [code, title, courseF, statusF].forEach(function (f) { form.appendChild(f); });
+        v.appendChild(form);
+
+        v.appendChild(el("h2", "lx-h2", "Terms"));
+        v.appendChild(el("p", "lx-lede",
+          "Every definition has to stand on its own: in Match, Test and the games it is " +
+          "shown without its term beside it. A term with a reason and an example can also " +
+          "be asked as a case to work through — without them it stops at explanation."));
+
+        var depth = el("p", "ad-depth");
+        v.appendChild(depth);
+        function say() {
+          var full = rows.filter(function (r) {
+            return r.term.trim() && r.definition.trim() && r.why.trim() && r.example.trim();
+          }).length;
+          var done = rows.filter(function (r) {
+            return r.term.trim() && r.definition.trim();
+          }).length;
+          depth.textContent = done < 4
+            ? done + " of the four terms a set needs so far."
+            : done + " terms, " + full + " with a worked case" +
+              (full === done ? " — every one can be asked at apply."
+                             : ". The other " + (done - full) + " stop at explanation.");
+        }
+
+        var table = el("div", "ad-table terms");
+        var hd = el("div", "ad-tr head");
+        hd.innerHTML = "<span>Term</span><span>Definition</span>" +
+          "<span>Why it matters</span><span>An example</span><span></span>";
+        table.appendChild(hd);
+
+        rows.forEach(function (r, ix) {
+          var tr = el("div", "ad-tr");
+          function box(key, placeholder, rowsN) {
+            var i = rowsN ? el("textarea") : el("input");
+            if (rowsN) i.rows = rowsN; else i.type = "text";
+            i.value = r[key];
+            i.placeholder = placeholder;
+            i.addEventListener("input", function () { r[key] = i.value; say(); });
+            return i;
+          }
+          tr.appendChild(box("term", "Term"));
+          tr.appendChild(box("definition", "A definition that stands on its own.", 2));
+          tr.appendChild(box("why", "Optional — why this is worth knowing.", 2));
+          tr.appendChild(box("example", "Optional — one concrete instance.", 2));
+          var del = el("button", "ad-x");
+          del.type = "button";
+          del.setAttribute("aria-label", "Remove this term");
+          del.innerHTML = svg(I.close, true);
+          del.addEventListener("click", function () { rows.splice(ix, 1); render(); });
+          tr.appendChild(del);
+          table.appendChild(tr);
+        });
+        v.appendChild(table);
+        say();
+
+        var acts = el("div", "ad-acts");
+        var add = el("button", "lx-btn quiet", "Add a term");
+        add.type = "button";
+        add.addEventListener("click", function () {
+          rows.push({ term: "", definition: "", why: "", example: "" });
+          render();
+        });
+        acts.appendChild(add);
+
+        var save = el("button", "lx-btn lg", making ? "Create the set" : "Save");
+        save.type = "button";
+        save.addEventListener("click", function () {
+          var terms = rows.map(function (r) {
+            return { term: r.term.trim(), definition: r.definition.trim(),
+                     why: r.why.trim() || null, example: r.example.trim() || null };
+          }).filter(function (r) { return r.term && r.definition; });
+
+          var payload = {
+            title: head.title.trim(),
+            courseId: head.courseId || null,
+            status: head.status,
+            terms: terms
+          };
+          if (!payload.title) { toast("A set needs a title."); return; }
+
+          save.disabled = true;
+          var go = making
+            ? API.studySets.create(Object.assign(
+                { code: head.code.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""),
+                  orgId: S.me.orgId }, payload))
+            : API.studySets.update(setId, payload);
+
+          /* The cache is refilled from the server rather than patched from
+             what was typed. The server may have normalised something, and a
+             cache that diverges from the source is worse than no cache. */
+          attempt(go, function (saved) {
+            loadStudySets().then(function () {
+              toast(making
+                ? (payload.status === "published"
+                    ? "Created and published to the course."
+                    : "Created as a draft — only you can see it until you publish it.")
+                : "Saved.");
+              goBack();
+            });
+          }).then(function () { save.disabled = false; });
+        });
+        acts.appendChild(save);
+
+        if (!making) {
+          var arch = el("button", "lx-btn quiet", "Archive");
+          arch.type = "button";
+          arch.addEventListener("click", function () {
+            if (!confirm("Archive “" + set.title + "”? Students stop seeing it. " +
+                         "It is not deleted.")) return;
+            attempt(API.studySets.archive(setId), function () {
+              delete dbSets[set.code];
+              toast("Archived.");
+              goBack();
+            });
+          });
+          acts.appendChild(arch);
+        }
+        v.appendChild(acts);
+        show("admin");
+      }
+
+      render();
     }
 
-    /* The session is the tab's, not the browser's: closing it signs out. */
-    var KEY = "oplo.learn.session";
-    function open(id) {
-      try { sessionStorage.setItem(KEY, id); } catch (e) { /* private mode */ }
-    }
-    function current() {
-      var id;
-      try { id = sessionStorage.getItem(KEY); } catch (e) { return null; }
-      return id ? D.STUDENTS.filter(function (s) { return s.id === id; })[0] || null : null;
-    }
-    function close() {
-      try { sessionStorage.removeItem(KEY); } catch (e) { /* nothing to clear */ }
+    if (making) { draw(null); return; }
+    v.innerHTML = "";
+    var node = loading(v, "the set");
+    show("admin");
+    API.studySets.get(setId).then(function (set) { draw(set); },
+                                 function (e) { failed(node, e, function () {
+                                   openSetEditor(setId, courses); }); });
+  }
+
+  /* --------------------------------------------------------------- People */  /* --------------------------------------------------------------- People */
+  function tabPeople(v) {
+    var node = loading(v, "people");
+    API.accounts.list(S.me.orgId).then(function (people) {
+      node.remove();
+      v.appendChild(el("p", "lx-lede",
+        people.length + (people.length === 1 ? " account" : " accounts") +
+        ". An Oplo Account, not a Learn account — the same sign-in carries a person " +
+        "into every Oplo product they are authorised for, and roles are held per product."));
+
+      var acts = el("div", "ad-acts");
+      var add = el("button", "lx-btn", "Add a person");
+      add.type = "button";
+      add.addEventListener("click", function () { openPersonEditor(null); });
+      acts.appendChild(add);
+      v.appendChild(acts);
+
+      var list = el("div", "ad-list");
+      people.forEach(function (p) {
+        var row = el("div", "ad-row");
+        row.appendChild(avatarFor(p));
+        row.appendChild(el("span", "t", "<b>" + esc(p.name) + "</b><span>" +
+          esc(p.email || "") + (p.title ? " · " + esc(p.title) : "") + "</span>"));
+        var edit = el("button", "lx-btn quiet", "Edit");
+        edit.type = "button";
+        edit.addEventListener("click", function () { openPersonEditor(p); });
+        row.appendChild(edit);
+        list.appendChild(row);
+      });
+      v.appendChild(list);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "people"); }); });
+  }
+
+  function openPersonEditor(p) {
+    var making = !p;
+    enter("person:" + (p ? p.id : "new"), making ? "New person" : (p.firstName || p.name),
+          function () { openPersonEditor(p); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", making ? "New person" : "Person"));
+    v.appendChild(el("h1", "lx-h1", making ? "Add somebody" : esc(p.name)));
+
+    var form = el("div", "ad-form");
+    var name = field("Full name", p ? p.name : "");
+    var email = field("Email", p ? p.email : "");
+    if (!making) email.input.disabled = true;
+    var title = field("Title", p ? p.title : "", "High School Silver Program");
+
+    var roleF = el("label", "ad-field");
+    roleF.innerHTML = "<span>Role in Oplo Learn</span>";
+    var role = el("select");
+    [["student", "Student — their own work"],
+     ["teacher", "Teacher — the courses they teach"],
+     ["author", "Author — content they write"],
+     ["admin", "Administrator — the whole school"]].forEach(function (r) {
+      var o = el("option");
+      o.value = r[0]; o.textContent = r[1];
+      role.appendChild(o);
+    });
+    roleF.appendChild(role);
+
+    var pw = field("Password", "", making ? "At least 10 characters" : "");
+    pw.input.type = "password";
+    pw.input.autocomplete = "new-password";
+
+    [name, email, title, roleF].forEach(function (f) { form.appendChild(f); });
+    if (making) form.appendChild(pw);
+    v.appendChild(form);
+
+    if (making) {
+      v.appendChild(el("p", "lx-lede",
+        "The password is sent once, over HTTPS, and hashed on the server. It is never " +
+        "stored anywhere in this page and never reaches the database in a readable form."));
+    } else {
+      v.appendChild(el("p", "lx-lede",
+        "Passwords are changed by the person they belong to, from their own account " +
+        "screen. An administrator cannot read or set somebody else's password."));
     }
 
-    return { verify: verify, open: open, current: current, close: close, b64: b64 };
+    var acts = el("div", "ad-acts");
+    var save = el("button", "lx-btn lg", making ? "Add them" : "Save");
+    save.type = "button";
+    save.addEventListener("click", function () {
+      if (!name.input.value.trim()) { toast("A person needs a name."); return; }
+      save.disabled = true;
+      var go;
+      if (making) {
+        go = API.accounts.create({
+          email: email.input.value.trim(),
+          name: name.input.value.trim(),
+          title: title.input.value.trim(),
+          password: pw.input.value,
+          role: role.value,
+          orgId: S.me.orgId
+        });
+      } else {
+        go = API.accounts.update(p.id, {
+          name: name.input.value.trim(),
+          title: title.input.value.trim()
+        }).then(function () {
+          return API.accounts.role(p.id, "learn", role.value, S.me.orgId);
+        });
+      }
+      attempt(go, function () {
+        toast(making ? name.input.value.trim() + " added." : "Saved.");
+        goBack();
+      }).then(function () { save.disabled = false; });
+    });
+    acts.appendChild(save);
+    v.appendChild(acts);
+    show("admin");
+  }
+
+  /* --------------------------------------------------------------- System
+     What is real, what is not, and where the line is. It is a screen rather
+     than a README because the person who most needs to know is the one
+     looking at the console wondering why a change did not reach a student. */
+  function tabSystem(v) {
+    v.appendChild(el("p", "lx-lede",
+      "Where this install stands, and what is actually enforced."));
+
+    var box = el("div", "ad-sys");
+    var rows = [
+      ["Platform API", API.base(), "checking…"],
+      ["Identity", "Oplo Account", "One account across Oplo products. Sessions are " +
+        "HttpOnly cookies set by the server; this page cannot read them."],
+      ["Authorization", "Server-side", "Every permission is decided in the API. Hidden " +
+        "buttons are a courtesy, not a control."],
+      ["Grades", "Database", "Written by the teachers of a course, read by the student " +
+        "they belong to. Synchronised across devices."],
+      ["Progress and XP", "Database", "Written by the student, priced by the server. " +
+        "This browser keeps a cache so the app works offline; the database is the truth."],
+      ["Study sets", "Database", "Written by teachers, published to a course, and read by " +
+        "the students in it. Drafts stay with their author until published."],
+      ["Course catalogue", "Shipped in the site", "The Explore tab reads published " +
+        "content from the site's files. Database courses carry the enrolment and grades."],
+      ["Tutor", "Local model", "Runs through Ollama on your own machine, if you have it. " +
+        "Nothing is sent to a server."]
+    ];
+    rows.forEach(function (r) {
+      var row = el("div", "ad-sys-row");
+      row.innerHTML = "<b>" + esc(r[0]) + "</b><em>" + esc(r[1]) + "</em><span>" +
+        esc(r[2]) + "</span>";
+      box.appendChild(row);
+    });
+    v.appendChild(box);
+
+    API.health().then(function (up) {
+      var first = box.querySelector(".ad-sys-row span");
+      if (first) {
+        first.textContent = up
+          ? "Answering. Sign-in, grades and progress are live."
+          : "Not answering. Nothing that needs the server will work until it is running.";
+      }
+    });
+
+    v.appendChild(el("h2", "lx-h2", "Your account"));
+    var who = el("div", "ad-list");
+    var row1 = el("div", "ad-row");
+    row1.appendChild(avatarFor(S.me));
+    row1.appendChild(el("span", "t", "<b>" + esc(S.me.name) + "</b><span>" +
+      esc(S.me.email) + " · " + esc(S.me.id) + "</span>"));
+    who.appendChild(row1);
+    (S.me.roles || []).forEach(function (r) {
+      var row = el("div", "ad-row");
+      row.innerHTML = '<span class="t"><b>' + esc(r.product) + "." + esc(r.role) +
+        "</b><span>" + (r.orgId ? "in " + esc(r.orgId) : "platform-wide") + "</span></span>";
+      who.appendChild(row);
+    });
+    v.appendChild(who);
+  }
+
+  /* ================================================================== Auth
+     Identity is the platform's, not this app's.
+
+     What used to be here was a PBKDF2 verifier that ran in the browser
+     against a salt and hash shipped inside data.js. It was honest about being
+     a lock on a door rather than a safe, but it was still the wrong thing: a
+     verifier that reaches the browser is a verifier an attacker can grind
+     offline at their own pace, and an app that decides for itself who is
+     signed in cannot enforce anything against a user with a console open.
+
+     So it is gone. Sign-in posts to the Oplo platform API, the server checks
+     the password, and the server sets an HttpOnly session cookie this file
+     cannot read. From then on the only question this app ever asks about
+     identity is `who am I?` — and the answer comes from the server.
+
+     One Oplo Account, not an Oplo Learn account. The same session will carry
+     a person into OMaps or OShopping, which is why none of this lives under
+     a Learn-specific name. */
+  var Auth = (function () {
+    function verify(email, password) { return API.login(email, password); }
+    function current() { return API.me(); }
+    function close() { return API.logout().catch(function () { /* already gone */ }); }
+    return { verify: verify, current: current, close: close };
   })();
 
+  /* `who` is whatever /api/v1/me resolved the session cookie to. Nothing in
+     this function may be reached without that having succeeded. */
   function boot(who) {
-    S.me = who;
+    S.me = normaliseAccount(who);
+    who = S.me;
 
     /* The record is opened before anything is drawn, and S is pointed at it.
        Every screen below reads S.m, S.sets, S.mistakes exactly as it always
@@ -4926,21 +6832,76 @@
     av.style.background = who.hue || "";
     document.querySelector(".lx-user .nm").textContent = who.name;
     $("#user").title = "Signed in as " + who.name;
-    document.body.classList.toggle("is-admin", who.role === "admin");
-    $("#navAdmin").hidden = who.role !== "admin";
+    document.body.classList.toggle("is-admin", who.role === "admin" || who.role === "teacher");
+    $("#navAdmin").hidden = !allowedTabs().length;
+    $("#navGrades").hidden = who.role !== "student";
+    $("#navAdmin").textContent = who.role === "admin" ? "Console" : "My students";
     if (R.broken) {
       toast("This browser will not let the page store anything, so progress will not be kept.");
     }
     Ann.reset();
-    Game.paint();          // the bar shows the real streak and rank from the first frame
     drawSubjectNav();
     home();
     Room.presence();
     Room.fromLink();
+
+    /* Enrolment is the database's answer, not a list in a file. The home
+       screen is drawn twice — once immediately so the app is not a spinner,
+       and again when the server says what this person is actually taking. */
+    Promise.all([
+      API.courses.mine().then(function (courses) {
+        S.me.assigned = courses.filter(function (c) {
+          return !c.myRole || c.myRole === "student";
+        });
+        S.me.teaching = courses.filter(function (c) {
+          return c.myRole === "teacher" || c.myRole === "assistant";
+        });
+        return true;
+      }, function () { return false; }),
+      loadStudySets()
+    ]).then(function (out) {
+      if ((out[0] || out[1]) && S.view === "my") drawMy();
+    });
+
+    /* The record on this device is a cache. The server is the truth, so it is
+       asked as soon as there is a session, and the screens redraw when the
+       answer differs from what was cached. */
+    Sync.pull().then(function (changed) {
+      Game.paint();
+      if (changed && S.view === "my") drawMy();
+    });
+  }
+
+  /* The API returns an Oplo Account: an id, a profile, and product roles. The
+     rest of this app was written against a flatter shape, so the translation
+     happens once, here, rather than in forty places. */
+  function normaliseAccount(a) {
+    var learn = (a.roles || []).filter(function (r) { return r.product === "learn"; });
+    var platform = (a.roles || []).filter(function (r) { return r.product === "platform"; });
+    var role = platform.some(function (r) { return r.role === "admin"; }) ? "admin"
+             : learn.some(function (r) { return r.role === "admin"; }) ? "admin"
+             : learn.some(function (r) { return r.role === "teacher"; }) ? "teacher"
+             : "student";
+    var name = a.name || a.email || "Someone";
+    return {
+      id: a.id, email: a.email, name: name,
+      first: a.firstName || name.split(/\s+/)[0],
+      initials: a.initials ||
+        name.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(),
+      hue: a.hue || "#0071e3",
+      title: a.title || "",
+      role: role,
+      roles: a.roles || [],
+      orgs: a.organizations || [],
+      orgId: (a.organizations && a.organizations[0]) ? a.organizations[0].id : null,
+      assigned: [],
+      enrolment: null
+    };
   }
 
   function signOut() {
     if (R) R.flush();                 // never leave the last few answers unwritten
+    Sync.flushNow();
     R = null;
     Game.attach(null);
     Auth.close();
@@ -4950,10 +6911,12 @@
     // memory for whoever opens the tab next.
     S.me = null; S.m = {}; S.sets = {}; S.mistakes = [];
     S.here = null; S.hist = [];
+    S.tab = null;
     TRAIL = []; POS = -1;            // the next person's history starts from nothing
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     document.body.classList.remove("is-admin");
     $("#navAdmin").hidden = true;
+    $("#navGrades").hidden = true;
     $("#rankChip").hidden = true;
     $("#streak").textContent = "0";
     $("#gate").hidden = false;
@@ -4965,49 +6928,62 @@
 
   (function gate() {
     var form = $("#gateForm"), err = $("#gErr"), btn = form.querySelector("button");
-    var tries = 0, until = 0;
+
+    function fail(message, field) {
+      err.textContent = message;
+      if (field === "email") $("#gEmail").classList.add("bad");
+      if (field === "password") $("#gPass").classList.add("bad");
+      if (!field) { $("#gEmail").classList.add("bad"); $("#gPass").classList.add("bad"); }
+      $("#gPass").value = "";
+      $("#gPass").focus();
+    }
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var email = $("#gEmail").value, pw = $("#gPass").value;
+      var email = $("#gEmail").value.trim(), pw = $("#gPass").value;
       err.textContent = "";
       $("#gEmail").classList.remove("bad");
       $("#gPass").classList.remove("bad");
-
-      var wait = Math.ceil((until - Date.now()) / 1000);
-      if (wait > 0) {
-        err.textContent = "Too many attempts. Try again in " + wait +
-                          (wait === 1 ? " second." : " seconds.");
-        return;
-      }
       if (!email || !pw) { err.textContent = "Both fields, please."; return; }
 
       btn.disabled = true;
-      btn.textContent = "Checking\u2026";
-      Auth.verify(email, pw).then(function (who) {
+      btn.textContent = "Signing in…";
+
+      /* No rate limiting here, and that is deliberate: it is enforced by the
+         server, per address and per address-of-origin. A limiter in the page
+         stops an honest user from mistyping twice and stops an attacker from
+         nothing at all. */
+      Auth.verify(email, pw).then(function (account) {
         btn.disabled = false;
         btn.textContent = "Sign in";
-        if (who) { tries = 0; Auth.open(who.id); boot(who); return; }
-        tries++;
-        // Backs off after three: 5s, 10s, 20s, capped at a minute.
-        if (tries >= 3) until = Date.now() + Math.min(60000, 5000 * Math.pow(2, tries - 3));
-        err.textContent = "That email and password do not match an account.";
-        $("#gEmail").classList.add("bad");
-        $("#gPass").classList.add("bad");
-        $("#gPass").value = "";
-        $("#gPass").focus();
-      }).catch(function () {
+        boot(account);
+      }).catch(function (e2) {
         btn.disabled = false;
         btn.textContent = "Sign in";
-        err.textContent = "This page needs a secure connection (https) to check a password.";
+        if (e2 && e2.code === "offline") {
+          err.innerHTML = "Cannot reach the Oplo account service. " +
+            "Sign-in needs the platform API, and it is not answering at " +
+            "<code>" + esc(API.base()) + "</code>.";
+          return;
+        }
+        if (e2 && e2.code === "rate_limited") { fail(e2.message); return; }
+        fail(e2 && e2.message ? e2.message
+                              : "That email and password do not match an account.", e2 && e2.field);
       });
     });
 
-    var already = Auth.current();
-    if (already) boot(already);
-    else setTimeout(function () { $("#gEmail").focus(); }, 120);
+    /* A session already open in this browser signs straight in. The cookie is
+       HttpOnly, so the only way to find out is to ask the server. */
+    API.me().then(function (account) {
+      boot(account);
+    }).catch(function (e) {
+      if (e && e.code === "offline") {
+        err.innerHTML = "Cannot reach the Oplo account service at <code>" +
+          esc(API.base()) + "</code>.";
+      }
+      setTimeout(function () { $("#gEmail").focus(); }, 120);
+    });
   })();
-
 
   /* ================================================================ Tutor
      The panel. All the pedagogy lives in tutor.js; this is the surface, plus
@@ -5250,9 +7226,15 @@
   /* A tab can be closed between two debounced writes. `pagehide` is the one
      event that fires reliably on every path out — closing, navigating,
      backgrounding on iOS — so the last few seconds are written there. */
-  window.addEventListener("pagehide", function () { if (R) R.flush(); });
+  window.addEventListener("pagehide", function () {
+    if (R) R.flush();
+    Sync.flushNow();
+  });
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden" && R) R.flush();
+    if (document.visibilityState === "hidden") {
+      if (R) R.flush();
+      Sync.flush();
+    }
   });
 
   /* ---------------------------------------------------------------- Wiring */
@@ -5262,6 +7244,7 @@
       noFoot(); progress(null);
       if (b.dataset.view === "my") home();
       else if (b.dataset.view === "admin") openAdmin();
+      else if (b.dataset.view === "grades") openGrades();
       else explore();
     });
   });

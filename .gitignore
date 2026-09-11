@@ -11,6 +11,10 @@ node_modules/
 **/node_modules/
 *.log
 
+# wrangler's local state and cache — a local database can hold student records
+.wrangler/
+**/.wrangler/
+
 # Secrets — never commit real credentials
 .env
 **/.env
