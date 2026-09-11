@@ -27,7 +27,10 @@ ok()   { printf "  \033[32m✓\033[0m %s\n" "$1"; }
 note() { printf "  \033[2m%s\033[0m\n" "$1"; }
 die()  { printf "  \033[31m✗ %s\033[0m\n" "$1"; exit 1; }
 
-if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+# Either a token in the environment or a session from `wrangler login` will do.
+# Checking only for the token turned away the login this message recommends.
+if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] &&
+   [[ "$(npx wrangler whoami 2>&1 || true)" == *"not authenticated"* ]]; then
   cat <<'MSG'
 
 Cloudflare credentials are missing.
@@ -79,7 +82,10 @@ say "4. The session pepper"
 # Mixed into session-token hashes before storage, so a leaked database is not
 # a set of usable sessions. It is set once and must never change afterwards:
 # changing it invalidates every live session at once.
-if npx wrangler secret list --env production 2>/dev/null | grep -q SESSION_PEPPER; then
+# Read the list, then match. Under pipefail a `| grep -q` can report a miss when
+# grep stops reading early, and a miss here would replace the pepper.
+SECRETS=$(npx wrangler secret list --env production 2>/dev/null || true)
+if [[ "$SECRETS" == *SESSION_PEPPER* ]]; then
   ok "SESSION_PEPPER already set"
   note "do not rotate it casually — every signed-in person is signed out"
 else
