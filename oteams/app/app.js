@@ -607,11 +607,19 @@
   /* ==================================================================
      Navigation
      ================================================================== */
+  /* Every conversation opened is also a browser history entry. The list
+     below used to be private to OTeams, so the browser's Back skipped every
+     channel and left the app. `history` here is OTeams' own list and shadows
+     the browser's, which is why the browser's is always window.history. */
   function openConvo(id, fromHistory){
     if (!convo(id)) return;
+    var was = current;
     current = id; read[id]=true; replyingTo = null;
     viewMode = null; editingId = null; $(".main").classList.remove("viewing");
-    if (!fromHistory){ history = history.slice(0,hIndex+1); history.push(id); hIndex=history.length-1; }
+    if (!fromHistory && id !== was){
+      history = history.slice(0,hIndex+1); history.push(id); hIndex=history.length-1;
+      try { window.history.pushState({ ot: id, i: hIndex }, ""); } catch(e){}
+    }
     closeThread();
     renderSidebar(); renderHeader(); renderMessages(); renderComposer();
     if (memberOpen) renderMembers();
@@ -623,8 +631,18 @@
     $("#navBack").style.opacity = hIndex>0?"1":".4";
     $("#navFwd").style.opacity = hIndex<history.length-1?"1":".4";
   }
-  function navBack(){ if(hIndex>0){ hIndex--; openConvo(history[hIndex], true); } }
-  function navFwd(){ if(hIndex<history.length-1){ hIndex++; openConvo(history[hIndex], true); } }
+  // The arrows in the header go through the browser, so they and the
+  // browser's own Back and Forward are one history, not two.
+  function navBack(){ if(hIndex>0) window.history.back(); }
+  function navFwd(){ if(hIndex<history.length-1) window.history.forward(); }
+  window.addEventListener("popstate", function(e){
+    var s = e.state;
+    if (!s || typeof s.ot !== "string" || !convo(s.ot)) return;
+    hIndex = Math.max(0, Math.min(history.length-1, s.i|0));
+    // After a reload the browser remembers entries this page no longer does.
+    if (history[hIndex] !== s.ot){ history = [s.ot]; hIndex = 0; }
+    openConvo(s.ot, true);
+  });
 
   /* ==================================================================
      Reactions
@@ -1462,6 +1480,7 @@
      ================================================================== */
   loadState(); loadUI(); applyTheme();
   current = "launch-q3"; read["launch-q3"]=true; history=["launch-q3"]; hIndex=0;
+  try { window.history.replaceState({ ot: current, i: 0 }, ""); } catch(e){}
   renderRail(); renderSidebar();
   renderHeader(); renderMessages(); renderComposer(); updateNavButtons();
   renderMembers(); scheduleTyping();

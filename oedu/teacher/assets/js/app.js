@@ -37,9 +37,16 @@ function boot(){
   applyTheme();
   const u = auth.currentUser();
   if (!u) { state.mode="login"; return renderLogin(); }
-  if (u.role==="guardian"){ state.mode="guardian"; state.route="ghome"; return guardianShell(u); }
+  if (u.role==="guardian"){ state.mode="guardian"; state.route="ghome"; guardianShell(u); return anchor(); }
   state.mode="teacher"; state.route = u.role==="admin" ? "admin" : "today";
   teacherShell(u);
+  anchor();
+}
+
+// The first screen replaces the page's own history entry rather than adding
+// one, so leaving OEdu never costs an extra press of Back.
+function anchor(){
+  try { history.replaceState({ oedu: state.route, params: state.params || {}, mode: state.mode }, ""); } catch {}
 }
 
 // ---------------------------------------------------------------
@@ -208,14 +215,29 @@ function guardianShell(u){
 // ---------------------------------------------------------------
 // routing / mount (shared)
 // ---------------------------------------------------------------
-function go(route, params={}){
+// Every screen is a browser history entry. Without that the browser saw one
+// page, and its Back button skipped every screen in OEdu and left entirely.
+function go(route, params={}, fromHistory=false){
   const routes = activeRoutes();
   if (!routes[route]) return;
+  const same = state.route === route &&
+    JSON.stringify(state.params || {}) === JSON.stringify(params || {});
   state.route = route; state.params = params;
+  if (!fromHistory && !same) {
+    try { history.pushState({ oedu: route, params, mode: state.mode }, ""); } catch {}
+  }
   if (state.mobileOpen){ state.mobileOpen=false; document.getElementById("device")?.classList.remove("nav-open"); }
   mount();
 }
-function ctx(){ return { params: state.params, go, toast, applyTheme, user: auth.currentUser(),
+// Back and Forward replay the screen. An entry from another mode — a teacher's
+// history after signing in as a guardian — is not this person's, and is left.
+window.addEventListener("popstate", e => {
+  const s = e.state;
+  if (!s || !s.oedu || s.mode !== state.mode) return;
+  go(s.oedu, s.params || {}, true);
+});
+
+function ctx(){ return { params: state.params, go: (r, p) => go(r, p), toast, applyTheme, user: auth.currentUser(),
   rerender:(keepFocus=false)=>mount(keepFocus) }; }
 
 function mount(keepFocus=false){
