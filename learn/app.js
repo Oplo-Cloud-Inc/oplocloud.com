@@ -240,8 +240,46 @@
     return t.length > (n || 20) ? t.slice(0, (n || 20) - 1).trim() + "\u2026" : t;
   }
 
+  /* ------------------------------------------------ The browser's history
+     The stack above was the app's alone. The browser never heard about any
+     of it, so to the browser the whole of Learn was one page — and its Back
+     button skipped every screen inside it and left the app entirely,
+     landing wherever the student had been before they opened it.
+
+     So every place is also a browser history entry. TRAIL mirrors those
+     entries one for one, each holding the place and a copy of the path that
+     led to it, and a popstate replays the entry the browser moved to. The
+     URL is left alone: the places are closures, not addresses, and a URL
+     that looked shareable but opened the home screen would be worse than
+     one that makes no promise. After a reload the old entries still exist
+     in the browser but not in memory, so they land on Home rather than on
+     nothing. */
+  var TRAIL = [], POS = -1, RESTORING = false;
+
+  function mark(push) {
+    if (RESTORING) return;
+    var entry = { here: S.here, hist: S.hist.slice() };
+    if (push && POS >= 0) {
+      TRAIL = TRAIL.slice(0, POS + 1);        // a new step drops the old forward path
+      TRAIL.push(entry);
+      POS = TRAIL.length - 1;
+      try { history.pushState({ lx: POS }, ""); } catch (e) { /* sandboxed frame */ }
+    } else {
+      // The very first place replaces the entry the page already has, so
+      // opening Learn does not cost an extra press of Back to leave it.
+      if (POS < 0) { TRAIL = [entry]; POS = 0; } else TRAIL[POS] = entry;
+      try { history.replaceState({ lx: POS }, ""); } catch (e) { /* sandboxed frame */ }
+    }
+  }
+
   function enter(key, label, restore, replace) {
     if (S.here && S.here.key === key) { S.here.restore = restore; return; }
+    // Replaying a place must not record it again as a new one.
+    if (RESTORING) {
+      S.here = { key: key, label: label, restore: restore };
+      if (TRAIL[POS]) TRAIL[POS].here = S.here;
+      return;
+    }
     // A finished run is not a place to go back into, so the screen that
     // reports it replaces the run rather than stacking on top of it.
     if (!replace && S.here) {
@@ -249,11 +287,18 @@
       if (S.hist.length > 40) S.hist.shift();
     }
     S.here = { key: key, label: label, restore: restore };
+    mark(!replace);
   }
 
+  /* A top-level section starts a fresh in-app path — the Back button in the
+     bar hides — but it is still a step in the browser's history, so the
+     browser's Back returns to wherever the student was before they clicked
+     Home. Clicking the section they are already on does not add a step. */
   function root(key, label, restore) {
+    var same = S.here && S.here.key === key && !S.hist.length;
     S.hist = [];
     S.here = { key: key, label: label, restore: restore };
+    mark(!same);
   }
 
   function show(view) {
@@ -278,11 +323,16 @@
     if (typeof Tutor !== "undefined" && Tutor && Tutor.where) Tutor.where();
   }
 
+  /* The Back button in the bar goes through the browser whenever there is a
+     browser entry behind this one, so the two backs can never disagree about
+     where the student is. */
   function goBack() {
+    if (S.hist.length && POS > 0 && TRAIL[POS - 1]) { history.back(); return; }
     var prev = S.hist.pop();
     if (!prev) { home(); return; }
     S.here = prev;
     prev.restore();
+    mark(false);
   }
 
   function home() {
@@ -4829,6 +4879,7 @@
     // memory for whoever opens the tab next.
     S.me = null; S.m = {}; S.sets = {}; S.mistakes = [];
     S.here = null; S.hist = [];
+    TRAIL = []; POS = -1;            // the next person's history starts from nothing
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     document.body.classList.remove("is-admin");
     $("#navAdmin").hidden = true;
@@ -5144,6 +5195,26 @@
     });
   });
   $("#back").addEventListener("click", goBack);
+
+  /* The browser's Back and Forward — including a swipe on a phone. */
+  window.addEventListener("popstate", function (e) {
+    if (!S.me) return;                         // the sign-in gate is showing
+    var pos = e.state && typeof e.state.lx === "number" ? e.state.lx : null;
+    var entry = pos != null ? TRAIL[pos] : null;
+    RESTORING = true;
+    try {
+      if (entry) {
+        POS = pos;
+        S.hist = entry.hist.slice();
+        S.here = entry.here;
+        entry.here.restore();
+      } else {
+        S.hist = []; S.here = null;
+        home();
+      }
+    } finally { RESTORING = false; }
+    if (!entry) { TRAIL = []; POS = -1; mark(false); }
+  });
   $("#user").addEventListener("click", function () { openAccount(); });
 
   document.addEventListener("keydown", function (e) {

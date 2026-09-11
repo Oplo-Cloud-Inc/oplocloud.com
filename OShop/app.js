@@ -725,7 +725,9 @@ let coPayment = 'OShopping Pay';
 const PAYMENTS = [['OShopping Pay','bolt'],['•••• 4242','card'],['OShopping Credit','gift']];
 function screenCheckout(){
   const sel = selectedItems();
-  if(!sel.length){ location.hash = '#/cart'; return '<div></div>'; }
+  // Replace, not push. A redirect that adds a history entry turns Back into a
+  // loop: back to checkout, which immediately sends you forward to the cart.
+  if(!sel.length){ location.replace('#/cart'); return '<div></div>'; }
   const c = calc(sel);
   const a = PROFILE.address;
   const arrival = new Date(Date.now()+86400*1000*2).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
@@ -1014,7 +1016,10 @@ function placeOrder(){
     store.cart = store.cart.filter(i=>!buy.has(i.sku));
     store.deselected.clear(); store.promo=null; persist(); syncChrome();
     confirmationTotal = total;
-    location.hash = '#/confirmation';
+    // Replace the checkout rather than stacking on top of it. An order that
+    // has been placed has no checkout behind it — Back from here goes to the
+    // cart, not to a checkout page that immediately bounces there itself.
+    location.replace('#/confirmation');
   }, 1300);
 }
 
