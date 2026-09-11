@@ -19,10 +19,12 @@
 
 const enc = new TextEncoder();
 
-/* Deliberately below what a server with a dedicated CPU would use. A Worker
-   invocation has a CPU budget, and a login that exceeds it fails closed for
-   everybody — which is a worse security outcome than a slightly cheaper KDF. */
-export const PBKDF2_ITERATIONS = 210000;
+/* The most Cloudflare's runtime allows. It refuses PBKDF2 above 100,000
+   iterations with an exception, so a higher count fails every sign-in at once
+   — and the local runtime does not enforce the limit, which is how 210,000
+   passed every local test and failed the first sign-in in production.
+   scripts/check-boundaries.sh holds this number to the limit. */
+export const PBKDF2_ITERATIONS = 100000;
 
 export function id(prefix) {
   // UUIDv4 without the hyphens, prefixed so an id is self-describing in a log

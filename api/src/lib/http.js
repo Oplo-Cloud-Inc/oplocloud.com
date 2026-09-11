@@ -53,6 +53,10 @@ export function errorResponse(err, env) {
     }
   };
   if (known && err.field) body.error.field = err.field;
+  // The response says nothing about an unexpected error, so the log is the
+  // only record of it. The error alone — never the request, which may carry a
+  // password.
+  if (!known) console.error(String(err && err.stack || err));
   // A stack trace is a gift to an attacker in production and a necessity in
   // development, so it is gated on the environment rather than on a guess.
   if (!known && env && env.ENVIRONMENT !== "production") {

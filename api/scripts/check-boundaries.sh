@@ -97,6 +97,13 @@ creds=$(cgrep "pbkdf2|PBKDF2|deriveBits|verifier|password_hash|pw_hash" $(jsfile
 if [ -z "$creds" ]; then ok "no password derivation or verifiers in the frontend"
 else bad "the frontend appears to handle password material:"; echo "$creds" | sed 's/^/      /'; fi
 
+say "6. Password hashing stays inside Cloudflare's limit"
+# Production refuses PBKDF2 above 100,000 iterations and the local runtime does
+# not, so no local test can notice a higher number. This check can.
+iter=$(grep -oE 'PBKDF2_ITERATIONS = [0-9]+' src/lib/crypto.js | grep -oE '[0-9]+$')
+if [ -n "$iter" ] && [ "$iter" -le 100000 ]; then ok "PBKDF2_ITERATIONS is $iter, within the 100,000 limit"
+else bad "PBKDF2_ITERATIONS is ${iter:-unreadable}; Cloudflare refuses anything above 100,000"; fi
+
 printf "\n"
 if [ "$fail" = "0" ]; then printf "\033[1;32mBoundaries hold.\033[0m\n"; else printf "\033[1;31mBoundary violated.\033[0m\n"; fi
 exit $fail
