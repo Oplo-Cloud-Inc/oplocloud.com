@@ -3,7 +3,7 @@
 Identity, organizations, and product data for Oplo. One Worker, one database,
 every product.
 
-This is **not** an Oplo Learn backend. It is the platform's, and Learn is the
+This is **not** an OEdu backend. It is the platform's, and OEdu is the
 first product to consume it.
 
 ```
@@ -13,14 +13,14 @@ first product to consume it.
                              │
         ┌───────────┬────────┼────────┬───────────┐
         │           │        │        │           │
-   Oplo Learn    OMaps   OShopping  Roxan   …future products
+      OEdu       OMaps   OShopping  Roxan   …future products
         │           │        │        │           │
    learn_*       maps_*   shopping_*  roxan_*    <product>_*
 ```
 
 The distinction shows up in one place and it is the important one: every
 product table references `account_id`, never a product-local user id. A person
-who is a teacher in Learn and a seller in OShopping is one row in `accounts`
+who is a teacher in OEdu and a seller in OShopping is one row in `accounts`
 with two rows in `account_roles`, not two accounts that share an email
 address. Signing in once is what makes them one person.
 
@@ -131,7 +131,9 @@ signs out every account at once.
 | --- | --- |
 | Who you are | `src/core/auth.js` — from the session token, never the request body |
 | What you may do | `src/core/guard.js` — every decision, in one function |
-| What a grade means | `src/services/grades.js` |
+| What a grade means | `src/services/grades.js` — including what a blank cell means |
+| Every change to a mark | `learn_grade_events`, written by the repository so no route can skip it |
+| Whether a report is finished | `src/services/reporting.js` — and it is a question about the marking, not the fields |
 | What an answer is worth | `src/services/progress.js` |
 | SQL | `src/repo/d1.js`, and nowhere else |
 
@@ -158,7 +160,8 @@ KDF.
 
 In `LAUNCH.md`, with what each one needs and what it blocks. The short version:
 email verification, password reset and durable rate limiting block a public
-launch; grade history, session pruning and observability block scale.
+launch; session pruning and observability block scale. (Grade history was on
+that list and is now `learn_grade_events`.)
 
 ## Keeping the layering honest
 

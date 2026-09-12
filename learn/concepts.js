@@ -6,7 +6,7 @@
    every study app built out of pairs, and it is why a student can finish a
    set at 100% and still not be able to use any of it.
 
-   So Learn does not run on pairs. It runs on concepts, and a concept carries
+   So OEdu does not run on pairs. It runs on concepts, and a concept carries
    the things you would need in order to ask a harder question:
 
      why    why this is worth knowing at all

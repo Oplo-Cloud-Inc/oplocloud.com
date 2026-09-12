@@ -1,0 +1,86 @@
+# ===========================================================================
+# OEdu — the product, on its own hostname.
+#
+# `edu.oplocloud.com` serves the OEdu application: the student's app and the
+# teacher's console, which is the whole of `learn/` and nothing else. It is a
+# Worker with no code — Cloudflare serves the directory as static assets, the
+# same as the apex does from GitHub Pages, because there is nothing here that
+# needs a server.
+#
+# ------------------------------------------------------------- Why a split
+#
+# The product and the pages that describe it are different things with
+# different release cadences, and putting them on one host makes every change
+# to a marketing paragraph a deploy of the gradebook.
+#
+#     oplocloud.com          the company, and everything that explains it,
+#                            including /edu/ and /oedu/ — GitHub Pages
+#     edu.oplocloud.com      OEdu itself, the thing people sign in to
+#     api.oplocloud.com      the platform API — api/wrangler.toml
+#
+# All three sit under one registrable domain, and that is load-bearing rather
+# than tidy: the session cookie is SameSite=Lax, so a request from
+# edu.oplocloud.com to api.oplocloud.com is same-site and carries it. Moving
+# OEdu to a different domain entirely would silently sign everybody out.
+#
+# `learn/` is already self-contained — every script and stylesheet in it is
+# referenced relatively, and api.js works out where the API is from the
+# hostname it was served from — so it needs no change to be served at a root
+# rather than at /learn/.
+# ===========================================================================
+# The default deploy carries no custom domain, so it lands on workers.dev and
+# takes nothing over. `--env production` is what attaches the hostname, and it
+# is a separate command on purpose — see the note above that block.
+#
+#     npx wrangler deploy                  → oedu.<subdomain>.workers.dev
+#     npx wrangler deploy --env production → edu.oplocloud.com
+name = "oedu"
+main = "worker/index.js"
+compatibility_date = "2026-05-01"
+workers_dev = true
+
+[assets]
+directory = "./learn"
+# Files are matched before the script runs, so the Worker only sees requests
+# no file answered — which is what makes the redirect cheap.
+binding = "ASSETS"
+# A path that is not a file is not a page. The app never changes the URL — its
+# history entries are pushed with no path — so it has no deep links to fall
+# back for, and "single-page-application" here would buy nothing while costing
+# something real: a mistyped script src would return index.html with a 200,
+# and a trivial typo would surface as a JavaScript syntax error instead of a
+# missing file.
+not_found_handling = "none"
+
+# --------------------------------------------------------------- Production
+#
+# The same script, with the hostname attached. Cloudflare creates the DNS
+# record and the certificate on deploy; there is nothing to add by hand at the
+# registrar.
+#
+# NOTE: `edu.oplocloud.com` already exists as a custom domain on another Worker
+# in this account. Deploying this env attaches it here and detaches it there.
+# That is why it is not the default.
+[env.production]
+name = "oedu"
+main = "worker/index.js"
+
+[env.production.assets]
+directory = "./learn"
+binding = "ASSETS"
+not_found_handling = "none"
+
+[[env.production.routes]]
+pattern = "edu.oplocloud.com"
+custom_domain = true
+
+# The old address. Two patterns rather than `/learn*`, which would also catch
+# a future /learning or /learner — a redirect that fires on a page nobody
+# asked it about is a bug that takes a year to notice.
+[[env.production.routes]]
+pattern = "oplocloud.com/learn"
+zone_name = "oplocloud.com"
+
+[[env.production.routes]]
+pattern = "oplocloud.com/learn/*"
+zone_name = "oplocloud.com"

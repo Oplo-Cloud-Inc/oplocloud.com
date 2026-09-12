@@ -33,6 +33,7 @@ import * as grades from "./routes/grades.js";
 import * as progress from "./routes/progress.js";
 import * as studysets from "./routes/studysets.js";
 import * as graduation from "./routes/graduation.js";
+import * as reporting from "./routes/reporting.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -62,14 +63,25 @@ const ROUTES = [
   ["PATCH",  "/api/v1/assignments/:assignmentId",        courses.updateAssignment],
   ["DELETE", "/api/v1/assignments/:assignmentId",        courses.deleteAssignment],
 
-  ["GET",    "/api/v1/grades",   grades.list],
-  ["PUT",    "/api/v1/grades",   grades.put],
+  ["GET",    "/api/v1/grades",          grades.list],
+  ["PUT",    "/api/v1/grades",          grades.put],
+  ["POST",   "/api/v1/grades/batch",    grades.batch],
+  ["GET",    "/api/v1/grades/history",  grades.history],
+  ["POST",   "/api/v1/grades/undo",     grades.undo],
+  ["GET",    "/api/v1/courses/:courseId/gradebook", grades.gradebook],
 
   ["GET",    "/api/v1/study-sets",         studysets.list],
   ["POST",   "/api/v1/study-sets",         studysets.create],
   ["GET",    "/api/v1/study-sets/:setId",  studysets.get],
   ["PATCH",  "/api/v1/study-sets/:setId",  studysets.update],
   ["DELETE", "/api/v1/study-sets/:setId",  studysets.remove],
+
+  ["GET",    "/api/v1/teaching",                 reporting.teaching],
+  ["GET",    "/api/v1/students",                 reporting.students],
+  ["GET",    "/api/v1/activity",                 reporting.activity],
+  ["GET",    "/api/v1/reporting",                reporting.readiness],
+  ["PUT",    "/api/v1/reporting/comment",        reporting.putComment],
+  ["GET",    "/api/v1/students/:accountId/report", reporting.report],
 
   ["GET",    "/api/v1/graduation",                       graduation.get],
   ["PUT",    "/api/v1/accounts/:accountId/program",      graduation.setProgram],

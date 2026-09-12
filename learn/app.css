@@ -3044,3 +3044,777 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 @media (prefers-reduced-motion: reduce) {
   .gr *, .gr *::before, .gr *::after { animation: none !important; transition: none !important; }
 }
+
+/* ==========================================================================
+   The class gradebook.
+
+   A sheet: students down, work across. Everything in it is in service of one
+   thing — a teacher reading a column of marks and typing the next one without
+   ever losing which row they are on.
+
+   That is why the name column and the header row are frozen rather than
+   scrolled, why a cell is an input with no chrome until it is touched, and
+   why there is exactly one colour in the whole grid. Marks are the content;
+   anything else drawn at the same weight competes with them.
+   ========================================================================== */
+
+.gb-pick { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 20px; }
+.gb-pickb {
+  text-align: left; padding: 9px 14px; border-radius: 11px;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair);
+  transition: box-shadow .16s var(--ease), background .16s var(--ease);
+}
+.gb-pickb b { display: block; font-size: 14px; font-weight: 500; letter-spacing: -.014em; }
+.gb-pickb span { display: block; font-size: 11.5px; color: var(--ink-3); }
+.gb-pickb:hover { box-shadow: inset 0 0 0 1px var(--rule); }
+.gb-pickb.on { background: var(--ink); color: #fff; box-shadow: none; }
+.gb-pickb.on span { color: rgba(255,255,255,.62); }
+
+.gb-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.gb-title h2 { font-family: var(--font); font-size: 24px; font-weight: 600; letter-spacing: -.022em; }
+.gb-title span { font-size: 13px; color: var(--ink-3); }
+.gb-head .admin-acts { margin-top: 0; }
+
+/* --------------------------------------------------------------- Needs you
+   What is owed, and nothing else. Three at most: a list of everything that
+   could be done is a list nobody reads twice. */
+.gb-needs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.gb-need {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 8px 13px; border-radius: 11px; background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: box-shadow .16s var(--ease);
+}
+.gb-need:hover { box-shadow: inset 0 0 0 1px var(--rule); }
+.gb-need b { font-family: var(--font); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gb-need span { font-size: 12.5px; color: var(--ink-2); }
+.gb-need.late b { color: var(--amber); }
+.gb-needs.clear b { font-size: 13px; font-weight: 500; color: var(--ink-3); }
+.gb-needmore { font-size: 12.5px; color: var(--ink-3); }
+
+/* ------------------------------------------------------------- The sheet */
+.gb-scroll {
+  overflow: auto; background: var(--paper); border-radius: var(--r);
+  box-shadow: 0 0 0 .5px var(--hair);
+  max-height: min(70vh, 720px);
+  overscroll-behavior: contain;
+}
+/* Wide enough for its columns, and never narrower than the box it sits in —
+   so a class with two pieces of work still fills the sheet, and one with
+   twenty scrolls. The trailing `1fr` is where any slack goes; without it the
+   last real column stretches and the grade drifts away from the marks it is
+   made of. */
+.gb { display: flex; flex-direction: column; width: max-content; min-width: 100%; }
+.gb-r {
+  display: grid;
+  grid-template-columns: 210px repeat(var(--gb-cols), 88px) 96px 1fr;
+  align-items: stretch;
+  border-bottom: 1px solid var(--hair);
+}
+/* The slack at the right edge. It is a cell so the grid lines up, and it
+   is drawn as nothing so it does not read as a column. */
+.gb-c.fill { border-left: 0; }
+.gb-r:last-child { border-bottom: 0; }
+.gb-r.head {
+  position: sticky; top: 0; z-index: 3;
+  background: var(--paper); border-bottom: 1px solid var(--rule);
+}
+.gb-r.foot {
+  position: sticky; bottom: 0; z-index: 2;
+  background: var(--canvas); border-top: 1px solid var(--rule); border-bottom: 0;
+}
+.gb-r:not(.head):not(.foot):hover { background: #fafafc; }
+
+.gb-c { min-width: 0; display: flex; align-items: center; }
+.gb-c.name {
+  position: sticky; left: 0; z-index: 2;
+  gap: 9px; padding: 0 14px 0 16px; background: inherit;
+  box-shadow: 1px 0 0 var(--hair);
+  text-align: left;
+}
+.gb-r:not(.head):not(.foot) .gb-c.name { background: var(--paper); }
+.gb-r:not(.head):not(.foot):hover .gb-c.name { background: #fafafc; }
+.gb-r.head .gb-c.name, .gb-r.foot .gb-c.name { background: inherit; }
+.gb-nm {
+  font-size: 14px; letter-spacing: -.012em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gb-hn {
+  font-size: 10.5px; font-weight: 600; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.gb-c.name .admin-av { width: 24px; height: 24px; font-size: 9.5px; flex: none; }
+
+/* The column head. It is a button because a column is selectable — that is
+   where the actions that apply to a whole piece of work live. */
+.gb-c.col {
+  position: relative; flex-direction: column; align-items: flex-start;
+  justify-content: flex-end; gap: 1px; padding: 22px 9px 9px;
+  border-left: 1px solid var(--hair); text-align: left;
+  transition: background .14s var(--ease);
+}
+.gb-c.col b {
+  display: block; width: 100%;
+  font-size: 12px; font-weight: 600; letter-spacing: -.01em; line-height: 1.25;
+  /* Two lines, then an ellipsis. A column is 88px wide and most titles are
+     longer than that; truncating at one line loses the half that
+     distinguishes "Unit 5 quiz" from "Unit 6 quiz". */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.gb-c.col span { font-size: 10.5px; color: var(--ink-3); white-space: nowrap; }
+.gb-c.col:hover { background: var(--canvas); }
+.gb-c.col.on { background: var(--canvas); box-shadow: inset 0 -2px 0 var(--ink); }
+.gb-owed {
+  position: absolute; top: 6px; left: 9px;
+  font-style: normal; font-size: 9.5px; font-weight: 700; line-height: 1;
+  padding: 3px 5px; border-radius: 999px;
+  background: var(--sunk); color: var(--ink-2); font-variant-numeric: tabular-nums;
+}
+.gb-owed.late { background: #fdf0dd; color: var(--amber); }
+
+/* ---------------------------------------------------------------- A cell */
+.gb-c.cell { position: relative; border-left: 1px solid var(--hair); padding: 0; }
+.gb-c.cell input {
+  width: 100%; height: 100%; min-height: 40px;
+  border: 0; background: none; text-align: center;
+  font-family: var(--text); font-size: 14.5px; font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em; color: var(--ink); padding: 0 4px;
+}
+.gb-c.cell input:focus {
+  outline: none; background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--blue); border-radius: 3px;
+}
+.gb-c.cell.miss input { color: var(--red); font-weight: 600; }
+.gb-c.cell.exc input { color: var(--ink-3); font-style: italic; }
+.gb-c.cell.blank.late { background: #fffaf1; }
+/* A comment attached to the mark, shown as a corner rather than a badge: it
+   is a fact about the cell, not a thing to click. */
+.gb-c.cell.noted::after {
+  content: ""; position: absolute; top: 3px; right: 3px;
+  width: 0; height: 0; border-top: 5px solid var(--blue);
+  border-left: 5px solid transparent; opacity: .7;
+}
+.gb-c.cell.busy input { color: var(--ink-3); }
+.gb-c.cell.ok { animation: gbOk .9s var(--ease); }
+.gb-c.cell.bad { background: #fdeced; }
+@keyframes gbOk { 0% { background: #e7f5ec; } 100% { background: transparent; } }
+
+.gb-c.grade {
+  justify-content: flex-end; gap: 7px; padding: 0 16px 0 10px;
+  border-left: 1px solid var(--hair);
+}
+.gb-c.grade b {
+  font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -.02em;
+}
+.gb-c.grade span { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.gb-c.grade.head { justify-content: flex-end; }
+.gb-none { color: var(--ink-3); }
+.gb-c.avg {
+  justify-content: center; border-left: 1px solid var(--hair);
+  padding: 9px 4px; font-size: 12.5px; color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.gb-c.avg b { font-weight: 600; }
+
+.gb-hint { margin: 10px 2px 0; font-size: 12px; color: var(--ink-3); }
+.gb-hint b { font-weight: 600; color: var(--ink-2); }
+
+/* ------------------------------------------------------------- Inspector
+   One bar for whatever is selected. It holds the things that cannot fit in a
+   cell — the comment the student will read, the history of the mark, and the
+   single bulk action that is worth having. */
+.gb-insp {
+  display: none; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-top: 14px; padding: 12px 16px; border-radius: 13px;
+  background: var(--canvas); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.gb-insp.on { display: flex; }
+.gb-iwho b { font-size: 14px; font-weight: 600; letter-spacing: -.014em; }
+.gb-iwho span { display: block; font-size: 12px; color: var(--ink-3); }
+.gb-istate { font-size: 12.5px; color: var(--ink-2); }
+.gb-ifb {
+  flex: 1; min-width: 220px; font: inherit; font-size: 13.5px;
+  padding: 8px 12px; border-radius: 9px;
+  border: 1px solid var(--rule); background: var(--paper);
+}
+.gb-ifb:focus { outline: none; border-color: var(--blue); }
+.gb-ibtn {
+  font-size: 13px; padding: 7px 13px; border-radius: 9px; white-space: nowrap;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink);
+}
+.gb-ibtn:hover { background: #fff; box-shadow: inset 0 0 0 1px var(--ink-3); }
+.gb-ibtn.strong { background: var(--ink); color: #fff; box-shadow: none; }
+.gb-ibtn:disabled { color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--hair); }
+
+.gb-hist {
+  margin-top: 10px; padding: 14px 16px; border-radius: 13px;
+  background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.gb-histh { font-size: 12px; font-weight: 600; color: var(--ink-3); margin-bottom: 8px; }
+.gb-histl { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.gb-histl li { display: flex; align-items: baseline; gap: 10px; }
+.gb-histl b { font-size: 13.5px; font-weight: 600; min-width: 72px; font-variant-numeric: tabular-nums; }
+.gb-histl span { font-size: 12px; color: var(--ink-3); }
+
+/* -------------------------------------------------------- One student */
+.gb-marks { display: flex; flex-direction: column; gap: 2px; margin-bottom: 22px; }
+.gb-mark {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 0; border-bottom: 1px solid var(--hair);
+}
+.gb-mark .t { flex: 1; min-width: 160px; }
+.gb-mark .t b { display: block; font-size: 15px; font-weight: 500; letter-spacing: -.015em; }
+.gb-mark .t span { font-size: 12.5px; color: var(--ink-3); }
+.gb-mark .fb {
+  flex-basis: 100%; font-size: 13.5px; color: var(--ink-2); line-height: 1.5;
+  padding: 8px 12px; border-radius: 9px; background: var(--canvas);
+}
+
+@media (max-width: 700px) {
+  .gb-r { grid-template-columns: 132px repeat(var(--gb-cols), 70px) 80px 1fr; }
+  .gb-c.name { padding-left: 10px; }
+  .gb-c.name .admin-av { display: none; }
+  .gb-scroll { max-height: 62vh; }
+}
+
+/* Motion is decoration here too. */
+@media (prefers-reduced-motion: reduce) {
+  .gb-c.cell.ok { animation: none; }
+}
+
+/* A mark in a list of marks. `em` is the shape a fact takes when it is not a
+   number — "Not handed in" is as much a mark as 14 / 20 is, and drawing it in
+   a lighter grey than the scores beside it would be the same as hiding it. */
+.admin-row .mk { font-size: 13.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.admin-row .mk em { font-style: normal; color: var(--ink-3); }
+.admin-row .mk.miss em { color: var(--red); font-weight: 500; }
+
+/* ==========================================================================
+   The console.
+
+   A left rail holding the whole surface, and the work filling everything to
+   the right of it. The structure is the one operations dashboards have
+   converged on — Cloudflare's is the clearest — because it is the right answer
+   to the problem it solves: somebody who uses eight screens all day should be
+   able to see all eight and reach any of them in one movement.
+
+   What is adjusted is the weight of it. A rail read for eight hours needs
+   less, not more: no chevron on a row that does not expand, no icon arguing
+   with the word next to it, no colour except on the row you are standing on
+   and the numbers that changed. The type is one size for everything a person
+   navigates by, because two sizes in a list of eight is a hierarchy nobody
+   asked for.
+   ========================================================================== */
+
+.cn-rail {
+  position: fixed; inset: 0 auto 0 0; width: 232px; z-index: 60;
+  display: none; flex-direction: column;
+  padding: 10px 10px 12px;
+  background: var(--paper); border-right: 1px solid var(--hair);
+}
+body.is-console .cn-rail { display: flex; }
+
+/* There is no top bar in the console. The rail is the navigation, it is flush
+   to the edge of the screen, and it runs the full height of it.
+
+   The bar that used to sit above was the student's — Home, Explore, a streak,
+   an avatar — and keeping it meant a teacher navigated with two things that
+   disagreed about where they were. Going back is now a small control at the
+   head of the content, present only when there is somewhere to go back to. */
+body.is-console .lx-bar,
+body.is-console .lx-subbar,
+body.is-console .tt-open { display: none !important; }
+body.is-console .lx-wrap {
+  padding-left: 232px; padding-top: 64px; max-width: none;
+}
+body.is-console .admin-body { max-width: 1080px; }
+
+.cn-back, .cn-open { display: none; }
+body.is-console .cn-back {
+  position: fixed; top: 20px; left: 258px; z-index: 50;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12.5px; color: var(--ink-3);
+  padding: 5px 11px 5px 8px; border-radius: 999px;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair);
+  transition: color .14s var(--ease), box-shadow .14s var(--ease);
+}
+body.is-console .cn-back[hidden] { display: none; }
+body.is-console .cn-back:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+/* The content always starts below where the back control sits, present or
+   not, so a screen does not shift when one appears. */
+
+/* The account, at the top. It is the only row in the rail with two lines,
+   because it is the only one that is about a person rather than a place. */
+.cn-org {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; border-radius: 10px; text-align: left;
+  transition: background .14s var(--ease);
+}
+.cn-org:hover { background: var(--canvas); }
+.cn-org .av {
+  width: 26px; height: 26px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; color: #fff;
+  font-size: 10px; font-weight: 600; letter-spacing: .01em; background: var(--ink-3);
+}
+.cn-org .t { min-width: 0; }
+.cn-org .t b {
+  display: block; font-size: 13px; font-weight: 550; letter-spacing: -.012em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cn-org .t span { display: block; font-size: 11px; color: var(--ink-3); }
+
+.cn-find {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; margin: 8px 0 4px; padding: 7px 10px; border-radius: 9px;
+  font-size: 13px; color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: box-shadow .14s var(--ease);
+}
+.cn-find:hover { box-shadow: inset 0 0 0 1px var(--rule); }
+.cn-find kbd {
+  font: inherit; font-size: 10.5px; color: var(--ink-3);
+  padding: 1px 5px; border-radius: 5px; background: var(--canvas);
+}
+
+.cn-nav { flex: 1; overflow: auto; margin-top: 6px; }
+.cn-group {
+  margin: 16px 10px 5px; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3);
+}
+.cn-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 10px; border-radius: 9px; text-align: left;
+  font-size: 13.5px; letter-spacing: -.012em; color: var(--ink-2);
+  transition: background .14s var(--ease), color .14s var(--ease);
+}
+.cn-item .nm { flex: 1; min-width: 0; }
+.cn-item:hover { background: var(--canvas); color: var(--ink); }
+.cn-item.on { background: var(--canvas); color: var(--ink); font-weight: 550; }
+.cn-item.quiet { color: var(--ink-3); }
+/* The count. It is the only number in the rail and it only appears when it is
+   not zero — a row that permanently reads "0" teaches you to stop looking. */
+.cn-item .ct {
+  font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3);
+  padding: 1px 6px; border-radius: 999px;
+}
+.cn-item .ct.on { background: var(--sunk); color: var(--ink-2); }
+.cn-foot { border-top: 1px solid var(--hair); padding-top: 8px; margin-top: 8px; }
+
+.cn-scrim { display: none; }
+
+/* ------------------------------------------------------------ The page */
+.cn-head { margin-bottom: 22px; }
+.cn-eyebrow {
+  font-size: 11.5px; font-weight: 600; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--ink-3); margin-bottom: 7px;
+}
+.cn-h1 {
+  font-family: var(--font); font-size: clamp(28px, 3.4vw, 38px); font-weight: 600;
+  letter-spacing: -.028em; line-height: 1.06;
+}
+.cn-sub { margin-top: 10px; max-width: 62ch; font-size: 14.5px; color: var(--ink-2); line-height: 1.5; }
+.cn-h2 {
+  margin: 32px 0 12px; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.018em;
+}
+
+/* The tiles. Numbers, and the word for what they count. There is no chart on
+   any of them because nothing behind them is a series — a sparkline drawn
+   through one point is a drawing. */
+.cn-tiles {
+  display: grid; gap: 10px; margin-bottom: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+}
+.cn-tile {
+  padding: 16px 18px; border-radius: 13px;
+  background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.cn-tile b {
+  display: block; font-family: var(--font); font-size: 30px; font-weight: 600;
+  letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.cn-tile span { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-3); }
+.cn-tile.owe b { color: var(--amber); }
+.cn-tile.late b { color: var(--red); }
+.cn-tile.done b { color: var(--green); }
+
+.cn-verdict {
+  margin: 16px 0 4px; padding: 13px 16px; border-radius: 11px;
+  font-size: 14px; line-height: 1.5; color: var(--ink);
+  background: #fffaf1; box-shadow: inset 0 0 0 .5px #f0e0c4;
+}
+.cn-verdict.ok { background: #f1f8f3; box-shadow: inset 0 0 0 .5px #d8ecdf; }
+
+/* A row. One shape for every list in the console — a class, a piece of work,
+   a report — so that moving between screens is not relearning a layout. */
+.cn-rows { display: flex; flex-direction: column; }
+.cn-row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 18px;
+  align-items: center; width: 100%; text-align: left;
+  padding: 14px 4px; border-bottom: 1px solid var(--hair);
+  transition: background .13s var(--ease);
+}
+.cn-rows.tight .cn-row { padding: 11px 4px; }
+button.cn-row:hover { background: var(--canvas); }
+.cn-row.flat { cursor: default; }
+.cn-row .t { min-width: 0; }
+.cn-row .t b {
+  display: block; font-size: 15px; font-weight: 550; letter-spacing: -.016em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cn-row .t span { display: block; font-size: 12.5px; color: var(--ink-3); }
+.cn-row .m { text-align: right; }
+.cn-row .m i {
+  font-style: normal; font-family: var(--font); font-size: 16px; font-weight: 600;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}
+.cn-row .m span { display: block; font-size: 11px; color: var(--ink-3); }
+.cn-row .s { text-align: right; min-width: 0; }
+.cn-row .s em {
+  font-style: normal; font-size: 12.5px; font-weight: 550; white-space: nowrap;
+}
+.cn-row .s em.owe { color: var(--amber); }
+.cn-row .s em.late { color: var(--red); }
+.cn-row .s em.done { color: var(--ink-3); font-weight: 400; }
+.cn-row .s .why {
+  display: block; max-width: 34ch; font-size: 11.5px; color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.cn-block { margin-bottom: 30px; }
+.cn-blockhead {
+  display: flex; align-items: baseline; gap: 10px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+}
+.cn-blockhead h3 { font-size: 16px; font-weight: 600; letter-spacing: -.018em; }
+.cn-blockhead span { flex: 1; font-size: 12.5px; color: var(--ink-3); }
+
+.cn-btn {
+  font-size: 13px; padding: 7px 13px; border-radius: 9px; white-space: nowrap;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink);
+}
+.cn-btn:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
+.cn-btn.strong { background: var(--ink); color: #fff; box-shadow: none; }
+.cn-btn:disabled { color: var(--ink-3); background: var(--canvas); box-shadow: none; }
+
+/* --------------------------------------------------------- One report */
+.cn-report {
+  margin: 22px 0; padding: 22px 24px; border-radius: var(--r);
+  background: var(--paper); box-shadow: 0 0 0 .5px var(--hair);
+}
+.cn-reporthead { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.cn-reporthead h3 { font-family: var(--font); font-size: 20px; font-weight: 600; letter-spacing: -.022em; }
+.cn-reporthead .t span { font-size: 12.5px; color: var(--ink-3); }
+.cn-reporthead .g { display: flex; align-items: baseline; gap: 9px; }
+.cn-reporthead .g b {
+  font-family: var(--font); font-size: 26px; font-weight: 600; letter-spacing: -.03em;
+}
+.cn-reporthead .g span { font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.cn-reporthead .g .tr { font-style: normal; font-size: 12.5px; font-weight: 550; color: var(--ink-3); }
+.cn-reporthead .g .tr.up { color: var(--green); }
+.cn-reporthead .g .tr.down { color: var(--amber); }
+.cn-fine { margin-top: 8px; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+
+/* The evidence, sitting above the box the sentence goes in. */
+.cn-ev { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 4px; }
+.cn-chip {
+  font-size: 12px; color: var(--ink-2); padding: 7px 11px; border-radius: 9px;
+  background: var(--canvas);
+}
+.cn-chip b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cn-chip span { display: block; font-size: 10.5px; color: var(--ink-3); }
+.cn-chip.quiet b { color: var(--ink-2); }
+
+.cn-comment { margin-top: 14px; }
+.cn-lab { display: block; font-size: 12px; font-weight: 600; color: var(--ink-3); margin-bottom: 6px; }
+.cn-comment textarea {
+  width: 100%; font: inherit; font-size: 14.5px; line-height: 1.5; resize: vertical;
+  padding: 11px 13px; border-radius: 11px; border: 1px solid var(--rule);
+  background: var(--paper); color: var(--ink);
+}
+.cn-comment textarea:focus { outline: none; border-color: var(--blue); }
+.cn-commentfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.cn-commentfoot .cn-fine { margin-top: 0; }
+
+.cn-why { margin-top: 14px; display: flex; flex-direction: column; gap: 5px; }
+.cn-why li { font-size: 12.5px; color: var(--ink-3); padding-left: 14px; position: relative; }
+.cn-why li::before { content: "·"; position: absolute; left: 4px; }
+.cn-why li.flag { color: var(--amber); }
+
+.cn-marks { margin-top: 16px; }
+.cn-marks summary {
+  cursor: pointer; font-size: 13px; color: var(--ink-2); padding: 6px 0;
+  list-style: none;
+}
+.cn-marks summary::-webkit-details-marker { display: none; }
+.cn-marks summary::before { content: "›"; display: inline-block; width: 14px; transition: transform .15s var(--ease); }
+.cn-marks[open] summary::before { transform: rotate(90deg); }
+
+/* ------------------------------------------------------------- The finder */
+.cn-finderwrap {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: start center;
+  padding-top: 14vh; background: rgba(0,0,0,.18);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.cn-finder {
+  width: min(520px, 92vw); border-radius: 15px; overflow: hidden;
+  background: var(--paper); box-shadow: 0 24px 60px -12px rgba(0,0,0,.28), 0 0 0 .5px var(--hair);
+}
+.cn-finderin {
+  width: 100%; font: inherit; font-size: 16px; padding: 16px 18px;
+  border: 0; border-bottom: 1px solid var(--hair); background: none; color: var(--ink);
+}
+.cn-finderin:focus { outline: none; }
+.cn-finderlist { max-height: 50vh; overflow: auto; padding: 6px; }
+.cn-finderrow {
+  display: flex; align-items: baseline; gap: 10px; width: 100%;
+  padding: 9px 12px; border-radius: 9px; text-align: left;
+}
+.cn-finderrow b { font-size: 14px; font-weight: 500; letter-spacing: -.014em; }
+.cn-finderrow span { font-size: 11.5px; color: var(--ink-3); }
+.cn-finderrow.on { background: var(--canvas); }
+
+@media (max-width: 900px) {
+  .cn-rail { transform: translateX(-100%); transition: transform .22s var(--ease); }
+  body.is-console .cn-rail { display: flex; }
+  body.rail-open .cn-rail { transform: none; box-shadow: 0 0 60px rgba(0,0,0,.16); }
+  body.is-console .lx-wrap { padding-left: 0; padding-top: 64px; }
+  body.is-console .cn-back { left: 58px; top: 16px; }
+  /* The rail is a drawer here, so it needs a way in. A 34px control at the
+     top-left corner is the whole of what a top bar was doing. */
+  body.is-console .cn-open {
+    position: fixed; top: 14px; left: 14px; z-index: 58;
+    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px;
+    color: var(--ink-2); background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair);
+  }
+  body.rail-open .cn-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.16); }
+  .cn-row { grid-template-columns: 1fr auto; gap: 12px; }
+  .cn-row .m { display: none; }
+  .cn-row .s .why { max-width: 22ch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cn-rail { transition: none; }
+}
+
+/* ==========================================================================
+   Console primitives.
+
+   Three shapes — a table, a split view, an inspector — and every screen is
+   built from them. That is the point: moving between screens should not be
+   relearning a layout, and the fastest interface is the one whose second
+   screen you already know how to read.
+
+   Density is a variable rather than a redesign. The same markup at three row
+   heights, and the type never shrinks: solving density with 10px text is how
+   professional software becomes unreadable by the people who use it most.
+   ========================================================================== */
+
+body { --row: 12px; --rowgap: 14px; }
+body[data-density="comfortable"] { --row: 16px; --rowgap: 18px; }
+body[data-density="dense"]       { --row: 7px;  --rowgap: 10px; }
+
+/* -------------------------------------------------------------- The table */
+.cn-tbl {
+  margin-top: 14px; background: var(--paper); border-radius: 13px;
+  box-shadow: inset 0 0 0 .5px var(--hair); overflow: hidden;
+}
+.cn-tr {
+  display: grid; grid-template-columns: var(--cols); gap: var(--rowgap);
+  align-items: center; width: 100%; text-align: left;
+  padding: var(--row) 16px; border-bottom: 1px solid var(--hair);
+  transition: background .12s var(--ease);
+}
+.cn-tbody .cn-tr:last-child { border-bottom: 0; }
+.cn-tr.head {
+  padding-top: 10px; padding-bottom: 10px;
+  background: var(--canvas); border-bottom: 1px solid var(--rule);
+}
+.cn-th {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.cn-th.r, .cn-td.r { text-align: right; }
+.cn-td { min-width: 0; font-size: 13.5px; color: var(--ink-2); letter-spacing: -.01em; }
+.cn-td b {
+  display: block; font-size: 14px; font-weight: 550; color: var(--ink);
+  letter-spacing: -.014em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cn-td.r b { display: inline; }
+button.cn-tr:hover { background: var(--canvas); }
+button.cn-tr.on { background: #eef5fd; }
+button.cn-tr.on::before {
+  content: ""; position: absolute; left: 0; width: 2px; height: 100%; background: var(--blue);
+}
+button.cn-tr { position: relative; }
+.cn-tr.flat { cursor: default; }
+
+.cn-who { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.cn-who .nm {
+  font-size: 14px; font-weight: 550; color: var(--ink); letter-spacing: -.014em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cn-who .admin-av { width: 24px; height: 24px; font-size: 9.5px; flex: none; }
+body[data-density="dense"] .cn-who .admin-av { width: 20px; height: 20px; font-size: 9px; }
+
+/* Numbers are the content. They align right, they use tabular figures so a
+   column of them is a column, and only two of them are ever coloured. */
+.cn-mk {
+  font-family: var(--font); font-size: 14.5px; font-weight: 600;
+  letter-spacing: -.018em; font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.cn-mk.bad { color: var(--red); }
+.cn-mk.warn { color: var(--amber); }
+.cn-pc { margin-left: 5px; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cn-none { color: var(--ink-3); }
+.cn-sub2 { display: block; font-size: 11.5px; color: var(--ink-3); }
+.cn-mono { font-size: 12.5px; color: var(--ink-3); }
+.cn-tag {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  background: var(--sunk); color: var(--ink-2);
+}
+.cn-tag.on { background: #e7f3ea; color: var(--green); }
+.cn-change i { font-style: normal; color: var(--ink-3); }
+.cn-change b { display: inline; margin-left: 6px; }
+.cn-change i + b::before { content: ""; }
+
+/* ---------------------------------------------------------- The split view */
+.cn-split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); gap: 18px; align-items: start; }
+.cn-splitright { position: sticky; top: calc(var(--bar) + 18px); }
+@media (max-width: 1040px) {
+  .cn-split { grid-template-columns: 1fr; }
+  .cn-splitright { position: static; }
+}
+
+.cn-insp {
+  padding: 20px; border-radius: 14px; background: var(--paper);
+  box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.cn-insphead { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+.cn-insphead .admin-av { width: 34px; height: 34px; font-size: 12px; flex: none; }
+.cn-insphead .t { min-width: 0; }
+.cn-insphead .t b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.018em; }
+.cn-insphead .t span {
+  display: block; font-size: 12px; color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cn-inspbig { margin-bottom: 4px; }
+.cn-inspbig b {
+  font-family: var(--font); font-size: 34px; font-weight: 600; letter-spacing: -.032em;
+  line-height: 1; font-variant-numeric: tabular-nums;
+}
+.cn-inspbig span { display: block; margin-top: 5px; font-size: 12px; color: var(--ink-3); }
+.cn-insp .cn-tbl { box-shadow: none; border-radius: 0; margin-top: 10px; }
+.cn-insp .cn-tr { padding-left: 0; padding-right: 0; }
+.cn-insp .cn-tr.head { background: none; }
+
+/* -------------------------------------------------- Filters and the bar */
+.cn-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.cn-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.cn-filter {
+  font-size: 13px; padding: 6px 12px; border-radius: 999px; color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: box-shadow .14s var(--ease), background .14s var(--ease);
+}
+.cn-filter em {
+  font-style: normal; margin-left: 6px; font-size: 11.5px; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.cn-filter:hover { box-shadow: inset 0 0 0 1px var(--rule); }
+.cn-filter.on { background: var(--ink); color: #fff; box-shadow: none; }
+.cn-filter.on em { color: rgba(255,255,255,.6); }
+input.cn-search {
+  flex: 1; min-width: 180px; max-width: 320px; font: inherit; font-size: 13.5px;
+  padding: 7px 13px; border-radius: 9px; border: 1px solid var(--hair); background: var(--paper);
+}
+input.cn-search:focus { outline: none; border-color: var(--blue); }
+
+.cn-acts { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 2px; }
+.cn-btn.small { font-size: 12px; padding: 5px 10px; }
+
+.cn-empty {
+  margin-top: 16px; padding: 34px 28px; border-radius: 14px; text-align: center;
+  background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.cn-empty b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.018em; }
+.cn-empty p {
+  margin: 8px auto 0; max-width: 44ch; font-size: 13.5px; color: var(--ink-3); line-height: 1.5;
+}
+.cn-empty .cn-btn { margin-top: 16px; }
+
+.cn-pref {
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  flex-wrap: wrap; margin: 6px 0 20px; padding: 16px 18px; border-radius: 13px;
+  background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.cn-pref .t b { display: block; font-size: 14px; font-weight: 600; letter-spacing: -.014em; }
+.cn-pref .t span { display: block; margin-top: 3px; max-width: 52ch; font-size: 12.5px; color: var(--ink-3); }
+.cn-seg { display: flex; padding: 2px; border-radius: 9px; background: var(--canvas); }
+.cn-segb { font-size: 12.5px; padding: 6px 13px; border-radius: 7px; color: var(--ink-2); }
+.cn-segb.on { background: var(--paper); color: var(--ink); font-weight: 550; box-shadow: 0 0 0 .5px var(--hair); }
+
+/* ------------------------------------------------------------ Focus mode
+   Marking is the one thing here somebody does for an hour without stopping,
+   so it gets a mode with nothing else on the screen. */
+body.focus-mode .cn-rail,
+body.focus-mode .cn-back,
+body.focus-mode .cn-open,
+body.focus-mode .cn-head,
+body.focus-mode .gb-pick,
+body.focus-mode .gb-needs,
+body.focus-mode .tt-open { display: none !important; }
+body.focus-mode.is-console .lx-wrap { padding-left: 0; padding-top: 18px; }
+body.focus-mode .gb-scroll { max-height: calc(100vh - 190px); }
+
+/* ==========================================================================
+   What is left of the old console.
+
+   The screens above were rebuilt; the editors underneath them — a course, a
+   person, a study set — keep their logic and are re-dressed here rather than
+   rewritten, because their behaviour was never the problem. The card grid,
+   the tab strip and the list rows are gone; these are the forms.
+   ========================================================================== */
+
+body.is-console .admin-form {
+  margin-top: 18px; padding: 20px; border-radius: 14px;
+  background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+body.is-console .admin-field > span {
+  font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  color: var(--ink-3);
+}
+body.is-console .admin-field input,
+body.is-console .admin-field textarea,
+body.is-console .admin-field select {
+  border-radius: 10px; border-color: var(--hair); font-size: 14px;
+}
+body.is-console .admin-field input:focus,
+body.is-console .admin-field textarea:focus,
+body.is-console .admin-field select:focus { border-color: var(--blue); }
+body.is-console .admin-acts { gap: 8px; margin-top: 16px; }
+body.is-console .admin-acts .lx-btn {
+  height: 34px; font-size: 13px; padding: 0 14px; border-radius: 9px;
+  background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule);
+}
+body.is-console .admin-acts .lx-btn:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
+body.is-console .admin-acts .lx-btn.lg { background: var(--ink); color: #fff; box-shadow: none; }
+body.is-console .admin-list { margin-top: 14px; }
+body.is-console .admin-row {
+  padding: var(--row) 16px; border-radius: 0; border-bottom: 1px solid var(--hair);
+}
+body.is-console .lx-h1 {
+  font-family: var(--font); font-size: clamp(26px, 3vw, 34px); font-weight: 600;
+  letter-spacing: -.026em;
+}
+body.is-console .lx-eyebrow {
+  font-size: 11.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cn-tr, .cn-filter, .cn-btn { transition: none; }
+}

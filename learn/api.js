@@ -133,7 +133,7 @@ window.OPLO_API = (function () {
     },
 
     /* --------------------------------------------------------- Identity
-       One Oplo Account. Not a Learn account — Learn is a product that reads
+       One Oplo Account. Not an OEdu account — OEdu is a product that reads
        this, the way OMaps and OShopping will. */
     login: function (email, password) {
       return post("/auth/login", { email: email, password: password }, { timeout: 20000 })
@@ -208,11 +208,80 @@ window.OPLO_API = (function () {
         opts = opts || {};
         return get("/grades" + q({ courseId: opts.courseId, accountId: opts.accountId }));
       },
-      put: function (assignmentId, accountId, score, outOf, feedback) {
-        return put("/grades", {
-          assignmentId: assignmentId, accountId: accountId,
-          score: score, outOf: outOf, feedback: feedback
-        }).then(function (r) { return r.grade; });
+
+      /* A whole class in one call: the students, the work, every mark, each
+         student's computed grade, and what is still owed. The console used to
+         build this out of sixty requests. */
+      book: function (courseId) { return get("/courses/" + courseId + "/gradebook"); },
+
+      /* One mark. `patch` carries only what is changing — a score, a status,
+         a comment — because a write that sends the fields it was not asked
+         about is a write that quietly reverts them. */
+      put: function (assignmentId, accountId, patchData) {
+        var body = { assignmentId: assignmentId, accountId: accountId };
+        Object.keys(patchData || {}).forEach(function (k) { body[k] = patchData[k]; });
+        // Resolves with the mark AND the student's recomputed grade, so a
+        // screen can show the new grade without adding up its own columns.
+        return put("/grades", body);
+      },
+
+      /* Many marks, one request — filling a column. Resolves with what was
+         written and what was refused, because a batch that reports only
+         success is a batch that loses marks silently. */
+      batch: function (entries) {
+        return post("/grades/batch", { grades: [].concat(entries) }, { timeout: 30000 });
+      },
+
+      /* Put a mark back to what it was. Not a delete: the change and its
+         reversal both stay on the record. */
+      undo: function (eventId) {
+        return post("/grades/undo", { eventId: eventId });
+      },
+
+      history: function (opts) {
+        opts = opts || {};
+        return get("/grades/history" + q({ assignmentId: opts.assignmentId,
+                                           accountId: opts.accountId,
+                                           courseId: opts.courseId, limit: opts.limit }))
+          .then(function (r) { return r.events; });
+      }
+    },
+
+    /* --------------------------------------------------------- Reporting
+       A report card is a view, not a file. There is no generate call here and
+       there is not going to be one — `report` asks what the record says now,
+       and asking again after a mark changes returns something different. */
+    reporting: {
+      /* Every class this account teaches, with what each one owes. The
+         console's first screen, in one request. */
+      teaching: function () { return get("/teaching"); },
+
+      /* Every student the caller teaches, once, with their standing in each
+         class they share. A teacher thinks in people as often as in classes. */
+      students: function () { return get("/students"); },
+
+      /* What has happened to the marks, across every class. */
+      activity: function (limit) {
+        return get("/activity" + q({ limit: limit })).then(function (r) { return r.events; });
+      },
+
+      /* Whether a term's reporting is finished, and whose marking is missing. */
+      readiness: function (opts) {
+        opts = opts || {};
+        return get("/reporting" + q({ courseId: opts.courseId, term: opts.term }));
+      },
+
+      /* The sentence about the term, as opposed to the comment on one piece of
+         work — which is `grades.put`'s `feedback`. */
+      comment: function (courseId, accountId, body, term) {
+        return put("/reporting/comment",
+          { courseId: courseId, accountId: accountId, body: body, term: term })
+          .then(function (r) { return r.comment; });
+      },
+
+      report: function (accountId, term) {
+        return get("/students/" + accountId + "/report" + q({ term: term }))
+          .then(function (r) { return r.report; });
       }
     },
 

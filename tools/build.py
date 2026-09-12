@@ -29,6 +29,10 @@ MARK_D  = ("M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.64843
            "216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z "
            "M 130.378906 -138.132812")
 
+# OEdu is a product on its own hostname, not a folder on this site. Every link
+# to it is absolute for that reason, and `rel()` leaves absolute targets alone.
+OEDU = "https://edu.oplocloud.com/"
+
 NAV = [("Hardware", "hardware/"), ("Software", "software/"), ("Intelligence", "intelligence/"),
        ("Privacy", "privacy/"), ("Edu", "edu/"), ("Oplo+", "plus/"), ("Company", "company/"), ("Support", "support/")]
 
@@ -41,7 +45,7 @@ FOOTER = [
                       ("Privacy", "privacy/"), ("Research", "intelligence/#research")]),
     ("Developers", [("Documentation", "developers/#docs"), ("SDKs", "developers/#sdks"),
                     ("Design resources", "developers/#design"), ("Support", "developers/#support")]),
-    ("Education", [("Oplo Edu", "edu/"), ("Oplo Learn", "learn/"), ("Edu Learn", "edu/learn/"),
+    ("Education", [("Oplo Edu", "edu/"), ("OEdu", OEDU), ("How OEdu works", "edu/learn/"),
                    ("Who it is for", "edu/#who"), ("Contact", "contact/")]),
     ("Membership", [("Oplo+", "plus/"), ("Plans", "plus/#plans"),
                     ("Compare tiers", "plus/#compare"), ("Questions", "plus/#faq")]),
@@ -1428,7 +1432,7 @@ def edu_page():
                "Oplo Edu brings structured curriculum, adaptive practice, live expert coaching and classroom administration into one workspace.",
                "edu/", EDU_CSS)
     out += nav(depth, "edu/")
-    out += chapter(depth, "Oplo Edu", links, "edu/", ("Try OEdu", "learn/"))
+    out += chapter(depth, "Oplo Edu", links, "edu/", ("Try OEdu", OEDU))
     out += '<main id="top">\n'
 
     out += '''<section class="band">
@@ -1437,7 +1441,7 @@ def edu_page():
     <h1 class="t-hero balance reveal" style="max-width:19ch;margin-inline:auto">Automated where it helps. Human where it counts.</h1>
     <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:42ch;margin-inline:auto">Structured curriculum, practice that adapts, live experts, and the administration underneath &mdash; in one workspace.</p>
     <p class="cta-row reveal d2" style="margin-top:24px">
-      <a class="cta" href="../learn/">Try OLearn</a>
+      <a class="cta" href="https://edu.oplocloud.com/">Try OEdu</a>
       <a class="cta" href="learn/">How it works</a>
     </p>
     <p class="t-fine muted reveal d2" style="margin-top:20px">In development.<sup>1</sup></p>
@@ -1489,7 +1493,7 @@ def edu_page():
     <q class="reveal">Technology should carry the load. Not the relationship.</q>
     <p class="body balance reveal d1"><span class="more">Every school and every organisation on the same infrastructure, with automation and human guidance each doing the part it is actually good at. </span>The machine handles the tracking, the marking and the scheduling. A person does the teaching.</p>
     <p class="cta-row reveal d2">
-      <a class="cta" href="learn/">See Edu Learn</a>
+      <a class="cta" href="learn/">See how OEdu works</a>
       <a class="cta" href="../contact/">Talk to us</a>
     </p>
   </div>
@@ -1506,7 +1510,7 @@ def edu_page():
 
 
 # ==========================================================================
-# Oplo Edu — Learn. The online-school product page.
+# OEdu. The online-school product page.
 #
 # The centrepiece is a wireframe of the lesson console, laid out from the
 # reference: an icon rail, a stage spanning two columns, a roster beside it,
@@ -1678,16 +1682,16 @@ def learn_page():
     depth = 2
     links = [("Overview", "#top"), ("The console", "#console"), ("What it does", "#does"),
              ("For teachers", "#teachers")]
-    out = head(depth, "Oplo Edu Learn — online school",
-               "Oplo Edu Learn is a single console for online school: live lessons, coursework, adaptive practice and live tutoring.",
+    out = head(depth, "OEdu — online school",
+               "OEdu is a single console for online school: live lessons, coursework, adaptive practice and live tutoring.",
                "edu/learn/", LEARN_CSS)
     out += nav(depth, "edu/")
-    out += chapter(depth, "Edu Learn", links, "edu/learn/", ("Try OEdu", "learn/"))
+    out += chapter(depth, "OEdu", links, "edu/learn/", ("Try OEdu", OEDU))
     out += '<main id="top">\n'
 
     out += f'''<section class="band dark" id="console">
   <div class="well">
-    <p class="eyebrow reveal">Oplo Edu Learn</p>
+    <p class="eyebrow reveal">OEdu</p>
     <h1 class="t-hero balance reveal" style="max-width:17ch;margin-inline:auto">School that was built to be online.</h1>
     <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:40ch;margin-inline:auto">Not a video call bolted to a homework folder. One room where the lesson, the work and the help all live.</p>
 {CONSOLE}
@@ -1696,7 +1700,7 @@ def learn_page():
       <div><b>The roster</b>Who is here, who is following, and who has quietly stopped.</div>
       <div><b>Underneath</b>Coursework, the mastery map, and a tutor a click away.</div>
     </div>
-    <p class="cta-row reveal d2" style="margin-top:26px"><a class="cta" href="../../learn/">Open the working demo</a></p>
+    <p class="cta-row reveal d2" style="margin-top:26px"><a class="cta" href="https://edu.oplocloud.com/">Open the working demo</a></p>
     <p class="t-fine muted reveal d2" style="margin-top:18px">Wireframe above; the demo is a running build with sample data. Neither is shipping software.<sup>1</sup></p>
   </div>
 </section>
@@ -1719,7 +1723,7 @@ def learn_page():
     <q class="reveal">The class is thirty. The attention is not.</q>
     <p class="body balance reveal d1">In a room you can read a face. On a call you get a grid of muted squares and a feeling. The console watches the things a screen hides &mdash; who has stopped answering, who is guessing, who has been on the same step for eleven minutes &mdash; and tells the one person who can do something about it.</p>
     <p class="cta-row reveal d2">
-      <a class="cta" href="../../learn/">Try OLearn</a>
+      <a class="cta" href="https://edu.oplocloud.com/">Try OEdu</a>
       <a class="cta" href="../../contact/">Talk to us</a>
     </p>
   </div>
@@ -1727,7 +1731,7 @@ def learn_page():
 </main>
 '''
     notes = [
-        "Oplo Edu Learn is in development. The console shown is a wireframe of the interface being designed, "
+        "OEdu is in development. The console shown is a wireframe of the interface being designed, "
         "not a screenshot of working software. Capabilities described state design intent; availability and "
         "feature scope are not final.",
         "Live tutoring would connect learners with independent tutors. Vetting standards, availability and "
@@ -2581,7 +2585,7 @@ PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — Oplo",
     ("In development", [
         ("Oplo intelligence", "Label published at ship"),
         ("Oplo Edu", "Label published at ship"),
-        ("Oplo Learn", "Label published at ship"),
+        ("OEdu", "Label published at ship"),
         ("Oplo account and sign-in", "Label published at ship"),
     ]),
     ("This site", [
