@@ -35,11 +35,15 @@
 #     npx wrangler deploy                  → oedu.<subdomain>.workers.dev
 #     npx wrangler deploy --env production → edu.oplocloud.com
 name = "oedu"
+main = "worker/index.js"
 compatibility_date = "2026-05-01"
 workers_dev = true
 
 [assets]
 directory = "./learn"
+# Files are matched before the script runs, so the Worker only sees requests
+# no file answered — which is what makes the redirect cheap.
+binding = "ASSETS"
 # A path that is not a file is not a page. The app never changes the URL — its
 # history entries are pushed with no path — so it has no deep links to fall
 # back for, and "single-page-application" here would buy nothing while costing
@@ -59,11 +63,24 @@ not_found_handling = "none"
 # That is why it is not the default.
 [env.production]
 name = "oedu"
+main = "worker/index.js"
 
 [env.production.assets]
 directory = "./learn"
+binding = "ASSETS"
 not_found_handling = "none"
 
 [[env.production.routes]]
 pattern = "edu.oplocloud.com"
 custom_domain = true
+
+# The old address. Two patterns rather than `/learn*`, which would also catch
+# a future /learning or /learner — a redirect that fires on a page nobody
+# asked it about is a bug that takes a year to notice.
+[[env.production.routes]]
+pattern = "oplocloud.com/learn"
+zone_name = "oplocloud.com"
+
+[[env.production.routes]]
+pattern = "oplocloud.com/learn/*"
+zone_name = "oplocloud.com"
