@@ -285,10 +285,8 @@ def doc_page(slug, depth, title, desc, heading, dateline, body):
 PAGES = []
 
 # ------------------------------------------------------------------- Home
-# The whole page is one argument told in descending size: a statement, two
-# full-bleed units for the two things hardest to explain, then a tile for every
-# other door. Every section of the site is one click from here, which is the
-# job the eight-item nav used to do badly.
+# One drawn image opens the page, then a tile for every door. The image is the
+# statement; nothing repeats it in type underneath.
 def card(cls, eyebrow, head, lead, ctas):
     c = "".join(f'<a class="cta" href="{h}">{t}</a>' for t, h in ctas)
     return f'''  <section class="card {cls}">
@@ -305,25 +303,15 @@ def home():
     out = head(depth, "Oplo", "Oplo builds hardware, software and intelligence designed around one person at a time.", "")
     out += nav(depth)
     out += "<main>\n"
-    out += band("opening well", '''  <h1 class="t-mega reveal">Oplo</h1>
-  <p class="t-sub muted measure-wide reveal d1">Hardware, software, and intelligence — designed around one person at a time.</p>
-  <p class="cta-row reveal d2">
+    # The artwork carries the wordmark and the line, so the heading is there
+    # for screen readers and search engines and the image is marked decorative:
+    # announcing both would read the same words twice.
+    out += band("opening well", '''  <h1 class="sr">Oplo Cloud — Technology for Human</h1>
+  <img class="hero-art reveal" src="assets/img/hero-nature.svg" alt="" width="1440" height="810" fetchpriority="high" decoding="async">
+  <p class="cta-row reveal d1">
     <a class="cta" href="products/">What we make</a>
     <a class="cta" href="solutions/">Who it is for</a>
   </p>''')
-    out += band("dark tall", '''  <span class="bloom" aria-hidden="true"></span>
-  <div class="well">
-    <p class="eyebrow reveal">Intelligence</p>
-    <h2 class="t-hero measure reveal">Close to you.<br class="br-wide">Not to a data centre.</h2>
-    <p class="t-lead muted measure-wide reveal d1">Models that run on the device in your hand, on silicon designed to carry them.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="intelligence/">Learn more</a></p>
-  </div>''')
-    out += band("grey tall", '''  <div class="well">
-    <p class="eyebrow reveal">Hardware</p>
-    <h2 class="t-hero measure reveal">We make the machine and everything on it.</h2>
-    <p class="t-lead muted measure-wide reveal d1">One team from the silicon to the last pixel, so neither side has to compromise for the other.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="hardware/">Learn more</a></p>
-  </div>''')
     out += '<div class="cards">\n'
     out += card("", "Software", 'Built for a person,<br class="br-wide">not an org chart.',
                 "Tools that assume one user with taste, not a procurement department.",
