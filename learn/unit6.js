@@ -68,6 +68,12 @@ window.OPLO_UNIT6 = (function () {
   var Q = function (t, s) { return { k: "quote", t: t, s: s }; };
   var N = function (t) { return { k: "note", t: t }; };
   var L = function (t, items) { return { k: "list", t: t, items: items }; };
+  // A figure: images with real dimensions and alt text, a caption, and the
+  // credit its licence asks for. See figureBlock in app.js.
+  var F = function (o) {
+    return { k: "fig", imgs: o.imgs, cap: o.cap, credits: o.credits,
+             diagram: !!o.diagram, size: o.size || null };
+  };
 
   return [{
     n: "6.1", t: "Early Cameras", kicker: "How a camera sees",
@@ -234,19 +240,78 @@ window.OPLO_UNIT6 = (function () {
         "to advance toward the viewer and take up more room."),
       D("Cool colours", "Blues, greens and light purples — the colours of water and sky. They seem " +
         "to recede, and tend to calm a design."),
+      F({ imgs: [{ src: "media/unit6/6-3-warm-dunes.jpg", w: 800, h: 533,
+                   alt: "Close-up of rippled sand dunes lit by a low sun, glowing deep orange and red " +
+                        "between black shadows." },
+                 { src: "media/unit6/6-3-cool-mountains.jpg", w: 800, h: 400,
+                   alt: "Jagged mountain peaks rising above a sea of cloud before sunrise, under a pale " +
+                        "blue sky with a faint pink glow along the horizon." }],
+          cap: "Warm and cool. The orange dunes seem close enough to touch; the blue peaks sit far back " +
+               "behind the cloud.",
+          credits: [{ what: "Dunes", by: "Edwin Rodriguez", byUrl: "https://unsplash.com/@ed_757",
+                      site: "Unsplash",
+                      siteUrl: "https://unsplash.com/photos/rippled-sand-dunes-illuminated-by-warm-sunset-light-DS6lRtglcOM",
+                      license: "Unsplash License", licenseUrl: "https://unsplash.com/license" },
+                    { what: "Mountains", by: "Felix Bacher", byUrl: "https://unsplash.com/@bacherfelix",
+                      site: "Unsplash", siteUrl: "https://unsplash.com/photos/mountains-during-blue-hour-FkSHP7t8mCg",
+                      license: "Unsplash License", licenseUrl: "https://unsplash.com/license" }] }),
       P("That difference is practical. Interior designers use warm colours to make large rooms " +
         "feel cosier, because warm colours seem to bring the walls in."),
       N("On a colour wheel, the warm colours sit together on one side and the cool colours on the " +
         "other."),
+      F({ imgs: [{ src: "media/unit6/6-3-colour-wheel.png", w: 960, h: 960,
+                   alt: "A twelve-segment colour wheel divided by a diagonal line. The yellows, oranges " +
+                        "and reds on one side are marked as warm colours; the greens, blues and purples " +
+                        "on the other side are marked as cool colours." }],
+          cap: "The warm half and the cool half of a colour wheel.",
+          credits: [{ by: "Maulucioni, Guypeter4 and Sakurambo",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Warm_and_cool_colors.svg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Warm_and_cool_colors.svg",
+                      license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" }],
+          diagram: true, size: "small" }),
       P("Most images lean warm or cool, but many of the most successful ones mix the two — and a " +
         "well-composed mix is often the most appealing to the eye."),
+      F({ imgs: [{ src: "media/unit6/6-3-warm-and-cool-seashore.jpg", w: 1400, h: 931,
+                   alt: "A beach at sunset. On the left the low sun, the clouds and the wet sand glow " +
+                        "orange and pink; on the right the sea is a clear turquoise blue." }],
+          cap: "Warm and cool in one frame: the sun and the sand come forward, and the turquoise water " +
+               "settles back.",
+          credits: [{ by: "Sean Oulashin", byUrl: "https://unsplash.com/@oulashin",
+                      site: "Unsplash", siteUrl: "https://unsplash.com/photos/seashore-during-golden-hour-KMn4VEeEPR8",
+                      license: "Unsplash License", licenseUrl: "https://unsplash.com/license" }] }),
       H("Colour balance"),
       D("Colour balance", "Adjusting the intensity of the colours in an image, usually the " +
         "primaries, so that particular colours — especially neutrals — look right. Called grey " +
         "balance for black-and-white images, and also known as white balance."),
+      F({ imgs: [{ src: "media/unit6/6-3-kelvin-scale.png", w: 1920, h: 492,
+                   alt: "A horizontal colour scale labelled from 1,000 to 12,000 kelvin. It runs from " +
+                        "red and orange at the low end, through white around 6,500, to pale blue at the " +
+                        "high end." }],
+          cap: "Light has a colour temperature, measured in kelvin. A flame or an old bulb sits at the " +
+               "warm, low end; overcast daylight and shade sit at the cool, high end — the numbers run " +
+               "the opposite way to the feeling. White balance is how a camera, or an editor, corrects " +
+               "for where the light sat.",
+          credits: [{ by: "Bhutajata",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Color_temperature_black_body_800-12200K.svg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Color_temperature_black_body_800-12200K.svg",
+                      license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" }],
+          diagram: true }),
       P("Neutral colours often come out tinted in a photograph, and need a little red, blue or " +
         "yellow added or taken away to look neutral again. Editing software does it by changing " +
         "the red, green and blue values of the pixels."),
+      F({ imgs: [{ src: "media/unit6/6-3-white-balance-lily.jpg", w: 801, h: 600,
+                   alt: "The same photograph of a white, spotted lily shown twice side by side. The left " +
+                        "version, straight from the camera, is brighter with cold whites; the right " +
+                        "version, after colour balancing, is darker and warmer overall." }],
+          cap: "As shot (left) and colour-balanced (right). The right-hand version was adjusted until a " +
+               "grey surface photographed in the same light came out grey — so it is closer to how the " +
+               "lily actually looked.",
+          credits: [{ by: "Fg2", byUrl: "https://commons.wikimedia.org/wiki/File:Lily-M7292-As-shot-and-manual.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Lily-M7292-As-shot-and-manual.jpg",
+                      license: "Public domain" }] }),
       Q("Correct, or deliberate.", "Sometimes colour balance makes neutrals neutral. Sometimes it " +
         "is pushed warmer or cooler on purpose. It depends on how the photographer wants the image " +
         "to feel.")
