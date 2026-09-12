@@ -131,7 +131,8 @@ signs out every account at once.
 | --- | --- |
 | Who you are | `src/core/auth.js` — from the session token, never the request body |
 | What you may do | `src/core/guard.js` — every decision, in one function |
-| What a grade means | `src/services/grades.js` |
+| What a grade means | `src/services/grades.js` — including what a blank cell means |
+| Every change to a mark | `learn_grade_events`, written by the repository so no route can skip it |
 | What an answer is worth | `src/services/progress.js` |
 | SQL | `src/repo/d1.js`, and nowhere else |
 
@@ -158,7 +159,8 @@ KDF.
 
 In `LAUNCH.md`, with what each one needs and what it blocks. The short version:
 email verification, password reset and durable rate limiting block a public
-launch; grade history, session pruning and observability block scale.
+launch; session pruning and observability block scale. (Grade history was on
+that list and is now `learn_grade_events`.)
 
 ## Keeping the layering honest
 

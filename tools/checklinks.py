@@ -15,6 +15,9 @@ PAGES = sorted(
     for r, _d, f in os.walk(ROOT)
     if "index.html" in f
     and ".git" not in r
+    # Installed dependencies ship their own HTML, and their broken links are
+    # not ours to fix. They are not deployed either — node_modules is ignored.
+    and "node_modules" not in r.split(os.sep)
     and not (os.path.relpath(r, ROOT).split(os.sep)[0] in OLD_SITE)
 )
 

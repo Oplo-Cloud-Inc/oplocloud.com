@@ -109,15 +109,17 @@ loses. That costs a few minutes of practice, never a grade, which is why it
 was acceptable to ship. A merge on the concept state — take the higher `seen`
 count and the later `last` per concept — would remove even that.
 
-### 7. Audit trail
+### 7. Audit trail — done
 
-`learn_grades` records `graded_by` and `graded_at`, so the current state of a
-grade is attributable. There is no history: a mark changed from 42 to 95 leaves
-no record that it was ever 42. For an academic record that is the wrong
-default.
+`learn_grade_events` (migration `0004`) records both sides of every change to
+every mark: what it was, what it became, who did it, when, and the reason if
+one was given. It is written by the repository rather than by a caller, so a
+route cannot forget it, and nothing deletes from it. `GET /api/v1/grades/history`
+reads it, under the same permission as the grade it describes — which includes
+the student, who can therefore see that their own mark was changed.
 
-**Needs:** an append-only `learn_grade_events` table written in the same batch
-as the grade. Cheap to add now, expensive to backfill later.
+What is still missing is a way to *undo* from that history. The record is
+there; putting a "restore this" next to each entry is a screen, not a schema.
 
 ### 8. Observability
 

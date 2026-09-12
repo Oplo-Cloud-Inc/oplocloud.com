@@ -3044,3 +3044,251 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 @media (prefers-reduced-motion: reduce) {
   .gr *, .gr *::before, .gr *::after { animation: none !important; transition: none !important; }
 }
+
+/* ==========================================================================
+   The class gradebook.
+
+   A sheet: students down, work across. Everything in it is in service of one
+   thing — a teacher reading a column of marks and typing the next one without
+   ever losing which row they are on.
+
+   That is why the name column and the header row are frozen rather than
+   scrolled, why a cell is an input with no chrome until it is touched, and
+   why there is exactly one colour in the whole grid. Marks are the content;
+   anything else drawn at the same weight competes with them.
+   ========================================================================== */
+
+.gb-pick { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 20px; }
+.gb-pickb {
+  text-align: left; padding: 9px 14px; border-radius: 11px;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair);
+  transition: box-shadow .16s var(--ease), background .16s var(--ease);
+}
+.gb-pickb b { display: block; font-size: 14px; font-weight: 500; letter-spacing: -.014em; }
+.gb-pickb span { display: block; font-size: 11.5px; color: var(--ink-3); }
+.gb-pickb:hover { box-shadow: inset 0 0 0 1px var(--rule); }
+.gb-pickb.on { background: var(--ink); color: #fff; box-shadow: none; }
+.gb-pickb.on span { color: rgba(255,255,255,.62); }
+
+.gb-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.gb-title h2 { font-family: var(--font); font-size: 24px; font-weight: 600; letter-spacing: -.022em; }
+.gb-title span { font-size: 13px; color: var(--ink-3); }
+.gb-head .admin-acts { margin-top: 0; }
+
+/* --------------------------------------------------------------- Needs you
+   What is owed, and nothing else. Three at most: a list of everything that
+   could be done is a list nobody reads twice. */
+.gb-needs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.gb-need {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 8px 13px; border-radius: 11px; background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: box-shadow .16s var(--ease);
+}
+.gb-need:hover { box-shadow: inset 0 0 0 1px var(--rule); }
+.gb-need b { font-family: var(--font); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gb-need span { font-size: 12.5px; color: var(--ink-2); }
+.gb-need.late b { color: var(--amber); }
+.gb-needs.clear b { font-size: 13px; font-weight: 500; color: var(--ink-3); }
+.gb-needmore { font-size: 12.5px; color: var(--ink-3); }
+
+/* ------------------------------------------------------------- The sheet */
+.gb-scroll {
+  overflow: auto; background: var(--paper); border-radius: var(--r);
+  box-shadow: 0 0 0 .5px var(--hair);
+  max-height: min(70vh, 720px);
+  overscroll-behavior: contain;
+}
+/* Wide enough for its columns, and never narrower than the box it sits in —
+   so a class with two pieces of work still fills the sheet, and one with
+   twenty scrolls. The trailing `1fr` is where any slack goes; without it the
+   last real column stretches and the grade drifts away from the marks it is
+   made of. */
+.gb { display: flex; flex-direction: column; width: max-content; min-width: 100%; }
+.gb-r {
+  display: grid;
+  grid-template-columns: 210px repeat(var(--gb-cols), 88px) 96px 1fr;
+  align-items: stretch;
+  border-bottom: 1px solid var(--hair);
+}
+/* The slack at the right edge. It is a cell so the grid lines up, and it
+   is drawn as nothing so it does not read as a column. */
+.gb-c.fill { border-left: 0; }
+.gb-r:last-child { border-bottom: 0; }
+.gb-r.head {
+  position: sticky; top: 0; z-index: 3;
+  background: var(--paper); border-bottom: 1px solid var(--rule);
+}
+.gb-r.foot {
+  position: sticky; bottom: 0; z-index: 2;
+  background: var(--canvas); border-top: 1px solid var(--rule); border-bottom: 0;
+}
+.gb-r:not(.head):not(.foot):hover { background: #fafafc; }
+
+.gb-c { min-width: 0; display: flex; align-items: center; }
+.gb-c.name {
+  position: sticky; left: 0; z-index: 2;
+  gap: 9px; padding: 0 14px 0 16px; background: inherit;
+  box-shadow: 1px 0 0 var(--hair);
+  text-align: left;
+}
+.gb-r:not(.head):not(.foot) .gb-c.name { background: var(--paper); }
+.gb-r:not(.head):not(.foot):hover .gb-c.name { background: #fafafc; }
+.gb-r.head .gb-c.name, .gb-r.foot .gb-c.name { background: inherit; }
+.gb-nm {
+  font-size: 14px; letter-spacing: -.012em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gb-hn {
+  font-size: 10.5px; font-weight: 600; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.gb-c.name .admin-av { width: 24px; height: 24px; font-size: 9.5px; flex: none; }
+
+/* The column head. It is a button because a column is selectable — that is
+   where the actions that apply to a whole piece of work live. */
+.gb-c.col {
+  position: relative; flex-direction: column; align-items: flex-start;
+  justify-content: flex-end; gap: 1px; padding: 22px 9px 9px;
+  border-left: 1px solid var(--hair); text-align: left;
+  transition: background .14s var(--ease);
+}
+.gb-c.col b {
+  display: block; width: 100%;
+  font-size: 12px; font-weight: 600; letter-spacing: -.01em; line-height: 1.25;
+  /* Two lines, then an ellipsis. A column is 88px wide and most titles are
+     longer than that; truncating at one line loses the half that
+     distinguishes "Unit 5 quiz" from "Unit 6 quiz". */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.gb-c.col span { font-size: 10.5px; color: var(--ink-3); white-space: nowrap; }
+.gb-c.col:hover { background: var(--canvas); }
+.gb-c.col.on { background: var(--canvas); box-shadow: inset 0 -2px 0 var(--ink); }
+.gb-owed {
+  position: absolute; top: 6px; left: 9px;
+  font-style: normal; font-size: 9.5px; font-weight: 700; line-height: 1;
+  padding: 3px 5px; border-radius: 999px;
+  background: var(--sunk); color: var(--ink-2); font-variant-numeric: tabular-nums;
+}
+.gb-owed.late { background: #fdf0dd; color: var(--amber); }
+
+/* ---------------------------------------------------------------- A cell */
+.gb-c.cell { position: relative; border-left: 1px solid var(--hair); padding: 0; }
+.gb-c.cell input {
+  width: 100%; height: 100%; min-height: 40px;
+  border: 0; background: none; text-align: center;
+  font-family: var(--text); font-size: 14.5px; font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em; color: var(--ink); padding: 0 4px;
+}
+.gb-c.cell input:focus {
+  outline: none; background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--blue); border-radius: 3px;
+}
+.gb-c.cell.miss input { color: var(--red); font-weight: 600; }
+.gb-c.cell.exc input { color: var(--ink-3); font-style: italic; }
+.gb-c.cell.blank.late { background: #fffaf1; }
+/* A comment attached to the mark, shown as a corner rather than a badge: it
+   is a fact about the cell, not a thing to click. */
+.gb-c.cell.noted::after {
+  content: ""; position: absolute; top: 3px; right: 3px;
+  width: 0; height: 0; border-top: 5px solid var(--blue);
+  border-left: 5px solid transparent; opacity: .7;
+}
+.gb-c.cell.busy input { color: var(--ink-3); }
+.gb-c.cell.ok { animation: gbOk .9s var(--ease); }
+.gb-c.cell.bad { background: #fdeced; }
+@keyframes gbOk { 0% { background: #e7f5ec; } 100% { background: transparent; } }
+
+.gb-c.grade {
+  justify-content: flex-end; gap: 7px; padding: 0 16px 0 10px;
+  border-left: 1px solid var(--hair);
+}
+.gb-c.grade b {
+  font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -.02em;
+}
+.gb-c.grade span { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.gb-c.grade.head { justify-content: flex-end; }
+.gb-none { color: var(--ink-3); }
+.gb-c.avg {
+  justify-content: center; border-left: 1px solid var(--hair);
+  padding: 9px 4px; font-size: 12.5px; color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.gb-c.avg b { font-weight: 600; }
+
+.gb-hint { margin: 10px 2px 0; font-size: 12px; color: var(--ink-3); }
+.gb-hint b { font-weight: 600; color: var(--ink-2); }
+
+/* ------------------------------------------------------------- Inspector
+   One bar for whatever is selected. It holds the things that cannot fit in a
+   cell — the comment the student will read, the history of the mark, and the
+   single bulk action that is worth having. */
+.gb-insp {
+  display: none; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-top: 14px; padding: 12px 16px; border-radius: 13px;
+  background: var(--canvas); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.gb-insp.on { display: flex; }
+.gb-iwho b { font-size: 14px; font-weight: 600; letter-spacing: -.014em; }
+.gb-iwho span { display: block; font-size: 12px; color: var(--ink-3); }
+.gb-istate { font-size: 12.5px; color: var(--ink-2); }
+.gb-ifb {
+  flex: 1; min-width: 220px; font: inherit; font-size: 13.5px;
+  padding: 8px 12px; border-radius: 9px;
+  border: 1px solid var(--rule); background: var(--paper);
+}
+.gb-ifb:focus { outline: none; border-color: var(--blue); }
+.gb-ibtn {
+  font-size: 13px; padding: 7px 13px; border-radius: 9px; white-space: nowrap;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink);
+}
+.gb-ibtn:hover { background: #fff; box-shadow: inset 0 0 0 1px var(--ink-3); }
+.gb-ibtn.strong { background: var(--ink); color: #fff; box-shadow: none; }
+.gb-ibtn:disabled { color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--hair); }
+
+.gb-hist {
+  margin-top: 10px; padding: 14px 16px; border-radius: 13px;
+  background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.gb-histh { font-size: 12px; font-weight: 600; color: var(--ink-3); margin-bottom: 8px; }
+.gb-histl { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.gb-histl li { display: flex; align-items: baseline; gap: 10px; }
+.gb-histl b { font-size: 13.5px; font-weight: 600; min-width: 72px; font-variant-numeric: tabular-nums; }
+.gb-histl span { font-size: 12px; color: var(--ink-3); }
+
+/* -------------------------------------------------------- One student */
+.gb-marks { display: flex; flex-direction: column; gap: 2px; margin-bottom: 22px; }
+.gb-mark {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 0; border-bottom: 1px solid var(--hair);
+}
+.gb-mark .t { flex: 1; min-width: 160px; }
+.gb-mark .t b { display: block; font-size: 15px; font-weight: 500; letter-spacing: -.015em; }
+.gb-mark .t span { font-size: 12.5px; color: var(--ink-3); }
+.gb-mark .fb {
+  flex-basis: 100%; font-size: 13.5px; color: var(--ink-2); line-height: 1.5;
+  padding: 8px 12px; border-radius: 9px; background: var(--canvas);
+}
+
+@media (max-width: 700px) {
+  .gb-r { grid-template-columns: 132px repeat(var(--gb-cols), 70px) 80px 1fr; }
+  .gb-c.name { padding-left: 10px; }
+  .gb-c.name .admin-av { display: none; }
+  .gb-scroll { max-height: 62vh; }
+}
+
+/* Motion is decoration here too. */
+@media (prefers-reduced-motion: reduce) {
+  .gb-c.cell.ok { animation: none; }
+}
+
+/* A mark in a list of marks. `em` is the shape a fact takes when it is not a
+   number — "Not handed in" is as much a mark as 14 / 20 is, and drawing it in
+   a lighter grey than the scores beside it would be the same as hiding it. */
+.admin-row .mk { font-size: 13.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.admin-row .mk em { font-style: normal; color: var(--ink-3); }
+.admin-row .mk.miss em { color: var(--red); font-weight: 500; }

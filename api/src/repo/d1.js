@@ -390,22 +390,104 @@ export class D1Repository {
     ).bind(gradeId).first();
   }
 
-  async upsertGrade({ assignmentId, accountId, score, outOf, feedback, gradedBy }) {
-    const existing = await this.db.prepare(
-      `SELECT id FROM learn_grades WHERE assignment_id = ? AND account_id = ?`
+  /* A patch, not a replacement. A teacher who writes a comment has not
+     withdrawn the mark, and a teacher who corrects a mark has not withdrawn
+     the comment — so a field that was not sent is a field that is left where
+     it was. The old upsert overwrote every column from whatever the caller
+     happened to include, which made "save the feedback" quietly erase a
+     score.
+
+     Every write also lands in `learn_grade_events`, from here rather than
+     from a service, because a history that a caller can forget to write is
+     not a history. */
+  async upsertGrade({ assignmentId, accountId, score, outOf, status, feedback,
+                      note, gradedBy }) {
+    const before = await this.db.prepare(
+      `SELECT * FROM learn_grades WHERE assignment_id = ? AND account_id = ?`
     ).bind(assignmentId, accountId).first();
-    const gradeId = existing ? existing.id : id("grd");
+    const t = now();
+
+    if (!before) {
+      const gradeId = id("grd");
+      await this.db.prepare(
+        `INSERT INTO learn_grades
+           (id, assignment_id, account_id, score, out_of, status, feedback,
+            graded_by, graded_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(gradeId, assignmentId, accountId, score ?? null, outOf ?? 100,
+             status || "marked", feedback ?? null, gradedBy || null, t).run();
+      await this.recordGradeEvent({
+        assignmentId, accountId, fromScore: null, fromStatus: null,
+        toScore: score ?? null, toStatus: status || "marked", note, actorId: gradedBy, at: t
+      });
+      return this.findGrade(gradeId);
+    }
+
+    const fields = [], values = [];
+    const set = (col, v) => { fields.push(`${col} = ?`); values.push(v); };
+    if (score !== undefined)    set("score", score);
+    if (outOf !== undefined)    set("out_of", outOf);
+    if (status !== undefined)   set("status", status);
+    if (feedback !== undefined) set("feedback", feedback);
+
+    // A write that changes nothing is not an event. Otherwise tabbing across
+    // a row fills the history with rows saying a grade stayed the same.
+    const scoreChanged = score !== undefined &&
+      (score == null ? before.score != null : Number(score) !== Number(before.score));
+    const statusChanged = status !== undefined && status !== before.status;
+    if (!fields.length) return this.findGrade(before.id);
+
+    set("graded_by", gradedBy || before.graded_by || null);
+    set("graded_at", t);
+    values.push(before.id);
     await this.db.prepare(
-      `INSERT INTO learn_grades
-         (id, assignment_id, account_id, score, out_of, feedback, graded_by, graded_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT (assignment_id, account_id) DO UPDATE SET
-         score = excluded.score, out_of = excluded.out_of,
-         feedback = excluded.feedback, graded_by = excluded.graded_by,
-         graded_at = excluded.graded_at`
-    ).bind(gradeId, assignmentId, accountId, score, outOf ?? 100,
-           feedback || null, gradedBy || null, now()).run();
-    return this.findGrade(gradeId);
+      `UPDATE learn_grades SET ${fields.join(", ")} WHERE id = ?`
+    ).bind(...values).run();
+
+    if (scoreChanged || statusChanged) {
+      await this.recordGradeEvent({
+        assignmentId, accountId,
+        fromScore: before.score, fromStatus: before.status,
+        toScore: score !== undefined ? score : before.score,
+        toStatus: status !== undefined ? status : before.status,
+        note, actorId: gradedBy, at: t
+      });
+    }
+    return this.findGrade(before.id);
+  }
+
+  async recordGradeEvent({ assignmentId, accountId, fromScore, fromStatus,
+                           toScore, toStatus, note, actorId, at }) {
+    await this.db.prepare(
+      `INSERT INTO learn_grade_events
+         (id, assignment_id, account_id, from_score, from_status, to_score,
+          to_status, note, actor_id, at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("gev"), assignmentId, accountId, fromScore ?? null, fromStatus ?? null,
+           toScore ?? null, toStatus ?? null, note || null, actorId || null,
+           at || now()).run();
+  }
+
+  /* The history of one mark, or of everything one student has been given in
+     one course. Newest first, because the question is almost always "what
+     just happened". */
+  async listGradeEvents({ assignmentId, accountId, courseId, limit = 50 }) {
+    const { results } = await this.db.prepare(
+      `SELECT e.*, a.title, a.out_of AS assignment_out_of, a.course_id,
+              p.name AS actor_name
+         FROM learn_grade_events e
+         JOIN learn_assignments a ON a.id = e.assignment_id
+         LEFT JOIN profiles p ON p.account_id = e.actor_id
+        WHERE (? IS NULL OR e.assignment_id = ?)
+          AND (? IS NULL OR e.account_id = ?)
+          AND (? IS NULL OR a.course_id = ?)
+        ORDER BY e.at DESC
+        LIMIT ?`
+    ).bind(assignmentId || null, assignmentId || null,
+           accountId || null, accountId || null,
+           courseId || null, courseId || null,
+           Math.min(Number(limit) || 50, 200)).all();
+    return results || [];
   }
 
   /* ---------------------------------------------------------- Study sets */

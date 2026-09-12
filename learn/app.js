@@ -129,7 +129,9 @@
     readIx: 0, readDone: {},
     doneToday: {},        // which planned steps have been finished
     citeStyle: "mla",     // what a copied quotation comes out as
-    p: {}                 // the practice run in flight
+    p: {},                // the practice run in flight
+    tab: null,            // the console: which tab is open
+    courseId: null        // and which class is on the gradebook
   };
 
   function setState(id) {
@@ -5064,7 +5066,12 @@
     v.appendChild(el("p", "lx-lede",
       "Computed over the " + summary.countedWeight + "% of the grade that has been " +
       "marked so far. Categories with nothing in them are left out rather than counted " +
-      "as zero."));
+      "as zero." +
+      (summary.missingCount
+        ? " " + summary.missingCount + (summary.missingCount === 1 ? " piece" : " pieces") +
+          " of work marked as not handed in is counted as a zero, which is why it is " +
+          "worth asking whether it can still be submitted."
+        : "")));
 
     var parts = el("div", "admin-mark-parts");
     summary.parts.forEach(function (x) {
@@ -5083,10 +5090,20 @@
       .forEach(function (g) {
         var row = el("div", "admin-row");
         var pct = g.score != null && g.outOf ? Math.round(g.score / g.outOf * 100) : null;
+        /* The three things a blank can mean, said rather than left blank. A
+           student looking at a dash cannot tell whether their teacher has not
+           marked it yet or whether it is a zero sitting in their grade, and
+           those call for opposite actions on their part. */
+        var mark = g.status === "missing" ? "<em>Not handed in</em>"
+          : g.status === "excused" ? "<em>Excused</em>"
+          : g.score == null ? "<em>Not marked yet</em>"
+          : g.score + " / " + g.outOf + (pct != null ? " · " + pct + "%" : "");
+        var note = g.status === "missing" ? "counted as 0 of " + g.outOf
+          : g.status === "excused" ? "not part of your grade" : "";
         row.innerHTML = '<span class="t"><b>' + esc(g.title) + "</b><span>" +
-          esc(g.category || "") + (g.feedback ? " · " + esc(g.feedback) : "") + "</span></span>" +
-          '<span class="mk">' + (g.score == null ? "—" : g.score + " / " + g.outOf) +
-          (pct != null ? " · " + pct + "%" : "") + "</span>";
+          esc(g.category || "") + (note ? " · " + esc(note) : "") +
+          (g.feedback ? " · " + esc(g.feedback) : "") + "</span></span>" +
+          '<span class="mk' + (g.status === "missing" ? " miss" : "") + '">' + mark + "</span>";
         list.appendChild(row);
       });
     v.appendChild(list);
@@ -6110,9 +6127,43 @@
   }
 
   /* ------------------------------------------------------------- Students
-     For a teacher this is the students in the courses they teach — which is
-     what "their students" means on the server too, so the screen and the
-     permission agree by construction rather than by being kept in step. */
+     The class, as one sheet.
+
+     What was here before was a card per student, and a screen per student to
+     mark them on. Marking one quiz for a class of twenty-eight meant opening
+     twenty-eight screens, and the arithmetic a teacher actually does — who
+     has not handed this in, what did the class find hard, who is sliding —
+     was not on any of them. A gradebook that can only be read one person at a
+     time is not a gradebook; it is twenty-eight report cards.
+
+     So this is a grid: students down, work across, the grade at the end. It
+     is the oldest interface in teaching and it is the right one, because the
+     comparison a teacher needs is always between cells.
+
+     Three rules hold it up.
+
+     One: a cell is never ambiguous. Blank means nobody has marked it yet.
+     `M` means it was not handed in and is being counted as a zero. `Ex` means
+     the work does not apply to this student and is not in their grade at all.
+     Those are three different facts and every gradebook that shows them as
+     one blank cell eventually tells a student something untrue about
+     themselves.
+
+     Two: the browser never works out a grade. A mark is written, and the
+     student's recomputed grade comes back with the response — from the same
+     function on the server that the student's own screen reads. Two
+     implementations of a weighted average disagree in the end, and the
+     disagreement is always discovered by the person it costs.
+
+     Three: nothing here is a draft. There is no save button, because there is
+     no state in this page worth losing. A mark leaves the cell as it is
+     typed, and the cell says whether it landed. */
+
+  /* The book on screen: the server's payload, the DOM handles into it, and
+     what the teacher has selected. It dies with the screen, so it lives here
+     rather than in the record. */
+  var BOOK = null;
+
   function tabRoster(v) {
     var node = loading(v, "your courses");
 
@@ -6131,127 +6182,721 @@
       }
 
       node.remove();
-      v.appendChild(el("p", "lx-lede",
-        teaching.length + (teaching.length === 1 ? " course" : " courses") +
-        ". A grade entered here is written to the database and is visible to that student " +
-        "on their own device."));
+      if (!S.courseId || !teaching.some(function (c) { return c.id === S.courseId; })) {
+        S.courseId = teaching[0].id;
+      }
 
-      teaching.forEach(function (c) { v.appendChild(courseRoster(c)); });
+      /* One class at a time. A stack of grids is a stack of things to scroll
+         past to reach the one being marked. */
+      if (teaching.length > 1) {
+        var pick = el("div", "gb-pick");
+        teaching.forEach(function (c) {
+          var b = el("button", "gb-pickb" + (c.id === S.courseId ? " on" : ""));
+          b.type = "button";
+          b.innerHTML = "<b>" + esc(c.title) + "</b><span>" + esc(c.subject || c.code) + "</span>";
+          b.addEventListener("click", function () {
+            S.courseId = c.id;
+            openAdmin(true, "roster");
+          });
+          pick.appendChild(b);
+        });
+        v.appendChild(pick);
+      }
+
+      var host = el("div", "gb-host");
+      v.appendChild(host);
+      loadBook(host, S.courseId);
     }, function (e) { failed(node, e, function () { openAdmin(true, "roster"); }); });
   }
 
-  function courseRoster(course) {
-    var wrap = el("section", "admin-course");
-    var head = el("header", "admin-course-head");
-    head.innerHTML = "<h2>" + esc(course.title) + "</h2><span>" +
-      esc(course.subject || "") + " · " + esc(course.code) + "</span>";
-    wrap.appendChild(head);
-
-    var body = el("div");
-    wrap.appendChild(body);
-    var node = loading(body, "the roster");
-
-    Promise.all([
-      API.courses.members(course.id),
-      API.courses.assignments(course.id),
-      API.grades.list({ courseId: course.id })
-    ]).then(function (out) {
-      var members = out[0], assignments = out[1], grades = out[2];
+  /* One request for the whole class. It used to be one for the members, one
+     for the work, and two per student — sixty-odd for a class of thirty, each
+     able to fail on its own and leave the sheet half true. */
+  function loadBook(host, courseId) {
+    host.innerHTML = "";
+    var node = loading(host, "the class");
+    API.grades.book(courseId).then(function (book) {
       node.remove();
-
-      var students = members.filter(function (m) { return m.role === "student"; });
-      var byStudent = {};
-      (grades.summaries || []).forEach(function (sm) { /* per course, not per student */ });
-
-      var acts = el("div", "admin-acts");
-      var addWork = el("button", "lx-btn quiet",
-        assignments.length ? assignments.length + " pieces of work" : "Set some work");
-      addWork.type = "button";
-      addWork.addEventListener("click", function () { openAssignments(course); });
-      acts.appendChild(addWork);
-
-      var enrol = el("button", "lx-btn quiet", "Enrol a student");
-      enrol.type = "button";
-      enrol.addEventListener("click", function () { openEnrol(course); });
-      acts.appendChild(enrol);
-      body.appendChild(acts);
-
-      if (!students.length) {
-        body.appendChild(el("div", "lx-empty",
-          "Nobody is enrolled yet. Enrol a student and their work appears here."));
-        return;
-      }
-
-      var grid = el("div", "admin-grid");
-      students.forEach(function (st) {
-        grid.appendChild(studentCard(st, course, assignments));
-      });
-      body.appendChild(grid);
-    }, function (e) { failed(node, e, function () { openAdmin(true, "roster"); }); });
-
-    return wrap;
+      BOOK = book;
+      BOOK.host = host;
+      BOOK.sel = null;
+      drawBook();
+    }, function (e) { failed(node, e, function () { loadBook(host, courseId); }); });
   }
 
-  function studentCard(p, course, assignments) {
-    var c = el("article", "admin-card");
+  /* ---------------------------------------------------------- The cell
+     A cell holds one of four things and has to be readable as which. */
+  function cellText(g) {
+    if (!g) return "";
+    if (g.status === "missing") return "M";
+    if (g.status === "excused") return "Ex";
+    return g.score == null ? "" : String(g.score);
+  }
 
-    var head = el("header", "admin-head");
-    head.appendChild(avatarFor(p));
-    head.appendChild(el("div", "admin-who", "<b>" + esc(p.name) + "</b><span>" +
-      esc(p.email || "") + "</span>"));
-    c.appendChild(head);
+  /* What a teacher typed, read as what they meant. Empty clears; `m` is not
+     handed in; `e` does not apply. Anything else must be a number, and if it
+     is not, nothing is written — a typo is not a grade. */
+  function readCell(raw) {
+    var t = String(raw == null ? "" : raw).trim().toLowerCase();
+    if (!t || t === "-" || t === "—") return { status: "marked", score: null };
+    if (t === "m" || t === "missing") return { status: "missing", score: null };
+    if (t === "e" || t === "ex" || t === "excused") return { status: "excused", score: null };
+    var n = Number(t);
+    if (!isFinite(n) || n < 0) return null;
+    return { status: "marked", score: n };
+  }
 
-    var markSlot = el("div", "admin-books");
-    markSlot.appendChild(el("p", "admin-shape quiet", "Reading their grade…"));
-    c.appendChild(markSlot);
+  function sameMark(g, want) {
+    var have = g ? { status: g.status || "marked", score: g.score == null ? null : Number(g.score) }
+                 : { status: "marked", score: null };
+    return have.status === want.status && have.score === (want.score == null ? null : Number(want.score));
+  }
 
-    /* Their mark, from the server. Asked per student rather than computed in
-       the page, so the number a teacher sees is the number the student sees —
-       there is one implementation of the weighting and it is on the server. */
-    API.grades.list({ courseId: course.id, accountId: p.id }).then(function (r) {
-      markSlot.innerHTML = "";
-      var sum = (r.summaries || [])[0];
-      var row = el("button", "admin-book");
-      row.type = "button";
-      row.innerHTML = "<b>" + esc(course.title) + "</b>" +
-        (sum ? '<span class="mk"><em>' + sum.letter + "</em>" + sum.percent + "%</span>"
-             : '<span class="mk none">no marks yet</span>');
-      row.addEventListener("click", function () { openGradebook(p, course, assignments); });
-      markSlot.appendChild(row);
-      if (sum && sum.countedWeight < sum.totalWeight) {
-        markSlot.appendChild(el("p", "admin-shape quiet",
-          "Over the " + sum.countedWeight + "% of the grade marked so far."));
-      }
-    }, function () {
-      markSlot.innerHTML = "";
-      markSlot.appendChild(el("p", "admin-shape quiet", "Could not read their grade."));
-    });
+  /* --------------------------------------------------------- The sheet */
+  function drawBook() {
+    var host = BOOK.host;
+    host.innerHTML = "";
 
-    /* What they have actually done in the app. Progress is theirs and is
-       readable by their teachers; it is not writable by anybody but them. */
-    var work = el("div", "admin-stats");
-    work.appendChild(el("div", "admin-stat", "<b>…</b><span>XP</span>"));
-    c.appendChild(work);
-    API.gamification.standing(p.id).then(function (st) {
-      work.innerHTML = "";
-      [["XP", st.xp], ["Streak", st.streak], ["Rank", st.rank.name],
-       ["Badges", (st.badges || []).length]].forEach(function (x) {
-        var b = el("div", "admin-stat");
-        b.innerHTML = "<b>" + esc(String(x[1])) + "</b><span>" + x[0] + "</span>";
-        work.appendChild(b);
-      });
-    }, function () {
-      work.innerHTML = "";
-      work.appendChild(el("p", "admin-shape quiet", "No activity recorded yet."));
-    });
+    var students = BOOK.students, work = BOOK.assignments;
+
+    var head = el("header", "gb-head");
+    head.appendChild(el("div", "gb-title",
+      "<h2>" + esc(BOOK.course.title) + "</h2><span>" +
+      students.length + (students.length === 1 ? " student · " : " students · ") +
+      (work.length ? work.length + (work.length === 1 ? " piece of work" : " pieces of work")
+                   : "no work set yet") + "</span>"));
 
     var acts = el("div", "admin-acts");
-    var grade = el("button", "lx-btn", "Grades");
-    grade.type = "button";
-    grade.addEventListener("click", function () { openGradebook(p, course, assignments); });
-    acts.appendChild(grade);
-    c.appendChild(acts);
-    return c;
+    var addWork = el("button", "lx-btn quiet", "Set work");
+    addWork.type = "button";
+    addWork.addEventListener("click", function () { openAssignments(courseOf()); });
+    acts.appendChild(addWork);
+    var enrol = el("button", "lx-btn quiet", "Enrol");
+    enrol.type = "button";
+    enrol.addEventListener("click", function () { openEnrol(courseOf()); });
+    acts.appendChild(enrol);
+    head.appendChild(acts);
+    host.appendChild(head);
+
+    if (!students.length) {
+      host.appendChild(el("div", "lx-empty",
+        "Nobody is enrolled yet. Enrol a student and the sheet fills in."));
+      return;
+    }
+    if (!work.length) {
+      host.appendChild(el("div", "lx-empty",
+        "No work has been set on this course, so there is nothing to mark. " +
+        "Set a quiz or an assignment and a column appears here for it."));
+      return;
+    }
+
+    host.appendChild(needsStrip());
+
+    /* The sheet scrolls sideways under a frozen header and a frozen name
+       column, because the two things you must never lose while marking are
+       which student you are on and which piece of work. */
+    var scroll = el("div", "gb-scroll");
+    var sheet = el("div", "gb");
+    sheet.style.setProperty("--gb-cols", work.length);
+    scroll.appendChild(sheet);
+
+    var hr = el("div", "gb-r head");
+    hr.appendChild(el("div", "gb-c name", "<span class='gb-hn'>Student</span>"));
+    work.forEach(function (a, ci) {
+      var col = BOOK.columns[ci] || {};
+      var b = el("button", "gb-c col");
+      b.type = "button";
+      b.dataset.c = ci;
+      b.title = a.title + " · " + (a.category || "uncategorised") + " · out of " + a.outOf;
+      b.innerHTML = "<b>" + esc(a.title) + "</b><span>out of " + a.outOf + "</span>" +
+        (col.unmarked ? "<i class='gb-owed" + (col.overdue ? " late" : "") + "'>" +
+                        col.unmarked + "</i>" : "");
+      b.addEventListener("click", function () { selectColumn(ci); });
+      hr.appendChild(b);
+    });
+    hr.appendChild(el("div", "gb-c grade head", "<span class='gb-hn'>Grade</span>"));
+    hr.appendChild(el("div", "gb-c fill"));
+    sheet.appendChild(hr);
+
+    BOOK.cells = [];
+    BOOK.gradeCells = [];
+    students.forEach(function (st, ri) {
+      var row = el("div", "gb-r");
+      row.dataset.r = ri;
+
+      var who = el("button", "gb-c name");
+      who.type = "button";
+      who.appendChild(avatarFor({ name: st.name, initials: st.initials, hue: st.hue }));
+      who.appendChild(el("span", "gb-nm", esc(st.name)));
+      who.addEventListener("click", function () { openStudent(st); });
+      row.appendChild(who);
+
+      BOOK.cells[ri] = [];
+      work.forEach(function (a, ci) {
+        var wrap = el("div", "gb-c cell");
+        var input = el("input");
+        input.type = "text";
+        input.inputMode = "decimal";
+        input.autocomplete = "off";
+        input.spellcheck = false;
+        input.dataset.r = ri;
+        input.dataset.c = ci;
+        input.setAttribute("aria-label", st.name + " · " + a.title);
+        var cell = { r: ri, c: ci, student: st, work: a, input: input, wrap: wrap,
+                     grade: gradeAt(a.id, st.id) };
+        input.value = cellText(cell.grade);
+        paintCell(cell);
+
+        input.addEventListener("focus", function () { selectCell(cell); });
+        input.addEventListener("blur", function () { saveCell(cell); });
+        wrap.appendChild(input);
+        row.appendChild(wrap);
+        BOOK.cells[ri][ci] = cell;
+      });
+
+      var g = el("div", "gb-c grade");
+      g.dataset.r = ri;
+      row.appendChild(g);
+      row.appendChild(el("div", "gb-c fill"));
+      BOOK.gradeCells[ri] = g;
+      sheet.appendChild(row);
+      paintGrade(ri);
+    });
+
+    var fr = el("div", "gb-r foot");
+    fr.appendChild(el("div", "gb-c name", "<span class='gb-hn'>Class</span>"));
+    work.forEach(function (a, ci) { fr.appendChild(el("div", "gb-c avg", "")); });
+    fr.appendChild(el("div", "gb-c grade", ""));
+    fr.appendChild(el("div", "gb-c fill"));
+    sheet.appendChild(fr);
+    BOOK.foot = fr;
+    paintFoot();
+
+    sheet.addEventListener("keydown", sheetKeys);
+    host.appendChild(scroll);
+
+    host.appendChild(el("p", "gb-hint",
+      "Type a score. <b>m</b> for not handed in, <b>e</b> for excused, " +
+      "<b>blank</b> for not marked yet. <b>Return</b> moves to the next student, " +
+      "<b>Tab</b> to the next piece of work."));
+
+    host.appendChild(inspector());
+  }
+
+  function courseOf() {
+    return { id: BOOK.course.id, title: BOOK.course.title, code: BOOK.course.code,
+             subject: BOOK.course.subject, body: { grading: BOOK.course.grading } };
+  }
+
+  function gradeAt(assignmentId, accountId) {
+    for (var i = 0; i < BOOK.grades.length; i++) {
+      var g = BOOK.grades[i];
+      if (g.assignmentId === assignmentId && g.accountId === accountId) return g;
+    }
+    return null;
+  }
+
+  function paintCell(cell) {
+    var g = cell.grade;
+    var cls = "gb-c cell";
+    if (g && g.status === "missing") cls += " miss";
+    else if (g && g.status === "excused") cls += " exc";
+    else if (!g || g.score == null) {
+      cls += " blank";
+      var col = BOOK.columns[cell.c];
+      if (col && col.overdue) cls += " late";
+    }
+    if (g && g.feedback) cls += " noted";
+    cell.wrap.className = cls;
+  }
+
+  function paintGrade(ri) {
+    var st = BOOK.students[ri];
+    var node = BOOK.gradeCells[ri];
+    if (!node) return;
+    var sum = BOOK.summaries[st.id];
+    if (!sum) { node.innerHTML = "<span class='gb-none'>—</span>"; return; }
+    node.innerHTML = "<b>" + esc(sum.letter) + "</b><span>" + sum.percent + "%</span>";
+    node.title = "Over the " + sum.countedWeight + "% of the grade marked so far.";
+  }
+
+  function paintFoot() {
+    if (!BOOK.foot) return;
+    var cells = BOOK.foot.querySelectorAll(".gb-c.avg");
+    BOOK.assignments.forEach(function (a, ci) {
+      var col = BOOK.columns[ci] || {};
+      var n = cells[ci];
+      if (!n) return;
+      n.innerHTML = col.average == null ? "<span class='gb-none'>—</span>"
+        : "<b>" + col.average + "%</b>";
+      n.title = col.average == null ? "Nothing marked yet."
+        : "The class average on " + a.title + ", over what has been marked.";
+    });
+  }
+
+  /* ------------------------------------------------------------ Writing
+     A mark is written when the cell is left, not as it is typed. A request
+     per keystroke would briefly store 9 while somebody types 95, and a grade
+     that flickers is a grade a student can see flicker. */
+  function saveCell(cell) {
+    var want = readCell(cell.input.value);
+    if (!want) {
+      cell.input.value = cellText(cell.grade);
+      toast("A score, m for not handed in, or e for excused.");
+      return;
+    }
+    if (sameMark(cell.grade, want)) { cell.input.value = cellText(cell.grade); return; }
+    if (want.score != null && want.score > cell.work.outOf * 1.5) {
+      cell.input.value = cellText(cell.grade);
+      toast(want.score + " is well above the " + cell.work.outOf + " this is out of.");
+      return;
+    }
+
+    cell.wrap.classList.add("busy");
+    API.grades.put(cell.work.id, cell.student.id,
+                   { score: want.score, status: want.status, outOf: cell.work.outOf })
+      .then(function (r) {
+        cell.wrap.classList.remove("busy");
+        cell.grade = r.grade;
+        replaceGrade(r.grade);
+        cell.input.value = cellText(r.grade);
+        paintCell(cell);
+        applySummary(cell.student.id, r.summary);
+        flash(cell.wrap);
+        if (BOOK.sel && BOOK.sel.cell === cell) drawInspector();
+        statsSoon();
+      }, function (e) {
+        cell.wrap.classList.remove("busy");
+        cell.input.value = cellText(cell.grade);
+        cell.wrap.classList.add("bad");
+        setTimeout(function () { cell.wrap.classList.remove("bad"); }, 1400);
+        toast(e && e.message ? e.message : "The server refused that mark.");
+      });
+  }
+
+  function replaceGrade(g) {
+    for (var i = 0; i < BOOK.grades.length; i++) {
+      if (BOOK.grades[i].assignmentId === g.assignmentId &&
+          BOOK.grades[i].accountId === g.accountId) { BOOK.grades[i] = g; return; }
+    }
+    BOOK.grades.push(g);
+  }
+
+  function applySummary(accountId, summary) {
+    if (summary) BOOK.summaries[accountId] = summary;
+    else delete BOOK.summaries[accountId];
+    var ri = BOOK.students.findIndex(function (s) { return s.id === accountId; });
+    if (ri > -1) paintGrade(ri);
+  }
+
+  function flash(node) {
+    node.classList.add("ok");
+    setTimeout(function () { node.classList.remove("ok"); }, 900);
+  }
+
+  /* The class's own numbers — what each column averages, what is still owed —
+     are the server's arithmetic too, so they are re-read rather than
+     recomputed here. Debounced, because they are not what the teacher is
+     looking at while they type. */
+  var statsTimer = null;
+  function statsSoon() {
+    clearTimeout(statsTimer);
+    statsTimer = setTimeout(function () {
+      var courseId = BOOK && BOOK.course.id;
+      if (!courseId) return;
+      API.grades.book(courseId).then(function (fresh) {
+        if (!BOOK || BOOK.course.id !== courseId) return;   // they moved on
+        BOOK.columns = fresh.columns;
+        BOOK.needs = fresh.needs;
+        BOOK.summaries = fresh.summaries;
+        paintFoot();
+        BOOK.students.forEach(function (s, ri) { paintGrade(ri); });
+        var strip = BOOK.host.querySelector(".gb-needs");
+        if (strip) strip.replaceWith(needsStrip());
+        var heads = BOOK.host.querySelectorAll(".gb-c.col");
+        BOOK.assignments.forEach(function (a, ci) {
+          var col = BOOK.columns[ci] || {}, h = heads[ci];
+          if (!h) return;
+          var owed = h.querySelector(".gb-owed");
+          if (!col.unmarked) { if (owed) owed.remove(); return; }
+          if (!owed) { owed = el("i", "gb-owed"); h.appendChild(owed); }
+          owed.className = "gb-owed" + (col.overdue ? " late" : "");
+          owed.textContent = col.unmarked;
+        });
+        // A selected column's inspector is a statement about these numbers —
+        // "14 not marked yet" — so it is stale the moment they are not.
+        if (BOOK.sel && BOOK.sel.kind === "col") drawInspector();
+      }, function () { /* the sheet is still true; only the totals are stale */ });
+    }, 700);
+  }
+
+  /* --------------------------------------------------------- Navigation */
+  function focusCell(r, c) {
+    var row = BOOK.cells[r];
+    if (!row || !row[c]) return;
+    row[c].input.focus();
+    row[c].input.select();
+  }
+
+  function sheetKeys(e) {
+    var t = e.target;
+    if (!t || !t.dataset || t.dataset.r == null || t.tagName !== "INPUT") return;
+    var r = Number(t.dataset.r), c = Number(t.dataset.c);
+    var rows = BOOK.cells.length, cols = BOOK.assignments.length;
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      t.blur();
+      focusCell(e.shiftKey ? Math.max(0, r - 1) : Math.min(rows - 1, r + 1), c);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault(); t.blur(); focusCell(Math.min(rows - 1, r + 1), c);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault(); t.blur(); focusCell(Math.max(0, r - 1), c);
+    } else if (e.key === "Escape") {
+      var cell = BOOK.cells[r][c];
+      t.value = cellText(cell.grade);
+      t.blur();
+    } else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") &&
+               t.selectionStart === t.selectionEnd &&
+               (e.key === "ArrowLeft" ? t.selectionStart === 0
+                                      : t.selectionStart === t.value.length)) {
+      // Only when the caret is already at the end it would leave: inside a
+      // two-digit score the arrows still move the caret, which is what a
+      // person typing expects them to do.
+      e.preventDefault(); t.blur();
+      focusCell(r, e.key === "ArrowLeft" ? Math.max(0, c - 1) : Math.min(cols - 1, c + 1));
+    }
+  }
+
+  /* ------------------------------------------------------------ Needs you
+     What is owed, named. It is deliberately short: a list of everything that
+     could be done is a list nobody reads. */
+  function needsStrip() {
+    var strip = el("div", "gb-needs");
+    if (!BOOK.needs.length) {
+      strip.className = "gb-needs clear";
+      strip.innerHTML = "<b>Everything set on this course is marked.</b>";
+      return strip;
+    }
+    BOOK.needs.slice(0, 3).forEach(function (n) {
+      var b = el("button", "gb-need" + (n.kind === "overdue" ? " late" : ""));
+      b.type = "button";
+      b.innerHTML = "<b>" + n.count + "</b><span>unmarked on " + esc(trim(n.title, 28)) +
+        (n.kind === "overdue" ? " · past due" : "") + "</span>";
+      b.addEventListener("click", function () {
+        var ci = BOOK.assignments.findIndex(function (a) { return a.id === n.assignmentId; });
+        if (ci < 0) return;
+        selectColumn(ci);
+        var first = BOOK.cells.findIndex(function (row) {
+          var g = row[ci].grade;
+          return !g || (g.status === "marked" && g.score == null);
+        });
+        if (first > -1) focusCell(first, ci);
+      });
+      strip.appendChild(b);
+    });
+    if (BOOK.needs.length > 3) {
+      strip.appendChild(el("span", "gb-needmore",
+        "and " + (BOOK.needs.length - 3) + " more"));
+    }
+    return strip;
+  }
+
+  /* ----------------------------------------------------------- Inspector
+     One bar under the sheet, showing whatever is selected: a cell, or a whole
+     column. It is where the things that do not fit in a cell live — the
+     comment, the history, and the one bulk action worth having. */
+  function inspector() {
+    var bar = el("div", "gb-insp");
+    bar.id = "gbInsp";
+    return bar;
+  }
+
+  function selectCell(cell) {
+    BOOK.sel = { kind: "cell", cell: cell };
+    var sheet = BOOK.host.querySelector(".gb");
+    if (sheet) {
+      sheet.querySelectorAll(".gb-c.col.on").forEach(function (n) { n.classList.remove("on"); });
+    }
+    drawInspector();
+  }
+
+  function selectColumn(ci) {
+    BOOK.sel = { kind: "col", c: ci };
+    var heads = BOOK.host.querySelectorAll(".gb-c.col");
+    heads.forEach(function (n, i) { n.classList.toggle("on", i === ci); });
+    drawInspector();
+  }
+
+  function drawInspector() {
+    var bar = BOOK.host.querySelector("#gbInsp");
+    if (!bar) return;
+    bar.innerHTML = "";
+    var sel = BOOK.sel;
+    if (!sel) { bar.className = "gb-insp"; return; }
+    bar.className = "gb-insp on";
+
+    if (sel.kind === "col") { drawColumnInspector(bar, sel.c); return; }
+
+    var cell = sel.cell, g = cell.grade;
+    bar.appendChild(el("div", "gb-iwho",
+      "<b>" + esc(cell.student.name) + "</b><span>" + esc(cell.work.title) + "</span>"));
+
+    var state = !g ? "Not marked"
+      : g.status === "missing" ? "Not handed in — counted as 0 of " + cell.work.outOf
+      : g.status === "excused" ? "Excused — not part of their grade"
+      : g.score == null ? "Not marked"
+      : g.score + " out of " + cell.work.outOf;
+    bar.appendChild(el("div", "gb-istate", esc(state)));
+
+    var fb = el("input", "gb-ifb");
+    fb.type = "text";
+    fb.placeholder = "A comment for " + esc(cell.student.firstName || cell.student.name) +
+                     " — they see it with the mark";
+    fb.value = (g && g.feedback) || "";
+    fb.addEventListener("keydown", function (e) { if (e.key === "Enter") fb.blur(); });
+    fb.addEventListener("blur", function () {
+      var was = (cell.grade && cell.grade.feedback) || "";
+      if (fb.value === was) return;
+      API.grades.put(cell.work.id, cell.student.id, { feedback: fb.value })
+        .then(function (r) {
+          cell.grade = r.grade;
+          replaceGrade(r.grade);
+          paintCell(cell);
+          toast(fb.value ? "Comment saved." : "Comment removed.");
+        }, function (e) {
+          fb.value = was;
+          toast(e && e.message ? e.message : "The server refused that comment.");
+        });
+    });
+    bar.appendChild(fb);
+
+    var hist = el("button", "gb-ibtn", "History");
+    hist.type = "button";
+    hist.addEventListener("click", function () {
+      showHistory(bar, { assignmentId: cell.work.id, accountId: cell.student.id },
+                   cell.student.name + " · " + cell.work.title);
+    });
+    bar.appendChild(hist);
+  }
+
+  function drawColumnInspector(bar, ci) {
+    var a = BOOK.assignments[ci], col = BOOK.columns[ci] || {};
+    bar.appendChild(el("div", "gb-iwho",
+      "<b>" + esc(a.title) + "</b><span>" + esc(a.category || "uncategorised") +
+      " · out of " + a.outOf + (a.dueAt ? " · due " + esc(dayName(a.dueAt)) : "") + "</span>"));
+    bar.appendChild(el("div", "gb-istate",
+      col.marked + " marked · " + col.missing + " missing · " + col.excused +
+      " excused · " + col.unmarked + " not marked yet"));
+
+    if (col.unmarked) {
+      var all = el("button", "gb-ibtn strong",
+        "Mark the " + col.unmarked + " unmarked as missing");
+      all.type = "button";
+      all.addEventListener("click", function () { markRestMissing(ci, all); });
+      bar.appendChild(all);
+    }
+
+    var edit = el("button", "gb-ibtn", "Edit work");
+    edit.type = "button";
+    edit.addEventListener("click", function () { openAssignments(courseOf()); });
+    bar.appendChild(edit);
+  }
+
+  /* The one bulk action that earns its place. "Everybody I have not marked
+     did not hand it in" is a decision a teacher makes once; making them make
+     it thirty times is how an evening disappears. It is a write like any
+     other, so it is recorded like any other and can be undone one cell at a
+     time. */
+  function markRestMissing(ci, btn) {
+    var a = BOOK.assignments[ci];
+    var entries = [];
+    BOOK.cells.forEach(function (row) {
+      var cell = row[ci], g = cell.grade;
+      if (g && (g.status !== "marked" || g.score != null)) return;
+      entries.push({ assignmentId: a.id, accountId: cell.student.id, status: "missing" });
+    });
+    if (!entries.length) return;
+    if (!confirm("Mark " + entries.length + " " +
+                 (entries.length === 1 ? "student" : "students") + " as not having handed in “" +
+                 a.title + "”? Each one is counted as a zero.")) return;
+
+    btn.disabled = true;
+    btn.textContent = "Marking…";
+    API.grades.batch(entries).then(function (r) {
+      (r.grades || []).forEach(function (g) {
+        replaceGrade(g);
+        var ri = BOOK.students.findIndex(function (s) { return s.id === g.accountId; });
+        if (ri < 0) return;
+        var cell = BOOK.cells[ri][ci];
+        cell.grade = g;
+        cell.input.value = cellText(g);
+        paintCell(cell);
+      });
+      Object.keys(r.summaries || {}).forEach(function (id) { applySummary(id, r.summaries[id]); });
+      if ((r.refused || []).length) {
+        toast(r.refused.length + " could not be marked: " + r.refused[0].message);
+      } else {
+        toast(r.grades.length + " marked as missing.");
+      }
+      statsSoon();
+      drawInspector();
+    }, function (e) {
+      btn.disabled = false;
+      btn.textContent = "Mark the " + entries.length + " unmarked as missing";
+      toast(e && e.message ? e.message : "The server refused that.");
+    });
+  }
+
+  /* -------------------------------------------------------------- History
+     Every change to a mark, kept. Not a feature so much as the difference
+     between a gradebook and a spreadsheet: a number that can be altered with
+     no trace of having been altered is not a record of anything. */
+  function showHistory(after, query, title) {
+    var open = after.parentNode.querySelector(".gb-hist");
+    if (open) open.remove();
+    var panel = el("div", "gb-hist");
+    panel.appendChild(el("p", "gb-histh", esc(title)));
+    var node = loading(panel, "the history");
+    // Directly under whatever was clicked, so on a list of marks the history
+    // belongs visibly to the one it is about.
+    after.parentNode.insertBefore(panel, after.nextSibling);
+
+    API.grades.history(query).then(function (events) {
+      node.remove();
+      if (!events.length) {
+        panel.appendChild(el("p", "admin-shape quiet", "No changes recorded yet."));
+        return;
+      }
+      var list = el("ol", "gb-histl");
+      events.forEach(function (ev) {
+        var from = ev.fromStatus == null ? "entered"
+          : ev.fromStatus === "missing" ? "was missing"
+          : ev.fromStatus === "excused" ? "was excused"
+          : ev.fromScore == null ? "was unmarked" : "was " + ev.fromScore;
+        var to = ev.toStatus === "missing" ? "missing"
+          : ev.toStatus === "excused" ? "excused"
+          : ev.toScore == null ? "unmarked" : ev.toScore + " / " + ev.outOf;
+        var li = el("li");
+        li.innerHTML = "<b>" + esc(to) + "</b><span>" + esc(from) + " · " +
+          esc(ev.actorName || "somebody") + " · " + esc(whenName(ev.at)) + "</span>";
+        list.appendChild(li);
+      });
+      panel.appendChild(list);
+      var close = el("button", "gb-ibtn", "Close");
+      close.type = "button";
+      close.addEventListener("click", function () { panel.remove(); });
+      panel.appendChild(close);
+    }, function (e) { failed(node, e, null); });
+  }
+
+  function dayName(ms) {
+    var d = new Date(Number(ms));
+    if (!isFinite(d.getTime())) return "—";
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
+  function whenName(ms) {
+    var d = new Date(Number(ms));
+    if (!isFinite(d.getTime())) return "—";
+    var mins = Math.round((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + (mins === 1 ? " minute ago" : " minutes ago");
+    if (mins < 60 * 24) {
+      var h = Math.round(mins / 60);
+      return h + (h === 1 ? " hour ago" : " hours ago");
+    }
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + ", " +
+           d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+
+  /* ------------------------------------------------------- One student
+     The row, opened. Everything on this screen is also on the sheet; what it
+     adds is the reason for the number — every mark that makes it up, the
+     comment attached to each, and what the student sees. */
+  function openStudent(st) {
+    enter("student:" + st.id + ":" + BOOK.course.id, trim(st.name, 18),
+          function () { openStudent(st); });
+    var course = courseOf();
+    var v = $("#v-admin");
+
+    function render() {
+      v.innerHTML = "";
+      v.appendChild(el("p", "lx-eyebrow", esc(course.title)));
+      v.appendChild(el("h1", "lx-h1", esc(st.name)));
+      var node = loading(v, "their marks");
+
+      Promise.all([
+        API.courses.assignments(course.id),
+        API.grades.list({ courseId: course.id, accountId: st.id })
+      ]).then(function (out) {
+        var work = out[0], data = out[1];
+        node.remove();
+
+        var byAssignment = {};
+        (data.grades || []).forEach(function (g) { byAssignment[g.assignmentId] = g; });
+        var sum = (data.summaries || [])[0];
+
+        var mark = el("div", "admin-mark");
+        if (sum) {
+          mark.innerHTML = '<div class="big"><b>' + sum.letter + "</b><span>" +
+            sum.percent + "%</span></div>";
+          var parts = el("div", "admin-mark-parts");
+          sum.parts.forEach(function (x) {
+            var row = el("div", "admin-mark-part");
+            row.innerHTML = "<span>" + esc(x.category) + "</span>" +
+              '<div class="t"><i style="width:' + x.percent + '%"></i></div>' +
+              "<em>" + x.percent + '%</em><span class="w">' + x.weight +
+              "% of the grade · " + x.items + (x.items === 1 ? " item" : " items") + "</span>";
+            parts.appendChild(row);
+          });
+          mark.appendChild(parts);
+          if (sum.countedWeight < sum.totalWeight) {
+            mark.appendChild(el("p", "admin-mark-say",
+              "Computed over the " + sum.countedWeight + "% of the grade that has been " +
+              "marked. Categories with nothing in them are left out rather than counted " +
+              "as zero — a student who has not sat the final has not failed it." +
+              (sum.missingCount
+                ? " " + sum.missingCount + (sum.missingCount === 1 ? " piece" : " pieces") +
+                  " of work marked missing is counted as a zero, because it is one."
+                : "")));
+          }
+        } else {
+          mark.innerHTML = '<p class="admin-shape quiet">Nothing marked yet.</p>';
+        }
+        v.appendChild(mark);
+
+        var list = el("div", "gb-marks");
+        work.forEach(function (a) {
+          var g = byAssignment[a.id];
+          var row = el("div", "gb-mark");
+          var state = !g ? "not marked"
+            : g.status === "missing" ? "not handed in"
+            : g.status === "excused" ? "excused"
+            : g.score == null ? "not marked" : g.score + " / " + a.outOf;
+          row.innerHTML = "<div class='t'><b>" + esc(a.title) + "</b><span>" +
+            esc(a.category || "—") + " · " + esc(state) + "</span></div>" +
+            (g && g.feedback ? "<p class='fb'>" + esc(g.feedback) + "</p>" : "");
+          var h = el("button", "gb-ibtn", "History");
+          h.type = "button";
+          h.addEventListener("click", function () {
+            showHistory(row, { assignmentId: a.id, accountId: st.id },
+                        st.name + " · " + a.title);
+          });
+          row.appendChild(h);
+          list.appendChild(row);
+        });
+        v.appendChild(list);
+
+        v.appendChild(el("p", "lx-lede",
+          "This is what " + esc(st.firstName || st.name) + " sees on their own Grades tab, " +
+          "computed by the server from the same record. Marks are entered on the sheet."));
+        show("admin");
+      }, function (e) { failed(node, e, render); });
+      show("admin");
+    }
+
+    render();
   }
 
   /* ------------------------------------------------------------ Enrolment */
@@ -6325,7 +6970,8 @@
         items.forEach(function (a) {
           var row = el("div", "admin-row");
           row.innerHTML = '<span class="t"><b>' + esc(a.title) + "</b><span>" +
-            esc(a.category || "uncategorised") + " · out of " + a.outOf + "</span></span>";
+            esc(a.category || "uncategorised") + " · out of " + a.outOf +
+            (a.dueAt ? " · due " + esc(dayName(a.dueAt)) : "") + "</span></span>";
           var rm = el("button", "admin-x");
           rm.type = "button";
           rm.setAttribute("aria-label", "Remove " + a.title);
@@ -6355,7 +7001,12 @@
         });
         catF.appendChild(cat);
         var outOf = field("Out of", "20");
-        [title, catF, outOf].forEach(function (f) { form.appendChild(f); });
+        /* A due date is what lets the sheet tell "nobody has marked this yet"
+           apart from "this was due on Tuesday and six people have not handed
+           it in". The column stops being a list and starts being a deadline. */
+        var due = field("Due", "", "optional");
+        due.input.type = "date";
+        [title, catF, outOf, due].forEach(function (f) { form.appendChild(f); });
         v.appendChild(form);
 
         var acts = el("div", "admin-acts");
@@ -6364,137 +7015,24 @@
         add.addEventListener("click", function () {
           if (!title.input.value.trim()) { toast("Give it a title."); return; }
           add.disabled = true;
+          // Midnight at the end of the day named, in the teacher's own zone: a
+          // date input says "the 14th", and work due on the 14th is late on
+          // the 15th, not at midnight as the 14th begins.
+          var dueAt = null;
+          if (due.input.value) {
+            var d = new Date(due.input.value + "T23:59:59");
+            if (isFinite(d.getTime())) dueAt = d.getTime();
+          }
           attempt(API.courses.addAssignment(course.id, {
             title: title.input.value.trim(),
             category: cat.value,
-            outOf: Number(outOf.input.value) || 100
+            outOf: Number(outOf.input.value) || 100,
+            dueAt: dueAt
           }), function () { toast("Added."); render(); })
             .then(function () { add.disabled = false; });
         });
         acts.appendChild(add);
         v.appendChild(acts);
-        show("admin");
-      }, function (e) { failed(node, e, render); });
-      show("admin");
-    }
-
-    render();
-  }
-
-  /* ----------------------------------------------------------- Gradebook
-     The screen the whole backend exists for. A number typed here is a PUT to
-     /api/v1/grades, checked against whether this person teaches the course,
-     and stored. The student reads it from the same table on another machine. */
-  function openGradebook(p, course, assignments) {
-    enter("grades:" + p.id + ":" + course.id, "Grades",
-          function () { openGradebook(p, course, assignments); });
-    var v = $("#v-admin");
-
-    function render() {
-      v.innerHTML = "";
-      v.appendChild(el("p", "lx-eyebrow", esc(p.name) + " · " + esc(course.title)));
-      v.appendChild(el("h1", "lx-h1", "Gradebook"));
-      var node = loading(v, "their marks");
-
-      Promise.all([
-        assignments ? Promise.resolve(assignments) : API.courses.assignments(course.id),
-        API.grades.list({ courseId: course.id, accountId: p.id })
-      ]).then(function (out) {
-        var work = out[0], data = out[1];
-        node.remove();
-
-        var byAssignment = {};
-        (data.grades || []).forEach(function (g) { byAssignment[g.assignmentId] = g; });
-        var sum = (data.summaries || [])[0];
-
-        var head = el("div", "admin-mark");
-        if (sum) {
-          head.innerHTML = '<div class="big"><b>' + sum.letter + "</b><span>" +
-            sum.percent + "%</span></div>";
-          var parts = el("div", "admin-mark-parts");
-          sum.parts.forEach(function (x) {
-            var row = el("div", "admin-mark-part");
-            row.innerHTML = "<span>" + esc(x.category) + "</span>" +
-              '<div class="t"><i style="width:' + x.percent + '%"></i></div>' +
-              "<em>" + x.percent + '%</em><span class="w">' + x.weight +
-              "% of the grade · " + x.items +
-              (x.items === 1 ? " item" : " items") + "</span>";
-            parts.appendChild(row);
-          });
-          head.appendChild(parts);
-          if (sum.countedWeight < sum.totalWeight) {
-            head.appendChild(el("p", "admin-mark-say",
-              "Computed over the " + sum.countedWeight + "% of the grade that has been " +
-              "marked. Categories with nothing in them are left out rather than counted " +
-              "as zero — a student who has not sat the final has not failed it."));
-          }
-        } else {
-          head.innerHTML = '<p class="admin-shape quiet">Nothing marked yet.</p>';
-        }
-        v.appendChild(head);
-
-        if (!work.length) {
-          v.appendChild(el("div", "lx-empty",
-            "No work has been set on this course, so there is nothing to mark."));
-          var setBtn = el("button", "lx-btn", "Set some work");
-          setBtn.type = "button";
-          setBtn.addEventListener("click", function () { openAssignments(course); });
-          v.appendChild(setBtn);
-          show("admin");
-          return;
-        }
-
-        var table = el("div", "admin-table");
-        var hd = el("div", "admin-tr head");
-        hd.innerHTML = "<span>Work</span><span>Category</span><span>Score</span>" +
-          "<span>Out of</span><span></span>";
-        table.appendChild(hd);
-
-        work.forEach(function (a) {
-          var g = byAssignment[a.id];
-          var tr = el("div", "admin-tr");
-          tr.appendChild(el("span", "admin-cellname", esc(a.title)));
-          tr.appendChild(el("span", "admin-cellcat", esc(a.category || "—")));
-
-          var got = el("input");
-          got.type = "number"; got.min = "0"; got.step = "0.5";
-          got.value = g && g.score != null ? g.score : "";
-          got.placeholder = "—";
-          tr.appendChild(got);
-
-          tr.appendChild(el("span", "admin-cellout", String(a.outOf)));
-
-          var state = el("span", "admin-cellstate");
-          tr.appendChild(state);
-
-          /* Written when the field loses focus, not on every keystroke. A
-             PUT per digit would mean "9" is briefly stored while somebody
-             types "95", and a grade that flickers is a grade a student sees. */
-          var last = got.value;
-          got.addEventListener("blur", function () {
-            if (got.value === last) return;
-            last = got.value;
-            var score = got.value === "" ? null : Number(got.value);
-            state.textContent = "Saving…";
-            state.className = "admin-cellstate busy";
-            API.grades.put(a.id, p.id, score, a.outOf).then(function () {
-              state.textContent = "Saved";
-              state.className = "admin-cellstate ok";
-              setTimeout(function () { state.textContent = ""; }, 1600);
-              render();
-            }, function (e) {
-              state.textContent = "Refused";
-              state.className = "admin-cellstate bad";
-              toast(e && e.message ? e.message : "The server refused that grade.");
-            });
-          });
-          table.appendChild(tr);
-        });
-        v.appendChild(table);
-
-        v.appendChild(el("p", "lx-lede",
-          "Saved to the database as you go. " + esc(p.first || p.name) +
-          " sees this on their own device the next time they open OEdu."));
         show("admin");
       }, function (e) { failed(node, e, render); });
       show("admin");

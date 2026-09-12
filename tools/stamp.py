@@ -10,7 +10,12 @@ import hashlib, io, os, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGE = os.path.join(ROOT, "learn", "index.html")
-ASSETS = ["app.css", "data.js", "unit5.js", "concepts.js", "learn.js", "annotate.js", "collab.js", "tutor.js", "app.js"]
+# Every file index.html loads. A file missing from this list is a file a
+# browser may keep serving from yesterday after it changes — which is how a
+# deploy ends up half old and half new, and why the list is derived from the
+# page rather than remembered by hand.
+ASSETS = re.findall(r'(?:src|href)="([A-Za-z0-9_.-]+\.(?:js|css))(?:\?v=[0-9a-f]+)?"',
+                    io.open(PAGE, encoding="utf-8").read())
 
 html = io.open(PAGE, encoding="utf-8").read()
 for name in ASSETS:

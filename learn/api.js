@@ -208,11 +208,36 @@ window.OPLO_API = (function () {
         opts = opts || {};
         return get("/grades" + q({ courseId: opts.courseId, accountId: opts.accountId }));
       },
-      put: function (assignmentId, accountId, score, outOf, feedback) {
-        return put("/grades", {
-          assignmentId: assignmentId, accountId: accountId,
-          score: score, outOf: outOf, feedback: feedback
-        }).then(function (r) { return r.grade; });
+
+      /* A whole class in one call: the students, the work, every mark, each
+         student's computed grade, and what is still owed. The console used to
+         build this out of sixty requests. */
+      book: function (courseId) { return get("/courses/" + courseId + "/gradebook"); },
+
+      /* One mark. `patch` carries only what is changing — a score, a status,
+         a comment — because a write that sends the fields it was not asked
+         about is a write that quietly reverts them. */
+      put: function (assignmentId, accountId, patchData) {
+        var body = { assignmentId: assignmentId, accountId: accountId };
+        Object.keys(patchData || {}).forEach(function (k) { body[k] = patchData[k]; });
+        // Resolves with the mark AND the student's recomputed grade, so a
+        // screen can show the new grade without adding up its own columns.
+        return put("/grades", body);
+      },
+
+      /* Many marks, one request — filling a column. Resolves with what was
+         written and what was refused, because a batch that reports only
+         success is a batch that loses marks silently. */
+      batch: function (entries) {
+        return post("/grades/batch", { grades: [].concat(entries) }, { timeout: 30000 });
+      },
+
+      history: function (opts) {
+        opts = opts || {};
+        return get("/grades/history" + q({ assignmentId: opts.assignmentId,
+                                           accountId: opts.accountId,
+                                           courseId: opts.courseId, limit: opts.limit }))
+          .then(function (r) { return r.events; });
       }
     },
 

@@ -62,8 +62,11 @@ const ROUTES = [
   ["PATCH",  "/api/v1/assignments/:assignmentId",        courses.updateAssignment],
   ["DELETE", "/api/v1/assignments/:assignmentId",        courses.deleteAssignment],
 
-  ["GET",    "/api/v1/grades",   grades.list],
-  ["PUT",    "/api/v1/grades",   grades.put],
+  ["GET",    "/api/v1/grades",          grades.list],
+  ["PUT",    "/api/v1/grades",          grades.put],
+  ["POST",   "/api/v1/grades/batch",    grades.batch],
+  ["GET",    "/api/v1/grades/history",  grades.history],
+  ["GET",    "/api/v1/courses/:courseId/gradebook", grades.gradebook],
 
   ["GET",    "/api/v1/study-sets",         studysets.list],
   ["POST",   "/api/v1/study-sets",         studysets.create],
