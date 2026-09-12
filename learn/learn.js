@@ -261,6 +261,11 @@ window.OPLO_LEARN = (function () {
     if (s.miss >= 2) i = 0;
     else if (s.miss === 1) i = Math.max(0, i - 2);
     if (s.streak >= 3) i = Math.min(STEPS.length - 1, i + 1);
+    // A confident wrong answer is a belief, not a blank, and a belief left
+    // alone overnight is a belief rehearsed. It comes back at the first step
+    // however well the rest of the concept is known. Last, so nothing above
+    // can lengthen it again.
+    if (s.flagged) i = 0;
     return now + STEPS[i] * 864e5;
   }
 

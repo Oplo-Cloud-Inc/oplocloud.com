@@ -1107,6 +1107,12 @@ svg { display: block; }
    says what will fill it is a promise, and the promise is what makes a student
    answer before looking. */
 .rt-margin .mg-head span { color: var(--ink-3); }
+/* In the reader a margin note is positioned beside the line it belongs to,
+   so `.mg` is absolute. Here there are no lines to sit beside, and an
+   absolute note lies on top of whatever follows it — the unit's definition,
+   after a miss. In flow, and not a control: nothing here opens on click. */
+.rt-margin .mg { position: static; cursor: default; }
+.rt-margin .mg:hover { transform: none; box-shadow: none; }
 .rt-shown {
   border-left: 2px solid var(--rule);
   padding-left: 13px;
@@ -1116,6 +1122,88 @@ svg { display: block; }
   display: block; margin-top: 9px; font-size: 13px; line-height: 1.5;
   color: var(--ink-2);
 }
+
+/* What the student wrote, once it is committed. Shown as a quotation rather
+   than a disabled box, because it is no longer something to edit. */
+.rt-said {
+  margin-top: 22px; padding: 14px 16px; border-radius: 14px;
+  background: var(--canvas);
+  font-size: 15px; line-height: 1.55; color: var(--ink-2);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.rt-said span, .rt-belief span, .rt-instead span, .rt-says span {
+  display: block; margin-bottom: 5px;
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.rt-conf { margin-top: 22px; }
+.rt-conf b { display: block; font-size: 14.5px; font-weight: 500; color: var(--ink-2); }
+.rt-conf-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.rt-conf-row button {
+  padding: 10px 16px; border-radius: 100px;
+  border: 1px solid var(--hair); background: var(--paper);
+  font-size: 13.5px; color: var(--ink-2);
+  transition: border-color .16s var(--ease), color .16s var(--ease);
+}
+.rt-conf-row button:hover { border-color: var(--ink); color: var(--ink); }
+
+/* -------------------------------------------------------------- Repair
+   A miss names the mistake the concept already carries and what to think
+   instead, then asks for the idea to be used. The belief is struck through
+   rather than shown in red: it is being set aside, not scolded. */
+.rt-repair { margin-top: 18px; display: grid; gap: 14px; }
+.rt-flag {
+  padding: 14px 16px; border-radius: 14px;
+  background: rgba(215, 0, 21, .055);
+  font-size: 14.5px; line-height: 1.55; color: var(--ink);
+}
+.rt-flag b { color: var(--red); font-weight: 600; }
+.rt-belief p, .rt-instead p { font-size: 15px; line-height: 1.55; max-width: 52ch; }
+.rt-belief p {
+  color: var(--ink-2);
+  text-decoration: line-through; text-decoration-color: rgba(0, 0, 0, .28);
+}
+.rt-instead p { color: var(--ink); }
+
+.rt-again { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--hair); }
+.rt-q {
+  margin-top: 10px; font-size: 17px; line-height: 1.45;
+  font-weight: 500; letter-spacing: -.01em; max-width: 44ch;
+}
+.rt-again .lx-opts { margin-top: 16px; }
+
+.rt-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin-top: 22px; }
+.rt-actions .rt-next { margin-top: 0; }
+.rt-look {
+  padding: 8px 2px; font-size: 14px; color: var(--blue);
+  transition: color .16s var(--ease);
+}
+.rt-look:hover { text-decoration: underline; }
+
+/* In the margin after a miss: the unit's own definition, beside the
+   student's mark, so the correction has something to be checked against. */
+.rt-says { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--hair); }
+.rt-says b { display: block; font-size: 14px; font-weight: 600; }
+.rt-says p { margin-top: 5px; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
+
+/* Back in the article from a retrieval card. The banner is the way back to
+   the questions, and the passage the card was about is lit when it arrives. */
+.rd-review {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px 18px;
+  margin-bottom: 30px; padding: 14px 16px 14px 18px;
+  border-radius: 16px; background: var(--paper); border: 1px solid var(--hair);
+}
+.rd-review p { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.rd-review b { color: var(--ink); font-weight: 600; }
+mark.rt-flash {
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, .30);
+  border-radius: 3px;
+  animation: rt-flash 1.4s var(--ease) 2;
+}
+@keyframes rt-flash { 50% { box-shadow: 0 0 0 7px rgba(0, 113, 227, .10); } }
+@media (prefers-reduced-motion: reduce) { mark.rt-flash { animation: none; } }
 
 /* The door out of a section, at the foot of the article. */
 .rd-next .why {
@@ -1168,6 +1256,11 @@ svg { display: block; }
 }
 
 .rd-rail-nav { position: sticky; top: calc(var(--bar) + 20px); display: grid; gap: 12px; }
+/* The phone override for this lives in the breakpoints above, and at equal
+   specificity the later rule wins — so on a phone the unit panel stayed
+   sticky and slid over the text being read. Restated after the rule it
+   overrides, where it can actually take effect. */
+@media (max-width: 900px) { .rd-rail-nav { position: static; } }
 .rd-panel {
   padding: 19px 16px; border-radius: 18px;
   background: var(--paper); border: 1px solid var(--hair);

@@ -4444,17 +4444,21 @@
        recognise rather than to recall — and the difference between those two
        is most of what this product is for. It is the last card on the
        retrieval screen now. */
-    var nxt = sectionAt(i + 1);
     var next = el("div", "rd-next");
     var marked = Ann.all().filter(function (m) { return m.sec === sec.n && !m.by; }).length;
-    next.innerHTML = '<div><span class="t">Finished reading?</span><b>' +
-      (marked ? "Close the section without the page" : "Answer one question on this section") +
-      "</b><p class=\"why\">" +
-      (marked
-        ? "What you marked, asked back — the article will not be on screen."
+    // A boundary already started is resumed, not restarted: the answers given
+    // before a look back at the text are the ones that count.
+    var inFlight = !!rtBag()[rtKey(r, sec)];
+    next.innerHTML = '<div><span class="t">' + (inFlight ? "Part-way through" : "Finished reading?") +
+      "</span><b>" +
+      (inFlight ? "Your questions on this section are waiting"
+        : marked ? "Close the section without the page" : "Answer one question on this section") +
+      '</b><p class="why">' +
+      (inFlight ? "Answers you have already given are kept."
+        : marked ? "What you marked, asked back — the article will not be on screen."
         : "You have not marked anything here. Marking as you read is what the questions are made of.") +
       "</p></div>";
-    var nb = el("button", "lx-btn", "Continue");
+    var nb = el("button", "lx-btn", inFlight ? "Back to the questions" : "Continue");
     nb.type = "button";
     nb.addEventListener("click", function () { openRetrieve(sec, i); });
     next.appendChild(nb);
@@ -4472,6 +4476,28 @@
     noFoot(); progress(null);
     show("read");
     Ann.arm(body, sec.n, art, margin);
+    // Arrived from a retrieval card to look back. The answer was committed
+    // before this was offered, so looking is feedback now rather than a way
+    // round the question — and the questions wait where they were left.
+    var rv = S.rtReview;
+    S.rtReview = null;
+    if (rv && rv.key === rtKey(r, sec)) {
+      var banner = el("div", "rd-review");
+      banner.innerHTML = "<p><b>Looking back at " + esc(sec.n) + ".</b> Your answers so far are kept.</p>";
+      var resume = el("button", "lx-btn", "Back to the questions");
+      resume.type = "button";
+      resume.addEventListener("click", function () { openRetrieve(sec, i); });
+      banner.appendChild(resume);
+      art.insertBefore(banner, art.firstChild);
+      if (rv.mark) {
+        var sel = 'mark[data-id="' + (window.CSS && CSS.escape ? CSS.escape(rv.mark) : rv.mark) + '"]';
+        var lit = body.querySelectorAll(sel);
+        [].forEach.call(lit, function (x) { x.classList.add("rt-flash"); });
+        if (lit.length) setTimeout(function () {
+          lit[0].scrollIntoView({ block: "center", behavior: "smooth" });
+        }, 60);
+      }
+    }
     railWatch();
     Room.here(sec.n);
     if (S.marginFn) window.removeEventListener("resize", S.marginFn);
@@ -4679,17 +4705,52 @@
     return scored.slice(0, 3);
   }
 
+  /* Where a section boundary has got to. Kept in the record, because leaving
+     this screen — Back, the rail, a reload — and returning through Continue
+     used to rebuild the cards and grade every answer again, after the student
+     had been free to reread the passage in between. The first answer is the
+     one that counts, and this state is what makes that true. */
+  function rtBag() {
+    if (R && R.d) return R.d.rt || (R.d.rt = {});
+    return S.rtBag || (S.rtBag = {});
+  }
+  function rtKey(r, sec) { return r.key + ":" + sec.n; }
+
   function openRetrieve(sec, i) {
     var r = RU;
-    var cards = retrievalCards(sec, r);
+    var key = rtKey(r, sec);
+    var bag = rtBag();
+    var st = bag[key] || (bag[key] = { cards: {}, check: null, at: Date.now() });
+    var pool = unitConcepts(r);
     var store = new L.Store(S.me ? S.me.id : "anon", r.set);
     var v = $("#v-read");
-    var ix = 0;
+
+    // The selection is frozen the first time the screen opens. A mark made
+    // while looking back at the passage must not reshuffle the questions, or
+    // an answered card could quietly be swapped for a fresh one.
+    var cards;
+    if (st.ids) {
+      cards = st.ids.map(function (id) {
+        var m = Ann.all().filter(function (x) { return x.id === id; })[0];
+        return m ? { mark: m, pass: A.pass(m.pass), concept: conceptFor(m.text, pool) } : null;
+      }).filter(Boolean);
+    } else {
+      cards = retrievalCards(sec, r);
+      st.ids = cards.map(function (c) { return c.mark.id; });
+      keep();
+    }
+
+    function stateOf(card) { return st.cards[card.mark.id] || (st.cards[card.mark.id] = {}); }
+    function current() {
+      for (var k = 0; k < cards.length; k++) if (!stateOf(cards[k]).closed) return k;
+      return cards.length;
+    }
 
     function finish() {
       // Done is done whether or not every answer was right. The section was
       // read and recalled from; a wrong answer is information, not a gate.
       S.readDone[sec.n] = true;
+      delete bag[key];
       keep();
       var pct = Math.round(doneIn(r) / r.sections.length * 100);
       var course = allCourses().filter(function (x) { return x.id === r.course; })[0] || D.MEDIA;
@@ -4698,7 +4759,30 @@
       if (nxt) openRead(i + 1); else openSet(r.set);
     }
 
+    /* Looking back is offered only once an answer is committed. Before that
+       it is a way round the question; after, it is the feedback. The state
+       survives the trip, so returning resumes rather than restarts. */
+    function lookButton(markId) {
+      var b = el("button", "rt-look", "Show me in the text");
+      b.type = "button";
+      b.addEventListener("click", function () {
+        S.rtReview = { key: key, mark: markId || null };
+        openRead(i, false, r.key);
+      });
+      return b;
+    }
+    function nextButton(label, then) {
+      var b = el("button", "rt-next", label);
+      b.type = "button";
+      b.addEventListener("click", then);
+      return b;
+    }
+
     function draw() {
+      var ix = current();
+      var total = cards.length + (sec.check ? 1 : 0);
+      if (ix >= cards.length && (!sec.check || (st.check && st.check.closed))) { finish(); return; }
+
       v.innerHTML = "";
       var three = el("div", "rd-three");
       three.appendChild(unitRail(i));
@@ -4714,8 +4798,7 @@
       mid.appendChild(head);
 
       var step = el("div", "rt-step");
-      var total = cards.length + (sec.check ? 1 : 0);
-      step.innerHTML = "<span>" + Math.min(ix + 1, total) + " of " + total + "</span>" +
+      step.innerHTML = "<span>" + (ix + 1) + " of " + total + "</span>" +
         '<div class="track"><i style="width:' + Math.round(ix / total * 100) + '%"></i></div>';
       mid.appendChild(step);
 
@@ -4723,10 +4806,7 @@
       margin.innerHTML = '<div class="mg-head"><b>Your mark</b><span>shown after you answer</span></div>' +
                          '<div class="mg-wrap"></div>';
 
-      if (ix < cards.length) mid.appendChild(markCard(cards[ix], margin, store));
-      else if (sec.check) mid.appendChild(finalCheck(sec, margin));
-      else { finish(); return; }
-
+      mid.appendChild(ix < cards.length ? markCard(cards[ix], margin) : finalCheck(margin));
       three.appendChild(mid);
       three.appendChild(margin);
       v.appendChild(three);
@@ -4735,115 +4815,248 @@
       window.scrollTo(0, 0);
     }
 
-    /* One mark, asked with the prompt its own pass carries. */
-    function markCard(card, margin, store) {
+    /* One mark, asked with the prompt its own pass carries, and drawn from
+       its state every time — so a card returned to after a look at the text
+       shows the answer that was given rather than taking a second one. */
+    function markCard(card, margin) {
+      var p = card.pass, c = card.concept, cs = stateOf(card);
+      var scored = !!(c && c.say && c.say.length);
       var box = el("div", "rt-card");
-      var p = card.pass;
       box.innerHTML = '<p class="rt-kind"><i style="background:' + p.hue + '"></i>' +
         "You marked something here as <b>" + esc(p.name) + "</b></p>" +
         '<p class="rt-ask">' + esc(p.ask) + "</p>";
-
-      var f = el("form", "rt-form");
-      var ta = el("textarea");
-      ta.rows = 4;
-      ta.placeholder = "From memory. A sentence or two is plenty.";
-      ta.setAttribute("aria-label", p.ask);
-      var send = el("button", "rt-send", "Answer");
-      send.type = "submit";
-      f.appendChild(ta); f.appendChild(send);
-      box.appendChild(f);
       var slot = el("div");
       box.appendChild(slot);
+      var close = function () { cs.closed = true; keep(); draw(); };
 
-      f.addEventListener("submit", function (e) {
-        e.preventDefault();
-        var txt = ta.value.trim();
-        if (!txt) return;
-        ta.disabled = true; send.disabled = true;
-
-        // The passage comes back only now. Before this it would have been the
-        // answer sitting beside the question.
+      // The passage comes back only once there is an answer. Before that it
+      // would be the answer, sitting beside the question.
+      function reveal(missed) {
+        var says = "";
+        if (missed && c) {
+          var def = null;
+          r.sections.forEach(function (x) {
+            (x.body || []).forEach(function (b) {
+              if (!def && b.k === "def" && norm(b.t) === norm(c.k)) def = b;
+            });
+          });
+          if (def) says = '<div class="rt-says"><span>What the unit says</span><b>' + esc(def.t) +
+                          "</b><p>" + def.d + "</p></div>";
+        }
+        margin.querySelector(".mg-head").innerHTML = "<b>Your mark</b><span>" + esc(p.name) + "</span>";
         margin.querySelector(".mg-wrap").innerHTML =
           '<div class="mg rt-shown" style="border-left-color:' + p.hue + '">' +
           "<p>&ldquo;" + esc(card.mark.text) + "&rdquo;</p>" +
           (card.mark.note ? "<span>Your note: " + esc(card.mark.note) + "</span>" : "") +
-          "</div>";
-        margin.querySelector(".mg-head").innerHTML = "<b>Your mark</b><span>" + esc(p.name) + "</span>";
+          "</div>" + says;
+      }
 
-        var next = el("button", "rt-next");
-        next.type = "button";
-        next.textContent = "Next";
-        next.addEventListener("click", function () { ix++; draw(); });
+      function actions(withLook) {
+        var a = el("div", "rt-actions");
+        a.appendChild(nextButton("Next", close));
+        if (withLook) a.appendChild(lookButton(card.mark.id));
+        return a;
+      }
 
-        if (card.concept && card.concept.say && card.concept.say.length) {
-          // Gradeable: the unit knows this concept and what a good answer
-          // contains. This is the call that has been missing — reading now
-          // moves a dimension and sets a review date.
-          var d = scoreExplanation(txt, card.concept.say);
-          store.grade(card.concept.k, { level: "explain", right: d.ok, hints: 0 }, Date.now());
-          slot.innerHTML = '<div class="rt-verdict ' + (d.ok ? "ok" : "") + '"><b>' +
-            (d.ok ? "That holds." : "Partly.") + "</b>" +
-            "<p>You reached <em>" + d.hit.length + " of " + card.concept.say.length +
-            "</em> of the things a full answer covers" +
-            (d.miss.length ? ", and did not reach <em>" + d.miss.map(esc).join(", ") + "</em>" : "") +
-            ".</p></div>";
-        } else {
-          // Not gradeable, and saying so is better than inventing a score.
-          // The retrieval still happened, which is the part that works.
-          slot.innerHTML = '<div class="rt-verdict"><b>Compare.</b>' +
-            "<p>Nothing here scores this one &mdash; it is your sentence, not a term the unit " +
-            "defines. Read what you marked against what you just wrote.</p></div>";
+      /* ------------------------------------------------------------ Repair
+         Phase four. A miss names the mistake the concept already carries and
+         what to think instead. Not "the one you hold" — a keyword match cannot
+         know that — but "the usual mistake", which is what the data can
+         honestly claim. A confident miss is framed as what it is: a belief
+         rather than a gap, and one the engine now brings back in minutes. */
+      function repair(first) {
+        var box = el("div", "rt-repair");
+        if (first.conf >= 3) {
+          box.insertAdjacentHTML("beforeend", '<div class="rt-flag"><b>You were certain.</b> ' +
+            "That makes this a belief rather than a gap &mdash; the kind worth fixing now, before it " +
+            "is rehearsed. It will come back in minutes, not days.</div>");
         }
-        slot.firstChild.appendChild(next);
-        slot.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      });
+        var m = (c.miss || [])[0];
+        if (m) {
+          box.insertAdjacentHTML("beforeend",
+            '<div class="rt-belief"><span>The usual mistake</span><p>' + esc(m[0]) + "</p></div>" +
+            '<div class="rt-instead"><span>What to think instead</span><p>' + esc(m[1]) + "</p></div>");
+        }
+        return box;
+      }
+
+      /* The second attempt is at a different level: the idea used on a case,
+         not the correction repeated back. It is graded with a hint counted,
+         because the correction was help, and help caps what an answer can
+         prove. */
+      function again() {
+        var wrap = el("div", "rt-again");
+        var q = c.apply;
+        if (!q || !q.opts || !q.opts.length) { wrap.appendChild(actions(true)); return wrap; }
+        wrap.innerHTML = '<p class="rt-kind"><i style="background:var(--ink-3)"></i>Now use it</p>' +
+          '<p class="rt-q">' + esc(q.ask) + "</p>";
+        var opts = el("div", "lx-opts");
+        q.opts.forEach(function (o, j) {
+          var b = el("button", "lx-opt");
+          b.type = "button";
+          b.innerHTML = '<span class="lx-key">' + "ABCD"[j] + "</span><span>" + esc(o) + "</span>";
+          if (cs.second) {
+            b.disabled = true;
+            if (j === q.right) b.classList.add("right");
+            else if (j === cs.second.chose) b.classList.add("wrong");
+          } else {
+            b.addEventListener("click", function () {
+              if (cs.second) return;                      // a double tap grades once
+              var ok = j === q.right;
+              store.grade(c.k, { level: "apply", right: ok, hints: 1 }, Date.now());
+              cs.second = { chose: j, ok: ok };
+              keep();
+              paint();
+            });
+          }
+          opts.appendChild(b);
+        });
+        wrap.appendChild(opts);
+        if (cs.second) {
+          var ok2 = cs.second.ok;
+          wrap.insertAdjacentHTML("beforeend", '<div class="rt-verdict ' + (ok2 ? "ok" : "") + '"><b>' +
+            (ok2 ? (cs.first.conf >= 3 ? "You changed your mind." : "Now it holds.")
+                 : "Still not there. That is recorded, and this concept comes back sooner because of it.") +
+            "</b><p>" + esc(q.why || "") + "</p></div>");
+          wrap.appendChild(actions(true));
+        }
+        return wrap;
+      }
+
+      function paint() {
+        slot.innerHTML = "";
+
+        // Nothing written yet: the question, and nowhere to look.
+        if (!cs.text) {
+          var f = el("form", "rt-form");
+          var ta = el("textarea");
+          ta.rows = 4;
+          ta.placeholder = "From memory. A sentence or two is plenty.";
+          ta.setAttribute("aria-label", p.ask);
+          var send = el("button", "rt-send", "Answer");
+          send.type = "submit";
+          f.appendChild(ta); f.appendChild(send);
+          f.addEventListener("submit", function (e) {
+            e.preventDefault();
+            var txt = ta.value.trim();
+            if (!txt || cs.text) return;
+            cs.text = txt;
+            if (!scored) cs.first = { scored: false };
+            keep();
+            paint();
+          });
+          slot.appendChild(f);
+          return;
+        }
+
+        slot.insertAdjacentHTML("beforeend", '<div class="rt-said"><span>You wrote</span>' +
+          esc(cs.text) + "</div>");
+
+        // Written and scoreable: how sure, before the verdict. Asked after, it
+        // is a memory of confidence — a kinder question, and a less useful one.
+        if (!cs.first) {
+          var conf = el("div", "rt-conf");
+          conf.innerHTML = "<b>Before the answer &mdash; how sure are you?</b>";
+          var row = el("div", "rt-conf-row");
+          [["Guessing", 0], ["Not sure", 1], ["Fairly sure", 2], ["Certain", 3]].forEach(function (x) {
+            var b = el("button", null, x[0]);
+            b.type = "button";
+            b.addEventListener("click", function () {
+              if (cs.first) return;                       // a double tap grades once
+              var d = scoreExplanation(cs.text, c.say);
+              store.grade(c.k, { level: "explain", right: d.ok, hints: 0, confidence: x[1] }, Date.now());
+              cs.first = { scored: true, ok: d.ok, conf: x[1], hit: d.hit, miss: d.miss };
+              keep();
+              paint();
+              var last = slot.lastElementChild;
+              if (last) last.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            });
+            row.appendChild(b);
+          });
+          conf.appendChild(row);
+          slot.appendChild(conf);
+          return;
+        }
+
+        var first = cs.first;
+        reveal(first.scored && !first.ok);
+
+        // Nothing here can score it, and saying so beats inventing a number.
+        if (!first.scored) {
+          slot.insertAdjacentHTML("beforeend", '<div class="rt-verdict"><b>Compare.</b>' +
+            "<p>Nothing here scores this one &mdash; it is your sentence, not a term the unit " +
+            "defines. Read what you marked against what you just wrote.</p></div>");
+          slot.appendChild(actions(true));
+          return;
+        }
+
+        var reach = "<p>You reached <em>" + first.hit.length + " of " + c.say.length +
+          "</em> of the things a full answer covers" +
+          (first.miss.length ? ", and did not reach <em>" + first.miss.map(esc).join(", ") + "</em>" : "") +
+          ".</p>";
+
+        if (first.ok) {
+          slot.insertAdjacentHTML("beforeend", '<div class="rt-verdict ok"><b>That holds.</b>' + reach + "</div>");
+          slot.appendChild(actions(true));
+          return;
+        }
+
+        slot.insertAdjacentHTML("beforeend", '<div class="rt-verdict"><b>' +
+          (first.hit.length ? "Partly." : "Not yet.") + "</b>" + reach + "</div>");
+        slot.appendChild(repair(first));
+        slot.appendChild(again());
+      }
+
+      paint();
       return box;
     }
 
-    /* The section's authored question, last. It used to sit at the foot of
-       the article with its own answer four inches above it. */
-    function finalCheck(sec, margin) {
-      var c = sec.check, done = false;
+    /* The section's authored question, last. Answered once: coming back to it
+       after a look at the text shows the answer given, not a fresh chance. */
+    function finalCheck(margin) {
+      var c = sec.check, cs = st.check;
+      margin.querySelector(".mg-head").innerHTML = "<b>From the section</b><span>not one of your marks</span>";
       var box = el("div", "rt-card");
       box.innerHTML = '<p class="rt-kind"><i style="background:var(--ink-3)"></i>From the section</p>' +
         '<p class="rt-ask">' + esc(c.q) + "</p>";
       var wrap = el("div", "lx-opts");
-      var slot = el("div");
       c.opts.forEach(function (o, j) {
         var b = el("button", "lx-opt");
         b.type = "button";
         b.innerHTML = '<span class="lx-key">' + "ABCD"[j] + "</span><span>" + esc(o) + "</span>";
-        b.addEventListener("click", function () {
-          if (done) return;
-          done = true;
-          var ok = j === c.right;
-          [].forEach.call(wrap.children, function (x, k) {
-            x.disabled = true;
-            if (k === c.right) x.classList.add("right");
-            else if (k === j) x.classList.add("wrong");
+        if (cs) {
+          b.disabled = true;
+          if (j === c.right) b.classList.add("right");
+          else if (j === cs.chose) b.classList.add("wrong");
+        } else {
+          b.addEventListener("click", function () {
+            if (st.check) return;
+            var ok = j === c.right;
+            var course = allCourses().filter(function (x) { return x.id === r.course; })[0] || D.MEDIA;
+            var pct = Math.round(doneIn(r) / r.sections.length * 100);
+            if (ok) raise(course, r.unit, "p", pct);
+            else slip("problem", "u" + r.unit + ":" + sec.n, sec.t,
+                      "Missed the check in section " + sec.n + ".");
+            st.check = { chose: j, ok: ok };
+            keep();
+            draw();
           });
-          var course = allCourses().filter(function (x) { return x.id === RU.course; })[0] || D.MEDIA;
-          var pct = Math.round(doneIn(RU) / RU.sections.length * 100);
-          if (ok) raise(course, RU.unit, "p", pct);
-          else slip("problem", "u" + RU.unit + ":" + sec.n, sec.t,
-                    "Missed the check in section " + sec.n + ".");
-          var go = el("button", "rt-next");
-          go.type = "button";
-          go.textContent = sectionAt(i + 1) ? "Next section" : "Study the terms";
-          go.addEventListener("click", finish);
-          slot.innerHTML = '<div class="rt-verdict ' + (ok ? "ok" : "") + '"><b>' +
-            (ok ? "That's it." : "Not quite.") + "</b><p>" + c.why + "</p></div>";
-          slot.firstChild.appendChild(go);
-          slot.scrollIntoView({ block: "nearest", behavior: "smooth" });
-        });
+        }
         wrap.appendChild(b);
       });
       box.appendChild(wrap);
-      box.appendChild(slot);
+      if (cs) {
+        box.insertAdjacentHTML("beforeend", '<div class="rt-verdict ' + (cs.ok ? "ok" : "") + '"><b>' +
+          (cs.ok ? "That's it." : "Not quite.") + "</b><p>" + c.why + "</p></div>");
+        var a = el("div", "rt-actions");
+        a.appendChild(nextButton(sectionAt(i + 1) ? "Next section" : "Study the terms",
+          function () { st.check.closed = true; keep(); draw(); }));
+        a.appendChild(lookButton(null));
+        box.appendChild(a);
+      }
       return box;
     }
 
-    if (!cards.length && !sec.check) { finish(); return; }
     draw();
   }
 
