@@ -4262,6 +4262,7 @@
 
     var v = $("#v-read");
     show("read");
+    $("#wrap").classList.add("pd-on");
     noFoot();
 
     function done() {
@@ -4373,6 +4374,7 @@
     // The prediction gates the unit, not the section: once through it, the
     // reader opens where it was going anyway.
     if (wantsPredict(r)) { openPredict(r, function () { openRead(i, silent, rkey); }); return; }
+    $("#wrap").classList.remove("pd-on");
     if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true, r.key); });
     S.readIx = i;
     // S.readIx is a copy, not a reference into the record, so the record has
