@@ -132,7 +132,10 @@
     p: {},                // the practice run in flight
     tab: null,            // the console: which section is open
     courseId: null,       // and which class is on the gradebook
-    reportCourse: null    // and which class the report list is filtered to
+    reportCourse: null,   // and which class the report list is filtered to
+    studentFilter: null,  // the roster's filter, remembered between visits
+    studentQuery: null,   // and what was typed into its search
+    studentPick: null     // and who was selected, so coming back keeps the place
   };
 
   function setState(id) {
@@ -533,6 +536,11 @@
     var prev = S.hist[S.hist.length - 1];
     $("#back").hidden = !prev;
     if (prev) $("#backLabel").textContent = prev.label;
+    /* The console has no bar, so its back control is its own element. It is
+       shown only when there is somewhere to go back to — a permanently
+       present Back that sometimes does nothing is worse than none. */
+    $("#cnBack").hidden = !(prev && view === "admin");
+    if (prev) $("#cnBackLabel").textContent = prev.label;
     // The subject bar belongs to browsing. The home screen is a personal
     // command centre, and a catalogue across the top of it is just noise.
     $("#subbar").hidden = !(view === "explore" || view === "subject");
@@ -6048,10 +6056,12 @@
   var SECTIONS = [
     { k: "today",   name: "Today",       group: null,         roles: ["admin", "teacher"] },
     { k: "roster",  name: "Gradebook",   group: "Teaching",   roles: ["admin", "teacher"] },
+    { k: "students",name: "Students",    group: "Teaching",   roles: ["admin", "teacher"] },
     { k: "work",    name: "Work",        group: "Teaching",   roles: ["admin", "teacher"] },
     { k: "sets",    name: "Study sets",  group: "Teaching",   roles: ["admin", "teacher"] },
     { k: "reports", name: "Report cards",group: "Reporting",  roles: ["admin", "teacher"] },
     { k: "courses", name: "Courses",     group: "School",     roles: ["admin", "teacher"] },
+    { k: "activity",name: "Activity",    group: "School",     roles: ["admin", "teacher"] },
     { k: "people",  name: "People",      group: "School",     roles: ["admin"] },
     { k: "system",  name: "System",      group: "School",     roles: ["admin"] }
   ];
@@ -6148,6 +6158,7 @@
     if (!silent) enter("admin:" + S.tab, "Console", function () { openAdmin(true, S.tab); });
 
     document.body.classList.add("is-console");
+    applyDensity(currentDensity());
     drawRail();
     closeRail();
 
@@ -6155,9 +6166,9 @@
     v.innerHTML = "";
     var body = el("div", "admin-body");
     v.appendChild(body);
-    ({ today: consoleHome, roster: tabRoster, work: tabWork, sets: tabSets,
-       reports: tabReports, courses: tabCourses, people: tabPeople,
-       system: tabSystem }[S.tab] || consoleHome)(body);
+    ({ today: consoleHome, roster: tabRoster, students: tabStudents, work: tabWork,
+       sets: tabSets, reports: tabReports, courses: tabCourses, activity: tabActivity,
+       people: tabPeople, system: tabSystem }[S.tab] || consoleHome)(body);
 
     noFoot(); progress(null);
     show("admin");
@@ -6168,6 +6179,7 @@
      not have to sign in twice to be both. */
   function leaveConsole() {
     document.body.classList.remove("is-console");
+    document.body.classList.remove("focus-mode");
     closeRail();
   }
 
@@ -6617,6 +6629,28 @@
     });
     places.push({ name: "Back to learning", hint: "Leave the console", go: home });
 
+    /* People, once they have been asked for. The roster is one request and it
+       is the thing most often searched for, so it is fetched on the first ⌘K
+       of a session and kept — but the box works before it arrives rather than
+       waiting on it. */
+    if (FOUND_PEOPLE) addPeople();
+    else {
+      API.reporting.students().then(function (data) {
+        FOUND_PEOPLE = data.students;
+        addPeople();
+        draw();
+      }, function () { /* the places still work */ });
+    }
+    function addPeople() {
+      FOUND_PEOPLE.forEach(function (st) {
+        places.push({
+          name: st.name,
+          hint: st.standing == null ? "Student" : "Student · " + st.standing + "%",
+          go: function () { openReport(st); }
+        });
+      });
+    }
+
     var picked = 0;
     function draw() {
       var term = input.value.trim().toLowerCase();
@@ -6653,6 +6687,8 @@
     draw();
     input.focus();
   }
+
+  var FOUND_PEOPLE = null;
 
   function closeFinder() {
     var wrap = $("#finder");
@@ -6868,15 +6904,16 @@
       (work.length ? work.length + (work.length === 1 ? " piece of work" : " pieces of work")
                    : "no work set yet") + "</span>"));
 
-    var acts = el("div", "admin-acts");
-    var addWork = el("button", "lx-btn quiet", "Set work");
-    addWork.type = "button";
-    addWork.addEventListener("click", function () { openAssignments(courseOf()); });
-    acts.appendChild(addWork);
-    var enrol = el("button", "lx-btn quiet", "Enrol");
-    enrol.type = "button";
-    enrol.addEventListener("click", function () { openEnrol(courseOf()); });
-    acts.appendChild(enrol);
+    var acts = cnActions();
+    acts.appendChild(cnAction("Set work", function () { openAssignments(courseOf()); }));
+    acts.appendChild(cnAction("Enrol", function () { openEnrol(courseOf()); }));
+    /* Marking is the one thing in this product somebody does for an hour
+       without stopping, so it gets a mode with nothing else on the screen.
+       Escape comes back. */
+    acts.appendChild(cnAction("Focus", function () {
+      document.body.classList.add("focus-mode");
+      toast("Focus. Escape to come back.");
+    }));
     head.appendChild(acts);
     host.appendChild(head);
 
@@ -7371,7 +7408,7 @@
         return;
       }
       var list = el("ol", "gb-histl");
-      events.forEach(function (ev) {
+      events.forEach(function (ev, i) {
         var from = ev.fromStatus == null ? "entered"
           : ev.fromStatus === "missing" ? "was missing"
           : ev.fromStatus === "excused" ? "was excused"
@@ -7382,6 +7419,33 @@
         var li = el("li");
         li.innerHTML = "<b>" + esc(to) + "</b><span>" + esc(from) + " · " +
           esc(ev.actorName || "somebody") + " · " + esc(whenName(ev.at)) + "</span>";
+
+        /* Undo, on the newest change only. Undoing something from three
+           changes ago is not an undo — it is entering an old number, and
+           calling it undo hides which one you are actually restoring. */
+        if (i === 0 && S.me && S.me.role !== "student") {
+          var back = el("button", "cn-btn small", "Undo");
+          back.type = "button";
+          back.addEventListener("click", function () {
+            back.disabled = true;
+            back.textContent = "Undoing…";
+            API.grades.undo(ev.id).then(function (r) {
+              toast("Put back to " +
+                (r.grade.status === "missing" ? "missing"
+                 : r.grade.status === "excused" ? "excused"
+                 : r.grade.score == null ? "unmarked" : r.grade.score) + ".");
+              // The reversal is a change like any other, so the sheet and the
+              // history both have to be re-read rather than patched.
+              if (BOOK && BOOK.course) loadBook(BOOK.host, BOOK.course.id);
+              else openAdmin(true, S.tab);
+            }, function (e) {
+              back.disabled = false;
+              back.textContent = "Undo";
+              toast(e && e.message ? e.message : "The server refused that.");
+            });
+          });
+          li.appendChild(back);
+        }
         list.appendChild(li);
       });
       panel.appendChild(list);
@@ -7424,8 +7488,7 @@
 
     function render() {
       v.innerHTML = "";
-      v.appendChild(el("p", "lx-eyebrow", esc(course.title)));
-      v.appendChild(el("h1", "lx-h1", esc(st.name)));
+      consoleHead(v, course.title, st.name);
       var node = loading(v, "their marks");
 
       Promise.all([
@@ -7490,7 +7553,7 @@
         });
         v.appendChild(list);
 
-        v.appendChild(el("p", "lx-lede",
+        v.appendChild(el("p", "cn-sub",
           "This is what " + esc(st.firstName || st.name) + " sees on their own Grades tab, " +
           "computed by the server from the same record. Marks are entered on the sheet."));
         show("admin");
@@ -7506,8 +7569,9 @@
     enter("enrol:" + course.id, trim(course.title), function () { openEnrol(course); });
     var v = $("#v-admin");
     v.innerHTML = "";
-    v.appendChild(el("p", "lx-eyebrow", esc(course.title)));
-    v.appendChild(el("h1", "lx-h1", "Who is in this course"));
+    consoleHead(v, course.title, "Who is in this course",
+      "A student enrolled here has this course on their own screen, and their work on " +
+      "it counts towards their grade.");
     var node = loading(v, "people");
 
     Promise.all([API.accounts.list(S.me.orgId), API.courses.members(course.id)])
@@ -7517,7 +7581,7 @@
         var inCourse = {};
         members.forEach(function (m) { inCourse[m.id] = m.role; });
 
-        v.appendChild(el("p", "lx-lede",
+        v.appendChild(el("p", "cn-sub",
           "Enrolling a student is what gives you permission to grade them. The server " +
           "checks that relationship on every write, so this list is the permission, " +
           "not a display of it."));
@@ -7556,14 +7620,13 @@
 
     function render() {
       v.innerHTML = "";
-      v.appendChild(el("p", "lx-eyebrow", esc(course.title)));
-      v.appendChild(el("h1", "lx-h1", "Work set on this course"));
+      consoleHead(v, course.title, "Work set on this course");
       var node = loading(v, "the list");
 
       API.courses.assignments(course.id).then(function (items) {
         node.remove();
         var weights = (course.body && course.body.grading) || [["Work", 100]];
-        v.appendChild(el("p", "lx-lede",
+        v.appendChild(el("p", "cn-sub",
           "Each piece counts towards a category, and the categories carry the weights " +
           "the course sets: " + weights.map(function (w) { return w[0] + " " + w[1] + "%"; })
             .join(", ") + "."));
@@ -7643,41 +7706,413 @@
     render();
   }
 
+  /* ============================================================== Primitives
+
+     Three shapes, and every console screen is built from them.
+
+     A **table**, because a teacher comparing thirty students is doing the one
+     thing a table is for and the one thing a card grid makes impossible. The
+     old console drew a card per student: 340px wide, a heading, an avatar, four
+     statistics and two buttons, repeated. Twenty-eight of those is nine screens
+     of scrolling to answer a question a table answers in one glance, and the
+     comparison — which is the entire point — has to be held in the head.
+
+     A **split view**, because selecting somebody should not be a page
+     transition. Losing your place in a list to look at one row, and losing it
+     again coming back, is the single most common way software wastes a
+     professional's afternoon.
+
+     An **inspector**, which is where everything that does not fit in a row
+     lives. It changes with the selection and it never moves.
+
+     Density is a variable rather than a redesign: the same markup at three
+     row heights, chosen by the person doing the work. Somebody marking four
+     hundred submissions wants more rows; somebody planning a lesson does not.
+     The text does not get smaller — solving density with 10px type is how
+     professional software becomes unreadable. */
+
+  var DENSITY = ["comfortable", "standard", "dense"];
+
+  function applyDensity(d) {
+    if (DENSITY.indexOf(d) < 0) d = "standard";
+    document.body.dataset.density = d;
+    try { localStorage.setItem("oplo.console.density", d); } catch (e) { /* private mode */ }
+  }
+
+  function currentDensity() {
+    try { return localStorage.getItem("oplo.console.density") || "standard"; }
+    catch (e) { return "standard"; }
+  }
+
+  /* `cols` is [{ label, w, align }]. The returned node carries `.row()`, which
+     is the only way rows are added — so every table in the console has the
+     same alignment, the same header, and the same keyboard behaviour without
+     any screen having to remember to ask for them. */
+  function cnTable(cols) {
+    var t = el("div", "cn-tbl");
+    t.style.setProperty("--cols", cols.map(function (c) { return c.w || "1fr"; }).join(" "));
+
+    var head = el("div", "cn-tr head");
+    cols.forEach(function (c) {
+      var s = el("span", "cn-th" + (c.align === "right" ? " r" : ""));
+      s.textContent = c.label || "";
+      head.appendChild(s);
+    });
+    t.appendChild(head);
+
+    var body = el("div", "cn-tbody");
+    t.appendChild(body);
+
+    t.row = function (cells, onPick, key) {
+      var r = el(onPick ? "button" : "div", "cn-tr" + (onPick ? "" : " flat"));
+      if (onPick) r.type = "button";
+      if (key) r.dataset.key = key;
+      cells.forEach(function (html, i) {
+        var c = el("span", "cn-td" + (cols[i] && cols[i].align === "right" ? " r" : ""));
+        if (html && html.nodeType) c.appendChild(html);
+        else c.innerHTML = html == null ? "" : html;
+        r.appendChild(c);
+      });
+      if (onPick) r.addEventListener("click", function () { onPick(r); });
+      body.appendChild(r);
+      return r;
+    };
+
+    /* Up and down move the selection. A table somebody works down all day has
+       to be reachable from the keyboard, and Tab through thirty rows is not
+       reachable, it is a punishment. */
+    t.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      var rows = [].slice.call(body.querySelectorAll(".cn-tr:not(.flat)"));
+      var at = rows.indexOf(document.activeElement);
+      if (at < 0) return;
+      e.preventDefault();
+      var next = rows[e.key === "ArrowDown" ? at + 1 : at - 1];
+      if (next) { next.focus(); next.click(); }
+    });
+
+    t.select = function (key) {
+      [].forEach.call(body.querySelectorAll(".cn-tr"), function (r) {
+        r.classList.toggle("on", r.dataset.key === key);
+      });
+    };
+    return t;
+  }
+
+  /* A list on the left, whatever is selected on the right. */
+  function cnSplit(v) {
+    var wrap = el("div", "cn-split");
+    var left = el("div", "cn-splitleft");
+    var right = el("div", "cn-splitright");
+    wrap.appendChild(left);
+    wrap.appendChild(right);
+    v.appendChild(wrap);
+    return { wrap: wrap, left: left, right: right };
+  }
+
+  /* An empty state says what to do next. "No data" says nothing and is the
+     first thing a person sees on a screen they have never used. */
+  function cnEmpty(title, body, action, go) {
+    var n = el("div", "cn-empty");
+    n.appendChild(el("b", null, esc(title)));
+    if (body) n.appendChild(el("p", null, esc(body)));
+    if (action && go) {
+      var b = el("button", "cn-btn strong", esc(action));
+      b.type = "button";
+      b.addEventListener("click", go);
+      n.appendChild(b);
+    }
+    return n;
+  }
+
+  function cnActions() { return el("div", "cn-acts"); }
+
+  function cnAction(label, go, strong) {
+    var b = el("button", "cn-btn" + (strong ? " strong" : ""), esc(label));
+    b.type = "button";
+    b.addEventListener("click", go);
+    return b;
+  }
+
+  /* A filter bar. Deliberately a small fixed set per screen rather than a
+     query builder: the four filters a teacher actually uses are worth one
+     click each, and the fifth is worth a search box. */
+  function cnFilters(options, current, pick) {
+    var bar = el("div", "cn-filters");
+    options.forEach(function (o) {
+      var b = el("button", "cn-filter" + (o.k === current ? " on" : ""));
+      b.type = "button";
+      b.dataset.k = o.k;
+      b.innerHTML = esc(o.name) + (o.n != null ? "<em>" + o.n + "</em>" : "");
+      b.addEventListener("click", function () { pick(o.k); });
+      bar.appendChild(b);
+    });
+    /* Which one is lit is a fact about the key, never about the label. A
+       filter bar that decides by matching its own text breaks the day two
+       filters start with the same word. */
+    bar.mark = function (k) {
+      [].forEach.call(bar.children, function (b) { b.classList.toggle("on", b.dataset.k === k); });
+    };
+    return bar;
+  }
+
+  function gradeCell(g) {
+    if (!g) return "<span class='cn-none'>—</span>";
+    return "<b class='cn-mk'>" + esc(g.letter) + "</b><span class='cn-pc'>" +
+           g.percent + "%</span>";
+  }
+
+  /* ================================================================ Students
+     The people, across every class, with the comparison a teacher is actually
+     making visible in one screen. Selecting somebody fills the inspector; it
+     does not take the list away. */
+  function tabStudents(v) {
+    consoleHead(v, "Teaching", "Students",
+      "Everyone you teach, once. A student in three of your classes is one " +
+      "row with three grades on it, not three rows.");
+
+    var node = loading(v, "your students");
+    API.reporting.students().then(function (data) {
+      node.remove();
+      railCount("students", data.totals.belowPass);
+
+      if (!data.students.length) {
+        v.appendChild(cnEmpty("Nobody is enrolled yet.",
+          "Enrol students into a class and they appear here, with their standing in each.",
+          "Open a class", function () { openAdmin(false, "roster"); }));
+        return;
+      }
+
+      var filters = [
+        { k: "all", name: "Everyone", n: data.students.length },
+        { k: "low", name: "Below a pass", n: data.totals.belowPass },
+        { k: "missing", name: "Missing work",
+          n: data.students.filter(function (s) { return s.missing > 0; }).length },
+        { k: "unmarked", name: "Waiting on me",
+          n: data.students.filter(function (s) { return s.unmarked > 0; }).length }
+      ];
+      S.studentFilter = S.studentFilter || "all";
+
+      var bar = el("div", "cn-bar");
+      var chips = cnFilters(filters, S.studentFilter, function (k) {
+        S.studentFilter = k;
+        draw();
+      });
+      bar.appendChild(chips);
+      var search = el("input", "cn-search");
+      search.type = "search";
+      search.placeholder = "Find a student";
+      search.setAttribute("aria-label", "Find a student");
+      search.value = S.studentQuery || "";
+      search.addEventListener("input", function () {
+        S.studentQuery = search.value;
+        draw();
+      });
+      bar.appendChild(search);
+      v.appendChild(bar);
+
+      var split = cnSplit(v);
+      var listSlot = el("div");
+      split.left.appendChild(listSlot);
+
+      function matching() {
+        var term = String(S.studentQuery || "").trim().toLowerCase();
+        return data.students.filter(function (s) {
+          if (S.studentFilter === "low" && !(s.standing != null && s.standing < 70)) return false;
+          if (S.studentFilter === "missing" && !s.missing) return false;
+          if (S.studentFilter === "unmarked" && !s.unmarked) return false;
+          if (term && String(s.name).toLowerCase().indexOf(term) < 0 &&
+              String(s.email || "").toLowerCase().indexOf(term) < 0) return false;
+          return true;
+        });
+      }
+
+      var table;
+      function draw() {
+        chips.mark(S.studentFilter);
+        listSlot.innerHTML = "";
+        var rows = matching();
+        if (!rows.length) {
+          listSlot.appendChild(cnEmpty("Nobody matches that.",
+            "Clear the filter or the search to see everyone again."));
+          return;
+        }
+        table = cnTable([
+          { label: "Student", w: "minmax(160px, 1fr)" },
+          { label: "Standing", w: "86px", align: "right" },
+          { label: "Missing", w: "74px", align: "right" },
+          { label: "Unmarked", w: "88px", align: "right" }
+        ]);
+        rows.forEach(function (s) {
+          var who = el("span", "cn-who");
+          who.appendChild(avatarFor(s));
+          who.appendChild(el("span", "nm", esc(s.name)));
+          table.row([
+            who,
+            s.standing == null ? "<span class='cn-none'>—</span>"
+              : "<b class='cn-mk" + (s.standing < 70 ? " bad" : "") + "'>" + s.standing + "%</b>",
+            s.missing ? "<b class='cn-mk bad'>" + s.missing + "</b>" : "<span class='cn-none'>—</span>",
+            s.unmarked ? "<b class='cn-mk warn'>" + s.unmarked + "</b>" : "<span class='cn-none'>—</span>"
+          ], function () { pick(s); }, s.id);
+        });
+        listSlot.appendChild(table);
+        var was = rows.filter(function (s) { return s.id === S.studentPick; })[0];
+        pick(was || rows[0]);
+      }
+
+      function pick(s) {
+        if (!s) return;
+        S.studentPick = s.id;
+        if (table) table.select(s.id);
+        split.right.innerHTML = "";
+        split.right.appendChild(studentInspector(s));
+      }
+
+      draw();
+    }, function (e) { failed(node, e, function () { openAdmin(true, "students"); }); });
+  }
+
+  /* What is worth knowing about one person, in the space beside the list. Not
+     a page — a page would have taken the list away, and the next question is
+     almost always about the row underneath. */
+  function studentInspector(s) {
+    var box = el("div", "cn-insp");
+
+    var head = el("header", "cn-insphead");
+    head.appendChild(avatarFor(s));
+    head.appendChild(el("div", "t", "<b>" + esc(s.name) + "</b><span>" +
+      esc(s.email || "") + "</span>"));
+    box.appendChild(head);
+
+    var big = el("div", "cn-inspbig");
+    big.innerHTML = s.standing == null
+      ? "<b>—</b><span>nothing marked yet</span>"
+      : "<b>" + s.standing + "%</b><span>across " + s.courses.length +
+        (s.courses.length === 1 ? " class" : " classes") + "</span>";
+    box.appendChild(big);
+
+    var t = cnTable([
+      { label: "Class", w: "minmax(120px, 1fr)" },
+      { label: "Grade", w: "78px", align: "right" },
+      { label: "Missing", w: "70px", align: "right" }
+    ]);
+    s.courses.forEach(function (c) {
+      t.row([
+        "<b>" + esc(c.title) + "</b><span class='cn-sub2'>" + esc(c.subject || "") + "</span>",
+        gradeCell(c.grade),
+        c.missing ? "<b class='cn-mk bad'>" + c.missing + "</b>" : "<span class='cn-none'>—</span>"
+      ], function () {
+        S.courseId = c.courseId;
+        openAdmin(false, "roster");
+      }, c.courseId);
+    });
+    box.appendChild(t);
+
+    if (s.unmarked) {
+      box.appendChild(el("p", "cn-fine",
+        s.unmarked + (s.unmarked === 1 ? " piece" : " pieces") +
+        " of their work is waiting on you. Their grade is computed over what has been " +
+        "marked, so it will move when you mark it."));
+    }
+
+    var acts = cnActions();
+    acts.appendChild(cnAction("Open their report", function () { openReport(s); }, true));
+    box.appendChild(acts);
+    return box;
+  }
+
+  /* ================================================================ Activity
+     What has happened to the marks, newest first.
+
+     Deliberately only that. A log of every screen a teacher opened would be
+     surveillance of teachers, and this product is not going to build one —
+     which is worth writing down here, because "activity feed" is the name
+     under which that usually arrives. */
+  function tabActivity(v) {
+    consoleHead(v, "School", "Activity",
+      "Every change to a mark in your classes. Not a log of what anybody looked " +
+      "at — only the things that change what a student's grade says.");
+
+    var node = loading(v, "what happened");
+    API.reporting.activity(80).then(function (events) {
+      node.remove();
+      if (!events.length) {
+        v.appendChild(cnEmpty("Nothing has been marked yet.",
+          "Changes to marks appear here as they are made, with who made them."));
+        return;
+      }
+
+      var t = cnTable([
+        { label: "Student", w: "minmax(140px, 1fr)" },
+        { label: "Work", w: "minmax(140px, 1.2fr)" },
+        { label: "Change", w: "140px" },
+        { label: "By", w: "minmax(110px, .8fr)" },
+        { label: "When", w: "120px", align: "right" }
+      ]);
+      events.forEach(function (e) {
+        var was = e.fromStatus == null ? "entered"
+          : e.fromStatus === "missing" ? "missing"
+          : e.fromStatus === "excused" ? "excused"
+          : e.fromScore == null ? "unmarked" : String(e.fromScore);
+        var now = e.toStatus === "missing" ? "missing"
+          : e.toStatus === "excused" ? "excused"
+          : e.toScore == null ? "unmarked" : e.toScore + " / " + e.outOf;
+        var who = el("span", "cn-who");
+        who.appendChild(avatarFor({ name: e.student.name, initials: e.student.initials,
+                                    hue: e.student.hue }));
+        who.appendChild(el("span", "nm", esc(e.student.name || "—")));
+        t.row([
+          who,
+          "<b>" + esc(e.title) + "</b><span class='cn-sub2'>" + esc(e.courseTitle) + "</span>",
+          "<span class='cn-change'><i>" + esc(was) + "</i>→<b>" + esc(now) + "</b></span>",
+          esc(e.actorName || "—"),
+          esc(whenName(e.at))
+        ], null, e.id);
+      });
+      v.appendChild(t);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "activity"); }); });
+  }
+
   /* -------------------------------------------------------------- Courses */
   function tabCourses(v) {
+    consoleHead(v, "School", "Courses",
+      "The courses that carry enrolment, work and grades. The catalogue students " +
+      "browse is the shipped curriculum — published content in the site's files, " +
+      "not rows in the database.");
+
     var node = loading(v, "courses");
     API.courses.mine().then(function (courses) {
       node.remove();
-      v.appendChild(el("p", "lx-lede",
-        "Courses in the database. These are the ones that carry enrolment, work and " +
-        "grades. The catalogue on the Explore tab is the shipped curriculum — " +
-        "published content that lives in the site's files, not in the database."));
 
-      var acts = el("div", "admin-acts");
-      var add = el("button", "lx-btn", "New course");
-      add.type = "button";
-      add.addEventListener("click", function () { openCourseEditor(null); });
-      acts.appendChild(add);
+      var acts = cnActions();
+      acts.appendChild(cnAction("New course", function () { openCourseEditor(null); }, true));
       v.appendChild(acts);
 
-      var list = el("div", "admin-list");
-      courses.forEach(function (c) {
-        var row = el("div", "admin-row");
-        row.innerHTML = '<span class="t"><b>' + esc(c.title) + "</b><span>" +
-          esc(c.subject || "") + " · " + esc(c.code) + " · " + esc(c.status) +
-          (c.myRole ? " · you are " + esc(c.myRole) : "") + "</span></span>";
-        var edit = el("button", "lx-btn quiet", "Edit");
-        edit.type = "button";
-        edit.addEventListener("click", function () { openCourseEditor(c); });
-        row.appendChild(edit);
-        list.appendChild(row);
-      });
       if (!courses.length) {
-        list.appendChild(el("div", "lx-empty",
-          "No courses in the database yet. Create one, enrol students, and you can " +
-          "set work and grade it."));
+        v.appendChild(cnEmpty("No courses yet.",
+          "Create one, enrol students into it, and you can set work and grade it.",
+          "New course", function () { openCourseEditor(null); }));
+        return;
       }
-      v.appendChild(list);
+
+      var t = cnTable([
+        { label: "Course", w: "minmax(180px, 1.4fr)" },
+        { label: "Subject", w: "minmax(110px, .8fr)" },
+        { label: "Code", w: "minmax(100px, .7fr)" },
+        { label: "You are", w: "100px" },
+        { label: "Status", w: "94px", align: "right" }
+      ]);
+      courses.forEach(function (c) {
+        t.row([
+          "<b>" + esc(c.title) + "</b>",
+          esc(c.subject || "—"),
+          "<span class='cn-mono'>" + esc(c.code) + "</span>",
+          c.myRole ? esc(c.myRole) : "<span class='cn-none'>—</span>",
+          "<span class='cn-tag" + (c.status === "published" ? " on" : "") + "'>" +
+            esc(c.status) + "</span>"
+        ], function () { openCourseEditor(c); }, c.id);
+      });
+      v.appendChild(t);
     }, function (e) { failed(node, e, function () { openAdmin(true, "courses"); }); });
   }
 
@@ -7687,8 +8122,8 @@
           function () { openCourseEditor(c); });
     var v = $("#v-admin");
     v.innerHTML = "";
-    v.appendChild(el("p", "lx-eyebrow", making ? "New course" : "Course"));
-    v.appendChild(el("h1", "lx-h1", making ? "Create a course" : esc(c.title)));
+    consoleHead(v, making ? "New course" : "Course",
+      making ? "Create a course" : c.title);
 
     var body = (c && c.body) || {};
     var form = el("div", "admin-form");
@@ -7760,6 +8195,10 @@
      described is gone — which is the only honest way for a label like that to
      disappear. */
   function tabSets(v) {
+    consoleHead(v, "Teaching", "Study sets",
+      "A set published to a course reaches every student in it, on every device they " +
+      "sign in on. It works in Flashcards, Learn, Match, Test and all three games.");
+
     var node = loading(v, "study sets");
 
     Promise.all([
@@ -7769,37 +8208,35 @@
       var sets = out[0], courses = out[1];
       node.remove();
 
-      v.appendChild(el("p", "lx-lede",
-        "A set published to a course appears for every student in it, on every device " +
-        "they sign in on. It works in Flashcards, Learn, Match, Test and all three games."));
-
-      var acts = el("div", "admin-acts");
-      var add = el("button", "lx-btn", "New study set");
-      add.type = "button";
-      add.addEventListener("click", function () { openSetEditor(null, courses); });
-      acts.appendChild(add);
+      var acts = cnActions();
+      acts.appendChild(cnAction("New study set",
+        function () { openSetEditor(null, courses); }, true));
       v.appendChild(acts);
 
-      var list = el("div", "admin-list");
-      sets.forEach(function (st) {
-        var course = courses.filter(function (c) { return c.id === st.courseId; })[0];
-        var row = el("div", "admin-row");
-        row.innerHTML = '<span class="t"><b>' + esc(st.title) + "</b><span>" +
-          st.termCount + (st.termCount === 1 ? " term" : " terms") +
-          (course ? " · " + esc(course.title) : " · not attached to a course") +
-          " · " + esc(st.status) + "</span></span>";
-        var edit = el("button", "lx-btn quiet", "Edit");
-        edit.type = "button";
-        edit.addEventListener("click", function () { openSetEditor(st.id, courses); });
-        row.appendChild(edit);
-        list.appendChild(row);
-      });
       if (!sets.length) {
-        list.appendChild(el("div", "lx-empty",
-          "You have not written any yet. A set needs four terms to work — the games " +
-          "need something to choose between."));
+        v.appendChild(cnEmpty("You have not written a set yet.",
+          "A set needs four terms before the games will use it — they need something " +
+          "to choose between.",
+          "New study set", function () { openSetEditor(null, courses); }));
+      } else {
+        var t = cnTable([
+          { label: "Set", w: "minmax(180px, 1.4fr)" },
+          { label: "Class", w: "minmax(140px, 1fr)" },
+          { label: "Terms", w: "80px", align: "right" },
+          { label: "Status", w: "100px", align: "right" }
+        ]);
+        sets.forEach(function (st) {
+          var course = courses.filter(function (c) { return c.id === st.courseId; })[0];
+          t.row([
+            "<b>" + esc(st.title) + "</b>",
+            course ? esc(course.title) : "<span class='cn-none'>not attached</span>",
+            "<b class='cn-mk'>" + st.termCount + "</b>",
+            "<span class='cn-tag" + (st.status === "published" ? " on" : "") + "'>" +
+              esc(st.status) + "</span>"
+          ], function () { openSetEditor(st.id, courses); }, st.id);
+        });
+        v.appendChild(t);
       }
-      v.appendChild(list);
 
       /* The curriculum that ships with the site, listed so nobody wonders
          where the built-in sets went. They are read-only here: they are
@@ -7808,16 +8245,21 @@
       var shipped = SC.sets();
       var ids = Object.keys(shipped).filter(function (k) { return k.indexOf("__") !== 0; });
       if (ids.length) {
-        v.appendChild(el("h2", "lx-h2", "Shipped with the site"));
-        v.appendChild(el("p", "lx-lede",
+        v.appendChild(el("h2", "cn-h2", "Shipped with the site"));
+        v.appendChild(el("p", "cn-sub",
           "Published curriculum, read-only. To make a school version of one, write a new " +
-          "set with the same terms — it will take precedence for your students."));
-        var sl = el("div", "admin-list");
+          "set with the same terms — it takes precedence for your students."));
+        var sl = cnTable([
+          { label: "Set", w: "minmax(180px, 1.4fr)" },
+          { label: "Code", w: "minmax(140px, 1fr)" },
+          { label: "Terms", w: "80px", align: "right" }
+        ]);
         ids.forEach(function (id) {
-          var row = el("div", "admin-row");
-          row.innerHTML = '<span class="t"><b>' + esc(shipped[id].t) + "</b><span>" +
-            esc(id) + " · " + shipped[id].cards.length + " terms</span></span>";
-          sl.appendChild(row);
+          sl.row([
+            "<b>" + esc(shipped[id].t) + "</b>",
+            "<span class='cn-mono'>" + esc(id) + "</span>",
+            "<b class='cn-mk'>" + shipped[id].cards.length + "</b>"
+          ], null, id);
         });
         v.appendChild(sl);
       }
@@ -7852,8 +8294,8 @@
 
       function render() {
         v.innerHTML = "";
-        v.appendChild(el("p", "lx-eyebrow", making ? "New study set" : "Study set"));
-        v.appendChild(el("h1", "lx-h1", making ? "Write a study set" : esc(set.title)));
+        v.appendChild(el("p", "cn-eyebrow", making ? "New study set" : "Study set"));
+        v.appendChild(el("h1", "cn-h1", making ? "Write a study set" : esc(set.title)));
 
         var form = el("div", "admin-form");
         var code = field("Code", head.code, "e.g. waves-and-sound");
@@ -7895,7 +8337,7 @@
         v.appendChild(form);
 
         v.appendChild(el("h2", "lx-h2", "Terms"));
-        v.appendChild(el("p", "lx-lede",
+        v.appendChild(el("p", "cn-sub",
           "Every definition has to stand on its own: in Match, Test and the games it is " +
           "shown without its term beside it. A term with a reason and an example can also " +
           "be asked as a case to work through — without them it stops at explanation."));
@@ -8027,38 +8469,46 @@
 
   /* --------------------------------------------------------------- People */  /* --------------------------------------------------------------- People */
   function tabPeople(v) {
+    consoleHead(v, "School", "People",
+      "An Oplo Account, not an OEdu account — the same sign-in carries a person into " +
+      "every Oplo product they are authorised for, and roles are held per product.");
+
     var node = loading(v, "people");
     API.accounts.list(S.me.orgId).then(function (people) {
       node.remove();
-      v.appendChild(el("p", "lx-lede",
-        people.length + (people.length === 1 ? " account" : " accounts") +
-        ". An Oplo Account, not an OEdu account — the same sign-in carries a person " +
-        "into every Oplo product they are authorised for, and roles are held per product."));
 
-      var acts = el("div", "admin-acts");
-      var add = el("button", "lx-btn", "Add a person");
-      add.type = "button";
-      add.addEventListener("click", function () { openPersonEditor(null); });
-      acts.appendChild(add);
+      var acts = cnActions();
+      acts.appendChild(cnAction("Add a person", function () { openPersonEditor(null); }, true));
       v.appendChild(acts);
 
-      var list = el("div", "admin-list");
+      if (!people.length) {
+        v.appendChild(cnEmpty("No accounts in this organisation yet.",
+          "Add a person and they can sign in to every Oplo product they are given a " +
+          "role in.", "Add a person", function () { openPersonEditor(null); }));
+        return;
+      }
+
+      var t = cnTable([
+        { label: "Name", w: "minmax(170px, 1.2fr)" },
+        { label: "Email", w: "minmax(180px, 1.4fr)" },
+        { label: "Title", w: "minmax(110px, .8fr)" },
+        { label: "", w: "96px", align: "right" }
+      ]);
       people.forEach(function (p) {
-        var row = el("div", "admin-row");
-        row.appendChild(avatarFor(p));
-        row.appendChild(el("span", "t", "<b>" + esc(p.name) + "</b><span>" +
-          esc(p.email || "") + (p.title ? " · " + esc(p.title) : "") + "</span>"));
-        var rec = el("button", "lx-btn quiet", "Record");
+        var who = el("span", "cn-who");
+        who.appendChild(avatarFor(p));
+        who.appendChild(el("span", "nm", esc(p.name)));
+        var rec = el("button", "cn-btn small", "Record");
         rec.type = "button";
-        rec.addEventListener("click", function () { openRecord(p); });
-        row.appendChild(rec);
-        var edit = el("button", "lx-btn quiet", "Edit");
-        edit.type = "button";
-        edit.addEventListener("click", function () { openPersonEditor(p); });
-        row.appendChild(edit);
-        list.appendChild(row);
+        rec.addEventListener("click", function (e) { e.stopPropagation(); openRecord(p); });
+        t.row([
+          who,
+          "<span class='cn-mono'>" + esc(p.email || "—") + "</span>",
+          p.title ? esc(p.title) : "<span class='cn-none'>—</span>",
+          rec
+        ], function () { openPersonEditor(p); }, p.id);
       });
-      v.appendChild(list);
+      v.appendChild(t);
     }, function (e) { failed(node, e, function () { openAdmin(true, "people"); }); });
   }
 
@@ -8074,9 +8524,8 @@
     enter("record:" + p.id, first, function () { openRecord(p); });
     var v = $("#v-admin");
     v.innerHTML = "";
-    v.appendChild(el("p", "lx-eyebrow", "Diploma record"));
-    v.appendChild(el("h1", "lx-h1", esc(p.name)));
-    v.appendChild(el("p", "lx-lede",
+    consoleHead(v, "Diploma record", p.name);
+    v.appendChild(el("p", "cn-sub",
       "What " + esc(first) + " sees on their Grades tab, computed by the server from their record. " +
       "A transcript from a school that is already on the record replaces it rather than adding to it."));
 
@@ -8132,7 +8581,7 @@
     }
     var courses = data.terms.reduce(function (n, t) { return n + (t.courses || []).length; }, 0);
     var exams = (data.exams || []).length;
-    where.appendChild(el("p", "lx-lede",
+    where.appendChild(el("p", "cn-sub",
       "<b>" + esc(data.source.school || "Unnamed school") + "</b> · " + courses + " courses in " +
       data.terms.length + " terms · " + exams + " exams" +
       (data.source.printedOn ? " · printed " + esc(data.source.printedOn) : "") +
@@ -8163,8 +8612,8 @@
           function () { openPersonEditor(p); });
     var v = $("#v-admin");
     v.innerHTML = "";
-    v.appendChild(el("p", "lx-eyebrow", making ? "New person" : "Person"));
-    v.appendChild(el("h1", "lx-h1", making ? "Add somebody" : esc(p.name)));
+    v.appendChild(el("p", "cn-eyebrow", making ? "New person" : "Person"));
+    v.appendChild(el("h1", "cn-h1", making ? "Add somebody" : esc(p.name)));
 
     var form = el("div", "admin-form");
     var name = field("Full name", p ? p.name : "");
@@ -8194,11 +8643,11 @@
     v.appendChild(form);
 
     if (making) {
-      v.appendChild(el("p", "lx-lede",
+      v.appendChild(el("p", "cn-sub",
         "The password is sent once, over HTTPS, and hashed on the server. It is never " +
         "stored anywhere in this page and never reaches the database in a readable form."));
     } else {
-      v.appendChild(el("p", "lx-lede",
+      v.appendChild(el("p", "cn-sub",
         "Passwords are changed by the person they belong to, from their own account " +
         "screen. An administrator cannot read or set somebody else's password."));
     }
@@ -8242,8 +8691,32 @@
      than a README because the person who most needs to know is the one
      looking at the console wondering why a change did not reach a student. */
   function tabSystem(v) {
-    v.appendChild(el("p", "lx-lede",
-      "Where this install stands, and what is actually enforced."));
+    consoleHead(v, "School", "System",
+      "Where this install stands, and what is actually enforced.");
+
+    /* How much fits on a screen, chosen by the person looking at it. The same
+       markup at three row heights — the text does not shrink, because solving
+       density with smaller type is how professional software becomes
+       unreadable by the people who use it most. */
+    var pref = el("div", "cn-pref");
+    pref.appendChild(el("div", "t",
+      "<b>Rows</b><span>How much fits on a screen. Marking hundreds of submissions " +
+      "wants more; planning a lesson wants fewer.</span>"));
+    var seg = el("div", "cn-seg");
+    [["comfortable", "Comfortable"], ["standard", "Standard"], ["dense", "Dense"]]
+      .forEach(function (d) {
+        var b = el("button", "cn-segb" + (currentDensity() === d[0] ? " on" : ""));
+        b.type = "button";
+        b.textContent = d[1];
+        b.addEventListener("click", function () {
+          applyDensity(d[0]);
+          [].forEach.call(seg.children, function (x) { x.classList.remove("on"); });
+          b.classList.add("on");
+        });
+        seg.appendChild(b);
+      });
+    pref.appendChild(seg);
+    v.appendChild(pref);
 
     var box = el("div", "admin-sys");
     var rows = [
@@ -8791,11 +9264,12 @@
   /* The rail, on a narrow screen. It is a drawer rather than a squeeze: at
      900px there is not room for both a rail and a gradebook, and a rail that
      shrinks to icons is a rail you have to learn twice. */
-  $("#railToggle").addEventListener("click", function () {
+  $("#railOpen").addEventListener("click", function () {
     var open = document.body.classList.toggle("rail-open");
     this.setAttribute("aria-expanded", String(open));
   });
   $("#railScrim").addEventListener("click", closeRail);
+  $("#cnBack").addEventListener("click", goBack);
 
   document.addEventListener("keydown", function (e) {
     /* ⌘K, from anywhere in the console. Not bound outside it: a student
@@ -8809,6 +9283,10 @@
       return;
     }
     if (e.key === "Escape" && !$("#finder").hidden) { closeFinder(); return; }
+    if (e.key === "Escape" && document.body.classList.contains("focus-mode")) {
+      document.body.classList.remove("focus-mode");
+      return;
+    }
     if (S.view === "cards" && S.keys) S.keys(e);
     else if (S.view === "hangman" && S.hangKeys) S.hangKeys(e);
     else if (S.view === "read" && S.readKeys) S.readKeys(e);

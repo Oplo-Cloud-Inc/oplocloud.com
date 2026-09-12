@@ -270,7 +270,49 @@ S=$(status other GET "/students/$STUDENT/report")
 [ "$S" = "403" ] && ok "a teacher who does not teach them may not (403)" \
   || bad "unrelated teacher report read" "HTTP $S"
 
-say "16. Progress and experience, priced by the server"
+say "16. The roster across every class, and what happened to it"
+R=$(call teacher GET /students)
+N=$(echo "$R" | jq_ "o.students&&o.students.length")
+CN=$(echo "$R" | jq_ "o.students[0]&&o.students[0].courses.length")
+[ "$N" = "1" ] && ok "one student, once, with their classes on the row" || bad "students" "$R"
+[ "$CN" = "1" ] && ok "and one entry per class they share with this teacher" || bad "student courses" "$CN"
+
+R=$(call teacher GET /activity)
+EV=$(echo "$R" | jq_ "o.events&&o.events.length")
+WHO=$(echo "$R" | jq_ "o.events[0]&&o.events[0].student&&o.events[0].student.name")
+[ -n "$EV" ] && [ "$EV" != "0" ] && ok "activity lists $EV changes across the teacher's classes" \
+  || bad "activity" "$R"
+[ "$WHO" = "Sehej Kaur" ] && ok "each one naming the student it was about" || bad "activity student" "$WHO"
+
+S=$(status student GET /activity)
+R2=$(call student GET /activity)
+[ "$(echo "$R2" | jq_ "o.events.length")" = "0" ] \
+  && ok "a student teaches nothing, so their activity is empty" || bad "student activity" "$R2"
+
+say "17. Undo — the record keeps the mistake and the correction"
+call teacher PUT /grades "{\"assignmentId\":\"$MID\",\"accountId\":\"$STUDENT\",\"score\":5,\"outOf\":50}" >/dev/null
+R=$(call teacher GET "/grades/history?assignmentId=$MID&accountId=$STUDENT")
+EVID=$(echo "$R" | jq_ "o.events[0]&&o.events[0].id")
+WAS=$(echo "$R" | jq_ "o.events[0]&&o.events[0].fromScore")
+[ -n "$EVID" ] && ok "the mistyped 5 is on the record, over a $WAS" || bad "history for undo" "$R"
+
+R=$(call teacher POST /grades/undo "{\"eventId\":\"$EVID\"}")
+BACK=$(echo "$R" | jq_ "o.grade&&o.grade.score")
+[ "$BACK" = "$WAS" ] && ok "undo put it back to $BACK" || bad "undo" "$R"
+
+R=$(call teacher GET "/grades/history?assignmentId=$MID&accountId=$STUDENT")
+NEV=$(echo "$R" | jq_ "o.events.length")
+NOTE=$(echo "$R" | jq_ "o.events[0]&&o.events[0].note")
+# 40 entered, 40→44, 44→10, 10→5, and the undo back to 10. Five, not four:
+# the reversal is a change like any other.
+[ "$NEV" = "5" ] && ok "and the undo is itself a change on the record, not an erasure" \
+  || bad "undo must be recorded" "events=$NEV"
+echo "$NOTE" | grep -q "Undo" && ok "carrying the reason it was made" || bad "undo note" "$NOTE"
+
+S=$(status student POST /grades/undo "{\"eventId\":\"$EVID\"}")
+[ "$S" = "403" ] && ok "a student cannot undo a grade change (403)" || bad "student undo" "HTTP $S"
+
+say "18. Progress and experience, priced by the server"
 R=$(call student PUT /progress "{\"scope\":\"set:media-1\",\"state\":{\"Cochlea\":{\"seen\":3,\"recall\":0.8}}}")
 echo "$R" | grep -q '"ok":true' && ok "student wrote their own progress" || bad "progress write" "$R"
 
@@ -295,7 +337,7 @@ XP=$(echo "$R" | jq_ "o.standing&&o.standing.xp")
 STREAK=$(echo "$R" | jq_ "o.standing&&o.standing.streak")
 [ "$XP" = "33" ] && ok "standing totals $XP XP from the ledger, streak $STREAK" || bad "standing" "$R"
 
-say "17. Study sets — authoring and consumption, both server-backed"
+say "19. Study sets — authoring and consumption, both server-backed"
 R=$(call teacher POST /study-sets "{\"code\":\"waves-$STAMP\",\"title\":\"Waves and Sound\",\"courseId\":\"$COURSE\",\"status\":\"published\",\"terms\":[{\"term\":\"Pinna\",\"definition\":\"The visible outer ear that collects sound.\",\"why\":\"It is why you can tell a sound came from behind you.\",\"example\":\"Cupping a hand behind your ear.\"},{\"term\":\"Cochlea\",\"definition\":\"The snail-shaped hearing part of the inner ear.\"},{\"term\":\"Amplitude\",\"definition\":\"The height of a wave, crest to trough.\"},{\"term\":\"Frequency\",\"definition\":\"Cycles per second, measured in Hertz.\"}]}")
 SET=$(echo "$R" | jq_ "o.studySet&&o.studySet.id")
 [ -n "$SET" ] && ok "teacher authored a set: $SET" || bad "create study set" "$R"
@@ -337,7 +379,7 @@ call teacher PATCH "/study-sets/$DRAFT" '{"status":"published"}' >/dev/null
 S=$(status student GET "/study-sets/$DRAFT")
 [ "$S" = "200" ] && ok "publishing it makes it visible (200)" || bad "publish" "HTTP $S"
 
-say "18. Transcripts — imported by an administrator, read by the student, changed by nobody else"
+say "20. Transcripts — imported by an administrator, read by the student, changed by nobody else"
 TX='{"source":{"school":"Proof High","creditSystem":"nyc-4-term","kind":"unofficial","creditsEarned":1.75,"cumulativeAverage":77},"terms":[{"year":"2024-2025","gradeLevel":9,"term":"Term 1","average":77,"courses":[["E1","English 1A","88",0.5,0.5,"english"],["E2","English 1B","90",0.5,0.5,"english"],["M1","Algebra 1A","62",0.5,0.5,"math"],["M2","Algebra 1B","45",0.5,0,"math"],["P1","PE 1A","100",0.25,0.25,"pe","not_averaged"]]}],"exams":[["Algebra I","2025-06",70,"passed"]]}'
 S=$(status student POST "/accounts/$STUDENT/transcripts" "$TX")
 [ "$S" = "403" ] && ok "a student cannot import their own transcript (403)" || bad "student MUST NOT import a transcript" "HTTP $S"
@@ -369,7 +411,7 @@ call admin PATCH "/transcript-courses/$CID" '{"decision":"declined"}' >/dev/null
 EST=$(call student GET /graduation | jq_ "o.graduation.totals.transferEstimate")
 [ "$EST" = "0.625" ] && ok "a course the registrar declines stops counting: now $EST" || bad "declined course still counted" "$EST"
 
-say "19. The analysis — every sentence of it computed from the record"
+say "21. The analysis — every sentence of it computed from the record"
 R=$(call student GET /graduation)
 MET=$(echo "$R" | jq_ "o.graduation.board.met")
 [ "$MET" = "1" ] && ok "the exam board finds one core area met: Algebra I at 70" || bad "exam board" "$MET"
@@ -402,7 +444,7 @@ N=$(echo "$R" | jq_ "o.graduation.courses.length")
 [ "$EST" = "16" ] && ok "20 more credits imported, but transfer stops at the 16-credit cap" || bad "transfer cap" "$EST"
 [ "$N" = "45" ] && ok "importing the same school twice replaces it rather than doubling it (45 courses)" || bad "re-import doubled" "$N"
 
-say "20. Sessions"
+say "22. Sessions"
 # A second sign-in from the "same person, different device".
 curl -s -c "$JAR/student2" -H 'content-type: application/json' \
   -d "{\"email\":\"student$STAMP@example.com\",\"password\":\"another-long-password\"}" \

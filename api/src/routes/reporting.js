@@ -109,6 +109,100 @@ export async function teaching(ctx) {
   });
 }
 
+/* GET /api/v1/students
+
+   Every student the caller teaches, once, with their standing in each class
+   they share with them. A teacher thinks in people as often as they think in
+   classes — "how is Jason doing" is not a question about a course — and a
+   roster that can only be reached by opening a class first makes that the
+   long way round.
+
+   A student in three of the caller's classes is one row with three entries,
+   not three rows. That is the whole reason this is not just the gradebook
+   asked twice. */
+export async function students(ctx) {
+  const actor = requireActor(ctx);
+  const courses = await myCourses(ctx, actor);
+
+  const people = new Map();
+  for (const course of courses) {
+    const c = await loadCourse(ctx, course);
+    for (const s of c.students) {
+      const grades = c.byStudent.get(s.id) || [];
+      const summary = computeGrade(grades, c.weights);
+      const marked = new Set(grades.filter((g) => g.score != null ||
+                                                  g.status === "missing" ||
+                                                  g.status === "excused")
+                                   .map((g) => g.assignment_id));
+      const entry = people.get(s.id) || { ...s, courses: [] };
+      entry.courses.push({
+        courseId: course.id,
+        title: course.title,
+        subject: course.subject,
+        grade: summary ? { percent: summary.percent, letter: summary.letter,
+                           countedWeight: summary.countedWeight } : null,
+        missing: grades.filter((g) => g.status === "missing").length,
+        unmarked: c.assignments.filter((a) => !marked.has(a.id)).length
+      });
+      people.set(s.id, entry);
+    }
+  }
+
+  const rows = [...people.values()].map((p) => {
+    const graded = p.courses.filter((c) => c.grade);
+    return {
+      ...p,
+      // The mean of their course grades. Not a GPA — a GPA needs credits, and
+      // credits live with the transcript.
+      standing: graded.length
+        ? Math.round(graded.reduce((a, c) => a + c.grade.percent, 0) / graded.length)
+        : null,
+      missing: p.courses.reduce((a, c) => a + c.missing, 0),
+      unmarked: p.courses.reduce((a, c) => a + c.unmarked, 0)
+    };
+  }).sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+
+  return json({
+    students: rows,
+    totals: {
+      students: rows.length,
+      belowPass: rows.filter((r) => r.standing != null && r.standing < 70).length,
+      missing: rows.reduce((a, r) => a + r.missing, 0)
+    }
+  });
+}
+
+/* GET /api/v1/activity?limit=
+
+   What has happened to the marks in the caller's classes, newest first. It is
+   the grade history read across courses rather than down one, and it exists
+   for the same reason the history does: a record of academic work that cannot
+   be reviewed is not a record.
+
+   Deliberately only the things that change a student's grade. A log of every
+   page somebody opened would be surveillance of teachers, which is a thing
+   this product is not going to build. */
+export async function activity(ctx) {
+  const actor = requireActor(ctx);
+  const courses = await myCourses(ctx, actor);
+  const events = await ctx.repo.listGradeEventsForCourses(
+    courses.map((c) => c.id),
+    Number(ctx.url.searchParams.get("limit")) || 60
+  );
+
+  return json({
+    events: events.map((e) => ({
+      id: e.id, assignmentId: e.assignment_id, accountId: e.account_id,
+      courseId: e.course_id, courseTitle: e.course_title, title: e.title,
+      student: { id: e.account_id, name: e.student_name,
+                 initials: e.student_initials, hue: e.student_hue },
+      fromScore: e.from_score, fromStatus: e.from_status,
+      toScore: e.to_score, toStatus: e.to_status, outOf: e.assignment_out_of,
+      note: e.note, actorId: e.actor_id, actorName: e.actor_name, at: e.at
+    }))
+  });
+}
+
 /* GET /api/v1/reporting?courseId=&term=
 
    Is this term's reporting finished, and if not, whose fault is that. One row

@@ -277,6 +277,45 @@ export async function batch(ctx) {
   return json({ grades: written, refused, summaries });
 }
 
+/* POST /api/v1/grades/undo — put a mark back to what it was.
+
+   The history already holds both sides of every change, so undo is not a new
+   mechanism: it is a normal write of the value the event says was there
+   before. Which means it is checked by the same rule, recorded as its own
+   event, and itself undoable.
+
+   Nothing is erased. An undo that removed the mistake from the record would
+   be a worse record than one that keeps it — "this was 92, then 72 for eleven
+   minutes, then 92 again" is the true story, and the eleven minutes are
+   exactly what somebody asking about it wants to know. */
+export async function undo(ctx) {
+  const actor = requireActor(ctx);
+  const body = await readJson(ctx.request);
+  const eventId = check.string(body.eventId, "eventId", { max: 64 });
+
+  const event = await ctx.repo.findGradeEvent(eventId);
+  if (!event) throw ApiError.notFound("No such change.");
+
+  await must(ctx, "grade.write",
+    { courseId: event.course_id, accountId: event.account_id });
+
+  // The first event on a mark has no "before" — undoing it means returning
+  // the cell to unmarked, which is a real state and not a deletion.
+  const grade = await ctx.repo.upsertGrade({
+    assignmentId: event.assignment_id,
+    accountId: event.account_id,
+    score: event.from_score,
+    status: event.from_status || "marked",
+    note: "Undo of a change made " + new Date(event.at).toISOString(),
+    gradedBy: actor.id
+  });
+
+  return json({
+    grade: shape(grade),
+    summary: await summaryFor(ctx, grade.course_id, grade.account_id)
+  });
+}
+
 /* GET /api/v1/grades/history?assignmentId=&accountId=&courseId=
 
    Who changed this mark, from what, to what, and when. Readable by whoever

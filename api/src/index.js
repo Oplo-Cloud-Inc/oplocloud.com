@@ -67,6 +67,7 @@ const ROUTES = [
   ["PUT",    "/api/v1/grades",          grades.put],
   ["POST",   "/api/v1/grades/batch",    grades.batch],
   ["GET",    "/api/v1/grades/history",  grades.history],
+  ["POST",   "/api/v1/grades/undo",     grades.undo],
   ["GET",    "/api/v1/courses/:courseId/gradebook", grades.gradebook],
 
   ["GET",    "/api/v1/study-sets",         studysets.list],
@@ -76,6 +77,8 @@ const ROUTES = [
   ["DELETE", "/api/v1/study-sets/:setId",  studysets.remove],
 
   ["GET",    "/api/v1/teaching",                 reporting.teaching],
+  ["GET",    "/api/v1/students",                 reporting.students],
+  ["GET",    "/api/v1/activity",                 reporting.activity],
   ["GET",    "/api/v1/reporting",                reporting.readiness],
   ["PUT",    "/api/v1/reporting/comment",        reporting.putComment],
   ["GET",    "/api/v1/students/:accountId/report", reporting.report],

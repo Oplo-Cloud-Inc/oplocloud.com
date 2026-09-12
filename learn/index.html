@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=fb47e397">
+<link rel="stylesheet" href="app.css?v=64e53273">
 </head>
 <body>
 
@@ -50,12 +50,21 @@
 <aside class="cn-rail" id="rail" aria-label="Console"></aside>
 <div class="cn-scrim" id="railScrim" hidden></div>
 
+<!-- The console has no top bar. Going back is a small control at the head of
+     the content, shown only when there is somewhere to go back to; opening the
+     rail on a narrow screen is another. Neither is a bar. -->
+<button class="cn-back" id="cnBack" type="button" hidden>
+  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor"
+       stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+  <span id="cnBackLabel">Back</span>
+</button>
+<button class="cn-open" id="railOpen" type="button" aria-label="Sections" aria-expanded="false">
+  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+       stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+</button>
+
 <header class="lx-bar">
   <div class="lx-bar-in">
-    <button class="cn-burger" id="railToggle" type="button" aria-label="Sections" aria-expanded="false">
-      <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
-           stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
-    </button>
     <button class="lx-back" id="back" type="button" hidden>
       <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
            stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
@@ -191,7 +200,7 @@
 <div class="lx-xp" id="xpPop" aria-hidden="true"></div>
 <div class="lx-badge" id="badgePop" role="status" aria-live="polite"></div>
 
-<script src="api.js?v=5c956fa1"></script>
+<script src="api.js?v=058a6d2f"></script>
 <script src="data.js?v=29a4bfe7"></script>
 <script src="school.js?v=89fed491"></script>
 <script src="store.js?v=b8219a19"></script>
@@ -205,6 +214,6 @@
 <script src="annotate.js?v=bba6542f"></script>
 <script src="collab.js?v=45bea90d"></script>
 <script src="tutor.js?v=e36b13da"></script>
-<script src="app.js?v=80480aa0"></script>
+<script src="app.js?v=00d46ab1"></script>
 </body>
 </html>

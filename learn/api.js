@@ -232,6 +232,12 @@ window.OPLO_API = (function () {
         return post("/grades/batch", { grades: [].concat(entries) }, { timeout: 30000 });
       },
 
+      /* Put a mark back to what it was. Not a delete: the change and its
+         reversal both stay on the record. */
+      undo: function (eventId) {
+        return post("/grades/undo", { eventId: eventId });
+      },
+
       history: function (opts) {
         opts = opts || {};
         return get("/grades/history" + q({ assignmentId: opts.assignmentId,
@@ -249,6 +255,15 @@ window.OPLO_API = (function () {
       /* Every class this account teaches, with what each one owes. The
          console's first screen, in one request. */
       teaching: function () { return get("/teaching"); },
+
+      /* Every student the caller teaches, once, with their standing in each
+         class they share. A teacher thinks in people as often as in classes. */
+      students: function () { return get("/students"); },
+
+      /* What has happened to the marks, across every class. */
+      activity: function (limit) {
+        return get("/activity" + q({ limit: limit })).then(function (r) { return r.events; });
+      },
 
       /* Whether a term's reporting is finished, and whose marking is missing. */
       readiness: function (opts) {

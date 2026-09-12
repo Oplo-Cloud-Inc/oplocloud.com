@@ -491,6 +491,39 @@ export class D1Repository {
     return results || [];
   }
 
+  /* Everything that happened across a set of courses, newest first. The
+     placeholders are generated from the list's length and the values are still
+     bound — there is no interpolation of a value into SQL here and there must
+     never be one, whatever the shape of the query. */
+  async listGradeEventsForCourses(courseIds, limit = 60) {
+    if (!courseIds || !courseIds.length) return [];
+    const slots = courseIds.map(() => "?").join(", ");
+    const { results } = await this.db.prepare(
+      `SELECT e.*, a.title, a.out_of AS assignment_out_of, a.course_id,
+              c.title AS course_title,
+              p.name AS actor_name, sp.name AS student_name,
+              sp.initials AS student_initials, sp.avatar_hue AS student_hue
+         FROM learn_grade_events e
+         JOIN learn_assignments a ON a.id = e.assignment_id
+         JOIN learn_courses c ON c.id = a.course_id
+         LEFT JOIN profiles p ON p.account_id = e.actor_id
+         LEFT JOIN profiles sp ON sp.account_id = e.account_id
+        WHERE a.course_id IN (${slots})
+        ORDER BY e.at DESC
+        LIMIT ?`
+    ).bind(...courseIds, Math.min(Number(limit) || 60, 200)).all();
+    return results || [];
+  }
+
+  async findGradeEvent(eventId) {
+    return this.db.prepare(
+      `SELECT e.*, a.course_id, a.title, a.out_of AS assignment_out_of
+         FROM learn_grade_events e
+         JOIN learn_assignments a ON a.id = e.assignment_id
+        WHERE e.id = ?`
+    ).bind(eventId).first();
+  }
+
   /* ----------------------------------------------------------- Reporting
      The one thing on a report card that is written rather than computed. */
 
