@@ -4200,23 +4200,64 @@
      wherever it is shown, and naming a photographer is what the free licences
      ask in return even where they do not require it.
 
-     b = { imgs: [{ src, alt, w, h, pos }], cap, credits: [{ what, by, byUrl,
-           site, siteUrl, license, licenseUrl }], diagram, size } */
+     A figure can also teach by comparison. `label` names each panel; `grid`
+     lays the rule-of-thirds or golden-ratio lines over a photograph, drawn in
+     the page rather than burned into the file; `natural` keeps each image's
+     own proportions, because a before-and-after that crops both sides to
+     match has stopped showing the before; `fx` applies one of a fixed set of
+     display filters to the same licensed photograph, so "this is what sepia
+     does" is shown on pixels the student has already seen unfiltered.
+
+     b = { imgs: [{ src, alt, w, h, pos, label, grid, fx }], cap,
+           credits: [{ what, by, byUrl, site, siteUrl, license, licenseUrl }],
+           cols, natural, diagram, size } */
+  var FIG_FX = { sepia: 1, vintage: 1, dramatic: 1, saturated: 1, swapped: 1 };
+  function figureFilters() {
+    // Swapping two colour channels is not a CSS filter function, so the one
+    // SVG filter it needs is added to the page the first time a figure asks.
+    if (document.getElementById("fxFilters")) return;
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("id", "fxFilters");
+    svg.setAttribute("width", "0");
+    svg.setAttribute("height", "0");
+    svg.setAttribute("aria-hidden", "true");
+    svg.style.position = "absolute";
+    svg.innerHTML = '<filter id="fx-swap-gb" color-interpolation-filters="sRGB">' +
+      '<feColorMatrix type="matrix" values="1 0 0 0 0  0 0 1 0 0  0 1 0 0 0  0 0 0 1 0"/></filter>';
+    document.body.appendChild(svg);
+  }
+
   function figureBlock(b) {
-    var cls = "rd-fig" + (b.imgs.length > 1 ? " pair" : "") +
+    var cols = Math.min(b.cols || b.imgs.length, 3);
+    var cls = "rd-fig cols-" + cols + (b.natural ? " natural" : "") +
               (b.diagram ? " diagram" : "") + (b.size ? " " + b.size : "");
     var f = el("figure", cls);
     var row = el("div", "rd-fig-imgs");
     b.imgs.forEach(function (im) {
+      var cell = el("div", "rd-fig-cell");
+      if (im.label) cell.appendChild(el("span", "rd-fig-label", esc(im.label)));
+      var frame = el("div", "rd-fig-frame");
       var img = document.createElement("img");
       img.src = im.src;
       img.alt = im.alt;
       if (im.w) img.width = im.w;
       if (im.h) img.height = im.h;
       if (im.pos) img.style.objectPosition = im.pos;
+      if (im.fx && FIG_FX[im.fx]) {
+        img.classList.add("fx-" + im.fx);
+        if (im.fx === "swapped") figureFilters();
+      }
       img.loading = "lazy";
       img.decoding = "async";
-      row.appendChild(img);
+      frame.appendChild(img);
+      if (im.grid === "thirds" || im.grid === "phi") {
+        var g = el("i", "rd-fig-grid " + im.grid);
+        g.setAttribute("aria-hidden", "true");
+        frame.appendChild(g);
+      }
+      cell.appendChild(frame);
+      row.appendChild(cell);
     });
     f.appendChild(row);
 

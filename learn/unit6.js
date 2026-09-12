@@ -72,6 +72,7 @@ window.OPLO_UNIT6 = (function () {
   // credit its licence asks for. See figureBlock in app.js.
   var F = function (o) {
     return { k: "fig", imgs: o.imgs, cap: o.cap, credits: o.credits,
+             cols: o.cols || null, natural: !!o.natural,
              diagram: !!o.diagram, size: o.size || null };
   };
 
@@ -390,6 +391,36 @@ window.OPLO_UNIT6 = (function () {
         "Adams is best known for his photographs of Yosemite and Yellowstone National Parks. His " +
         "work showed the public the beauty of the Sierra Nevada — people who might never travel " +
         "there themselves — and helped build political support for protecting it."),
+      F({ imgs: [
+            { src: "media/unit6/6-5-adams-with-camera.jpg",
+              w: 700,
+              h: 885,
+              label: "Adams, about 1950",
+              alt: "Black-and-white portrait of Ansel Adams, bearded, in a wide-brimmed hat and " +
+              "jacket, beside a camera on a tripod, a light meter hanging from his hand." },
+            { src: "media/unit6/6-5-monolith-half-dome.jpg",
+              w: 700,
+              h: 906,
+              label: "Monolith, 1927",
+              alt: "Black-and-white photograph of the sheer granite face of Half Dome in " +
+              "Yosemite against a nearly black sky, with snowy slopes and a pine tree below." }
+          ],
+          cap: "Adams in a portrait from the 1950 Yosemite Field School yearbook, and " +
+            "Monolith, the Face of Half Dome, made in 1927. Adams described Monolith as the " +
+            "first photograph he visualised: he pictured the finished print before exposing, " +
+            "and used a deep red filter to turn the sky nearly black.",
+          credits: [{ what: "Portrait",
+                      by: "J. Malcolm Greany",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Ansel_Adams_and_camera.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Ansel_Adams_and_camera.jpg",
+                      license: "Public domain" },
+                    { what: "Monolith",
+                      by: "Ansel Adams",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Ansel-adams-monolith-the-face-of-half-dome_-_edit1.jpg",
+                      site: "Library of Congress, via Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Ansel-adams-monolith-the-face-of-half-dome_-_edit1.jpg",
+                      license: "Public domain" }], cols: 2, natural: true }),
       P("He was a photographer and an environmentalist, and for him those were not two separate " +
         "jobs."),
       N("Adams was born in San Francisco, California, in 1902. His father's family had been New " +
@@ -400,6 +431,20 @@ window.OPLO_UNIT6 = (function () {
         "each tone in the scene will appear."),
       P("It was first worked out for black-and-white prints, and it is the reason for the clarity " +
         "and depth his photographs are known for."),
+      F({ imgs: [
+            { src: "media/unit6/6-5-zone-scale.svg",
+              w: 1100,
+              h: 250,
+              alt: "Eleven grey swatches numbered 0 to X, from pure black through middle grey " +
+              "at Zone V to pure white, with dark tones that still show texture marked at " +
+              "Zone III and light tones that still show texture at Zone VII." }
+          ],
+          cap: "The Zone System's eleven zones, one stop of exposure apart. A photographer " +
+            "decides which zone an important part of the scene should fall in, then exposes " +
+            "and develops to put it there. In Monolith the sky was placed near Zone I and the " +
+            "lit granite high on the scale.",
+          credits: [{ what: "Diagram",
+                      by: "OEdu" }], diagram: true }),
       D("Large-format camera", "A camera that records on large sheets of film, giving very high " +
         "resolution and sharpness. Adams used them throughout his career."),
       N("<b>A correction to the course text.</b> Large-format cameras are not a thing of the 1930s " +
@@ -429,8 +474,45 @@ window.OPLO_UNIT6 = (function () {
       D("Rule of thirds", "Dividing the frame into thirds horizontally and vertically, so two " +
         "lines each way make a grid of nine. The four points where the lines cross are the " +
         "strongest places to put a subject."),
+      F({ imgs: [
+            { src: "media/unit6/6-6-rule-of-thirds-oak.jpg",
+              w: 1100,
+              h: 892,
+              grid: "thirds",
+              alt: "A large bare tree with a forked trunk in a frosty meadow under a clear blue " +
+              "sky, with a rule-of-thirds grid drawn over it: the trunk stands on the " +
+              "right-hand vertical line and the far treeline runs along the lower horizontal " +
+              "line." }
+          ],
+          cap: "The trunk stands on the right-hand line and the treeline runs along the lower " +
+            "one, so the empty sky on the left gives the tree room. The grid is drawn by the " +
+            "page, not printed on the photograph.",
+          credits: [{ what: "Photo, cropped on the right",
+                      by: "Dietmar Rabich",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:D%C3%BClmen,_Wildpark,_Solit%C3%A4rbaum_--_2022_--_0303.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:D%C3%BClmen,_Wildpark,_Solit%C3%A4rbaum_--_2022_--_0303.jpg",
+                      license: "CC BY-SA 4.0",
+                      licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" }] }),
       P("The grid is also a way to check balance. Look at each third across and each third down: " +
         "if one holds far more than the others, move something — or find a different angle."),
+      F({ imgs: [
+            { src: "media/unit6/6-6-rule-of-thirds-1797.png",
+              w: 600,
+              h: 473,
+              alt: "A printed page from 1797 that begins: Analogous to this “Rule of thirds”, " +
+              "(if I may be allowed so to call it) — and goes on to set the sky of a " +
+              "landscape at about two-thirds of the picture, or else at about one-third." }
+          ],
+          cap: "Where the name comes from: John Thomas Smith, Remarks on Rural Scenery, 1797, " +
+            "the earliest known use of “rule of thirds” in print. He uses it for balance, " +
+            "just as above: the sky at about two-thirds of a landscape, or about one-third, " +
+            "and a ratio of two to one preferred over an exact half.",
+          credits: [{ by: "John Thomas Smith",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Rule_of_thirds_1797_John_Thomas_Smith_rule_of_thirds.png",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Rule_of_thirds_1797_John_Thomas_Smith_rule_of_thirds.png",
+                      license: "Public domain" }], size: "medium" }),
       H("The golden ratio"),
       D("Golden ratio", "A proportion of about 1 to 1.618. Two lengths are in the golden ratio " +
         "when the larger divided by the smaller equals their sum divided by the larger. It " +
@@ -441,12 +523,43 @@ window.OPLO_UNIT6 = (function () {
         "equal thirds, with lines at 33 and 67 percent. The golden ratio divides it at about 38 " +
         "and 62 percent. The rule of thirds is best thought of as a simpler approximation of the " +
         "golden ratio."),
+      F({ imgs: [
+            { src: "media/unit6/6-6-thirds-vs-golden.svg",
+              w: 1100,
+              h: 440,
+              alt: "Two identical frames. The left is divided by blue rule-of-thirds lines at " +
+              "33 and 67 percent; the right by amber golden-ratio lines at about 38 and 62 " +
+              "percent, with the thirds dashed for comparison, so the golden lines sit closer " +
+              "to the centre." }
+          ],
+          cap: "The same frame divided both ways. The golden ratio's lines, at about 38% and " +
+            "62%, sit closer to the centre than the thirds at 33% and 67% — near enough that " +
+            "the rule of thirds works as a simpler stand-in for it.",
+          credits: [{ what: "Diagram",
+                      by: "OEdu" }], diagram: true }),
       Q("Mathematics and art share a vocabulary.", "The golden ratio is one of the places where " +
         "that is easiest to see."),
       H("Breaking the rule"),
       P("The rule of thirds can be broken on purpose. A strongly symmetrical scene holds its " +
         "balance through symmetry instead: every part of the grid carries equal weight, and there " +
         "is no single focal point to place."),
+      F({ imgs: [
+            { src: "media/unit6/6-6-symmetry-pavilion.jpg",
+              w: 840,
+              h: 1260,
+              alt: "A two-storey hexagonal pavilion with a curved tiled roof, centred in the " +
+              "frame and reflected almost perfectly in the still pond below, with trees and a " +
+              "mountain behind." }
+          ],
+          cap: "Hyangwonjeong Pavilion at Gyeongbokgung Palace, Seoul, mirrored in its pond. " +
+            "Placed dead centre on purpose: the reflection balances the frame, so no subject " +
+            "needs to sit on a third.",
+          credits: [{ by: "Basile Morin",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Water_reflection_of_Hyangwonjeong_Pavilion_at_Gyeongbokgung_Palace_in_Seoul.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Water_reflection_of_Hyangwonjeong_Pavilion_at_Gyeongbokgung_Palace_in_Seoul.jpg",
+                      license: "CC BY-SA 4.0",
+                      licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" }], size: "medium" }),
       H("Other elements"),
       D("Depth", "The sense of distance into a photograph, built from perspective and layering. " +
         "Many consider it the most important element of photography."),
@@ -456,9 +569,40 @@ window.OPLO_UNIT6 = (function () {
                        "most often forgotten."],
         ["Background", "What is farthest away."]
       ]),
+      F({ imgs: [
+            { src: "media/unit6/6-6-tetons-snake-river.jpg",
+              w: 1300,
+              h: 1040,
+              alt: "Black-and-white landscape: dark pine trees in the foreground, the Snake " +
+              "River curving through a wooded valley in the middle distance, and the " +
+              "snow-covered Teton Range under storm clouds in the background." }
+          ],
+          cap: "All three planes in one photograph: dark trees in the foreground, the bend of " +
+            "the river in the mid-ground, the mountains behind. The river's curve is what " +
+            "carries the eye from one to the next. Ansel Adams, The Tetons and the Snake " +
+            "River, 1942, made for the National Park Service.",
+          credits: [{ by: "Ansel Adams",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Adams_The_Tetons_and_the_Snake_River.jpg",
+                      site: "US National Archives, via Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Adams_The_Tetons_and_the_Snake_River.jpg",
+                      license: "Public domain" }] }),
       D("Gestalt", "An organised whole that is perceived as more than the sum of its parts. " +
         "Originally a theory in psychology about how the mind makes meaning out of a chaotic " +
         "world."),
+      F({ imgs: [
+            { src: "media/unit6/6-6-gestalt-closure.svg",
+              w: 530,
+              h: 290,
+              alt: "A circle and a rectangle drawn only as broken line segments with wide gaps, " +
+              "which the eye still reads as a complete circle and a complete rectangle." }
+          ],
+          cap: "Closure, one of the Gestalt principles. The lines are broken, yet the mind " +
+            "completes a circle and a rectangle: the whole is seen before the parts.",
+          credits: [{ by: "Kasufcgslfguhvsne",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Gestalt_closure.svg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Gestalt_closure.svg",
+                      license: "Public domain" }], diagram: true, size: "medium" }),
       P("A photograph can feel different from any of its parts, but the parts still build that " +
         "whole. A photograph is a single frozen moment and still full of movement — contrast, " +
         "value and colour working together to put emphasis on the focal point.")
@@ -483,9 +627,52 @@ window.OPLO_UNIT6 = (function () {
         "printing. Cutting unwanted space, subjects or detail usually strengthens the composition, " +
         "and cropping in on the subject can narrow the view when the lens could not zoom in far " +
         "enough."),
+      F({ imgs: [
+            { src: "media/unit6/6-7-crop-before.jpg",
+              w: 1000,
+              h: 560,
+              label: "Before",
+              alt: "A wide photograph of a vineyard in autumn leaf, with a village of red " +
+              "roofs, green hills and snow-dusted mountains beyond." },
+            { src: "media/unit6/6-7-crop-after.jpg",
+              w: 637,
+              h: 495,
+              label: "After",
+              alt: "The same vineyard photograph cropped on both sides, so the vines, the " +
+              "village and the mountains fill a narrower frame." }
+          ],
+          cap: "A vineyard near Perpignan, France, before and after cropping. Trimming both " +
+            "sides removes the empty edges, pulls the vines, the village and the peaks " +
+            "together, and changes the frame from wide to close to 4:3.",
+          credits: [{ what: "Before",
+                      by: "Mick Stephenson",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Vinepyrennees.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Vinepyrennees.jpg",
+                      license: "CC BY-SA 3.0",
+                      licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/" },
+                    { what: "After",
+                      by: "Mick Stephenson",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Vinepyrennees_crop.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Vinepyrennees_crop.jpg",
+                      license: "CC BY-SA 3.0",
+                      licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/" }], cols: 2, natural: true }),
       N("To make a panoramic image, crop away the top and bottom of a wide shot."),
       D("Aspect ratio", "The proportion of an image's width to its height. Editing software offers " +
         "preset ratios, so a photo can be cropped to fit a particular frame."),
+      F({ imgs: [
+            { src: "media/unit6/6-7-aspect-ratios.svg",
+              w: 1100,
+              h: 280,
+              alt: "Five rectangles at the same height showing the aspect ratios 1:1 for square " +
+              "posts and 6×6 film, 4:5 for 8×10 prints and portrait posts, 4:3 for most phone " +
+              "cameras, 3:2 for 35mm film and most DSLRs, and 16:9 for screens and video." }
+          ],
+          cap: "Five common aspect ratios at the same height. Cropping to a preset ratio is " +
+            "how one photograph is made to fit a print, a screen or a post.",
+          credits: [{ what: "Diagram",
+                      by: "OEdu" }], diagram: true }),
       H("Size and resolution"),
       P("Making an image smaller is easy. Making it larger again is hard, because shrinking throws " +
         "pixel data away and a computer cannot invent the pixels that were lost."),
@@ -493,6 +680,20 @@ window.OPLO_UNIT6 = (function () {
         "printed before the pixels become visible."),
       D("Pixelation", "Visible blocks of individual pixels, which appear when an image is printed " +
         "or shown larger than its resolution can support."),
+      F({ imgs: [
+            { src: "media/unit6/6-7-resolution-steps.png",
+              w: 788,
+              h: 133,
+              alt: "Seven squares showing the same letter R at 1 by 1, 2 by 2, 5 by 5, 10 by " +
+              "10, 20 by 20, 50 by 50 and 100 by 100 pixels: the first three are only blocks " +
+              "of colour, the letter is blocky at 10 and 20, and smooth only at 100." }
+          ],
+          cap: "One image at seven resolutions, shown at the same size. At 10×10 the letter " +
+            "is barely readable and at 20×20 its edges are steps — pixelation. Enlarging the " +
+            "small version cannot bring the detail back.",
+          credits: [{ by: "Wikimedia Commons",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Resolution_illustration.png",
+                      license: "Public domain" }], diagram: true }),
       P("So keep the highest-resolution version there is. For large prints, photographers often " +
         "keep files as TIFF, a lossless format that preserves all of the image data."),
       N("<b>A correction to the course text.</b> TIFF does not add resolution — nothing can. It " +
@@ -534,6 +735,21 @@ window.OPLO_UNIT6 = (function () {
       ]),
       P("When it happens anyway, even basic editing software has a one-click red-eye tool. " +
         "Professional software has the user circle the area, for a more precise fix."),
+      F({ imgs: [
+            { src: "media/unit6/6-8-red-eye-corrected.jpg",
+              w: 640,
+              h: 240,
+              alt: "The same close-up of a young person's face shown twice: on the left both " +
+              "pupils glow red from a camera flash; on the right the pupils have been " +
+              "corrected to dark." }
+          ],
+          cap: "Before and after a red-eye tool, in the free editor GIMP. The correction " +
+            "darkens only the red of the pupils and leaves the iris and skin as they were.",
+          credits: [{ by: "Hydrargyrum",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:BoldRedEye-corrected.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:BoldRedEye-corrected.jpg",
+                      license: "Public domain" }] }),
       H("Scars and blemishes"),
       P("Headshot clients often ask for scars and blemishes to be removed, and editing software " +
         "has several tools for it. The first two both work from a sampling point."),
@@ -549,6 +765,24 @@ window.OPLO_UNIT6 = (function () {
       D("Patch tool", "Blends like the healing brush, but works from a selection rather than " +
         "brush strokes, and makes sure the pixels match the area they are copied to. Best for " +
         "larger areas with unusual shapes."),
+      F({ imgs: [
+            { src: "media/unit6/6-8-portrait-restoration.jpg",
+              w: 962,
+              h: 554,
+              alt: "An old portrait of an older woman shown twice: on the left the print is " +
+              "yellowed and crossed by cracks and creases; on the right the cracks are gone " +
+              "and the tones are clean." }
+          ],
+          cap: "A portrait of Elvira Maria Bourtscheidt before and after restoration. Cracks " +
+            "are removed the same way as blemishes: undamaged areas nearby are sampled and " +
+            "blended over the damage — the job of the healing brush, spot healing brush and " +
+            "patch tool.",
+          credits: [{ by: "Michel Vuijlsteke",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Portrait_restoration,_before_and_after.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Portrait_restoration,_before_and_after.jpg",
+                      license: "CC BY-SA 3.0",
+                      licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/" }] }),
       H("Filters"),
       P("Filters began as physical attachments screwed onto the end of a lens. In software and on " +
         "social media, a filter changes an image's colour balance and tone — and with them, the " +
@@ -557,8 +791,56 @@ window.OPLO_UNIT6 = (function () {
         "with brownish-yellow tones."),
       D("Sepia", "A monochromatic filter that renders an image in shades of brown instead of grey. " +
         "Named for the pigment once taken from cuttlefish."),
+      F({ imgs: [
+            { src: "media/unit6/6-8-sepia-studio-portrait.jpg",
+              w: 700,
+              h: 1018,
+              alt: "A studio portrait from around 1900 of a young woman with upswept hair and a " +
+              "lace blouse, resting her head on her hand against a carved chair, printed " +
+              "entirely in warm browns." }
+          ],
+          cap: "Real sepia: a Victorian or Edwardian studio print, toned brown by chemistry " +
+            "rather than software. Retouching is older than editing apps, too — the sitter's " +
+            "waist is said to have been painted over on this print to look narrower.",
+          credits: [{ by: "Unidentified photographer",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Edwardian_or_Victorian_%E2%80%9Cphotoshopped%E2%80%9D_photograph.jpg",
+                      site: "Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Edwardian_or_Victorian_%E2%80%9Cphotoshopped%E2%80%9D_photograph.jpg",
+                      license: "Public domain" }], size: "medium" }),
       N("Vintage and sepia look alike but differ: sepia is monochromatic, and vintage keeps some " +
         "colour."),
+      F({ imgs: [
+            { src: "media/unit6/6-3-warm-and-cool-seashore.jpg",
+              w: 1400,
+              h: 931,
+              label: "Original",
+              alt: "The unfiltered photograph: a beach at sunset, the low sun and sand on the " +
+              "left and turquoise sea on the right, in full colour." },
+            { src: "media/unit6/6-3-warm-and-cool-seashore.jpg",
+              w: 1400,
+              h: 931,
+              label: "Vintage",
+              fx: "vintage",
+              alt: "The same photograph with a vintage filter: a beach at sunset, the low sun " +
+              "and sand on the left and turquoise sea on the right, faded under a " +
+              "brownish-yellow cast but still faintly coloured." },
+            { src: "media/unit6/6-3-warm-and-cool-seashore.jpg",
+              w: 1400,
+              h: 931,
+              label: "Sepia",
+              fx: "sepia",
+              alt: "The same photograph with a sepia filter: a beach at sunset, the low sun and " +
+              "sand on the left and turquoise sea on the right, in shades of brown only." }
+          ],
+          cap: "One photograph from section 6.3, filtered two ways in the browser. Vintage " +
+            "keeps a little colour under its brownish-yellow cast; sepia keeps none, only " +
+            "shades of brown.",
+          credits: [{ by: "Sean Oulashin",
+                      byUrl: "https://unsplash.com/@oulashin",
+                      site: "Unsplash",
+                      siteUrl: "https://unsplash.com/photos/seashore-during-golden-hour-KMn4VEeEPR8",
+                      license: "Unsplash License",
+                      licenseUrl: "https://unsplash.com/license" }], cols: 3, natural: true }),
       Q("No wrong way, if it is the intended way.", "Experimenting is how an editor learns which " +
         "filters and techniques are theirs.")
     ],
@@ -585,6 +867,23 @@ window.OPLO_UNIT6 = (function () {
       N("Many passionate photographers choose a theme that challenges a social issue. It can draw " +
         "strongly opposed reactions, and it can also bring awareness, and change, to something the " +
         "world was not looking at."),
+      F({ imgs: [
+            { src: "media/unit6/6-9-migrant-mother.jpg",
+              w: 840,
+              h: 1092,
+              alt: "Black-and-white photograph of a worn, worried woman with her hand at her " +
+              "chin, two children leaning on her shoulders with their faces hidden and a baby " +
+              "wrapped in her lap." }
+          ],
+          cap: "Dorothea Lange, Migrant Mother, Nipomo, California, 1936, made for the US " +
+            "Resettlement Administration, later the Farm Security Administration. Pictures " +
+            "like it made the poverty of Depression-era farm workers impossible to ignore, " +
+            "and federal aid was sent to the camp.",
+          credits: [{ by: "Dorothea Lange",
+                      byUrl: "https://commons.wikimedia.org/wiki/File:Lange-MigrantMother02.jpg",
+                      site: "Library of Congress, via Wikimedia Commons",
+                      siteUrl: "https://commons.wikimedia.org/wiki/File:Lange-MigrantMother02.jpg",
+                      license: "Public domain" }], size: "medium" }),
       H("A style of shooting"),
       P("Photographers are known for their technique too: film or digital, modern cameras or ones " +
         "from photography's early years, chosen for a particular effect. Finding a style takes " +
@@ -594,6 +893,47 @@ window.OPLO_UNIT6 = (function () {
       D("Editing style", "The consistent way a photographer processes images — dark and " +
         "high-contrast, highly saturated, even with colours inverted so the sky is green and the " +
         "grass is blue. It is often what viewers recognise first."),
+      F({ imgs: [
+            { src: "media/unit6/6-9-meadow.jpg",
+              w: 800,
+              h: 449,
+              label: "As shot",
+              alt: "The unedited photograph: a meadow of long green grass with trees and " +
+              "rolling hills under a blue sky with white clouds." },
+            { src: "media/unit6/6-9-meadow.jpg",
+              w: 800,
+              h: 449,
+              label: "Dark and high-contrast",
+              fx: "dramatic",
+              alt: "The same photograph edited dark and high-contrast: a meadow of long green " +
+              "grass with trees and rolling hills under a blue sky with white clouds, with " +
+              "deep shadows and muted colour." },
+            { src: "media/unit6/6-9-meadow.jpg",
+              w: 800,
+              h: 449,
+              label: "Highly saturated",
+              fx: "saturated",
+              alt: "The same photograph edited highly saturated: a meadow of long green grass " +
+              "with trees and rolling hills under a blue sky with white clouds, with the " +
+              "greens and blues pushed intensely bright." },
+            { src: "media/unit6/6-9-meadow.jpg",
+              w: 800,
+              h: 449,
+              label: "Sky green, grass blue",
+              fx: "swapped",
+              alt: "The same photograph with its green and blue colour channels swapped, so the " +
+              "sky is green and the grass is blue." }
+          ],
+          cap: "One photograph in the three editing styles above, applied in the browser. The " +
+            "last swaps the green and blue channels — the sky turns green and the grass blue. " +
+            "Kept across a whole portfolio, any one of these becomes a style viewers " +
+            "recognise.",
+          credits: [{ by: "Bernd Dittrich",
+                      byUrl: "https://unsplash.com/@hdbernd",
+                      site: "Unsplash",
+                      siteUrl: "https://unsplash.com/photos/a-grassy-field-with-trees-and-clouds-in-the-background-7fQwXbLZXf0",
+                      license: "Unsplash License",
+                      licenseUrl: "https://unsplash.com/license" }], cols: 2, natural: true }),
       P("Two photographers can shoot the same subjects and still be told apart by how they edit. " +
         "Whatever the style, it has to serve the message and the feeling of the portfolio."),
       Q("Art is a science, and science is an art.", "Both are learned by experiment, and so is a " +

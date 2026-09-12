@@ -798,33 +798,83 @@ svg { display: block; }
 /* ------------------------------------------------------------- Figures
    Pictures inside a section. They sit in the reading column at its measure,
    with room above and below, so a photograph reads as a pause rather than a
-   wall. Pairs share a row and a crop; diagrams keep their own edges and no
-   rounded frame. The caption is set for reading, the credit beneath it small. */
+   wall. Photo pairs share a row and a crop; comparisons keep each image's
+   own shape; diagrams keep their own edges and no rounded frame. The caption
+   is set for reading, the credit beneath it small. */
 .rd-fig { max-width: var(--measure); margin: 2.1em 0; }
-.rd-fig-imgs { display: grid; gap: 10px; }
-.rd-fig.pair .rd-fig-imgs { grid-template-columns: 1fr 1fr; }
+.rd-fig-imgs { display: grid; gap: 10px; align-items: start; }
+.rd-fig.cols-2 .rd-fig-imgs { grid-template-columns: 1fr 1fr; }
+.rd-fig.cols-3 .rd-fig-imgs { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rd-fig-frame { position: relative; line-height: 0; }
 .rd-fig img {
   display: block; width: 100%; height: auto;
   border-radius: 14px; background: var(--sunk);
 }
-.rd-fig.pair img { aspect-ratio: 4 / 3; object-fit: cover; }
+.rd-fig.cols-2:not(.natural) img { aspect-ratio: 4 / 3; object-fit: cover; }
+.rd-fig.cols-3 img { border-radius: 10px; }
 .rd-fig.diagram img { border-radius: 0; background: none; }
 .rd-fig.small .rd-fig-imgs { max-width: 320px; margin-inline: auto; }
+/* Tall portraits and narrow diagrams: full width would make a portrait taller
+   than the screen, so it is held to a column a reader can take in whole. */
+.rd-fig.medium .rd-fig-imgs { max-width: 420px; margin-inline: auto; }
+.rd-fig-label {
+  display: block; margin-bottom: 7px;
+  font-family: var(--text); font-size: 11px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+}
 .rd-fig figcaption {
   margin-top: 11px;
   font-family: var(--text); font-size: 14px; line-height: 1.5; letter-spacing: 0;
   color: var(--ink-2);
 }
-.rd-fig.small figcaption { text-align: center; }
+.rd-fig.small figcaption, .rd-fig.medium figcaption { max-width: 460px; margin-inline: auto; text-align: center; }
 .rd-fig .credit { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
 .rd-fig .credit a {
   color: inherit;
   text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 2px;
 }
 .rd-fig .credit a:hover { color: var(--ink-2); }
+
+/* Composition grids, drawn over the photograph rather than into it. The lines
+   carry a faint dark edge so they read on a bright sky and on a dark field. */
+.rd-fig-grid {
+  --a: 33.333%; --b: 66.667%; --c: rgba(255, 255, 255, .92);
+  position: absolute; inset: 0; pointer-events: none;
+  border-radius: 14px; overflow: hidden;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, .55));
+  background:
+    linear-gradient(to right, transparent calc(var(--a) - 1px), var(--c) calc(var(--a) - 1px),
+                    var(--c) calc(var(--a) + 1px), transparent calc(var(--a) + 1px)),
+    linear-gradient(to right, transparent calc(var(--b) - 1px), var(--c) calc(var(--b) - 1px),
+                    var(--c) calc(var(--b) + 1px), transparent calc(var(--b) + 1px)),
+    linear-gradient(to bottom, transparent calc(var(--a) - 1px), var(--c) calc(var(--a) - 1px),
+                    var(--c) calc(var(--a) + 1px), transparent calc(var(--a) + 1px)),
+    linear-gradient(to bottom, transparent calc(var(--b) - 1px), var(--c) calc(var(--b) - 1px),
+                    var(--c) calc(var(--b) + 1px), transparent calc(var(--b) + 1px));
+}
+.rd-fig-grid.phi { --a: 38.197%; --b: 61.803%; }
+.rd-fig-grid::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at var(--a) var(--a), var(--c) 0 4px, transparent 5px),
+    radial-gradient(circle at var(--b) var(--a), var(--c) 0 4px, transparent 5px),
+    radial-gradient(circle at var(--a) var(--b), var(--c) 0 4px, transparent 5px),
+    radial-gradient(circle at var(--b) var(--b), var(--c) 0 4px, transparent 5px);
+}
+
+/* The display filters a comparison may apply. A fixed set, named, rather than
+   arbitrary CSS in the unit data. */
+.fx-sepia     { filter: sepia(1) contrast(1.04); }
+.fx-vintage   { filter: sepia(.42) saturate(.72) contrast(.9) brightness(1.07); }
+.fx-dramatic  { filter: grayscale(.25) contrast(1.55) brightness(.8); }
+.fx-saturated { filter: saturate(2) contrast(1.06); }
+.fx-swapped   { filter: url(#fx-swap-gb); }
+
 @media (max-width: 560px) {
-  .rd-fig.pair .rd-fig-imgs { grid-template-columns: 1fr; }
-  .rd-fig.pair img { aspect-ratio: 3 / 2; }
+  .rd-fig.cols-2:not(.natural) .rd-fig-imgs { grid-template-columns: 1fr; }
+  .rd-fig.cols-2:not(.natural) img { aspect-ratio: 3 / 2; }
+  .rd-fig.cols-3 .rd-fig-imgs { gap: 5px; }
+  .rd-fig-label { font-size: 10px; letter-spacing: .04em; }
 }
 
 .rd-def {
