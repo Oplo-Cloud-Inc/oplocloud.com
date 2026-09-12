@@ -539,7 +539,8 @@
     /* The console has no bar, so its back control is its own element. It is
        shown only when there is somewhere to go back to — a permanently
        present Back that sometimes does nothing is worse than none. */
-    $("#cnBack").hidden = !(prev && view === "admin");
+    // Any view inside the console shell, not just #v-admin — Account is one.
+    $("#cnBack").hidden = !(prev && document.body.classList.contains("is-console"));
     if (prev) $("#cnBackLabel").textContent = prev.label;
     // The subject bar belongs to browsing. The home screen is a personal
     // command centre, and a catalogue across the top of it is just noise.
@@ -6120,10 +6121,19 @@
     });
     rail.appendChild(nav);
 
+    /* The foot of the rail, and there is deliberately no way from here into
+       the student app: the console is not a mode this person is visiting.
+
+       The label is what the button does. The account chip at the top of the
+       rail opens the account; this signs out, and a row that said "Sign out"
+       while opening a settings page would be the kind of small lie that
+       teaches people not to trust the rest of the labels. */
     var foot = el("div", "cn-foot");
-    var out = el("button", "cn-item quiet", "<span class='nm'>Back to learning</span>");
+    var out = el("button", "cn-item quiet", "<span class='nm'>Sign out</span>");
     out.type = "button";
-    out.addEventListener("click", function () { home(); });
+    out.addEventListener("click", function () {
+      if (confirm("Sign out of OEdu?")) signOut();
+    });
     foot.appendChild(out);
     rail.appendChild(foot);
 
@@ -6178,6 +6188,11 @@
      body rather than two apps, because a teacher who is also studying should
      not have to sign in twice to be both. */
   function leaveConsole() {
+    /* For staff there is nowhere to leave to. The account screen and every
+       other view they can reach is drawn inside the console's shell, so the
+       rail stays and the student's chrome never appears — without this guard
+       opening Account would strand them on a page with no navigation at all. */
+    if (document.body.classList.contains("is-staff")) { closeRail(); return; }
     document.body.classList.remove("is-console");
     document.body.classList.remove("focus-mode");
     closeRail();
@@ -6276,6 +6291,7 @@
           row.innerHTML =
             "<span class='t'><b>" + esc(x.need.title) + "</b><span>" +
               esc(x.course.title) + "</span></span>" +
+            "<span class='m'></span>" +
             "<span class='s'><em class='" + (x.need.kind === "overdue" ? "late" : "owe") + "'>" +
               x.need.count + " unmarked" +
               (x.need.kind === "overdue" ? " · past due" : "") + "</em></span>";
@@ -6339,8 +6355,10 @@
             row.type = "button";
             row.innerHTML =
               "<span class='t'><b>" + esc(a.title) + "</b><span>" +
-                esc(a.category || "uncategorised") + " · out of " + a.outOf +
-                (a.dueAt ? " · due " + esc(dayName(a.dueAt)) : "") + "</span></span>";
+                esc(a.category || "uncategorised") + " · out of " + a.outOf + "</span></span>" +
+              "<span class='m'></span>" +
+              "<span class='s'>" + (a.dueAt ? "<em>due " + esc(dayName(a.dueAt)) + "</em>"
+                                            : "<em class='done'>no due date</em>") + "</span>";
             row.addEventListener("click", function () { openAssignments(c); });
             list.appendChild(row);
           });
@@ -6595,6 +6613,7 @@
       row.innerHTML =
         "<span class='t'><b>" + esc(m.title) + "</b><span>" + esc(m.category || "—") +
           (m.feedback ? " · " + esc(m.feedback) : "") + "</span></span>" +
+        "<span class='m'></span>" +
         "<span class='s'>" + said + "</span>";
       list.appendChild(row);
     });
@@ -6627,7 +6646,7 @@
     var places = allowedTabs().map(function (t) {
       return { name: t.name, hint: t.group || "Console", go: function () { openAdmin(false, t.k); } };
     });
-    places.push({ name: "Back to learning", hint: "Leave the console", go: home });
+    places.push({ name: "Account", hint: "Sessions, password, sign out", go: openAccount });
 
     /* People, once they have been asked for. The roster is one request and it
        is the thing most often searched for, so it is fetched on the first ⌘K
@@ -6803,6 +6822,13 @@
   var BOOK = null;
 
   function tabRoster(v) {
+    /* Every other console screen names itself. This one went straight into
+       the class picker, which made it the one place you could arrive and not
+       be told where you were. */
+    consoleHead(v, "Teaching", "Gradebook",
+      "Students down, work across. Type a score, <b>m</b> for not handed in, " +
+      "<b>e</b> for excused.");
+
     var node = loading(v, "your courses");
 
     API.courses.mine().then(function (courses) {
@@ -8822,7 +8848,21 @@
     av.style.background = who.hue || "";
     document.querySelector(".lx-user .nm").textContent = who.name;
     $("#user").title = "Signed in as " + who.name;
-    document.body.classList.toggle("is-admin", who.role === "admin" || who.role === "teacher");
+    /* Staff and students are not the same product.
+
+       A teacher is not a student with extra buttons. They have no streak, no
+       badges, no rank and nothing assigned to them, and a screen offering all
+       four is a screen telling them it was built for somebody else. So the
+       console is not a tab they can reach — it is the whole of what they
+       signed in to, and there is no way out of it because there is nowhere
+       else they were going.
+
+       Everything the student app puts in the top bar goes with it: the bar,
+       the subject rail, the tutor, the experience counter. Not hidden behind
+       a class that some future screen forgets to set — never drawn. */
+    var staff = who.role === "admin" || who.role === "teacher";
+    document.body.classList.toggle("is-admin", staff);
+    document.body.classList.toggle("is-staff", staff);
     $("#navAdmin").hidden = !allowedTabs().length;
     $("#navGrades").hidden = who.role !== "student";
     $("#navAdmin").textContent = who.role === "admin" ? "Console" : "My students";
@@ -8830,10 +8870,15 @@
       toast("This browser will not let the page store anything, so progress will not be kept.");
     }
     Ann.reset();
-    drawSubjectNav();
-    home();
-    Room.presence();
-    Room.fromLink();
+
+    if (staff) {
+      openAdmin(true, S.tab || "today");
+    } else {
+      drawSubjectNav();
+      home();
+      Room.presence();
+      Room.fromLink();
+    }
 
     /* Enrolment is the database's answer, not a list in a file. The home
        screen is drawn twice — once immediately so the app is not a spinner,
@@ -8850,6 +8895,7 @@
       }, function () { return false; }),
       loadStudySets()
     ]).then(function (out) {
+      if (staff) return;
       if ((out[0] || out[1]) && S.view === "my") drawMy();
     });
 
