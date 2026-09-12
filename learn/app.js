@@ -6975,6 +6975,7 @@
       document.body.classList.add("focus-mode");
       toast("Focus. Escape to come back.");
     }));
+    acts.appendChild(cnAction("Export", exportBook));
     head.appendChild(acts);
     host.appendChild(head);
 
@@ -7135,6 +7136,70 @@
       n.title = col.average == null ? "Nothing marked yet."
         : "The class average on " + a.title + ", over what has been marked.";
     });
+  }
+
+  /* A gradebook a teacher cannot get out of the building is a gradebook they
+     do not own. This writes exactly what is on the screen — the same marks,
+     the same three words for the three kinds of blank, and the grade the
+     server computed — so the file and the sheet can never disagree.
+
+     It is built from the payload already in the page rather than from a new
+     endpoint, because "export" should never be able to show something the
+     teacher was not already looking at. */
+  function exportBook() {
+    var rows = [];
+    var head = ["Student", "Email"];
+    BOOK.assignments.forEach(function (a) {
+      head.push(a.title + " (out of " + a.outOf +
+                (a.extraCredit ? ", extra credit" : "") + ")");
+    });
+    head.push("Grade", "Percent", "Over");
+    rows.push(head);
+
+    BOOK.students.forEach(function (st) {
+      var line = [st.name, st.email || ""];
+      BOOK.assignments.forEach(function (a) {
+        var g = gradeAt(a.id, st.id);
+        line.push(!g ? ""
+          : g.status === "missing" ? "missing"
+          : g.status === "excused" ? "excused"
+          : g.score == null ? ""
+          : String(g.score) + (g.late ? " late" : ""));
+      });
+      var sum = BOOK.summaries[st.id];
+      line.push(sum ? sum.letter : "", sum ? sum.percent + "%" : "",
+                sum ? sum.countedWeight + "% of the grade marked" : "");
+      rows.push(line);
+    });
+
+    /* Quoted properly, because a student called "O'Shea, Liam" and a comment
+       with a comma in it are both ordinary, and a CSV that breaks on them is
+       a CSV somebody has to repair by hand. */
+    var csv = rows.map(function (r) {
+      return r.map(function (cell) {
+        var v = String(cell == null ? "" : cell);
+        return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      }).join(",");
+    }).join("\r\n");
+
+    var name = String(BOOK.course.title).replace(/[^A-Za-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "").toLowerCase() + "-" +
+      new Date().toISOString().slice(0, 10) + ".csv";
+
+    try {
+      var blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      toast(BOOK.students.length + " students exported.");
+    } catch (e) {
+      toast("This browser would not let the file be saved.");
+    }
   }
 
   /* ------------------------------------------------------------ Writing
@@ -7815,10 +7880,21 @@
         var list = el("div", "admin-list");
         items.forEach(function (a) {
           var row = el("div", "admin-row");
-          row.innerHTML = '<span class="t"><b>' + esc(a.title) + "</b><span>" +
+          /* A piece of work can be edited. Until now it could only be added or
+             removed, and removing it takes every grade on it — so fixing a
+             typo in a title meant deleting thirty marks and typing them again.
+             The API could always do this; nothing called it. */
+          var open = el("button", "admin-rowmain");
+          open.type = "button";
+          open.innerHTML = '<span class="t"><b>' + esc(a.title) + "</b><span>" +
             esc(a.category || "uncategorised") + " · out of " + a.outOf +
             (a.extraCredit ? " · extra credit" : "") +
             (a.dueAt ? " · due " + esc(dayName(a.dueAt)) : "") + "</span></span>";
+          open.addEventListener("click", function () {
+            editWork(a, row, weights, render);
+          });
+          row.appendChild(open);
+
           var rm = el("button", "admin-x");
           rm.type = "button";
           rm.setAttribute("aria-label", "Remove " + a.title);
@@ -7900,6 +7976,93 @@
     }
 
     render();
+  }
+
+  /* Editing one piece of work, in place, so the list it belongs to does not
+     go away while you are looking at it. */
+  function editWork(a, row, weights, done) {
+    if (row.nextSibling && row.nextSibling.className === "admin-edit") {
+      row.nextSibling.remove();
+      return;
+    }
+    [].forEach.call(row.parentNode.querySelectorAll(".admin-edit"),
+                    function (n) { n.remove(); });
+
+    var box = el("div", "admin-edit");
+    var form = el("div", "admin-form");
+    var title = field("Title", a.title);
+    var catF = el("label", "admin-field");
+    catF.innerHTML = "<span>Category</span>";
+    var cat = el("select");
+    weights.forEach(function (w) {
+      var o = el("option");
+      o.value = w[0];
+      o.textContent = w[0] + " (" + w[1] + "% of the grade)";
+      if (w[0] === a.category) o.selected = true;
+      cat.appendChild(o);
+    });
+    catF.appendChild(cat);
+    var outOf = field("Out of", String(a.outOf));
+    var due = field("Due", "");
+    due.input.type = "date";
+    if (a.dueAt) {
+      var d = new Date(Number(a.dueAt));
+      if (isFinite(d.getTime())) {
+        due.input.value = d.getFullYear() + "-" +
+          ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+      }
+    }
+    var xcF = el("label", "admin-field");
+    xcF.innerHTML = "<span>Extra credit</span>";
+    var xc = el("select");
+    [["", "No — counts towards the grade"],
+     ["1", "Yes — can only raise a grade"]].forEach(function (o) {
+      var n = el("option");
+      n.value = o[0]; n.textContent = o[1];
+      if (!!o[0] === !!a.extraCredit) n.selected = true;
+      xc.appendChild(n);
+    });
+    xcF.appendChild(xc);
+    [title, catF, outOf, due, xcF].forEach(function (f) { form.appendChild(f); });
+    box.appendChild(form);
+
+    /* A mark is "18 out of 20" for as long as it exists — the grade keeps what
+       it was out of rather than a pointer to whatever the work says today.
+       That is the right design and it has a consequence worth saying out loud
+       rather than letting somebody discover it. */
+    box.appendChild(el("p", "cn-fine",
+      "Marks already given keep what they were out of. Changing “out of” applies to " +
+      "marks entered from now on; it does not rescale work that has already been graded."));
+
+    var acts = el("div", "admin-acts");
+    var save = el("button", "lx-btn lg", "Save");
+    save.type = "button";
+    save.addEventListener("click", function () {
+      var t = title.input.value.trim();
+      if (!t) { toast("Give it a title."); return; }
+      var n = Number(outOf.input.value);
+      if (!isFinite(n) || n <= 0) { toast("What is it out of?"); return; }
+      var dueAt = null;
+      if (due.input.value) {
+        var dd = new Date(due.input.value + "T23:59:59");
+        if (isFinite(dd.getTime())) dueAt = dd.getTime();
+      }
+      save.disabled = true;
+      attempt(API.courses.updateAssignment(a.id, {
+        title: t, category: cat.value, outOf: n, dueAt: dueAt, extraCredit: !!xc.value
+      }), function () { toast("Saved."); done(); })
+        .then(function () { save.disabled = false; });
+    });
+    acts.appendChild(save);
+    var cancel = el("button", "lx-btn quiet", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", function () { box.remove(); });
+    acts.appendChild(cancel);
+    box.appendChild(acts);
+
+    row.parentNode.insertBefore(box, row.nextSibling);
+    title.input.focus();
+    title.input.select();
   }
 
   /* ============================================================== Primitives
