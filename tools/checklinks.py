@@ -32,6 +32,9 @@ def resolve(page, href):
         return None
     base = os.path.dirname(page)
     path, frag = urldefrag(href)
+    # Shared assets carry a ?v= content fingerprint; the file on disk is the
+    # part before it. Checking the literal string would fail every page.
+    path = path.split("?", 1)[0]
     if path == "":
         return page, frag
     target = os.path.normpath(os.path.join(base, path))

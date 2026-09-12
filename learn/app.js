@@ -6455,11 +6455,6 @@
     }, function (e) { failed(node, e, function () { openAdmin(true, "today"); }); });
   }
 
-  function greeting() {
-    var h = new Date().getHours();
-    return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-  }
-
   /* ------------------------------------------------------------------- Work
      Everything set, across every class. The gradebook is where work is marked;
      this is where it is kept — renamed, re-weighted, given a due date, or
@@ -7862,34 +7857,6 @@
      implementation, used by the student's screen, the teacher's and the
      report card — three descriptions of one grade is three chances to
      disagree about it. */
-  function policySays(sum, who) {
-    if (!sum) return "";
-    var they = who || "They";
-    var bits = [];
-    if (sum.dropped && sum.dropped.length) {
-      bits.push("The lowest " +
-        (sum.dropped.length === 1 ? "mark was dropped" : sum.dropped.length + " marks were dropped") +
-        " under this course's rules: " +
-        sum.dropped.map(function (d) { return esc(d.title); }).join(", ") + ".");
-    }
-    if (sum.lateCount) {
-      bits.push(sum.lateCount + (sum.lateCount === 1 ? " piece" : " pieces") +
-        " of work came in late, costing " +
-        (Math.round(sum.latePenalty * 10) / 10) +
-        (sum.latePenalty === 1 ? " point." : " points."));
-    }
-    if (sum.extraCredit) {
-      bits.push((Math.round(sum.extraCredit * 10) / 10) +
-        " points of extra credit are included, which can raise this grade and " +
-        "could never have lowered it.");
-    }
-    if (sum.missingCount) {
-      bits.push(sum.missingCount + (sum.missingCount === 1 ? " piece" : " pieces") +
-        " of work marked as not handed in is counted as a zero, because it is one.");
-    }
-    return bits.join(" ");
-  }
-
   /* ------------------------------------------------------- One student
      The row, opened. Everything on this screen is also on the sheet; what it
      adds is the reason for the number — every mark that makes it up, the
@@ -8699,7 +8666,7 @@
           c.myRole ? esc(c.myRole) : "<span class='cn-none'>—</span>",
           "<span class='cn-tag" + (c.status === "published" ? " on" : "") + "'>" +
             esc(c.status) + "</span>"
-        ], function () { openCourse(c); }, c.id);
+        ], function () { openCoursePage(c); }, c.id);
       });
       v.appendChild(t);
     }, function (e) { failed(node, e, function () { openAdmin(true, "courses"); }); });
@@ -8722,8 +8689,13 @@
      read for what a row cannot hold: what each unit is about, which ones have
      a study set or a reader written, what the course sets out to teach, and
      the textbook it came from. Read, not linked — the copy stays a copy. */
-  function openCourse(c) {
-    enter("course:" + c.id, trim(c.title, 18), function () { openCourse(c); });
+  function openCoursePage(c) {
+    /* `openCoursePage`, not `openCourse`. There is already an openCourse — the
+       student's course screen, since long before this one — and two function
+       declarations with one name in the same scope is not an overload, it is
+       the second one silently winning. Naming this one the same broke every
+       route a student had into a course, and did it quietly. */
+    enter("course:" + c.id, trim(c.title, 18), function () { openCoursePage(c); });
     var v = $("#v-admin");
     v.innerHTML = "";
     var body = el("div", "admin-body");
@@ -8922,7 +8894,7 @@
           "wrote it. Enrol yourself as a teacher to see and mark its students."));
       }
       show("admin");
-    }, function (e) { failed(node, e, function () { openCourse(c); }); });
+    }, function (e) { failed(node, e, function () { openCoursePage(c); }); });
     show("admin");
   }
 
