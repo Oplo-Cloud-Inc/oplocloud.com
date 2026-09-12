@@ -269,6 +269,14 @@ window.OPLO_API = (function () {
          class they share. A teacher thinks in people as often as in classes. */
       students: function () { return get("/students"); },
 
+      /* Every piece of work set on the courses this person is in, with their
+         own mark on it if there is one. The student's half of `teaching` —
+         and the only place work with no mark yet can be seen, which is the
+         only work anybody can still do something about. */
+      coursework: function (accountId) {
+        return get("/coursework" + q({ accountId: accountId }));
+      },
+
       /* What has happened to the marks, across every class. */
       activity: function (limit) {
         return get("/activity" + q({ limit: limit })).then(function (r) { return r.events; });

@@ -203,6 +203,92 @@ export async function activity(ctx) {
   });
 }
 
+/* GET /api/v1/coursework?accountId=
+
+   Every piece of work set on every course this person is enrolled in, with
+   their own mark on it if there is one.
+
+   This is the student's half of `/teaching`, and until it existed there was a
+   hole in the product with a real consequence rather than a missing feature:
+   a teacher could set an essay, mark it missing, and count it as a zero, and
+   the student had no screen anywhere that said the essay existed. The
+   gradebook could take marks off somebody for work they were never shown.
+
+   Work with no grade row is the important part of the answer, not an edge
+   case — that is exactly the work nobody has handed in or marked yet, which
+   is the only work a student can still do something about.
+
+   Ordered the way a person asks the question: what is late, then what is due
+   soonest, then everything without a date. */
+export async function coursework(ctx) {
+  const actor = requireActor(ctx);
+  const accountId = ctx.url.searchParams.get("accountId") || actor.id;
+
+  // A student's own, or a student taught by the caller. The same rule as
+  // reading their grades, because that is what this is.
+  if (accountId !== actor.id) {
+    const allowed = isLearnAdmin(actor) || (await teachesStudent(ctx, actor, accountId));
+    if (!allowed) {
+      throw ApiError.forbidden(
+        "You do not teach this student, so their work is not yours to read.");
+    }
+  }
+
+  const enrolled = (await ctx.repo.listCourses({ accountId }))
+    .filter((c) => c.my_role === "student");
+
+  const grades = await ctx.repo.listGrades({ courseId: null, accountId });
+  const byAssignment = new Map(grades.map((g) => [g.assignment_id, g]));
+
+  const work = [];
+  for (const course of enrolled) {
+    const assignments = await ctx.repo.listAssignments(course.id);
+    for (const a of assignments) {
+      const g = byAssignment.get(a.id);
+      work.push({
+        courseId: course.id, courseTitle: course.title, courseCode: course.code,
+        assignmentId: a.id, title: a.title, category: a.category,
+        outOf: a.out_of, dueAt: a.due_at, extraCredit: !!a.extra_credit,
+        // `null` means no row at all: nobody has marked it and nobody has said
+        // it is missing. It is the state a student can act on.
+        status: g ? (g.status || "marked") : null,
+        score: g ? g.score : null,
+        late: g ? !!g.late : false,
+        feedback: g ? g.feedback : null,
+        gradedAt: g ? g.graded_at : null
+      });
+    }
+  }
+
+  const now = Date.now();
+  const rank = (w) => {
+    if (w.dueAt && w.dueAt < now) return 0;            // late
+    if (w.dueAt) return 1;                             // coming
+    return 2;                                          // no date
+  };
+  work.sort((a, b) => (rank(a) - rank(b)) ||
+                      ((a.dueAt || Infinity) - (b.dueAt || Infinity)) ||
+                      String(a.title).localeCompare(String(b.title)));
+
+  const marked = work.filter((w) => w.status === "marked" && w.score != null);
+  const missing = work.filter((w) => w.status === "missing");
+  const waiting = work.filter((w) => !w.status || (w.status === "marked" && w.score == null));
+  const overdue = waiting.filter((w) => w.dueAt && w.dueAt < now);
+
+  return json({
+    work,
+    totals: {
+      all: work.length,
+      marked: marked.length,
+      missing: missing.length,
+      // Not handed back yet — which from the student's side is one state,
+      // whatever the reason.
+      waiting: waiting.length,
+      overdue: overdue.length
+    }
+  });
+}
+
 /* GET /api/v1/reporting?courseId=&term=
 
    Is this term's reporting finished, and if not, whose fault is that. One row

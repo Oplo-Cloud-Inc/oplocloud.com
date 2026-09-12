@@ -79,6 +79,7 @@ const ROUTES = [
 
   ["GET",    "/api/v1/teaching",                 reporting.teaching],
   ["GET",    "/api/v1/students",                 reporting.students],
+  ["GET",    "/api/v1/coursework",               reporting.coursework],
   ["GET",    "/api/v1/activity",                 reporting.activity],
   ["GET",    "/api/v1/reporting",                reporting.readiness],
   ["PUT",    "/api/v1/reporting/comment",        reporting.putComment],

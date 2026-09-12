@@ -852,14 +852,23 @@
     v.appendChild(el("h1", "lx-h1", "Here is where you are."));
     v.appendChild(standing());
 
+    /* ---- What your teachers have set ------------------------------- */
+    var workSlot = el("div");
+    v.appendChild(workSlot);
+    drawSetWork(workSlot);
+
     /* ---- Your next step ------------------------------------------- */
     var step = nextStep();
     var next = el("div", "lx-next");
     if (!step) {
-      next.innerHTML = '<p class="k">Nothing outstanding</p>' +
-        "<h2>You are on top of everything assigned.</h2>" +
-        '<p class="why">Every unit with material behind it is at mastery. Review keeps it there — ' +
-        "the study sets do not expire.</p>";
+        /* This is about Oplo's own material, not about work a teacher set —
+           and "everything assigned" put it in flat contradiction with the
+           list of unhanded-in work three lines above it on the same screen. */
+        next.innerHTML = '<p class="k">Nothing to practise</p>' +
+          "<h2>Every unit is at mastery.</h2>" +
+          '<p class="why">That is the material. Work your teachers have set is above, ' +
+          "and is counted separately. Review keeps mastery where it is; the study sets " +
+          "do not expire.</p>";
     } else {
       var target = step.weak
         ? unitsOf(step.course).filter(function (x) { return x.n === step.weak.n; })[0]
@@ -1000,6 +1009,90 @@
      screen is where a student decides what to do, and "you are eleven points
      short of the day" is a decision-shaped fact. Inside a session it would
      just be noise beside a question. */
+  /* ----------------------------------------------------- What has been set
+
+     The hole this fills had a real consequence rather than being a missing
+     feature. A teacher could set an essay, mark it not handed in, and count it
+     as a zero — and nothing anywhere told the student the essay existed. A
+     gradebook that can take marks off somebody for work they were never shown
+     is not a gradebook, and no amount of polish elsewhere makes up for it.
+
+     So it sits first, above everything the app has an opinion about. What is
+     late, then what is due, then what has come back. The study plan below it
+     is Oplo's suggestion; this is what somebody is actually being marked on. */
+  function drawSetWork(host) {
+    host.innerHTML = "";
+    API.reporting.coursework().then(function (data) {
+      if (!data.work.length) return;          // nothing set: say nothing
+
+      var t = data.totals;
+      var waiting = data.work.filter(function (w) {
+        return !w.status || (w.status === "marked" && w.score == null);
+      });
+      var missing = data.work.filter(function (w) { return w.status === "missing"; });
+      var back = data.work.filter(function (w) {
+        return w.status === "marked" && w.score != null;
+      });
+
+      host.appendChild(el("h2", "lx-h2", "Set by your teachers"));
+
+      /* One sentence before the list. Somebody who reads "3 things" and goes
+         and does them is better served than somebody who reads five numbers. */
+      var bits = [];
+      if (t.overdue) bits.push("<b>" + t.overdue + " past due</b>");
+      if (waiting.length - t.overdue > 0) {
+        bits.push((waiting.length - t.overdue) + " still to hand in");
+      }
+      if (t.missing) bits.push("<b>" + t.missing + " marked as not handed in</b>");
+      if (back.length) bits.push(back.length + " marked");
+      host.appendChild(el("p", "lx-lede", bits.length
+        ? bits.join(" &middot; ")
+        : "Everything set has been handed back."));
+
+      var list = el("div", "sw-list");
+      // What can still be done something about, first.
+      waiting.concat(missing).slice(0, 8).forEach(function (w) {
+        list.appendChild(workRow(w));
+      });
+      if (!waiting.length && !missing.length) {
+        back.slice(0, 4).forEach(function (w) { list.appendChild(workRow(w)); });
+      }
+      host.appendChild(list);
+    }, function () {
+      /* The rest of this screen is the student's own record and works without
+         a server. This one piece does not, and says so — "nothing was set" and
+         "could not ask" are different, and only one of them is good news. */
+      host.appendChild(el("p", "lx-lede",
+        "Could not reach the server, so what your teachers have set is not shown here. " +
+        "Everything below is from this device."));
+    });
+  }
+
+  function workRow(w) {
+    var late = w.dueAt && w.dueAt < Date.now();
+    var row = el("div", "sw-row" +
+      (w.status === "missing" ? " miss" : (late && !w.status) ? " late" : ""));
+
+    var said = w.status === "missing" ? "Not handed in"
+      : w.status === "excused" ? "Excused"
+      : (w.status === "marked" && w.score != null) ? w.score + " / " + w.outOf
+      : "Not marked yet";
+
+    var when = w.status === "missing" ? "counted as 0 of " + w.outOf
+      : w.status === "excused" ? "not part of your grade"
+      : w.dueAt ? (late ? "was due " + dayName(w.dueAt) : "due " + dayName(w.dueAt))
+      : "no date set";
+
+    row.innerHTML =
+      "<span class='t'><b>" + esc(w.title) + "</b><span>" + esc(w.courseTitle) +
+        " &middot; " + esc(when) + (w.extraCredit ? " &middot; extra credit" : "") +
+        "</span></span>" +
+      "<span class='m'>" + esc(said) + "</span>" +
+      (w.feedback ? "<p class='fb'>" + esc(w.feedback) + "</p>" : "");
+    return row;
+  }
+
+
   function standing() {
     var wrap = el("div", "lx-standing");
     if (!R) return wrap;
@@ -5092,6 +5185,26 @@
       parts.appendChild(row);
     });
     v.appendChild(parts);
+
+    /* What the teacher wrote about the term. The server has always let a
+       student read their own report — a document a school writes about
+       somebody that they are not allowed to read is a strange thing to
+       produce — and nothing had ever asked it for one. */
+    var said = el("div");
+    v.appendChild(said);
+    API.reporting.report(S.me.id).then(function (rep) {
+      var mine = (rep.courses || []).filter(function (c) {
+        return c.courseId === summary.courseId;
+      })[0];
+      if (!mine || !mine.comment || !String(mine.comment.body || "").trim()) return;
+      said.appendChild(el("h2", "lx-h2", "What your teacher wrote"));
+      var box = el("div", "sw-said");
+      box.innerHTML = "<p>" + esc(mine.comment.body) + "</p><span>" +
+        esc(mine.comment.author || "Your teacher") +
+        (mine.comment.updatedAt ? " · " + esc(whenName(mine.comment.updatedAt)) : "") +
+        "</span>";
+      said.appendChild(box);
+    }, function () { /* the marks below are the point; this is an addition */ });
 
     v.appendChild(el("h2", "lx-h2", "Every mark"));
     var list = el("div", "admin-list");

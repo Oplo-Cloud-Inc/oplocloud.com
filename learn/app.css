@@ -3945,3 +3945,53 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
   margin-top: 10px; max-width: 58ch; font-size: 14.5px; line-height: 1.55; color: var(--ink-2);
 }
 .cn-start .cn-acts { margin-top: 20px; }
+
+/* ==========================================================================
+   What a teacher has set.
+
+   First on a student's screen, above everything the app has an opinion about,
+   because it is the only part they are actually being marked on. Late first,
+   then due, then handed back — and the two states that cost marks are the two
+   that are allowed any colour.
+   ========================================================================== */
+
+.sw-list {
+  margin-top: 14px; border-radius: var(--r); overflow: hidden;
+  background: var(--paper); box-shadow: 0 0 0 .5px var(--hair);
+}
+.sw-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px; align-items: baseline;
+  padding: 14px 18px; border-bottom: 1px solid var(--hair);
+}
+.sw-row:last-child { border-bottom: 0; }
+.sw-row .t b {
+  display: block; font-size: 15.5px; font-weight: 550; letter-spacing: -.016em;
+}
+.sw-row .t span { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ink-3); }
+.sw-row .m {
+  font-size: 14px; font-weight: 550; white-space: nowrap;
+  font-variant-numeric: tabular-nums; color: var(--ink-2);
+}
+/* Past due and not handed in are the two that cost a student marks, so they
+   are the two the eye is allowed to find. Everything else stays quiet. */
+.sw-row.late .m { color: var(--amber); }
+.sw-row.miss .m { color: var(--red); }
+.sw-row.miss .t b { color: var(--ink); }
+.sw-row .fb {
+  grid-column: 1 / -1; margin-top: 8px; padding: 9px 12px; border-radius: 9px;
+  background: var(--canvas); font-size: 13.5px; line-height: 1.5; color: var(--ink-2);
+}
+@media (max-width: 560px) {
+  .sw-row { grid-template-columns: 1fr; gap: 4px; }
+  .sw-row .m { text-align: left; }
+}
+
+/* The sentence a teacher wrote about the term, on the student's own screen.
+   Set as something somebody said, not as a data field. */
+.sw-said {
+  margin-top: 12px; padding: 18px 20px; border-radius: var(--r);
+  background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.sw-said p { font-size: 16px; line-height: 1.55; letter-spacing: -.012em; }
+.sw-said span { display: block; margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
