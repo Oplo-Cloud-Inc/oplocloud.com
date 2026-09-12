@@ -30,7 +30,10 @@ name = "oplo-api"
 
 [env.production.vars]
 ENVIRONMENT = "production"
-ALLOWED_ORIGINS = "https://oplocloud.com,https://www.oplocloud.com"
+# OEdu is served from edu.oplocloud.com and calls this API from there, so the
+# origin has to be on the list or every request from the product is refused.
+# The apex stays because the marketing pages link into the app.
+ALLOWED_ORIGINS = "https://edu.oplocloud.com,https://oplocloud.com,https://www.oplocloud.com"
 
 [[env.production.d1_databases]]
 binding = "DB"

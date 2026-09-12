@@ -1,0 +1,49 @@
+# ===========================================================================
+# OEdu — the product, on its own hostname.
+#
+# `edu.oplocloud.com` serves the OEdu application: the student's app and the
+# teacher's console, which is the whole of `learn/` and nothing else. It is a
+# Worker with no code — Cloudflare serves the directory as static assets, the
+# same as the apex does from GitHub Pages, because there is nothing here that
+# needs a server.
+#
+# ------------------------------------------------------------- Why a split
+#
+# The product and the pages that describe it are different things with
+# different release cadences, and putting them on one host makes every change
+# to a marketing paragraph a deploy of the gradebook.
+#
+#     oplocloud.com          the company, and everything that explains it,
+#                            including /edu/ and /oedu/ — GitHub Pages
+#     edu.oplocloud.com      OEdu itself, the thing people sign in to
+#     api.oplocloud.com      the platform API — api/wrangler.toml
+#
+# All three sit under one registrable domain, and that is load-bearing rather
+# than tidy: the session cookie is SameSite=Lax, so a request from
+# edu.oplocloud.com to api.oplocloud.com is same-site and carries it. Moving
+# OEdu to a different domain entirely would silently sign everybody out.
+#
+# `learn/` is already self-contained — every script and stylesheet in it is
+# referenced relatively, and api.js works out where the API is from the
+# hostname it was served from — so it needs no change to be served at a root
+# rather than at /learn/.
+# ===========================================================================
+name = "oedu"
+compatibility_date = "2026-05-01"
+
+[assets]
+directory = "./learn"
+# The app has one page and routes inside itself, so a path it does not
+# recognise should still arrive in the app rather than at a 404 belonging to
+# nobody.
+not_found_handling = "single-page-application"
+
+# The custom domain. Cloudflare creates the DNS record and the certificate on
+# deploy; there is nothing to add by hand at the registrar.
+#
+# NOTE: this hostname already exists on another Worker in this account.
+# Deploying attaches it here and detaches it there, so run the deploy
+# deliberately rather than as part of something else.
+[[routes]]
+pattern = "edu.oplocloud.com"
+custom_domain = true
