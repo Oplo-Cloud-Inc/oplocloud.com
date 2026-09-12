@@ -60,8 +60,11 @@ svg { display: block; }
   backdrop-filter: saturate(180%) blur(18px);
   border-bottom: 1px solid var(--hair);
 }
+/* The bar is chrome, not content: it spans the window, so the mark and the
+   sections sit at the left edge of the screen and the streak and the account
+   at the right, instead of both floating in from a 1240px column. */
 .lx-bar-in {
-  max-width: 1240px; margin-inline: auto; height: var(--bar);
+  height: var(--bar);
   padding-inline: max(var(--gut), env(safe-area-inset-left)) max(var(--gut), env(safe-area-inset-right));
   display: flex; align-items: center; gap: 14px;
 }
@@ -114,7 +117,7 @@ svg { display: block; }
 /* Subject bar */
 .lx-subbar { border-top: 1px solid var(--hair); background: rgba(255,255,255,.7); }
 .lx-subbar-in {
-  max-width: 1240px; margin-inline: auto; height: var(--sub);
+  height: var(--sub);
   padding-inline: max(var(--gut), env(safe-area-inset-left));
   display: flex; align-items: center; gap: 4px; overflow-x: auto;
   scrollbar-width: none;
@@ -135,6 +138,14 @@ svg { display: block; }
            120px max(var(--gut), env(safe-area-inset-right));
 }
 .lx-wrap.wide { max-width: 1240px; }
+/* The reader is the one view that wants the whole screen: the rail belongs at
+   the left edge, the margin at the right, and the text between them. The cap
+   is not a column, it is a limit on how far apart the three can drift — past
+   it the layout stays left-anchored so the rail keeps the screen edge, because
+   a note that ends up 500px from its own sentence is no longer a margin note.
+   `margin-inline` is 0 for the same reason: auto would centre it and take the
+   rail off the edge. */
+.lx-wrap.full { max-width: 1720px; margin-inline: 0; }
 .lx-view { display: none; }
 /* No fill mode on purpose. `both` holds the 0% keyframe before the animation
    runs, so a throttled or backgrounded tab can leave a whole view stranded at
@@ -878,9 +889,9 @@ svg { display: block; }
    opens over your own notes is a panel you close. */
 .rd-three {
   display: grid;
-  grid-template-columns: 234px minmax(0, 700px) 292px;
+  grid-template-columns: 234px minmax(0, 760px) 292px;
   gap: clamp(22px, 3vw, 46px);
-  justify-content: center; align-items: start;
+  justify-content: space-between; align-items: start;
 }
 .rd-three .rd { max-width: none; margin-inline: 0; }
 

@@ -549,7 +549,8 @@
     // gradebook, enrolment, a student's report — is drawn into #v-admin, so
     // one check here keeps the chrome right without every screen knowing.
     if (view !== "admin") leaveConsole();
-    $("#wrap").classList.toggle("wide", view === "match" || view === "read");
+    $("#wrap").classList.toggle("wide", view === "match");
+    $("#wrap").classList.toggle("full", view === "read");
     if (view !== "read") { railOff(); if (S.hideAnn) S.hideAnn(); }
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
       b.setAttribute("aria-current", String(b.dataset.view === view));
