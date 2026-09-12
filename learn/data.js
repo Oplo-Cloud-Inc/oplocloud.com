@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Oplo Learn — curriculum, study sets, accounts and enrolment records.
+   OEdu — curriculum, study sets, accounts and enrolment records.
    Content only. Nothing here touches the DOM; app.js renders it.
    ========================================================================== */
 window.OPLO = (function () {

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Oplo Learn.
+   OEdu.
 
    Two halves that answer different questions. The course side — subjects,
    units, practice — asks "do you understand this?" The study side —
@@ -463,7 +463,7 @@
 
   /* ------------------------------------------------ The browser's history
      The stack above was the app's alone. The browser never heard about any
-     of it, so to the browser the whole of Learn was one page — and its Back
+     of it, so to the browser the whole of OEdu was one page — and its Back
      button skipped every screen inside it and left the app entirely,
      landing wherever the student had been before they opened it.
 
@@ -3294,7 +3294,7 @@
         });
         if (!list.length) {
           who.appendChild(el("p", "rm-none",
-            "Nobody else yet. Send them the link below — it opens Learn straight into this room."));
+            "Nobody else yet. Send them the link below — it opens OEdu straight into this room."));
         }
         panelEl.appendChild(who);
 
@@ -3376,7 +3376,7 @@
       panelEl.appendChild(dir);
 
       panelEl.appendChild(el("p", "rm-fine",
-        "A room reaches every tab of Oplo Learn in this browser. Reaching a second " +
+        "A room reaches every tab of OEdu in this browser. Reaching a second " +
         "machine needs a relay, and this page is served as static files — there is no " +
         "server here to be one. The transport is a single object in <code>collab.js</code>, " +
         "so that is a swap rather than a rebuild."));
@@ -5168,7 +5168,7 @@
      One commitment, in the student's own words, kept on the server under its
      own scope so it follows them to another device. "When X, I will Y" is the
      form on purpose: an intention tied to a cue is kept far more often than
-     one floating free of it, and this is the only thing in Learn a student is
+     one floating free of it, and this is the only thing in OEdu a student is
      asked to keep. An administrator reading the record sees it and cannot
      write it — the server allows progress to be written by its owner only. */
   var PLAN_SCOPE = "graduation:plan";
@@ -5995,7 +5995,7 @@
 
      The practical consequence is worth stating plainly: a grade entered here
      is written to the database and is visible to that student on their own
-     laptop the next time they open Learn. That is the whole point of the
+     laptop the next time they open OEdu. That is the whole point of the
      backend existing, and it is the one thing this console could not do
      before it. */
 
@@ -6494,7 +6494,7 @@
 
         v.appendChild(el("p", "lx-lede",
           "Saved to the database as you go. " + esc(p.first || p.name) +
-          " sees this on their own device the next time they open Learn."));
+          " sees this on their own device the next time they open OEdu."));
         show("admin");
       }, function (e) { failed(node, e, render); });
       show("admin");
@@ -6892,7 +6892,7 @@
       node.remove();
       v.appendChild(el("p", "lx-lede",
         people.length + (people.length === 1 ? " account" : " accounts") +
-        ". An Oplo Account, not a Learn account — the same sign-in carries a person " +
+        ". An Oplo Account, not an OEdu account — the same sign-in carries a person " +
         "into every Oplo product they are authorised for, and roles are held per product."));
 
       var acts = el("div", "admin-acts");
@@ -7033,7 +7033,7 @@
     var title = field("Title", p ? p.title : "", "High School Silver Program");
 
     var roleF = el("label", "admin-field");
-    roleF.innerHTML = "<span>Role in Oplo Learn</span>";
+    roleF.innerHTML = "<span>Role in OEdu</span>";
     var role = el("select");
     [["student", "Student — their own work"],
      ["teacher", "Teacher — the courses they teach"],
@@ -7171,9 +7171,9 @@
      cannot read. From then on the only question this app ever asks about
      identity is `who am I?` — and the answer comes from the server.
 
-     One Oplo Account, not an Oplo Learn account. The same session will carry
+     One Oplo Account, not an OEdu account. The same session will carry
      a person into OMaps or OShopping, which is why none of this lives under
-     a Learn-specific name. */
+     an OEdu-specific name. */
   var Auth = (function () {
     function verify(email, password) { return API.login(email, password); }
     function current() { return API.me(); }

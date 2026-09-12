@@ -3,7 +3,7 @@
 Identity, organizations, and product data for Oplo. One Worker, one database,
 every product.
 
-This is **not** an Oplo Learn backend. It is the platform's, and Learn is the
+This is **not** an OEdu backend. It is the platform's, and OEdu is the
 first product to consume it.
 
 ```
@@ -13,14 +13,14 @@ first product to consume it.
                              │
         ┌───────────┬────────┼────────┬───────────┐
         │           │        │        │           │
-   Oplo Learn    OMaps   OShopping  Roxan   …future products
+      OEdu       OMaps   OShopping  Roxan   …future products
         │           │        │        │           │
    learn_*       maps_*   shopping_*  roxan_*    <product>_*
 ```
 
 The distinction shows up in one place and it is the important one: every
 product table references `account_id`, never a product-local user id. A person
-who is a teacher in Learn and a seller in OShopping is one row in `accounts`
+who is a teacher in OEdu and a seller in OShopping is one row in `accounts`
 with two rows in `account_roles`, not two accounts that share an email
 address. Signing in once is what makes them one person.
 

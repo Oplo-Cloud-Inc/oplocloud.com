@@ -298,7 +298,7 @@ window.OPLO_STORE = (function () {
 
   Record.prototype.import = function (text) {
     var parsed = JSON.parse(text);
-    if (!parsed || parsed.oplo !== "learn-record") throw new Error("Not an Oplo Learn record.");
+    if (!parsed || parsed.oplo !== "learn-record") throw new Error("Not an OEdu record.");
     this.d = migrate(parsed.d);
     this.rollDay(Date.now());
     this.flush();

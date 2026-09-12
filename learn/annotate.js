@@ -256,17 +256,17 @@ window.OPLO_ANNOTATE = (function () {
     var s = src || {};
     var where = m.sec ? " " + m.sec : "";
     if (style === "apa") {
-      return (s.author || s.publisher || "Oplo Learn") + " (" + (s.year || "n.d.") + "). " +
+      return (s.author || s.publisher || "OEdu") + " (" + (s.year || "n.d.") + "). " +
              (s.title || "Untitled") + ". " + (s.container || "") +
              (where ? " (§" + m.sec + ")" : "") + ".";
     }
     if (style === "chicago") {
-      return (s.author || s.publisher || "Oplo Learn") + ", “" + (s.title || "Untitled") +
+      return (s.author || s.publisher || "OEdu") + ", “" + (s.title || "Untitled") +
              ",” " + (s.container || "") + ", " + (s.year || "n.d.") +
              (where ? ", §" + m.sec : "") + ".";
     }
     // MLA by default: the style most of these students are marked against.
-    return (s.author || s.publisher || "Oplo Learn") + ". “" + (s.title || "Untitled") +
+    return (s.author || s.publisher || "OEdu") + ". “" + (s.title || "Untitled") +
            ".” " + (s.container || "") + ", " + (s.year || "n.d.") +
            (where ? ", sec. " + m.sec : "") + ".";
   }

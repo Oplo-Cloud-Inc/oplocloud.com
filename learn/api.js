@@ -133,7 +133,7 @@ window.OPLO_API = (function () {
     },
 
     /* --------------------------------------------------------- Identity
-       One Oplo Account. Not a Learn account — Learn is a product that reads
+       One Oplo Account. Not an OEdu account — OEdu is a product that reads
        this, the way OMaps and OShopping will. */
     login: function (email, password) {
       return post("/auth/login", { email: email, password: password }, { timeout: 20000 })
