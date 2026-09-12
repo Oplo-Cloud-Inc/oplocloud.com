@@ -3359,8 +3359,10 @@ body.is-console .lx-wrap {
 body.is-console .admin-body { max-width: 1280px; }
 
 .cn-back, .cn-open { display: none; }
+/* Absolute, not fixed. It is a link at the head of a page, not chrome — and
+   fixed meant it sat on top of the sixth unit of a course while you read it. */
 body.is-console .cn-back {
-  position: fixed; top: 20px; left: calc(232px + 34px); z-index: 50;
+  position: absolute; top: 20px; left: calc(232px + 34px); z-index: 50;
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 12.5px; color: var(--ink-3);
   padding: 5px 11px 5px 8px; border-radius: 999px;
@@ -3884,3 +3886,49 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
   padding: 4px 0 18px; border-bottom: 1px solid var(--hair); margin-bottom: 4px;
 }
 .admin-edit .admin-form { margin-top: 10px; }
+
+/* ==========================================================================
+   One course.
+
+   A page about a course rather than the row that stores it: the plan, what is
+   set, what is written, who is in it. The editor is still there, behind a
+   button, because editing is something you do to a course occasionally and
+   reading one is something you do every day.
+   ========================================================================== */
+
+.cs-lede {
+  max-width: 68ch; font-size: 15.5px; line-height: 1.55; color: var(--ink-2);
+}
+
+/* The plan. Numbered, because a syllabus is an order and not a set, and the
+   number is the thing a teacher says out loud — "we're on four". */
+.cs-plan { margin-top: 12px; }
+.cs-plan li {
+  display: grid; grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 14px; align-items: baseline;
+  padding: var(--row) 4px; border-bottom: 1px solid var(--hair);
+}
+.cs-plan li:last-child { border-bottom: 0; }
+.cs-plan .n {
+  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.cs-plan .t b {
+  display: block; font-size: 15px; font-weight: 550; letter-spacing: -.016em;
+}
+.cs-plan .t span {
+  display: block; margin-top: 3px; max-width: 74ch;
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-3);
+}
+.cs-plan .g { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+/* What is written behind a unit. Not a status and not a warning — a fact
+   about the curriculum, so it is drawn as quietly as one. */
+.cs-tag {
+  font-style: normal; font-size: 10.5px; color: var(--ink-2);
+  padding: 2px 8px; border-radius: 999px; background: var(--canvas); white-space: nowrap;
+}
+
+/* The weights, as bars. A textarea reading "Quizzes = 25" is the storage
+   format shown to a person. */
+.admin-body .admin-mark-parts { margin-top: 10px; max-width: 620px; }
+.admin-body .admin-mark-part { grid-template-columns: 190px 1fr 52px; }

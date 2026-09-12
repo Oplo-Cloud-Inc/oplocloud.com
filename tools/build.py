@@ -39,22 +39,28 @@ OEDU = "https://edu.oplocloud.com/"
 NAV = [("Products", "products/"), ("Solutions", "solutions/"), ("Resources", "resources/"),
        ("Company", "company/"), ("Support", "support/")]
 
+# One column per door in the nav, in the same order. The grid is five tracks
+# wide, so five columns land as one clean row rather than a widowed second.
 FOOTER = [
-    ("Hardware", [("Overview", "hardware/"), ("Silicon", "hardware/#silicon"),
-                  ("Devices", "hardware/#devices"), ("Accessories", "hardware/#accessories")]),
-    ("Software", [("Overview", "software/"), ("Apps", "software/#apps"),
-                  ("Updates", "software/#updates"), ("Downloads", "software/#downloads")]),
-    ("Intelligence", [("Overview", "intelligence/"), ("On-device AI", "intelligence/#on-device"),
-                      ("Privacy", "privacy/"), ("Research", "intelligence/#research")]),
-    ("Developers", [("Documentation", "developers/#docs"), ("SDKs", "developers/#sdks"),
-                    ("Design resources", "developers/#design"), ("Support", "developers/#support")]),
-    ("Education", [("Oplo Edu", "edu/"), ("OEdu", OEDU), ("How OEdu works", "edu/learn/"),
-                   ("Who it is for", "edu/#who"), ("Contact", "contact/")]),
-    ("Membership", [("Oplo+", "plus/"), ("Plans", "plus/#plans"),
-                    ("Compare tiers", "plus/#compare"), ("Questions", "plus/#faq")]),
+    ("Products", [("All products", "products/"), ("Hardware", "hardware/"),
+                  ("Software", "software/"), ("Intelligence", "intelligence/"),
+                  ("Oplo+", "plus/")]),
+    ("Solutions", [("Who it is for", "solutions/"), ("Personal", "solutions/#personal"),
+                   ("Education", "edu/"), ("OEdu", OEDU),
+                   ("Developers", "developers/"),
+                   ("Business and government", "solutions/#institutions")]),
+    ("Resources", [("Everything written down", "resources/"),
+                   ("Developer documentation", "developers/#docs"),
+                   ("Design resources", "developers/#design"),
+                   ("Privacy", "privacy/"), ("Privacy labels", "privacy/labels/"),
+                   ("Transparency report", "privacy/transparency/"),
+                   ("Legal", "legal/")]),
     ("Company", [("About Oplo", "company/"), ("Newsroom", "newsroom/"),
-                 ("Careers", "careers/"), ("Investors", "investor/"),
+                 ("Careers", "careers/"), ("Investor relations", "investor/"),
                  ("Contact", "contact/")]),
+    ("Support", [("Getting help", "support/"), ("Developer support", "developers/#support"),
+                 ("Your Oplo account", "sign-in/"), ("Oplo+ membership", "plus/#faq"),
+                 ("Write to us", "contact/")]),
 ]
 LEGAL = [("Privacy Policy", "legal/privacy-policy/"), ("Terms of Use", "legal/terms/"),
          ("Legal", "legal/"), ("Site Map", "sitemap.xml")]
@@ -279,6 +285,21 @@ def doc_page(slug, depth, title, desc, heading, dateline, body):
 PAGES = []
 
 # ------------------------------------------------------------------- Home
+# The whole page is one argument told in descending size: a statement, two
+# full-bleed units for the two things hardest to explain, then a tile for every
+# other door. Every section of the site is one click from here, which is the
+# job the eight-item nav used to do badly.
+def card(cls, eyebrow, head, lead, ctas):
+    c = "".join(f'<a class="cta" href="{h}">{t}</a>' for t, h in ctas)
+    return f'''  <section class="card {cls}">
+    <p class="eyebrow reveal">{eyebrow}</p>
+    <h2 class="t-display balance reveal">{head}</h2>
+    <p class="t-lead muted reveal d1">{lead}</p>
+    <p class="cta-row reveal d2">{c}</p>
+  </section>
+'''
+
+
 def home():
     depth = 0
     out = head(depth, "Oplo", "Oplo builds hardware, software and intelligence designed around one person at a time.", "")
@@ -287,8 +308,8 @@ def home():
     out += band("opening well", '''  <h1 class="t-mega reveal">Oplo</h1>
   <p class="t-sub muted measure-wide reveal d1">Hardware, software, and intelligence — designed around one person at a time.</p>
   <p class="cta-row reveal d2">
-    <a class="cta" href="hardware/">See what we build</a>
-    <a class="cta" href="company/">About Oplo</a>
+    <a class="cta" href="products/">What we make</a>
+    <a class="cta" href="solutions/">Who it is for</a>
   </p>''')
     out += band("dark tall", '''  <span class="bloom" aria-hidden="true"></span>
   <div class="well">
@@ -303,37 +324,26 @@ def home():
     <p class="t-lead muted measure-wide reveal d1">One team from the silicon to the last pixel, so neither side has to compromise for the other.</p>
     <p class="cta-row reveal d2"><a class="cta" href="hardware/">Learn more</a></p>
   </div>''')
-    out += '''<div class="cards">
-  <section class="card">
-    <p class="eyebrow reveal">Software</p>
-    <h2 class="t-display balance reveal">Built for a person,<br class="br-wide">not an org chart.</h2>
-    <p class="t-lead muted reveal d1">Tools that assume one user with taste, not a procurement department.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="software/">Learn more</a></p>
-  </section>
-  <section class="card dark">
-    <p class="eyebrow reveal">Privacy</p>
-    <h2 class="t-display balance reveal">Yours stays yours.</h2>
-    <p class="t-lead muted reveal d1">Personal computing only means something if the personal part stays private.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="privacy/">Learn more</a></p>
-  </section>
-  <section class="card">
-    <p class="eyebrow reveal">Developers</p>
-    <h2 class="t-display balance reveal">Build on Oplo.</h2>
-    <p class="t-lead muted reveal d1">One set of tools across the hardware, the software and the models.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="developers/">Read the docs</a></p>
-  </section>
-  <section class="card">
-    <p class="eyebrow reveal">Company</p>
-    <h2 class="t-display balance reveal">Where we're going.</h2>
-    <p class="t-lead muted reveal d1">What we're building, who is building it, and how to join.</p>
-    <p class="cta-row reveal d2">
-      <a class="cta" href="careers/">Careers</a>
-      <a class="cta" href="newsroom/">Newsroom</a>
-    </p>
-  </section>
-</div>
-</main>
-'''
+    out += '<div class="cards">\n'
+    out += card("", "Software", 'Built for a person,<br class="br-wide">not an org chart.',
+                "Tools that assume one user with taste, not a procurement department.",
+                [("Learn more", "software/")])
+    out += card("dark", "Privacy", "Yours stays yours.",
+                "Personal computing only means something if the personal part stays private.",
+                [("Learn more", "privacy/")])
+    out += card("", "Education", "A classroom, not a fleet.",
+                "Oplo Edu is the division. OEdu is the thing students and teachers actually sign in to.",
+                [("Oplo Edu", "edu/"), ("Open OEdu", OEDU)])
+    out += card("dark", "Oplo+", 'One membership,<br class="br-wide">the whole system.',
+                "The account, the storage and the services that follow you across every Oplo device.",
+                [("Learn more", "plus/")])
+    out += card("", "Developers", "Build on Oplo.",
+                "One set of tools across the hardware, the software and the models.",
+                [("Read the docs", "developers/")])
+    out += card("", "Company", "Where we're going.",
+                "What we're building, who is building it, and how to join.",
+                [("About Oplo", "company/"), ("Careers", "careers/")])
+    out += "</div>\n</main>\n"
     out += footer(0)
     return ("index.html", out)
 
