@@ -4219,11 +4219,160 @@
   })();
 
   /* ==================================================== The section itself */
+  /* ====================================================== Predict
+     Three questions before the unit, and they are meant to be got wrong.
+
+     A student who has already tried to answer something reads the passage
+     that answers it differently — the gap is felt rather than described, and
+     the objectives list at the top of a section describes it at best. Wrong
+     predictions cost nothing in the model (see `pre` in learn.js); a right
+     one is recorded as what it is, which is that they already knew.
+
+     It runs once per unit and it is skippable. Seven phases of ceremony
+     around a five-minute read is its own way of losing a reader.
+   ========================================================================== */
+  function predictable(r) {
+    var set = SET(r.set);
+    if (!set || !set.cards || !CN) return [];
+    var all;
+    try { all = CN.forSet(r.set, set.cards); } catch (e) { return []; }
+    // Only concepts authored with a worked case can be asked at apply. A
+    // pretest built out of definitions would be asking a student to recall
+    // words nobody has shown them yet, which teaches nothing and reads as a
+    // trick.
+    return all.filter(function (c) {
+      return c.apply && c.apply.ask && c.apply.opts && c.apply.opts.length > 1;
+    });
+  }
+
+  function wantsPredict(r) {
+    if (!R || !R.d) return false;
+    if (R.d.pre && R.d.pre[r.key]) return false;         // already predicted
+    if (doneIn(r) > 0) return false;                      // already reading
+    return predictable(r).length >= 3;
+  }
+
+  function openPredict(r, then) {
+    var pool = predictable(r);
+    // Deterministic per unit rather than random: a student who reloads should
+    // get the questions they walked away from, not three new ones.
+    var picks = pool.slice(0, 3);
+    var ix = 0, right = 0, asked = [];
+    var store = new L.Store(S.me ? S.me.id : "anon", r.set);
+
+    var v = $("#v-read");
+    show("read");
+    noFoot();
+
+    function done() {
+      R.d.pre[r.key] = { right: right, of: picks.length, at: Date.now(), asked: asked };
+      keep();
+      then();
+    }
+
+    function draw() {
+      var c = picks[ix];
+      if (!c) return done();
+      v.innerHTML = "";
+      var wrap = el("div", "pd");
+
+      var head = el("div", "pd-head");
+      head.innerHTML = '<p class="eyebrow">Before you read</p>' +
+        "<h1>What do you already think?</h1>" +
+        "<p class=\"pd-say\">Three questions about Unit " + r.unit + ". You have not been taught " +
+        "this yet, so being wrong is the point &mdash; it is what makes the reading land.</p>";
+      wrap.appendChild(head);
+
+      var step = el("div", "pd-step");
+      step.innerHTML = "<span>" + (ix + 1) + " of " + picks.length + "</span>" +
+        '<div class="track"><i style="width:' + Math.round(ix / picks.length * 100) + '%"></i></div>';
+      wrap.appendChild(step);
+
+      var card = el("div", "pd-card");
+      card.appendChild(el("p", "pd-ask", esc(c.apply.ask)));
+      var opts = el("div", "pd-opts");
+      c.apply.opts.forEach(function (o, k) {
+        var b = el("button");
+        b.type = "button";
+        b.textContent = o;
+        b.addEventListener("click", function () { answer(c, k, card, opts); });
+        opts.appendChild(b);
+      });
+      card.appendChild(opts);
+      wrap.appendChild(card);
+
+      var skip = el("button", "pd-skip");
+      skip.type = "button";
+      skip.textContent = "Skip this and start reading";
+      skip.addEventListener("click", function () {
+        // Skipping is recorded, so the end-of-unit screen does not claim a
+        // gain against a baseline nobody set.
+        R.d.pre[r.key] = { right: 0, of: 0, at: Date.now(), asked: [], skipped: true };
+        keep();
+        then();
+      });
+      wrap.appendChild(skip);
+
+      v.appendChild(wrap);
+      window.scrollTo(0, 0);
+    }
+
+    /* Confidence is asked before the verdict, never after. Asked afterwards
+       it is a memory of how sure you were, which is a different and much
+       kinder question than the one worth recording. */
+    function answer(c, chose, card, opts) {
+      [].forEach.call(opts.querySelectorAll("button"), function (b) { b.disabled = true; });
+      var ok = chose === c.apply.right;
+
+      var conf = el("div", "pd-conf");
+      conf.innerHTML = "<b>Before the answer &mdash; how sure were you?</b>";
+      var row = el("div", "pd-conf-row");
+      [["Guessing", 0], ["Not sure", 1], ["Fairly sure", 2], ["Certain", 3]].forEach(function (x) {
+        var b = el("button");
+        b.type = "button";
+        b.textContent = x[0];
+        b.addEventListener("click", function () { verdict(c, ok, x[1], card); });
+        row.appendChild(b);
+      });
+      conf.appendChild(row);
+      card.appendChild(conf);
+      conf.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    function verdict(c, ok, confidence, card) {
+      // A double-tap on a confidence button would otherwise grade twice and
+      // then throw on the second pass, when the row it removes is already gone.
+      var conf = card.querySelector(".pd-conf");
+      if (!conf) return;
+      conf.remove();
+      store.grade(c.k, { level: "apply", right: ok, confidence: confidence, pre: true });
+      asked.push(c.k);
+      if (ok) right++;
+
+      var box = el("div", "pd-verdict" + (ok ? " ok" : ""));
+      box.innerHTML = "<b>" + (ok ? "You already knew that." : "Not yet &mdash; and that is fine.") +
+        "</b><p>" + esc(c.apply.why || "") + "</p>" +
+        (ok ? "" : '<p class="pd-watch">Watch for <em>' + esc(c.k) + "</em> as you read.</p>");
+      var next = el("button", "pd-next");
+      next.type = "button";
+      next.textContent = ix === picks.length - 1 ? "Start reading" : "Next question";
+      next.addEventListener("click", function () { ix++; draw(); });
+      box.appendChild(next);
+      card.appendChild(box);
+      box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    draw();
+  }
+
   function openRead(i, silent, rkey) {
     if (rkey && READERS[rkey]) useReader(READERS[rkey]);
     var r = RU;
     var sec = sectionAt(i);
     if (!sec) return;
+    // The prediction gates the unit, not the section: once through it, the
+    // reader opens where it was going anyway.
+    if (wantsPredict(r)) { openPredict(r, function () { openRead(i, silent, rkey); }); return; }
     if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true, r.key); });
     S.readIx = i;
     // S.readIx is a copy, not a reference into the record, so the record has

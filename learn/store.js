@@ -18,6 +18,7 @@
      sets       per study set: what is learned, what is starred, best times
      mistakes   every wrong answer, deduplicated and counted
      read       where you are in the reading and what you have finished
+     pre        what was predicted about a unit before reading it
      day        what has been done today, and on which days you showed up
      game       experience, rank, streak, badges
      resume     a session you walked out of, so you can walk back into it
@@ -52,6 +53,11 @@ window.OPLO_STORE = (function () {
       readIx: 0,
       readUnit: "media:5",   // which unit's reader readIx points into
       readDone: {},
+      // What a student predicted about a unit before reading any of it, kept
+      // so the same three questions can be put back in front of them at the
+      // end. The gain is the point: a prediction nobody ever returns to is a
+      // quiz that wasted three questions.
+      pre: {},               // "media:6" -> { right, of, at, asked: [concept] }
       doneToday: {},
       citeStyle: "mla",
       game: {
@@ -102,6 +108,7 @@ window.OPLO_STORE = (function () {
     if (typeof d.readIx === "number") out.readIx = d.readIx;
     if (typeof d.readUnit === "string") out.readUnit = d.readUnit;
     if (d.readDone && typeof d.readDone === "object") out.readDone = d.readDone;
+    if (d.pre && typeof d.pre === "object") out.pre = d.pre;
     if (d.doneToday && typeof d.doneToday === "object") out.doneToday = d.doneToday;
     if (typeof d.citeStyle === "string") out.citeStyle = d.citeStyle;
     if (d.resume && typeof d.resume === "object") out.resume = d.resume;
