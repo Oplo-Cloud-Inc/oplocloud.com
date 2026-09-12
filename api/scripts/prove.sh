@@ -388,7 +388,37 @@ S=$(status other POST "/courses/$PC/whatif" "{\"accountId\":\"$STUDENT\",\"chang
 [ "$S" = "403" ] && ok "an unrelated teacher may not ask it about somebody else's (403)" \
   || bad "whatif leak" "HTTP $S"
 
-say "20. Progress and experience, priced by the server"
+say "20. The work a student can actually see"
+# The hole this closes: a teacher sets work, marks it missing, and counts it as
+# a zero. Until now nothing told the student the work existed.
+R=$(call student GET /coursework)
+N=$(echo "$R" | jq_ "o.work&&o.work.length")
+WAIT=$(echo "$R" | jq_ "o.totals&&o.totals.waiting")
+MISS=$(echo "$R" | jq_ "o.totals&&o.totals.missing")
+[ -n "$N" ] && [ "$N" != "0" ] && ok "the student sees $N pieces of work set on their courses" \
+  || bad "coursework" "$R"
+
+# Work nobody has marked has no grade row at all, and is the whole point.
+call teacher POST "/courses/$PC/assignments" '{"title":"Unseen essay","category":"Assignments","outOf":10}' >/dev/null
+R=$(call student GET /coursework)
+SEEN=$(echo "$R" | jq_ "o.work.filter(w=>w.title=='Unseen essay').length")
+ST=$(echo "$R" | jq_ "o.work.filter(w=>w.title=='Unseen essay')[0].status")
+[ "$SEEN" = "1" ] && ok "work with no mark on it still appears — that is the point" \
+  || bad "unmarked work must be visible" "$R"
+[ -z "$ST" ] && ok "and its status is nothing, not a guess" || bad "status" "got '$ST'"
+
+# Late first, then soonest, then undated.
+FIRST=$(echo "$R" | jq_ "o.work[0].title")
+[ -n "$FIRST" ] && ok "ordered by what is late, then by what is due soonest: “$FIRST” first" \
+  || bad "order" "$R"
+
+S=$(status other GET "/coursework?accountId=$STUDENT")
+[ "$S" = "403" ] && ok "a teacher who does not teach them cannot read their work (403)" \
+  || bad "coursework leak" "HTTP $S"
+S=$(status teacher GET "/coursework?accountId=$STUDENT")
+[ "$S" = "200" ] && ok "their own teacher can (200)" || bad "teacher coursework" "HTTP $S"
+
+say "21. Progress and experience, priced by the server"
 R=$(call student PUT /progress "{\"scope\":\"set:media-1\",\"state\":{\"Cochlea\":{\"seen\":3,\"recall\":0.8}}}")
 echo "$R" | grep -q '"ok":true' && ok "student wrote their own progress" || bad "progress write" "$R"
 
@@ -413,7 +443,7 @@ XP=$(echo "$R" | jq_ "o.standing&&o.standing.xp")
 STREAK=$(echo "$R" | jq_ "o.standing&&o.standing.streak")
 [ "$XP" = "33" ] && ok "standing totals $XP XP from the ledger, streak $STREAK" || bad "standing" "$R"
 
-say "21. Study sets — authoring and consumption, both server-backed"
+say "22. Study sets — authoring and consumption, both server-backed"
 R=$(call teacher POST /study-sets "{\"code\":\"waves-$STAMP\",\"title\":\"Waves and Sound\",\"courseId\":\"$COURSE\",\"status\":\"published\",\"terms\":[{\"term\":\"Pinna\",\"definition\":\"The visible outer ear that collects sound.\",\"why\":\"It is why you can tell a sound came from behind you.\",\"example\":\"Cupping a hand behind your ear.\"},{\"term\":\"Cochlea\",\"definition\":\"The snail-shaped hearing part of the inner ear.\"},{\"term\":\"Amplitude\",\"definition\":\"The height of a wave, crest to trough.\"},{\"term\":\"Frequency\",\"definition\":\"Cycles per second, measured in Hertz.\"}]}")
 SET=$(echo "$R" | jq_ "o.studySet&&o.studySet.id")
 [ -n "$SET" ] && ok "teacher authored a set: $SET" || bad "create study set" "$R"
@@ -455,7 +485,7 @@ call teacher PATCH "/study-sets/$DRAFT" '{"status":"published"}' >/dev/null
 S=$(status student GET "/study-sets/$DRAFT")
 [ "$S" = "200" ] && ok "publishing it makes it visible (200)" || bad "publish" "HTTP $S"
 
-say "22. Transcripts — imported by an administrator, read by the student, changed by nobody else"
+say "23. Transcripts — imported by an administrator, read by the student, changed by nobody else"
 TX='{"source":{"school":"Proof High","creditSystem":"nyc-4-term","kind":"unofficial","creditsEarned":1.75,"cumulativeAverage":77},"terms":[{"year":"2024-2025","gradeLevel":9,"term":"Term 1","average":77,"courses":[["E1","English 1A","88",0.5,0.5,"english"],["E2","English 1B","90",0.5,0.5,"english"],["M1","Algebra 1A","62",0.5,0.5,"math"],["M2","Algebra 1B","45",0.5,0,"math"],["P1","PE 1A","100",0.25,0.25,"pe","not_averaged"]]}],"exams":[["Algebra I","2025-06",70,"passed"]]}'
 S=$(status student POST "/accounts/$STUDENT/transcripts" "$TX")
 [ "$S" = "403" ] && ok "a student cannot import their own transcript (403)" || bad "student MUST NOT import a transcript" "HTTP $S"
@@ -487,7 +517,7 @@ call admin PATCH "/transcript-courses/$CID" '{"decision":"declined"}' >/dev/null
 EST=$(call student GET /graduation | jq_ "o.graduation.totals.transferEstimate")
 [ "$EST" = "0.625" ] && ok "a course the registrar declines stops counting: now $EST" || bad "declined course still counted" "$EST"
 
-say "23. The analysis — every sentence of it computed from the record"
+say "24. The analysis — every sentence of it computed from the record"
 R=$(call student GET /graduation)
 MET=$(echo "$R" | jq_ "o.graduation.board.met")
 [ "$MET" = "1" ] && ok "the exam board finds one core area met: Algebra I at 70" || bad "exam board" "$MET"
@@ -520,7 +550,7 @@ N=$(echo "$R" | jq_ "o.graduation.courses.length")
 [ "$EST" = "16" ] && ok "20 more credits imported, but transfer stops at the 16-credit cap" || bad "transfer cap" "$EST"
 [ "$N" = "45" ] && ok "importing the same school twice replaces it rather than doubling it (45 courses)" || bad "re-import doubled" "$N"
 
-say "24. Sessions"
+say "25. Sessions"
 # A second sign-in from the "same person, different device".
 curl -s -c "$JAR/student2" -H 'content-type: application/json' \
   -d "{\"email\":\"student$STAMP@example.com\",\"password\":\"another-long-password\"}" \

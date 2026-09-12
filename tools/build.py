@@ -306,12 +306,14 @@ def home():
     # The artwork carries the wordmark and the line, so the heading is there
     # for screen readers and search engines and the image is marked decorative:
     # announcing both would read the same words twice.
-    out += band("opening well", '''  <h1 class="sr">Oplo Cloud — Technology for Human</h1>
+    out += band("opening art", '''  <h1 class="sr">Oplo Cloud — Technology for Human</h1>
   <img class="hero-art reveal" src="assets/img/hero-nature.svg" alt="" width="1440" height="810" fetchpriority="high" decoding="async">
-  <p class="cta-row reveal d1">
-    <a class="cta" href="products/">What we make</a>
-    <a class="cta" href="solutions/">Who it is for</a>
-  </p>''')
+  <div class="well">
+    <p class="cta-row reveal d1">
+      <a class="cta" href="products/">What we make</a>
+      <a class="cta" href="solutions/">Who it is for</a>
+    </p>
+  </div>''')
     out += '<div class="cards">\n'
     out += card("", "Software", 'Built for a person,<br class="br-wide">not an org chart.',
                 "Tools that assume one user with taste, not a procurement department.",

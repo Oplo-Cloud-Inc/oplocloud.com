@@ -262,11 +262,23 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
    shrunk to 375px wide puts the lettering below the size anyone can read. */
 .hero-art {
   display: block;
-  width: min(100%, 1440px); height: auto;
+  width: 100%; height: auto;
   margin-inline: auto;
 }
+/* The opening band carries the artwork edge to edge, so it drops the top
+   padding a band normally has: the image starts where the nav ends. Only the
+   line of links underneath sits in the well. */
+.band.art { padding-top: 0; padding-bottom: clamp(32px, 6vh, 72px); }
+/* The artwork ends in its own white space, so the links are pulled up into it
+   rather than sitting below a band of nothing. */
+.band.art .cta-row { margin-top: -6vh; }
+
 @media (max-width: 734px) {
+  /* Scaled past the viewport and cropped by the band: at 375px wide the
+     lettering inside the artwork is otherwise too small to read. The crop
+     takes the white space the links were sitting in, so they sit below. */
   .hero-art { width: 170%; max-width: none; margin-inline: -35%; }
+  .band.art .cta-row { margin-top: clamp(12px, 3vh, 28px); }
 }
 
 /* A single soft bloom, used only on the dark band. Nothing else is coloured. */
