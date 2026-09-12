@@ -5128,7 +5128,11 @@
   function grCr(x) { return String(Math.round(Number(x || 0) * 1000) / 1000); }
   function grCount(node, to, decimals, suffix) {
     suffix = suffix || "";
-    if (GR_CALM) { node.textContent = to.toFixed(decimals) + suffix; return; }
+    // The finished number goes in first. A tab that is not being painted gets
+    // no animation frames at all, and a headline number left blank — or worse,
+    // frozen partway up — is not a trade worth making for a flourish.
+    node.textContent = to.toFixed(decimals) + suffix;
+    if (GR_CALM || document.hidden) return;
     var t0 = null;
     function step(ts) {
       if (!t0) t0 = ts;
@@ -5160,6 +5164,22 @@
     return h;
   }
 
+  /* ------------------------------------------------------------- The plan
+     One commitment, in the student's own words, kept on the server under its
+     own scope so it follows them to another device. "When X, I will Y" is the
+     form on purpose: an intention tied to a cue is kept far more often than
+     one floating free of it, and this is the only thing in Learn a student is
+     asked to keep. An administrator reading the record sees it and cannot
+     write it — the server allows progress to be written by its owner only. */
+  var PLAN_SCOPE = "graduation:plan";
+
+  function planLoad(accountId) {
+    return API.progress.all(accountId).then(function (rows) {
+      var row = rows && rows[PLAN_SCOPE];
+      return row && row.state && row.state.what ? row.state : null;
+    }, function () { return null; });
+  }
+
   function openGrades(silent) {
     root("grades", "Grades", function () { openGrades(true); });
     var v = $("#v-grades");
@@ -5172,15 +5192,17 @@
     host.appendChild(wait);
     noFoot(); progress(null);
     show("grades");
-    API.graduation.get().then(function (g) {
+    Promise.all([API.graduation.get(), planLoad()]).then(function (out) {
       wait.remove();
-      drawGrades(host, g);
+      drawGrades(host, out[0], null, { canCommit: true, plan: out[1],
+                                       again: function () { openGrades(true); } });
     }, function (e) { failed(wait, e, function () { openGrades(true); }); });
   }
 
   /* `empty` is what to say when there is nothing yet. The student is spoken to
      in the second person; the Console, looking at somebody else, passes its own. */
-  function drawGrades(host, g, empty) {
+  function drawGrades(host, g, empty, opts) {
+    opts = opts || {};
     if (!g.transfer && !g.current.length && !g.totals.earnedTowardDiploma) {
       host.appendChild(el("div", "lx-empty", empty ||
         "Nothing on your record yet. When your school adds your previous transcript, or your " +
@@ -5188,7 +5210,14 @@
       return;
     }
     host.appendChild(gradHero(g));
+    /* The one move before the wall of numbers. A student who opens this page
+       and reads eight things they owe closes it; a student who reads one
+       thing they can do today does that thing. */
+    if (g.focus) host.appendChild(gradFocus(g, opts));
     host.appendChild(gradKpis(g));
+    if (g.pace) host.appendChild(gradPlan(g));
+    if (g.risk) host.appendChild(gradRisk(g, opts));
+    if (g.board && g.exams.length) host.appendChild(gradPathway(g));
     host.appendChild(gradBadges(g));
     host.appendChild(gradAreas(g));
     if (g.transfer) host.appendChild(gradTransfer(g));
@@ -5529,6 +5558,11 @@
     wrap.appendChild(tip);
     card.appendChild(wrap);
 
+    if (g.momentum) {
+      var mo = el("p", "gr-lede"); mo.textContent = g.momentum.says; card.appendChild(mo);
+      var hi = el("p", "gr-sub"); hi.textContent = g.momentum.high; card.appendChild(hi);
+    }
+
     var det = document.createElement("details");
     det.className = "gr-table";
     det.innerHTML = "<summary>Show as a table</summary>";
@@ -5690,6 +5724,248 @@
       });
       sec.appendChild(det);
     });
+    return sec;
+  }
+
+  /* ------------------------------------------------------------- The move
+     Ranked on the server by what it unlocks against what it costs, and shown
+     with both, because "2.25 credits of coursework" and "one email" are not
+     comparable and must not look it. */
+  function gradFocus(g, opts) {
+    var f = g.focus;
+    var sec = el("section", "gr-focus");
+    var head = el("div", "gr-focus-head");
+    head.appendChild(el("p", "gr-kicker", "The one move"));
+    var costs = el("span", "gr-effort");
+    costs.innerHTML = "<b></b><em>what it costs</em>";
+    costs.querySelector("b").textContent = f.effort;
+    head.appendChild(costs);
+    sec.appendChild(head);
+
+    var h = el("h2"); h.textContent = f.title; sec.appendChild(h);
+    var d = el("p", "gr-lede"); d.textContent = f.detail; sec.appendChild(d);
+    if (f.why) { var w = el("p", "gr-why"); w.textContent = f.why; sec.appendChild(w); }
+
+    sec.appendChild(planBox(g, f, opts));
+    return sec;
+  }
+
+  /* The commitment. Not a reminder and not a nag: a sentence the student
+     writes, shown back to them in their own words. */
+  function planBox(g, f, opts) {
+    var box = el("div", "gr-commit");
+    var plan = opts.plan;
+
+    if (!opts.canCommit) {
+      if (plan) {
+        box.appendChild(el("p", "gr-kicker", plan.doneAt ? "They kept their plan" : "Their plan"));
+        var said = el("p", "gr-plan-said");
+        said.textContent = "When " + plan.when + ", I will " + plan.what + ".";
+        box.appendChild(said);
+      } else {
+        box.appendChild(el("p", "gr-sub", "No plan written yet. It is theirs to write, not yours."));
+      }
+      return box;
+    }
+
+    if (plan && !plan.doneAt) {
+      box.appendChild(el("p", "gr-kicker", "Your plan"));
+      var mine = el("p", "gr-plan-said");
+      mine.textContent = "When " + plan.when + ", I will " + plan.what + ".";
+      box.appendChild(mine);
+      var acts = el("div", "gr-commit-acts");
+      var done = el("button", "lx-btn", "I did it");
+      done.type = "button";
+      done.addEventListener("click", function () {
+        done.disabled = true;
+        plan.doneAt = Date.now();
+        attempt(API.progress.put(PLAN_SCOPE, plan), function () {
+          toast("Kept. That is the part most people skip.");
+          if (opts.again) opts.again();
+        }).then(function () { done.disabled = false; });
+      });
+      var change = el("button", "lx-btn quiet", "Change it");
+      change.type = "button";
+      change.addEventListener("click", function () {
+        box.innerHTML = "";
+        box.appendChild(planForm(f, opts, null));
+      });
+      acts.appendChild(done); acts.appendChild(change);
+      box.appendChild(acts);
+      return box;
+    }
+
+    if (plan && plan.doneAt) {
+      box.appendChild(el("p", "gr-kicker", "Done"));
+      var kept = el("p", "gr-plan-said");
+      kept.textContent = "You said you would " + plan.what + ". You did.";
+      box.appendChild(kept);
+    }
+    box.appendChild(planForm(f, opts, plan));
+    return box;
+  }
+
+  function planForm(f, opts, previous) {
+    var wrap = el("div", "gr-plan-form");
+    wrap.appendChild(el("p", "gr-kicker", previous ? "Write the next one" : "Make it a plan"));
+    var line = el("div", "gr-plan-line");
+    var when = el("input");
+    when.type = "text";
+    when.placeholder = "Tuesday after dinner";
+    when.setAttribute("aria-label", "When");
+    var what = el("input");
+    what.type = "text";
+    what.value = f.title;
+    what.setAttribute("aria-label", "What you will do");
+    line.appendChild(el("span", null, "When"));
+    line.appendChild(when);
+    line.appendChild(el("span", null, "I will"));
+    line.appendChild(what);
+    wrap.appendChild(line);
+    var go = el("button", "lx-btn", "Save the plan");
+    go.type = "button";
+    go.addEventListener("click", function () {
+      var w = when.value.trim(), t = what.value.trim();
+      if (!w) { toast("A plan needs its moment. When will you do it?"); when.focus(); return; }
+      if (!t) { toast("And the thing you will do."); what.focus(); return; }
+      go.disabled = true;
+      attempt(API.progress.put(PLAN_SCOPE, { when: w, what: t, kind: f.kind, madeAt: Date.now() }),
+        function () {
+          toast("Written down. A plan with a time attached is kept far more often.");
+          if (opts.again) opts.again();
+        }).then(function () { go.disabled = false; });
+    });
+    wrap.appendChild(go);
+    wrap.appendChild(el("p", "gr-sub",
+      "Saved to your account, not to this browser, so it is here on any device you sign in on."));
+    return wrap;
+  }
+
+  /* ---------------------------------------------------------- When it ends
+     A credit count says how far. This says when — at the pace of the
+     student's own record, labelled as the estimate it is. */
+  function gradPlan(g) {
+    var pc = g.pace;
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("When this ends", pc.finishBy ? "On your own pace" : "No pace on the record yet"));
+    var grid = el("div", "gr-two");
+
+    var card = el("div", "gr-card gr-plan");
+    var big = el("p", "gr-plan-big");
+    big.innerHTML = "<b></b><span></span>";
+    big.querySelector("b").textContent = pc.finishBy ? grMonth(pc.finishBy) : "—";
+    big.querySelector("span").textContent = pc.finishBy ? "on this pace" : "not enough finished terms";
+    card.appendChild(big);
+    var says = el("p", "gr-lede"); says.textContent = pc.says; card.appendChild(says);
+    if (pc.expected) {
+      var vs = el("p", "gr-sub");
+      vs.textContent = pc.aheadOfPlan
+        ? "That is at or ahead of the " + grMonth(pc.expected) + " on file."
+        : "The record on file says " + grMonth(pc.expected) + ", which is sooner than this pace reaches.";
+      card.appendChild(vs);
+    }
+    var note = el("p", "gr-note"); note.textContent = pc.assumption; card.appendChild(note);
+    grid.appendChild(card);
+
+    var years = el("div", "gr-card");
+    years.appendChild(el("h3", null, "Credits a year, as you actually earned them"));
+    var bars = el("div", "gr-hbars");
+    var top = Math.max.apply(null, pc.years.map(function (y) { return y.credits; }).concat([pc.creditsPerYear, 1]));
+    pc.years.forEach(function (y) {
+      var row = el("div", "gr-hbar");
+      var nm = el("span"); nm.textContent = y.year.replace("-", "–");
+      var trk = el("div", "trk"), fill = el("i");
+      fill.style.width = Math.round(y.credits / top * 100) + "%";
+      trk.appendChild(fill);
+      row.appendChild(nm); row.appendChild(trk); row.appendChild(el("b", null, grCr(y.credits)));
+      bars.appendChild(row);
+    });
+    years.appendChild(bars);
+    years.appendChild(el("p", "gr-sub", "In EHS credits, after conversion — not in your old school's units."));
+    grid.appendChild(years);
+    sec.appendChild(grid);
+    return sec;
+  }
+
+  /* ---------------------------------------------------------------- Risk
+     One area, named once, with its evidence. Never a verdict about a person:
+     the sentence has to survive being read by the student on a bad day. */
+  function gradRisk(g, opts) {
+    var r = g.risk;
+    var sec = el("section", "gr-risk");
+    sec.appendChild(el("p", "gr-kicker", "Where the next hour pays most"));
+    var h = el("h3"); h.textContent = r.name; sec.appendChild(h);
+    var ul = el("ul", "gr-evidence");
+    r.evidence.forEach(function (e) { var li = el("li"); li.textContent = e; ul.appendChild(li); });
+    sec.appendChild(ul);
+    var says = el("p", "gr-lede");
+    says.textContent = opts.canCommit ? r.says
+      : r.says.replace(/\byour\b/g, "their").replace(/\byou\b/g, "they");
+    sec.appendChild(says);
+    return sec;
+  }
+
+  /* -------------------------------------------------------------- Pathway
+     The state's rules, as printed on the transcript — not EHS's, which does
+     not publish any. Kept because the record carries these results and
+     because they decide which diploma New York would issue, which is worth
+     knowing while a retake window is still open. */
+  function gradPathway(g) {
+    var b = g.board;
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("Your New York exam record", b.covered + " of 4 core areas covered"));
+
+    var core = el("div", "gr-core");
+    b.areas.forEach(function (a) {
+      var cell = el("div", "gr-core-cell " + a.state);
+      var nm = el("b"); nm.textContent = a.name; cell.appendChild(nm);
+      var sc = el("span", "sc");
+      sc.textContent = a.score == null ? "—" : String(a.score);
+      cell.appendChild(sc);
+      var st = el("em");
+      st.textContent = a.state === "met" ? "Met at 65+"
+        : a.state === "low_pass" ? a.toPass + " from 65"
+        : a.state === "short" ? "Below the 55 band" : "No exam yet";
+      cell.appendChild(st);
+      if (a.exam) { var ex = el("i"); ex.textContent = a.exam + (a.sitting ? " · " + grMonth(a.sitting) : ""); cell.appendChild(ex); }
+      core.appendChild(cell);
+    });
+    sec.appendChild(core);
+
+    var paths = el("div", "gr-paths");
+    b.pathways.forEach(function (p) {
+      var card = el("div", "gr-path " + (p.met ? "met" : ""));
+      var t = el("h4");
+      t.innerHTML = (p.met ? svg(I.tick, true) : "") + "<span></span>";
+      t.querySelector("span").textContent = p.name;
+      card.appendChild(t);
+      var sub = el("p", "gr-sub"); sub.textContent = p.says; card.appendChild(sub);
+      if (p.met) { card.appendChild(el("p", "gr-plan-said", "Every condition on this path is met.")); }
+      else {
+        var ul = el("ul", "gr-evidence");
+        p.blockers.forEach(function (x) { var li = el("li"); li.textContent = x; ul.appendChild(li); });
+        card.appendChild(ul);
+      }
+      paths.appendChild(card);
+    });
+    sec.appendChild(paths);
+
+    if (b.closest) {
+      var near = el("div", "gr-near");
+      near.innerHTML = '<span class="ic">' + svg(I.star, true) + "</span><div><b></b><p></p></div>";
+      near.querySelector("b").textContent = b.closest.toPass +
+        (b.closest.toPass === 1 ? " point" : " points") + " on " + b.closest.exam;
+      near.querySelector("p").textContent =
+        "Your best sitting is " + b.closest.score + ". Nothing else on this record changes so much for " +
+        "so little — and a retake is a sitting, not a year.";
+      sec.appendChild(near);
+    }
+    if (b.surplus.length) {
+      sec.appendChild(el("p", "gr-sub", "Blocks nothing: " + b.surplus.map(function (s) {
+        return s.name + (s.score == null ? "" : " " + s.score); }).join(", ") +
+        ". That area is already covered by another exam."));
+    }
+    var note = el("p", "gr-note"); note.textContent = b.says; sec.appendChild(note);
     return sec;
   }
 
@@ -6694,10 +6970,11 @@
     host.appendChild(wait);
     noFoot(); progress(null);
     show("admin");
-    API.graduation.get(p.id).then(function (g) {
+    Promise.all([API.graduation.get(p.id), planLoad(p.id)]).then(function (out) {
       wait.remove();
-      drawGrades(host, g, "Nothing on this record yet. Import the transcript from " +
-        esc(first) + "'s previous school and the path to graduation appears here.");
+      drawGrades(host, out[0], "Nothing on this record yet. Import the transcript from " +
+        esc(first) + "'s previous school and the path to graduation appears here.",
+        { canCommit: false, plan: out[1] });
     }, function (e) { failed(wait, e, function () { openRecord(p); }); });
   }
 
