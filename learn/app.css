@@ -145,7 +145,16 @@ svg { display: block; }
    a note that ends up 500px from its own sentence is no longer a margin note.
    `margin-inline` is 0 for the same reason: auto would centre it and take the
    rail off the edge. */
-.lx-wrap.full { max-width: 1720px; margin-inline: 0; }
+/* Centred, not left-anchored. An earlier pass pinned this to the left so the
+   rail could hold the screen edge, and the cost only shows on a wide window:
+   the text ends up sitting well left of the middle with a field of nothing on
+   the right, which reads as a page that ran out rather than a page composed.
+   The rail is still the leftmost thing; it now has a margin instead of being
+   jammed against the glass. */
+.lx-wrap.full {
+  max-width: 1680px; margin-inline: auto;
+  padding-top: clamp(38px, 5.5vh, 76px);
+}
 /* Predict borrows the reader's view, and the reader is left-anchored so its
    rail can hold the screen edge. A single centred card must not inherit that
    or it sits off-centre on any window wider than the cap. Both classes are
@@ -776,10 +785,10 @@ svg { display: block; }
 
 .rd-body { margin-top: 34px; }
 .rd-body > * { max-width: var(--measure); }
-.rd-body p { margin-bottom: 1.05em; }
+.rd-body p { margin-bottom: 1.3em; }
 .rd-body p em { font-style: italic; }
 .rd-body h2 {
-  margin: 2em 0 .7em;
+  margin: 2.4em 0 .8em;
   font-family: var(--font); font-size: 25px; font-weight: 600;
   letter-spacing: -.018em; line-height: 1.2;
 }
@@ -1018,14 +1027,22 @@ svg { display: block; }
    opens over your own notes is a panel you close. */
 .rd-three {
   display: grid;
-  grid-template-columns: 234px minmax(0, 760px) 292px;
-  gap: clamp(22px, 3vw, 46px);
+  /* The flanks are the same width on purpose. Unequal ones put the text
+     off-centre by half their difference, which is small enough to look like
+     a mistake rather than a choice — and this is the column the reader is
+     actually looking at. */
+  grid-template-columns: 272px minmax(0, 720px) 272px;
+  gap: clamp(22px, 3.4vw, 64px);
   justify-content: space-between; align-items: start;
 }
-.rd-three .rd { max-width: none; margin-inline: 0; }
+/* The article is held to its measure and the whole of it is centred in the
+   column — not each child separately. Centring the children independently is
+   what gives a reading column two left edges: the heading starts at one x and
+   the paragraph under it at another, and the eye reads that as a wobble. */
+.rd-three .rd { max-width: var(--measure); margin-inline: auto; }
 
 @media (max-width: 1220px) {
-  .rd-three { grid-template-columns: 214px minmax(0, 1fr); }
+  .rd-three { grid-template-columns: 234px minmax(0, 1fr); }
   /* The margin stops being a margin and becomes a section, which is the
      honest thing for it to do when there is no room beside the text. */
   .rd-margin { grid-column: 1 / -1; }
@@ -1040,9 +1057,9 @@ svg { display: block; }
   .rd-rail-nav { position: static; }
 }
 
-.rd-rail-nav { position: sticky; top: calc(var(--bar) + 16px); display: grid; gap: 9px; }
+.rd-rail-nav { position: sticky; top: calc(var(--bar) + 20px); display: grid; gap: 12px; }
 .rd-panel {
-  padding: 15px 13px; border-radius: 16px;
+  padding: 19px 16px; border-radius: 18px;
   background: var(--paper); border: 1px solid var(--hair);
 }
 .rd-panel h3 {
