@@ -8111,13 +8111,19 @@
     var t = el("div", "cn-tbl");
     t.style.setProperty("--cols", cols.map(function (c) { return c.w || "1fr"; }).join(" "));
 
-    var head = el("div", "cn-tr head");
-    cols.forEach(function (c) {
-      var s = el("span", "cn-th" + (c.align === "right" ? " r" : ""));
-      s.textContent = c.label || "";
-      head.appendChild(s);
-    });
-    t.appendChild(head);
+    /* A table whose columns are all unlabelled is a list of facts, not a
+       table of data. Drawing an empty header over it is a rule with nothing
+       above it. */
+    var titled = cols.some(function (c) { return c.label; });
+    if (titled) {
+      var head = el("div", "cn-tr head");
+      cols.forEach(function (c) {
+        var s = el("span", "cn-th" + (c.align === "right" ? " r" : ""));
+        s.textContent = c.label || "";
+        head.appendChild(s);
+      });
+      t.appendChild(head);
+    }
 
     var body = el("div", "cn-tbody");
     t.appendChild(body);
@@ -8445,12 +8451,13 @@
 
       var acts = cnActions();
       acts.appendChild(cnAction("New course", function () { openCourseEditor(null); }, true));
+      acts.appendChild(cnAction("Explore courses", openCatalogue));
       v.appendChild(acts);
 
       if (!courses.length) {
         v.appendChild(cnEmpty("No courses yet.",
-          "Create one, enrol students into it, and you can set work and grade it.",
-          "New course", function () { openCourseEditor(null); }));
+          "Start from a course Oplo has already written, or create your own from nothing.",
+          "Explore courses", openCatalogue));
         return;
       }
 
@@ -8473,6 +8480,171 @@
       });
       v.appendChild(t);
     }, function (e) { failed(node, e, function () { openAdmin(true, "courses"); }); });
+  }
+
+  /* ------------------------------------------------------------- Catalogue
+     Every course Oplo has written, offered as a starting point.
+
+     The distinction this screen exists to hold is the one the whole product
+     rests on. The catalogue is *published curriculum* — units, objectives,
+     study sets, a textbook — and it lives in the site's files, the same for
+     every school. A course is a *database row* that carries enrolment, work
+     and grades, and belongs to one organisation.
+
+     Picking one here does not link them. It copies what a course needs to
+     exist — the title, the subject, the grading scheme the curriculum was
+     written around, and the unit list — into a row this school owns and can
+     change. Nothing here reaches back into the catalogue afterwards, because a
+     school that renames a unit should not be editing Oplo's curriculum, and a
+     change Oplo makes next year should not silently rewrite a course somebody
+     already graded against. */
+  function openCatalogue() {
+    enter("catalogue", "Courses", openCatalogue);
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    var body = el("div", "admin-body");
+    v.appendChild(body);
+
+    consoleHead(body, "School", "Explore courses",
+      "Curriculum Oplo has written. Picking one creates a course this school owns — " +
+      "with its units and its grading scheme already in place — which you can then " +
+      "change like any other. It is a starting point, not a link.");
+
+    var shipped = allCourses();
+    var written = shipped.filter(function (c) { return !c.stub; });
+    var soon = shipped.filter(function (c) { return c.stub; });
+
+    var t = cnTable([
+      { label: "Course", w: "minmax(200px, 1.6fr)" },
+      { label: "Subject", w: "minmax(110px, .8fr)" },
+      { label: "Units", w: "80px", align: "right" },
+      { label: "Grading", w: "minmax(150px, 1fr)" }
+    ]);
+    written.forEach(function (c) {
+      var us = unitsOf(c);
+      t.row([
+        "<b>" + esc(c.t) + "</b><span class='cn-sub2'>" + esc(trim(c.d, 62)) + "</span>",
+        esc(c.subject || "—"),
+        "<b class='cn-mk'>" + us.length + "</b>",
+        (c.grading || []).length
+          ? esc(c.grading.map(function (g) { return g[0] + " " + g[1] + "%"; }).join(" · "))
+          : "<span class='cn-none'>set it yourself</span>"
+      ], function () { openCataloguePick(c); }, c.id);
+    });
+    body.appendChild(t);
+
+    if (soon.length) {
+      body.appendChild(el("h2", "cn-h2", "Not written yet"));
+      body.appendChild(el("p", "cn-sub",
+        "These have a name and a subject and nothing behind them. A course made from " +
+        "one is an empty course with a sensible title — which is still a saving over " +
+        "typing it, and is not pretending to be a curriculum."));
+      var t2 = cnTable([
+        { label: "Course", w: "minmax(200px, 1.6fr)" },
+        { label: "Subject", w: "minmax(110px, 1fr)" }
+      ]);
+      soon.forEach(function (c) {
+        t2.row(["<b>" + esc(c.t) + "</b><span class='cn-sub2'>" + esc(trim(c.d, 62)) + "</span>",
+                esc(c.subject || "—")],
+               function () { openCataloguePick(c); }, c.id);
+      });
+      body.appendChild(t2);
+    }
+    show("admin");
+  }
+
+  /* What will be created, before it is created. */
+  function openCataloguePick(c) {
+    enter("catalogue:" + c.id, trim(c.t, 18), function () { openCataloguePick(c); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    var body = el("div", "admin-body");
+    v.appendChild(body);
+
+    var us = unitsOf(c);
+    var grading = (c.grading && c.grading.length)
+      ? c.grading
+      : [["Quizzes", 35], ["Assignments", 35], ["Exams", 30]];
+
+    consoleHead(body, "From the catalogue", c.t, esc(c.lede || c.d));
+
+    var box = el("div", "cn-report");
+    box.appendChild(el("p", "cn-lab", "What this creates"));
+    var facts = cnTable([
+      { label: "", w: "minmax(140px, .7fr)" },
+      { label: "", w: "minmax(200px, 2fr)" }
+    ]);
+    facts.row(["<b>Subject</b>", esc(c.subject || "—")], null, "subject");
+    facts.row(["<b>Level</b>", esc(c.level || "Introductory")], null, "level");
+    facts.row(["<b>Grading</b>",
+      esc(grading.map(function (g) { return g[0] + " — " + g[1] + "%"; }).join("  ·  ")) +
+      (c.grading && c.grading.length ? "" :
+        "<span class='cn-sub2'>a sensible default, because this course does not set one</span>")],
+      null, "grading");
+    facts.row(["<b>Units</b>", us.length
+      ? esc(us.map(function (u) { return u.t || u.n; }).join(" · "))
+      : "<span class='cn-none'>none yet</span>"], null, "units");
+    if (c.textbook) facts.row(["<b>Textbook</b>", esc(c.textbook)], null, "book");
+    box.appendChild(facts);
+
+    if ((c.objectives || []).length) {
+      box.appendChild(el("p", "cn-lab", "What it sets out to teach"));
+      var ol = el("ul", "cn-why");
+      c.objectives.forEach(function (o) { ol.appendChild(el("li", null, esc(o))); });
+      box.appendChild(ol);
+    }
+
+    box.appendChild(el("p", "cn-fine",
+      "A copy, not a link. Change anything here afterwards and you are changing your " +
+      "school's course; the catalogue is untouched, and a change Oplo makes to the " +
+      "curriculum later will not rewrite a course you have already graded against."));
+
+    var acts = cnActions();
+    var make = cnAction("Create this course", function () {
+      make.disabled = true;
+      make.textContent = "Creating…";
+      createFromCatalogue(c, grading, us, make);
+    }, true);
+    acts.appendChild(make);
+    box.appendChild(acts);
+    body.appendChild(box);
+    show("admin");
+  }
+
+  function createFromCatalogue(c, grading, us, btn) {
+    /* The code has to be unique inside the organisation, and the obvious one
+       is often taken — a school teaching Media Arts twice wants both. Rather
+       than refusing and making somebody invent a name, take the next free
+       one. */
+    function attemptWith(code, n) {
+      API.courses.create({
+        code: code,
+        orgId: S.me.orgId,
+        title: c.t,
+        subject: c.subject || null,
+        level: c.level || "Introductory",
+        summary: c.d || null,
+        status: "published",
+        body: {
+          grading: grading,
+          units: us.map(function (u) { return u.t || u.n; }),
+          from: c.id
+        }
+      }).then(function (made) {
+        toast("“" + made.title + "” created. You are its teacher.");
+        S.courseId = made.id;
+        openAdmin(false, "roster");
+      }, function (e) {
+        if (e && e.code === "conflict" && n < 9) {
+          attemptWith(c.id + "-" + (n + 1), n + 1);
+          return;
+        }
+        btn.disabled = false;
+        btn.textContent = "Create this course";
+        toast(e && e.message ? e.message : "The server refused that.");
+      });
+    }
+    attemptWith(c.id, 1);
   }
 
   function openCourseEditor(c) {
