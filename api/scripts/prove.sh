@@ -233,6 +233,27 @@ S=$(status teacher PATCH "/transcript-courses/$CID" '{"decision":"accepted"}')
 call admin PATCH "/transcript-courses/$CID" '{"decision":"declined"}' >/dev/null
 EST=$(call student GET /graduation | jq_ "o.graduation.totals.transferEstimate")
 [ "$EST" = "0.625" ] && ok "a course the registrar declines stops counting: now $EST" || bad "declined course still counted" "$EST"
+
+say "11. The analysis — every sentence of it computed from the record"
+R=$(call student GET /graduation)
+MET=$(echo "$R" | jq_ "o.graduation.board.met")
+[ "$MET" = "1" ] && ok "the exam board finds one core area met: Algebra I at 70" || bad "exam board" "$MET"
+PLUS=$(echo "$R" | jq_ "o.graduation.board.needsPlusOne")
+[ "$PLUS" = "true" ] && ok "and no fifth assessment on the record, which the 4+1 rule needs" || bad "plus-one" "$PLUS"
+PATHS=$(echo "$R" | jq_ "o.graduation.board.pathways.length")
+[ "$PATHS" = "2" ] && ok "both New York pathways are spelled out, with their blockers" || bad "pathways" "$PATHS"
+FOCUS=$(echo "$R" | jq_ "o.graduation.focus.kind")
+[ "$FOCUS" = "transcript" ] && ok "the ranked move is the official transcript — the most credit for one email" \
+  || bad "leverage ranking" "$FOCUS"
+RISK=$(echo "$R" | jq_ "o.graduation.risk.area")
+[ "$RISK" = "math" ] && ok "the named risk is Math: the lost credit and the lowest marks sit together there" \
+  || bad "risk area" "$RISK"
+LEFT=$(echo "$R" | jq_ "o.graduation.pace.creditsLeft")
+PLAN=$(echo "$R" | jq_ "o.graduation.totals.planAtEhs")
+[ "$LEFT" = "$PLAN" ] && ok "pace projects exactly what the plan still asks for: $LEFT credits" \
+  || bad "pace disagrees with the plan" "$LEFT vs $PLAN"
+MOM=$(echo "$R" | jq_ "o.graduation.momentum")
+[ -z "$MOM" ] && ok "one term is not a trend, so momentum says nothing" || bad "momentum from a single term" "$MOM"
 BIG=$(node -e '
 const areas=["english","math","science","social_studies","health","pe","fine_art","elective"];
 const term=(n)=>({year:"2023-2024",gradeLevel:9,term:"Term "+n,average:80,

@@ -2750,6 +2750,101 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 
 /* ---------------------------------------------------------------- Badges */
 .gr-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+
+/* ------------------------------------------------------------- The one move
+   Given the weight of a decision rather than an alert: one accent rule, no
+   filled panel. A page that shouts at a student about their diploma is a page
+   they stop opening. */
+.gr-focus {
+  padding: 22px 24px; border-radius: var(--r); background: var(--paper);
+  box-shadow: 0 0 0 .5px var(--hair); border-left: 3px solid var(--blue);
+}
+.gr-focus-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.gr-focus h2 { font-family: var(--font); font-size: 24px; letter-spacing: -.01em; line-height: 1.2; }
+.gr-effort { text-align: right; white-space: nowrap; }
+.gr-effort b { display: block; font-size: 14px; color: var(--ink); }
+.gr-effort em {
+  font-style: normal; font-size: 10.5px; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.gr-why {
+  margin-top: 12px; padding-left: 12px; border-left: 2px solid var(--hair);
+  font-size: 13.5px; color: var(--ink-2); line-height: 1.55;
+}
+
+/* The commitment. Sunk into the card, because it is the student's half of it. */
+.gr-commit { margin-top: 18px; padding: 16px 18px; border-radius: 12px; background: var(--canvas); }
+.gr-plan-said { font-size: 16px; color: var(--ink); line-height: 1.45; font-weight: 500; }
+.gr-commit-acts { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.gr-plan-form { margin-top: 4px; }
+.gr-plan-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.gr-plan-line span { font-size: 13.5px; color: var(--ink-2); }
+.gr-plan-line input {
+  flex: 1 1 180px; min-width: 140px; padding: 9px 12px; font: inherit; font-size: 14px;
+  color: var(--ink); background: var(--paper); border: none; border-radius: 10px;
+  box-shadow: 0 0 0 .5px var(--rule); transition: box-shadow .15s var(--ease);
+}
+.gr-plan-line input:focus { outline: none; box-shadow: 0 0 0 2px var(--blue); }
+
+/* ------------------------------------------------------------ When it ends */
+.gr-plan-big { display: flex; align-items: baseline; gap: 10px; }
+.gr-plan-big b { font-family: var(--font); font-size: 32px; letter-spacing: -.02em; }
+.gr-plan-big span { font-size: 13px; color: var(--ink-3); }
+
+/* ------------------------------------------------------------------- Risk
+   Amber, once, on the rule — never a red panel. This names where an hour is
+   worth the most, and a student should be able to read it on a bad day. */
+.gr-risk {
+  padding: 20px 22px; border-radius: var(--r); background: var(--paper);
+  box-shadow: 0 0 0 .5px var(--hair); border-left: 3px solid var(--amber);
+}
+.gr-risk h3 { font-family: var(--font); font-size: 19px; letter-spacing: -.01em; }
+.gr-evidence { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.gr-evidence li {
+  position: relative; padding-left: 16px; font-size: 13.5px; color: var(--ink-2); line-height: 1.5;
+}
+.gr-evidence li::before { content: "—"; position: absolute; left: 0; color: var(--ink-3); }
+
+/* --------------------------------------------------------- The exam board */
+.gr-core { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.gr-core-cell {
+  padding: 14px 16px; border-radius: 12px; background: var(--paper);
+  box-shadow: 0 0 0 .5px var(--hair); border-top: 2px solid var(--rule);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.gr-core-cell b { font-size: 13px; color: var(--ink); }
+.gr-core-cell .sc { font-family: var(--font); font-size: 26px; letter-spacing: -.02em; line-height: 1.1; }
+.gr-core-cell em { font-style: normal; font-size: 12px; color: var(--ink-2); }
+.gr-core-cell i { font-style: normal; font-size: 11px; color: var(--ink-3); }
+.gr-core-cell.met { border-top-color: var(--green); }
+.gr-core-cell.met em { color: var(--green); }
+.gr-core-cell.low_pass { border-top-color: var(--amber); }
+.gr-core-cell.low_pass em { color: var(--amber); }
+.gr-core-cell.short { border-top-color: var(--red); }
+.gr-core-cell.short em { color: var(--red); }
+.gr-core-cell.none .sc { color: var(--ink-3); }
+
+.gr-paths { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.gr-path {
+  padding: 18px 20px; border-radius: var(--r); background: var(--paper);
+  box-shadow: 0 0 0 .5px var(--hair);
+}
+.gr-path h4 { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 600; }
+.gr-path h4 svg { width: 15px; height: 15px; color: var(--green); flex: none; }
+.gr-path.met { box-shadow: 0 0 0 1px var(--green); }
+.gr-near {
+  display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px;
+  border-radius: 12px; background: var(--canvas);
+}
+.gr-near .ic svg { width: 18px; height: 18px; color: var(--amber); }
+.gr-near b { font-size: 15px; }
+.gr-near p { margin-top: 3px; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+
+@media (max-width: 720px) {
+  .gr-focus h2 { font-size: 21px; }
+  .gr-focus-head { flex-direction: column; gap: 4px; }
+  .gr-effort { text-align: left; }
+}
 .gr-badge {
   display: flex; gap: 12px; align-items: flex-start; padding: 14px 15px;
   border-radius: 14px; background: var(--paper); box-shadow: 0 0 0 .5px var(--hair);
