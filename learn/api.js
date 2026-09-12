@@ -363,6 +363,20 @@ window.OPLO_API = (function () {
        The student's own record, synchronised across their devices. Scoped
        finely — one study set, one unit — so two devices working on different
        material never collide. */
+    /* --------------------------------------------------------------- Marks
+       What a student left in the text. The id travels from the client, so
+       posting the same mark twice writes one row — which is what lets the
+       reader save locally first and reach the network whenever it can. */
+    marks: {
+      list: function (opts) {
+        opts = opts || {};
+        return get("/marks" + q({ scope: opts.scope, accountId: opts.accountId }))
+          .then(function (r) { return r.marks || []; });
+      },
+      put: function (mark) { return post("/marks", mark); },
+      remove: function (markId) { return del("/marks/" + encodeURIComponent(markId)); }
+    },
+
     progress: {
       all: function (accountId) {
         return get("/progress" + q({ accountId: accountId }))

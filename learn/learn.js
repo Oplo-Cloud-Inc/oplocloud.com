@@ -173,6 +173,12 @@ window.OPLO_LEARN = (function () {
      much the answer was worth: a level you have not touched moves further
      than one you have already half-proved, and help taken shrinks the move
      rather than cancelling it. */
+  /* `o` is { level, right, hints, confidence, pre }.
+
+     `pre` marks an answer given before the material was read. A correct one
+     is graded normally — they knew it already, and that is worth recording —
+     while a wrong one is not held against them. Everything else is the same
+     answer it would otherwise be. */
   function grade(s, o, now) {
     now = now || Date.now();
     var lv = o.level || "recognise";
@@ -209,6 +215,19 @@ window.OPLO_LEARN = (function () {
       });
       if (gapDays >= 1) s.gap = Math.max(s.gap, gapDays);
       s.flagged = false;
+    } else if (o.pre) {
+      /* A prediction made before the material was taught. Getting it wrong is
+         the mechanism, not a result — it is what makes the reading afterwards
+         land on a question the student has already felt. So a miss here costs
+         nothing: no wrong, no streak break, no dimension knocked down.
+
+         What it does do is bring the concept forward. `miss` shortens the
+         interval, which is exactly right: something you could not predict is
+         something to come back to. And a confident wrong prediction is still
+         a misconception — arguably the most valuable one this app can catch,
+         because it was believed before anybody taught it. */
+      s.miss++;
+      if (o.confidence != null && o.confidence >= 3) s.flagged = true;
     } else {
       s.wrong++;
       s.streak = 0;
