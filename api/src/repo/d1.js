@@ -341,17 +341,19 @@ export class D1Repository {
     const t = now();
     await this.db.prepare(
       `INSERT INTO learn_assignments
-         (id, course_id, title, category, out_of, due_at, status, created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`
+         (id, course_id, title, category, out_of, due_at, extra_credit, status,
+          created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`
     ).bind(assignmentId, data.courseId, data.title, data.category || null,
-           data.outOf ?? 100, data.dueAt || null, data.createdBy || null, t, t).run();
+           data.outOf ?? 100, data.dueAt || null, data.extraCredit ? 1 : 0,
+           data.createdBy || null, t, t).run();
     return this.findAssignment(assignmentId);
   }
 
   async updateAssignment(assignmentId, patch) {
     const fields = [], values = [];
     const map = { title: "title", category: "category", outOf: "out_of",
-                  dueAt: "due_at", status: "status" };
+                  dueAt: "due_at", status: "status", extraCredit: "extra_credit" };
     for (const [k, col] of Object.entries(map)) {
       if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
     }
@@ -373,7 +375,7 @@ export class D1Repository {
   async listGrades({ courseId, accountId }) {
     const { results } = await this.db.prepare(
       `SELECT g.*, a.title, a.category, a.course_id, a.out_of AS assignment_out_of,
-              a.created_at AS work_created_at, a.due_at
+              a.created_at AS work_created_at, a.due_at, a.extra_credit
          FROM learn_grades g
          JOIN learn_assignments a ON a.id = g.assignment_id
         WHERE (? IS NULL OR a.course_id = ?)
@@ -401,7 +403,7 @@ export class D1Repository {
      Every write also lands in `learn_grade_events`, from here rather than
      from a service, because a history that a caller can forget to write is
      not a history. */
-  async upsertGrade({ assignmentId, accountId, score, outOf, status, feedback,
+  async upsertGrade({ assignmentId, accountId, score, outOf, status, late, feedback,
                       note, gradedBy }) {
     const before = await this.db.prepare(
       `SELECT * FROM learn_grades WHERE assignment_id = ? AND account_id = ?`
@@ -412,11 +414,11 @@ export class D1Repository {
       const gradeId = id("grd");
       await this.db.prepare(
         `INSERT INTO learn_grades
-           (id, assignment_id, account_id, score, out_of, status, feedback,
+           (id, assignment_id, account_id, score, out_of, status, late, feedback,
             graded_by, graded_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(gradeId, assignmentId, accountId, score ?? null, outOf ?? 100,
-             status || "marked", feedback ?? null, gradedBy || null, t).run();
+             status || "marked", late ? 1 : 0, feedback ?? null, gradedBy || null, t).run();
       await this.recordGradeEvent({
         assignmentId, accountId, fromScore: null, fromStatus: null,
         toScore: score ?? null, toStatus: status || "marked", note, actorId: gradedBy, at: t
@@ -429,6 +431,7 @@ export class D1Repository {
     if (score !== undefined)    set("score", score);
     if (outOf !== undefined)    set("out_of", outOf);
     if (status !== undefined)   set("status", status);
+    if (late !== undefined)     set("late", late ? 1 : 0);
     if (feedback !== undefined) set("feedback", feedback);
 
     // A write that changes nothing is not an event. Otherwise tabbing across

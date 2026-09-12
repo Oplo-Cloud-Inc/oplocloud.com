@@ -13,7 +13,7 @@
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must } from "../core/guard.js";
-import { computeGrade, courseWeights, classSignal } from "../services/grades.js";
+import { computeGrade, courseWeights, coursePolicy, classSignal } from "../services/grades.js";
 
 const STATUSES = ["marked", "missing", "excused"];
 
@@ -22,6 +22,7 @@ function shape(g) {
     id: g.id, assignmentId: g.assignment_id, accountId: g.account_id,
     courseId: g.course_id, title: g.title, category: g.category,
     score: g.score, outOf: g.out_of, status: g.status || "marked",
+    late: !!g.late, extraCredit: !!g.extra_credit,
     feedback: g.feedback, gradedBy: g.graded_by, gradedAt: g.graded_at
   };
 }
@@ -58,7 +59,7 @@ export async function list(ctx) {
   out.summaries = [];
   for (const [cid, list] of byCourse) {
     const course = await ctx.repo.findCourse(cid);
-    const computed = computeGrade(list, courseWeights(course));
+    const computed = computeGrade(list, courseWeights(course), coursePolicy(course));
     if (computed) out.summaries.push({ courseId: cid, courseTitle: course && course.title, ...computed });
   }
   return json(out);
@@ -111,9 +112,10 @@ export async function gradebook(ctx, { courseId }) {
   }
 
   const weights = courseWeights(course);
+  const policy = coursePolicy(course);
   const summaries = {};
   for (const s of students) {
-    const computed = computeGrade(byStudent.get(s.id) || [], weights);
+    const computed = computeGrade(byStudent.get(s.id) || [], weights, policy);
     if (computed) summaries[s.id] = computed;
   }
 
@@ -193,6 +195,9 @@ async function writeOne(ctx, actor, entry, cache) {
     assignmentId, accountId, outOf,
     score: status && status !== "marked" ? null : score,
     status,
+    // A flag, not a status: work can be late and marked, and asking which is
+    // asking two different questions.
+    late: entry.late === undefined ? undefined : !!entry.late,
     feedback: entry.feedback === undefined ? undefined
       : (entry.feedback === null ? null
          : check.string(entry.feedback, "feedback", { min: 0, max: 4000 })),
@@ -211,7 +216,7 @@ async function writeOne(ctx, actor, entry, cache) {
 async function summaryFor(ctx, courseId, accountId) {
   const course = await ctx.repo.findCourse(courseId);
   const rows = await ctx.repo.listGrades({ courseId, accountId });
-  const computed = computeGrade(rows, courseWeights(course));
+  const computed = computeGrade(rows, courseWeights(course), coursePolicy(course));
   return computed ? { courseId, accountId, ...computed } : null;
 }
 
@@ -313,6 +318,70 @@ export async function undo(ctx) {
   return json({
     grade: shape(grade),
     summary: await summaryFor(ctx, grade.course_id, grade.account_id)
+  });
+}
+
+/* POST /api/v1/courses/:courseId/whatif
+
+   "What happens to Sarah if she gets 85 on the final?"
+
+   The honest way to answer it is to ask the thing that decides. The
+   alternative — working it out in the browser — means a second
+   implementation of the weighting, the drop rule and the late penalty, and
+   the two would part company the first time a policy changed. So a
+   hypothetical is sent here, applied on top of the real marks in memory, and
+   the same function that produces a real grade produces this one.
+
+   Nothing is written. A what-if that could touch the record would be a
+   feature nobody dared use. */
+export async function whatif(ctx, { courseId }) {
+  const actor = requireActor(ctx);
+  const body = await readJson(ctx.request);
+  const accountId = check.string(body.accountId || actor.id, "accountId", { max: 64 });
+
+  await must(ctx, "grade.read", { courseId, accountId });
+
+  const course = await ctx.repo.findCourse(courseId);
+  if (!course) throw ApiError.notFound("No such course.");
+
+  const rows = await ctx.repo.listGrades({ courseId, accountId });
+  const assignments = await ctx.repo.listAssignments(courseId);
+  const byId = new Map(assignments.map((a) => [a.id, a]));
+
+  const changes = Array.isArray(body.changes) ? body.changes : [];
+  if (changes.length > 100) {
+    throw ApiError.badRequest("That is more than 100 changes in one question.", "changes");
+  }
+
+  /* The real marks, with the hypothesis laid over them. A change naming work
+     the student has no row for is still a change — "what if they sit the
+     final" is the most common form of the question. */
+  const hypothetical = rows.map((r) => ({ ...r }));
+  for (const c of changes) {
+    const assignmentId = check.string(c.assignmentId, "assignmentId", { max: 64 });
+    const a = byId.get(assignmentId);
+    if (!a) throw ApiError.badRequest("No such work on this course.", "assignmentId");
+    const score = c.score === undefined ? undefined
+      : check.number(c.score, "score", { min: 0, max: 100000, allowNull: true });
+
+    let row = hypothetical.find((r) => r.assignment_id === assignmentId);
+    if (!row) {
+      row = { assignment_id: assignmentId, account_id: accountId, score: null,
+              out_of: a.out_of, status: "marked", late: 0, category: a.category,
+              title: a.title, extra_credit: a.extra_credit,
+              work_created_at: a.created_at };
+      hypothetical.push(row);
+    }
+    if (score !== undefined) row.score = score;
+    if (c.status !== undefined) row.status = c.status;
+    if (c.late !== undefined) row.late = c.late ? 1 : 0;
+  }
+
+  const weights = courseWeights(course);
+  const policy = coursePolicy(course);
+  return json({
+    now: computeGrade(rows, weights, policy),
+    then: computeGrade(hypothetical, weights, policy)
   });
 }
 

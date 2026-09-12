@@ -69,6 +69,7 @@ const ROUTES = [
   ["GET",    "/api/v1/grades/history",  grades.history],
   ["POST",   "/api/v1/grades/undo",     grades.undo],
   ["GET",    "/api/v1/courses/:courseId/gradebook", grades.gradebook],
+  ["POST",   "/api/v1/courses/:courseId/whatif",    grades.whatif],
 
   ["GET",    "/api/v1/study-sets",         studysets.list],
   ["POST",   "/api/v1/study-sets",         studysets.create],

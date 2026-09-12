@@ -238,6 +238,15 @@ window.OPLO_API = (function () {
         return post("/grades/undo", { eventId: eventId });
       },
 
+      /* "What happens if she gets 85 on the final?" Asked of the server,
+         because the alternative is a second implementation of the weighting,
+         the drop rule and the late penalty — and two of those part company
+         the first time a policy changes. Writes nothing. */
+      whatif: function (courseId, accountId, changes) {
+        return post("/courses/" + courseId + "/whatif",
+          { accountId: accountId, changes: [].concat(changes || []) });
+      },
+
       history: function (opts) {
         opts = opts || {};
         return get("/grades/history" + q({ assignmentId: opts.assignmentId,

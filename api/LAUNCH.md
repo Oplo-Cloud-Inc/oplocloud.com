@@ -121,6 +121,23 @@ the student, who can therefore see that their own mark was changed.
 What is still missing is a way to *undo* from that history. The record is
 there; putting a "restore this" next to each entry is a screen, not a schema.
 
+### 7b. Grading policies — done
+
+Late, extra credit and drop-lowest are in the engine (migration `0006`), and
+each one reports what it did: `dropped` names the marks, `latePenalty` gives
+the points deducted, `extraCredit` gives the points added. A policy that
+changes a grade without saying so is indistinguishable from a bug.
+
+There is deliberately **no per-day late penalty**. Charging per day needs the
+moment the work arrived and nothing records that — a teacher ticks "late" when
+they mark it, which may be a week later. A per-day figure computed from
+marking time would be invented, and the student could not check it.
+
+The final percentage is **uncapped**. Extra credit can take a course past 100%
+and that is the arithmetic of the rules the school wrote. A ceiling is itself a
+policy; applying one nobody asked for would be the engine overruling the
+teacher, silently.
+
 ### 8. Observability
 
 No structured logging, no error aggregation, no alerting. A 500 in production

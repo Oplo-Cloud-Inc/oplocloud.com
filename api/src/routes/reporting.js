@@ -18,7 +18,7 @@
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must, teachesStudent, isLearnAdmin } from "../core/guard.js";
-import { computeGrade, courseWeights, classSignal } from "../services/grades.js";
+import { computeGrade, courseWeights, coursePolicy, classSignal } from "../services/grades.js";
 import { readinessFor, reportFor } from "../services/reporting.js";
 
 /* The courses this person teaches. An administrator is not automatically a
@@ -50,7 +50,7 @@ async function loadCourse(ctx, course) {
     byStudent.get(g.account_id).push(g);
   }
   return { course, students, assignments, grades, byPair, byStudent,
-           weights: courseWeights(course) };
+           weights: courseWeights(course), policy: coursePolicy(course) };
 }
 
 /* GET /api/v1/teaching
@@ -73,7 +73,7 @@ export async function teaching(ctx) {
 
     let sum = 0, graded = 0, low = 0;
     for (const s of c.students) {
-      const computed = computeGrade(c.byStudent.get(s.id) || [], c.weights);
+      const computed = computeGrade(c.byStudent.get(s.id) || [], c.weights, c.policy);
       if (!computed) continue;
       sum += computed.percent;
       graded++;
@@ -129,7 +129,7 @@ export async function students(ctx) {
     const c = await loadCourse(ctx, course);
     for (const s of c.students) {
       const grades = c.byStudent.get(s.id) || [];
-      const summary = computeGrade(grades, c.weights);
+      const summary = computeGrade(grades, c.weights, c.policy);
       const marked = new Set(grades.filter((g) => g.score != null ||
                                                   g.status === "missing" ||
                                                   g.status === "excused")
@@ -236,7 +236,7 @@ export async function readiness(ctx) {
     let ready = 0, review = 0, blocked = 0;
     for (const s of c.students) {
       const grades = c.byStudent.get(s.id) || [];
-      const summary = computeGrade(grades, c.weights);
+      const summary = computeGrade(grades, c.weights, c.policy);
       const state = readinessFor({
         courseTitle: course.title, grades, assignments: c.assignments,
         summary, comment: commentFor.get(s.id)
@@ -347,6 +347,7 @@ export async function report(ctx, { accountId }) {
       ctx.repo.listGrades({ courseId: course.id, accountId })
     ]);
     courses.push({ course, assignments, grades, weights: courseWeights(course),
+                   policy: coursePolicy(course),
                    comment: commentFor.get(course.id) || null });
   }
 
