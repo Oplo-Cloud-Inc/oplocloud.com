@@ -186,7 +186,7 @@ export function reportFor({ student, courses }) {
   let weighted = 0, weight = 0;
 
   for (const c of courses) {
-    const summary = computeGrade(c.grades, c.weights);
+    const summary = computeGrade(c.grades, c.weights, c.policy);
     const entry = {
       courseId: c.course.id,
       title: c.course.title,

@@ -3864,3 +3864,11 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
 @media (prefers-reduced-motion: reduce) {
   .cn-tr, .cn-filter, .cn-btn { transition: none; }
 }
+
+/* Work handed in late. A corner rather than a badge — it is a fact about the
+   mark, not a thing to click, and the mark is what the eye is here for. */
+.gb-c.cell.tardy::before {
+  content: ""; position: absolute; bottom: 3px; left: 3px;
+  width: 0; height: 0; border-bottom: 5px solid var(--amber);
+  border-right: 5px solid transparent; opacity: .8;
+}

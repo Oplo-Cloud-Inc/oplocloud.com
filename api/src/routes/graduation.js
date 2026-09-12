@@ -10,7 +10,7 @@
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must } from "../core/guard.js";
-import { computeGrade, courseWeights } from "../services/grades.js";
+import { computeGrade, courseWeights, coursePolicy } from "../services/grades.js";
 import { TRACKS, AREAS, CREDIT_SYSTEMS, toEhsCredits, parseMark, buildDashboard }
   from "../services/graduation.js";
 
@@ -48,7 +48,7 @@ export async function get(ctx) {
   const current = [];
   for (const [cid, list] of byCourse) {
     const course = await ctx.repo.findCourse(cid);
-    const mark = computeGrade(list, courseWeights(course));
+    const mark = computeGrade(list, courseWeights(course), coursePolicy(course));
     if (mark) current.push({ courseId: cid, title: course ? course.title : "Course", ...mark });
   }
 

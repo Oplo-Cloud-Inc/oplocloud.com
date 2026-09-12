@@ -5080,12 +5080,7 @@
     v.appendChild(el("p", "lx-lede",
       "Computed over the " + summary.countedWeight + "% of the grade that has been " +
       "marked so far. Categories with nothing in them are left out rather than counted " +
-      "as zero." +
-      (summary.missingCount
-        ? " " + summary.missingCount + (summary.missingCount === 1 ? " piece" : " pieces") +
-          " of work marked as not handed in is counted as a zero, which is why it is " +
-          "worth asking whether it can still be submitted."
-        : "")));
+      "as zero. " + policySays(summary)));
 
     var parts = el("div", "admin-mark-parts");
     summary.parts.forEach(function (x) {
@@ -5113,7 +5108,9 @@
           : g.score == null ? "<em>Not marked yet</em>"
           : g.score + " / " + g.outOf + (pct != null ? " · " + pct + "%" : "");
         var note = g.status === "missing" ? "counted as 0 of " + g.outOf
-          : g.status === "excused" ? "not part of your grade" : "";
+          : g.status === "excused" ? "not part of your grade"
+          : g.late ? "handed in late" : "";
+        if (g.extraCredit) note = note ? note + " · extra credit" : "extra credit";
         row.innerHTML = '<span class="t"><b>' + esc(g.title) + "</b><span>" +
           esc(g.category || "") + (note ? " · " + esc(note) : "") +
           (g.feedback ? " · " + esc(g.feedback) : "") + "</span></span>" +
@@ -6461,6 +6458,38 @@
     }, function (e) { failed(node, e, function () { openAdmin(true, "reports"); }); });
   }
 
+  /* What the course's rules did to a number, said in a sentence. One
+     implementation, used by the student's screen, the teacher's and the
+     report card — three descriptions of one grade is three chances to
+     disagree about it. */
+  function policySays(sum, who) {
+    if (!sum) return "";
+    var they = who || "They";
+    var bits = [];
+    if (sum.dropped && sum.dropped.length) {
+      bits.push("The lowest " +
+        (sum.dropped.length === 1 ? "mark was dropped" : sum.dropped.length + " marks were dropped") +
+        " under this course's rules: " +
+        sum.dropped.map(function (d) { return esc(d.title); }).join(", ") + ".");
+    }
+    if (sum.lateCount) {
+      bits.push(sum.lateCount + (sum.lateCount === 1 ? " piece" : " pieces") +
+        " of work came in late, costing " +
+        (Math.round(sum.latePenalty * 10) / 10) +
+        (sum.latePenalty === 1 ? " point." : " points."));
+    }
+    if (sum.extraCredit) {
+      bits.push((Math.round(sum.extraCredit * 10) / 10) +
+        " points of extra credit are included, which can raise this grade and " +
+        "could never have lowered it.");
+    }
+    if (sum.missingCount) {
+      bits.push(sum.missingCount + (sum.missingCount === 1 ? " piece" : " pieces") +
+        " of work marked as not handed in is counted as a zero, because it is one.");
+    }
+    return bits.join(" ");
+  }
+
   /* ------------------------------------------------------- One student's report
      The document a school prints, except that it is not a document. Every
      course the student is enrolled in, the grade, where it is going, the marks
@@ -6525,14 +6554,11 @@
         : "<b>—</b><span>no marks</span>") + "</div>";
     sec.appendChild(head);
 
-    if (c.grade && c.grade.countedWeight < c.grade.totalWeight) {
+    var say = policySays(c.grade);
+    if (c.grade && (c.grade.countedWeight < c.grade.totalWeight || say)) {
       sec.appendChild(el("p", "cn-fine",
-        "Over the " + c.grade.countedWeight + "% of the grade marked so far." +
-        (c.grade.missingCount
-          ? " " + c.grade.missingCount +
-            (c.grade.missingCount === 1 ? " piece" : " pieces") +
-            " of work was not handed in and is counted as a zero."
-          : "")));
+        (c.grade.countedWeight < c.grade.totalWeight
+          ? "Over the " + c.grade.countedWeight + "% of the grade marked so far. " : "") + say));
     }
 
     /* The evidence, beside the box the sentence goes in. A teacher writing
@@ -6902,18 +6928,27 @@
      is not, nothing is written — a typo is not a grade. */
   function readCell(raw) {
     var t = String(raw == null ? "" : raw).trim().toLowerCase();
-    if (!t || t === "-" || t === "—") return { status: "marked", score: null };
-    if (t === "m" || t === "missing") return { status: "missing", score: null };
-    if (t === "e" || t === "ex" || t === "excused") return { status: "excused", score: null };
+    if (!t || t === "-" || t === "—") return { status: "marked", score: null, late: false };
+    if (t === "m" || t === "missing") return { status: "missing", score: null, late: false };
+    if (t === "e" || t === "ex" || t === "excused") return { status: "excused", score: null, late: false };
+
+    /* A trailing `l` means it came in late. Late is not a status — the mark
+       is still a mark — so it rides along with the number rather than
+       replacing it, and `18l` is the fastest way to say both at once. */
+    var late = false;
+    if (/l$/.test(t) && t.length > 1) { late = true; t = t.slice(0, -1).trim(); }
+
     var n = Number(t);
     if (!isFinite(n) || n < 0) return null;
-    return { status: "marked", score: n };
+    return { status: "marked", score: n, late: late };
   }
 
   function sameMark(g, want) {
-    var have = g ? { status: g.status || "marked", score: g.score == null ? null : Number(g.score) }
-                 : { status: "marked", score: null };
-    return have.status === want.status && have.score === (want.score == null ? null : Number(want.score));
+    var have = g ? { status: g.status || "marked",
+                     score: g.score == null ? null : Number(g.score), late: !!g.late }
+                 : { status: "marked", score: null, late: false };
+    return have.status === want.status && have.late === !!want.late &&
+           have.score === (want.score == null ? null : Number(want.score));
   }
 
   /* --------------------------------------------------------- The sheet */
@@ -7038,12 +7073,14 @@
     paintFoot();
 
     sheet.addEventListener("keydown", sheetKeys);
+    sheet.addEventListener("paste", sheetPaste);
     host.appendChild(scroll);
 
     host.appendChild(el("p", "gb-hint",
       "Type a score. <b>m</b> for not handed in, <b>e</b> for excused, " +
-      "<b>blank</b> for not marked yet. <b>Return</b> moves to the next student, " +
-      "<b>Tab</b> to the next piece of work."));
+      "<b>18l</b> for a mark handed in late, <b>blank</b> for not marked yet. " +
+      "<b>Return</b> moves to the next student, <b>Tab</b> to the next piece of work. " +
+      "<b>Paste</b> a column of marks from a spreadsheet straight into a cell."));
 
     host.appendChild(inspector());
   }
@@ -7072,6 +7109,7 @@
       if (col && col.overdue) cls += " late";
     }
     if (g && g.feedback) cls += " noted";
+    if (g && g.late) cls += " tardy";
     cell.wrap.className = cls;
   }
 
@@ -7119,7 +7157,8 @@
 
     cell.wrap.classList.add("busy");
     API.grades.put(cell.work.id, cell.student.id,
-                   { score: want.score, status: want.status, outOf: cell.work.outOf })
+                   { score: want.score, status: want.status, late: want.late,
+                     outOf: cell.work.outOf })
       .then(function (r) {
         cell.wrap.classList.remove("busy");
         cell.grade = r.grade;
@@ -7233,6 +7272,93 @@
     }
   }
 
+  /* ------------------------------------------------------------------ Paste
+     Teachers have their marks in a spreadsheet. They always have. A gradebook
+     that makes them retype thirty numbers they already have in a column is
+     asking them to do the same work twice, and the second time is the one
+     with the typos in it.
+
+     So a column pasted from anywhere — Excel, Numbers, Sheets, a text file —
+     fills down from the cell it was pasted into. Nothing is written until the
+     teacher has seen what it would do: a paste that silently wrote thirty
+     marks would be the most frightening button in the product. */
+  function sheetPaste(e) {
+    var t = e.target;
+    if (!t || t.tagName !== "INPUT" || t.dataset.r == null) return;
+    var text = (e.clipboardData || window.clipboardData).getData("text") || "";
+    var lines = text.replace(/\r/g, "").split("\n");
+
+    // One value is not a column. Let the browser paste it into the cell.
+    if (lines.length < 2) return;
+    e.preventDefault();
+
+    var r0 = Number(t.dataset.r), c = Number(t.dataset.c);
+    var work = BOOK.assignments[c];
+
+    /* A row from a spreadsheet may be "Amara Bello<TAB>18". Take the last
+       non-empty column: the marks are what was copied, whatever came with
+       them. */
+    var wanted = [], skipped = [], bad = [];
+    for (var i = 0; i < lines.length && (r0 + i) < BOOK.cells.length; i++) {
+      var raw = lines[i];
+      if (!String(raw).trim()) { skipped.push(r0 + i); continue; }
+      var cols = String(raw).split("\t").filter(function (x) { return String(x).trim(); });
+      var want = readCell(cols[cols.length - 1]);
+      var student = BOOK.students[r0 + i];
+      if (!want) { bad.push(student.name + " · “" + trim(String(raw).trim(), 14) + "”"); continue; }
+      if (want.score != null && want.score > work.outOf * 1.5) {
+        bad.push(student.name + " · " + want.score + " over " + work.outOf);
+        continue;
+      }
+      wanted.push({ r: r0 + i, student: student, want: want });
+    }
+
+    var over = lines.filter(function (x) { return String(x).trim(); }).length -
+               (wanted.length + bad.length);
+
+    if (!wanted.length) {
+      toast(bad.length ? "None of that could be read as a mark." : "Nothing to paste.");
+      return;
+    }
+
+    var says = "Put " + wanted.length + (wanted.length === 1 ? " mark" : " marks") +
+      " into “" + work.title + "”, starting at " + wanted[0].student.name + "?" +
+      (bad.length ? "\n\n" + bad.length + " could not be read and will be left alone:\n" +
+                    bad.slice(0, 5).join("\n") + (bad.length > 5 ? "\n…" : "") : "") +
+      (over > 0 ? "\n\n" + over + " more than there are students — those are ignored." : "");
+    if (!confirm(says)) return;
+
+    var entries = wanted.map(function (x) {
+      return { assignmentId: work.id, accountId: x.student.id, outOf: work.outOf,
+               score: x.want.score, status: x.want.status, late: x.want.late };
+    });
+
+    API.grades.batch(entries).then(function (res) {
+      (res.grades || []).forEach(function (g) {
+        replaceGrade(g);
+        var ri = BOOK.students.findIndex(function (st) { return st.id === g.accountId; });
+        if (ri < 0) return;
+        var cell = BOOK.cells[ri][c];
+        cell.grade = g;
+        cell.input.value = cellText(g);
+        paintCell(cell);
+        flash(cell.wrap);
+      });
+      Object.keys(res.summaries || {}).forEach(function (id) {
+        applySummary(id, res.summaries[id]);
+      });
+      if ((res.refused || []).length) {
+        toast(res.grades.length + " written, " + res.refused.length + " refused: " +
+              res.refused[0].message);
+      } else {
+        toast(res.grades.length + " marks pasted.");
+      }
+      statsSoon();
+    }, function (err) {
+      toast(err && err.message ? err.message : "The server refused that paste.");
+    });
+  }
+
   /* ------------------------------------------------------------ Needs you
      What is owed, named. It is deliberately short: a list of everything that
      could be done is a list nobody reads. */
@@ -7311,7 +7437,7 @@
       : g.status === "missing" ? "Not handed in — counted as 0 of " + cell.work.outOf
       : g.status === "excused" ? "Excused — not part of their grade"
       : g.score == null ? "Not marked"
-      : g.score + " out of " + cell.work.outOf;
+      : g.score + " out of " + cell.work.outOf + (g.late ? " · handed in late" : "");
     bar.appendChild(el("div", "gb-istate", esc(state)));
 
     var fb = el("input", "gb-ifb");
@@ -7502,6 +7628,38 @@
            d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   }
 
+  /* What the course's rules did to a number, said in a sentence. One
+     implementation, used by the student's screen, the teacher's and the
+     report card — three descriptions of one grade is three chances to
+     disagree about it. */
+  function policySays(sum, who) {
+    if (!sum) return "";
+    var they = who || "They";
+    var bits = [];
+    if (sum.dropped && sum.dropped.length) {
+      bits.push("The lowest " +
+        (sum.dropped.length === 1 ? "mark was dropped" : sum.dropped.length + " marks were dropped") +
+        " under this course's rules: " +
+        sum.dropped.map(function (d) { return esc(d.title); }).join(", ") + ".");
+    }
+    if (sum.lateCount) {
+      bits.push(sum.lateCount + (sum.lateCount === 1 ? " piece" : " pieces") +
+        " of work came in late, costing " +
+        (Math.round(sum.latePenalty * 10) / 10) +
+        (sum.latePenalty === 1 ? " point." : " points."));
+    }
+    if (sum.extraCredit) {
+      bits.push((Math.round(sum.extraCredit * 10) / 10) +
+        " points of extra credit are included, which can raise this grade and " +
+        "could never have lowered it.");
+    }
+    if (sum.missingCount) {
+      bits.push(sum.missingCount + (sum.missingCount === 1 ? " piece" : " pieces") +
+        " of work marked as not handed in is counted as a zero, because it is one.");
+    }
+    return bits.join(" ");
+  }
+
   /* ------------------------------------------------------- One student
      The row, opened. Everything on this screen is also on the sheet; what it
      adds is the reason for the number — every mark that makes it up, the
@@ -7546,11 +7704,8 @@
             mark.appendChild(el("p", "admin-mark-say",
               "Computed over the " + sum.countedWeight + "% of the grade that has been " +
               "marked. Categories with nothing in them are left out rather than counted " +
-              "as zero — a student who has not sat the final has not failed it." +
-              (sum.missingCount
-                ? " " + sum.missingCount + (sum.missingCount === 1 ? " piece" : " pieces") +
-                  " of work marked missing is counted as a zero, because it is one."
-                : "")));
+              "as zero — a student who has not sat the final has not failed it. " +
+              policySays(sum)));
           }
         } else {
           mark.innerHTML = '<p class="admin-shape quiet">Nothing marked yet.</p>';
@@ -7662,6 +7817,7 @@
           var row = el("div", "admin-row");
           row.innerHTML = '<span class="t"><b>' + esc(a.title) + "</b><span>" +
             esc(a.category || "uncategorised") + " · out of " + a.outOf +
+            (a.extraCredit ? " · extra credit" : "") +
             (a.dueAt ? " · due " + esc(dayName(a.dueAt)) : "") + "</span></span>";
           var rm = el("button", "admin-x");
           rm.type = "button";
@@ -7697,7 +7853,20 @@
            it in". The column stops being a list and starts being a deadline. */
         var due = field("Due", "", "optional");
         due.input.type = "date";
-        [title, catF, outOf, due].forEach(function (f) { form.appendChild(f); });
+        /* Work that can raise a grade and never lower one. Not doing it is
+           not a failure at it, so it is never counted as a zero and never
+           dropped. */
+        var xcF = el("label", "admin-field");
+        xcF.innerHTML = "<span>Extra credit</span>";
+        var xc = el("select");
+        [["", "No — counts towards the grade"],
+         ["1", "Yes — can only raise a grade"]].forEach(function (o) {
+          var n = el("option");
+          n.value = o[0]; n.textContent = o[1];
+          xc.appendChild(n);
+        });
+        xcF.appendChild(xc);
+        [title, catF, outOf, due, xcF].forEach(function (f) { form.appendChild(f); });
         v.appendChild(form);
 
         var acts = el("div", "admin-acts");
@@ -7718,7 +7887,8 @@
             title: title.input.value.trim(),
             category: cat.value,
             outOf: Number(outOf.input.value) || 100,
-            dueAt: dueAt
+            dueAt: dueAt,
+            extraCredit: !!xc.value
           }), function () { toast("Added."); render(); })
             .then(function () { add.disabled = false; });
         });

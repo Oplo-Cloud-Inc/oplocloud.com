@@ -122,7 +122,8 @@ export async function enrol(ctx, { courseId }) {
 
 function assignmentShape(a) {
   return { id: a.id, courseId: a.course_id, title: a.title, category: a.category,
-           outOf: a.out_of, dueAt: a.due_at, status: a.status };
+           outOf: a.out_of, dueAt: a.due_at, extraCredit: !!a.extra_credit,
+           status: a.status };
 }
 
 export async function listAssignments(ctx, { courseId }) {
@@ -144,6 +145,8 @@ export async function createAssignment(ctx, { courseId }) {
     category: body.category || null,
     outOf: check.number(body.outOf ?? 100, "outOf", { min: 0.01, max: 100000 }),
     dueAt: body.dueAt || null,
+    // Work that can raise a grade and never lower one.
+    extraCredit: !!body.extraCredit,
     createdBy: actor.id
   });
   return json({ assignment: assignmentShape(a) }, { status: 201 });
@@ -163,6 +166,7 @@ export async function updateAssignment(ctx, { assignmentId }) {
     patch.outOf = check.number(body.outOf, "outOf", { min: 0.01, max: 100000 });
   }
   if (body.dueAt !== undefined) patch.dueAt = body.dueAt;
+  if (body.extraCredit !== undefined) patch.extraCredit = body.extraCredit ? 1 : 0;
   return json({ assignment: assignmentShape(await ctx.repo.updateAssignment(assignmentId, patch)) });
 }
 

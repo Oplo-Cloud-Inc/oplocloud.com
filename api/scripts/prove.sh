@@ -312,7 +312,83 @@ echo "$NOTE" | grep -q "Undo" && ok "carrying the reason it was made" || bad "un
 S=$(status student POST /grades/undo "{\"eventId\":\"$EVID\"}")
 [ "$S" = "403" ] && ok "a student cannot undo a grade change (403)" || bad "student undo" "HTTP $S"
 
-say "18. Progress and experience, priced by the server"
+say "18. The rules a school actually has"
+# A course of its own, so the policies do not disturb the assertions above.
+R=$(call admin POST /courses "{\"code\":\"pol-$STAMP\",\"title\":\"Policy Physics\",\"subject\":\"Physics\",\"orgId\":\"org_oplo\",\"status\":\"published\",\"body\":{\"grading\":[[\"Quizzes\",50],[\"Exams\",50]],\"latePenalty\":10,\"drop\":{\"Quizzes\":1}}}")
+PC=$(echo "$R" | jq_ "o.course&&o.course.id")
+call admin POST "/courses/$PC/members" "{\"accountId\":\"$TEACHER\",\"role\":\"teacher\"}" >/dev/null
+call admin POST "/courses/$PC/members" "{\"accountId\":\"$STUDENT\",\"role\":\"student\"}" >/dev/null
+[ -n "$PC" ] && ok "a course graded 50/50 that drops one quiz and charges 10% for late" \
+  || bad "policy course" "$R"
+
+mk() { call teacher POST "/courses/$PC/assignments" "$1" | jq_ "o.assignment&&o.assignment.id"; }
+Q1=$(mk '{"title":"Quiz 1","category":"Quizzes","outOf":10}')
+Q2=$(mk '{"title":"Quiz 2","category":"Quizzes","outOf":10}')
+EX=$(mk '{"title":"Final","category":"Exams","outOf":100}')
+XC=$(mk '{"title":"Bonus","category":"Quizzes","outOf":3,"extraCredit":true}')
+R=$(call teacher GET "/courses/$PC/assignments")
+echo "$R" | grep -q '"extraCredit":true' && ok "and one piece of work marked extra credit" \
+  || bad "extra credit flag" "$R"
+
+g() { call teacher PUT /grades "{\"assignmentId\":\"$1\",\"accountId\":\"$STUDENT\",\"score\":$2,\"outOf\":$3${4:+,$4}}" >/dev/null; }
+pct() { call teacher GET "/courses/$PC/gradebook" | jq_ "o.summaries&&o.summaries['$STUDENT']&&o.summaries['$STUDENT'].percent"; }
+
+g "$Q1" 2 10; g "$Q2" 10 10; g "$EX" 90 100
+P=$(pct)
+[ "$P" = "95" ] && ok "the lowest quiz is dropped: 2/10 ignored, so 95%" \
+  || bad "drop lowest" "pct=$P"
+
+R=$(call teacher GET "/courses/$PC/gradebook")
+DROPPED=$(echo "$R" | jq_ "o.summaries['$STUDENT'].dropped[0]&&o.summaries['$STUDENT'].dropped[0].title")
+[ "$DROPPED" = "Quiz 1" ] && ok "and the sheet says which one it dropped, by name" \
+  || bad "dropped must be named" "$DROPPED"
+
+# Late is a flag, not a status: the mark is still a mark.
+g "$Q2" 10 10 '"late":true'
+R=$(call teacher GET "/courses/$PC/gradebook")
+P=$(echo "$R" | jq_ "o.summaries['$STUDENT'].percent")
+PEN=$(echo "$R" | jq_ "o.summaries['$STUDENT'].latePenalty")
+LATE=$(echo "$R" | jq_ "o.grades.filter(x=>x.assignmentId=='$Q2')[0].late")
+[ "$LATE" = "true" ] && ok "the mark is still 10/10 and also late" || bad "late flag" "late=$LATE"
+[ "$P" = "90" ] && [ "$PEN" = "1" ] && ok "10% of what it was out of comes off: 90%, a point deducted" \
+  || bad "late penalty" "pct=$P penalty=$PEN"
+
+# Extra credit raises and can never lower.
+# Quizzes is 9/10 after the drop and the late penalty; three points of extra
+# credit make it 12/10, which is 120% of a category worth half the course.
+# 105% is what the school's own rules produce and the engine does not quietly
+# cap it — a cap is itself a policy and nobody asked for one here.
+g "$XC" 3 3
+R=$(call teacher GET "/courses/$PC/gradebook")
+P=$(echo "$R" | jq_ "o.summaries['$STUDENT'].percent")
+XCP=$(echo "$R" | jq_ "o.summaries['$STUDENT'].extraCredit")
+[ "$P" = "105" ] && [ "$XCP" = "3" ] \
+  && ok "extra credit adds to what was earned and not to what was asked: $P%, $XCP points of it" \
+  || bad "extra credit" "pct=$P extra=$XCP"
+
+call teacher PUT /grades "{\"assignmentId\":\"$XC\",\"accountId\":\"$STUDENT\",\"status\":\"missing\"}" >/dev/null
+P=$(pct)
+[ "$P" = "90" ] && ok "unearned extra credit is not a zero — back to 90%, not below" \
+  || bad "extra credit must never lower a grade" "pct=$P"
+
+say "19. What if"
+R=$(call teacher POST "/courses/$PC/whatif" "{\"accountId\":\"$STUDENT\",\"changes\":[{\"assignmentId\":\"$EX\",\"score\":50}]}")
+NOW=$(echo "$R" | jq_ "o.now&&o.now.percent")
+THEN=$(echo "$R" | jq_ "o.then&&o.then.percent")
+[ "$NOW" = "90" ] && [ "$THEN" = "70" ] && ok "50 on the final instead of 90: $NOW% becomes $THEN%" \
+  || bad "whatif" "now=$NOW then=$THEN"
+
+P=$(pct)
+[ "$P" = "90" ] && ok "and the record did not move — a what-if writes nothing" \
+  || bad "whatif MUST NOT write" "pct=$P"
+
+R=$(call student POST "/courses/$PC/whatif" "{\"changes\":[{\"assignmentId\":\"$EX\",\"score\":100}]}")
+echo "$R" | grep -q '"then"' && ok "a student may ask it about their own grade" || bad "student whatif" "$R"
+S=$(status other POST "/courses/$PC/whatif" "{\"accountId\":\"$STUDENT\",\"changes\":[]}")
+[ "$S" = "403" ] && ok "an unrelated teacher may not ask it about somebody else's (403)" \
+  || bad "whatif leak" "HTTP $S"
+
+say "20. Progress and experience, priced by the server"
 R=$(call student PUT /progress "{\"scope\":\"set:media-1\",\"state\":{\"Cochlea\":{\"seen\":3,\"recall\":0.8}}}")
 echo "$R" | grep -q '"ok":true' && ok "student wrote their own progress" || bad "progress write" "$R"
 
@@ -337,7 +413,7 @@ XP=$(echo "$R" | jq_ "o.standing&&o.standing.xp")
 STREAK=$(echo "$R" | jq_ "o.standing&&o.standing.streak")
 [ "$XP" = "33" ] && ok "standing totals $XP XP from the ledger, streak $STREAK" || bad "standing" "$R"
 
-say "19. Study sets — authoring and consumption, both server-backed"
+say "21. Study sets — authoring and consumption, both server-backed"
 R=$(call teacher POST /study-sets "{\"code\":\"waves-$STAMP\",\"title\":\"Waves and Sound\",\"courseId\":\"$COURSE\",\"status\":\"published\",\"terms\":[{\"term\":\"Pinna\",\"definition\":\"The visible outer ear that collects sound.\",\"why\":\"It is why you can tell a sound came from behind you.\",\"example\":\"Cupping a hand behind your ear.\"},{\"term\":\"Cochlea\",\"definition\":\"The snail-shaped hearing part of the inner ear.\"},{\"term\":\"Amplitude\",\"definition\":\"The height of a wave, crest to trough.\"},{\"term\":\"Frequency\",\"definition\":\"Cycles per second, measured in Hertz.\"}]}")
 SET=$(echo "$R" | jq_ "o.studySet&&o.studySet.id")
 [ -n "$SET" ] && ok "teacher authored a set: $SET" || bad "create study set" "$R"
@@ -379,7 +455,7 @@ call teacher PATCH "/study-sets/$DRAFT" '{"status":"published"}' >/dev/null
 S=$(status student GET "/study-sets/$DRAFT")
 [ "$S" = "200" ] && ok "publishing it makes it visible (200)" || bad "publish" "HTTP $S"
 
-say "20. Transcripts — imported by an administrator, read by the student, changed by nobody else"
+say "22. Transcripts — imported by an administrator, read by the student, changed by nobody else"
 TX='{"source":{"school":"Proof High","creditSystem":"nyc-4-term","kind":"unofficial","creditsEarned":1.75,"cumulativeAverage":77},"terms":[{"year":"2024-2025","gradeLevel":9,"term":"Term 1","average":77,"courses":[["E1","English 1A","88",0.5,0.5,"english"],["E2","English 1B","90",0.5,0.5,"english"],["M1","Algebra 1A","62",0.5,0.5,"math"],["M2","Algebra 1B","45",0.5,0,"math"],["P1","PE 1A","100",0.25,0.25,"pe","not_averaged"]]}],"exams":[["Algebra I","2025-06",70,"passed"]]}'
 S=$(status student POST "/accounts/$STUDENT/transcripts" "$TX")
 [ "$S" = "403" ] && ok "a student cannot import their own transcript (403)" || bad "student MUST NOT import a transcript" "HTTP $S"
@@ -411,7 +487,7 @@ call admin PATCH "/transcript-courses/$CID" '{"decision":"declined"}' >/dev/null
 EST=$(call student GET /graduation | jq_ "o.graduation.totals.transferEstimate")
 [ "$EST" = "0.625" ] && ok "a course the registrar declines stops counting: now $EST" || bad "declined course still counted" "$EST"
 
-say "21. The analysis — every sentence of it computed from the record"
+say "23. The analysis — every sentence of it computed from the record"
 R=$(call student GET /graduation)
 MET=$(echo "$R" | jq_ "o.graduation.board.met")
 [ "$MET" = "1" ] && ok "the exam board finds one core area met: Algebra I at 70" || bad "exam board" "$MET"
@@ -444,7 +520,7 @@ N=$(echo "$R" | jq_ "o.graduation.courses.length")
 [ "$EST" = "16" ] && ok "20 more credits imported, but transfer stops at the 16-credit cap" || bad "transfer cap" "$EST"
 [ "$N" = "45" ] && ok "importing the same school twice replaces it rather than doubling it (45 courses)" || bad "re-import doubled" "$N"
 
-say "22. Sessions"
+say "24. Sessions"
 # A second sign-in from the "same person, different device".
 curl -s -c "$JAR/student2" -H 'content-type: application/json' \
   -d "{\"email\":\"student$STAMP@example.com\",\"password\":\"another-long-password\"}" \

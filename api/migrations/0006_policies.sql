@@ -1,0 +1,45 @@
+-- ===========================================================================
+-- The rules schools actually have.
+--
+-- The grade engine could express one policy: weighted categories. Every real
+-- school has three more, and a gradebook that cannot express them does not
+-- remove the work — it moves it into the teacher's head and a calculator.
+--
+--     late          handed in, but after the due date, and the school takes
+--                   something off for it
+--     extra credit  work that can raise a grade and can never lower one
+--     drop lowest   the policy nearly every teacher has and nearly every
+--                   gradebook makes them apply by hand, once per student,
+--                   every term
+--
+-- ---------------------------------------------------------------- Storage
+--
+-- Two columns and two settings.
+--
+-- `late` is a flag, not a status. A late piece of work still has a mark, and
+-- it can also be missing or excused; those are answers to different questions
+-- and collapsing them into one column would make "late" and "not handed in"
+-- the same fact again, which is the mistake migration 0004 existed to undo.
+--
+-- There is deliberately no per-day penalty. Charging per day needs the moment
+-- the work arrived, and nothing in this database records that — a teacher
+-- ticks "late" when they mark it, which could be a week after it came in.
+-- A per-day figure computed from marking time would be a number the software
+-- invented and the student could not check.
+--
+-- The two policies themselves live in the course's `body_json` beside the
+-- weights, because they are the same kind of thing: the scheme a course is
+-- graded by, authored per course, and read whole.
+--
+--     body.latePenalty  a whole-number percentage of what the work is out of
+--     body.drop         { "Quizzes": 1 } — drop the lowest 1 quiz
+-- ===========================================================================
+
+ALTER TABLE learn_grades ADD COLUMN late INTEGER NOT NULL DEFAULT 0;
+
+-- Work that can raise a grade and never lower one: its score counts towards
+-- what a student earned, and what it is out of is not added to what they were
+-- asked for. Which is also why extra credit is never dropped and never
+-- counted as a zero when it is missing — not doing optional work is not a
+-- failure at it.
+ALTER TABLE learn_assignments ADD COLUMN extra_credit INTEGER NOT NULL DEFAULT 0;
