@@ -833,21 +833,81 @@ export class D1Repository {
     return row || null;
   }
 
-  async listProgress(accountId) {
-    const { results } = await this.db.prepare(
-      `SELECT scope, state_json, updated_at FROM learn_progress WHERE account_id = ?`
-    ).bind(accountId).all();
+  async listProgress(accountId, scope = null) {
+    const stmt = scope
+      ? this.db.prepare(
+          `SELECT scope, state_json, updated_at FROM learn_progress WHERE account_id = ? AND scope = ?`
+        ).bind(accountId, scope)
+      : this.db.prepare(
+          `SELECT scope, state_json, updated_at FROM learn_progress WHERE account_id = ?`
+        ).bind(accountId);
+    const { results } = await stmt.all();
     return results || [];
   }
 
-  async putProgress(accountId, scope, state, courseId = null) {
-    await this.db.prepare(
-      `INSERT INTO learn_progress (id, account_id, course_id, scope, state_json, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON CONFLICT (account_id, scope) DO UPDATE SET
-         state_json = excluded.state_json, updated_at = excluded.updated_at,
-         course_id = excluded.course_id`
-    ).bind(id("prg"), accountId, courseId, scope, JSON.stringify(state), now()).run();
+  /* Write one scope of a student's progress.
+
+     With no `base` this is the old unconditional write, kept for callers that
+     never learned a base. With one, it is a compare-and-set against the
+     server's own updatedAt: `base` 0 means "I believe nothing is stored" and
+     only inserts; any other `base` only updates a row still at that value.
+     Either way a device that has not seen another device's write gets
+     { conflict: true } instead of overwriting it.
+
+     `updated_at` only ever moves forward — MAX(now, previous + 1) — so two
+     writes in the same millisecond still have distinct stamps, and a base can
+     never match a row that has changed since it was read. RETURNING hands back
+     the value actually stored, rather than a second clock reading that could
+     disagree with it. */
+  async putProgress(accountId, scope, state, courseId = null, base = undefined) {
+    const t = now();
+    const body = JSON.stringify(state);
+    const current = async () => {
+      const row = await this.db.prepare(
+        `SELECT updated_at FROM learn_progress WHERE account_id = ? AND scope = ?`
+      ).bind(accountId, scope).first();
+      return row ? row.updated_at : null;
+    };
+
+    if (base === undefined || base === null) {
+      const row = await this.db.prepare(
+        `INSERT INTO learn_progress (id, account_id, course_id, scope, state_json, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (account_id, scope) DO UPDATE SET
+           state_json = excluded.state_json,
+           course_id  = excluded.course_id,
+           updated_at = MAX(excluded.updated_at, learn_progress.updated_at + 1)
+         RETURNING updated_at`
+      ).bind(id("prg"), accountId, courseId, scope, body, t).first();
+      return { ok: true, updatedAt: row ? row.updated_at : t };
+    }
+
+    if (Number(base) === 0) {
+      try {
+        const row = await this.db.prepare(
+          `INSERT INTO learn_progress (id, account_id, course_id, scope, state_json, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?)
+           RETURNING updated_at`
+        ).bind(id("prg"), accountId, courseId, scope, body, t).first();
+        return { ok: true, updatedAt: row.updated_at };
+      } catch (e) {
+        // Another device created the scope first. That is the conflict this
+        // exists to catch, not an error.
+        if (!/unique|constraint/i.test(String(e && e.message))) throw e;
+        return { conflict: true, updatedAt: await current() };
+      }
+    }
+
+    const row = await this.db.prepare(
+      `UPDATE learn_progress
+          SET state_json = ?,
+              course_id  = COALESCE(?, course_id),
+              updated_at = MAX(?, updated_at + 1)
+        WHERE account_id = ? AND scope = ? AND updated_at = ?
+        RETURNING updated_at`
+    ).bind(body, courseId, t, accountId, scope, Number(base)).first();
+    if (row) return { ok: true, updatedAt: row.updated_at };
+    return { conflict: true, updatedAt: await current() };
   }
 
   /* ------------------------------------------------------------- Marks

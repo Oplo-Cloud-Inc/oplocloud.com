@@ -428,6 +428,32 @@ S=$(status teacher PUT /progress "{\"scope\":\"set:media-1\",\"state\":{\"forged
 R=$(call teacher GET "/progress?accountId=$STUDENT")
 echo "$R" | grep -q "Cochlea" && ok "teacher can READ their student's progress" || bad "teacher reads progress" "$R"
 
+# Two devices, one account. The base is the server's updatedAt a device last
+# saw; a write from a stale base must be refused, never allowed to overwrite.
+SC="record-$STAMP"
+R=$(call student PUT /progress "{\"scope\":\"$SC\",\"state\":{\"readDone\":{\"6.1\":true}},\"base\":0}")
+U1=$(echo "$R" | jq_ "o.updatedAt")
+echo "$R" | grep -q '"ok":true' && ok "a first write with base 0 creates the scope" || bad "conditional create" "$R"
+
+S=$(status student PUT /progress "{\"scope\":\"$SC\",\"state\":{\"readDone\":{}},\"base\":0}")
+[ "$S" = "409" ] && ok "a second device also claiming 'nothing stored yet' is refused (409)" || bad "create race" "HTTP $S"
+
+R=$(call student PUT /progress "{\"scope\":\"$SC\",\"state\":{\"readDone\":{\"6.1\":true,\"6.2\":true}},\"base\":$U1}")
+U2=$(echo "$R" | jq_ "o.updatedAt")
+echo "$R" | grep -q '"ok":true' && ok "a write against the current base succeeds" || bad "conditional update" "$R"
+[ -n "$U2" ] && [ "$U2" -gt "$U1" ] 2>/dev/null && ok "updatedAt moves strictly forward ($U1 -> $U2)" || bad "monotonic updatedAt" "$U1 $U2"
+
+S=$(status student PUT /progress "{\"scope\":\"$SC\",\"state\":{\"readDone\":{}},\"base\":$U1}")
+[ "$S" = "409" ] && ok "a device writing from a stale base is refused (409) - it must merge first" || bad "stale write" "HTTP $S"
+
+R=$(call student GET "/progress?scope=$SC")
+N=$(echo "$R" | jq_ "Object.keys(o.progress).length")
+K=$(echo "$R" | jq_ "Object.keys(o.progress['$SC'].state.readDone).length")
+[ "$N" = "1" ] && [ "$K" = "2" ] && ok "the refused write did not land, and one scope reads back by name" || bad "scope read / stale write landed" "$R"
+
+S=$(status student PUT /progress "{\"scope\":\"$SC\",\"state\":{},\"base\":\"soon\"}")
+[ "$S" = "400" ] && ok "a base that is not a number is rejected (400)" || bad "base validation" "HTTP $S"
+
 R=$(call student POST /gamification/events '{"events":[{"kind":"answer","level":"transfer","right":true,"hints":0,"mastery":0.2},{"kind":"answer","level":"recognise","right":true,"hints":3,"mastery":0.95}],"tzOffset":0}')
 AWARDED=$(echo "$R" | jq_ "o.awarded")
 [ "$AWARDED" = "27" ] && ok "server priced the events at $AWARDED XP (transfer 26 + a hinted, mastered recognise 1)" \
