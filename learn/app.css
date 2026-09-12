@@ -795,6 +795,38 @@ svg { display: block; }
 .rd-body h2:first-child { margin-top: 0; }
 
 /* A definition is a thing, not a sentence in bold. */
+/* ------------------------------------------------------------- Figures
+   Pictures inside a section. They sit in the reading column at its measure,
+   with room above and below, so a photograph reads as a pause rather than a
+   wall. Pairs share a row and a crop; diagrams keep their own edges and no
+   rounded frame. The caption is set for reading, the credit beneath it small. */
+.rd-fig { max-width: var(--measure); margin: 2.1em 0; }
+.rd-fig-imgs { display: grid; gap: 10px; }
+.rd-fig.pair .rd-fig-imgs { grid-template-columns: 1fr 1fr; }
+.rd-fig img {
+  display: block; width: 100%; height: auto;
+  border-radius: 14px; background: var(--sunk);
+}
+.rd-fig.pair img { aspect-ratio: 4 / 3; object-fit: cover; }
+.rd-fig.diagram img { border-radius: 0; background: none; }
+.rd-fig.small .rd-fig-imgs { max-width: 320px; margin-inline: auto; }
+.rd-fig figcaption {
+  margin-top: 11px;
+  font-family: var(--text); font-size: 14px; line-height: 1.5; letter-spacing: 0;
+  color: var(--ink-2);
+}
+.rd-fig.small figcaption { text-align: center; }
+.rd-fig .credit { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.rd-fig .credit a {
+  color: inherit;
+  text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 2px;
+}
+.rd-fig .credit a:hover { color: var(--ink-2); }
+@media (max-width: 560px) {
+  .rd-fig.pair .rd-fig-imgs { grid-template-columns: 1fr; }
+  .rd-fig.pair img { aspect-ratio: 3 / 2; }
+}
+
 .rd-def {
   max-width: var(--measure);
   margin: 1.7em 0; padding: 20px 22px; border-radius: 15px;

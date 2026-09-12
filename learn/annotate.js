@@ -95,6 +95,11 @@ window.OPLO_ANNOTATE = (function () {
         while (p && p !== root) {
           var tag = p.nodeName;
           if (tag === "SCRIPT" || tag === "STYLE") return NodeFilter.FILTER_REJECT;
+          // A figure's caption and credit are not the text being read. Left
+          // in, a photographer's name could be marked as a Claim, and every
+          // character of a caption would shift the offsets marks after it
+          // were measured against.
+          if (tag === "FIGURE") return NodeFilter.FILTER_REJECT;
           p = p.parentNode;
         }
         return NodeFilter.FILTER_ACCEPT;

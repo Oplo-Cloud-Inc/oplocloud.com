@@ -4190,6 +4190,53 @@
   })();
 
   /* ==================================================== The section itself */
+  /* ------------------------------------------------------------- Figures
+     A picture inside a section, placed beside the sentence it illustrates.
+
+     Every <img> carries its real width and height, so the column does not
+     jump when a photograph arrives, and loads lazily, because a reader starts
+     at the top. The credit travels with the figure rather than living on a
+     page at the end: a CC BY-SA image has to carry its author and licence
+     wherever it is shown, and naming a photographer is what the free licences
+     ask in return even where they do not require it.
+
+     b = { imgs: [{ src, alt, w, h, pos }], cap, credits: [{ what, by, byUrl,
+           site, siteUrl, license, licenseUrl }], diagram, size } */
+  function figureBlock(b) {
+    var cls = "rd-fig" + (b.imgs.length > 1 ? " pair" : "") +
+              (b.diagram ? " diagram" : "") + (b.size ? " " + b.size : "");
+    var f = el("figure", cls);
+    var row = el("div", "rd-fig-imgs");
+    b.imgs.forEach(function (im) {
+      var img = document.createElement("img");
+      img.src = im.src;
+      img.alt = im.alt;
+      if (im.w) img.width = im.w;
+      if (im.h) img.height = im.h;
+      if (im.pos) img.style.objectPosition = im.pos;
+      img.loading = "lazy";
+      img.decoding = "async";
+      row.appendChild(img);
+    });
+    f.appendChild(row);
+
+    function link(text, href) {
+      return href
+        ? '<a href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(text) + "</a>"
+        : esc(text);
+    }
+    var credits = (b.credits || []).map(function (c) {
+      return (c.what ? esc(c.what) + ": " : "") + link(c.by, c.byUrl) +
+        (c.site ? " / " + link(c.site, c.siteUrl) : "") +
+        (c.license ? " (" + link(c.license, c.licenseUrl) + ")" : "");
+    }).join(" &middot; ");
+    var cap = el("figcaption");
+    cap.innerHTML = (b.cap ? "<span>" + b.cap + "</span>" : "") +
+      (credits ? '<span class="credit">' + credits + "</span>" : "");
+    f.appendChild(cap);
+    return f;
+  }
+
   /* ====================================================== Predict
      Three questions before the unit, and they are meant to be got wrong.
 
@@ -4402,6 +4449,8 @@
         });
         ul.appendChild(inner);
         body.appendChild(ul);
+      } else if (b.k === "fig") {
+        body.appendChild(figureBlock(b));
       }
     });
     art.appendChild(body);
