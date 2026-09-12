@@ -19,7 +19,6 @@ apps that each keep their own product colour.
 | `/learn/` | **OEdu** — the working product: the student's app, and the teacher's Console, which has its own left-rail shell and no top bar at all. See [TEACHER_UX.md](docs/TEACHER_UX.md) |
 | `/api/` | The platform API — identity, courses, grades. See its [README](api/README.md) |
 | `/oedu/` | OEdu education landing |
-| `/oedu/teacher/` | **OEdu Teacher** — an earlier standalone teacher dashboard (browser-only, no backend) |
 | `/odocs/` `/osheets/` `/omails/` `/omaps/` `/osurf/` `/ophotos/` `/ocanvas/` | Suite app pages (early "coming soon" surfaces) |
 | `/oplo-accounts/` | Oplo Accounts — the ecosystem's single sign-in, over self-hosted [ZITADEL](https://zitadel.com) (OIDC). See its [README](oplo-accounts/README.md) |
 | `/soon/` | Generic "coming soon" surface |

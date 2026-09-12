@@ -200,6 +200,13 @@ Named so nobody mistakes them for decisions:
   teacher cannot send somebody a link to one student. That is a routing change,
   and it is the main thing standing between this and a shareable console.
 - **No dark mode.** The stylesheet has one palette. It is a pass, not a patch.
+- **No attendance, and no session.** The retired `/oedu/teacher/` prototype had
+  one idea this product does not: *the session* — one class, at one time, on one
+  day, with attendance attached, so that marking is the "after" of something
+  rather than the whole of it. It is written down here because it is the best
+  idea in a thing that was deleted, and deleting the code should not delete the
+  argument. `git show 2f7c4d2:oedu/teacher/README.md` has the original — that is the
+  last commit in which it existed.
 - **No standards or mastery model.** Insights over grades alone would be the
   descriptive dashboard this document rejects. It needs item-level assessment
   data first.

@@ -3872,3 +3872,15 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
   width: 0; height: 0; border-bottom: 5px solid var(--amber);
   border-right: 5px solid transparent; opacity: .8;
 }
+
+/* A row you can open. The main part is the button; the remove control stays
+   its own target so a mis-aimed click edits rather than deletes. */
+.admin-rowmain {
+  flex: 1; min-width: 0; text-align: left; display: flex; align-items: center;
+  padding: 0; border-radius: 8px;
+}
+.admin-rowmain:hover .t b { color: var(--blue); }
+.admin-edit {
+  padding: 4px 0 18px; border-bottom: 1px solid var(--hair); margin-bottom: 4px;
+}
+.admin-edit .admin-form { margin-top: 10px; }

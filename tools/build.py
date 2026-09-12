@@ -33,8 +33,11 @@ MARK_D  = ("M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.64843
 # to it is absolute for that reason, and `rel()` leaves absolute targets alone.
 OEDU = "https://edu.oplocloud.com/"
 
-NAV = [("Hardware", "hardware/"), ("Software", "software/"), ("Intelligence", "intelligence/"),
-       ("Privacy", "privacy/"), ("Edu", "edu/"), ("Oplo+", "plus/"), ("Company", "company/"), ("Support", "support/")]
+# Five doors, not eight. Hardware, Software, Intelligence, Privacy, Edu and
+# Oplo+ are still whole sections of the site — they now hang off the three hub
+# pages below (and the footer) rather than competing for room in the bar.
+NAV = [("Products", "products/"), ("Solutions", "solutions/"), ("Resources", "resources/"),
+       ("Company", "company/"), ("Support", "support/")]
 
 FOOTER = [
     ("Hardware", [("Overview", "hardware/"), ("Silicon", "hardware/#silicon"),
@@ -388,6 +391,72 @@ PAGES.append(("developers/index.html", section_page(
       "Until there is a forum worth having, developer questions reach us the same way everything else does.",
       [("Get in touch", "contact/")])],
     ["No developer programme is open yet. This page describes what is planned, not what is available."])))
+
+
+# ==========================================================================
+# The three hub pages the nav now points at. Each one is a door into sections
+# that already exist: nothing here is a new claim, and every old top-level
+# page is reachable from one of them in a single click.
+# ==========================================================================
+PAGES.append(("products/index.html", section_page(
+    "products/", 1, "Products — Oplo",
+    "Everything Oplo makes: the silicon and the machine, the software on it, the intelligence inside it, and the membership that carries an account across all three.",
+    "Products", "Everything we make, in one place.",
+    "Four things built as one system rather than four companies negotiating an interface between them.",
+    [("dark", "hardware", "Hardware", "The machine, made whole.",
+      "Silicon designed for the software that runs on it, and a device that belongs to the person holding it rather than to whoever is watching.",
+      [("Oplo hardware", "hardware/")]),
+     ("", "software", "Software", "Built for a person, not an org chart.",
+      "Tools that assume one user with taste. The operating system, the apps and the updates are ours, so there is nobody to point at when something is wrong.",
+      [("Oplo software", "software/")]),
+     ("", "intelligence", "Intelligence", "Close to you, not to a data centre.",
+      "Models that run on the device in your hand, on silicon designed to carry them, so the private part of personal computing stays on the machine.",
+      [("Oplo intelligence", "intelligence/")]),
+     ("", "membership", "Oplo+", "One membership, the whole system.",
+      "The account, the storage and the services that follow you across every Oplo device, sold as one thing rather than assembled out of six subscriptions.",
+      [("Oplo+", "plus/")])],
+    ["Oplo products are in development. Nothing on this page is an offer of sale or a commitment to a specification."])))
+
+PAGES.append(("solutions/index.html", section_page(
+    "solutions/", 1, "Solutions — Oplo",
+    "Who Oplo is built for: one person at a desk, a classroom, a developer, and the institutions that will come after them.",
+    "Solutions", "Built around who is using it.",
+    "The same hardware, software and intelligence, arranged for the person on the other side of the screen.",
+    [("dark", "personal", "Personal", "One person, one machine.",
+      "Personal computing in the original sense: a device that is quiet when it should be, ready when it is needed, and not quietly working for someone else.",
+      [("What we build", "products/"), ("Oplo+", "plus/")]),
+     ("", "education", "Education", "A classroom, not a fleet.",
+      "Oplo Edu is the education division, and OEdu is the thing students and teachers actually sign in to — coursework, grades and a teacher console built for teaching rather than for asset management.",
+      [("Oplo Edu", "edu/"), ("Open OEdu", OEDU)]),
+     ("", "developers", "Developers", "Build on Oplo.",
+      "One set of tools across the hardware, the software and the models, so the platform is learned once rather than once per device.",
+      [("Developer resources", "developers/")]),
+     ("", "institutions", "Business and government", "Not yet, and we will say so.",
+      "Oplo is early, and an enterprise programme we have not built would be a page of promises. If your organisation wants to be part of what we build next, the fastest route is a conversation.",
+      [("Talk to us", "contact/")])],
+    ["Availability differs by product and region. Nothing described here is generally available today."])))
+
+PAGES.append(("resources/index.html", section_page(
+    "resources/", 1, "Resources — Oplo",
+    "Documentation, privacy commitments, announcements, investor material and legal notices, in one place.",
+    "Resources", "The written record.",
+    "Documentation, policy and the public record — everything we have put in writing and intend to be held to.",
+    [("dark", "developers", "Developer documentation", "Written as it is built.",
+      "The reference, the SDKs and the design system. When there is an API to document, the document here is the one our own engineers work from.",
+      [("Developers", "developers/")]),
+     ("", "privacy", "Privacy", "Yours stays yours, in writing.",
+      "What each product collects, what you can turn off, and what we have been asked to hand over — stated plainly rather than buried in a policy.",
+      [("Privacy at Oplo", "privacy/"), ("Transparency report", "privacy/transparency/")]),
+     ("", "newsroom", "Newsroom", "Dated and attributable.",
+      "Announcements and updates, with a name on them. There is nothing to report yet, and the page says that rather than filling the space.",
+      [("Newsroom", "newsroom/")]),
+     ("", "investors", "Investor relations", "The numbers and the governance.",
+      "Filings, leadership, values and the questions investors ask most often, kept in one section rather than scattered through the site.",
+      [("Investor relations", "investor/")]),
+     ("", "legal", "Legal", "Terms, policies and notices.",
+      "The privacy policy, the terms of use and the rest of the legal material that governs using this site and anything we ship.",
+      [("Legal", "legal/")])],
+    None)))
 
 
 # ==========================================================================
