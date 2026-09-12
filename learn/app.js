@@ -8476,10 +8476,231 @@
           c.myRole ? esc(c.myRole) : "<span class='cn-none'>—</span>",
           "<span class='cn-tag" + (c.status === "published" ? " on" : "") + "'>" +
             esc(c.status) + "</span>"
-        ], function () { openCourseEditor(c); }, c.id);
+        ], function () { openCourse(c); }, c.id);
       });
       v.appendChild(t);
     }, function (e) { failed(node, e, function () { openAdmin(true, "courses"); }); });
+  }
+
+  /* ---------------------------------------------------------- One course
+     What a course *is*, rather than the row that stores it.
+
+     This was a form: seven fields and a Save button, which is the database
+     table with labels on. A teacher opening their own course wants to know
+     what is in it — the plan, what is set, what is written, who is in it —
+     and a page that answers none of those has made them go and look in four
+     other places to assemble it themselves.
+
+     Two requests build the whole thing. The gradebook already returns the
+     students, the work and every mark, so the numbers at the top are the same
+     arithmetic the sheet uses rather than a second count that can drift.
+
+     Where a course was started from the catalogue, the curriculum behind it is
+     read for what a row cannot hold: what each unit is about, which ones have
+     a study set or a reader written, what the course sets out to teach, and
+     the textbook it came from. Read, not linked — the copy stays a copy. */
+  function openCourse(c) {
+    enter("course:" + c.id, trim(c.title, 18), function () { openCourse(c); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    var body = el("div", "admin-body");
+    v.appendChild(body);
+
+    var cb = c.body || {};
+    var shipped = cb.from ? SC.course(cb.from) : SC.course(c.code);
+    var grading = (cb.grading && cb.grading.length) ? cb.grading
+                : (shipped && shipped.grading) || [];
+    var unitNames = (cb.units && cb.units.length) ? cb.units
+                  : (shipped ? unitsOf(shipped).map(function (u) { return u.t; }) : []);
+
+    consoleHead(body, "Course", c.title,
+      [esc(c.subject || "—"), esc(c.level || "Introductory"),
+       "<span class='cn-mono'>" + esc(c.code) + "</span>",
+       "<span class='cn-tag" + (c.status === "published" ? " on" : "") + "'>" +
+         esc(c.status) + "</span>"].join(" &middot; "));
+
+    var acts = cnActions();
+    acts.appendChild(cnAction("Open the gradebook", function () {
+      S.courseId = c.id;
+      openAdmin(false, "roster");
+    }, true));
+    acts.appendChild(cnAction("Set work", function () { openAssignments(c); }));
+    acts.appendChild(cnAction("Enrol", function () { openEnrol(c); }));
+    acts.appendChild(cnAction("Edit", function () { openCourseEditor(c); }));
+    body.appendChild(acts);
+
+    var tiles = el("div", "cn-tiles");
+    body.appendChild(tiles);
+    function tile(label, value, tone) {
+      var t = el("div", "cn-tile" + (tone ? " " + tone : ""));
+      t.innerHTML = "<b>" + value + "</b><span>" + label + "</span>";
+      tiles.appendChild(t);
+    }
+
+    var slot = el("div");
+    body.appendChild(slot);
+    var node = loading(slot, "the course");
+
+    Promise.all([
+      API.grades.book(c.id).catch(function () { return null; }),
+      API.studySets.forCourse(c.id).catch(function () { return []; })
+    ]).then(function (out) {
+      var book = out[0], sets = out[1] || [];
+      node.remove();
+
+      var students = book ? book.students.length : null;
+      var work = book ? book.assignments.length : null;
+      var avg = null;
+      if (book) {
+        var vals = Object.keys(book.summaries).map(function (k) {
+          return book.summaries[k].percent;
+        });
+        if (vals.length) {
+          avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length);
+        }
+      }
+      var owed = book ? book.columns.reduce(function (a, col) { return a + col.unmarked; }, 0) : 0;
+
+      tile("Students", students == null ? "—" : students);
+      tile("Work set", work == null ? "—" : work);
+      tile("Units", unitNames.length || "—");
+      tile("Class average", avg == null ? "—" : avg + "%");
+      if (owed) tile("Unmarked", owed, "owe");
+
+      /* ------------------------------------------------------ What it is */
+      var about = c.summary || (shipped && (shipped.lede || shipped.d)) || "";
+      if (about) {
+        slot.appendChild(el("h2", "cn-h2", "What this course is"));
+        slot.appendChild(el("p", "cs-lede", esc(about)));
+      }
+
+      /* ----------------------------------------------------- How it grades */
+      if (grading.length) {
+        slot.appendChild(el("h2", "cn-h2", "How it is graded"));
+        var total = grading.reduce(function (a, g) { return a + Number(g[1] || 0); }, 0);
+        var parts = el("div", "admin-mark-parts");
+        grading.forEach(function (g) {
+          var row = el("div", "admin-mark-part");
+          var pct = Number(g[1]) || 0;
+          row.innerHTML = "<span>" + esc(g[0]) + "</span>" +
+            '<div class="t"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
+            "<em>" + pct + "%</em><span class='w'></span>";
+          parts.appendChild(row);
+        });
+        slot.appendChild(parts);
+        if (Math.abs(total - 100) > 0.5) {
+          slot.appendChild(el("p", "cn-fine",
+            "These add to " + total + "%, not 100. A grade is computed over the " +
+            "categories that have something in them, so it still works — but the " +
+            "weights are not saying what they look like they are saying."));
+        }
+        var policy = [];
+        if (cb.latePenalty) policy.push("Work handed in late loses " + cb.latePenalty +
+          "% of what it was out of.");
+        if (cb.drop) {
+          Object.keys(cb.drop).forEach(function (k) {
+            if (cb.drop[k] > 0) policy.push("The lowest " + cb.drop[k] + " in " + esc(k) +
+              (cb.drop[k] === 1 ? " is" : " are") + " dropped.");
+          });
+        }
+        if (policy.length) slot.appendChild(el("p", "cn-fine", policy.join(" ")));
+      }
+
+      /* ------------------------------------------------------------ The plan */
+      if (unitNames.length) {
+        var h = el("h2", "cn-h2", "The plan");
+        slot.appendChild(h);
+        var su = shipped ? unitsOf(shipped) : [];
+        var plan = el("ol", "cs-plan");
+        unitNames.forEach(function (name, i) {
+          var u = su[i];
+          var li = el("li");
+          var tags = "";
+          if (u && u.set) tags += "<em class='cs-tag'>study set</em>";
+          if (u && u.read) tags += "<em class='cs-tag'>reader</em>";
+          if (u && u.play) tags += "<em class='cs-tag'>practice</em>";
+          li.innerHTML = "<span class='n'>" + (i + 1) + "</span>" +
+            "<span class='t'><b>" + esc(name) + "</b>" +
+            (u && u.desc ? "<span>" + esc(u.desc) + "</span>" : "") + "</span>" +
+            "<span class='g'>" + (tags || "<span class='cn-none'>nothing written yet</span>") +
+            "</span>";
+          plan.appendChild(li);
+        });
+        slot.appendChild(plan);
+        slot.appendChild(el("p", "cn-fine",
+          "The plan is this course's own. What is written behind a unit — a study set, " +
+          "a reader, a practice run — belongs to the published curriculum and is the " +
+          "same for every school."));
+      }
+
+      /* ----------------------------------------------------------- The work */
+      slot.appendChild(el("h2", "cn-h2", "Work set on this course"));
+      if (book && book.assignments.length) {
+        var wt = cnTable([
+          { label: "Work", w: "minmax(180px, 1.6fr)" },
+          { label: "Category", w: "minmax(120px, 1fr)" },
+          { label: "Out of", w: "80px", align: "right" },
+          { label: "Marked", w: "110px", align: "right" }
+        ]);
+        book.assignments.forEach(function (a, ci) {
+          var col = book.columns[ci] || {};
+          wt.row([
+            "<b>" + esc(a.title) + "</b>" +
+              (a.dueAt ? "<span class='cn-sub2'>due " + esc(dayName(a.dueAt)) + "</span>" : ""),
+            esc(a.category || "—") + (a.extraCredit ? " · extra credit" : ""),
+            "<b class='cn-mk'>" + a.outOf + "</b>",
+            col.unmarked
+              ? "<b class='cn-mk warn'>" + col.unmarked + " left</b>"
+              : "<span class='cn-none'>all marked</span>"
+          ], function () { openAssignments(c); }, a.id);
+        });
+        slot.appendChild(wt);
+      } else {
+        slot.appendChild(cnEmpty("Nothing set yet.",
+          "A piece of work is a column on the gradebook. Set one and you can mark it.",
+          "Set work", function () { openAssignments(c); }));
+      }
+
+      /* ----------------------------------------------------- The study sets */
+      slot.appendChild(el("h2", "cn-h2", "Study sets for this course"));
+      if (sets.length) {
+        var st = cnTable([
+          { label: "Set", w: "minmax(180px, 1.6fr)" },
+          { label: "Terms", w: "90px", align: "right" },
+          { label: "Status", w: "110px", align: "right" }
+        ]);
+        sets.forEach(function (x) {
+          st.row(["<b>" + esc(x.title) + "</b>",
+                  "<b class='cn-mk'>" + x.termCount + "</b>",
+                  "<span class='cn-tag" + (x.status === "published" ? " on" : "") + "'>" +
+                    esc(x.status) + "</span>"],
+                 function () { openAdmin(false, "sets"); }, x.id);
+        });
+        slot.appendChild(st);
+      } else {
+        slot.appendChild(el("p", "cn-sub",
+          "None written for this course yet. A set published to a course reaches every " +
+          "student in it, on every device they sign in on."));
+      }
+
+      /* ------------------------------------------------------- The objectives */
+      if (shipped && (shipped.objectives || []).length) {
+        slot.appendChild(el("h2", "cn-h2", "What it sets out to teach"));
+        var ol = el("ul", "cn-why");
+        shipped.objectives.forEach(function (o) { ol.appendChild(el("li", null, esc(o))); });
+        slot.appendChild(ol);
+      }
+      if (shipped && shipped.textbook) {
+        slot.appendChild(el("p", "cn-fine", esc(shipped.textbook)));
+      }
+      if (!book) {
+        slot.appendChild(el("p", "cn-fine",
+          "The class numbers are missing because you do not teach this course — you " +
+          "wrote it. Enrol yourself as a teacher to see and mark its students."));
+      }
+      show("admin");
+    }, function (e) { failed(node, e, function () { openCourse(c); }); });
+    show("admin");
   }
 
   /* ------------------------------------------------------------- Catalogue
