@@ -92,12 +92,23 @@ net=$(cgrep "fetch\(|XMLHttpRequest|EventSource" $(jsfiles ../learn | grep -v "/
 if [ -z "$net" ]; then ok "api.js is the only file that reaches the Oplo API"
 else bad "the frontend reaches the network outside api.js:"; echo "$net" | sed 's/^/      /'; fi
 
-say "5. The frontend does not hold credentials"
+say "5. One name, one function"
+# This one is here because it cost something. `learn/app.js` is one long IIFE,
+# so two function declarations sharing a name are not an overload — the second
+# silently wins, everywhere, including in code written years earlier. A console
+# screen called openCourse shadowed the student's openCourse and broke every
+# route a student had into a course, with no error anywhere.
+dupes=$(grep -oE "^  function [a-zA-Z_$]+" ../learn/app.js | sort | uniq -d)
+if [ -z "$dupes" ]; then ok "no two top-level functions in learn/app.js share a name"
+else bad "a function name is declared twice — the second one wins, silently:";
+     echo "$dupes" | sed 's/^/      /'; fi
+
+say "6. The frontend does not hold credentials"
 creds=$(cgrep "pbkdf2|PBKDF2|deriveBits|verifier|password_hash|pw_hash" $(jsfiles ../learn))
 if [ -z "$creds" ]; then ok "no password derivation or verifiers in the frontend"
 else bad "the frontend appears to handle password material:"; echo "$creds" | sed 's/^/      /'; fi
 
-say "6. Password hashing stays inside Cloudflare's limit"
+say "7. Password hashing stays inside Cloudflare's limit"
 # Production refuses PBKDF2 above 100,000 iterations and the local runtime does
 # not, so no local test can notice a higher number. This check can.
 iter=$(grep -oE 'PBKDF2_ITERATIONS = [0-9]+' src/lib/crypto.js | grep -oE '[0-9]+$')
