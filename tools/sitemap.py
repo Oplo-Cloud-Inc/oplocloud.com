@@ -16,7 +16,8 @@ OLD_SITE = {"OLaws", "OShop", "ocanvas", "ocrd", "odocs", "oedu", "omails", "oma
 # The Learn app is noindex; it should not be in the sitemap either.
 EXCLUDE = OLD_SITE | {"learn"}
 
-PRIORITY = {"": "1.0", "hardware/": "0.9", "software/": "0.9", "intelligence/": "0.9",
+PRIORITY = {"": "1.0", "products/": "0.9", "solutions/": "0.9", "resources/": "0.9",
+            "hardware/": "0.9", "software/": "0.9", "intelligence/": "0.9",
             "edu/": "0.9", "edu/learn/": "0.9", "plus/": "0.9",
             "privacy/": "0.8", "investor/": "0.8"}
 
@@ -30,6 +31,9 @@ def slugs():
             out.append("")
             continue
         if rel.split("/")[0] in EXCLUDE:
+            continue
+        # Installed dependencies ship their own index.html and are not deployed.
+        if "node_modules" in rel.split("/"):
             continue
         out.append(rel + "/")
     return sorted(out)
