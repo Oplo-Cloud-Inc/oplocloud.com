@@ -15,6 +15,25 @@ import io, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+
+def stamp(path):
+    """A short content fingerprint for a shared asset, used as ?v= on its URL.
+
+    GitHub Pages serves assets with a four-hour cache, so without this a
+    deploy lands new HTML against the visitor's old stylesheet — the markup
+    asking for rules the cached CSS has never heard of. Keying the URL to the
+    bytes means a changed file is simply a different URL, and an unchanged one
+    still comes out of cache."""
+    import hashlib
+    try:
+        return hashlib.md5(io.open(os.path.join(ROOT, path), "rb").read()).hexdigest()[:8]
+    except FileNotFoundError:
+        return ""
+
+
+CSS_V = stamp("assets/css/oplo-design.css")
+JS_V  = stamp("assets/js/oplo-motion.js")
+
 MARK_VB = "84.13 107.80 206.73 194.91"
 MARK_TR = "73.919875, 252.710833"
 MARK_D  = ("M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 "
@@ -97,7 +116,7 @@ def head(depth, title, desc, canonical, extra=""):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{a}css/oplo-design.css">
+<link rel="stylesheet" href="{a}css/oplo-design.css?v={CSS_V}">
 <script>
   (function (r) {{
     r.classList.add("oplo-motion");
@@ -192,7 +211,7 @@ def footer(depth, notes=None):
   </div>
 </footer>
 
-<script src="{rel(depth, "assets/")}js/oplo-motion.js" defer></script>
+<script src="{rel(depth, "assets/")}js/oplo-motion.js?v={JS_V}" defer></script>
 <script>
   (function () {{
     var nav = document.getElementById("nav");
