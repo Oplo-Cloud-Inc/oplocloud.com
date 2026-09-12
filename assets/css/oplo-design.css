@@ -254,6 +254,21 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .band .measure  { max-width: 20ch; margin-inline: auto; }
 .band .measure-wide { max-width: 34ch; margin-inline: auto; }
 
+/* -------------------------------------------------------- Hero artwork
+   The front page opens on one drawn image, which carries the wordmark and
+   the line inside it. Its ground is the same white as .band, so it sits on
+   the page with no visible edge and needs no frame. On a phone it is scaled
+   past the viewport and clipped by .band's overflow, because a 16:9 image
+   shrunk to 375px wide puts the lettering below the size anyone can read. */
+.hero-art {
+  display: block;
+  width: min(100%, 1440px); height: auto;
+  margin-inline: auto;
+}
+@media (max-width: 734px) {
+  .hero-art { width: 170%; max-width: none; margin-inline: -35%; }
+}
+
 /* A single soft bloom, used only on the dark band. Nothing else is coloured. */
 .bloom {
   position: absolute; z-index: 0;

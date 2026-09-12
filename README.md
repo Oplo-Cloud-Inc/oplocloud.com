@@ -88,9 +88,10 @@ This repo is set up to publish to **GitHub Pages** at the apex domain
 
 ## Design system
 
-Near-monochrome, one accent, an enormous type scale. There is no illustration
-anywhere: a drawn product reads as worse than no product, so the words and the
-space are the design.
+Near-monochrome, one accent, an enormous type scale. There is one drawn image
+on the whole site — the front page opens on it — and it is the brand rather
+than a product: a drawn *product* still reads as worse than no product, so
+everywhere else the words and the space are the design.
 
 - **Ground** — `#fff`, `#f5f5f7`, and `#000`. Nothing else.
 - **Ink** — `#1d1d1f`, `#6e6e73` secondary, `#86868b` tertiary.
@@ -101,6 +102,10 @@ space are the design.
 - **Hierarchy** — a `.band` is a tall full-bleed statement; a `.card` is half
   as tall and comes in pairs. That size difference *is* the hierarchy, and
   flattening it into one repeating tile is what made the first attempt fail.
-- **Colour is spent once** — a single soft `.bloom` behind the dark band. The
-  rest of the site is black, white, and grey.
+- **Colour is spent once** — the blossom on the front page, and a single soft
+  `.bloom` behind any dark band. The rest of the site is black, white, and grey.
+- **Hero artwork** — `assets/img/hero-nature.svg`, run through svgo. Its ground
+  is the same white as `.band`, so it needs no frame; on a phone `.hero-art`
+  scales it past the viewport and lets `.band`'s overflow crop the edges,
+  because the lettering inside it is unreadable at 375px wide.
 

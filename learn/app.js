@@ -5231,6 +5231,16 @@
      in the second person; the Console, looking at somebody else, passes its own. */
   function drawGrades(host, g, empty, opts) {
     opts = opts || {};
+    /* The server always sends a dashboard, even an empty one — but a screen
+       that throws shows a student nothing at all, with no way to tell whether
+       their record is empty or the page is broken. The empty state already
+       has the right words; this is what lets it reach them. */
+    if (!g || !g.totals || !g.current) {
+      host.appendChild(el("div", "lx-empty", empty ||
+        "Nothing on your record yet. When your school adds your previous transcript, or " +
+        "your teachers enter grades, your path to graduation appears here."));
+      return;
+    }
     if (!g.transfer && !g.current.length && !g.totals.earnedTowardDiploma) {
       host.appendChild(el("div", "lx-empty", empty ||
         "Nothing on your record yet. When your school adds your previous transcript, or your " +
@@ -6223,6 +6233,28 @@
       node.remove();
       var t = data.totals;
 
+      /* Nothing set up yet. Five zeroes and a sentence telling somebody to go
+         to another screen is the worst thing a product can open with: it
+         reports on work that does not exist and then declines to help start
+         it. So on the first day the numbers are not drawn at all, and the
+         screen is the one thing there is to do. */
+      if (!data.courses.length) {
+        var start = el("div", "cn-start");
+        start.appendChild(el("h2", null, "Let’s get your first class in."));
+        start.appendChild(el("p", null,
+          "A course is what carries enrolment, work and grades. Start from one Oplo " +
+          "has already written — the units and the grading scheme come with it — or " +
+          "make your own from nothing."));
+        var sacts = cnActions();
+        sacts.appendChild(cnAction("Explore courses", openCatalogue, true));
+        sacts.appendChild(cnAction("Create one from nothing",
+          function () { openCourseEditor(null); }));
+        start.appendChild(sacts);
+        v.appendChild(start);
+        railCount("roster", 0);
+        return;
+      }
+
       /* The tiles. Five numbers, no charts: there is no time series behind
          any of these, and a sparkline drawn over one point is a drawing. */
       var tiles = el("div", "cn-tiles");
@@ -6253,10 +6285,17 @@
       data.courses.forEach(function (c) {
         var row = el("button", "cn-row");
         row.type = "button";
-        var state = c.unmarked
-          ? "<em class='" + (c.overdue ? "late" : "owe") + "'>" + c.unmarked + " unmarked" +
-            (c.overdue ? " · " + c.overdue + " past due" : "") + "</em>"
-          : "<em class='done'>all marked</em>";
+        /* "All marked" on a class with nobody in it, or nothing set, is a
+           product telling a teacher they are finished before they have
+           started. Say what is actually missing. */
+        var state = !c.students
+          ? "<em class='owe'>nobody enrolled</em>"
+          : !c.work
+            ? "<em class='owe'>no work set</em>"
+            : c.unmarked
+              ? "<em class='" + (c.overdue ? "late" : "owe") + "'>" + c.unmarked + " unmarked" +
+                (c.overdue ? " · " + c.overdue + " past due" : "") + "</em>"
+              : "<em class='done'>all marked</em>";
         row.innerHTML =
           "<span class='t'><b>" + esc(c.title) + "</b><span>" +
             esc(c.subject || c.code) + " · " + c.students +
@@ -6323,7 +6362,13 @@
         : courses.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
       node.remove();
       if (!teaching.length) {
-        v.appendChild(el("div", "lx-empty", "No classes yet, so there is nothing set."));
+        v.appendChild(S.me.role === "admin"
+          ? cnEmpty("No classes yet, so there is nothing set.",
+              "Work is set on a course. Make one first and its columns appear here.",
+              "Explore courses", openCatalogue)
+          : cnEmpty("No classes yet, so there is nothing set.",
+              "An administrator enrols you as a teacher on a course, and the work you " +
+              "set on it appears here."));
         return;
       }
       teaching.forEach(function (c) {
@@ -6863,11 +6908,18 @@
         : courses.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
 
       if (!teaching.length) {
-        node.className = "lx-empty";
-        node.textContent = S.me.role === "admin"
-          ? "No courses yet. Create one on the Courses tab, then enrol students into it."
-          : "You are not teaching any courses yet. An administrator enrols you as a teacher, " +
-            "and the students on those courses appear here.";
+        node.remove();
+        /* A sentence naming another screen, with no way to reach it, is a dead
+           end. An administrator can make a course; a teacher cannot, and is
+           told who can rather than sent somewhere that will refuse them. */
+        v.appendChild(S.me.role === "admin"
+          ? cnEmpty("No courses yet.",
+              "A course is what carries enrolment, work and grades. Start from one Oplo " +
+              "has written, or make your own.",
+              "Explore courses", openCatalogue)
+          : cnEmpty("You are not teaching any courses yet.",
+              "An administrator enrols you as a teacher on a course, and it appears here " +
+              "with its students."));
         return;
       }
 
@@ -7832,10 +7884,54 @@
           "checks that relationship on every write, so this list is the permission, " +
           "not a display of it."));
 
+        var others = people.filter(function (p) { return p.id !== S.me.id; });
+
+        /* A school on its first day has no accounts but its own. The screen
+           used to render two paragraphs and an empty box — a wall, at the
+           exact moment somebody is trying to get started. */
+        if (!others.length) {
+          v.appendChild(S.me.role === "admin"
+            ? cnEmpty("There are no other accounts yet.",
+                "A student has to have an Oplo Account before they can be enrolled. Add " +
+                "them once and the same sign-in carries them into every Oplo product.",
+                "Add a person", function () { openPersonEditor(null); })
+            : cnEmpty("There are no student accounts yet.",
+                "An administrator creates accounts. Once they exist, they appear here and " +
+                "you can enrol them."));
+          show("admin");
+          return;
+        }
+
+        /* A search, because an organisation with four hundred accounts is an
+           organisation where scrolling to find one is the whole job. */
+        var bar = el("div", "cn-bar");
+        var find = el("input", "cn-search");
+        find.type = "search";
+        find.placeholder = "Find somebody";
+        find.setAttribute("aria-label", "Find somebody");
+        bar.appendChild(find);
+        var count = el("span", "cn-fine");
+        bar.appendChild(count);
+        v.appendChild(bar);
+
         var list = el("div", "admin-picklist");
-        people.forEach(function (p) {
-          if (p.id === S.me.id) return;
+        find.addEventListener("input", function () {
+          var term = find.value.trim().toLowerCase();
+          var shown = 0;
+          [].forEach.call(list.children, function (row) {
+            var hit = !term || row.dataset.find.indexOf(term) > -1;
+            row.hidden = !hit;
+            if (hit) shown++;
+          });
+          count.textContent = term
+            ? shown + (shown === 1 ? " person" : " people") + " match"
+            : others.length + " in this organisation";
+        });
+        count.textContent = others.length + " in this organisation";
+
+        others.forEach(function (p) {
           var row = el("label", "admin-pick");
+          row.dataset.find = String(p.name + " " + (p.email || "")).toLowerCase();
           var box = el("input");
           box.type = "checkbox";
           box.checked = inCourse[p.id] === "student";
@@ -8242,9 +8338,23 @@
       railCount("students", data.totals.belowPass);
 
       if (!data.students.length) {
-        v.appendChild(cnEmpty("Nobody is enrolled yet.",
-          "Enrol students into a class and they appear here, with their standing in each.",
-          "Open a class", function () { openAdmin(false, "roster"); }));
+        API.courses.mine().then(function (courses) {
+          var mine = courses.filter(function (c) {
+            return S.me.role === "admin" || c.myRole === "teacher" || c.myRole === "assistant";
+          });
+          v.appendChild(mine.length
+            ? cnEmpty("Nobody is enrolled yet.",
+                "Enrol students into " + esc(mine[0].title) + " and they appear here, with " +
+                "their standing in every class you share with them.",
+                "Enrol students", function () { openEnrol(mine[0]); })
+            : cnEmpty("Nobody is enrolled yet.",
+                "Students are enrolled on a course, so there needs to be one first.",
+                S.me.role === "admin" ? "Explore courses" : null,
+                S.me.role === "admin" ? openCatalogue : null));
+        }, function () {
+          v.appendChild(cnEmpty("Nobody is enrolled yet.",
+            "Enrol students into a class and they appear here."));
+        });
         return;
       }
 
