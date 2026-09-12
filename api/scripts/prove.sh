@@ -550,7 +550,44 @@ N=$(echo "$R" | jq_ "o.graduation.courses.length")
 [ "$EST" = "16" ] && ok "20 more credits imported, but transfer stops at the 16-credit cap" || bad "transfer cap" "$EST"
 [ "$N" = "45" ] && ok "importing the same school twice replaces it rather than doubling it (45 courses)" || bad "re-import doubled" "$N"
 
-say "25. Sessions"
+say "25. Marks — the student's reading"
+MARK="m$STAMP"
+R=$(call student POST /marks "{\"id\":\"$MARK\",\"scope\":\"media-u6\",\"sec\":\"6.1\",\"pass\":3,\"text\":\"light-proof box\",\"anchor\":{\"exact\":\"light-proof box\",\"prefix\":\"is a \",\"suffix\":\" of plastic\",\"offset\":42},\"note\":\"holds up the claim about control\"}")
+echo "$R" | grep -q '"ok":true' && ok "a student can mark a sentence" || bad "post mark" "$R"
+
+R=$(call student GET "/marks?scope=media-u6")
+N=$(echo "$R" | jq_ "o.marks&&o.marks.length")
+EX=$(echo "$R" | jq_ "o.marks&&o.marks[0].anchor.exact")
+[ "$N" = "1" ] && ok "it reads back in the unit they marked" || bad "mark list" "$R"
+[ "$EX" = "light-proof box" ] && ok "the anchor survives the round trip" || bad "anchor" "$R"
+
+# The same id twice is the same mark. This is what makes a retried sync safe.
+call student POST /marks "{\"id\":\"$MARK\",\"scope\":\"media-u6\",\"sec\":\"6.1\",\"pass\":5,\"text\":\"light-proof box\",\"anchor\":{\"exact\":\"light-proof box\"},\"note\":\"actually I do not buy this\"}" >/dev/null
+R=$(call student GET "/marks?scope=media-u6")
+N=$(echo "$R" | jq_ "o.marks&&o.marks.length")
+P=$(echo "$R" | jq_ "o.marks&&o.marks[0].pass")
+[ "$N" = "1" ] && ok "posting the same id again edits rather than duplicates" || bad "upsert" "$R"
+[ "$P" = "5" ] && ok "and the pass it was changed to is the one stored" || bad "upsert pass" "$R"
+
+S=$(status other GET "/marks?accountId=$STUDENT")
+[ "$S" = "403" ] && ok "an unrelated account cannot read the marks (403)" || bad "mark privacy" "HTTP $S"
+
+R=$(call teacher GET "/marks?accountId=$STUDENT")
+echo "$R" | grep -q "light-proof box" && ok "the teacher who teaches them can" || bad "teacher read" "$R"
+
+R=$(call other POST /marks "{\"id\":\"$MARK\",\"scope\":\"media-u6\",\"sec\":\"6.1\",\"pass\":1,\"text\":\"x\",\"anchor\":{\"exact\":\"x\"}}")
+echo "$R" | grep -q '"forbidden"' && ok "nobody can overwrite a mark in someone else's margin" || bad "mark theft" "$R"
+
+S=$(status other DELETE "/marks/$MARK")
+[ "$S" = "403" ] && ok "nor delete one (403)" || bad "mark delete by other" "HTTP $S"
+
+R=$(call student DELETE "/marks/$MARK")
+echo "$R" | grep -q '"ok":true' && ok "the student can unmark their own" || bad "delete own" "$R"
+R=$(call student GET "/marks?scope=media-u6")
+N=$(echo "$R" | jq_ "o.marks&&o.marks.length")
+[ "$N" = "0" ] && ok "and it is gone" || bad "delete" "$R"
+
+say "26. Sessions"
 # A second sign-in from the "same person, different device".
 curl -s -c "$JAR/student2" -H 'content-type: application/json' \
   -d "{\"email\":\"student$STAMP@example.com\",\"password\":\"another-long-password\"}" \

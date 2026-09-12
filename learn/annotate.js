@@ -26,8 +26,16 @@
       use. Every mark carries its section, and can be rendered in MLA, APA or
       Chicago on the way to the clipboard.
 
-   No network. Marks live in localStorage under the reader's own id, so two
-   people on one machine do not read each other's notebook by accident.
+   No network in this file. Marks live in localStorage under the reader's own
+   id, so two people on one machine do not read each other's notebook by
+   accident, and a reader with no connection loses nothing.
+
+   A `remote` may be attached from outside — `Store.connect()` — and then the
+   local copy is a cache in front of it: every write is saved locally first
+   and pushed afterwards, so the reading never waits for a request and a
+   failed request never costs a mark. Which server, and whether there is one
+   at all, is not this file's business; it knows only `pull`, `push` and
+   `drop`.
    ========================================================================== */
 window.OPLO_ANNOTATE = (function () {
   "use strict";
@@ -311,6 +319,51 @@ window.OPLO_ANNOTATE = (function () {
     this.subs.forEach(function (fn) { fn(self.marks); });
   };
 
+  /* --------------------------------------------------------- The remote
+     Attach a server and the store becomes the near half of a pair. The order
+     matters and is the whole design: local write, then push. A student who
+     marks a sentence on a train has marked it — the sync is the app's
+     problem, not theirs, and a rejected push leaves the mark exactly where
+     they put it.
+
+     `remote` is { pull(scope), push(mark), drop(id) }, each returning a
+     promise. Nothing here inspects what it talks to. */
+  Store.prototype.connect = function (remote, scope) {
+    var self = this;
+    this.remote = remote;
+    this.scope = scope;
+    if (!remote || !remote.pull) return Promise.resolve(this.marks);
+    return remote.pull(scope).then(function (rows) {
+      // Anything the server has that we do not is merged in; anything we have
+      // that it does not is pushed. A mark is only ever added or edited by
+      // the one person who owns it, so newest-wins needs no tie-break beyond
+      // the timestamp the writer stamped on it.
+      var seen = {};
+      (rows || []).forEach(function (m) {
+        if (!m || !m.anchor || !m.anchor.exact) return;
+        seen[m.id] = true;
+        self.receive(m);
+      });
+      self.marks.forEach(function (m) { if (!seen[m.id]) self.push(m); });
+      self.save();
+      return self.marks;
+    }).catch(function () {
+      // Offline, signed out, or the server is down. The reading continues on
+      // the local copy, which is the whole reason it is written first.
+      return self.marks;
+    });
+  };
+
+  Store.prototype.push = function (m) {
+    if (!this.remote || !this.remote.push) return;
+    var body = {
+      id: m.id, scope: this.scope, sec: m.sec, pass: m.pass,
+      text: m.text, anchor: m.anchor, note: m.note || "",
+      at: m.at, courseId: this.courseId || null
+    };
+    try { this.remote.push(body).catch(function () {}); } catch (e) { /* offline */ }
+  };
+
   Store.prototype.subscribe = function (fn) { this.subs.push(fn); };
   Store.prototype.all = function () { return this.marks; };
   Store.prototype.inSection = function (sec) {
@@ -328,6 +381,7 @@ window.OPLO_ANNOTATE = (function () {
     m.links = m.links || [];
     this.marks.push(m);
     this.save();
+    if (!this._quiet) this.push(m);
     return m;
   };
 
@@ -335,8 +389,9 @@ window.OPLO_ANNOTATE = (function () {
     var m = this.byId(id);
     if (!m) return null;
     for (var k in patch) if (Object.prototype.hasOwnProperty.call(patch, k)) m[k] = patch[k];
-    m.edited = Date.now();
+    if (!this._quiet) m.edited = Date.now();
     this.save();
+    if (!this._quiet) this.push(m);
     return m;
   };
 
@@ -350,17 +405,26 @@ window.OPLO_ANNOTATE = (function () {
       }
     });
     this.save();
+    if (!this._quiet && this.remote && this.remote.drop) {
+      try { this.remote.drop(id).catch(function () {}); } catch (e) { /* offline */ }
+    }
   };
 
   /* Merge a mark that arrived from someone else's browser. Theirs wins on
      content; ours wins on nothing, because we did not write it. */
   Store.prototype.receive = function (m) {
-    var mine = this.byId(m.id);
-    if (mine) {
-      if ((m.edited || m.at || 0) >= (mine.edited || mine.at || 0)) this.update(m.id, m);
-      return mine;
-    }
-    return this.add(m);
+    // Quiet, because a mark that arrived from somewhere else must not be sent
+    // straight back to it, and must not have its timestamp rewritten on the
+    // way in — newest-wins needs the writer's stamp, not the receiver's.
+    this._quiet = true;
+    try {
+      var mine = this.byId(m.id);
+      if (mine) {
+        if ((m.edited || m.at || 0) >= (mine.edited || mine.at || 0)) this.update(m.id, m);
+        return mine;
+      }
+      return this.add(m);
+    } finally { this._quiet = false; }
   };
 
   /* --------------------------------------------------------------- Reading

@@ -944,6 +944,20 @@ svg { display: block; }
   font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .rd-toc .badge + .tick { margin-left: 5px; }
+
+/* Marks in a section, by pass. A dot per pass that has anything in it, with
+   the count inside once there is more than one — so a row reads as the shape
+   of a reading rather than as a total. */
+.rd-toc .dots { margin-left: auto; display: flex; align-items: center; gap: 3px; flex: none; }
+.rd-toc .dots:empty { display: none; }
+.rd-toc .dots i {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 8px; height: 14px; padding: 0 3px; border-radius: 100px;
+  font-style: normal; font-size: 9.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgba(0,0,0,.62);
+}
+.rd-toc .dots + .tick { margin-left: 5px; }
 .rd-unitprog { padding: 12px 9px 2px; }
 .rd-unitprog .track { height: 3px; border-radius: 100px; background: var(--sunk); overflow: hidden; }
 .rd-unitprog .track i { display: block; height: 100%; background: var(--blue); transition: width .6s var(--ease); }

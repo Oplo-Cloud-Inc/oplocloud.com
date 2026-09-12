@@ -42,6 +42,7 @@ export const ACTIONS = [
   "transcript.read", "transcript.write", "program.write",
   "grade.read", "grade.write",
   "progress.read", "progress.write",
+  "mark.read", "mark.write",
   "role.grant"
 ];
 
@@ -197,6 +198,18 @@ export async function can(ctx, action, resource = {}) {
        A student's own work, which they write and their teachers read. Note
        that a teacher cannot write it: progress is evidence of what a student
        did, and evidence somebody else can edit is not evidence. */
+    /* A mark is the student's own reading. They own it; a teacher who
+       teaches them may read it; nobody else may, and nobody at all may write
+       one on their behalf — a note in somebody else's margin signed with
+       their name is not a thing this product should be able to produce. */
+    case "mark.read":
+      if (resource.accountId === actor.id) return true;
+      if (learnAdmin) return true;
+      return teachesStudent(ctx, actor, resource.accountId);
+
+    case "mark.write":
+      return resource.accountId === actor.id;
+
     case "progress.read":
       if (resource.accountId === actor.id) return true;
       if (learnAdmin) return true;

@@ -3648,8 +3648,27 @@
     var pending = null;       // a live selection waiting for a decision
     var open = null;          // the mark whose editor is showing
 
+    /* The store, and — when there is an account behind it — the server it
+       caches. `connect` pulls once and merges; every write after that pushes
+       itself. Nothing waits on the network: the reading uses the local copy
+       from the first frame, and a pull that lands later repaints the margin
+       through the same subscription a local write uses. */
     function shop() {
-      if (!store) store = new A.Store(S.me ? S.me.id : "anon", DOC);
+      if (!store) {
+        store = new A.Store(S.me ? S.me.id : "anon", DOC);
+        store.courseId = RU.key || null;
+        if (API && S.me) {
+          var bound = store;
+          bound.connect({
+            pull: function (scope) { return API.marks.list({ scope: scope }); },
+            push: function (m) { return API.marks.put(m); },
+            drop: function (id) { return API.marks.remove(id); }
+          }, DOC).then(function () {
+            // Only repaint if the reader is still on the page that asked.
+            if (store === bound && S.view === "read") redrawMarks();
+          });
+        }
+      }
       return store;
     }
     function reset() { store = null; theirs = []; }
@@ -3707,6 +3726,7 @@
       unfocus();
     }
     S.hideAnn = hideAll;
+    S.redrawMarks = redrawMarks;
 
     function grab() {
       var s = window.getSelection();
@@ -4075,6 +4095,16 @@
       wrap.style.height = floor + "px";
     }
 
+    /* Marks that arrived after the page did — a pull finishing, most often.
+       Painting is idempotent through `restore`, which skips a mark already on
+       the page, so this is safe to call whenever the store changes. */
+    function redrawMarks() {
+      if (!body || !sec) return;
+      A.restore(body, here());
+      drawMargin();
+      if (S.railCounts) S.railCounts();
+    }
+
     /* ------------------------------------------------------------- Wiring */
     function arm(newBody, newSec, art, margin) {
       body = newBody; sec = newSec; artEl = art; marginEl = margin;
@@ -4324,6 +4354,32 @@
     return box;
   }
 
+  /* What the reading looks like per section, by pass rather than as a total.
+     Six counts say something a single number cannot: four terms and nothing
+     else is a vocabulary pass, and the rail should be able to show that
+     without the student opening the section to find out. */
+  function railCounts(list) {
+    list = list || document.querySelector(".rd-toc");
+    if (!list) return;
+    var all = Ann.all();
+    [].forEach.call(list.querySelectorAll("button[data-sec]"), function (b) {
+      var slot = b.querySelector(".dots");
+      if (!slot) return;
+      var here = all.filter(function (m) { return m.sec === b.dataset.sec; });
+      if (!here.length) { slot.innerHTML = ""; return; }
+      var html = "";
+      A.PASSES.forEach(function (p) {
+        var n = here.filter(function (m) { return m.pass === p.n; }).length;
+        // A pass with nothing in it draws nothing. Six grey slots on every
+        // row would be a chart of what the student has not done.
+        if (n) html += '<i style="background:' + p.hue + '" title="' + esc(p.name) +
+                       ': ' + n + '">' + (n > 1 ? n : "") + "</i>";
+      });
+      slot.innerHTML = html;
+    });
+  }
+  S.railCounts = function () { railCounts(); };
+
   /* ---------------------------------------------- The left rail: the unit
      Where you are, what is left, and the two doors out of the article —
      your notebook, and the room. */
@@ -4336,15 +4392,16 @@
     RU.sections.forEach(function (x, k) {
       var b = el("button");
       b.type = "button";
+      b.dataset.sec = x.n;
       b.setAttribute("aria-current", String(k === i));
-      var n = Ann.all().filter(function (m) { return m.sec === x.n; }).length;
       b.innerHTML = '<span class="n">' + esc(x.n) + "</span><span class=\"t\">" + esc(x.t) + "</span>" +
-        (n ? '<span class="badge">' + n + "</span>" : "") +
+        '<span class="dots"></span>' +
         (S.readDone[x.n] ? '<span class="tick">' + svg(I.tick, true) + "</span>" : "");
       b.addEventListener("click", function () { openRead(k); });
       list.appendChild(b);
     });
     toc.appendChild(list);
+    railCounts(list);
 
     var done = doneIn(RU);
     var prog = el("div", "rd-unitprog");

@@ -31,6 +31,7 @@ import * as accounts from "./routes/accounts.js";
 import * as courses from "./routes/courses.js";
 import * as grades from "./routes/grades.js";
 import * as progress from "./routes/progress.js";
+import * as marks from "./routes/marks.js";
 import * as studysets from "./routes/studysets.js";
 import * as graduation from "./routes/graduation.js";
 import * as reporting from "./routes/reporting.js";
@@ -90,6 +91,10 @@ const ROUTES = [
   ["POST",   "/api/v1/accounts/:accountId/transcripts",  graduation.importTranscript],
   ["PATCH",  "/api/v1/transcripts/:recordId",            graduation.updateRecord],
   ["PATCH",  "/api/v1/transcript-courses/:courseId",     graduation.updateCourse],
+
+  ["GET",    "/api/v1/marks",           marks.list],
+  ["POST",   "/api/v1/marks",           marks.put],
+  ["DELETE", "/api/v1/marks/:markId",   marks.remove],
 
   ["GET",    "/api/v1/progress", progress.list],
   ["PUT",    "/api/v1/progress", progress.put],

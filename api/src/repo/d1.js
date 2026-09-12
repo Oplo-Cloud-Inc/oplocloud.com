@@ -850,6 +850,55 @@ export class D1Repository {
     ).bind(id("prg"), accountId, courseId, scope, JSON.stringify(state), now()).run();
   }
 
+  /* ------------------------------------------------------------- Marks
+     The student's reading, as rows. `putMark` is an upsert on an id the
+     client generated, which is what makes syncing a mark idempotent: a
+     retry after a dropped connection writes the same row rather than a
+     second copy of the same highlight. */
+  async listMarks(accountId, scope = null) {
+    const sql = scope
+      ? `SELECT * FROM learn_marks WHERE account_id = ? AND scope = ? ORDER BY created_at`
+      : `SELECT * FROM learn_marks WHERE account_id = ? ORDER BY created_at`;
+    const stmt = scope
+      ? this.db.prepare(sql).bind(accountId, scope)
+      : this.db.prepare(sql).bind(accountId);
+    const { results } = await stmt.all();
+    return results || [];
+  }
+
+  async getMark(markId) {
+    return await this.db.prepare(
+      `SELECT * FROM learn_marks WHERE id = ?`
+    ).bind(markId).first();
+  }
+
+  async putMark(m) {
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_marks
+         (id, account_id, course_id, scope, section, pass, text,
+          exact, prefix, suffix, char_offset, note, reply_to, visibility,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (id) DO UPDATE SET
+         pass = excluded.pass, text = excluded.text,
+         exact = excluded.exact, prefix = excluded.prefix,
+         suffix = excluded.suffix, char_offset = excluded.char_offset,
+         note = excluded.note, visibility = excluded.visibility,
+         updated_at = excluded.updated_at`
+    ).bind(
+      m.id, m.accountId, m.courseId || null, m.scope, m.section, m.pass,
+      m.text, m.exact, m.prefix || null, m.suffix || null,
+      m.charOffset == null ? null : m.charOffset,
+      m.note || null, m.replyTo || null, m.visibility || "private",
+      m.createdAt || t, t
+    ).run();
+  }
+
+  async deleteMark(markId) {
+    await this.db.prepare(`DELETE FROM learn_marks WHERE id = ?`).bind(markId).run();
+  }
+
   async addXp({ accountId, source, amount, day, meta }) {
     await this.db.prepare(
       `INSERT INTO learn_xp_events (id, account_id, source, amount, day, meta_json, created_at)
