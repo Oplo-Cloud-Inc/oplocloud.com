@@ -12,13 +12,16 @@
 # than from main. The content happened to be identical that time. There is no
 # reason it would be the next.
 #
-# Two rules make that impossible here:
+# Three rules make that impossible here:
 #
 #   set -euo pipefail   nothing runs after a step that failed, including a
 #                       failure in the middle of a pipe
 #   deploy from main    the Workers are published from a fresh checkout of the
 #                       commit just pushed to main — never from the tree
 #                       somebody is editing, which may hold anything
+#   touch no branches   the merge is made on a detached checkout of
+#                       origin/main and reaches main only by being pushed, so
+#                       a dry run leaves the repository exactly as it was
 #
 # Usage
 #     tools/ship.sh              merge, push main, publish the student app
@@ -62,6 +65,14 @@ echo "  $BRANCH at $(git log --oneline -1 "$BRANCH")"
 say "Merge into main"
 # A stale registration is exactly what broke the manual version. Prune first,
 # and use a directory that has never existed so nothing can be half-there.
+#
+# Detached at origin/main, not a checkout of the local `main` branch. A
+# worktree on a branch commits to that branch, and branches are shared with
+# every checkout of the repository: the first dry run of this script merged
+# into local `main`, and the real run after it found the work "already
+# merged" and published the dry run's commit. Nothing here moves
+# refs/heads/main now — a merge reaches main by push, or is discarded with
+# the worktree.
 git worktree prune
 WT="$(mktemp -d "${TMPDIR:-/tmp}/oplo-ship.XXXXXX")"
 cleanup() {
@@ -70,8 +81,7 @@ cleanup() {
 }
 trap cleanup EXIT
 rmdir "$WT"                                   # `worktree add` creates it
-git worktree add -q "$WT" main
-git -C "$WT" merge --ff-only -q origin/main
+git worktree add -q --detach "$WT" origin/main
 if git -C "$WT" merge-base --is-ancestor "origin/$BRANCH" HEAD; then
   echo "  main already contains $BRANCH"
 else
@@ -101,7 +111,7 @@ fi
 
 # --------------------------------------------------------------------------
 say "Push main"
-git -C "$WT" push -q origin main
+git -C "$WT" push -q origin HEAD:refs/heads/main
 [ "$(git -C "$WT" rev-parse HEAD)" = "$(git ls-remote origin refs/heads/main | cut -f1)" ] \
   || die "origin/main is not the commit that was just merged. Stopping before any deploy."
 echo "  origin/main at $(git -C "$WT" log --oneline -1)"
