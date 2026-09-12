@@ -236,6 +236,9 @@ svg { display: block; }
 .lx-hero .meta { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
 
 .lx-two { display: grid; grid-template-columns: minmax(0,1fr) 268px; gap: 40px; margin-top: 30px; align-items: start; }
+@media (max-width: 1040px) {
+  .cn-row { grid-template-columns: minmax(0, 1fr) 120px 150px; }
+}
 @media (max-width: 900px) { .lx-two { grid-template-columns: 1fr; gap: 30px; } }
 
 .lx-side { position: sticky; top: calc(var(--bar) + var(--sub) + 18px); display: grid; gap: 14px; }
@@ -888,6 +891,9 @@ svg { display: block; }
   .rd-margin { grid-column: 1 / -1; }
   .rd-margin .mg-wrap { height: auto !important; display: grid; gap: 10px; }
   .rd-margin .mg { position: static !important; }
+}
+@media (max-width: 1040px) {
+  .cn-row { grid-template-columns: minmax(0, 1fr) 120px 150px; }
 }
 @media (max-width: 900px) {
   .rd-three { grid-template-columns: 1fr; }
@@ -2581,6 +2587,9 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
   grid-template-columns: 0.9fr 1.5fr 1.2fr 1.2fr 34px;
   align-items: start;
 }
+@media (max-width: 1040px) {
+  .cn-row { grid-template-columns: minmax(0, 1fr) 120px 150px; }
+}
 @media (max-width: 900px) {
   .admin-table.terms .admin-tr { grid-template-columns: 1fr; }
 }
@@ -3327,15 +3336,31 @@ body.is-console .cn-rail { display: flex; }
    head of the content, present only when there is somewhere to go back to. */
 body.is-console .lx-bar,
 body.is-console .lx-subbar,
-body.is-console .tt-open { display: none !important; }
+body.is-console .tt-open,
+/* Staff have no streak, no rank and nothing assigned to them. A bar carrying
+   all three is a bar built for somebody else. */
+body.is-staff .lx-bar,
+body.is-staff .lx-subbar,
+body.is-staff .tt-open { display: none !important; }
+
+/* The gutter is the fix for the thing that looked broken: `padding-left` used
+   to equal the rail's width exactly, so the page's own 22px gutter was
+   overwritten and the first character of every heading sat eight pixels from
+   the rail's edge. The rail is a wall; content does not lean on it. */
 body.is-console .lx-wrap {
-  padding-left: 232px; padding-top: 64px; max-width: none;
+  padding-left: calc(232px + 34px);
+  padding-right: 34px;
+  padding-top: 64px;
+  max-width: none;
 }
-body.is-console .admin-body { max-width: 1080px; }
+/* Wide enough for a table of thirty students with five columns, and no wider.
+   A row whose name is at the far left and whose grade is 1400px away is a row
+   nobody reads across. */
+body.is-console .admin-body { max-width: 1280px; }
 
 .cn-back, .cn-open { display: none; }
 body.is-console .cn-back {
-  position: fixed; top: 20px; left: 258px; z-index: 50;
+  position: fixed; top: 20px; left: calc(232px + 34px); z-index: 50;
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 12.5px; color: var(--ink-3);
   padding: 5px 11px 5px 8px; border-radius: 999px;
@@ -3427,7 +3452,10 @@ body.is-console .cn-back:hover { color: var(--ink); box-shadow: inset 0 0 0 1px 
    through one point is a drawing. */
 .cn-tiles {
   display: grid; gap: 10px; margin-bottom: 6px;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  /* Capped, not stretched. A number is read at a glance and a glance does not
+     get better when the box around it is 250px wide. */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 208px));
+  justify-content: start;
 }
 .cn-tile {
   padding: 16px 18px; border-radius: 13px;
@@ -3452,13 +3480,20 @@ body.is-console .cn-back:hover { color: var(--ink); box-shadow: inset 0 0 0 1px 
 /* A row. One shape for every list in the console — a class, a piece of work,
    a report — so that moving between screens is not relearning a layout. */
 .cn-rows { display: flex; flex-direction: column; }
+/* Each row is its own grid, so `auto` columns sized themselves per row and
+   the numbers down a list did not line up — 76% in one row and 84% in the
+   next sat forty pixels apart. Fixed columns fix that, and the trailing one
+   takes the slack so the content clusters to the left instead of being flung
+   at the right edge of a 1280px page. */
 .cn-row {
-  display: grid; grid-template-columns: 1fr auto auto; gap: 18px;
+  display: grid;
+  grid-template-columns: minmax(180px, 2.2fr) 150px 210px minmax(0, 1.1fr);
+  gap: 18px;
   align-items: center; width: 100%; text-align: left;
-  padding: 14px 4px; border-bottom: 1px solid var(--hair);
+  padding: var(--row) 4px; border-bottom: 1px solid var(--hair);
   transition: background .13s var(--ease);
 }
-.cn-rows.tight .cn-row { padding: 11px 4px; }
+
 button.cn-row:hover { background: var(--canvas); }
 .cn-row.flat { cursor: default; }
 .cn-row .t { min-width: 0; }
@@ -3481,9 +3516,17 @@ button.cn-row:hover { background: var(--canvas); }
 .cn-row .s em.late { color: var(--red); }
 .cn-row .s em.done { color: var(--ink-3); font-weight: 400; }
 .cn-row .s .why {
-  display: block; max-width: 34ch; font-size: 11.5px; color: var(--ink-3);
+  display: block; font-size: 11.5px; color: var(--ink-3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* On the reporting list the reason is the content — "2 pieces of work
+   unmarked in Waves and Sound" is the whole point of the row — so it takes
+   the slack the other lists leave at the right rather than being ellipsised
+   into "2 pieces of work unmark…" beside 250px of nothing. */
+.cn-row.report { grid-template-columns: minmax(170px, 1.5fr) 120px minmax(280px, 2fr); }
+/* And it reads left. Right-aligned prose goes ragged down the left edge,
+   which is where the eye starts every line. */
+.cn-row.report .s { text-align: left; }
 
 .cn-block { margin-bottom: 30px; }
 .cn-blockhead {
@@ -3578,6 +3621,9 @@ button.cn-row:hover { background: var(--canvas); }
 .cn-finderrow span { font-size: 11.5px; color: var(--ink-3); }
 .cn-finderrow.on { background: var(--canvas); }
 
+@media (max-width: 1040px) {
+  .cn-row { grid-template-columns: minmax(0, 1fr) 120px 150px; }
+}
 @media (max-width: 900px) {
   .cn-rail { transform: translateX(-100%); transition: transform .22s var(--ease); }
   body.is-console .cn-rail { display: flex; }
@@ -3592,7 +3638,7 @@ button.cn-row:hover { background: var(--canvas); }
     color: var(--ink-2); background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair);
   }
   body.rail-open .cn-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.16); }
-  .cn-row { grid-template-columns: 1fr auto; gap: 12px; }
+  .cn-row { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
   .cn-row .m { display: none; }
   .cn-row .s .why { max-width: 22ch; }
 }
