@@ -6,11 +6,11 @@
    flashcards, Learn, Match, Test — asks "do you know it cold?" Neither one
    substitutes for the other, which is why both are here.
 
-   No backend and no network — but progress is kept. Everything a student
-   does is written to one record in this browser (store.js), so a session
-   resumes where it was left and a streak survives closing the tab. What that
-   cannot do is follow them to another machine, and the account screen says
-   so plainly rather than implying an account that does not exist.
+   Progress follows the account. Everything a student does is written first
+   to a record in this browser (store.js), so nothing waits on the network and
+   a dropped connection costs nothing, and is then kept in step with their Oplo
+   Account (sync.js) — merged, never replaced — so the same progress is there
+   on every device they sign in on.
    ========================================================================== */
 (function () {
   "use strict";
@@ -133,6 +133,7 @@
      references into R.d, assigned at sign-in: reading them is free, and
      writing them is followed by R.save(). */
   var R = null;           // the persisted record; null until somebody signs in
+  var Progress = null;    // the record's sync with the account (sync.js); null signed out
   var S = {
     me: null,             // the signed-in student
     view: "my",
@@ -326,9 +327,9 @@
       if (!R || !API) return Promise.resolve(false);
       return Promise.all([
         API.gamification.standing().catch(function () { return null; }),
-        API.progress.all().catch(function () { return null; })
+        Progress ? Progress.pull().catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (out) {
-        var standing = out[0], progress = out[1], changed = false;
+        var standing = out[0], moved = out[1] || [], changed = moved.length > 0;
 
         if (standing) {
           var g = R.d.game;
@@ -344,50 +345,16 @@
           R.d.game.synced = Date.now();
         }
 
-        if (progress) {
-          Object.keys(progress).forEach(function (scope) {
-            if (scope.indexOf("set:") !== 0) return;
-            var setId = scope.slice(4);
-            var remote = progress[scope];
-            var key = "oplo.learn." + S.me.id + "." + setId;
-            var localAt = 0;
-            try {
-              var raw = localStorage.getItem(key + ".at");
-              localAt = raw ? Number(raw) : 0;
-            } catch (e) { /* private mode */ }
-            // The newer of the two wins, and the timestamps are the server's
-            // on one side and this browser's on the other — so a device with
-            // a wrong clock loses rather than corrupting the record.
-            if (remote.updatedAt > localAt) {
-              try {
-                localStorage.setItem(key, JSON.stringify(remote.state));
-                localStorage.setItem(key + ".at", String(remote.updatedAt));
-                changed = true;
-              } catch (e) { /* full */ }
-            }
-          });
-        }
-
         if (changed) R.save();
         return changed;
       });
     }
 
-    /* Push one study set's concept states. Debounced per set, because a
-       session answers a question every few seconds and each one would
-       otherwise be a request. */
+    /* A set's concept states changed. Kept for the screens that still call it;
+       learn.js now tells the engine itself whenever any set is saved, so this is
+       belt and braces rather than the only path. */
     function pushSet(setId) {
-      if (!API || !S.me) return;
-      clearTimeout(pushing[setId]);
-      pushing[setId] = setTimeout(function () {
-        var key = "oplo.learn." + S.me.id + "." + setId;
-        var state;
-        try { state = JSON.parse(localStorage.getItem(key) || "{}"); }
-        catch (e) { return; }
-        API.progress.put("set:" + setId, state).then(function () {
-          try { localStorage.setItem(key + ".at", String(Date.now())); } catch (e) { /* full */ }
-        }).catch(function () { /* offline; the next push carries it */ });
-      }, 4000);
+      if (Progress) Progress.dirty("set:" + setId);
     }
 
     /* Experience events. Batched and retried, because a dropped award is a
@@ -4448,7 +4415,8 @@
     var marked = Ann.all().filter(function (m) { return m.sec === sec.n && !m.by; }).length;
     // A boundary already started is resumed, not restarted: the answers given
     // before a look back at the text are the ones that count.
-    var inFlight = !!rtBag()[rtKey(r, sec)];
+    var flight = rtBag()[rtKey(r, sec)];
+    var inFlight = !!(flight && !flight.done);
     next.innerHTML = '<div><span class="t">' + (inFlight ? "Part-way through" : "Finished reading?") +
       "</span><b>" +
       (inFlight ? "Your questions on this section are waiting"
@@ -4720,7 +4688,8 @@
     var r = RU;
     var key = rtKey(r, sec);
     var bag = rtBag();
-    var st = bag[key] || (bag[key] = { cards: {}, check: null, at: Date.now() });
+    var st = (bag[key] && !bag[key].done) ? bag[key]
+           : (bag[key] = { cards: {}, check: null, at: Date.now() });
     var pool = unitConcepts(r);
     var store = new L.Store(S.me ? S.me.id : "anon", r.set);
     var v = $("#v-read");
@@ -4750,7 +4719,9 @@
       // Done is done whether or not every answer was right. The section was
       // read and recalled from; a wrong answer is information, not a gate.
       S.readDone[sec.n] = true;
-      delete bag[key];
+      // Closed, not deleted: a dated marker, so another device's copy of this
+      // boundary, still open there, cannot come back through a merge.
+      bag[key] = { done: true, at: Date.now() };
       keep();
       var pct = Math.round(doneIn(r) / r.sections.length * 100);
       var course = allCourses().filter(function (x) { return x.id === r.course; })[0] || D.MEDIA;
@@ -5735,6 +5706,13 @@
       });
       v.appendChild(list);
     }
+
+    /* ---- Progress ----------------------------------------------------- */
+    v.appendChild(el("h2", "lx-h2", "Progress"));
+    var syncLine = el("p", "lx-lede");
+    syncLine.id = "acSync";
+    v.appendChild(syncLine);
+    paintSync();
 
     /* ---- Password ----------------------------------------------------- */
     v.appendChild(el("h2", "lx-h2", "Password"));
@@ -10371,6 +10349,43 @@
 
   /* `who` is whatever /api/v1/me resolved the session cookie to. Nothing in
      this function may be reached without that having succeeded. */
+  /* Something arrived from another device. The record was merged in place,
+     so S.m, S.sets and the rest already hold it; only the copied primitives
+     need refreshing, and whatever is on screen redrawn. Where a student is
+     reading is not moved under them mid-page — it applies when the reader is
+     next opened. */
+  function adoptSynced(scopes) {
+    if (!R) return;
+    if (scopes.indexOf("record") > -1) {
+      S.citeStyle = R.d.citeStyle || S.citeStyle;
+      if (S.view !== "read") {
+        S.readIx = R.d.readIx || 0;
+        var ru = READERS[R.d.readUnit];
+        if (ru && ru.sections.length) useReader(ru);
+      }
+    }
+    Game.paint();
+    if (S.view === "my") drawMy();
+  }
+
+  /* Saved, saving, or waiting for a connection — in words, because "is my
+     work safe?" deserves an answer a student can read. */
+  function paintSync() {
+    var n = document.getElementById("acSync");
+    if (!n) return;
+    var st = S.syncState || {};
+    var at = st.at ? new Date(st.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : null;
+    n.textContent =
+      st.state === "saving"  ? "Saving your progress to your account…" :
+      st.state === "offline" ? "You are offline. Your progress is kept on this device and saves to " +
+                               "your account when the connection is back." :
+      st.state === "error"   ? "Your latest progress has not reached your account yet. It is kept on " +
+                               "this device and will be sent again." :
+      st.state === "saved"   ? "Saved to your account, so it is the same on every device you sign in on." +
+                               (at ? " Last saved at " + at + "." : "") :
+      "Your progress saves to your account, so it is the same on every device you sign in on.";
+  }
+
   function boot(who) {
     S.me = normaliseAccount(who);
     who = S.me;
@@ -10390,6 +10405,20 @@
     var ru = READERS[R.d.readUnit];
     useReader(ru && ru.sections.length ? ru : READERS["media:5"]);
     Game.attach(R);
+
+    /* The record is written here first and kept in step with the account —
+       and so is every set's concept state, through the one hook learn.js
+       calls when it saves. The first pull runs below with the rest of what
+       the server knows. */
+    if (window.OPLO_SYNC && API) {
+      Progress = window.OPLO_SYNC.create({
+        api: API, record: R, store: ST, learn: L, personId: who.id,
+        onChange: adoptSynced,
+        onStatus: function (st) { S.syncState = st; paintSync(); }
+      });
+      R.subscribe(function () { if (Progress) Progress.dirty("record"); });
+      L.Store.changed = function (setId) { if (Progress) Progress.dirty("set:" + setId); };
+    }
 
     $("#gate").hidden = true;
     var av = document.querySelector(".lx-user .av");
@@ -10487,6 +10516,8 @@
   function signOut() {
     if (R) R.flush();                 // never leave the last few answers unwritten
     Sync.flushNow();
+    if (Progress) { Progress.flushNow(); Progress.stop(); Progress = null; }
+    L.Store.changed = null;
     R = null;
     Game.attach(null);
     Auth.close();
@@ -10814,11 +10845,16 @@
   window.addEventListener("pagehide", function () {
     if (R) R.flush();
     Sync.flushNow();
+    if (Progress) Progress.flushNow();
   });
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") {
       if (R) R.flush();
       Sync.flush();
+      if (Progress) Progress.flush();
+    } else if (Progress) {
+      // Back to a tab that may have sat behind another device's session.
+      Progress.maybePull();
     }
   });
 

@@ -382,8 +382,38 @@ window.OPLO_API = (function () {
         return get("/progress" + q({ accountId: accountId }))
           .then(function (r) { return r.progress; });
       },
-      put: function (scope, state, courseId) {
-        return put("/progress", { scope: scope, state: state, courseId: courseId });
+      /* One scope by name — what a device asks for after its write was
+         refused because another device got there first. */
+      one: function (scope) {
+        return get("/progress" + q({ scope: scope }))
+          .then(function (r) { return (r.progress || {})[scope] || null; });
+      },
+      /* `since` is the server's updatedAt this device last saw for the scope,
+         or 0 for "nothing stored yet". Given one, the server refuses (409) a
+         write that would overwrite a change this device has not seen. */
+      put: function (scope, state, courseId, since) {
+        var body = { scope: scope, state: state, courseId: courseId };
+        if (since != null) body.base = since;
+        return put("/progress", body);
+      },
+      /* The same write from a page that is closing. Browsers cap keepalive
+         bodies, so a copy too large to fit is not attempted — it is still in
+         this browser, and the next sign-in merges and sends it. */
+      beacon: function (scope, state, since) {
+        try {
+          var payload = JSON.stringify({ scope: scope, state: state, base: since });
+          if (payload.length > 60000) return false;
+          fetch(base + "/progress", {
+            method: "PUT",
+            credentials: "include",
+            keepalive: true,
+            headers: { "content-type": "application/json" },
+            body: payload
+          });
+          return true;
+        } catch (e) {
+          return false;
+        }
       }
     },
 

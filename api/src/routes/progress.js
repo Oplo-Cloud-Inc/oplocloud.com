@@ -15,7 +15,10 @@ export async function list(ctx) {
   const accountId = ctx.url.searchParams.get("accountId") || actor.id;
   await must(ctx, "progress.read", { accountId });
 
-  const rows = await ctx.repo.listProgress(accountId);
+  // One scope by name is what a device asks for after its write was refused:
+  // it needs that scope's current copy to merge with, not the whole record.
+  const scope = ctx.url.searchParams.get("scope") || null;
+  const rows = await ctx.repo.listProgress(accountId, scope);
   const out = {};
   for (const r of rows) {
     try { out[r.scope] = { state: JSON.parse(r.state_json), updatedAt: r.updated_at }; }
@@ -26,10 +29,14 @@ export async function list(ctx) {
 
 /* PUT /api/v1/progress — the student's own record for one scope.
 
-   Last-write-wins per scope, with the scope deliberately fine-grained (one
-   study set, one unit) so two devices working on different material never
-   collide. Two devices working on the *same* set still can, and the response
-   returns what was stored so a client can notice it lost and reconcile. */
+   `base` is the updatedAt this device last saw for the scope, from this
+   server — never from its own clock — or 0 for "nothing stored yet". Given
+   one, a write that would overwrite a change the device has not seen is
+   refused with 409, and the device is expected to fetch the scope, merge, and
+   write again. Merging is the client's job because only the client knows what
+   each field means; refusing to lose data silently is the server's.
+
+   Without a base the write is unconditional, as it always was. */
 export async function put(ctx) {
   const actor = requireActor(ctx);
   const body = await readJson(ctx.request, { limit: 256 * 1024 });
@@ -37,10 +44,22 @@ export async function put(ctx) {
   if (body.state == null || typeof body.state !== "object") {
     throw ApiError.badRequest("state must be an object.", "state");
   }
+  let base;
+  if (body.base !== undefined && body.base !== null) {
+    base = Number(body.base);
+    if (!Number.isFinite(base) || base < 0) {
+      throw ApiError.badRequest("base must be the updatedAt last seen, or 0.", "base");
+    }
+  }
   await must(ctx, "progress.write", { accountId: actor.id });
 
-  await ctx.repo.putProgress(actor.id, scope, body.state, body.courseId || null);
-  return json({ ok: true, scope, updatedAt: Date.now() });
+  const out = await ctx.repo.putProgress(actor.id, scope, body.state, body.courseId || null, base);
+  if (out.conflict) {
+    throw ApiError.conflict(
+      "This progress changed on another device since this one last saw it. Fetch it, merge, and try again.",
+      "base");
+  }
+  return json({ ok: true, scope, updatedAt: out.updatedAt });
 }
 
 /* --------------------------------------------------------------- Standing

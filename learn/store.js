@@ -30,11 +30,11 @@
    read-modify-write of one key, debounced, and guarded — a full disk or a
    private window degrades to forgetting, never to corruption.
 
-   The second is that this is a local record, and the file says so out loud.
-   It lives in this browser, under this profile. It is not an account, it does
-   not follow the student to another machine, and nothing here is sent
-   anywhere. `Sync.push` and `Sync.pull` at the bottom are the two functions a
-   server would replace, and they are deliberately the only two.
+   The second is that this copy is written first and never waits on a
+   network. It lives in this browser, under this profile, and sync.js keeps it
+   in step with the student's Oplo Account — merging, never replacing — so the
+   same progress is there on every device they sign in on. `merge` at the
+   bottom is the whole rule for how two copies of one record become one.
    ========================================================================== */
 window.OPLO_STORE = (function () {
   "use strict";
@@ -63,7 +63,7 @@ window.OPLO_STORE = (function () {
       // retrieval screen and coming back rebuilt the questions and graded
       // every answer a second time — after the student had been free to
       // reread the passage in between.
-      rt: {},                // "media:6:6.1" -> { ids, cards: { markId: {...} }, check }
+      rt: {},                // "media:6:6.1" -> { ids, cards, check }, or { done, at } once closed
       doneToday: {},
       citeStyle: "mla",
       game: {
@@ -77,6 +77,7 @@ window.OPLO_STORE = (function () {
         goal: 60             // xp a day, changeable
       },
       resume: {},            // setId -> a Learn session walked out of
+      epoch: 0,              // when this record was last reset; a newer reset wins a merge outright
       first: null,           // when this record was created
       last: null             // when it was last written
     };
@@ -120,6 +121,7 @@ window.OPLO_STORE = (function () {
     if (typeof d.citeStyle === "string") out.citeStyle = d.citeStyle;
     if (d.resume && typeof d.resume === "object") out.resume = d.resume;
     if (d.first) out.first = d.first;
+    if (typeof d.epoch === "number") out.epoch = d.epoch;
     if (d.last) out.last = d.last;
     if (d.game && typeof d.game === "object") {
       var g = out.game, s = d.game;
@@ -266,12 +268,16 @@ window.OPLO_STORE = (function () {
   };
   Record.prototype.parked = function (setId) {
     var r = this.d.resume[setId];
-    if (!r) return null;
+    if (!r || r.gone) return null;
     if (Date.now() - (r.at || 0) > RESUME_LIFE) { delete this.d.resume[setId]; this.save(); return null; }
     return r;
   };
+  /* Cleared, not deleted. A deleted entry is indistinguishable from one this
+     device never had, so the next merge would take the other device's copy
+     of the finished session and offer it again. A dated marker says it ended. */
   Record.prototype.clearPark = function (setId) {
-    if (this.d.resume[setId]) { delete this.d.resume[setId]; this.save(); }
+    var r = this.d.resume[setId];
+    if (r && !r.gone) { this.d.resume[setId] = { gone: true, at: Date.now() }; this.save(); }
   };
 
   /* --------------------------------------------------------- Mistake book */
@@ -314,6 +320,9 @@ window.OPLO_STORE = (function () {
     var parsed = JSON.parse(text);
     if (!parsed || parsed.oplo !== "learn-record") throw new Error("Not an OEdu record.");
     this.d = migrate(parsed.d);
+    // An import replaces everything, so it is a reset as far as merging is
+    // concerned: nothing a device held from before it may come back.
+    this.d.epoch = Date.now();
     this.rollDay(Date.now());
     this.flush();
     return true;
@@ -322,20 +331,160 @@ window.OPLO_STORE = (function () {
   Record.prototype.wipe = function () {
     this.d = blank();
     this.d.first = Date.now();
+    this.d.epoch = Date.now();
     this.flush();
   };
 
+  /* ---------------------------------------------------------------- Merge
+     Two copies of one person's record — this browser's and the account's —
+     made into one without losing the work in either.
+
+     Last-write-wins on the whole record is the easy rule and the wrong one: a
+     phone that saves a minute after a laptop erases the laptop's morning. So
+     every field merges by what it means, and most fields only move one way,
+     which is what makes the result the same whichever copy arrives first:
+
+       m          unit mastery never falls (raise() only raises)   max
+       readDone   a checked section stays checked                  union
+       pre        a baseline is the first prediction made          earliest
+       sets       stars and levels are choices                     newest device
+                  best time is the lowest, run counts the highest
+       mistakes   one row per mistake, the larger count            by key
+       resume     newest per set; cleared stays cleared            by stamp
+       rt         each card only moves forward; a closed boundary
+                  beats an open one started before it closed       by progress
+       position   where you are reading, and how you cite          newest device
+       game       the server's ledger, not this merge's business   kept local
+
+     `epoch` sits above all of it. A reset or an import stamps one, and a
+     newer epoch wins outright: data from before a reset has nothing to merge
+     with. `local` and `remote` are never modified. */
+  var TOMB_LIFE = 30 * 864e5;
+  function mnum(x) { return typeof x === "number" && isFinite(x) ? x : 0; }
+  function mobj(x) { return x && typeof x === "object" && !Array.isArray(x) ? x : {}; }
+  function mclone(x) { return x == null ? x : JSON.parse(JSON.stringify(x)); }
+  function mkeys(x, y) {
+    var out = [], seen = {};
+    Object.keys(mobj(x)).concat(Object.keys(mobj(y))).forEach(function (k) {
+      if (!seen[k]) { seen[k] = true; out.push(k); }
+    });
+    return out;
+  }
+
+  function cardRank(c) {
+    if (!c) return 0;
+    return c.closed ? 4 : c.second ? 3 : c.first ? 2 : c.text ? 1 : 0;
+  }
+
+  function mergeBoundary(x, y) {
+    if (!x || !y) return mclone(x || y);
+    if (x.done || y.done) {
+      if (x.done && y.done) return mclone(mnum(x.at) >= mnum(y.at) ? x : y);
+      var closed = x.done ? x : y, open = x.done ? y : x;
+      // Started after it closed: a new attempt, not the old one coming back
+      // from a device that had not heard.
+      return mclone(mnum(open.at) > mnum(closed.at) ? open : closed);
+    }
+    var earlier = mnum(x.at) <= mnum(y.at) ? x : y, later = earlier === x ? y : x;
+    var out = {
+      at: mnum(earlier.at) || mnum(later.at),
+      // The questions asked are the ones frozen first.
+      ids: (earlier.ids && earlier.ids.length ? earlier.ids : later.ids) || undefined,
+      cards: {},
+      check: null
+    };
+    mkeys(x.cards, y.cards).forEach(function (id) {
+      var a = mobj(x.cards)[id], b = mobj(y.cards)[id];
+      out.cards[id] = mclone(cardRank(b) > cardRank(a) ? b : a);
+    });
+    var p = x.check, q = y.check;
+    out.check = mclone(!p ? q : !q ? p : (q.closed && !p.closed ? q : p));
+    return out;
+  }
+
+  function merge(local, remote, now) {
+    now = now || Date.now();
+    if (!remote) return migrate(mclone(local));
+    if (!local) return migrate(mclone(remote));
+    var a = migrate(mclone(local)), b = migrate(mclone(remote));
+
+    if (mnum(a.epoch) !== mnum(b.epoch)) return mnum(a.epoch) > mnum(b.epoch) ? a : b;
+
+    var newer = mnum(a.last) >= mnum(b.last) ? a : b;
+    var out = blank();
+    out.epoch = mnum(a.epoch);
+    var firsts = [a.first, b.first].filter(function (x) { return mnum(x) > 0; });
+    out.first = firsts.length ? Math.min.apply(null, firsts) : null;
+    out.last = Math.max(mnum(a.last), mnum(b.last)) || null;
+
+    out.readIx = newer.readIx;
+    out.readUnit = newer.readUnit;
+    out.citeStyle = newer.citeStyle;
+
+    mkeys(a.m, b.m).forEach(function (k) {
+      var x = mobj(a.m[k]), y = mobj(b.m[k]), row = {};
+      mkeys(x, y).forEach(function (dim) { row[dim] = Math.max(mnum(x[dim]), mnum(y[dim])); });
+      out.m[k] = row;
+    });
+
+    mkeys(a.readDone, b.readDone).forEach(function (k) {
+      if (a.readDone[k] || b.readDone[k]) out.readDone[k] = true;
+    });
+    out.doneToday = Object.assign({}, mobj(b.doneToday), mobj(a.doneToday));
+
+    mkeys(a.pre, b.pre).forEach(function (k) {
+      var x = a.pre[k], y = b.pre[k];
+      out.pre[k] = mclone(!x ? y : !y ? x : (mnum(x.at) <= mnum(y.at) ? x : y));
+    });
+
+    mkeys(a.sets, b.sets).forEach(function (id) {
+      var x = a.sets[id], y = b.sets[id];
+      if (!x || !y) { out.sets[id] = mclone(x || y); return; }
+      var pick = newer === a ? x : y, other = pick === x ? y : x;
+      var s = Object.assign({}, mclone(other), mclone(pick));
+      s.level = Object.assign({}, mobj(other.level), mobj(pick.level));
+      s.star = Object.assign({}, mobj(other.star), mobj(pick.star));
+      s.best = x.best == null ? y.best : y.best == null ? x.best : Math.min(x.best, y.best);
+      s.runs = Math.max(mnum(x.runs), mnum(y.runs));
+      s.seen = Math.max(mnum(x.seen), mnum(y.seen));
+      out.sets[id] = s;
+    });
+
+    var byKey = {};
+    a.mistakes.concat(b.mistakes).forEach(function (m) {
+      if (!m || !m.key) return;
+      var h = byKey[m.key];
+      if (!h) { byKey[m.key] = mclone(m); return; }
+      var later = mnum(m.at) >= mnum(h.at) ? m : h, earlier = later === m ? h : m;
+      var row = Object.assign({}, mclone(earlier), mclone(later));
+      row.n = Math.max(mnum(h.n), mnum(m.n));
+      row.at = Math.max(mnum(h.at), mnum(m.at));
+      byKey[m.key] = row;
+    });
+    out.mistakes = Object.keys(byKey).map(function (k) { return byKey[k]; })
+      .sort(function (p, q) { return (q.n - p.n) || (q.at - p.at); }).slice(0, 60);
+
+    mkeys(a.resume, b.resume).forEach(function (id) {
+      var x = a.resume[id], y = b.resume[id];
+      var w = !x ? y : !y ? x : (mnum(x.at) >= mnum(y.at) ? x : y);
+      if (w && !(w.gone && now - mnum(w.at) > TOMB_LIFE)) out.resume[id] = mclone(w);
+    });
+
+    mkeys(a.rt, b.rt).forEach(function (k) {
+      var w = mergeBoundary(a.rt[k], b.rt[k]);
+      if (w && !(w.done && now - mnum(w.at) > TOMB_LIFE)) out.rt[k] = w;
+    });
+
+    // Experience comes from the server's ledger through its own endpoint.
+    // Only the daily goal is the student's choice, and it follows them.
+    out.game = mclone(a.game);
+    if (newer.game && newer.game.goal != null) out.game.goal = newer.game.goal;
+    return out;
+  }
+
   /* ----------------------------------------------------------------- Sync
-     The seam, and the whole seam.
-
-     Today a record is local: `pull` finds nothing and `push` goes nowhere,
-     and both say so rather than pretending. Given a server, these two
-     functions become a GET and a PUT against an account, every screen above
-     them stays exactly as it is, and the app gains the one thing a static
-     host cannot give it — the same progress on two machines.
-
-     They are async on purpose. Writing them synchronously today would mean
-     rewriting every caller on the day the server arrives. */
+     Kept for anything that still reaches for it. Synchronisation lives in
+     sync.js, which uses `merge` above. */
   var Sync = {
     online: false,
     pull: function () { return Promise.resolve(null); },
@@ -343,7 +492,7 @@ window.OPLO_STORE = (function () {
   };
 
   return {
-    VERSION: VERSION, Record: Record, Sync: Sync,
+    VERSION: VERSION, Record: Record, Sync: Sync, merge: merge,
     today: today, daysBetween: daysBetween, blank: blank
   };
 })();

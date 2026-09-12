@@ -386,8 +386,29 @@ window.OPLO_LEARN = (function () {
   }
 
   /* -------------------------------------------------------------- Storage */
+  /* Two copies of one set's concept states, merged per concept. A state is a
+     whole — five dimensions, counters and a due date computed together — so it
+     is kept whole: the copy answered most recently wins that concept, and a
+     concept only one side has is kept as it is. Taking a dimension from one
+     device and a due date from the other would describe a student who never
+     existed. */
+  function mergeStates(a, b) {
+    a = a && typeof a === "object" ? a : {};
+    b = b && typeof b === "object" ? b : {};
+    var out = {};
+    Object.keys(a).concat(Object.keys(b)).forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(out, k)) return;
+      var x = a[k], y = b[k];
+      if (!x || !y) { out[k] = x || y; return; }
+      var tx = x.last || 0, ty = y.last || 0;
+      out[k] = tx !== ty ? (tx > ty ? x : y) : ((x.seen || 0) >= (y.seen || 0) ? x : y);
+    });
+    return out;
+  }
+
   function Store(personId, setId) {
     this.key = "oplo.learn." + (personId || "anon") + "." + (setId || "set");
+    this.setId = setId || "set";
     this.states = {};
     this.load();
   }
@@ -404,6 +425,11 @@ window.OPLO_LEARN = (function () {
     this._t = setTimeout(function () {
       try { localStorage.setItem(self.key, JSON.stringify(self.states)); }
       catch (e) { /* full or private; the session still works, it just forgets */ }
+      // One hook for every screen that grades anything. A sync that depends
+      // on each caller remembering to ask for it is a sync the next screen
+      // forgets — which is exactly how reading's grades never reached the
+      // server.
+      if (Store.changed) { try { Store.changed(self.setId); } catch (e) { /* the listener's problem */ } }
     }, 150);
   };
   Store.prototype.get = function (key) {
@@ -411,6 +437,14 @@ window.OPLO_LEARN = (function () {
     return this.states[key];
   };
   Store.prototype.all = function () { return this.states; };
+  /* Replace this set's states with a merged copy — what sync.js does after
+     another device has answered. Written straight through and without
+     calling the hook: telling the syncer about its own write is how a pull
+     turns into a push of the same thing. */
+  Store.prototype.adopt = function (states) {
+    this.states = states && typeof states === "object" ? states : {};
+    try { localStorage.setItem(this.key, JSON.stringify(this.states)); } catch (e) { /* full */ }
+  };
   Store.prototype.grade = function (key, o, now) {
     var s = grade(this.get(key), o, now);
     this.save();
@@ -468,6 +502,7 @@ window.OPLO_LEARN = (function () {
     hintDependency: hintDependency, calibration: calibration,
     grade: grade, nextReview: nextReview, due: due,
     next: next, levelFor: levelFor, decideGoal: decideGoal,
-    ceilingLevels: ceilingLevels, Store: Store, summary: summary, when: when
+    ceilingLevels: ceilingLevels, Store: Store, summary: summary, when: when,
+    mergeStates: mergeStates
   };
 })();
