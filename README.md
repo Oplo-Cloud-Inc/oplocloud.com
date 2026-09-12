@@ -67,6 +67,19 @@ python3 -m http.server 4173
 
 (There's a `.claude/launch.json` preconfigured for this on port 4173.)
 
+## Ship it
+
+`tools/ship.sh` is the one way work on `platform-backend` goes live. It refuses
+a dirty tree, merges into `main` in a throwaway worktree, pushes, and only then
+publishes the Workers — from that checkout of `main`, never from the tree being
+edited — stopping at the first step that fails.
+
+```bash
+tools/ship.sh             # the student app at edu.oplocloud.com
+tools/ship.sh --api       # remote D1 migrations, then the API, then the app
+tools/ship.sh --dry-run   # merge and verify locally; publish nothing
+```
+
 ## Deploy — GitHub Pages on oplocloud.com
 
 This repo is set up to publish to **GitHub Pages** at the apex domain
