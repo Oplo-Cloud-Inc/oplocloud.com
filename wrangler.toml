@@ -28,22 +28,42 @@
 # hostname it was served from — so it needs no change to be served at a root
 # rather than at /learn/.
 # ===========================================================================
+# The default deploy carries no custom domain, so it lands on workers.dev and
+# takes nothing over. `--env production` is what attaches the hostname, and it
+# is a separate command on purpose — see the note above that block.
+#
+#     npx wrangler deploy                  → oedu.<subdomain>.workers.dev
+#     npx wrangler deploy --env production → edu.oplocloud.com
 name = "oedu"
 compatibility_date = "2026-05-01"
+workers_dev = true
 
 [assets]
 directory = "./learn"
-# The app has one page and routes inside itself, so a path it does not
-# recognise should still arrive in the app rather than at a 404 belonging to
-# nobody.
-not_found_handling = "single-page-application"
+# A path that is not a file is not a page. The app never changes the URL — its
+# history entries are pushed with no path — so it has no deep links to fall
+# back for, and "single-page-application" here would buy nothing while costing
+# something real: a mistyped script src would return index.html with a 200,
+# and a trivial typo would surface as a JavaScript syntax error instead of a
+# missing file.
+not_found_handling = "none"
 
-# The custom domain. Cloudflare creates the DNS record and the certificate on
-# deploy; there is nothing to add by hand at the registrar.
+# --------------------------------------------------------------- Production
 #
-# NOTE: this hostname already exists on another Worker in this account.
-# Deploying attaches it here and detaches it there, so run the deploy
-# deliberately rather than as part of something else.
-[[routes]]
+# The same script, with the hostname attached. Cloudflare creates the DNS
+# record and the certificate on deploy; there is nothing to add by hand at the
+# registrar.
+#
+# NOTE: `edu.oplocloud.com` already exists as a custom domain on another Worker
+# in this account. Deploying this env attaches it here and detaches it there.
+# That is why it is not the default.
+[env.production]
+name = "oedu"
+
+[env.production.assets]
+directory = "./learn"
+not_found_handling = "none"
+
+[[env.production.routes]]
 pattern = "edu.oplocloud.com"
 custom_domain = true
