@@ -1017,6 +1017,116 @@ svg { display: block; }
   .pd-opts button { padding: 15px 18px; }
 }
 
+/* =============================================================== Retrieve
+   The section boundary, with the article gone. It keeps the reader's three
+   columns because the shape is the point: the rail still says where you are,
+   and the margin is where the passage comes back — the same place it lived
+   while you were reading it. What is missing is the text, and that absence is
+   the whole mechanism.
+   ------------------------------------------------------------------------ */
+.rt { padding-top: 4px; }
+.rt-head .eyebrow { letter-spacing: .07em; }
+.rt-head h1 {
+  margin-top: 10px;
+  font-family: var(--font); font-size: clamp(27px, 3.2vw, 36px);
+  font-weight: 600; letter-spacing: -.021em; line-height: 1.1;
+  text-wrap: balance;
+}
+.rt-say {
+  margin-top: 12px; font-size: 15.5px; line-height: 1.6; color: var(--ink-2);
+  max-width: 52ch; text-wrap: pretty;
+}
+.rt-step {
+  display: flex; align-items: center; gap: 14px;
+  margin: 26px 0 18px; max-width: 300px;
+  font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--ink-3); font-variant-numeric: tabular-nums;
+}
+.rt-step .track { flex: 1; height: 2px; border-radius: 100px; background: var(--sunk); overflow: hidden; }
+.rt-step .track i { display: block; height: 100%; background: var(--ink-3); transition: width .5s var(--ease); }
+
+.rt-card {
+  background: var(--paper); border-radius: 20px;
+  padding: clamp(24px, 3vw, 34px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 34px -20px rgba(0,0,0,.13);
+}
+/* The pass is named, with its own colour, because the prompt only makes sense
+   as a follow-up to the act: "which claim does this support" is a strange
+   question until you remember you called something evidence. */
+.rt-kind {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: var(--ink-3);
+}
+.rt-kind i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.rt-kind b { font-weight: 600; color: var(--ink-2); }
+.rt-ask {
+  margin-top: 14px;
+  font-size: clamp(19px, 2.1vw, 23px); line-height: 1.4;
+  font-weight: 500; letter-spacing: -.014em;
+  max-width: 36ch; text-wrap: pretty;
+}
+
+.rt-form { margin-top: 22px; display: grid; gap: 12px; justify-items: start; }
+.rt-form textarea {
+  width: 100%; resize: vertical;
+  padding: 14px 16px; border-radius: 14px;
+  border: 1px solid var(--rule); background: var(--paper);
+  font: inherit; font-size: 15.5px; line-height: 1.55; color: var(--ink);
+  transition: border-color .16s var(--ease);
+}
+.rt-form textarea:focus { outline: none; border-color: var(--ink-3); }
+.rt-form textarea:disabled { background: var(--canvas); color: var(--ink-2); }
+.rt-send {
+  height: 42px; padding: 0 22px; border-radius: 100px;
+  background: var(--ink); color: var(--paper);
+  font-size: 14.5px; font-weight: 500;
+  transition: opacity .16s var(--ease);
+}
+.rt-send:hover:not(:disabled) { opacity: .88; }
+.rt-send:disabled { opacity: .4; cursor: default; }
+
+.rt-verdict {
+  margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--hair);
+}
+.rt-verdict b { display: block; font-size: 16.5px; font-weight: 600; color: var(--amber); }
+.rt-verdict.ok b { color: var(--green); }
+.rt-verdict p {
+  margin-top: 9px; font-size: 15px; line-height: 1.6; color: var(--ink-2);
+  max-width: 46ch; text-wrap: pretty;
+}
+.rt-verdict em { font-style: normal; font-weight: 600; color: var(--ink); }
+.rt-next {
+  margin-top: 20px; height: 42px; padding: 0 22px; border-radius: 100px;
+  background: var(--ink); color: var(--paper);
+  font-size: 14.5px; font-weight: 500;
+  transition: opacity .16s var(--ease), transform .16s var(--ease);
+}
+.rt-next:hover { opacity: .88; transform: translateY(-1px); }
+
+/* The margin keeps its shape and starts empty on purpose: an empty panel that
+   says what will fill it is a promise, and the promise is what makes a student
+   answer before looking. */
+.rt-margin .mg-head span { color: var(--ink-3); }
+.rt-shown {
+  border-left: 2px solid var(--rule);
+  padding-left: 13px;
+}
+.rt-shown p { font-size: 14.5px; line-height: 1.55; color: var(--ink); }
+.rt-shown span {
+  display: block; margin-top: 9px; font-size: 13px; line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* The door out of a section, at the foot of the article. */
+.rd-next .why {
+  margin-top: 6px; font-size: 13px; line-height: 1.5; color: var(--ink-3);
+  max-width: 44ch;
+}
+
+@media (max-width: 900px) {
+  .rt-margin { margin-top: 22px; }
+}
+
 /* ================================================== Reader, three columns
    Navigation left, text centre, margin right. It is the shape of a book with
    a wide outer margin and a reader who writes in it, and the reason it works

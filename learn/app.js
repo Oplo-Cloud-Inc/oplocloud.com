@@ -108,6 +108,24 @@
     return String(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
 
+  /* Scored on the ideas a good answer contains rather than on wording. The
+     list is shown afterwards either way, because "you missed two of the five
+     things we look for, and here they are" is a lesson and a mark is not.
+
+     Module level because two screens ask a student to explain something now —
+     the Learn session and the retrieval at a section boundary — and two copies
+     of a scoring rule is how they end up scoring differently. */
+  function scoreExplanation(text, look) {
+    var t = " " + norm(text) + " ";
+    var hit = [], miss = [];
+    (look || []).forEach(function (w) {
+      if (t.indexOf(norm(w)) > -1) hit.push(w); else miss.push(w);
+    });
+    var need = Math.max(2, Math.ceil((look || []).length * 0.4));
+    return { hit: hit, miss: miss, need: need, ok: hit.length >= need,
+             words: text.trim().split(/\s+/).length };
+  }
+
   /* ---------------------------------------------------------------- State
      S is the session — where you are, what is in flight, what is on screen.
      What is *true about you* lives in R, the record, and survives the tab.
@@ -2138,20 +2156,6 @@
         record(ok, detail, null);
         verdict(ok, detail, null);
       }
-    }
-
-    /* Scored on the ideas a good answer contains rather than on wording. The
-       list is shown afterwards either way, because "you missed two of the five
-       things we look for, and here they are" is a lesson and a mark is not. */
-    function scoreExplanation(text, look) {
-      var t = " " + norm(text) + " ";
-      var hit = [], miss = [];
-      (look || []).forEach(function (w) {
-        if (t.indexOf(norm(w)) > -1) hit.push(w); else miss.push(w);
-      });
-      var need = Math.max(2, Math.ceil((look || []).length * 0.4));
-      return { hit: hit, miss: miss, need: need, ok: hit.length >= need,
-               words: text.trim().split(/\s+/).length };
     }
 
     function askConfidence(ok, detail) {
@@ -4435,16 +4439,24 @@
     });
     art.appendChild(body);
 
-    if (sec.check) art.appendChild(checkBlock(sec, i));
-
+    /* The authored check no longer sits here. It used to close the article
+       with its own answer four inches above it, which asks a student to
+       recognise rather than to recall — and the difference between those two
+       is most of what this product is for. It is the last card on the
+       retrieval screen now. */
     var nxt = sectionAt(i + 1);
     var next = el("div", "rd-next");
-    next.innerHTML = nxt
-      ? '<div><span class="t">Next in this unit</span><b>' + esc(nxt.n) + " " + esc(nxt.t) + "</b></div>"
-      : '<div><span class="t">End of the unit</span><b>Study the terms</b></div>';
-    var nb = el("button", "lx-btn", nxt ? "Continue" : "Study set");
+    var marked = Ann.all().filter(function (m) { return m.sec === sec.n && !m.by; }).length;
+    next.innerHTML = '<div><span class="t">Finished reading?</span><b>' +
+      (marked ? "Close the section without the page" : "Answer one question on this section") +
+      "</b><p class=\"why\">" +
+      (marked
+        ? "What you marked, asked back — the article will not be on screen."
+        : "You have not marked anything here. Marking as you read is what the questions are made of.") +
+      "</p></div>";
+    var nb = el("button", "lx-btn", "Continue");
     nb.type = "button";
-    nb.addEventListener("click", function () { if (nxt) openRead(i + 1); else openSet(r.set); });
+    nb.addEventListener("click", function () { openRetrieve(sec, i); });
     next.appendChild(nb);
     art.appendChild(next);
 
@@ -4604,41 +4616,235 @@
     return side;
   }
 
-  function checkBlock(sec, i) {
-    var c = sec.check, done = false, r = RU;
-    var box = el("div", "rd-check");
-    box.innerHTML = '<p class="k">Check your understanding</p><p class="q">' + esc(c.q) + "</p>";
-    var wrap = el("div", "lx-opts");
-    var verdict = el("div");
-    c.opts.forEach(function (o, j) {
-      var b = el("button", "lx-opt");
-      b.type = "button";
-      b.innerHTML = '<span class="lx-key">' + "ABCD"[j] + "</span><span>" + esc(o) + "</span>";
-      b.addEventListener("click", function () {
-        if (done) return;
-        done = true;
-        var ok = j === c.right;
-        [].forEach.call(wrap.children, function (x, k) {
-          x.disabled = true;
-          if (k === c.right) x.classList.add("right");
-          else if (k === j) x.classList.add("wrong");
-        });
-        verdict.innerHTML = '<div class="lx-verdict ' + (ok ? "right" : "wrong") + '"><b>' +
-          (ok ? "That's it" : "Not quite") + "</b><p>" + c.why + "</p></div>";
-        S.readDone[sec.n] = true;
-        keep();
-        var pct = Math.round(doneIn(r) / r.sections.length * 100);
-        var course = allCourses().filter(function (x) { return x.id === r.course; })[0] || D.MEDIA;
-        raise(course, r.unit, "u", pct);
-        if (ok) raise(course, r.unit, "p", pct);
-        else slip("problem", "u" + r.unit + ":" + sec.n, sec.t,
-                  "Missed the check in section " + sec.n + ".");
-      });
-      wrap.appendChild(b);
+  /* ====================================================== Retrieve
+     The section boundary, with the text gone.
+
+     A check sitting at the foot of the article is answered by looking up. The
+     answer is four inches above it, and a student who scrolls back has learned
+     that scrolling back works. So this is a screen and not a block: the
+     article is not on it, and the only way to answer is to have kept
+     something.
+
+     The questions are cued by what this student marked, and the prompts were
+     already written — every pass in annotate.js carries an `ask`. Marking a
+     sentence as Evidence and then being asked which claim it supports is the
+     same intellectual act the taxonomy was built around, a few minutes later
+     and without the page.
+
+     What the engine gets out of it is the part that was missing: reading has
+     never moved a dimension or set a review date. Now a section ends in real
+     `grade()` calls, and retention starts its clock.
+   ========================================================================== */
+  function unitConcepts(r) {
+    var set = SET(r.set);
+    if (!set || !set.cards || !CN) return [];
+    try { return CN.forSet(r.set, set.cards); } catch (e) { return []; }
+  }
+
+  /* The concept a marked sentence is about, if the unit knows one. Longest
+     match wins, so a sentence containing both "lens" and "telephoto lens" is
+     about the telephoto lens. */
+  function conceptFor(text, pool) {
+    var t = " " + norm(text) + " ", best = null;
+    pool.forEach(function (c) {
+      var k = norm(c.k);
+      if (!k) return;
+      if (t.indexOf(" " + k + " ") > -1 || t.indexOf(" " + k + "s ") > -1) {
+        if (!best || k.length > norm(best.k).length) best = c;
+      }
     });
-    box.appendChild(wrap);
-    box.appendChild(verdict);
-    return box;
+    return best;
+  }
+
+  /* Which marks to ask about. Weighted by how hard the mark was to make — an
+     objection is worth more than an underlined term, and annotate.js already
+     says so — then by whether it lands on something gradeable, then by
+     whether the student wrote anything beside it. */
+  function retrievalCards(sec, r) {
+    var pool = unitConcepts(r);
+    var mine = Ann.all().filter(function (m) { return m.sec === sec.n && !m.by; });
+    var seen = {};
+    var scored = [];
+    mine.forEach(function (m) {
+      var c = conceptFor(m.text, pool);
+      // One question per concept. Three questions about aperture because it
+      // was marked three times is a worse minute than three about three things.
+      if (c && seen[c.k]) return;
+      if (c) seen[c.k] = true;
+      var p = A.pass(m.pass);
+      scored.push({ mark: m, pass: p, concept: c,
+                    w: p.weight * 2 + (c && c.say ? 3 : 0) + (m.note ? 1 : 0) });
+    });
+    scored.sort(function (a, b) { return b.w - a.w; });
+    return scored.slice(0, 3);
+  }
+
+  function openRetrieve(sec, i) {
+    var r = RU;
+    var cards = retrievalCards(sec, r);
+    var store = new L.Store(S.me ? S.me.id : "anon", r.set);
+    var v = $("#v-read");
+    var ix = 0;
+
+    function finish() {
+      // Done is done whether or not every answer was right. The section was
+      // read and recalled from; a wrong answer is information, not a gate.
+      S.readDone[sec.n] = true;
+      keep();
+      var pct = Math.round(doneIn(r) / r.sections.length * 100);
+      var course = allCourses().filter(function (x) { return x.id === r.course; })[0] || D.MEDIA;
+      raise(course, r.unit, "u", pct);
+      var nxt = sectionAt(i + 1);
+      if (nxt) openRead(i + 1); else openSet(r.set);
+    }
+
+    function draw() {
+      v.innerHTML = "";
+      var three = el("div", "rd-three");
+      three.appendChild(unitRail(i));
+
+      var mid = el("div", "rt");
+      var head = el("div", "rt-head");
+      head.innerHTML = '<p class="eyebrow">' + esc(sec.n) + " &middot; without the page</p>" +
+        "<h1>" + esc(sec.t) + "</h1>" +
+        '<p class="rt-say">' + (cards.length
+          ? "What you marked, asked back. Answer from memory &mdash; the passage comes back after you do."
+          : "You did not mark anything in this section, so there is nothing of yours to ask about. " +
+            "One question from the section itself instead.") + "</p>";
+      mid.appendChild(head);
+
+      var step = el("div", "rt-step");
+      var total = cards.length + (sec.check ? 1 : 0);
+      step.innerHTML = "<span>" + Math.min(ix + 1, total) + " of " + total + "</span>" +
+        '<div class="track"><i style="width:' + Math.round(ix / total * 100) + '%"></i></div>';
+      mid.appendChild(step);
+
+      var margin = el("aside", "rd-margin rt-margin");
+      margin.innerHTML = '<div class="mg-head"><b>Your mark</b><span>shown after you answer</span></div>' +
+                         '<div class="mg-wrap"></div>';
+
+      if (ix < cards.length) mid.appendChild(markCard(cards[ix], margin, store));
+      else if (sec.check) mid.appendChild(finalCheck(sec, margin));
+      else { finish(); return; }
+
+      three.appendChild(mid);
+      three.appendChild(margin);
+      v.appendChild(three);
+      noFoot(); progress(null); show("read");
+      $("#wrap").classList.remove("pd-on");
+      window.scrollTo(0, 0);
+    }
+
+    /* One mark, asked with the prompt its own pass carries. */
+    function markCard(card, margin, store) {
+      var box = el("div", "rt-card");
+      var p = card.pass;
+      box.innerHTML = '<p class="rt-kind"><i style="background:' + p.hue + '"></i>' +
+        "You marked something here as <b>" + esc(p.name) + "</b></p>" +
+        '<p class="rt-ask">' + esc(p.ask) + "</p>";
+
+      var f = el("form", "rt-form");
+      var ta = el("textarea");
+      ta.rows = 4;
+      ta.placeholder = "From memory. A sentence or two is plenty.";
+      ta.setAttribute("aria-label", p.ask);
+      var send = el("button", "rt-send", "Answer");
+      send.type = "submit";
+      f.appendChild(ta); f.appendChild(send);
+      box.appendChild(f);
+      var slot = el("div");
+      box.appendChild(slot);
+
+      f.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var txt = ta.value.trim();
+        if (!txt) return;
+        ta.disabled = true; send.disabled = true;
+
+        // The passage comes back only now. Before this it would have been the
+        // answer sitting beside the question.
+        margin.querySelector(".mg-wrap").innerHTML =
+          '<div class="mg rt-shown" style="border-left-color:' + p.hue + '">' +
+          "<p>&ldquo;" + esc(card.mark.text) + "&rdquo;</p>" +
+          (card.mark.note ? "<span>Your note: " + esc(card.mark.note) + "</span>" : "") +
+          "</div>";
+        margin.querySelector(".mg-head").innerHTML = "<b>Your mark</b><span>" + esc(p.name) + "</span>";
+
+        var next = el("button", "rt-next");
+        next.type = "button";
+        next.textContent = "Next";
+        next.addEventListener("click", function () { ix++; draw(); });
+
+        if (card.concept && card.concept.say && card.concept.say.length) {
+          // Gradeable: the unit knows this concept and what a good answer
+          // contains. This is the call that has been missing — reading now
+          // moves a dimension and sets a review date.
+          var d = scoreExplanation(txt, card.concept.say);
+          store.grade(card.concept.k, { level: "explain", right: d.ok, hints: 0 }, Date.now());
+          slot.innerHTML = '<div class="rt-verdict ' + (d.ok ? "ok" : "") + '"><b>' +
+            (d.ok ? "That holds." : "Partly.") + "</b>" +
+            "<p>You reached <em>" + d.hit.length + " of " + card.concept.say.length +
+            "</em> of the things a full answer covers" +
+            (d.miss.length ? ", and did not reach <em>" + d.miss.map(esc).join(", ") + "</em>" : "") +
+            ".</p></div>";
+        } else {
+          // Not gradeable, and saying so is better than inventing a score.
+          // The retrieval still happened, which is the part that works.
+          slot.innerHTML = '<div class="rt-verdict"><b>Compare.</b>' +
+            "<p>Nothing here scores this one &mdash; it is your sentence, not a term the unit " +
+            "defines. Read what you marked against what you just wrote.</p></div>";
+        }
+        slot.firstChild.appendChild(next);
+        slot.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+      return box;
+    }
+
+    /* The section's authored question, last. It used to sit at the foot of
+       the article with its own answer four inches above it. */
+    function finalCheck(sec, margin) {
+      var c = sec.check, done = false;
+      var box = el("div", "rt-card");
+      box.innerHTML = '<p class="rt-kind"><i style="background:var(--ink-3)"></i>From the section</p>' +
+        '<p class="rt-ask">' + esc(c.q) + "</p>";
+      var wrap = el("div", "lx-opts");
+      var slot = el("div");
+      c.opts.forEach(function (o, j) {
+        var b = el("button", "lx-opt");
+        b.type = "button";
+        b.innerHTML = '<span class="lx-key">' + "ABCD"[j] + "</span><span>" + esc(o) + "</span>";
+        b.addEventListener("click", function () {
+          if (done) return;
+          done = true;
+          var ok = j === c.right;
+          [].forEach.call(wrap.children, function (x, k) {
+            x.disabled = true;
+            if (k === c.right) x.classList.add("right");
+            else if (k === j) x.classList.add("wrong");
+          });
+          var course = allCourses().filter(function (x) { return x.id === RU.course; })[0] || D.MEDIA;
+          var pct = Math.round(doneIn(RU) / RU.sections.length * 100);
+          if (ok) raise(course, RU.unit, "p", pct);
+          else slip("problem", "u" + RU.unit + ":" + sec.n, sec.t,
+                    "Missed the check in section " + sec.n + ".");
+          var go = el("button", "rt-next");
+          go.type = "button";
+          go.textContent = sectionAt(i + 1) ? "Next section" : "Study the terms";
+          go.addEventListener("click", finish);
+          slot.innerHTML = '<div class="rt-verdict ' + (ok ? "ok" : "") + '"><b>' +
+            (ok ? "That's it." : "Not quite.") + "</b><p>" + c.why + "</p></div>";
+          slot.firstChild.appendChild(go);
+          slot.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        });
+        wrap.appendChild(b);
+      });
+      box.appendChild(wrap);
+      box.appendChild(slot);
+      return box;
+    }
+
+    if (!cards.length && !sec.check) { finish(); return; }
+    draw();
   }
 
   /* Reading progress as a hairline under the bar — and, when following
