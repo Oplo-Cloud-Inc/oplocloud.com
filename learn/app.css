@@ -3292,3 +3292,289 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 .admin-row .mk { font-size: 13.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .admin-row .mk em { font-style: normal; color: var(--ink-3); }
 .admin-row .mk.miss em { color: var(--red); font-weight: 500; }
+
+/* ==========================================================================
+   The console.
+
+   A left rail holding the whole surface, and the work filling everything to
+   the right of it. The structure is the one operations dashboards have
+   converged on — Cloudflare's is the clearest — because it is the right answer
+   to the problem it solves: somebody who uses eight screens all day should be
+   able to see all eight and reach any of them in one movement.
+
+   What is adjusted is the weight of it. A rail read for eight hours needs
+   less, not more: no chevron on a row that does not expand, no icon arguing
+   with the word next to it, no colour except on the row you are standing on
+   and the numbers that changed. The type is one size for everything a person
+   navigates by, because two sizes in a list of eight is a hierarchy nobody
+   asked for.
+   ========================================================================== */
+
+.cn-rail {
+  position: fixed; inset: 0 auto 0 0; width: 232px; z-index: 60;
+  display: none; flex-direction: column;
+  padding: 10px 10px 12px;
+  background: var(--paper); border-right: 1px solid var(--hair);
+}
+body.is-console .cn-rail { display: flex; }
+body.is-console .lx-bar-in,
+body.is-console .lx-wrap { padding-left: 232px; }
+body.is-console .lx-subbar,
+body.is-console .lx-top,
+body.is-console .lx-streak,
+body.is-console .lx-rank,
+body.is-console .lx-presence,
+body.is-console .lx-prog,
+/* The person is named once, in the rail. Naming them again in the bar is the
+   same fact twice, and the second one is the one you stop reading. */
+body.is-console .lx-user { display: none !important; }
+body.is-console .lx-wrap { max-width: none; }
+body.is-console .admin-body { max-width: 1080px; }
+
+/* The account, at the top. It is the only row in the rail with two lines,
+   because it is the only one that is about a person rather than a place. */
+.cn-org {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; border-radius: 10px; text-align: left;
+  transition: background .14s var(--ease);
+}
+.cn-org:hover { background: var(--canvas); }
+.cn-org .av {
+  width: 26px; height: 26px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; color: #fff;
+  font-size: 10px; font-weight: 600; letter-spacing: .01em; background: var(--ink-3);
+}
+.cn-org .t { min-width: 0; }
+.cn-org .t b {
+  display: block; font-size: 13px; font-weight: 550; letter-spacing: -.012em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cn-org .t span { display: block; font-size: 11px; color: var(--ink-3); }
+
+.cn-find {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; margin: 8px 0 4px; padding: 7px 10px; border-radius: 9px;
+  font-size: 13px; color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: box-shadow .14s var(--ease);
+}
+.cn-find:hover { box-shadow: inset 0 0 0 1px var(--rule); }
+.cn-find kbd {
+  font: inherit; font-size: 10.5px; color: var(--ink-3);
+  padding: 1px 5px; border-radius: 5px; background: var(--canvas);
+}
+
+.cn-nav { flex: 1; overflow: auto; margin-top: 6px; }
+.cn-group {
+  margin: 16px 10px 5px; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3);
+}
+.cn-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 10px; border-radius: 9px; text-align: left;
+  font-size: 13.5px; letter-spacing: -.012em; color: var(--ink-2);
+  transition: background .14s var(--ease), color .14s var(--ease);
+}
+.cn-item .nm { flex: 1; min-width: 0; }
+.cn-item:hover { background: var(--canvas); color: var(--ink); }
+.cn-item.on { background: var(--canvas); color: var(--ink); font-weight: 550; }
+.cn-item.quiet { color: var(--ink-3); }
+/* The count. It is the only number in the rail and it only appears when it is
+   not zero — a row that permanently reads "0" teaches you to stop looking. */
+.cn-item .ct {
+  font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3);
+  padding: 1px 6px; border-radius: 999px;
+}
+.cn-item .ct.on { background: var(--sunk); color: var(--ink-2); }
+.cn-foot { border-top: 1px solid var(--hair); padding-top: 8px; margin-top: 8px; }
+
+.cn-burger { display: none; width: 30px; height: 30px; border-radius: 8px; place-items: center; color: var(--ink-2); }
+.cn-burger:hover { background: var(--canvas); }
+.cn-scrim { display: none; }
+
+/* ------------------------------------------------------------ The page */
+.cn-head { margin-bottom: 22px; }
+.cn-eyebrow {
+  font-size: 11.5px; font-weight: 600; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--ink-3); margin-bottom: 7px;
+}
+.cn-h1 {
+  font-family: var(--font); font-size: clamp(28px, 3.4vw, 38px); font-weight: 600;
+  letter-spacing: -.028em; line-height: 1.06;
+}
+.cn-sub { margin-top: 10px; max-width: 62ch; font-size: 14.5px; color: var(--ink-2); line-height: 1.5; }
+.cn-h2 {
+  margin: 32px 0 12px; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.018em;
+}
+
+/* The tiles. Numbers, and the word for what they count. There is no chart on
+   any of them because nothing behind them is a series — a sparkline drawn
+   through one point is a drawing. */
+.cn-tiles {
+  display: grid; gap: 10px; margin-bottom: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+}
+.cn-tile {
+  padding: 16px 18px; border-radius: 13px;
+  background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
+}
+.cn-tile b {
+  display: block; font-family: var(--font); font-size: 30px; font-weight: 600;
+  letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.cn-tile span { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-3); }
+.cn-tile.owe b { color: var(--amber); }
+.cn-tile.late b { color: var(--red); }
+.cn-tile.done b { color: var(--green); }
+
+.cn-verdict {
+  margin: 16px 0 4px; padding: 13px 16px; border-radius: 11px;
+  font-size: 14px; line-height: 1.5; color: var(--ink);
+  background: #fffaf1; box-shadow: inset 0 0 0 .5px #f0e0c4;
+}
+.cn-verdict.ok { background: #f1f8f3; box-shadow: inset 0 0 0 .5px #d8ecdf; }
+
+/* A row. One shape for every list in the console — a class, a piece of work,
+   a report — so that moving between screens is not relearning a layout. */
+.cn-rows { display: flex; flex-direction: column; }
+.cn-row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 18px;
+  align-items: center; width: 100%; text-align: left;
+  padding: 14px 4px; border-bottom: 1px solid var(--hair);
+  transition: background .13s var(--ease);
+}
+.cn-rows.tight .cn-row { padding: 11px 4px; }
+button.cn-row:hover { background: var(--canvas); }
+.cn-row.flat { cursor: default; }
+.cn-row .t { min-width: 0; }
+.cn-row .t b {
+  display: block; font-size: 15px; font-weight: 550; letter-spacing: -.016em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cn-row .t span { display: block; font-size: 12.5px; color: var(--ink-3); }
+.cn-row .m { text-align: right; }
+.cn-row .m i {
+  font-style: normal; font-family: var(--font); font-size: 16px; font-weight: 600;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}
+.cn-row .m span { display: block; font-size: 11px; color: var(--ink-3); }
+.cn-row .s { text-align: right; min-width: 0; }
+.cn-row .s em {
+  font-style: normal; font-size: 12.5px; font-weight: 550; white-space: nowrap;
+}
+.cn-row .s em.owe { color: var(--amber); }
+.cn-row .s em.late { color: var(--red); }
+.cn-row .s em.done { color: var(--ink-3); font-weight: 400; }
+.cn-row .s .why {
+  display: block; max-width: 34ch; font-size: 11.5px; color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.cn-block { margin-bottom: 30px; }
+.cn-blockhead {
+  display: flex; align-items: baseline; gap: 10px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+}
+.cn-blockhead h3 { font-size: 16px; font-weight: 600; letter-spacing: -.018em; }
+.cn-blockhead span { flex: 1; font-size: 12.5px; color: var(--ink-3); }
+
+.cn-btn {
+  font-size: 13px; padding: 7px 13px; border-radius: 9px; white-space: nowrap;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink);
+}
+.cn-btn:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
+.cn-btn.strong { background: var(--ink); color: #fff; box-shadow: none; }
+.cn-btn:disabled { color: var(--ink-3); background: var(--canvas); box-shadow: none; }
+
+/* --------------------------------------------------------- One report */
+.cn-report {
+  margin: 22px 0; padding: 22px 24px; border-radius: var(--r);
+  background: var(--paper); box-shadow: 0 0 0 .5px var(--hair);
+}
+.cn-reporthead { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.cn-reporthead h3 { font-family: var(--font); font-size: 20px; font-weight: 600; letter-spacing: -.022em; }
+.cn-reporthead .t span { font-size: 12.5px; color: var(--ink-3); }
+.cn-reporthead .g { display: flex; align-items: baseline; gap: 9px; }
+.cn-reporthead .g b {
+  font-family: var(--font); font-size: 26px; font-weight: 600; letter-spacing: -.03em;
+}
+.cn-reporthead .g span { font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.cn-reporthead .g .tr { font-style: normal; font-size: 12.5px; font-weight: 550; color: var(--ink-3); }
+.cn-reporthead .g .tr.up { color: var(--green); }
+.cn-reporthead .g .tr.down { color: var(--amber); }
+.cn-fine { margin-top: 8px; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+
+/* The evidence, sitting above the box the sentence goes in. */
+.cn-ev { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 4px; }
+.cn-chip {
+  font-size: 12px; color: var(--ink-2); padding: 7px 11px; border-radius: 9px;
+  background: var(--canvas);
+}
+.cn-chip b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cn-chip span { display: block; font-size: 10.5px; color: var(--ink-3); }
+.cn-chip.quiet b { color: var(--ink-2); }
+
+.cn-comment { margin-top: 14px; }
+.cn-lab { display: block; font-size: 12px; font-weight: 600; color: var(--ink-3); margin-bottom: 6px; }
+.cn-comment textarea {
+  width: 100%; font: inherit; font-size: 14.5px; line-height: 1.5; resize: vertical;
+  padding: 11px 13px; border-radius: 11px; border: 1px solid var(--rule);
+  background: var(--paper); color: var(--ink);
+}
+.cn-comment textarea:focus { outline: none; border-color: var(--blue); }
+.cn-commentfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.cn-commentfoot .cn-fine { margin-top: 0; }
+
+.cn-why { margin-top: 14px; display: flex; flex-direction: column; gap: 5px; }
+.cn-why li { font-size: 12.5px; color: var(--ink-3); padding-left: 14px; position: relative; }
+.cn-why li::before { content: "·"; position: absolute; left: 4px; }
+.cn-why li.flag { color: var(--amber); }
+
+.cn-marks { margin-top: 16px; }
+.cn-marks summary {
+  cursor: pointer; font-size: 13px; color: var(--ink-2); padding: 6px 0;
+  list-style: none;
+}
+.cn-marks summary::-webkit-details-marker { display: none; }
+.cn-marks summary::before { content: "›"; display: inline-block; width: 14px; transition: transform .15s var(--ease); }
+.cn-marks[open] summary::before { transform: rotate(90deg); }
+
+/* ------------------------------------------------------------- The finder */
+.cn-finderwrap {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: start center;
+  padding-top: 14vh; background: rgba(0,0,0,.18);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.cn-finder {
+  width: min(520px, 92vw); border-radius: 15px; overflow: hidden;
+  background: var(--paper); box-shadow: 0 24px 60px -12px rgba(0,0,0,.28), 0 0 0 .5px var(--hair);
+}
+.cn-finderin {
+  width: 100%; font: inherit; font-size: 16px; padding: 16px 18px;
+  border: 0; border-bottom: 1px solid var(--hair); background: none; color: var(--ink);
+}
+.cn-finderin:focus { outline: none; }
+.cn-finderlist { max-height: 50vh; overflow: auto; padding: 6px; }
+.cn-finderrow {
+  display: flex; align-items: baseline; gap: 10px; width: 100%;
+  padding: 9px 12px; border-radius: 9px; text-align: left;
+}
+.cn-finderrow b { font-size: 14px; font-weight: 500; letter-spacing: -.014em; }
+.cn-finderrow span { font-size: 11.5px; color: var(--ink-3); }
+.cn-finderrow.on { background: var(--canvas); }
+
+@media (max-width: 900px) {
+  .cn-rail { transform: translateX(-100%); transition: transform .22s var(--ease); }
+  body.is-console .cn-rail { display: flex; }
+  body.rail-open .cn-rail { transform: none; box-shadow: 0 0 60px rgba(0,0,0,.16); }
+  body.is-console .lx-bar-in, body.is-console .lx-wrap { padding-left: 0; }
+  body.is-console .cn-burger { display: grid; }
+  body.rail-open .cn-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.16); }
+  .cn-row { grid-template-columns: 1fr auto; gap: 12px; }
+  .cn-row .m { display: none; }
+  .cn-row .s .why { max-width: 22ch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cn-rail { transition: none; }
+}

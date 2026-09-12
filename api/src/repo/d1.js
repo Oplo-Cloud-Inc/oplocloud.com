@@ -372,7 +372,8 @@ export class D1Repository {
      out of and which category it counts in is not a grade, it is a number. */
   async listGrades({ courseId, accountId }) {
     const { results } = await this.db.prepare(
-      `SELECT g.*, a.title, a.category, a.course_id, a.out_of AS assignment_out_of
+      `SELECT g.*, a.title, a.category, a.course_id, a.out_of AS assignment_out_of,
+              a.created_at AS work_created_at, a.due_at
          FROM learn_grades g
          JOIN learn_assignments a ON a.id = g.assignment_id
         WHERE (? IS NULL OR a.course_id = ?)
@@ -488,6 +489,62 @@ export class D1Repository {
            courseId || null, courseId || null,
            Math.min(Number(limit) || 50, 200)).all();
     return results || [];
+  }
+
+  /* ----------------------------------------------------------- Reporting
+     The one thing on a report card that is written rather than computed. */
+
+  async listReportComments({ courseId, accountId, term = "current" }) {
+    const { results } = await this.db.prepare(
+      `SELECT rc.*, c.title AS course_title, p.name AS author_name
+         FROM learn_report_comments rc
+         JOIN learn_courses c ON c.id = rc.course_id
+         LEFT JOIN profiles p ON p.account_id = rc.author_id
+        WHERE (? IS NULL OR rc.course_id = ?)
+          AND (? IS NULL OR rc.account_id = ?)
+          AND rc.term = ?
+        ORDER BY c.title`
+    ).bind(courseId || null, courseId || null,
+           accountId || null, accountId || null, term).all();
+    return results || [];
+  }
+
+  async upsertReportComment({ courseId, accountId, term = "current", body, actorId }) {
+    const existing = await this.db.prepare(
+      `SELECT * FROM learn_report_comments
+        WHERE course_id = ? AND account_id = ? AND term = ?`
+    ).bind(courseId, accountId, term).first();
+    const t = now();
+
+    if (!existing) {
+      const commentId = id("rcm");
+      await this.db.prepare(
+        `INSERT INTO learn_report_comments
+           (id, course_id, account_id, term, body, author_id, updated_by,
+            created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(commentId, courseId, accountId, term, body || null,
+             actorId || null, actorId || null, t, t).run();
+      return this.findReportComment(commentId);
+    }
+
+    // The author stays whoever wrote it. Editing somebody's sentence about a
+    // child does not make it yours.
+    await this.db.prepare(
+      `UPDATE learn_report_comments SET body = ?, updated_by = ?, updated_at = ?
+        WHERE id = ?`
+    ).bind(body || null, actorId || null, t, existing.id).run();
+    return this.findReportComment(existing.id);
+  }
+
+  async findReportComment(commentId) {
+    return this.db.prepare(
+      `SELECT rc.*, c.title AS course_title, p.name AS author_name
+         FROM learn_report_comments rc
+         JOIN learn_courses c ON c.id = rc.course_id
+         LEFT JOIN profiles p ON p.account_id = rc.author_id
+        WHERE rc.id = ?`
+    ).bind(commentId).first();
   }
 
   /* ---------------------------------------------------------- Study sets */

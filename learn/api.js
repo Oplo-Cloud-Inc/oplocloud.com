@@ -241,6 +241,35 @@ window.OPLO_API = (function () {
       }
     },
 
+    /* --------------------------------------------------------- Reporting
+       A report card is a view, not a file. There is no generate call here and
+       there is not going to be one — `report` asks what the record says now,
+       and asking again after a mark changes returns something different. */
+    reporting: {
+      /* Every class this account teaches, with what each one owes. The
+         console's first screen, in one request. */
+      teaching: function () { return get("/teaching"); },
+
+      /* Whether a term's reporting is finished, and whose marking is missing. */
+      readiness: function (opts) {
+        opts = opts || {};
+        return get("/reporting" + q({ courseId: opts.courseId, term: opts.term }));
+      },
+
+      /* The sentence about the term, as opposed to the comment on one piece of
+         work — which is `grades.put`'s `feedback`. */
+      comment: function (courseId, accountId, body, term) {
+        return put("/reporting/comment",
+          { courseId: courseId, accountId: accountId, body: body, term: term })
+          .then(function (r) { return r.comment; });
+      },
+
+      report: function (accountId, term) {
+        return get("/students/" + accountId + "/report" + q({ term: term }))
+          .then(function (r) { return r.report; });
+      }
+    },
+
     /* -------------------------------------------------------- Study sets
        Authored by teachers, studied by their classes, and stored in the
        database — which is what makes a set a teacher writes something they

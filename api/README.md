@@ -133,6 +133,7 @@ signs out every account at once.
 | What you may do | `src/core/guard.js` — every decision, in one function |
 | What a grade means | `src/services/grades.js` — including what a blank cell means |
 | Every change to a mark | `learn_grade_events`, written by the repository so no route can skip it |
+| Whether a report is finished | `src/services/reporting.js` — and it is a question about the marking, not the fields |
 | What an answer is worth | `src/services/progress.js` |
 | SQL | `src/repo/d1.js`, and nowhere else |
 

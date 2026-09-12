@@ -212,7 +212,65 @@ S=$(status other GET "/courses/$COURSE/gradebook")
 [ "$S" = "403" ] && ok "nor a teacher who does not teach this course (403)" \
   || bad "unrelated teacher read gradebook" "HTTP $S"
 
-say "12. Progress and experience, priced by the server"
+say "12. The console's first screen — every class in one request"
+R=$(call teacher GET /teaching)
+N=$(echo "$R" | jq_ "o.courses&&o.courses.length")
+OWED=$(echo "$R" | jq_ "o.totals&&o.totals.unmarked")
+[ "$N" = "1" ] && ok "one class, with its totals beside it" || bad "teaching" "$R"
+[ -n "$OWED" ] && ok "and what it owes across every class: $OWED unmarked" || bad "totals" "$R"
+
+S=$(status student GET /teaching)
+R2=$(call student GET /teaching)
+[ "$(echo "$R2" | jq_ "o.courses.length")" = "0" ] \
+  && ok "a student teaches nothing, so it is empty rather than forbidden" \
+  || bad "student teaching" "$R2"
+
+say "13. Reporting — a view, not a file"
+R=$(call teacher GET "/reporting?courseId=$COURSE")
+BLOCKED=$(echo "$R" | jq_ "o.counts&&o.counts.blocked")
+PUB=$(echo "$R" | jq_ "o.publishable")
+WHY=$(echo "$R" | jq_ "o.rows[0].reasons.map(r=>r.kind).join(',')")
+[ "$BLOCKED" = "1" ] && ok "the report is blocked, because work is unmarked" \
+  || bad "readiness blocked" "blocked=$BLOCKED"
+[ "$PUB" = "false" ] && ok "and the term is not publishable while it is" \
+  || bad "publishable" "$PUB"
+echo "$WHY" | grep -q "no-comment" && ok "the reasons name the missing comment: $WHY" \
+  || bad "reasons" "$WHY"
+
+R=$(call teacher PUT /reporting/comment "{\"courseId\":\"$COURSE\",\"accountId\":\"$STUDENT\",\"body\":\"Sehej has been an absolute delight this term.\"}")
+echo "$R" | grep -q "delight" && ok "a teacher wrote the term's comment" || bad "comment write" "$R"
+
+S=$(status student PUT /reporting/comment "{\"courseId\":\"$COURSE\",\"accountId\":\"$STUDENT\",\"body\":\"A+ student\"}")
+[ "$S" = "403" ] && ok "a student cannot write their own report comment (403)" \
+  || bad "student MUST NOT write a comment" "HTTP $S"
+
+say "14. The check that matters — words against the marks"
+# Everything is marked now except the Midterm; mark it low so the grade falls
+# under the warm comment already written.
+call teacher PUT /grades "{\"assignmentId\":\"$MID\",\"accountId\":\"$STUDENT\",\"score\":10,\"outOf\":50}" >/dev/null
+R=$(call teacher GET "/reporting?courseId=$COURSE")
+KINDS=$(echo "$R" | jq_ "o.rows[0].reasons.map(r=>r.kind).join(',')")
+echo "$KINDS" | grep -q "mismatch" \
+  && ok "a warm comment over a failing grade is flagged for review" \
+  || bad "mismatch not detected" "$KINDS"
+
+say "15. One student's report, assembled on request"
+R=$(call student GET "/students/$STUDENT/report")
+STANDING=$(echo "$R" | jq_ "o.report&&o.report.standing")
+COMMENT=$(echo "$R" | jq_ "o.report.courses[0].comment&&o.report.courses[0].comment.body")
+AUTHOR=$(echo "$R" | jq_ "o.report.courses[0].comment&&o.report.courses[0].comment.author")
+[ -n "$STANDING" ] && ok "the student may read their own report: standing $STANDING%" \
+  || bad "own report" "$R"
+echo "$COMMENT" | grep -q "delight" && ok "with the teacher's comment on it, attributed to $AUTHOR" \
+  || bad "report comment" "$COMMENT"
+
+S=$(status teacher GET "/students/$STUDENT/report")
+[ "$S" = "200" ] && ok "their teacher may read it (200)" || bad "teacher report read" "HTTP $S"
+S=$(status other GET "/students/$STUDENT/report")
+[ "$S" = "403" ] && ok "a teacher who does not teach them may not (403)" \
+  || bad "unrelated teacher report read" "HTTP $S"
+
+say "16. Progress and experience, priced by the server"
 R=$(call student PUT /progress "{\"scope\":\"set:media-1\",\"state\":{\"Cochlea\":{\"seen\":3,\"recall\":0.8}}}")
 echo "$R" | grep -q '"ok":true' && ok "student wrote their own progress" || bad "progress write" "$R"
 
@@ -237,7 +295,7 @@ XP=$(echo "$R" | jq_ "o.standing&&o.standing.xp")
 STREAK=$(echo "$R" | jq_ "o.standing&&o.standing.streak")
 [ "$XP" = "33" ] && ok "standing totals $XP XP from the ledger, streak $STREAK" || bad "standing" "$R"
 
-say "13. Study sets — authoring and consumption, both server-backed"
+say "17. Study sets — authoring and consumption, both server-backed"
 R=$(call teacher POST /study-sets "{\"code\":\"waves-$STAMP\",\"title\":\"Waves and Sound\",\"courseId\":\"$COURSE\",\"status\":\"published\",\"terms\":[{\"term\":\"Pinna\",\"definition\":\"The visible outer ear that collects sound.\",\"why\":\"It is why you can tell a sound came from behind you.\",\"example\":\"Cupping a hand behind your ear.\"},{\"term\":\"Cochlea\",\"definition\":\"The snail-shaped hearing part of the inner ear.\"},{\"term\":\"Amplitude\",\"definition\":\"The height of a wave, crest to trough.\"},{\"term\":\"Frequency\",\"definition\":\"Cycles per second, measured in Hertz.\"}]}")
 SET=$(echo "$R" | jq_ "o.studySet&&o.studySet.id")
 [ -n "$SET" ] && ok "teacher authored a set: $SET" || bad "create study set" "$R"
@@ -279,7 +337,7 @@ call teacher PATCH "/study-sets/$DRAFT" '{"status":"published"}' >/dev/null
 S=$(status student GET "/study-sets/$DRAFT")
 [ "$S" = "200" ] && ok "publishing it makes it visible (200)" || bad "publish" "HTTP $S"
 
-say "14. Transcripts — imported by an administrator, read by the student, changed by nobody else"
+say "18. Transcripts — imported by an administrator, read by the student, changed by nobody else"
 TX='{"source":{"school":"Proof High","creditSystem":"nyc-4-term","kind":"unofficial","creditsEarned":1.75,"cumulativeAverage":77},"terms":[{"year":"2024-2025","gradeLevel":9,"term":"Term 1","average":77,"courses":[["E1","English 1A","88",0.5,0.5,"english"],["E2","English 1B","90",0.5,0.5,"english"],["M1","Algebra 1A","62",0.5,0.5,"math"],["M2","Algebra 1B","45",0.5,0,"math"],["P1","PE 1A","100",0.25,0.25,"pe","not_averaged"]]}],"exams":[["Algebra I","2025-06",70,"passed"]]}'
 S=$(status student POST "/accounts/$STUDENT/transcripts" "$TX")
 [ "$S" = "403" ] && ok "a student cannot import their own transcript (403)" || bad "student MUST NOT import a transcript" "HTTP $S"
@@ -311,7 +369,7 @@ call admin PATCH "/transcript-courses/$CID" '{"decision":"declined"}' >/dev/null
 EST=$(call student GET /graduation | jq_ "o.graduation.totals.transferEstimate")
 [ "$EST" = "0.625" ] && ok "a course the registrar declines stops counting: now $EST" || bad "declined course still counted" "$EST"
 
-say "15. The analysis — every sentence of it computed from the record"
+say "19. The analysis — every sentence of it computed from the record"
 R=$(call student GET /graduation)
 MET=$(echo "$R" | jq_ "o.graduation.board.met")
 [ "$MET" = "1" ] && ok "the exam board finds one core area met: Algebra I at 70" || bad "exam board" "$MET"
@@ -344,7 +402,7 @@ N=$(echo "$R" | jq_ "o.graduation.courses.length")
 [ "$EST" = "16" ] && ok "20 more credits imported, but transfer stops at the 16-credit cap" || bad "transfer cap" "$EST"
 [ "$N" = "45" ] && ok "importing the same school twice replaces it rather than doubling it (45 courses)" || bad "re-import doubled" "$N"
 
-say "16. Sessions"
+say "20. Sessions"
 # A second sign-in from the "same person, different device".
 curl -s -c "$JAR/student2" -H 'content-type: application/json' \
   -d "{\"email\":\"student$STAMP@example.com\",\"password\":\"another-long-password\"}" \

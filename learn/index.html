@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=e5e7312c">
+<link rel="stylesheet" href="app.css?v=fb47e397">
 </head>
 <body>
 
@@ -44,8 +44,18 @@
   </div>
 </div>
 
+<!-- The console's rail. Empty here and filled by app.js, because what is in
+     it depends on who signed in — and a nav written into the page is a nav
+     that has to be hidden from the people it does not belong to. -->
+<aside class="cn-rail" id="rail" aria-label="Console"></aside>
+<div class="cn-scrim" id="railScrim" hidden></div>
+
 <header class="lx-bar">
   <div class="lx-bar-in">
+    <button class="cn-burger" id="railToggle" type="button" aria-label="Sections" aria-expanded="false">
+      <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+           stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
     <button class="lx-back" id="back" type="button" hidden>
       <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
            stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
@@ -171,6 +181,9 @@
   </div>
 </section>
 
+<!-- ⌘K. It goes to a place; it does not answer questions. -->
+<div class="cn-finderwrap" id="finder" hidden></div>
+
 <div class="lx-toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Experience and badges. Both sit outside the question card on purpose:
@@ -178,7 +191,7 @@
 <div class="lx-xp" id="xpPop" aria-hidden="true"></div>
 <div class="lx-badge" id="badgePop" role="status" aria-live="polite"></div>
 
-<script src="api.js?v=4b0aa06e"></script>
+<script src="api.js?v=5c956fa1"></script>
 <script src="data.js?v=29a4bfe7"></script>
 <script src="school.js?v=89fed491"></script>
 <script src="store.js?v=b8219a19"></script>
@@ -192,6 +205,6 @@
 <script src="annotate.js?v=bba6542f"></script>
 <script src="collab.js?v=45bea90d"></script>
 <script src="tutor.js?v=e36b13da"></script>
-<script src="app.js?v=acbe200a"></script>
+<script src="app.js?v=80480aa0"></script>
 </body>
 </html>
