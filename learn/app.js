@@ -1676,6 +1676,18 @@
   var CN = window.OPLO_CONCEPTS;
   var AK = window.OPLO_ASK;
 
+  /* The colour for one of summary()'s groups. Those groups are not the
+     bands: "weak" is exposed and familiar together, and there is no band
+     called that. Looking it up as if it were one threw the moment a student
+     had got anything wrong — which the unit's warm-up questions are built to
+     make happen — so Learn would not open at all. A name with no band of its
+     own falls back to "new" rather than stopping the screen. */
+  function bandHue(group) {
+    var k = group === "weak" ? "familiar" : group === "untouched" ? "new" : group;
+    var hit = L.BANDS.filter(function (b) { return b.k === k; })[0];
+    return (hit || L.BANDS[0]).hue;
+  }
+
   function startLearn(again) {
     enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again);
 
@@ -1732,7 +1744,7 @@
           if (!p[1]) return;
           var i = el("i");
           i.style.flex = p[1];
-          i.style.background = L.BANDS.filter(function (b) { return b.k === p[0]; })[0].hue;
+          i.style.background = bandHue(p[0]);
           i.title = p[1] + " " + p[0];
           bar.appendChild(i);
         });
@@ -2405,7 +2417,7 @@
        ["Developing", sum.developing, "developing"], ["Still weak", sum.weak, "weak"]]
         .forEach(function (g) {
           if (!g[1].length) return;
-          var hue = L.BANDS.filter(function (b) { return b.k === g[2]; })[0].hue;
+          var hue = bandHue(g[2]);
           var c = el("div", "ln-rep-col");
           c.innerHTML = '<h3><i style="background:' + hue + '"></i>' + g[0] +
             "<em>" + g[1].length + "</em></h3>";
