@@ -534,7 +534,7 @@
     // gradebook, enrolment, a student's report — is drawn into #v-admin, so
     // one check here keeps the chrome right without every screen knowing.
     if (view !== "admin") leaveConsole();
-    $("#wrap").classList.toggle("wide", view === "match");
+    $("#wrap").classList.toggle("wide", view === "match" || view === "map");
     $("#wrap").classList.toggle("full", view === "read");
     if (view !== "read") { railOff(); if (S.hideAnn) S.hideAnn(); }
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
@@ -744,61 +744,63 @@
     return out + "</div>";
   }
 
-  /* The prerequisite graph, drawn. Columns are depth, so an arrow always
-     points forward and the weak link is visible without reading anything. */
-  function mapFor(c, units) {
-    var pre = (D.PRE || {})[c.id];
-    if (!pre || !Object.keys(pre).length) return "";
-    var depth = {}, order = Object.keys(pre).map(Number).sort(function (a, b) { return a - b; });
-    order.forEach(function (k) {
-      depth[k] = (pre[k] || []).reduce(function (a, p) {
-        return Math.max(a, (depth[p] == null ? 0 : depth[p]) + 1);
-      }, 0);
+  /* ------------------------------------------------------ Knowledge map
+     kmap.js draws it and decides what each unit's state means. The numbers
+     come from here: the same unit mastery, the same prerequisite graph and the
+     same concept states as every other screen, so the map can never tell a
+     student something the course page or Learn would contradict. */
+  function mapModel(c) {
+    var units = unitsOf(c);
+    return window.OPLO_KMAP.build({
+      units: units.map(function (u) {
+        return { n: u.n, t: u.t, part: u.part, desc: u.desc, set: u.set, live: !!(u.play || u.set) };
+      }),
+      pre: (D.PRE || {})[c.id] || {},
+      mastery: function (n) { return mastery(c, n); },
+      concepts: function (n) {
+        var u = units.filter(function (x) { return x.n === n; })[0];
+        var set = u && u.set ? SET(u.set) : null;
+        if (!set) return null;
+        var store = new L.Store(S.me ? S.me.id : "anon", u.set);
+        return CN.forSet(u.set, set.cards).map(function (cn) {
+          cn.levels = CN.levelsFor(cn);
+          cn.state = store.get(cn.k);
+          return cn;
+        });
+      },
+      sections: function (n) {
+        var r = readerFor(c.id, n);
+        if (!r) return null;
+        return { total: r.sections.length,
+                 done: r.sections.filter(function (sec) { return S.readDone[sec.n]; }).length };
+      },
+      L: L, G: G, now: Date.now()
     });
-    var cols = {}, maxD = 0;
-    order.forEach(function (k) {
-      (cols[depth[k]] = cols[depth[k]] || []).push(k);
-      maxD = Math.max(maxD, depth[k]);
-    });
-    var colW = 132, rowH = 62, pad = 8;
-    var rows = Math.max.apply(null, Object.keys(cols).map(function (d) { return cols[d].length; }));
-    var w = (maxD + 1) * colW + pad, h = rows * rowH + pad;
-    var at = {};
-    Object.keys(cols).forEach(function (d) {
-      cols[d].forEach(function (k, i) {
-        at[k] = { x: +d * colW + pad, y: i * rowH + pad,
-                  cy: i * rowH + pad + 20, w: colW - 26 };
-      });
-    });
-    var edges = "", nodes = "";
-    var byN = {};
-    units.forEach(function (u) { byN[u.n] = u; });
-    order.forEach(function (k) {
-      (pre[k] || []).forEach(function (p) {
-        if (!at[p] || !at[k]) return;
-        var x1 = at[p].x + at[p].w, y1 = at[p].cy, x2 = at[k].x, y2 = at[k].cy;
-        edges += '<path d="M' + x1 + " " + y1 + " C" + (x1 + 14) + " " + y1 + " " +
-          (x2 - 14) + " " + y2 + " " + x2 + " " + y2 +
-          '" fill="none" stroke="#d2d2d7" stroke-width="1.4"/>';
-      });
-    });
-    var TONE = { master: c.hue, prof: "#61a8ee", fam: "#b8d8f7", "": "#ececee" };
-    order.forEach(function (k) {
-      var u = byN[k], a = at[k], m = mastery(c, k), b = band(m);
-      var live = u && (u.play || u.set);
-      nodes += '<g class="node" data-n="' + k + '" role="button" tabindex="0">' +
-        '<rect x="' + a.x + '" y="' + a.y + '" width="' + a.w + '" height="40" rx="9" ' +
-        'fill="#fff" stroke="#e6e6e8" stroke-width="1.2"/>' +
-        '<rect x="' + a.x + '" y="' + a.y + '" width="4" height="40" rx="2" fill="' +
-        (live ? TONE[b] : "#ececee") + '"/>' +
-        '<text x="' + (a.x + 13) + '" y="' + (a.y + 17) + '" font-size="11" font-weight="600" ' +
-        'fill="#1d1d1f">' + esc(String(u ? u.t : k).slice(0, 15)) +
-        (u && u.t.length > 15 ? "…" : "") + "</text>" +
-        '<text x="' + (a.x + 13) + '" y="' + (a.y + 31) + '" font-size="10" fill="#86868b">' +
-        (live ? m + "%" : "not written") + "</text></g>";
-    });
-    return '<div class="lx-map"><svg viewBox="0 0 ' + w + " " + h + '" width="' + w +
-           '" height="' + h + '">' + edges + nodes + "</svg></div>";
+  }
+
+  /* What the map looked like last time, per person and per course, so the
+     next visit can show what moved. A convenience of this browser only: lose
+     it and the map simply has no news to report. */
+  function mapSeenKey(c) { return "oplo.map." + (S.me ? S.me.id : "anon") + "." + c.id; }
+
+  function openMap(c, silent, focus) {
+    if (!c) return;
+    if (!silent) enter("map:" + c.id, "Map", function () { openMap(c, true, focus); });
+    S.course = c;
+    var K = window.OPLO_KMAP, model = mapModel(c), prev = null;
+    try { prev = JSON.parse(localStorage.getItem(mapSeenKey(c)) || "null"); } catch (e) { /* private mode */ }
+    var v = $("#v-map");
+    v.innerHTML = "";
+    v.appendChild(K.render(model, {
+      course: c.t, hue: c.hue, focus: focus,
+      rank: R ? G.rank(R.d.game.xp) : null,
+      streak: R ? R.d.game.streak : null,
+      changes: K.diff(prev, model),
+      onUnit: function (n) { openUnit(c, n); },
+      onLearn: function (setId) { openSet(setId); startLearn(); }
+    }));
+    try { localStorage.setItem(mapSeenKey(c), JSON.stringify(K.snapshot(model))); } catch (e) { /* full */ }
+    show("map");
   }
 
   /* ------------------------------------------------------------ My courses */
@@ -875,6 +877,10 @@
       go.type = "button";
       go.addEventListener("click", function () { openUnit(step.course, target.n); });
       next.appendChild(go);
+      var onMap = el("button", "lx-btn ghost", "See it on the map");
+      onMap.type = "button";
+      onMap.addEventListener("click", function () { openMap(step.course, false, target.n); });
+      next.appendChild(onMap);
     }
     v.appendChild(next);
 
@@ -1334,17 +1340,10 @@
       dimRow(c, units);
     main.appendChild(mast);
 
-    var map = mapFor(c, units);
-    if (map) {
-      var mp = el("div", "lx-panel");
-      mp.style.marginBottom = "22px";
-      mp.innerHTML = "<h3>Knowledge map</h3>" +
-        '<p style="margin-bottom:4px">What each unit rests on. A unit is only worth opening once ' +
-        "the ones feeding into it hold up.</p>" + map;
-      mp.querySelectorAll(".node").forEach(function (g) {
-        g.addEventListener("click", function () { openUnit(c, +g.dataset.n); });
-      });
-      main.appendChild(mp);
+    if (units.some(function (u) { return u.play || u.set; })) {
+      main.appendChild(window.OPLO_KMAP.teaser(mapModel(c), {
+        hue: c.hue, onOpen: function () { openMap(c); }
+      }));
     }
 
     var list = el("div", "lx-units");
