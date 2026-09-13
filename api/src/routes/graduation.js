@@ -30,13 +30,26 @@ export async function get(ctx) {
   const account = await ctx.repo.findAccountById(accountId);
   if (!account) throw ApiError.notFound("No such account.");
 
-  const [program, records, courses, exams, grades] = await Promise.all([
+  const [program, records, courses, exams, grades, ehsCourses, mine] = await Promise.all([
     ctx.repo.getProgram(accountId),
     ctx.repo.listTransferRecords(accountId),
     ctx.repo.listTransferCourses(accountId),
     ctx.repo.listTransferExams(accountId),
-    ctx.repo.listGrades({ accountId })
+    ctx.repo.listGrades({ accountId }),
+    ctx.repo.listEhsCourses(accountId),
+    ctx.repo.listCourses({ accountId })
   ]);
+
+  // The credit and requirement area a course says it carries, where it says.
+  // Courses without them still show; they just cannot be counted toward a gap.
+  const carries = (course) => {
+    let body = {};
+    try { body = course && course.body_json ? JSON.parse(course.body_json) || {} : {}; } catch { body = {}; }
+    return {
+      credits: typeof body.credits === "number" && body.credits > 0 ? body.credits : null,
+      area: AREAS.includes(body.area) ? body.area : null
+    };
+  };
 
   // This year's EHS courses, with the mark computed the same way the
   // gradebook computes it.
@@ -49,10 +62,18 @@ export async function get(ctx) {
   for (const [cid, list] of byCourse) {
     const course = await ctx.repo.findCourse(cid);
     const mark = computeGrade(list, courseWeights(course), coursePolicy(course));
-    if (mark) current.push({ courseId: cid, title: course ? course.title : "Course", ...mark });
+    if (mark) current.push({ courseId: cid, title: course ? course.title : "Course", ...mark, ...carries(course) });
+  }
+  // A course the student is enrolled in and has no marks for yet is still
+  // this year's work. Leaving it off made a student with one open course look
+  // as if they were taking nothing.
+  for (const c of mine) {
+    if (c.my_role !== "student" || byCourse.has(c.id)) continue;
+    current.push({ courseId: c.id, title: c.title, percent: null, letter: null, itemCount: 0,
+                   countedWeight: 0, ...carries(c) });
   }
 
-  return json({ graduation: buildDashboard({ account, program, records, courses, exams, current }) });
+  return json({ graduation: buildDashboard({ account, program, records, courses, exams, current, ehsCourses }) });
 }
 
 /* PUT /api/v1/accounts/:accountId/program */
@@ -87,6 +108,12 @@ export async function importTranscript(ctx, { accountId }) {
   const school = check.string(src.school, "source.school", { max: 160 });
   const system = check.oneOf(src.creditSystem, "source.creditSystem", Object.keys(CREDIT_SYSTEMS));
   const kind = check.oneOf(src.kind || "unofficial", "source.kind", ["unofficial", "official"]);
+  // A record can arrive already evaluated: the transfer section of EHS's own
+  // academic record is EHS's decision, not an estimate waiting for one. Its
+  // courses are then accepted rather than proposed.
+  const status = src.status == null ? (kind === "official" ? "received" : "estimate")
+    : check.oneOf(src.status, "source.status", ["estimate", "requested", "received", "evaluated"]);
+  const decision = status === "evaluated" ? "accepted" : "proposed";
   const terms = Array.isArray(body.terms) ? body.terms : [];
   if (!terms.length || terms.length > 40) {
     throw ApiError.badRequest("terms must be a list of 1 to 40 terms.", "terms");
@@ -116,7 +143,8 @@ export async function importTranscript(ctx, { accountId }) {
         earned: check.number(earned, "earned", { min: 0, max: 10 }),
         area: a,
         flags: fl.join(","),
-        ehsCredits: toEhsCredits(earned, system)
+        ehsCredits: toEhsCredits(earned, system),
+        decision
       });
     });
   });
@@ -138,14 +166,15 @@ export async function importTranscript(ctx, { accountId }) {
     creditsEarned: src.creditsEarned ?? null,
     cumulativeAverage: src.cumulativeAverage ?? null,
     terms: terms.filter((t) => t.average != null)
-                .map((t) => ({ term: String(t.term || ""), average: Number(t.average) }))
+                .map((t) => ({ term: String(t.term || ""), average: Number(t.average) })),
+    stateTests: stateTestsOf(body.stateTests)
   };
 
   const record = await ctx.repo.replaceTransferRecord({
     accountId, orgId: orgOf(actor), createdBy: actor.id,
     record: {
       school, authority: src.authority || null, schoolCode: src.schoolCode || null,
-      kind, status: kind === "official" ? "received" : "estimate",
+      kind, status,
       creditSystem: system, printedOn: src.printedOn || null, summary
     },
     courses, exams
@@ -153,6 +182,88 @@ export async function importTranscript(ctx, { accountId }) {
   return json({ record: { id: record.id, school: record.school, kind: record.kind,
                           status: record.status, courses: courses.length, exams: exams.length } },
               { status: 201 });
+}
+
+/* State tests from the grades before high school, verbatim, as the previous
+   school's record prints them: [year, grade, exam, score, level, rating,
+   percentile, note]. Kept with that record because they are part of it, and
+   bounded because they are the least load-bearing thing on it. */
+function stateTestsOf(list) {
+  if (!Array.isArray(list)) return [];
+  const num = (v, min, max) => (v == null || v === "" || !isFinite(Number(v)) ? null
+    : Math.min(max, Math.max(min, Number(v))));
+  return list.slice(0, 30).filter(Array.isArray).map((t) => ({
+    year: t[0] ? String(t[0]).slice(0, 9) : null,
+    grade: num(t[1], 1, 12),
+    exam: t[2] ? String(t[2]).slice(0, 60) : null,
+    score: t[3] == null || t[3] === "" ? null : String(t[3]).slice(0, 8),
+    level: num(t[4], 1, 4),
+    rating: num(t[5], 0, 5),
+    percentile: t[6] ? String(t[6]).slice(0, 12) : null,
+    note: t[7] ? String(t[7]).slice(0, 120) : null
+  }));
+}
+
+/* PUT /api/v1/accounts/:accountId/ehs-record
+
+   EHS's own record of a student who is already enrolled: when they started,
+   their standing, what EHS issued, and the courses they finished with EHS.
+   Rows are [code, title, mark, credits, area, schoolYear, term, status].
+   Replaces whatever was there, the same as a transcript import does. */
+export async function putEhsRecord(ctx, { accountId }) {
+  const actor = requireActor(ctx);
+  await must(ctx, "transcript.write", { accountId });
+  if (!(await ctx.repo.findAccountById(accountId))) throw ApiError.notFound("No such account.");
+
+  const body = await readJson(ctx.request, { limit: 128 * 1024 });
+  const rows = Array.isArray(body.courses) ? body.courses : [];
+  if (rows.length > 80) throw ApiError.badRequest("That is more EHS courses than a record holds.", "courses");
+
+  const courses = rows.map((row, i) => {
+    if (!Array.isArray(row) || row.length < 6) {
+      throw ApiError.badRequest(`Course ${i + 1}: expected [code, title, mark, credits, area, ` +
+                                `schoolYear, term, status].`, "courses");
+    }
+    const [code, title, mark, credits, area, year, term, status] = row;
+    return {
+      code: code ? String(code).slice(0, 24) : null,
+      title: check.string(title, `courses[${i}].title`, { max: 120 }),
+      mark: mark == null ? null : String(mark).slice(0, 12),
+      markNumeric: parseMark(mark),
+      credits: check.number(credits, `courses[${i}].credits`, { min: 0, max: 4 }),
+      area: check.oneOf(area, `courses[${i}].area`, AREAS),
+      schoolYear: year ? String(year).slice(0, 16) : null,
+      term: term ? String(term).slice(0, 40) : null,
+      status: check.oneOf(status || "completed", `courses[${i}].status`, ["completed", "in_progress", "withdrawn"])
+    };
+  });
+
+  let enrolledAt = null;
+  if (body.enrolledOn) {
+    const m = String(body.enrolledOn).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) throw ApiError.badRequest("enrolledOn must be a date: YYYY-MM-DD.", "enrolledOn");
+    enrolledAt = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  const standing = body.status == null ? null
+    : check.oneOf(body.status, "status", ["active", "withdrawn", "graduated"]);
+  const i = body.issued || {};
+  const n = (v, f, max) => (v == null ? undefined : check.number(v, "issued." + f, { min: 0, max }));
+  const issued = {
+    gpa: n(i.gpa, "gpa", 5), gpaCredits: n(i.gpaCredits, "gpaCredits", 60),
+    qualityPoints: n(i.qualityPoints, "qualityPoints", 300), creditsEarned: n(i.creditsEarned, "creditsEarned", 60),
+    printedOn: i.printedOn ? check.string(i.printedOn, "issued.printedOn", { max: 10 }) : undefined
+  };
+  for (const k of Object.keys(issued)) if (issued[k] === undefined) delete issued[k];
+
+  const saved = await ctx.repo.replaceEhsRecord({
+    accountId, orgId: orgOf(actor), createdBy: actor.id,
+    enrollment: { enrolledAt, status: standing, issued: Object.keys(issued).length ? issued : null },
+    courses
+  });
+  const credits = Math.round(courses.filter((c) => c.status === "completed")
+                                    .reduce((a, c) => a + c.credits, 0) * 1000) / 1000;
+  return json({ record: { courses: saved.courses, credits, enrolledOn: body.enrolledOn || null,
+                          status: standing } });
 }
 
 /* PATCH /api/v1/transcripts/:recordId — official copy arrived, evaluated. */

@@ -351,6 +351,10 @@ window.OPLO_API = (function () {
         return post("/accounts/" + accountId + "/transcripts", data, { timeout: 30000 })
           .then(function (r) { return r.record; });
       },
+      putEhsRecord: function (accountId, data) {
+        return put("/accounts/" + accountId + "/ehs-record", data, { timeout: 30000 })
+          .then(function (r) { return r.record; });
+      },
       updateRecord: function (recordId, data) {
         return patch("/transcripts/" + recordId, data).then(function (r) { return r.record; });
       },

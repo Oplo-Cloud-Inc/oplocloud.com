@@ -716,8 +716,10 @@ export class D1Repository {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (account_id) DO UPDATE SET
          org_id = excluded.org_id, program = excluded.program, track = excluded.track,
-         grade_level = excluded.grade_level, enrolled_at = excluded.enrolled_at,
-         expected_grad = excluded.expected_grad, updated_at = excluded.updated_at`
+         grade_level = excluded.grade_level,
+         enrolled_at = COALESCE(excluded.enrolled_at, learn_student_programs.enrolled_at),
+         expected_grad = COALESCE(excluded.expected_grad, learn_student_programs.expected_grad),
+         updated_at = excluded.updated_at`
     ).bind(id("prg"), accountId, orgId || null, data.program || null, data.track,
            data.gradeLevel ?? null, data.enrolledAt ?? null, data.expectedGrad ?? null, t, t).run();
     return this.getProgram(accountId);
@@ -746,6 +748,41 @@ export class D1Repository {
       `SELECT * FROM learn_transfer_exams WHERE account_id = ? ORDER BY sitting, name`
     ).bind(accountId).all();
     return results || [];
+  }
+  async listEhsCourses(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_ehs_courses WHERE account_id = ? ORDER BY position`
+    ).bind(accountId).all();
+    return results || [];
+  }
+  /* EHS's own record of a student: their standing, what EHS issued, and every
+     course they took with it. Replaced whole, in one batch, the same as a
+     transfer record — a correction must never leave two copies adding up. */
+  async replaceEhsRecord({ accountId, orgId, createdBy, enrollment, courses }) {
+    const t = now();
+    const statements = [
+      this.db.prepare(`DELETE FROM learn_ehs_courses WHERE account_id = ?`).bind(accountId),
+      this.db.prepare(
+        `INSERT INTO learn_student_programs
+           (id, account_id, org_id, track, enrolled_at, status, issued_json, created_at, updated_at)
+         VALUES (?, ?, ?, '21.5', ?, ?, ?, ?, ?)
+         ON CONFLICT (account_id) DO UPDATE SET
+           enrolled_at = excluded.enrolled_at, status = excluded.status,
+           issued_json = excluded.issued_json, updated_at = excluded.updated_at`
+      ).bind(id("prg"), accountId, orgId || null, enrollment.enrolledAt ?? null, enrollment.status || null,
+             enrollment.issued ? JSON.stringify(enrollment.issued) : null, t, t)
+    ];
+    courses.forEach((c, i) => {
+      statements.push(this.db.prepare(
+        `INSERT INTO learn_ehs_courses
+           (id, account_id, org_id, course_id, position, school_year, term, code, title, mark,
+            mark_numeric, credits, area, status, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id("ehc"), accountId, orgId || null, c.courseId || null, i, c.schoolYear, c.term, c.code,
+             c.title, c.mark, c.markNumeric, c.credits, c.area, c.status, createdBy || null, t, t));
+    });
+    await this.db.batch(statements);
+    return { courses: courses.length };
   }
 
   /* A record, its courses and its exams, replacing any earlier record from
@@ -778,9 +815,10 @@ export class D1Repository {
         `INSERT INTO learn_transfer_courses
            (id, record_id, account_id, position, school_year, grade_level, term, code, title, mark,
             mark_numeric, attempted, earned, area, flags, ehs_credits, decision, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'proposed', NULL)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`
       ).bind(id("tcr"), recordId, accountId, i, c.schoolYear, c.gradeLevel, c.term, c.code, c.title,
-             c.mark, c.markNumeric, c.attempted, c.earned, c.area, c.flags || null, c.ehsCredits));
+             c.mark, c.markNumeric, c.attempted, c.earned, c.area, c.flags || null, c.ehsCredits,
+             c.decision || "proposed"));
     });
     exams.forEach((e) => {
       statements.push(this.db.prepare(

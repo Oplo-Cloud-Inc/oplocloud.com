@@ -89,6 +89,7 @@ const ROUTES = [
   ["GET",    "/api/v1/graduation",                       graduation.get],
   ["PUT",    "/api/v1/accounts/:accountId/program",      graduation.setProgram],
   ["POST",   "/api/v1/accounts/:accountId/transcripts",  graduation.importTranscript],
+  ["PUT",    "/api/v1/accounts/:accountId/ehs-record",   graduation.putEhsRecord],
   ["PATCH",  "/api/v1/transcripts/:recordId",            graduation.updateRecord],
   ["PATCH",  "/api/v1/transcript-courses/:courseId",     graduation.updateCourse],
 

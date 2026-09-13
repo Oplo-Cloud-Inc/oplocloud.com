@@ -146,17 +146,21 @@ a Logpush destination, plus a request id threaded through `errorResponse`.
 
 ---
 
-### 9. Credits earned at EHS
+### 9. Credits earned at EHS — half done
 
-The graduation dashboard counts transferred credit and shows this year's EHS
-course grades, but finishing an EHS course does not yet award credit toward a
-requirement area. Courses carry no credit value or area, and nothing marks one
-complete. Until that exists "Earned at EHS" reads 0 and the orange segments on
-the requirement bars stay empty — the dashboard says 0 rather than guessing.
+EHS coursework recorded by the registrar now counts: `learn_ehs_courses`
+(migration `0008`) holds the courses a student finished with EHS, entered from
+EHS's own academic record through `PUT /api/v1/accounts/:id/ehs-record`, and
+the dashboard fills `ehsByArea` from them, checks the GPA and credit total
+against what EHS issued, and tests the transfer cap and the minimum at EHS
+against the right side of the line.
 
-**Needs:** a credit value and a requirement area on each course, a completion
-event (the final grade entered), and `ehsByArea` filled from it in
-`services/graduation.js`, which is already written to receive it.
+A course may also say what it carries — `credits` and `area` in its body — and
+an enrolled course that does is counted as work in progress toward its gap.
+
+**Still missing:** finishing an OEdu-taught course does not write a row. It
+needs a completion event (the final grade entered) that writes the credit into
+`learn_ehs_courses` with its `course_id`, so the registrar does not have to.
 
 ### 10. A registrar screen for transfer evaluation
 
