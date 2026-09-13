@@ -10870,11 +10870,22 @@
         var rec = el("button", "cn-btn small", "Record");
         rec.type = "button";
         rec.addEventListener("click", function (e) { e.stopPropagation(); openRecord(p); });
+        // What this person's family sees, and where the school adds a guardian
+        // and the parts of the record that are not marks.
+        var fam = el("button", "cn-btn small", "Family");
+        fam.type = "button";
+        fam.addEventListener("click", function (e) {
+          e.stopPropagation();
+          window.open("parent/?student=" + encodeURIComponent(p.id), "_blank", "noopener");
+        });
+        var both = el("span", "cn-rowacts");
+        both.appendChild(fam);
+        both.appendChild(rec);
         t.row([
           who,
           "<span class='cn-mono'>" + esc(p.email || "—") + "</span>",
           p.title ? esc(p.title) : "<span class='cn-none'>—</span>",
-          rec
+          both
         ], function () { openPersonEditor(p); }, p.id);
       });
       v.appendChild(t);
@@ -11223,6 +11234,18 @@
   }
 
   function boot(who) {
+    /* A family signs in at the same address as everybody else, and belongs in
+       the family view. Somebody who is family and also a student, a teacher or
+       an administrator stays here: for them the family view is a place they
+       can go, not a door they are pushed through. */
+    var roles = who.roles || [];
+    if (roles.some(function (r) { return r.product === "learn" && r.role === "guardian"; }) &&
+        !roles.some(function (r) {
+          return r.product === "platform" || (r.product === "learn" && r.role !== "guardian");
+        })) {
+      location.replace("parent/");
+      return;
+    }
     S.me = normaliseAccount(who);
     who = S.me;
 

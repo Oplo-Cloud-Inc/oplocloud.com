@@ -170,6 +170,43 @@ API-only today: `scripts/import-transcript.mjs` and
 administrators. A Console tab over the same endpoints is the next step, and it
 changes nothing in the API.
 
+### 11. The family view — done, with its gaps named
+
+`edu.oplocloud.com/parent` is a guardian's view of a child's record: grades,
+assignments, exams, progress, promotion and graduation, and the parts of a
+school record that are not marks. Migration `0009` adds three tables:
+`learn_guardians` (who a student's family is), `account_contacts` (how to reach
+a person — a platform table, because a parent of two students has one phone
+number) and `learn_student_records` (what the school enters, section by
+section).
+
+What a guardian can do is in `guard.js` and nowhere else: read their own
+child's account, transcript, grades, coursework, report, progress, family and
+school record; write their own contact card. They cannot read a class
+gradebook, another child, or the child's private margin notes, and there is no
+branch by which they write a mark, a record or a link. `prove.sh` §27 checks
+each of those, including that an unlinked guardian is refused on the next
+request.
+
+A guardian is added by an administrator from the family view itself (Console →
+People → Family → Guardians), which creates their Oplo Account if the email
+does not hold one and never replaces the password of one that does.
+
+**Still missing:**
+
+- **Attendance, schedule, IEP, supports, wellness, transportation, emergency
+  contacts** have nowhere to come from except an administrator typing them in.
+  Each is a section a real SIS would feed; until one does, a section nobody has
+  written says so rather than showing an estimate.
+- **Documents** lists what the database holds (transcripts) and what the school
+  lists by hand. There is no file storage, so nothing can be downloaded — an R2
+  bucket and a signed-URL route would be the whole of it.
+- **Notifications.** A family learns something changed by opening the page.
+  Needs the same mail path as email verification.
+- **Self-service linking.** A family cannot claim a child with a code; the
+  school links them. That is deliberate for now, because a claim code is a way
+  to be shown a child's record and it needs rate limiting that holds (item 3).
+
 ## Explicitly out of scope for now
 
 Recorded so they are decisions rather than oversights.

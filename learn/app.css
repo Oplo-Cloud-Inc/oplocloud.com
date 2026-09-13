@@ -4726,6 +4726,7 @@ input.cn-search {
 input.cn-search:focus { outline: none; border-color: var(--blue); }
 
 .cn-acts { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 2px; }
+.cn-rowacts { display: inline-flex; gap: 6px; justify-content: flex-end; }
 .cn-btn.small { font-size: 12px; padding: 5px 10px; }
 
 .cn-empty {

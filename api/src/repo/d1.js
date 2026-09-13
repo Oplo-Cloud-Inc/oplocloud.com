@@ -226,6 +226,120 @@ export class D1Repository {
     return results || [];
   }
 
+  /* --------------------------------------------------------------- Family */
+
+  async guardianship(guardianId, studentId) {
+    return this.db.prepare(
+      `SELECT * FROM learn_guardians WHERE guardian_id = ? AND student_id = ?`
+    ).bind(guardianId, studentId).first();
+  }
+
+  async listGuardians(studentId) {
+    const { results } = await this.db.prepare(
+      `SELECT g.relationship, g.label, g.is_primary, g.created_at AS linked_at,
+              a.id, a.email, a.status, p.name, p.first_name, p.initials, p.avatar_hue,
+              c.mailing_address, c.cell_phone, c.alt_phone, c.date_of_birth,
+              c.updated_at AS contact_updated_at
+         FROM learn_guardians g
+         JOIN accounts a ON a.id = g.guardian_id
+         LEFT JOIN profiles p ON p.account_id = a.id
+         LEFT JOIN account_contacts c ON c.account_id = a.id
+        WHERE g.student_id = ?
+        ORDER BY g.is_primary DESC, p.name`
+    ).bind(studentId).all();
+    return results || [];
+  }
+
+  async listWards(guardianId) {
+    const { results } = await this.db.prepare(
+      `SELECT g.relationship, g.label, g.is_primary,
+              a.id, a.email, p.name, p.first_name, p.initials, p.avatar_hue,
+              sp.grade_level, sp.program
+         FROM learn_guardians g
+         JOIN accounts a ON a.id = g.student_id
+         LEFT JOIN profiles p ON p.account_id = a.id
+         LEFT JOIN learn_student_programs sp ON sp.account_id = a.id
+        WHERE g.guardian_id = ?
+        ORDER BY p.name`
+    ).bind(guardianId).all();
+    return results || [];
+  }
+
+  /* One primary guardian per student, so marking one primary clears the
+     others in the same batch rather than in a second request that can fail. */
+  async linkGuardian({ guardianId, studentId, orgId, relationship, label, primary, createdBy }) {
+    const t = now();
+    const statements = [];
+    if (primary) {
+      statements.push(this.db.prepare(
+        `UPDATE learn_guardians SET is_primary = 0, updated_at = ? WHERE student_id = ?`
+      ).bind(t, studentId));
+    }
+    statements.push(this.db.prepare(
+      `INSERT INTO learn_guardians
+         (id, guardian_id, student_id, org_id, relationship, label, is_primary, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (guardian_id, student_id) DO UPDATE SET
+         relationship = excluded.relationship, label = excluded.label,
+         is_primary = excluded.is_primary, updated_at = excluded.updated_at`
+    ).bind(id("grd"), guardianId, studentId, orgId || null, relationship, label || null,
+           primary ? 1 : 0, createdBy || null, t, t));
+    await this.db.batch(statements);
+    return this.guardianship(guardianId, studentId);
+  }
+
+  async unlinkGuardian(guardianId, studentId) {
+    await this.db.prepare(
+      `DELETE FROM learn_guardians WHERE guardian_id = ? AND student_id = ?`
+    ).bind(guardianId, studentId).run();
+  }
+
+  async getContact(accountId) {
+    return this.db.prepare(`SELECT * FROM account_contacts WHERE account_id = ?`).bind(accountId).first();
+  }
+
+  async putContact(accountId, c, actorId) {
+    await this.db.prepare(
+      `INSERT INTO account_contacts
+         (account_id, mailing_address, cell_phone, alt_phone, date_of_birth, updated_by, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (account_id) DO UPDATE SET
+         mailing_address = excluded.mailing_address, cell_phone = excluded.cell_phone,
+         alt_phone = excluded.alt_phone, date_of_birth = excluded.date_of_birth,
+         updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+    ).bind(accountId, c.mailingAddress ?? null, c.cellPhone ?? null, c.altPhone ?? null,
+           c.dateOfBirth ?? null, actorId || null, now()).run();
+    return this.getContact(accountId);
+  }
+
+  async listStudentRecords(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT r.section, r.body_json, r.updated_at, p.name AS updated_by_name
+         FROM learn_student_records r
+         LEFT JOIN profiles p ON p.account_id = r.updated_by
+        WHERE r.account_id = ?`
+    ).bind(accountId).all();
+    return results || [];
+  }
+
+  async putStudentRecord({ accountId, orgId, section, body, actorId }) {
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_student_records
+         (id, account_id, org_id, section, body_json, updated_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (account_id, section) DO UPDATE SET
+         body_json = excluded.body_json, updated_by = excluded.updated_by,
+         updated_at = excluded.updated_at`
+    ).bind(id("srec"), accountId, orgId || null, section, JSON.stringify(body), actorId || null, t, t).run();
+  }
+
+  async deleteStudentRecord(accountId, section) {
+    await this.db.prepare(
+      `DELETE FROM learn_student_records WHERE account_id = ? AND section = ?`
+    ).bind(accountId, section).run();
+  }
+
   /* -------------------------------------------------------------- Courses */
 
   async listCourses({ orgId, accountId } = {}) {

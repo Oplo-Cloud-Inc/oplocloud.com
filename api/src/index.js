@@ -35,6 +35,7 @@ import * as marks from "./routes/marks.js";
 import * as studysets from "./routes/studysets.js";
 import * as graduation from "./routes/graduation.js";
 import * as reporting from "./routes/reporting.js";
+import * as family from "./routes/family.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -85,6 +86,16 @@ const ROUTES = [
   ["GET",    "/api/v1/reporting",                reporting.readiness],
   ["PUT",    "/api/v1/reporting/comment",        reporting.putComment],
   ["GET",    "/api/v1/students/:accountId/report", reporting.report],
+
+  ["GET",    "/api/v1/family",                                     family.mine],
+  ["GET",    "/api/v1/students/:accountId/guardians",              family.guardians],
+  ["POST",   "/api/v1/students/:accountId/guardians",              family.addGuardian],
+  ["DELETE", "/api/v1/students/:accountId/guardians/:guardianId",  family.removeGuardian],
+  ["GET",    "/api/v1/accounts/:accountId/contact",                family.getContact],
+  ["PUT",    "/api/v1/accounts/:accountId/contact",                family.putContact],
+  ["GET",    "/api/v1/students/:accountId/records",                family.records],
+  ["PUT",    "/api/v1/students/:accountId/records/:section",       family.putRecord],
+  ["DELETE", "/api/v1/students/:accountId/records/:section",       family.clearRecord],
 
   ["GET",    "/api/v1/graduation",                       graduation.get],
   ["PUT",    "/api/v1/accounts/:accountId/program",      graduation.setProgram],

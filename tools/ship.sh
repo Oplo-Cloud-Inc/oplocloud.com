@@ -91,7 +91,8 @@ fi
 
 # --------------------------------------------------------------------------
 say "Verify what is about to be published"
-for f in learn/app.js learn/learn.js learn/store.js learn/annotate.js learn/api.js learn/kmap.js; do
+for f in learn/app.js learn/learn.js learn/store.js learn/annotate.js learn/api.js learn/kmap.js \
+         learn/parent/parent.js learn/parent/viz.js; do
   node --check "$WT/$f"
 done
 if [ "$API" = 1 ]; then
