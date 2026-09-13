@@ -44,9 +44,10 @@ directory = "./learn"
 # Files are matched before the script runs, so the Worker only sees requests
 # no file answered — which is what makes the redirect cheap.
 binding = "ASSETS"
-# A path that is not a file is not a page. The app never changes the URL — its
-# history entries are pushed with no path — so it has no deep links to fall
-# back for, and "single-page-application" here would buy nothing while costing
+# A path that is not a file is not a page. The app has exactly three addresses
+# of its own — /admin/, /teacher/ and /student/, where the one sign-in page
+# sends people by their roles — and worker/index.js answers those by name. So
+# "single-page-application" here would buy nothing while costing
 # something real: a mistyped script src would return index.html with a 200,
 # and a trivial typo would surface as a JavaScript syntax error instead of a
 # missing file.

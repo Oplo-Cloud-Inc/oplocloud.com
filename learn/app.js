@@ -10876,7 +10876,9 @@
         fam.type = "button";
         fam.addEventListener("click", function (e) {
           e.stopPropagation();
-          window.open("parent/?student=" + encodeURIComponent(p.id), "_blank", "noopener");
+          var H = window.OPLO_HOME;
+          window.open(H.pathFor(H.parse(location.pathname).root, "parent") + "?student=" + encodeURIComponent(p.id),
+                      "_blank", "noopener");
         });
         var both = el("span", "cn-rowacts");
         both.appendChild(fam);
@@ -11234,19 +11236,22 @@
   }
 
   function boot(who) {
-    /* A family signs in at the same address as everybody else, and belongs in
-       the family view. Somebody who is family and also a student, a teacher or
-       an administrator stays here: for them the family view is a place they
-       can go, not a door they are pushed through. */
-    var roles = who.roles || [];
-    if (roles.some(function (r) { return r.product === "learn" && r.role === "guardian"; }) &&
-        !roles.some(function (r) {
-          return r.product === "platform" || (r.product === "learn" && r.role !== "guardian");
-        })) {
-      location.replace("parent/");
-      return;
+    /* Everybody signs in on this one page; where they belong is read from their
+       roles (home.js) — /admin/, /teacher/, /student/, or the family view at
+       /parent/. An address their roles allow is kept, a `next` they were sent
+       with is honoured if it is one of those, and anything else sends them
+       home. The app's own addresses are the same page, so moving between them
+       changes the URL and not the document; the family view is another page. */
+    var H = window.OPLO_HOME;
+    var dest = H.destination(who.roles, location, new URLSearchParams(location.search).get("next"));
+    if (!dest.stay) {
+      if (dest.mode === "parent") { location.replace(dest.href); return; }
+      history.replaceState(null, "", dest.href);
     }
     S.me = normaliseAccount(who);
+    // The address is the hat: an administrator who opens /teacher/ sees the
+    // console as a teacher does. Their roles allowed it, or they would not be here.
+    S.me.role = dest.mode;
     who = S.me;
 
     /* The record is opened before anything is drawn, and S is pointed at it.
@@ -11394,6 +11399,9 @@
     $("#navGrades").hidden = true;
     $("#rankChip").hidden = true;
     $("#streak").textContent = "0";
+    // Signed out, the page is the sign-in page again, at the address everybody
+    // signs in at — not at the /admin/ or /student/ the last person left behind.
+    history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root);
     $("#gate").hidden = false;
     $("#gEmail").value = ""; $("#gPass").value = "";
     $("#gErr").textContent = "";
