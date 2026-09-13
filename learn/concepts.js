@@ -1099,7 +1099,566 @@ window.OPLO_CONCEPTS = (function () {
     })
   ];
 
-  var BOOK = { "media-5": MEDIA5, "media-6": MEDIA6 };
+  /* Introduction to Business, Unit 4. Every concept in the set is authored,
+     because a unit on trade is mostly ideas that sound obvious as a
+     definition and go wrong the moment they are used — a trade deficit as
+     "losing money", offshoring as another word for outsourcing. */
+  var BIZ4 = [
+    C("Absolute advantage", {
+      why: "It is the common-sense idea of being better at something — and seeing why it is not " +
+           "enough is the key to understanding trade.",
+      eg: "If a worker in Brazil grows more coffee in a day than a worker in Canada, Brazil has the " +
+          "absolute advantage in coffee.",
+      miss: [["A country with no absolute advantage has nothing to gain from trade.",
+              "It can still have a comparative advantage — something it gives up less to make — " +
+              "and trade on that."]],
+      pre: [], rel: ["Comparative advantage"],
+      say: ["more", "same", "resources", "produce", "rival", "output"],
+      apply: { ask: "In one day, a worker in Country X makes 10 shirts and a worker in Country Y " +
+                    "makes 6. Who has the absolute advantage in shirts?",
+               opts: ["Country X", "Country Y", "Neither — you need prices to tell", "Both equally"],
+               right: 0,
+               why: "X makes more with the same labour, which is exactly what absolute advantage " +
+                    "means." },
+      xfer: { ask: "A hospital's best surgeon also types faster than its secretary. Should the " +
+                   "surgeon type the reports?",
+              opts: ["Yes — the surgeon is faster, so the surgeon should type",
+                     "No — every hour typing is an hour not operating, so the secretary should type",
+                     "Yes — whoever is fastest always does the work",
+                     "It makes no difference who types"],
+              right: 1,
+              why: "Typing faster is an absolute advantage. What decides it is what the surgeon " +
+                   "gives up — and that is surgery." }
+    }),
+
+    C("Comparative advantage", {
+      why: "It explains why trade leaves both sides better off, even when one side is better at " +
+           "everything.",
+      eg: "England needed more hours than Portugal for both cloth and wine, yet one cloth cost " +
+          "England less wine — so England should make the cloth.",
+      miss: [["Comparative advantage means being the best at making something.",
+              "That is absolute advantage. Comparative advantage is about giving up the least — the " +
+              "lower opportunity cost."]],
+      pre: ["Absolute advantage"], rel: ["Competitive advantage"],
+      say: ["opportunity cost", "give up", "lower", "specialise", "trade", "both"],
+      apply: { ask: "Making one table costs Country A the 2 chairs it could have made instead, and " +
+                    "costs Country B 4 chairs. Who has the comparative advantage in tables?",
+               opts: ["Country A", "Country B", "Whichever makes more tables per worker", "Neither"],
+               right: 0,
+               why: "A gives up fewer chairs for each table. The lower opportunity cost is the " +
+                    "comparative advantage." },
+      xfer: { ask: "Two students share a project. One is better at both research and design, but " +
+                   "far better at research. How should they split the work?",
+              opts: ["The stronger student does everything",
+                     "The stronger student researches; the other designs",
+                     "Each does half of both",
+                     "The weaker student researches"],
+              right: 1,
+              why: "Each gives up least by doing their own task, so together they finish more than " +
+                   "if the stronger student did it all." }
+    }),
+
+    C("Competitive advantage", {
+      why: "It is what lets a business win customers from its rivals — and what a strategy is " +
+           "trying to build.",
+      eg: "A shop whose website sells straight to customers, without a middleman, can charge less " +
+          "and deliver faster than its rivals.",
+      miss: [["Competitive advantage and comparative advantage mean the same thing.",
+              "Comparative advantage is about opportunity cost. Competitive advantage is any edge — " +
+              "skills, technology, brand — that beats rivals."]],
+      pre: ["Comparative advantage"], rel: [],
+      say: ["edge", "outperform", "rivals", "technology", "skills", "Porter"],
+      apply: { ask: "Which of these is a competitive advantage for a bakery?",
+               opts: ["It is in the same town as its rivals",
+                      "Its recipe is so good that customers queue for it",
+                      "It pays the same rent as everyone else",
+                      "It opens at the usual time"],
+               right: 1,
+               why: "Only the recipe sets it apart. The others are true of every bakery, so they are " +
+                    "no advantage at all." },
+      xfer: { ask: "Porter warned against countries relying only on exporting cheap raw materials. " +
+                   "What was he afraid would happen?",
+              opts: ["They would run out of workers",
+                     "They would stay stuck selling low-priced goods on low wages",
+                     "They would run too many trade surpluses",
+                     "Their currencies would be fixed"],
+              right: 1,
+              why: "Cheap raw materials can trap a country in low prices and low pay. Building " +
+                   "high-quality, high-price goods was his way out." }
+    }),
+
+    C("Balance of trade", {
+      why: "It is the headline number for a country's trade, and one of the most argued about.",
+      eg: "A country that exports $80bn and imports $110bn in a year has a trade deficit of $30bn.",
+      miss: [["A trade deficit means a country loses money on its trades.",
+              "Each trade is still a fair exchange. A deficit only says the country bought more " +
+              "from abroad than it sold."]],
+      pre: [], rel: ["Balance of payments"],
+      say: ["exports", "imports", "minus", "surplus", "deficit", "period"],
+      apply: { ask: "In a year, a country exports $250bn and imports $200bn. What is its balance of " +
+                    "trade?",
+               opts: ["A $50bn deficit", "A $50bn surplus", "$450bn", "It balances exactly"],
+               right: 1,
+               why: "250 − 200 = +50. Selling more than it buys is a surplus." },
+      xfer: { ask: "A country's currency becomes much cheaper. What would you expect to happen to " +
+                   "its balance of trade over time?",
+              opts: ["It worsens, because imports get cheaper",
+                     "It improves, because its exports get cheaper for foreign buyers",
+                     "Nothing — currencies do not affect trade",
+                     "It becomes exactly zero"],
+              right: 1,
+              why: "A cheaper currency makes its goods cheaper abroad and foreign goods dearer at " +
+                   "home, so exports tend to rise and imports to fall." }
+    }),
+
+    C("Trade barrier", {
+      why: "Barriers decide what a product costs once it crosses a border — and which businesses " +
+           "can compete at all.",
+      eg: "A rule that every imported toy must pass a new safety test that is only run inside the " +
+          "importing country.",
+      miss: [["Only tariffs count as trade barriers.",
+              "Quotas, embargoes, subsidies, licences and even product standards can all keep " +
+              "foreign goods out."]],
+      pre: [], rel: ["Tariff", "Import quota", "Embargo"],
+      say: ["government", "restriction", "cost", "price", "imports", "protect"],
+      apply: { ask: "Two countries keep raising barriers against each other's goods, each in answer " +
+                    "to the other. What is this called?",
+               opts: ["A trade surplus", "A trade war", "A free trade area", "Countertrade"],
+               right: 1,
+               why: "Barriers raised again and again in retaliation are a trade war." },
+      xfer: { ask: "A government pays its steel makers so they can sell below foreign prices. Why " +
+                   "do other countries call this a trade barrier?",
+              opts: ["It taxes their steel at the border",
+                     "It tilts prices so their steel struggles to compete",
+                     "It bans their steel outright",
+                     "It fixes the exchange rate"],
+              right: 1,
+              why: "A subsidy charges nothing at the border, but it works against foreign sellers " +
+                   "just as surely as a tariff." }
+    }),
+
+    C("Tariff", {
+      why: "It is the oldest and most common trade barrier — and it is paid, in the end, mostly by " +
+           "shoppers.",
+      eg: "A 30% tariff turns a $10 imported shirt into a $13 one.",
+      miss: [["The foreign country pays the tariff.",
+              "It is collected from the importer at the border, and usually passed on to buyers as " +
+              "a higher price."]],
+      pre: ["Trade barrier"], rel: ["Import quota"],
+      say: ["tax", "imports", "price", "protect", "home", "border"],
+      apply: { ask: "An imported bike costs $200 and a home-made one $230. The government adds a 20% " +
+                    "tariff to the import. Which is cheaper now?",
+               opts: ["The import, still $200", "The import, now $220",
+                      "The home-made bike, because the import now costs $240", "They cost the same"],
+               right: 2,
+               why: "20% of $200 is $40, so the import rises to $240 — more than the $230 home-made " +
+                    "bike." },
+      xfer: { ask: "A country puts a large tariff on imported steel. Who at home is most likely to " +
+                   "be hurt?",
+              opts: ["Home steel makers",
+                     "Home companies that use steel to make cars and machines",
+                     "Nobody at home",
+                     "Only foreign governments"],
+              right: 1,
+              why: "Home steel makers gain, but every home business that buys steel now pays more " +
+                   "for it." }
+    }),
+
+    C("Import quota", {
+      why: "A quota caps the amount of a good, which can hurt more than a tariff: extra demand " +
+           "cannot be met at any price.",
+      eg: "A country lets only one million tonnes of foreign sugar in each year.",
+      miss: [["A quota is a kind of tax.",
+              "A quota limits the quantity. A tariff is the tax."]],
+      pre: ["Trade barrier"], rel: ["Tariff", "Embargo"],
+      say: ["limit", "amount", "quantity", "imports", "period"],
+      apply: { ask: "A country allows 50,000 foreign cars in a year, and in October the limit is " +
+                    "reached. What happens to the next foreign car?",
+               opts: ["It pays a higher tax", "It cannot come in until next year",
+                      "It is sold at a discount", "It counts as home-made"],
+               right: 1,
+               why: "A quota is a hard limit on quantity. Once it is reached, nothing more comes in " +
+                    "that period." },
+      xfer: { ask: "Why can a quota push prices up more than a tariff that gives the same protection?",
+              opts: ["Quotas are against WTO rules",
+                     "With a quota, no more can come in however much buyers will pay",
+                     "Tariffs lower prices",
+                     "Quotas apply only to services"],
+              right: 1,
+              why: "Anyone can still import under a tariff by paying it. A quota shuts the door, so " +
+                   "shortages can drive prices higher." }
+    }),
+
+    C("Embargo", {
+      why: "It is the strongest barrier of all — not a cost on trade but a ban — and is usually " +
+           "used for political reasons.",
+      eg: "A government forbids all trade with a country whose leaders it wants to put pressure on.",
+      miss: [["An embargo limits trade to a set amount.",
+              "That is a quota. An embargo stops the trade altogether."]],
+      pre: ["Trade barrier"], rel: ["Import quota"],
+      say: ["ban", "trade", "country", "government", "political"],
+      apply: { ask: "Which of these is an embargo?",
+               opts: ["A 10% tax on imported cheese", "A limit of 1,000 tonnes of imported cheese a year",
+                      "A ban on buying any goods from one particular country", "A subsidy for cheese makers"],
+               right: 2,
+               why: "The ban is an embargo. The tax is a tariff, the limit a quota, and the payment a " +
+                    "subsidy." },
+      xfer: { ask: "Why do governments often use embargoes for political rather than economic " +
+                   "reasons?",
+              opts: ["Because embargoes raise tax money",
+                     "Because cutting off trade puts pressure on another government",
+                     "Because they lower prices at home",
+                     "Because the WTO requires them"],
+              right: 1,
+              why: "An embargo costs both sides trade. It is used when the goal is pressure, not " +
+                   "profit." }
+    }),
+
+    C("Cultural dimensions", {
+      why: "Culture changes how people give orders, take risks and make deals. Misread it, and a " +
+           "good business plan can still fail abroad.",
+      eg: "A manager from a low power-distance culture may expect to question the boss; in a high " +
+          "power-distance culture that can cause offence.",
+      miss: [["The scores describe every person in a country.",
+              "They describe tendencies across a whole culture. Individuals vary widely."]],
+      pre: [], rel: [],
+      say: ["Hofstede", "culture", "power distance", "individualism", "compare", "business"],
+      apply: { ask: "Country B scores much higher than Country A on power distance. A manager from A " +
+                    "moves to B. What should they expect?",
+               opts: ["Staff will question every decision",
+                      "Lines of authority will be more formal and rigid",
+                      "Nobody will care about job titles",
+                      "Decisions will be made by a vote"],
+               right: 1,
+               why: "High power distance means people accept unequal power, so authority is more " +
+                    "formal." },
+      xfer: { ask: "A manager from a very individualist culture praises one star salesperson in " +
+                   "front of the whole team. In a strongly collectivist office, the salesperson looks " +
+                   "embarrassed. Why?",
+              opts: ["They wanted a pay rise instead",
+                     "Being singled out above the group feels uncomfortable where the group comes first",
+                     "They dislike selling",
+                     "Praise at work is not allowed there"],
+              right: 1,
+              why: "Where the group comes first, success is shared. Lifting one person above the team " +
+                   "can feel like breaking that." }
+    }),
+
+    C("World Trade Organization", {
+      why: "It writes and referees the rules that most of the world's trade runs on.",
+      eg: "When one member says another's tariffs break the rules, the case goes through the WTO.",
+      miss: [["The WTO is a trade deal between a few neighbouring countries.",
+              "It is worldwide, with 166 members. Regional deals like the EU and USMCA are " +
+              "separate."]],
+      pre: [], rel: ["European Union", "USMCA"],
+      say: ["rules", "trade", "members", "disputes", "GATT", "1995"],
+      apply: { ask: "Which organisation took over from GATT in 1995?",
+               opts: ["The IMF", "The World Trade Organization", "The European Union", "APEC"],
+               right: 1,
+               why: "The WTO replaced GATT on 1 January 1995." },
+      xfer: { ask: "A small country believes a much bigger country's barriers against its fruit " +
+                   "break world trade rules. How does WTO membership help it?",
+              opts: ["The WTO lends it money",
+                     "It can bring a case under shared rules, instead of simply giving in",
+                     "The WTO sets its exchange rate",
+                     "It lets it join the EU"],
+              right: 1,
+              why: "Shared rules and a way to settle disputes give even small members a way to " +
+                   "challenge bigger ones." }
+    }),
+
+    C("European Union", {
+      why: "It is one of the world's largest single markets, and the clearest example of how far " +
+           "countries can go in trading as one.",
+      eg: "A company in Spain sells to customers in Germany with no tariffs, under the same " +
+          "product rules.",
+      miss: [["Every EU country uses the euro.",
+              "21 of the 27 do. Denmark, Sweden and Poland are among those that keep their own " +
+              "currencies."]],
+      pre: [], rel: ["World Trade Organization"],
+      say: ["27", "single market", "Europe", "free movement", "union"],
+      apply: { ask: "Why can Italian cheese be sold in France without a tariff?",
+               opts: ["France has no tariffs on anything", "Both are in the EU's single market",
+                      "The WTO bans tariffs on cheese", "Using the euro removes tariffs"],
+               right: 1,
+               why: "The single market removes tariffs between EU members." },
+      xfer: { ask: "After the United Kingdom left the EU in 2020, what did British businesses " +
+                   "selling to Europe start to face?",
+              opts: ["Nothing different", "Customs paperwork and checks at the border",
+                      "A switch to the euro", "Membership of the Schengen Area"],
+              right: 1,
+              why: "Outside the single market and customs union, goods need paperwork and checks " +
+                   "they did not need before." }
+    }),
+
+    C("USMCA", {
+      why: "It sets the rules of trade between the United States and its two largest neighbours.",
+      eg: "Farm goods, cars and car parts cross between the US, Mexico and Canada largely " +
+          "tariff-free.",
+      miss: [["NAFTA is still the agreement in force.",
+              "USMCA replaced NAFTA in 2020."]],
+      pre: [], rel: ["World Trade Organization"],
+      say: ["United States", "Mexico", "Canada", "NAFTA", "replaced", "2020"],
+      apply: { ask: "Which three countries are in USMCA?",
+               opts: ["The US, Canada and Mexico", "The US, Mexico and Cuba",
+                      "Canada, Mexico and Brazil", "The US, Canada and the UK"],
+               right: 0,
+               why: "The name gives it away: United States, Mexico, Canada." },
+      xfer: { ask: "A car is built from parts made in all three USMCA countries. Why does the deal " +
+                   "matter so much to carmakers?",
+              opts: ["It sets their exchange rates",
+                     "Parts can cross borders several times without a tariff at each crossing",
+                     "It bans cars from Asia",
+                     "It pays their workers"],
+              right: 1,
+              why: "A car's parts may cross a border again and again. A tariff at every crossing " +
+                   "would add up fast." }
+    }),
+
+    C("World Bank", {
+      why: "It is one of the main ways money from richer countries reaches development projects in " +
+           "poorer ones.",
+      eg: "A loan to build roads and schools, agreed as part of a country's plan to reduce poverty.",
+      miss: [["The World Bank and the IMF do the same job.",
+              "The World Bank funds long-term development. The IMF deals with exchange rates and " +
+              "short-term payment crises."]],
+      pre: [], rel: ["International Monetary Fund"],
+      say: ["loans", "developing", "poverty", "projects", "countries"],
+      apply: { ask: "A poor country wants money to build clean-water systems over ten years. Which " +
+                    "organisation is designed for that?",
+               opts: ["The World Bank", "The IMF", "The WTO", "The European Central Bank"],
+               right: 0,
+               why: "Long-term projects aimed at reducing poverty are the World Bank's work." },
+      xfer: { ask: "Why does the World Bank build its lending around each poor country's own plan " +
+                   "for reducing poverty?",
+              opts: ["To cut down on paperwork",
+                     "So the money backs what the country itself has made a priority",
+                     "Because it may not lend any other way",
+                     "To set the country's exchange rate"],
+              right: 1,
+              why: "Money that follows a country's own priorities is more likely to be used well " +
+                   "and to last." }
+    }),
+
+    C("International Monetary Fund", {
+      why: "It is the lender countries turn to in a crisis, and its conditions can reshape a whole " +
+           "economy.",
+      eg: "A country that cannot pay for its imports borrows from the IMF and agrees to cut its " +
+          "budget deficit.",
+      miss: [["The IMF asks for collateral, like a bank.",
+              "It asks for policy changes instead, which is called conditionality."]],
+      pre: ["World Bank"], rel: ["Exchange rate", "Balance of payments"],
+      say: ["exchange rates", "stability", "lends", "conditions", "quota", "members"],
+      apply: { ask: "A country's currency is collapsing and it cannot pay its foreign bills. Which " +
+                    "organisation is set up to help?",
+               opts: ["The World Bank", "The IMF", "APEC", "The Ex-Im Bank"],
+               right: 1,
+               why: "Short-term payment crises and exchange-rate stability are the IMF's job." },
+      xfer: { ask: "Why are the IMF's loan conditions controversial?",
+              opts: ["Because the IMF charges no interest",
+                     "Because the policy changes it requires can be painful for ordinary people",
+                     "Because it only lends to rich countries",
+                     "Because it sets tariffs"],
+              right: 1,
+              why: "Spending cuts and reforms can cost jobs and services, even when they help a " +
+                   "country repay." }
+    }),
+
+    C("Exchange rate", {
+      why: "It decides what every foreign purchase really costs, and it changes every day.",
+      eg: "At €1 = $1.25, a €20 T-shirt costs an American $25.",
+      miss: [["A bigger number always means a stronger home currency.",
+              "It depends which way round the rate is written. €1 = $1.25 and $1 = €0.80 are the " +
+              "same rate."]],
+      pre: [], rel: ["Balance of payments"],
+      say: ["price", "currency", "another", "direct", "indirect", "forex"],
+      apply: { ask: "The rate is £1 = $1.30. A British book costs £10. What does it cost in dollars?",
+               opts: ["$10", "$7.69", "$13", "$1.30"],
+               right: 2,
+               why: "Each pound costs $1.30, so £10 costs 10 × 1.30 = $13." },
+      xfer: { ask: "The euro gets stronger against the dollar. What happens to an American's holiday " +
+                   "in Paris?",
+              opts: ["It gets cheaper", "It gets more expensive", "It costs the same",
+                     "The hotel has to accept dollars"],
+              right: 1,
+              why: "Each euro now costs more dollars, so everything priced in euros costs an " +
+                   "American more." }
+    }),
+
+    C("Balance of payments", {
+      why: "It is the full picture behind the trade figures: it shows how a deficit actually gets " +
+           "paid for.",
+      eg: "A country buys $80bn more than it sells, and a net $80bn of foreign investment coming in " +
+          "covers it.",
+      miss: [["A trade deficit means the balance of payments is out of balance.",
+              "The whole balance of payments always adds to zero. The deficit is matched by money " +
+              "flowing in some other way."]],
+      pre: ["Balance of trade"], rel: ["Exchange rate"],
+      say: ["record", "payments", "in", "out", "zero", "investment"],
+      apply: { ask: "A country's imports are $40bn more than its exports. What must be true of the " +
+                    "rest of its payments?",
+               opts: ["$40bn more must come in than goes out",
+                      "$40bn more must go out than comes in",
+                      "They must add up to exactly zero on their own",
+                      "The IMF must lend it $40bn"],
+               right: 0,
+               why: "The accounts must balance, so $40bn has to arrive some other way — investment, " +
+                    "borrowing or reserves." },
+      xfer: { ask: "Why do countries that run trade deficits for many years tend to build up debt?",
+              opts: ["Because deficits are illegal",
+                     "Because the gap is often covered by borrowing from abroad, year after year",
+                     "Because surpluses cancel them out automatically",
+                     "Because the WTO fines them"],
+              right: 1,
+              why: "If each year's deficit is paid for by borrowing, each year adds to what is owed." }
+    }),
+
+    C("Licensing", {
+      why: "It is the quickest, lowest-risk way into a foreign market — paid for with control.",
+      eg: "Polski Fiat built Fiat's 508 car in Poland under licence in the 1930s.",
+      miss: [["Licensing and franchising are the same thing.",
+              "A licence lets another firm use one thing, such as a brand or a recipe. A franchise " +
+              "hands over a whole way of running the business."]],
+      pre: [], rel: ["Franchising", "Joint venture"],
+      say: ["licensor", "licensee", "fee", "royalty", "brand", "technology"],
+      apply: { ask: "A drinks company cannot sell in a country because of food rules. It lets a local " +
+                    "drinks maker produce its recipe in return for 15% of sales. What is this?",
+               opts: ["Exporting", "Licensing", "Direct investment", "Countertrade"],
+               right: 1,
+               why: "Letting a local firm use your recipe for a royalty is licensing." },
+      xfer: { ask: "A famous brand licenses its name to a foreign clothing maker, which then sells " +
+                   "badly made clothes. What is the brand's biggest risk?",
+              opts: ["Losing its factory", "Damage to its own reputation",
+                     "Paying tariffs", "A trade surplus"],
+              right: 1,
+              why: "Losing quality control is licensing's main weakness: the licensee's mistakes " +
+                   "carry the licensor's name." }
+    }),
+
+    C("Franchising", {
+      why: "It lets a brand spread fast with other people's money — and lets local owners run a " +
+           "proven business.",
+      eg: "A local owner opens a restaurant under a global brand, pays fees, and follows its recipes " +
+          "and methods.",
+      miss: [["The franchiser pays to open each new location.",
+              "The franchisee puts up most of the money and takes most of the risk."]],
+      pre: ["Licensing"], rel: ["Joint venture"],
+      say: ["franchiser", "franchisee", "brand", "system", "fees", "local"],
+      apply: { ask: "In a franchise, who usually pays to build and open a new restaurant?",
+               opts: ["The franchiser", "The franchisee", "The government", "The customers"],
+               right: 1,
+               why: "The franchisee invests the money, and gets the brand and the system in return." },
+      xfer: { ask: "Why can a franchise adapt its menu to local tastes more easily than a shop run " +
+                   "from head office abroad?",
+              opts: ["Franchises have no rules",
+                     "Local owners know local customers and can pass that on",
+                     "Menus are set by the WTO",
+                     "Franchises pay no tariffs"],
+              right: 1,
+              why: "Local ownership brings local knowledge — one of franchising's biggest " +
+                   "advantages." }
+    }),
+
+    C("Joint venture", {
+      why: "It lets companies take on projects too costly or risky to try alone, and share the " +
+           "reward.",
+      eg: "Sony Ericsson combined a Japanese electronics company and a Swedish telecoms company to " +
+          "make phones.",
+      miss: [["Partners in a joint venture always own equal shares.",
+              "They share ownership and control, but the split is often unequal."]],
+      pre: [], rel: ["Licensing", "Foreign direct investment"],
+      say: ["new", "company", "together", "share", "equity", "profits"],
+      apply: { ask: "Two companies each put money into a brand-new company that both own and run, " +
+                    "and split its profits. What is it?",
+               opts: ["A licence", "A franchise", "A joint venture", "Outsourcing"],
+               right: 2,
+               why: "A new, jointly owned business with shared control and profit is a joint " +
+                    "venture." },
+      xfer: { ask: "A company wants to enter a country whose laws and customers it does not know. " +
+                   "Why might a joint venture with a local firm help?",
+              opts: ["It avoids all taxes",
+                     "The local partner brings market knowledge and contacts",
+                     "It guarantees a profit",
+                     "It removes all competition"],
+              right: 1,
+              why: "The local partner supplies what the newcomer lacks, and both share the risk." }
+    }),
+
+    C("Outsourcing", {
+      why: "It is one of the main ways companies cut costs and focus — and one of the most " +
+           "politically argued over.",
+      eg: "A bank pays a call-centre company to answer its customers' calls.",
+      miss: [["Outsourcing always means sending work abroad.",
+              "It means another company does the work. That company can be in the same country."]],
+      pre: [], rel: ["Offshoring"],
+      say: ["another company", "contract", "service", "cost", "work"],
+      apply: { ask: "A school hires a separate company to run its cafeteria. Is this outsourcing?",
+               opts: ["Yes — another company does work the school could do itself",
+                      "No — the company is not in another country",
+                      "No — schools cannot outsource",
+                      "Only if the company is foreign"],
+               right: 0,
+               why: "Outsourcing is about who does the work, not where." },
+      xfer: { ask: "A company outsources the processing of its customers' personal data. What new " +
+                   "risk should it plan for?",
+              opts: ["Higher tariffs", "Leaks of confidential information",
+                     "A stronger currency", "Too many employees"],
+              right: 1,
+              why: "Handing data to another firm adds privacy and security risks the company no " +
+                   "longer fully controls." }
+    }),
+
+    C("Offshoring", {
+      why: "It explains why so much manufacturing now happens in China and so many services are " +
+           "run from India.",
+      eg: "A US company moves its own accounting department to an office it opens in India.",
+      miss: [["Offshoring means hiring another company.",
+              "It means moving the work to another country. The company can keep doing it itself."]],
+      pre: ["Outsourcing"], rel: [],
+      say: ["another country", "move", "process", "cost", "location"],
+      apply: { ask: "A carmaker closes its own US factory and opens its own new factory in Mexico. " +
+                    "What is this?",
+               opts: ["Outsourcing only", "Offshoring", "Licensing", "Countertrade"],
+               right: 1,
+               why: "The work moved country, but the company still does it itself: offshoring, not " +
+                    "outsourcing." },
+      xfer: { ask: "A US company moves work to Canada rather than to Asia, partly so time zones " +
+                   "match. What is this sometimes called?",
+              opts: ["Insourcing", "Nearshoring", "Bartering", "Licensing"],
+              right: 1,
+              why: "Moving work to a cheaper country close by is nearshoring." }
+    }),
+
+    C("Foreign direct investment", {
+      why: "It is how a company puts down real roots abroad — and what many developing countries " +
+           "work hardest to attract.",
+      eg: "A Japanese carmaker builds a factory in the United States.",
+      miss: [["Buying a few shares in a foreign company is direct investment.",
+              "That is portfolio investment. Direct investment means owning and running an " +
+              "operation."]],
+      pre: [], rel: ["Joint venture"],
+      say: ["buy", "build", "operation", "another country", "control", "factory"],
+      apply: { ask: "Which of these is foreign direct investment?",
+               opts: ["A US family buys shares in a German company",
+                      "A German company builds a factory in Texas",
+                      "A shop imports German cheese",
+                      "A student changes dollars into euros"],
+               right: 1,
+               why: "Building and running an operation abroad is direct investment. Buying shares " +
+                    "alone is portfolio investment." },
+      xfer: { ask: "Developing countries that signed more trade agreements attracted more foreign " +
+                   "direct investment. Why might that be?",
+              opts: ["Agreements ban foreign companies",
+                     "Firmer rules make a long-term investment like a factory look safer",
+                     "Agreements raise tariffs",
+                     "Agreements fix exchange rates"],
+              right: 1,
+              why: "A factory takes years to pay for itself. Predictable trade rules lower the risk " +
+                   "of that bet." }
+    })
+  ];
+
+  var BOOK = { "media-5": MEDIA5, "media-6": MEDIA6, "biz-4": BIZ4 };
 
   /* A set with no authored concepts still runs, at the three levels a pair can
      honestly support. Saying so in the data is better than a Learn session
