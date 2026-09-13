@@ -6,6 +6,13 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
   ".jpg": "image/jpeg", ".ico": "image/x-icon", ".webp": "image/webp" };
 http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split("?")[0]);
+  // The app's role addresses, answered from the app's own files the way the
+  // production Worker answers them (worker/index.js).
+  if (/^\/learn\/(admin|teacher|student)$/.test(p)) {
+    res.writeHead(308, { Location: p + "/" + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "") }).end();
+    return;
+  }
+  p = p.replace(/^\/learn\/(admin|teacher|student)(?=\/)/, "/learn");
   if (p.endsWith("/")) p += "index.html";
   const file = path.join(ROOT, p);
   if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }

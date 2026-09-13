@@ -1,7 +1,8 @@
 /* ==========================================================================
    OEdu's Worker.
 
-   It serves the app, and it sends the old address to the new one.
+   It serves the app at the addresses people are sent to after signing in —
+   /admin/, /teacher/, /student/ — and it sends the old address to the new one.
 
    The redirect could not be a page. `learn/` is the directory this Worker
    publishes, so an index.html in it saying "go to edu.oplocloud.com" would be
@@ -35,6 +36,24 @@ export default {
     if (url.hostname !== "edu.oplocloud.com" &&
         (url.pathname === "/learn" || url.pathname.startsWith("/learn/"))) {
       return Response.redirect(OEDU, 301);
+    }
+
+    /* The app's own addresses. Everybody signs in at the root and is sent to
+       /admin/, /teacher/ or /student/ by their roles (learn/home.js); all three
+       are the app itself, so each is answered from the app's files with the
+       address taken off — /admin/ is index.html, /admin/app.css is app.css.
+       The family view at /parent/ is a real directory and never reaches here.
+       Without the trailing slash, the page's relative links would resolve
+       against the root, so it is added first. */
+    const mode = url.pathname.match(/^\/(admin|teacher|student)(\/.*)?$/);
+    if (mode) {
+      if (!mode[2]) {
+        url.pathname += "/";
+        return Response.redirect(url.toString(), 308);
+      }
+      const inner = new URL(url);
+      inner.pathname = mode[2];
+      return env.ASSETS.fetch(new Request(inner, request));
     }
 
     // Anything else that reached the Worker matched no file. Asking the asset

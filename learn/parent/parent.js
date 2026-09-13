@@ -315,60 +315,28 @@
   }
   function currentTheme() { return document.documentElement.getAttribute("data-theme") || "system"; }
 
-  /* =============================================================== Gate */
+  /* ============================================================ Sign in
+     There is no sign-in on this page. Everybody — administrators, teachers,
+     students and families — signs in on the one page at the root of OEdu,
+     which sends each person to their own address by their roles (home.js).
+     Arriving here signed out goes there, and comes straight back afterwards. */
 
-  function showGate(message) {
-    $("#boot").hidden = true;
-    $("#app").hidden = true;
-    $("#gate").hidden = false;
-    if (message) $("#gErr").innerHTML = message;
-    setTimeout(function () { $("#gEmail").focus(); }, 60);
-  }
+  var H = window.OPLO_HOME;
+  var ROOT = H.parse(location.pathname).root;
 
-  function wireGate() {
-    var form = $("#gateForm"), err = $("#gErr"), go = form.querySelector("button");
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var email = $("#gEmail").value.trim(), pw = $("#gPass").value;
-      err.textContent = "";
-      $("#gEmail").classList.remove("bad");
-      $("#gPass").classList.remove("bad");
-      if (!email || !pw) { err.textContent = "Both fields, please."; return; }
-      go.disabled = true;
-      go.textContent = "Signing in…";
-      // Rate limiting is the server's, per account and per network. A limiter
-      // in the page would stop an honest parent mistyping twice, and nobody else.
-      API.login(email, pw).then(function (account) {
-        go.disabled = false;
-        go.textContent = "Sign in";
-        $("#gPass").value = "";
-        $("#gate").hidden = true;
-        signedIn(account);
-      }).catch(function (e2) {
-        go.disabled = false;
-        go.textContent = "Sign in";
-        $("#gPass").value = "";
-        if (e2 && e2.code === "offline") {
-          err.innerHTML = "Cannot reach the Oplo account service at <code>" + esc(API.base()) + "</code>.";
-          return;
-        }
-        $("#gEmail").classList.add("bad");
-        $("#gPass").classList.add("bad");
-        err.textContent = (e2 && e2.message) || "That email and password do not match an account.";
-        $("#gPass").focus();
-      });
-    });
+  function toSignIn() {
+    location.replace(ROOT + "?next=" + encodeURIComponent(location.pathname + location.search + location.hash));
   }
 
   /* ============================================================== Start */
 
   function start() {
-    wireGate();
     wireShell();
     API.me().then(signedIn, function (e) {
-      showGate(e && e.code === "offline"
-        ? "Cannot reach the Oplo account service at <code>" + esc(API.base()) + "</code>."
-        : "");
+      if (e && e.code === "offline") {
+        return problemScreen("The Oplo account service is not answering.", "It could not be reached at " + API.base() + ".");
+      }
+      toSignIn();
     });
   }
 
@@ -377,6 +345,9 @@
   }
 
   function signedIn(me) {
+    // Somebody whose roles do not include this page is sent to their own.
+    var dest = H.destination(me.roles, location, null);
+    if (!dest.stay) { location.replace(dest.href); return; }
     S.me = me;
     $("#boot").hidden = false;
     API.family.mine().then(function (fam) {
@@ -400,14 +371,13 @@
       return noticeScreen("This is the family view.",
         "It is for parents and guardians. Your own work is in <a href='../'>OEdu</a>.");
     }, function (e) {
-      if (e && e.status === 401) return showGate("");
+      if (e && e.status === 401) return toSignIn();
       problemScreen("The family view could not be opened.", e && e.message);
     });
   }
 
   function shellOn() {
     $("#boot").hidden = true;
-    $("#gate").hidden = true;
     $("#app").hidden = false;
     paintMe();
   }
@@ -618,7 +588,7 @@
         });
         if (more) {
           var a = h("a", "", icon("link", 16) + "<span>Open OEdu</span>");
-          a.href = "../";
+          a.href = H.pathFor(ROOT, H.home(S.me.roles));
           m.appendChild(a);
         }
         m.appendChild(h("div", "sep"));
@@ -630,8 +600,7 @@
             S.me = S.family = S.student = S.data = null;
             $("#stage").innerHTML = "";
             closeSheet(true);
-            history.replaceState(null, "", location.pathname);
-            showGate("");
+            location.replace(ROOT);
           });
         }));
       });

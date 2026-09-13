@@ -212,57 +212,14 @@ kbd { font: 500 11px var(--sans); }
 .fb-icon:hover { color: var(--ink); background: var(--rule); }
 .fb-icon:disabled { opacity: .35; cursor: default; }
 
-/* ----------------------------------------------------------------- Gate */
-.fg {
-  position: relative; z-index: 2; min-height: 100vh;
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center;
-  gap: 40px; padding: 48px clamp(20px, 6vw, 96px);
-}
-.fg-art { position: relative; aspect-ratio: 1; max-width: 620px; width: 100%; justify-self: center; }
-.fg-orbits { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.fg-orbits circle { fill: none; stroke: var(--rule); stroke-width: 1; }
-.fg-orbits .p { fill: var(--ink); stroke: none; }
-.fg-orbits g { transform-origin: 300px 300px; animation: fg-spin linear infinite; }
-.fg-orbits .o1 { animation-duration: 26s; }
-.fg-orbits .o2 { animation-duration: 44s; animation-direction: reverse; }
-.fg-orbits .o3 { animation-duration: 70s; }
-.fg-orbits .o4 { animation-duration: 96s; animation-direction: reverse; }
-@keyframes fg-spin { to { transform: rotate(360deg); } }
-.fg-core {
-  position: absolute; left: 50%; top: 50%; width: 21%; aspect-ratio: 1; transform: translate(-50%, -50%);
-  border-radius: 50%; display: grid; place-items: center; color: var(--ink);
-  background: var(--glass-2); border: 1px solid var(--hair); box-shadow: var(--lift);
-  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-}
-.fg-core svg { width: 46%; }
-.fg-copy { max-width: 520px; }
-.fg-eyebrow { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 18px; }
-.fg-copy h1 { font: 400 clamp(44px, 5.2vw, 72px)/.98 var(--serif); letter-spacing: -.02em; }
-.fg-copy h1 em { font-style: italic; color: var(--ink-2); }
-.fg-sub { margin: 20px 0 30px; color: var(--ink-2); font-size: 17px; max-width: 46ch; }
-.fg-form {
-  display: grid; gap: 14px; padding: 22px; border-radius: var(--r-xl);
-  background: var(--glass); border: 1px solid var(--hair); box-shadow: var(--lift);
-  -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%);
-}
-.fg-field { display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
-.fg-field input, .fe input, .fe select, .fe textarea {
+/* ------------------------------------------------------------ Form fields */
+.fe input, .fe select, .fe textarea {
   height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--rule);
   background: var(--surface); color: var(--ink); font-size: 16px; outline: none;
   transition: border-color .2s, box-shadow .2s;
 }
-.fg-field input:focus, .fe input:focus, .fe select:focus, .fe textarea:focus {
+.fe input:focus, .fe select:focus, .fe textarea:focus {
   border-color: var(--focus); box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus) 18%, transparent);
-}
-.fg-field input.bad { border-color: var(--critical); }
-.fg-err { min-height: 1.4em; color: var(--critical); font-size: 13.5px; }
-.fg-err code { font: 12px var(--mono); }
-.fg-fine { margin-top: 18px; font-size: 12.5px; color: var(--ink-3); max-width: 50ch; }
-.fg-alt { margin-top: 12px; font-size: 13.5px; }
-.fg-alt a { color: var(--ink-2); text-underline-offset: 3px; }
-@media (max-width: 880px) {
-  .fg { grid-template-columns: 1fr; padding-top: 24px; gap: 0; }
-  .fg-art { max-width: 300px; margin-bottom: -20px; }
 }
 
 /* ---------------------------------------------------------------- Shell */
@@ -1047,11 +1004,6 @@ table.ftab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 
   .ff-wrap { padding: calc(10px + env(safe-area-inset-top)) 10px 0; }
   .fm-toast { bottom: calc(88px + env(safe-area-inset-bottom)); border-radius: 16px; text-align: center; }
-
-  .fg { padding: calc(20px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom)); }
-  .fg-art { max-width: 210px; margin: 0 auto -8px; }
-  .fg-copy h1 { font-size: 40px; }
-  .fg-sub { font-size: 15.5px; margin: 14px 0 20px; }
 }
 
 /* --------------------------------------------------------------- Motion */
@@ -1061,7 +1013,7 @@ table.ftab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-  .fx-sky i, .fg-orbits g, .fh-orb .halo { animation: none !important; }
+  .fx-sky i, .fh-orb .halo { animation: none !important; }
   body.sheet-open .fm-stage { transform: none; filter: none; }
 }
 
