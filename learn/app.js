@@ -10861,7 +10861,7 @@
         { label: "Name", w: "minmax(170px, 1.2fr)" },
         { label: "Email", w: "minmax(180px, 1.4fr)" },
         { label: "Title", w: "minmax(110px, .8fr)" },
-        { label: "", w: "96px", align: "right" }
+        { label: "", w: "150px", align: "right" }
       ]);
       people.forEach(function (p) {
         var who = el("span", "cn-who");
@@ -11029,6 +11029,7 @@
     [["student", "Student — their own work"],
      ["teacher", "Teacher — the courses they teach"],
      ["author", "Author — content they write"],
+     ["guardian", "Parent or guardian — a student's family"],
      ["admin", "Administrator — the whole school"]].forEach(function (r) {
       var o = el("option");
       o.value = r[0]; o.textContent = r[1];
@@ -11085,7 +11086,173 @@
     });
     acts.appendChild(save);
     v.appendChild(acts);
+    if (!making) {
+      /* The person's roles, read rather than assumed. The select starts at the
+         role they hold, so saving a name never quietly makes a parent a
+         student; and a student's page gains their family. The anchor keeps a
+         slow answer from landing on whatever screen came next. */
+      var anchor = el("div");
+      v.appendChild(anchor);
+      API.accounts.get(p.id).then(function (a) {
+        if (!anchor.isConnected) return;
+        var learn = (a.roles || []).filter(function (r) { return r.product === "learn"; })
+                                   .map(function (r) { return r.role; });
+        var held = ["admin", "teacher", "author", "student", "guardian"]
+          .filter(function (r) { return learn.indexOf(r) > -1; })[0];
+        if (held) role.value = held;
+        if (learn.indexOf("student") > -1) personFamily(anchor, p);
+      }, function () { /* the editor works without them */ });
+    }
     show("admin");
+  }
+
+  /* A student's family, from their page in People: who is linked, and a form
+     to add a parent or guardian. Adding creates the guardian's Oplo Account on
+     the server — or links the account an email already has, keeping its own
+     password — and they sign in on the same page as everybody else and land on
+     /parent/. Removing takes the link away, never the account. */
+  function personFamily(host, p) {
+    var first = p.firstName || p.name;
+    var REL = { parent: "Parent", guardian: "Guardian", grandparent: "Grandparent",
+                foster_parent: "Foster parent", relative: "Relative", other: "Other" };
+    var box = el("section", "cn-family");
+    box.appendChild(el("h2", null, "Family"));
+    box.appendChild(el("p", "cn-sub", "Parents and guardians linked to " + esc(first) + ". Each signs in on the " +
+      "same page as everybody else and lands on the family view, where they can read " + esc(first) +
+      "'s record and change none of it."));
+    var list = el("div");
+    box.appendChild(list);
+    host.appendChild(box);
+
+    function draw(gs) {
+      list.innerHTML = "";
+      if (!gs.length) {
+        list.appendChild(el("p", "cn-none", "Nobody is linked yet."));
+        return;
+      }
+      var t = cnTable([
+        { label: "Name", w: "minmax(160px, 1.2fr)" },
+        { label: "Email", w: "minmax(170px, 1.3fr)" },
+        { label: "Relationship", w: "minmax(110px, .8fr)" },
+        { label: "", w: "90px", align: "right" }
+      ]);
+      gs.forEach(function (g) {
+        var who = el("span", "cn-who");
+        who.appendChild(avatarFor(g));
+        who.appendChild(el("span", "nm", esc(g.name)));
+        var rm = el("button", "cn-btn small", "Remove");
+        rm.type = "button";
+        rm.addEventListener("click", function () {
+          if (!confirm("Remove " + g.name + " from " + first + "? Their account stays; they stop seeing this record.")) return;
+          rm.disabled = true;
+          API.family.removeGuardian(p.id, g.id).then(function (next) {
+            toast(g.name + " is no longer linked to " + first + ".");
+            draw(next);
+          }, function (e) { rm.disabled = false; toast(e.message); });
+        });
+        var rel = [g.label, REL[g.relationship]].filter(function (x, i, all) { return x && all.indexOf(x) === i; });
+        t.row([who, "<span class='cn-mono'>" + esc(g.email || "—") + "</span>",
+               esc(rel.join(" · ")) + (g.primary ? " <span class='cn-none'>· primary</span>" : ""), rm]);
+      });
+      list.appendChild(t);
+    }
+    list.appendChild(el("p", "cn-none", "Reading the family…"));
+    API.family.guardians(p.id).then(draw, function (e) {
+      list.innerHTML = "";
+      list.appendChild(el("p", "cn-none", esc(e.message)));
+    });
+
+    var acts = el("div", "admin-acts");
+    var open = el("button", "lx-btn", "Add a parent or guardian");
+    open.type = "button";
+    var view = el("button", "lx-btn quiet", "Open the family view");
+    view.type = "button";
+    view.addEventListener("click", function () {
+      var H = window.OPLO_HOME;
+      window.open(H.pathFor(H.parse(location.pathname).root, "parent") + "?student=" + encodeURIComponent(p.id),
+                  "_blank", "noopener");
+    });
+    acts.appendChild(open);
+    acts.appendChild(view);
+    box.appendChild(acts);
+
+    var add = el("div", "cn-family-add");
+    add.hidden = true;
+    var form = el("div", "admin-form");
+    var gName = field("Full name", "");
+    var gEmail = field("Email", "");
+    gEmail.input.type = "email";
+    gEmail.input.autocapitalize = "none";
+    var gPw = field("Password", "", "Leave empty if this email already has an account");
+    gPw.input.type = "password";
+    gPw.input.autocomplete = "new-password";
+    var relF = el("label", "admin-field");
+    relF.innerHTML = "<span>Relationship</span>";
+    var relSel = el("select");
+    Object.keys(REL).forEach(function (k) {
+      var o = el("option");
+      o.value = k;
+      o.textContent = REL[k];
+      relSel.appendChild(o);
+    });
+    relF.appendChild(relSel);
+    var gLabel = field("Described as", "", "Father, Mother, Aunt…");
+    var gDob = field("Date of birth", "");
+    gDob.input.type = "date";
+    var gCell = field("Cell phone", "", "Leave empty or write N/A");
+    var gAlt = field("Alternate phone", "", "Leave empty or write N/A");
+    var gAddr = field("Mailing address", "", "Leave empty or write N/A");
+    [gName, gEmail, gPw, relF, gLabel, gDob, gCell, gAlt, gAddr].forEach(function (f) { form.appendChild(f); });
+    add.appendChild(form);
+    var prim = el("label", "cn-check", "<input type='checkbox' checked> <span>Primary guardian</span>");
+    add.appendChild(prim);
+    add.appendChild(el("p", "cn-sub",
+      "The password is sent once, over HTTPS, and hashed on the server. It is never stored in this page, " +
+      "and an account that already exists keeps the password its owner set."));
+    var addActs = el("div", "admin-acts");
+    var save = el("button", "lx-btn", "Add and link to " + esc(first));
+    save.type = "button";
+    var cancel = el("button", "lx-btn quiet", "Cancel");
+    cancel.type = "button";
+    addActs.appendChild(save);
+    addActs.appendChild(cancel);
+    add.appendChild(addActs);
+    box.appendChild(add);
+
+    open.addEventListener("click", function () {
+      add.hidden = false;
+      open.hidden = true;
+      gName.input.focus();
+    });
+    cancel.addEventListener("click", function () {
+      gPw.input.value = "";
+      add.hidden = true;
+      open.hidden = false;
+    });
+    save.addEventListener("click", function () {
+      if (!gEmail.input.value.trim()) { toast("A guardian needs an email to sign in with."); return; }
+      var body = {
+        email: gEmail.input.value.trim(),
+        name: gName.input.value.trim(),
+        relationship: relSel.value,
+        label: gLabel.input.value.trim(),
+        primary: prim.querySelector("input").checked,
+        contact: { dateOfBirth: gDob.input.value, cellPhone: gCell.input.value,
+                   altPhone: gAlt.input.value, mailingAddress: gAddr.input.value }
+      };
+      if (gPw.input.value) body.password = gPw.input.value;
+      save.disabled = true;
+      API.family.addGuardian(p.id, body).then(function (next) {
+        [gName, gEmail, gPw, gLabel, gDob, gCell, gAlt, gAddr].forEach(function (f) { f.input.value = ""; });
+        add.hidden = true;
+        open.hidden = false;
+        toast((body.name || body.email) + " is linked to " + first + ". They sign in on the OEdu sign-in page.");
+        draw(next);
+      }, function (e) {
+        gPw.input.value = "";
+        toast(e.message || "That did not work.");
+      }).then(function () { save.disabled = false; });
+    });
   }
 
   /* --------------------------------------------------------------- System

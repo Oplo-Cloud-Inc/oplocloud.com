@@ -4727,6 +4727,14 @@ input.cn-search:focus { outline: none; border-color: var(--blue); }
 
 .cn-acts { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 2px; }
 .cn-rowacts { display: inline-flex; gap: 6px; justify-content: flex-end; }
+
+/* A student's family, on their page in People. */
+.cn-family { margin-top: 40px; padding-top: 26px; border-top: 1px solid var(--hair); max-width: 820px; }
+.cn-family h2 { font-size: 20px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
+.cn-family .cn-tbl { margin-top: 12px; }
+.cn-family > div > .cn-none { margin-top: 12px; font-size: 13.5px; }
+.cn-family-add { margin-top: 18px; padding: 18px; border-radius: 14px; background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair); }
+.cn-check { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 13.5px; color: var(--ink); }
 .cn-btn.small { font-size: 12px; padding: 5px 10px; }
 
 .cn-empty {
