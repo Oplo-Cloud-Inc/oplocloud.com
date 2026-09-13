@@ -1676,6 +1676,18 @@
   var CN = window.OPLO_CONCEPTS;
   var AK = window.OPLO_ASK;
 
+  /* The colour for one of summary()'s groups. Those groups are not the
+     bands: "weak" is exposed and familiar together, and there is no band
+     called that. Looking it up as if it were one threw the moment a student
+     had got anything wrong — which the unit's warm-up questions are built to
+     make happen — so Learn would not open at all. A name with no band of its
+     own falls back to "new" rather than stopping the screen. */
+  function bandHue(group) {
+    var k = group === "weak" ? "familiar" : group === "untouched" ? "new" : group;
+    var hit = L.BANDS.filter(function (b) { return b.k === k; })[0];
+    return (hit || L.BANDS[0]).hue;
+  }
+
   function startLearn(again) {
     enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again);
 
@@ -1732,7 +1744,7 @@
           if (!p[1]) return;
           var i = el("i");
           i.style.flex = p[1];
-          i.style.background = L.BANDS.filter(function (b) { return b.k === p[0]; })[0].hue;
+          i.style.background = bandHue(p[0]);
           i.title = p[1] + " " + p[0];
           bar.appendChild(i);
         });
@@ -2405,7 +2417,7 @@
        ["Developing", sum.developing, "developing"], ["Still weak", sum.weak, "weak"]]
         .forEach(function (g) {
           if (!g[1].length) return;
-          var hue = L.BANDS.filter(function (b) { return b.k === g[2]; })[0].hue;
+          var hue = bandHue(g[2]);
           var c = el("div", "ln-rep-col");
           c.innerHTML = '<h3><i style="background:' + hue + '"></i>' + g[0] +
             "<em>" + g[1].length + "</em></h3>";
@@ -6042,54 +6054,155 @@
      in the second person; the Console, looking at somebody else, passes its own. */
   function drawGrades(host, g, empty, opts) {
     opts = opts || {};
+    var none = empty ||
+      "Nothing on your record yet. When your school adds your previous transcript, or your " +
+      "teachers enter grades, your path to graduation appears here.";
     /* The server always sends a dashboard, even an empty one — but a screen
        that throws shows a student nothing at all, with no way to tell whether
        their record is empty or the page is broken. The empty state already
        has the right words; this is what lets it reach them. */
-    if (!g || !g.totals || !g.current) {
-      host.appendChild(el("div", "lx-empty", empty ||
-        "Nothing on your record yet. When your school adds your previous transcript, or " +
-        "your teachers enter grades, your path to graduation appears here."));
+    if (!g || !g.totals || !g.current) { host.appendChild(el("div", "lx-empty", none)); return; }
+    var ehsCount = g.ehs ? g.ehs.count : 0;
+    if (!g.transfer && !g.current.length && !g.totals.earned && !ehsCount) {
+      host.appendChild(el("div", "lx-empty", none));
       return;
     }
-    if (!g.transfer && !g.current.length && !g.totals.earnedTowardDiploma) {
-      host.appendChild(el("div", "lx-empty", empty ||
-        "Nothing on your record yet. When your school adds your previous transcript, or your " +
-        "teachers enter grades, your path to graduation appears here."));
-      return;
-    }
+    /* The order is the order a student's questions come in: how far am I, what
+       is the one thing to do, what does every credit look like, how have I
+       been doing, when does it end — and last, the record itself, laid out the
+       way EHS lays it out, so the page and the paper can be read side by side. */
     host.appendChild(gradHero(g));
-    /* The one move before the wall of numbers. A student who opens this page
-       and reads eight things they owe closes it; a student who reads one
-       thing they can do today does that thing. */
     if (g.focus) host.appendChild(gradFocus(g, opts));
     host.appendChild(gradKpis(g));
-    if (g.pace) host.appendChild(gradPlan(g));
+    host.appendChild(gradMap(g));
+    if (g.years && g.years.length) host.appendChild(gradJourney(g));
+    if (g.marks && g.marks.length) host.appendChild(gradMarks(g));
+    if (g.pace && g.totals.planAtEhs > 0) host.appendChild(gradPlan(g));
     if (g.risk) host.appendChild(gradRisk(g, opts));
+    if (g.checks && g.checks.length) host.appendChild(gradChecks(g));
+    if (g.transfer && g.transfer.status !== "evaluated") host.appendChild(gradTransfer(g));
     if (g.board && g.exams.length) host.appendChild(gradPathway(g));
-    host.appendChild(gradBadges(g));
-    host.appendChild(gradAreas(g));
-    if (g.transfer) host.appendChild(gradTransfer(g));
-    if (g.courses.length) host.appendChild(gradPerformance(g));
-    if (g.exams.length) host.appendChild(gradExams(g));
+    if (g.exams.length || (g.stateTests || []).length) host.appendChild(gradExams(g));
     host.appendChild(gradCurrent(g));
-    if (g.courses.length) host.appendChild(gradHistory(g));
+    if (g.courses.length || ehsCount) host.appendChild(gradRecord(g));
+    host.appendChild(gradBadges(g));
     host.appendChild(gradNotes(g));
   }
 
+  /* ------------------------------------------------------- Shared pieces */
+  function grYear(y) {
+    var m = String(y || "").match(/^(\d{4})\D+(\d{2,4})$/);
+    return m ? m[1] + "–" + m[2].slice(-2) : String(y || "");
+  }
+  function grYY(y) {
+    var m = String(y || "").match(/^(\d{4})\D+(\d{2,4})$/);
+    return m ? m[1].slice(2) + "/" + m[2].slice(-2) : String(y || "");
+  }
+  /* A credit printed the way a record prints it — 4.0, 0.5, 19.0 — and a
+     converted fragment like 0.125 as itself rather than rounded away. */
+  function grFixed(x) {
+    var v = Math.round(Number(x || 0) * 1000) / 1000;
+    return Math.abs(v * 2 - Math.round(v * 2)) < 1e-9 ? v.toFixed(1) : String(v);
+  }
+  function grCredits(x) { return grFixed(x) + (Math.abs(Number(x) - 1) < 1e-9 ? " credit" : " credits"); }
+  function grAnd(list) {
+    if (list.length <= 1) return list.join("");
+    return list.slice(0, -1).join(", ") + " and " + list[list.length - 1];
+  }
+  var GR_AREA_WORD = { english: "English", math: "math", science: "science", social_studies: "social studies",
+                       health: "health", pe: "PE", fine_art: "fine art", world_language: "world language",
+                       elective: "elective" };
+
+  /* One tooltip per chart, positioned against the chart's own box. It adds to
+     what is on the page and never gates it: every value it shows is also in
+     the table under the chart. */
+  function grTip(box) {
+    var tip = el("div", "gr-tip");
+    tip.hidden = true;
+    box.appendChild(tip);
+    return {
+      show: function (node, head, lines) {
+        tip.innerHTML = "";
+        var b = el("b"); b.textContent = head; tip.appendChild(b);
+        (lines || []).forEach(function (l) {
+          if (!l) return;
+          var s = el("span"); s.textContent = l; tip.appendChild(s);
+        });
+        tip.hidden = false;
+        var r = node.getBoundingClientRect(), c = box.getBoundingClientRect();
+        var half = tip.offsetWidth / 2;
+        var x = Math.max(half, Math.min(c.width - half, r.left - c.left + r.width / 2));
+        tip.style.left = x + "px";
+        tip.style.top = (r.top - c.top) + "px";
+      },
+      hide: function () { tip.hidden = true; }
+    };
+  }
+  function grBind(node, tip, head, lines) {
+    node.__tip = [head, lines];
+    function on() { tip.show(node, head, lines); }
+    node.addEventListener("pointerenter", on);
+    node.addEventListener("focus", on);
+    node.addEventListener("pointerleave", tip.hide);
+    node.addEventListener("blur", tip.hide);
+  }
+  /* Arrow keys walk a chart's marks in reading order, so the same values the
+     pointer finds are reachable from the keyboard. */
+  function grKeys(sv, nodes, tip) {
+    var ki = -1;
+    sv.setAttribute("tabindex", "0");
+    sv.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      var fwd = e.key === "ArrowRight" || e.key === "ArrowDown";
+      ki = fwd ? Math.min(nodes.length - 1, ki + 1) : Math.max(0, ki - 1);
+      var nd = nodes[ki];
+      if (nd && nd.__tip) tip.show(nd, nd.__tip[0], nd.__tip[1]);
+      e.preventDefault();
+    });
+    sv.addEventListener("blur", tip.hide);
+  }
+  function grTable(summary, head, rows) {
+    var det = document.createElement("details");
+    det.className = "gr-table";
+    det.innerHTML = "<summary></summary>";
+    det.querySelector("summary").textContent = summary;
+    var scroll = el("div", "gr-table-scroll");
+    var tb = el("table");
+    var th = el("thead"), tr = el("tr");
+    head.forEach(function (h) { var c = el("th"); c.textContent = h; tr.appendChild(c); });
+    th.appendChild(tr);
+    tb.appendChild(th);
+    var body = el("tbody");
+    rows.forEach(function (r) {
+      var row = el("tr");
+      r.forEach(function (v) { var c = el("td"); c.textContent = v == null ? "—" : String(v); row.appendChild(c); });
+      body.appendChild(row);
+    });
+    tb.appendChild(body);
+    scroll.appendChild(tb);
+    det.appendChild(scroll);
+    return det;
+  }
+
   /* ------------------------------------------------------------- The hero
-     The one big number, inside a ring that separates what is expected to
-     count from what may still move. */
+     The one big number, in a ring the size of the diploma. The ring holds
+     every credit in the order it counts — transferred, earned at EHS — and
+     then the extra, in grey, because extra credit is real and still fills
+     nothing. What the ring leaves open is what has not been earned; what the
+     sentence beside it says is what still has to be, and when those differ
+     the sentence says why. */
   function gradHero(g) {
-    var t = g.totals, track = g.track;
+    var t = g.totals, track = g.track, total = track.total;
     var sec = el("section", "gr-hero");
-    var got = t.earnedTowardDiploma;
-    var sure = Math.min(got, t.transferConservative + t.ehsEarned);
-    var evaluated = g.transfer && g.transfer.status === "evaluated";
+    var ehsApplied = 0;
+    g.areas.forEach(function (a) { ehsApplied += Math.min(a.ehs, a.applied); });
+    var transferApplied = Math.max(0, t.applied - ehsApplied);
+    var sure = Math.min(transferApplied, t.transferConservative);
+    var segs = [[sure, "t"], [transferApplied - sure, "maybe"], [ehsApplied, "e"], [t.surplus, "x"]];
 
     var side = el("div", "gr-ring-side");
     var ring = el("div", "gr-ring");
-    var R = 66, C = 2 * Math.PI * R, GAP = 2;
+    var R = 66, C = 2 * Math.PI * R, GAP = 2.5;
     var sv = grNode("svg", { viewBox: "0 0 160 160", "aria-hidden": "true" });
     sv.appendChild(grNode("circle", { cx: 80, cy: 80, r: R, class: "gr-ring-track" }));
     function arc(from, to, cls) {
@@ -6098,44 +6211,90 @@
       var len = Math.max(0, to * C - start);
       var c = grNode("circle", { cx: 80, cy: 80, r: R, class: "gr-arc " + cls, transform: "rotate(-90 80 80)" });
       c.style.strokeDashoffset = String(-start);
-      c.style.strokeDasharray = (GR_CALM ? len : 0) + " " + C;
+      // The same rule as grCount: a tab that is not being painted gets no
+      // animation frames, and a ring left at zero because nobody was looking
+      // when it was drawn is a ring that says the student has nothing.
+      var still = GR_CALM || document.hidden;
+      c.style.strokeDasharray = (still ? len : 0) + " " + C;
       sv.appendChild(c);
-      if (!GR_CALM) {
+      if (!still) {
         requestAnimationFrame(function () {
           requestAnimationFrame(function () { c.style.strokeDasharray = len + " " + C; });
         });
+        setTimeout(function () { c.style.strokeDasharray = len + " " + C; }, 1500);
       }
     }
-    arc(0, sure / track.total, "sure");
-    arc(sure / track.total, Math.min(1, got / track.total), "maybe");
+    var at = 0;
+    segs.forEach(function (s) {
+      if (s[0] <= 1e-9) return;
+      var end = Math.min(total, at + s[0]);
+      arc(at / total, end / total, s[1]);
+      at = end;
+    });
     ring.appendChild(sv);
+    ring.setAttribute("role", "img");
+    ring.setAttribute("aria-label", Math.floor(t.percent) + " percent: " + grFixed(t.earned) + " of " + total +
+      " credits earned, " + grFixed(t.planAtEhs) + " still to earn");
     var mid = el("div", "gr-ring-mid");
     var num = el("b");
     mid.appendChild(num);
-    mid.appendChild(el("span", null, "of your diploma"));
+    mid.appendChild(el("span", null, grFixed(t.earned) + " of " + total + " credits"));
     ring.appendChild(mid);
-    grCount(num, t.percent, t.percent % 1 ? 1 : 0, "%");
+    grCount(num, Math.floor(t.percent), 0, "%");
     side.appendChild(ring);
+    var evaluated = g.transfer && g.transfer.status === "evaluated";
     side.appendChild(el("div", "gr-key",
-      '<span><i class="t"></i>' + (evaluated ? "Transferred" : "Expected to transfer") + "</span>" +
-      (sure < got ? '<span><i class="maybe"></i>May not transfer</span>' : "") +
-      '<span><i class="left"></i>Still to earn</span>'));
+      (transferApplied > 0 ? '<span><i class="t"></i>' + (evaluated ? "Transferred" : "Expected to transfer") + "</span>" : "") +
+      (transferApplied - sure > 1e-9 ? '<span><i class="maybe"></i>May not transfer</span>' : "") +
+      (ehsApplied > 0 ? '<span><i class="e"></i>Earned at EHS</span>' : "") +
+      (t.surplus > 0 ? '<span><i class="x"></i>Extra</span>' : "") +
+      '<span><i class="left"></i>Not yet earned</span>'));
     sec.appendChild(side);
 
     var txt = el("div", "gr-hero-txt");
-    txt.appendChild(el("p", "gr-kicker", esc(track.name) + " · " + track.total + " credits" +
-      (g.program && g.program.name ? " · " + esc(g.program.name) : "")));
-    var who = g.account && g.account.firstName ? esc(g.account.firstName) + ", you’re " : "You’re ";
-    txt.appendChild(el("h2", null, t.percent >= 100
-      ? "Every credit is in. That’s a diploma."
-      : who + Math.floor(t.percent) + "% of the way to your diploma."));
-    txt.appendChild(el("p", "gr-lede",
-      "<b>" + grCr(got) + " of " + track.total + " credits</b> already count toward it" +
-      (sure < got ? " — between " + grCr(sure) + " and " + grCr(got) + " once EHS confirms your transfer."
-                  : ".")));
-    var togo = el("div", "gr-togo");
-    togo.innerHTML = "<b>" + grCr(t.planAtEhs) + "</b><span>credits to go at EHS</span>";
-    txt.appendChild(togo);
+    var kick = el("p", "gr-kicker");
+    kick.textContent = (g.enrollment ? "Excel High School · " : "") + track.name + " · " + total + " credits" +
+      (g.program && g.program.name ? " · " + g.program.name : "");
+    txt.appendChild(kick);
+    var first = g.account && g.account.firstName;
+    var h = el("h2");
+    h.textContent = t.planAtEhs <= 0
+      ? "Every requirement is met. That’s a diploma."
+      : (first ? first + ", you’ve" : "You’ve") + " earned " + Math.floor(t.percent) + "% of your diploma’s credits.";
+    txt.appendChild(h);
+
+    var gapNames = g.gaps.map(function (x) { return x.name + " " + grFixed(x.left); });
+    var extras = g.areas.filter(function (a) { return a.surplus > 0; }).map(function (a) { return a.name; });
+    var lede = "<b>" + grFixed(t.earned) + " of " + total + "</b> credits are in";
+    if (t.transferConservative < t.transferEstimate - 1e-9) {
+      lede += " — between " + grFixed(t.earned - (t.transferEstimate - t.transferConservative)) + " and " +
+        grFixed(t.earned) + " once EHS confirms your transfer";
+    }
+    lede += ".";
+    if (t.planAtEhs > 0) lede += " <b>" + grFixed(t.planAtEhs) + "</b> still to earn: " + esc(grAnd(gapNames)) + ".";
+    if (t.surplus > 0 && t.planAtEhs > t.netRemaining + 1e-9) {
+      lede += " The " + grFixed(t.surplus) + " extra in " + esc(grAnd(extras)) + " can’t stand in for " +
+        (g.gaps.length === 1 ? "it" : g.gaps.length === 2 ? "either" : "any of them") +
+        ", which is why it’s " + grFixed(t.planAtEhs) + " and not " + grFixed(t.netRemaining) + ".";
+    }
+    txt.appendChild(el("p", "gr-lede", lede));
+
+    var facts = el("dl", "gr-facts");
+    function fact(k, v) {
+      var d = el("div"), dt = el("dt"), dd = el("dd");
+      dt.textContent = k; dd.textContent = v;
+      d.appendChild(dt); d.appendChild(dd);
+      facts.appendChild(d);
+    }
+    if (g.enrollment && g.enrollment.enrolledOn) fact("Enrolled", grMonth(g.enrollment.enrolledOn));
+    if (g.enrollment && g.enrollment.status) {
+      fact("Standing", g.enrollment.status.charAt(0).toUpperCase() + g.enrollment.status.slice(1));
+    }
+    var gpaV = g.gpa.issued != null ? g.gpa.issued : g.gpa.value;
+    if (gpaV != null) fact("GPA", gpaV.toFixed(2));
+    if (g.board && g.board.taken) fact("Regents passed", g.board.passed + " of " + g.board.taken);
+    if (g.transfer && !g.enrollment) fact("Transfer", evaluated ? "Evaluated" : "Estimate");
+    txt.appendChild(facts);
 
     var miles = el("ol", "gr-miles");
     // The stops sit at the centres of four equal columns (12.5%, 37.5%,
@@ -6152,30 +6311,34 @@
     });
     txt.appendChild(miles);
     if (next) {
-      var need = Math.max(0, next.at / 100 * track.total - got);
+      var need = next.at === 100 ? t.planAtEhs : Math.max(0, next.at / 100 * total - t.earned);
       txt.appendChild(el("p", "gr-next", svg(I.star, true) + "<span><b>Next up: " + esc(next.label) +
-        "</b> — " + (need > 0 ? grCr(need) + (need === 1 ? " credit" : " credits") + " away." : "within reach.") +
-        "</span>"));
+        "</b> — " + (need > 0 ? grCredits(need) + " away." : "within reach.") + "</span>"));
     }
     sec.appendChild(txt);
     return sec;
   }
 
   function gradKpis(g) {
-    var t = g.totals;
+    var t = g.totals, b = g.board;
     var row = el("div", "gr-kpis");
-    var taken = {}, passed = {};
-    g.exams.forEach(function (e) { taken[e.name] = true; if (e.passed) passed[e.name] = true; });
-    var nTaken = Object.keys(taken).length, nPassed = Object.keys(passed).length;
-    [[grCr(t.transferEstimate), "Transferred" + (g.transfer ? " from " + g.transfer.school : ""),
-      !g.transfer ? "None on file"
-        : t.transferConservative < t.transferEstimate
-          ? "Estimate · " + grCr(t.transferConservative) + " if partial semesters don’t count"
-          : "Estimate until EHS evaluates it"],
-     [grCr(t.planAtEhs), "Still to earn at EHS", "Including EHS’s " + g.track.minAtEhs + "-credit minimum"],
-     [g.gpa.estimate != null ? g.gpa.estimate.toFixed(2) : "—", "GPA on the EHS scale",
-      g.gpa.courses ? "Estimate from " + g.gpa.courses + " marks" : "No marks yet"],
-     [String(nPassed), "State exams passed", nTaken ? "of " + nTaken + " taken" : "None on file"]
+    var gpaV = g.gpa.issued != null ? g.gpa.issued : g.gpa.value;
+    var noEla = b && b.taken && b.areas.some(function (a) { return a.key === "english" && a.state === "none"; });
+    [[grFixed(t.earned), "Credits earned",
+      (g.transfer ? grFixed(t.transferEarned) + " transferred · " : "") + grFixed(t.ehsEarned) + " at EHS"],
+     [grFixed(t.planAtEhs), "Still to earn",
+      t.surplus > 0 && t.planAtEhs > t.netRemaining + 1e-9
+        ? grFixed(t.netRemaining) + " on paper — " + grFixed(t.surplus) + " extra can’t fill a gap"
+        : g.gaps.length ? "Across " + g.gaps.length + (g.gaps.length === 1 ? " requirement" : " requirements")
+                        : "Every requirement met"],
+     [gpaV != null ? gpaV.toFixed(2) : "—", "GPA · unweighted",
+      g.gpa.issued != null
+        ? (g.gpa.matchesIssued ? "As issued by EHS · checks out over " + grCredits(g.gpa.credits)
+                               : "As issued by EHS · the record adds up to " +
+                                 (g.gpa.value != null ? g.gpa.value.toFixed(2) : "—"))
+        : g.gpa.courses ? "From " + g.gpa.courses + " lettered marks" : "No marks yet"],
+     [b && b.taken ? String(b.passed) : "—", "State exams passed",
+      b && b.taken ? "of " + b.taken + " taken" + (noEla ? " · no ELA exam on record" : "") : "None on file"]
     ].forEach(function (k) {
       var tile = el("div", "gr-kpi");
       tile.appendChild(el("b", null, esc(k[0])));
@@ -6185,6 +6348,807 @@
     });
     return row;
   }
+
+  /* ----------------------------------------------------------- Credit map
+     Every requirement drawn to one scale, a credit the same width in every
+     row, with every course that fills it as its own block and its grade on
+     it. The black line is where the requirement ends: what sits before it
+     counts, what sits after it is extra, and the grey bed is what is left.
+     A student can see from across a room that English is one block short and
+     Electives three — and hover any block to see which course it is. */
+  function gradMap(g) {
+    var sec = el("section", "gr-sec");
+    var done = g.areas.filter(function (a) { return a.complete; }).length;
+    sec.appendChild(grHead("Your diploma, credit by credit", done + " of " + g.areas.length + " requirements met"));
+    var card = el("div", "gr-card gcm");
+    var anyT = false, anyE = false, anyX = false, anyC = false;
+    g.areas.forEach(function (a) {
+      (a.items || []).forEach(function (it) {
+        if (it.source === "ehs") anyE = true; else anyT = true;
+        if (it.surplus > 0) anyX = true;
+        if (it.capped > 0) anyC = true;
+      });
+    });
+    card.appendChild(el("div", "gr-key",
+      (anyT ? '<span><i class="t"></i>Transferred</span>' : "") +
+      (anyE ? '<span><i class="e"></i>Earned at EHS</span>' : "") +
+      (anyX ? '<span><i class="x"></i>Extra, past the requirement</span>' : "") +
+      (anyC ? '<span><i class="cap"></i>Over the transfer limit</span>' : "") +
+      '<span><i class="left"></i>Still to earn</span><span><i class="line"></i>Where the requirement ends</span>'));
+
+    var scale = 0;
+    g.areas.forEach(function (a) { scale = Math.max(scale, a.required + a.surplus + (a.cappedOut || 0)); });
+    var rows = el("div", "gcm-rows");
+    var tip = grTip(card);
+    var fits = [];
+    g.groups.forEach(function (grp) {
+      var areas = g.areas.filter(function (a) { return a.group === grp.key; });
+      if (!areas.length) return;
+      var block = el("div", "gcm-group" + (areas.length > 1 ? " multi" : ""));
+      if (areas.length > 1) {
+        var gh = el("div", "gcm-grouphead");
+        var gb = el("b"); gb.textContent = grp.name; gh.appendChild(gb);
+        var gs = el("span");
+        gs.textContent = grFixed(grp.earned) + " of " + grFixed(grp.required) +
+          (grp.includes ? " · " + grAnd(grp.includes) : "");
+        gh.appendChild(gs);
+        block.appendChild(gh);
+      }
+      areas.forEach(function (a) {
+        block.appendChild(gmRow(a, areas.length > 1 ? a.name : grp.name, scale, tip, fits));
+      });
+      rows.appendChild(block);
+    });
+    card.appendChild(rows);
+
+    // A grade goes on its block only where it fits with room either side.
+    // Anything narrower keeps it in the tooltip and the table.
+    function fit() {
+      fits.forEach(function (b) {
+        var s = b.firstChild;
+        if (!s) return;
+        s.hidden = false;
+        if (!b.clientWidth || s.offsetWidth > b.clientWidth - 8) s.hidden = true;
+      });
+    }
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(rows);
+    requestAnimationFrame(fit);
+
+    if (anyX) {
+      card.appendChild(el("p", "gr-note",
+        "A credit counts in the requirement it was earned in. What goes past the line is extra — it isn’t " +
+        "moved into Electives, because that is how your EHS record counts it."));
+    }
+    card.appendChild(grTable("Show as a table", ["Requirement", "Needed", "Earned", "Extra", "Left", "Courses"],
+      g.areas.map(function (a) {
+        return [a.name, grFixed(a.required), grFixed(a.earned), a.surplus ? "+" + grFixed(a.surplus) : "—",
+          a.planAtEhs ? grFixed(a.planAtEhs) : "Met",
+          (a.items || []).map(function (it) {
+            return it.title + " " + grFixed(it.credits) + (it.source === "ehs" ? " (EHS)" : "");
+          }).join("; ") || "—"];
+      })));
+    sec.appendChild(card);
+    return sec;
+  }
+
+  function gmRow(a, label, scale, tip, fits) {
+    var row = el("div", "gcm-row" + (a.complete ? " done" : ""));
+    var name = el("div", "gcm-name");
+    var nb = el("b"); nb.textContent = label; name.appendChild(nb);
+    var ns = el("span"); ns.textContent = grFixed(a.earned - (a.cappedOut || 0)) + " / " + grFixed(a.required);
+    name.appendChild(ns);
+    row.appendChild(name);
+
+    var trackEl = el("div", "gcm-track");
+    trackEl.setAttribute("role", "group");
+    trackEl.setAttribute("aria-label", label + ": " + grFixed(a.applied) + " of " + grFixed(a.required) +
+      " counted" + (a.surplus ? ", " + grFixed(a.surplus) + " extra" : "") +
+      (a.planAtEhs ? ", " + grFixed(a.planAtEhs) + " to go" : ", met"));
+    var bed = el("span", "gcm-bed");
+    bed.style.width = (a.required / scale * 100) + "%";
+    // A faint tick at every half credit, the unit EHS counts in.
+    bed.style.backgroundSize = (0.5 / a.required * 100) + "% 100%";
+    trackEl.appendChild(bed);
+    var line = el("i", "gcm-line");
+    line.style.left = (a.required / scale * 100) + "%";
+    trackEl.appendChild(line);
+
+    function seg(it, from, len, cls, role) {
+      var b = el("button", "gcm-seg " + cls);
+      b.type = "button";
+      b.style.left = "calc(" + (from / scale * 100) + "% + 1px)";
+      b.style.width = "calc(" + (len / scale * 100) + "% - 2px)";
+      var mark = it.letter || it.mark || "";
+      if (mark) { var s = el("span"); s.textContent = mark; b.appendChild(s); fits.push(b); }
+      var lines = [
+        (it.source === "ehs" ? "Earned at EHS" : "Transferred") + " · " + grYear(it.year) + " · " + grCredits(len),
+        it.markNumeric != null ? it.markNumeric + " · " + it.letter : it.mark ? "Mark " + it.mark : null,
+        role
+      ];
+      b.setAttribute("aria-label", it.title + ". " + lines.filter(Boolean).join(". "));
+      grBind(b, tip, it.title, lines);
+      trackEl.appendChild(b);
+    }
+    var applied = 0, extra = a.required;
+    (a.items || []).forEach(function (it) {
+      var src = it.source === "ehs" ? "e" : "t";
+      if (it.applied > 0) { seg(it, applied, it.applied, src, "Counts toward " + label); applied += it.applied; }
+      if (it.capped > 0) { seg(it, extra, it.capped, "cap", "Over the transfer limit, so it doesn’t count"); extra += it.capped; }
+      if (it.surplus > 0) { seg(it, extra, it.surplus, "x", "Extra — past the " + label + " requirement"); extra += it.surplus; }
+    });
+    row.appendChild(trackEl);
+
+    var st = el("div", "gcm-state");
+    if (a.complete) {
+      st.innerHTML = '<span class="ok">' + svg(I.tick, true) + "Met</span>";
+      if (a.surplus > 0) st.appendChild(el("em", null, "+" + grFixed(a.surplus) + " extra"));
+    } else {
+      st.innerHTML = "<b>" + grFixed(a.planAtEhs) + "</b> to go";
+    }
+    if (a.residencyExtra > 0) st.appendChild(el("em", "warn", "EHS minimum: " + grFixed(a.residencyMin) + " at EHS"));
+    row.appendChild(st);
+    return row;
+  }
+
+  /* ---------------------------------------------------------- Year by year
+     Two small charts on the same years, side by side rather than stacked on
+     one plot with two scales: credits in one, marks in the other. A year with
+     nothing on the record keeps its place and says so, and the day a student
+     started at EHS is drawn as a line on both. */
+  function gradJourney(g) {
+    var ys = g.years;
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("Year by year", ys[0].label + " to " + ys[ys.length - 1].label));
+
+    var strip = el("div", "gj-schools");
+    function school(cls, name, line) {
+      var d = el("div", "gj-school");
+      d.innerHTML = '<i class="' + cls + '"></i><div><b></b><span></span></div>';
+      d.querySelector("b").textContent = name;
+      d.querySelector("span").textContent = line;
+      strip.appendChild(d);
+    }
+    if (g.transfer) {
+      var x = g.transfer;
+      var span = x.firstYear && x.lastYear
+        ? String(x.firstYear).slice(0, 4) + "–" + (Number(String(x.lastYear).slice(0, 4)) + 1) + " · " : "";
+      school("t", x.school, span + x.courses + (x.courses === 1 ? " course · " : " courses · ") +
+        grCredits(x.credits) + " · " + (x.status === "evaluated" ? "evaluated by EHS" : "estimate until EHS evaluates it"));
+    }
+    if (g.enrollment || (g.ehs && g.ehs.count)) {
+      school("e", "Excel High School",
+        (g.enrollment && g.enrollment.enrolledOn ? "Since " + grMonth(g.enrollment.enrolledOn) + " · " : "") +
+        g.ehs.count + (g.ehs.count === 1 ? " course · " : " courses · ") + grCredits(g.ehs.credits) +
+        (g.ehs.average != null ? " · averaging " + g.ehs.average : ""));
+    }
+    sec.appendChild(strip);
+
+    var W = 360, H = 220, m = { l: 30, r: 12, t: 34, b: 30 };
+    var slot = (W - m.l - m.r) / ys.length;
+    var geo = { W: W, H: H, m: m, slot: slot, cx: function (i) { return m.l + slot * i + slot / 2; }, join: -1 };
+    if (g.transfer && g.ehs && g.ehs.count) {
+      ys.forEach(function (y, i) { if (geo.join < 0 && y.ehs > 0) geo.join = i; });
+    }
+    var grid = el("div", "gr-two");
+    grid.appendChild(gjCredits(g, ys, geo));
+    grid.appendChild(gjAverage(g, ys, geo));
+    sec.appendChild(grid);
+    if (g.momentum && g.momentum.basis === "years") {
+      var mo = el("p", "gr-lede"); mo.textContent = g.momentum.says; sec.appendChild(mo);
+    }
+    if (g.trend && g.trend.length >= 2) sec.appendChild(trendCard(g));
+    sec.appendChild(grTable("Show years as a table", ["Year", "Transferred", "At EHS", "Courses", "Average"],
+      ys.map(function (y) {
+        return [y.label, y.transfer ? grFixed(y.transfer) : "—", y.ehs ? grFixed(y.ehs) : "—",
+          y.gap ? "None on the record" : y.courses,
+          y.average != null ? y.average : y.thinAverage != null ? y.thinAverage + " (under 1 lettered credit)" : "—"];
+      })));
+    return sec;
+  }
+
+  function gjJoin(sv, geo, g) {
+    var x = geo.m.l + geo.slot * geo.join;
+    sv.appendChild(grNode("line", { x1: x, x2: x, y1: geo.m.t - 16, y2: geo.H - geo.m.b, class: "gj-join" }));
+    var right = x > geo.W * 0.55;
+    var t = grNode("text", { x: right ? x - 5 : x + 5, y: geo.m.t - 20, "text-anchor": right ? "end" : "start",
+                             class: "gj-joinlabel" });
+    t.textContent = "Joined EHS" + (g.enrollment && g.enrollment.enrolledOn ? " · " + grMonth(g.enrollment.enrolledOn) : "");
+    sv.appendChild(t);
+  }
+  function grColumn(x, w, top, bottom, r) {
+    var h = bottom - top;
+    if (h <= 0) return "";
+    r = Math.min(r, h, w / 2);
+    return "M" + x + " " + bottom + "V" + (top + r) +
+      (r ? "Q" + x + " " + top + " " + (x + r) + " " + top : "") + "H" + (x + w - r) +
+      (r ? "Q" + (x + w) + " " + top + " " + (x + w) + " " + (top + r) : "") + "V" + bottom + "Z";
+  }
+
+  function gjCredits(g, ys, geo) {
+    var W = geo.W, H = geo.H, m = geo.m;
+    var card = el("section", "gr-card");
+    card.appendChild(el("h3", null, "Credits earned each year"));
+    card.appendChild(el("p", "gr-sub", "EHS credits, by the school that awarded them"));
+    var max = 0;
+    ys.forEach(function (y) { max = Math.max(max, y.credits); });
+    var top = Math.max(2, Math.ceil(max / 2) * 2), step = top <= 4 ? 1 : 2;
+    function y(v) { return m.t + (top - v) * (H - m.t - m.b) / top; }
+    var wrap = el("div", "gr-plot");
+    var sv = grNode("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Credits earned each year: " + ys.map(function (yy) {
+        return yy.label + " " + (yy.gap ? "none" : grFixed(yy.credits)); }).join(", ") + "." });
+    for (var v = 0; v <= top; v += step) {
+      sv.appendChild(grNode("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: v === 0 ? "gr-base" : "gr-grid" }));
+      var tk = grNode("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", class: "gr-tick" });
+      tk.textContent = v;
+      sv.appendChild(tk);
+    }
+    if (geo.join > 0) gjJoin(sv, geo, g);
+    var tip = grTip(wrap);
+    var bw = Math.min(24, geo.slot * 0.46), nodes = [];
+    ys.forEach(function (yy, i) {
+      var cx = geo.cx(i);
+      var gEl = grNode("g", { class: "gr-col" });
+      gEl.appendChild(grNode("rect", { x: cx - geo.slot / 2, y: m.t - 12, width: geo.slot, height: H - m.t - m.b + 12, fill: "transparent" }));
+      var lab = grNode("text", { x: cx, y: H - 9, "text-anchor": "middle", class: "gr-tick" });
+      lab.textContent = grYY(yy.year);
+      gEl.appendChild(lab);
+      if (yy.gap) {
+        var none = grNode("text", { x: cx, y: y(0) - 8, "text-anchor": "middle", class: "gj-none" });
+        none.textContent = "none";
+        gEl.appendChild(none);
+      } else {
+        var parts = [[yy.transfer, "t"], [yy.ehs, "e"]].filter(function (p) { return p[0] > 0; });
+        var sumAt = 0;
+        parts.forEach(function (p, k) {
+          var bottom = y(sumAt) - (k > 0 ? 2 : 0), topY = y(sumAt + p[0]);
+          gEl.appendChild(grNode("path", { class: "gj-bar " + p[1],
+            d: grColumn(cx - bw / 2, bw, topY, bottom, k === parts.length - 1 ? 4 : 0) }));
+          sumAt += p[0];
+        });
+        var val = grNode("text", { x: cx, y: y(yy.credits) - 7, "text-anchor": "middle", class: "gr-val" });
+        val.textContent = grFixed(yy.credits);
+        gEl.appendChild(val);
+      }
+      grBind(gEl, tip, yy.label + (yy.gap ? "" : " · " + grCredits(yy.credits)), yy.gap
+        ? ["No coursework on the record"]
+        : [yy.transfer ? grFixed(yy.transfer) + " transferred" : null,
+           yy.ehs ? grFixed(yy.ehs) + " earned at EHS" : null,
+           yy.courses + (yy.courses === 1 ? " course" : " courses")]);
+      sv.appendChild(gEl);
+      nodes.push(gEl);
+    });
+    grKeys(sv, nodes, tip);
+    wrap.appendChild(sv);
+    card.appendChild(wrap);
+    return card;
+  }
+
+  function gjAverage(g, ys, geo) {
+    var W = geo.W, H = geo.H, m = geo.m;
+    var card = el("section", "gr-card");
+    card.appendChild(el("h3", null, "Average mark each year"));
+    card.appendChild(el("p", "gr-sub", "Weighted by credit · lettered courses only"));
+    var pts = [];
+    ys.forEach(function (yy, i) { if (yy.average != null) pts.push({ i: i, v: yy.average, y: yy }); });
+    if (!pts.length) {
+      card.appendChild(el("p", "gr-sub", "No year with a full lettered credit on the record yet."));
+      return card;
+    }
+    var minV = Math.min.apply(null, pts.map(function (p) { return p.v; }));
+    var lo = Math.min(70, Math.floor((minV - 1) / 10) * 10), hi = 100;
+    function y(v) { return m.t + (hi - v) * (H - m.t - m.b) / (hi - lo); }
+    var wrap = el("div", "gr-plot");
+    var sv = grNode("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Average mark each year: " + pts.map(function (p) { return p.y.label + " " + p.v; }).join(", ") + "." });
+    for (var v = lo; v <= hi; v += 10) {
+      sv.appendChild(grNode("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: v === lo ? "gr-base" : "gr-grid" }));
+      var tk = grNode("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", class: "gr-tick" });
+      tk.textContent = v;
+      sv.appendChild(tk);
+    }
+    // The letter each band is, named at the right edge, so 90 reads as an A
+    // without a legend to hunt for.
+    [[90, "A"], [80, "B"], [70, "C"], [60, "D"]].forEach(function (b) {
+      if (b[0] < lo || b[0] >= hi) return;
+      var t = grNode("text", { x: W - m.r, y: y(b[0]) - 4, "text-anchor": "end", class: "gj-band" });
+      t.textContent = b[1];
+      sv.appendChild(t);
+    });
+    if (geo.join > 0) gjJoin(sv, geo, g);
+    ys.forEach(function (yy, i) {
+      var lab = grNode("text", { x: geo.cx(i), y: H - 9, "text-anchor": "middle", class: "gr-tick" });
+      lab.textContent = grYY(yy.year);
+      sv.appendChild(lab);
+    });
+    // Consecutive years join with the line; a year with no average between
+    // them leaves only a hairline, so the chart never implies marks it lacks.
+    for (var k = 1; k < pts.length; k++) {
+      var p0 = pts[k - 1], p1 = pts[k];
+      sv.appendChild(grNode("line", { x1: geo.cx(p0.i), y1: y(p0.v), x2: geo.cx(p1.i), y2: y(p1.v),
+        class: p1.i - p0.i === 1 ? "gj-line" : "gj-bridge" }));
+    }
+    var tip = grTip(wrap), nodes = [];
+    pts.forEach(function (p, n) {
+      var cls = p.y.school === "ehs" ? "e" : "t";
+      var gEl = grNode("g", { class: "gj-pt" });
+      gEl.appendChild(grNode("circle", { cx: geo.cx(p.i), cy: y(p.v), r: 14, fill: "transparent" }));
+      gEl.appendChild(grNode("circle", { cx: geo.cx(p.i), cy: y(p.v), r: 5.5, class: "gj-dot " + cls }));
+      if (n === 0 || n === pts.length - 1) {
+        var lb = grNode("text", { x: geo.cx(p.i), y: y(p.v) - 12, "text-anchor": "middle", class: "gr-endlabel" });
+        lb.textContent = p.v;
+        gEl.appendChild(lb);
+      }
+      grBind(gEl, tip, p.y.label + " · " + p.v, [
+        p.y.school === "ehs" ? "Excel High School" : p.y.school === "both" ? "Both schools"
+          : (g.transfer ? g.transfer.school : "Previous school"),
+        grFixed(p.y.letteredCredits) + " lettered credits"]);
+      sv.appendChild(gEl);
+      nodes.push(gEl);
+    });
+    grKeys(sv, nodes, tip);
+    wrap.appendChild(sv);
+    card.appendChild(wrap);
+    return card;
+  }
+
+  /* ------------------------------------------------------------ The marks
+     Every lettered course as a dot on the 0–100 line, one row per school
+     year, with EHS's letter bands behind them. A D in one row and a run of
+     A's in another is the whole story of a record, and a table of 20
+     percentages hides it. The highest and lowest are named; the rest are in
+     the tooltip and the table. */
+  function gradMarks(g) {
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("Every mark on your record", g.marks.length + " lettered courses · EHS’s 4.0 scale"));
+    var grid = el("div", "gr-two wide");
+    grid.appendChild(markStrip(g));
+    var col = el("div", "gr-stack");
+    col.appendChild(gpaCard(g));
+    if (g.strengths.length) col.appendChild(strengthCard(g));
+    grid.appendChild(col);
+    sec.appendChild(grid);
+    return sec;
+  }
+
+  function markStrip(g) {
+    var card = el("section", "gr-card");
+    card.appendChild(el("h3", null, "Each course, by mark"));
+    card.appendChild(el("p", "gr-sub", "One dot per lettered course · a bigger dot carries more credit"));
+    var hasT = g.marks.some(function (x) { return x.source !== "ehs"; });
+    var hasE = g.marks.some(function (x) { return x.source === "ehs"; });
+    if (hasT && hasE) {
+      card.appendChild(el("div", "gr-key gk-key", '<span><i class="t dot"></i>Transferred</span><span><i class="e dot"></i>Earned at EHS</span>'));
+    }
+    var years = [];
+    g.marks.forEach(function (x) { var k = x.year || "Other"; if (years.indexOf(k) < 0) years.push(k); });
+    years.sort();
+    var W = 600, rowH = 62, m = { l: 50, r: 16, t: 28, b: 28 };
+    var H = m.t + years.length * rowH + m.b;
+    var minMark = Math.min.apply(null, g.marks.map(function (x) { return x.mark; }));
+    var lo = Math.min(60, Math.floor((minMark - 2) / 10) * 10), hi = 100;
+    function x(v) { return m.l + (v - lo) * (W - m.l - m.r) / (hi - lo); }
+    var wrap = el("div", "gr-plot");
+    var sv = grNode("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": g.marks.length + " lettered courses from " + minMark + " to " +
+        Math.max.apply(null, g.marks.map(function (q) { return q.mark; })) + ". Use the arrow keys to read each one." });
+    [[90, 100, "A"], [80, 90, "B"], [70, 80, "C"], [60, 70, "D"], [0, 60, "F"]].forEach(function (b, i) {
+      var a0 = Math.max(lo, b[0]), a1 = Math.min(hi, b[1]);
+      if (a1 <= a0) return;
+      sv.appendChild(grNode("rect", { x: x(a0), y: m.t - 18, width: x(a1) - x(a0), height: H - m.t - m.b + 18,
+                                      class: "gk-band" + (i % 2 ? "" : " alt") }));
+      var t = grNode("text", { x: (x(a0) + x(a1)) / 2, y: m.t - 6, "text-anchor": "middle", class: "gk-letter" });
+      t.textContent = b[2];
+      sv.appendChild(t);
+    });
+    for (var v = lo; v <= hi; v += 10) {
+      var tk = grNode("text", { x: x(v), y: H - 8, "text-anchor": "middle", class: "gr-tick" });
+      tk.textContent = v;
+      sv.appendChild(tk);
+    }
+    years.forEach(function (yr, i) {
+      var cy = m.t + i * rowH + rowH / 2;
+      sv.appendChild(grNode("line", { x1: m.l, x2: W - m.r, y1: cy, y2: cy, class: "gr-grid" }));
+      var t = grNode("text", { x: m.l - 10, y: cy + 4, "text-anchor": "end", class: "gr-tick" });
+      t.textContent = grYY(yr);
+      sv.appendChild(t);
+    });
+
+    var tip = grTip(wrap);
+    var byMark = g.marks.slice().sort(function (a, b) { return a.mark - b.mark || String(b.year).localeCompare(String(a.year)); });
+    var low = byMark[0];
+    var high = g.marks.slice().sort(function (a, b) { return b.mark - a.mark || String(b.year).localeCompare(String(a.year)); })[0];
+    var placed = {}, nodes = [];
+    g.marks.slice().sort(function (a, b) { return String(a.year).localeCompare(String(b.year)) || a.mark - b.mark; })
+      .forEach(function (mk) {
+        var row = years.indexOf(mk.year || "Other");
+        var base = m.t + row * rowH + rowH / 2;
+        var r = 4 + Math.min(2.5, mk.credits * 2);
+        var px = x(mk.mark), list = placed[row] || (placed[row] = []);
+        var cy = null, offs = [0, -9, 9, -17, 17];
+        for (var o = 0; o < offs.length && cy == null; o++) {
+          var tryY = base + offs[o];
+          var clash = list.some(function (q) {
+            var dx = q.x - px, dy = q.y - tryY;
+            return Math.sqrt(dx * dx + dy * dy) < q.r + r + 1;
+          });
+          if (!clash) cy = tryY;
+        }
+        if (cy == null) cy = base;
+        list.push({ x: px, y: cy, r: r });
+        var gEl = grNode("g", { class: "gk-pt" });
+        gEl.appendChild(grNode("circle", { cx: px, cy: cy, r: Math.max(12, r + 4), fill: "transparent" }));
+        gEl.appendChild(grNode("circle", { cx: px, cy: cy, r: r, class: "gk-dot " + (mk.source === "ehs" ? "e" : "t") }));
+        if (mk === low || mk === high) {
+          var anchor = px > W - 110 ? "end" : px < m.l + 70 ? "start" : "middle";
+          var lb = grNode("text", { x: px + (anchor === "end" ? 4 : anchor === "start" ? -4 : 0), y: cy + r + 14,
+                                    "text-anchor": anchor, class: "gk-label" });
+          lb.textContent = mk.title + " · " + mk.mark;
+          gEl.appendChild(lb);
+        }
+        grBind(gEl, tip, mk.title, [
+          (mk.source === "ehs" ? "Earned at EHS" : "Transferred") + " · " + grYear(mk.year),
+          mk.mark + " · " + mk.letter + " · " + grCredits(mk.credits)]);
+        sv.appendChild(gEl);
+        nodes.push(gEl);
+      });
+    grKeys(sv, nodes, tip);
+    wrap.appendChild(sv);
+    card.appendChild(wrap);
+    card.appendChild(grTable("Show as a table", ["Year", "Course", "School", "Mark", "Grade", "Credits"],
+      g.marks.slice().sort(function (a, b) { return String(b.year).localeCompare(String(a.year)) || b.mark - a.mark; })
+        .map(function (q) {
+          return [grYear(q.year), q.title, q.source === "ehs" ? "EHS" : "Transferred", q.mark, q.letter, grFixed(q.credits)];
+        })));
+    return card;
+  }
+
+  function gpaCard(g) {
+    var card = el("section", "gr-card");
+    card.appendChild(el("h3", null, "GPA"));
+    var v = g.gpa.issued != null ? g.gpa.issued : g.gpa.value;
+    var big = el("p", "gk-gpa");
+    big.innerHTML = "<b></b><span></span>";
+    big.querySelector("b").textContent = v != null ? v.toFixed(2) : "—";
+    big.querySelector("span").textContent = "unweighted · 4.0 scale";
+    card.appendChild(big);
+    card.appendChild(el("p", "gr-sub", grFixed(g.gpa.points) + " quality points ÷ " + grFixed(g.gpa.credits) +
+      " lettered credits. Courses marked P carry credit and no points."));
+    if (g.gpa.issued != null && g.gpa.value != null) {
+      card.appendChild(el("p", "gk-verdict", g.gpa.matchesIssued
+        ? '<span class="chip ok">' + svg(I.tick, true) + "Matches the GPA EHS issued</span>"
+        : '<span class="chip warn">' + svg(I.alert, true) + "EHS issued " + g.gpa.issued.toFixed(2) +
+          " · the record adds up to " + g.gpa.value.toFixed(2) + "</span>"));
+    }
+
+    // Credits at each letter: the weight each letter actually carries in the
+    // average, which a count of courses does not show.
+    var L = ["A", "B", "C", "D", "F"], dc = g.gpa.distributionCredits || {}, dn = g.gpa.distribution || {};
+    var max = Math.max.apply(null, L.map(function (k) { return dc[k] || 0; })) || 1;
+    var W = 300, H = 150, top = 24, base = H - 24, slot = W / L.length, bw = 22;
+    var wrap = el("div", "gr-plot");
+    var sv = grNode("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Credits at each letter: " + L.map(function (k) { return k + " " + grFixed(dc[k] || 0); }).join(", ") });
+    sv.appendChild(grNode("line", { x1: 0, x2: W, y1: base, y2: base, class: "gr-base" }));
+    var tip = grTip(wrap), nodes = [];
+    L.forEach(function (k, i) {
+      var n = dc[k] || 0, h = n / max * (base - top), bx = i * slot + (slot - bw) / 2;
+      var gEl = grNode("g", { class: "gr-col" });
+      gEl.appendChild(grNode("rect", { x: i * slot, y: 0, width: slot, height: H, fill: "transparent" }));
+      if (h > 0) gEl.appendChild(grNode("path", { class: "gr-bar", d: grColumn(bx, bw, base - h, base, 4) }));
+      var val = grNode("text", { x: bx + bw / 2, y: base - h - 6, "text-anchor": "middle", class: "gr-val" });
+      val.textContent = grFixed(n);
+      var lab = grNode("text", { x: bx + bw / 2, y: H - 6, "text-anchor": "middle", class: "gr-tick" });
+      lab.textContent = k;
+      gEl.appendChild(val);
+      gEl.appendChild(lab);
+      grBind(gEl, tip, k + " · " + grCredits(n), [(dn[k] || 0) + ((dn[k] || 0) === 1 ? " course" : " courses")]);
+      sv.appendChild(gEl);
+      nodes.push(gEl);
+    });
+    grKeys(sv, nodes, tip);
+    wrap.appendChild(sv);
+    card.appendChild(el("p", "gr-sub gk-distlabel", "Credits at each letter"));
+    card.appendChild(wrap);
+    return card;
+  }
+
+  /* ---------------------------------------------------- What’s left, and when
+     A credit count says how far; this says when, at the pace of the
+     student's own record, labelled as the estimate it is — and beside it,
+     each gap with what is already on the way to it and the EHS courses that
+     would close the rest. */
+  function gradPlan(g) {
+    var pc = g.pace;
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("What’s left, and when",
+      pc.finishBy ? (pc.basis === "ehs" ? "At your EHS pace" : "On your own pace") : "No pace on the record yet"));
+    var grid = el("div", "gr-two");
+
+    var card = el("div", "gr-card gr-plan");
+    var big = el("p", "gr-plan-big");
+    big.innerHTML = "<b></b><span></span>";
+    big.querySelector("b").textContent = pc.finishBy ? grMonth(pc.finishBy) : "—";
+    big.querySelector("span").textContent = pc.finishBy ? "on this pace" : "not enough on the record yet";
+    card.appendChild(big);
+    var says = el("p", "gr-lede"); says.textContent = pc.says; card.appendChild(says);
+    if (pc.expected) {
+      var vs = el("p", "gr-sub");
+      vs.textContent = pc.aheadOfPlan
+        ? "That is at or ahead of the " + grMonth(pc.expected) + " on file."
+        : "The record on file says " + grMonth(pc.expected) + ", which is sooner than this pace reaches.";
+      card.appendChild(vs);
+    }
+    var note = el("p", "gr-note"); note.textContent = pc.assumption; card.appendChild(note);
+    grid.appendChild(card);
+
+    var gaps = el("div", "gr-card");
+    gaps.appendChild(el("h3", null, "What closes each gap"));
+    var list = el("div", "gr-gaps");
+    g.gaps.forEach(function (gp) {
+      var row = el("div", "gr-gap");
+      var head = el("div", "gr-gap-head");
+      head.innerHTML = "<b></b><span><strong></strong> to go</span>";
+      head.querySelector("b").textContent = gp.name;
+      head.querySelector("strong").textContent = grFixed(gp.left);
+      row.appendChild(head);
+      gp.enrolled.forEach(function (c) {
+        var p = el("p", "gr-gap-on");
+        p.innerHTML = "<em>In progress</em><span></span>";
+        p.querySelector("span").textContent = c.title + " · " + grCredits(c.credits) +
+          (c.percent != null ? " · " + c.percent + "% so far" : "");
+        row.appendChild(p);
+      });
+      if (gp.enrolled.length && gp.afterEnrolled > 0) {
+        row.appendChild(el("p", null, "After that, " + grFixed(gp.afterEnrolled) + " more."));
+      }
+      if (gp.options.length && gp.afterEnrolled > 0) {
+        var o = el("p", "gr-gap-opts");
+        o.innerHTML = "<em>EHS offers</em><span></span>";
+        o.querySelector("span").textContent = gp.options.join(" · ");
+        row.appendChild(o);
+      }
+      list.appendChild(row);
+    });
+    gaps.appendChild(list);
+    if (g.residency && g.residency.extra > 0) {
+      var rn = el("p", "gr-note"); rn.textContent = g.residency.says; gaps.appendChild(rn);
+    }
+    grid.appendChild(gaps);
+    sec.appendChild(grid);
+    return sec;
+  }
+
+  /* --------------------------------------------------------------- Checks
+     The record read against itself, the way a registrar would. "Checks
+     out" is shown as plainly as "ask about", because knowing the GPA adds up
+     is worth as much to a student as knowing where it does not. */
+  function gradChecks(g) {
+    var sec = el("section", "gr-sec");
+    var ok = g.checks.filter(function (c) { return c.level === "ok"; }).length;
+    var look = g.checks.filter(function (c) { return c.level === "check"; }).length;
+    sec.appendChild(grHead("Checked against your record",
+      ok + (ok === 1 ? " checks out" : " check out") + (look ? " · " + look + " to ask about" : "")));
+    var list = el("div", "gr-checks");
+    var order = { check: 0, info: 1, ok: 2 };
+    var TAG = { ok: [I.tick, "Checks out"], check: [I.alert, "Ask about"], info: [I.bulb, "Worth knowing"] };
+    g.checks.slice().sort(function (a, b) { return order[a.level] - order[b.level]; }).forEach(function (c) {
+      var tag = TAG[c.level] || TAG.info;
+      var row = el("div", "gr-check " + c.level);
+      row.innerHTML = '<span class="ic">' + svg(tag[0], true) + "</span><div><em></em><b></b><p></p></div>";
+      row.querySelector("em").textContent = tag[1];
+      row.querySelector("b").textContent = c.title;
+      row.querySelector("p").textContent = c.detail;
+      list.appendChild(row);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  /* ---------------------------------------------------------- State exams */
+  function gradExams(g) {
+    var sec = el("section", "gr-sec");
+    var passed = g.exams.filter(function (e) { return e.passed; }).length;
+    sec.appendChild(grHead("State exams", g.exams.length ? passed + " of " + g.exams.length + " passed" : "Grades 4 to 8"));
+    if (g.exams.length) {
+      var list = el("div", "gr-exams");
+      var ST = { passed: ["ok", I.tick, "Passed"], not_passed: ["bad", I.close, "Not passed"],
+                 below_65: ["warn", I.alert, "Below 65"], superseded: ["muted", I.arrow, "Retaken"] };
+      g.exams.forEach(function (e) {
+        var st = ST[e.status] || ["muted", I.alert, e.status];
+        var row = el("div", "gr-exam");
+        row.innerHTML = '<div class="n"><b></b><span></span></div>' +
+          '<div class="sc"><div class="trk"><i style="width:' + Math.max(0, Math.min(100, e.score || 0)) + '%"></i>' +
+          '<u style="left:65%" title="65"></u></div><b>' + (e.score != null ? e.score : "—") + "</b></div>" +
+          '<span class="chip ' + st[0] + '">' + svg(st[1], true) + st[2] + "</span>";
+        row.querySelector(".n b").textContent = e.name;
+        row.querySelector(".n span").textContent = grMonth(e.sitting);
+        list.appendChild(row);
+      });
+      sec.appendChild(list);
+    }
+    var tests = g.stateTests || [];
+    if (tests.length) {
+      var card = el("div", "gr-card gs");
+      card.appendChild(el("h3", null, "Earlier state tests"));
+      card.appendChild(el("p", "gr-sub", "Grades 4 to 8, as your previous school recorded them. Levels run 1 to 4, " +
+        "and 3 is proficient."));
+      var LV = { 4: "Excels", 3: "Proficient", 2: "Below proficient", 1: "Well below" };
+      var scroll = el("div", "gs-scroll");
+      var tb = el("table");
+      tb.innerHTML = "<thead><tr><th>Year</th><th>Grade</th><th>Exam</th><th class='num'>Score</th><th>Level</th>" +
+        "<th class='num'>Rating</th><th class='num'>City percentile</th></tr></thead>";
+      var body = el("tbody");
+      tests.forEach(function (s) {
+        var tr = el("tr");
+        if (s.note) {
+          tr.className = "note";
+          tr.innerHTML = "<td></td><td></td><td colspan='5'></td>";
+          tr.children[0].textContent = s.year || "";
+          tr.children[1].textContent = s.grade != null ? s.grade : "";
+          tr.children[2].textContent = s.note;
+        } else {
+          if (s.score == null && s.level == null) tr.className = "blank";
+          tr.innerHTML = "<td></td><td></td><td></td><td class='num'></td><td></td><td class='num'></td><td class='num'></td>";
+          tr.children[0].textContent = s.year || "";
+          tr.children[1].textContent = s.grade != null ? s.grade : "";
+          tr.children[2].textContent = s.exam || "";
+          tr.children[3].textContent = s.score != null ? s.score : "—";
+          if (s.level != null) {
+            var lv = el("span", "gs-lv");
+            var pips = "";
+            for (var p = 1; p <= 4; p++) pips += '<u class="' + (p <= s.level ? "on" : "") + '"></u>';
+            lv.innerHTML = "<i aria-hidden='true'>" + pips + "</i><span></span>";
+            lv.querySelector("span").textContent = s.level + " · " + LV[s.level];
+            tr.children[4].appendChild(lv);
+          } else {
+            tr.children[4].textContent = "—";
+          }
+          tr.children[5].textContent = s.rating != null ? s.rating : "—";
+          tr.children[6].textContent = s.percentile || "—";
+        }
+        body.appendChild(tr);
+      });
+      tb.appendChild(body);
+      scroll.appendChild(tb);
+      card.appendChild(scroll);
+      sec.appendChild(card);
+    }
+    return sec;
+  }
+
+  /* ------------------------------------------------------ This year at EHS */
+  function gradCurrent(g) {
+    var sec = el("section", "gr-sec");
+    sec.appendChild(grHead("This year at EHS", g.current.length
+      ? g.current.length + (g.current.length === 1 ? " course" : " courses") : ""));
+    if (!g.current.length) {
+      sec.appendChild(el("div", "lx-empty", "No courses open right now. As you enrol and your teachers mark your " +
+        "work, your courses and grades appear here."));
+      return sec;
+    }
+    var list = el("div", "gr-current");
+    g.current.forEach(function (c) {
+      var row = el("div", "gr-cur");
+      row.innerHTML = "<div><b></b><span></span></div><span class='let'></span><strong></strong>";
+      row.querySelector("b").textContent = c.title;
+      row.querySelector("div span").textContent =
+        (c.itemCount ? c.itemCount + (c.itemCount === 1 ? " item" : " items") + " marked · over " +
+                       c.countedWeight + "% of the grade" : "No marks yet") +
+        (c.credits ? " · counts " + grFixed(c.credits) + " " + (GR_AREA_WORD[c.area] || "") +
+                     (c.credits === 1 ? " credit" : " credits") : "");
+      if (c.percent != null) {
+        row.querySelector(".let").textContent = c.letter;
+        row.querySelector("strong").textContent = c.percent + "%";
+      } else {
+        row.querySelector(".let").remove();
+        var chip = el("span", "chip", "In progress");
+        row.replaceChild(chip, row.querySelector("strong"));
+      }
+      list.appendChild(row);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  /* ---------------------------------------------------------- Course record
+     The record itself, grouped by subject exactly as EHS's academic record
+     groups it, newest first, with where each course came from on its row.
+     This is the section a student holds their paper copy up against. */
+  function gradRecord(g) {
+    var sec = el("section", "gr-sec");
+    var groupOf = {};
+    g.areas.forEach(function (a) { groupOf[a.key] = a.group; });
+    function numMark(n, raw) {
+      if (n != null) return Number(n).toFixed(1);
+      return raw && /\d/.test(raw) ? raw : "—";
+    }
+    var all = (g.ehsCourses || []).map(function (c) {
+      return { src: "e", year: c.year, code: c.code || "", title: c.title,
+               credits: c.status === "completed" ? Number(c.credits || 0) : 0,
+               mark: numMark(c.markNumeric, c.mark), letter: c.letter || (c.mark && !/\d/.test(c.mark) ? c.mark : ""),
+               area: c.area, flags: c.status === "completed" ? [] : [c.status === "in_progress" ? "In progress" : "Withdrawn"] };
+    }).concat(g.courses.map(function (c) {
+      var fl = [];
+      if (c.decision === "declined") fl.push("Declined by EHS");
+      if (c.attempted > 0 && !Number(c.earned) && c.markNumeric != null) fl.push("No credit");
+      if (c.flags.indexOf("recovered") > -1) fl.push("Recovered");
+      return { src: "t", year: c.year, code: c.code && c.code !== "TR" ? c.code : "", title: c.title,
+               credits: c.decision === "declined" ? 0 : Number(c.ehsCredits || 0),
+               mark: numMark(c.markNumeric, c.mark), letter: c.letter || (c.mark && !/\d/.test(c.mark) ? c.mark : ""),
+               area: c.area, flags: fl };
+    }));
+    sec.appendChild(grHead("Course record", all.length + " courses · grouped by subject, as your EHS record lays them out"));
+
+    g.groups.forEach(function (grp) {
+      var rows = all.filter(function (r) { return (groupOf[r.area] || "elective") === grp.key; })
+        .sort(function (a, b) {
+          return String(b.year).localeCompare(String(a.year)) || (a.src === b.src ? 0 : a.src === "e" ? -1 : 1);
+        });
+      if (!rows.length) return;
+      var det = document.createElement("details");
+      det.className = "gr-rec";
+      det.open = true;
+      var sum = document.createElement("summary");
+      sum.innerHTML = "<b></b><span></span><strong></strong>";
+      sum.querySelector("b").textContent = grp.name;
+      sum.querySelector("span").textContent = grFixed(grp.required) + " credits required" +
+        (grp.includes ? " · " + grAnd(grp.includes) : "");
+      sum.querySelector("strong").innerHTML = esc(grFixed(grp.earned)) + "<small>/" + esc(grFixed(grp.required)) + "</small>";
+      det.appendChild(sum);
+
+      var scroll = el("div", "gr-rec-scroll");
+      var tb = el("table");
+      tb.innerHTML = "<thead><tr><th>Term</th><th>School</th><th>Code</th><th>Course</th>" +
+        "<th class='num'>Credits</th><th class='num'>%</th><th class='let'>Grade</th></tr></thead>";
+      var body = el("tbody");
+      rows.forEach(function (r) {
+        var tr = el("tr");
+        tr.innerHTML = "<td></td><td><span class='gr-src'><i></i><span></span></span></td><td class='code'></td>" +
+          "<td class='t'></td><td class='num'></td><td class='num'></td><td class='let'></td>";
+        tr.children[0].textContent = grYY(r.year);
+        tr.querySelector(".gr-src").classList.add(r.src);
+        tr.querySelector(".gr-src span").textContent = r.src === "e" ? "EHS" : "Transfer";
+        tr.children[2].textContent = r.code || "—";
+        tr.children[3].textContent = r.title;
+        r.flags.forEach(function (f) { tr.children[3].appendChild(el("em", "gr-flag", esc(f))); });
+        tr.children[4].textContent = grFixed(r.credits);
+        tr.children[5].textContent = r.mark;
+        tr.children[6].textContent = r.letter || "—";
+        body.appendChild(tr);
+      });
+      tb.appendChild(body);
+      scroll.appendChild(tb);
+      det.appendChild(scroll);
+
+      var foot = el("p", "gr-rec-foot");
+      var over = Math.round((grp.earned - grp.required) * 1000) / 1000;
+      foot.innerHTML = "<span>Earned <b></b></span><em></em>";
+      foot.querySelector("b").textContent = grFixed(grp.earned);
+      var em = foot.querySelector("em");
+      if (grp.left > 0) { em.className = "left"; em.textContent = grCredits(grp.left) + " remaining"; }
+      else { em.className = "ok"; em.textContent = "Requirement met" + (over > 0 ? " · +" + grFixed(over) + " surplus" : ""); }
+      det.appendChild(foot);
+      sec.appendChild(det);
+    });
+    return sec;
+  }
+
+  function gradNotes(g) {
+    var sec = el("section", "gr-notes");
+    sec.appendChild(el("h3", null, "How these numbers are worked out"));
+    var ul = el("ul");
+    g.assumptions.concat([
+      "Diploma rules follow Excel High School’s published requirements: the " + g.track.total +
+      "-credit track, up to " + g.track.transferCap + " credits by transfer, at least " + g.track.minAtEhs +
+      " earned at EHS, and a 60% passing mark."
+    ]).forEach(function (a) { var li = el("li"); li.textContent = a; ul.appendChild(li); });
+    sec.appendChild(ul);
+    return sec;
+  }
+
+
+
 
   /* --------------------------------------------------------- Achievements
      Each is computed from the record and carries the evidence that earned
@@ -6207,52 +7171,6 @@
     return sec;
   }
 
-  /* ---------------------------------------------------------- Requirements */
-  function gradAreas(g) {
-    var sec = el("section", "gr-sec");
-    var done = g.areas.filter(function (a) { return a.complete; }).length;
-    sec.appendChild(grHead("Diploma requirements", done + " of " + g.areas.length + " areas complete"));
-    sec.appendChild(el("div", "gr-key",
-      '<span><i class="t"></i>Transferred' + (g.transfer ? " from " + esc(g.transfer.school) : "") + "</span>" +
-      '<span><i class="e"></i>Earned at EHS</span><span><i class="left"></i>Still to go</span>'));
-    var list = el("div", "gr-areas");
-    g.areas.forEach(function (a) {
-      var row = el("div", "gr-area" + (a.complete ? " done" : ""));
-      var fromT = Math.max(0, a.applied - a.ehs);
-      var pt = Math.min(100, fromT / a.required * 100);
-      var pe = Math.min(100 - pt, a.ehs / a.required * 100);
-      var name = el("div", "gr-area-name");
-      name.appendChild(el("b"));
-      name.firstChild.textContent = a.name;
-      name.appendChild(el("span", null, grCr(a.applied) + " / " + a.required));
-      row.appendChild(name);
-      var meter = el("div", "gr-meter");
-      meter.setAttribute("role", "img");
-      meter.setAttribute("aria-label", a.name + ": " + grCr(a.applied) + " of " + a.required + " credits");
-      if (pt > 0) {
-        var s1 = el("span", "seg t" + (pe > 0 ? "" : " end"));
-        s1.style.width = pt + "%";
-        s1.title = grCr(fromT) + " transferred";
-        meter.appendChild(s1);
-      }
-      if (pe > 0) {
-        var s2 = el("span", "seg e end");
-        s2.style.width = pe + "%";
-        s2.title = grCr(a.ehs) + " earned at EHS";
-        meter.appendChild(s2);
-      }
-      row.appendChild(meter);
-      var st = el("div", "gr-area-state");
-      st.innerHTML = a.complete ? '<span class="ok">' + svg(I.tick, true) + "Done</span>"
-                                : "<b>" + grCr(a.remaining) + "</b> to go";
-      if (a.planAtEhs > a.remaining) st.appendChild(el("em", null, "EHS asks for " + a.residencyMin + " here"));
-      if (a.fromOtherAreas > 0) st.appendChild(el("em", null, "+" + grCr(a.fromOtherAreas) + " from other areas"));
-      row.appendChild(st);
-      list.appendChild(row);
-    });
-    sec.appendChild(list);
-    return sec;
-  }
 
   /* -------------------------------------------------------------- Transfer */
   function gradTransfer(g) {
@@ -6307,19 +7225,6 @@
     return sec;
   }
 
-  /* ----------------------------------------------------------- Performance */
-  function gradPerformance(g) {
-    var sec = el("section", "gr-sec");
-    sec.appendChild(grHead("How you’ve been doing", "Marks from your previous school"));
-    var grid = el("div", "gr-two wide");
-    grid.appendChild(trendCard(g));
-    var col = el("div", "gr-stack");
-    col.appendChild(distCard(g));
-    col.appendChild(strengthCard(g));
-    grid.appendChild(col);
-    sec.appendChild(grid);
-    return sec;
-  }
 
   /* One series, so no legend box: the title names it. Crosshair and
      tooltip on hover, arrow keys on focus, and a table twin underneath. */
@@ -6429,39 +7334,6 @@
     return card;
   }
 
-  function distCard(g) {
-    var card = el("section", "gr-card");
-    card.appendChild(el("h3", null, "Your marks on the EHS scale"));
-    card.appendChild(el("p", "gr-sub", g.gpa.courses + " marks · A 90+, B 80+, C 70+, D 60+"));
-    var L = ["A", "B", "C", "D", "F"], d = g.gpa.distribution;
-    var max = Math.max.apply(null, L.map(function (k) { return d[k] || 0; })) || 1;
-    var W = 300, H = 150, top = 22, base = H - 24, slot = W / L.length, bw = 22;
-    var sv = grNode("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
-      "aria-label": L.map(function (k) { return k + ": " + (d[k] || 0); }).join(", ") });
-    sv.appendChild(grNode("line", { x1: 0, x2: W, y1: base, y2: base, class: "gr-base" }));
-    L.forEach(function (k, i) {
-      var n = d[k] || 0, h = n / max * (base - top), x = i * slot + (slot - bw) / 2, yy = base - h, r = Math.min(4, h);
-      var gEl = grNode("g", { class: "gr-col" });
-      gEl.appendChild(grNode("rect", { x: i * slot, y: 0, width: slot, height: H, fill: "transparent" }));
-      if (h > 0) {
-        gEl.appendChild(grNode("path", { class: "gr-bar", d: "M" + x + " " + base + "V" + (yy + r) + "Q" + x + " " + yy +
-          " " + (x + r) + " " + yy + "H" + (x + bw - r) + "Q" + (x + bw) + " " + yy + " " + (x + bw) + " " + (yy + r) + "V" + base + "Z" }));
-      }
-      var val = grNode("text", { x: x + bw / 2, y: yy - 6, "text-anchor": "middle", class: "gr-val" });
-      val.textContent = n;
-      var lab = grNode("text", { x: x + bw / 2, y: H - 6, "text-anchor": "middle", class: "gr-tick" });
-      lab.textContent = k;
-      var tt = grNode("title", {});
-      tt.textContent = k + ": " + n + (n === 1 ? " mark" : " marks");
-      gEl.appendChild(val); gEl.appendChild(lab); gEl.appendChild(tt);
-      sv.appendChild(gEl);
-    });
-    card.appendChild(sv);
-    if (g.gpa.estimate != null) {
-      card.appendChild(el("p", "gr-gpa", "<b>" + g.gpa.estimate.toFixed(2) + "</b> estimated GPA on EHS’s 4.0 scale"));
-    }
-    return card;
-  }
 
   function strengthCard(g) {
     var card = el("section", "gr-card");
@@ -6482,99 +7354,8 @@
     return card;
   }
 
-  function gradExams(g) {
-    var sec = el("section", "gr-sec");
-    var passed = g.exams.filter(function (e) { return e.passed; }).length;
-    sec.appendChild(grHead("State exams", passed + " passed"));
-    var list = el("div", "gr-exams");
-    var ST = { passed: ["ok", I.tick, "Passed"], not_passed: ["bad", I.close, "Not passed"],
-               below_65: ["warn", I.alert, "Below 65"], superseded: ["muted", I.arrow, "Retaken"] };
-    g.exams.forEach(function (e) {
-      var st = ST[e.status] || ["muted", I.alert, e.status];
-      var row = el("div", "gr-exam");
-      row.innerHTML = '<div class="n"><b></b><span></span></div>' +
-        '<div class="sc"><div class="trk"><i style="width:' + Math.max(0, Math.min(100, e.score || 0)) + '%"></i>' +
-        '<u style="left:65%" title="65"></u></div><b>' + (e.score != null ? e.score : "—") + "</b></div>" +
-        '<span class="chip ' + st[0] + '">' + svg(st[1], true) + st[2] + "</span>";
-      row.querySelector(".n b").textContent = e.name;
-      row.querySelector(".n span").textContent = grMonth(e.sitting);
-      list.appendChild(row);
-    });
-    sec.appendChild(list);
-    return sec;
-  }
 
-  function gradCurrent(g) {
-    var sec = el("section", "gr-sec");
-    sec.appendChild(grHead("This year at EHS", g.current.length ? g.current.length + (g.current.length === 1 ? " course" : " courses") : ""));
-    if (!g.current.length) {
-      sec.appendChild(el("div", "lx-empty", "No EHS grades yet. As your teachers mark your work, your courses and grades appear here."));
-      return sec;
-    }
-    var list = el("div", "gr-current");
-    g.current.forEach(function (c) {
-      var row = el("div", "gr-cur");
-      row.innerHTML = '<div><b></b><span></span></div><span class="let"></span><strong></strong>';
-      row.querySelector("b").textContent = c.title;
-      row.querySelector("div span").textContent = c.itemCount + (c.itemCount === 1 ? " item" : " items") +
-        " marked · over " + c.countedWeight + "% of the grade";
-      row.querySelector(".let").textContent = c.letter;
-      row.querySelector("strong").textContent = c.percent + "%";
-      list.appendChild(row);
-    });
-    sec.appendChild(list);
-    return sec;
-  }
 
-  function gradHistory(g) {
-    var sec = el("section", "gr-sec");
-    sec.appendChild(grHead("Course history", g.courses.length + " courses on your record"));
-    var avg = {};
-    (g.trend || []).forEach(function (t) { avg[t.term] = t.average; });
-    var years = [], byYear = {};
-    g.courses.forEach(function (c) {
-      var k = c.year || "Other";
-      if (!byYear[k]) { byYear[k] = { grade: c.gradeLevel, terms: [], byTerm: {} }; years.push(k); }
-      var y = byYear[k];
-      if (!y.byTerm[c.term]) { y.byTerm[c.term] = []; y.terms.push(c.term); }
-      y.byTerm[c.term].push(c);
-    });
-    years.forEach(function (k) {
-      var y = byYear[k];
-      var all = [];
-      y.terms.forEach(function (t) { all = all.concat(y.byTerm[t]); });
-      var credits = all.reduce(function (a, c) { return a + (c.decision === "declined" ? 0 : Number(c.ehsCredits || 0)); }, 0);
-      var det = document.createElement("details");
-      det.className = "gr-year";
-      var sum = document.createElement("summary");
-      sum.innerHTML = "<b></b><span></span>";
-      sum.querySelector("b").textContent = k.replace("-", "–") + (y.grade ? " · Grade " + y.grade : "");
-      sum.querySelector("span").textContent = all.length + " courses · " + grCr(credits) + " EHS credits";
-      det.appendChild(sum);
-      y.terms.forEach(function (t) {
-        var box = el("div", "gr-term");
-        var th = el("h4"); th.textContent = t + (avg[t] != null ? " · " + avg[t] + "%" : "");
-        box.appendChild(th);
-        y.byTerm[t].forEach(function (c) {
-          var row = el("div", "gr-crs" + (c.attempted > 0 && !c.earned && c.markNumeric != null ? " miss" : ""));
-          row.innerHTML = '<span class="t"></span><span class="mk"></span><span class="let"></span><span class="cr"></span><span class="fl"></span>';
-          row.querySelector(".t").textContent = c.title;
-          row.querySelector(".mk").textContent = c.mark || "";
-          row.querySelector(".let").textContent = c.letter || "";
-          row.querySelector(".cr").textContent = c.ehsCredits ? "+" + grCr(c.ehsCredits) : "";
-          var fl = row.querySelector(".fl");
-          if (c.flags.indexOf("recovered") > -1) fl.appendChild(el("em", "rec", "Recovered"));
-          if (c.flags.indexOf("weighted") > -1) fl.appendChild(el("em", null, "Weighted"));
-          if (c.attempted > 0 && !c.earned && c.markNumeric != null) fl.appendChild(el("em", "no", svg(I.close, true) + "No credit"));
-          if (c.decision === "declined") fl.appendChild(el("em", "no", "Declined by EHS"));
-          box.appendChild(row);
-        });
-        det.appendChild(box);
-      });
-      sec.appendChild(det);
-    });
-    return sec;
-  }
 
   /* ------------------------------------------------------------- The move
      Ranked on the server by what it unlocks against what it costs, and shown
@@ -6690,51 +7471,6 @@
     return wrap;
   }
 
-  /* ---------------------------------------------------------- When it ends
-     A credit count says how far. This says when — at the pace of the
-     student's own record, labelled as the estimate it is. */
-  function gradPlan(g) {
-    var pc = g.pace;
-    var sec = el("section", "gr-sec");
-    sec.appendChild(grHead("When this ends", pc.finishBy ? "On your own pace" : "No pace on the record yet"));
-    var grid = el("div", "gr-two");
-
-    var card = el("div", "gr-card gr-plan");
-    var big = el("p", "gr-plan-big");
-    big.innerHTML = "<b></b><span></span>";
-    big.querySelector("b").textContent = pc.finishBy ? grMonth(pc.finishBy) : "—";
-    big.querySelector("span").textContent = pc.finishBy ? "on this pace" : "not enough finished terms";
-    card.appendChild(big);
-    var says = el("p", "gr-lede"); says.textContent = pc.says; card.appendChild(says);
-    if (pc.expected) {
-      var vs = el("p", "gr-sub");
-      vs.textContent = pc.aheadOfPlan
-        ? "That is at or ahead of the " + grMonth(pc.expected) + " on file."
-        : "The record on file says " + grMonth(pc.expected) + ", which is sooner than this pace reaches.";
-      card.appendChild(vs);
-    }
-    var note = el("p", "gr-note"); note.textContent = pc.assumption; card.appendChild(note);
-    grid.appendChild(card);
-
-    var years = el("div", "gr-card");
-    years.appendChild(el("h3", null, "Credits a year, as you actually earned them"));
-    var bars = el("div", "gr-hbars");
-    var top = Math.max.apply(null, pc.years.map(function (y) { return y.credits; }).concat([pc.creditsPerYear, 1]));
-    pc.years.forEach(function (y) {
-      var row = el("div", "gr-hbar");
-      var nm = el("span"); nm.textContent = y.year.replace("-", "–");
-      var trk = el("div", "trk"), fill = el("i");
-      fill.style.width = Math.round(y.credits / top * 100) + "%";
-      trk.appendChild(fill);
-      row.appendChild(nm); row.appendChild(trk); row.appendChild(el("b", null, grCr(y.credits)));
-      bars.appendChild(row);
-    });
-    years.appendChild(bars);
-    years.appendChild(el("p", "gr-sub", "In EHS credits, after conversion — not in your old school's units."));
-    grid.appendChild(years);
-    sec.appendChild(grid);
-    return sec;
-  }
 
   /* ---------------------------------------------------------------- Risk
      One area, named once, with its evidence. Never a verdict about a person:
@@ -6818,18 +7554,6 @@
     return sec;
   }
 
-  function gradNotes(g) {
-    var sec = el("section", "gr-notes");
-    sec.appendChild(el("h3", null, "How these numbers are worked out"));
-    var ul = el("ul");
-    g.assumptions.concat([
-      "Diploma rules follow Excel High School’s published policies: the " + g.track.total +
-      "-credit track, up to " + g.track.transferCap + " credits by transfer, at least " + g.track.minAtEhs +
-      " earned at EHS, and a 60% passing mark."
-    ]).forEach(function (a) { var li = el("li"); li.textContent = a; ul.appendChild(li); });
-    sec.appendChild(ul);
-    return sec;
-  }
 
   /* ================================================================ Console
      What an administrator needs is not a second application. It is this one,
@@ -10219,17 +10943,28 @@
     where.innerHTML = "";
     var data = null;
     try { data = JSON.parse(text); } catch (e) { /* reported below */ }
-    if (!data || !data.source || !Array.isArray(data.terms)) {
+    // A file can carry a previous school's transcript, EHS's own record of a
+    // student already enrolled, or both — an EHS academic record has both.
+    var hasTransfer = !!(data && data.source && Array.isArray(data.terms) && data.terms.length);
+    var hasEhs = !!(data && data.ehs && Array.isArray(data.ehs.courses));
+    if (!hasTransfer && !hasEhs) {
       where.appendChild(el("div", "lx-empty",
-        "That file is not a transcript import: it needs a source and a list of terms."));
+        "That file is not a record import: it needs a previous school's source and terms, an EHS record, or both."));
       return;
     }
-    var courses = data.terms.reduce(function (n, t) { return n + (t.courses || []).length; }, 0);
+    var courses = hasTransfer ? data.terms.reduce(function (n, t) { return n + (t.courses || []).length; }, 0) : 0;
     var exams = (data.exams || []).length;
     where.appendChild(el("p", "cn-sub",
-      "<b>" + esc(data.source.school || "Unnamed school") + "</b> · " + courses + " courses in " +
-      data.terms.length + " terms · " + exams + " exams" +
-      (data.source.printedOn ? " · printed " + esc(data.source.printedOn) : "") +
+      (hasTransfer
+        ? "<b>" + esc(data.source.school || "Unnamed school") + "</b> · " + courses + " courses in " +
+          data.terms.length + " terms · " + exams + " exams" +
+          (data.source.status === "evaluated" ? " · evaluated by EHS" : "") +
+          (data.source.printedOn ? " · printed " + esc(data.source.printedOn) : "")
+        : "") +
+      (hasEhs
+        ? (hasTransfer ? " · " : "") + "<b>Excel High School</b> · " + data.ehs.courses.length + " courses" +
+          (data.ehs.enrolledOn ? " · enrolled " + esc(data.ehs.enrolledOn) : "")
+        : "") +
       (data.program && data.program.track ? " · " + esc(data.program.track) + "-credit track" : "")));
     var acts = el("div", "admin-acts");
     var go = el("button", "lx-btn", "Import into " + esc(p.firstName || p.name) + "'s record");
@@ -10240,9 +10975,18 @@
     go.addEventListener("click", function () {
       go.disabled = true;
       var program = data.program ? API.graduation.setProgram(p.id, data.program) : Promise.resolve();
-      attempt(program.then(function () { return API.graduation.importTranscript(p.id, data); }),
-        function (r) {
-          toast("Imported " + r.courses + " courses and " + r.exams + " exams from " + r.school + ".");
+      var saved = { t: null, e: null };
+      attempt(program
+        .then(function () { return hasTransfer ? API.graduation.importTranscript(p.id, data) : null; })
+        .then(function (r) {
+          saved.t = r;
+          return hasEhs ? API.graduation.putEhsRecord(p.id, data.ehs) : null;
+        })
+        .then(function (e) { saved.e = e; return saved; }),
+        function () {
+          toast("Imported " +
+            (saved.t ? saved.t.courses + " courses and " + saved.t.exams + " exams from " + saved.t.school : "") +
+            (saved.e ? (saved.t ? ", and " : "") + saved.e.courses + " EHS courses" : "") + ".");
           openRecord(p);
         }).then(function () { go.disabled = false; });
     });

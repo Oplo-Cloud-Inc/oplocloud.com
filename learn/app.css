@@ -3694,9 +3694,10 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
   box-shadow: 0 0 0 .5px var(--hair); padding: 4px 22px;
 }
 .gr-exam {
-  display: grid; grid-template-columns: 1.3fr 1fr auto; gap: 18px; align-items: center;
+  display: grid; grid-template-columns: 1.3fr 1fr 112px; gap: 18px; align-items: center;
   padding: 12px 0; border-bottom: 1px solid var(--hair);
 }
+.gr-exam .chip { justify-self: end; }
 .gr-exam:last-child { border-bottom: 0; }
 @media (max-width: 640px) { .gr-exam { grid-template-columns: 1fr; gap: 6px; } }
 .gr-exam .n b { display: block; font-size: 14px; font-weight: 500; }
@@ -3763,6 +3764,235 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 .gr-notes h3 { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 .gr-notes ul { display: flex; flex-direction: column; gap: 6px; padding-left: 16px; list-style: disc; }
 .gr-notes li { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+
+/* ============================================================ Grades · the record
+   The pieces an enrolled student's record needs and an applicant's did not:
+   credit that stays where it was earned, a map of every credit, two schools
+   on one timeline, every mark as a dot, and the record checked against itself.
+
+   Two series colours carry identity everywhere on this page — blue for what
+   was transferred, orange for what was earned at EHS — validated as a pair
+   for colour-blind separation. Extra credit is grey on purpose: it is real,
+   and it fills nothing, and a colour would suggest otherwise. Identity is
+   never colour alone: every mark has a label, a tooltip or a table row. */
+.gr { --gr-extra: #8f8e86; }
+/* What the ring leaves open is "not yet earned", and it is the same grey as
+   "still to earn" everywhere else on the page rather than a tint of a series. */
+.gr-ring-track { stroke: var(--sunk); }
+.gr-arc.t { stroke: var(--gr-blue); }
+.gr-arc.e { stroke: var(--gr-orange); }
+.gr-arc.x { stroke: var(--gr-extra); }
+.gr-key i.x { background: var(--gr-extra); }
+.gr-key i.cap { background: var(--rule); }
+.gr-key i.line { width: 2px; height: 13px; border-radius: 1px; background: var(--ink); }
+.gr-key i.dot { width: 9px; height: 9px; border-radius: 50%; }
+
+.gr-facts { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 18px; }
+.gr-facts div { display: flex; flex-direction: column; gap: 2px; }
+.gr-facts dt {
+  font-size: 10.5px; font-weight: 600; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.gr-facts dd { margin: 0; font-family: var(--font); font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+
+.gr-table-scroll { overflow-x: auto; }
+
+/* ------------------------------------------------------------- Credit map */
+.gcm { position: relative; padding: 20px 24px 18px; }
+.gcm > .gr-key { margin-bottom: 12px; }
+.gcm-rows { display: flex; flex-direction: column; }
+.gcm-group { padding: 2px 0; border-top: 1px solid var(--hair); }
+.gcm-group:first-child { border-top: 0; }
+.gcm-group.multi { padding-top: 12px; }
+.gcm-grouphead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.gcm-grouphead b { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.gcm-grouphead span { font-size: 12px; color: var(--ink-3); }
+.gcm-row { display: grid; grid-template-columns: 208px 1fr 150px; gap: 16px; align-items: center; padding: 9px 0; }
+.gcm-group.multi .gcm-row { padding: 6px 0; }
+.gcm-name { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.gcm-name b { font-size: 14px; font-weight: 500; white-space: nowrap; }
+.gcm-group.multi .gcm-name b { font-weight: 400; color: var(--ink-2); padding-left: 10px; }
+.gcm-name span { font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gcm-track { position: relative; height: 28px; }
+.gcm-bed {
+  position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background-color: var(--sunk);
+  background-image: linear-gradient(90deg, transparent calc(100% - 1px), rgba(0,0,0,.08) calc(100% - 1px));
+  background-repeat: repeat-x;
+}
+.gcm-line {
+  position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; border-radius: 1px;
+  background: var(--ink); pointer-events: none; z-index: 2;
+}
+.gcm-seg {
+  position: absolute; top: 0; bottom: 0; padding: 0; border: 0; border-radius: 4px; cursor: default;
+  display: grid; place-items: center; font: inherit; font-size: 11.5px; font-weight: 600;
+  transform-origin: left; animation: gr-grow .8s var(--ease) both;
+}
+.gcm-seg span { pointer-events: none; line-height: 1; }
+.gcm-seg.t { background: var(--gr-blue); color: #fff; }
+.gcm-seg.e { background: var(--gr-orange); color: var(--ink); }
+.gcm-seg.x { background: var(--gr-extra); color: var(--ink); }
+.gcm-seg.cap { background: var(--rule); color: var(--ink-2); }
+.gcm-seg:hover { filter: brightness(1.07); }
+.gcm-seg:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; z-index: 3; }
+.gcm-state { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: 13px; color: var(--ink-2); }
+.gcm-state b { font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
+.gcm-state em { font-style: normal; font-size: 12px; color: var(--ink-3); }
+.gcm-state em.warn { color: var(--gr-warn); }
+.gcm-state .ok { display: inline-flex; align-items: center; gap: 5px; color: var(--gr-good); font-weight: 600; }
+.gcm-state .ok svg { width: 14px; height: 14px; }
+/* On a phone each requirement stacks: its name, its credits, then what is
+   left — three lines rather than three columns fighting for one. */
+@media (max-width: 720px) {
+  .gcm { padding: 18px 16px; }
+  .gcm-row { grid-template-columns: 1fr; gap: 7px; padding: 12px 0; }
+  .gcm-track { order: 2; }
+  .gcm-state { order: 3; }
+  .gcm-group.multi .gcm-name b { padding-left: 0; }
+}
+
+/* --------------------------------------------------------- Year by year */
+.gj-schools { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.gj-school {
+  display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px;
+  border-radius: 14px; background: var(--paper); box-shadow: 0 0 0 .5px var(--hair);
+}
+.gj-school i { flex: none; width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; }
+.gj-school i.t { background: var(--gr-blue); }
+.gj-school i.e { background: var(--gr-orange); }
+.gj-school b { display: block; font-size: 14.5px; font-weight: 600; }
+.gj-school span { font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+.gj-bar.t { fill: var(--gr-blue); }
+.gj-bar.e { fill: var(--gr-orange); }
+.gj-none { font-size: 11px; fill: var(--ink-3); font-style: italic; }
+.gj-join { stroke: var(--ink-3); stroke-width: 1; }
+.gj-joinlabel { font-size: 10.5px; font-weight: 600; fill: var(--ink-2); }
+.gj-line { stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; }
+.gj-bridge { stroke: var(--rule); stroke-width: 1; }
+.gj-dot { stroke: var(--paper); stroke-width: 2; }
+.gj-dot.t, .gk-dot.t { fill: var(--gr-blue); }
+.gj-dot.e, .gk-dot.e { fill: var(--gr-orange); }
+.gj-band { font-size: 10.5px; font-weight: 600; fill: var(--ink-3); }
+.gr-col, .gj-pt, .gk-pt { outline: none; }
+.gr-col:hover .gj-bar { opacity: .85; }
+.gj-pt:hover .gj-dot, .gk-pt:hover .gk-dot { stroke: var(--ink); }
+
+/* -------------------------------------------------------------- The marks */
+.gk-key { margin-top: 10px; }
+.gk-band { fill: transparent; }
+.gk-band.alt { fill: #f6f6f4; }
+.gk-letter { font-size: 11px; font-weight: 600; fill: var(--ink-3); }
+.gk-dot { stroke: var(--paper); stroke-width: 2; }
+.gk-label {
+  font-size: 11px; font-weight: 600; fill: var(--ink);
+  paint-order: stroke; stroke: var(--paper); stroke-width: 3px; stroke-linejoin: round;
+}
+.gk-gpa { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; }
+.gk-gpa b { font-family: var(--font); font-size: 48px; font-weight: 600; letter-spacing: -.04em; line-height: 1; }
+.gk-gpa span { font-size: 13px; color: var(--ink-3); }
+.gk-verdict { margin-top: 12px; }
+.gk-distlabel { margin-top: 16px; }
+
+/* ---------------------------------------------------------------- Gaps */
+.gr-gaps { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.gr-gap { padding-top: 14px; border-top: 1px solid var(--hair); }
+.gr-gap:first-child { padding-top: 0; border-top: 0; }
+.gr-gap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.gr-gap-head b { font-size: 15px; font-weight: 600; }
+.gr-gap-head span { font-size: 13px; color: var(--ink-2); }
+.gr-gap-head strong { font-family: var(--font); font-size: 19px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
+.gr-gap p { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--ink-2); line-height: 1.5; margin-top: 6px; }
+.gr-gap p em {
+  flex: none; font-style: normal; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+}
+.gr-gap-on span { color: var(--ink); font-weight: 500; }
+
+/* -------------------------------------------------------------- Checks */
+.gr-checks {
+  display: flex; flex-direction: column; border-radius: var(--r); background: var(--paper);
+  box-shadow: 0 0 0 .5px var(--hair); padding: 4px 22px;
+}
+.gr-check { display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 15px 0; border-bottom: 1px solid var(--hair); }
+.gr-check:last-child { border-bottom: 0; }
+.gr-check .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--sunk); color: var(--ink-2); }
+.gr-check .ic svg { width: 16px; height: 16px; }
+.gr-check.ok .ic { background: #e7f5e7; color: var(--gr-good); }
+.gr-check.check .ic { background: #fff4dc; color: var(--gr-warn); }
+.gr-check em {
+  display: block; font-style: normal; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3);
+}
+.gr-check.ok em { color: var(--gr-good); }
+.gr-check.check em { color: var(--gr-warn); }
+.gr-check b { display: block; font-size: 14.5px; font-weight: 600; margin-top: 2px; letter-spacing: -.01em; }
+.gr-check p { font-size: 13px; color: var(--ink-2); line-height: 1.55; margin-top: 3px; }
+
+/* ------------------------------------------------------- Earlier state tests */
+.gs-scroll { overflow-x: auto; margin-top: 12px; }
+.gs table { width: 100%; min-width: 580px; border-collapse: collapse; font-size: 13px; }
+.gs th {
+  text-align: left; font-size: 10.5px; font-weight: 600; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .07em; padding: 8px 8px; border-bottom: 1px solid var(--hair);
+}
+.gs td { padding: 9px 8px; border-bottom: 1px solid var(--hair); font-variant-numeric: tabular-nums; }
+.gs tr:last-child td { border-bottom: 0; }
+.gs .num { text-align: right; }
+.gs tr.blank td { color: var(--ink-3); }
+.gs tr.note td { color: var(--ink-3); font-style: italic; background: var(--canvas); }
+.gs-lv { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.gs-lv i { display: inline-flex; gap: 2px; }
+.gs-lv u { display: block; width: 6px; height: 11px; border-radius: 2px; background: var(--sunk); box-shadow: inset 0 0 0 .5px var(--rule); }
+.gs-lv u.on { background: var(--ink-2); box-shadow: none; }
+
+/* ------------------------------------------------------------ Course record */
+.gr-rec { border-radius: 14px; background: var(--paper); box-shadow: 0 0 0 .5px var(--hair); overflow: hidden; }
+.gr-rec summary {
+  display: flex; align-items: baseline; gap: 12px; padding: 15px 20px; cursor: pointer; list-style: none;
+}
+.gr-rec summary::-webkit-details-marker { display: none; }
+.gr-rec summary b { font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
+.gr-rec summary span { flex: 1; font-size: 12px; color: var(--ink-3); font-style: italic; }
+.gr-rec summary strong { font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: -.02em; }
+.gr-rec summary strong small { font-size: 13px; font-weight: 500; color: var(--ink-3); letter-spacing: 0; }
+.gr-rec[open] summary { box-shadow: inset 0 -1.5px 0 var(--ink); }
+.gr-rec-scroll { overflow-x: auto; }
+/* Fixed columns, so Credits, % and Grade sit on the same line in every
+   subject's table and the eye can run straight down the page. */
+.gr-rec table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
+.gr-rec th:nth-child(1) { width: 76px; }
+.gr-rec th:nth-child(2) { width: 104px; }
+.gr-rec th:nth-child(3) { width: 128px; }
+.gr-rec th:nth-child(5) { width: 76px; }
+.gr-rec th:nth-child(6) { width: 70px; }
+.gr-rec th:nth-child(7) { width: 78px; }
+.gr-rec td.t { overflow-wrap: anywhere; }
+.gr-rec th {
+  text-align: left; font-size: 10.5px; font-weight: 600; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .07em; padding: 9px 10px; border-bottom: 1px solid var(--hair);
+}
+.gr-rec td { padding: 10px 10px; border-bottom: 1px solid var(--hair); font-variant-numeric: tabular-nums; vertical-align: baseline; }
+.gr-rec th:first-child, .gr-rec td:first-child { padding-left: 20px; }
+.gr-rec th:last-child, .gr-rec td:last-child { padding-right: 20px; }
+.gr-rec .num { text-align: right; }
+.gr-rec .let { text-align: center; font-weight: 600; }
+.gr-rec td.code { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; }
+.gr-src { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+.gr-src i { width: 8px; height: 8px; border-radius: 50%; }
+.gr-src.t i { background: var(--gr-blue); }
+.gr-src.e i { background: var(--gr-orange); }
+.gr-flag {
+  display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-style: normal;
+  font-size: 10.5px; font-weight: 600; background: var(--sunk); color: var(--ink-2); vertical-align: 1px;
+}
+.gr-rec-foot {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 11px 20px;
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+}
+.gr-rec-foot b { color: var(--ink); font-weight: 600; }
+.gr-rec-foot em { font-style: normal; font-weight: 600; }
+.gr-rec-foot em.ok { color: var(--gr-good); }
+.gr-rec-foot em.left { color: var(--gr-warn); }
 
 /* Motion is decoration here, so anybody who has asked for less gets none. */
 @media (prefers-reduced-motion: reduce) {

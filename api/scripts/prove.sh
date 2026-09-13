@@ -576,6 +576,33 @@ N=$(echo "$R" | jq_ "o.graduation.courses.length")
 [ "$EST" = "16" ] && ok "20 more credits imported, but transfer stops at the 16-credit cap" || bad "transfer cap" "$EST"
 [ "$N" = "45" ] && ok "importing the same school twice replaces it rather than doubling it (45 courses)" || bad "re-import doubled" "$N"
 
+say "24b. An EHS record — credit earned with EHS, and extra credit that stays where it was earned"
+EHS='{"enrolledOn":"2025-10-14","status":"active","issued":{"gpa":3.9},"courses":[["EHS-ELLS","Life Skills","97.0",1,"elective","2025-2026","2025-26","completed"],["EHS-SSUSGB","U.S. Government B","90.0",0.5,"social_studies","2025-2026","2025-26","completed"]]}'
+S=$(status student PUT "/accounts/$STUDENT/ehs-record" "$EHS")
+[ "$S" = "403" ] && ok "a student cannot write their own EHS record (403)" || bad "student MUST NOT write an EHS record" "HTTP $S"
+S=$(status teacher PUT "/accounts/$STUDENT/ehs-record" "$EHS")
+[ "$S" = "403" ] && ok "nor can their teacher (403)" || bad "teacher MUST NOT write an EHS record" "HTTP $S"
+S=$(status admin PUT "/accounts/$STUDENT/ehs-record" '{"courses":[["X","Basket Weaving","90",1,"basketry","2025-2026"]]}')
+[ "$S" = "400" ] && ok "a course in an area EHS does not have is refused (400)" || bad "EHS record area validation" "HTTP $S"
+R=$(call admin PUT "/accounts/$STUDENT/ehs-record" "$EHS")
+[ "$(echo "$R" | jq_ "o.record&&o.record.credits")" = "1.5" ] && ok "an administrator recorded 2 EHS courses, 1.5 credits" || bad "put EHS record" "$R"
+call admin PUT "/accounts/$STUDENT/ehs-record" "$EHS" >/dev/null
+R=$(call student GET /graduation)
+[ "$(echo "$R" | jq_ "o.graduation.totals.ehsEarned")" = "1.5" ] && ok "the student sees 1.5 credits earned at EHS — written twice, counted once" \
+  || bad "ehs credit on the dashboard" "$(echo "$R" | jq_ "o.graduation.totals.ehsEarned")"
+[ "$(echo "$R" | jq_ "o.graduation.enrollment.status")" = "active" ] && ok "and their standing as active" || bad "enrollment status" "$R"
+SUR=$(echo "$R" | jq_ "o.graduation.areas.filter(a=>a.key!=='elective'&&a.surplus>0).map(a=>a.name).join(', ')")
+ELEC=$(echo "$R" | jq_ "(function(e){return e.applied<=e.earned&&e.fromOtherAreas===0})(o.graduation.areas.find(a=>a.key==='elective'))")
+[ -n "$SUR" ] && [ "$ELEC" = "true" ] \
+  && ok "credit past a requirement ($SUR) is surplus, and none of it is moved into Electives" \
+  || bad "surplus must stay where it was earned" "surplus areas=[$SUR] electives-clean=$ELEC"
+NET=$(echo "$R" | jq_ "o.graduation.totals.netRemaining")
+PLAN=$(echo "$R" | jq_ "o.graduation.totals.planAtEhs")
+node -e "process.exit(Number('$PLAN') >= Number('$NET') ? 0 : 1)" \
+  && ok "the plan ($PLAN) is never less than what is left on paper ($NET)" || bad "plan below net remaining" "$PLAN vs $NET"
+S=$(status other GET "/graduation?accountId=$STUDENT")
+[ "$S" = "403" ] && ok "an unrelated teacher still cannot read it (403)" || bad "EHS record privacy" "HTTP $S"
+
 say "25. Marks — the student's reading"
 MARK="m$STAMP"
 R=$(call student POST /marks "{\"id\":\"$MARK\",\"scope\":\"media-u6\",\"sec\":\"6.1\",\"pass\":3,\"text\":\"light-proof box\",\"anchor\":{\"exact\":\"light-proof box\",\"prefix\":\"is a \",\"suffix\":\" of plastic\",\"offset\":42},\"note\":\"holds up the claim about control\"}")
