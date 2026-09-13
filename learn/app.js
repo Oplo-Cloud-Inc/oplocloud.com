@@ -5816,7 +5816,7 @@
     var cur = field("Current password", "");
     cur.input.type = "password";
     cur.input.autocomplete = "current-password";
-    var next = field("New password", "", "At least 10 characters");
+    var next = field("New password", "");
     next.input.type = "password";
     next.input.autocomplete = "new-password";
     pwForm.appendChild(cur);
@@ -10279,7 +10279,7 @@
     });
     roleF.appendChild(role);
 
-    var pw = field("Password", "", making ? "At least 10 characters" : "");
+    var pw = field("Password", "");
     pw.input.type = "password";
     pw.input.autocomplete = "new-password";
 

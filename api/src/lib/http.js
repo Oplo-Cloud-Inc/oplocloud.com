@@ -135,9 +135,11 @@ export const check = {
     return v;
   },
   password(value, field = "password") {
-    if (typeof value !== "string") throw ApiError.badRequest("A password is required.", field);
-    if (value.length < 10) {
-      throw ApiError.badRequest("Use at least 10 characters. Length beats punctuation.", field);
+    // No minimum length: the school sets the passwords it hands out, and how
+    // short is its call. Empty is still refused, and the ceiling stays,
+    // because PBKDF2 over megabytes of input is a way to burn a Worker's CPU.
+    if (typeof value !== "string" || value.length === 0) {
+      throw ApiError.badRequest("A password is required.", field);
     }
     if (value.length > 512) throw ApiError.badRequest("That password is too long.", field);
     return value;
