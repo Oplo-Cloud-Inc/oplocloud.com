@@ -22,6 +22,7 @@
      learn.student   their own work
      learn.teacher   the courses they teach, and the students in them
      learn.author    content they wrote
+     learn.guardian  the students they are family to — to read, never to write
      learn.admin     everything inside their organization
      platform.admin  everything, everywhere
 
@@ -29,6 +30,12 @@
    teacher acts on a course they teach. Not on all courses, and not on a
    student who merely shares an organization with them. Widening that is one
    line in this file rather than an audit of every route.
+
+   The guardian rule is the other narrow one. A family reads what the school
+   holds about their own child, and there is no branch below by which a
+   guardian writes any of it. What makes somebody a child's guardian is a row
+   in learn_guardians, asked about on every request — the role only tells the
+   product which front door to show them.
    ========================================================================== */
 
 import { ApiError } from "../lib/http.js";
@@ -43,6 +50,8 @@ export const ACTIONS = [
   "grade.read", "grade.write",
   "progress.read", "progress.write",
   "mark.read", "mark.write",
+  "guardian.read", "guardian.write",
+  "record.read", "record.write",
   "role.grant"
 ];
 
@@ -86,6 +95,14 @@ export async function teachesStudent(ctx, actor, studentId) {
   return teaching.some((c) => theirIds.has(c.id));
 }
 
+/* Whether the actor is family to this student. A database question for the
+   same reason teaching is: a link an administrator removed must stop working
+   on the next request, not whenever a session happens to expire. */
+export async function guardsStudent(ctx, actor, studentId) {
+  if (!actor || !studentId || actor.id === studentId) return false;
+  return !!(await ctx.repo.guardianship(actor.id, studentId));
+}
+
 export async function can(ctx, action, resource = {}) {
   const actor = ctx.actor;
   if (!actor) return false;
@@ -99,11 +116,13 @@ export async function can(ctx, action, resource = {}) {
     case "account.read":
       if (resource.accountId === actor.id) return true;
       if (learnAdmin) return true;
+      if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
     case "account.write":
       // A person edits their own profile. Changing somebody else's is an
-      // administrative act, never a teaching one.
+      // administrative act, never a teaching one — and never a family one,
+      // not even for their own child.
       return resource.accountId === actor.id || learnAdmin;
 
     case "account.create":
@@ -155,14 +174,15 @@ export async function can(ctx, action, resource = {}) {
 
     /* ------------------------------------------ Transcripts and programs
        A previous school's record is read by the student it belongs to, by
-       the school's administrators, and by the teachers of that student's
-       courses — who need to know where a student is coming from. It is
-       written by administrators alone. Evaluating transfer credit is a
-       registrar's decision, and there is no branch here that lets a student
-       or a teacher change a transferred mark or credit. */
+       their family, by the school's administrators, and by the teachers of
+       that student's courses — who need to know where a student is coming
+       from. It is written by administrators alone. Evaluating transfer
+       credit is a registrar's decision, and there is no branch here that lets
+       a student, a family or a teacher change a transferred mark or credit. */
     case "transcript.read":
       if (resource.accountId === actor.id) return true;
       if (learnAdmin) return true;
+      if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
     case "transcript.write":
@@ -185,10 +205,13 @@ export async function can(ctx, action, resource = {}) {
     /* ---------------------------------------------------------- Grades
        The asymmetry here is the entire point of having this file. A student
        may READ their own grade and may never WRITE one — not their own, not
-       anybody's. There is no branch below that lets them. */
+       anybody's. There is no branch below that lets them. A family reads one
+       child's marks by naming the child; a whole class — the gradebook, which
+       names no student — is never theirs, and nor is a single write. */
     case "grade.read":
       if (resource.accountId === actor.id) return true;
       if (learnAdmin) return true;
+      if (resource.accountId && await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesCourse(ctx, actor, resource.courseId);
 
     case "grade.write":
@@ -201,7 +224,10 @@ export async function can(ctx, action, resource = {}) {
     /* A mark is the student's own reading. They own it; a teacher who
        teaches them may read it; nobody else may, and nobody at all may write
        one on their behalf — a note in somebody else's margin signed with
-       their name is not a thing this product should be able to produce. */
+       their name is not a thing this product should be able to produce.
+       Nobody else includes their family. A Question mark is a written record
+       of not understanding something, and a student who knows their parents
+       can read it stops writing honest ones. */
     case "mark.read":
       if (resource.accountId === actor.id) return true;
       if (learnAdmin) return true;
@@ -213,10 +239,28 @@ export async function can(ctx, action, resource = {}) {
     case "progress.read":
       if (resource.accountId === actor.id) return true;
       if (learnAdmin) return true;
+      if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
     case "progress.write":
       return resource.accountId === actor.id;
+
+    /* ---------------------------------------------------------- Family
+       Who a student's family is, and what the school keeps about the child
+       beyond marks — attendance, supports, the bus. Read by the student, by
+       their family, by their teachers and by administrators; written by
+       administrators alone. A family corrects their own phone number through
+       account.write, on their own account, and nothing else here. */
+    case "guardian.read":
+    case "record.read":
+      if (resource.accountId === actor.id) return true;
+      if (learnAdmin) return true;
+      if (await guardsStudent(ctx, actor, resource.accountId)) return true;
+      return teachesStudent(ctx, actor, resource.accountId);
+
+    case "guardian.write":
+    case "record.write":
+      return learnAdmin;
 
     default:
       return false;
@@ -247,6 +291,10 @@ const REASONS = {
   "grade.write": "You can only enter grades for courses you teach. Students cannot change grades.",
   "progress.read": "You can only see your own progress and that of students you teach.",
   "progress.write": "Progress is written by the student it belongs to, and by nobody else.",
+  "guardian.read": "You can only see the family of yourself, your own children, or students you teach.",
+  "guardian.write": "Only administrators can link a family to a student.",
+  "record.read": "You can only see the school record of yourself, your own children, or students you teach.",
+  "record.write": "The school record is kept by administrators. Families and teachers can read it but not change it.",
   "role.grant": "Only administrators can change roles."
 };
 

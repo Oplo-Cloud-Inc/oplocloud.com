@@ -17,7 +17,7 @@
 
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
-import { must, teachesStudent, isLearnAdmin } from "../core/guard.js";
+import { must, teachesStudent, guardsStudent, isLearnAdmin } from "../core/guard.js";
 import { computeGrade, courseWeights, coursePolicy, classSignal } from "../services/grades.js";
 import { readinessFor, reportFor } from "../services/reporting.js";
 
@@ -227,7 +227,8 @@ export async function coursework(ctx) {
   // A student's own, or a student taught by the caller. The same rule as
   // reading their grades, because that is what this is.
   if (accountId !== actor.id) {
-    const allowed = isLearnAdmin(actor) || (await teachesStudent(ctx, actor, accountId));
+    const allowed = isLearnAdmin(actor) || (await guardsStudent(ctx, actor, accountId)) ||
+                    (await teachesStudent(ctx, actor, accountId));
     if (!allowed) {
       throw ApiError.forbidden(
         "You do not teach this student, so their work is not yours to read.");
@@ -410,7 +411,8 @@ export async function report(ctx, { accountId }) {
 
   const mine = accountId === actor.id;
   if (!mine) {
-    const allowed = isLearnAdmin(actor) || (await teachesStudent(ctx, actor, accountId));
+    const allowed = isLearnAdmin(actor) || (await guardsStudent(ctx, actor, accountId)) ||
+                    (await teachesStudent(ctx, actor, accountId));
     if (!allowed) {
       throw ApiError.forbidden(
         "You do not teach this student, so their report is not yours to read.");

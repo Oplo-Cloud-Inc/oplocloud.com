@@ -363,6 +363,43 @@ window.OPLO_API = (function () {
       }
     },
 
+    /* ----------------------------------------------------------- Family
+       A student's guardians, and the school record beyond marks. A family
+       reads all of it and writes only their own contact card; the server
+       decides that, not the page that happens to hide the edit buttons. */
+    family: {
+      /* The children the signed-in person is family to. Names nobody, so
+         there is nothing to change to ask for somebody else's. */
+      mine: function () { return get("/family"); },
+      guardians: function (studentId) {
+        return get("/students/" + studentId + "/guardians").then(function (r) { return r.guardians; });
+      },
+      addGuardian: function (studentId, data) {
+        return post("/students/" + studentId + "/guardians", data, { timeout: 20000 })
+          .then(function (r) { return r.guardians; });
+      },
+      removeGuardian: function (studentId, guardianId) {
+        return del("/students/" + studentId + "/guardians/" + encodeURIComponent(guardianId))
+          .then(function (r) { return r.guardians; });
+      },
+      getContact: function (accountId) {
+        return get("/accounts/" + accountId + "/contact").then(function (r) { return r.contact; });
+      },
+      contact: function (accountId, data) {
+        return put("/accounts/" + accountId + "/contact", data).then(function (r) { return r.contact; });
+      },
+      records: function (studentId) {
+        return get("/students/" + studentId + "/records").then(function (r) { return r.sections; });
+      },
+      putRecord: function (studentId, section, data) {
+        return put("/students/" + studentId + "/records/" + section, data)
+          .then(function (r) { return r.record; });
+      },
+      clearRecord: function (studentId, section) {
+        return del("/students/" + studentId + "/records/" + section);
+      }
+    },
+
     /* --------------------------------------------------------- Progress
        The student's own record, synchronised across their devices. Scoped
        finely — one study set, one unit — so two devices working on different

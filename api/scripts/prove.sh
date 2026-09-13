@@ -670,6 +670,90 @@ call student POST /auth/logout >/dev/null
 S=$(status student GET /me)
 [ "$S" = "401" ] && ok "after sign-out the session is dead (401)" || bad "logout" "HTTP $S"
 
+say "27. A student's family"
+# The student's own session ended above; everything here is the administrator,
+# the teacher, the unrelated teacher, and the family's own session.
+R=$(call admin POST "/students/$STUDENT/guardians" "{\"email\":\"guardian$STAMP@example.com\",\"name\":\"Harpreet Test\",\"password\":\"a-family-password\",\"relationship\":\"parent\",\"label\":\"Father\",\"primary\":true,\"contact\":{\"cellPhone\":\"N/A\",\"altPhone\":\"N/A\",\"mailingAddress\":\"N/A\",\"dateOfBirth\":\"1980-01-01\"}}")
+GUARDIAN=$(echo "$R" | jq_ "o.guardians&&o.guardians[0]&&o.guardians[0].id")
+[ -n "$GUARDIAN" ] && ok "an administrator adds a guardian and links them: $GUARDIAN" || bad "add guardian" "$R"
+NA=$(echo "$R" | jq_ "o.guardians[0].contact.cellPhone===null&&o.guardians[0].contact.mailingAddress===null")
+[ "$NA" = "true" ] && ok "N/A on the form is stored as nothing, not as a phone number" || bad "N/A contact" "$R"
+
+S=$(status guardian POST /auth/login "{\"email\":\"guardian$STAMP@example.com\",\"password\":\"a-family-password\"}")
+[ "$S" = "200" ] && ok "the guardian signs in on their own session" || bad "guardian login" "HTTP $S"
+R=$(call guardian GET /me)
+echo "$R" | grep -q '"guardian"' && ok "and holds the guardian role" || bad "guardian role" "$R"
+
+R=$(call guardian GET /family)
+N=$(echo "$R" | jq_ "o.students&&o.students.filter(s=>s.id==='$STUDENT').length")
+[ "$N" = "1" ] && ok "/family lists the child they are linked to" || bad "family list" "$R"
+
+for P in "/grades?accountId=$STUDENT" "/graduation?accountId=$STUDENT" "/coursework?accountId=$STUDENT" \
+         "/students/$STUDENT/report" "/students/$STUDENT/records" "/students/$STUDENT/guardians" \
+         "/progress?accountId=$STUDENT" "/accounts/$STUDENT"; do
+  S=$(status guardian GET "$P")
+  [ "$S" = "200" ] && ok "the family reads $P (200)" || bad "family read $P" "HTTP $S"
+done
+
+R=$(call guardian GET "/grades?accountId=$STUDENT")
+SCORE=$(echo "$R" | jq_ "o.grades&&o.grades[0]&&o.grades[0].score")
+[ -n "$SCORE" ] && ok "and sees the same marks the student does ($SCORE)" || bad "family grade content" "$R"
+
+for P in "/grades?accountId=$OTHER" "/graduation?accountId=$OTHER" "/students/$OTHER/report" \
+         "/students/$OTHER/records" "/marks?accountId=$STUDENT" "/courses/$COURSE/gradebook"; do
+  S=$(status guardian GET "$P")
+  [ "$S" = "403" ] && ok "but not $P (403)" || bad "family over-read $P" "HTTP $S"
+done
+
+S=$(status guardian PUT /grades "{\"assignmentId\":\"$ESSAY\",\"accountId\":\"$STUDENT\",\"score\":100}")
+[ "$S" = "403" ] && ok "a guardian cannot change a grade (403)" || bad "family grade write" "HTTP $S"
+S=$(status guardian PUT "/students/$STUDENT/records/attendance" "{\"summary\":\"Perfect.\"}")
+[ "$S" = "403" ] && ok "nor write to the school record (403)" || bad "family record write" "HTTP $S"
+S=$(status guardian POST "/students/$STUDENT/guardians" "{\"guardianId\":\"$OTHER\"}")
+[ "$S" = "403" ] && ok "nor link somebody else to the child (403)" || bad "family link" "HTTP $S"
+S=$(status teacher PUT "/students/$STUDENT/records/attendance" "{\"summary\":\"x\"}")
+[ "$S" = "403" ] && ok "and a teacher cannot write the school record either (403)" || bad "teacher record write" "HTTP $S"
+
+R=$(call admin PUT "/students/$STUDENT/records/attendance" "{\"summary\":\"Present every day this term.\",\"facts\":[{\"label\":\"Days present\",\"value\":\"42\"}],\"rows\":{\"columns\":[\"Month\",\"Present\"],\"items\":[[\"September\",\"20\"]]}}")
+echo "$R" | grep -q '"Days present"' && ok "an administrator keeps an attendance record" || bad "record write" "$R"
+R=$(call guardian GET "/students/$STUDENT/records")
+echo "$R" | grep -q "Present every day" && ok "and the family reads it as entered" || bad "record read" "$R"
+S=$(status admin PUT "/students/$STUDENT/records/lunch_money" "{\"summary\":\"x\"}")
+[ "$S" = "400" ] && ok "a section that does not exist is refused (400)" || bad "unknown section" "HTTP $S"
+S=$(status admin PUT "/students/$STUDENT/records/attendance" "{}")
+[ "$S" = "400" ] && ok "an empty record is refused rather than stored (400)" || bad "empty record" "HTTP $S"
+
+R=$(call guardian PUT "/accounts/$GUARDIAN/contact" "{\"cellPhone\":\"555-0100\",\"dateOfBirth\":\"1980-01-01\"}")
+echo "$R" | grep -q '555-0100' && ok "a guardian corrects their own phone number" || bad "own contact" "$R"
+S=$(status guardian PUT "/accounts/$STUDENT/contact" "{\"cellPhone\":\"555-0199\"}")
+[ "$S" = "403" ] && ok "but not the child's (403)" || bad "child contact" "HTTP $S"
+
+R=$(call teacher GET "/students/$STUDENT/guardians")
+echo "$R" | grep -q '555-0100' && ok "the child's teacher can reach the family by phone" || bad "teacher family read" "$R"
+echo "$R" | grep -q 'dateOfBirth' && bad "the teacher sees the guardian's date of birth" "$R" \
+  || ok "without seeing the guardian's date of birth or address"
+S=$(status other GET "/students/$STUDENT/guardians")
+[ "$S" = "403" ] && ok "a teacher who does not teach the child cannot see the family (403)" || bad "other family read" "HTTP $S"
+
+S=$(status admin POST "/students/$STUDENT/guardians" "{\"email\":\"guardian$STAMP@example.com\",\"password\":\"replace-it\"}")
+[ "$S" = "409" ] && ok "an existing account is never given a new password by linking (409)" || bad "relink password" "HTTP $S"
+
+R=$(call admin PUT "/accounts/$STUDENT/contact" "{\"mailingAddress\":\"1 Test Street\",\"cellPhone\":\"555-0142\",\"altPhone\":\"N/A\",\"dateOfBirth\":\"2010-01-01\"}")
+echo "$R" | grep -q '2010-01-01' && ok "an administrator records the student's own contact card" || bad "student contact write" "$R"
+R=$(call guardian GET "/accounts/$STUDENT/contact")
+echo "$R" | grep -q '1 Test Street' && echo "$R" | grep -q '2010-01-01' \
+  && ok "the family reads the child's address and date of birth" || bad "family contact read" "$R"
+R=$(call teacher GET "/accounts/$STUDENT/contact")
+echo "$R" | grep -q '555-0142' && ! echo "$R" | grep -q 'Test Street' \
+  && ok "the child's teacher gets the phone number and not the address" || bad "teacher contact read" "$R"
+S=$(status other GET "/accounts/$STUDENT/contact")
+[ "$S" = "403" ] && ok "a teacher who does not teach the child gets nothing (403)" || bad "other contact read" "HTTP $S"
+
+R=$(call admin DELETE "/students/$STUDENT/guardians/$GUARDIAN")
+echo "$R" | grep -q "$GUARDIAN" && bad "unlink" "$R" || ok "an administrator removes the link"
+S=$(status guardian GET "/grades?accountId=$STUDENT")
+[ "$S" = "403" ] && ok "and on the very next request the family is refused (403)" || bad "stale guardian" "HTTP $S"
+
 printf "\n\033[1m%d passed, %d failed\033[0m\n" "$pass" "$fail"
 rm -rf "$JAR"
 [ "$fail" -eq 0 ]
