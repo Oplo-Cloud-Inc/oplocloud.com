@@ -3552,7 +3552,10 @@
                  doc: "media-u5", set: "media-5" },
     "media:6": { key: "media:6", course: "media", courseTitle: "Media Arts", unit: 6,
                  title: "Intro to Photography", sections: window.OPLO_UNIT6 || [],
-                 doc: "media-u6", set: "media-6" }
+                 doc: "media-u6", set: "media-6" },
+    "biz:4":   { key: "biz:4", course: "biz", courseTitle: "Introduction to Business", unit: 4,
+                 title: "International Business", sections: window.OPLO_BIZ4 || [],
+                 doc: "biz-u4", set: "biz-4" }
   };
   var RU = READERS["media:5"];        // the unit being read
 
@@ -10746,9 +10749,12 @@
     }
 
     function context() {
-      var c = { mastery: coursePct(D.MEDIA) };
+      // The course of the unit being read, not Media Arts: the tutor was told
+      // "Media Arts 4.2" about a Business section before a second course had a reader.
+      var ruCourse = allCourses().filter(function (x) { return x.id === RU.course; })[0] || D.MEDIA;
+      var c = { mastery: coursePct(ruCourse) };
       var sec = readSec();
-      if (S.view === "read" && sec) { c.section = "Media Arts " + sec.n; c.title = sec.t; }
+      if (S.view === "read" && sec) { c.section = RU.courseTitle + " " + sec.n; c.title = sec.t; }
       else if (S.course) { c.section = S.course.t; c.title = S.unit && S.unit.t; }
       var sel = String(window.getSelection() || "").trim();
       if (sel && sel.length < 400) c.selection = sel.replace(/\s+/g, " ");

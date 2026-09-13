@@ -176,6 +176,30 @@ window.OPLO = (function () {
       ["Profit", "Revenue minus costs. The reason a private business exists and the test of whether it works."],
       ["Goods and services", "Goods are tangible things; services are work performed. Most businesses sell some of each."],
       ["Market economy", "An economy where prices are set by supply and demand rather than by a central authority."]
+    ]},
+    "biz-4": { t: "International Business", cards: [
+      ["Absolute advantage", "Producing more of a good than a rival can with the same resources."],
+      ["Comparative advantage", "Producing a good at a lower opportunity cost than a rival — giving up less of everything else to make it."],
+      ["Competitive advantage", "An edge that lets a business or country outperform its rivals, such as skills, technology or a lower cost."],
+      ["Balance of trade", "A country's exports minus its imports over a period. Positive is a trade surplus; negative is a trade deficit."],
+      ["Trade barrier", "A government restriction that makes trade across borders harder or more expensive."],
+      ["Tariff", "A tax on imported goods. It raises their price so goods made at home can compete."],
+      ["Import quota", "A limit on how much of a good may be imported in a given period."],
+      ["Embargo", "A government ban on trade with a particular country, or in a particular good."],
+      ["Cultural dimensions", "Hofstede's six scores for how a culture treats authority, the group, uncertainty, competition, the long term and enjoyment."],
+      ["World Trade Organization", "The WTO: sets the rules of trade between its 166 members and settles their disputes. It replaced GATT in 1995."],
+      ["European Union", "An economic and political union of 27 European countries with one single market."],
+      ["USMCA", "The United States–Mexico–Canada Agreement, which replaced NAFTA as North America's trade deal in 2020."],
+      ["World Bank", "Lends to developing countries for projects that reduce poverty."],
+      ["International Monetary Fund", "The IMF: works for stable exchange rates, and lends to countries that cannot pay their international bills."],
+      ["Exchange rate", "The price of one currency in terms of another."],
+      ["Balance of payments", "The record of every payment between a country and the rest of the world. Counted in full, it always balances."],
+      ["Licensing", "Letting a foreign company use your brand, technology or recipe in return for a fee or royalty."],
+      ["Franchising", "Letting a local owner run a business under your brand and system, in return for fees and a share of the profits."],
+      ["Joint venture", "A new business that two or more companies own and control together, sharing its costs and profits."],
+      ["Outsourcing", "Paying another company to do work your company could do itself."],
+      ["Offshoring", "Moving a business process to another country."],
+      ["Foreign direct investment", "Buying or building a business operation in another country."]
     ]}
   };
 
@@ -241,9 +265,10 @@ window.OPLO = (function () {
       "Weigh financial risks and rewards."
     ],
     parts: [{ name: "Semester A", units: BIZ_A }, { name: "Semester B", units: BIZ_B }],
-    sets: { 1: "biz-1" },
+    sets: { 1: "biz-1", 4: "biz-4" },
     grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
-    textbook: "Introduction to Business — Boundless, CC BY-SA 4.0."
+    textbook: "Introduction to Business — Boundless, CC BY-SA 4.0, as taught in the EHS " +
+              "Introduction to Business course, © Excel Education Systems, Inc."
   };
 
   var BOOK  = '<path d="M4 4.5h6.5A2.5 2.5 0 0 1 13 7v12a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-6.5A2.5 2.5 0 0 0 11 7v12a2 2 0 0 1 2-2h7z"/>';

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 400" width="1100" height="400" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Timeline of the organisations in this section: IMF and World Bank agreed 1944, GATT 1947, EEC 1957, APEC 1989, EU 1993, NAFTA 1994, WTO replaces GATT 1995, the euro 1999, USMCA replaces NAFTA 2020</title>
+<line x1="60" y1="200" x2="1060" y2="200" stroke="#1d1d1f" stroke-width="2.5"/>
+<g font-size="13" fill="#86868b" text-anchor="middle">
+<line x1="60" y1="194" x2="60" y2="206" stroke="#86868b" stroke-width="1.5"/><text x="60" y="222">1940</text>
+<line x1="282.2" y1="194" x2="282.2" y2="206" stroke="#86868b" stroke-width="1.5"/><text x="282.2" y="222">1960</text>
+<line x1="504.4" y1="194" x2="504.4" y2="206" stroke="#86868b" stroke-width="1.5"/><text x="504.4" y="222">1980</text>
+<line x1="726.7" y1="194" x2="726.7" y2="206" stroke="#86868b" stroke-width="1.5"/><text x="726.7" y="222">2000</text>
+<line x1="948.9" y1="194" x2="948.9" y2="206" stroke="#86868b" stroke-width="1.5"/><text x="948.9" y="222">2020</text>
+</g>
+<g text-anchor="middle">
+<line x1="104.4" y1="200" x2="104.4" y2="150" stroke="#0071e3" stroke-width="2"/><circle cx="104.4" cy="200" r="6" fill="#0071e3"/>
+<text x="120" y="118" font-size="16" font-weight="600" fill="#1d1d1f">1944</text>
+<text x="120" y="140" font-size="15" fill="#6e6e73">IMF &amp; World Bank</text>
+<line x1="137.8" y1="200" x2="137.8" y2="250" stroke="#b26a00" stroke-width="2"/><circle cx="137.8" cy="200" r="6" fill="#b26a00"/>
+<text x="150" y="272" font-size="16" font-weight="600" fill="#1d1d1f">1947</text>
+<text x="150" y="294" font-size="15" fill="#6e6e73">GATT</text>
+<line x1="248.9" y1="200" x2="248.9" y2="150" stroke="#12915a" stroke-width="2"/><circle cx="248.9" cy="200" r="6" fill="#12915a"/>
+<text x="270" y="118" font-size="16" font-weight="600" fill="#1d1d1f">1957</text>
+<text x="270" y="140" font-size="15" fill="#6e6e73">EEC</text>
+<line x1="604.4" y1="200" x2="604.4" y2="250" stroke="#12915a" stroke-width="2"/><circle cx="604.4" cy="200" r="6" fill="#12915a"/>
+<text x="570" y="272" font-size="16" font-weight="600" fill="#1d1d1f">1989</text>
+<text x="570" y="294" font-size="15" fill="#6e6e73">APEC</text>
+<line x1="648.9" y1="200" x2="648.9" y2="150" stroke="#12915a" stroke-width="2"/><circle cx="648.9" cy="200" r="6" fill="#12915a"/>
+<text x="585" y="118" font-size="16" font-weight="600" fill="#1d1d1f">1993</text>
+<text x="585" y="140" font-size="15" fill="#6e6e73">EEC becomes EU</text>
+<line x1="660" y1="200" x2="660" y2="316" stroke="#12915a" stroke-width="2"/><circle cx="660" cy="200" r="6" fill="#12915a"/>
+<text x="660" y="338" font-size="16" font-weight="600" fill="#1d1d1f">1994</text>
+<text x="660" y="360" font-size="15" fill="#6e6e73">NAFTA</text>
+<line x1="671.1" y1="200" x2="671.1" y2="84" stroke="#b26a00" stroke-width="2"/><circle cx="671.1" cy="200" r="6" fill="#b26a00"/>
+<text x="720" y="52" font-size="16" font-weight="600" fill="#1d1d1f">1995</text>
+<text x="720" y="74" font-size="15" fill="#6e6e73">WTO replaces GATT</text>
+<line x1="715.6" y1="200" x2="715.6" y2="250" stroke="#0071e3" stroke-width="2"/><circle cx="715.6" cy="200" r="6" fill="#0071e3"/>
+<text x="760" y="272" font-size="16" font-weight="600" fill="#1d1d1f">1999</text>
+<text x="760" y="294" font-size="15" fill="#6e6e73">The euro</text>
+<line x1="948.9" y1="200" x2="948.9" y2="150" stroke="#12915a" stroke-width="2"/><circle cx="948.9" cy="200" r="6" fill="#12915a"/>
+<text x="948.9" y="118" font-size="16" font-weight="600" fill="#1d1d1f">2020</text>
+<text x="948.9" y="140" font-size="15" fill="#6e6e73">USMCA replaces NAFTA</text>
+</g>
+<g font-size="14" fill="#1d1d1f">
+<circle cx="66" cy="384" r="6" fill="#b26a00"/><text x="78" y="389">World trade rules</text>
+<circle cx="236" cy="384" r="6" fill="#12915a"/><text x="248" y="389">Regional trade blocs</text>
+<circle cx="426" cy="384" r="6" fill="#0071e3"/><text x="438" y="389">Money and lending</text>
+</g>
+</svg>
