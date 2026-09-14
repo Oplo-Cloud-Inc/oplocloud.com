@@ -157,7 +157,7 @@ MENUS = [
     [("Explore Solutions", [("Who It’s For", "solutions/"), ("Personal", "solutions/#personal"),
                             ("Education", "edu/"), ("Developers", "developers/"),
                             ("Business and Government", "solutions/#institutions")]),
-     ("", [("OEdu", OEDU), ("Who It’s For", "edu/#who")]),
+     ("Education", [("OEdu", OEDU), ("Who It’s For", "edu/#who")]),
      ("Developers", [("Documentation", "developers/#docs"), ("SDKs", "developers/#sdks"),
                      ("Design Resources", "developers/#design"), ("Developer Support", "developers/#support")])],
     [("Explore Resources", [("All Resources", "resources/"), ("Privacy", "privacy/"),
@@ -193,13 +193,8 @@ def flyout(depth):
         body = ""
         for c, (heading, links) in enumerate(cols):
             li = "".join(f'<li><a href="{rel(depth, h)}">{l}</a></li>' for l, h in links)
-            # A column may go without a heading ("" in MENUS). It keeps the
-            # heading's line, empty and hidden from screen readers, so its links
-            # still start level with the columns beside it.
-            head = (f'<h2 class="nav-menu-h">{heading}</h2>' if heading
-                    else '<p class="nav-menu-h" aria-hidden="true">&#8203;</p>')
             body += (f'\n        <div class="nav-menu-col{" big" if c == 0 else ""}">'
-                     f'{head}<ul>{li}</ul></div>')
+                     f'<h2 class="nav-menu-h">{heading}</h2><ul>{li}</ul></div>')
         menus += (f'\n      <div class="nav-menu" id="navMenu{i}" role="region" '
                   f'aria-label="{NAV[i][0]}">{body}\n      </div>')
     return f'''  <div class="nav-flyout" id="navFlyout" hidden>
