@@ -80,9 +80,13 @@
      the sign-in panel or the film. */
   function hold() {
     var open = (modal && !modal.hidden) || (film && !film.hidden) ||
-               !!(navLinks && navLinks.classList.contains("open"));
+               !!(navLinks && navLinks.classList.contains("open")) ||
+               !!(window.OploSearch && window.OploSearch.isOpen());
     root.classList.toggle("ld-locked", open);
   }
+  // The site's search (oplo-search.js) holds and releases #gate itself; this
+  // puts the hold back if something else is still open when search closes.
+  document.addEventListener("oplo:search", hold);
 
   /* --------------------------------------------------------------- Site bar
      The same behaviour as the inline script every oplocloud.com page carries,
@@ -93,6 +97,7 @@
   function setNav(open) {
     if (!navEl || !navLinks || !navToggle) return;
     if (open === navLinks.classList.contains("open")) return;
+    if (open && window.OploSearch) window.OploSearch.close();
     navLinks.classList.toggle("open", open);
     navEl.classList.toggle("open", open);
     navToggle.classList.toggle("on", open);
