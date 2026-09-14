@@ -607,18 +607,8 @@ svg { display: block; }
 }
 
 /* ============================================================== Sign in
-   A gate, not authentication. Everything a static page ships is readable by
-   whoever asks for it, so the screen says what it is instead of implying a
-   password is protecting something. */
-.lx-gate {
-  position: fixed; inset: 0; z-index: 90; background: var(--canvas);
-  display: grid; place-items: center; padding: 24px;
-  overflow-y: auto;
-}
-.lx-gate-in { width: min(100%, 380px); text-align: center; }
-.lx-gate .lx-mark { width: 38px; height: 38px; margin: 0 auto 26px; }
-.lx-gate h1 { font-family: var(--font); font-size: 28px; font-weight: 600; letter-spacing: -.018em; }
-.lx-gate .sub { margin-top: 10px; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+   The sign-in form's fields. The page around it — the welcome page, and the
+   panel the form sits in — is landing.css. */
 .lx-form { margin-top: 26px; display: grid; gap: 10px; text-align: left; }
 .lx-field label {
   display: block; margin-bottom: 6px;
@@ -632,14 +622,6 @@ svg { display: block; }
 }
 .lx-field input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0,113,227,.14); }
 .lx-field input.bad { border-color: var(--red); }
-.lx-gate .lx-btn { width: 100%; margin-top: 6px; }
-.lx-gate .err {
-  margin-top: 12px; font-size: 13.5px; color: var(--red); min-height: 1.3em;
-}
-.lx-gate .fine {
-  margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--hair);
-  font-size: 12.5px; line-height: 1.5; color: var(--ink-3);
-}
 
 /* ============================================== Home: command centre */
 .lx-hello { font-size: 15px; color: var(--ink-2); }
@@ -3290,7 +3272,7 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 }
 .admin-sys-row span { font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
 
-.lx-gate .err code {
+.ld-sheet .err code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
   background: rgba(0,0,0,.05); padding: 1px 5px; border-radius: 4px;
 }

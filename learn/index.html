@@ -11,36 +11,334 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=2c0e7b3c">
+<link rel="stylesheet" href="app.css?v=124f1719">
+<link rel="stylesheet" href="landing.css?v=dbcc7497">
 </head>
 <body>
 
-<div class="lx-gate" id="gate">
-  <div class="lx-gate-in">
-    <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
-      <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
-    </svg>
-    <h1>Sign in to OEdu</h1>
-    <p class="sub">Students, teachers, families and administrators all sign in here, with their Oplo Account.</p>
-    <form class="lx-form" id="gateForm" novalidate>
-      <div class="lx-field">
-        <label for="gEmail">Email</label>
-        <input id="gEmail" name="email" type="email" autocomplete="username"
-               autocapitalize="none" spellcheck="false" required>
+<!-- ================================================================ Welcome
+     What edu.oplocloud.com is to somebody who is not signed in: the page that
+     says what OEdu is, with the one sign-in in a panel on top of it. The form
+     in that panel is the form it always was (#gateForm, #gEmail, #gPass,
+     #gErr) and app.js drives it unchanged. A signed-in visitor never sees
+     this page: the moment the server answers /me they are sent to their own
+     address, and until it answers the page stays blank (.ld-wait).
+
+     Every picture and film is a slot:
+
+         <div class="ld-media" data-slot="Name" data-size="1600 × 900" data-src=""></div>
+
+     Put a file in learn/media/landing/ and write its path into data-src —
+     "media/landing/hero.jpg". An image (.jpg .png .webp .avif .gif) is drawn
+     as an image and a film (.mp4 .webm .mov) plays muted and looping. data-alt
+     describes it for screen readers. An empty data-src shows the slot's name
+     and the size it looks best at. The film behind "Watch the film" goes in
+     data-film-src on the film slot.
+
+     Slots: hero · film · course · practice · gradebook · family-record ·
+     students · teachers · families · inside-1 … inside-5 · schools
+     ======================================================================== -->
+<div class="ld ld-wait" id="gate">
+
+  <nav class="ld-global" aria-label="Oplo">
+    <div class="ld-global-in">
+      <a class="ld-logo" href="https://oplocloud.com/" aria-label="Oplo">
+        <svg viewBox="12 12 76 76" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg>
+      </a>
+      <a href="https://oplocloud.com/edu/">OEdu</a>
+      <a href="https://oplocloud.com/intelligence/">Intelligence</a>
+      <a href="https://oplocloud.com/developers/">Developers</a>
+      <a href="https://oplocloud.com/company/">Company</a>
+      <a href="https://oplocloud.com/support/">Support</a>
+      <span class="ld-sp"></span>
+      <button class="ld-link" type="button" data-signin>Sign in</button>
+    </div>
+  </nav>
+
+  <header class="ld-sub" id="ldSub">
+    <div class="ld-sub-in">
+      <a class="ld-sub-title" href="#top">OEdu</a>
+      <button class="ld-sub-menu" type="button" aria-expanded="false" aria-controls="ldSubLinks" aria-label="Sections">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5.5 8 10.5 13 5.5"/></svg>
+      </button>
+      <nav class="ld-sub-links" id="ldSubLinks" aria-label="OEdu">
+        <a href="#students">Students</a>
+        <a href="#teachers">Teachers</a>
+        <a href="#families">Families</a>
+        <a href="#schools">Schools</a>
+      </nav>
+      <button class="ld-pill" type="button" data-signin>Sign in</button>
+    </div>
+  </header>
+
+  <aside class="ld-ribbon">
+    <p>New this term: families can follow grades, exams and the road to graduation in the family view.
+      <button class="ld-inline" type="button" data-signin>Sign in ›</button></p>
+  </aside>
+
+  <main class="ld-main" id="top">
+
+    <section class="ld-hero" aria-labelledby="ldHeroTitle">
+      <div class="ld-hero-frame">
+        <div class="ld-media ld-dark" data-slot="Hero" data-size="2560 × 1440 · image or film" data-src="" data-alt="" data-eager></div>
+        <div class="ld-hero-copy">
+          <svg class="ld-hero-mark" viewBox="12 12 76 76" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg>
+          <h1 id="ldHeroTitle">Made for <span class="ld-accent">the way you learn.</span></h1>
+          <p>Courses you work through by solving, practice that sticks, and one record that
+            students, teachers and families all read the same way.</p>
+        </div>
       </div>
-      <div class="lx-field">
-        <label for="gPass">Password</label>
-        <input id="gPass" name="password" type="password" autocomplete="current-password" required>
+    </section>
+
+    <section class="ld-film">
+      <div class="ld-wrap">
+        <div class="ld-film-card ld-reveal">
+          <div class="ld-film-copy">
+            <h2>See OEdu in action.</h2>
+            <button class="ld-play" type="button" data-film>
+              Watch the film
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="10" cy="10" r="8.3"/><path d="M8.3 6.8v6.4l5-3.2z" fill="currentColor" stroke="none"/></svg>
+            </button>
+          </div>
+          <div class="ld-media" data-slot="Film poster" data-size="1600 × 900" data-src="" data-alt="" data-film-src=""></div>
+        </div>
       </div>
-      <button class="lx-btn lg" type="submit">Sign in</button>
-      <p class="err" id="gErr" role="alert"></p>
-    </form>
-    <p class="fine">
-      One Oplo Account signs you in to OEdu and to every other Oplo product you are
-      authorised for. Your password is sent once over an encrypted connection, checked on
-      the Oplo platform, and never stored in this browser. Your session is a cookie this
-      page cannot read.
-    </p>
+    </section>
+
+    <section class="ld-band ld-soft" id="students">
+      <div class="ld-wrap">
+        <header class="ld-head ld-reveal">
+          <h2>Learning that’s <span class="ld-accent">a grade ahead.</span></h2>
+          <p>OEdu brings courses, practice, marks and the record into one place — for the student
+            doing the work, the teacher setting it, and the family following along.</p>
+        </header>
+        <div class="ld-grid2">
+          <article class="ld-card ld-reveal">
+            <div class="ld-media" data-slot="Courses" data-size="1400 × 1000" data-src="" data-alt=""></div>
+            <div class="ld-card-copy">
+              <h3>Courses built <br>for <span class="ld-accent">solving.</span></h3>
+              <p>Every unit is worked through rather than read past: questions before the lesson,
+                a repair when an answer goes wrong, and one grade that counts.</p>
+            </div>
+          </article>
+          <article class="ld-card ld-reveal">
+            <div class="ld-media" data-slot="Practice" data-size="1400 × 1000" data-src="" data-alt=""></div>
+            <div class="ld-card-copy">
+              <h3>Practice that <br><span class="ld-accent">sticks.</span></h3>
+              <p>Study sets drilled until they hold, and a tutor that offers a hint before it
+                offers an answer.</p>
+            </div>
+          </article>
+          <article class="ld-card ld-reveal">
+            <div class="ld-media" data-slot="Gradebook" data-size="1400 × 1000" data-src="" data-alt=""></div>
+            <div class="ld-card-copy">
+              <h3>A gradebook that <br><span class="ld-accent">explains itself.</span></h3>
+              <p>Missing, excused and late mean what they say, and every change to a mark is kept —
+                what it was, who changed it, and why.</p>
+            </div>
+          </article>
+          <article class="ld-card ld-reveal">
+            <div class="ld-media" data-slot="Family record" data-size="1400 × 1000" data-src="" data-alt=""></div>
+            <div class="ld-card-copy">
+              <h3>A record families <br><span class="ld-accent">can read.</span></h3>
+              <p>Grades, state exams and the road to a diploma in the family view — computed from
+                the record, and never estimated to fill a gap.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-band ld-black" id="teachers">
+      <div class="ld-wrap">
+        <h2 class="ld-h2 ld-reveal">From <span class="ld-accent">first lesson to graduation.</span></h2>
+        <div class="ld-row3 ld-tiles">
+          <button class="ld-tile ld-reveal" type="button" data-signin>
+            <div class="ld-media" data-slot="Students" data-size="900 × 860" data-src="" data-alt=""></div>
+            <span class="ld-tile-copy"><span class="k">Students</span><span class="t">Learn by doing.</span></span>
+            <span class="ld-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg></span>
+          </button>
+          <button class="ld-tile ld-reveal" type="button" data-signin>
+            <div class="ld-media" data-slot="Teachers" data-size="900 × 860" data-src="" data-alt=""></div>
+            <span class="ld-tile-copy"><span class="k">Teachers</span><span class="t">Teach, mark and report <br>in one place.</span></span>
+            <span class="ld-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg></span>
+          </button>
+          <button class="ld-tile ld-reveal" type="button" data-signin>
+            <div class="ld-media" data-slot="Families" data-size="900 × 860" data-src="" data-alt=""></div>
+            <span class="ld-tile-copy"><span class="k">Families</span><span class="t">The whole record, <br>in one view.</span></span>
+            <span class="ld-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-band ld-soft ld-stories" id="families">
+      <div class="ld-wrap">
+        <div class="ld-head-row ld-reveal">
+          <h2 class="ld-h2">Inside OEdu. <span class="ld-accent">Every day.</span></h2>
+          <a class="ld-more" href="https://oplocloud.com/edu/">Explore OEdu ›</a>
+        </div>
+      </div>
+      <div class="ld-rail ld-reveal" id="ldRail" tabindex="0" aria-label="Inside OEdu">
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 1" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Students</span><span class="t">Read with a pencil in hand.</span></span>
+        </article>
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 2" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Students</span><span class="t">A tutor that asks back.</span></span>
+        </article>
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 3" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Teachers</span><span class="t">A whole column, marked at once.</span></span>
+        </article>
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 4" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Families</span><span class="t">Every mark, where the family can see it.</span></span>
+        </article>
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 5" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Schools</span><span class="t">One sign-in for everybody.</span></span>
+        </article>
+      </div>
+      <div class="ld-wrap ld-rail-ctl">
+        <button type="button" data-rail="-1" aria-label="Previous" disabled>
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5"/></svg>
+        </button>
+        <button type="button" data-rail="1" aria-label="Next">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <section class="ld-band ld-white" id="schools">
+      <div class="ld-wrap ld-split">
+        <div class="ld-split-copy ld-reveal">
+          <h2 class="ld-h2">Bring OEdu <br>to your school.</h2>
+          <p>Courses, the gradebook, reporting and the family view — set up for your students,
+            teachers and families.</p>
+          <a class="ld-btn" href="https://oplocloud.com/contact/">Get in touch</a>
+        </div>
+        <div class="ld-media ld-bare ld-reveal" data-slot="Schools" data-size="1600 × 1200 · a transparent PNG works well" data-src="" data-alt=""></div>
+      </div>
+    </section>
+
+    <section class="ld-band ld-soft">
+      <div class="ld-wrap">
+        <h2 class="ld-h2 ld-reveal">What we hold to.</h2>
+        <div class="ld-row3 ld-values">
+          <article class="ld-value ld-reveal">
+            <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="12.5" width="16" height="11" rx="2.5"/><path d="M9.5 12.5V9a4.5 4.5 0 0 1 9 0v3.5"/></svg>
+            <h3>Private by design.</h3>
+            <p>Your session is a cookie no page can read, and a student’s record is shown only to
+              the people it belongs to.</p>
+            <a href="https://oplocloud.com/privacy/">Learn more ›</a>
+          </article>
+          <article class="ld-value ld-reveal">
+            <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="14" r="10"/><path d="m9.5 14.3 3 3 6-6.3"/></svg>
+            <h3>Honest about <br>every number.</h3>
+            <p>A figure the record cannot support is left out rather than estimated, and every
+              page says where its numbers came from.</p>
+            <a href="https://oplocloud.com/edu/">Learn more ›</a>
+          </article>
+          <article class="ld-value ld-reveal">
+            <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="14" r="10"/><circle cx="14" cy="8.6" r="1.3" fill="currentColor"/><path d="M8.5 11.5c3.6 1 7.4 1 11 0M14 12.2v4.6M14 16.8l-2.6 5M14 16.8l2.6 5"/></svg>
+            <h3>Made for <br>every learner.</h3>
+            <p>Every chart can be read as a table, every screen works from a keyboard, and nothing
+              depends on colour alone.</p>
+            <a href="https://oplocloud.com/support/">Learn more ›</a>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="ld-foot">
+    <div class="ld-wrap">
+      <p class="ld-fine">Accounts are created by your school. If you cannot sign in, ask your school’s
+        administrator — the same account signs you in whether you are a student, a teacher or family.</p>
+      <div class="ld-crumb">
+        <svg viewBox="12 12 76 76" width="14" height="14" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg>
+        <span aria-hidden="true">›</span><span>OEdu</span>
+      </div>
+      <div class="ld-cols">
+        <div>
+          <h4>OEdu</h4>
+          <button type="button" data-signin>Sign in</button>
+          <a href="#students">Students</a>
+          <a href="#teachers">Teachers</a>
+          <a href="#families">Families</a>
+          <a href="#schools">Schools</a>
+        </div>
+        <div>
+          <h4>Oplo</h4>
+          <a href="https://oplocloud.com/">Home</a>
+          <a href="https://oplocloud.com/intelligence/">Intelligence</a>
+          <a href="https://oplocloud.com/developers/">Developers</a>
+          <a href="https://oplocloud.com/company/">Company</a>
+          <a href="https://oplocloud.com/careers/">Careers</a>
+        </div>
+        <div>
+          <h4>Help</h4>
+          <a href="https://oplocloud.com/support/">Support</a>
+          <a href="https://oplocloud.com/contact/">Contact</a>
+          <a href="https://oplocloud.com/newsroom/">Newsroom</a>
+        </div>
+        <div>
+          <h4>Legal</h4>
+          <a href="https://oplocloud.com/privacy/">Privacy</a>
+          <a href="https://oplocloud.com/legal/">Legal</a>
+        </div>
+      </div>
+      <div class="ld-legal">
+        <span>Copyright © 2026 Oplo. All rights reserved.</span>
+        <span class="ld-sp"></span>
+        <span>United States</span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="ld-modal" id="ldSignin" hidden>
+    <div class="ld-scrim" data-close></div>
+    <div class="ld-sheet" role="dialog" aria-modal="true" aria-labelledby="ldSigninTitle">
+      <button class="ld-x" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+      <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
+        <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
+      </svg>
+      <h2 id="ldSigninTitle">Sign in to OEdu</h2>
+      <p class="sub">Students, teachers, families and administrators all sign in here, with their Oplo Account.</p>
+      <form class="lx-form" id="gateForm" novalidate>
+        <div class="lx-field">
+          <label for="gEmail">Email</label>
+          <input id="gEmail" name="email" type="email" autocomplete="username"
+                 autocapitalize="none" spellcheck="false" required>
+        </div>
+        <div class="lx-field">
+          <label for="gPass">Password</label>
+          <input id="gPass" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="lx-btn lg" type="submit">Sign in</button>
+        <p class="err" id="gErr" role="alert"></p>
+      </form>
+      <p class="fine">
+        One Oplo Account signs you in to OEdu and to every other Oplo product you are
+        authorised for. Your password is sent once over an encrypted connection, checked on
+        the Oplo platform, and never stored in this browser. Your session is a cookie this
+        page cannot read.
+      </p>
+    </div>
+  </div>
+
+  <div class="ld-lightbox" id="ldFilm" hidden>
+    <div class="ld-scrim" data-close></div>
+    <div class="ld-film-player" role="dialog" aria-modal="true" aria-label="OEdu film">
+      <button class="ld-x" type="button" data-close aria-label="Close the film">
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+      <video controls playsinline></video>
+    </div>
   </div>
 </div>
 
@@ -219,6 +517,7 @@
 <script src="tutor.js?v=e36b13da"></script>
 <script src="kmap.js?v=32de7572"></script>
 <script src="home.js?v=6cb47e0b"></script>
-<script src="app.js?v=2f908bdc"></script>
+<script src="landing.js?v=b07c840b"></script>
+<script src="app.js?v=ce54b578"></script>
 </body>
 </html>
