@@ -199,6 +199,7 @@ def flyout(depth):
         menus += (f'\n      <div class="nav-menu" id="navMenu{i}" role="region" '
                   f'aria-label="{NAV[i][0]}">{body}\n      </div>')
     return f'''  <div class="nav-flyout" id="navFlyout" hidden>
+    <div class="nav-flyout-bg"></div>
     <div class="nav-flyout-in">{menus}
     </div>
   </div>
