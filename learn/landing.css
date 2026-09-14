@@ -1,16 +1,18 @@
 /* ==========================================================================
    OEdu — the welcome page, before sign-in.
 
-   What edu.oplocloud.com shows somebody who is not signed in. It takes its
-   manners from Apple's education pages: a global bar that scrolls away, a
-   product bar that stays, a photograph that fills the window and draws in as
-   you leave it, rounded cards on quiet grey, a black band for the three kinds
-   of people OEdu is for, a rail to swipe, and a footer that lists everything.
+   What edu.oplocloud.com shows somebody who is not signed in. It wears
+   oplocloud.com's own bar, chapter bar and footer — generated into index.html
+   and oplo-chrome.css by tools/build.py, the same way every page on the site
+   gets them — and between them takes its manners from Apple's education
+   pages: a photograph that fills the window and draws in as you leave it,
+   rounded cards on quiet grey, a black band for the three kinds of people
+   OEdu is for, a rail to swipe.
 
    The whole page is the #gate overlay, so it scrolls inside itself and never
-   touches the app behind it. Every class is `ld-` prefixed so nothing here can
-   reach the app's styles, and nothing there can reach these — except the
-   sign-in form's .lx-form and .lx-field, which are the app's on purpose.
+   touches the app behind it. Every class here is `ld-` prefixed so nothing
+   here can reach the app's styles, and nothing there can reach these — except
+   the sign-in form's .lx-form and .lx-field, which are the app's on purpose.
    ========================================================================== */
 
 .ld {
@@ -19,7 +21,6 @@
   --ld-ink-3: #86868b;
   --ld-soft: #f5f5f7;
   --ld-warm: #f7f6f4;
-  --ld-line: #d2d2d7;
   --ld-blue: #0071e3;
   --ld-blue-2: #0077ed;
   --ld-link: #0066cc;
@@ -46,45 +47,24 @@
 .ld a { color: inherit; text-decoration: none; }
 /* app.css already takes the browser's styling off every button. This adds
    only the letter-spacing, at no specificity, so each button's own class —
-   the blue pill, the close button, the sign-in button — still decides how it
-   looks. A `.ld button` reset here outranked all of them and painted them
-   out. */
+   the chapter bar's pill, the close button, the sign-in button — still decides
+   how it looks. A `.ld button` reset here outranked all of them and painted
+   them out. */
 :where(.ld) :where(button) { letter-spacing: inherit; }
 .ld svg { display: block; }
 .ld :focus-visible { outline: 2px solid var(--ld-blue); outline-offset: 3px; border-radius: 6px; }
 .ld-wrap { width: min(var(--ld-wrap), calc(100% - 44px)); margin: 0 auto; }
 .ld-accent { color: var(--ld-accent); }
-.ld-sp { flex: 1; }
-.ld section[id] { scroll-margin-top: 52px; }
+/* A section link scrolls its heading clear of the bar and the chapter bar,
+   not underneath them. */
+.ld section[id] { scroll-margin-top: 112px; }
 
-/* ------------------------------------------------------------- Global bar */
-.ld-global { background: #161617; color: rgba(255, 255, 255, .8); padding-top: env(safe-area-inset-top); }
-.ld-global-in {
-  width: min(1024px, calc(100% - 44px)); height: 44px; margin: 0 auto;
-  display: flex; align-items: center; gap: 36px; font-size: 12px; letter-spacing: -.01em;
-}
-.ld-global a, .ld-global .ld-link { color: rgba(255, 255, 255, .8); transition: color .2s; }
-.ld-global a:hover, .ld-global .ld-link:hover { color: #fff; }
-.ld-logo svg { width: 16px; height: 16px; }
-
-/* ------------------------------------------------------------ Product bar */
-.ld-sub {
-  position: sticky; top: 0; z-index: 30; height: 52px;
-  background: rgba(255, 255, 255, .78);
-  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, .08);
-}
-.ld-sub-in { position: relative; width: min(var(--ld-wrap), calc(100% - 44px)); height: 100%; margin: 0 auto; display: flex; align-items: center; gap: 24px; }
-.ld-sub-title { margin-right: auto; font-family: var(--ld-display); font-size: 21px; font-weight: 600; letter-spacing: .01em; }
-.ld-sub-links { display: flex; gap: 24px; font-size: 12px; letter-spacing: -.01em; }
-.ld-sub-links a { color: rgba(0, 0, 0, .8); transition: color .2s; }
-.ld-sub-links a:hover { color: var(--ld-link); }
-.ld-sub-menu { display: none; }
-.ld-pill {
-  height: 28px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 400;
-  background: var(--ld-blue); color: #fff !important; transition: background .2s;
-}
-.ld-pill:hover { background: var(--ld-blue-2); }
+/* Room for the site's bar, which is fixed. The main site gives the body this
+   padding, but here the page scrolls inside #gate, and padding on a scroll
+   container is added to a sticky element's offset — the chapter bar would
+   stick 44px below the bar instead of under it. A margin on the chapter bar
+   leaves the same room and lets it stick where the site's does. */
+.ld > .chapter { margin-top: 44px; }
 
 .ld-ribbon { padding: 16px 22px; background: var(--ld-soft); text-align: center; font-size: 14px; line-height: 1.43; }
 .ld-inline { color: var(--ld-link) !important; }
@@ -111,11 +91,11 @@
 /* ------------------------------------------------------------------ Hero */
 .ld-hero-frame {
   --p: 0;
-  position: relative; height: min(92vh, 920px); min-height: 580px; overflow: hidden; background: #000;
+  position: relative; height: min(88vh, 900px); min-height: 560px; overflow: hidden; background: #000;
   clip-path: inset(0 calc(var(--p) * 6%) 0 calc(var(--p) * 6%) round calc(var(--p) * 30px));
 }
 .ld-hero-frame > .ld-media { position: absolute; inset: 0; }
-.ld-hero-frame > .ld-media.is-empty { align-items: start; padding-top: 14vh; }
+.ld-hero-frame > .ld-media.is-empty { align-items: start; padding-top: 12vh; }
 .ld-hero-frame::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, .74));
@@ -225,18 +205,9 @@
 .ld-value a { margin-top: 12px; color: var(--ld-link); }
 .ld-value a:hover { text-decoration: underline; }
 
-/* ---------------------------------------------------------------- Footer */
-.ld-foot { padding: 18px 0 24px; background: var(--ld-soft); color: var(--ld-ink-2); font-size: 12px; line-height: 1.34; letter-spacing: -.01em; }
-.ld-fine { padding: 16px 0 14px; border-bottom: 1px solid var(--ld-line); color: var(--ld-ink-3); }
-.ld-crumb { display: flex; align-items: center; gap: 8px; padding: 14px 0 4px; color: var(--ld-ink); }
-.ld-cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; padding: 14px 0 26px; }
-.ld-cols h4 { margin-bottom: 10px; font-size: 12px; font-weight: 600; color: var(--ld-ink); }
-.ld-cols a, .ld-cols button { display: block; margin-bottom: 9px; font-size: 12px; text-align: left; color: var(--ld-ink-2); }
-.ld-cols a:hover, .ld-cols button:hover { color: var(--ld-ink); text-decoration: underline; }
-.ld-legal { display: flex; gap: 20px; padding-top: 14px; border-top: 1px solid var(--ld-line); color: var(--ld-ink-3); }
-
-/* ----------------------------------------------------- Sign in, and film */
-.ld-modal, .ld-lightbox { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 22px; }
+/* ----------------------------------------------------- Sign in, and film
+   Above the site's bar, which sits at z-index 9000. */
+.ld-modal, .ld-lightbox { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 22px; }
 .ld-scrim {
   position: absolute; inset: 0; background: rgba(0, 0, 0, .42);
   -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%);
@@ -278,37 +249,24 @@
   .ld-card-copy { padding: 30px 32px 40px; }
 }
 @media (max-width: 834px) {
-  .ld-global-in > a:not(.ld-logo) { display: none; }
   .ld-grid2, .ld-split { grid-template-columns: minmax(0, 1fr); }
   .ld-split .ld-media { order: -1; }
   .ld-values { grid-template-columns: minmax(0, 1fr); }
   .ld-value { min-height: 0; }
+  .ld section[id] { scroll-margin-top: 108px; }
 }
 
 /* ----------------------------------------------------------------- Phone
-   Chosen for a thumb rather than shrunk: the product bar folds its links
-   behind a chevron, the black band and the rail become rows to swipe, the
-   rail's cards turn portrait, and sign-in rises from the bottom edge. */
+   Chosen for a thumb rather than shrunk: the site's bar and chapter bar do
+   what they do on every oplocloud.com page, the black band and the rail
+   become rows to swipe, the rail's cards turn portrait, and sign-in rises
+   from the bottom edge. */
 @media (max-width: 734px) {
   .ld { font-size: 16px; }
-  .ld-sub { height: 48px; }
-  .ld-sub-in { gap: 10px; }
-  .ld-sub-title { margin-right: 0; font-size: 19px; }
-  .ld-sub-menu { display: grid; place-items: center; width: 30px; height: 30px; margin-right: auto; color: var(--ld-ink); transition: transform .3s var(--ld-ease); }
-  .ld-sub.is-open .ld-sub-menu { transform: rotate(180deg); }
-  .ld-sub-links {
-    display: none; position: absolute; top: 100%; left: -22px; right: -22px; flex-direction: column; gap: 0;
-    padding: 6px 22px 16px; background: #fff;
-    border-bottom: 1px solid rgba(0, 0, 0, .08); box-shadow: 0 24px 40px -24px rgba(0, 0, 0, .35);
-  }
-  .ld-sub.is-open .ld-sub-links { display: flex; }
-  .ld-sub-links a { padding: 13px 0; font-size: 17px; border-bottom: 1px solid #e8e8ed; }
-  .ld-sub-links a:last-child { border-bottom: 0; }
-  .ld section[id] { scroll-margin-top: 48px; }
 
   .ld-ribbon { padding: 12px 18px; font-size: 12px; }
-  .ld-hero-frame { height: 80vh; min-height: 540px; clip-path: none; }
-  .ld-hero-frame > .ld-media.is-empty { padding-top: 12vh; }
+  .ld-hero-frame { height: 78vh; min-height: 520px; clip-path: none; }
+  .ld-hero-frame > .ld-media.is-empty { padding-top: 10vh; }
   .ld-hero h1 { font-size: 38px; }
   .ld-hero-copy { bottom: 6%; }
   .ld-hero-copy p { font-size: 16px; }
@@ -342,9 +300,6 @@
   .ld-split .ld-media { aspect-ratio: 1; }
   .ld-values { gap: 10px; margin-top: 28px; }
   .ld-value { padding: 26px 24px 30px; }
-
-  .ld-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-  .ld-legal { flex-direction: column; gap: 6px; }
 
   .ld-modal { align-items: end; padding: 0; }
   .ld-sheet {
