@@ -3565,6 +3565,9 @@
     "media:6": { key: "media:6", course: "media", courseTitle: "Media Arts", unit: 6,
                  title: "Intro to Photography", sections: window.OPLO_UNIT6 || [],
                  doc: "media-u6", set: "media-6" },
+    "media:7": { key: "media:7", course: "media", courseTitle: "Media Arts", unit: 7,
+                 title: "Video Basics", sections: window.OPLO_UNIT7 || [],
+                 doc: "media-u7", set: "media-7" },
     "biz:4":   { key: "biz:4", course: "biz", courseTitle: "Introduction to Business", unit: 4,
                  title: "International Business", sections: window.OPLO_BIZ4 || [],
                  doc: "biz-u4", set: "biz-4" }
@@ -4264,7 +4267,21 @@
       }
       img.loading = "lazy";
       img.decoding = "async";
+      // Every picture opens at the size of the window, so a label in a
+      // diagram or a detail in a photograph can be read however narrow the
+      // column is. A figure a reader has to squint at is a figure that does
+      // not teach.
+      img.tabIndex = 0;
+      img.setAttribute("role", "button");
+      img.setAttribute("aria-label", "Enlarge: " + im.alt);
+      img.classList.add("rd-zoomable");
+      img.addEventListener("click", function () { openFigZoom(im, b); });
+      img.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFigZoom(im, b); }
+      });
       frame.appendChild(img);
+      frame.appendChild(el("span", "rd-fig-hint",
+        svg('<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>', true) + "<span>Enlarge</span>"));
       if (im.grid === "thirds" || im.grid === "phi") {
         var g = el("i", "rd-fig-grid " + im.grid);
         g.setAttribute("aria-hidden", "true");
@@ -4290,6 +4307,80 @@
       (credits ? '<span class="credit">' + credits + "</span>" : "");
     f.appendChild(cap);
     return f;
+  }
+
+  /* One picture at the size of the screen, with its caption under it. A
+     diagram is scaled up as a vector, so its smallest label is as sharp at
+     full screen as its title; a photograph is shown at up to its own size.
+     Escape, the close button, or a click on the dark closes it, and focus
+     goes back to the picture it came from. */
+  var zoomBack = null;
+  function openFigZoom(im, b) {
+    closeFigZoom();
+    zoomBack = document.activeElement;
+    var box = el("div", "rd-zoom");
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-label", im.alt);
+    var x = el("button", "rd-zoom-x", svg(I.close, true));
+    x.type = "button";
+    x.setAttribute("aria-label", "Close");
+    var stage = el("div", "rd-zoom-stage");
+    var big = document.createElement("img");
+    big.src = im.src;
+    big.alt = im.alt;
+    if (im.fx && FIG_FX[im.fx]) big.classList.add("fx-" + im.fx);
+    if (/\.svg(\?|$)/i.test(im.src) || b.diagram) {
+      big.classList.add("vector");
+      if (im.w && im.h) big.style.setProperty("--ar", String(im.w / im.h));
+    }
+    stage.appendChild(big);
+    box.appendChild(x);
+    box.appendChild(stage);
+    if (b.cap) box.appendChild(el("p", "rd-zoom-cap", b.cap));
+    box.addEventListener("click", function (e) {
+      if (e.target === box || e.target === stage || e.target.closest(".rd-zoom-x")) closeFigZoom();
+    });
+    document.body.appendChild(box);
+    window.addEventListener("keydown", zoomKey, true);
+    x.focus();
+  }
+  function zoomKey(e) {
+    if (e.key !== "Escape") return;
+    e.stopPropagation();
+    closeFigZoom();
+  }
+  function closeFigZoom() {
+    var z = document.querySelector(".rd-zoom");
+    if (!z) return;
+    z.remove();
+    window.removeEventListener("keydown", zoomKey, true);
+    if (zoomBack && zoomBack.focus) zoomBack.focus();
+    zoomBack = null;
+  }
+
+  /* Sources and further reading, set at reading size under the section.
+     A reference in small grey type is a reference nobody follows. Kept out of
+     the text that can be marked, like a figure's caption, so a book title
+     cannot be tagged as a Claim. */
+  function refsBlock(b) {
+    var box = el("aside", "rd-refs");
+    box.setAttribute("data-noread", "");
+    box.appendChild(el("h3", null, esc(b.t || "Sources and further reading")));
+    var ol = el("ol");
+    b.items.forEach(function (r) {
+      var li = el("li");
+      var bits = [];
+      if (r.by) bits.push(esc(r.by) + (r.year ? " (" + esc(r.year) + ")" : "") + ".");
+      if (r.title) bits.push("<i>" + esc(r.title) + "</i>" + ".");
+      if (r.pub) bits.push(esc(r.pub) + ".");
+      li.innerHTML = bits.join(" ") +
+        (r.url ? ' <a href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer">Open</a>' : "") +
+        (r.note ? '<span class="rd-refs-note">' + esc(r.note) + "</span>" : "");
+      ol.appendChild(li);
+    });
+    box.appendChild(ol);
+    return box;
   }
 
   /* ====================================================== Predict
@@ -4506,6 +4597,8 @@
         body.appendChild(ul);
       } else if (b.k === "fig") {
         body.appendChild(figureBlock(b));
+      } else if (b.k === "refs") {
+        body.appendChild(refsBlock(b));
       }
     });
     art.appendChild(body);

@@ -1076,6 +1076,66 @@ svg { display: block; }
 }
 .rd-fig .credit a:hover { color: var(--ink-2); }
 
+/* Every picture enlarges. The hint sits in the corner of the picture and
+   shows on hover or focus, so the column stays quiet until it is wanted; on
+   a touch screen, where nothing hovers, it stays faintly visible. */
+.rd-zoomable { cursor: zoom-in; }
+.rd-zoomable:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.rd-fig-hint {
+  position: absolute; right: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px 5px 8px; border-radius: 100px; pointer-events: none;
+  background: rgba(29,29,31,.72); color: #fff; line-height: 1;
+  font-family: var(--text); font-size: 12px; font-weight: 600; letter-spacing: 0;
+  opacity: 0; transform: translateY(3px); transition: opacity .18s var(--ease), transform .18s var(--ease);
+}
+.rd-fig-hint svg { width: 13px; height: 13px; }
+.rd-fig-frame:hover .rd-fig-hint, .rd-zoomable:focus-visible + .rd-fig-hint { opacity: 1; transform: none; }
+@media (hover: none) { .rd-fig-hint { opacity: .82; transform: none; } }
+
+.rd-zoom {
+  position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column;
+  align-items: center; gap: 16px; padding: 64px 28px 28px;
+  background: rgba(16,16,18,.95); animation: rd-zoom-in .2s var(--ease);
+}
+@keyframes rd-zoom-in { from { opacity: 0; } to { opacity: 1; } }
+.rd-zoom-stage { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+.rd-zoom-stage img { display: block; max-width: 100%; max-height: 100%; border-radius: 12px; }
+.rd-zoom-stage img.vector {
+  width: min(100%, calc((100dvh - 190px) * var(--ar, 1.4)), 1500px); height: auto; max-height: none;
+  padding: 18px; background: #fff;
+}
+.rd-zoom-cap {
+  max-width: 780px; margin: 0; text-align: center;
+  font-family: var(--text); font-size: 16px; line-height: 1.55; color: rgba(255,255,255,.88);
+}
+.rd-zoom-x {
+  position: absolute; top: 14px; right: 16px; width: 44px; height: 44px; border: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; background: rgba(255,255,255,.14); color: #fff;
+}
+.rd-zoom-x:hover { background: rgba(255,255,255,.24); }
+.rd-zoom-x svg { width: 20px; height: 20px; }
+@media (prefers-reduced-motion: reduce) { .rd-zoom { animation: none; } .rd-fig-hint { transition: none; } }
+
+/* Sources, at a size a reader will actually read. */
+.rd-refs {
+  max-width: var(--measure); margin: 2.6em 0 .6em; padding: 20px 22px 18px;
+  border-radius: 14px; background: var(--paper); box-shadow: 0 0 0 .5px var(--rule);
+  font-family: var(--text); letter-spacing: 0;
+}
+.rd-refs h3 {
+  margin: 0 0 10px; font-size: 13px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-2);
+}
+.rd-refs ol { margin: 0; padding-left: 22px; list-style: decimal; display: flex; flex-direction: column; gap: 9px; }
+.rd-refs li { display: list-item; }
+.rd-refs li { font-size: 15.5px; line-height: 1.5; color: var(--ink); }
+.rd-refs li::marker { color: var(--ink-3); font-size: 14px; }
+.rd-refs a {
+  color: var(--blue); font-weight: 500; text-decoration: underline;
+  text-decoration-color: rgba(0,113,227,.35); text-underline-offset: 3px; white-space: nowrap;
+}
+.rd-refs-note { display: block; margin-top: 2px; font-size: 14px; color: var(--ink-2); }
+
 /* Composition grids, drawn over the photograph rather than into it. The lines
    carry a faint dark edge so they read on a bright sky and on a dark field. */
 .rd-fig-grid {
