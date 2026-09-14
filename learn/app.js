@@ -11569,11 +11569,16 @@
     // Signed out, the page is the sign-in page again, at the address everybody
     // signs in at — not at the /admin/ or /student/ the last person left behind.
     history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root);
-    $("#gate").hidden = false;
+    // Back to the welcome page from its top, with the sign-in panel closed —
+    // it was left open by the sign-in that started this session.
+    var gate = $("#gate"), panel = $("#ldSignin");
+    if (panel) panel.hidden = true;
+    gate.classList.remove("ld-locked", "ld-wait");
+    gate.hidden = false;
+    gate.scrollTop = 0;
     $("#gEmail").value = ""; $("#gPass").value = "";
     $("#gErr").textContent = "";
     noFoot(); progress(null);
-    setTimeout(function () { $("#gEmail").focus(); }, 80);
   }
 
   (function gate() {
@@ -11627,11 +11632,17 @@
     API.me().then(function (account) {
       boot(account);
     }).catch(function (e) {
+      // Nobody is signed in, so the welcome page can be shown; until now it
+      // stayed blank so a signed-in visitor never saw it on the way home.
+      $("#gate").classList.remove("ld-wait");
+      var panel = $("#ldSignin");
       if (e && e.code === "offline") {
         err.innerHTML = "Cannot reach the Oplo account service at <code>" +
           esc(API.base()) + "</code>.";
       }
-      setTimeout(function () { $("#gEmail").focus(); }, 120);
+      // The email field is only focused when the sign-in panel is open;
+      // focusing into a closed panel would scroll the welcome page to nowhere.
+      if (!panel || !panel.hidden) setTimeout(function () { $("#gEmail").focus(); }, 120);
     });
   })();
 
