@@ -177,6 +177,35 @@ window.OPLO = (function () {
       ["Goods and services", "Goods are tangible things; services are work performed. Most businesses sell some of each."],
       ["Market economy", "An economy where prices are set by supply and demand rather than by a central authority."]
     ]},
+    "media-7": { t: "Video Basics", cards: [
+      ["Camcorder", "A video camera and a video recorder built into one body."],
+      ["Image sensor", "The electronic chip behind the lens that turns light into a signal. CCD and CMOS are the two main kinds."],
+      ["Nitrate film", "The first flexible motion-picture film, used from 1889 until about 1951. Highly flammable, and it decays."],
+      ["Safety film", "Film on a cellulose acetate base, which replaced nitrate. It does not burn like nitrate, but can suffer vinegar syndrome."],
+      ["LaserDisc", "The first commercial optical video disc, launched in 1978. It played pre-recorded films, stored as an analog signal."],
+      ["Non-linear editing", "Editing clips on a software timeline, where any shot can move to any place without re-recording the rest."],
+      ["180-degree rule", "Keep the camera on one side of the line between two characters, so each stays on the same side of the frame."],
+      ["Establishing shot", "The first shot of a scene, usually wide, showing where the action takes place."],
+      ["Close-up", "A shot that fills the frame with part of the subject — for a person, usually the face."],
+      ["Low-angle shot", "A shot from below the subject looking up, which makes the subject seem bigger and more powerful."],
+      ["Dutch angle", "A shot with the camera rolled sideways so the horizon tilts, used to suggest unease or disorientation."],
+      ["Tracking shot", "A shot in which the camera travels alongside a moving subject, often on a dolly running on track."],
+      ["Pan", "Turning the camera left or right from a fixed point."],
+      ["Tilt", "Pointing the camera up or down from a fixed point."],
+      ["Dolly zoom", "Moving the camera toward or away from the subject while zooming the other way, so the subject stays the same size while the background seems to stretch or swell."],
+      ["Rack focus", "Shifting sharp focus within one shot from a subject at one distance to a subject at another."],
+      ["Camera stabilizer", "A rig that isolates the camera from the operator's movement, so a moving shot stays smooth. The Steadicam is the best known."],
+      ["Lead room", "Space left in the frame ahead of a moving subject, in the direction it is moving."],
+      ["Head room", "The space between the top of a subject's head and the top of the frame."],
+      ["Leading lines", "Lines in the frame, such as roads, rails or ropes, that guide the viewer's eye toward the subject."],
+      ["Teleprompter", "A script reflected onto angled glass in front of the camera lens, so a presenter can read while looking into the lens."],
+      ["Foley", "Everyday sound effects performed and recorded in time with the picture, such as footsteps and doors."],
+      ["Match cut", "A cut that links two different shots through a matching shape, movement or composition."],
+      ["Jump cut", "A cut between two shots of the same subject from almost the same angle, so time seems to jump."],
+      ["Cutaway", "A shot that interrupts the main action to show something else, before returning to it."],
+      ["Dissolve", "A transition in which one shot gradually fades out as the next fades in, often suggesting that time has passed."],
+      ["Frame rate", "How many still frames are shown each second. Film uses 24; US television about 30."]
+    ]},
     "biz-4": { t: "International Business", cards: [
       ["Absolute advantage", "Producing more of a good than a rival can with the same resources."],
       ["Comparative advantage", "Producing a good at a lower opportunity cost than a rival — giving up less of everything else to make it."],
@@ -246,7 +275,7 @@ window.OPLO = (function () {
       "Describe the history and application of photography, video, animation and audio/video production."
     ],
     parts: [{ name: null, units: MEDIA_UNITS }],
-    sets: { 1: "media-1", 2: "media-2", 5: "media-5", 6: "media-6" },
+    sets: { 1: "media-1", 2: "media-2", 5: "media-5", 6: "media-6", 7: "media-7" },
     grading: [["Quizzes", 35], ["Assignments", 35], ["Mid-term and final exams", 30]],
     textbook: "EHS Media Arts — © Excel Education Systems, Inc., 2021."
   };

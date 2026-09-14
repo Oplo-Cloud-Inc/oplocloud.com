@@ -1658,7 +1658,543 @@ window.OPLO_CONCEPTS = (function () {
     })
   ];
 
-  var BOOK = { "media-5": MEDIA5, "media-6": MEDIA6, "biz-4": BIZ4 };
+  /* Media Arts, Unit 7. Every concept authored: video vocabulary is full of
+     words that sound alike and mean opposite things on set — a pan is not a
+     tilt, a tilt is not a pedestal, a jump cut is not any cut — and the
+     questions are written to make a student tell them apart, not recite them. */
+  var MEDIA7 = [
+    C("Camcorder", {
+      why: "It is the tool the whole unit is about, and knowing it is two machines in one explains what " +
+           "each part does.",
+      eg: "A news crew's shoulder camcorder records straight to a memory card, with no separate recorder.",
+      miss: [["A camcorder is just a digital camera.",
+              "It is a video camera and a video recorder in one body. Early video cameras had to be cabled " +
+              "to a separate recorder."]],
+      pre: [], rel: ["Image sensor"],
+      say: ["camera", "recorder", "one", "body", "video", "record"],
+      apply: { ask: "In 1980 a TV crew used a camera cabled to a separate recorder carried on a strap. What " +
+                    "did the camcorder change?",
+               opts: ["It recorded in colour for the first time", "It put the camera and the recorder in one body",
+                      "It removed the need for a lens", "It made video digital"],
+               right: 1,
+               why: "Camera plus recorder is both the name and the idea. Colour and digital video came " +
+                    "separately." },
+      xfer: { ask: "A smartphone records video. By the definition of a camcorder, is it one?",
+              opts: ["Yes — it captures and records video in one device", "No — only devices sold as camcorders count",
+                     "No — phones have no image sensor", "Only when it zooms"],
+              right: 0,
+              why: "It combines a camera and a recorder in one body, which is all the word means. A phone is " +
+                   "simply a camcorder that does other things too." }
+    }),
+
+    C("Image sensor", {
+      why: "It is where the picture is actually made. Everything before it only steers light onto it.",
+      eg: "Behind every camcorder lens sits a small rectangular chip covered in millions of light-sensitive sites.",
+      miss: [["The image sensor is a mechanical part.",
+              "It is an electronic chip with no moving parts. It turns light into an electrical signal."]],
+      pre: [], rel: ["Camcorder"],
+      say: ["chip", "light", "signal", "electronic", "CMOS", "CCD"],
+      apply: { ask: "Light passes through a camcorder's lens. What turns it into something that can be stored " +
+                    "on a memory card?",
+               opts: ["The viewfinder", "The image sensor", "The zoom control", "The AC adapter"],
+               right: 1,
+               why: "The lens focuses light onto the sensor, and the sensor converts it into a signal the " +
+                    "camcorder records." },
+      xfer: { ask: "In a film camera, what does the job that the image sensor does in a camcorder?",
+              opts: ["The shutter", "The film itself", "The lens cap", "The viewfinder"],
+              right: 1,
+              why: "Film is where the light is recorded in a film camera. The sensor took over exactly that job." }
+    }),
+
+    C("Nitrate film", {
+      why: "Much of early film history was shot on it, and much of that history has been lost to fire and " +
+           "decay.",
+      eg: "Archives keep surviving nitrate reels in fire-resistant vaults, away from other collections.",
+      miss: [["Nitrate was an early video format.",
+              "It was motion-picture film. Video — a picture stored as an electronic signal — came decades " +
+              "later."]],
+      pre: [], rel: ["Safety film"],
+      say: ["flammable", "decay", "celluloid", "1889", "film", "archive"],
+      apply: { ask: "An archive finds a feature film from 1935 in a rusted can. The film has turned sticky, and " +
+                    "in places to brown powder. What is the base most likely to be?",
+               opts: ["Nitrate", "Polyester", "Magnetic tape", "A DVD"],
+               right: 0,
+               why: "Professional film before about 1951 was nitrate, which turns sticky and then to powder as " +
+                    "it decays." },
+      xfer: { ask: "Why did cinemas in the nitrate era enclose their projectors in fireproof booths?",
+              opts: ["Projectors were loud", "Nitrate film could ignite in the heat of the projector",
+                     "To keep the film cold", "Sound equipment needed shielding"],
+              right: 1,
+              why: "A reel stuck in front of the hot lamp could catch fire, and nitrate burns fiercely." }
+    }),
+
+    C("Safety film", {
+      why: "It is why film stopped burning down cinemas — and why archives now fight a different enemy.",
+      eg: "16mm film, introduced for home movies in 1923, was made only on acetate safety film.",
+      miss: [["Acetate damages the camera if it jams.",
+              "Acetate tears in a jam, which protects the camera. Polyester is strong enough to damage the " +
+              "machine instead."]],
+      pre: ["Nitrate film"], rel: [],
+      say: ["acetate", "safety", "nitrate", "vinegar", "replaced", "tears"],
+      apply: { ask: "A reel of 1960s acetate film smells strongly of vinegar. What is happening?",
+               opts: ["It is about to catch fire", "The acetate base is breaking down",
+                      "It was stored too cold", "It is really nitrate film"],
+               right: 1,
+               why: "Vinegar syndrome: as acetate decays it releases acetic acid, which speeds up the decay." },
+      xfer: { ask: "Why is original camera negative still made on acetate rather than on stronger polyester?",
+              opts: ["Polyester cannot hold an image", "Acetate tears in a jam instead of damaging the camera",
+                     "Acetate is flammable", "Polyester cannot be developed"],
+              right: 1,
+              why: "A weak point that gives way protects a very expensive machine. Strong polyester is used for " +
+                   "prints, where durability matters more." }
+    }),
+
+    C("LaserDisc", {
+      why: "It shows that a disc and a laser do not make a format digital.",
+      eg: "The first LaserDisc sold in North America was Jaws, in December 1978.",
+      miss: [["LaserDisc was the first digital recording tool.",
+              "Its picture was an analog signal, and it played pre-recorded films. Nobody recorded their own " +
+              "video on it at home."]],
+      pre: [], rel: [],
+      say: ["optical", "analog", "1978", "disc", "laser", "films"],
+      apply: { ask: "A friend says LaserDisc was basically an early DVD. What is the key difference?",
+               opts: ["LaserDisc stored video as an analog signal; DVD stores it digitally",
+                      "LaserDisc was smaller", "A DVD was read by a needle", "There is no difference"],
+               right: 0,
+               why: "Both are read by a laser, but only the DVD stores the picture as digital data." },
+      xfer: { ask: "A vinyl record is read by a needle and a CD by a laser. Which statement is true?",
+              opts: ["Anything read by a laser is digital",
+                     "How a disc is read does not decide whether its data is analog or digital",
+                     "All discs are analog", "Only CDs use lasers"],
+              right: 1,
+              why: "LaserDisc is the proof: read by laser, and analog." }
+    }),
+
+    C("Non-linear editing", {
+      why: "It is how nearly every video is edited today, and it changed what editors could afford to try.",
+      eg: "Moving the final shot of a timeline to the very start takes a single drag in editing software.",
+      miss: [["Non-linear editing means cutting film with scissors.",
+              "Physically splicing is film editing. Non-linear editing is done in software, where clips move " +
+              "without touching the original footage."]],
+      pre: [], rel: [],
+      say: ["timeline", "software", "any order", "clips", "move", "re-record"],
+      apply: { ask: "On a tape-to-tape system, an editor wants to swap shots 2 and 5 of a finished ten-shot " +
+                    "sequence. What must happen?",
+               opts: ["Drag the two clips", "Re-record everything from shot 2 onward", "Nothing", "Delete shot 1"],
+               right: 1,
+               why: "That is the cost of linear editing, and it is exactly what non-linear editing removed." },
+      xfer: { ask: "A student rearranges paragraphs in a word processor instead of retyping the whole essay. " +
+                   "Which kind of editing is that like?",
+              opts: ["Linear", "Non-linear", "Neither", "Analog"],
+              right: 1,
+              why: "Any part can be moved anywhere without redoing the rest — the definition of non-linear." }
+    }),
+
+    C("180-degree rule", {
+      why: "Break it and viewers lose track of who is where, even if they could not say why.",
+      eg: "In a conversation the cameras all stay on one side of the line between the two speakers, so one " +
+          "always faces right and the other left.",
+      miss: [["Crossing the line gives a reverse angle.",
+              "It flips screen direction, so the two people swap sides. Ordinary reverse shots stay on the " +
+              "same side of the line."]],
+      pre: [], rel: ["Establishing shot"],
+      say: ["line", "side", "left", "right", "two", "axis"],
+      apply: { ask: "In shot 1, A is on the left of the frame facing right. For shot 2 the camera crosses the " +
+                    "line. What do viewers see?",
+               opts: ["A still on the left", "A now on the right, facing left", "Both on the left", "A seen from above"],
+               right: 1,
+               why: "Crossing the axis mirrors the left–right relationship." },
+      xfer: { ask: "A football broadcast keeps its main cameras on one side of the pitch. Why?",
+              opts: ["To avoid the sun", "So a team attacking left keeps moving left on screen",
+                     "To use fewer cables", "The rules of football require it"],
+              right: 1,
+              why: "The same rule keeps the direction of play consistent for viewers." }
+    }),
+
+    C("Establishing shot", {
+      why: "It tells the audience where they are before the story asks them to care about who.",
+      eg: "A wide shot of a hospital at night, before the cut to a nurse at her desk.",
+      miss: [["An establishing shot is always a close-up.",
+              "It is usually wide or very wide, because its job is to show the place."]],
+      pre: [], rel: ["Close-up", "180-degree rule"],
+      say: ["first", "wide", "where", "place", "scene", "context"],
+      apply: { ask: "A scene takes place in a small diner. Which shot best establishes it?",
+               opts: ["A close-up of a coffee cup", "A wide shot of the diner from across the street",
+                      "A shot of a character's eyes", "A black screen"],
+               right: 1,
+               why: "Only the wide exterior shows the audience where the scene is." },
+      xfer: { ask: "A news report opens on a wide aerial shot of a flooded town before interviewing a resident. " +
+                   "What is that first shot doing?",
+              opts: ["Hiding the location", "Establishing where the story is", "Making a jump cut", "Replacing the interview"],
+              right: 1,
+              why: "News uses the same grammar as film: place first, then people." }
+    }),
+
+    C("Close-up", {
+      why: "Emotion lives in faces, and the close-up is how a film puts a face in front of you.",
+      eg: "A close-up on an actor's eyes as they fill with tears.",
+      miss: [["A close-up is just a zoomed-in wide shot.",
+              "A shot size is defined by what it frames — here, part of the subject — however the camera " +
+              "gets there."]],
+      pre: [], rel: ["Establishing shot"],
+      say: ["face", "emotion", "fills", "detail", "frame", "reaction"],
+      apply: { ask: "A director wants the audience to feel a character's fear. Which shot size fits best?",
+               opts: ["Extreme wide shot", "Close-up", "Bird's-eye view", "Establishing shot"],
+               right: 1,
+               why: "The close-up puts the face — where fear shows — at the centre of the frame." },
+      xfer: { ask: "A cooking video fills the whole frame with a knife slicing garlic. What shot size is it?",
+              opts: ["A close-up, or insert, of the garlic", "A wide shot", "A master shot", "An establishing shot"],
+              right: 0,
+              why: "The frame is filled with a detail of the action, which is what a close-up does." }
+    }),
+
+    C("Low-angle shot", {
+      why: "It changes how powerful a subject feels without changing a word of the script.",
+      eg: "A hero is often shot from below as they rise to their feet.",
+      miss: [["A low-angle shot means the camera is far away.",
+              "It is about height, not distance: the camera is below the subject, looking up."]],
+      pre: [], rel: ["Dutch angle"],
+      say: ["below", "up", "powerful", "bigger", "angle", "looking"],
+      apply: { ask: "A documentary wants a skyscraper to look overwhelming. Where should the camera be?",
+               opts: ["High above, looking down", "At street level, looking up", "Level with the 20th floor",
+                      "Behind the building"],
+               right: 1,
+               why: "Looking up from low makes the subject loom." },
+      xfer: { ask: "An election poster photographs a candidate from slightly below. What impression is intended?",
+              opts: ["Weakness", "Strength and authority", "Confusion", "Nothing at all"],
+              right: 1,
+              why: "The same low angle that works in film works in a still photograph." }
+    }),
+
+    C("Dutch angle", {
+      why: "A tilted horizon is one of the quickest ways to make a scene feel wrong.",
+      eg: "A dizzy character stumbles home, and the frame tilts with them.",
+      miss: [["A Dutch angle is a camera pointed down from above.",
+              "That is a high angle. A Dutch angle rolls the camera sideways so the horizon slants."]],
+      pre: [], rel: ["Low-angle shot"],
+      say: ["tilt", "roll", "horizon", "unease", "sideways", "slanted"],
+      apply: { ask: "In a thriller, the moment a character realises they are being watched, the horizon slants. " +
+                    "What is being used?",
+               opts: ["A Dutch angle", "A pan", "A dolly zoom", "A close-up"],
+               right: 0,
+               why: "Rolling the camera tilts the horizon, which reads as unease." },
+      xfer: { ask: "A video game tilts the whole screen when the player's character is poisoned. What film " +
+                   "technique does that borrow?",
+              opts: ["A Dutch angle", "A jump cut", "An establishing shot", "Lead room"],
+              right: 0,
+              why: "The same slanted horizon, used for the same feeling." }
+    }),
+
+    C("Tracking shot", {
+      why: "Moving with a subject keeps the audience beside them, instead of watching from one spot.",
+      eg: "The camera rides a dolly on rails beside a running actor.",
+      miss: [["A tracking shot is the same as a pan.",
+              "In a pan the camera stays put and turns. In a tracking shot the whole camera travels."]],
+      pre: [], rel: ["Pan", "Camera stabilizer"],
+      say: ["moves", "alongside", "dolly", "track", "travels", "subject"],
+      apply: { ask: "A horse gallops along a fence, and the camera must stay level with its head the whole way. " +
+                    "Which shot?",
+               opts: ["A pan from one spot", "A tracking shot", "A tilt", "A dissolve"],
+               right: 1,
+               why: "Only a camera that travels with the horse stays level with it." },
+      xfer: { ask: "In a car advert, a camera car drives alongside the car being filmed at the same speed. In " +
+                   "film terms, what is that?",
+              opts: ["A tracking shot", "A rack focus", "A cutaway", "A tilt"],
+              right: 0,
+              why: "The camera travels with the subject — the vehicle simply replaces the dolly." }
+    }),
+
+    C("Pan", {
+      why: "It is the simplest camera move, and the one most often done badly — usually too fast.",
+      eg: "From one spot, the camera sweeps slowly across a city skyline.",
+      miss: [["Following someone up a staircase is a pan.",
+              "Up and down is a tilt. A pan turns the camera left or right."]],
+      pre: [], rel: ["Tilt", "Tracking shot"],
+      say: ["turn", "horizontal", "left", "right", "fixed", "sweep"],
+      apply: { ask: "A camera on a tripod follows a car driving left to right across a field, and the tripod " +
+                    "does not move. What move is this?",
+               opts: ["Pan", "Tilt", "Dolly", "Pedestal"],
+               right: 0,
+               why: "Turning horizontally from a fixed point is a pan." },
+      xfer: { ask: "You stand still and turn your head to look along a row of shops. Which camera move does " +
+                   "your head imitate?",
+              opts: ["Tilt", "Pan", "Truck", "Crane"],
+              right: 1,
+              why: "Your eyes stay in one place and turn sideways — a pan." }
+    }),
+
+    C("Tilt", {
+      why: "It reveals height: a tower, a person from head to foot, a threat above.",
+      eg: "The camera starts at a climber's boots and tilts up to the summit.",
+      miss: [["A tilt raises the whole camera.",
+              "That is a pedestal. A tilt only points the lens up or down from the same place."]],
+      pre: [], rel: ["Pan"],
+      say: ["up", "down", "point", "vertical", "fixed", "lens"],
+      apply: { ask: "The camera stays on its tripod and moves from a person's shoes up to their face. What move?",
+               opts: ["Tilt", "Pedestal", "Pan", "Truck"],
+               right: 0,
+               why: "The camera pivots upward without changing height — a tilt." },
+      xfer: { ask: "On a studio camera, the operator raises the whole camera column so the lens sits higher, " +
+                   "still pointing straight ahead. What move is that?",
+              opts: ["Tilt", "Pedestal", "Pan", "Roll"],
+              right: 1,
+              why: "The height changed, not the direction the lens points — so it is a pedestal." }
+    }),
+
+    C("Dolly zoom", {
+      why: "It turns a feeling — vertigo, dread, a sudden realisation — into something you can see.",
+      eg: "Alfred Hitchcock's Vertigo (1958) uses it to show a man's fear of heights.",
+      miss: [["A dolly zoom is just a fast zoom.",
+              "It combines moving the camera with zooming the opposite way, so the subject stays the same " +
+              "size while the background changes."]],
+      pre: [], rel: ["Tracking shot"],
+      say: ["zoom", "dolly", "same size", "background", "opposite", "vertigo"],
+      apply: { ask: "The camera moves back while zooming in, keeping the actor the same size. What happens to " +
+                    "the background?",
+               opts: ["It seems to shrink away", "It seems to swell up behind the actor",
+                      "It stays exactly the same", "It goes out of focus"],
+               right: 1,
+               why: "The zoomed-in lens takes in a narrower slice of the background, so it fills more of the frame." },
+      xfer: { ask: "Why can't a zoom on its own produce the dolly zoom effect?",
+              opts: ["A zoom enlarges everything equally; only moving the camera changes perspective",
+                     "Zooms are too slow", "Zoom lenses cannot focus", "It can"],
+              right: 0,
+              why: "Perspective depends on where the camera is, not on the lens." }
+    }),
+
+    C("Rack focus", {
+      why: "It moves the audience's attention without a cut.",
+      eg: "Focus slides from a ringing phone on a table to the person reaching for it.",
+      miss: [["Rack focus means keeping everything sharp.",
+              "It deliberately shifts sharp focus from one distance to another within the same shot."]],
+      pre: [], rel: ["Close-up"],
+      say: ["focus", "shift", "foreground", "background", "subject", "attention"],
+      apply: { ask: "A flower in the foreground is sharp; then the focus slides to a person standing far behind " +
+                    "it. What technique is this?",
+               opts: ["Rack focus", "Dolly zoom", "Pan", "Dissolve"],
+               right: 0,
+               why: "Changing what is sharp within one shot is a rack focus." },
+      xfer: { ask: "On a phone, you tap a nearby cup and then a distant tree, and the sharp area jumps between " +
+                   "them. What film technique does that imitate?",
+              opts: ["Rack focus", "Tilt", "Jump cut", "Dutch angle"],
+              right: 0,
+              why: "Same idea — choosing which distance is sharp." }
+    }),
+
+    C("Camera stabilizer", {
+      why: "It gave filmmakers smooth moving shots anywhere a person could walk, without laying track.",
+      eg: "Garrett Brown's Steadicam followed Rocky up the Philadelphia Museum of Art steps in 1976.",
+      miss: [["A stabilizer is a kind of tripod.",
+              "A tripod holds the camera still. A stabilizer lets it move smoothly with an operator who walks " +
+              "or runs."]],
+      pre: [], rel: ["Tracking shot"],
+      say: ["smooth", "Steadicam", "operator", "walking", "balance", "steady"],
+      apply: { ask: "A director needs a smooth shot following an actor up narrow stairs where no track can be " +
+                    "laid. What tool?",
+               opts: ["A dolly on track", "A camera stabilizer", "A crane", "A tripod"],
+               right: 1,
+               why: "The operator can climb stairs; the stabilizer keeps the picture smooth." },
+      xfer: { ask: "A motorised phone gimbal keeps the picture level as you walk. It is a modern version of what?",
+              opts: ["A teleprompter", "A camera stabilizer", "A dolly zoom", "A jib"],
+              right: 1,
+              why: "It isolates the camera from the operator's movement — motors instead of counterweights." }
+    }),
+
+    C("Lead room", {
+      why: "Space ahead of a moving subject tells the viewer where it is going.",
+      eg: "A cyclist heading right is framed on the left third, with open road ahead.",
+      miss: [["Lead room is the space above the head.",
+              "That is head room. Lead room is space in the direction of movement."]],
+      pre: [], rel: ["Head room", "Leading lines"],
+      say: ["space", "ahead", "direction", "moving", "in front", "frame"],
+      apply: { ask: "A car drives from left to right across the frame. Where should it sit?",
+               opts: ["Near the right edge", "On the left side, with space ahead on the right",
+                      "Dead centre with no space either side", "Cut in half by the left edge"],
+               right: 1,
+               why: "Leave space in the direction of travel." },
+      xfer: { ask: "In a comic panel, a character running right is drawn at the far right edge. Why does it feel " +
+                   "cramped?",
+              opts: ["There is no lead room — nowhere for the motion to go", "Too much head room",
+                     "It is a Dutch angle", "It is a jump cut"],
+              right: 0,
+              why: "The rule belongs to the frame, whether the frame is film or paper." }
+    }),
+
+    C("Head room", {
+      why: "Too much and a person seems to sink; too little and they seem squeezed out of the frame.",
+      eg: "In an interview, the eyes sit near the upper third line with a small gap above the head.",
+      miss: [["More head room always looks better.",
+              "Too much makes the subject look small and the frame unbalanced. Aim for a small gap."]],
+      pre: [], rel: ["Lead room"],
+      say: ["above", "head", "top", "gap", "frame", "space"],
+      apply: { ask: "On a video call, your head sits at the bottom of the screen under a big empty wall. What is " +
+                    "wrong?",
+               opts: ["Too much head room", "Too little lead room", "A Dutch angle", "A rack focus"],
+               right: 0,
+               why: "The empty space above the head is head room, and there is far too much of it." },
+      xfer: { ask: "A tight close-up crops off the top of the subject's hair, with their eyes on the upper third " +
+                   "line. Is that acceptable?",
+              opts: ["Yes — in a tight close-up, cutting into the top of the head is normal",
+                     "No — never crop a head", "Only in wide shots", "Only in black and white"],
+              right: 0,
+              why: "The eyes matter more than the hairline. The closer the shot, the less head room it needs." }
+    }),
+
+    C("Leading lines", {
+      why: "They steer the eye to the subject without a word or a cut.",
+      eg: "Railway tracks converge toward a figure standing in the distance.",
+      miss: [["A tangent is a line that connects one subject to another.",
+              "In composition, a tangent is an awkward touching of edges, usually avoided. Lines that guide " +
+              "the eye are leading lines."]],
+      pre: [], rel: ["Lead room"],
+      say: ["lines", "guide", "eye", "toward", "road", "direct"],
+      apply: { ask: "A shot shows a path winding up a hill to a lone house. What is the path doing?",
+               opts: ["Acting as a leading line to the house", "Breaking the 180-degree rule",
+                      "Adding head room", "Creating a jump cut"],
+               right: 0,
+               why: "The eye follows the path to where it ends — the house." },
+      xfer: { ask: "In a painting, the edge of a table points straight at the main figure's face. What device is " +
+                   "that?",
+              opts: ["A leading line", "A rack focus", "A cutaway", "A Dutch angle"],
+              right: 0,
+              why: "Painters used leading lines long before cameras existed." }
+    }),
+
+    C("Teleprompter", {
+      why: "It lets a presenter read every word while looking the audience in the eye.",
+      eg: "A news anchor reads the script off angled glass mounted on the front of the studio camera.",
+      miss: [["The teleprompter sits beside the camera, out of its view.",
+              "The text is reflected onto glass directly in front of the lens, and the camera shoots straight " +
+              "through the glass."]],
+      pre: [], rel: [],
+      say: ["glass", "lens", "reflect", "script", "read", "presenter"],
+      apply: { ask: "Why don't viewers see the text of a studio teleprompter?",
+               opts: ["The angled glass reflects the text toward the presenter while the camera sees through it",
+                      "It is off to the side", "It uses invisible ink", "It is behind the presenter"],
+               right: 0,
+               why: "The glass is a one-way mirror: reflective to the presenter, transparent to the lens." },
+      xfer: { ask: "A politician reads a speech from two clear glass panels on stands and seems to look at the " +
+                   "crowd throughout. What are the panels?",
+              opts: ["Teleprompters, without a camera", "Stage lights", "Microphones", "Stabilizers"],
+              right: 0,
+              why: "The same reflected-text idea, aimed at a live audience instead of a lens." }
+    }),
+
+    C("Foley", {
+      why: "Much of what you hear in a film was made afterwards, on purpose, by a person.",
+      eg: "A Foley artist walks in place on a tray of gravel to match an actor's footsteps.",
+      miss: [["Foley is the final mix of a film's sound.",
+              "The final balance is the re-recording mixer's job. Foley is performing sound effects in time " +
+              "with the picture."]],
+      pre: [], rel: [],
+      say: ["sound", "effects", "footsteps", "performed", "sync", "recorded"],
+      apply: { ask: "Footsteps recorded on set are drowned out by wind. What does the sound team do?",
+               opts: ["Recreate them in a Foley session", "Reshoot the whole scene", "Add a dissolve",
+                      "Raise the frame rate"],
+               right: 0,
+               why: "Performing the footsteps again, in sync, is exactly what Foley is for." },
+      xfer: { ask: "A radio drama producer crumples cellophane near the microphone to sound like fire. What craft " +
+                   "is that?",
+              opts: ["Foley", "Rack focus", "Colour grading", "Tracking"],
+              right: 0,
+              why: "Foley grew out of exactly this radio tradition." }
+    }),
+
+    C("Match cut", {
+      why: "It joins two moments through what they share, so the cut itself says something.",
+      eg: "In 2001: A Space Odyssey (1968), a bone thrown into the air cuts to a spacecraft in orbit.",
+      miss: [["A match cut joins two shots of the same thing at the same time.",
+              "It links different shots through a matching shape, movement or composition — often across time " +
+              "or place."]],
+      pre: [], rel: ["Jump cut", "Dissolve"],
+      say: ["matching", "shape", "movement", "link", "similar", "cut"],
+      apply: { ask: "A spinning coin cuts to a spinning planet in the same position in the frame. What edit is it?",
+               opts: ["Match cut", "Jump cut", "Cutaway", "Wipe"],
+               right: 0,
+               why: "Two different things, linked by shape, motion and position." },
+      xfer: { ask: "A slideshow moves from a round clock face straight to a full moon in the same spot. Which " +
+                   "film transition is it copying?",
+              opts: ["Match cut", "Cutaway", "Jump cut", "Pan"],
+              right: 0,
+              why: "A matching shape carries the eye across the cut." }
+    }),
+
+    C("Jump cut", {
+      why: "It makes time visibly skip, which can feel restless, funny or urgent.",
+      eg: "Jean-Luc Godard's Breathless (1960) made the jump cut famous.",
+      miss: [["Any cut between different angles is a jump cut.",
+              "A jump cut keeps nearly the same angle and framing, so the subject seems to jump. Changing the " +
+              "angle by 30 degrees or more hides the join."]],
+      pre: [], rel: ["Match cut", "Cutaway"],
+      say: ["same", "angle", "jump", "time", "skip", "framing"],
+      apply: { ask: "A vlogger talks to a fixed camera, and the editor cuts out the pauses, so their head jerks " +
+                    "at every cut. What are these?",
+               opts: ["Jump cuts", "Match cuts", "Dissolves", "Wipes"],
+               right: 0,
+               why: "Same framing, time removed — the definition of a jump cut." },
+      xfer: { ask: "An editor wants to shorten an interview without anyone noticing the join. What hides it?",
+              opts: ["Laying a cutaway over the cut", "Adding more jump cuts", "Tilting the camera", "More head room"],
+              right: 0,
+              why: "The viewer is looking at something else at the moment the interview jumps." }
+    }),
+
+    C("Cutaway", {
+      why: "It covers a cut and adds context in the same move.",
+      eg: "An interviewee describes a painting, and the edit cuts to the painting before returning to them.",
+      miss: [["A cutaway ends the scene.",
+              "It leaves the main action only briefly, then returns to it."]],
+      pre: [], rel: ["Jump cut"],
+      say: ["interrupt", "something else", "return", "insert", "context", "show"],
+      apply: { ask: "During an interview about a bridge collapse, the edit shows the damaged bridge, then returns " +
+                    "to the speaker. The bridge shot is a…",
+               opts: ["Cutaway", "Wipe", "Dutch angle", "Dolly zoom"],
+               right: 0,
+               why: "It interrupts the main action to show what is being talked about, then returns." },
+      xfer: { ask: "A cooking show cuts from the host's face to the oven timer, then back to the host. What is " +
+                   "the timer shot?",
+              opts: ["A cutaway", "A match cut", "A dissolve", "A pan"],
+              right: 0,
+              why: "A brief look away from the main action, and back." }
+    }),
+
+    C("Dissolve", {
+      why: "It tells the audience, gently, that time has passed or the place has changed.",
+      eg: "A busy street in daylight dissolves into the same street, empty, at night.",
+      miss: [["A dissolve is a seamless continuity cut.",
+              "A dissolve usually signals a passage of time or a change of place. It draws attention to the join."]],
+      pre: [], rel: ["Match cut"],
+      say: ["fade", "overlap", "gradual", "time", "blend", "transition"],
+      apply: { ask: "A character falls asleep, and the shot slowly blends into the same room the next morning. " +
+                    "What transition?",
+               opts: ["Dissolve", "Jump cut", "Cut", "Wipe"],
+               right: 0,
+               why: "One shot fades through the other, and the overlap says time has passed." },
+      xfer: { ask: "A presentation fades one slide into the next over one second. Which film transition is that?",
+              opts: ["Dissolve", "Match cut", "Cutaway", "Tracking shot"],
+              right: 0,
+              why: "A gradual overlap of two images is a dissolve, on any screen." }
+    }),
+
+    C("Frame rate", {
+      why: "It decides how smooth motion looks — and playing it back at a different rate makes slow motion.",
+      eg: "Film runs at 24 frames per second. Shoot at 120 and play at 24, and action slows to a fifth.",
+      miss: [["Video works because the images blur together in the eye.",
+              "The brain perceives motion from the differences between frames — apparent motion — not from " +
+              "images lingering or blurring."]],
+      pre: [], rel: [],
+      say: ["frames", "second", "24", "smooth", "motion", "fps"],
+      apply: { ask: "Footage shot at 60 frames per second is played back at 30. How does the action look?",
+               opts: ["Twice as fast", "Half speed — slow motion", "Exactly the same", "Frozen"],
+               right: 1,
+               why: "Each second of action now takes two seconds to show." },
+      xfer: { ask: "A flip-book looks jerky with 5 drawings a second and smooth with 20. What changed?",
+              opts: ["The frame rate", "The aspect ratio", "The head room", "The focus"],
+              right: 0,
+              why: "More images each second — a higher frame rate — makes motion smoother." }
+    })
+  ];
+
+  var BOOK = { "media-5": MEDIA5, "media-6": MEDIA6, "media-7": MEDIA7, "biz-4": BIZ4 };
 
   /* A set with no authored concepts still runs, at the three levels a pair can
      honestly support. Saying so in the data is better than a Learn session

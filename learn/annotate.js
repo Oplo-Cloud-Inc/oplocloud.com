@@ -100,6 +100,8 @@ window.OPLO_ANNOTATE = (function () {
           // character of a caption would shift the offsets marks after it
           // were measured against.
           if (tag === "FIGURE") return NodeFilter.FILTER_REJECT;
+          // The same for a section's list of sources.
+          if (p.hasAttribute && p.hasAttribute("data-noread")) return NodeFilter.FILTER_REJECT;
           p = p.parentNode;
         }
         return NodeFilter.FILTER_ACCEPT;

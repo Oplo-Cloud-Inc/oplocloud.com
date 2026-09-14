@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 724" width="700" height="724" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Three framing rules, each shown well framed and badly framed. Looking room: a person looking left sits on the right third with space in front of their face, rather than at the left edge looking into it. Head room: a small gap above the head with the eyes near the upper third line, rather than the head sunk low under empty space. Lead room: a runner moving right sits on the left third with space ahead, rather than at the right edge about to leave the frame.</title>
+<rect width="700" height="724" fill="#ffffff"/>
+<defs>
+  <g id="thirds" stroke="#ffffff" stroke-width="1.5" opacity=".75">
+    <line x1="106.7" y1="0" x2="106.7" y2="180"/><line x1="213.3" y1="0" x2="213.3" y2="180"/>
+    <line x1="0" y1="60" x2="320" y2="60"/><line x1="0" y1="120" x2="320" y2="120"/>
+  </g>
+</defs>
+<g font-size="18" font-weight="700" fill="#1d1d1f">
+  <text x="24" y="30">Looking room</text>
+  <text x="24" y="262">Head room</text>
+  <text x="24" y="494">Lead room</text>
+</g>
+<g font-size="15" font-weight="600">
+  <text x="24" y="54" fill="#006300">✓ Space in front of the face</text>
+  <text x="364" y="54" fill="#a3262a">✕ Looking into the edge</text>
+  <text x="24" y="286" fill="#006300">✓ A small gap above the head</text>
+  <text x="364" y="286" fill="#a3262a">✕ The head sinks under empty space</text>
+  <text x="24" y="518" fill="#006300">✓ Space to move into</text>
+  <text x="364" y="518" fill="#a3262a">✕ About to leave the frame</text>
+</g>
+<svg x="24" y="64" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#8ea7c2"/><use href="#thirds"/>
+  <ellipse cx="226" cy="190" rx="70" ry="44" fill="#3a3a3c"/>
+  <circle cx="220" cy="90" r="34" fill="#f2c9a1"/>
+  <path d="M187 88 l-12 8 l12 5 z" fill="#f2c9a1"/><circle cx="200" cy="84" r="3.5" fill="#1d1d1f"/>
+  <path d="M60 90 H150" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="6 5"/>
+  <path d="M60 90 l10 -6 v12 z" fill="#ffffff"/>
+</svg>
+<rect x="24" y="64" width="320" height="180" fill="none" stroke="#006300" stroke-width="3"/>
+<svg x="356" y="64" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#8ea7c2"/>
+  <ellipse cx="54" cy="190" rx="70" ry="44" fill="#3a3a3c"/>
+  <circle cx="48" cy="90" r="34" fill="#f2c9a1"/>
+  <path d="M15 88 l-12 8 l12 5 z" fill="#f2c9a1"/><circle cx="28" cy="84" r="3.5" fill="#1d1d1f"/>
+</svg>
+<rect x="356" y="64" width="320" height="180" fill="none" stroke="#d03b3b" stroke-width="3"/>
+<svg x="24" y="296" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#b9c4a8"/><use href="#thirds"/>
+  <ellipse cx="160" cy="196" rx="96" ry="66" fill="#3a3a3c"/>
+  <circle cx="160" cy="72" r="46" fill="#f2c9a1"/>
+  <circle cx="144" cy="62" r="4" fill="#1d1d1f"/><circle cx="176" cy="62" r="4" fill="#1d1d1f"/>
+</svg>
+<rect x="24" y="296" width="320" height="180" fill="none" stroke="#006300" stroke-width="3"/>
+<svg x="356" y="296" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#b9c4a8"/>
+  <circle cx="160" cy="150" r="46" fill="#f2c9a1"/>
+  <circle cx="144" cy="140" r="4" fill="#1d1d1f"/><circle cx="176" cy="140" r="4" fill="#1d1d1f"/>
+  <rect x="60" y="14" width="200" height="78" rx="6" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="7 6"/>
+  <text x="160" y="58" font-size="15" font-weight="600" fill="#ffffff" text-anchor="middle">empty</text>
+</svg>
+<rect x="356" y="296" width="320" height="180" fill="none" stroke="#d03b3b" stroke-width="3"/>
+<svg x="24" y="528" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#e3c89a"/><use href="#thirds"/>
+  <rect x="0" y="146" width="320" height="34" fill="#c9a877"/>
+  <g stroke="#1d1d1f" stroke-width="9" stroke-linecap="round" fill="none">
+    <path d="M104 66 L96 108"/><path d="M96 108 L80 146"/><path d="M96 108 L118 144"/>
+    <path d="M102 78 L84 96"/><path d="M102 78 L124 90"/>
+  </g>
+  <circle cx="108" cy="48" r="14" fill="#1d1d1f"/>
+  <path d="M150 80 H286" stroke="#ffffff" stroke-width="3" stroke-dasharray="8 6"/>
+  <path d="M296 80 l-12 -7 v14 z" fill="#ffffff"/>
+</svg>
+<rect x="24" y="528" width="320" height="180" fill="none" stroke="#006300" stroke-width="3"/>
+<svg x="356" y="528" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#e3c89a"/>
+  <rect x="0" y="146" width="320" height="34" fill="#c9a877"/>
+  <g stroke="#1d1d1f" stroke-width="9" stroke-linecap="round" fill="none">
+    <path d="M290 66 L282 108"/><path d="M282 108 L266 146"/><path d="M282 108 L304 144"/>
+    <path d="M288 78 L270 96"/><path d="M288 78 L310 90"/>
+  </g>
+  <circle cx="294" cy="48" r="14" fill="#1d1d1f"/>
+</svg>
+<rect x="356" y="528" width="320" height="180" fill="none" stroke="#d03b3b" stroke-width="3"/>
+</svg>
