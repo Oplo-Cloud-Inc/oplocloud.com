@@ -7,8 +7,11 @@
                    when it names none yet
      sign in       opens the panel from any "Sign in", and on arrival when
                    another page sent somebody here to sign in (?next=)
+     the site bar  the phone menu, as oplocloud.com's own bar does it — but
+                   holding the page, which scrolls inside #gate, not the body
+     the footer    link columns that fold into rows on a phone, as
+                   assets/js/oplo-motion.js does it on the main site
      the hero      draws in, rounded, as the window scrolls away from it
-     the bars      the product bar's links fold behind a chevron on a phone
      the rail      previous and next, and whether there is anywhere to go
      the film      plays in a lightbox, once a film has been given
 
@@ -70,16 +73,72 @@
     slot.appendChild(node);
   });
 
-  /* ---------------------------------------------------------------- Sign in */
   var modal = document.getElementById("ldSignin");
-  var returnTo = null;
+  var film = document.getElementById("ldFilm");
 
+  /* The page is held still while anything sits on top of it: the phone menu,
+     the sign-in panel or the film. */
+  function hold() {
+    var open = (modal && !modal.hidden) || (film && !film.hidden) ||
+               !!(navLinks && navLinks.classList.contains("open"));
+    root.classList.toggle("ld-locked", open);
+  }
+
+  /* --------------------------------------------------------------- Site bar
+     The same behaviour as the inline script every oplocloud.com page carries,
+     except that it holds #gate rather than the body. */
+  var navEl = document.getElementById("nav");
+  var navLinks = document.getElementById("navLinks");
+  var navToggle = document.getElementById("navToggle");
+  function setNav(open) {
+    if (!navEl || !navLinks || !navToggle) return;
+    if (open === navLinks.classList.contains("open")) return;
+    navLinks.classList.toggle("open", open);
+    navEl.classList.toggle("open", open);
+    navToggle.classList.toggle("on", open);
+    navToggle.setAttribute("aria-expanded", String(open));
+    hold();
+  }
+  if (navToggle && navLinks) {
+    navToggle.addEventListener("click", function () { setNav(!navLinks.classList.contains("open")); });
+    navLinks.addEventListener("click", function (e) { if (e.target.closest("a")) setNav(false); });
+    window.addEventListener("resize", function () { setNav(false); });
+  }
+
+  /* ----------------------------------------------------------------- Footer
+     As assets/js/oplo-motion.js does it: below 734px each column's heading
+     becomes a button that opens its list. Above it the CSS keeps them open
+     and the buttons inert. */
+  [].forEach.call(root.querySelectorAll(".foot-col"), function (col) {
+    var h = col.querySelector("h3");
+    if (!h || h.querySelector("button")) return;
+    var list = col.querySelector("ul");
+    var label = h.textContent.trim();
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.setAttribute("aria-expanded", "false");
+    if (list) {
+      if (!list.id) list.id = "foot-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      b.setAttribute("aria-controls", list.id);
+    }
+    h.textContent = "";
+    h.appendChild(b);
+    b.addEventListener("click", function () {
+      var open = col.getAttribute("data-open") === "true";
+      col.setAttribute("data-open", String(!open));
+      b.setAttribute("aria-expanded", String(!open));
+    });
+  });
+
+  /* ---------------------------------------------------------------- Sign in */
+  var returnTo = null;
   function openSignin(from) {
     if (!modal || !modal.hidden) return;
     returnTo = from || document.activeElement;
+    setNav(false);
     modal.hidden = false;
-    root.classList.add("ld-locked");
-    closeMenu();
+    hold();
     setTimeout(function () {
       var email = document.getElementById("gEmail");
       if (email) email.focus();
@@ -88,12 +147,11 @@
   function closeSignin() {
     if (!modal || modal.hidden) return;
     modal.hidden = true;
-    root.classList.remove("ld-locked");
+    hold();
     if (returnTo && returnTo.focus) returnTo.focus();
   }
 
   /* ------------------------------------------------------------------ Film */
-  var film = document.getElementById("ldFilm");
   var player = film ? film.querySelector("video") : null;
   var poster = root.querySelector("[data-film-src]");
   var filmSrc = poster ? (poster.getAttribute("data-film-src") || "").trim() : "";
@@ -107,7 +165,7 @@
     if (!filmSrc || !film) return;
     player.src = filmSrc;
     film.hidden = false;
-    root.classList.add("ld-locked");
+    hold();
     var go = player.play();
     if (go && go.catch) go.catch(function () { /* the controls are there */ });
   }
@@ -117,22 +175,7 @@
     player.removeAttribute("src");
     player.load();
     film.hidden = true;
-    root.classList.remove("ld-locked");
-  }
-
-  /* ----------------------------------------------------------- Product bar */
-  var sub = document.getElementById("ldSub");
-  var menu = sub ? sub.querySelector(".ld-sub-menu") : null;
-  function closeMenu() {
-    if (!sub) return;
-    sub.classList.remove("is-open");
-    if (menu) menu.setAttribute("aria-expanded", "false");
-  }
-  if (menu) {
-    menu.addEventListener("click", function () {
-      var open = sub.classList.toggle("is-open");
-      menu.setAttribute("aria-expanded", String(open));
-    });
+    hold();
   }
 
   root.addEventListener("click", function (e) {
@@ -142,13 +185,12 @@
     if (t.closest("[data-film]")) { e.preventDefault(); openFilm(); return; }
     if (t.closest("#ldSignin [data-close]")) { closeSignin(); return; }
     if (t.closest("#ldFilm [data-close]")) { closeFilm(); return; }
-    if (t.closest(".ld-sub-links a")) closeMenu();
   });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape" || root.hidden) return;
     if (film && !film.hidden) closeFilm();
     else if (modal && !modal.hidden) closeSignin();
-    else closeMenu();
+    else setNav(false);
   });
 
   // Sent here to sign in — from the family view, or a link that asked for it.
@@ -161,7 +203,7 @@
     queued = false;
     if (!frame || reduced) return;
     var r = frame.getBoundingClientRect();
-    var p = Math.max(0, Math.min(1, -r.top / (r.height * 0.55)));
+    var p = Math.max(0, Math.min(1, -(r.top - 96) / (r.height * 0.55)));
     frame.style.setProperty("--p", p.toFixed(3));
   }
   root.addEventListener("scroll", function () {
