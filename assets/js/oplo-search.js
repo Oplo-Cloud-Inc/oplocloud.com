@@ -127,6 +127,8 @@
     // The phone menu and the search panel take the same space; one at a time.
     var links = $("navLinks"), toggle = $("navToggle");
     if (links && toggle && links.classList.contains("open")) toggle.click();
+    // So do a bar menu and search.
+    if (window.OploMenu && window.OploMenu.isOpen()) window.OploMenu.close();
     open = true;
     returnFocus = true;
     nav.classList.add("searching");

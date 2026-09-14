@@ -165,6 +165,63 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav-end a:hover { opacity: 1; }
 .nav-toggle { display: none; }
 
+/* Menus. Hovering a link in the bar opens its menu under the bar, the way
+   Apple's does: a column of large links, then small ones under their own
+   headings. The panel grows to its menu's height and the bar turns solid
+   while it is open, for the same containing-block reason as search below.
+   From a keyboard, the small button after each link opens it; the button is
+   only drawn while it has focus. A phone has the drawer instead. */
+@media (min-width: 834px) {
+  .nav-links > li { position: relative; display: flex; align-items: center; height: var(--nav); }
+}
+.nav-more {
+  position: absolute; left: 100%; top: 50%; margin: -7px 0 0 3px;
+  width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;
+  color: var(--ink); opacity: 0; pointer-events: none;
+}
+.nav-more:focus-visible { opacity: .8; pointer-events: auto; }
+.nav-more svg { width: 8px; height: 5px; display: block; transition: transform .2s var(--ease); }
+.nav-more[aria-expanded="true"] svg { transform: rotate(180deg); }
+.nav-links > li.on > a { opacity: 1; }
+.nav.menu-open { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.nav-flyout {
+  position: fixed; top: var(--nav); left: 0; right: 0; z-index: 1;
+  height: 0; overflow: hidden; visibility: hidden; background: var(--paper);
+  transition: height .32s var(--ease), visibility 0s linear .32s;
+}
+.nav-flyout.is-open { visibility: visible; transition: height .32s var(--ease); }
+.nav-flyout-in {
+  max-width: 1024px; margin-inline: auto;
+  padding: 38px max(var(--gutter), env(safe-area-inset-right)) 78px max(var(--gutter), env(safe-area-inset-left));
+}
+.nav-menu { display: none; gap: 44px; }
+.nav-menu.on { display: flex; }
+.nav-menu-col { min-width: 0; }
+.nav-menu-col.big { min-width: 200px; margin-right: 12px; }
+.nav-menu-h {
+  margin: 0 0 14px; font-size: 12px; line-height: 1.33; font-weight: 400;
+  letter-spacing: -.01em; color: var(--ink-2);
+}
+.nav-menu li { margin-bottom: 8px; }
+.nav-menu a {
+  display: inline-block; font-size: 12px; line-height: 1.33; font-weight: 600;
+  letter-spacing: -.01em; color: var(--ink); transition: color .15s;
+}
+.nav-menu-col.big li { margin-bottom: 7px; }
+.nav-menu-col.big a { font-family: var(--font); font-size: 24px; line-height: 1.17; letter-spacing: .009em; }
+.nav-menu a:hover, .nav-menu a:focus-visible { color: var(--blue); }
+.nav-flyout.is-open .nav-menu.on .nav-menu-col { animation: nav-menu-in .4s var(--ease) both; }
+.nav-flyout.is-open .nav-menu.on .nav-menu-col:nth-child(2) { animation-delay: 40ms; }
+.nav-flyout.is-open .nav-menu.on .nav-menu-col:nth-child(3) { animation-delay: 80ms; }
+@keyframes nav-menu-in { from { opacity: 0; transform: translateY(-8px); } }
+@media (max-width: 833px) {
+  .nav-more, .nav-flyout { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-flyout, .nav-flyout.is-open { transition: none; }
+  .nav-flyout.is-open .nav-menu.on .nav-menu-col { animation: none; }
+}
+
 /* Search. The magnifier ends the bar where "Sign in" used to be, and opens a
    panel under it: a field, then Quick Links until something is typed. While
    it is open the bar turns solid and loses its blur — a backdrop-filter makes
