@@ -61,6 +61,95 @@
 .ld .nav-toggle {
   display: none;
 }
+@media (min-width: 834px) {
+.ld .nav-links > li {
+  position: relative; display: flex; align-items: center; height: var(--nav);
+}
+}
+.ld .nav-more {
+  position: absolute; left: 100%; top: 50%; margin: -7px 0 0 3px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; color: var(--ink); opacity: 0; pointer-events: none;
+}
+.ld .nav-more:focus-visible {
+  opacity: .8; pointer-events: auto;
+}
+.ld .nav-more svg {
+  width: 8px; height: 5px; display: block; transition: transform .2s var(--ease);
+}
+.ld .nav-more[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.ld .nav-links > li.on > a {
+  opacity: 1;
+}
+.ld .nav.menu-open {
+  background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.ld .nav-flyout {
+  position: fixed; top: var(--nav); left: 0; right: 0; z-index: 1; height: 0; overflow: hidden; visibility: hidden; background: var(--paper); transition: height .32s var(--ease), visibility 0s linear .32s;
+}
+.ld .nav-flyout.is-open {
+  visibility: visible; transition: height .32s var(--ease);
+}
+.ld .nav-flyout-in {
+  max-width: 1024px; margin-inline: auto; padding: 38px max(var(--gutter), env(safe-area-inset-right)) 78px max(var(--gutter), env(safe-area-inset-left));
+}
+.ld .nav-menu {
+  display: none; gap: 44px;
+}
+.ld .nav-menu.on {
+  display: flex;
+}
+.ld .nav-menu-col {
+  min-width: 0;
+}
+.ld .nav-menu-col.big {
+  min-width: 200px; margin-right: 12px;
+}
+.ld .nav-menu-h {
+  margin: 0 0 14px; font-size: 12px; line-height: 1.33; font-weight: 400; letter-spacing: -.01em; color: var(--ink-2);
+}
+.ld .nav-menu li {
+  margin-bottom: 8px;
+}
+.ld .nav-menu a {
+  display: inline-block; font-size: 12px; line-height: 1.33; font-weight: 600; letter-spacing: -.01em; color: var(--ink); transition: color .15s;
+}
+.ld .nav-menu-col.big li {
+  margin-bottom: 7px;
+}
+.ld .nav-menu-col.big a {
+  font-family: var(--font); font-size: 24px; line-height: 1.17; letter-spacing: .009em;
+}
+.ld .nav-menu a:hover, .ld .nav-menu a:focus-visible {
+  color: var(--blue);
+}
+.ld .nav-flyout.is-open .nav-menu.on .nav-menu-col {
+  animation: nav-menu-in .4s var(--ease) both;
+}
+.ld .nav-flyout.is-open .nav-menu.on .nav-menu-col:nth-child(2) {
+  animation-delay: 40ms;
+}
+.ld .nav-flyout.is-open .nav-menu.on .nav-menu-col:nth-child(3) {
+  animation-delay: 80ms;
+}
+@keyframes nav-menu-in {
+.ld from {
+  opacity: 0; transform: translateY(-8px);
+}
+}
+@media (max-width: 833px) {
+.ld .nav-more, .ld .nav-flyout {
+  display: none !important;
+}
+}
+@media (prefers-reduced-motion: reduce) {
+.ld .nav-flyout, .ld .nav-flyout.is-open {
+  transition: none;
+}
+.ld .nav-flyout.is-open .nav-menu.on .nav-menu-col {
+  animation: none;
+}
+}
 .ld .nav-search {
   display: flex; align-items: center; justify-content: center; width: 32px; height: var(--nav); margin-right: -8px; color: var(--ink); opacity: .8; transition: opacity .2s;
 }

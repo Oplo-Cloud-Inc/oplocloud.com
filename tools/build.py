@@ -141,14 +141,81 @@ SEARCH_ICON = ('<svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><c
                'stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>')
 
 
+# What hovering each link in the bar opens, in NAV's order: a column of large
+# links, then smaller columns under their own headings, the way Apple's bar
+# does it. Every target is a page this script builds, or a section id on one,
+# so checklinks.py fails the build if a menu ever points at nothing.
+MENUS = [
+    [("Explore Products", [("All Products", "products/"), ("Hardware", "hardware/"),
+                           ("Software", "software/"), ("Intelligence", "intelligence/"),
+                           ("Oplo+", "plus/")]),
+     ("Hardware and Software", [("Silicon", "hardware/#silicon"), ("Devices", "hardware/#devices"),
+                                ("Accessories", "hardware/#accessories"), ("Apps", "software/#apps"),
+                                ("Updates", "software/#updates"), ("Downloads", "software/#downloads")]),
+     ("Oplo+", [("Plans", "plus/#plans"), ("What’s Included", "plus/#perks"),
+                ("Compare Plans", "plus/#compare"), ("Questions", "plus/#faq")])],
+    [("Explore Solutions", [("Who It’s For", "solutions/"), ("Personal", "solutions/#personal"),
+                            ("Education", "edu/"), ("Developers", "developers/"),
+                            ("Business and Government", "solutions/#institutions")]),
+     ("Education", [("Oplo Edu", "edu/"), ("OEdu", "edu/learn/"), ("Sign In to OEdu", OEDU),
+                    ("Who It’s For", "edu/#who")]),
+     ("Developers", [("Documentation", "developers/#docs"), ("SDKs", "developers/#sdks"),
+                     ("Design Resources", "developers/#design"), ("Developer Support", "developers/#support")])],
+    [("Explore Resources", [("All Resources", "resources/"), ("Privacy", "privacy/"),
+                            ("Newsroom", "newsroom/"), ("Investor Relations", "investor/"),
+                            ("Legal", "legal/")]),
+     ("Privacy", [("Features", "privacy/features/"), ("Control", "privacy/control/"),
+                  ("Privacy Labels", "privacy/labels/"), ("Transparency Report", "privacy/transparency/"),
+                  ("Privacy Policy", "legal/privacy-policy/")]),
+     ("Investors", [("Leadership and Governance", "investor/leadership/"), ("Filings", "investor/filings/"),
+                    ("Our Values", "investor/values/"), ("FAQ", "investor/faq/")])],
+    [("Explore Oplo", [("About Oplo", "company/"), ("Newsroom", "newsroom/"),
+                       ("Careers", "careers/"), ("Investor Relations", "investor/"),
+                       ("Contact", "contact/")]),
+     ("Quick Links", [("What We’re Building", "company/#what"), ("Where We’re Going", "company/#where"),
+                      ("Open Roles", "careers/#roles"), ("Press", "newsroom/#press")]),
+     ("Legal", [("Legal", "legal/"), ("Terms of Use", "legal/terms/"),
+                ("Privacy Policy", "legal/privacy-policy/")])],
+    [("Explore Support", [("Getting Help", "support/"), ("Developer Support", "developers/#support"),
+                          ("Contact Oplo", "contact/")]),
+     ("Quick Links", [("Your Oplo Account", "sign-in/"), ("Get Help", "support/#help"),
+                      ("Developer Help", "support/#developer-help"), ("Oplo+ Questions", "plus/#faq")]),
+     ("Contact", [("General Enquiries", "contact/#general"), ("Careers Enquiries", "contact/#careers-contact"),
+                  ("Investor Contact", "investor/contact/")])],
+]
+
+CHEVRON = ('<svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" '
+           'stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+
+
+def flyout(depth):
+    menus = ""
+    for i, cols in enumerate(MENUS):
+        body = ""
+        for c, (heading, links) in enumerate(cols):
+            li = "".join(f'<li><a href="{rel(depth, h)}">{l}</a></li>' for l, h in links)
+            body += (f'\n        <div class="nav-menu-col{" big" if c == 0 else ""}">'
+                     f'<h2 class="nav-menu-h">{heading}</h2><ul>{li}</ul></div>')
+        menus += (f'\n      <div class="nav-menu" id="navMenu{i}" role="region" '
+                  f'aria-label="{NAV[i][0]}">{body}\n      </div>')
+    return f'''  <div class="nav-flyout" id="navFlyout" hidden>
+    <div class="nav-flyout-in">{menus}
+    </div>
+  </div>
+'''
+
+
 def nav(depth, active=""):
     mark = (f'<svg class="mark" viewBox="{MARK_VB}" aria-hidden="true" focusable="false">'
             f'<g transform="translate({MARK_TR})"><path fill="currentColor" d="{MARK_D}"/></g></svg>')
     items = "".join(
         f'\n        <li><a href="{rel(depth, href)}"'
         + (' aria-current="page"' if href == active else "")
-        + f'>{label}</a></li>'
-        for label, href in NAV)
+        + f'>{label}</a>'
+        + (f'<button class="nav-more" type="button" aria-label="{label} menu" aria-expanded="false" '
+           f'aria-controls="navMenu{i}">{CHEVRON}</button>' if i < len(MENUS) else "")
+        + '</li>'
+        for i, (label, href) in enumerate(NAV))
     quick = "".join(f'\n          <li role="presentation"><a role="option" href="{rel(depth, href)}">'
                     f'<span class="t">{label}</span></a></li>' for label, href in QUICK)
     big_icon = SEARCH_ICON.replace('viewBox="0 0 15 15"', 'viewBox="-1 -1 17 17"')
@@ -164,7 +231,7 @@ def nav(depth, active=""):
       <span></span><span></span><span></span>
     </button>
   </div>
-  <div class="nav-find" id="navFind" hidden>
+{flyout(depth)}  <div class="nav-find" id="navFind" hidden>
     <div class="nav-find-in">
       <form class="nav-find-form" role="search" action="#">
         {big_icon}
@@ -239,6 +306,7 @@ def footer(depth, notes=None):
 </footer>
 
 <script src="{rel(depth, "assets/")}js/oplo-motion.js?v={JS_V}" defer></script>
+<script src="{rel(depth, "assets/")}js/oplo-menu.js?v={stamp("assets/js/oplo-menu.js")}" defer></script>
 <script src="{rel(depth, "assets/")}js/oplo-search.js?v={stamp("assets/js/oplo-search.js")}" defer></script>
 <script>
   (function () {{
@@ -2912,11 +2980,13 @@ def oedu_chrome():
              "  .ld .nav-links, .ld .nav-links a { transition: none !important; }\n}\n")
     io.open(os.path.join(ROOT, OEDU_CSS), "w", encoding="utf-8").write(css)
 
-    # The search behind the bar's magnifier, copied beside the page so OEdu
-    # stays served from its own directory. The index it reads is this site's.
-    search = io.open(os.path.join(ROOT, "assets/js/oplo-search.js"), encoding="utf-8").read()
-    io.open(os.path.join(ROOT, "learn/oplo-search.js"), "w", encoding="utf-8").write(search)
-    print(f"  wrote {OEDU_PAGE} bar, chapter bar and footer, {OEDU_CSS} and learn/oplo-search.js")
+    # The bar's menus and the search behind its magnifier, copied beside the
+    # page so OEdu stays served from its own directory. The search index it
+    # reads is this site's.
+    for name in ("oplo-menu.js", "oplo-search.js"):
+        js = io.open(os.path.join(ROOT, "assets/js", name), encoding="utf-8").read()
+        io.open(os.path.join(ROOT, "learn", name), "w", encoding="utf-8").write(js)
+    print(f"  wrote {OEDU_PAGE} bar, chapter bar and footer, {OEDU_CSS}, learn/oplo-menu.js and learn/oplo-search.js")
 
 
 # ----------------------------------------------------------------- Search
