@@ -130,6 +130,17 @@ def head(depth, title, desc, canonical, extra=""):
 '''
 
 
+# The bar ends in search, not "Sign in". An Oplo account is reached from the
+# footer (Support → Your Oplo account), and OEdu signs people in on its own
+# page. What search shows before anything is typed:
+QUICK = [("Products", "products/"), ("OEdu", OEDU), ("Oplo+", "plus/"),
+         ("Support", "support/"), ("Contact Oplo", "contact/")]
+
+SEARCH_ICON = ('<svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" '
+               'fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" '
+               'stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>')
+
+
 def nav(depth, active=""):
     mark = (f'<svg class="mark" viewBox="{MARK_VB}" aria-hidden="true" focusable="false">'
             f'<g transform="translate({MARK_TR})"><path fill="currentColor" d="{MARK_D}"/></g></svg>')
@@ -138,6 +149,9 @@ def nav(depth, active=""):
         + (' aria-current="page"' if href == active else "")
         + f'>{label}</a></li>'
         for label, href in NAV)
+    quick = "".join(f'\n          <li role="presentation"><a role="option" href="{rel(depth, href)}">'
+                    f'<span class="t">{label}</span></a></li>' for label, href in QUICK)
+    big_icon = SEARCH_ICON.replace('viewBox="0 0 15 15"', 'viewBox="-1 -1 17 17"')
     return f'''<nav class="nav" id="nav" aria-label="Oplo">
   <div class="nav-in">
     <a class="nav-brand" href="{rel(depth, "")}" aria-label="Oplo home">
@@ -145,11 +159,24 @@ def nav(depth, active=""):
     </a>
     <ul class="nav-links" id="navLinks">{items}
     </ul>
-    <div class="nav-end">{"" if active == "sign-in/" else f'<a href="{rel(depth, "sign-in/")}">Sign in</a>'}</div>
+    <div class="nav-end"><button class="nav-search" id="navSearch" type="button" aria-label="Search oplocloud.com" aria-expanded="false" aria-controls="navFind">{SEARCH_ICON}</button></div>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
     </button>
   </div>
+  <div class="nav-find" id="navFind" hidden>
+    <div class="nav-find-in">
+      <form class="nav-find-form" role="search" action="#">
+        {big_icon}
+        <input id="navFindInput" type="search" placeholder="Search oplocloud.com" aria-label="Search oplocloud.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-controls="navFindList">
+        <button class="nav-find-clear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 8 8" aria-hidden="true" focusable="false"><path d="M1 1l6 6M7 1 1 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+      </form>
+      <p class="nav-find-label" id="navFindLabel">Quick Links</p>
+      <ul class="nav-find-list" id="navFindList" role="listbox" aria-labelledby="navFindLabel">{quick}
+      </ul>
+    </div>
+  </div>
+  <div class="nav-scrim" id="navScrim" hidden></div>
 </nav>
 '''
 
@@ -212,6 +239,7 @@ def footer(depth, notes=None):
 </footer>
 
 <script src="{rel(depth, "assets/")}js/oplo-motion.js?v={JS_V}" defer></script>
+<script src="{rel(depth, "assets/")}js/oplo-search.js?v={stamp("assets/js/oplo-search.js")}" defer></script>
 <script>
   (function () {{
     var nav = document.getElementById("nav");
@@ -221,6 +249,7 @@ def footer(depth, notes=None):
     var held = 0;
     function set(open) {{
       if (open === links.classList.contains("open")) return;
+      if (open && window.OploSearch) window.OploSearch.close();
       if (open) {{
         held = window.scrollY;
         document.body.style.top = (-held) + "px";
@@ -2849,11 +2878,9 @@ def scope_css(css, prefix):
 
 
 def oedu_chrome():
+    # The bar is the site's, search and all. OEdu's own "Sign in" is the
+    # chapter bar's, below it, because that is the product's sign-in.
     bar = absolute(nav(0))
-    here = f'<a href="{SITE}sign-in/">Sign in</a>'
-    if here not in bar:
-        raise SystemExit("the bar's Sign in link has moved; update oedu_chrome()")
-    bar = bar.replace(here, '<a href="#signin" data-signin>Sign in</a>')
 
     sub = chapter(0, "OEdu", OEDU_SECTIONS, "#top", ("Sign in", "#signin"))
     sub = sub.replace('class="chapter-cta" href="#signin"', 'class="chapter-cta" href="#signin" data-signin')
@@ -2884,7 +2911,46 @@ def oedu_chrome():
            + "@media (prefers-reduced-motion: reduce) {\n"
              "  .ld .nav-links, .ld .nav-links a { transition: none !important; }\n}\n")
     io.open(os.path.join(ROOT, OEDU_CSS), "w", encoding="utf-8").write(css)
-    print(f"  wrote {OEDU_PAGE} bar, chapter bar and footer, and {OEDU_CSS}")
+
+    # The search behind the bar's magnifier, copied beside the page so OEdu
+    # stays served from its own directory. The index it reads is this site's.
+    search = io.open(os.path.join(ROOT, "assets/js/oplo-search.js"), encoding="utf-8").read()
+    io.open(os.path.join(ROOT, "learn/oplo-search.js"), "w", encoding="utf-8").write(search)
+    print(f"  wrote {OEDU_PAGE} bar, chapter bar and footer, {OEDU_CSS} and learn/oplo-search.js")
+
+
+# ----------------------------------------------------------------- Search
+# What the bar's search looks through: every page this script builds, read
+# back from the pages themselves — title, description, and the section names
+# in its chapter bar — so the index can only ever describe pages that exist.
+SEARCH_INDEX = "assets/search-index.json"
+
+
+def search_index():
+    import html as htmllib, json
+
+    def text(s):
+        return " ".join(htmllib.unescape(re.sub(r"<[^>]+>", " ", s or "")).split())
+
+    pages = []
+    for path, content in PAGES:
+        title = re.search(r"<title>(.*?)</title>", content, re.S)
+        desc = re.search(r'<meta name="description" content="([^"]*)"', content)
+        chap = re.search(r'class="chapter-links"[^>]*>(.*?)</nav>', content, re.S)
+        h1 = re.search(r"<h1[^>]*>(.*?)</h1>", content, re.S)
+        t = text(title.group(1) if title else path)
+        t = re.sub(r"\s+[—–-]\s+Oplo$", "", t)
+        pages.append({
+            "t": "Home" if t == "Oplo" else t,
+            "d": text(desc.group(1) if desc else ""),
+            "k": " ".join(filter(None, [text(h1.group(1)) if h1 else "", text(chap.group(1)) if chap else ""])),
+            "u": re.sub(r"index\.html$", "", path),
+        })
+    pages.append({"t": "OEdu", "d": "Sign in to OEdu — courses, the gradebook, and the family view.",
+                  "k": "students teachers families school sign in learn", "u": OEDU})
+    io.open(os.path.join(ROOT, SEARCH_INDEX), "w", encoding="utf-8").write(
+        json.dumps({"pages": pages}, ensure_ascii=False, separators=(",", ":")) + "\n")
+    print(f"  wrote {SEARCH_INDEX} ({len(pages)} pages)")
 
 
 if __name__ == "__main__":
@@ -2894,4 +2960,5 @@ if __name__ == "__main__":
         io.open(full, "w", encoding="utf-8").write(content)
         print(f"  wrote {path:44s} {len(content):>6,} bytes")
     print(f"\n{len(PAGES)} pages built")
+    search_index()
     oedu_chrome()

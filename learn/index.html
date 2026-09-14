@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css?v=124f1719">
-<link rel="stylesheet" href="oplo-chrome.css?v=9e05b335">
+<link rel="stylesheet" href="oplo-chrome.css?v=98289d77">
 <link rel="stylesheet" href="landing.css?v=22fc4b93">
 </head>
 <body>
@@ -58,11 +58,29 @@
         <li><a href="https://oplocloud.com/company/">Company</a></li>
         <li><a href="https://oplocloud.com/support/">Support</a></li>
     </ul>
-    <div class="nav-end"><a href="#signin" data-signin>Sign in</a></div>
+    <div class="nav-end"><button class="nav-search" id="navSearch" type="button" aria-label="Search oplocloud.com" aria-expanded="false" aria-controls="navFind"><svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button></div>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
     </button>
   </div>
+  <div class="nav-find" id="navFind" hidden>
+    <div class="nav-find-in">
+      <form class="nav-find-form" role="search" action="#">
+        <svg viewBox="-1 -1 17 17" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <input id="navFindInput" type="search" placeholder="Search oplocloud.com" aria-label="Search oplocloud.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-controls="navFindList">
+        <button class="nav-find-clear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 8 8" aria-hidden="true" focusable="false"><path d="M1 1l6 6M7 1 1 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+      </form>
+      <p class="nav-find-label" id="navFindLabel">Quick Links</p>
+      <ul class="nav-find-list" id="navFindList" role="listbox" aria-labelledby="navFindLabel">
+          <li role="presentation"><a role="option" href="https://oplocloud.com/products/"><span class="t">Products</span></a></li>
+          <li role="presentation"><a role="option" href="https://edu.oplocloud.com/"><span class="t">OEdu</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/plus/"><span class="t">Oplo+</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/support/"><span class="t">Support</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/contact/"><span class="t">Contact Oplo</span></a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="nav-scrim" id="navScrim" hidden></div>
 </nav>
 <!-- /oplo:nav -->
   <!-- oplo:chapter -->
@@ -554,7 +572,8 @@
 <script src="tutor.js?v=e36b13da"></script>
 <script src="kmap.js?v=32de7572"></script>
 <script src="home.js?v=6cb47e0b"></script>
-<script src="landing.js?v=c0fa2055"></script>
+<script src="oplo-search.js?v=7ec74629"></script>
+<script src="landing.js?v=7b3b8d9a"></script>
 <script src="app.js?v=ce54b578"></script>
 </body>
 </html>
