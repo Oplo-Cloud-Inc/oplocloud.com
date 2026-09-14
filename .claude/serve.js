@@ -1,6 +1,8 @@
 /* A static file server for previewing the site locally. Nothing here ships. */
 const http = require("http"), fs = require("fs"), path = require("path");
 const ROOT = "/Users/saswatjimac/Library/CloudStorage/Dropbox/oplocloud.com";
+// 8123 unless a port is given, so a second session can preview beside a first.
+const PORT = Number(process.env.PORT || process.argv[2] || 8123);
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
   ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png",
   ".jpg": "image/jpeg", ".ico": "image/x-icon", ".webp": "image/webp" };
@@ -22,4 +24,4 @@ http.createServer((req, res) => {
                          "Cache-Control": "no-store" });
     res.end(buf);
   });
-}).listen(8123, () => console.log("serving " + ROOT + " on http://localhost:8123"));
+}).listen(PORT, () => console.log("serving " + ROOT + " on http://localhost:" + PORT));

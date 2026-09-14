@@ -133,9 +133,18 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   position: fixed; top: 0; left: 0; right: 0;
   height: var(--nav);
   z-index: 9000;
-  background: rgba(255,255,255,.8);
+}
+/* The bar's glass is a layer behind the bar, not the bar. A backdrop-filter
+   on the bar itself makes it the containing block for everything fixed inside
+   it — the phone drawer, the menus, search, the scrim — and pins them all to
+   its 44px. On a layer of its own it pins nothing, and the bar turning solid
+   under a menu is a fade of one colour instead of a switch. */
+.nav::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background-color: rgba(255,255,255,.8);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
+  transition: background-color .45s var(--ease);
 }
 .nav-in {
   max-width: 1024px; margin-inline: auto;
@@ -167,10 +176,37 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 /* Menus. Hovering a link in the bar opens its menu under the bar, the way
    Apple's does: a column of large links, then small ones under their own
-   headings. The panel grows to its menu's height and the bar turns solid
-   while it is open, for the same containing-block reason as search below.
+   headings. oplo-menu.js decides when; this decides how it moves, and all of
+   it is transform and opacity, so the compositor does the work and nothing on
+   the page is laid out again while it plays:
+
+     the panel   one white layer, as tall as the tallest menu, scaled to the
+                 menu showing — it grows on a spring that settles without
+                 passing its mark, and morphs from menu to menu
+     the links   every row has its own delay, set by the script, so they arrive
+                 down each column and across; they travel on a softer spring
+                 that carries 2% past where they land and comes back
+     switching   the old menu's links leave toward where the pointer came
+                 from while the new menu's arrive from where it is going
+     the bar     fades solid, the other links step back, and a hairline glides
+                 under the link that is open
+     closing     faster than opening: the links go, then the panel folds
+
    From a keyboard, the small button after each link opens it; the button is
    only drawn while it has focus. A phone has the drawer instead. */
+.nav {
+  --menu-ease: cubic-bezier(.32, .72, 0, 1);
+  --menu-spring: cubic-bezier(.34, 1.16, .64, 1);
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  .nav {
+    /* Damped springs, sampled: the panel (ratio .96) settles in 530ms without
+       overshoot; the links (ratio .78) overshoot 2% and settle in 490ms. */
+    --menu-ease: linear(0, 0.004 1.3%, 0.023 3.1%, 0.081 6.3%, 0.175 10.1%, 0.466 20.8%, 0.556 24.5%, 0.623 27.7%, 0.683 30.8%, 0.744 34.6%, 0.795 38.4%, 0.837 42.1%, 0.877 46.5%, 0.911 51.6%, 0.94 57.2%, 0.961 63.5%, 0.986 77.4%, 1);
+    --menu-spring: linear(0, 0.005 1.4%, 0.031 3.4%, 0.057 4.7%, 0.107 6.8%, 0.209 10.1%, 0.544 20.3%, 0.641 23.6%, 0.726 27%, 0.785 29.7%, 0.846 33.1%, 0.896 36.5%, 0.935 39.9%, 0.969 43.9%, 0.992 48%, 1.009 52.7%, 1.017 57.4%, 1.019 67.6%, 1);
+  }
+}
+.nav-in { position: relative; }
 @media (min-width: 834px) {
   .nav-links > li { position: relative; display: flex; align-items: center; height: var(--nav); }
 }
@@ -182,20 +218,45 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav-more:focus-visible { opacity: .8; pointer-events: auto; }
 .nav-more svg { width: 8px; height: 5px; display: block; transition: transform .2s var(--ease); }
 .nav-more[aria-expanded="true"] svg { transform: rotate(180deg); }
-.nav-links > li.on > a { opacity: 1; }
-.nav.menu-open { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* The bar while a menu is open. */
+.nav.menu-open::before { background-color: var(--paper); }
+.nav-links > li > a { transition: opacity .35s var(--ease); }
+.nav.menu-open .nav-links > li > a { opacity: .5; }
+.nav.menu-open .nav-links > li.on > a,
+.nav.menu-open .nav-links > li > a:hover { opacity: 1; }
+.nav-glide {
+  position: absolute; left: 0; bottom: 8px; width: 100px; height: 2px; border-radius: 1px;
+  background: var(--ink); transform-origin: 0 50%; opacity: 0; pointer-events: none;
+  transition: transform .5s var(--menu-ease), opacity .25s var(--ease);
+}
+.nav-glide.on { opacity: .85; }
+.nav-glide.snap { transition: opacity .25s var(--ease); }
+
+/* The panel. Everything is laid out the whole time, stacked in one grid cell
+   and hidden, so the script always knows each menu's height; the white layer
+   behind them is what grows. The panel takes no pointer itself, only what is
+   drawn of it, so the page under the rest of it still closes the menu. */
 .nav-flyout {
   position: fixed; top: var(--nav); left: 0; right: 0; z-index: 1;
-  height: 0; overflow: hidden; visibility: hidden; background: var(--paper);
-  transition: height .32s var(--ease), visibility 0s linear .32s;
+  visibility: hidden; pointer-events: none;
 }
-.nav-flyout.is-open { visibility: visible; transition: height .32s var(--ease); }
-.nav-flyout-in {
-  max-width: 1024px; margin-inline: auto;
+.nav-flyout.is-open { visibility: visible; }
+.nav-flyout-bg {
+  position: absolute; inset: 0; background: var(--paper);
+  transform: scaleY(0); transform-origin: 50% 0; will-change: transform;
+  pointer-events: auto;
+  transition: transform .56s var(--menu-ease);
+}
+.nav-flyout.is-closing .nav-flyout-bg { transition: transform .36s cubic-bezier(.4, 0, .2, 1) 50ms; }
+.nav-flyout-bg.snap { transition: none; }
+.nav-flyout-in { position: relative; display: grid; max-width: 1024px; margin-inline: auto; }
+.nav-menu {
+  grid-area: 1 / 1; align-self: start; display: flex; gap: 44px;
   padding: 38px max(var(--gutter), env(safe-area-inset-right)) 78px max(var(--gutter), env(safe-area-inset-left));
+  visibility: hidden; pointer-events: none;
 }
-.nav-menu { display: none; gap: 44px; }
-.nav-menu.on { display: flex; }
+.nav-menu.on { visibility: visible; pointer-events: auto; }
+.nav-menu.out { visibility: visible; }
 .nav-menu-col { min-width: 0; }
 .nav-menu-col.big { min-width: 200px; margin-right: 12px; }
 .nav-menu-h {
@@ -210,23 +271,46 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav-menu-col.big li { margin-bottom: 7px; }
 .nav-menu-col.big a { font-family: var(--font); font-size: 24px; line-height: 1.17; letter-spacing: .009em; }
 .nav-menu a:hover, .nav-menu a:focus-visible { color: var(--blue); }
-.nav-flyout.is-open .nav-menu.on .nav-menu-col { animation: nav-menu-in .4s var(--ease) both; }
-.nav-flyout.is-open .nav-menu.on .nav-menu-col:nth-child(2) { animation-delay: 40ms; }
-.nav-flyout.is-open .nav-menu.on .nav-menu-col:nth-child(3) { animation-delay: 80ms; }
-@keyframes nav-menu-in { from { opacity: 0; transform: translateY(-8px); } }
+
+/* The links. Resting state is out of sight; .on brings them in on their own
+   delays, .prep is where they start from, .out is where they leave to. */
+.nav-menu-h, .nav-menu li {
+  opacity: 0; transform: translate3d(0, -6px, 0);
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+}
+.nav-menu.on .nav-menu-h, .nav-menu.on li {
+  opacity: 1; transform: none;
+  transition: opacity .4s var(--ease) var(--d, 0ms), transform .5s var(--menu-spring) var(--d, 0ms);
+}
+.nav-menu.prep .nav-menu-h, .nav-menu.prep li {
+  opacity: 0; transform: translate3d(var(--from-x, 0px), var(--from-y, -10px), 0);
+  transition: none;
+}
+.nav-menu.out .nav-menu-h, .nav-menu.out li {
+  opacity: 0; transform: translate3d(var(--to-x, 0px), 0, 0);
+  transition: opacity .16s var(--ease), transform .3s var(--menu-ease);
+}
+.nav-flyout.is-closing .nav-menu.on .nav-menu-h, .nav-flyout.is-closing .nav-menu.on li {
+  opacity: 0; transform: translate3d(0, -4px, 0);
+  transition: opacity .16s var(--ease), transform .24s var(--ease);
+}
+
+/* The page behind a menu blurs and dims by fading, rather than appearing. */
+.nav-scrim.menu-fade { animation: none; opacity: 0; transition: opacity .36s var(--ease); }
+.nav-scrim.menu-fade.is-on { opacity: 1; transition-duration: .5s; }
+
 @media (max-width: 833px) {
-  .nav-more, .nav-flyout { display: none !important; }
+  .nav-more, .nav-flyout, .nav-glide { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nav-flyout, .nav-flyout.is-open { transition: none; }
-  .nav-flyout.is-open .nav-menu.on .nav-menu-col { animation: none; }
+  .nav::before, .nav-glide, .nav-flyout-bg, .nav-menu-h, .nav-menu li, .nav-scrim.menu-fade,
+  .nav-links > li > a { transition: none !important; }
+  .nav-menu-h, .nav-menu li { transform: none !important; }
 }
 
 /* Search. The magnifier ends the bar where "Sign in" used to be, and opens a
    panel under it: a field, then Quick Links until something is typed. While
-   it is open the bar turns solid and loses its blur — a backdrop-filter makes
-   the bar the containing block for anything fixed inside it, which would pin
-   the panel and its scrim to the bar's 44px instead of the window. */
+   it is open the bar turns solid. */
 .nav-search {
   display: flex; align-items: center; justify-content: center;
   width: 32px; height: var(--nav); margin-right: -8px;
@@ -234,7 +318,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 .nav-search:hover, .nav-search[aria-expanded="true"] { opacity: 1; }
 .nav-search svg { width: 15px; height: 15px; display: block; }
-.nav.searching { background: var(--paper); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.nav.searching::before { background-color: var(--paper); }
 .nav.searching .nav-links { opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
 .nav-find {
   position: fixed; top: var(--nav); left: 0; right: 0; z-index: 1;
@@ -341,10 +425,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .nav-links.open li:nth-child(8) a { transition-delay: 174ms; }
   /* You are already here; the row stays reachable but stops competing. */
   .nav-links a[aria-current="page"] { color: var(--ink-3); }
-  .nav.open { background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .nav.open::before { background-color: #fff; }
   /* Half the blur radius costs the compositor far less per frame and is
      indistinguishable behind a 44px bar. */
-  .nav { -webkit-backdrop-filter: saturate(180%) blur(10px); backdrop-filter: saturate(180%) blur(10px); }
+  .nav::before { -webkit-backdrop-filter: saturate(180%) blur(10px); backdrop-filter: saturate(180%) blur(10px); }
   .nav-toggle { min-width: 44px; min-height: 44px; justify-content: center; align-items: flex-end; }
   .nav-toggle {
     display: flex; flex-direction: column; gap: 4px;
