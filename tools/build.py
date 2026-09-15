@@ -65,7 +65,7 @@ FOOTER = [
                   ("Software", "software/"), ("Intelligence", "intelligence/"),
                   ("Oplo+", "plus/")]),
     ("Solutions", [("Who it is for", "solutions/"), ("Personal", "solutions/#personal"),
-                   ("Education", "edu/"), ("OEdu", OEDU),
+                   ("Education", OEDU),
                    ("Developers", "developers/"),
                    ("Business and government", "solutions/#institutions")]),
     ("Resources", [("Everything written down", "resources/"),
@@ -155,9 +155,11 @@ MENUS = [
      ("Oplo+", [("Plans", "plus/#plans"), ("What’s Included", "plus/#perks"),
                 ("Compare Plans", "plus/#compare"), ("Questions", "plus/#faq")])],
     [("Explore Solutions", [("Who It’s For", "solutions/"), ("Personal", "solutions/#personal"),
-                            ("Education", "edu/"), ("Developers", "developers/"),
+                            ("Education", OEDU), ("Developers", "developers/"),
                             ("Business and Government", "solutions/#institutions")]),
-     ("Education", [("OEdu", OEDU), ("Who It’s For", "edu/#who")]),
+     ("Education", [("OEdu", OEDU), ("Students", OEDU + "#students"),
+                    ("Teachers", OEDU + "#teachers"), ("Families", OEDU + "#families"),
+                    ("Schools", OEDU + "#schools")]),
      ("Developers", [("Documentation", "developers/#docs"), ("SDKs", "developers/#sdks"),
                      ("Design Resources", "developers/#design"), ("Developer Support", "developers/#support")])],
     [("Explore Resources", [("All Resources", "resources/"), ("Privacy", "privacy/"),
@@ -438,8 +440,9 @@ def home():
                 "Personal computing only means something if the personal part stays private.",
                 [("Learn more", "privacy/")])
     out += card("", "Education", "A classroom, not a fleet.",
-                "Oplo Edu is the division. OEdu is the thing students and teachers actually sign in to.",
-                [("Oplo Edu", "edu/"), ("Open OEdu", OEDU)])
+                "OEdu is where a school signs in: coursework, grades, and one record that "
+                "students, teachers and families all read the same way.",
+                [("Open OEdu", OEDU)])
     out += card("dark", "Oplo+", 'One membership,<br class="br-wide">the whole system.',
                 "The account, the storage and the services that follow you across every Oplo device.",
                 [("Learn more", "plus/")])
@@ -542,8 +545,8 @@ PAGES.append(("solutions/index.html", section_page(
       "Personal computing in the original sense: a device that is quiet when it should be, ready when it is needed, and not quietly working for someone else.",
       [("What we build", "products/"), ("Oplo+", "plus/")]),
      ("", "education", "Education", "A classroom, not a fleet.",
-      "Oplo Edu is the education division, and OEdu is the thing students and teachers actually sign in to — coursework, grades and a teacher console built for teaching rather than for asset management.",
-      [("Oplo Edu", "edu/"), ("Open OEdu", OEDU)]),
+      "OEdu is the thing a school actually signs in to — coursework, grades and a teacher console built for teaching rather than for asset management, with one record students, teachers and families all read the same way.",
+      [("Open OEdu", OEDU)]),
      ("", "developers", "Developers", "Build on Oplo.",
       "One set of tools across the hardware, the software and the models, so the platform is learned once rather than once per device.",
       [("Developer resources", "developers/")]),
@@ -1522,410 +1525,6 @@ def plus_page():
     return ("plus/index.html", out + footer(depth, notes))
 
 PAGES.append(plus_page())
-
-
-# ==========================================================================
-# Oplo Edu.
-# Content and structure supplied by Oplo — the mission, the fragmentation
-# argument, the four pillars, the two audiences, the vision. Substance kept
-# whole; register tuned to match the rest of the site, which is plainer than
-# the source draft.
-# ==========================================================================
-
-PILLARS = [
-    ("Institutional rigour",
-     "Structured pathways and professional certifications built to the standards corporate training and "
-     "academic credit actually have to meet." + mo(" Not a library of videos with a quiz at the end.")),
-    ("Adaptive mastery",
-     "Learners move at their own pace through skill trees, and nothing unlocks until the thing before it "
-     "is genuinely understood." + mo(" Proficiency is the gate, not attendance.")),
-    ("Expert mentorship, on demand",
-     "When tracking sees someone stuck, it connects them to a vetted one-to-one tutor rather than letting "
-     "them stall." + mo(" The automation knows its own limits.")),
-    ("One workflow",
-     "Assignments, progress, templates and grading from a single console" + mo(", so the administrative "
-     "load stops being the price of running a course") + "."),
-]
-
-AUDIENCES = [
-    ("K&#8209;12 and higher education",
-     "Secure, LTI&#8209;compliant infrastructure that sits inside what a school already runs." + mo(" It "
-     "takes administrative weight off teachers and gives students support at the hour they actually get "
-     "stuck, which is rarely during the lesson.")),
-    ("Enterprise and corporate training",
-     "Scalable upskilling pathways with transparent skill&#8209;gap analytics for the people planning "
-     "headcount" + mo(", and hands-on training backed by live coaching for the people doing the work") + "."),
-]
-
-EDU_CSS = '''<style>
-  /* The fragmentation, shown: four things that do not touch, then one that
-     does. Type-led, because the argument is about arrangement, not imagery. */
-  .split { width: min(100%, 720px); margin: clamp(40px, 5.4vw, 64px) auto 0; }
-  .split .four {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-  }
-  .split .four span {
-    padding: 18px 8px; font-size: 13px; line-height: 1.35;
-    color: var(--ink-lt-2); text-align: center;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
-    border-radius: 10px;
-  }
-  .split .verdict {
-    margin-top: 18px; font-size: 13px; color: var(--ink-lt-2);
-  }
-  .split .one {
-    margin-top: 26px; padding: 22px 8px; border-radius: 10px;
-    background: var(--ink-lt); color: #000;
-    font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -.01em;
-  }
-  @media (max-width: 600px) {
-    .split .four { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  /* Pillars and audiences: text held apart by hairlines, no panels. */
-  .pillars {
-    width: min(100%, 940px); margin: clamp(40px, 5.4vw, 64px) auto 0;
-    display: grid; grid-template-columns: repeat(2, 1fr);
-    gap: 0 clamp(36px, 5vw, 76px); text-align: left;
-  }
-  .pillars > div { padding: 30px 0; border-top: 1px solid var(--rule); }
-  .pillars h3 {
-    font-family: var(--font); font-size: clamp(19px, 2vw, 23px); font-weight: 600;
-    letter-spacing: -.01em; margin-bottom: 8px;
-  }
-  .pillars p { font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 42ch; }
-  .band.dark .pillars > div { border-top-color: rgba(255,255,255,.2); }
-  .band.dark .pillars p { color: var(--ink-lt-2); }
-  @media (max-width: 734px) { .pillars { grid-template-columns: 1fr; gap: 0; } }
-
-  .serve { width: min(100%, 900px); margin: clamp(38px, 5vw, 58px) auto 0;
-           display: grid; gap: clamp(30px, 4vw, 46px); text-align: left; }
-  .serve > div { padding-top: 28px; border-top: 1px solid var(--rule); }
-  .serve h3 {
-    font-family: var(--font); font-size: clamp(21px, 2.4vw, 28px); font-weight: 600;
-    letter-spacing: -.014em; margin-bottom: 10px;
-  }
-  .serve p { font-size: clamp(16px, 1.5vw, 18px); line-height: 1.6; color: var(--ink-2); max-width: 58ch; }
-</style>'''
-
-
-def edu_page():
-    depth = 1
-    links = [("Overview", "#top"), ("The problem", "#problem"), ("The platform", "#platform"),
-             ("Who it is for", "#who"), ("Vision", "#vision")]
-    out = head(depth, "Oplo Edu",
-               "Oplo Edu brings structured curriculum, adaptive practice, live expert coaching and classroom administration into one workspace.",
-               "edu/", EDU_CSS)
-    out += nav(depth, "edu/")
-    out += chapter(depth, "Oplo Edu", links, "edu/", ("Try OEdu", OEDU))
-    out += '<main id="top">\n'
-
-    out += '''<section class="band">
-  <div class="well">
-    <p class="eyebrow reveal">Oplo Edu</p>
-    <h1 class="t-hero balance reveal" style="max-width:19ch;margin-inline:auto">Automated where it helps. Human where it counts.</h1>
-    <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:42ch;margin-inline:auto">Structured curriculum, practice that adapts, live experts, and the administration underneath &mdash; in one workspace.</p>
-    <p class="cta-row reveal d2" style="margin-top:24px">
-      <a class="cta" href="https://edu.oplocloud.com/">Try OEdu</a>
-      <a class="cta" href="learn/">How it works</a>
-    </p>
-    <p class="t-fine muted reveal d2" style="margin-top:20px">In development.<sup>1</sup></p>
-  </div>
-</section>
-'''
-
-    out += '''<section class="band dark scene" id="problem">
-  <div class="well">
-    <p class="moment reveal">The problem</p>
-    <q class="reveal">One tool for the lecture. Another for the exercises. A third for homework. A fourth to find a tutor.</q>
-    <div class="split reveal d1">
-      <div class="four" aria-hidden="true">
-        <span>Lectures</span><span>Practice</span><span>Assignments</span><span>Tutoring</span>
-      </div>
-      <p class="verdict">Four logins. Four sets of data. Nobody holding the whole picture of how a learner is actually doing.</p>
-      <div class="one" aria-hidden="true">One workspace</div>
-    </div>
-    <p class="body balance reveal d1">The overhead lands on staff, the gaps land on learners, and completion rates fall for reasons no single system can see.<span class="more"> Fragmentation is not an inconvenience &mdash; it is the reason the numbers look the way they do.</span></p>
-  </div>
-</section>
-'''
-
-    pill = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in PILLARS)
-    out += f'''<section class="band" id="platform">
-  <div class="well">
-    <p class="eyebrow reveal">The platform</p>
-    <h2 class="t-display balance reveal" style="max-width:20ch;margin-inline:auto">Four things that usually live apart.</h2>
-    <div class="pillars reveal d1">
-{pill}    </div>
-  </div>
-</section>
-'''
-
-    serve = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in AUDIENCES)
-    out += f'''<section class="band grey" id="who">
-  <div class="well">
-    <p class="eyebrow reveal">Who it is for</p>
-    <h2 class="t-display balance reveal">Schools and organisations.</h2>
-    <div class="serve reveal d1">
-{serve}    </div>
-  </div>
-</section>
-'''
-
-    out += '''<section class="band dark scene" id="vision">
-  <div class="well">
-    <p class="moment reveal">Our vision</p>
-    <q class="reveal">Technology should carry the load. Not the relationship.</q>
-    <p class="body balance reveal d1"><span class="more">Every school and every organisation on the same infrastructure, with automation and human guidance each doing the part it is actually good at. </span>The machine handles the tracking, the marking and the scheduling. A person does the teaching.</p>
-    <p class="cta-row reveal d2">
-      <a class="cta" href="learn/">See how OEdu works</a>
-      <a class="cta" href="../contact/">Talk to us</a>
-    </p>
-  </div>
-</section>
-</main>
-'''
-    notes = [
-        "Oplo Edu is in development. Capabilities described on this page state design intent; availability, "
-        "integrations and certification scope are not final.",
-        "LTI compliance and any accreditation or certification claims will be stated specifically, with the "
-        "standard and version named, before the platform is offered to an institution.",
-    ]
-    return ("edu/index.html", out + footer(depth, notes))
-
-
-# ==========================================================================
-# OEdu. The online-school product page.
-#
-# The centrepiece is a wireframe of the lesson console, laid out from the
-# reference: an icon rail, a stage spanning two columns, a roster beside it,
-# and three tiles underneath. Kept deliberately as a wireframe rather than a
-# fake screenshot — grey blocks read as "this is the layout", where invented
-# screen content would read as "this exists", which it does not.
-#
-# The whole thing is sized in em off one clamped font-size, so it scales as a
-# single object from 320px to desktop instead of relayouting.
-# ==========================================================================
-
-LEARN_CSS = '''<style>
-  .console {
-    /* One knob. Every measurement below is em, so the console scales whole. */
-    font-size: clamp(4.4px, 1.16vw, 11px);
-    width: min(100%, 1040px); margin: clamp(40px, 5.6vw, 72px) auto 0;
-    display: grid;
-    grid-template-columns: 3.4em repeat(3, 1fr);
-    grid-template-rows: 21em 13em;
-    gap: 1em;
-    padding: 1.2em;
-    border-radius: 2.2em;
-    background: #141517;
-    box-shadow: inset 0 0 0 .22em rgba(255,255,255,.5), 0 3em 6em -2em rgba(0,0,0,.8);
-  }
-  .console > div {
-    background: #2b2c30; border-radius: 1.2em; padding: 1.1em;
-    display: flex; flex-direction: column; gap: .8em; min-width: 0;
-  }
-  .console .cx-rail {
-    grid-row: 1 / 3; align-items: center; gap: .7em; padding: 1.1em .6em;
-    border-radius: 1.6em;
-  }
-  .console .cx-stage  { grid-column: 2 / 4; }
-  .console .cx-roster { grid-column: 4; }
-
-  /* Wireframe vocabulary: a bar, a dot, a field, a void. */
-  .cx-bar  { height: 1.5em; border-radius: 1em; background: #c9cacd; }
-  .cx-bar.cx-dim{ background: #4a4b50; }
-  .cx-dot  { width: 1.9em; height: 1.9em; border-radius: 50%; background: #c9cacd; flex: none; }
-  .cx-dot.cx-sm{ width: 1.2em; height: 1.2em; }
-  .cx-dot.cx-dim{ background: #4a4b50; }
-  .cx-void { flex: 1; border-radius: .8em; background: #1e1f22; min-height: 0; }
-  .cx-row  { display: flex; align-items: center; gap: .7em; }
-  .cx-row .cx-grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .45em; }
-  .cx-stack { display: flex; flex-direction: column; gap: .55em; }
-
-  .console .cx-rail .cx-dot { width: 1.6em; height: 1.6em; }
-  .console .cx-rail .cx-key { width: 1.9em; height: 1.5em; border-radius: .5em; background: #4a4b50; }
-  .console .cx-rail .cx-key.cx-on { background: #c9cacd; }
-
-  .console .cx-tabs { display: flex; gap: .55em; margin-left: auto; }
-  .console .cx-tabs span { width: 2.6em; height: 1.4em; border-radius: .8em; background: #c9cacd; }
-
-  /* The selected row in the roster — the one lit element on the whole board. */
-  .console .cx-pick { background: #c9cacd; border-radius: 1em; padding: .5em .7em; }
-  .console .cx-pick .cx-dot { background: #6d6e73; }
-  .console .cx-pick .cx-bar { background: #8e8f94; }
-
-  .console .cx-field { height: 2.4em; border-radius: 1em; background: #c9cacd; }
-  .console .cx-ctrls { display: flex; align-items: center; justify-content: center; gap: .7em; }
-  .console .cx-ctrls .cx-big { width: 2.6em; height: 2.6em; border-radius: 50%; background: #c9cacd; }
-
-  .cx-cap {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 10px 26px; width: min(100%, 900px); margin: 26px auto 0;
-    font-size: 13px; line-height: 1.45; color: var(--ink-lt-2); text-align: left;
-  }
-  .cx-cap b { display: block; color: var(--ink-lt); font-weight: 600; font-size: 14px; margin-bottom: 2px; }
-  @media (max-width: 734px) { .cx-cap { grid-template-columns: 1fr; gap: 12px; } }
-
-  /* Four capability blocks, hairline-separated, no panels. */
-  .cx-quad {
-    width: min(100%, 940px); margin: clamp(40px, 5.4vw, 64px) auto 0;
-    display: grid; grid-template-columns: repeat(2, 1fr);
-    gap: 0 clamp(36px, 5vw, 76px); text-align: left;
-  }
-  .cx-quad > div { padding: 30px 0; border-top: 1px solid var(--rule); }
-  .band.dark .cx-quad > div { border-top-color: rgba(255,255,255,.2); }
-  .cx-quad h3 {
-    font-family: var(--font); font-size: clamp(19px, 2vw, 23px); font-weight: 600;
-    letter-spacing: -.01em; margin-bottom: 8px;
-  }
-  .cx-quad p { font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 42ch; }
-  .band.dark .cx-quad p { color: var(--ink-lt-2); }
-  @media (max-width: 734px) { .cx-quad { grid-template-columns: 1fr; gap: 0; } }
-</style>'''
-
-CONSOLE = '''    <div class="console reveal d1" role="img"
-         aria-label="Wireframe of the Oplo Edu lesson console: an icon rail, a lesson stage, a class roster, and panels for coursework, mastery and tutors.">
-      <div class="cx-rail">
-        <span class="cx-dot"></span>
-        <span class="cx-key cx-on"></span><span class="cx-key"></span><span class="cx-key"></span>
-        <span class="cx-key"></span><span class="cx-key"></span><span class="cx-key"></span>
-        <span style="flex:1"></span>
-        <span class="cx-dot"></span>
-      </div>
-
-      <div class="cx-stage">
-        <div class="cx-row">
-          <span class="cx-bar" style="width:8em"></span>
-          <span class="cx-tabs"><span></span><span></span><span></span><span></span></span>
-        </div>
-        <div class="cx-void"></div>
-        <div class="cx-row">
-          <span class="cx-bar" style="width:6em"></span>
-          <span style="flex:1"></span>
-          <span class="cx-dot s d"></span><span class="cx-dot s d"></span>
-        </div>
-      </div>
-
-      <div class="cx-roster">
-        <span class="cx-bar" style="width:5.5em"></span>
-        <div class="cx-stack">
-          <div class="cx-row"><span class="cx-dot"></span><span class="cx-grow"><span class="cx-bar" style="width:60%"></span><span class="cx-bar cx-dim" style="width:40%"></span></span><span class="cx-dot s d"></span></div>
-          <div class="cx-row"><span class="cx-dot"></span><span class="cx-grow"><span class="cx-bar" style="width:52%"></span><span class="cx-bar cx-dim" style="width:34%"></span></span><span class="cx-dot s d"></span></div>
-          <div class="cx-row cx-pick"><span class="cx-dot"></span><span class="cx-grow"><span class="cx-bar" style="width:72%"></span></span></div>
-          <div class="cx-row"><span class="cx-dot"></span><span class="cx-grow"><span class="cx-bar" style="width:56%"></span><span class="cx-bar cx-dim" style="width:38%"></span></span><span class="cx-dot s d"></span></div>
-        </div>
-        <span style="flex:1"></span>
-        <span class="cx-field"></span>
-      </div>
-
-      <div class="cx-tile">
-        <span class="cx-bar" style="width:5em"></span>
-        <div class="cx-void"></div>
-        <div class="cx-row"><span class="cx-bar" style="width:6em"></span><span style="flex:1"></span><span class="cx-bar cx-dim" style="width:4em"></span></div>
-      </div>
-
-      <div class="cx-tile">
-        <span class="cx-bar" style="width:5.5em"></span>
-        <div class="cx-void"></div>
-        <div class="cx-row" style="background:#3a3b40;border-radius:1em;padding:.45em .7em">
-          <span class="cx-bar" style="width:4em"></span><span style="flex:1"></span><span class="cx-dot cx-sm"></span>
-        </div>
-        <span class="cx-field"></span>
-      </div>
-
-      <div class="cx-tile">
-        <div class="cx-row"><span class="cx-bar" style="width:5em"></span><span style="flex:1"></span><span class="cx-dot cx-sm"></span></div>
-        <div class="cx-void"></div>
-        <div class="cx-ctrls">
-          <span class="cx-dot cx-sm"></span><span class="cx-dot cx-sm"></span>
-          <span class="cx-big"></span>
-          <span class="cx-dot cx-sm"></span><span class="cx-dot cx-sm"></span>
-        </div>
-      </div>
-    </div>
-'''
-
-QUAD = [
-    ("The room",
-     "A live lesson that opens in the browser with no install and no meeting id to paste. Video, a shared "
-     "board, breakout groups and a hand to raise &mdash; and the teacher can see who has stopped following "
-     "before anyone admits it."),
-    ("Coursework",
-     "Set work once and send it to a class, a group or one person. Submissions come back in one place, "
-     "grading carries a rubric, and the marks land in the record without anyone retyping them."),
-    ("Mastery",
-     "Practice that adapts. Learners move through a skill tree at their own pace, and a topic stays shut "
-     "until the one under it is genuinely understood &mdash; so a gap gets closed rather than carried."),
-    ("A person, when it stops working",
-     "When the tracking sees somebody stuck, it offers a vetted tutor for a live one-to-one rather than "
-     "another video. Booked inside the lesson, in the same window, at the moment it would help."),
-]
-
-
-def learn_page():
-    depth = 2
-    links = [("Overview", "#top"), ("The console", "#console"), ("What it does", "#does"),
-             ("For teachers", "#teachers")]
-    out = head(depth, "OEdu — online school",
-               "OEdu is a single console for online school: live lessons, coursework, adaptive practice and live tutoring.",
-               "edu/learn/", LEARN_CSS)
-    out += nav(depth, "edu/")
-    out += chapter(depth, "OEdu", links, "edu/learn/", ("Try OEdu", OEDU))
-    out += '<main id="top">\n'
-
-    out += f'''<section class="band dark" id="console">
-  <div class="well">
-    <p class="eyebrow reveal">OEdu</p>
-    <h1 class="t-hero balance reveal" style="max-width:17ch;margin-inline:auto">School that was built to be online.</h1>
-    <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:40ch;margin-inline:auto">Not a video call bolted to a homework folder. One room where the lesson, the work and the help all live.</p>
-{CONSOLE}
-    <div class="cx-cap reveal d2">
-      <div><b>The stage</b>Whoever is speaking, whatever is being shown, and the board everyone can draw on.</div>
-      <div><b>The roster</b>Who is here, who is following, and who has quietly stopped.</div>
-      <div><b>Underneath</b>Coursework, the mastery map, and a tutor a click away.</div>
-    </div>
-    <p class="cta-row reveal d2" style="margin-top:26px"><a class="cta" href="https://edu.oplocloud.com/">Open the working demo</a></p>
-    <p class="t-fine muted reveal d2" style="margin-top:18px">Wireframe above; the demo is a running build with sample data. Neither is shipping software.<sup>1</sup></p>
-  </div>
-</section>
-'''
-
-    quad = "".join(f"      <div><h3>{t}</h3><p>{d}</p></div>\n" for t, d in QUAD)
-    out += f'''<section class="band" id="does">
-  <div class="well">
-    <p class="eyebrow reveal">What it does</p>
-    <h2 class="t-display balance reveal" style="max-width:19ch;margin-inline:auto">Four tools that stopped being four tabs.</h2>
-    <div class="cx-quad reveal d1">
-{quad}    </div>
-  </div>
-</section>
-'''
-
-    out += '''<section class="band dark scene" id="teachers">
-  <div class="well">
-    <p class="moment reveal">For teachers</p>
-    <q class="reveal">The class is thirty. The attention is not.</q>
-    <p class="body balance reveal d1">In a room you can read a face. On a call you get a grid of muted squares and a feeling. The console watches the things a screen hides &mdash; who has stopped answering, who is guessing, who has been on the same step for eleven minutes &mdash; and tells the one person who can do something about it.</p>
-    <p class="cta-row reveal d2">
-      <a class="cta" href="https://edu.oplocloud.com/">Try OEdu</a>
-      <a class="cta" href="../../contact/">Talk to us</a>
-    </p>
-  </div>
-</section>
-</main>
-'''
-    notes = [
-        "OEdu is in development. The console shown is a wireframe of the interface being designed, "
-        "not a screenshot of working software. Capabilities described state design intent; availability and "
-        "feature scope are not final.",
-        "Live tutoring would connect learners with independent tutors. Vetting standards, availability and "
-        "pricing will be published before the marketplace opens.",
-    ]
-    return ("edu/learn/index.html", out + footer(depth, notes))
-
-PAGES.append(edu_page())
-PAGES.append(learn_page())
 
 # ----------------------------------------------------- Company & utility
 def simple(slug, depth, title, desc, eyebrow, heading, lead, rows_html=""):

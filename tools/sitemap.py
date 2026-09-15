@@ -17,8 +17,7 @@ OLD_SITE = {"OLaws", "OShop", "ocanvas", "ocrd", "odocs", "oedu", "omails", "oma
 EXCLUDE = OLD_SITE | {"learn"}
 
 PRIORITY = {"": "1.0", "products/": "0.9", "solutions/": "0.9", "resources/": "0.9",
-            "hardware/": "0.9", "software/": "0.9", "intelligence/": "0.9",
-            "edu/": "0.9", "edu/learn/": "0.9", "plus/": "0.9",
+            "hardware/": "0.9", "software/": "0.9", "intelligence/": "0.9", "plus/": "0.9",
             "privacy/": "0.8", "investor/": "0.8"}
 
 def slugs():

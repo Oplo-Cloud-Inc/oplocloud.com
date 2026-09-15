@@ -992,7 +992,7 @@
       "<b>In progress.</b> Five study sets are written and one unit is playable end to end. The rest " +
       "carry a real syllabus with the lessons still to be made. Your progress is kept in this " +
       "browser and is not sent anywhere \u2014 which also means it does not follow you to another " +
-      'computer. <a href="../edu/">About Oplo Edu &rsaquo;</a>'));
+      'computer.'));
   }
 
   /* ------------------------------------------------------- Your standing

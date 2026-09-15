@@ -15,7 +15,6 @@ apps that each keep their own product colour.
 | `/` ([index.html](index.html)) | The Oplo landing page |
 | `/productivity/` | The productivity suite hub (ODocs, OSheets, OMails, OMaps, OSurf, OPhotos, OCanvas) |
 | `/roxan/` | Roxan — the AI woven through every app |
-| `/edu/` | Oplo Edu — the education division's pages |
 | `/learn/` | **OEdu** — the working product: the student's app, and the teacher's Console, which has its own left-rail shell and no top bar at all. See [TEACHER_UX.md](docs/TEACHER_UX.md) |
 | `/api/` | The platform API — identity, courses, grades. See its [README](api/README.md) |
 | `/oedu/` | OEdu education landing |
