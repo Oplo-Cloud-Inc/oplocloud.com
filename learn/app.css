@@ -1309,7 +1309,7 @@ svg { display: block; }
 .rd-mo-stage { position: relative; background: #fbfbfd; border-bottom: 1px solid var(--hair); }
 .rd-mo-stage svg { width: 100%; height: auto; }
 .rd-mo-read {
-  position: absolute; right: 10px; bottom: 9px; padding: 3px 9px; border-radius: 100px;
+  position: absolute; right: 10px; top: 9px; padding: 3px 9px; border-radius: 100px;
   background: rgba(255,255,255,.92); box-shadow: 0 0 0 1px var(--hair);
   font-family: var(--text); font-size: 12px; font-weight: 600; line-height: 1.5; letter-spacing: 0;
   font-variant-numeric: tabular-nums; color: var(--ink-2);
@@ -5112,4 +5112,153 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
   background: var(--paper); box-shadow: inset 0 0 0 .5px var(--hair);
 }
 .sw-said p { font-size: 16px; line-height: 1.55; letter-spacing: -.012em; }
+
+.atb-badge {
+  display: inline-flex; align-items: center; height: 18px; padding: 0 5px;
+  margin-left: 5px; border-radius: 5px;
+  background: var(--blue); color: #fff;
+  font-family: "Spline Sans Mono", "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: .04em; line-height: 1;
+  vertical-align: middle;
+}
+
+/* ============================================================ Exams ATB
+   Apple-level exam centre. Every assessment is a card with a clear
+   state: today it is doing, upcoming it waits, past it finished.
+   Colour describes state — nothing else. The card says what is
+   happening and when; nothing more. */
+
+.lx-exam-tabs {
+  display: flex; gap: 4px; margin: 18px 0 22px;
+  background: var(--canvas); border-radius: 100px; padding: 3px;
+  width: fit-content;
+}
+.lx-exam-tab {
+  height: 32px; padding: 0 16px; border-radius: 100px;
+  font-size: 13.5px; font-weight: 500; color: var(--ink-2);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.lx-exam-tab:hover { color: var(--ink); background: var(--sunk); }
+.lx-exam-tab[aria-current="true"] { color: var(--ink); background: var(--paper); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.lx-exam-tab .n {
+  font-size: 11.5px; font-weight: 600; padding: 1px 6px;
+  border-radius: 100px; background: var(--sunk); color: var(--ink-3);
+}
+
+.lx-exam-group { margin-bottom: 32px; }
+.lx-exam-group-head {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
+}
+.lx-exam-group-head h2 {
+  font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.014em;
+}
+.lx-exam-group-head p {
+  font-size: 13px; color: var(--ink-3); font-weight: 400;
+}
+
+.lx-exam-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px;
+}
+.lx-exam-card {
+  display: flex; flex-direction: column; text-align: left;
+  padding: 22px; border-radius: 18px; background: var(--paper);
+  border: 1px solid var(--hair); min-height: 158px;
+  transition: transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+  cursor: pointer;
+}
+.lx-exam-card:hover { transform: translateY(-2px); border-color: var(--rule); box-shadow: 0 8px 28px rgba(0,0,0,.06); }
+.lx-exam-card:active { transform: translateY(0); }
+
+.lx-exam-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.lx-exam-icon {
+  width: 38px; height: 38px; border-radius: 11px; flex: none;
+  display: grid; place-items: center;
+}
+.lx-exam-icon svg { width: 18px; height: 18px; }
+.lx-exam-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 22px; padding: 0 9px; border-radius: 100px;
+  font-size: 11.5px; font-weight: 600; letter-spacing: .01em;
+  white-space: nowrap; flex: none;
+}
+.lx-exam-status .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.lx-exam-status.today { background: #e8f5ee; color: #12915a; }
+.lx-exam-status.today .dot { background: #12915a; }
+.lx-exam-status.upcoming { background: #e2f0fd; color: #0060c0; }
+.lx-exam-status.upcoming .dot { background: #0060c0; }
+.lx-exam-status.past { background: var(--canvas); color: var(--ink-3); }
+.lx-exam-status.past .dot { background: #c7c7cc; }
+
+.lx-exam-title {
+  font-family: var(--font); font-size: 18px; font-weight: 600;
+  letter-spacing: -.018em; margin-top: 14px; line-height: 1.22;
+}
+.lx-exam-sub {
+  font-size: 13.5px; color: var(--ink-2); margin-top: 3px;
+  letter-spacing: -.01em;
+}
+.lx-exam-when {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--ink-3); margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.lx-exam-when svg { width: 12px; height: 12px; flex: none; }
+.lx-exam-meta {
+  display: flex; gap: 12px; margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--hair);
+}
+.lx-exam-meta span {
+  font-size: 12.5px; color: var(--ink-3);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.lx-exam-meta svg { width: 11px; height: 11px; }
+.lx-exam-score {
+  font-size: 13px; font-weight: 600; color: var(--ink);
+  margin-left: auto;
+}
+.lx-exam-go {
+  margin-top: auto; padding-top: 14px; display: flex; align-items: center; gap: 4px;
+  font-size: 13px; font-weight: 500; color: var(--blue);
+}
+.lx-exam-go svg { width: 13px; height: 13px; transition: transform .18s var(--ease); }
+.lx-exam-card:hover .lx-exam-go svg { transform: translateX(3px); }
+
+/* Exam empty state */
+.lx-exams-empty {
+  margin-top: 40px; padding: 48px 32px; border-radius: 20px; text-align: center;
+  background: var(--paper); border: 1px solid var(--hair);
+}
+.lx-exams-empty .ic {
+  width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 18px;
+  display: grid; place-items: center; background: var(--canvas); color: var(--ink-2);
+}
+.lx-exams-empty .ic svg { width: 24px; height: 24px; }
+.lx-exams-empty h2 { font-family: var(--font); font-size: 20px; font-weight: 600; letter-spacing: -.016em; }
+.lx-exams-empty p { margin-top: 6px; font-size: 14.5px; color: var(--ink-2); max-width: 36ch; margin-inline: auto; line-height: 1.5; }
+
+/* Today hero strip */
+.lx-today-strip {
+  display: flex; align-items: center; gap: 20px;
+  padding: 24px 26px; border-radius: 18px; background: var(--ink); color: #fff;
+  margin-bottom: 28px;
+}
+.lx-today-strip .k { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.5); }
+.lx-today-strip h2 { font-family: var(--font); font-size: 22px; font-weight: 600; letter-spacing: -.018em; margin-top: 4px; }
+.lx-today-strip p { margin-top: 5px; font-size: 14px; color: rgba(255,255,255,.65); max-width: 50ch; line-height: 1.5; }
+.lx-today-strip .lx-btn { margin-left: auto; background: #fff; color: var(--ink); flex: none; }
+.lx-today-strip .lx-btn:hover { background: #e8e8ea; }
+
+@media (max-width: 734px) {
+  .lx-exam-grid { grid-template-columns: 1fr; }
+  .lx-exam-tab { padding: 0 12px; }
+  .lx-today-strip { flex-direction: column; align-items: flex-start; }
+  .lx-today-strip .lx-btn { margin-left: 0; width: 100%; }
+}
+
+/* Exam view header */
+.lx-exams-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.lx-exams-head .sub { font-size: 14px; color: var(--ink-2); margin-top: 6px; }
 .sw-said span { display: block; margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
