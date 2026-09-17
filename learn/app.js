@@ -3568,6 +3568,9 @@
     "media:7": { key: "media:7", course: "media", courseTitle: "Media Arts", unit: 7,
                  title: "Video Basics", sections: window.OPLO_UNIT7 || [],
                  doc: "media-u7", set: "media-7" },
+    "media:8": { key: "media:8", course: "media", courseTitle: "Media Arts", unit: 8,
+                 title: "Intro to Animation", sections: window.OPLO_UNIT8 || [],
+                 doc: "media-u8", set: "media-8" },
     "biz:4":   { key: "biz:4", course: "biz", courseTitle: "Introduction to Business", unit: 4,
                  title: "International Business", sections: window.OPLO_BIZ4 || [],
                  doc: "biz-u4", set: "biz-4" }
@@ -4291,7 +4294,12 @@
       row.appendChild(cell);
     });
     f.appendChild(row);
+    f.appendChild(figCaption(b));
+    return f;
+  }
 
+  /* A figure's caption, and under it the credit its licence asks for. */
+  function figCaption(b) {
     function link(text, href) {
       return href
         ? '<a href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(text) + "</a>"
@@ -4305,8 +4313,7 @@
     var cap = el("figcaption");
     cap.innerHTML = (b.cap ? "<span>" + b.cap + "</span>" : "") +
       (credits ? '<span class="credit">' + credits + "</span>" : "");
-    f.appendChild(cap);
-    return f;
+    return cap;
   }
 
   /* One picture at the size of the screen, with its caption under it. A
@@ -4381,6 +4388,219 @@
     });
     box.appendChild(ol);
     return box;
+  }
+
+  /* Words a reader may not have yet, said the way you would say them to a
+     ten-year-old. Not the terms a section teaches — those are definitions —
+     but the ordinary words the explanation leans on, so a reader who is
+     missing one is not stopped by it. */
+  function wordsBlock(b) {
+    var box = el("div", "rd-words", "<b>Words to know</b>");
+    var dl = el("dl");
+    b.items.forEach(function (w) { dl.innerHTML += "<dt>" + esc(w[0]) + "</dt><dd>" + w[1] + "</dd>"; });
+    box.appendChild(dl);
+    return box;
+  }
+
+  /* Two kinds of card that leave the page: something to do with your hands,
+     and a place the idea turns up outside the course. */
+  var CALLOUT = {
+    try: ["Try it", I.pen],
+    world: ["In the real world", '<circle cx="12" cy="12" r="9"/><path d="M3.2 9.5h17.6M3.2 14.5h17.6"/>' +
+            '<path d="M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18"/>']
+  };
+  function calloutBlock(b) {
+    var k = CALLOUT[b.k];
+    return el("aside", "rd-call " + b.k,
+      "<span>" + svg(k[1], true) + k[0] + "</span><b>" + esc(b.t) + "</b><p>" + b.d + "</p>");
+  }
+
+  /* ------------------------------------------------------------- Motion
+     A figure that moves, for a unit about movement. A still diagram can say
+     that twos are choppier than ones; a moving one lets a student see it,
+     and one they can switch themselves lets them find it out.
+
+     The content file supplies the scene: draw(f, o, ghost) returns the SVG
+     for the drawing that starts on frame f with options o, frames(o) the
+     frames that start a new drawing (every other frame holds the one
+     before), keys(o) which of those are key frames, back(o) what sits
+     underneath. The reader supplies the clock, the controls and the strip of
+     frames under the stage — a dark block for a key, a mid one for a new
+     drawing, a pale one for a hold — which is where most of the teaching is.
+
+     It plays only while it is on screen, and never by itself for a reader
+     who has asked for less motion: for them it opens paused with every
+     drawing showing, which is a diagram in its own right. Nothing flashes;
+     the scenes move shapes, they never swap light for dark.
+
+     b = { k: "motion", w, h, len, fps, alt, cap, credits,
+           controls: [{ key, label, def, opts: [[value, label], …] }],
+           frames(o), keys(o), back(o), draw(f, o, ghost) } */
+  var MO_ICON = {
+    pause: '<path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z"/>',
+    prev: '<path d="M17 5.5 8.5 12l8.5 6.5z"/><path d="M5.5 5.5h2.2v13H5.5z"/>',
+    next: '<path d="M7 5.5 15.5 12 7 18.5z"/><path d="M16.3 5.5h2.2v13h-2.2z"/>'
+  };
+  var moSeq = 0;
+  function motionBlock(b) {
+    var NS = "http://www.w3.org/2000/svg";
+    var reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    var len = b.len, fps = b.fps || 24;
+    var o = {};
+    (b.controls || []).forEach(function (c) { o[c.key] = c.def != null ? c.def : c.opts[0][0]; });
+    var st = { f: 0, playing: false, want: !reduced, onion: reduced, t0: 0, raf: 0, shown: -1 };
+    var ds = [], keys = {};
+
+    var fig = el("figure", "rd-fig rd-motion");
+    var box = el("div", "rd-mo");
+    var stage = el("div", "rd-mo-stage");
+    var pic = document.createElementNS(NS, "svg");
+    pic.setAttribute("viewBox", "0 0 " + b.w + " " + b.h);
+    pic.setAttribute("role", "img");
+    pic.setAttribute("aria-label", b.alt);
+    pic.setAttribute("font-family", "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif");
+    var gBack = document.createElementNS(NS, "g");
+    var gGhost = document.createElementNS(NS, "g");
+    var gLive = document.createElementNS(NS, "g");
+    gGhost.setAttribute("opacity", "0.32");
+    pic.appendChild(gBack); pic.appendChild(gGhost); pic.appendChild(gLive);
+    stage.appendChild(pic);
+    var readout = el("span", "rd-mo-read");
+    readout.setAttribute("aria-hidden", "true");
+    stage.appendChild(readout);
+    box.appendChild(stage);
+
+    var strip = el("div", "rd-mo-strip");
+    strip.setAttribute("aria-hidden", "true");
+    var cells = [];
+    for (var i = 0; i < len; i++) cells.push(strip.appendChild(el("i")));
+    box.appendChild(strip);
+    var legend = el("div", "rd-mo-legend",
+      '<span><i class="k"></i>Key frame</span><span><i class="d"></i>New drawing</span><span><i></i>Held</span>');
+    legend.setAttribute("aria-hidden", "true");
+    box.appendChild(legend);
+
+    var bar = el("div", "rd-mo-bar");
+    function button(icon, label, fn) {
+      var x = el("button", "rd-mo-btn", svg(icon));
+      x.type = "button";
+      x.setAttribute("aria-label", label);
+      x.title = label;
+      x.addEventListener("click", fn);
+      return bar.appendChild(x);
+    }
+    button(MO_ICON.prev, "Previous drawing", function () { step(-1); });
+    var bPlay = button(I.play, "Play", function () {
+      st.want = !st.playing;
+      if (st.want) play(); else pause();
+    });
+    bPlay.classList.add("main");
+    button(MO_ICON.next, "Next drawing", function () { step(1); });
+    var bOnion = bar.appendChild(el("button", "rd-mo-onion", "Show every drawing"));
+    bOnion.type = "button";
+    bOnion.addEventListener("click", function () { st.onion = !st.onion; ghosts(); sync(); });
+    box.appendChild(bar);
+
+    if (b.controls && b.controls.length) {
+      var ctl = el("div", "rd-mo-ctl");
+      b.controls.forEach(function (c) {
+        var grp = el("div", "rd-mo-grp");
+        var name = grp.appendChild(el("span", null, esc(c.label)));
+        name.id = "mo" + (++moSeq);
+        var seg = grp.appendChild(el("div", "rd-mo-seg"));
+        seg.setAttribute("role", "group");
+        seg.setAttribute("aria-labelledby", name.id);
+        c.opts.forEach(function (op) {
+          var x = seg.appendChild(el("button", null, esc(op[1])));
+          x.type = "button";
+          x.setAttribute("aria-pressed", String(o[c.key] === op[0]));
+          x.addEventListener("click", function () {
+            o[c.key] = op[0];
+            [].forEach.call(seg.children, function (y) { y.setAttribute("aria-pressed", String(y === x)); });
+            rebuild();
+          });
+        });
+        ctl.appendChild(grp);
+      });
+      box.appendChild(ctl);
+    }
+    fig.appendChild(box);
+    fig.appendChild(figCaption(b));
+
+    function drawingAt(f) {
+      var d = ds[0];
+      for (var k = 0; k < ds.length && ds[k] <= f; k++) d = ds[k];
+      return d;
+    }
+    function paint() {
+      var d = drawingAt(st.f);
+      if (d !== st.shown) { gLive.innerHTML = b.draw(d, o, false); st.shown = d; }
+      cells.forEach(function (c, k) { c.classList.toggle("on", k === st.f); });
+      readout.textContent = "Frame " + (st.f + 1) + " of " + len +
+        " · drawing " + (ds.indexOf(d) + 1) + " of " + ds.length;
+    }
+    function ghosts() {
+      gGhost.innerHTML = st.onion ? ds.map(function (d) { return b.draw(d, o, true); }).join("") : "";
+    }
+    function rebuild() {
+      ds = b.frames ? b.frames(o) : cells.map(function (c, k) { return k; });
+      keys = {};
+      (b.keys ? b.keys(o) : []).forEach(function (k) { keys[k] = true; });
+      gBack.innerHTML = b.back ? b.back(o) : "";
+      cells.forEach(function (c, k) {
+        c.className = ds.indexOf(k) < 0 ? "" : keys[k] ? "k" : "d";
+      });
+      st.shown = -1;
+      ghosts();
+      paint();
+    }
+    function sync() {
+      bPlay.innerHTML = svg(st.playing ? MO_ICON.pause : I.play);
+      bPlay.setAttribute("aria-label", st.playing ? "Pause" : "Play");
+      bPlay.title = st.playing ? "Pause" : "Play";
+      bOnion.setAttribute("aria-pressed", String(st.onion));
+    }
+    function tick(now) {
+      if (!st.playing) return;
+      if (!fig.isConnected) { pause(); return; }
+      var f = Math.floor((now - st.t0) * fps / 1000) % len;
+      if (f !== st.f) { st.f = f; paint(); }
+      st.raf = requestAnimationFrame(tick);
+    }
+    function play() {
+      if (st.playing) return;
+      st.playing = true;
+      st.t0 = performance.now() - st.f * 1000 / fps;
+      st.raf = requestAnimationFrame(tick);
+      sync();
+    }
+    function pause() {
+      st.playing = false;
+      cancelAnimationFrame(st.raf);
+      sync();
+    }
+    function step(dir) {
+      st.want = false;
+      pause();
+      var k = ds.indexOf(drawingAt(st.f));
+      st.f = ds[(k + dir + ds.length) % ds.length];
+      paint();
+    }
+
+    rebuild();
+    sync();
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (seen) {
+        if (!fig.isConnected) { io.disconnect(); pause(); return; }
+        var on = seen[seen.length - 1].isIntersecting;
+        if (on && st.want) play();
+        else if (!on && st.playing) pause();
+      }, { threshold: 0.35 });
+      io.observe(fig);
+    } else if (st.want) {
+      play();
+    }
+    return fig;
   }
 
   /* ====================================================== Predict
@@ -4579,7 +4799,14 @@
       if (b.k === "p") body.appendChild(el("p", null, b.t));
       else if (b.k === "h") body.appendChild(el("h2", null, esc(b.t)));
       else if (b.k === "def") {
-        body.appendChild(el("div", "rd-def", "<b>" + esc(b.t) + "</b><p>" + b.d + "</p>"));
+        /* A definition may carry a second, plainer sentence. The first line is
+           the definition a course will examine; `p` is the same idea said the
+           way you would say it out loud to somebody who has never met the word.
+           Both are shown, because a student who only gets the plain one cannot
+           answer the paper, and one who only gets the formal one often cannot
+           answer anything. */
+        body.appendChild(el("div", "rd-def", "<b>" + esc(b.t) + "</b><p>" + b.d + "</p>" +
+          (b.p ? '<p class="plain"><span>In plain words</span>' + b.p + "</p>" : "")));
       } else if (b.k === "quote") {
         body.appendChild(el("blockquote", "rd-quote",
           "<p>" + esc(b.t) + "</p>" + (b.s ? "<span>" + esc(b.s) + "</span>" : "")));
@@ -4599,6 +4826,12 @@
         body.appendChild(figureBlock(b));
       } else if (b.k === "refs") {
         body.appendChild(refsBlock(b));
+      } else if (b.k === "words") {
+        body.appendChild(wordsBlock(b));
+      } else if (b.k === "try" || b.k === "world") {
+        body.appendChild(calloutBlock(b));
+      } else if (b.k === "motion") {
+        body.appendChild(motionBlock(b));
       }
     });
     art.appendChild(body);
