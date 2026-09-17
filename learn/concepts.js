@@ -26,9 +26,10 @@
      APPLY      use it on a new case           <- needs `apply`
      TRANSFER   predict something unseen       <- needs `xfer`
 
-   Units 5 and 6 are authored in full below. Every other set is derived: a
-   concept with the pair and nothing else, which honestly caps that set at the
-   first two levels rather than pretending to depth it does not have.
+   Media Arts 5 to 8 and Business 4 are authored in full below.
+   Every other set is derived: a concept with the pair and nothing else, which
+   honestly caps that set at the first two levels rather than pretending to
+   depth it does not have.
    ========================================================================== */
 window.OPLO_CONCEPTS = (function () {
   "use strict";
@@ -2194,7 +2195,690 @@ window.OPLO_CONCEPTS = (function () {
     })
   ];
 
-  var BOOK = { "media-5": MEDIA5, "media-6": MEDIA6, "media-7": MEDIA7, "biz-4": BIZ4 };
+  /* ----------------------------------------------------------- Media Arts 8
+     Animation is a unit of near-synonyms that are not synonyms: a key frame
+     is not the first frame, twos are not slower than ones, timing is not
+     spacing, a hold is not stillness, and modeling is not animation. Every
+     one of those is a `miss` below, because a student who has never been
+     shown the wrong version cannot tell that they are holding it. */
+  var MEDIA8 = [
+    C("Animation", {
+      why: "It is the one idea the whole unit rests on: movement that was never there, made out of pictures " +
+           "that do not move.",
+      eg: "A flip book of twelve sticky notes. Nothing on any page moves, but the ball falls.",
+      miss: [["Animation means cartoons.",
+              "Animation is any run of still images shown fast enough to read as movement. A crash " +
+              "simulation, a diagram of a heart and a stop-motion advert are all animation."]],
+      pre: [], rel: ["Key frame", "Stop motion"],
+      say: ["still", "images", "sequence", "quickly", "movement", "illusion"],
+      apply: { ask: "A surgeon shows a patient a moving picture of a knee operation, built from a 3D model. " +
+                    "Is it animation?",
+               opts: ["Yes — still images in sequence, shown as movement",
+                     "No — only hand-drawn work counts", "No — it is a medical diagram",
+                     "Only if a camera filmed it"],
+               right: 0,
+               why: "The images were made one at a time and played in order. What they are for does not change " +
+                    "what they are." },
+      xfer: { ask: "A photograph of a sprinter shows blur and speed. Why is it not animation?",
+              opts: ["It is too short", "It is one image, not a sequence shown over time",
+                    "It was not drawn", "Photographs cannot show movement"],
+              right: 1,
+              why: "Animation needs a series of images and time to play them in. One image, however fast its " +
+                   "subject, is a picture." }
+    }),
+
+    C("Thaumatrope", {
+      why: "It is the simplest proof of the thing every animation device relies on: the eye blends pictures " +
+           "that arrive quickly enough.",
+      eg: "A bird on one side of a card, a cage on the other. Spun, the bird is in the cage.",
+      miss: [["A thaumatrope shows a small animation.",
+              "Most combine two pictures into one still image. Nothing moves; the two simply arrive too fast " +
+              "to be kept apart."]],
+      pre: [], rel: ["Animation"],
+      say: ["disc", "two", "pictures", "spin", "strings", "blend"],
+      apply: { ask: "Why is the picture on the back of a thaumatrope drawn upside down?",
+               opts: ["To make it harder to copy", "So the two pictures never line up",
+                     "Because the card turns over as it spins, which puts it upright",
+                     "Because the ink dries that way"],
+               right: 2,
+               why: "The strings flip the card end over end. Drawn the right way up, the back picture would " +
+                    "appear upside down half the time." },
+      xfer: { ask: "A screen alternates two images too fast for you to separate them, and you see both at once. " +
+                   "Which toy is that?",
+              opts: ["The zoetrope", "The flip book", "The praxinoscope", "The thaumatrope"],
+              right: 3,
+              why: "Blending two images into one is the thaumatrope's trick. The others show a sequence of " +
+                   "different drawings." }
+    }),
+
+    C("Cel", {
+      why: "The cel is what made cartoon studios affordable: paint the background once, and move only what moves.",
+      eg: "A woman in a chair: the room and her body stay put, and only the mouth cel is swapped.",
+      miss: [["A cel is the background.",
+              "The background is painted on paper or board. Cels are the clear sheets laid on top of it."]],
+      pre: [], rel: ["Limited animation"],
+      say: ["clear", "plastic", "celluloid", "layer", "background", "paint"],
+      apply: { ask: "Winsor McCay's team redrew the trees and rocks on every sheet of Gertie the Dinosaur. What " +
+                    "would cels have saved them?",
+               opts: ["Redrawing the background thousands of times", "Drawing the dinosaur",
+                     "The need for a camera", "The need for key frames"],
+               right: 0,
+               why: "A cel lets one painted background sit under thousands of drawings of the character." },
+      xfer: { ask: "In 2D digital animation, what does the job the cel used to do?",
+              opts: ["The frame rate", "A layer", "The stage", "The codec"],
+              right: 1,
+              why: "A layer is a clear sheet in software: things on it move without disturbing what is below." }
+    }),
+
+    C("Limited animation", {
+      why: "It is how most television animation is made, and it explains why some cartoons move so much less " +
+           "than others.",
+      eg: "A character talks: the body is one drawing, and only the mouth changes.",
+      miss: [["Limited animation just means using cels.",
+              "Cels were used for full animation too — Snow White is painted on them. Limited animation is the " +
+              "choice to redraw as little as possible."]],
+      pre: ["Cel"], rel: ["On twos", "Cycle"],
+      say: ["reuse", "redraw", "only", "moves", "cheaper", "faster"],
+      apply: { ask: "A studio must deliver twenty minutes of cartoon a week on a small budget. What will it do?",
+               opts: ["Full animation on ones", "Stop motion",
+                     "Limited animation, with reused drawings and cycles", "Rotoscope every frame"],
+               right: 2,
+               why: "Reusing drawings and looping cycles is the only one of these that gets cheaper as it gets " +
+                    "longer." },
+      xfer: { ask: "In an old TV cartoon a character's body freezes while the mouth moves, and the same walk " +
+                   "goes past twice. What are you watching?",
+              opts: ["A boil", "Pixilation", "A moving hold", "Limited animation"],
+              right: 3,
+              why: "Redrawing only the mouth, and repeating a walk cycle, are both limited animation saving work." }
+    }),
+
+    C("Stop motion", {
+      why: "It is the style where the drawings are real objects, and where the cost of a single frame is " +
+           "something you can feel.",
+      eg: "Wallace and Gromit: clay over metal armatures, nudged a fraction between photographs.",
+      miss: [["Stop motion is quicker than drawing everything.",
+              "It is among the slowest ways to animate. At Aardman an animator finishes about two seconds of " +
+              "film a day."]],
+      pre: ["Animation"], rel: ["Pixilation"],
+      say: ["photograph", "frame", "move", "object", "puppet", "slow"],
+      apply: { ask: "A stop-motion advert runs 30 seconds at 24 frames a second. How many photographs is that?",
+               opts: ["720", "24", "1,440", "30"],
+               right: 0,
+               why: "Twenty-four photographs for every second: 24 × 30 = 720, each one a small move of every " +
+                    "puppet." },
+      xfer: { ask: "Why do stop-motion crews bolt the camera down and control the lights so carefully?",
+              opts: ["To save electricity",
+                    "Because any accidental change between photographs shows as a jump",
+                    "Because film is expensive", "To stop the clay melting"],
+              right: 1,
+              why: "The frames are taken minutes or hours apart, so anything that shifts — camera, lamp, a " +
+                   "leaning puppet — flickers on screen." }
+    }),
+
+    C("Pixilation", {
+      why: "It shows that the objects in stop motion can be people, and it is about the cheapest special " +
+           "effect there is.",
+      eg: "Norman McLaren's Neighbours (1952): men slide across the grass without walking.",
+      miss: [["Pixilation is something to do with pixels.",
+              "Nothing to do with pixels. It is stop motion with live actors, and the word comes from being " +
+              "“pixilated” — bewitched."]],
+      pre: ["Stop motion"], rel: [],
+      say: ["actors", "people", "frame", "pose", "stop motion", "puppet"],
+      apply: { ask: "A student photographs a friend only while they are in mid-air, twenty times, moving them " +
+                    "along a little each time, then plays the photos in order. What is it?",
+               opts: ["A rotoscope", "A boil", "Pixilation", "A time-lapse"],
+               right: 2,
+               why: "Live people held in poses, one frame at a time — the friend appears to fly." },
+      xfer: { ask: "Why does a pixilated person look like a puppet rather than a person?",
+              opts: ["The camera is too far away", "They are wearing costumes", "The frame rate is higher",
+                    "The in-between moments of real movement are missing"],
+              right: 3,
+              why: "Real movement fills every instant. Posing frame by frame throws those instants away, which " +
+                   "is exactly what makes a puppet look like a puppet." }
+    }),
+
+    C("3D modeling", {
+      why: "Nothing in 3D can be textured, rigged, lit or moved until it exists as a model.",
+      eg: "Martin Newell measured his family's teapot in 1975 and turned it into numbers.",
+      miss: [["Modeling is a more advanced kind of animation.",
+              "It is the step before animation. A model is a shape, and plenty of models — a printed part, a " +
+              "game prop — never move at all."]],
+      pre: [], rel: ["Texture mapping", "Rigging"],
+      say: ["mesh", "faces", "surface", "three", "dimensions", "shape"],
+      apply: { ask: "A studio is asked to animate a dragon that does not exist yet. What has to happen first?",
+               opts: ["Modeling its surface", "Texture mapping", "Rigging", "Rendering"],
+               right: 0,
+               why: "There is nothing to texture, rig or render until the shape exists." },
+      xfer: { ask: "A model is sent to a 3D printer instead of a renderer. Which steps were never needed?",
+              opts: ["Modeling", "Texturing and rigging", "Measuring the object", "None of them"],
+              right: 1,
+              why: "A printed object gets its colour and its joints from the real world, so the surface picture " +
+                   "and the skeleton are never built." }
+    }),
+
+    C("Texture mapping", {
+      why: "It is where a grey shape becomes skin, rust, bark or cloth — most of what makes computer graphics " +
+           "look like something.",
+      eg: "A flat painting of a face, wrapped round a 3D head.",
+      miss: [["A texture is how bumpy a surface is.",
+              "Here a texture is a flat image wrapped onto the model, which gives it colour and pattern. Bumps " +
+              "are faked with other maps."]],
+      pre: ["3D modeling"], rel: [],
+      say: ["image", "wrap", "surface", "colour", "pattern", "flat"],
+      apply: { ask: "A game needs a hundred different-looking soldiers without a hundred models. What is the " +
+                    "cheap way?",
+               opts: ["Model each one", "Rig each one twice", "Put different textures on the same model",
+                     "Render at a higher frame rate"],
+               right: 2,
+               why: "One shape, many surfaces. Changing the picture wrapped round a model is far cheaper than " +
+                    "building new geometry." },
+      xfer: { ask: "Why do artists lay a model's surface out flat before painting it?",
+              opts: ["To measure its volume", "To add a skeleton", "To make the file smaller",
+                    "So a flat picture can be painted, then wrapped back onto the shape"],
+              right: 3,
+              why: "Painting happens in two dimensions. The flat layout records which part of the picture lands " +
+                   "on which part of the model." }
+    }),
+
+    C("Rigging", {
+      why: "Without a rig a model can be carried about but never posed: no bent elbow, no expression.",
+      eg: "A skeleton of joints inside a character, with handles an animator can grab.",
+      miss: [["Rigging is a new, emerging technique.",
+              "It has been standard in 3D animation for decades. What is still developing is how much of it a " +
+              "computer can do for you."]],
+      pre: ["3D modeling"], rel: [],
+      say: ["skeleton", "joints", "bones", "controls", "pose", "inside"],
+      apply: { ask: "An animator can slide a 3D character around the scene but cannot bend its arm. What is missing?",
+               opts: ["A rig", "A texture", "A render", "A key frame"],
+               right: 0,
+               why: "Without joints and controls inside it, the model is one solid object." },
+      xfer: { ask: "In stop motion, what does the same job as a rig?",
+              opts: ["The clay", "The armature", "The camera", "The background"],
+              right: 1,
+              why: "A jointed metal skeleton that holds a pose is exactly what a rig is, in metal instead of maths." }
+    }),
+
+    C("Key frame", {
+      why: "Keys are how an animator plans a movement. Everything else is filling in between them.",
+      eg: "A hop needs three: the take-off, the top, and the landing.",
+      miss: [["The key frame is the first drawing of a scene.",
+              "A key falls wherever a movement starts, ends or changes direction — usually several times in a " +
+              "scene, and often nowhere near the first frame."]],
+      pre: [], rel: ["In-betweening", "Pose to pose"],
+      say: ["important", "pose", "first", "start", "end", "change"],
+      apply: { ask: "A ball rolls right, hits a wall and bounces back. Where do the key frames belong?",
+               opts: ["Only at the start", "On every frame", "At the start, at the wall, and at the end",
+                     "Exactly halfway"],
+               right: 2,
+               why: "The wall is where the movement changes direction, which is precisely what a key marks." },
+      xfer: { ask: "In software you set poses on frames 1, 15 and 40 and the program fills in the rest. What have " +
+                   "you set?",
+              opts: ["In-betweens", "Cycles", "Holds", "Key frames"],
+              right: 3,
+              why: "The poses you set yourself are the keys; what the program calculates between them are the " +
+                   "in-betweens." }
+    }),
+
+    C("In-betweening", {
+      why: "It is where smoothness comes from, and where most of the drawing hours go.",
+      eg: "Eleven in-betweens turn a jump between two keys into a smooth hop.",
+      miss: [["In-betweens matter less than keys.",
+              "They carry the timing and spacing. The same two keys, in-betweened differently, read as a " +
+              "different weight, speed and mood."]],
+      pre: ["Key frame"], rel: ["Slow in and slow out"],
+      say: ["between", "keys", "smooth", "tween", "fill", "frames"],
+      apply: { ask: "Two keys, no in-betweens, each held for twelve frames. What does the audience see?",
+               opts: ["The object jumping from one pose to the other and waiting", "Smooth movement",
+                     "Faster movement", "A blur"],
+               right: 0,
+               why: "With nothing between them, each key simply sits on screen until the next one replaces it." },
+      xfer: { ask: "A program calculates the frames between your poses. What is the result called?",
+              opts: ["A cycle", "A tween", "A boil", "A hold"],
+              right: 1,
+              why: "Tween is short for in-between: the same job, done by software." }
+    }),
+
+    C("On twos", {
+      why: "It is the everyday economy of hand-drawn animation: half the drawings, and the same speed.",
+      eg: "Twelve drawings for a second of film, each photographed twice.",
+      miss: [["Animating on twos makes the movement slower.",
+              "Speed is set by how far things move per drawing. Twos only makes motion less smooth, which is " +
+              "why fast action is often done on ones."]],
+      pre: ["Key frame"], rel: ["Timing", "Limited animation"],
+      say: ["two", "frames", "held", "twelve", "drawings", "smooth"],
+      apply: { ask: "A ball crosses the screen in one second on ones. It is redrawn on twos, same start and " +
+                    "finish. What changes?",
+               opts: ["It takes two seconds", "It moves twice as fast",
+                     "It crosses at the same speed, a little less smoothly", "Nothing at all"],
+               right: 2,
+               why: "Twelve drawings now share the same second and the same distance: the speed is identical, " +
+                    "the steps are bigger." },
+      xfer: { ask: "In Spider-Man: Into the Spider-Verse, Miles is animated on twos early on and on ones later. " +
+                   "What does that do?",
+              opts: ["Saves money", "Slows the film down", "Changes the colours",
+                    "Makes him look clumsy at first and smooth once he has mastered his powers"],
+              right: 3,
+              why: "Smoothness is used as characterisation: the experienced Spider-Man beside him is on ones " +
+                   "from the start." }
+    }),
+
+    C("Moving hold", {
+      why: "It is the difference between a character pausing and a character dying on screen.",
+      eg: "A character waits for an answer, still breathing, the hand drifting a little.",
+      miss: [["A hold means absolutely nothing moves.",
+              "That is a still hold, and in 3D it reads as a freeze. A moving hold keeps a trace of movement so " +
+              "the pause stays alive."]],
+      pre: [], rel: ["Boil", "Timing"],
+      say: ["pause", "slight", "movement", "alive", "breath", "frozen"],
+      apply: { ask: "A 3D character holds a pose for two seconds and testers say the film looks broken. What " +
+                    "fixes it?",
+               opts: ["A moving hold", "A longer hold", "More exaggeration", "A lower frame rate"],
+               right: 0,
+               why: "Perfectly still computer-generated surfaces look like a stopped machine. A breath is enough " +
+                    "to keep them alive." },
+      xfer: { ask: "Why does a held drawing cause less trouble in hand-drawn animation than in 3D?",
+              opts: ["Paper moves",
+                    "Audiences read a drawn pause as a pause, while a photo-real render reads as a machine stopping",
+                    "Drawings are bigger", "It uses fewer frames"],
+              right: 1,
+              why: "The more realistic the picture, the more a perfect freeze looks like a fault rather than a " +
+                   "choice." }
+    }),
+
+    C("Boil", {
+      why: "It shows that “still” can still shimmer — and in some cartoons it is the whole look.",
+      eg: "Squigglevision in Dr. Katz: five tracings looped, so every outline shivers.",
+      miss: [["A boil is a mistake in the tracing.",
+              "It can be. It is also used deliberately, to keep a held drawing alive or as a house style."]],
+      pre: ["Moving hold"], rel: [],
+      say: ["trace", "same", "drawing", "loop", "wobble", "lines"],
+      apply: { ask: "A hand-drawn character stands still, but its outline keeps shivering. What is it?",
+               opts: ["A tween", "A cycle", "A boil", "A rotoscope"],
+               right: 2,
+               why: "Several tracings of one drawing, looped: no two are quite the same, so the line wriggles." },
+      xfer: { ask: "Why does a boil make a motionless character feel alive?",
+              opts: ["The colours change", "It uses more frames a second", "It plays faster",
+                    "The picture is never exactly the same twice, so the eye keeps finding movement"],
+              right: 3,
+              why: "The eye is drawn to change. A tiny, constant change is enough to read as life." }
+    }),
+
+    C("Cycle", {
+      why: "It is how animation buys long movement cheaply — and the first thing a beginner gets wrong.",
+      eg: "Four poses of a walk, repeated for as long as the character needs to keep walking.",
+      miss: [["Any short repeated clip is a cycle.",
+              "A cycle has to end where it begins. If the last drawing does not lead back into the first, it " +
+              "pops every time it loops."]],
+      pre: ["Key frame"], rel: ["Limited animation"],
+      say: ["repeat", "loop", "ends", "begins", "walk", "drawings"],
+      apply: { ask: "A walk is drawn as left foot forward, legs together, right foot forward — and then repeats. " +
+                    "What goes wrong?",
+               opts: ["The legs swap over in a single frame, because the second passing pose is missing",
+                     "Nothing", "It looks too smooth", "The character walks backwards"],
+               right: 0,
+               why: "Going back to “left foot forward” from “right foot forward” skips the passing pose, so the " +
+                    "legs jump." },
+      xfer: { ask: "A flag waves in the background of a shot for thirty seconds. How is that normally made?",
+              opts: ["Thirty seconds of unique drawings", "A short cycle, repeated", "A single hold",
+                    "Rotoscoped footage"],
+              right: 1,
+              why: "Background movement that nobody studies closely is exactly what cycles are for." }
+    }),
+
+    C("Pose to pose", {
+      why: "It is how most acting is animated, and it only makes sense against its opposite, straight ahead.",
+      eg: "Keys first, breakdowns second, in-betweens last.",
+      miss: [["Pose to pose is just a slower version of straight ahead.",
+              "They are different orders of work. Straight ahead is lively but drifts; pose to pose is " +
+              "controlled but can come out even and stiff."]],
+      pre: ["Key frame"], rel: ["In-betweening"],
+      say: ["keys", "first", "plan", "then", "in-betweens", "control"],
+      apply: { ask: "An animator has to hit an exact pose on an exact frame, to match a line of dialogue. Which " +
+                    "method?",
+               opts: ["Straight ahead", "Rotoscoping", "Pose to pose", "Boiling"],
+               right: 2,
+               why: "Planning the keys first is what lets you place a pose on a chosen frame." },
+      xfer: { ask: "Fire, water and smoke are usually animated straight ahead. Why?",
+              opts: ["They are easy to draw", "They need fewer frames", "They move slowly",
+                    "They have no exact poses to hit, and straight ahead keeps them unpredictable"],
+              right: 3,
+              why: "There is no “right pose” for a flame on frame 12, and the drift that spoils acting is what " +
+                   "makes fire look like fire." }
+    }),
+
+    C("Rotoscope", {
+      why: "It is the oldest way of getting real movement into animation, and the ancestor of motion capture.",
+      eg: "Max Fleischer filmed his brother in a clown suit and traced him as Koko the Clown.",
+      miss: [["Rotoscoping is cheating.",
+              "It is a tool. Traced movement brings real weight and timing, and it still has to be pushed and " +
+              "simplified, or the result looks oddly flat."]],
+      pre: [], rel: ["Motion capture"],
+      say: ["trace", "live-action", "film", "frame", "project", "Fleischer"],
+      apply: { ask: "In 1930 an animator needs a character to dance exactly like a real dancer. What do they use?",
+               opts: ["A rotoscope, tracing the filmed dancer", "Motion capture", "Pixilation", "A boil"],
+               right: 0,
+               why: "Motion capture was decades away; tracing projected film was how real movement got into a " +
+                    "cartoon." },
+      xfer: { ask: "In visual effects today, “roto” means tracing round an object in every frame. What for?",
+              opts: ["To add sound", "To cut the object out of the footage", "To compress the file",
+                    "To build a storyboard"],
+              right: 1,
+              why: "Same action, different purpose: the traced outline becomes a mask that separates the object " +
+                   "from its background." }
+    }),
+
+    C("Motion capture", {
+      why: "Most blockbuster and video-game movement starts as a real person moving.",
+      eg: "An actor in a marker suit, cameras round the room, a small camera on a headset for the face.",
+      miss: [["Motion capture replaces animators.",
+              "It supplies raw movement that animators clean up, fix and exaggerate. Markers slip, feet slide, " +
+              "and a human performance rarely fits a non-human body."]],
+      pre: [], rel: ["Rotoscope", "Uncanny valley"],
+      say: ["markers", "cameras", "record", "performer", "digital", "character"],
+      apply: { ask: "In a basketball game the players move exactly like real athletes. How was that made?",
+               opts: ["Rotoscoping", "Pixilation", "Motion capture of real players", "Hand-drawn cycles"],
+               right: 2,
+               why: "Studios capture the athletes themselves, then fit the recorded movement to the game's " +
+                    "characters." },
+      xfer: { ask: "Besides films and games, where is motion capture used?",
+              opts: ["Photographic developing", "Printing", "Radio broadcasting",
+                    "Sports science and medicine"],
+              right: 3,
+              why: "Anywhere movement has to be measured rather than watched: gait analysis, rehabilitation, " +
+                   "robotics." }
+    }),
+
+    C("Uncanny valley", {
+      why: "It explains why studios stylise their characters instead of chasing perfect realism.",
+      eg: "The Polar Express (2004): almost-real children that many viewers found eerie.",
+      miss: [["The more realistic a character looks, the more an audience will like it.",
+              "Liking rises with likeness until just short of real, then drops sharply. A stylised cartoon can " +
+              "be liked more than a nearly perfect human."]],
+      pre: [], rel: ["Motion capture"],
+      say: ["almost", "human", "eerie", "dip", "affinity", "Mori"],
+      apply: { ask: "A studio's realistic digital human makes test audiences uneasy. What is the usual fix?",
+               opts: ["Stylise it — larger eyes, simpler shapes", "Make it even more realistic",
+                     "Lower the frame rate", "Add motion blur"],
+               right: 0,
+               why: "Moving back down the curve is cheaper and safer than trying to climb out the far side of " +
+                    "the valley." },
+      xfer: { ask: "Why does a cartoon rabbit with enormous eyes never feel creepy?",
+              opts: ["It moves faster", "It is nowhere near human enough to fall into the valley",
+                    "It is hand-drawn", "It never speaks"],
+              right: 1,
+              why: "The valley sits at the far end of the likeness scale. A clearly stylised character is judged " +
+                   "as a design, not as a person." }
+    }),
+
+    C("Storyboard", {
+      why: "It is the cheapest place to find out that a story does not work.",
+      eg: "Disney's team pinned sketches to a wall for Three Little Pigs in 1933.",
+      miss: [["A storyboard is a set of nice drawings.",
+              "It is a plan: shot order, camera, dialogue and timing. Rough panels that read clearly beat " +
+              "beautiful ones that do not."]],
+      pre: [], rel: ["Animatic", "Production storyboard"],
+      say: ["drawings", "order", "shots", "plan", "before", "notes"],
+      apply: { ask: "A team is halfway through animating when it realises a scene is confusing. Where should that " +
+                    "have shown up?",
+               opts: ["In texture mapping", "In rendering", "In the storyboard", "In compression"],
+               right: 2,
+               why: "Fixing a sketch costs minutes; fixing animated footage costs weeks." },
+      xfer: { ask: "Why do live-action films and video games storyboard as well?",
+              opts: ["Tradition", "To advertise the film", "Legal requirements",
+                    "Anything built shot by shot is cheaper to fix as drawings than as footage"],
+              right: 3,
+              why: "The saving has nothing to do with animation: it is about seeing the plan before paying to " +
+                   "build it." }
+    }),
+
+    C("Production storyboard", {
+      why: "It is the board a crew actually works from, and the one the course's test asks about.",
+      eg: "A panel carrying the scene and shot number, the shot size, a push-in arrow, action, dialogue and the " +
+          "transition.",
+      miss: [["The production board is the polished one.",
+              "The polished one is the presentation board, made for people outside the team. The production " +
+              "board is the working one, thick with technical notes."]],
+      pre: ["Storyboard"], rel: [],
+      say: ["every", "shot", "technical", "notes", "camera", "dialogue"],
+      apply: { ask: "Which board does a camera operator want on set?",
+               opts: ["Production", "Concept", "Presentation", "None of them"],
+               right: 0,
+               why: "It is the one that says what the shot is, how the camera moves, and what is said over it." },
+      xfer: { ask: "A client cannot read rough sketches but has to approve the work. Which board gets made?",
+              opts: ["Concept", "Presentation", "Production", "Animatic"],
+              right: 1,
+              why: "The presentation board exists for exactly that reader: clean, finished panels for someone " +
+                   "outside the team." }
+    }),
+
+    C("Animatic", {
+      why: "It is the first time the film exists in time, which is when pacing problems finally show.",
+      eg: "Storyboard panels cut to the dialogue and music, played as a video.",
+      miss: [["An animatic is rough animation.",
+              "The drawings do not move. The panels are held and cut in time with the sound, which is enough to " +
+              "judge pacing and length."]],
+      pre: ["Storyboard"], rel: ["Timing"],
+      say: ["storyboard", "timed", "sound", "video", "pacing", "length"],
+      apply: { ask: "A director wants to know whether a joke lands before anyone animates it. What gets built?",
+               opts: ["A cycle", "A rig", "An animatic", "A texture"],
+               right: 2,
+               why: "Comedy is timing, and an animatic is the cheapest thing that has timing in it." },
+      xfer: { ask: "An animatic runs 90 seconds and the slot is 60. What is the cheap moment to fix it?",
+              opts: ["After rendering", "After the motion capture shoot", "After rigging",
+                    "Now, by cutting and retiming panels"],
+              right: 3,
+              why: "Thirty seconds cut from an animatic costs an afternoon. Cut later, it costs everything spent " +
+                   "animating them." }
+    }),
+
+    C("Squash and stretch", {
+      why: "Thomas and Johnston called it the most important discovery of all: weight and flexibility, shown by " +
+           "one change of shape.",
+      eg: "A ball flattens as it lands and lengthens as it falls fast — and holds the same volume throughout.",
+      miss: [["Squash means drawing the object smaller.",
+              "Volume stays the same. Squash it and it must spread wider, or it reads as shrinking instead of " +
+              "squashing."]],
+      pre: [], rel: ["Slow in and slow out", "Timing"],
+      say: ["volume", "flatten", "stretch", "impact", "same", "flexible"],
+      apply: { ask: "A ball is drawn flatter on impact, but no wider. What do viewers see?",
+               opts: ["A ball that shrinks", "Weight", "Speed", "A harder bounce"],
+               right: 0,
+               why: "Losing area reads as losing substance. Widening as it flattens is what keeps it the same ball." },
+      xfer: { ask: "A bowling ball barely changes shape when it lands; a beach ball squashes a lot. What does that " +
+                   "tell an audience?",
+              opts: ["How fast each one moves", "How rigid and how heavy each one is", "The frame rate",
+                    "The camera angle"],
+              right: 1,
+              why: "How much a thing deforms is how an audience reads what it is made of." }
+    }),
+
+    C("Anticipation", {
+      why: "Without it the audience misses the action; with it, the eye is already in the right place.",
+      eg: "A crouch before a jump, a wind-up before a throw, a look before a run.",
+      miss: [["Anticipation is a pause before the action.",
+              "It is a movement the opposite way first — down before up, back before forward. Waiting is not " +
+              "anticipating."]],
+      pre: [], rel: ["Follow-through", "Timing"],
+      say: ["before", "opposite", "prepare", "audience", "ready", "crouch"],
+      apply: { ask: "A character bursts into a sprint from standing, and testers say they missed the start. What " +
+                    "is missing?",
+               opts: ["Follow-through", "A cycle", "Anticipation", "A boil"],
+               right: 2,
+               why: "A lean back, or a crouch, gives the eye the half-second of warning it needs." },
+      xfer: { ask: "Why does a stage magician make a big gesture with one hand before the trick?",
+              opts: ["To rest", "To slow the show down", "To hide the exit",
+                    "To prepare the audience's eye for what comes next"],
+              right: 3,
+              why: "Same principle, different craft: a preparing movement decides where the audience is looking." }
+    }),
+
+    C("Follow-through", {
+      why: "It is what makes a stop look like a body stopping instead of a switch being flicked.",
+      eg: "A runner halts; the hair and coat keep going, then swing back and settle.",
+      miss: [["Everything should come to a stop on the same frame.",
+              "Loose parts carry on and settle back, and different parts start and stop at different times — " +
+              "that second half is overlapping action."]],
+      pre: [], rel: ["Anticipation", "Slow in and slow out"],
+      say: ["after", "stops", "loose", "parts", "settle", "inertia"],
+      apply: { ask: "A character stops dead and their long coat stops in the very same frame. How does it read?",
+               opts: ["Stiff, like a toy", "Heavy", "Fast", "Realistic"],
+               right: 0,
+               why: "Nothing in the real world stops all at once, so everything stopping together reads as rigid." },
+      xfer: { ask: "Which law of physics is follow-through drawing?",
+              opts: ["Gravity", "Inertia — moving things keep moving until something stops them",
+                    "Refraction", "Friction"],
+              right: 1,
+              why: "The coat has no reason to stop when the body does, so it keeps going until the body drags it " +
+                   "back." }
+    }),
+
+    C("Slow in and slow out", {
+      why: "It is spacing, and spacing is most of what makes movement feel real.",
+      eg: "Nine drawings bunched at both ends of a move and spread out through the middle.",
+      miss: [["Slow in and slow out means the whole action is slower.",
+              "The action can take exactly the same time. What changes is where the drawings fall: more near " +
+              "the poses, fewer in the middle."]],
+      pre: ["In-betweening"], rel: ["Timing", "Squash and stretch"],
+      say: ["more", "drawings", "start", "end", "speeds", "gradually"],
+      apply: { ask: "Nine evenly spaced drawings carry a ball across the screen. How does it read?",
+               opts: ["Natural", "Too slow",
+                     "Mechanical — full speed from a standing start, then a dead stop", "Bouncy"],
+               right: 2,
+               why: "Even spacing is constant speed, and nothing with mass starts or stops at constant speed." },
+      xfer: { ask: "A lift that starts and stops abruptly feels wrong to ride in. Which principle describes doing " +
+                   "it properly?",
+              opts: ["Arcs", "Staging", "Appeal", "Slow in and slow out"],
+              right: 3,
+              why: "Engineers ease lifts in and out for the same reason animators do: bodies feel the jolt of " +
+                   "instant speed." }
+    }),
+
+    C("Timing", {
+      why: "The same poses, given a different number of frames, become a different character.",
+      eg: "A head turn in two frames is a snap; in twenty it is a slow, tired look.",
+      miss: [["Timing and spacing are the same thing.",
+              "Timing is how many frames an action gets. Spacing is where the drawings fall inside them. A " +
+              "move can be slow and still badly spaced."]],
+      pre: [], rel: ["On twos", "Slow in and slow out"],
+      say: ["number", "frames", "drawings", "speed", "weight", "mood"],
+      apply: { ask: "Two characters make an identical gesture; one takes 6 frames, the other 24. What does the " +
+                    "audience read?",
+               opts: ["Different weight and mood", "Different colours", "A different camera angle",
+                     "Nothing"],
+               right: 0,
+               why: "Quick reads as light, urgent or startled; slow reads as heavy, calm or weary." },
+      xfer: { ask: "A punch lands but feels weak, and the poses are right. What do you change first?",
+              opts: ["The texture", "The timing — fewer frames into the impact, and a hold after it",
+                    "The rig", "The file format"],
+              right: 1,
+              why: "Impact is made of timing: a fast approach, a sudden stop, and a moment to let it land." }
+    }),
+
+    C("Critique", {
+      why: "A critique is what turns a first version into a second one, and the order of the steps is what keeps " +
+           "it fair.",
+      eg: "Describe, analyze, interpret, judge — opinion last.",
+      miss: [["A critique is saying what you liked and what you didn't.",
+              "Judgement is the last of four steps. Describing and analysing first is what makes the judgement " +
+              "worth hearing."]],
+      pre: [], rel: [],
+      say: ["describe", "analyze", "interpret", "judge", "order", "constructive"],
+      apply: { ask: "The first thing a critic says is “the ending is weak”. What have they skipped?",
+               opts: ["Nothing", "Judging", "Describing, analysing and interpreting", "Only the description"],
+               right: 2,
+               why: "Without those three, the artist gets a verdict and no way to act on it." },
+      xfer: { ask: "Why does Pixar's Braintrust give notes with no authority over the director?",
+              opts: ["To save time", "Because directors outrank them", "For legal reasons",
+                    "So the notes stay about the film instead of becoming orders"],
+              right: 3,
+              why: "Notes that must be obeyed become a negotiation. Notes that need not be obeyed can be honest." }
+    }),
+
+    C("Greeking", {
+      why: "It lets a layout be judged before the words exist.",
+      eg: "“Lorem ipsum”, jumbled Latin from Cicero, or plain grey bars where text will go.",
+      miss: [["Greeking means writing a short summary of each slide.",
+              "A summary is a useful plan, but it is not greeking. Greeking is deliberately meaningless text, so " +
+              "nobody reads it while judging the design."]],
+      pre: [], rel: [],
+      say: ["placeholder", "text", "lorem", "ipsum", "layout", "unreadable"],
+      apply: { ask: "A designer fills a slide with “lorem ipsum” before the script arrives. Why?",
+               opts: ["To judge the layout without being distracted by the words", "To confuse the client",
+                     "To save file space", "Because Latin looks serious"],
+               right: 0,
+               why: "Real words pull attention to what they say. Meaningless ones leave only the shape of the page." },
+      xfer: { ask: "A newspaper mock-up uses grey bars instead of headlines. What is being tested?",
+              opts: ["The writing", "The design and balance of the page", "The printing ink",
+                    "The font licence"],
+              right: 1,
+              why: "Same trick as lorem ipsum, in an even plainer form." }
+    }),
+
+    C("Selective omission", {
+      why: "It is the commonest kind of bias and the hardest to catch, because nothing printed is false.",
+      eg: "Two crops of one photograph: a packed stand, or an empty one.",
+      miss: [["Bias means making things up.",
+              "Most bias is true facts, chosen and placed. What is left out, and where a story is put, does the " +
+              "work."]],
+      pre: [], rel: ["Critique"],
+      say: ["leave", "out", "facts", "placement", "impression", "choose"],
+      apply: { ask: "Two papers report the same protest. One gives the crowd size, the other does not mention it. " +
+                    "What is that?",
+               opts: ["Distortion", "A loaded word", "Selective omission", "A correction"],
+               right: 2,
+               why: "Nothing false was printed. A fact that would change the impression was left out." },
+      xfer: { ask: "A charity's advert shows only the families it helped. Which bias is that, and is it lying?",
+              opts: ["No bias at all", "Distortion — lying", "Imbalance — lying",
+                    "Selective omission — not lying, but not the whole picture"],
+              right: 3,
+              why: "Every story shown is true. The ones not shown are what make it an advert rather than a report." }
+    }),
+
+    C("Lossy compression", {
+      why: "Every photo and video you share online has been through it, and it is why a file gets worse each " +
+           "time it is saved.",
+      eg: "A JPEG saved again and again until the fur turns into blocks.",
+      miss: [["Compression just makes files smaller.",
+              "Lossless compression does that and loses nothing. Lossy compression throws detail away for good, " +
+              "which is why a re-saved JPEG never recovers."]],
+      pre: [], rel: [],
+      say: ["smaller", "discard", "detail", "permanent", "quality", "lossless"],
+      apply: { ask: "A student opens a JPEG, edits it and saves it, ten times over. What happens?",
+               opts: ["A little more detail is lost every time", "Nothing changes", "The file grows",
+                     "It becomes lossless"],
+               right: 0,
+               why: "Each save throws away more of what is left, and no save can put back what an earlier one " +
+                    "discarded." },
+      xfer: { ask: "Why must a bank statement be compressed losslessly?",
+              opts: ["It is smaller that way", "A changed digit is a different number", "It is only text",
+                    "Banks have slow computers"],
+              right: 1,
+              why: "“Close enough” is fine for the shade of a pixel and useless for an amount of money." }
+    }),
+
+    C("Niche blog", {
+      why: "It explains why narrow blogs find an audience while general ones disappear.",
+      eg: "A blog only about building armatures for stop-motion puppets.",
+      miss: [["A niche blog is one that covers current events.",
+              "A niche is a narrow subject with a particular audience. Covering all the news is the opposite of " +
+              "niche."]],
+      pre: [], rel: [],
+      say: ["one", "topic", "narrow", "audience", "specific", "interest"],
+      apply: { ask: "Which of these is a niche blog?",
+               opts: ["A site covering all national news", "A general lifestyle magazine",
+                     "A blog about repairing vintage film cameras", "A search engine"],
+               right: 2,
+               why: "One narrow subject, and a particular group of people who want exactly it." },
+      xfer: { ask: "Why does writing about something you already love make a blog more likely to survive?",
+              opts: ["It ranks higher automatically", "Readers prefer older topics",
+                    "It costs less to host", "You keep finding things to say, and keep showing up"],
+              right: 3,
+              why: "Blogs die of silence. Interest is what keeps posts coming once the novelty has gone." }
+    })
+  ];
+
+  var BOOK = { "media-5": MEDIA5, "media-6": MEDIA6, "media-7": MEDIA7, "media-8": MEDIA8,
+               "biz-4": BIZ4 };
 
   /* A set with no authored concepts still runs, at the three levels a pair can
      honestly support. Saying so in the data is better than a Learn session
