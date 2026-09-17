@@ -206,6 +206,40 @@ window.OPLO = (function () {
       ["Dissolve", "A transition in which one shot gradually fades out as the next fades in, often suggesting that time has passed."],
       ["Frame rate", "How many still frames are shown each second. Film uses 24; US television about 30."]
     ]},
+    "media-8": { t: "Intro to Animation", cards: [
+      ["Animation", "Still images, each slightly different, shown in quick succession so that they appear to move."],
+      ["Thaumatrope", "A 19th-century toy: a disc with a picture on each side, spun on strings until the two pictures look like one."],
+      ["Cel", "A clear plastic sheet a character is painted on, laid over a background that is painted only once."],
+      ["Limited animation", "Animation that reuses drawings and redraws only the parts that move, such as a mouth."],
+      ["Stop motion", "Animation made by photographing real objects one frame at a time, moving them slightly between shots."],
+      ["Pixilation", "Stop motion with live actors, who hold a pose for each frame and shift slightly before the next."],
+      ["3D modeling", "Building an object's surface in 3D, usually as a mesh of small flat faces, so a computer can show it from any angle."],
+      ["Texture mapping", "Wrapping a flat image around a 3D model to give its surface colour, pattern and detail."],
+      ["Rigging", "Building a skeleton of joints inside a 3D model, with controls an animator uses to pose it."],
+      ["Key frame", "A pose that marks an important moment — where a move starts, ends or changes. Drawn first, and not only at the start."],
+      ["In-betweening", "Making the frames between two key frames so one pose flows into the next. Also called tweening."],
+      ["On twos", "Each drawing held for two frames: twelve drawings a second. Smoother on ones, but the same speed."],
+      ["Moving hold", "A pause in which the character still moves slightly — a breath, a blink — so it doesn't look frozen."],
+      ["Boil", "A shimmer made by tracing the same drawing several times and looping the copies."],
+      ["Cycle", "A short series of drawings that ends where it begins, so it can repeat, like a walk."],
+      ["Pose to pose", "Drawing the key poses first, then the in-betweens. The opposite of straight ahead action."],
+      ["Rotoscope", "Max Fleischer's device, patented in 1917, for tracing live-action film frame by frame."],
+      ["Motion capture", "Recording a real performer's movement, often with markers and cameras, to drive a digital character."],
+      ["Uncanny valley", "The eerie feeling caused by an artificial human that looks almost, but not quite, real. Mori, 1970."],
+      ["Storyboard", "A sequence of drawings showing each shot of a film in order, with notes. The plan everyone works from."],
+      ["Production storyboard", "A detailed storyboard of every shot, with dialogue, shot size, camera angle and movement, effects and transitions."],
+      ["Animatic", "A storyboard timed to sound and played as a video, to judge pacing and length before animating."],
+      ["Squash and stretch", "Flattening an object on impact and lengthening it at speed, while keeping its volume the same."],
+      ["Anticipation", "A small preparatory move before a main action, such as crouching before a jump."],
+      ["Follow-through", "Loose parts that keep moving after the body stops, then settle back."],
+      ["Slow in and slow out", "More drawings near the start and end of a move, so it speeds up and slows down gradually."],
+      ["Timing", "The number of drawings or frames given to an action, which sets its speed and feel."],
+      ["Critique", "A fair response to a work that describes, analyzes and interprets it before judging it."],
+      ["Greeking", "Placeholder text, such as “lorem ipsum”, that shows where real text will go."],
+      ["Selective omission", "Leaving facts out so a story gives a particular impression."],
+      ["Lossy compression", "Making a file smaller by permanently discarding data. Lossless compression loses nothing."],
+      ["Niche blog", "A blog about one specific subject for a particular audience."]
+    ]},
     "biz-4": { t: "International Business", cards: [
       ["Absolute advantage", "Producing more of a good than a rival can with the same resources."],
       ["Comparative advantage", "Producing a good at a lower opportunity cost than a rival — giving up less of everything else to make it."],
@@ -275,7 +309,7 @@ window.OPLO = (function () {
       "Describe the history and application of photography, video, animation and audio/video production."
     ],
     parts: [{ name: null, units: MEDIA_UNITS }],
-    sets: { 1: "media-1", 2: "media-2", 5: "media-5", 6: "media-6", 7: "media-7" },
+    sets: { 1: "media-1", 2: "media-2", 5: "media-5", 6: "media-6", 7: "media-7", 8: "media-8" },
     grading: [["Quizzes", 35], ["Assignments", 35], ["Mid-term and final exams", 30]],
     textbook: "EHS Media Arts — © Excel Education Systems, Inc., 2021."
   };
@@ -340,7 +374,7 @@ window.OPLO = (function () {
      ground has not been laid is not the next thing to do, however far down
      the list you are. */
   var PRE = {
-    media: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [2], 7: [6], 8: [6], 9: [5, 7] },
+    media: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [2], 7: [6], 8: [6, 7], 9: [5, 7] },
     seeing: { 1: [], 2: [1], 3: [2] },
     biz: {}
   };
