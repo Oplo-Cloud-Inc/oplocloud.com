@@ -1,0 +1,227 @@
+{
+  "id": "asm-alg2-mp4-qam",
+  "title": "Algebra 2 — MP4 QAM",
+  "course": "Algebra 2",
+  "type": "Quarterly Exam",
+  "assessment_goal": "Determine whether students can apply Algebra 2 concepts — polynomial operations, functions, statistics, trigonometry, and advanced algebraic reasoning — to solve multi-step problems.",
+  "state": "LIVE",
+  "published": true,
+  "publishedAt": "2026-09-17T08:00:00Z",
+  "scheduledAt": "2026-09-17T14:00:00Z",
+  "startsAt": "2026-09-18T10:00:00Z",
+  "version": "v1.0",
+  "createdBy": "Saswat Jimac",
+  "duration": 90,
+  "items": 16,
+  "students": 1,
+  "classes": 1,
+  "readiness": 100,
+  "security": { "testingMode": "Secure", "internet": false, "aiAssistance": false, "calculator": true, "referenceSheet": true },
+  "skills": {
+    "Radical & rational equations": 85,
+    "Complex numbers": 80,
+    "Polynomial factoring": 82,
+    "Systems of equations": 78,
+    "Trigonometric graphs": 76,
+    "Conic sections": 75,
+    "Probability": 80,
+    "Normal distribution": 78,
+    "Sequences & series": 77,
+    "Reasoning & proof": 83
+  },
+  "experiences": [
+    "Opening — Read the exam directions",
+    "Part A — Equations & Expressions (Questions 1-6)",
+    "Part B — Polynomials & Functions (Questions 7-10)",
+    "Part C — Probability & Statistics (Questions 11, 13, 16)",
+    "Part D — Trigonometry & Conics (Questions 12, 14, 15)",
+    "Final Demonstration — Review and submit"
+  ],
+  "timeline": {
+    "created": 1726646400000,
+    "reviewed": 1727078400000,
+    "approved": 1727424000000,
+    "scheduled": 1726653600000,
+    "testing": 1726720800000,
+    "scoring": 1727596800000,
+    "results": 1727683200000
+  },
+  "incidents": 0,
+  "sessions": { "started": 0, "paused": 0, "submitted": 0, "interrupted": 0 },
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Identify the study design",
+      "section": "Part A",
+      "question": "A veterinarian pharmaceutical company is testing a new drug to treat an infection among puppies. The puppies are randomly placed into two equally-sized groups. One group will receive the drug and the other group will receive a placebo. The veterinarians monitor the puppies. This is an example of:",
+      "type": "multiple_choice",
+      "options": ["census", "observational study", "survey", "controlled experiment"],
+      "correct": 3
+    },
+    {
+      "id": "task-2",
+      "title": "Solve a radical equation",
+      "section": "Part A",
+      "question": "Solve algebraically for x: √(2x − 7) + x = 5",
+      "type": "constructed_response",
+      "correctAnswer": "x = 4",
+      "hint": "Isolate the radical, square both sides, then check for extraneous solutions."
+    },
+    {
+      "id": "task-3",
+      "title": "Complex number expansion",
+      "section": "Part A",
+      "question": "Given that i is the imaginary unit, the expression (x − 2i)² is equivalent to:",
+      "type": "multiple_choice",
+      "options": ["x² + 4", "x² − 4", "x² − 2xi − 4", "x² − 4xi − 4"],
+      "correct": 3
+    },
+    {
+      "id": "task-4",
+      "title": "Factor polynomials",
+      "section": "Part A",
+      "question": "Factor completely: a) 3x² − 2x − 5  b) 2x² + 3x − 9",
+      "type": "constructed_response",
+      "correctAnswer": "a) (3x − 5)(x + 1)  b) (2x − 3)(x + 3)",
+      "hint": "Use the AC method or trial and error for each quadratic."
+    },
+    {
+      "id": "task-5",
+      "title": "Solve exponential equation",
+      "section": "Part A",
+      "question": "Solve algebraically for x and round your solution to the nearest tenth: 87e^(0.3x) − 10 = 5918",
+      "type": "constructed_response",
+      "correctAnswer": "x ≈ 14.1",
+      "hint": "Isolate the exponential, take the natural log of both sides."
+    },
+    {
+      "id": "task-6",
+      "title": "Rational exponents",
+      "section": "Part A",
+      "question": "Rewrite in simplest form using rational exponents: ∛(81x⁴y⁻⁸z⁶) / 12",
+      "type": "constructed_response",
+      "correctAnswer": "(3^(4/3) · x^(4/3) · y^(−8/3) · z²) / 12",
+      "hint": "Convert the cube root to a rational exponent and simplify each variable."
+    },
+    {
+      "id": "task-7",
+      "title": "Function intersection",
+      "section": "Part B",
+      "question": "Given q(x) = 1 and r(x) = |x − 12| − 3, what is an approximate solution of q(x) = r(x)?",
+      "type": "multiple_choice",
+      "options": ["15.07", "(0.11, 8.89)", "0.07", "(8.89, 0.11)"],
+      "correct": 3
+    },
+    {
+      "id": "task-8",
+      "title": "System of three equations",
+      "section": "Part B",
+      "question": "Consider the system: x + 2y − z = 1, −x − 3y + 2z = 0, 2x − 4y + z = 10. What is the solution set?",
+      "type": "multiple_choice",
+      "options": ["(1, 1, 2)", "(3, −1, 0)", "(5, −1, 2)", "(3, 5, 8)"],
+      "correct": 1
+    },
+    {
+      "id": "task-9",
+      "title": "Factor theorem proof",
+      "section": "Part B",
+      "question": "Algebraically determine whether x + 4 is a factor of 2x³ + 10x² + 4x − 16. Justify your answer.",
+      "type": "constructed_response",
+      "correctAnswer": "Yes, x + 4 is a factor because f(−4) = 0 by the Factor Theorem.",
+      "hint": "Evaluate f(−4). If it equals 0, then x + 4 is a factor."
+    },
+    {
+      "id": "task-10",
+      "title": "Complete polynomial factoring",
+      "section": "Part B",
+      "question": "Over the set of integers, factor completely: x⁴ + 4x³ − 9x² − 36x",
+      "type": "constructed_response",
+      "correctAnswer": "x(x + 4)(x + 3)(x − 3)",
+      "hint": "Factor out x first, then factor by grouping, then use difference of squares."
+    },
+    {
+      "id": "task-11",
+      "title": "Independence of events",
+      "section": "Part C",
+      "question": "The probability that Felipe wins is 22/45. The probability that they practice for a long time is 27/45. The probability that Felipe wins and they practice for a long time is 12/45. Determine whether the two events are independent. Justify.",
+      "type": "constructed_response",
+      "correctAnswer": "Not independent, because P(A)·P(B) = (22/45)(27/45) = 594/2025 ≈ 0.293 ≠ P(A∩B) = 12/45 = 540/2025 ≈ 0.267.",
+      "hint": "Two events are independent if P(A∩B) = P(A)·P(B)."
+    },
+    {
+      "id": "task-12",
+      "title": "Trigonometric graphing",
+      "section": "Part D",
+      "question": "Graph at least one cycle of y = 3cos(4x) − 2. Find amplitude, period, and midline.",
+      "type": "constructed_response",
+      "correctAnswer": "Amplitude = 3, Period = π/2, Midline: y = −2",
+      "hint": "For y = A·cos(Bx) + D: amplitude = |A|, period = 2π/|B|, midline y = D."
+    },
+    {
+      "id": "task-13",
+      "title": "Solve rational equation",
+      "section": "Part C",
+      "question": "The solution set of (x+3)/(x−5) + 6/(x+2) = (6+10x)/(x²−3x−10) is:",
+      "type": "multiple_choice",
+      "options": ["{−6}", "{5}", "{−6, 5}", "{−5, 6}"],
+      "correct": 0
+    },
+    {
+      "id": "task-14",
+      "title": "Parabola from focus and directrix",
+      "section": "Part D",
+      "question": "The equation of the parabola with focus at (−3, 2) and directrix y = 0 is:",
+      "type": "constructed_response",
+      "correctAnswer": "(x + 3)² = 4(y − 1) or equivalently y = ¼(x + 3)² + 1",
+      "hint": "Find the vertex (midpoint between focus and directrix) and use (x−h)² = 4p(y−k)."
+    },
+    {
+      "id": "task-15",
+      "title": "Identify the sequence formula",
+      "section": "Part D",
+      "question": "Which function defines the sequence −6, −10, −14, −18, ..., where f(6) = −26?",
+      "type": "multiple_choice",
+      "options": ["f(x) = −4x − 2", "f(x) = −x + 32", "f(x) = 4x − 2", "f(x) = x − 26"],
+      "correct": 0
+    },
+    {
+      "id": "task-16",
+      "title": "Normal distribution percentage",
+      "section": "Part C",
+      "question": "A population is normally distributed with mean 23 and standard deviation 1.2. The percentage of the population that falls below 21, to the nearest hundredth, is:",
+      "type": "multiple_choice",
+      "options": ["0.05", "8.29", "4.78", "91.30"],
+      "correct": 2
+    }
+  ],
+  "answerKey": {
+    "task-1": 3,
+    "task-2": "x = 4",
+    "task-3": 3,
+    "task-4": { "a": "(3x − 5)(x + 1)", "b": "(2x − 3)(x + 3)" },
+    "task-5": "x ≈ 14.1",
+    "task-6": "(3^(4/3) · x^(4/3) · y^(−8/3) · z²) / 12",
+    "task-7": 3,
+    "task-8": 1,
+    "task-9": "Yes, x + 4 is a factor because f(−4) = 0",
+    "task-10": "x(x + 4)(x + 3)(x − 3)",
+    "task-11": "Not independent; P(A)·P(B) ≠ P(A∩B)",
+    "task-12": { "amplitude": 3, "period": "π/2", "midline": "y = −2" },
+    "task-13": 0,
+    "task-14": "(x + 3)² = 4(y − 1)",
+    "task-15": 0,
+    "task-16": "4.78%"
+  },
+  "studentExperience": {
+    "title": "Algebra 2 — MP4 QAM",
+    "subtitle": "Quarterly Assessment · 90 minutes · 16 tasks",
+    "intro": "This assessment covers polynomial operations, functions, statistics, trigonometry, and advanced algebraic reasoning. Show all work. Read each task carefully before beginning.",
+    "rules": [
+      "90 minutes — calculator permitted",
+      "Reference sheet permitted",
+      "Cannot leave the assessment once started",
+      "No unauthorized assistance"
+    ],
+    "progressFormat": "Task X of 16"
+  }
+}
