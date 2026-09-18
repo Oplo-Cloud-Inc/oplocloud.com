@@ -13106,10 +13106,17 @@
     var staff = who.role === "admin" || who.role === "teacher";
     document.body.classList.toggle("is-admin", staff);
     document.body.classList.toggle("is-staff", staff);
-    $("#navAdmin").hidden = !allowedTabs().length;
-    $("#navGrades").hidden = who.role !== "student";
-    $("#navExams").hidden = who.role !== "student";
-    $("#navAdmin").textContent = who.role === "admin" ? "Console" : "My students";
+    /* The six-section bar (index.html) has no Grades, Exams or Console tab.
+       Each is set only if it is there: a tab missing from the bar must not
+       stop the app from drawing, and it did — every sign-in and every reload
+       died here and left the bar over an empty page. */
+    var navAdmin = $("#navAdmin"), navGrades = $("#navGrades"), navExams = $("#navExams");
+    if (navAdmin) {
+      navAdmin.hidden = !allowedTabs().length;
+      navAdmin.textContent = who.role === "admin" ? "Console" : "My students";
+    }
+    if (navGrades) navGrades.hidden = who.role !== "student";
+    if (navExams) navExams.hidden = who.role !== "student";
     if (R.broken) {
       toast("This browser will not let the page store anything, so progress will not be kept.");
     }
@@ -13197,9 +13204,10 @@
     TRAIL = []; POS = -1;            // the next person's history starts from nothing
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     document.body.classList.remove("is-admin");
-    $("#navAdmin").hidden = true;
-    $("#navGrades").hidden = true;
-    $("#navExams").hidden = true;
+    ["#navAdmin", "#navGrades", "#navExams"].forEach(function (id) {
+      var tab = $(id);
+      if (tab) tab.hidden = true;
+    });
     $("#rankChip").hidden = true;
     $("#streak").textContent = "0";
     // Signed out, the page is the sign-in page again, at the address everybody
