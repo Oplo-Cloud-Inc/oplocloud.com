@@ -303,6 +303,17 @@ window.OPLO_API = (function () {
       }
     },
 
+    /* ------------------------------------------------------ Assessments
+       What a student has been set, as cards with the rules and no questions;
+       and, only to them and only once it has opened, the questions. Never an
+       answer — the server refuses to store one. */
+    assessments: {
+      mine: function () { return get("/assessments").then(function (r) { return r.assessments; }); },
+      get: function (id) {
+        return get("/assessments/" + encodeURIComponent(id)).then(function (r) { return r.assessment; });
+      }
+    },
+
     /* -------------------------------------------------------- Study sets
        Authored by teachers, studied by their students, and stored in the
        database — which is what makes a set a teacher writes something they

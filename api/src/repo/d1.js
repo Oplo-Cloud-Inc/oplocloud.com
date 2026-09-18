@@ -732,6 +732,82 @@ export class D1Repository {
     return results || [];
   }
 
+  /* ---------------------------------------------------------- Assessments
+     A published assessment reaches only the accounts it was set for. The
+     spec is stored as the JSON a student is shown — services/assessments.js
+     has already refused anything carrying an answer. */
+
+  async findAssessment(assessmentId) {
+    return this.db.prepare(`SELECT * FROM learn_assessments WHERE id = ?`)
+      .bind(assessmentId).first();
+  }
+
+  async listAssessments() {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_assessments WHERE status != 'archived'
+        ORDER BY COALESCE(opens_at, created_at) DESC`
+    ).all();
+    return results || [];
+  }
+
+  async listAssessmentsFor(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.* FROM learn_assessments a
+         JOIN learn_assessment_assignees x ON x.assessment_id = a.id
+        WHERE x.account_id = ? AND a.status = 'published'
+        ORDER BY COALESCE(a.opens_at, a.created_at)`
+    ).bind(accountId).all();
+    return results || [];
+  }
+
+  async isAssessmentAssignee(assessmentId, accountId) {
+    const row = await this.db.prepare(
+      `SELECT 1 AS ok FROM learn_assessment_assignees WHERE assessment_id = ? AND account_id = ?`
+    ).bind(assessmentId, accountId).first();
+    return !!row;
+  }
+
+  async listAssessmentAssignees(assessmentId) {
+    const { results } = await this.db.prepare(
+      `SELECT account_id, assigned_at FROM learn_assessment_assignees
+        WHERE assessment_id = ? ORDER BY assigned_at`
+    ).bind(assessmentId).all();
+    return results || [];
+  }
+
+  async upsertAssessment(a) {
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_assessments
+         (id, org_id, course_code, title, version, status, opens_at, closes_at,
+          spec_json, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (id) DO UPDATE SET
+         org_id = excluded.org_id, course_code = excluded.course_code,
+         title = excluded.title, version = excluded.version, status = excluded.status,
+         opens_at = excluded.opens_at, closes_at = excluded.closes_at,
+         spec_json = excluded.spec_json, updated_at = excluded.updated_at`
+    ).bind(a.id, a.orgId || null, a.courseCode || null, a.title, a.version, a.status,
+           a.opensAt ?? null, a.closesAt ?? null, a.specJson, a.createdBy || null, t, t).run();
+    return this.findAssessment(a.id);
+  }
+
+  /* The whole list at once, in one transaction: a partial list is a student
+     who was set an exam and cannot open it. */
+  async replaceAssessmentAssignees(assessmentId, accountIds, assignedBy) {
+    const t = now();
+    const stmts = [
+      this.db.prepare(`DELETE FROM learn_assessment_assignees WHERE assessment_id = ?`).bind(assessmentId)
+    ];
+    for (const accountId of accountIds) {
+      stmts.push(this.db.prepare(
+        `INSERT INTO learn_assessment_assignees (assessment_id, account_id, assigned_by, assigned_at)
+         VALUES (?, ?, ?, ?)`
+      ).bind(assessmentId, accountId, assignedBy || null, t));
+    }
+    await this.db.batch(stmts);
+  }
+
   async findStudySet(setId) {
     return this.db.prepare(`SELECT * FROM learn_study_sets WHERE id = ?`)
       .bind(setId).first();

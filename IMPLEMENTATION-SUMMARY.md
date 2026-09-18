@@ -38,13 +38,13 @@ Home · Explore · Exams · Progress
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/assessments` | Assessments set for the caller |
-| GET | `/api/v1/assessments/:id` | The student spec, released at sitting time only |
 | POST | `/api/v1/assessments/:id/submit` | Server-side lock on a submitted sitting |
+
+Built: `GET /api/v1/assessments`, `GET` and `PUT /api/v1/assessments/:id` (migration 0010).
 
 ## Blocked on backend
 
-- Assessment endpoints: until they exist, exam questions are public static files (never answers)
+- A server-side lock on submitted sittings, a teacher view of sittings, and scoring
 - DNS records for `auth.oplocloud.com` require manual Cloudflare setup (wrangler has only read zone permission)
 - Deploy auth Worker to custom domain pending DNS resolution
 

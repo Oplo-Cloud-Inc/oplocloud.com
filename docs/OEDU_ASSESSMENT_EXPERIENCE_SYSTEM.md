@@ -11,7 +11,7 @@
 > Ask: "What do we need to learn about the student, and what is the clearest, most meaningful way for the student to demonstrate it?"
 > Then make that experience exceptional.
 
-Where this standard is implemented today: the student runtime is `learn/exam.js` with `learn/exam.css`; published assessments are `learn/assessments/*.json`. See [Implementation notes](#implementation-notes) at the end.
+Where this standard is implemented today: the student runtime is `learn/exam.js` with `learn/exam.css`; published assessments are stored in the database and served by `/api/v1/assessments` (`api/src/routes/assessments.js`). See [Implementation notes](#implementation-notes) at the end.
 
 ---
 
@@ -571,7 +571,7 @@ How the student runtime (`learn/exam.js`) meets this standard today, and what it
 
 | Section | How |
 |---|---|
-| §3, §50, §51 | Every published assessment is a JSON spec in `learn/assessments/` with an `assessment_goal`, stages, tasks and a policy. The runtime renders any spec; no content lives in UI code. |
+| §3, §50, §51 | Every published assessment is a JSON spec — an `assessment_goal`, stages, tasks and a policy — stored in `learn_assessments`. The API refuses one without a goal. The runtime renders any spec; no content lives in UI code. |
 | §4, §67 | Teacher-facing task titles, skills and readiness numbers are not in the student spec. A title that names the method ("Factor theorem proof") would be a hint the paper never gave. |
 | §7, §61 | One task per screen, in a single focus card. Tools open beside it, never over it. |
 | §13, §14 | Progress is *answered* tasks, not screens visited. |
@@ -580,14 +580,14 @@ How the student runtime (`learn/exam.js`) meets this standard today, and what it
 | §29 | The timer reads "54 min left"; it turns amber at 5 minutes, never red, and can be hidden. |
 | §30, §31, §32, §70 | Every change is written to this device at once, and to the student's account as the progress scope `exam:<id>` (compare-and-set, merge on conflict). Refresh, a closed tab or a lost connection resume where the student was. |
 | §33 | Native radio groups, labelled fields, a keyboard-drivable graph with a text list of its points, focus moved to each task, polite live announcements, `prefers-reduced-motion` honoured. |
-| §35, §36 | No answer, key or correctness signal is ever sent to the browser in a summative or controlled assessment. Results are released by the teacher. |
+| §35, §36 | The API refuses to store a spec with an answer, key, solution or rubric in it — and, outside formative and practice modes, a hint — so none can be served. The questions go only to a signed-in student the assessment was set for, once it has opened, with `cache-control: no-store`; the list the Exams tab draws from carries no question. While a sitting runs its questions are kept on the student's device for offline recovery, and removed when it is submitted. |
 | §38, §11 | The Tutor and every XP, streak and badge system are absent inside an assessment. |
 | §43, §44, §45 | A calm completion screen that says exactly what happened, including whether the submission has reached the teacher yet. No confetti. |
 | §71–§73 | Events recorded: started, resumed, left the page, came back, went offline, reconnected, tools opened, submitted. Neutral words; nothing is called cheating. |
 
 **Not yet done — do not claim otherwise:**
 
-- **Content confidentiality.** Specs in `learn/assessments/` are static files. They carry no answers, but the questions are readable by anyone who fetches the URL, and the whole repository is published by GitHub Pages. A controlled or high-stakes sitting needs an API endpoint that releases the spec only to an assigned, signed-in student within the sitting's window.
+- **Past exposure.** Algebra 2 — MP4 QAM's questions (never its answers) were a public file on edu.oplocloud.com for about half an hour on 2026-09-18, and are in the history of the `platform-backend` branch (commit 2da0f62). Specs are never committed now; the database is their only home.
 - **Server-side lock.** The progress API accepts any write from the student, so "submitted" is enforced by the client. Locking a submission belongs on the server.
 - **Scoring and results.** No scoring engine exists; answer keys belong in the database, never in this repository.
 - **Teacher and admin views** of live sessions and submissions.

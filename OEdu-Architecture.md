@@ -145,6 +145,8 @@ OEdu follows Apple's design language:
 | `/api/v1/courses/:id/whatif` | Teacher | Hypothetical grade |
 | `/api/v1/grades/history` | All | Mark audit trail |
 | `/api/v1/progress` | Sync, Exams | Student record sync; an exam sitting is the scope `exam:<id>` |
+| `/api/v1/assessments` | Exams | What has been set for the caller — cards with the rules, no questions |
+| `/api/v1/assessments/:id` | Exams | The questions, only to an assigned student once open (`PUT` publishes; administrators) |
 | `/api/v1/gamification/standing` | Home | XP, rank, streak |
 | `/api/v1/gamification/events` | Sync | XP events |
 | `/api/v1/study-sets` | Explore | Study sets |
@@ -158,8 +160,6 @@ OEdu follows Apple's design language:
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/assessments` | Assessments set for the caller, replacing the public `learn/assessments/index.json` |
-| GET | `/api/v1/assessments/:id` | The student spec, released only to an assigned student within the sitting's window — exam questions must not be public files |
 | POST | `/api/v1/assessments/:id/submit` | Lock a sitting on the server; today "submitted" is enforced by the client |
 
 ## 6. Progress Model
@@ -213,7 +213,6 @@ learn/
 ├── kmap.js             — Knowledge map visualization
 ├── home.js             — Role-based routing
 ├── exam.js / exam.css  — Assessment runtime: Exams tab, briefing, tasks, tools, review, submit
-├── assessments/        — Published assessment specs (no answers) and who each is for
 └── progress.js         — Progress/analytics view
 ```
 

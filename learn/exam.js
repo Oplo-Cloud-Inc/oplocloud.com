@@ -9,8 +9,9 @@
 
    The layers (§69), each a section below:
 
-     Content       a published spec, learn/assessments/<id>.json, and the
-                   small math markup its text is written in
+     Content       a published spec from /api/v1/assessments — released only
+                   to its students, once open — and the math markup its text
+                   is written in
      Session       what the student has done — on this device at once, and on
                    their account as the progress scope exam:<id>
      Clock         the server's time, and when the sitting ends
@@ -25,7 +26,6 @@
   "use strict";
 
   var API = window.OPLO_API;
-  var DIR = "assessments/";
   var LOCAL = "oplo.exam.";
   var SCOPE = "exam:";
 
@@ -153,33 +153,52 @@
       .replace(/_\{([^{}]*)\}/g, "$1");
   }
 
-  /* ===================================================== Content: specs */
-  function loadJSON(path, cacheKey) {
-    return fetch(path, { cache: "no-cache", credentials: "same-origin" }).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    }).then(function (data) {
-      try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) { /* full or blocked */ }
-      return data;
-    }, function (e) {
-      /* Offline after a refresh is exactly when the spec is needed most, so
-         the last copy this device fetched is kept and used (§32). It is the
-         same public file, so keeping it costs nothing. */
-      var kept = null;
-      try { kept = JSON.parse(localStorage.getItem(cacheKey) || "null"); } catch (x) { kept = null; }
-      if (kept) return kept;
-      throw e;
-    });
+  /* ===================================================== Content: specs
+     Both come from the API (api/src/routes/assessments.js). The list is
+     cards — the rules, and no question. The questions arrive only when a
+     student opens an assessment that was set for them and has opened; the
+     server refuses everyone else, and no copy of them ships with the app.
+
+     §32 still holds: while a sitting is running its questions are kept on
+     this device, so a refresh with no connection can resume it, and they are
+     removed the moment it is submitted. The list is kept too — it holds no
+     question. */
+  function kept(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; }
   }
+  function keep(key, v) {
+    try {
+      if (v == null) localStorage.removeItem(key);
+      else localStorage.setItem(key, typeof v === "string" ? v : JSON.stringify(v));
+    } catch (e) { /* full or blocked */ }
+  }
+  function specKey(accountId, id) { return LOCAL + accountId + ".spec." + id; }
+  function listKey(accountId) { return LOCAL + accountId + ".list"; }
+  function lostConnection(e) { return !e || e.status === 0; }
 
   var specs = {};
   function spec(id) {
+    var me = ME;
     if (!specs[id]) {
-      specs[id] = loadJSON(DIR + encodeURIComponent(id) + ".json", LOCAL + "spec." + id)
-        .then(prepare)
-        .catch(function (e) { delete specs[id]; throw e; });
+      specs[id] = (API ? API.assessments.get(id) : Promise.reject({ status: 0 })).then(function (a) {
+        return a.spec;
+      }, function (e) {
+        // Only a lost connection falls back to the copy kept for a running
+        // sitting. A refusal from the server is a refusal.
+        var copy = lostConnection(e) && me ? kept(specKey(me.id, id)) : null;
+        if (copy) return copy;
+        throw e;
+      }).then(function (raw) {
+        var s = prepare(JSON.parse(JSON.stringify(raw)));
+        s.raw = JSON.stringify(raw);
+        return s;
+      }).catch(function (e) { delete specs[id]; throw e; });
     }
     return specs[id];
+  }
+  /* Keep the questions on this device for as long as a sitting runs. */
+  function holdSpec(s, sess) {
+    if (s && s.raw && sess) keep(specKey(sess.account, sess.id), sess.status === "active" ? s.raw : null);
   }
   function prepare(s) {
     var tasks = [];
@@ -192,28 +211,34 @@
       });
     });
     s.tasks = tasks;
-    s.policy = s.policy || {};
-    s.policy.tools = s.policy.tools || {};
-    return s;
+    return card_(s);
   }
+  /* A list card and a full spec answer the same questions the same way. */
+  function card_(c) {
+    c.policy = c.policy || {};
+    c.policy.tools = c.policy.tools || {};
+    c.course = c.course || { name: "" };
+    c.kind = c.kind || "Assessment";
+    return c;
+  }
+  function taskTotal(s) { return s.tasks ? s.tasks.length : (s.taskCount || 0); }
+
   function manifest() {
-    return loadJSON(DIR + "index.json", LOCAL + "index").then(function (m) {
-      return (m && m.assessments) || [];
+    var me = ME;
+    if (!API) return Promise.reject({ status: 0 });
+    return API.assessments.mine().then(function (cards) {
+      if (me) keep(listKey(me.id), cards);
+      return cards.map(card_);
+    }, function (e) {
+      var copy = lostConnection(e) && me ? kept(listKey(me.id)) : null;
+      if (copy) return copy.map(card_);
+      throw e;
     });
   }
-  function visibleTo(entry, me) {
-    var a = entry.audience || {};
-    if (a.everyone) return true;
-    if (a.accounts && me && a.accounts.indexOf(me.id) > -1) return true;
-    if (a.courses && me && me.assigned) {
-      return me.assigned.some(function (c) { return a.courses.indexOf(c.code) > -1; });
-    }
-    return false;
-  }
-  function openWindow(entry) {
+  function openWindow(c) {
     var t = Date.now();
-    if (entry.opens && Date.parse(entry.opens) > t) return { state: "later", at: Date.parse(entry.opens) };
-    if (entry.closes && Date.parse(entry.closes) < t) return { state: "closed", at: Date.parse(entry.closes) };
+    if (c.opensAt && c.opensAt > t) return { state: "later", at: c.opensAt };
+    if (c.closesAt && c.closesAt < t) return { state: "closed", at: c.closesAt };
     return { state: "open" };
   }
 
@@ -333,8 +358,7 @@
     if (!ME) return;
     var me = ME;
     manifest().then(function (entries) {
-      entries.filter(function (x) { return visibleTo(x, me); })
-        .forEach(function (x) { drain(me.id, x.id); });
+      entries.forEach(function (x) { drain(me.id, x.id); });
     }, function () { /* no manifest, nothing known to send */ });
   }
 
@@ -388,6 +412,7 @@
   function changed(immediate) {
     if (!R) return;
     R.sess.at = now();
+    if (R.spec && R.spec.tasks) R.sess.answered = answeredCount(R.spec, R.sess);
     R.local = writeLocal(R.sess);
     setSave("saving");
     clearTimeout(R.debounce);
@@ -563,14 +588,11 @@
     list.innerHTML = '<div class="exh-card exh-skel" aria-hidden="true"><i></i><i></i><i></i></div>';
     host.appendChild(list);
 
-    manifest().then(function (entries) {
-      var mine = entries.filter(function (e) { return visibleTo(e, me); });
-      return Promise.all(mine.map(function (entry) {
-        return spec(entry.id).then(function (s) {
-          return sessionFor(s, me).then(function (x) {
-            return { entry: entry, spec: s, sess: x.sess };
-          });
-        }, function () { return null; });
+    manifest().then(function (cards) {
+      return Promise.all(cards.map(function (c) {
+        return sessionFor(c, me).then(function (x) {
+          return { entry: c, spec: c, sess: x.sess };
+        });
       }));
     }).then(function (items) {
       if (HUB !== host) return;
@@ -623,7 +645,7 @@
   function facts(s) {
     var p = s.policy, out = [];
     if (p.durationMinutes) out.push([icon("clock"), plural(p.durationMinutes, "minute")]);
-    out.push([icon("tasks"), plural(s.tasks.length, "task")]);
+    out.push([icon("tasks"), plural(taskTotal(s), "task")]);
     if (p.tools.calculator) out.push([icon("calc"), "Calculator"]);
     if (p.tools.referenceSheet) out.push([icon("ref"), "Reference sheet"]);
     return '<ul class="exh-facts">' + out.map(function (f) {
@@ -647,9 +669,9 @@
       facts(s);
     var act = el("div", "exh-act");
     if (active && !expired) {
-      var n = answeredCount(s, sess);
-      var pct = Math.round(n / s.tasks.length * 100);
-      act.innerHTML = '<div class="exh-prog"><span>' + n + " of " + s.tasks.length + " answered · " +
+      var n = sess.answered || 0, total = taskTotal(s);
+      var pct = total ? Math.round(n / total * 100) : 0;
+      act.innerHTML = '<div class="exh-prog"><span>' + n + " of " + total + " answered · " +
         esc(left(sess.expiresAt - now())) + '</span><i><b style="width:' + pct + '%"></b></i></div>';
     }
     var go = el("button", "ex-btn primary lg");
@@ -683,12 +705,14 @@
     setUrl(id);
     return spec(id).then(function (s) {
       return sessionFor(s, me).then(function (x) { start(s, x.sess, x.base, how); });
-    }).catch(function () {
+    }).catch(function (e) {
       o.className = "ex";
       o.innerHTML = "";
-      var box = el("div", "ex-fail", icon("offline") +
-        "<h1>This assessment could not be opened.</h1>" +
-        "<p>Your connection may have dropped. Nothing you have done is lost.</p>");
+      var refused = e && (e.status === 403 || e.status === 404);
+      var box = el("div", "ex-fail", icon(refused ? "lock" : "offline") +
+        "<h1>" + (refused ? "This assessment isn't open to you." : "This assessment could not be opened.") + "</h1>" +
+        "<p>" + (refused ? "It may not have opened yet, or it was not set for you. Your teacher can tell you when." :
+          "Your connection may have dropped. Nothing you have done is lost.") + "</p>");
       var row = el("div", "ex-fail-act");
       var again = el("button", "ex-btn primary", "Try again");
       again.type = "button";
@@ -721,6 +745,7 @@
     }
     if (sess.status === "submitted") { drawDone(); return; }
     if (sess.status === "active") {
+      holdSpec(s, sess);
       event("RESUMED");
       changed(true);
       drawRunner();
@@ -756,7 +781,7 @@
     if (!silent && ME) {
       var me = ME;
       manifest().then(function (entries) {
-        badgeQuick(entries.filter(function (x) { return visibleTo(x, me); }), me);
+        badgeQuick(entries, me);
       }, function () { /* the dot stays as it was */ });
     }
     if (!silent && HUB && HUB.isConnected && ME) hub(HUB, ME);
@@ -837,6 +862,7 @@
     R.sess.expiresAt = R.policy.durationMinutes ? t + R.policy.durationMinutes * 60000 : null;
     R.sess.current = 0;
     R.uncalibrated = !skewKnown;
+    holdSpec(R.spec, R.sess);
     event("STARTED");
     changed(true);
     drawRunner(true);
@@ -1947,6 +1973,7 @@
     R.sess.status = "submitted";
     R.sess.submittedAt = at || now();
     R.sess.endedBy = by;
+    holdSpec(R.spec, R.sess);
     event(by === "time" ? "TIME_EXPIRED" : "SUBMITTED");
     clearInterval(R.ticker);
     changed(true);
@@ -2042,8 +2069,7 @@
     drainAll();
     var asked = null;
     try { asked = new URL(location.href).searchParams.get("exam"); } catch (e) { asked = null; }
-    manifest().then(function (entries) {
-      var mine = entries.filter(function (x) { return visibleTo(x, me); });
+    manifest().then(function (mine) {
       badgeQuick(mine, me);
       if (asked && mine.some(function (x) { return x.id === asked; })) { open_(asked, "resume"); return; }
       if (asked) setUrl(null);
