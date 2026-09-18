@@ -1,30 +1,34 @@
 /* ==========================================================================
-   OEdu — Quick Checks (Learning Checks).
+   OEdu — Learning Companion.
 
-   Small, optional retrieval practice moments embedded directly into
-   reading. Not quizzes. Not interrupts. Tiny learning cards that sit
-   in the reading margin.
+   The right side of the reading page is a persistent secondary learning
+   column that changes its content based on where the student is reading.
 
-   Read → Understand concept → Quick Check → Recall it → Feedback → Continue
+   At important points the companion holds a small interactive activity
+   anchored to the exact content the student is reading.
+
+   Types:
+   - key-idea: a one-line truth (secondary)
+   - quick-check: recall or recognize (primary)
+   - watch-out: common misconception (secondary)
+   - connect: how this links to what comes next (tertiary)
+   - think: open-ended reflection (tertiary)
+   - apply: use the concept in a new situation (primary)
 
    Design principles:
-   - Optional: every card has Skip. No penalty, no grade, no lock.
-   - Infrequent: 2-4 per 10 minutes of reading (Light mode), default 3.
-   - Varied: sometimes recognition, sometimes recall, sometimes application.
-   - Remembered: OEdu quietly notes which concepts a student skipped or
-     struggled with, and surfaces them later for reinforcement.
-   - Belongs to the page: the card appears in the right margin and feels
-     like part of the reading, not a popup.
+   - Persistent: column exists throughout the lesson
+   - Contextual: every card relates to nearby content
+   - Optional: students can engage without being forced
+   - Lightweight: never competes with the reading
+   - Hierarchical: Quick Check > Key Idea > Connection
+   - Continuous: completed interactions remain as artifacts
+   - Calm: no popups, no aggressive animations
    ========================================================================== */
 window.OPLO_CHECKINS = (function () {
   "use strict";
 
-  /* ---------------------------------------------------------- Settings */
-  var FREQUENCY = "light"; // "light" (1-2 per session) | "standard" (2-4) | "frequent" (4-6)
-  var ON = true;           // student toggle: on / fewer / off
-
-  var FREQUENCY_COUNT = { light: 2, standard: 3, frequent: 4 };
-  var FREQUENCY_INTERVAL = 300000; // 5 minutes between checks (minimum)
+  var MAX_VISIBLE = 3;
+  var ON = true;
 
   /* --------------------------------------------------------- Storage */
   function getMemory() {
@@ -35,127 +39,24 @@ window.OPLO_CHECKINS = (function () {
     try { localStorage.setItem("oplo_checkins", JSON.stringify(m)); } catch (e) {}
   }
 
-  function readMemory() {
+  function getInteractions() {
     var m = getMemory();
-    var today = new Date().toISOString().slice(0, 10);
-    if (m[today] === undefined) m[today] = { count: 0, firstCheck: null, skipped: [] };
-    return m;
-  }
-  function writeMemory(m) { saveMemory(m); }
-
-  /* ------------------------------------------------------- State */
-  var active = null;        // the currently showing check-in card
-  var shown = 0;            // how many shown in current reading session
-  var lastShownAt = 0;      // timestamp of last check shown
-  var session = "current";  // session identifier (changes per page load)
-  var memory = readMemory();
-  var container = null;     // DOM element holding the active card
-
-  /* --------------------------------------------------- Helpers */
-  function todayKey() { return new Date().toISOString().slice(0, 10); }
-
-  function canShow() {
-    if (!ON) return false;
-    if (shown >= FREQUENCY_COUNT[FREQUENCY]) return false;
-    var now = Date.now();
-    if (lastShownAt && now - lastShownAt < FREQUENCY_INTERVAL) return false;
-    var m = readMemory();
-    if (m[todayKey()] && m[todayKey()].count >= FREQUENCY_COUNT[FREQUENCY] * 3) return false;
-    return true;
+    if (!m.interactions) m.interactions = {};
+    return m.interactions;
   }
 
-  function recordShown(checkId, concept) {
-    shown++;
-    lastShownAt = Date.now();
-    var m = readMemory();
-    m[todayKey()].count++;
-    if (!m.shown) m.shown = [];
-    m.shown.push({ id: checkId, concept: concept, at: Date.now(), session: session });
-    writeMemory(m);
-  }
-
-  function recordResult(checkId, concept, result, answer) {
-    var m = readMemory();
-    if (!m.results) m.results = [];
-    m.results.push({
-      id: checkId, concept: concept, result: result,
-      answer: answer, at: Date.now(), session: session
-    });
-    writeMemory(m);
-  }
-
-  function recordSkipped(checkId, concept) {
-    var m = readMemory();
-    if (!m.skipped) m.skipped = [];
-    m.skipped.push({ id: checkId, concept: concept, at: Date.now(), session: session });
-    writeMemory(m);
-  }
-
-  /* ---------------------------------------------------- Question types */
-  function renderMC(q, state) {
-    var html = '<div class="qc-question">' + esc(q.q) + "</div>";
-    html += '<div class="qc-options">';
-    q.opts.forEach(function (opt, i) {
-      var letter = String.fromCharCode(65 + i); // A, B, C...
-      html += '<button type="button" class="qc-option" data-idx="' + i + '">' +
-              '<span class="qc-letter">' + letter + "</span>" +
-              "<span>" + esc(opt) + "</span>" +
-              "</button>";
-    });
-    html += "</div>";
-    html += '<button type="button" class="qc-submit">Check answer</button>';
-    html += '<button type="button" class="qc-skip">Skip</button>';
-    return html;
-  }
-
-  function renderTF(q, state) {
-    var html = '<div class="qc-question">' + esc(q.q) + "</div>";
-    html += '<div class="qc-options">';
-    q.opts.forEach(function (opt, i) {
-      html += '<button type="button" class="qc-option" data-idx="' + i + '">' +
-              "<span>" + esc(opt) + "</span>" +
-              "</button>";
-    });
-    html += "</div>";
-    html += '<button type="button" class="qc-submit">Check answer</button>';
-    html += '<button type="button" class="qc-skip">Skip</button>';
-    return html;
-  }
-
-  function renderSA(q, state) {
-    var html = '<div class="qc-question">' + esc(q.q) + "</div>";
-    html += '<input type="text" class="qc-answer" placeholder="Type your answer…" autocomplete="off">';
-    html += '<button type="button" class="qc-submit">Check answer</button>';
-    html += '<button type="button" class="qc-skip">Skip</button>';
-    return html;
-  }
-
-  function renderQuestion(q, state) {
-    var type = q.type || "mc";
-    if (type === "tf") return renderTF(q, state);
-    if (type === "sa") return renderSA(q, state);
-    return renderMC(q, state);
-  }
-
-  /* ---------------------------------------------------- Render result */
-  function renderResult(q, state, result, answer) {
-    var ok = result === "correct";
-    var html = "";
-    if (ok) {
-      html += '<div class="qc-feedback qc-correct">✓ Got it</div>';
-      html += "<p>" + esc(q.why || "That's right.") + "</p>";
-    } else {
-      html += '<div class="qc-feedback qc-wrong">Not quite</div>';
-      html += "<p>" + esc(q.why || "Let's look at this again.") + "</p>";
-      if (answer !== null && answer !== undefined && q.opts) {
-        var chosen = q.opts[answer];
-        if (chosen) {
-          html += "<p><em>You said:</em> " + esc(String(chosen)) + "</p>";
-        }
-      }
+  function markDone(id) {
+    var m = getMemory();
+    if (!m.interactions) m.interactions = {};
+    if (!m.interactions[id]) {
+      m.interactions[id] = { done: true, at: Date.now() };
+      saveMemory(m);
     }
-    html += '<button type="button" class="qc-continue">Continue reading →</button>';
-    return html;
+  }
+
+  function isDone(id) {
+    var i = getInteractions()[id];
+    return i && i.done;
   }
 
   /* ------------------------------------------------------------- Utils */
@@ -171,260 +72,381 @@ window.OPLO_CHECKINS = (function () {
     return n;
   }
 
-  /* ---------------------------------------------------- Card builder */
-  function buildCard(section, check) {
-    var card = el("div", "qc-card");
-    card.dataset.checkId = check.id;
-    card.dataset.concept = check.concept || section.t;
+  function capitalize(s) {
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  }
 
-    var state = { answered: false, answer: null };
+  /* ---------------------------------------------------- Render body */
+  function renderBody(comp) {
+    if (comp.type === "quick-check") {
+      return renderQuickCheck(comp);
+    }
+    if (comp.type === "key-idea") {
+      return '<div class="qc-kicker key">' + esc(comp.label || "Key Idea") + "</div>" +
+             '<p class="qc-text">' + esc(comp.content) + "</p>";
+    }
+    if (comp.type === "apply") {
+      return '<div class="qc-kicker apply">' + esc(comp.label || "Apply It") + "</div>" +
+             '<p class="qc-text">' + esc(comp.content) + "</p>" +
+             (comp.opts ? renderOptionsStatic(comp.opts) : "");
+    }
+    if (comp.type === "watch-out") {
+      return '<div class="qc-kicker watch">' + esc(comp.label || "Watch Out") + "</div>" +
+             '<p class="qc-text">' + esc(comp.content) + "</p>";
+    }
+    if (comp.type === "connect") {
+      return '<div class="qc-kicker connect">' + esc(comp.label || "Connect") + "</div>" +
+             '<p class="qc-text">' + esc(comp.content) + "</p>";
+    }
+    if (comp.type === "think") {
+      return '<div class="qc-kicker think">' + esc(comp.label || "Think") + "</div>" +
+             '<p class="qc-text">' + esc(comp.content) + "</p>" +
+             '<div class="qc-line"></div>';
+    }
+    if (comp.type === "look") {
+      return '<div class="qc-kicker look">' + esc(comp.label || "Look") + "</div>" +
+             (comp.img ? '<img class="qc-img" src="' + esc(comp.img) + '" alt="' + esc(comp.alt || "") + '">' : "") +
+             '<p class="qc-text">' + esc(comp.content) + "</p>";
+    }
+    return '<div class="qc-kicker">' + esc(comp.type) + "</div>" +
+           '<p class="qc-text">' + esc(comp.content || "") + "</p>";
+  }
 
-    card.innerHTML =
-      '<div class="qc-head">' +
-        '<span class="qc-label">Quick Check</span>' +
-        '<button type="button" class="qc-dismiss" title="Not now">✕</button>' +
-      "</div>" +
-      '<div class="qc-body">' + renderQuestion(check, state) + "</div>";
+  function renderQuickCheck(comp) {
+    var q = comp.question;
+    if (!q) return "";
+    var type = q.type || "mc";
+    var done = isDone(comp.id);
+    if (type === "sa") return renderShortAnswer(comp, done);
+    if (type === "tf") return renderTrueFalse(comp, done);
+    return renderMultipleChoice(comp, done);
+  }
 
-    card.querySelector(".qc-dismiss").addEventListener("click", function () {
-      dismiss(card, check);
+  function renderMultipleChoice(comp, done) {
+    var q = comp.question;
+    var html = '<div class="qc-q">' + esc(q.q) + "</div>";
+    html += '<div class="qc-opts">';
+    q.opts.forEach(function (opt, i) {
+      var letter = String.fromCharCode(65 + i);
+      html += '<button type="button" class="qc-opt' + (done ? " sel" : "") + '"' +
+              (done ? ' disabled="disabled"' : "") + ">" +
+              "<span class=" + esc(letter) + ">" + esc(letter) + "</span>" +
+              "<span>" + esc(opt) + "</span>" +
+              "</button>";
     });
+    html += "</div>";
+    if (!done) {
+      html += '<button type="button" class="qc-go">Check</button>';
+    }
+    html += '<button type="button" class="qc-skip">Skip</button>';
+    return html;
+  }
 
-    function dismiss(c, ch) {
-      recordSkipped(ch.id, ch.concept || section.t);
-      c.classList.add("qc-dismissing");
-      setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 300);
-      active = null;
+  function renderTrueFalse(comp, done) {
+    var q = comp.question;
+    var html = '<div class="qc-q">' + esc(q.q) + "</div>";
+    html += '<div class="qc-opts">';
+    q.opts.forEach(function (opt, i) {
+      html += '<button type="button" class="qc-opt' + (done ? " sel" : "") + '"' +
+              (done ? ' disabled="disabled"' : "") + ">" + esc(opt) + "</button>";
+    });
+    html += "</div>";
+    if (!done) {
+      html += '<button type="button" class="qc-go">Check</button>';
+    }
+    html += '<button type="button" class="qc-skip">Skip</button>';
+    return html;
+  }
+
+  function renderShortAnswer(comp, done) {
+    var q = comp.question;
+    var html = '<div class="qc-q">' + esc(q.q) + "</div>";
+    if (done) {
+      html += '<p class="qc-answer-text">' + esc(comp.answer) + "</p>";
+    } else {
+      html += '<input type="text" class="qc-in" placeholder="Type your answer…" autocomplete="off">';
+      html += '<button type="button" class="qc-go">Check</button>';
+    }
+    html += '<button type="button" class="qc-skip">Skip</button>';
+    return html;
+  }
+
+  function renderOptionsStatic(opts) {
+    var html = '<div class="qc-opts static">';
+    opts.forEach(function (o) {
+      html += '<div class="qc-opt-static">' + esc(o) + "</div>";
+    });
+    html += "</div>";
+    return html;
+  }
+
+  /* ----------------------------------------------------- Feedback */
+  function renderFeedback(comp) {
+    var html = '<div class="qc-feedback qc-correct">✓ Got it</div>';
+    if (comp.why) {
+      html += "<p>" + esc(comp.why) + "</p>";
+    }
+    return html;
+  }
+
+  /* ---------------------------------------------------- Card builder */
+  function buildCard(comp) {
+    var card = el("div", "qc-card " + comp.type);
+    card.dataset.compId = comp.id;
+
+    var done = isDone(comp.id);
+
+    var head = el("div", "qc-head");
+    head.appendChild(el("span", "qc-label", comp.label || capitalize(comp.type)));
+    if (comp.interactive && !done) {
+      var skip = el("button", "qc-skip", "Not now");
+      skip.type = "button";
+      skip.addEventListener("click", function () {
+        markDone(comp.id);
+        card.classList.add("qc-skipped");
+        setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 400);
+      });
+      head.appendChild(skip);
+    }
+    card.appendChild(head);
+
+    var body = el("div", "qc-body");
+    body.innerHTML = renderBody(comp);
+    card.appendChild(body);
+
+    if (done && comp.why) {
+      var fb = el("div", "qc-feedback qc-correct");
+      fb.innerHTML = "<b>✓ Checked</b><p>" + esc(comp.why) + "</p>";
+      card.appendChild(fb);
     }
 
-    function submit() {
-      var idx = null;
-      var selected = card.querySelectorAll(".qc-option.selected");
-      if (selected.length > 0) idx = parseInt(selected[0].dataset.idx, 10);
-      var saInput = card.querySelector(".qc-answer");
-      var saAnswer = saInput ? saInput.value.trim() : null;
+    if (comp.interactive && !done) {
+      wireInteraction(card, comp);
+    }
 
-      var answer = (q.type === "sa") ? saAnswer : idx;
-      var correct = grade(check, answer);
-      var result = correct ? "correct" : "incorrect";
+    return card;
+  }
 
-      state.answered = true;
-      state.answer = answer;
-      recordResult(check.id, check.concept || section.t, result, answer);
+  function wireInteraction(card, comp) {
+    if (comp.type !== "quick-check") return;
+    var q = comp.question;
+    if (!q) return;
 
-      card.querySelector(".qc-body").innerHTML = renderResult(check, state, result, answer);
-
-      card.querySelector(".qc-continue").addEventListener("click", function () {
-        if (card.parentNode) card.parentNode.removeChild(card);
-        active = null;
-      });
+    function gradeAndShow(answer) {
+      if (!answer) return;
+      var correct = false;
+      if (q.type === "sa") {
+        var accepted = comp.accept || [];
+        correct = accepted.indexOf(String(answer).toLowerCase()) > -1;
+      } else {
+        var idx = parseInt(answer, 10);
+        correct = idx === q.right;
+      }
+      markDone(comp.id);
+      var body = card.querySelector(".qc-body");
+      body.innerHTML = renderBody(comp);
+      if (!correct) {
+        body.innerHTML += renderFeedback(comp);
+      }
     }
 
     card.addEventListener("click", function (e) {
-      if (state.answered) return;
-      var opt = e.target.closest(".qc-option");
-      if (opt) {
-        card.querySelectorAll(".qc-option").forEach(function (o) { o.classList.remove("selected"); });
-        opt.classList.add("selected");
+      var opt = e.target.closest(".qc-opt");
+      if (opt && !opt.disabled) {
+        card.querySelectorAll(".qc-opt").forEach(function (o) { o.classList.add("sel"); o.disabled = true; });
+        var go = card.querySelector(".qc-go");
+        if (go) go.addEventListener("click", function () { gradeAndShow(opt.dataset.idx); });
       }
-      var submitBtn = card.querySelector(".qc-submit");
-      if (submitBtn && e.target === submitBtn) submit();
+      if (e.target.classList.contains("qc-go")) {
+        var sel = card.querySelector(".qc-opt.sel");
+        if (sel) gradeAndShow(sel.dataset.idx);
+        var inp = card.querySelector(".qc-in");
+        if (inp) gradeAndShow(inp.value);
+      }
     });
 
-    var saInput = card.querySelector(".qc-answer");
-    if (saInput) {
-      saInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") submit();
+    var inp = card.querySelector(".qc-in");
+    if (inp) {
+      inp.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") gradeAndShow(inp.value);
       });
     }
-    var submitBtn = card.querySelector(".qc-submit");
-    if (submitBtn) {
-      submitBtn.addEventListener("click", submit);
+  }
+
+  /* --------------------------------------------- Rank and render ----- */
+  function rankCompanions(sections) {
+    var all = [];
+    for (var i = 0; i < sections.length; i++) {
+      var s = sections[i];
+      if (s.checkins) {
+        for (var j = 0; j < s.checkins.length; j++) {
+          var c = s.checkins[j];
+          c._sectionN = s.n;
+          all.push(c);
+        }
+      }
     }
+    if (!all.length) return [];
 
-    return card;
+    var uniq = {};
+    var ranked = [];
+    all.forEach(function (c) {
+      var key = c.type + ":" + c.anchor;
+      if (uniq[key]) return;
+      uniq[key] = true;
+
+      var importance = 1;
+      if (c.importance === "primary") importance = 3;
+      else if (c.importance === "secondary") importance = 2;
+
+      var state = 0;
+      if (isDone(c.id)) state = 2;
+      else if (c.interactive) state = 1;
+
+      ranked.push({ comp: c, score: importance * 10 + state });
+    });
+
+    ranked.sort(function (a, b) { return b.score - a.score; });
+    return ranked.slice(0, MAX_VISIBLE).map(function (r) { return r.comp; });
   }
 
-  function grade(q, answer) {
-    if (q.type === "sa") {
-      if (!answer) return false;
-      var accepted = (q.accept || []).map(function (a) { return a.toLowerCase(); });
-      return accepted.indexOf(answer.toLowerCase()) > -1;
-    }
-    if (q.type === "tf") {
-      return answer === q.right;
-    }
-    return answer === q.right;
-  }
-
-  /* -------------------------------------------------- Section checkins */
-  function getCheckins(section) {
-    return (section.checkins && section.checkins.length) ? section.checkins : [];
-  }
-
-  function chooseCheck(section) {
-    var checks = getCheckins(section);
-    if (!checks.length) return null;
-
-    var m = readMemory();
-    var sessionResults = (m.results || []).filter(function (r) { return r.session === session; });
-    var alreadyAnswered = {};
-    sessionResults.forEach(function (r) { alreadyAnswered[r.id] = true; });
-
-    var available = checks.filter(function (c) { return !alreadyAnswered[c.id]; });
-    if (available.length === 0) return null;
-
-    return available[Math.floor(Math.random() * available.length)];
-  }
-
-  /* ---------------------------------------------------- Main logic */
-  function tryShow() {
-    if (!ON) return;
-    if (!canShow()) return;
-    if (active) return;
+  function render() {
+    if (!companionEl) return;
 
     var sections = window.OPLO_CURRENT_SECTIONS || [];
-    if (!sections.length) return;
+    var readIx = window.OPLO_CURRENT_READ_IX;
+    if (!sections.length || readIx === null || readIx === undefined) {
+      companionEl.innerHTML = '<div class="qc-empty">Learning Companion</div>';
+      return;
+    }
 
-    var readIx = (window.OPLO_CURRENT_READ_IX !== undefined) ? window.OPLO_CURRENT_READ_IX : 0;
-    var section = sections[readIx];
-    if (!section) return;
+    var ranked = rankCompanions(sections);
+    companionEl.innerHTML = "";
 
-    var check = chooseCheck(section);
-    if (!check) return;
+    var head = el("div", "qc-col-head");
+    head.innerHTML = '<span class="qc-col-title">Learning Companion</span>' +
+      '<span class="qc-col-sub">Near what you are reading</span>';
+    companionEl.appendChild(head);
 
-    var card = buildCard(section, check);
-    recordShown(check.id, check.concept || section.t);
+    if (ranked.length === 0) {
+      companionEl.appendChild(el("p", "qc-empty", "Keep reading — learning moments appear as you go."));
+      return;
+    }
 
-    card.classList.add("qc-enter");
-    active = card;
-    return card;
+    ranked.forEach(function (comp) {
+      var card = buildCard(comp);
+      companionEl.appendChild(card);
+    });
   }
 
-  /* ----------------------------------------------------- Placement */
-  function injectIntoReader() {
+  /* ------------------------------------------ section change detection */
+  function watchState() {
+    var lastIx = null;
+    setInterval(function () {
+      var ix = window.OPLO_CURRENT_READ_IX;
+      var sec = window.OPLO_CURRENT_SECTIONS;
+      if (sec && sec.length && ix !== null && ix !== lastIx) {
+        lastIx = ix;
+        render();
+      }
+    }, 500);
+  }
+
+  function watchScroll() {
+    var ticking = false;
+    window.addEventListener("scroll", function () {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(function () { ticking = false; render(); });
+      }
+    }, { passive: true });
+  }
+
+  /* -------------------------------------------------------- student UI */
+  function createToggle() {
+    if (!companionEl) return;
+    var bar = el("div", "qc-col-bar");
+    var btn = el("button", "qc-col-toggle", "Learning Companion · On");
+    btn.type = "button";
+    btn.addEventListener("click", function () { showCompanionToggle(); });
+    bar.appendChild(btn);
+    companionEl.insertBefore(bar, companionEl.firstChild);
+  }
+
+  function showCompanionToggle() {
+    var existing = document.getElementById("qc-col-menu");
+    if (existing) { existing.parentNode.removeChild(existing); return; }
+
+    var menu = el("div", "qc-col-menu");
+    menu.innerHTML =
+      '<div class="qc-col-title">Learning Companion</div>' +
+      '<div class="qc-col-opt' + (ON ? " sel" : "") + '" data-mode="on">On</div>' +
+      '<div class="qc-col-opt' + (!ON ? " sel" : "") + '" data-mode="off">Off</div>' +
+      '<p class="qc-col-desc">Small activities that help you think about ' +
+      "what you're reading. They sit beside the lesson and don't " +
+      "interrupt it. You can ignore them.</p>" +
+      '<button type="button" class="qc-col-done">Done</button>';
+
+    var btn = document.querySelector(".qc-col-toggle");
+    if (btn && btn.parentNode) {
+      btn.parentNode.insertBefore(menu, btn.nextSibling);
+    }
+
+    menu.querySelectorAll(".qc-col-opt").forEach(function (opt) {
+      opt.addEventListener("click", function () {
+        ON = opt.dataset.mode === "on";
+        var btn2 = document.querySelector(".qc-col-toggle");
+        if (btn2) btn2.textContent = "Learning Companion · " + (ON ? "On" : "Off");
+        menu.style.display = "none";
+        if (!ON) {
+          companionEl.innerHTML = "";
+        } else {
+          render();
+        }
+      });
+    });
+
+    var done = menu.querySelector(".qc-col-done");
+    if (done) {
+      done.addEventListener("click", function () { menu.style.display = "none"; });
+    }
+  }
+
+  /* ------------------------------------------------------ initialization */
+  function init() {
     var readView = document.getElementById("v-read");
     if (!readView) return;
 
     var aside = readView.querySelector("aside.rd-margin");
     if (!aside) return;
 
+    companionEl = el("div", "qc-col");
     var wrap = aside.querySelector(".mg-wrap");
-    if (!wrap) {
-      wrap = el("div", "mg-wrap");
-      aside.appendChild(wrap);
+    if (wrap) {
+      wrap.innerHTML = "";
+      wrap.appendChild(companionEl);
+    } else {
+      aside.appendChild(companionEl);
     }
 
-    var toggleBar = el("div", "qc-toggle-bar");
-    toggleBar.innerHTML = '<button type="button" class="qc-toggle" id="qc-toggle-btn">' +
-      '<span id="qc-toggle-text">Learning checks · On</span>' +
-      "</button>";
-    aside.appendChild(toggleBar);
-
-    document.getElementById("qc-toggle-btn").addEventListener("click", function () {
-      showToggle();
-    });
-
-    window.QC_APPENDIX = wrap;
-  }
-
-  function showToggle() {
-    var existing = document.getElementById("qc-toggle-menu");
-    if (existing) { existing.parentNode.removeChild(existing); return; }
-
-    var menu = el("div", "qc-toggle-menu");
-    menu.id = "qc-toggle-menu";
-    menu.innerHTML =
-      '<div class="qc-toggle-head">Learning checks</div>' +
-      '<div class="qc-toggle-options">' +
-        '<button type="button" class="qc-toggle-option ' + (ON ? "sel" : "") + '" data-mode="on">On</button>' +
-        '<button type="button" class="qc-toggle-option ' + (FREQUENCY === "light" && ON ? "sel" : "") + '" data-mode="fewer">Fewer</button>' +
-        '<button type="button" class="qc-toggle-option ' + (!ON ? "sel" : "") + '" data-mode="off">Off</button>' +
-      "</div>" +
-      '<p class="qc-toggle-desc">These quick questions help you remember what you\'re learning. ' +
-      'They are optional — skipping has no effect on your grade.</p>' +
-      '<button type="button" class="qc-toggle-done">Done</button>';
-
-    var btn = document.getElementById("qc-toggle-btn");
-    btn.parentNode.insertBefore(menu, btn.nextSibling);
-
-    menu.querySelectorAll(".qc-toggle-option").forEach(function (opt) {
-      opt.addEventListener("click", function () {
-        var mode = opt.dataset.mode;
-        if (mode === "on") { ON = true; FREQUENCY = "standard"; }
-        if (mode === "fewer") { ON = true; FREQUENCY = "light"; }
-        if (mode === "off") { ON = false; }
-        document.getElementById("qc-toggle-text").textContent =
-          "Learning checks · " + (ON ? (FREQUENCY === "light" ? "Fewer" : "On") : "Off");
-        document.getElementById("qc-toggle-menu").style.display = "none";
-        if (!ON) {
-          document.querySelectorAll(".qc-card").forEach(function (c) {
-            if (c.parentNode) c.parentNode.removeChild(c);
-          });
-          active = null;
-        }
-      });
-    });
-
-    menu.querySelector(".qc-toggle-done").addEventListener("click", function () {
-      menu.style.display = "none";
-    });
-  }
-
-  /* ------------------------------------------------------ Scroll hook */
-  function watchScroll() {
-    var ticking = false;
-    window.addEventListener("scroll", function () {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(function () {
-        ticking = false;
-        if (!active && canShow()) {
-          var readView = document.getElementById("v-read");
-          if (readView) {
-            var rect = readView.getBoundingClientRect();
-            if (rect.top < 0 || rect.bottom > window.innerHeight) {
-              var card = tryShow();
-              if (card && window.QC_APPENDIX) {
-                window.QC_APPENDIX.appendChild(card);
-              }
-            }
-          }
-        }
-      });
-    }, { passive: true });
-  }
-
-  /* ------------------------------------------------------ Init */
-  function init() {
-    injectIntoReader();
+    createToggle();
+    render();
+    watchState();
     watchScroll();
-
-    setTimeout(function () {
-      if (!active && canShow()) {
-        var card = tryShow();
-        if (card && window.QC_APPENDIX) {
-          window.QC_APPENDIX.appendChild(card);
-        }
-      }
-    }, 8000);
   }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
-    init();
+    setTimeout(init, 200);
   }
 
   return {
     init: init,
-    tryShow: tryShow,
-    canShow: canShow,
-    setOn: function (v) { ON = v; },
-    setFrequency: function (f) { FREQUENCY = f; },
-    getMemory: getMemory,
-    recordShown: recordShown,
-    recordResult: recordResult,
-    recordSkipped: recordSkipped
+    render: render,
+    isDone: isDone,
+    markDone: markDone,
+    setOn: function (v) { ON = v; render(); },
+    getInteractions: getInteractions
   };
 })();
