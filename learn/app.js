@@ -3574,7 +3574,7 @@
     "biz:4":   { key: "biz:4", course: "biz", courseTitle: "Introduction to Business", unit: 4,
                  title: "International Business", sections: window.OPLO_BIZ4 || [],
                  doc: "biz-u4", set: "biz-4" },
-    "bio:1":   { key: "bio:1", course: "bio", courseTitle: "High School Biology", unit: 1,
+    "bio:1":   { key: "bio:1", course: "bio", courseTitle: "Biology", unit: 1,
                  title: "Ecology and Natural Systems", sections: window.OPLO_BIO1 || [],
                  doc: "bio-u1", set: "bio-1" }
   };
@@ -4418,6 +4418,40 @@
       "<span>" + svg(k[1], true) + k[0] + "</span><b>" + esc(b.t) + "</b><p>" + b.d + "</p>");
   }
 
+  /* A common misconception, what the student thinks, and the specific
+     intervention that corrects it. Shown as a callout so it cannot be
+     skipped without being seen. */
+  function misconBlock(b) {
+    return el("aside", "rd-mcon",
+      '<span>' + svg(I.alert, true) + "Common mistake</span>" +
+      "<b>" + esc(b.t) + "</b>" +
+      "<p class=\"why\">" + esc(b.d) + "</p>" +
+      "<p>" + esc(b.i || "") + "</p>");
+  }
+
+  /* A concept from an earlier section the student is about to need again.
+     Kept short enough to answer in thirty seconds. */
+  function flashbackBlock(b) {
+    return el("aside", "rd-fbk",
+      '<span>' + svg(I.learn, true) + "Flashback</span>" +
+      "<b>" + esc(b.t) + "</b>" +
+      "<p>" + esc(b.d) + "</p>");
+  }
+
+  /* Claim, Evidence, Reasoning. The scaffolding the standards ask for,
+     made visible so a student can see the shape of an argument before
+     writing one. */
+  function cerBlock(b) {
+    var parts = b.items || [];
+    var html = '<div class="rd-cer"><b>' + esc(b.t || "Claim, Evidence, Reasoning") + "</b>";
+    parts.forEach(function (p) {
+      html += '<div class="rd-cer-part"><span class="k">' + esc(p.k) +
+              '</span><p>' + esc(p.d) + "</p></div>";
+    });
+    html += "</div>";
+    return el("div", "rd-cer-wrap", html);
+  }
+
   /* ------------------------------------------------------------- Motion
      A figure that moves, for a unit about movement. A still diagram can say
      that twos are choppier than ones; a moving one lets a student see it,
@@ -4802,13 +4836,10 @@
       if (b.k === "p") body.appendChild(el("p", null, b.t));
       else if (b.k === "h") body.appendChild(el("h2", null, esc(b.t)));
       else if (b.k === "def") {
-        /* A definition may carry a second, plainer sentence. The first line is
-           the definition a course will examine; `p` is the same idea said the
-           way you would say it out loud to somebody who has never met the word.
-           Both are shown, because a student who only gets the plain one cannot
-           answer the paper, and one who only gets the formal one often cannot
-           answer anything. */
-        body.appendChild(el("div", "rd-def", "<b>" + esc(b.t) + "</b><p>" + b.d + "</p>" +
+        var depthBadge = b.depth
+          ? ' <span class="rd-depth" data-depth="' + esc(b.depth) + '">' + esc(b.depth) + '</span>'
+          : "";
+        body.appendChild(el("div", "rd-def", "<b>" + esc(b.t) + "</b>" + depthBadge + "<p>" + b.d + "</p>" +
           (b.p ? '<p class="plain"><span>In plain words</span>' + b.p + "</p>" : "")));
       } else if (b.k === "quote") {
         body.appendChild(el("blockquote", "rd-quote",
@@ -4831,10 +4862,16 @@
         body.appendChild(refsBlock(b));
       } else if (b.k === "words") {
         body.appendChild(wordsBlock(b));
-      } else if (b.k === "try" || b.k === "world") {
+      }       else if (b.k === "try" || b.k === "world") {
         body.appendChild(calloutBlock(b));
       } else if (b.k === "motion") {
         body.appendChild(motionBlock(b));
+      } else if (b.k === "mcon") {
+        body.appendChild(misconBlock(b));
+      } else if (b.k === "fbk") {
+        body.appendChild(flashbackBlock(b));
+      } else if (b.k === "cer") {
+        body.appendChild(cerBlock(b));
       }
     });
     art.appendChild(body);
@@ -12014,7 +12051,7 @@
 
     /* Pre-populated Biology curriculum */
     if (isBio && making) {
-      title.value = "High School Biology";
+      title.value = "Biology";
       subject.value = "Biology";
       level.value = "High School";
       summary.value = "Unit 1: Ecology and Natural Systems — how biotic and abiotic factors interact to shape Earth's natural systems, influence the distribution of life, affect population dynamics, and drive species interactions.";
@@ -12039,7 +12076,7 @@
     var form = el("div", "admin-form");
     var code = field("Code", c ? c.code : (isBio ? "biology-eco-1" : ""), "a short slug, e.g. biology");
     if (!making) code.input.disabled = true;
-    var title = field("Title", c ? c.title : (isBio ? "High School Biology" : "Biology"), "Biology");
+    var title = field("Title", c ? c.title : "Biology", "Biology");
     if (isBio && making) title.input.disabled = true;
     var subject = field("Subject", c ? c.subject : "Biology", "Biology");
     if (isBio && making) subject.input.disabled = true;

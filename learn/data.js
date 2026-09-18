@@ -84,8 +84,30 @@ window.OPLO = (function () {
      Term and definition, written to be studied rather than skimmed. Every
      definition stands on its own, because in Match and Test it appears
      without its term next to it. */
-  var SETS = {
-    "seeing-1": { t: "Counting in shapes", cards: [
+   var SETS = {
+     "bio-1": { t: "Ecology and Natural Systems", cards: [
+       ["Biotic factor", "Any living part of an environment, or anything produced by something living."],
+       ["Abiotic factor", "Any non-living part of an environment: temperature, sunlight, water, wind, salt, soil chemistry, rock, pH, oxygen."],
+       ["Population", "All the individuals of one species living in the same area at the same time, able to breed with each other."],
+       ["Community", "All the populations of all the different species living together in one area, and the interactions between them."],
+       ["Ecosystem", "A community plus the abiotic environment it depends on, treated as one working system through which energy flows and matter cycles."],
+       ["Niche", "Everything a species needs and everything it does: the range of every abiotic factor it can tolerate, the resources it consumes, when and how it is active, what eats it, what it competes with, and how it changes the place it lives in."],
+       ["Habitat", "The physical place where an organism lives."],
+       ["Carrying capacity", "The population size an environment can sustain over the long run, given its resources."],
+       ["Limiting factor", "Anything that holds a population below the size it would otherwise reach."],
+       ["Competition", "An interaction in which two organisms use the same limited resource, so that both do worse than either would alone."],
+       ["Predation", "An interaction in which one organism hunts, kills and eats another."],
+       ["Mutualism", "An interaction in which both species gain."],
+       ["Commensalism", "An interaction in which one species gains and the other is not measurably affected."],
+       ["Parasitism", "An interaction in which one species lives on or in another and takes resources from it, usually harming it without killing it outright."],
+       ["Trophic cascade", "A chain of effects that runs down through the levels of a food web when something changes at the top."],
+       ["Exponential growth", "Growth in which a fixed percentage is added each time period, so the increase itself keeps getting bigger. Drawn against time it makes a J."],
+       ["Logistic growth", "Growth that starts exponentially, then slows as resources run short, and levels off at the carrying capacity. Drawn against time it makes an S."],
+       ["Density", "The number of individuals per unit of area or volume."],
+       ["Dispersion", "The pattern in which individuals are spread through that space: clumped, uniform or random."],
+       ["Species richness", "The number of different species found in an area."]
+     ]},
+     "seeing-1": { t: "Counting in shapes", cards: [
       ["Array", "A rectangular arrangement in equal rows and columns, which turns a count into a multiplication."],
       ["Factor", "A number being multiplied. In 6 × 4, both 6 and 4 are factors."],
       ["Product", "The result of a multiplication. The product of 6 and 4 is 24."],
@@ -331,7 +353,28 @@ window.OPLO = (function () {
     sets: { 1: "biz-1", 4: "biz-4" },
     grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
     textbook: "Introduction to Business — Boundless, CC BY-SA 4.0, as taught in the EHS " +
-              "Introduction to Business course, © Excel Education Systems, Inc."
+               "Introduction to Business course, © Excel Education Systems, Inc."
+  };
+
+  var BIO = {
+    id: "bio", t: "Biology", hue: GREEN, subject: "Science", level: "High School",
+    d: "Cells, inheritance and ecosystems — systems that keep themselves going.",
+    lede: "Life interacts with the world around it. Biotic and abiotic factors are connected. Levels of organisation matter. Niches, populations, interactions and community structure are all one system.",
+    glyph: FLASK,
+    units: [
+      { n: 1, t: "Ecology and Natural Systems", play: true, set: "bio-1",
+        desc: "How living and nonliving factors interact to shape ecosystems, influence where species live, drive population dynamics, and determine how species shape each other." }
+    ],
+    sets: { 1: "bio-1" },
+    grading: [["Reading", 30], ["Practice", 30], ["Assessments", 40]],
+    unitPromise: ["Everything in an ecosystem is connected.",
+                  "A change in temperature can change where a species lives.",
+                  "A change in food can change population size.",
+                  "A change in one species can affect many others."],
+    bigQuestion: "How does life interact with the world around it?",
+    unitMap: "01 — How Is Life Organized?\n02 — Why Does Life Live Where It Does?\n03 — What Does an Organism Need to Survive?\n04 — How Big Can a Population Get?\n05 — Investigation — Human-Shark Interactions\n06 — How Do Species Shape Each Other?",
+    phenomena: ["Bald Eagle: How do biologists know whether a population is changing?",
+                "Monarch Butterfly: Why do monarch butterflies migrate so far?"]
   };
 
   var BOOK  = '<path d="M4 4.5h6.5A2.5 2.5 0 0 1 13 7v12a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-6.5A2.5 2.5 0 0 0 11 7v12a2 2 0 0 1 2-2h7z"/>';
@@ -358,7 +401,7 @@ window.OPLO = (function () {
     { n: "Science", hue: GREEN,
       d: "Method first: what would have to be true, and how would you find out.",
       courses: [
-        stub("bio",  "Biology",   "Science", GREEN, "Cells, inheritance and ecosystems — systems that keep themselves going.", FLASK),
+        BIO,
         stub("chem", "Chemistry", "Science", GREEN, "Why substances behave as they do, from the structure up.", FLASK),
         stub("phys", "Physics",   "Science", GREEN, "Motion, force and energy, with the algebra kept in service of the idea.", FLASK)] },
     { n: "Social Studies", hue: "#e8a317",
@@ -412,5 +455,5 @@ window.OPLO = (function () {
   function contacts() { return []; }
 
   return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE, ITERATIONS: ITERATIONS,
-           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, CONTACTS: contacts };
+           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, BIO: BIO, CONTACTS: contacts };
 })();

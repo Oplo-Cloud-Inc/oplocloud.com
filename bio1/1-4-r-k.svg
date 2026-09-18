@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 396" width="700" height="396" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Two life-history strategies compared side by side. An r-selected species, such as a dandelion, produces enormous numbers of tiny offspring, gives them no care, matures fast, dies young, and grows in the J-shaped exponential way, booming and crashing. A K-selected species, such as an elephant, has very few large offspring, cares for them for years, matures late, lives a long time, and sits near the carrying capacity in the S-shaped logistic way.</title>
+<rect width="700" height="396" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Two ways of betting on the future</text>
+<rect x="22" y="58" width="656" height="34" fill="#1d1d1f"/>
+<text x="38" y="80" font-size="13" fill="#1d1d1f"></text>
+<rect x="22" y="58" width="656" height="34" fill="#ffffff"/>
+<text x="200" y="78" font-size="15" fill="#eb6834" font-weight="700" text-anchor="middle">r-selected  ·  dandelion</text>
+<text x="496" y="78" font-size="15" fill="#12915a" font-weight="700" text-anchor="middle">K-selected  ·  elephant</text>
+<rect x="22" y="96" width="656" height="40" fill="#f5f5f7" rx="6"/>
+<text x="36" y="121" font-size="13.5" fill="#6e6e73">Offspring</text>
+<text x="200" y="121" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">thousands, tiny</text>
+<text x="496" y="121" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">one or two, large</text>
+<text x="36" y="161" font-size="13.5" fill="#6e6e73">Care for them</text>
+<text x="200" y="161" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">none</text>
+<text x="496" y="161" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">years of it</text>
+<rect x="22" y="176" width="656" height="40" fill="#f5f5f7" rx="6"/>
+<text x="36" y="201" font-size="13.5" fill="#6e6e73">Ready to breed</text>
+<text x="200" y="201" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">within weeks</text>
+<text x="496" y="201" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">after many years</text>
+<text x="36" y="241" font-size="13.5" fill="#6e6e73">Lifespan</text>
+<text x="200" y="241" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">short</text>
+<text x="496" y="241" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">long</text>
+<rect x="22" y="256" width="656" height="40" fill="#f5f5f7" rx="6"/>
+<text x="36" y="281" font-size="13.5" fill="#6e6e73">Growth curve</text>
+<text x="200" y="281" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">J — boom and crash</text>
+<text x="496" y="281" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">S — steady near K</text>
+<text x="36" y="321" font-size="13.5" fill="#6e6e73">Wins when</text>
+<text x="200" y="321" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">conditions keep changing</text>
+<text x="496" y="321" font-size="14" fill="#1d1d1f" font-weight="600" text-anchor="middle">conditions stay crowded and stable</text>
+<line x1="348" y1="58" x2="348" y2="332" stroke="#d2d2d7" stroke-width="1" stroke-linecap="round"/>
+<text x="22" y="356" font-size="14.5" fill="#1d1d1f">Most species sit somewhere between the two. The pair of labels is a way of asking one question:</text>
+<text x="22" y="375" font-size="14.5" fill="#1d1d1f">is this species betting on numbers, or on each individual surviving?</text>
+</svg>

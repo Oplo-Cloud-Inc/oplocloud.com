@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 594" width="700" height="594" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Six levels of biological organisation, from a single organism up to the biosphere. Each level is the one below it, repeated or added to: a population is many organisms of one species; a community is many populations; an ecosystem is a community plus the non-living things around it; a biome is every ecosystem on Earth of the same kind; the biosphere is all life everywhere.</title>
+<rect width="700" height="594" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Each level is the one before it, with something added</text>
+<rect x="22" y="56" width="656" height="74" fill="#f5f5f7" rx="13"/>
+<g transform="translate(92 93.0) scale(1.15 1.15)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<text x="168" y="86" font-size="17" fill="#1d1d1f" font-weight="600">Organism</text>
+<text x="168" y="108" font-size="14" fill="#6e6e73">One living thing.</text>
+<text x="168" y="126" font-size="13.5" fill="#2a78d6" font-style="italic">A single kelp bass.</text>
+<line x1="350" y1="129" x2="350.0" y2="134.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 350.0 139.0 L 346.9 132.2 L 353.1 132.2 Z" fill="#86868b"/>
+<rect x="22" y="140" width="656" height="74" fill="#f5f5f7" rx="13"/>
+<g transform="translate(50 161.0) scale(0.68 0.68)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(86 155.0) scale(0.68 0.68)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(118 169.0) scale(-0.68 0.68)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(62 191.0) scale(0.68 0.68)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(102 195.0) scale(-0.68 0.68)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<text x="168" y="170" font-size="17" fill="#1d1d1f" font-weight="600">Population</text>
+<text x="168" y="192" font-size="14" fill="#6e6e73">Every one of the SAME species, in one place.</text>
+<text x="168" y="210" font-size="13.5" fill="#2a78d6" font-style="italic">All the kelp bass in this forest.</text>
+<line x1="350" y1="213" x2="350.0" y2="218.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 350.0 223.0 L 346.9 216.2 L 353.1 216.2 Z" fill="#86868b"/>
+<rect x="22" y="224" width="656" height="74" fill="#f5f5f7" rx="13"/>
+<g transform="translate(70 245.0) scale(0.72 0.72)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(110 255.0) scale(-0.62 0.62)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(74 279.0) scale(0.78)" fill="none" stroke="#eb6834" stroke-width="2" stroke-linecap="round">
+<ellipse cx="0" cy="0" rx="9" ry="6.5" fill="#eb6834" stroke="none"/>
+<path d="M -8.8 3 L -11 9"/>
+<path d="M -4.800000000000001 3 L -6 9"/>
+<path d="M 4.800000000000001 3 L 6 9"/>
+<path d="M 8.8 3 L 11 9"/>
+<path d="M -9 -4 L -14 -9"/><path d="M 9 -4 L 14 -9"/>
+</g>
+<path d="M 118 287.0 C 109 273.4 127 263.2 118 253.0" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 118 287.0 C 128 271.7 112 261.5 121 254.7" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<text x="168" y="254" font-size="17" fill="#1d1d1f" font-weight="600">Community</text>
+<text x="168" y="276" font-size="14" fill="#6e6e73">Every population living together — all the species at once.</text>
+<text x="168" y="294" font-size="13.5" fill="#2a78d6" font-style="italic">Bass, crabs, urchins, kelp.</text>
+<line x1="350" y1="297" x2="350.0" y2="302.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 350.0 307.0 L 346.9 300.2 L 353.1 300.2 Z" fill="#86868b"/>
+<rect x="22" y="308" width="656" height="74" fill="#f5f5f7" rx="13"/>
+<rect x="40" y="322" width="104" height="46" fill="#dceaf8" rx="8"/>
+<rect x="40" y="360" width="104" height="14" fill="#d8d2c6"/>
+<circle cx="130" cy="335" r="6.5" fill="#eb6834"/>
+<line x1="140.0" y1="335.0" x2="144.5" y2="335.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="137.07106781186548" y1="342.0710678118655" x2="140.25304832720494" y2="345.25304832720497" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="130.0" y1="345.0" x2="130.0" y2="349.5" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="122.92893218813452" y1="342.0710678118655" x2="119.74695167279506" y2="345.25304832720497" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="120.0" y1="335.0" x2="115.5" y2="335.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="122.92893218813452" y1="327.9289321881345" x2="119.74695167279506" y2="324.74695167279503" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="130.0" y1="325.0" x2="130.0" y2="320.5" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="137.07106781186548" y1="327.9289321881345" x2="140.25304832720494" y2="324.74695167279503" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<g transform="translate(78 341.0) scale(0.66 0.66)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(66 358) scale(0.66)" fill="none" stroke="#eb6834" stroke-width="2" stroke-linecap="round">
+<ellipse cx="0" cy="0" rx="9" ry="6.5" fill="#eb6834" stroke="none"/>
+<path d="M -8.8 3 L -11 9"/>
+<path d="M -4.800000000000001 3 L -6 9"/>
+<path d="M 4.800000000000001 3 L 6 9"/>
+<path d="M 8.8 3 L 11 9"/>
+<path d="M -9 -4 L -14 -9"/><path d="M 9 -4 L 14 -9"/>
+</g>
+<path d="M 108 360 C 99 348.0 117 339.0 108 330" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 108 360 C 118 346.5 102 337.5 111 331.5" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<text x="168" y="338" font-size="17" fill="#1d1d1f" font-weight="600">Ecosystem</text>
+<text x="168" y="360" font-size="14" fill="#6e6e73">The community PLUS the non-living things it depends on.</text>
+<text x="168" y="378" font-size="13.5" fill="#2a78d6" font-style="italic">Add the water, light, rock and temperature.</text>
+<line x1="350" y1="381" x2="350.0" y2="386.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 350.0 391.0 L 346.9 384.2 L 353.1 384.2 Z" fill="#86868b"/>
+<rect x="22" y="392" width="656" height="74" fill="#f5f5f7" rx="13"/>
+<rect x="40" y="410" width="30" height="38" fill="#dceaf8" rx="6"/>
+<rect x="40" y="442" width="30" height="12" fill="#d8d2c6"/>
+<path d="M 55 442 C 46 433.2 64 426.6 55 420" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 55 442 C 65 432.1 49 425.5 58 421.1" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="76" y="410" width="30" height="38" fill="#dceaf8" rx="6"/>
+<rect x="76" y="442" width="30" height="12" fill="#d8d2c6"/>
+<path d="M 91 442 C 82 433.2 100 426.6 91 420" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 91 442 C 101 432.1 85 425.5 94 421.1" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="112" y="410" width="30" height="38" fill="#dceaf8" rx="6"/>
+<rect x="112" y="442" width="30" height="12" fill="#d8d2c6"/>
+<path d="M 127 442 C 118 433.2 136 426.6 127 420" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 127 442 C 137 432.1 121 425.5 130 421.1" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<text x="92" y="462" font-size="12.5" fill="#6e6e73" text-anchor="middle">× everywhere</text>
+<text x="168" y="422" font-size="17" fill="#1d1d1f" font-weight="600">Biome</text>
+<text x="168" y="444" font-size="14" fill="#6e6e73">Every place on Earth with the same climate and the same kind of life.</text>
+<text x="168" y="462" font-size="13.5" fill="#2a78d6" font-style="italic">Every cold-water kelp forest, worldwide.</text>
+<line x1="350" y1="465" x2="350.0" y2="470.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 350.0 475.0 L 346.9 468.2 L 353.1 468.2 Z" fill="#86868b"/>
+<rect x="22" y="476" width="656" height="74" fill="#f5f5f7" rx="13"/>
+<circle cx="92" cy="513.0" r="30" fill="#dceaf8" stroke="#2a78d6" stroke-width="1.6"/>
+<path d="M 66 521.0 C 80 507.0 102 527.0 118 511.0" fill="none" stroke="#12915a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="92" cy="513.0" r="30" fill="none" stroke="#2a78d6" stroke-width="1.6"/>
+<text x="168" y="506" font-size="17" fill="#1d1d1f" font-weight="600">Biosphere</text>
+<text x="168" y="528" font-size="14" fill="#6e6e73">Every living thing on Earth, everywhere, as one system.</text>
+<text x="168" y="546" font-size="13.5" fill="#2a78d6" font-style="italic">All of it, all at once.</text>
+<text x="22" y="582" font-size="14.5" fill="#1d1d1f">Zoom out one step and you have the next level. Nothing new is invented; more is included.</text>
+</svg>

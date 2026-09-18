@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 444" width="700" height="444" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Two tolerance curves on the same axes. The specialist's curve is narrow and tall: it does extremely well across a small range of conditions and fails outside it. The generalist's curve is wide and low: it survives across a much broader range, but is never as abundant anywhere. A koala, which eats only eucalyptus leaves, is the specialist; a raccoon, which eats almost anything and lives from forests to city streets, is the generalist.</title>
+<rect width="700" height="444" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Narrow and excellent, or broad and adequate</text>
+<path d="M 92.0 292.0 C 97.1 290.6 110.8 288.6 122.7 283.8 C 134.7 279.0 148.3 270.4 163.7 263.2 C 179.0 256.0 196.1 246.8 214.9 240.6 C 233.7 234.5 254.1 229.3 276.3 226.3 C 298.5 223.2 324.1 222.1 348.0 222.1 C 371.9 222.1 397.5 223.2 419.7 226.3 C 441.9 229.3 462.3 234.5 481.1 240.6 C 499.9 246.8 517.0 256.0 532.3 263.2 C 547.7 270.4 561.3 279.0 573.3 283.8 C 585.2 288.6 598.9 290.6 604.0 292.0 L 604.0 292.0 L 92.0 292.0 Z" fill="#dbe8f6"/>
+<path d="M 92.0 292.0 C 97.1 290.6 110.8 288.6 122.7 283.8 C 134.7 279.0 148.3 270.4 163.7 263.2 C 179.0 256.0 196.1 246.8 214.9 240.6 C 233.7 234.5 254.1 229.3 276.3 226.3 C 298.5 223.2 324.1 222.1 348.0 222.1 C 371.9 222.1 397.5 223.2 419.7 226.3 C 441.9 229.3 462.3 234.5 481.1 240.6 C 499.9 246.8 517.0 256.0 532.3 263.2 C 547.7 270.4 561.3 279.0 573.3 283.8 C 585.2 288.6 598.9 290.6 604.0 292.0" fill="none" stroke="#2a78d6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 92.0 292.0 C 117.6 292.0 214.9 293.7 245.6 292.0 C 276.3 290.3 267.8 289.3 276.3 281.7 C 284.9 274.2 290.0 266.3 296.8 246.8 C 303.6 227.3 310.5 190.0 317.3 164.6 C 324.1 139.3 332.6 107.8 337.8 94.8 C 342.9 81.8 344.6 86.5 348.0 86.5 C 351.4 86.5 353.1 81.8 358.2 94.8 C 363.4 107.8 371.9 139.3 378.7 164.6 C 385.5 190.0 392.4 227.3 399.2 246.8 C 406.0 266.3 411.1 274.2 419.7 281.7 C 428.2 289.3 419.7 290.3 450.4 292.0 C 481.1 293.7 578.4 292.0 604.0 292.0 L 604.0 292.0 L 92.0 292.0 Z" fill="#dcecd9"/>
+<path d="M 92.0 292.0 C 117.6 292.0 214.9 293.7 245.6 292.0 C 276.3 290.3 267.8 289.3 276.3 281.7 C 284.9 274.2 290.0 266.3 296.8 246.8 C 303.6 227.3 310.5 190.0 317.3 164.6 C 324.1 139.3 332.6 107.8 337.8 94.8 C 342.9 81.8 344.6 86.5 348.0 86.5 C 351.4 86.5 353.1 81.8 358.2 94.8 C 363.4 107.8 371.9 139.3 378.7 164.6 C 385.5 190.0 392.4 227.3 399.2 246.8 C 406.0 266.3 411.1 274.2 419.7 281.7 C 428.2 289.3 419.7 290.3 450.4 292.0 C 481.1 293.7 578.4 292.0 604.0 292.0" fill="none" stroke="#12915a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="92" y1="292" x2="604" y2="292" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="92" y1="66" x2="92" y2="292" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<text x="348.0" y="324" font-size="14.5" fill="#6e6e73" text-anchor="middle">Conditions — temperature, food, salt, whatever the species must cope with</text>
+<text transform="rotate(-90 70 179.0)" x="70" y="179.0" font-size="14.5" fill="#6e6e73" text-anchor="middle">How well it does</text>
+<text x="348.0" y="72.54545454545456" font-size="13.5" fill="#12915a" font-weight="700" text-anchor="middle">SPECIALIST</text>
+<text x="511.84" y="220.36363636363637" font-size="13.5" fill="#2a78d6" font-weight="700" text-anchor="middle">GENERALIST</text>
+<rect x="40" y="346" width="288" height="84" fill="#f5f5f7" rx="11"/>
+<text x="54" y="369" font-size="14" fill="#12915a" font-weight="700">Specialist · koala</text>
+<text x="54" y="388" font-size="12.5" fill="#6e6e73">Eats the leaves of a few eucalyptus species and</text>
+<text x="54" y="403" font-size="12.5" fill="#6e6e73">almost nothing else. Superb at it — those leaves</text>
+<text x="54" y="418" font-size="12.5" fill="#6e6e73">are poisonous to nearly everything. Take the trees</text>
+<text x="54" y="433" font-size="12.5" fill="#6e6e73">away and there is no second option.</text>
+<rect x="372" y="346" width="288" height="84" fill="#f5f5f7" rx="11"/>
+<text x="386" y="369" font-size="14" fill="#2a78d6" font-weight="700">Generalist · raccoon</text>
+<text x="386" y="388" font-size="12.5" fill="#6e6e73">Eats fruit, eggs, frogs, rubbish. Lives in forests,</text>
+<text x="386" y="403" font-size="12.5" fill="#6e6e73">marshes and city drains. Never the best at any one</text>
+<text x="386" y="418" font-size="12.5" fill="#6e6e73">of these, and that is exactly why a change in any</text>
+<text x="386" y="433" font-size="12.5" fill="#6e6e73">one of them does not finish it.</text>
+</svg>

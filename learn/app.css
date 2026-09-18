@@ -1280,6 +1280,17 @@ svg { display: block; }
   .rd-words dd { padding-top: 0; border-top: 0; }
 }
 
+/* A depth marker on a definition. Small, coloured, always secondary. */
+.rd-depth {
+  display: inline-block; margin-left: 8px;
+  font-family: var(--text); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 100px; vertical-align: middle;
+}
+.rd-depth[data-depth="CORE"] { background: rgba(0,113,227,.1); color: var(--blue); }
+.rd-depth[data-depth="MORE"] { background: rgba(212,155,0,.12); color: #9a6d00; }
+.rd-depth[data-depth="DEEP DIVE"] { background: rgba(191,40,40,.1); color: #b12828; }
+
 /* Something to try, and somewhere the idea turns up in the world. */
 .rd-call {
   max-width: var(--measure);
@@ -1298,6 +1309,66 @@ svg { display: block; }
   display: block; font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -.012em;
 }
 .rd-body .rd-call p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+
+/* A common misconception and the specific correction. */
+.rd-mcon {
+  max-width: var(--measure);
+  margin: 1.7em 0; padding: 17px 20px 16px; border-radius: 15px;
+  background: rgba(191,40,40,.05); border: 1px solid rgba(191,40,40,.2);
+}
+.rd-mcon > span {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+  font-family: var(--text); font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: #b12828;
+}
+.rd-mcon > span svg { width: 15px; height: 15px; }
+.rd-mcon > b {
+  display: block; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.012em; margin-bottom: 4px;
+}
+.rd-mcon p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+.rd-mcon p.why { font-style: italic; color: var(--ink-3); }
+
+/* A flashback — a concept from earlier the student is about to need. */
+.rd-fbk {
+  max-width: var(--measure);
+  margin: 1.7em 0; padding: 15px 20px; border-radius: 15px;
+  background: rgba(0,113,227,.05); border: 1px solid rgba(0,113,227,.2);
+}
+.rd-fbk > span {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+  font-family: var(--text); font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--blue);
+}
+.rd-fbk > span svg { width: 15px; height: 15px; }
+.rd-fbk > b {
+  display: block; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.012em; margin-bottom: 4px;
+}
+.rd-fbk p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+
+/* CER — Claim, Evidence, Reasoning. */
+.rd-cer {
+  max-width: var(--measure);
+  margin: 1.7em 0; padding: 18px 22px; border-radius: 15px;
+  background: var(--paper); border: 1px solid var(--hair);
+}
+.rd-cer > b {
+  display: block; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.012em; margin-bottom: 12px;
+}
+.rd-cer-part {
+  padding: 10px 0;
+  border-top: 1px solid var(--hair);
+}
+.rd-cer-part .k {
+  display: inline-block; margin-bottom: 4px;
+  font-family: var(--text); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 100px;
+  background: rgba(0,113,227,.1); color: var(--blue);
+}
+.rd-cer-part p { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--ink-2); }
 
 /* ------------------------------------------------------------ Motion labs
    A figure with a clock: the stage, a strip of frames, the transport, and

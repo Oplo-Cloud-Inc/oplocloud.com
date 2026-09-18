@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 552" width="700" height="552" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>The Yellowstone trophic cascade, drawn as a chain with its evidence marked. Wolves were reintroduced in 1995 and 1996; this is documented. Northern-range elk numbers fell steeply; this is documented, though hunting, bears, cougars and drought all pushed the same way. Willow and aspen grew taller in some places; this is measured but patchy. The last link — that the whole valley changed because of the wolves — is drawn as a dashed arrow with a question mark, because the evidence is contested.</title>
+<rect width="700" height="552" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">A famous chain, with the strength of each link marked</text>
+<rect x="22" y="62" width="656" height="56" fill="#ffffff" rx="11" stroke="#12915a" stroke-width="1.6"/>
+<rect x="22" y="62" width="7" height="56" fill="#12915a" rx="3.5"/>
+<text x="44" y="85" font-size="15" fill="#1d1d1f" font-weight="600">31 wolves released into Yellowstone</text>
+<text x="44" y="105" font-size="12.8" fill="#6e6e73">14 in 1995, 17 in 1996, after seventy years with none.</text>
+<rect x="558" y="70" width="108" height="21" fill="#12915a" rx="10" opacity="0.14"/>
+<text x="612.0" y="85" font-size="11.5" fill="#12915a" font-weight="700" text-anchor="middle">Documented</text>
+<line x1="66" y1="120" x2="66.0" y2="134.0" stroke="#12915a" stroke-width="2" stroke-linecap="round"/>
+<path d="M 66.0 140.0 L 62.3 131.8 L 69.7 131.8 Z" fill="#12915a"/>
+<rect x="22" y="146" width="656" height="56" fill="#ffffff" rx="11" stroke="#12915a" stroke-width="1.6"/>
+<rect x="22" y="146" width="7" height="56" fill="#12915a" rx="3.5"/>
+<text x="44" y="169" font-size="15" fill="#1d1d1f" font-weight="600">Northern-range elk numbers fell steeply</text>
+<text x="44" y="189" font-size="12.8" fill="#6e6e73">From roughly 19,000 in the mid-1990s to a few thousand two decades later.</text>
+<rect x="558" y="154" width="108" height="21" fill="#12915a" rx="10" opacity="0.14"/>
+<text x="612.0" y="169" font-size="11.5" fill="#12915a" font-weight="700" text-anchor="middle">Documented</text>
+<line x1="66" y1="204" x2="66.0" y2="218.0" stroke="#12915a" stroke-width="2" stroke-linecap="round"/>
+<path d="M 66.0 224.0 L 62.3 215.8 L 69.7 215.8 Z" fill="#12915a"/>
+<rect x="22" y="230" width="656" height="56" fill="#ffffff" rx="11" stroke="#eb6834" stroke-width="1.6"/>
+<rect x="22" y="230" width="7" height="56" fill="#eb6834" rx="3.5"/>
+<text x="44" y="253" font-size="15" fill="#1d1d1f" font-weight="600">Elk browsed less in some places, and moved more</text>
+<text x="44" y="273" font-size="12.8" fill="#6e6e73">Fewer elk, and elk that linger less in open valleys, means fewer bites per plant.</text>
+<rect x="558" y="238" width="108" height="21" fill="#eb6834" rx="10" opacity="0.14"/>
+<text x="612.0" y="253" font-size="11.5" fill="#eb6834" font-weight="700" text-anchor="middle">Partly measured</text>
+<line x1="66" y1="288" x2="66.0" y2="302.0" stroke="#86868b" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 4"/>
+<path d="M 66.0 308.0 L 62.3 299.8 L 69.7 299.8 Z" fill="#86868b"/>
+<rect x="22" y="314" width="656" height="56" fill="#ffffff" rx="11" stroke="#eb6834" stroke-width="1.6"/>
+<rect x="22" y="314" width="7" height="56" fill="#eb6834" rx="3.5"/>
+<text x="44" y="337" font-size="15" fill="#1d1d1f" font-weight="600">Willow and aspen grew taller — in some places</text>
+<text x="44" y="357" font-size="12.8" fill="#6e6e73">Recovery is real in places and absent in others. Water and beaver matter as much.</text>
+<rect x="558" y="322" width="108" height="21" fill="#eb6834" rx="10" opacity="0.14"/>
+<text x="612.0" y="337" font-size="11.5" fill="#eb6834" font-weight="700" text-anchor="middle">Patchy</text>
+<line x1="66" y1="372" x2="66.0" y2="386.0" stroke="#86868b" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 4"/>
+<path d="M 66.0 392.0 L 62.3 383.8 L 69.7 383.8 Z" fill="#86868b"/>
+<text x="84" y="387" font-size="12.5" fill="#c0392b" font-style="italic">and here the argument starts</text>
+<rect x="22" y="398" width="656" height="56" fill="#ffffff" rx="11" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="6 5"/>
+<rect x="22" y="398" width="7" height="56" fill="#c0392b" rx="3.5"/>
+<text x="44" y="421" font-size="15" fill="#1d1d1f" font-weight="600">“Wolves changed the whole ecosystem”</text>
+<text x="44" y="441" font-size="12.8" fill="#6e6e73">Hunting, drought, bears and cougars all pushed the same way at the same time.</text>
+<rect x="558" y="406" width="108" height="21" fill="#c0392b" rx="10" opacity="0.14"/>
+<text x="612.0" y="421" font-size="11.5" fill="#c0392b" font-weight="700" text-anchor="middle">Contested</text>
+<text x="22" y="498" font-size="14.5" fill="#1d1d1f">A trophic cascade is real: a predator can change the plants. Whether THIS cascade explains THIS valley is a</text>
+<text x="22" y="517" font-size="14.5" fill="#1d1d1f">separate question, and the honest answer is partly. Evaluating a claim means asking what else could have</text>
+<text x="22" y="536" font-size="14.5" fill="#1d1d1f">produced the same evidence — not deciding whether you like the story.</text>
+</svg>
