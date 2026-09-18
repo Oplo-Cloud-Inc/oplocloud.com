@@ -196,7 +196,36 @@ window.OPLO_API = (function () {
         return patch("/assignments/" + assignmentId, data)
           .then(function (r) { return r.assignment; });
       },
-      removeAssignment: function (assignmentId) { return del("/assignments/" + assignmentId); }
+      removeAssignment: function (assignmentId) { return del("/assignments/" + assignmentId); },
+      gradebook: function (id) { return get("/courses/" + id + "/gradebook"); }
+    },
+
+    /* ------------------------------------------------------------ Classes
+       Live enrollment instances of Courses. A student belongs to
+       classes, not courses; a course is the curriculum, a class is
+       the room. */
+    classes: {
+      mine: function () { return get("/classes?mine=true").then(function (r) { return r.classes; }); },
+      all: function () { return get("/classes/catalog").then(function (r) { return r.classes; }); },
+      get: function (id) { return get("/classes/" + id).then(function (r) { return r.class; }); },
+      assignments: function (id) {
+        return get("/classes/" + id + "/assignments").then(function (r) { return r.assignments; });
+      },
+      members: function (id) {
+        return get("/classes/" + id + "/members").then(function (r) { return r.members; });
+      },
+      gradebook: function (id) { return get("/classes/" + id + "/gradebook"); }
+    },
+
+    /* -------------------------------------------------------- Assignments
+       All assigned work across all classes, sorted by urgency. */
+    assignments: {
+      all: function () {
+        return get("/assignments" + q({ student: true })).then(function (r) { return r.assignments; });
+      },
+      upcoming: function () {
+        return get("/assignments" + q({ upcoming: true })).then(function (r) { return r.assignments; });
+      }
     },
 
     /* ----------------------------------------------------------- Grades

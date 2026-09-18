@@ -1,0 +1,37 @@
+# ===========================================================================
+# Oplo Identity — auth.oplocloud.com
+#
+# The authentication portal. Serves the sign-in, registration, and
+# recovery pages, initiates OAuth/OIDC flows, and forwards API calls
+# to api.oplocloud.com for actual session management.
+#
+# Why a separate Worker rather than a static page:
+#   - The sign-in page is static, but the OAuth/OIDC discovery and
+#     redirect handling need logic (this Worker).
+#   - A dedicated subdomain keeps the session cookie scope clean:
+#     auth.oplocloud.com handles identity, api.oplocloud.com handles
+#     data, and the session is shared at the oplocloud.com domain level.
+#
+# Deploy:
+#   npx wrangler deploy                  → lands on auth.<subdomain>.workers.dev
+#   npx wrangler deploy --env production → auth.oplocloud.com
+# ===========================================================================
+name = "oplo-auth"
+main = "index.js"
+compatibility_date = "2026-05-01"
+workers_dev = true
+
+[env.production]
+name = "oplo-auth"
+
+[env.production.vars]
+API_BASE = "https://api.oplocloud.com"
+COOKIE_DOMAIN = "oplocloud.com"
+
+[[env.production.routes]]
+pattern = "auth.oplocloud.com/*"
+zone_name = "oplocloud.com"
+
+[[env.production.routes]]
+pattern = "auth.oplocloud.com/.well-known/*"
+zone_name = "oplocloud.com"

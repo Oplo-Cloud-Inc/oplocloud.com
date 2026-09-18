@@ -5638,12 +5638,77 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
 .asm-ask-chip:hover { background: var(--sunk); }
 
 /* Preview mode */
-.asm-previewing { position: relative; }
-.asm-previewing::before {
-  content: 'PREVIEW MODE';
-  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-  padding: 6px 16px; border-radius: 100px; z-index: 100;
-  background: var(--amber); color: #fff; font-size: 11px; font-weight: 600;
-  letter-spacing: .08em; text-transform: uppercase;
-}
+  .asm-previewing { position: relative; }
+  .asm-previewing::before {
+    content: 'PREVIEW MODE';
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    padding: 6px 16px; border-radius: 100px; z-index: 100;
+    background: var(--amber); color: #fff; font-size: 11px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+  }
+
+  /* ============================================================= Classes */
+  .lx-class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .lx-class-card {
+    display: flex; flex-direction: column; text-align: left;
+    padding: 20px; border-radius: var(--r); background: var(--paper);
+    border: 1px solid var(--hair); min-height: 178px;
+    transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+    cursor: pointer;
+  }
+  .lx-class-card:hover { transform: translateY(-2px); border-color: var(--rule); box-shadow: 0 6px 20px rgba(0,0,0,.05); }
+  .lx-class-card .ic {
+    width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+    margin-bottom: 14px; flex: none;
+  }
+  .lx-class-card h3 { font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -.012em; }
+  .lx-class-card p { margin-top: 6px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+  .lx-class-card .foot {
+    margin-top: auto; padding-top: 15px; display: flex; align-items: center; gap: 9px;
+    font-size: 12.5px; color: var(--ink-3);
+  }
+  .lx-class-hero { padding-bottom: 26px; border-bottom: 1px solid var(--hair); }
+  .lx-class-hero .row { display: flex; align-items: flex-start; gap: 16px; }
+  .lx-class-hero .ic { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+  .lx-class-hero .ic svg { width: 25px; height: 25px; }
+  .lx-class-hero .meta { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .lx-class-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .lx-class-meta .lx-tag { background: var(--canvas); }
+  .lx-class-ta {
+    margin-top: 26px; padding: 24px 26px; border-radius: 18px;
+    background: var(--ink); color: #fff;
+  }
+  .lx-class-ta .k { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.5); }
+  .lx-class-ta h2 {
+    font-family: var(--font); font-size: clamp(22px, 3vw, 28px); font-weight: 600;
+    letter-spacing: -.018em; margin-top: 6px; color: #fff;
+  }
+  .lx-class-ta p { margin-top: 8px; font-size: 14.5px; line-height: 1.5; color: rgba(255,255,255,.68); max-width: 54ch; }
+  .lx-class-ta .lx-btn { margin-top: 18px; background: #fff; color: var(--ink); }
+  .lx-class-ta .lx-btn:hover { background: #e8e8ea; }
+
+  /* ============================================================ Library */
+  .lx-lib-tabs { display: flex; gap: 2px; margin-bottom: 20px; }
+  .lx-lib-tab {
+    height: 30px; padding: 0 12px; border-radius: 100px;
+    font-size: 13.5px; font-weight: 500; color: var(--ink-2);
+    transition: background .15s var(--ease), color .15s var(--ease);
+  }
+  .lx-lib-tab:hover { color: var(--ink); background: var(--canvas); }
+  .lx-lib-tab[aria-current="true"] { color: var(--ink); background: var(--sunk); }
+
+  /* ==================================================== Assignments */
+  .lx-asgn-list { display: grid; gap: 10px; margin-top: 20px; }
+  .lx-asgn-card {
+    display: flex; align-items: center; gap: 15px; width: 100%; text-align: left;
+    padding: 17px 19px; border-radius: 14px; background: var(--paper);
+    border: 1px solid var(--hair);
+    transition: border-color .16s var(--ease), transform .16s var(--ease);
+    cursor: pointer;
+  }
+  .lx-asgn-card:hover { border-color: var(--rule); transform: translateX(2px); }
+  .lx-asgn-card .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; flex: none; background: var(--canvas); color: var(--ink-2); }
+  .lx-asgn-card h3 { font-family: var(--font); font-size: 16px; font-weight: 600; letter-spacing: -.012em; }
+  .lx-asgn-card .sub { display: block; margin-top: 2px; font-size: 13px; color: var(--ink-3); }
+  .lx-asgn-card .status { margin-left: auto; flex: none; }
 

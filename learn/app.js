@@ -521,18 +521,9 @@
     var prev = S.hist[S.hist.length - 1];
     $("#back").hidden = !prev;
     if (prev) $("#backLabel").textContent = prev.label;
-    /* The console has no bar, so its back control is its own element. It is
-       shown only when there is somewhere to go back to — a permanently
-       present Back that sometimes does nothing is worse than none. */
-    // Any view inside the console shell, not just #v-admin — Account is one.
     $("#cnBack").hidden = !(prev && document.body.classList.contains("is-console"));
     if (prev) $("#cnBackLabel").textContent = prev.label;
-    // The subject bar belongs to browsing. The home screen is a personal
-    // command centre, and a catalogue across the top of it is just noise.
     $("#subbar").hidden = !(view === "explore" || view === "subject");
-    // The console's rail belongs to the console. Every screen it owns —
-    // gradebook, enrolment, a student's report — is drawn into #v-admin, so
-    // one check here keeps the chrome right without every screen knowing.
     if (view !== "admin") leaveConsole();
     $("#wrap").classList.toggle("wide", view === "match" || view === "map");
     $("#wrap").classList.toggle("full", view === "read");
@@ -540,9 +531,11 @@
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
       b.setAttribute("aria-current", String(b.dataset.view === view));
     });
+    if (view === "classes" && window.OPLO_CLASSES) window.OPLO_CLASSES.draw();
+    if (view === "class-home" && window.OPLO_CLASS_HOME) window.OPLO_CLASS_HOME.draw(S._classHomeCls || null);
+    if (view === "assignments" && window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw();
+    if (view === "library" && window.OPLO_LIBRARY) window.OPLO_LIBRARY.draw();
     window.scrollTo(0, 0);
-    // Tutor is declared later in this scope; hoisting makes it undefined
-    // until the panel is built, which is exactly the case to skip.
     if (typeof Tutor !== "undefined" && Tutor && Tutor.where) Tutor.where();
   }
 
@@ -13076,6 +13069,7 @@
     var ru = READERS[R.d.readUnit];
     useReader(ru && ru.sections.length ? ru : READERS["media:5"]);
     Game.attach(R);
+    if (window.OPLO_PROGRESS) window.OPLO_PROGRESS.setRecord(R);
 
     /* The record is written here first and kept in step with the account —
        and so is every set's concept state, through the one hook learn.js
@@ -13554,6 +13548,11 @@
       markSubjectNav(null);
       noFoot(); progress(null);
       if (b.dataset.view === "my") home();
+      else if (b.dataset.view === "classes") { S._classHomeCls = null; show("classes"); }
+      else if (b.dataset.view === "class-home") show("class-home");
+      else if (b.dataset.view === "assignments") { if (window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw(); show("assignments"); }
+      else if (b.dataset.view === "progress") { if (window.OPLO_PROGRESS) { if (R) window.OPLO_PROGRESS.setRecord(R); window.OPLO_PROGRESS.draw(); } show("progress"); }
+      else if (b.dataset.view === "library") { if (window.OPLO_LIBRARY) window.OPLO_LIBRARY.draw(); show("library"); }
       else if (b.dataset.view === "admin") openAdmin();
       else if (b.dataset.view === "grades") openGrades();
       else if (b.dataset.view === "exams") openExams();
@@ -13615,4 +13614,48 @@
     else if (S.view === "learn" && S.learnKeys) S.learnKeys(e);
   });
 
+  /* New view navigation */
+  window.OPLO_APP = {
+    enter: enter,
+    show: show,
+    subjectPct: function (name) { return subjectPct(name); },
+    openClassHome: function (cls) {
+      S._classHomeCls = cls;
+      root("class-home", cls.t || "Class", function () { window.OPLO_CLASS_HOME.draw(cls); });
+      show("class-home");
+    },
+    showClassHome: function (cls) {
+      S._classHomeCls = cls;
+      window.OPLO_CLASS_HOME.draw(cls);
+      show("class-home");
+    },
+    showClassHomeById: function (id) {
+      if (!API) return;
+      API.classes.get(id).then(function (r) {
+        if (r && r.class) window.OPLO_APP.showClassHome(r.class);
+      }, function () { });
+    },
+    showAssignments: function () {
+      if (window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw();
+      show("assignments");
+    },
+    showAssignmentsForClass: function (classId) {
+      if (!API) return;
+      API.classes.assignments(classId).then(function () {
+        show("assignments");
+        if (window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw();
+      }, function () { show("assignments"); });
+    },
+    openSet: function (setId) {
+      if (!API) return;
+      API.studySets.get(setId).then(function (r) {
+        if (r && r.studySet) openSet(r.studySet.id || r.studySet.code || setId);
+      }, function () { });
+    },
+    showCreateAssignment: function (cls) {
+      var title = el("input", "lx-num", "");
+      title.style.cssText = "height:48px;border-radius:12px;border:1.5px solid var(--hair);background:var(--paper);font-size:16px;padding:0 15px;";
+      toast("Set assignment — coming soon");
+    }
+  };
 })();

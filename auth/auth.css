@@ -1,0 +1,317 @@
+/* ==========================================================================
+   Oplo Identity — auth-specific styles.
+
+   Loaded only by auth.oplocloud.com. The base design tokens come from
+   /assets/css/oplo-design.css. These rules override or extend them for
+   the authentication surface.
+   ========================================================================== */
+
+.authMain {
+  min-height: calc(100vh - 44px); min-height: calc(100svh - 44px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: clamp(48px, 9vh, 96px) var(--gutter) clamp(40px, 7vh, 72px);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------- The card
+   The sign-in form lives in a card rather than full-page. On the sign-in
+   page the page itself is the identity — the card frames it without
+   competing. */
+
+.authCard {
+  width: 100%; max-width: 400px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  padding: clamp(32px, 5vh, 48px) clamp(24px, 4vw, 40px);
+  text-align: left;
+}
+
+.authCardCentered {
+  display: flex; flex-direction: column; align-items: center;
+}
+
+.authCard h1 {
+  font-family: var(--font); font-size: clamp(26px, 3.4vw, 36px);
+  line-height: 1.1; font-weight: 600; letter-spacing: -.015em;
+  margin: 0 0 6px;
+  text-align: center; width: 100%;
+}
+
+.authCard .sub {
+  margin: 0 auto; max-width: 34ch;
+  font-size: 16px; line-height: 1.47; color: var(--ink-2);
+  text-align: center; width: 100%;
+}
+
+.authCard .brandRow {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-bottom: clamp(26px, 4vh, 38px);
+}
+
+.authCard .brandRow svg { width: 32px; height: 30px; color: var(--ink); }
+
+.authCard .brandRow span {
+  font-size: 15px; font-weight: 600; color: var(--ink-2);
+  letter-spacing: -.01em;
+}
+
+/* ------------------------------------------------------------- Method tabs
+   Passkey is the primary method. Other methods are secondary but never
+   hidden — people without passkeys need a path. */
+
+.methodTabs {
+  display: flex; gap: 4px; margin-bottom: 24px;
+  background: var(--canvas); border-radius: 12px; padding: 4px;
+}
+
+.methodTab {
+  flex: 1; padding: 10px 12px; border: none; border-radius: 10px;
+  font: inherit; font-size: 14px; font-weight: 500;
+  background: transparent; color: var(--ink-2); cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+
+.methodTab:hover { color: var(--ink); }
+
+.methodTab.active {
+  background: #fff; color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+/* ------------------------------------------------------------- Passkey banner
+   When a passkey is available, surface it first. This is the primary
+   authentication experience per the Oplo Identity design. */
+
+.passkeyBanner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; border-radius: 12px;
+  background: var(--canvas); margin-bottom: 20px;
+  font-size: 14px; color: var(--ink-2);
+}
+
+.passkeyBanner .pkIcon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--ink); color: var(--paper);
+  display: grid; place-items: center; flex-shrink: 0;
+}
+
+.passkeyBanner .pkIcon svg { width: 15px; height: 15px; }
+
+.passkeyBanner .pkText b { color: var(--ink); font-weight: 600; }
+
+/* ------------------------------------------------------------- Form elements */
+
+.field { position: relative; margin-bottom: 16px; }
+
+.field input {
+  width: 100%; height: 56px;
+  padding: 20px 54px 6px 16px;
+  font: inherit; font-size: 17px; color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 12px;
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease;
+  -webkit-appearance: none; appearance: none;
+  box-sizing: border-box;
+}
+
+.field input:hover { border-color: #b8b8bf; }
+.field input:focus {
+  border-color: #0071e3;
+  box-shadow: 0 0 0 4px rgba(0,113,227,.16);
+}
+
+.field label {
+  position: absolute; left: 17px; top: 50%; transform: translateY(-50%);
+  transform-origin: left center; pointer-events: none;
+  font-size: 17px; color: var(--ink-3);
+  transition: transform .18s ease, color .18s ease;
+}
+
+.field input:focus + label,
+.field input:not(:placeholder-shown) + label {
+  transform: translateY(-19px) scale(.72); color: var(--ink-2);
+}
+
+.field .go {
+  position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--rule);
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+.field input:not(:placeholder-shown) ~ .go {
+  background: #0071e3; color: #fff; box-shadow: none;
+}
+
+.field .go svg { width: 15px; height: 15px; }
+
+/* ------------------------------------------------------------- Buttons */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; height: 52px;
+  font: inherit; font-size: 16px; font-weight: 500;
+  border-radius: 12px; border: none; cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+
+.btnPrimary {
+  background: var(--ink); color: var(--paper);
+}
+.btnPrimary:hover { background: #333; }
+
+.btnPrimary:disabled {
+  opacity: .4; cursor: not-allowed;
+}
+
+.btnSecondary {
+  background: transparent; color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.btnSecondary:hover { background: var(--canvas); }
+
+.btnPasskey {
+  background: #fff; color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.btnPasskey:hover { background: var(--canvas); }
+
+/* ------------------------------------------------------------- Passkey button
+   Full-width, prominent, the primary action on the page when a passkey
+   exists. */
+
+.passkeyBtn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 56px;
+  font: inherit; font-size: 17px; font-weight: 500;
+  border-radius: 12px; border: none; cursor: pointer;
+  background: var(--ink); color: var(--paper);
+  transition: background .18s ease;
+}
+
+.passkeyBtn:hover { background: #333; }
+.passkeyBtn svg { width: 20px; height: 20px; }
+
+/* ------------------------------------------------------------- Divider */
+
+.divider {
+  display: flex; align-items: center; gap: 14px;
+  margin: 20px 0; color: var(--ink-3); font-size: 13px;
+}
+
+.divider::before, .divider::after {
+  content: ""; flex: 1; height: 1px; background: var(--rule);
+}
+
+/* ------------------------------------------------------------- Social sign-in */
+
+.socialBtns { display: flex; gap: 8px; margin-bottom: 20px; }
+
+.socialBtn {
+  flex: 1; height: 48px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font: inherit; font-size: 14px; font-weight: 500;
+  border-radius: 10px; border: 1px solid var(--rule);
+  background: #fff; color: var(--ink); cursor: pointer;
+  transition: background .15s ease;
+}
+
+.socialBtn:hover { background: var(--canvas); }
+.socialBtn svg { width: 18px; height: 18px; }
+
+/* ------------------------------------------------------------- Status messages */
+
+.authStatus {
+  margin: 16px 0; padding: 12px 16px; border-radius: 10px;
+  font-size: 14px; line-height: 1.45;
+  text-align: center;
+}
+
+.authStatus.error { background: #fef2f2; color: #b42318; }
+.authStatus.success { background: #f0fdf4; color: #166534; }
+.authStatus.info { background: var(--canvas); color: var(--ink-2); }
+
+/* ------------------------------------------------------------- Sign-in options */
+
+.signinOptions {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 16px 0 24px; font-size: 14px;
+}
+
+.signinOptions label {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--ink-2); cursor: pointer;
+}
+
+.signinOptions input { width: 15px; height: 15px; accent-color: #0071e3; }
+
+.signinOptions a { color: var(--blue); text-decoration: none; }
+.signinOptions a:hover { text-decoration: underline; }
+
+/* ------------------------------------------------------------- Recovery form */
+
+.recoveryNote {
+  margin: 20px 0 0; padding: 16px; border-radius: 12px;
+  background: var(--canvas); font-size: 14px; line-height: 1.5;
+  color: var(--ink-2); text-align: left;
+}
+
+.recoveryNote b { color: var(--ink); }
+
+/* ------------------------------------------------------------- Context switcher
+   After sign-in, shows which organization context the user is in. */
+
+.contextPanel { width: 100%; }
+
+.contextPanel .orgName {
+  font-size: 20px; font-weight: 600; letter-spacing: -.01em;
+  margin: 0 0 2px;
+}
+
+.contextPanel .orgRole {
+  font-size: 14px; color: var(--ink-2); margin: 0 0 24px;
+}
+
+.contextPanel .apps {
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px;
+}
+
+.contextPanel .app {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; border-radius: 12px;
+  background: var(--canvas); text-decoration: none; color: var(--ink);
+  font-size: 15px; font-weight: 500;
+  transition: background .15s ease;
+}
+
+.contextPanel .app:hover { background: var(--rule); }
+
+.contextPanel .app .appIcon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: grid; place-items: center; flex-shrink: 0;
+  font-size: 18px;
+}
+
+.contextPanel .app .appMeta {
+  text-align: left;
+}
+
+.contextPanel .app .appMeta b { display: block; font-weight: 600; font-size: 14px; }
+.contextPanel .app .appMeta span { font-size: 13px; color: var(--ink-2); }
+
+/* ------------------------------------------------------------- Mobile */
+@media (max-width: 734px) {
+  .authMain {
+    justify-content: flex-start;
+    padding: clamp(30px, 6vh, 52px) var(--gutter) 28px;
+    min-height: calc(100svh - 44px - 86px);
+  }
+  .authCard { padding: 28px 20px; border-radius: 16px; }
+  .authCard h1 { font-size: 24px; }
+  .authCard .sub { font-size: 15px; }
+  .socialBtns { flex-direction: column; }
+}

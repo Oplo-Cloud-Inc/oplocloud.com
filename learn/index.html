@@ -457,10 +457,11 @@
 
     <nav class="lx-top" id="topNav" aria-label="Sections">
       <button type="button" data-view="my" aria-current="true">Home</button>
+      <button type="button" data-view="classes">My Classes</button>
       <button type="button" data-view="explore">Explore</button>
-      <button type="button" data-view="grades" id="navGrades" hidden>Grades</button>
-      <button type="button" data-view="exams" id="navExams" hidden>Exams <span class="atb-badge">ATB</span></button>
-      <button type="button" data-view="admin" id="navAdmin" hidden>Students</button>
+      <button type="button" data-view="assignments">Assignments</button>
+      <button type="button" data-view="progress">Progress</button>
+      <button type="button" data-view="library">Library</button>
     </nav>
 
     <div class="lx-prog" id="barProg" hidden><i></i></div>
@@ -486,9 +487,14 @@
 </header>
 
 <main class="lx-wrap" id="wrap">
-  <section class="lx-view on" id="v-my"></section>
-  <section class="lx-view" id="v-explore"></section>
-  <section class="lx-view" id="v-grades"></section>
+    <section class="lx-view on" id="v-my"></section>
+    <section class="lx-view" id="v-explore"></section>
+    <section class="lx-view" id="v-classes"></section>
+    <section class="lx-view" id="v-class-home"></section>
+    <section class="lx-view" id="v-assignments"></section>
+    <section class="lx-view" id="v-progress"></section>
+    <section class="lx-view" id="v-library"></section>
+    <section class="lx-view" id="v-grades"></section>
   <section class="lx-view" id="v-exams"></section>
   <section class="lx-view" id="v-subject"></section>
   <section class="lx-view" id="v-course"></section>
@@ -609,6 +615,11 @@
 <script src="tutor.js?v=e36b13da"></script>
 <script src="kmap.js?v=32de7572"></script>
 <script src="home.js?v=6cb47e0b"></script>
+<script src="classes.js"></script>
+<script src="class-home.js"></script>
+<script src="assignments.js"></script>
+<script src="progress.js"></script>
+<script src="library.js"></script>
 <script src="oplo-menu.js?v=098abb73"></script>
 <script src="oplo-search.js?v=b2f48c6b"></script>
 <script src="landing.js?v=7b3b8d9a"></script>
