@@ -4814,6 +4814,8 @@
     // to be written directly — keep() alone saved the old position forever.
     if (R) { R.d.readIx = i; R.d.readUnit = r.key; }
     keep();
+    window.OPLO_CURRENT_SECTIONS = RU.sections;
+    window.OPLO_CURRENT_READ_IX = i;
 
     var v = $("#v-read");
     v.innerHTML = "";
