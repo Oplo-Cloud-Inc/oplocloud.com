@@ -1,60 +1,19 @@
 /* ==========================================================================
    Media Arts — Unit 8, Intro to Animation. Sections 8.1 to 8.9.
 
-   Written from the EHS course text the way Units 5 to 7 were: curated rather
-   than copied, every tested definition kept, and every idea shown as well as
-   said. This unit is about movement, so for the first time a figure moves:
-   five motion labs (see motionBlock in app.js) let a student switch a
-   principle on and off and watch what changes — ones against twos, key
-   frames with and without in-betweens, a walk cycle that works and the
-   course's one that does not, a bouncing ball with spacing, arcs and squash
-   and stretch, and a character with and without anticipation and
-   follow-through. Each shows its frames on a strip under the stage: keys,
-   new drawings and holds.
+   Based on the EHS course text: curated, not copied. Every tested definition
+   is kept; every idea is shown as well as said.
 
-   Every definition carries a second line in plain words (the `p` of a def),
-   each section opens with the everyday words a reader may not have, and
-   "Try it" and "In the real world" cards tie the ideas to things a student
-   can do or has seen.
+   Five motion labs (see motionBlock in app.js) let students toggle principles
+   and watch what changes: ones vs twos, keys with/without in-betweens, walk
+   cycles, a bouncing ball (spacing, arcs, squash/stretch), and a character
+   with/without anticipation and follow-through.
 
-   ------------------------------------------------------------ Corrections
+   Definitions include a plain-English line. Each section opens with everyday
+   words. "Try it" and "In the real world" cards connect ideas to student
+   experience.
 
-   Marked in the reader with a note rather than silently rewritten.
-
-     8.1  The thaumatrope's two pictures "form one moving animation". Most
-          thaumatropes combine two pictures into one still image.
-     8.1  The side note's "first animation on standard picture film", The
-          Enchanted Drawing (1900), used stop-camera substitution, not
-          frame-by-frame drawing; Humorous Phases of Funny Faces (1906) is
-          the usual answer.
-     8.1  "Logarithms" (twice) for algorithms; crash animations are the
-          output of simulations.
-     8.1  Limited animation as "the use of the cel technique". Cels were used
-          for full animation too.
-     8.1  Stop motion "is not" time-consuming. Aardman: about two seconds of
-          film per animator per day (Smithsonian, 2026).
-     8.1  3D modeling as "a more complex form of 3D animation". It is the
-          first step, and many models are never animated.
-     8.1  Rigging "an emerging technique". Standard for decades.
-     8.2  The key frame as "the first drawing". Keys fall wherever a move
-          starts, ends or turns.
-     8.2  Ones for "very fast movement", twos for slower. Ones and twos change
-          smoothness, not speed; the lab shows it.
-     8.2  Frame-by-frame changes "the stage or background". In Adobe's
-          sense the stage is the whole picture; the background can stay.
-     8.2  A three-drawing walk cycle. It cannot loop; the lab shows it.
-     8.2  Pose to pose less fluid because poses are hard to make "after the
-          key frames". Garbled: its risk is even, stiff in-betweens.
-     8.2  Snappy and swimmy as frame rate. They are timing and spacing.
-     8.2  Motion capture "created" the uncanny valley, a dip in "aptitude".
-          Mori, 1970, about robots; the dip is in affinity.
-     8.4  The key frame as "the first drawing", again.
-     8.5  "The rule of thirds or the golden ratio", as in 6.6 and 7.5.
-     8.7  Greeking as "words or small synopses". It is placeholder text.
-     8.9  A ".awf" format (probably .asf); .mov dated 1998 (1991); QuickTime
-          for Windows (ended 2016); WMV's "codes" (codecs).
-     8.9  A niche blog as one about current events. A niche is a narrow
-          subject.
+   Corrections to the course text are noted inline rather than silently fixed.
 
    ------------------------------------------------------------------ Checks
 
@@ -64,12 +23,9 @@
 
    ---------------------------------------------------------------- Pictures
 
-   Twenty diagrams drawn for OEdu, labels set to render at 13px or larger in
-   the reading column. Eighteen photographs and one animation from Wikimedia
-   Commons, each checked at its source for licence and author and credited
-   beside the figure. No figure flashes: the motion labs move smoothly, and
-   they do not start on their own for a reader who has asked for reduced
-   motion.
+   20 OEdu diagrams (labels at 13px+), 18 Wikimedia photos, 1 Commons
+   animation. All licensed and credited beside the figure. Motion labs move
+   smoothly and respect reduced-motion settings.
    ========================================================================== */
 window.OPLO_UNIT8 = (function () {
   "use strict";
@@ -397,21 +353,19 @@ window.OPLO_UNIT8 = (function () {
 
   return [{
     n: "8.1", t: "Drawings That Move", kicker: "Intro to animation",
-    stand: "Animation is the oldest special effect there is: still pictures, each a little different, shown fast " +
-           "enough to come alive. The tools have changed from painted cups to computers. The trick never has.",
+    stand: "Animation is the oldest special effect: still pictures, each slightly different, shown fast enough to " +
+           "come alive. Tools have changed from painted cups to computers. The trick never has.",
     mins: 14,
-    objectives: ["Briefly summarise the history of animation",
-                 "List the various uses of animation",
-                 "Identify and describe the various styles of animation"],
-    body: [
-      P("Every animation, from a Victorian toy to a Pixar film, runs on one trick. Make a series of still " +
-        "pictures, each changed a little from the one before, and show them quickly one after another. The " +
-        "brain stops seeing separate pictures and sees movement instead."),
-      W([["Illusion", "something that tricks your eyes or brain into seeing what isn't really there"],
-         ["Sequence", "a set of things in a certain order, one after another"],
-         ["Project", "to shine a picture onto a wall or screen, the way a projector does"],
-         ["Algorithm", "a list of step-by-step instructions that a computer follows"],
-         ["Simulation", "a computer's pretend version of something real, like a car crash"]]),
+      objectives: ["Briefly summarise the history of animation",
+                   "List the various uses of animation",
+                   "Identify and describe the various styles of animation"],
+      body: [
+        P("Every animation — from a Victorian toy to a Pixar film — uses one trick: show still pictures, each " +
+          "slightly different, fast enough that the brain sees movement."),
+        W([["Illusion", "something that tricks your eyes or brain into seeing what isn't really there"],
+           ["Sequence", "a set of things in a certain order, one after another"],
+           ["Algorithm", "a list of step-by-step instructions that a computer follows"],
+           ["Simulation", "a computer's pretend version of something real, like a car crash"]]),
       D("Animation", "The making of a sequence of still images, each slightly different, that appear to move " +
         "when shown in quick succession. The images can be drawn, painted, built, photographed or computed.",
         "Lots of still pictures, each a tiny bit different, shown so fast that they seem to move."),
@@ -430,10 +384,8 @@ window.OPLO_UNIT8 = (function () {
         "found at Shahr-e Sukhteh — the Burnt City — in Iran, is painted with five pictures of a wild goat " +
         "leaping at a tree. Turn the cup and the goat seems to jump, and it is often called the oldest known " +
         "animation."),
-      P("The <b>magic lantern</b>, developed in the 1650s, was an early projector: a lamp and a lens that threw " +
-        "pictures painted on glass onto a wall in a dark room. Some slides had moving parts, so a picture could " +
-        "change as it was shown, and later showmen used lanterns for ghost shows in which skeletons and demons " +
-        "seemed to rush at the audience."),
+      P("The <b>magic lantern</b> (1650s) was an early projector: a lamp and lens that threw painted glass slides onto a " +
+        "wall. Some slides had moving parts, creating ghost shows where skeletons seemed to rush at the audience."),
       F({ imgs: [{ src: M + "8-1-magic-lantern.jpg", w: 588, h: 772,
                    alt: "An old metal magic lantern with a brass lens at the front and a chimney on top, with a long " +
                         "painted glass slide pushed through its middle." }],
@@ -451,10 +403,9 @@ window.OPLO_UNIT8 = (function () {
       D("Thaumatrope", "A 19th-century optical toy: a disc with a different picture on each side, spun on " +
         "strings so fast that the two pictures seem to become one.",
         "A spinning card with a picture on each side. Spin it fast and the two pictures look like one."),
-      N("<b>A correction to the course text.</b> It says a thaumatrope's pictures “run together to form one " +
-        "moving animation”. Most thaumatropes show no movement at all: they join two pictures into one still " +
-        "image, like the bird in its cage. What they proved is that the eye blends pictures that follow each " +
-        "other quickly — the idea every animation device after them was built on."),
+      N("It says a thaumatrope's pictures form \"one moving animation\". Most join two images into one still picture, " +
+        "like the bird in its cage. What they proved is that the eye blends quickly sequential images — the idea " +
+        "behind every animation device that followed."),
 
       H("Toys that really moved"),
       P("The first devices to show true animation arrived in 1833. Joseph Plateau's <b>phenakistiscope</b> was a " +
@@ -472,11 +423,9 @@ window.OPLO_UNIT8 = (function () {
                       siteUrl: commons("Animated_phenakistiscope_disc_-_Running_rats_Fantascope_by_Thomas_Mann_Baynes_1833.gif"),
                       license: "Public domain" }],
           natural: true, size: "medium" }),
-      P("The <b>zoetrope</b> did the same job with a drum. A strip of drawings sits inside a spinning cylinder, " +
-        "and you watch through slits in its side — no mirror needed, and several people can look at once. " +
-        "William Horner built the first in 1834, and as the zoetrope it became a popular toy from 1866. The " +
-        "<b>flip book</b> (1868) needed no machine at all, only a thumb, and Émile Reynaud's <b>praxinoscope</b> " +
-        "(1877) swapped the slits for a ring of mirrors, which gave a brighter, steadier picture."),
+      P("The <b>zoetrope</b> (1834) used a spinning drum with drawings inside; viewers looked through slits to see " +
+        "the animations. The <b>flip book</b> (1868) needed only a thumb to flip pages. Émile Reynaud's " +
+        "<b>praxinoscope</b> (1877) replaced slits with mirrors for a brighter picture."),
       F({ imgs: [{ src: M + "8-1-zoetrope.jpg", w: 1400, h: 1050,
                    alt: "A black metal zoetrope drum on a stand, decorated with blue patterns, with a strip of " +
                         "drawings of a horse and rider running round the inside and tall slots in its upper wall." }],
@@ -511,8 +460,8 @@ window.OPLO_UNIT8 = (function () {
         "Seven Dwarfs</i>, the first feature-length animated film made in America."),
 
       H("Animation at work"),
-      P("Animation isn't only for entertainment. It can show what no camera can film: the inside of a beating " +
-        "heart, a molecule folding, a building that hasn't been built."),
+      P("Animation serves science, medicine, business, and more. It shows what no camera can: a beating heart, " +
+        "a folding molecule, a building not yet built."),
       L("Where you'll find it", [
         ["Medicine", "Surgeons study animations of new procedures, and hospitals use them to show patients what " +
          "an operation involves. Students watch processes too small or too fast to see, like a cell dividing."],
@@ -524,10 +473,8 @@ window.OPLO_UNIT8 = (function () {
          "see how a car's structure and its passengers would move in a collision."],
         ["Science and news", "Weather maps, space missions, and anything that happened where no camera was."]
       ]),
-      N("<b>A correction to the course text.</b> Twice it says animations are made with “logarithms”. It means " +
-        "<i>algorithms</i>, the step-by-step instructions a computer follows; a logarithm is a kind of maths. And " +
-        "a car-crash animation is the output of a crash simulation, which calculates how the car would behave — " +
-        "the animation is how engineers see the answer."),
+      N("It says animations are made with \"logarithms\" twice. It means <i>algorithms</i> — step-by-step computer " +
+        "instructions. A car-crash animation is the output of a crash simulation: engineers watch the results."),
       WORLD("Crash tests before the crash", "Carmakers still crash real cars, but long before that they crash " +
             "virtual ones, over and over, on computers. Each simulated crash becomes an animation an engineer can " +
             "slow down, spin round and replay from inside the car."),
@@ -563,10 +510,9 @@ window.OPLO_UNIT8 = (function () {
           cap: "The course's example of limited animation: a woman in a chair, talking. Her body is drawn once, " +
                "and only the top cel — her mouth — is redrawn for each sound.",
           credits: OEDU, diagram: true }),
-      N("<b>A note on the course text.</b> It describes limited animation as “the use of the cel technique”. Cels " +
-        "made limited animation practical, because a still layer can sit under a moving one — but full " +
-        "animation, like <i>Snow White</i>, was painted on cels too. The cel is the tool; limited animation is " +
-        "the choice to redraw as little as possible."),
+      N("It describes limited animation as \"the use of the cel technique\". Cels made it practical — a still layer " +
+        "under a moving one — but full animation (like <i>Snow White</i>) used cels too. The cel is the tool; " +
+        "limited animation is the choice to redraw as little as possible."),
       P("<b>2D digital animation</b> works the same way, except that the drawings are made directly on a " +
         "computer or tablet, usually on layers that behave like cels. There is no paper to scan, colours fill in " +
         "a click, and a mistake can be undone."),
@@ -592,10 +538,9 @@ window.OPLO_UNIT8 = (function () {
                     cc("Danylo Maliuha (cropped)",
                        "Steel_Animation_Hands_with_Aluminum_Wire_Fingers_–_Armature_Puppet_(2021).jpg",
                        "CC BY-SA 4.0", BYSA4, "Right")] }),
-      N("<b>A correction to the course text.</b> It says that stop motion, unlike 2D digital animation, “is not” " +
-        "time-consuming. It is one of the slowest kinds of animation there is: every frame means moving every " +
-        "puppet a fraction and taking a new photograph. At Aardman, the studio behind <i>Wallace and Gromit</i>, " +
-        "an animator finishes about two seconds of film a day."),
+      N("It says stop motion \"is not\" time-consuming. It is one of the slowest animation forms: every frame means " +
+        "moving every puppet a fraction and photographing it. At Aardman (Wallace and Gromit), an animator " +
+        "completes about two seconds of film per day."),
       D("Pixilation", "A form of stop motion in which live actors are the objects: they hold a pose for each " +
         "frame and shift it slightly before the next, so they move like puppets on screen.",
         "Stop motion with real people. They freeze, get photographed, move a little, and freeze again."),
@@ -625,9 +570,8 @@ window.OPLO_UNIT8 = (function () {
                "is now in the Computer History Museum.",
           credits: [cc("The wub", "Utah_Teapot_circa_1974,_Computer_History_Museum.jpg", "CC BY-SA 4.0", BYSA4, "Left"),
                     cc("Dhatfield", "Utah_teapot_simple_2.png", "CC BY-SA 3.0", BYSA3, "Right")] }),
-      N("<b>A correction to the course text.</b> It calls 3D modeling “a more complex form of 3D animation”. " +
-        "Modeling isn't a kind of animation; it is the first step of one. A model has to exist before it can be " +
-        "textured, rigged and moved — and many models, like a part sent to a 3D printer, are never animated."),
+      N("It calls 3D modeling \"a more complex form of 3D animation\". Modeling is the first step, not a kind of " +
+        "animation. Many models, like 3D-printed parts, are never animated."),
       F({ imgs: [{ src: M + "8-1-3d-pipeline.svg", w: 700, h: 330,
                    alt: "Five steps with one simple figure: a wire-mesh model, the same figure with a striped " +
                         "texture, a skeleton rig inside it, the skeleton posed with an arm raised, and a shaded " +
@@ -650,9 +594,8 @@ window.OPLO_UNIT8 = (function () {
         "on a puppet."),
       P("Without a rig, a model is a statue: it can be moved as a whole, but it can't bend an elbow. With one, an " +
         "animator turns a control and the arm swings."),
-      N("<b>A note on the course text.</b> It calls rigging “an emerging animation technique”. Rigging has been a " +
-        "standard part of 3D animation for decades; what is still developing is how much of it can be done " +
-        "automatically."),
+      N("It calls rigging \"an emerging technique\". Rigging has been standard for decades; what's new is how much " +
+        "of it can be automated."),
       R([
         { by: "Frank Thomas and Ollie Johnston", year: "1981", title: "The Illusion of Life: Disney Animation",
           pub: "Abbeville Press", note: "The history of Disney's craft, told by two of its animators." },
@@ -678,24 +621,20 @@ window.OPLO_UNIT8 = (function () {
     mins: 14,
     objectives: ["Identify and define the key terms used in animation"],
     body: [
-      P("A good animator needs more than skill with a pencil or a mouse; they need the language animators use " +
-        "with each other. These are the words you'll hear in any studio."),
-      W([["Interval", "the gap between two things"],
-         ["Pose", "the position a character holds at one moment"],
-         ["Replica", "a copy made to look like the real thing"],
-         ["Hypothesis", "an idea that scientists test, not yet proven"],
-         ["Eerie", "strange in a way that makes you uneasy"]]),
-
-      H("Frames and keys"),
-      P("A <b>frame</b> is one still image in an animation. It is also the unit animators count time in: film " +
-        "shows 24 frames every second, so a frame lasts one twenty-fourth of a second."),
+        P("A good animator needs more than skill with a pencil or a mouse — they need the language animators use " +
+         "with each other. These are the words you'll hear in any studio."),
+        W([["Interval", "the gap between two things"],
+           ["Pose", "the position a character holds at one moment"]]),
+        H("Frames and keys"),
+      P("A <b>frame</b> is one still image in an animation. Film shows 24 per second, so each frame lasts one " +
+        "twenty-fourth of a second."),
       D("Key frame", "A drawing or pose that marks an important moment in a movement — where it starts, where it " +
         "ends, or where it changes direction. Key frames are made first; the frames between them come after.",
         "The most important pictures in a move, drawn first — like the dots in a dot-to-dot before you draw the " +
         "lines."),
-      N("<b>A correction to the course text.</b> It says the key frame is “the first drawing in an animation or " +
-        "scene”. A key frame can fall anywhere. A ball's hop needs at least three: take-off, the top of the hop " +
-        "and the landing."),
+      N("It says the key frame is \"the first drawing in an animation or scene\". Keys mark important moments " +
+        "anywhere in a move — the start, end, or a direction change. A ball's hop needs three keys: take-off, " +
+        "apex, and landing."),
       F({ imgs: [{ src: M + "8-2-keys-inbetweens.svg", w: 700, h: 440,
                    alt: "A ball's hop in thirteen frames: keys at frames 1, 7 and 13, breakdowns at 4 and 10, and " +
                         "in-betweens everywhere else, with a numbered strip of frames marked K, B and i." }],
@@ -707,21 +646,18 @@ window.OPLO_UNIT8 = (function () {
         "Drawing the pictures that go in the gaps between the key pictures, so the move looks smooth."),
       P("In a big studio, lead animators draw the keys and assistants — in-betweeners — fill the gaps. In " +
         "software the computer can do the in-betweening, which is why the result is called a <b>tween</b>. A " +
-        "<b>breakdown</b> is the first in-between an animator draws, and it decides the path from one key to the " +
-        "next: whether the ball flies high or skims low. Keys at the very ends of a movement are also called " +
-        "<b>extremes</b>."),
-
+        "<b>breakdown</b> is the first in-between an animator draws, setting the path from one key to the next. " +
+        "Keys at the very ends of a movement are also called <b>extremes</b>."),
       H("Ones, twos and frame rate"),
-      P("<b>Frame rate</b>, from Unit 7, is how many frames are shown each second, and film runs at 24. But an " +
-        "animator doesn't have to make a new drawing for every one of those 24 frames."),
+      P("<b>Frame rate</b> (Unit 7) is how many frames show each second. Film runs at 24. But an animator " +
+        "doesn't need a new drawing for every one of those 24 frames."),
       D("On twos", "Animating with each drawing held for two frames: twelve drawings for each second of film. " +
         "Animating on ones means a new drawing on every frame, twenty-four a second.",
         "Showing each drawing twice in a row. Half as many drawings, the same speed — just a little less smooth."),
       ROLL,
-      N("<b>A correction to the course text.</b> It says animating on ones makes “a very fast movement” and on " +
-        "twos a slower one. Ones and twos don't change speed: the ball above crosses in one second either way. " +
-        "They change smoothness. Animators do often switch to ones for fast action, because big jumps between " +
-        "fewer drawings would stutter."),
+       N("It says animating on ones makes \"a very fast movement\" and on twos a slower one. They change smoothness, " +
+        "not speed — the ball above crosses in one second either way. Animators do switch to ones for fast action, " +
+        "because few drawings can't carry big jumps without stuttering."),
       WORLD("Spider-Man, on twos", "In <i>Spider-Man: Into the Spider-Verse</i> (2018), Miles Morales is " +
             "animated on twos early in the film, while he is still clumsy, next to an experienced Spider-Man " +
             "animated on ones. Once Miles masters his powers, he moves on ones too. The frame count tells his " +
@@ -731,10 +667,9 @@ window.OPLO_UNIT8 = (function () {
       P("In animation software, <b>frame-by-frame</b> animation means every frame is its own drawing. It gives " +
         "the most control, for complex changes, and it makes the biggest files. <b>Tweened</b> animation stores " +
         "only the key frames and lets the program calculate the rest, which is quicker and keeps files small."),
-      N("<b>A correction to the course text.</b> It says frame-by-frame animation changes “the stage or " +
-        "background” in every frame. In animation software, the stage is the whole picture area, not the " +
-        "background. Frame by frame means each frame's contents are drawn separately; the background can stay " +
-        "exactly the same."),
+       N("It says frame-by-frame animation changes \"the stage or background\" in every frame. In software, the " +
+        "stage is the whole picture area, not the background. Frame-by-frame means each frame's contents are drawn " +
+        "separately; the background can stay the same."),
 
       H("Holding still"),
       P("A <b>hold</b> keeps one drawing on screen for a moment, which reads as a pause. In hand-drawn " +
@@ -757,10 +692,9 @@ window.OPLO_UNIT8 = (function () {
       P("The classic is the walk cycle. One step with each foot takes at least four poses: the left foot forward " +
         "(a <b>contact</b>), the legs passing, the right foot forward, and the legs passing again. Then it loops."),
       WALK,
-      N("<b>A correction to the course text.</b> It describes a three-frame walk: left leg forward, legs together, " +
-        "right leg forward, and repeat. That loop breaks. From “right leg forward” it jumps straight back to " +
-        "“left leg forward”, and the legs swap places in a single frame — choose “The course's 3” above to see " +
-        "it. A cycle has to pass through the middle again on the way back."),
+      N("It describes a three-frame walk: left leg, legs together, right leg, repeat. That loop breaks — from " +
+        "right leg it jumps straight back to left, swapping the legs in one frame. A cycle must pass through the " +
+        "middle again. See \"The course's 3\" in the lab above."),
 
       H("Two ways to work"),
       F({ imgs: [{ src: M + "8-2-straight-vs-pose.svg", w: 700, h: 490,
@@ -776,47 +710,42 @@ window.OPLO_UNIT8 = (function () {
         "and wild action. Pose to pose gives control: the poses are clear and the timing is planned, so most " +
         "acting and emotional scenes are done that way. Many animators mix the two — pose to pose for the " +
         "character, straight ahead for its flapping coat."),
-      N("<b>A correction to the course text.</b> It explains that pose to pose is less fluid because it is “much " +
-        "more difficult to create exact and convincing poses after the key frames”. That has it backwards: pose " +
-        "to pose makes the poses easy to control. Its risk is in-betweens that come out too even and stiff."),
+      N("It says pose to pose is less fluid because poses are \"much more difficult to create exact and convincing " +
+        "after the key frames\". That's backwards — pose to pose makes poses easy to control. Its risk is " +
+        "in-betweens that come out too even and stiff."),
 
       H("Snappy and swimmy"),
       P("Animators also have words for how movement feels. <b>Snappy</b> movement gets into each pose quickly " +
         "and holds it, so actions read crisply — good for comedy and action. <b>Swimmy</b> movement drifts from " +
         "pose to pose without clear stops, so everything feels mushy, and an animator who hears it will go back " +
         "and fix the timing."),
-      N("<b>A correction to the course text.</b> It says snappy and swimmy describe frame rate. They describe " +
-        "timing and spacing — where the drawings fall in time — and a film at 24 frames a second can be either. " +
-        "(And a viewer's interest is <i>piqued</i>, not “peaked”.)"),
+       N("It says snappy and swimmy describe frame rate. They describe timing and spacing — where drawings fall " +
+        "in time, not how many show per second. And interest is piqued, not peaked."),
 
       H("Borrowing real movement"),
-      D("Rotoscope", "A device, patented by Max Fleischer in 1917, that projects live-action film one frame at a " +
+       D("Rotoscope", "A device, patented by Max Fleischer in 1917, that projects live-action film one frame at a " +
         "time onto glass so an animator can trace the movement. Tracing over live footage is called rotoscoping.",
-        "A machine that shows a real film on glass so an artist can trace over it. The cartoon then moves just " +
-        "like a real person."),
-      F({ imgs: [{ src: M + "8-2-rotoscope-patent.png", w: 900, h: 900,
-                   alt: "A patent drawing of a man standing at an upright drawing board, pencil in hand, with a film " +
-                        "projector mounted behind the board throwing its picture onto it." }],
-          cap: "A drawing from Max Fleischer's rotoscope patent. The projector throws one frame of film onto the " +
-               "drawing surface; the animator traces it, then winds on to the next frame.",
-          credits: [cc("Max Fleischer, US patent 1,242,674", "US_patent_1242674_figure_3.png", "Public domain")],
-          size: "medium" }),
-      P("Fleischer applied for the patent in 1915, and filmed his brother Dave in a clown suit to create Koko the " +
-        "Clown. His studio later rotoscoped the bandleader Cab Calloway's dancing for Betty Boop cartoons. In " +
-        "visual effects today, rotoscoping also means tracing round a moving object to cut it out of footage."),
-      D("Motion capture", "Recording the movement of a real performer — usually with markers on a suit tracked by " +
-        "many cameras — and applying it to a digital character. Often shortened to mo-cap.",
-        "An actor wears a suit covered in dots. Cameras follow the dots, and a computer character copies every " +
-        "move."),
-      F({ imgs: [{ src: M + "8-2-motion-capture.jpg", w: 1400, h: 933,
-                   alt: "In a bright studio, an actor in a black motion-capture suit dotted with markers stands with " +
-                        "arms out while a technician adjusts a camera headset on her head." }],
-          cap: "An actor being fitted for motion capture at Bones Studio in Warsaw. Cameras round the room track the " +
-               "markers on her suit; the small camera on the headset records her face.",
-          credits: [cc("Gabriela Cybulska", "Aktor_motion_capture.jpg", "CC BY-SA 4.0", BYSA4)] }),
-      P("Motion capture animates film characters and video-game players — sports games capture real athletes so " +
-        "their virtual versions move correctly — and it is used outside entertainment too, in sports science, " +
-        "medicine and robotics."),
+        "A machine that shows a real film on glass so an artist can trace over it. The result moves like real life."),
+       F({ imgs: [{ src: M + "8-2-rotoscope-patent.png", w: 900, h: 900,
+                    alt: "A patent drawing of a man at an upright drawing board, pencil in hand, with a film projector " +
+                         "mounted behind him throwing its picture onto the board." }],
+           cap: "Fleischer's rotoscope patent. The projector throws one film frame onto the drawing surface for tracing.",
+           credits: [cc("Max Fleischer, US patent 1,242,674", "US_patent_1242674_figure_3.png", "Public domain")],
+           size: "medium" }),
+       P("Fleischer patented it in 1917, filming his brother Dave as Koko the Clown. Later his studio rotoscoped " +
+         "Cab Calloway's dancing for Betty Boop. Today in VFX, rotoscoping also traces around moving objects to " +
+         "isolate them from footage."),
+       D("Motion capture", "Recording a real performer's movement — usually with markers on a suit tracked by many " +
+        "cameras — and applying it to a digital character. Often shortened to mo-cap.",
+        "An actor wears a suit covered in dots. Cameras track the dots; a digital character copies every move."),
+       F({ imgs: [{ src: M + "8-2-motion-capture.jpg", w: 1400, h: 933,
+                    alt: "An actor in a black mocap suit dotted with markers stands in a bright studio while a " +
+                         "technician adjusts a camera headset on her head." }],
+           cap: "Motion capture session at Bones Studio, Warsaw. Cameras around the room track the markers on the suit; " +
+                "the headset camera records facial expressions.",
+           credits: [cc("Gabriela Cybulska", "Aktor_motion_capture.jpg", "CC BY-SA 4.0", BYSA4)] }),
+       P("Motion capture animates film and video-game characters. Sports games capture real athletes so virtual " +
+        "avatars move correctly. It is used beyond entertainment — in sports science, medicine and robotics."),
 
       H("The uncanny valley"),
       D("Uncanny valley", "The drop in how comfortable people feel about an artificial human as it comes very " +
@@ -829,13 +758,12 @@ window.OPLO_UNIT8 = (function () {
                         "climbs steeply to a real person." }],
           cap: "Drawn after Mori's graph, with animation examples. The valley sits just short of real.",
           credits: OEDU, diagram: true }),
-      N("<b>A correction to the course text.</b> It says motion capture created the uncanny valley, and that the " +
-        "valley is a dip in the viewer's “aptitude” for the replica. Mori described it in 1970, about robots, " +
-        "long before motion-captured films. And the dip is in <i>affinity</i> — how much we like and feel at ease " +
-        "with something — not aptitude, which means skill."),
-      P("Animated films have fallen into the valley: many critics found the motion-captured children of <i>The " +
-        "Polar Express</i> (2004) creepy. Most studios now stylise their humans on purpose — bigger eyes, simpler " +
-        "shapes — to stay on the safe side of the curve."),
+       N("It says motion capture created the uncanny valley, in the viewer's \"aptitude\". Mori described it in 1970 " +
+        "about robots, long before motion-captured films. He called it <i>affinity</i> — how much we like and feel " +
+        "at ease with something — not aptitude, which means skill."),
+      P("Films have fallen into the valley: critics found the motion-captured children in <i>The Polar Express</i> " +
+        "(2004) creepy. Most studios now stylise their humans on purpose — bigger eyes, simpler shapes — to stay " +
+        "on the safe side of the curve."),
       R([
         { by: "Richard Williams", year: "2001", title: "The Animator's Survival Kit", pub: "Faber and Faber",
           note: "Keys, breakdowns, ones and twos, and walk cycles, drawn out step by step." },
@@ -858,24 +786,18 @@ window.OPLO_UNIT8 = (function () {
     mins: 8,
     objectives: ["Summarise the process and purpose of storyboarding in animation"],
     body: [
-      P("Before anyone draws a frame, the story has to be settled: what happens, in what order, and what the " +
-        "audience should feel at each moment. Sometimes the animator invents it. Sometimes a writer or a client " +
-        "brings a script and hires an animator to show it. Either way, the animator needs to know the message " +
-        "and every emotion the piece must carry."),
+      P("Before drawing a frame, the story must be settled: what happens, in what order, and what feeling the " +
+        "audience should have. Sometimes the animator invents it. Sometimes a writer or client brings a script."),
       W([["Script", "the written story: what happens and what everyone says"],
-         ["Synopsis", "a short summary of a story"],
-         ["Pitch", "a short talk to convince someone to back your idea"],
-         ["Client", "the person or company paying for the work"]]),
+         ["Synopsis", "a short summary of a story"]]),
       D("Storyboard", "A sequence of drawings, in order, showing each shot of a film, animation or game, usually " +
         "with notes on the action, dialogue and camera. It is the plan everyone works from.",
         "A comic-strip version of the film, drawn before it is made, so everyone can see the plan."),
-      P("Storyboarding as we know it was developed at the Walt Disney studio in the early 1930s. Story artist " +
-        "Webb Smith is credited with pinning sketches of each scene to a wall, so the team could see the whole " +
-        "story at once — and rearrange it. <i>Three Little Pigs</i> (1933) was the first short with a complete " +
-        "storyboard, and by the end of the decade every American animation studio used them."),
-      P("Storyboard artists must be able to read a script and draw pictures that show each scene exactly, so " +
-        "that directors, animators and actors can all see how the story should look and move. The camera work " +
-        "from Unit 7 — shot sizes, angles, moves — is planned here too."),
+      P("Disney's animation studio developed storyboarding in the early 1930s. Story artist Webb Smith is " +
+        "credited with pinning sketches to a wall so the team could see — and rearrange — the whole story. " +
+        "<i>Three Little Pigs</i> (1933) was the first short with a complete storyboard."),
+      P("Storyboard artists read the script and draw each scene so directors and animators can see how it should " +
+        "look and move. Camera work from Unit 7 is planned here: shot sizes, angles, moves."),
       F({ imgs: [{ src: M + "8-3-storyboard-dr-floyd.jpg", w: 1600, h: 1237,
                    alt: "A storyboard page with six rough cyan sketches of two cartoon characters, each panel " +
                         "numbered, with the action and dialogue typed underneath." }],
@@ -889,44 +811,35 @@ window.OPLO_UNIT8 = (function () {
                         "presentation, clean finished panels; and animatic, the panels timed to sound as a video." }],
           cap: "Rough, then detailed, then polished — and then moving.",
           credits: OEDU, diagram: true }),
-      P("A <b>concept</b> storyboard, or proof of concept, comes first. It tells the story in a few quick " +
-        "sketches — a synopsis in pictures — so the team, and anyone who might pay for the project, can see what " +
-        "it is about and how events will unfold."),
-      D("Production storyboard", "A detailed storyboard showing every shot as it should be drawn or filmed, with " +
-        "the technical notes needed to make it: dialogue, shot size, camera angle and movement, special effects " +
-        "and transitions.",
-        "The full, detailed plan: every shot, plus notes on what's said, where the camera goes and which effects " +
-        "to use."),
-      F({ imgs: [{ src: M + "8-3-storyboard-panel.svg", w: 700, h: 440,
-                   alt: "One production storyboard panel with its parts labelled: scene and shot number, shot size, a " +
-                        "sketch of a girl reaching for a door, arrows for a push-in camera move, and notes for " +
-                        "action, dialogue, sound, time and the transition." }],
-          cap: "One panel from a production storyboard, and everything written round it.",
-          credits: OEDU, diagram: true }),
-      P("A <b>presentation</b> storyboard is the polished version, cleaned up and coloured for people outside the " +
-        "team — often a client who would find rough sketches hard to read. Not every project needs one; for " +
-        "many, the production storyboard is the most detailed board ever made."),
-      N("<b>A note on the course text.</b> The three names — concept, production and presentation — are the " +
-        "course's. Studios use other terms for the same stages, such as thumbnails, rough boards and clean-up " +
-        "boards. The idea is the same everywhere: rough first, detailed next, polished last."),
+       P("A <b>concept</b> storyboard (proof of concept) comes first — a few quick sketches telling the story " +
+        "in pictures so the team can see what it is about. A <b>production</b> storyboard shows every shot with " +
+        "technical notes: dialogue, shot size, camera angle and movement, effects and transitions. A " +
+        "<b>presentation</b> storyboard is the polished version for clients who find rough sketches hard to read; " +
+        "not every project needs one."),
+       F({ imgs: [{ src: M + "8-3-storyboard-panel.svg", w: 700, h: 440,
+                    alt: "One production storyboard panel with its parts labelled: scene and shot number, shot size, a " +
+                         "sketch of a girl reaching for a door, arrows for a push-in camera move, and notes for " +
+                         "action, dialogue, sound, time and the transition." }],
+           cap: "One panel from a production storyboard, with everything written round it.",
+           credits: OEDU, diagram: true }),
+       N("The three names — concept, production, presentation — are the course's. Studios use other terms: " +
+        "thumbnails, rough boards, clean-up boards. The idea is the same everywhere: rough first, detailed next, " +
+        "polished last."),
+
 
       H("Making it work"),
-      L("Words storyboard artists use", [
-        ["Pace", "How fast the story moves from panel to panel. A romance lingers; an action scene races."],
-        ["Pitch", "Presenting the storyboard to a client or studio, panel by panel, telling the story as you go."],
-        ["Sequential", "In order. Panels are laid out to read like a comic, left to right and top to bottom."],
-        ["Visual treatment", "Adding the camera work to the panels: shot sizes, angles, moves, effects and " +
-         "transitions."]
-      ]),
-      N("<b>A note on the word “treatment”.</b> In the film industry, a treatment usually means a written " +
-        "summary of a story, in prose, before the script. The course's “visual treatment” is something " +
-        "different: the camera and effects notes added to a storyboard."),
+       L("Words storyboard artists use", [
+        ["Pace", "How fast the story moves from panel to panel."],
+        ["Sequential", "In order. Panels read like a comic: left to right, top to bottom."],
+        ["Visual treatment", "Adding camera work to the panels: shot sizes, angles, moves, effects, transitions."]
+       ]),
+       N("The course's \"visual treatment\" adds camera notes to a storyboard. In film, a treatment is usually a " +
+        "written story summary, made before the script."),
       D("Animatic", "A storyboard turned into a video: the panels are timed to the dialogue, music and sound " +
         "effects and played in order, so the team can judge the pacing and length before animating.",
         "The storyboard made into a slideshow with sound, to check the timing before the real animation starts."),
-      P("An animatic shows a client how the finished piece will flow, and it is how many animators decide how " +
-        "long a film should be. Pixar calls them story reels, and watches and rebuilds them again and again " +
-        "before the final animation begins."),
+      P("An animatic shows a client how the finished piece will flow, and helps decide film length. Pixar calls " +
+        "them story reels, and rebuilds them again and again before final animation."),
       TRY("Board a short story", "Fold a sheet of paper into six panels and draw a story in six shots: a " +
           "character wants something, tries, and fails or succeeds. Under each panel, write the action, any " +
           "dialogue and the shot size. Photograph the panels and play them as a slideshow, two seconds each. " +
@@ -950,12 +863,11 @@ window.OPLO_UNIT8 = (function () {
     mins: 7,
     objectives: ["Define frames, key frames and in-between frames"],
     body: [
-      P("Making a first animation can feel huge. Start small: a short story, one idea told as directly as " +
-        "possible, and tools that are easy to use. Plenty of professional animators began with a single " +
-        "bouncing ball."),
+      P("A first animation can feel huge. Start small: one idea, told directly, with easy tools. Many pros began " +
+        "with a single bouncing ball."),
       W([["Stage", "the part of the screen where you draw and see your animation"],
-         ["Layer", "a see-through sheet in the software; things on different layers don't get in each other's way"],
-         ["Export", "to save a finished project as a file other people can open"]]),
+         ["Layer", "a see-through sheet; things on different layers don't block each other"],
+         ["Export", "to save a finished project as a file others can open"]]),
 
       H("Frames, keys and in-betweens"),
       P("The words from 8.2 are the whole job. Every drawing is a <b>frame</b>, the unit animation is measured " +
@@ -963,33 +875,27 @@ window.OPLO_UNIT8 = (function () {
         "everything after them. The frames that fill the gaps are <b>in-betweens</b>, and they turn one pose " +
         "smoothly into the next."),
       HOP,
-      N("<b>The same correction as in 8.2.</b> The course again calls the key frame “the first drawing in an " +
-        "animation or the scene”. Keys are the important poses wherever they fall — in the lab above, the top of " +
-        "every hop is one."),
-
+      N("Again, the key frame is not always \"the first drawing\". Keys mark important poses wherever they fall — " +
+        "in the lab above, the top of each hop is one."),
       H("Doing it in software"),
       F({ imgs: [{ src: M + "8-4-software-timeline.svg", w: 700, h: 570,
-                   alt: "A sketch of animation software: a stage with a ball on a dotted arc and faded onion-skin " +
-                        "copies, and a timeline with a Ball layer holding keyframes at 1, 12 and 24 joined by tweens, " +
-                        "a Background layer held from 1 to 24, and a red playhead at frame 6." }],
-          cap: "Almost every animation program looks like this: the stage on top, the timeline underneath, one row " +
-               "for each layer.",
-          credits: OEDU, diagram: true }),
-      P("Adobe Animate, Toon Boom Harmony, the free programs Krita and Pencil2D, and phone apps like FlipaClip all " +
-        "share this layout. The <b>stage</b> is the picture you are working on. The <b>timeline</b> is a row of " +
-        "numbered frames for each <b>layer</b>, and the playhead marks the frame on the stage."),
+                    alt: "Animation software: a stage with a ball on a dotted arc and faded onion-skin copies, and a " +
+                         "timeline with a Ball layer (keyframes at 1, 12, 24 joined by tweens), a Background layer, " +
+                         "and a red playhead at frame 6." }],
+           cap: "Every animation program looks like this: the stage on top, the timeline below, one row per layer.",
+           credits: OEDU, diagram: true }),
+      P("Adobe Animate, Toon Boom Harmony, free programs like Krita and Pencil2D, and phone apps like FlipaClip " +
+        "all share this layout. The <b>stage</b> is the picture area. The <b>timeline</b> has numbered frames for " +
+        "each <b>layer</b>. The <b>playhead</b> marks the frame on stage. <b>Onion skinning</b> shows faded copies " +
+        "of surrounding frames to help with spacing."),
       L("Your first animation, step by step", [
-        ["1. Set up", "Choose the size of the stage and the frame rate. Twenty-four frames a second is standard."],
-        ["2. Bring in your object", "Draw it or import it. If it's the wrong size, the free transform tool resizes " +
-         "it: drag a corner handle."],
-        ["3. First key frame", "Put the object in its starting pose on frame 1, and make frame 1 a key frame, so " +
-         "the software knows it is one."],
-        ["4. More keys", "Move along the timeline — say to frame 12 — add a key frame, and move the object to its " +
-         "next pose."],
-        ["5. In-betweens", "Draw the frames in between yourself, or have the software create a tween."],
-        ["6. Check with onion skin", "Onion skinning shows faded copies of the frames around the current one. Use " +
-         "it to spot jumps and fix the spacing."],
-        ["7. Play and export", "Play it back, adjust the timing, then export it as a video or a GIF."]
+        ["1. Set up", "Choose stage size and frame rate. 24 fps is standard."],
+        ["2. Bring in your object", "Draw it or import it. Resize with the free transform tool if needed."],
+        ["3. First key frame", "Place the object on frame 1 and make it a key frame."],
+        ["4. More keys", "Move to frame 12, add a key frame, move the object to its next pose."],
+        ["5. In-betweens", "Draw gaps yourself, or let the software create tweens."],
+        ["6. Check with onion skin", "Use onion skinning to spot jumps and fix spacing."],
+        ["7. Play and export", "Play back, adjust timing, then export as video or GIF."]
       ]),
       WORLD("The exercise everyone starts with", "The bouncing ball is one of the first exercises in many " +
             "animation courses, and animators come back to it for years, because one small loop holds timing, " +
@@ -1017,14 +923,12 @@ window.OPLO_UNIT8 = (function () {
     mins: 15,
     objectives: ["Identify the 12 principles of animation and explain how they are used"],
     body: [
-      P("Frank Thomas and Ollie Johnston, two of Disney's leading animators, set the twelve principles down in " +
-        "their 1981 book <i>The Illusion of Life</i>. They describe how real things move, and how to push that " +
-        "movement just far enough to feel alive on screen."),
-      W([["Inertia", "the way a moving thing keeps moving, and a still thing stays still, until something " +
-          "pushes it"],
+      P("Frank Thomas and Ollie Johnston, two of Disney's leading animators, set the twelve principles in their " +
+        "1981 book <i>The Illusion of Life</i>. They describe how real things move, and how to push that movement " +
+        "just far enough to feel alive on screen."),
+      W([["Inertia", "a moving thing keeps moving, and a still thing stays still, until pushed"],
          ["Volume", "how much space something takes up"],
-         ["Trajectory", "the path something travels along"],
-         ["Caricature", "a drawing that exaggerates someone's features on purpose"]]),
+         ["Trajectory", "the path something travels along"]]),
       F({ imgs: [{ src: M + "8-5-twelve-principles.svg", w: 700, h: 884,
                    alt: "A grid of twelve small pictures, one for each principle: squash and stretch, anticipation, " +
                         "staging, straight ahead and pose to pose, follow-through and overlapping action, slow in " +
@@ -1037,9 +941,9 @@ window.OPLO_UNIT8 = (function () {
         "speed — while keeping its volume the same, to show that it is flexible and has weight.",
         "A ball flattens when it hits the floor and gets longer when it zooms. But it never gets bigger or " +
         "smaller overall."),
-      P("Thomas and Johnston called it the most important discovery of all. Their test was a half-filled flour " +
-        "sack: drop it and it slumps flat; pick it up by the corners and it stretches long; yet it always holds " +
-        "the same amount of flour. Something that never changes shape as it moves looks stiff."),
+      P("Thomas and Johnston called it the most important discovery. Their test: a half-filled flour sack slumps " +
+        "flat when dropped, stretches long when lifted, yet always holds the same amount. Something that never " +
+        "changes shape looks stiff."),
       F({ imgs: [{ src: M + "8-5-bouncing-ball-strobe.jpg", w: 1400, h: 901,
                    alt: "A basketball photographed many times on one frame against black as it bounces twice from " +
                         "left to right, making two arcs of balls, bunched together at the top of each arc and " +
@@ -1069,9 +973,8 @@ window.OPLO_UNIT8 = (function () {
         "action, the camera and the background all point the same way. The composition tools from 6.6 and 7.5 " +
         "help — placing the subject where the thirds lines cross, and leaving lead room, looking room and head " +
         "room."),
-      N("<b>A correction to the course text.</b> Once again it gives “the rule of thirds or the golden ratio” as " +
-        "one idea; see 6.6 for why they differ. It also mixes up the kinds of room in a frame, so use the " +
-        "definitions from 7.5."),
+       N("It gives \"the rule of thirds or the golden ratio\" as one idea. They differ — see Unit 6.6. It also " +
+        "mixes up kinds of room in a frame; use definitions from Unit 7.5."),
 
       H("4. Straight ahead and pose to pose"),
       P("The two ways of working from 8.2 are a principle in themselves: straight ahead for lively, unpredictable " +
@@ -1083,9 +986,9 @@ window.OPLO_UNIT8 = (function () {
         "different times and speeds.",
         "When you stop running, your hair and your jacket keep going for a moment, then swing back. Not " +
         "everything stops at once."),
-      P("Both come from physics. Loose parts have inertia, so they carry on when the body stops and lag behind " +
-        "when it starts. When a character runs, its head doesn't bob in time with its legs. A character whose " +
-        "parts all stop on the same frame looks like a stiff toy."),
+       P("Both come from physics. Loose parts have inertia, so they carry on when the body stops and lag when it " +
+        "starts. A running character's head doesn't bob in time with its legs. If all parts stop on the same " +
+        "frame, it looks like a stiff toy."),
       SACKLAB,
 
       H("6. Slow in and slow out"),
@@ -1131,9 +1034,8 @@ window.OPLO_UNIT8 = (function () {
       P("<b>Appeal</b> is what makes a character worth watching. It doesn't mean cute or good — villains need it " +
         "as much as heroes. It comes from a clear design, readable expressions and a personality the audience " +
         "can connect with."),
-      WORLD("Real movement, studied", "Animators have long studied film of real people and animals, frame by " +
-            "frame, and Eadweard Muybridge's motion photographs — the galloping horse from 7.1 — to see how " +
-            "bodies really move before they exaggerate them."),
+      WORLD("Real movement, studied", "Animators study film of real people and animals frame by frame — Eadweard " +
+             "Muybridge's galloping horse from Unit 7.1 — to see how bodies move before exaggerating them."),
       WORLD("The same rules in games", "Game animators use the same twelve principles. A character that crouches " +
             "before it jumps and whose cape keeps moving after it lands feels good to control; one that doesn't " +
             "feels floaty."),
@@ -1158,29 +1060,20 @@ window.OPLO_UNIT8 = (function () {
     body: [
       P("In art classes, students often hold group critiques: an artist shows a piece and classmates respond " +
         "with constructive criticism. Media art can be critiqued the same way."),
-      W([["Constructive", "helpful; meant to make something better, not to put someone down"],
-         ["Element", "one part of a design, like a line, a colour, a shape or a sound"],
-         ["Objective", "fair, and based on what is really there rather than on feelings"],
-         ["Limitation", "something a tool or program can't do"]]),
-
+      W([["Constructive", "helpful; meant to make something better, not put someone down"],
+         ["Element", "one part of a design, like a line, colour, shape or sound"]]),
       H("What a critique is for"),
-      P("Media art, like studio art, usually carries a meaning: a feeling, a question, a comment on society or a " +
-        "current event. What makes it media art is that it uses technology — video, sound, animation, code, the " +
-        "web — and the technology is part of how the message reaches the viewer."),
-      P("So the point of a media critique is for the artist to learn how well that message landed. Viewers say " +
-        "what they noticed and understood, ask questions to check whether they read the purpose right, and " +
-        "suggest what might work better."),
+      P("Media art carries meaning — a feeling, a question, a social comment. What makes it media art is that it " +
+        "uses technology — video, sound, animation, code, web — as part of how the message reaches viewers."),
+      P("The point of critique is for the artist to learn how well their message landed. Viewers say what they " +
+        "noticed, ask questions to check understanding, and suggest improvements."),
       D("Critique", "A careful, fair response to a work of art that describes, analyzes and interprets it before " +
         "judging it, so the artist learns how well the work communicates.",
         "A careful look at someone's work that says what you see, how it works and what it means — and only then " +
         "whether it works."),
-      P("A fair critique doesn't dwell only on the best parts or the worst. The most useful comments are often " +
-        "about the middle: parts that are good but not yet great, and that caught someone's eye. Descriptive, " +
-        "precise words matter too. “The music speeds up just as the camera pushes in” helps the artist; “it was " +
-        "cool” doesn't."),
-      P("Fairness also means knowing the tools. Every medium has limits, so a critic should understand the " +
-        "software and technology the artist used and what they can and can't do — and may suggest a different " +
-        "tool that could carry the message better."),
+      P("A fair critique covers the middle: parts that are good but not yet great. Precise words matter — " +
+        "\"The music speeds up as the camera pushes in\" helps; \"it was cool\" doesn't. Fairness also means " +
+        "knowing the tools: every medium has limits."),
 
       H("The four steps"),
       F({ imgs: [{ src: M + "8-6-critique-steps.svg", w: 700, h: 460,
@@ -1191,16 +1084,15 @@ window.OPLO_UNIT8 = (function () {
           credits: OEDU, diagram: true }),
       P("The art educator Edmund Burke Feldman set out four steps for looking at art, and they work just as well " +
         "for media. Take them in order: each builds on the one before, and your own opinion waits until the end."),
-      L("Describe, analyze, interpret, judge", [
-        ["1. Describe", "Say what is there, without judging it: what you see and hear, and the media and " +
-         "technology used. Be exact enough that someone who hasn't seen it could picture it."],
-        ["2. Analyze", "Explain how the parts work together: which elements and design principles the artist " +
-         "used, and which choices succeeded — with reasons, and constructive criticism."],
-        ["3. Interpret", "Work out what it means. Why might the artist have chosen these elements and not others? " +
-         "What is the work saying?"],
-        ["4. Judge", "Now give your considered opinion: does it work, and how could it be stronger? For the " +
-         "artist, this is often the most useful part."]
-      ]),
+       L("Describe, analyze, interpret, judge", [
+         ["1. Describe", "Say what is there: what you see and hear, and the media used. Be specific enough that " +
+          "someone who hasn't seen it could picture it."],
+         ["2. Analyze", "Explain how the parts work: which design elements and principles succeeded, with " +
+          "reasons."],
+         ["3. Interpret", "What does it mean? Why these elements and not others?"],
+         ["4. Judge", "Give your considered opinion: does it work, and how could it be stronger? For the artist, " +
+          "this is often the most useful part."]
+       ]),
       WORLD("How Pixar critiques", "At Pixar, a group of senior filmmakers called the Braintrust watches each film " +
             "while it is being made and gives the director frank notes. As co-founder Ed Catmull describes it, " +
             "the notes are about the film, not the person — and the director decides what to do with them."),
@@ -1226,39 +1118,29 @@ window.OPLO_UNIT8 = (function () {
     body: [
       P("A critique can be presented as a slideshow, with the work broken into sections. A few principles make " +
         "every slide readable and easy to follow."),
-      W([["Target audience", "the particular people you are making something for"],
-         ["Placeholder", "something that holds a spot until the real thing is ready"],
-         ["Contrast", "how different two colours look next to each other"],
-         ["Coherent", "clear and logical, so all the parts fit together"]]),
-
+      W([["Target audience", "the people you are making something for"],
+         ["Placeholder", "something that holds a spot until the real thing is ready"]]),
       H("Plan before you open the software"),
-      P("Information is easier to take in when it comes in parts: books have chapters, and courses have lessons. " +
-        "A presentation needs a beginning that introduces it, a middle that carries most of the information, and " +
-        "an end that ties it all together."),
+      P("Information is easier to take in in parts. A presentation needs a beginning, a middle, and an end."),
       L("Plan in this order", [
-        ["Length", "Usually set for you. It decides how much you can say and how many images you can show."],
-        ["Audience", "Who is watching shapes the images, language, colours and effects you choose."],
-        ["Material", "Gather the images, clips and text you'll use: your own photos, or high-quality images you " +
-         "are allowed to use, with credit."],
-        ["Order", "Arrange it all so the message builds. This takes longest, and it matters most."]
+        ["Length", "Sets how much you can say and how many images to show."],
+        ["Audience", "Who is watching shapes your images, language, and colours."],
+        ["Material", "Gather images and text: your own photos, or high-quality images you're allowed to use."],
+        ["Order", "Arrange it so the message builds. This takes longest, and matters most."]
       ]),
-      N("For a critique, the middle can follow the four steps from 8.6, with a section each to describe, analyze, " +
-        "interpret and judge the work."),
-      D("Greeking", "Filling a layout with placeholder text — often scrambled Latin such as “lorem ipsum” — or " +
-        "grey bars, to show where text will go before it is written.",
-        "Fake text that holds the space where the real words will go later."),
-      P("It's called greeking because it's meant to be unreadable — as in “it's all Greek to me”. Lorem ipsum " +
-        "is jumbled Latin from a book by Cicero, written over 2,000 years ago. Laying out your slides this way " +
-        "lets you plan the whole show before the wording is final."),
-      N("<b>A correction to the course text.</b> It says greeking means filling slides with “words or small " +
-        "synopses”. A short summary of each slide is a useful plan, but it isn't greeking: greeking is " +
-        "deliberately meaningless placeholder text."),
+       N("For a critique, the middle can follow the four steps from 8.6: describe, analyze, interpret, judge."),
+       D("Greeking", "Filling a layout with placeholder text — often scrambled Latin like “lorem ipsum” — or grey " +
+        "bars, to show where text will go before it is written.",
+        "Fake text holding the space where the real words will go later."),
+       P("It's called greeking because it's meant to be unreadable. Lorem ipsum is jumbled Latin from Cicero, " +
+        "written over 2,000 years ago. Planning slides this way lets you build the layout before the wording is " +
+        "final."),
+       N("It says greeking means filling slides with \"words or small synopses\". That's useful planning, but " +
+        "it isn't greeking — greeking is deliberately meaningless placeholder text."),
 
       H("The beginning and the middle"),
-      P("Open with the message you want the audience to remember, and give them a reason to care in the first " +
-        "few slides. Then organise the body into a few main topics — the parts of the work that stood out in " +
-        "your analysis and interpretation. A clear structure makes an audience more likely to follow you, and " +
-        "to agree."),
+      P("Open with the message you want remembered, and give a reason to care. Then organise the body into main " +
+        "topics — the parts that stood out in your analysis. Clear structure helps the audience follow and agree."),
 
       H("Design for listening"),
       F({ imgs: [{ src: M + "8-7-slides.svg", w: 700, h: 560,
@@ -1267,19 +1149,17 @@ window.OPLO_UNIT8 = (function () {
                         "text on white with a contrast of 16.8 to 1, marked right." }],
           cap: "Slides that help, and slides that get in the way. The numbers are contrast ratios.",
           credits: OEDU, diagram: true }),
-      P("Slides work best with little text: key words, short bullet points and strong images. If a slide is full " +
-        "of sentences, people read it instead of listening to you. Research on multimedia learning agrees: " +
-        "people tend to learn more from pictures with spoken words than from pictures, spoken words and the same " +
-        "words printed on screen."),
-      P("Choose a bold, clear font and colours with strong contrast. Orange text on a yellow background strains " +
-        "the eyes, and the example above scores 1.6 : 1 — far below the 4.5 : 1 that web accessibility " +
-        "guidelines ask for ordinary text."),
+      P("Slides work best with little text: key words, short bullets, strong images. A slide full of sentences " +
+        "makes people read instead of listening. Research agrees: pictures with spoken words beat pictures, " +
+        "spoken words, and text all on screen."),
+      P("Choose a bold, clear font and colours with strong contrast. Orange on yellow strains the eyes — 1.6:1, " +
+        "far below the 4.5:1 that web accessibility guidelines ask for."),
 
       H("The end"),
-      P("Finish by returning to the message you opened with, and give your final judgement. That ties every " +
-        "section back to the main point, and reminds the audience why it mattered to them."),
-      TRY("The five-word test", "Take any slide you've made. Can you say its point in five words or fewer? If " +
-          "not, split it into two slides, or turn some of its words into a picture."),
+      P("Return to your opening message and give your final judgement. That ties everything back to the main " +
+        "point and reminds the audience why it matters."),
+       TRY("The five-word test", "Take any slide. Can you say its point in five words or fewer? If not, split it " +
+           "into two slides, or turn some words into a picture."),
       R([
         { by: "Richard E. Mayer", year: "2009", title: "Multimedia Learning", pub: "2nd ed., Cambridge University Press",
           note: "The research behind “don't read your slides aloud”." },
@@ -1301,16 +1181,13 @@ window.OPLO_UNIT8 = (function () {
       P("A critique should judge a work on its content and message, not on the critic's own leanings. The same " +
         "goes for news: to understand an event, you need to know how the people reporting it might tilt the story."),
       W([["Bias", "leaning toward one side, often without meaning to"],
-         ["Context", "the background you need to understand something properly"],
-         ["Verify", "to check that something is really true"],
-         ["Embellish", "to add made-up or exaggerated details to make a story more exciting"]]),
-
+         ["Context", "the background needed to understand something properly"]]),
       H("How a story tilts"),
+       P("Every news story involves choices: what to include, what to leave out, and which words to use. Spotting " +
+        "those choices is how you read the news instead of being led by it."),
       D("Selective omission", "Leaving out facts, sources or events so that a story gives a particular impression. " +
-        "Its partner, selective placement, puts some facts where everyone will see them — the headline, the front " +
-        "page — and buries others.",
-        "Telling only part of the story on purpose, so people see it your way — or putting some facts up front " +
-        "and hiding others at the bottom."),
+        "Its partner, selective placement, puts some facts where everyone sees them and buries others.",
+        "Telling only part of the story so people see it your way — or putting facts up front and hiding others."),
       F({ imgs: [{ src: M + "8-8-crop.svg", w: 700, h: 530,
                    alt: "A drawing of stadium stands, half full of people and half empty. A crop of the full part " +
                         "looks like a packed house; a crop of the empty part looks as if nobody came." }],
@@ -1342,27 +1219,25 @@ window.OPLO_UNIT8 = (function () {
                        "Right")] }),
 
       H("Why we fall for it"),
-      P("Bias isn't only on the reporter's side. People tend to look for, and remember, information that agrees " +
-        "with what they already believe, and to skip what doesn't. Psychologists call this confirmation bias. " +
-        "It's why two people can read the same article and both come away more certain of opposite views."),
-      P("Removing every opinion from the news is extremely hard, so the reader's job is to notice the difference " +
-        "between what was observed and what was supposed — and between a confident voice and a checked fact."),
+       P("Bias isn't only on the reporter's side. People seek and remember information that agrees with what they " +
+        "already believe. Psychologists call this confirmation bias. It's why two people can read the same article " +
+        "and both grow more certain of opposite views."),
+      P("The reader's job is to notice the difference between observed facts and supposed ones — and between a " +
+        "confident voice and a checked fact."),
       WORLD("The chocolate diet that wasn't", "In 2015 the science journalist John Bohannon ran a small, " +
             "deliberately weak study, announced that chocolate helps you lose weight, and sent out a press " +
             "release. News sites around the world ran the story without checking the study. Then he revealed the " +
             "hoax, to show how easily poor science becomes a headline."),
 
       H("Read laterally"),
-      P("Professional fact-checkers don't read a doubtful page from top to bottom. They open new tabs and check " +
-        "what other sources say about it — reading <b>laterally</b>, across the web. The SIFT method, from the " +
-        "digital-literacy researcher Mike Caulfield, turns that habit into four moves."),
-      L("SIFT", [
-        ["Stop", "Notice how you feel. A headline that makes you angry or thrilled is a signal to slow down."],
-        ["Investigate the source", "Who is behind this, and what do other people say about them?"],
-        ["Find better coverage", "Look for trusted reporting on the same claim."],
-        ["Trace it back", "Follow quotes, pictures and numbers to where they first appeared, and check nothing was " +
-         "changed or cut."]
-      ]),
+       P("Fact-checkers don't read a page top to bottom. They open new tabs and check what other sources say — " +
+        "reading <b>laterally</b>, across the web. The SIFT method from Mike Caulfield turns this into four moves."),
+       L("SIFT", [
+         ["Stop", "Notice how you feel — anger or excitement signals you should slow down."],
+         ["Investigate the source", "Who is behind this, and what do others say about them?"],
+         ["Find better coverage", "Look for trusted reporting on the same claim."],
+         ["Trace it back", "Follow quotes, pictures and numbers to their origin and check nothing was changed."]
+       ]),
       TRY("Two headlines, one event", "Find one news event covered by two different outlets. Write down each " +
           "headline and the first three facts each gives. What did one include that the other left out?"),
       R([
@@ -1391,15 +1266,12 @@ window.OPLO_UNIT8 = (function () {
     body: [
       P("An online presence lets an artist show their work to anyone, quickly. It also makes personal " +
         "information easy to find, so protecting yourself comes first."),
-      W([["Personal information", "facts that point to you: your name, address, school, phone number"],
-         ["Identity theft", "when someone uses your details to pretend to be you"],
-         ["Compress", "to squeeze a file so it takes up less space"],
-         ["Metadata", "hidden information stored inside a file, like when and where a photo was taken"]]),
-
+      W([["Personal information", "facts that point to you: name, address, school, phone number"],
+         ["Identity theft", "someone using your details to pretend to be you"]]),
       H("Stay safe while you share"),
-      P("Sign-up forms for blogs and video sites ask for personal details. Never put personal information online " +
-        "without permission from a parent or guardian — especially your full name, phone numbers, home address, " +
-        "school, where you are now, or where you're going to be."),
+      P("Sign-up forms ask for personal details. Never share personal information online without a parent's or " +
+        "guardian's permission — especially your full name, phone numbers, home address, school, or your " +
+        "current or upcoming location."),
       F({ imgs: [{ src: M + "8-9-overshare.svg", w: 700, h: 520,
                    alt: "A made-up social media post saying the writer is home alone all weekend, tagged with a " +
                         "street, with a photo showing a house number and a school sweatshirt. Six clues are marked: " +
@@ -1408,26 +1280,24 @@ window.OPLO_UNIT8 = (function () {
           cap: "A made-up post. None of it looks dangerous on its own; together it is an address, a schedule and " +
                "an empty house.",
           credits: OEDU, diagram: true }),
-      L("Why each one matters", [
-        ["Name and birthday", "Starting points for identity theft: with them, someone can pretend to be you."],
-        ["Phone and address", "Handy for family, and for anyone who wants to turn up uninvited — including " +
-         "stalkers and burglars."],
-        ["Where you are, and aren't", "A check-in or location tag tells strangers where to find you, and when " +
-         "your home is empty. Some apps add one automatically."],
-        ["Photos", "A house number, school logo or street sign can give away more than the caption."]
-      ]),
-      WORLD("The map inside your photos", "Phones can save the exact GPS location in a photo's metadata. Many " +
-            "social apps remove it when you post, but not every app, email or shared link does. You can turn " +
-            "location tagging off in your camera settings."),
-
-      H("Getting video onto the web"),
-      P("Video sites accept only certain kinds of file, and some limit how big a file can be. So before you share, " +
-        "you may need to convert a file or make it smaller — and making it smaller usually costs some quality."),
-      D("Lossy compression", "Making a file smaller by permanently discarding some of its data — detail the " +
-        "viewer is unlikely to notice. Also called irreversible compression. Lossless, or reversible, compression " +
-        "makes a file smaller without losing any data.",
+       L("Why each one matters", [
+         ["Name and birthday", "Starting points for identity theft."],
+         ["Phone and address", "For family — and anyone who wants to turn up uninvited."],
+         ["Location", "A tag tells strangers where to find you, and when your home is empty. Apps may add one " +
+          "automatically."],
+         ["Photos", "A house number, school logo or street sign reveals more than the caption."]
+       ]),
+       WORLD("The map inside your photos", "Phones can save GPS coordinates in a photo's metadata. Many social apps " +
+             "remove it when you post, but not every app, email or link does. Turn location tagging off in your " +
+             "camera settings."),
+       H("Getting video onto the web"),
+       P("Video sites accept only certain file types, and some limit file size. Before sharing, you may need to " +
+        "convert or shrink a file — and shrinking usually costs some quality."),
+      D("Lossy compression", "Making a file smaller by permanently discarding data — detail the viewer is unlikely " +
+        "to notice. Also called irreversible compression. Lossless, or reversible, compression shrinks a file " +
+        "without losing any data.",
         "Shrinking a file by throwing away tiny details you probably won't miss. You can't get them back. " +
-        "Lossless shrinking keeps every single detail."),
+        "Lossless shrinking keeps every detail."),
       F({ imgs: [{ src: M + "8-9-lossless-lossy.svg", w: 700, h: 480,
                    alt: "A strip of sixteen sky pixels. Lossless packs it as counts of identical colours and " +
                         "unpacks it exactly. Lossy treats similar blues as one colour: much smaller, but the " +
@@ -1444,10 +1314,9 @@ window.OPLO_UNIT8 = (function () {
                       site: "Wikimedia Commons",
                       siteUrl: commons("Felis_silvestris_silvestris_small_gradual_decrease_of_quality.png"),
                       license: "CC BY 3.0", licenseUrl: BY3 }], size: "medium" }),
-      P("Lossy compression is what makes streaming possible: JPEG photos, MP3 music and almost all online video " +
-        "use it, and it is the usual choice for storing and sending media. Lossless compression is essential " +
-        "wherever every bit matters — text, spreadsheets, software, bank records — because one changed digit is " +
-        "a different number."),
+      P("Lossy compression makes streaming possible: JPEG photos, MP3 music, almost all online video. It is the " +
+        "usual choice for storing and sending media. Lossless compression is essential wherever every bit matters " +
+        "— text, spreadsheets, software, bank records — because one changed digit is a different number."),
 
       H("File types"),
       F({ imgs: [{ src: M + "8-9-container-codec.svg", w: 700, h: 470,
@@ -1468,14 +1337,13 @@ window.OPLO_UNIT8 = (function () {
         [".flv", "Flash Video, from the Adobe Flash era. Flash Player itself was retired at the end of 2020."],
         [".webm", "An open format made for the web, played by all major browsers."]
       ]),
-      N("<b>Corrections to the course text.</b> It lists an “.awf” video format; there isn't a common one, and it " +
-        "probably means .asf, the Microsoft container that holds WMV video. It dates .mov to 1998, but QuickTime " +
-        "and its file format appeared in 1991. It says Windows computers open .mov files with QuickTime, but " +
-        "Apple stopped making QuickTime for Windows in 2016; Windows plays them with its own apps or a free " +
-        "player such as VLC. And WMV's three “codes” are codecs."),
-      P("Each platform publishes the formats it takes. YouTube, for example, accepts MOV, MP4, AVI, WMV, FLV and " +
-        "WebM, among others. Several sites the course lists have since closed — LiveLeak and Metacafe in 2021, " +
-        "Veoh in 2024 — while YouTube, Vimeo, Dailymotion and Twitch carry on."),
+       N("It lists an \".awf\" video format — there isn't a common one; it probably means .asf. It dates .mov to " +
+        "1998, but QuickTime and its file format appeared in 1991. It says Windows opens .mov with QuickTime, but " +
+        "Apple stopped QuickTime for Windows in 2016; use Windows' own apps or VLC. And WMV's three \"codes\" are " +
+        "codecs."),
+      P("Each platform lists accepted formats. YouTube accepts MOV, MP4, AVI, WMV, FLV and WebM, among others. " +
+        "Some listed sites have closed — LiveLeak and Metacafe in 2021, Veoh in 2024 — while YouTube, Vimeo, " +
+        "Dailymotion and Twitch carry on."),
 
       H("What to blog about"),
       P("When you start a blog, begin with what genuinely interests you. Above all, people search the internet " +
@@ -1483,17 +1351,13 @@ window.OPLO_UNIT8 = (function () {
       D("Niche blog", "A blog about one specific subject for a particular audience — stop-motion puppets, vintage " +
         "cameras, vegan baking — rather than about everything.",
         "A blog about one special topic that a certain group of people really cares about."),
-      N("<b>A correction to the course text.</b> It defines a niche blog as one that “keeps the public up to date " +
-        "on current events”, such as fashion or entertainment. A niche is a narrow subject, and a blog that " +
-        "covers all current events is the opposite. A fashion blog becomes a niche blog when it narrows — to " +
-        "thrifted streetwear, say."),
+      N("It defines a niche blog as one that \"keeps the public up to date on current events\". A niche is a narrow " +
+        "subject, not current events. A fashion blog becomes niche when it narrows — to thrifted streetwear, say."),
       L("Why write about what you love", [
-        ["You'll keep going", "Interest keeps you putting in the time, and makes you less likely to abandon the " +
-         "blog when life gets busy."],
-        ["You won't run out", "Once a blog has followers, they expect regular posts — sometimes daily. A real " +
-         "interest keeps producing ideas."],
-        ["It shows", "Energy and knowledge come through in writing, and that is what builds a following."]
-      ]),
+         ["You'll keep going", "Interest makes you stick with it — and with the blog when life gets busy."],
+         ["You won't run out", "Followers expect regular posts. A real interest keeps producing ideas."],
+         ["It shows", "Energy and knowledge come through in writing — that builds a following."]
+       ]),
       TRY("Find your niche", "List your hobbies, what you do in your free time, and what friends ask you for help " +
           "with. Circle anything that appears twice. That's a blog topic."),
       R([
