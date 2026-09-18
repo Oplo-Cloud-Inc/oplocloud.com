@@ -8106,17 +8106,20 @@
      series behind one and a drawn trend that nothing measured is a decoration
      people read as a fact. */
 
+  var ASSESSMENT_STATES = ["DRAFT", "IN_REVIEW", "APPROVED", "SCHEDULED", "LIVE", "SUBMITTED", "SCORING", "RESULTS_READY", "RELEASED", "ARCHIVED"];
+
+  var ASSESSMENT_TABS = ["Overview", "Experience", "Content", "Students", "Sessions", "Results", "Security", "Activity", "Versions"];
+
   var SECTIONS = [
-    { k: "today",   name: "Today",       group: null,         roles: ["admin", "teacher"] },
-    { k: "roster",  name: "Gradebook",   group: "Teaching",   roles: ["admin", "teacher"] },
-    { k: "students",name: "Students",    group: "Teaching",   roles: ["admin", "teacher"] },
-    { k: "work",    name: "Work",        group: "Teaching",   roles: ["admin", "teacher"] },
-    { k: "sets",    name: "Study sets",  group: "Teaching",   roles: ["admin", "teacher"] },
-    { k: "reports", name: "Report cards",group: "Reporting",  roles: ["admin", "teacher"] },
-    { k: "courses", name: "Courses",     group: "School",     roles: ["admin", "teacher"] },
-    { k: "activity",name: "Activity",    group: "School",     roles: ["admin", "teacher"] },
-    { k: "people",  name: "People",      group: "School",     roles: ["admin"] },
-    { k: "system",  name: "System",      group: "School",     roles: ["admin"] }
+    { k: "today",       name: "Today",         group: null,         roles: ["admin", "teacher"] },
+    { k: "assessments", name: "Assessments",   group: "Academics",  roles: ["admin", "teacher"] },
+    { k: "courses",     name: "Courses",       group: "Academics",  roles: ["admin", "teacher"] },
+    { k: "roster",      name: "Gradebook",     group: "Academics",  roles: ["admin", "teacher"] },
+    { k: "students",    name: "Students",      group: "People",     roles: ["admin", "teacher"] },
+    { k: "activity",    name: "Activity",      group: "Operations", roles: ["admin", "teacher"] },
+    { k: "reports",     name: "Reports",       group: "Reporting",  roles: ["admin", "teacher"] },
+    { k: "people",      name: "People",        group: "School",     roles: ["admin"] },
+    { k: "system",      name: "System",        group: "School",     roles: ["admin"] }
   ];
 
   function allowedTabs() {
@@ -8228,13 +8231,921 @@
     v.innerHTML = "";
     var body = el("div", "admin-body");
     v.appendChild(body);
-    ({ today: consoleHome, roster: tabRoster, students: tabStudents, work: tabWork,
+    ({ today: consoleHome, assessments: tabAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, activity: tabActivity,
        people: tabPeople, system: tabSystem }[S.tab] || consoleHome)(body);
 
     noFoot(); progress(null);
     show("admin");
   }
+
+  /* ============================================================ Assessments
+     Assessments are a first-class system in OEdu. They have states,
+     versions, governance, security policies, and a lifecycle from
+     DRAFT through ARCHIVED. The administrator controls governance,
+     permissions, policies, publishing, monitoring, and auditability.
+     The teacher controls instructional intent and assessment design.
+     The student experiences the assessment itself — not the machinery. */
+
+  /* Assessment state machine */
+  var ASSESSMENT_STATES = ["DRAFT", "IN_REVIEW", "APPROVED", "SCHEDULED", "LIVE", "SUBMITTED", "SCORING", "RESULTS_READY", "RELEASED", "ARCHIVED"];
+
+  var ASSESSMENT_TRANSITIONS = {
+    DRAFT: ["IN_REVIEW", "ARCHIVED"],
+    IN_REVIEW: ["APPROVED", "DRAFT"],
+    APPROVED: ["SCHEDULED", "DRAFT"],
+    SCHEDULED: ["LIVE", "DRAFT"],
+    LIVE: ["SUBMITTED"],
+    SUBMITTED: ["SCORING"],
+    SCORING: ["RESULTS_READY"],
+    RESULTS_READY: ["RELEASED", "SCORING"],
+    RELEASED: ["ARCHIVED"],
+    ARCHIVED: []
+  };
+
+  function canTransition(from, to) {
+    return (ASSESSMENT_TRANSITIONS[from] || []).indexOf(to) > -1;
+  }
+
+  var ASSESSMENT_TABS = ["Overview", "Experience", "Content", "Students", "Sessions", "Results", "Security", "Activity", "Versions"];
+
+  /* Sample assessment data for demo purposes */
+  function sampleAssessments() {
+    var now = Date.now();
+    return [
+      { id: "asm-001", title: "Algebra I — Quadratics Benchmark", course: "Algebra I",
+        state: "LIVE", version: "v2.0", createdBy: "Ms. Rivera",
+        duration: 45, items: 35, students: 126, classes: 4,
+        scheduledAt: now + 86400000 * 2, startsAt: now + 86400000 * 2 + 3600000 * 10,
+        readiness: 98, createdAt: now - 86400000 * 14,
+        approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 5,
+        security: { testingMode: "Secure", internet: false, aiAssistance: false, calculator: true, referenceSheet: true },
+        skills: { "Quadratic equations": 84, "Graph interpretation": 71, "Modeling": 76, "Reasoning": 69, "Communication": 82 },
+        experiences: ["Opening", "Explore", "Investigate", "Apply", "Challenge", "Final Demonstration", "Reflection"],
+        timeline: { created: now - 86400000 * 14, reviewed: now - 86400000 * 10, approved: now - 86400000 * 5, scheduled: now - 86400000 * 2, testing: now + 86400000 * 2, scoring: now + 86400000 * 4, results: now + 86400000 * 5 },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      },
+      { id: "asm-002", title: "Biology — Ecosystems Assessment", course: "Biology",
+        state: "SCHEDULED", version: "v1.1", createdBy: "Mr. Chen",
+        duration: 60, items: 28, students: 94, classes: 3,
+        scheduledAt: now + 86400000 * 5, startsAt: now + 86400000 * 5 + 3600000 * 9,
+        readiness: 92, createdAt: now - 86400000 * 10,
+        approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 3,
+        security: { testingMode: "Secure", internet: false, aiAssistance: false, calculator: true, referenceSheet: false },
+        skills: { "Ecosystem dynamics": 78, "Food webs": 82, "Energy flow": 71, "Biodiversity": 75 },
+        experiences: ["Opening", "Investigate", "Simulation", "Challenge", "Reflection"],
+        timeline: { created: now - 86400000 * 10, reviewed: now - 86400000 * 7, approved: now - 86400000 * 3, scheduled: now - 86400000 * 1, testing: now + 86400000 * 5, scoring: now + 86400000 * 7, results: now + 86400000 * 8 },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      },
+      { id: "asm-003", title: "ELA — Argument & Evidence", course: "ELA",
+        state: "IN_REVIEW", version: "v1.0", createdBy: "Ms. Williams",
+        duration: 50, items: 22, students: 118, classes: 4,
+        scheduledAt: null, startsAt: null,
+        readiness: 85, createdAt: now - 86400000 * 7,
+        approvedBy: null, approvedAt: null,
+        security: { testingMode: "Standard", internet: true, aiAssistance: "configurable", calculator: true, referenceSheet: true },
+        skills: { "Argument structure": 74, "Evidence evaluation": 68, "Counter-argument": 71, "Writing clarity": 79 },
+        experiences: ["Opening", "Case Study", "Challenge", "Reflection"],
+        timeline: { created: now - 86400000 * 7, reviewed: now - 86400000 * 3, approved: null, scheduled: null, testing: null, scoring: null, results: null },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      },
+      { id: "asm-004", title: "Algebra I — Unit 3 Review", course: "Algebra I",
+        state: "DRAFT", version: "v1.2", createdBy: "Ms. Rivera",
+        duration: 30, items: 18, students: 126, classes: 4,
+        scheduledAt: null, startsAt: null,
+        readiness: 72, createdAt: now - 86400000 * 3,
+        approvedBy: null, approvedAt: null,
+        security: { testingMode: "Standard", internet: true, aiAssistance: "configurable", calculator: true, referenceSheet: true },
+        skills: { "Linear equations": 80, "Quadratic equations": 65, "Graph interpretation": 72 },
+        experiences: ["Opening", "Practice", "Challenge", "Reflection"],
+        timeline: { created: now - 86400000 * 3, reviewed: null, approved: null, scheduled: null, testing: null, scoring: null, results: null },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      },
+      { id: "asm-005", title: "Science — Forces & Motion", course: "Science",
+        state: "RESULTS_READY", version: "v1.0", createdBy: "Mr. Patel",
+        duration: 40, items: 25, students: 88, classes: 3,
+        scheduledAt: null, startsAt: null,
+        readiness: 100, createdAt: now - 86400000 * 21,
+        approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 18,
+        security: { testingMode: "Secure", internet: false, aiAssistance: false, calculator: false, referenceSheet: false },
+        skills: { "Newton's laws": 81, "Force diagrams": 76, "Friction": 68, "Gravity": 73 },
+        experiences: ["Opening", "Lab", "Challenge", "Final Demonstration"],
+        timeline: { created: now - 86400000 * 21, reviewed: now - 86400000 * 19, approved: now - 86400000 * 18, scheduled: now - 86400000 * 15, testing: now - 86400000 * 10, scoring: now - 86400000 * 5, results: now - 86400000 * 2 },
+        incidents: 1, sessions: { started: 88, paused: 2, submitted: 85, interrupted: 1 }
+      },
+      { id: "asm-006", title: "History — Civilizations Unit", course: "History",
+        state: "APPROVED", version: "v1.0", createdBy: "Ms. Okafor",
+        duration: 55, items: 30, students: 102, classes: 4,
+        scheduledAt: now + 86400000 * 8, startsAt: now + 86400000 * 8 + 3600000 * 11,
+        readiness: 95, createdAt: now - 86400000 * 12,
+        approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 2,
+        security: { testingMode: "Standard", internet: true, aiAssistance: "configurable", calculator: true, referenceSheet: true },
+        skills: { "Historical analysis": 77, "Source evaluation": 72, "Timeline reasoning": 80, "Writing": 74 },
+        experiences: ["Opening", "Investigate", "Case Study", "Challenge", "Reflection"],
+        timeline: { created: now - 86400000 * 12, reviewed: now - 86400000 * 8, approved: now - 86400000 * 2, scheduled: now - 86400000 * 1, testing: now + 86400000 * 8, scoring: null, results: null },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      }
+    ];
+  }
+
+  function stateColor(state) {
+    var colors = {
+      DRAFT: "#6b7280", IN_REVIEW: "#d97706", APPROVED: "#7c5cfc",
+      SCHEDULED: "#0060c0", LIVE: "#12915a", SUBMITTED: "#0060c0",
+      SCORING: "#d97706", RESULTS_READY: "#7c5cfc", RELEASED: "#12915a", ARCHIVED: "#6b7280"
+    };
+    return colors[state] || "#6b7280";
+  }
+
+  function stateLabel(state) {
+    return state.replace(/_/g, " ");
+  }
+
+  /* ----------------------------------------------------------- Assessments List
+     The overview: what exists, in what state, who created it, when. */
+  function tabAssessments(v) {
+    consoleHead(v, "Academics", "Assessments",
+      "Create, review, publish, monitor, and understand every assessment across your school.");
+
+    var host = el("div");
+    v.appendChild(host);
+
+    /* Command area */
+    var cmd = el("div");
+    cmd.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;";
+    var createBtn = el("button", "cn-btn strong");
+    createBtn.type = "button";
+    createBtn.textContent = "Create assessment";
+    createBtn.addEventListener("click", function () { assessmentStudio(host); });
+    cmd.appendChild(createBtn);
+
+    var search = el("input");
+    search.type = "text";
+    search.placeholder = "Search assessments…";
+    search.style.cssText = "padding:8px 14px;border-radius:9px;border:1px solid var(--hair);font-size:13.5px;min-width:220px;background:var(--paper);color:var(--ink);";
+    search.addEventListener("input", function () { filterAssessments(search.value); });
+    cmd.appendChild(search);
+    host.appendChild(cmd);
+
+    /* Status tabs */
+    var tabs = el("div");
+    tabs.style.cssText = "display:flex;gap:4px;margin-bottom:20px;background:var(--canvas);border-radius:100px;padding:3px;width:fit-content;";
+    var filterState = "all";
+    var statusTabs = [["all", "All"], ["DRAFT", "Drafts"], ["SCHEDULED", "Scheduled"], ["LIVE", "Live"], ["RESULTS_READY", "Completed"]];
+    statusTabs.forEach(function (t) {
+      var b = el("button", "asm-tab" + (t[0] === "all" ? " asm-tab-on" : ""));
+      b.type = "button";
+      b.textContent = t[1];
+      b.addEventListener("click", function () {
+        filterState = t[0];
+        [].forEach.call(tabs.children, function (x) { x.classList.remove("asm-tab-on"); });
+        b.classList.add("asm-tab-on");
+        renderAssessments(v, filterState, search.value);
+      });
+      tabs.appendChild(b);
+    });
+    host.appendChild(tabs);
+
+    /* Results area */
+    var results = el("div");
+    results.id = "assess-results";
+    host.appendChild(results);
+
+    renderAssessments(v, "all", "");
+  }
+
+  function renderAssessments(v, filter, search) {
+    var results = $("#assess-results");
+    if (!results) return;
+    results.innerHTML = "";
+    var all = sampleAssessments();
+    if (filter !== "all") {
+      all = all.filter(function (a) { return a.state === filter; });
+    }
+    if (search) {
+      var q = search.toLowerCase();
+      all = all.filter(function (a) {
+        return (a.title || "").toLowerCase().indexOf(q) > -1 ||
+               (a.course || "").toLowerCase().indexOf(q) > -1 ||
+               (a.createdBy || "").toLowerCase().indexOf(q) > -1;
+      });
+    }
+
+    if (!all.length) {
+      results.innerHTML = '<div style="margin-top:40px;padding:48px;text-align:center;color:var(--ink-3);font-size:14px;">No assessments match your search.</div>';
+      return;
+    }
+
+    var head = el("p");
+    head.style.cssText = "font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px;";
+    head.textContent = "Recent assessments";
+    results.appendChild(head);
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+    all.forEach(function (a) {
+      var row = el("button");
+      row.type = "button";
+      row.style.cssText = "display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;background:var(--paper);border:1px solid var(--hair);cursor:pointer;text-align:left;transition:transform .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease);width:100%;";
+      row.addEventListener("mouseenter", function () { row.style.transform = "translateY(-2px)"; row.style.boxShadow = "0 8px 28px rgba(0,0,0,.06)"; });
+      row.addEventListener("mouseleave", function () { row.style.transform = ""; row.style.boxShadow = ""; });
+      row.addEventListener("click", function () { assessmentDetail(v, a.id); });
+
+      var statusColor = stateColor(a.state);
+      row.innerHTML =
+        '<div style="width:4px;height:40px;border-radius:2px;background:' + statusColor + ';flex:none;"></div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-family:var(--font);font-size:15px;font-weight:600;letter-spacing:-.014em;color:var(--ink);">' + esc(a.title) + '</div>' +
+          '<div style="font-size:12.5px;color:var(--ink-3);margin-top:2px;">' + esc(a.course) + ' · ' + esc(a.createdBy) + ' · ' + (a.scheduledAt ? new Date(a.scheduledAt).toLocaleDateString(undefined, {month:"short",day:"numeric"}) : "Not scheduled") + '</div>' +
+        "</div>" +
+        '<div style="display:flex;align-items:center;gap:12px;flex:none;">' +
+          '<span style="font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;">' + a.items + ' items · ' + a.students + ' students</span>' +
+          '<span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:100px;font-size:11px;font-weight:600;background:' + statusColor + '1a;color:' + statusColor + ';">' +
+            '<span style="width:6px;height:6px;border-radius:50%;background:' + statusColor + ';"></span>' +
+            stateLabel(a.state) +
+          "</span>" +
+          '<span style="font-size:11px;color:var(--ink-3);font-family:"Spline Sans Mono",monospace;">' + esc(a.version) + '</span>' +
+        "</div>";
+      list.appendChild(row);
+    });
+    results.appendChild(list);
+  }
+
+  function filterAssessments(query) {
+    var filter = "all";
+    var tabs = $("#assess-results").parentElement.querySelectorAll(".lx-exam-tab");
+    [].forEach.call(tabs, function (t) {
+      if (t.classList.contains("on")) {
+        var text = t.textContent.trim().toLowerCase();
+        if (text === "drafts") filter = "DRAFT";
+        else if (text === "scheduled") filter = "SCHEDULED";
+        else if (text === "live") filter = "LIVE";
+        else if (text === "completed") filter = "RESULTS_READY";
+        else filter = "all";
+      }
+    });
+    renderAssessments($("#v-admin"), filter, query);
+  }
+
+  /* ----------------------------------------------------------- Assessment Detail
+     The assessment's command center. */
+  function assessmentDetail(v, id) {
+    S.tab = "assessments";
+    var asm = sampleAssessments().filter(function (a) { return a.id === id; })[0];
+    if (!asm) return;
+
+    v.innerHTML = "";
+
+    /* Back button */
+    var back = el("button", "cn-back");
+    back.type = "button";
+    back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px;"><path d="M5 12h14"/><path d="m12 5-7 7 7 7"/></svg> Back to Assessments';
+    back.addEventListener("click", function () { tabAssessments(v); });
+    v.appendChild(back);
+
+    /* Header */
+    var head = el("header", "cn-head");
+    var eyebrow = el("p", "cn-eyebrow", "Academics");
+    head.appendChild(eyebrow);
+    var h1 = el("h1", "cn-h1", asm.title);
+    head.appendChild(h1);
+    var sub = el("p", "cn-sub");
+    sub.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:100px;font-size:11px;font-weight:600;background:' + stateColor(asm.state) + '1a;color:' + stateColor(asm.state) + ';"><span style="width:6px;height:6px;border-radius:50%;background:' + stateColor(asm.state) + ';"></span>' + stateLabel(asm.state) + '</span> ' + asm.version + ' · ' + asm.course;
+    head.appendChild(sub);
+    v.appendChild(head);
+
+    /* Stats bar */
+    var stats = el("div");
+    stats.style.cssText = "display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap;";
+    var statItems = [
+      [asm.duration + " min", "duration"],
+      [asm.items, "items"],
+      [asm.students, "students"],
+      [asm.classes, "classes"],
+      [asm.readiness + "%", "readiness"]
+    ];
+    statItems.forEach(function (s) {
+      var d = el("div");
+      d.innerHTML = "<b style='font-size:18px;font-weight:700;color:var(--ink);'>" + s[0] + "</b><span style='font-size:12px;color:var(--ink-3);'>" + s[1] + "</span>";
+      stats.appendChild(d);
+    });
+    v.appendChild(stats);
+
+    /* Tabs */
+    var tabs = el("div");
+    tabs.style.cssText = "display:flex;gap:2px;margin-bottom:24px;background:var(--canvas);border-radius:100px;padding:3px;width:fit-content;";
+    var activeTab = "Overview";
+    asmTabsRender(tabs, asm, activeTab);
+    v.appendChild(tabs);
+
+    /* Tab content */
+    var content = el("div");
+    content.id = "asm-tab-content";
+    asmTabContent(content, asm, activeTab);
+    v.appendChild(content);
+  }
+
+  function asmTabsRender(tabs, asm, active) {
+    tabs.innerHTML = "";
+    ASSESSMENT_TABS.forEach(function (t) {
+      var b = el("button", "lx-exam-tab" + (t === active ? " on" : ""));
+      b.type = "button";
+      b.style.cssText = "height:32px;padding:0 14px;border-radius:100px;font-size:13px;font-weight:500;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px;transition:background .18s var(--ease),color .18s var(--ease);";
+      b.textContent = t;
+      b.addEventListener("click", function () {
+        [].forEach.call(tabs.children, function (x) { x.classList.remove("asm-tab-on"); });
+        b.classList.add("asm-tab-on");
+        asmTabContent($("#asm-tab-content"), asm, t);
+      });
+      tabs.appendChild(b);
+    });
+  }
+
+  function asmTabContent(host, asm, tab) {
+    host.innerHTML = "";
+    switch (tab) {
+      case "Overview": asmOverview(host, asm); break;
+      case "Experience": asmExperience(host, asm); break;
+      case "Content": asmContent(host, asm); break;
+      case "Students": asmStudents(host, asm); break;
+      case "Sessions": asmSessions(host, asm); break;
+      case "Results": asmResults(host, asm); break;
+      case "Security": asmSecurity(host, asm); break;
+      case "Activity": asmActivity(host, asm); break;
+      case "Versions": asmVersions(host, asm); break;
+      default: asmOverview(host, asm);
+    }
+  }
+
+  function asmOverview(host, asm) {
+    /* Status block */
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Assessment status</h3>";
+    var span = el("span"); span.textContent = asm.state; head.appendChild(span);
+    block.appendChild(head);
+
+    var grid = el("div");
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;";
+    var items = [
+      ["Scheduled", asm.scheduledAt ? new Date(asm.scheduledAt).toLocaleDateString(undefined, {weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) : "Not scheduled"],
+      ["Students", asm.students + " assigned"],
+      ["Classes", asm.classes + " classes"],
+      ["Active", (asm.sessions ? asm.sessions.started : 0) + " started"],
+      ["Submitted", (asm.sessions ? asm.sessions.submitted : 0)],
+      ["Readiness", asm.readiness + "%"]
+    ];
+    items.forEach(function (it) {
+      var d = el("div");
+      d.style.cssText = "padding:14px;border-radius:12px;background:var(--canvas);border:1px solid var(--hair);";
+      d.innerHTML = "<div style='font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;'>" + it[0] + "</div><div style='font-size:14px;font-weight:500;color:var(--ink);'>" + it[1] + "</div>";
+      grid.appendChild(d);
+    });
+    block.appendChild(grid);
+    host.appendChild(block);
+
+    /* Timeline */
+    if (asm.timeline) {
+      var tl = el("div", "cn-block");
+      var tlHead = el("div", "cn-blockhead");
+      tlHead.innerHTML = "<h3>Timeline</h3>";
+      tl.appendChild(tlHead);
+
+      var steps = [
+        ["Created", asm.timeline.created],
+        ["Reviewed", asm.timeline.reviewed],
+        ["Approved", asm.timeline.approved],
+        ["Scheduled", asm.timeline.scheduled],
+        ["Testing", asm.timeline.testing],
+        ["Scoring", asm.timeline.scoring],
+        ["Results", asm.timeline.results]
+      ];
+      var tlList = el("div");
+      tlList.style.cssText = "display:flex;flex-direction:column;gap:0;";
+      steps.forEach(function (s, i) {
+        var row = el("div");
+        row.style.cssText = "display:flex;align-items:center;gap:12px;padding:8px 0;" + (i < steps.length - 1 ? 'border-bottom:1px solid var(--hair);' : "");
+        var dot = el("div");
+        dot.style.cssText = "width:8px;height:8px;border-radius:50%;flex:none;background:" + (s[1] ? "var(--blue)" : "var(--ink-3)") + ";";
+        row.appendChild(dot);
+        var label = el("div");
+        label.style.cssText = "font-size:13px;color:var(--ink);flex:1;";
+        label.textContent = s[0];
+        row.appendChild(label);
+        var date = el("div");
+        date.style.cssText = "font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;";
+        date.textContent = s[1] ? new Date(s[1]).toLocaleDateString(undefined, {month:"short",day:"numeric"}) : "Pending";
+        row.appendChild(date);
+        tlList.appendChild(row);
+      });
+      tl.appendChild(tlList);
+      host.appendChild(tl);
+    }
+
+    /* Governance */
+    var gov = el("div", "cn-block");
+    var govHead = el("div", "cn-blockhead");
+    govHead.innerHTML = "<h3>Governance</h3>";
+    gov.appendChild(govHead);
+    var govGrid = el("div");
+    govGrid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;";
+    var govItems = [
+      ["Created by", asm.createdBy],
+      ["Approved by", asm.approvedBy || "Pending"],
+      ["Version", asm.version],
+      ["State", stateLabel(asm.state)],
+      ["Created", asm.createdAt ? new Date(asm.createdAt).toLocaleDateString() : "—"],
+      ["Incidents", asm.incidents || 0]
+    ];
+    govItems.forEach(function (g) {
+      var d = el("div");
+      d.style.cssText = "padding:10px 14px;border-radius:10px;background:var(--canvas);border:1px solid var(--hair);";
+      d.innerHTML = "<div style='font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;'>" + g[0] + "</div><div style='font-size:13.5px;color:var(--ink);'>" + esc(g[1]) + "</div>";
+      govGrid.appendChild(d);
+    });
+    gov.appendChild(govGrid);
+    host.appendChild(gov);
+  }
+
+  function asmExperience(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Experience</h3><span>" + (asm.experiences ? asm.experiences.length : 0) + " stages</span>";
+    block.appendChild(head);
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+    if (asm.experiences) {
+      asm.experiences.forEach(function (exp, i) {
+        var row = el("div");
+        row.style.cssText = "display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:12px;background:var(--paper);border:1px solid var(--hair);";
+        row.innerHTML =
+          '<div style="width:28px;height:28px;border-radius:8px;background:var(--canvas);display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--ink-3);flex:none;">' + (i + 1) + '</div>' +
+          '<div style="flex:1;font-size:14px;font-weight:500;color:var(--ink);">' + esc(exp) + '</div>' +
+          '<span style="font-size:11px;color:var(--ink-3);">Stage ' + (i + 1) + '</span>';
+        list.appendChild(row);
+      });
+    }
+    block.appendChild(list);
+    host.appendChild(block);
+
+    /* AI panel */
+    var ai = el("div", "cn-block");
+    ai.style.cssText = "padding:18px;border-radius:14px;background:var(--canvas);border:1px solid var(--hair);";
+    ai.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:var(--blue);"></span>' +
+        '<span style="font-size:13px;font-weight:600;color:var(--ink);">Ask OEdu</span>' +
+      "</div>" +
+      '<div style="font-size:13px;color:var(--ink-3);line-height:1.5;margin-bottom:12px;">OEdu understands this assessment. Ask to modify the experience without leaving the builder.</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button type="button" style="padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--paper);font-size:12px;color:var(--ink-2);">Make it more rigorous</button>' +
+        '<button type="button" style="padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--paper);font-size:12px;color:var(--ink-2);">Reduce to 45 min</button>' +
+        '<button type="button" style="padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--paper);font-size:12px;color:var(--ink-2);">Check alignment</button>' +
+      "</div>";
+    host.appendChild(ai);
+  }
+
+  function asmContent(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Content</h3><span>" + (asm.items || 0) + " items</span>";
+    block.appendChild(head);
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+    var skills = asm.skills ? Object.keys(asm.skills) : [];
+    var items = asm.items || 0;
+    var perSkill = Math.ceil(items / Math.max(skills.length, 1));
+    skills.forEach(function (skill, i) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--paper);border:1px solid var(--hair);";
+      row.innerHTML =
+        '<div style="flex:1;font-size:13.5px;color:var(--ink);">' + esc(skill) + '</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);">' + perSkill + ' items</div>' +
+        '<div style="width:60px;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;">' +
+          '<div style="width:' + (asm.skills[skill] || 0) + '%;height:100%;border-radius:3px;background:' + (asm.skills[skill] >= 75 ? '#12915a' : asm.skills[skill] >= 60 ? '#0060c0' : '#d4533b') + ';"></div>' +
+        "</div>" +
+        '<div style="font-size:12px;font-weight:600;color:var(--ink-3);">' + (asm.skills[skill] || 0) + '%</div>';
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  function asmStudents(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Students</h3><span>" + asm.students + " assigned</span>";
+    block.appendChild(head);
+
+    var stats = el("div");
+    stats.style.cssText = "display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;";
+    var sStats = [
+      [asm.students - 4, "Ready", ""],
+      [4, "Not ready", "owe"],
+      [2, "Accommodation review", "late"]
+    ];
+    sStats.forEach(function (s) {
+      var d = el("div");
+      d.style.cssText = "padding:10px 16px;border-radius:10px;background:var(--paper);border:1px solid var(--hair);";
+      d.innerHTML = "<b style='font-size:16px;color:var(--ink);'>" + s[0] + "</b> <span style='font-size:12px;color:var(--ink-3);'>" + s[1] + "</span>";
+      if (s[2]) d.style.borderColor = s[2] === "owe" ? "#d4a017" : "#d4533b";
+      stats.appendChild(d);
+    });
+    block.appendChild(stats);
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:4px;";
+    var students = ["Jordan M.", "Alex K.", "Priya S.", "Marcus T.", "Elena R.", "Sam W.", "Taylor L.", "Rashid N."];
+    students.forEach(function (name, i) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--canvas);";
+      var status = i < 4 ? '<span style="font-size:11px;color:#d4533b;">Not ready</span>' : i < 6 ? '<span style="font-size:11px;color:#d4a017;">Accommodation</span>' : '<span style="font-size:11px;color:var(--green);">Ready</span>';
+      row.innerHTML =
+        '<div style="width:24px;height:24px;border-radius:6px;background:var(--sunk);display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--ink-3);flex:none;">' + name.split(" ").map(function(w){return w[0];}).join("") + '</div>' +
+        '<div style="flex:1;font-size:13px;color:var(--ink);">' + name + '</div>' +
+        status;
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  function asmSessions(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Live sessions</h3><span>" + (asm.sessions ? asm.sessions.started : 0) + " started</span>";
+    block.appendChild(head);
+
+    if (asm.state !== "LIVE") {
+      block.innerHTML += '<div style="margin-top:12px;font-size:13px;color:var(--ink-3);">This assessment is not currently live. Sessions will appear here during testing.</div>';
+      host.appendChild(block);
+      return;
+    }
+
+    var stats = el("div");
+    stats.style.cssText = "display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;";
+    var sStats = [
+      [asm.sessions.started, "Started", ""],
+      [asm.sessions.paused, "Paused", "late"],
+      [asm.sessions.submitted, "Submitted", "done"],
+      [asm.sessions.interrupted, "Interrupted", "owe"]
+    ];
+    sStats.forEach(function (s) {
+      var d = el("div");
+      d.style.cssText = "padding:10px 16px;border-radius:10px;background:var(--paper);border:1px solid var(--hair);";
+      d.innerHTML = "<b style='font-size:16px;color:var(--ink);'>" + s[0] + "</b> <span style='font-size:12px;color:var(--ink-3);'>" + s[1] + "</span>";
+      stats.appendChild(d);
+    });
+    block.appendChild(stats);
+    host.appendChild(block);
+  }
+
+  function asmResults(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Results</h3><span>" + (asm.skills ? Object.keys(asm.skills).length : 0) + " skill areas</span>";
+    block.appendChild(head);
+
+    if (!asm.skills) {
+      block.innerHTML += '<div style="margin-top:12px;font-size:13px;color:var(--ink-3);">Results will appear after the assessment is released.</div>';
+      host.appendChild(block);
+      return;
+    }
+
+    var grid = el("div");
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;";
+    Object.keys(asm.skills).forEach(function (skill) {
+      var val = asm.skills[skill];
+      var d = el("div");
+      d.style.cssText = "padding:14px;border-radius:12px;background:var(--paper);border:1px solid var(--hair);";
+      d.innerHTML =
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">' + esc(skill) + '</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--ink);">' + val + '%</div>' +
+        '<div style="width:100%;height:4px;border-radius:2px;background:var(--sunk);margin-top:8px;">' +
+          '<div style="width:' + val + '%;height:100%;border-radius:2px;background:' + (val >= 75 ? '#12915a' : val >= 60 ? '#0060c0' : '#d4533b') + ';"></div>' +
+        "</div>";
+      grid.appendChild(d);
+    });
+    block.appendChild(grid);
+    host.appendChild(block);
+  }
+
+  function asmSecurity(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Security</h3>";
+    block.appendChild(head);
+
+    var sec = asm.security || {};
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:0;";
+    var items = [
+      ["Testing mode", sec.testingMode || "Standard"],
+      ["Internet", sec.internet === false ? "Blocked" : "Allowed"],
+      ["AI assistance", sec.aiAssistance === false ? "Disabled" : sec.aiAssistance || "Configurable"],
+      ["Calculator", sec.calculator ? "Allowed" : "Blocked"],
+      ["Reference sheet", sec.referenceSheet ? "Allowed" : "Blocked"],
+      ["Navigation", sec.testingMode === "Secure" ? "Restricted" : "Standard"]
+    ];
+    items.forEach(function (it) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;background:var(--paper);border:1px solid var(--hair);";
+      row.innerHTML =
+        '<span style="font-size:13px;color:var(--ink);">' + it[0] + '</span>' +
+        '<span style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:100px;background:' + (it[1] === "Blocked" || it[1] === "Disabled" ? "#e8f5ee" : "var(--sunk)") + ';color:' + (it[1] === "Blocked" || it[1] === "Disabled" ? "#12915a" : "var(--ink-2)") + ';">' + it[1] + '</span>';
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  function asmActivity(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Activity</h3>";
+    block.appendChild(head);
+
+    var events = [
+      [asm.createdAt, asm.createdBy + " created assessment"],
+      [asm.timeline.reviewed, "Entered review"],
+      [asm.timeline.approved, "Approved by " + (asm.approvedBy || "—")],
+      [asm.timeline.scheduled, "Scheduled for " + (asm.scheduledAt ? new Date(asm.scheduledAt).toLocaleDateString() : "—")],
+      [asm.timeline.testing, "Assessment opened"]
+    ].filter(function (e) { return e[0]; });
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:0;";
+    events.forEach(function (e, i) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;gap:12px;padding:8px 0;" + (i < events.length - 1 ? 'border-bottom:1px solid var(--hair);' : "");
+      row.innerHTML =
+        '<div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none;"></div>' +
+        '<div style="flex:1;font-size:13px;color:var(--ink);">' + esc(e[1]) + '</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;">' + new Date(e[0]).toLocaleString() + '</div>';
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  function asmVersions(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Versions</h3>";
+    block.appendChild(head);
+
+    var versions = [
+      [asm.version, asm.state, asm.createdBy, asm.createdAt],
+      ["v1.0", "DRAFT", asm.createdBy, asm.createdAt ? asm.createdAt - 86400000 * 4 : null],
+      ["v0.9", "DRAFT", "OEdu AI", asm.createdAt ? asm.createdAt - 86400000 * 7 : null]
+    ];
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:0;";
+    versions.forEach(function (v, i) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--paper);border:1px solid var(--hair);" + (i === 0 ? 'box-shadow:inset 3px 0 0 var(--blue);' : "");
+      row.innerHTML =
+        '<div style="font-family:"Spline Sans Mono",monospace;font-size:13px;font-weight:600;color:var(--ink);flex:none;">' + esc(v[0]) + '</div>' +
+        '<div style="flex:1;font-size:13px;color:var(--ink-2);">' + esc(v[1]) + '</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);">' + esc(v[2]) + '</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;">' + (v[3] ? new Date(v[3]).toLocaleDateString() : "—") + '</div>';
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  /* ----------------------------------------------------------- Assessment Studio
+     Conversational creation surface. */
+  function assessmentStudio(host) {
+    S.tab = "assessments";
+    host.innerHTML = "";
+
+    /* Back button */
+    var back = el("button", "cn-back");
+    back.type = "button";
+    back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px;"><path d="M5 12h14"/><path d="m12 5-7 7 7 7"/></svg> Back to Assessments';
+    back.addEventListener("click", function () { tabAssessments(host); });
+    host.appendChild(back);
+
+    var studio = el("div");
+    studio.style.cssText = "max-width:800px;";
+
+    /* Header */
+    var head = el("div", "cn-head");
+    head.appendChild(el("p", "cn-eyebrow", "Create"));
+    head.appendChild(el("h1", "cn-h1", "Assessment Studio"));
+    head.appendChild(el("p", "cn-sub", "Describe what you want to assess. OEdu builds the structure, the experience, and the evidence."));
+    studio.appendChild(head);
+
+    /* Goal input */
+    var goalBlock = el("div");
+    goalBlock.style.cssText = "margin-bottom:24px;";
+    var goalLabel = el("p");
+    goalLabel.style.cssText = "font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;";
+    goalLabel.textContent = "What are you trying to assess?";
+    goalBlock.appendChild(goalLabel);
+
+    var textarea = el("textarea");
+    textarea.style.cssText = "width:100%;min-height:120px;padding:16px;border-radius:14px;border:1px solid var(--hair);background:var(--paper);font-size:14.5px;line-height:1.5;color:var(--ink);resize:vertical;font-family:inherit;";
+    textarea.placeholder = "e.g. Create a 60-minute Algebra I assessment on quadratic functions. I want students to demonstrate conceptual understanding, graph interpretation, solving, and reasoning. Make it rigorous and interactive.";
+    goalBlock.appendChild(textarea);
+    studio.appendChild(goalBlock);
+
+    /* Upload */
+    var uploadBlock = el("div");
+    uploadBlock.style.cssText = "margin-bottom:24px;padding:32px;border-radius:14px;border:2px dashed var(--hair);text-align:center;background:var(--paper);";
+    uploadBlock.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Drop files here</div>' +
+      '<div style="font-size:12.5px;color:var(--ink-3);">Past assessments · Curriculum · Standards · Teacher materials · Rubrics · PDFs · Images · Documents</div>' +
+      '<button type="button" style="margin-top:12px;padding:6px 14px;border-radius:8px;background:var(--canvas);border:1px solid var(--hair);font-size:12.5px;color:var(--ink-2);">Browse files</button>';
+    studio.appendChild(uploadBlock);
+
+    /* AI Architect panel */
+    var architect = el("div");
+    architect.style.cssText = "padding:20px;border-radius:14px;background:linear-gradient(135deg,#0d0d12,#1a1a2e);color:#fff;margin-bottom:24px;overflow:hidden;";
+    architect.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:#7c5cfc;"></span>' +
+        '<span style="font-size:13px;font-weight:600;">AI Assessment Architect</span>' +
+      "</div>" +
+      '<div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:14px;line-height:1.5;">OEdu will use your materials to understand the assessment goal before generating anything.</div>' +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.3);margin-bottom:8px;">Proposed blueprint</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,.85);line-height:1.6;">' +
+        '<div style="margin-bottom:8px;"><b>Goal:</b> Measure students ability to apply quadratic functions in unfamiliar contexts.</div>' +
+        '<div style="margin-bottom:8px;"><b>Evidence required:</b></div>' +
+        '<div style="padding-left:12px;margin-bottom:8px;">Conceptual understanding ████████</div>' +
+        '<div style="padding-left:12px;margin-bottom:8px;">Application ██████████</div>' +
+        '<div style="padding-left:12px;margin-bottom:8px;">Reasoning █████████</div>' +
+        '<div style="margin-bottom:8px;"><b>Proposed experience:</b> Quadratic Design Challenge — 6 stages, ~55 minutes</div>' +
+      "</div>" +
+      '<div style="display:flex;gap:8px;margin-top:16px;">' +
+        '<button type="button" id="asm-approve" style="padding:8px 16px;border-radius:9px;background:#fff;color:#0d0d12;font-size:13px;font-weight:600;border:none;cursor:pointer;">Approve blueprint</button>' +
+        '<button type="button" id="asm-modify" style="padding:8px 16px;border-radius:9px;background:rgba(255,255,255,.1);color:#fff;font-size:13px;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Modify</button>' +
+        '<button type="button" id="asm-ask" style="padding:8px 16px;border-radius:9px;background:transparent;color:rgba(255,255,255,.7);font-size:13px;border:none;cursor:pointer;">Ask OEdu</button>' +
+      "</div>";
+    studio.appendChild(architect);
+
+    /* Architect button interactivity */
+    var approveBtn = studio.querySelector("#asm-approve");
+    if (approveBtn) approveBtn.addEventListener("click", function () {
+      if (studioState.approved) return;
+      studioState.approved = true;
+      approveBtn.textContent = "Approved ✓";
+      approveBtn.style.background = "#e8f5ee";
+      approveBtn.style.color = "#12915a";
+      approveBtn.style.border = "none";
+      publishBtn2.disabled = false;
+      toast("Blueprint approved — you can now publish.");
+    });
+    var modifyBtn = studio.querySelector("#asm-modify");
+    if (modifyBtn) modifyBtn.addEventListener("click", function () {
+      var modPanel = studio.querySelector(".asm-modify-panel");
+      if (modPanel) { modPanel.remove(); return; }
+      modPanel = el("div");
+      modPanel.className = "asm-modify-panel";
+      modPanel.style.cssText = "padding:18px;border-radius:14px;background:var(--canvas);border:1px solid var(--hair);margin-bottom:16px;";
+      modPanel.innerHTML =
+        '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:12px;">Modify blueprint</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);margin-bottom:4px;">Content preservation: <b>60%</b></div>' +
+        '<input type="range" min="0" max="100" value="60" style="width:100%;margin-bottom:12px;">' +
+        '<div style="font-size:12px;color:var(--ink-3);margin-bottom:4px;">Experience intensity: <b>Interactive</b></div>' +
+        '<input type="range" min="0" max="100" value="70" style="width:100%;margin-bottom:12px;">' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+          '<button type="button" class="asm-mod-cancel" style="padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--paper);font-size:12px;color:var(--ink-2);">Cancel</button>' +
+          '<button type="button" class="asm-mod-apply" style="padding:6px 12px;border-radius:8px;background:var(--ink);color:#fff;font-size:12px;border:none;">Apply</button>' +
+        "</div>";
+      studio.insertBefore(modPanel, studio.querySelector(".asm-summary"));
+      modPanel.querySelector(".asm-mod-cancel").addEventListener("click", function () { modPanel.remove(); });
+      modPanel.querySelector(".asm-mod-apply").addEventListener("click", function () {
+        modPanel.remove();
+        toast("Blueprint modified — OEdu is recalculating the design.");
+        summary.innerHTML = '<div class="asm-summary-body"><div style="font-size:13px;font-weight:600;color:#d97706;margin-bottom:10px;">Blueprint modified</div><div style="font-size:13px;color:var(--ink-2);line-height:1.6;">Content preservation adjusted. Experience intensity increased.</div><div style="font-size:13px;color:var(--ink-3);margin-top:8px;">Recalculating timing and complexity…</div></div>';
+      });
+    });
+    var askBtn = studio.querySelector("#asm-ask");
+    if (askBtn) askBtn.addEventListener("click", function () {
+      var chatPanel = studio.querySelector(".asm-chat-panel");
+      if (chatPanel) { chatPanel.remove(); return; }
+      chatPanel = el("div");
+      chatPanel.className = "asm-chat-panel";
+      chatPanel.style.cssText = "padding:18px;border-radius:14px;background:var(--canvas);border:1px solid var(--hair);margin-bottom:16px;";
+      chatPanel.innerHTML =
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+          '<span style="width:8px;height:8px;border-radius:50%;background:#7c5cfc;"></span>' +
+          '<span style="font-size:13px;font-weight:600;color:var(--ink);">Ask OEdu</span>' +
+        "</div>" +
+        '<div style="font-size:13px;color:var(--ink-2);line-height:1.5;margin-bottom:12px;">What would you like to change?</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+          '<button type="button" class="asm-ask-chip" data-msg="Make this more rigorous">Make it more rigorous</button>' +
+          '<button type="button" class="asm-ask-chip" data-msg="Reduce to 45 minutes">Reduce to 45 min</button>' +
+          '<button type="button" class="asm-ask-chip" data-msg="Check alignment with curriculum">Check alignment</button>' +
+          '<button type="button" class="asm-ask-chip" data-msg="Add more interactive tasks">Add interaction</button>' +
+        "</div>" +
+        '<div id="asm-chat-response" style="font-size:13px;color:var(--ink-2);line-height:1.5;min-height:40px;"></div>';
+      studio.insertBefore(chatPanel, studio.querySelector(".asm-summary"));
+      chatPanel.querySelectorAll(".asm-ask-chip").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          var resp = chatPanel.querySelector("#asm-chat-response");
+          resp.innerHTML = '<em style="color:var(--ink-3);">OEdu is thinking…</em>';
+          var msg = chip.dataset.msg;
+          var responses = {
+            "Make this more rigorous": "I'll increase the proportion of transfer and reasoning tasks while preserving the core objectives.",
+            "Reduce to 45 minutes": "I've reduced the number of interaction stages and recalculated the estimated completion time.",
+            "Check alignment with curriculum": "I'll prioritize the uploaded curriculum materials and identify where the proposed tasks align.",
+            "Add more interactive tasks": "I'll add two application tasks and one constructed response to deepen engagement."
+          };
+          setTimeout(function () {
+            resp.innerHTML = '<div style="margin-bottom:4px;"><b>OEdu:</b> ' + (responses[msg] || "I'll adjust the assessment based on your request.") + '</div><div style="font-size:11px;color:var(--ink-3);">Based on: 24 source concepts · 6 skill areas</div>';
+          }, 800);
+        });
+      });
+    });
+
+    /* AI Design Summary */
+    var summary = el("div", "asm-summary");
+    summary.style.cssText = "padding:20px;border-radius:14px;background:var(--canvas);border:1px solid var(--hair);margin-bottom:24px;";
+    summary.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">AI Design Summary</div>' +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:6px;">Source</div>' +
+      '<div style="font-size:13px;color:var(--ink-2);margin-bottom:14px;">Algebra I Midterm.pdf · 3 files uploaded</div>' +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:6px;">Transformation</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;color:var(--ink-2);">' +
+        '<div>Retained: 24 concepts</div>' +
+        '<div>Redesigned: 18 experiences</div>' +
+        '<div>Combined: 7 items</div>' +
+        '<div>Added: 3 tasks</div>' +
+        '<div>Added: 1 constructed response</div>' +
+        '<div>Requires review: 2 items</div>' +
+      "</div>" +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-top:14px;margin-bottom:6px;">Requires attention</div>' +
+      '<div style="font-size:13px;color:#d4533b;">1 accessibility concern · 1 timing concern</div>';
+    studio.appendChild(summary);
+
+    /* Studio state */
+    var studioState = { approved: false, transformed: false, previewing: false, published: false };
+
+    /* Action buttons */
+    var actions = el("div");
+    actions.style.cssText = "display:flex;gap:10px;flex-wrap:wrap;";
+    var transformBtn = el("button", "cn-btn strong");
+    transformBtn.type = "button";
+    transformBtn.textContent = "Transform";
+    transformBtn.addEventListener("click", function () {
+      if (studioState.transformed) return;
+      transformBtn.textContent = "Transforming…";
+      transformBtn.disabled = true;
+      summary.innerHTML = '<div class="asm-summary-body"><div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:14px;">OEdu is redesigning the experience architecture…</div><div style="font-size:13px;color:rgba(255,255,255,.7);">Analyzing source materials</div><div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Mapping learning objectives</div><div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Designing interactive tasks</div><div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Checking accessibility</div></div>';
+      setTimeout(function () {
+        studioState.transformed = true;
+        transformBtn.textContent = "Transformed ✓";
+        transformBtn.disabled = false;
+        summary.innerHTML = '<div class="asm-summary-body"><div style="font-size:13px;font-weight:600;color:#12915a;margin-bottom:10px;">Transformation complete</div><div style="font-size:13px;color:var(--ink-2);line-height:1.6;">Retained: <b>24</b> concepts · Redesigned: <b>22</b> experiences · Added: <b>5</b> interactive tasks</div><div style="font-size:13px;color:var(--ink-3);margin-top:8px;">1 accessibility concern resolved · 1 timing concern adjusted</div></div>';
+        toast("Transformation complete — the experience has been redesigned.");
+      }, 2500);
+    });
+    actions.appendChild(transformBtn);
+
+    var previewBtn2 = el("button", "cn-btn");
+    previewBtn2.type = "button";
+    previewBtn2.textContent = "Preview as student";
+    previewBtn2.addEventListener("click", function () {
+      if (!studioState.previewing) {
+        studioState.previewing = true;
+        previewBtn2.textContent = "Exit preview";
+        previewBtn2.classList.add("cn-btn.strong");
+        studio.classList.add("asm-previewing");
+        toast("PREVIEW MODE — You are seeing what students see. No real data is affected.");
+      } else {
+        studioState.previewing = false;
+        previewBtn2.textContent = "Preview as student";
+        previewBtn2.classList.remove("cn-btn.strong");
+        studio.classList.remove("asm-previewing");
+      }
+    });
+    actions.appendChild(previewBtn2);
+
+    var publishBtn2 = el("button", "cn-btn");
+    publishBtn2.type = "button";
+    publishBtn2.textContent = "Publish";
+    publishBtn2.disabled = true;
+    publishBtn2.addEventListener("click", function () {
+      if (!studioState.approved) return;
+      if (studioState.published) return;
+      studioState.published = true;
+      publishBtn2.textContent = "Published ✓";
+      publishBtn2.disabled = true;
+      toast("Assessment published — students can now access it.");
+    });
+    actions.appendChild(publishBtn2);
+    studio.appendChild(actions);
+
+    host.appendChild(studio);
+  }
+
 
   /* Leaving the console puts the student's chrome back. It is one class on the
      body rather than two apps, because a teacher who is also studying should
@@ -9875,10 +10786,17 @@
   }
 
   /* ------------------------------------------------------------ Enrolment */
-  function openEnrol(course) {
-    enter("enrol:" + course.id, trim(course.title), function () { openEnrol(course); });
+  function openEnrol(course, studentName, studentEmail) {
+    enter("enrol:" + course.id, trim(course.title), function () { openEnrol(course, studentName, studentEmail); });
     var v = $("#v-admin");
     v.innerHTML = "";
+
+    /* If student info provided, auto-create and enrol */
+    if (studentName && studentEmail) {
+      openEnrolCreate(course, studentName, studentEmail);
+      return;
+    }
+
     consoleHead(v, course.title, "Who is in this course",
       "A student enrolled here has this course on their own screen, and their work on " +
       "it counts towards their grade.");
@@ -9888,6 +10806,12 @@
       .then(function (out) {
         var people = out[0], members = out[1];
         node.remove();
+
+        var acts = cnActions();
+        acts.appendChild(cnAction("Add student", function () { openEnrolCreate(course); }, true));
+        acts.appendChild(cnAction("Quick assign", function () { openEnrolCreate(course, "Saswat Chen", "saswatc@nycstudents.net"); }, true));
+        v.appendChild(acts);
+
         var inCourse = {};
         members.forEach(function (m) { inCourse[m.id] = m.role; });
 
@@ -9965,6 +10889,77 @@
         show("admin");
       }, function (e) { failed(node, e, function () { openEnrol(course); }); });
     show("admin");
+  }
+
+  /* ---------------------------------------------------------- Enrol by course name */
+  function openEnrolByCourseName(name, studentName, studentEmail) {
+    var node = loading($("#v-admin"), "finding course");
+    API.courses.mine().then(function (courses) {
+      node.remove();
+      var course = courses.filter(function (c) { return c.title === name; })[0];
+      if (!course) { toast("Could not find course: " + name); return; }
+      openEnrol(course, studentName, studentEmail);
+    }, function () { toast("Could not load courses."); });
+  }
+
+  /* ---------------------------------------------------------- Quick enrol student */
+  function openEnrolCreate(course, studentName, studentEmail) {
+    enter("enrol-create:" + course.id, trim(course.title), function () { openEnrolCreate(course); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    consoleHead(v, course.title, "Enrolling a student",
+      "Adding a student gives them access to this course and their work counts toward their grade.");
+
+    var node = loading(v, "checking");
+    API.accounts.list(S.me.orgId).then(function (people) {
+      var existing = people.filter(function (p) {
+        return (p.email || "").toLowerCase() === (studentEmail || "").toLowerCase();
+      });
+      node.remove();
+
+      if (existing.length) {
+        var person = existing[0];
+        attempt(API.courses.enrol(course.id, person.id, "student", false), function () {
+          toast(person.name + " is now enrolled in " + course.title + ".");
+          setTimeout(function () { openEnrol(course); }, 800);
+        });
+        return;
+      }
+
+      /* Create the student account first */
+      var form = el("div", "admin-form");
+      var name = field("Full name", studentName || "");
+      var email = field("Email", studentEmail || "");
+      var pw = field("Password", "");
+      pw.input.type = "password";
+      pw.input.autocomplete = "new-password";
+      [name, email, pw].forEach(function (f) { form.appendChild(f); });
+      v.appendChild(form);
+
+      var acts = el("div", "admin-acts");
+      var save = el("button", "lx-btn lg", "Create and enrol");
+      save.type = "button";
+      save.addEventListener("click", function () {
+        if (!name.input.value.trim()) { toast("A name is needed."); return; }
+        if (!email.input.value.trim()) { toast("An email is needed."); return; }
+        save.disabled = true;
+        attempt(API.accounts.create({
+          email: email.input.value.trim(),
+          name: name.input.value.trim(),
+          password: pw.input.value || "change-me",
+          role: "student",
+          orgId: S.me.orgId
+        }), function (account) {
+          attempt(API.courses.enrol(course.id, account.id, "student", false), function () {
+            toast(name.input.value.trim() + " is now enrolled in " + course.title + ".");
+            setTimeout(function () { openEnrol(course); }, 800);
+          });
+        }).then(function () { save.disabled = false; });
+      });
+      acts.appendChild(save);
+      v.appendChild(acts);
+      show("admin");
+    }, function () { toast("Could not check accounts."); });
   }
 
   /* ---------------------------------------------------------- Assignments */
@@ -10573,6 +11568,7 @@
 
       var acts = cnActions();
       acts.appendChild(cnAction("New course", function () { openCourseEditor(null); }, true));
+      acts.appendChild(cnAction("Create from curriculum", function () { openCourseEditor(null, "biology"); }, true));
       acts.appendChild(cnAction("Explore courses", openCatalogue));
       v.appendChild(acts);
 
@@ -10995,29 +11991,103 @@
     attemptWith(c.id, 1);
   }
 
-  function openCourseEditor(c) {
+  function openCourseEditor(c, curriculum) {
     var making = !c;
     enter("course-edit:" + (c ? c.id : "new"), making ? "New course" : trim(c.title),
-          function () { openCourseEditor(c); });
+          function () { openCourseEditor(c, curriculum); });
     var v = $("#v-admin");
     v.innerHTML = "";
     consoleHead(v, making ? "New course" : "Course",
       making ? "Create a course" : c.title);
 
     var body = (c && c.body) || {};
+    var isBio = curriculum === "biology";
+
+    /* Back button */
+    if (!making) {
+      var back = el("button", "cn-back");
+      back.type = "button";
+      back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px;"><path d="M5 12h14"/><path d="m12 5-7 7 7 7"/></svg> Back to Courses';
+      back.addEventListener("click", function () { openAdmin(false, "courses"); });
+      v.appendChild(back);
+    }
+
+    /* Pre-populated Biology curriculum */
+    if (isBio && making) {
+      title.value = "High School Biology";
+      subject.value = "Biology";
+      level.value = "High School";
+      summary.value = "Unit 1: Ecology and Natural Systems — how biotic and abiotic factors interact to shape Earth's natural systems, influence the distribution of life, affect population dynamics, and drive species interactions.";
+      standards.value = "HS-LS2-1\nHS-LS2-2\nHS-LS2-6\nHS-ESS2-7";
+      dcis.value = "HS-LS2.A.1\nHS-LS2.C.1\nHS-ESS2.E.1";
+      practices.value = "Developing and using models\nConstructing explanations and designing solutions\nEngaging in argument from evidence";
+      cccs.value = "Patterns\nCause and effect\nSystems and system models\nStability and change";
+      units.value = "Unit 1: Ecology and Natural Systems";
+      unitPromise.value = "Everything in an ecosystem is connected. A change in temperature can change where a species lives. A change in food can change population size. A change in one species can affect many others.";
+      bigQuestion.value = "How does life interact with the world around it?";
+      unitObjectives.value = "identify the living and nonliving factors that shape ecosystems\nexplain how organisms are organized from populations to the biosphere\nuse data to identify patterns in biodiversity\nexplain how environmental conditions shape where organisms can live\ndistinguish between fundamental and realized niches\nanalyze population growth and carrying capacity\nexplain how competition and other species interactions affect populations\nuse evidence to explain how ecosystems change\napply ecological ideas to real-world problems";
+      unitMap.value = "01 — How Is Life Organized?\n02 — Why Does Life Live Where It Does?\n03 — What Does an Organism Need to Survive?\n04 — How Big Can a Population Get?\n05 — Can We Predict Population Change?\n06 — How Do Species Shape Each Other?";
+      lessons.value = "Lesson 1: How Is Life Organized?\nLesson 2: Why Does Life Live Where It Does?\nLesson 3: What Does an Organism Need to Survive?\nLesson 4: How Big Can a Population Get?\nLesson 5: Investigation — Human-Shark Interactions\nLesson 6: How Do Species Shape Each Other?";
+      phenomena.value = "Bald Eagle: How do biologists know whether a population is changing?\nMonarch Butterfly: Why do monarch butterflies migrate so far?";
+      handsOn.value = "Why are human-shark interactions increasing around Cape Cod?";
+      misconceptions.value = 'A niche is just a habitat.\nPopulations cannot exceed their carrying capacity.\nMore individuals always means higher density.\nCompetition always means fighting.';
+      title.input.disabled = true;
+      subject.input.disabled = true;
+      level.input.disabled = true;
+    }
+
     var form = el("div", "admin-form");
-    var code = field("Code", c ? c.code : "", "a short slug, e.g. media-arts");
+    var code = field("Code", c ? c.code : (isBio ? "biology-eco-1" : ""), "a short slug, e.g. biology");
     if (!making) code.input.disabled = true;
-    var title = field("Title", c ? c.title : "", "Media Arts");
-    var subject = field("Subject", c ? c.subject : "", "English");
-    var level = field("Level", c ? c.level : "Introductory");
+    var title = field("Title", c ? c.title : (isBio ? "High School Biology" : "Biology"), "Biology");
+    if (isBio && making) title.input.disabled = true;
+    var subject = field("Subject", c ? c.subject : "Biology", "Biology");
+    if (isBio && making) subject.input.disabled = true;
+    var level = field("Level", c ? c.level : "High School", "High School");
+    if (isBio && making) level.input.disabled = true;
     var summary = areaField("Summary", c ? c.summary : "", "What this course is, in a sentence.");
+    var standards = areaField("Standards",
+      c && c.body && c.body.standards ? c.body.standards.join("\n") : "",
+      "One standard per line, e.g. HS-LS2-1");
     var grading = areaField("Grading",
       (body.grading || [["Quizzes", 35], ["Assignments", 35], ["Exams", 30]])
         .map(function (g) { return g[0] + " = " + g[1]; }).join("\n"),
       "One category per line, as Name = percent. They should add to 100.", 5);
     var units = areaField("Units", (body.units || []).join("\n"), "One unit per line.", 6);
-    [code, title, subject, level, summary, grading, units].forEach(function (f) {
+    var dcis = areaField("Core Ideas",
+      c && c.body && c.body.dcis ? c.body.dcis.join("\n") : "",
+      "Disciplinary core ideas, one per line");
+    var practices = areaField("Practices",
+      c && c.body && c.body.practices ? c.body.practices.join("\n") : "",
+      "Science and engineering practices, one per line");
+    var cccs = areaField("Crosscutting Concepts",
+      c && c.body && c.body.cccs ? c.body.cccs.join("\n") : "",
+      "Crosscutting concepts, one per line");
+    var unitPromise = areaField("Unit Promise",
+      c && c.body && c.body.unitPromise ? c.body.unitPromise.join("\n") : "",
+      "The core idea students should grasp by the end of the unit");
+    var bigQuestion = field("Big Question",
+      c && c.body && c.body.bigQuestion ? c.body.bigQuestion : "",
+      "The driving question for the unit");
+    var unitObjectives = areaField("Unit Objectives",
+      c && c.body && c.body.unitObjectives ? c.body.unitObjectives.join("\n") : "",
+      "What students will be able to do, one per line");
+    var unitMap = areaField("Unit Map",
+      c && c.body && c.body.unitMap ? c.body.unitMap.join("\n") : "",
+      "Lesson sequence, one per line");
+    var lessons = areaField("Lessons",
+      c && c.body && c.body.lessons ? c.body.lessons.join("\n") : "",
+      "One lesson per line. Format: Lesson N: Title");
+    var phenomena = areaField("Phenomena",
+      c && c.body && c.body.phenomena ? c.body.phenomena.join("\n") : "",
+      "Each phenomenon, one per line");
+    var handsOn = areaField("Hands-on Activity",
+      c && c.body && c.body.handsOn ? c.body.handsOn.join("\n") : "",
+      "Description of the hands-on investigation");
+    var misconceptions = areaField("Common Misconceptions",
+      c && c.body && c.body.misconceptions ? c.body.misconceptions.join("\n") : "",
+      "One misconception per line");
+    [code, title, subject, level, summary, standards, dcis, practices, cccs, units, unitPromise, bigQuestion, unitObjectives, unitMap, lessons, phenomena, handsOn, misconceptions, grading].forEach(function (f) {
       form.appendChild(f);
     });
     v.appendChild(form);
@@ -11046,8 +12116,11 @@
         status: "published",
         body: {
           grading: weights,
-          units: units.input.value.split("\n").map(function (x) { return x.trim(); })
-                      .filter(Boolean)
+          units: units.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
+          lessons: lessons.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
+          standards: standards.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
+          dcis: dcis.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
+          practices: practices.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean)
         }
       };
       if (!payload.title) { toast("A course needs a title."); return; }
@@ -11059,7 +12132,13 @@
       attempt(go, function () {
         toast(making ? "Course created." : "Saved.");
         goBack();
-      }).then(function () { save.disabled = false; });
+      }).then(function () {
+        save.disabled = false;
+        if (making) {
+          var newTitle = title.input.value.trim();
+          openEnrolByCourseName(newTitle);
+        }
+      });
     });
     acts.appendChild(save);
     v.appendChild(acts);
