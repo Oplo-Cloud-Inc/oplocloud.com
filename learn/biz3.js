@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Introduction to Business — Unit 2 Economics and Business; Unit 3 Ethics;
-   Unit 5 Business Writing. Sections 2.1–2.6, 3.1–3.4, 5.1–5.6.
+   Introduction to Business — Unit 3, Business Ethics and Social Responsibility.
+   Sections 3.1–3.4.
 
    Written from the Boundless Textbook the same way as Media Arts Units 5 and 6:
    curated rather than copied. Every definition a section tests on is here,
