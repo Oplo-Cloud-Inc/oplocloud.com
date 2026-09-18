@@ -2,15 +2,15 @@
 
 ## What was built
 
-A complete 6-section student navigation for OEdu with new views, Apple design language, and the Course/Class data model architecture documented.
+A 5-section student navigation for OEdu with new views, Apple design language, and the Course data model documented.
 
-## Files created (5 new view modules)
+The build first shipped a separate Class concept (a "My Classes" tab, a Class Home screen, and `/classes/*` API calls). It was removed on 2026-09-18: OEdu has courses and nothing beside them.
+
+## Files created (3 new view modules)
 
 | File | View | Purpose |
 |---|---|---|
-| `learn/classes.js` | My Classes | Dashboard showing all enrolled classes with progress |
-| `learn/class-home.js` | Class Home | Class detail (assignments, roster, gradebook for teachers) |
-| `learn/assignments.js` | Assignments | All assigned work across classes, sorted by due date |
+| `learn/assignments.js` | Assignments | All assigned work across courses, sorted by due date |
 | `learn/progress.js` | Progress | Mastery, streak, badges, week overview, daily goal |
 | `learn/library.js` | Library | Published courses and study sets catalog |
 
@@ -18,20 +18,20 @@ A complete 6-section student navigation for OEdu with new views, Apple design la
 
 | File | Change |
 |---|---|
-| `learn/index.html` | New 6-section navigation, 5 new view sections, 5 new script tags |
+| `learn/index.html` | 5-section navigation, 3 new view sections, 3 new script tags |
 | `learn/app.js` | View routing for new sections, OPLO_APP bridge, record→progress sync |
-| `learn/api.js` | New `classes`, `assignments` endpoint groups (7 methods) |
-| `learn/app.css` | Apple design styles for class, assignment, library, progress views |
+| `learn/api.js` | New `assignments` endpoint group (2 methods) |
+| `learn/app.css` | Apple design styles for assignment, library, progress views |
 | `OEdu-Architecture.md` | Full product architecture document |
 
 ## Navigation
 
-Home · My Classes · Explore · Assignments · Progress · Library
+Home · Explore · Assignments · Progress · Library
 
 ## Architecture decisions
 
-- **Course vs Class**: Course = canonical curriculum. Class = enrollment instance. A course has many classes.
-- **Assignment is the universal primitive**: connects Course → Class → Student → Grade.
+- **One Course**: a course carries the curriculum, who is enrolled, the work set on it and every mark. There is no Class or section object.
+- **Assignment is the universal primitive**: connects Course → Student → Grade.
 - **Local first**: all new views read from the API when online, gracefully degrade when offline.
 - **Apple HIG**: `--paper #ffffff`, `--canvas #f5f5f7`, `--ink #1d1d1f`, `--blue #0071e3`, SF Pro fonts, 16px cards, 100px pills, translucent sticky bars.
 
@@ -39,18 +39,12 @@ Home · My Classes · Explore · Assignments · Progress · Library
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/classes?mine=true` | Classes a student/teacher is enrolled in |
-| GET | `/api/v1/classes/catalog` | Published class catalog |
-| GET | `/api/v1/classes/:id` | Class detail |
-| GET | `/api/v1/classes/:id/assignments` | Assignments for a class |
-| GET | `/api/v1/classes/:id/members` | Class roster |
-| GET | `/api/v1/classes/:id/gradebook` | Whole class gradebook |
 | GET | `/api/v1/assignments?student=true` | All assignments for a student |
 | GET | `/api/v1/assignments?upcoming=true` | Upcoming assignments |
 
 ## Blocked on backend
 
-- All `/classes/*` endpoints need server implementation
+- `/api/v1/assignments` needs server implementation before the Assignments view can load
 - DNS records for `auth.oplocloud.com` require manual Cloudflare setup (wrangler has only read zone permission)
 - Deploy auth Worker to custom domain pending DNS resolution
 

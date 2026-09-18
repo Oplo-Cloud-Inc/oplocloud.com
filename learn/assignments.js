@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Assignments — all assigned work, across all classes.
+   Assignments — all assigned work, across all courses.
 
    This is the student's work list: everything that has been set, in
    one place, sorted by what is most urgent. A grade that exists but
@@ -67,7 +67,7 @@
 
         var body = el("div");
         var title = el("b", null, esc(w.title));
-        var sub = el("span", null, esc(w.courseTitle || w.classTitle || "") + " · out of " + (w.outOf || 100));
+        var sub = el("span", null, esc(w.courseTitle || "") + " · out of " + (w.outOf || 100));
         body.appendChild(title);
         body.appendChild(sub);
         card.appendChild(body);
@@ -96,7 +96,7 @@
         }
 
         card.addEventListener("click", function () {
-          if (window.OPLO_APP) window.OPLO_APP.showClassHomeById(w.courseId || w.classId);
+          if (window.OPLO_APP && w.courseId) window.OPLO_APP.openCourseById(w.courseId);
         });
 
         list.appendChild(card);

@@ -150,8 +150,8 @@
     citeStyle: "mla",     // what a copied quotation comes out as
     p: {},                // the practice run in flight
     tab: null,            // the console: which section is open
-    courseId: null,       // and which class is on the gradebook
-    reportCourse: null,   // and which class the report list is filtered to
+    courseId: null,       // and which course is on the gradebook
+    reportCourse: null,   // and which course the report list is filtered to
     studentFilter: null,  // the roster's filter, remembered between visits
     studentQuery: null,   // and what was typed into its search
     studentPick: null     // and who was selected, so coming back keeps the place
@@ -531,8 +531,6 @@
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
       b.setAttribute("aria-current", String(b.dataset.view === view));
     });
-    if (view === "classes" && window.OPLO_CLASSES) window.OPLO_CLASSES.draw();
-    if (view === "class-home" && window.OPLO_CLASS_HOME) window.OPLO_CLASS_HOME.draw(S._classHomeCls || null);
     if (view === "assignments" && window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw();
     if (view === "library" && window.OPLO_LIBRARY) window.OPLO_LIBRARY.draw();
     window.scrollTo(0, 0);
@@ -599,15 +597,17 @@
      that shows courses a student is not enrolled in, and then removes them a
      second later, is worse than one that waits. */
   function enrolled() {
-    var mine = (S.me && S.me.assigned) || [];
-    var shipped = allCourses();
-    var out = [];
-    mine.forEach(function (row) {
-      var match = shipped.filter(function (c) { return c.id === row.code; })[0];
-      if (match) { match.dbId = row.id; out.push(match); }
-      else out.push(fromDbCourse(row));
-    });
-    return out;
+    return ((S.me && S.me.assigned) || []).map(courseFromRow);
+  }
+
+  /* A database course as the catalogue screens know it: the shipped course
+     with the same code, carrying the row's id, or the row itself when nothing
+     was shipped for it. */
+  function courseFromRow(row) {
+    var match = allCourses().filter(function (c) { return c.id === row.code; })[0];
+    if (!match) return fromDbCourse(row);
+    match.dbId = row.id;
+    return match;
   }
 
   /* A database course rendered in the shape the catalogue screens expect. */
@@ -8145,7 +8145,7 @@
      numbers on the right are the only thing allowed to be loud, because they
      are the only thing that changes.
 
-     And nothing in the rail is a claim. A count beside a class is a count of
+     And nothing in the rail is a claim. A count beside a course is a count of
      rows the server returned; there is no sparkline, because there is no time
      series behind one and a drawn trend that nothing measured is a decoration
      people read as a fact. */
@@ -8319,7 +8319,7 @@
     return [
       { id: "asm-001", title: "Algebra I — Quadratics Benchmark", course: "Algebra I",
         state: "LIVE", version: "v2.0", createdBy: "Ms. Rivera",
-        duration: 45, items: 35, students: 126, classes: 4,
+        duration: 45, items: 35, students: 126,
         scheduledAt: now + 86400000 * 2, startsAt: now + 86400000 * 2 + 3600000 * 10,
         readiness: 98, createdAt: now - 86400000 * 14,
         approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 5,
@@ -8331,7 +8331,7 @@
       },
       { id: "asm-002", title: "Biology — Ecosystems Assessment", course: "Biology",
         state: "SCHEDULED", version: "v1.1", createdBy: "Mr. Chen",
-        duration: 60, items: 28, students: 94, classes: 3,
+        duration: 60, items: 28, students: 94,
         scheduledAt: now + 86400000 * 5, startsAt: now + 86400000 * 5 + 3600000 * 9,
         readiness: 92, createdAt: now - 86400000 * 10,
         approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 3,
@@ -8343,7 +8343,7 @@
       },
       { id: "asm-003", title: "ELA — Argument & Evidence", course: "ELA",
         state: "IN_REVIEW", version: "v1.0", createdBy: "Ms. Williams",
-        duration: 50, items: 22, students: 118, classes: 4,
+        duration: 50, items: 22, students: 118,
         scheduledAt: null, startsAt: null,
         readiness: 85, createdAt: now - 86400000 * 7,
         approvedBy: null, approvedAt: null,
@@ -8355,7 +8355,7 @@
       },
       { id: "asm-004", title: "Algebra I — Unit 3 Review", course: "Algebra I",
         state: "DRAFT", version: "v1.2", createdBy: "Ms. Rivera",
-        duration: 30, items: 18, students: 126, classes: 4,
+        duration: 30, items: 18, students: 126,
         scheduledAt: null, startsAt: null,
         readiness: 72, createdAt: now - 86400000 * 3,
         approvedBy: null, approvedAt: null,
@@ -8367,7 +8367,7 @@
       },
       { id: "asm-005", title: "Science — Forces & Motion", course: "Science",
         state: "RESULTS_READY", version: "v1.0", createdBy: "Mr. Patel",
-        duration: 40, items: 25, students: 88, classes: 3,
+        duration: 40, items: 25, students: 88,
         scheduledAt: null, startsAt: null,
         readiness: 100, createdAt: now - 86400000 * 21,
         approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 18,
@@ -8379,7 +8379,7 @@
       },
       { id: "asm-006", title: "History — Civilizations Unit", course: "History",
         state: "APPROVED", version: "v1.0", createdBy: "Ms. Okafor",
-        duration: 55, items: 30, students: 102, classes: 4,
+        duration: 55, items: 30, students: 102,
         scheduledAt: now + 86400000 * 8, startsAt: now + 86400000 * 8 + 3600000 * 11,
         readiness: 95, createdAt: now - 86400000 * 12,
         approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 2,
@@ -8565,7 +8565,6 @@
       [asm.duration + " min", "duration"],
       [asm.items, "items"],
       [asm.students, "students"],
-      [asm.classes, "classes"],
       [asm.readiness + "%", "readiness"]
     ];
     statItems.forEach(function (s) {
@@ -8634,7 +8633,6 @@
     var items = [
       ["Scheduled", asm.scheduledAt ? new Date(asm.scheduledAt).toLocaleDateString(undefined, {weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) : "Not scheduled"],
       ["Students", asm.students + " assigned"],
-      ["Classes", asm.classes + " classes"],
       ["Active", (asm.sessions ? asm.sessions.started : 0) + " started"],
       ["Submitted", (asm.sessions ? asm.sessions.submitted : 0)],
       ["Readiness", asm.readiness + "%"]
@@ -9220,7 +9218,7 @@
   }
 
   /* ------------------------------------------------------------------ Today
-     Every class at once, and what each one owes. This is the screen a teacher
+     Every course at once, and what each one owes. This is the screen a teacher
      opens first and it has one job: say where the work is. */
   function consoleHome(v) {
     var when = new Date();
@@ -9228,7 +9226,7 @@
       { weekday: "long", day: "numeric", month: "long" }),
       greeting() + ", " + esc(S.me.first || String(S.me.name).split(" ")[0]) + ".");
 
-    var node = loading(v, "your classes");
+    var node = loading(v, "your courses");
     API.reporting.teaching().then(function (data) {
       node.remove();
       var t = data.totals;
@@ -9240,7 +9238,7 @@
          screen is the one thing there is to do. */
       if (!data.courses.length) {
         var start = el("div", "cn-start");
-        start.appendChild(el("h2", null, "Let’s get your first class in."));
+        start.appendChild(el("h2", null, "Let’s get your first course in."));
         start.appendChild(el("p", null,
           "A course is what carries enrolment, work and grades. Start from one Oplo " +
           "has already written — the units and the grading scheme come with it — or " +
@@ -9262,7 +9260,7 @@
        ["Past due", t.overdue, t.overdue ? "late" : ""],
        ["Below a pass", t.atRisk, ""],
        ["Students", t.students, ""],
-       ["Classes", t.courses, ""]].forEach(function (x) {
+       ["Courses", t.courses, ""]].forEach(function (x) {
         var tile = el("div", "cn-tile" + (x[2] ? " " + x[2] : ""));
         tile.innerHTML = "<b>" + x[1] + "</b><span>" + x[0] + "</span>";
         tiles.appendChild(tile);
@@ -9276,16 +9274,16 @@
             ? "You are not teaching anything yet. Create a course and enrol yourself as its " +
               "teacher, and it appears here."
             : "You are not teaching any courses yet. An administrator enrols you as a " +
-              "teacher, and your classes appear here."));
+              "teacher, and your courses appear here."));
         return;
       }
 
-      v.appendChild(el("h2", "cn-h2", "Your classes"));
+      v.appendChild(el("h2", "cn-h2", "Your courses"));
       var list = el("div", "cn-rows");
       data.courses.forEach(function (c) {
         var row = el("button", "cn-row");
         row.type = "button";
-        /* "All marked" on a class with nobody in it, or nothing set, is a
+        /* "All marked" on a course with nobody in it, or nothing set, is a
            product telling a teacher they are finished before they have
            started. Say what is actually missing. */
         var state = !c.students
@@ -9301,7 +9299,7 @@
             esc(c.subject || c.code) + " · " + c.students +
             (c.students === 1 ? " student" : " students") + "</span></span>" +
           "<span class='m'>" + (c.average == null ? "<i>—</i>" : "<i>" + c.average + "%</i>") +
-            "<span>class average</span></span>" +
+            "<span>course average</span></span>" +
           "<span class='s'>" + state + "</span>";
         row.addEventListener("click", function () {
           S.courseId = c.id;
@@ -9311,7 +9309,7 @@
       });
       v.appendChild(list);
 
-      /* What is owed, named, across every class — the same strip the gradebook
+      /* What is owed, named, across every course — the same strip the gradebook
          shows for one, which is the point: it is the same computation on the
          server, asked over more courses. */
       var needs = [];
@@ -9343,25 +9341,25 @@
   }
 
   /* ------------------------------------------------------------------- Work
-     Everything set, across every class. The gradebook is where work is marked;
+     Everything set, across every course. The gradebook is where work is marked;
      this is where it is kept — renamed, re-weighted, given a due date, or
      removed. */
   function tabWork(v) {
     consoleHead(v, "Teaching", "Work",
-      "Everything set across your classes. A piece of work is a column on the " +
+      "Everything set across your courses. A piece of work is a column on the " +
       "gradebook, and what it is out of is what a mark on it is measured against.");
 
-    var node = loading(v, "your classes");
+    var node = loading(v, "your courses");
     API.courses.mine().then(function (courses) {
       var teaching = S.me.role === "admin" ? courses
         : courses.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
       node.remove();
       if (!teaching.length) {
         v.appendChild(S.me.role === "admin"
-          ? cnEmpty("No classes yet, so there is nothing set.",
+          ? cnEmpty("No courses yet, so there is nothing set.",
               "Work is set on a course. Make one first and its columns appear here.",
               "Explore courses", openCatalogue)
-          : cnEmpty("No classes yet, so there is nothing set.",
+          : cnEmpty("No courses yet, so there is nothing set.",
               "An administrator enrols you as a teacher on a course, and the work you " +
               "set on it appears here."));
         return;
@@ -9445,7 +9443,7 @@
         var pick = el("div", "gb-pick");
         var all = el("button", "gb-pickb" + (S.reportCourse ? "" : " on"));
         all.type = "button";
-        all.innerHTML = "<b>Every class</b><span>" + data.rows.length + " reports</span>";
+        all.innerHTML = "<b>Every course</b><span>" + data.rows.length + " reports</span>";
         all.addEventListener("click", function () {
           S.reportCourse = null; openAdmin(true, "reports");
         });
@@ -9850,12 +9848,12 @@
   }
 
   /* ------------------------------------------------------------- Students
-     The class, as one sheet.
+     The course, as one sheet.
 
      What was here before was a card per student, and a screen per student to
-     mark them on. Marking one quiz for a class of twenty-eight meant opening
+     mark them on. Marking one quiz for twenty-eight students meant opening
      twenty-eight screens, and the arithmetic a teacher actually does — who
-     has not handed this in, what did the class find hard, who is sliding —
+     has not handed this in, what did the students find hard, who is sliding —
      was not on any of them. A gradebook that can only be read one person at a
      time is not a gradebook; it is twenty-eight report cards.
 
@@ -9889,7 +9887,7 @@
 
   function tabRoster(v) {
     /* Every other console screen names itself. This one went straight into
-       the class picker, which made it the one place you could arrive and not
+       the course picker, which made it the one place you could arrive and not
        be told where you were. */
     consoleHead(v, "Teaching", "Gradebook",
       "Students down, work across. Type a score, <b>m</b> for not handed in, " +
@@ -9923,7 +9921,7 @@
         S.courseId = teaching[0].id;
       }
 
-      /* One class at a time. A stack of grids is a stack of things to scroll
+      /* One course at a time. A stack of grids is a stack of things to scroll
          past to reach the one being marked. */
       if (teaching.length > 1) {
         var pick = el("div", "gb-pick");
@@ -9946,12 +9944,12 @@
     }, function (e) { failed(node, e, function () { openAdmin(true, "roster"); }); });
   }
 
-  /* One request for the whole class. It used to be one for the members, one
-     for the work, and two per student — sixty-odd for a class of thirty, each
+  /* One request for the whole course. It used to be one for the members, one
+     for the work, and two per student — sixty-odd for thirty students, each
      able to fail on its own and leave the sheet half true. */
   function loadBook(host, courseId) {
     host.innerHTML = "";
-    var node = loading(host, "the class");
+    var node = loading(host, "the gradebook");
     API.grades.book(courseId).then(function (book) {
       node.remove();
       BOOK = book;
@@ -10181,7 +10179,7 @@
       n.innerHTML = col.average == null ? "<span class='gb-none'>—</span>"
         : "<b>" + col.average + "%</b>";
       n.title = col.average == null ? "Nothing marked yet."
-        : "The class average on " + a.title + ", over what has been marked.";
+        : "The course average on " + a.title + ", over what has been marked.";
     });
   }
 
@@ -10310,7 +10308,7 @@
     setTimeout(function () { node.classList.remove("ok"); }, 900);
   }
 
-  /* The class's own numbers — what each column averages, what is still owed —
+  /* The course's own numbers — what each column averages, what is still owed —
      are the server's arithmetic too, so they are re-read rather than
      recomputed here. Debounced, because they are not what the teacher is
      looking at while they type. */
@@ -11375,12 +11373,12 @@
   }
 
   /* ================================================================ Students
-     The people, across every class, with the comparison a teacher is actually
+     The people, across every course, with the comparison a teacher is actually
      making visible in one screen. Selecting somebody fills the inspector; it
      does not take the list away. */
   function tabStudents(v) {
     consoleHead(v, "Teaching", "Students",
-      "Everyone you teach, once. A student in three of your classes is one " +
+      "Everyone you teach, once. A student in three of your courses is one " +
       "row with three grades on it, not three rows.");
 
     var node = loading(v, "your students");
@@ -11396,7 +11394,7 @@
           v.appendChild(mine.length
             ? cnEmpty("Nobody is enrolled yet.",
                 "Enrol students into " + esc(mine[0].title) + " and they appear here, with " +
-                "their standing in every class you share with them.",
+                "their standing in every course you share with them.",
                 "Enrol students", function () { openEnrol(mine[0]); })
             : cnEmpty("Nobody is enrolled yet.",
                 "Students are enrolled on a course, so there needs to be one first.",
@@ -11404,7 +11402,7 @@
                 S.me.role === "admin" ? openCatalogue : null));
         }, function () {
           v.appendChild(cnEmpty("Nobody is enrolled yet.",
-            "Enrol students into a class and they appear here."));
+            "Enrol students into a course and they appear here."));
         });
         return;
       }
@@ -11514,11 +11512,11 @@
     big.innerHTML = s.standing == null
       ? "<b>—</b><span>nothing marked yet</span>"
       : "<b>" + s.standing + "%</b><span>across " + s.courses.length +
-        (s.courses.length === 1 ? " class" : " classes") + "</span>";
+        (s.courses.length === 1 ? " course" : " courses") + "</span>";
     box.appendChild(big);
 
     var t = cnTable([
-      { label: "Class", w: "minmax(120px, 1fr)" },
+      { label: "Course", w: "minmax(120px, 1fr)" },
       { label: "Grade", w: "78px", align: "right" },
       { label: "Missing", w: "70px", align: "right" }
     ]);
@@ -11556,7 +11554,7 @@
      under which that usually arrives. */
   function tabActivity(v) {
     consoleHead(v, "School", "Activity",
-      "Every change to a mark in your classes. Not a log of what anybody looked " +
+      "Every change to a mark in your courses. Not a log of what anybody looked " +
       "at — only the things that change what a student's grade says.");
 
     var node = loading(v, "what happened");
@@ -11731,7 +11729,7 @@
       tile("Students", students == null ? "—" : students);
       tile("Work set", work == null ? "—" : work);
       tile("Units", unitNames.length || "—");
-      tile("Class average", avg == null ? "—" : avg + "%");
+      tile("Course average", avg == null ? "—" : avg + "%");
       if (owed) tile("Unmarked", owed, "owe");
 
       /* ------------------------------------------------------ What it is */
@@ -11862,7 +11860,7 @@
       }
       if (!book) {
         slot.appendChild(el("p", "cn-fine",
-          "The class numbers are missing because you do not teach this course — you " +
+          "The course numbers are missing because you do not teach it — you " +
           "wrote it. Enrol yourself as a teacher to see and mark its students."));
       }
       show("admin");
@@ -12190,7 +12188,7 @@
   }
 
   /* ----------------------------------------------------------- Study sets
-     Written by teachers, studied by their classes, stored in the database.
+     Written by teachers, studied by their students, stored in the database.
 
      Until this existed the tab carried a warning saying sets reached nobody
      but the person who wrote them. The warning is gone because the thing it
@@ -12223,7 +12221,7 @@
       } else {
         var t = cnTable([
           { label: "Set", w: "minmax(180px, 1.4fr)" },
-          { label: "Class", w: "minmax(140px, 1fr)" },
+          { label: "Course", w: "minmax(140px, 1fr)" },
           { label: "Terms", w: "80px", align: "right" },
           { label: "Status", w: "100px", align: "right" }
         ]);
@@ -13556,8 +13554,6 @@
       markSubjectNav(null);
       noFoot(); progress(null);
       if (b.dataset.view === "my") home();
-      else if (b.dataset.view === "classes") { S._classHomeCls = null; show("classes"); }
-      else if (b.dataset.view === "class-home") show("class-home");
       else if (b.dataset.view === "assignments") { if (window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw(); show("assignments"); }
       else if (b.dataset.view === "progress") { if (window.OPLO_PROGRESS) { if (R) window.OPLO_PROGRESS.setRecord(R); window.OPLO_PROGRESS.draw(); } show("progress"); }
       else if (b.dataset.view === "library") { if (window.OPLO_LIBRARY) window.OPLO_LIBRARY.draw(); show("library"); }
@@ -13627,43 +13623,30 @@
     enter: enter,
     show: show,
     subjectPct: function (name) { return subjectPct(name); },
-    openClassHome: function (cls) {
-      S._classHomeCls = cls;
-      root("class-home", cls.t || "Class", function () { window.OPLO_CLASS_HOME.draw(cls); });
-      show("class-home");
-    },
-    showClassHome: function (cls) {
-      S._classHomeCls = cls;
-      window.OPLO_CLASS_HOME.draw(cls);
-      show("class-home");
-    },
-    showClassHomeById: function (id) {
-      if (!API) return;
-      API.classes.get(id).then(function (r) {
-        if (r && r.class) window.OPLO_APP.showClassHome(r.class);
-      }, function () { });
-    },
     showAssignments: function () {
       if (window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw();
       show("assignments");
     },
-    showAssignmentsForClass: function (classId) {
+    /* A course from the database — a Library card, or the course a piece of
+       work was set on — opens as the course screen, matched to the shipped
+       curriculum the way the home screen matches enrolment. */
+    openCourseRow: function (row) {
+      if (row) openCourse(courseFromRow(row));
+    },
+    openCourseById: function (id) {
+      var known = ((S.me && S.me.assigned) || []).concat((S.me && S.me.teaching) || [])
+        .filter(function (r) { return r.id === id; })[0];
+      if (known) { openCourse(courseFromRow(known)); return; }
       if (!API) return;
-      API.classes.assignments(classId).then(function () {
-        show("assignments");
-        if (window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw();
-      }, function () { show("assignments"); });
+      API.courses.get(id).then(function (row) {
+        if (row) openCourse(courseFromRow(row));
+      }, function () { toast("That course could not be opened."); });
     },
     openSet: function (setId) {
       if (!API) return;
       API.studySets.get(setId).then(function (r) {
         if (r && r.studySet) openSet(r.studySet.id || r.studySet.code || setId);
       }, function () { });
-    },
-    showCreateAssignment: function (cls) {
-      var title = el("input", "lx-num", "");
-      title.style.cssText = "height:48px;border-radius:12px;border:1.5px solid var(--hair);background:var(--paper);font-size:16px;padding:0 15px;";
-      toast("Set assignment — coming soon");
     }
   };
 })();

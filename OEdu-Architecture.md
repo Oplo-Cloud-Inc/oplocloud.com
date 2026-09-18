@@ -6,43 +6,33 @@ OEdu is an Oplo product for schools: courses you work through by solving, study 
 
 ## 2. Core Data Model
 
-### 2.1 Course vs Class
+### 2.1 The Course
 
-The single most important distinction in OEdu:
+The Course is the one thing people are enrolled in. It carries the curriculum — units, readings, practice, study sets — and everything that happens around it: who teaches it, who takes it, the work set on it, and every mark.
 
-| | **Course** | **Class** |
-|---|---|---|
-| What it is | Canonical curriculum — the syllabus, units, and content | Live enrollment instance — students, teacher, schedule |
-| Written by | Authors / publishers | Teachers (instantiated from a Course) |
-| Shared | Across all schools that license it | Only within the school that created it |
-| Has | Units, readings, practice problems, study sets | Students, teacher, assignments, grades |
-| Lifetime | Years | One term (or longer) |
-| Example | "Media Arts Grade 10" | "Ms. Rivera's Period 3 Media Arts" |
+The written curriculum ships with the app (`data.js`) and is matched to a database course by its code, so a database course `media` shows the Media Arts units. A student can be enrolled in a course without having started it.
 
-A Course can have many Classes. A Class belongs to one Course. A student can be enrolled in a Class without having started the Course.
+OEdu has no Class (section, period, or "My Classes") concept. One was added on 2026-09-18 and removed the same day: a teacher's roster, gradebook and work are the course's, and there is no second object to keep in step with it. Do not reintroduce it.
 
 ### 2.2 Entity Relationships
 
 ```
 Organization
-├── Course (canonical curriculum)
+├── Course (curriculum and enrolment)
 │   ├── Unit (sequenced learning material)
 │   ├── StudySet (drillable terms, authored for a Course)
-│   └── Assignment (work that can be set and graded)
-│
-├── Class (enrollment instance of a Course)
-│   ├── Enrolment (Student ↔ Class, with role)
-│   ├── Assignment (set on this Class, optional overrides)
+│   ├── Enrolment (Account ↔ Course, with role: student, teacher, assistant)
+│   ├── Assignment (work that can be set and graded)
 │   └── Grade (mark on an Assignment, per student)
 │
 ├── Student (Account with role "student")
-│   ├── Enrolment (× many Classes)
+│   ├── Enrolment (× many Courses)
 │   ├── Progress (mastery record, synced)
 │   ├── Transcript (formal record, graduation)
 │   └── FamilyLink (guardians who can read)
 │
 └── Teacher (Account with role "teacher")
-    ├── Teaching (Classes they teach)
+    ├── Teaching (Courses they teach)
     └── AuthoredContent (Courses, StudySets they created)
 ```
 
@@ -52,8 +42,7 @@ An Assignment is the thing a teacher sets. It is the most important object in OE
 
 ```
 Assignment
-├── Course        — what curriculum it belongs to
-├── Class         — who it is set for (optional: can be Course-level)
+├── Course        — what it is set on, and so who it is set for
 ├── Title         — what it is
 ├── Category      — Work, Quiz, Project, Exam, Reading
 ├── OutOf         — maximum score
@@ -74,42 +63,36 @@ Work with no mark yet is not invisible — it is the only work a student can sti
 Sign-in (Root)
 └── Home (role-based redirect)
     └── Student home (/student/)
-        ├── My Classes → Class list
-        │   └── Class Home → Class detail
-        │       ├── Assignments (set work)
-        │       ├── Gradebook (per student)
-        │       └── Roster (class members)
         ├── Explore (open catalog)
-        │   ├── All courses
+        │   ├── All courses → Course (units, study sets, mastery)
         │   └── Published study sets
-        ├── Assignments (all work, across classes)
+        ├── Assignments (all work, across courses)
         ├── Progress (mastery, streak, badges)
         └── Library (published content)
 ```
 
 ### 3.2 Navigation
 
-The top bar shows six sections:
+The top bar shows five sections:
 
 1. **Home** — Command centre: standing, next step, set work, today's plan
-2. **My Classes** — Every Class the student is enrolled in, with progress
-3. **Explore** — Open learning catalog: courses and study sets not yet enrolled
-4. **Assignments** — All assigned work across all Classes, sorted by due date
-5. **Progress** — Mastery, streak, badges, week overview
-6. **Library** — Published study sets and courses available to browse
+2. **Explore** — Open learning catalog: courses and study sets not yet enrolled
+3. **Assignments** — All assigned work across all courses, sorted by due date
+4. **Progress** — Mastery, streak, badges, week overview
+5. **Library** — Published study sets and courses available to browse
 
 ### 3.3 Teacher Journey
 
 ```
 Sign-in
 └── Teacher home (/teacher/)
-    ├── Teaching (Classes I teach)
-    │   └── Class Home → Class detail
+    ├── Teaching (Courses I teach)
+    │   └── Course
     │       ├── Roster (students)
     │       ├── Assignments (set and grade)
-    │       ├── Gradebook (whole class)
+    │       ├── Gradebook (whole course)
     │       └── Reporting (comments, readiness)
-    ├── Create (course or class)
+    ├── Create (course)
     │   ├── AI-assisted (describe → syllabus)
     │   └── Manual (fill the form)
     └── Authored (my Courses and StudySets)
@@ -150,39 +133,31 @@ OEdu follows Apple's design language:
 |---|---|---|
 | `/api/v1/me` | All | Who is signed in |
 | `/api/v1/courses` | Home, Explore, Library | List courses (mine or org) |
-| `/api/v1/courses/:id` | Class Home | Course detail |
-| `/api/v1/courses/:id/members` | Class Home | Class roster |
-| `/api/v1/courses/:id/assignments` | Class Home, Assignments | Set work |
+| `/api/v1/courses/:id` | Course, Assignments, Library | Course detail |
+| `/api/v1/courses/:id/members` | Teacher | Course roster |
+| `/api/v1/courses/:id/assignments` | Teacher | Set work |
 | `/api/v1/courses/:id/enrol` | Teacher | Enrol/unenrol |
 | `/api/v1/grades` | Student, Teacher | Individual marks |
 | `/api/v1/grades/batch` | Teacher | Fill a column |
 | `/api/v1/grades/undo` | Teacher | Reverse a change |
-| `/api/v1/courses/:id/gradebook` | Teacher | Whole class register |
+| `/api/v1/courses/:id/gradebook` | Teacher | Whole course register |
 | `/api/v1/courses/:id/whatif` | Teacher | Hypothetical grade |
 | `/api/v1/grades/history` | All | Mark audit trail |
 | `/api/v1/progress` | Sync | Student record sync |
 | `/api/v1/gamification/standing` | Home | XP, rank, streak |
 | `/api/v1/gamification/events` | Sync | XP events |
 | `/api/v1/study-sets` | Explore, Library | Study sets |
-| `/api/v1/teaching` | Teacher | Classes taught |
+| `/api/v1/teaching` | Teacher | Courses taught |
 | `/api/v1/coursework` | Home | Set work summary |
 | `/api/v1/family` | Parent | Children |
 | `/api/v1/graduation` | Student | Diploma progress |
 | `/api/v1/reporting` | Teacher | Reporting readiness |
 
-### 5.2 Course/Class Endpoint Design
-
-**New endpoints needed:**
+### 5.2 Endpoints Still Needed
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/classes` | Classes a student/teacher is enrolled in |
-| GET | `/api/v1/classes/:id` | Class detail (roster, teacher, schedule) |
-| POST | `/api/v1/classes` | Create a Class from a Course template |
-| GET | `/api/v1/classes/:id/assignments` | Assignments set on this Class |
-| POST | `/api/v1/classes/:id/assignments` | Set an Assignment on this Class |
-| GET | `/api/v1/classes/:id/gradebook` | Whole class register |
-| GET | `/api/v1/courses/catalog` | Open catalog (publishable courses) |
+| GET | `/api/v1/assignments?student=true` | The Assignments view's list across courses. It does not exist yet, so the view cannot load; `/api/v1/coursework` already returns the same work and may be the better source. |
 
 ## 6. Progress Model
 
@@ -234,8 +209,6 @@ learn/
 ├── learn.js            — Learning engine (5 dimensions, spaced repetition)
 ├── kmap.js             — Knowledge map visualization
 ├── home.js             — Role-based routing
-├── classes.js          — My Classes dashboard (NEW)
-├── class-home.js       — Class homepage (NEW)
 ├── assignments.js      — Assignments view (NEW)
 ├── progress.js         — Progress/analytics view (NEW)
 ├── library.js          — Library/catalog view (NEW)
@@ -245,15 +218,12 @@ learn/
 ## 9. Implementation Priority
 
 ### Phase 1: Foundation — COMPLETED
-- [x] Course/Class data model documented (Course = curriculum, Class = enrollment instance)
-- [x] New student navigation (6 sections: Home, My Classes, Explore, Assignments, Progress, Library)
-- [x] My Classes dashboard (`learn/classes.js`)
+- [x] Course data model documented (one Course carries curriculum, enrolment, work and marks)
+- [x] Student navigation (5 sections: Home, Explore, Assignments, Progress, Library)
 - [x] Explore page (exists via `app.js` drawExplore)
 
-### Phase 2: Class Experience — COMPLETED
-- [x] Class homepage for students and teachers (`learn/class-home.js`)
-- [x] Assignment list across all classes (`learn/assignments.js`)
-- [x] Class gradebook (teacher view, in class-home.js)
+### Phase 2: Assignments — COMPLETED
+- [x] Assignment list across all courses (`learn/assignments.js`)
 
 ### Phase 3: Progress and Library — COMPLETED
 - [x] Progress/analytics view (`learn/progress.js`)
@@ -261,12 +231,10 @@ learn/
 - [x] Apple design language already built into existing app.css
 
 ### Phase 4: Teacher Tools — PARTIALLY IMPLEMENTED
-- [x] Create assignment entry point (toast: "coming soon")
-- [x] Class creation endpoint defined in API adapter
 - [x] Interactive learning components (existing in app.js)
 
 ### Phase 5: Polish — NEXT STEPS
-- [ ] API backend endpoints for `/classes/*` need server implementation
+- [ ] `/api/v1/assignments` list endpoint for the Assignments view (see 5.2)
 - [ ] Cross-device sync for new views (sync.js framework exists)
 - [ ] DNS records for `auth.oplocloud.com` (manual Cloudflare setup required)
 - [ ] Deploy auth Worker to custom domain after DNS resolves

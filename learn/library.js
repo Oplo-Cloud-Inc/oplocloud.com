@@ -108,7 +108,7 @@
     }
     card.appendChild(foot);
     card.addEventListener("click", function () {
-      if (window.OPLO_APP) window.OPLO_APP.showClassHomeById(c.id);
+      if (window.OPLO_APP) window.OPLO_APP.openCourseRow(c);
     });
     return card;
   }
