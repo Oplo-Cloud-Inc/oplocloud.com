@@ -531,8 +531,6 @@
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
       b.setAttribute("aria-current", String(b.dataset.view === view));
     });
-    if (view === "assignments" && window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw();
-    if (view === "library" && window.OPLO_LIBRARY) window.OPLO_LIBRARY.draw();
     window.scrollTo(0, 0);
     if (typeof Tutor !== "undefined" && Tutor && Tutor.where) Tutor.where();
   }
@@ -6423,185 +6421,15 @@
     }, function (e) { failed(wait, e, function () { openGrades(true); }); });
   }
 
-  /* ----------------------------------------------------------- Exams ATB
-     The assessment universe. Every exam a student has, sorted
-     into Today, Upcoming, Past — the three states that matter.
-     Every card is one assessment with a clear status: what is
-     happening now, what waits, what is done. */
-
-  var EXAM_ICONS = {
-    today:    '<path d="M12 3v3"/><path d="M12 18v3"/><circle cx="12" cy="12" r="3.5"/><path d="M5 12h2M17 12h2M12 5v2M12 17v2" stroke-width="1.5"/>',
-    upcoming: '<rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/>',
-    past:     '<path d="M20 6 9 17l-5-5"/>'
-  };
-
-  function sortExams(exams) {
-    var now = Date.now();
-    var today = [], upcoming = [], past = [];
-    exams.forEach(function (e) {
-      var t = e.at || e.startsAt || 0;
-      if (t - now < 864e5 && t > now - 864e5) today.push(e);
-      else if (t > now) upcoming.push(e);
-      else past.push(e);
-    });
-    today.sort(function (a, b) { return (a.startsAt || 0) - (b.startsAt || 0); });
-    upcoming.sort(function (a, b) { return (a.startsAt || 0) - (b.startsAt || 0); });
-    past.sort(function (a, b) { return (b.startsAt || 0) - (a.startsAt || 0); });
-    return { today: today, upcoming: upcoming, past: past };
-  }
-
-  function examCard(e) {
-    var isPast = e.status === "past" || (e.score != null);
-    var status = "upcoming";
-    if (e.status === "today" || (!isPast && e.startsAt && e.startsAt - Date.now() < 864e5)) status = "today";
-    else if (isPast) status = "past";
-
-    var card = el("button", "lx-exam-card");
-    card.type = "button";
-    card.addEventListener("click", function () { openExam(e); });
-
-    var iconBg = status === "today" ? "#e8f5ee" : status === "past" ? "var(--canvas)" : "#e2f0fd";
-    var iconColor = status === "today" ? "#12915a" : status === "past" ? "var(--ink-3)" : "#0060c0";
-    var svgPath = status === "past" ? EXAM_ICONS.past : EXAM_ICONS[status] || EXAM_ICONS.upcoming;
-
-    card.innerHTML =
-      '<div class="lx-exam-top">' +
-        '<div class="lx-exam-icon" style="background:' + iconBg + ';color:' + iconColor + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + svgPath + "</svg>" +
-        "</div>" +
-        '<span class="lx-exam-status ' + status + '"><span class="dot"></span>' + esc(status.charAt(0).toUpperCase() + status.slice(1)) + "</span>" +
-      "</div>" +
-      '<div class="lx-exam-title">' + esc(e.title || e.name || "Assessment") + "</div>" +
-      '<div class="lx-exam-sub">' + esc(e.course || "Course") + " · " + esc(e.type || "Exam") + "</div>" +
-      '<div class="lx-exam-when">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' +
-        esc(e.when || "") +
-      "</div>" +
-      '<div class="lx-exam-meta">' +
-        '<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>' + esc(e.questions || "") + " questions</span>" +
-        '<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' + esc(e.duration || "") + "</span>" +
-        (e.score != null ? '<span class="lx-exam-score">' + esc(e.score) + "</span>" : "") +
-      "</div>" +
-      (status !== "past" ?
-        '<span class="lx-exam-go">Begin <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>' :
-        '<span class="lx-exam-go">Review <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>');
-    return card;
-  }
-
-  function drawExamGroup(host, label, items, whenLabel) {
-    if (!items.length) return;
-    var g = el("section", "lx-exam-group");
-    var head = el("div", "lx-exam-group-head");
-    head.innerHTML = "<h2>" + esc(label) + "</h2><p>" + esc(whenLabel) + "</p>";
-    g.appendChild(head);
-    var grid = el("div", "lx-exam-grid");
-    items.forEach(function (e) { grid.appendChild(examCard(e)); });
-    g.appendChild(grid);
-    host.appendChild(g);
-  }
-
-  function drawExams(host, exams) {
-    host.innerHTML = "";
-    var sorted = sortExams(exams);
-    var hasToday = sorted.today.length || sorted.upcoming.length;
-
-    if (hasToday) {
-      var strip = el("div", "lx-today-strip");
-      var nextExam = sorted.today[0] || sorted.upcoming[0];
-      var inMin = nextExam.startsAt ? Math.max(0, Math.round((nextExam.startsAt - Date.now()) / 60000)) : 0;
-      var begins = inMin <= 1 ? "Begins now" : inMin < 60 ? "Begins in " + inMin + " min" : "Today";
-      strip.innerHTML = '<div><p class="k">Exams today</p><h2>' + esc(nextExam.title || nextExam.name || "Assessment") + "</h2>" +
-        '<p>' + esc(begins) + " · " + (nextExam.when || "") + "</p></div>" +
-        '<button class="lx-btn lg" type="button">Begin</button>';
-      strip.querySelector(".lx-btn").addEventListener("click", function () { openExam(sorted.today[0] || sorted.upcoming[0]); });
-      host.appendChild(strip);
-    }
-
-    var tabs = el("div", "lx-exam-tabs");
-    var counts = { today: sorted.today.length, upcoming: sorted.upcoming.length, past: sorted.past.length };
-    ["today", "upcoming", "past"].forEach(function (k) {
-      var b = el("button", "lx-exam-tab" + (k === "today" ? " on" : ""));
-      b.type = "button";
-      b.dataset.examTab = k;
-      b.setAttribute("aria-current", String(k === "today"));
-      b.innerHTML = esc(k.charAt(0).toUpperCase() + k.slice(1)) + '<span class="n">' + counts[k] + "</span>";
-      b.addEventListener("click", function () { switchExamTab(b, sorted); });
-      tabs.appendChild(b);
-    });
-    host.appendChild(tabs);
-
-    var active = sorted.today.length ? sorted.today : sorted.upcoming.length ? sorted.upcoming : sorted.past;
-    var group = el("div");
-    drawExamGroup(group, "Today", sorted.today, "Starting soon");
-    drawExamGroup(group, "Upcoming", sorted.upcoming, "Scheduled");
-    drawExamGroup(group, "Past", sorted.past, "Completed");
-    host.appendChild(group);
-
-    if (!sorted.today.length && !sorted.upcoming.length && !sorted.past.length) {
-      var empty = el("div", "lx-exams-empty");
-      empty.innerHTML = '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/><path d="M9 14l2 2 4-4"/></svg></div>' +
-        "<h2>Nothing on your calendar yet.</h2>" +
-        "<p>When your teachers schedule an assessment, it appears here — sorted by when it begins.</p>";
-      group.appendChild(empty);
-    }
-  }
-
-  function switchExamTab(btn, sorted) {
-    var parent = btn.parentElement;
-    [].forEach.call(parent.children, function (b) {
-      b.classList.toggle("on", b === btn);
-      b.setAttribute("aria-current", String(b === btn));
-    });
-    var target = btn.dataset.examTab;
-    var view = btn.closest(".lx-view");
-    var groups = view ? view.querySelectorAll(".lx-exam-group") : [];
-    [].forEach.call(groups, function (g) {
-      var heading = g.querySelector(".lx-exam-group-head h2");
-      if (!heading) return;
-      var show = (target === "today" && heading.textContent === "Today") ||
-                 (target === "upcoming" && heading.textContent === "Upcoming") ||
-                 (target === "past" && heading.textContent === "Past");
-      g.style.display = show ? "" : "none";
-    });
-  }
-
-  function openExam(e) { /* Future: opens exam detail or begins secure session */ }
-
+  /* ---------------------------------------------------------------- Exams
+     The tab belongs to the assessment runtime (exam.js): it lists what this
+     student has been set, runs a sitting and keeps the work safe. This only
+     gives it the screen. */
   function openExams(silent) {
     if (!silent) root("exams", "Exams", function () { openExams(true); });
-    var v = $("#v-exams");
-    v.innerHTML = "";
-    var head = el("div", "lx-exams-head");
-    head.innerHTML = '<div><p class="lx-eyebrow">Assessment centre</p><h1 class="lx-h1">My Exams</h1>' +
-      '<p class="sub">Every assessment you have — today, upcoming, and past.</p></div>';
-    v.appendChild(head);
-    var host = el("div", "lx-exams-host");
-    v.appendChild(host);
     noFoot(); progress(null);
     show("exams");
-    API.exams == null ? drawExams(host, sampleExams()) : API.exams().then(
-      function (data) { drawExams(host, data); },
-      function () { drawExams(host, sampleExams()); }
-    );
-  }
-
-  /* Demo data shown while the server has not answered. */
-  function sampleExams() {
-    var now = Date.now();
-    return [
-      { title: "Algebra I — Unit 4", course: "Algebra I", type: "Unit Exam", score: null, status: "today",
-        startsAt: now + 3600000 * 2, questions: "40", duration: "60 min", when: "Friday · 10:00 AM" },
-      { title: "Algebra I — Midterm", course: "Algebra I", type: "Midterm", score: null, status: "today",
-        startsAt: now + 3600000 * 5, questions: "75", duration: "90 min", when: "Friday · 1:00 PM" },
-      { title: "Biology — Cell Structure", course: "Biology", type: "Quiz", score: null, status: "upcoming",
-        startsAt: now + 86400000 * 1, questions: "12", duration: "20 min", when: "Monday · 9:00 AM" },
-      { title: "Algebra I — Practice Final", course: "Algebra I", type: "Practice Exam", score: null, status: "upcoming",
-        startsAt: now + 86400000 * 2, questions: "35", duration: "75 min", when: "Next Wednesday" },
-      { title: "Algebra I — Unit 3", course: "Algebra I", type: "Unit Exam", score: "87%", status: "past",
-        startsAt: now - 86400000 * 3, questions: "40", duration: "60 min", when: "Tuesday · 10:00 AM" },
-      { title: "Biology — Genetics", course: "Biology", type: "Midterm", score: "91%", status: "past",
-        startsAt: now - 86400000 * 6, questions: "60", duration: "80 min", when: "Last Friday" }
-    ];
+    if (window.OPLO_EXAM) window.OPLO_EXAM.hub($("#v-exams"), S.me);
   }
 
   /* `empty` is what to say when there is nothing yet. The student is spoken to
@@ -13127,6 +12955,8 @@
       home();
       Room.presence();
       Room.fromLink();
+      // A sitting that was running when the page went away comes straight back.
+      if (window.OPLO_EXAM) window.OPLO_EXAM.resume(S.me);
     }
 
     /* Enrolment is the database's answer, not a list in a file. The home
@@ -13185,6 +13015,7 @@
   }
 
   function signOut() {
+    if (window.OPLO_EXAM) window.OPLO_EXAM.close(true);   // saved first, then closed
     if (R) R.flush();                 // never leave the last few answers unwritten
     Sync.flushNow();
     if (Progress) { Progress.flushNow(); Progress.stop(); Progress = null; }
@@ -13554,9 +13385,7 @@
       markSubjectNav(null);
       noFoot(); progress(null);
       if (b.dataset.view === "my") home();
-      else if (b.dataset.view === "assignments") { if (window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw(); show("assignments"); }
       else if (b.dataset.view === "progress") { if (window.OPLO_PROGRESS) { if (R) window.OPLO_PROGRESS.setRecord(R); window.OPLO_PROGRESS.draw(); } show("progress"); }
-      else if (b.dataset.view === "library") { if (window.OPLO_LIBRARY) window.OPLO_LIBRARY.draw(); show("library"); }
       else if (b.dataset.view === "admin") openAdmin();
       else if (b.dataset.view === "grades") openGrades();
       else if (b.dataset.view === "exams") openExams();
@@ -13622,31 +13451,6 @@
   window.OPLO_APP = {
     enter: enter,
     show: show,
-    subjectPct: function (name) { return subjectPct(name); },
-    showAssignments: function () {
-      if (window.OPLO_ASSIGNMENTS) window.OPLO_ASSIGNMENTS.draw();
-      show("assignments");
-    },
-    /* A course from the database — a Library card, or the course a piece of
-       work was set on — opens as the course screen, matched to the shipped
-       curriculum the way the home screen matches enrolment. */
-    openCourseRow: function (row) {
-      if (row) openCourse(courseFromRow(row));
-    },
-    openCourseById: function (id) {
-      var known = ((S.me && S.me.assigned) || []).concat((S.me && S.me.teaching) || [])
-        .filter(function (r) { return r.id === id; })[0];
-      if (known) { openCourse(courseFromRow(known)); return; }
-      if (!API) return;
-      API.courses.get(id).then(function (row) {
-        if (row) openCourse(courseFromRow(row));
-      }, function () { toast("That course could not be opened."); });
-    },
-    openSet: function (setId) {
-      if (!API) return;
-      API.studySets.get(setId).then(function (r) {
-        if (r && r.studySet) openSet(r.studySet.id || r.studySet.code || setId);
-      }, function () { });
-    }
+    subjectPct: function (name) { return subjectPct(name); }
   };
 })();

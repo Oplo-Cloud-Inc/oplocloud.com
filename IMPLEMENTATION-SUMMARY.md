@@ -2,31 +2,30 @@
 
 ## What was built
 
-A 5-section student navigation for OEdu with new views, Apple design language, and the Course data model documented.
+A 4-section student navigation for OEdu — Home, Explore, Exams, Progress — with Apple design language and the Course data model documented. Assignments and Library were removed on 2026-09-18; Exams is the assessment runtime in `learn/exam.js`.
 
 The build first shipped a separate Class concept (a "My Classes" tab, a Class Home screen, and `/classes/*` API calls). It was removed on 2026-09-18: OEdu has courses and nothing beside them.
 
-## Files created (3 new view modules)
+## Files created
 
 | File | View | Purpose |
 |---|---|---|
-| `learn/assignments.js` | Assignments | All assigned work across courses, sorted by due date |
+| `learn/exam.js`, `learn/exam.css` | Exams | The assessment runtime — see docs/OEDU_ASSESSMENT_EXPERIENCE_SYSTEM.md |
 | `learn/progress.js` | Progress | Mastery, streak, badges, week overview, daily goal |
-| `learn/library.js` | Library | Published courses and study sets catalog |
 
 ## Files modified
 
 | File | Change |
 |---|---|
-| `learn/index.html` | 5-section navigation, 3 new view sections, 3 new script tags |
+| `learn/index.html` | 4-section navigation (Home, Explore, Exams, Progress) |
 | `learn/app.js` | View routing for new sections, OPLO_APP bridge, record→progress sync |
-| `learn/api.js` | New `assignments` endpoint group (2 methods) |
-| `learn/app.css` | Apple design styles for assignment, library, progress views |
+| `learn/api.js` | No new endpoint groups; exam sittings use `progress` |
+| `learn/app.css` | Apple design styles for the progress view |
 | `OEdu-Architecture.md` | Full product architecture document |
 
 ## Navigation
 
-Home · Explore · Assignments · Progress · Library
+Home · Explore · Exams · Progress
 
 ## Architecture decisions
 
@@ -39,12 +38,13 @@ Home · Explore · Assignments · Progress · Library
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/assignments?student=true` | All assignments for a student |
-| GET | `/api/v1/assignments?upcoming=true` | Upcoming assignments |
+| GET | `/api/v1/assessments` | Assessments set for the caller |
+| GET | `/api/v1/assessments/:id` | The student spec, released at sitting time only |
+| POST | `/api/v1/assessments/:id/submit` | Server-side lock on a submitted sitting |
 
 ## Blocked on backend
 
-- `/api/v1/assignments` needs server implementation before the Assignments view can load
+- Assessment endpoints: until they exist, exam questions are public static files (never answers)
 - DNS records for `auth.oplocloud.com` require manual Cloudflare setup (wrangler has only read zone permission)
 - Deploy auth Worker to custom domain pending DNS resolution
 

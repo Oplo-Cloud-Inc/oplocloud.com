@@ -200,17 +200,6 @@ window.OPLO_API = (function () {
       gradebook: function (id) { return get("/courses/" + id + "/gradebook"); }
     },
 
-    /* -------------------------------------------------------- Assignments
-       All assigned work across all courses, sorted by urgency. */
-    assignments: {
-      all: function () {
-        return get("/assignments" + q({ student: true })).then(function (r) { return r.assignments; });
-      },
-      upcoming: function () {
-        return get("/assignments" + q({ upcoming: true })).then(function (r) { return r.assignments; });
-      }
-    },
-
     /* ----------------------------------------------------------- Grades
        Read by the student they belong to and by the teachers of their
        courses; written only by those teachers. Both rules are enforced on

@@ -66,20 +66,21 @@ Sign-in (Root)
         ├── Explore (open catalog)
         │   ├── All courses → Course (units, study sets, mastery)
         │   └── Published study sets
-        ├── Assignments (all work, across courses)
-        ├── Progress (mastery, streak, badges)
-        └── Library (published content)
+        ├── Exams (assessments set for this student)
+        │   └── Briefing → Tasks → Review → Submitted
+        └── Progress (mastery, streak, badges)
 ```
 
 ### 3.2 Navigation
 
-The top bar shows five sections:
+The top bar shows four sections, and only four:
 
 1. **Home** — Command centre: standing, next step, set work, today's plan
-2. **Explore** — Open learning catalog: courses and study sets not yet enrolled
-3. **Assignments** — All assigned work across all courses, sorted by due date
+2. **Explore** — Open learning catalog: courses and study sets
+3. **Exams** — Assessments set for this student, run by `learn/exam.js` to [the Assessment Experience System](docs/OEDU_ASSESSMENT_EXPERIENCE_SYSTEM.md)
 4. **Progress** — Mastery, streak, badges, week overview
-5. **Library** — Published study sets and courses available to browse
+
+Assignments and Library were removed on 2026-09-18: set work already shows on Home, and Explore is the catalogue.
 
 ### 3.3 Teacher Journey
 
@@ -132,8 +133,8 @@ OEdu follows Apple's design language:
 | Endpoint | Used by | Purpose |
 |---|---|---|
 | `/api/v1/me` | All | Who is signed in |
-| `/api/v1/courses` | Home, Explore, Library | List courses (mine or org) |
-| `/api/v1/courses/:id` | Course, Assignments, Library | Course detail |
+| `/api/v1/courses` | Home, Explore | List courses (mine or org) |
+| `/api/v1/courses/:id` | Course | Course detail |
 | `/api/v1/courses/:id/members` | Teacher | Course roster |
 | `/api/v1/courses/:id/assignments` | Teacher | Set work |
 | `/api/v1/courses/:id/enrol` | Teacher | Enrol/unenrol |
@@ -143,10 +144,10 @@ OEdu follows Apple's design language:
 | `/api/v1/courses/:id/gradebook` | Teacher | Whole course register |
 | `/api/v1/courses/:id/whatif` | Teacher | Hypothetical grade |
 | `/api/v1/grades/history` | All | Mark audit trail |
-| `/api/v1/progress` | Sync | Student record sync |
+| `/api/v1/progress` | Sync, Exams | Student record sync; an exam sitting is the scope `exam:<id>` |
 | `/api/v1/gamification/standing` | Home | XP, rank, streak |
 | `/api/v1/gamification/events` | Sync | XP events |
-| `/api/v1/study-sets` | Explore, Library | Study sets |
+| `/api/v1/study-sets` | Explore | Study sets |
 | `/api/v1/teaching` | Teacher | Courses taught |
 | `/api/v1/coursework` | Home | Set work summary |
 | `/api/v1/family` | Parent | Children |
@@ -157,7 +158,9 @@ OEdu follows Apple's design language:
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/assignments?student=true` | The Assignments view's list across courses. It does not exist yet, so the view cannot load; `/api/v1/coursework` already returns the same work and may be the better source. |
+| GET | `/api/v1/assessments` | Assessments set for the caller, replacing the public `learn/assessments/index.json` |
+| GET | `/api/v1/assessments/:id` | The student spec, released only to an assigned student within the sitting's window — exam questions must not be public files |
+| POST | `/api/v1/assessments/:id/submit` | Lock a sitting on the server; today "submitted" is enforced by the client |
 
 ## 6. Progress Model
 
@@ -209,32 +212,31 @@ learn/
 ├── learn.js            — Learning engine (5 dimensions, spaced repetition)
 ├── kmap.js             — Knowledge map visualization
 ├── home.js             — Role-based routing
-├── assignments.js      — Assignments view (NEW)
-├── progress.js         — Progress/analytics view (NEW)
-├── library.js          — Library/catalog view (NEW)
-└── explore.js          — Explore catalog (NEW)
+├── exam.js / exam.css  — Assessment runtime: Exams tab, briefing, tasks, tools, review, submit
+├── assessments/        — Published assessment specs (no answers) and who each is for
+└── progress.js         — Progress/analytics view
 ```
 
 ## 9. Implementation Priority
 
 ### Phase 1: Foundation — COMPLETED
 - [x] Course data model documented (one Course carries curriculum, enrolment, work and marks)
-- [x] Student navigation (5 sections: Home, Explore, Assignments, Progress, Library)
+- [x] Student navigation (4 sections: Home, Explore, Exams, Progress)
 - [x] Explore page (exists via `app.js` drawExplore)
 
-### Phase 2: Assignments — COMPLETED
-- [x] Assignment list across all courses (`learn/assignments.js`)
+### Phase 2: Exams — COMPLETED (student side)
+- [x] Assessment runtime (`learn/exam.js`) built to docs/OEDU_ASSESSMENT_EXPERIENCE_SYSTEM.md
+- [x] Algebra 2 — MP4 QAM published for its one student
 
-### Phase 3: Progress and Library — COMPLETED
+### Phase 3: Progress — COMPLETED
 - [x] Progress/analytics view (`learn/progress.js`)
-- [x] Library/catalog view (`learn/library.js`)
 - [x] Apple design language already built into existing app.css
 
 ### Phase 4: Teacher Tools — PARTIALLY IMPLEMENTED
 - [x] Interactive learning components (existing in app.js)
 
 ### Phase 5: Polish — NEXT STEPS
-- [ ] `/api/v1/assignments` list endpoint for the Assignments view (see 5.2)
+- [ ] Assessment endpoints (see 5.2), a teacher view of sittings, and scoring
 - [ ] Cross-device sync for new views (sync.js framework exists)
 - [ ] DNS records for `auth.oplocloud.com` (manual Cloudflare setup required)
 - [ ] Deploy auth Worker to custom domain after DNS resolves
