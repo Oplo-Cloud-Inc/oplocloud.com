@@ -199,6 +199,41 @@ window.OPLO = (function () {
       ["Goods and services", "Goods are tangible things; services are work performed. Most businesses sell some of each."],
       ["Market economy", "An economy where prices are set by supply and demand rather than by a central authority."]
     ]},
+    "biz-2": { t: "Economics and Business", cards: [
+      ["Microeconomics", "The study of individual decision-making: households, firms, and how prices are set in specific markets."],
+      ["Macroeconomics", "The study of the economy as a whole: inflation, unemployment, growth, and the role of government."],
+      ["Law of Demand", "As price decreases, quantity demanded increases — and vice versa, all else being equal."],
+      ["Law of Supply", "As price increases, quantity supplied increases — all else being equal."],
+      ["Equilibrium price", "The price at which quantity demanded equals quantity supplied."],
+      ["Opportunity cost", "The value of the next-best alternative given up when a choice is made."],
+      ["Comparative advantage", "Producing a good at a lower opportunity cost than a rival."],
+      ["Absolute advantage", "Being able to produce more of a good than a rival can, using the same resources."],
+      ["Market failure", "A situation in which the market does not allocate resources efficiently on its own."],
+      ["Progressive tax", "A tax where the rate rises as income rises."]
+    ]},
+    "biz-3": { t: "Business Ethics and Social Responsibility", cards: [
+      ["Business ethics", "The principles and standards that guide behaviour in the world of business."],
+      ["Utilitarianism", "The right action produces the greatest good for the greatest number."],
+      ["Deontology", "Certain actions are right or wrong in themselves, regardless of consequences."],
+      ["Corporate Social Responsibility", "A business model where companies consider their impact on all of society, not just shareholders."],
+      ["Triple Bottom Line", "A framework measuring success by people, planet, and profit."],
+      ["Sustainability", "Business practices that meet present needs without compromising future generations."],
+      ["Diversity", "The presence of difference within a group."],
+      ["Equity", "Ensuring fair treatment recognizing different needs."],
+      ["Compliance", "Adhering to laws, regulations, and internal policies."],
+      ["Pigouvian tax", "A tax equal to the external cost of a negative externality."]
+    ]},
+    "biz-5": { t: "Business Writing", cards: [
+      ["Encoding", "The sender translating ideas into words or symbols."],
+      ["Decoding", "The receiver interpreting the message."],
+      ["Feedback", "The receiver's response, which lets the sender know the message was understood."],
+      ["Noise", "Anything that interferes with understanding."],
+      ["Email", "A short written message sent electronically, usually for internal or quick external communication."],
+      ["Memo", "A short internal communication, usually on a specific topic with a clear directive."],
+      ["Report", "A structured document presenting findings, analysis, and recommendations."],
+      ["Proposal", "A document that persuades a client or stakeholder to approve a course of action."],
+      ["Netiquette", "Etiquette for electronic communication: the norms of respectful, professional online behaviour."]
+    ]},
     "media-7": { t: "Video Basics", cards: [
       ["Camcorder", "A video camera and a video recorder built into one body."],
       ["Image sensor", "The electronic chip behind the lens that turns light into a signal. CCD and CMOS are the two main kinds."],
@@ -350,7 +385,7 @@ window.OPLO = (function () {
       "Weigh financial risks and rewards."
     ],
     parts: [{ name: "Semester A", units: BIZ_A }, { name: "Semester B", units: BIZ_B }],
-    sets: { 1: "biz-1", 4: "biz-4" },
+    sets: { 1: "biz-1", 2: "biz-2", 3: "biz-3", 4: "biz-4", 5: "biz-5" },
     grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
     textbook: "Introduction to Business — Boundless, CC BY-SA 4.0, as taught in the EHS " +
                "Introduction to Business course, © Excel Education Systems, Inc."
