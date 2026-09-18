@@ -67,7 +67,7 @@ window.OPLO_BIO1 = (function () {
              diagram: !!o.diagram, size: o.size || null };
   };
 
-  var M = "media/bio1/";
+  var M = "bio1/";
   var OEDU = [{ what: "Diagram", by: "OEdu" }];
   function commons(file) { return "https://commons.wikimedia.org/wiki/File:" + file; }
   var BY2 = "https://creativecommons.org/licenses/by/2.0/";
