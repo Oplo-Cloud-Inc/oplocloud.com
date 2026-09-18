@@ -4805,8 +4805,6 @@
     // to be written directly — keep() alone saved the old position forever.
     if (R) { R.d.readIx = i; R.d.readUnit = r.key; }
     keep();
-    window.OPLO_CURRENT_SECTIONS = RU.sections;
-    window.OPLO_CURRENT_READ_IX = i;
 
     var v = $("#v-read");
     v.innerHTML = "";
@@ -4919,6 +4917,10 @@
     noFoot(); progress(null);
     show("read");
     Ann.arm(body, sec.n, art, margin);
+    // Checks sit in the same margin as the notes, level with their passages.
+    if (window.OPLO_CHECKS) {
+      window.OPLO_CHECKS.arm({ reader: r.key, sec: sec.n, body: body, art: art, margin: margin, me: S.me });
+    }
     // Arrived from a retrieval card to look back. The answer was committed
     // before this was offered, so looking is feedback now rather than a way
     // round the question — and the questions wait where they were left.

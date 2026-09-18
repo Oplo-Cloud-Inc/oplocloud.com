@@ -99,6 +99,10 @@ Sign-in
     └── Authored (my Courses and StudySets)
 ```
 
+### 3.4 Checks beside the reading
+
+While a student reads a lesson, a few small checks sit in the right-hand margin at the passages that matter most — the places the text itself warns a reader will slip. They are formative (docs/OEDU_ASSESSMENT_EXPERIENCE_SYSTEM.md §24, §35, §58): always there, never a popup, marked at once with the reason, retryable, and switchable off. They share the margin with the student's own notes and are laid out with them, each level with its line. Results are the progress scope `checks`, so they follow the student between devices and their teachers can see which ideas took two tries. Written so far: Biology Unit 1 (`learn/checks-bio1.js`, 25 checks).
+
 ## 4. Design Principles
 
 ### 4.1 Apple Human Interface Guidelines
@@ -213,6 +217,8 @@ learn/
 ├── kmap.js             — Knowledge map visualization
 ├── home.js             — Role-based routing
 ├── exam.js / exam.css  — Assessment runtime: Exams tab, briefing, tasks, tools, review, submit
+├── checks.js / .css    — Checks beside the reading: small formative checks in the margin, level with the passage
+├── checks-<unit>.js    — Their content, per unit, each anchored to a phrase in the lesson text
 └── progress.js         — Progress/analytics view
 ```
 
