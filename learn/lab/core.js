@@ -955,8 +955,6 @@ window.OPLO_LAB = (function () {
     sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/><path d="M6 8.5h1.2M6 11h1.2M6 13.5h1.2"/>',
     search: '<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 4.5 4.5"/>',
     x: '<path d="m7.5 7.5 9 9M16.5 7.5l-9 9"/>',
-    left: '<path d="m14.5 5.5-6.5 6.5 6.5 6.5"/>',
-    right: '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
     down: '<path d="m6 9.5 6 6 6-6"/>',
     doc: '<path d="M7 3.5h6.5l5 5V19a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M13.5 3.5v5h5"/>',
     test: '<rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 3.5h6"/><path d="m8.5 12.5 2.2 2.2 4.8-5"/>',
@@ -1080,20 +1078,17 @@ window.OPLO_LAB = (function () {
 
   /* ============================================================ The shell
      Around a lesson, a quiz, a skill's practice or the unit test, the way a
-     Mac app is laid out (Apple's HIG: sidebars, path controls, search
-     fields):
+     Mac app is laid out (Apple's HIG: sidebars, search fields): a sidebar
+     at the leading edge with the whole unit in it, so any lesson is one
+     click away — lessons and quizzes in the order they are taken, then the
+     unit test, then the skills to practise. Two sections that fold, the one
+     you are in as a filled pill, a check on what is done, a search field
+     that filters as you type. It can be hidden, and remembers that; it is
+     never hidden to begin with. On a narrow window it floats over the page
+     instead.
 
-       sidebar     the whole unit, so any lesson is one click away: lessons
-                   and quizzes in the order they are taken, then the unit
-                   test, then the skills to practise. Two sections that fold,
-                   the one you are in as a filled pill, a check on what is
-                   done, a search field that filters as you type. It can be
-                   hidden, and remembers that; it is never hidden to begin
-                   with. On a narrow window it floats over the page instead.
-       path        above the title: course › unit › here. Every part but
-                   the last is a way back up.
-       arrows      either side of the title: the previous and the next thing
-                   in the unit's order. */
+     The sidebar says where you are, so the work has no header of its own:
+     the player's title and progress bar are kept for screen readers only. */
   var SIDE = { q: "", folded: {}, scroll: null };
   var NARROW = "(max-width: 1099px)";
   function sideHidden() { try { return localStorage.getItem("oplo.lab.side") === "hidden"; } catch (e) { return false; } }
@@ -1253,45 +1248,6 @@ window.OPLO_LAB = (function () {
     return main;
   }
 
-  // The path back up, and the arrows either side of the title.
-  function head(work, ctx, u, here) {
-    var top = work.querySelector(".ch-top"), title = top && top.querySelector(".ch-title");
-    if (!title) return;
-    var seq = here.kind === "skill" ? skillSeq(u) : unitSeq(u);
-    var i = -1;
-    seq.forEach(function (it, j) { if (isHere(it, here)) i = j; });
-    var cur = seq[i] || { label: "" };
-
-    var path = el("nav", "lb-path");
-    path.setAttribute("aria-label", "Where you are");
-    function crumb(text, go) {
-      if (!go) { var s = el("span", "here", esc(text)); s.setAttribute("aria-current", "page"); path.appendChild(s); return; }
-      var b = button("", esc(text));
-      b.addEventListener("click", go);
-      path.appendChild(b);
-      path.appendChild(el("span", "sep", svg(ICON.right)));
-    }
-    if (ctx.go.course) crumb(ctx.courseTitle || "Course", function () { ctx.go.course(); });
-    crumb("Unit " + u.n + ": " + stripMath(u.title), function () { ctx.go.unit(); });
-    crumb(here.kind === "skill" ? "Practice" : cur.label);
-    var eb = title.querySelector(".ch-eyebrow");
-    if (eb) title.replaceChild(path, eb); else title.insertBefore(path, title.firstChild);
-
-    function arrow(it, dir) {
-      var b = button("lb-arrow " + dir, svg(dir === "prev" ? ICON.left : ICON.right));
-      if (!it) { b.disabled = true; b.setAttribute("aria-label", dir === "prev" ? "No previous lesson" : "No next lesson"); return b; }
-      var name = (dir === "prev" ? "Previous: " : "Next: ") + (it.kind === "lesson" ? it.label + ", " : "") + stripMath(it.title);
-      b.setAttribute("aria-label", name);
-      b.title = name;
-      b.addEventListener("click", function () { goItem(ctx, it); });
-      return b;
-    }
-    var row = el("div", "lb-headrow");
-    row.appendChild(arrow(seq[i - 1], "prev"));
-    top.insertBefore(row, title);
-    row.appendChild(title);
-    row.appendChild(arrow(i > -1 ? seq[i + 1] : null, "next"));
-  }
 
   /* ============================================================ Running */
   function lessonPath(u, k) {
@@ -1329,7 +1285,6 @@ window.OPLO_LAB = (function () {
           if (ctx.onProgress) ctx.onProgress(unitDims(u));
         }
       });
-      head(work, ctx, u, here);
       return u;
     }, function (e) { failed(host, e); });
   }
@@ -1377,7 +1332,6 @@ window.OPLO_LAB = (function () {
           });
         }
       });
-      head(work, ctx, u, here);
     }, function (e) { failed(host, e); });
   }
   function nextSkill(u, sk, ctx) {
@@ -1438,7 +1392,6 @@ window.OPLO_LAB = (function () {
             });
           }
         });
-        if (scope !== "course") head(work, ctx, us[0], here);
       }, function (e) { failed(host, e); });
   }
   /* A quiz: two problems from each of a few skills. It can lift a skill as
@@ -1495,7 +1448,6 @@ window.OPLO_LAB = (function () {
           });
         }
       });
-      head(work, ctx, u, here);
     }, function (e) { failed(host, e); });
   }
 

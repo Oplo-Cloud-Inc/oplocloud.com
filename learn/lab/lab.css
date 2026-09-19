@@ -619,8 +619,7 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 
 /* =============================================================== Shell
    A lesson's frame, laid out like a Mac app: a sidebar at the leading edge
-   with the whole unit in it, and above the work a path back up and arrows
-   to the previous and next lesson. See lab/core.js, frame() and head(). */
+   with the whole unit in it. See lab/core.js, frame(). */
 .lb-side {
   position: fixed; z-index: 30; top: calc(var(--bar) + 13px); left: 12px; bottom: 12px; width: 300px;
   display: flex; flex-direction: column; gap: 12px; padding: 14px 8px 10px;
@@ -708,21 +707,6 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
   .lb-shell.peek .lb-side-scrim { display: block; position: fixed; inset: 0; z-index: 29; background: rgba(0,0,0,.35); }
 }
 
-/* The path: course › unit › here, each part but the last a way back. */
-.lb-path { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px; font-size: 13px; font-weight: 600; }
-.lb-path button { padding: 3px 6px; border-radius: 6px; color: var(--blue); }
-.lb-path button:hover { background: color-mix(in srgb, var(--blue) 12%, transparent); }
-.lb-path .sep { display: grid; color: var(--ink-3); }
-.lb-path .sep svg { width: 12px; height: 12px; }
-.lb-path .here { padding: 3px 6px; color: var(--ink-2); }
-
-/* The title, with the previous and next lesson either side of it. */
-.lb-headrow { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 12px; margin-bottom: 18px; }
-.lb-headrow .ch-title { margin: 0; align-items: center; text-align: center; gap: 6px; }
-.lb-arrow {
-  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--ink-2);
-  transition: background .15s var(--ease), color .15s var(--ease);
-}
-.lb-arrow:hover:not(:disabled) { background: var(--sunk); color: var(--ink); }
-.lb-arrow:disabled { opacity: .3; cursor: default; }
-.lb-arrow svg { width: 22px; height: 22px; }
+/* The sidebar says where you are, so the work has no header on screen: the
+   title stays for screen readers, and the progress bar goes. */
+.lb-work .ch-top { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
