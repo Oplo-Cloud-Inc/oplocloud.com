@@ -16,25 +16,28 @@
   "use strict";
   var D = window.OPLO_CHALLENGE_DATA = window.OPLO_CHALLENGE_DATA || {};
 
-  /* ---------------------------------------------------------------- Boards */
+  /* ---------------------------------------------------------------- Boards
+     The colours written here are the light look's; each shape also carries
+     a class (chb-card, chb-line, ...) that challenge.css paints from the
+     tokens, so a board follows whichever look the page is in. */
   var INK = "#1d1d1f", INK3 = "#86868b", RULE = "#d2d2d7", BLUE = "#0071e3";
 
   // Freytag's pyramid with nothing on it — the student names the parts.
   var FREYTAG =
     '<svg viewBox="0 0 720 360" aria-hidden="true">' +
       '<defs><linearGradient id="chfg" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0" stop-color="' + BLUE + '" stop-opacity=".13"/>' +
-        '<stop offset="1" stop-color="' + BLUE + '" stop-opacity="0"/></linearGradient></defs>' +
+        '<stop class="chb-stop" offset="0" stop-color="' + BLUE + '" stop-opacity=".13"/>' +
+        '<stop class="chb-stop" offset="1" stop-color="' + BLUE + '" stop-opacity="0"/></linearGradient></defs>' +
       '<path d="M40 290 H180 L360 72 L540 290 H680" fill="url(#chfg)" stroke="none"/>' +
-      '<path d="M40 290 H180 L360 72 L540 290 H680" fill="none" stroke="' + BLUE + '" stroke-width="3.5" ' +
+      '<path class="chb-accent" d="M40 290 H180 L360 72 L540 290 H680" fill="none" stroke="' + BLUE + '" stroke-width="3.5" ' +
         'stroke-linejoin="round" stroke-linecap="round"/>' +
-      '<circle cx="180" cy="290" r="6" fill="#fff" stroke="' + BLUE + '" stroke-width="3"/>' +
-      '<circle cx="360" cy="72" r="6" fill="#fff" stroke="' + BLUE + '" stroke-width="3"/>' +
-      '<circle cx="540" cy="290" r="6" fill="#fff" stroke="' + BLUE + '" stroke-width="3"/>' +
-      '<path d="M18 300 V70" stroke="' + RULE + '" stroke-width="1.5"/>' +
-      '<path d="m12 80 6-10 6 10" fill="none" stroke="' + RULE + '" stroke-width="1.5"/>' +
-      '<text x="30" y="68" font-size="11" fill="' + INK3 + '" font-family="-apple-system, sans-serif">tension</text>' +
-      '<text x="686" y="344" text-anchor="end" font-size="11" fill="' + INK3 + '" font-family="-apple-system, sans-serif">time →</text>' +
+      '<circle class="chb-dot" cx="180" cy="290" r="6" fill="#fff" stroke="' + BLUE + '" stroke-width="3"/>' +
+      '<circle class="chb-dot" cx="360" cy="72" r="6" fill="#fff" stroke="' + BLUE + '" stroke-width="3"/>' +
+      '<circle class="chb-dot" cx="540" cy="290" r="6" fill="#fff" stroke="' + BLUE + '" stroke-width="3"/>' +
+      '<path class="chb-line" d="M18 300 V70" stroke="' + RULE + '" stroke-width="1.5"/>' +
+      '<path class="chb-line" d="m12 80 6-10 6 10" fill="none" stroke="' + RULE + '" stroke-width="1.5"/>' +
+      '<text class="chb-faint" x="30" y="68" font-size="11" fill="' + INK3 + '" font-family="-apple-system, sans-serif">tension</text>' +
+      '<text class="chb-faint" x="686" y="344" text-anchor="end" font-size="11" fill="' + INK3 + '" font-family="-apple-system, sans-serif">time →</text>' +
     "</svg>";
 
   // A music bed in four passages over an empty video track.
@@ -55,27 +58,27 @@
     });
     var labels = ["soft, slow", "fast, driving", "slow, minor key", "loud, full orchestra"];
     return '<svg viewBox="0 0 720 300" aria-hidden="true">' +
-      '<text x="22" y="24" font-size="11" font-weight="600" fill="' + INK3 + '" font-family="-apple-system, sans-serif" letter-spacing=".06em">MUSIC BED</text>' +
+      '<text class="chb-faint" x="22" y="24" font-size="11" font-weight="600" fill="' + INK3 + '" font-family="-apple-system, sans-serif" letter-spacing=".06em">MUSIC BED</text>' +
       parts.map(function (p, i) {
-        return '<rect x="' + (p.from + 2) + '" y="36" width="' + (p.to - p.from - 4) + '" height="136" rx="10" fill="#fff" stroke="' + RULE + '"/>' +
-          '<text x="' + (p.from + 12) + '" y="56" font-size="11.5" fill="' + INK + '" font-family="-apple-system, sans-serif">' + labels[i] + "</text>";
+        return '<rect class="chb-card" x="' + (p.from + 2) + '" y="36" width="' + (p.to - p.from - 4) + '" height="136" rx="10" fill="#fff" stroke="' + RULE + '"/>' +
+          '<text class="chb-ink" x="' + (p.from + 12) + '" y="56" font-size="11.5" fill="' + INK + '" font-family="-apple-system, sans-serif">' + labels[i] + "</text>";
       }).join("") +
-      '<path d="' + d + '" stroke="' + BLUE + '" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>' +
-      '<text x="22" y="198" font-size="11" font-weight="600" fill="' + INK3 + '" font-family="-apple-system, sans-serif" letter-spacing=".06em">VIDEO</text>' +
-      '<rect x="20" y="206" width="680" height="80" rx="12" fill="none" stroke="' + RULE + '" stroke-dasharray="4 5"/>' +
+      '<path class="chb-accent" d="' + d + '" stroke="' + BLUE + '" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>' +
+      '<text class="chb-faint" x="22" y="198" font-size="11" font-weight="600" fill="' + INK3 + '" font-family="-apple-system, sans-serif" letter-spacing=".06em">VIDEO</text>' +
+      '<rect class="chb-line" x="20" y="206" width="680" height="80" rx="12" fill="none" stroke="' + RULE + '" stroke-dasharray="4 5"/>' +
     "</svg>";
   }
 
   // A disc and an opened-out case: back, spine, front.
   var DVD =
     '<svg viewBox="0 0 720 340" aria-hidden="true">' +
-      '<circle cx="132" cy="185" r="112" fill="#fff" stroke="' + RULE + '" stroke-width="1.5"/>' +
-      '<circle cx="132" cy="185" r="40" fill="none" stroke="#ececee" stroke-width="1.5"/>' +
-      '<circle cx="132" cy="185" r="15" fill="#f5f5f7" stroke="' + RULE + '" stroke-width="1.5"/>' +
-      '<rect x="282" y="70" width="186" height="236" rx="6" fill="#fff" stroke="' + RULE + '" stroke-width="1.5"/>' +
-      '<rect x="468" y="70" width="34" height="236" fill="#f5f5f7" stroke="' + RULE + '" stroke-width="1.5"/>' +
-      '<rect x="502" y="70" width="186" height="236" rx="6" fill="#fff" stroke="' + RULE + '" stroke-width="1.5"/>' +
-      '<path d="M485 64 V40" stroke="' + RULE + '" stroke-width="1.5" stroke-dasharray="3 4"/>' +
+      '<circle class="chb-card" cx="132" cy="185" r="112" fill="#fff" stroke="' + RULE + '" stroke-width="1.5"/>' +
+      '<circle class="chb-soft" cx="132" cy="185" r="40" fill="none" stroke="#ececee" stroke-width="1.5"/>' +
+      '<circle class="chb-well" cx="132" cy="185" r="15" fill="#f5f5f7" stroke="' + RULE + '" stroke-width="1.5"/>' +
+      '<rect class="chb-card" x="282" y="70" width="186" height="236" rx="6" fill="#fff" stroke="' + RULE + '" stroke-width="1.5"/>' +
+      '<rect class="chb-well" x="468" y="70" width="34" height="236" fill="#f5f5f7" stroke="' + RULE + '" stroke-width="1.5"/>' +
+      '<rect class="chb-card" x="502" y="70" width="186" height="236" rx="6" fill="#fff" stroke="' + RULE + '" stroke-width="1.5"/>' +
+      '<path class="chb-line" d="M485 64 V40" stroke="' + RULE + '" stroke-width="1.5" stroke-dasharray="3 4"/>' +
     "</svg>";
 
   /* ======================================================================

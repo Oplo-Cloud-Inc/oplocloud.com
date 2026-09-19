@@ -147,6 +147,15 @@ OEdu follows Apple's design language:
 - **No decoration** — colour is spent on state and nothing else
 - **Motion** — subtle easing (`cubic-bezier(.28,.11,.32,1)`), `prefers-reduced-motion` respected
 
+### 4.1a Obsidian — the student side is dark
+
+Everything a student sees sits on Obsidian, `#151618`; the console, the family view and the signed-out welcome page stay light. The head of `learn/index.html` sets `<html data-look="obsidian">` for any `/student/` address before anything is drawn, and signing in or out at the root sets or clears it (`setLook` in `learn/app.js`). `learn/obsidian.css` holds the whole look, in two parts:
+
+- **Written by hand** — the tokens (`--paper`, `--ink`, … re-pointed to dark values, every text step AA or better), then the layer that makes it one object: dark glass for the bar and anything floating, cards a step lighter than the page with a rim of light and a long soft shadow, titles lit from above, the blue accent carrying a faint glow of its own colour, the "what next" panels lit from one corner, and lesson diagrams turned into the page (inverted, with every hue rotated back to itself) while photographs stay photographs.
+- **Generated** — `tools/obsidian.py` reads every student-facing stylesheet, finds each literal colour, and writes the same declaration again for the dark look, translated by what the colour is doing (a surface, text, a line, a shadow, an accent). **Run it again whenever a student-facing stylesheet changes:** `python3 tools/obsidian.py`.
+
+New components should use the tokens, not literal colours; then both looks follow without anything to regenerate. Shapes drawn in JavaScript follow the same rule — the challenge boards carry classes (`chb-card`, `chb-line`, …) that `challenge.css` paints from the tokens.
+
 ### 4.2 Architectural Rules
 
 1. **The server decides who the user is.** The frontend never names its own account.

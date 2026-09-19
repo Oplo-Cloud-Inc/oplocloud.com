@@ -11,11 +11,14 @@
    before any script runs: on edu.oplocloud.com the app's folder is "/", so
    those early fetches are already right. This corrects it anywhere else (a
    local preview serves the app from /learn/). A "#section" link on the
-   welcome page still means this page, not the folder. */
+   welcome page still means this page, not the folder.
+   The student side is dark (obsidian.css), and is marked here, before
+   anything is drawn, so a student never sees a light frame first. */
 (function () {
-  var m = /^(.*?\/)(?:admin|teacher|student)(?:\/|$)/.exec(location.pathname);
+  var m = /^(.*?\/)(admin|teacher|student)(?:\/|$)/.exec(location.pathname);
   var b = document.querySelector("base");
   b.href = m ? m[1] : location.pathname.replace(/[^\/]*$/, "");
+  if (m && m[2] === "student") document.documentElement.setAttribute("data-look", "obsidian");
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest('a[href^="#"]');
     if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
@@ -41,7 +44,8 @@
 <link rel="stylesheet" href="landing.css?v=22fc4b93">
 <link rel="stylesheet" href="exam.css?v=3869276c">
 <link rel="stylesheet" href="checks.css?v=a381359b">
-<link rel="stylesheet" href="challenge.css?v=2d50b3e4">
+<link rel="stylesheet" href="challenge.css?v=2651bace">
+<link rel="stylesheet" href="obsidian.css?v=0263d85c">
 </head>
 <body>
 
@@ -635,8 +639,8 @@
 <script src="oplo-search.js?v=b2f48c6b"></script>
 <script src="landing.js?v=7b3b8d9a"></script>
 <script src="challenge.js?v=3071dd0c"></script>
-<script src="challenges-media9.js?v=6d11f4f0"></script>
+<script src="challenges-media9.js?v=1a1aa6ab"></script>
 <script src="exam.js?v=65b52660"></script>
-<script src="app.js?v=f0e3207a"></script>
+<script src="app.js?v=c816cc1f"></script>
 </body>
 </html>

@@ -13070,6 +13070,15 @@
       "Your progress saves to your account, so it is the same on every device you sign in on.";
   }
 
+  /* The student side is dark (learn/obsidian.css). The page marks a
+     /student/ address itself before anything is drawn; signing in at the
+     root and signing out change the address without a new page, so they
+     mark it here. */
+  function setLook(mode) {
+    if (mode === "student") document.documentElement.setAttribute("data-look", "obsidian");
+    else document.documentElement.removeAttribute("data-look");
+  }
+
   function boot(who) {
     /* Everybody signs in on this one page; where they belong is read from their
        roles (home.js) — /admin/, /teacher/, /student/, or the family view at
@@ -13083,6 +13092,7 @@
       if (dest.mode === "parent") { location.replace(dest.href); return; }
       history.replaceState(null, "", dest.href);
     }
+    setLook(dest.mode);
     S.me = normaliseAccount(who);
     // The address is the hat: an administrator who opens /teacher/ sees the
     // console as a teacher does. Their roles allowed it, or they would not be here.
@@ -13261,6 +13271,7 @@
     // Signed out, the page is the sign-in page again, at the address everybody
     // signs in at — not at the /admin/ or /student/ the last person left behind.
     history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root);
+    setLook(null);
     // Back to the welcome page from its top, with the sign-in panel closed —
     // it was left open by the sign-in that started this session.
     var gate = $("#gate"), panel = $("#ldSignin");

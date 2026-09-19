@@ -253,6 +253,18 @@
 .ch-target.on-board .ch-slot { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 .ch-target.on-board .ch-cardlet { width: 100%; justify-content: center; text-align: center; font-size: 13.5px; }
 
+/* The shapes a board is drawn with, painted from the tokens so a board
+   follows the page's look (see learn/obsidian.css). */
+.ch-board .chb-card   { fill: var(--paper); stroke: var(--rule); }
+.ch-board .chb-well   { fill: var(--canvas); stroke: var(--rule); }
+.ch-board .chb-soft   { stroke: var(--hair); }
+.ch-board .chb-line   { stroke: var(--rule); }
+.ch-board .chb-accent { stroke: var(--blue); }
+.ch-board .chb-stop   { stop-color: var(--blue); }
+.ch-board .chb-dot    { fill: var(--paper); stroke: var(--blue); }
+.ch-board .chb-ink    { fill: var(--ink); }
+.ch-board .chb-faint  { fill: var(--ink-3); }
+
 /* ------------------------------------------------------------- Order */
 .ch-order { list-style: none; display: grid; gap: 8px; margin: 0; padding: 0; }
 .ch-step {
