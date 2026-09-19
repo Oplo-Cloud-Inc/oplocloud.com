@@ -15,3 +15,7 @@ alg2-mp4-qam.json
 # Useful beside the files in the repository; nothing a student should reach.
 bio1/_preview.html
 bio1/list.json
+
+# Who an assessment is assigned to is the database's business, not the app's.
+# The app never reads this file, and it names a student and their school email.
+alg2-mp4-qam-assignment.json
