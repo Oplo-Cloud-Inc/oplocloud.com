@@ -133,6 +133,20 @@ Step types: `choice`, `multi`, `sort` (cards into bins), `order`, `slots` (cards
 
 The unit review (`…/uN/Challenge`) is not written; it is drawn from the lessons: problems the student needed help with first, then ones not yet tried, then ones already solid, interleaved so no two in a row come from the same lesson. Results are the progress scope `challenges` — first try, tries, hints, whether the answer was shown, and whether the latest solve was clean — merged across devices like checks. Written so far: Media Arts Unit 9 (`learn/challenges-media9.js`, 46 problems across 9.1–9.9).
 
+### 3.6 The Lab — interactive math courses
+
+Algebra I is taught the way Brilliant teaches and practised the way Khan Academy practises (`learn/lab/`, `learn/alg/`). A lab unit's page is a path of **lessons**, a list of **skills**, and a **unit test**:
+
+- **Lessons** are short interactive paths played by the challenge player. The idea is met by moving something — blocks on a balance, a point on a number line, sliders under a graph, tiles into a rectangle — and is named only after it has been used. Idea cards can hold a live scene and wait (“gate”) until the move that shows the idea has been made.
+- **Skills** generate fresh problems every sitting (a seeded generator per skill, with hints, targeted replies to likely mistakes, and a worked solution). Five problems a sitting; four right first time lifts the skill a level.
+- **Tests** — the unit test draws one problem from every skill; the course challenge two from every unit. Right answers lift skills towards Mastered; wrong ones take them down a level. Levels: Not started · Attempted · Familiar · Proficient · Mastered, kept in the progress scope `lab`.
+
+Answers are checked by meaning, not by string: `lab/core.js` parses what a student types (implicit multiplication, fractions, powers, roots, absolute value) and tests equivalence at several points, so `2(x+3)` and `6+2x` are the same answer; equations are the same when they have the same solutions, inequalities when they describe the same set, and answers can be required to be simplified or factored. Math in any text is written `$…$` in a small TeX.
+
+The manipulatives (`lab/widgets.js`): balance, number line, coordinate plane, algebra tiles and area models, function machine, growing patterns, rate race, square, cube (3D), unit-conversion chain, fill-in table, growth bars. Everything draggable also moves with the arrow keys. `lab/widgets.js` and each unit's file load only when a lab course is opened; `python3 tools/lab_stamps.py` restamps them.
+
+Addresses: `…/Algebra-I/u2` (unit), `…/u2/l3` (lesson), `…/u2/Practice/<skill>`, `…/u2/Test`, `…/Algebra-I/Challenge`.
+
 ## 4. Design Principles
 
 ### 4.1 Apple Human Interface Guidelines
@@ -260,6 +274,10 @@ learn/
 ├── checks-<unit>.js    — Their content, per unit, each anchored to a phrase in the lesson text
 ├── challenge.js / .css — Challenges: problems solved by doing, one to a screen, and the mixed unit review
 ├── challenges-<unit>.js — Their content, per unit, keyed by section
+├── lab/core.js         — The Lab: math typesetting, the expression engine, records, unit pages, practice and tests
+├── lab/widgets.js      — The manipulatives (loaded on demand)
+├── lab/lab.css         — Math type, manipulatives and the lab unit page
+├── alg/uNN.js          — Algebra I, one file per unit: lessons and skill generators (loaded on demand)
 └── progress.js         — Progress/analytics view
 ```
 

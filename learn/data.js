@@ -352,6 +352,59 @@ window.OPLO = (function () {
     ]
   };
 
+  /* Algebra I is a lab course: its units are interactive lessons, practice
+     that generates its own problems, and tests (learn/lab/, learn/alg/). */
+  var ALG = {
+    id: "alg", t: "Algebra I", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
+    lab: true,
+    d: "Variables, equations, and the habit of doing the same thing to both sides.",
+    lede: "Algebra as something you do before you write it down: a balance you keep level, lines you drag into place, " +
+          "tiles you arrange into rectangles. Every idea is met by moving something, practised until it is easy, and " +
+          "tested until it sticks.",
+    glyph: '<path d="M17 5H7l6 7-6 7h10"/>',
+    objectives: [
+      "Write, evaluate and simplify expressions, and tell when two expressions are the same.",
+      "Solve linear equations and inequalities, and systems of them — and say how many solutions there are.",
+      "Move between a line's table, graph and equation, and read slope and intercepts in context.",
+      "Use function notation; find domain, range, rate of change and inverses.",
+      "Model growth with arithmetic and geometric sequences, and with linear and exponential functions.",
+      "Multiply and factor polynomials, and solve and graph quadratics every way there is."
+    ],
+    units: [
+      { t: "Algebra foundations", lab: true,
+        desc: "Letters that stand for numbers. Evaluating expressions, combining like terms, telling when two expressions are the same, and why nothing can be divided by zero." },
+      { t: "Solving equations & inequalities", lab: true,
+        desc: "The balance: do the same to both sides. Equations with variables on both sides, brackets and fractions; how many solutions an equation can have; and inequalities, including why the sign flips." },
+      { t: "Working with units", lab: true,
+        desc: "Units as part of the arithmetic: converting rates by multiplying by one, choosing sensible quantities, and letting the units check the answer." },
+      { t: "Linear equations & graphs", lab: true,
+        desc: "An equation in two variables is a line of solutions. Slope as rise over run, intercepts, horizontal and vertical lines, and what each means in a real situation." },
+      { t: "Forms of linear equations", lab: true,
+        desc: "Slope-intercept, point-slope and standard form: what each shows at a glance, how to write a line from what you know, and how to move between them." },
+      { t: "Systems of equations", lab: true,
+        desc: "Two conditions at once. Solving by graphing, substitution and elimination, and systems with no solution or infinitely many." },
+      { t: "Inequalities (systems & graphs)", lab: true,
+        desc: "Inequalities in two variables as shaded half-planes, systems of them as overlaps, and constraints from real situations." },
+      { t: "Functions", lab: true,
+        desc: "A rule that gives one output for each input. Notation, domain and range, recognising functions, maxima and minima, average rate of change and inverses." },
+      { t: "Sequences", lab: true,
+        desc: "Patterns that grow by adding (arithmetic) and by multiplying (geometric), written recursively and explicitly." },
+      { t: "Absolute value & piecewise functions", lab: true,
+        desc: "Absolute value as distance and its V-shaped graph, shifting and stretching it, and functions defined in pieces." },
+      { t: "Exponents & radicals", lab: true,
+        desc: "Why the exponent rules are true, zero and negative exponents, square and cube roots, and simplifying radicals." },
+      { t: "Exponential growth & decay", lab: true,
+        desc: "Adding versus multiplying. Exponential expressions and graphs, growth and decay, and telling linear from exponential in data." },
+      { t: "Quadratics: multiplying & factoring", lab: true,
+        desc: "Polynomials as areas. Multiplying binomials, special products, and factoring by common factors, by grouping, and as differences of squares and perfect squares." },
+      { t: "Quadratic functions & equations", lab: true,
+        desc: "Parabolas and their features. Solving by factoring, square roots, completing the square and the quadratic formula; vertex form; transformations." },
+      { t: "Irrational numbers", lab: true,
+        desc: "Numbers that are not fractions: recognising them, sums and products with rationals, and a proof that √2 is irrational." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
+  };
+
   var MEDIA = {
     id: "media", t: "Media Arts", hue: "#8f5cff", subject: "English", level: "Introductory",
     tag: "Arts and Design",
@@ -431,7 +484,7 @@ window.OPLO = (function () {
     { n: "Math", hue: BLUE,
       d: "Arithmetic, algebra and geometry, done by seeing why rather than remembering how.",
       courses: [SEEING,
-        stub("alg", "Algebra I", "Math", BLUE, "Variables, equations, and the habit of doing the same thing to both sides.", SIGMA),
+        ALG,
         stub("geo", "Geometry",  "Math", BLUE, "Proof as an argument you could win, not a form to fill in.", SIGMA)] },
     { n: "Science", hue: GREEN,
       d: "Method first: what would have to be true, and how would you find out.",
@@ -454,6 +507,8 @@ window.OPLO = (function () {
   var PRE = {
     media: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [2], 7: [6], 8: [6, 7], 9: [5, 7] },
     seeing: { 1: [], 2: [1], 3: [2] },
+    alg: { 1: [], 2: [1], 3: [1], 4: [2], 5: [4], 6: [5], 7: [6], 8: [4], 9: [8], 10: [8], 11: [1], 12: [9, 11],
+           13: [11], 14: [13, 10], 15: [11] },
     biz: {}
   };
 

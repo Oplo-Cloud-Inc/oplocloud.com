@@ -193,6 +193,9 @@ window.OPLO_CHALLENGE = (function () {
     return !(r && r.solved && (r.first || r.last));
   }
   function note(id, patch) {
+    // A path made on the spot (practice, a test) is recorded by whoever made
+    // it; its steps have no lasting ids to keep a record against.
+    if (P && P.opts && P.opts.record === false) return patch;
     var r = REC.results[id] || { tries: 0, hints: 0 };
     Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
     r.at = Date.now();
@@ -698,6 +701,18 @@ window.OPLO_CHALLENGE = (function () {
     return api;
   };
 
+  /* A number as a person types it: 12, -3.5, 3/4, -1 1/2, 2,5. */
+  function readNum(t) {
+    t = String(t || "").trim().replace(/\u2212/g, "-").replace(/\s+/g, " ");
+    if (!t) return NaN;
+    var m = /^(-?)(\d+) (\d+)\/(\d+)$/.exec(t);
+    if (m) return (m[1] ? -1 : 1) * (+m[2] + +m[3] / +m[4]);
+    m = /^(-?\d*\.?\d+)\s*\/\s*(-?\d*\.?\d+)$/.exec(t);
+    if (m) return +m[2] === 0 ? NaN : +m[1] / +m[2];
+    if (/^-?\d+,\d+$/.test(t)) t = t.replace(",", ".");
+    return /^-?(\d+\.?\d*|\.\d+)$/.test(t) ? parseFloat(t) : NaN;
+  }
+
   KINDS.number = function (s) {
     var api = {};
     var wrap = el("label", "ch-num");
@@ -711,16 +726,16 @@ window.OPLO_CHALLENGE = (function () {
     inp.addEventListener("input", function () { wrap.classList.remove("no"); api.onChange(); });
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter" && api.ready()) api.onEnter(); });
     api.el = wrap;
-    api.ready = function () { return inp.value.trim() !== "" && isFinite(parseFloat(inp.value.replace(",", "."))); };
+    api.ready = function () { return isFinite(readNum(inp.value)); };
     api.check = function () {
-      var v = parseFloat(inp.value.replace(",", "."));
-      var ok = Math.abs(v - s.answer) <= (s.tol || 0);
+      var v = readNum(inp.value);
+      var ok = Math.abs(v - s.answer) <= (s.tol || 1e-9);
       wrap.classList.toggle("no", !ok);
       if (ok) { wrap.classList.add("yes"); inp.disabled = true; }
       var near = (s.near || []).filter(function (n) { return Math.abs(v - n.v) <= (n.tol || 0); })[0];
       return { ok: ok, say: ok ? null : near ? near.fb : null };
     };
-    api.reveal = function () { inp.value = String(s.answer); inp.disabled = true; wrap.classList.remove("no"); wrap.classList.add("yes"); };
+    api.reveal = function () { inp.value = s.shown || String(s.answer); inp.disabled = true; wrap.classList.remove("no"); wrap.classList.add("yes"); };
     api.focus = function () { inp.focus(); };
     return api;
   };
@@ -754,7 +769,9 @@ window.OPLO_CHALLENGE = (function () {
 
   function play(host, opts) {
     useAccount(opts.me);
-    var path = opts.sec === "review" ? reviewPath(opts.reader) : lessonPath(opts.reader, opts.sec);
+    var path = opts.path ? Object.assign({}, opts.path, { steps: opts.path.steps.slice() })
+      : opts.sec === "review" ? reviewPath(opts.reader) : lessonPath(opts.reader, opts.sec);
+    dispose();
     host.innerHTML = "";
     if (!path || !path.steps.length) {
       host.appendChild(el("div", "ch-none", "<b>No challenge here yet.</b><p>This lesson's challenge is still being written.</p>"));
@@ -765,7 +782,7 @@ window.OPLO_CHALLENGE = (function () {
     var root = el("div", "ch");
     var top = el("header", "ch-top");
     top.innerHTML = '<div class="ch-title"><span class="ch-eyebrow">' + icon(I.spark) +
-      "<span>" + (path.review ? "Unit review" : "Challenge · " + esc(path.sec)) + "</span></span>" +
+      "<span>" + (path.eyebrow ? esc(path.eyebrow) : path.review ? "Unit review" : "Challenge · " + esc(path.sec)) + "</span></span>" +
       "<b>" + esc(path.title) + "</b></div>";
     var bar = el("div", "ch-prog");
     bar.setAttribute("aria-hidden", "true");
@@ -779,7 +796,7 @@ window.OPLO_CHALLENGE = (function () {
     root.appendChild(live);
     host.appendChild(root);
 
-    P = { path: path, opts: opts, root: root, stage: stage, bar: bar, live: live, ix: 0, session: {} };
+    P = { path: path, opts: opts, root: root, stage: stage, bar: bar, live: live, ix: 0, session: {}, order: [] };
 
     // Start at the first step not yet done, unless it has all been done —
     // then it is a fresh run.
@@ -788,7 +805,7 @@ window.OPLO_CHALLENGE = (function () {
       return !(r && (r.solved || (s.type === "learn" && r.seen)));
     });
     // A review or a retry is always a fresh run from the top.
-    P.fresh = !!(path.review || opts.only || firstOpen < 0);
+    P.fresh = !!(path.review || opts.only || opts.fresh || opts.record === false || firstOpen < 0);
     P.ix = P.fresh ? 0 : firstOpen;
     paintBar();
     step();
@@ -802,14 +819,27 @@ window.OPLO_CHALLENGE = (function () {
     });
   }
 
+  /* A step's interactive piece may hold on to things (timers, listeners on
+     the window); they are let go when the step is left. */
+  var DISPOSE = [];
+  function dispose() {
+    DISPOSE.splice(0).forEach(function (f) { try { f(); } catch (e) { /* already gone */ } });
+  }
+  function build(type, spec, seed, mode) {
+    var ui = KINDS[type](spec, seed, mode || {});
+    if (ui.destroy) DISPOSE.push(ui.destroy);
+    return ui;
+  }
+
   function step() {
     var s = P.path.steps[P.ix];
     if (!s) { summary(); return; }
     paintBar();
+    dispose();
     P.stage.innerHTML = "";
     var card = el("article", "ch-card" + (reduced() ? "" : " in"));
     var probs = P.path.steps.filter(isProblem), n = probs.indexOf(s) + 1;
-    var kicker = s.type === "learn" ? "The idea" : "Problem " + n + " of " + probs.length;
+    var kicker = s.kicker || (s.type === "learn" ? "The idea" : "Problem " + n + " of " + probs.length);
     card.appendChild(el("p", "ch-kind", kicker + (s.skill && s.type !== "learn" ? ' <span>· ' + esc(s.skill) + "</span>" : "")));
     var prompt = el("div", "ch-prompt", s.prompt || s.t || "");
     prompt.tabIndex = -1;
@@ -818,10 +848,27 @@ window.OPLO_CHALLENGE = (function () {
     var foot = el("footer", "ch-foot");
     if (s.type === "learn") {
       if (s.art) card.appendChild(el("div", "ch-art", s.art));
-      var go = button("ch-btn primary", "Continue" + icon(I.right));
+      // A scene to play with: the idea is met by moving something, and a
+      // gated scene holds Continue until the move that shows it is made.
+      var sc = s.scene && KINDS[s.scene.type] ? build(s.scene.type, Object.assign({ gate: !!s.gate }, s.scene), s.id, { explore: true }) : null;
+      if (sc) card.appendChild(el("div", "ch-work")).appendChild(sc.el);
+      if (s.after) card.appendChild(el("div", "ch-after", s.after));
+      var go = button("ch-btn primary", (P.ix === P.path.steps.length - 1 ? "Finish" : "Continue") + icon(I.right));
+      if (sc && s.gate) {
+        go.disabled = !sc.ready();
+        sc.onChange = function () {
+          var was = go.disabled;
+          go.disabled = !sc.ready();
+          if (was && !go.disabled && s.then) {
+            var t = card.querySelector(".ch-then");
+            if (!t) card.insertBefore(el("div", "ch-then" + (reduced() ? "" : " in"), s.then), foot);
+          }
+        };
+      } else if (sc) sc.onChange = function () {};
       go.addEventListener("click", function () {
         note(s.id, { seen: true });
         P.session[s.id] = { seen: true };
+        P.order.push({ step: s, seen: true });
         next();
       });
       foot.appendChild(go);
@@ -833,8 +880,14 @@ window.OPLO_CHALLENGE = (function () {
     }
 
     if (s.art) card.appendChild(el("div", "ch-art", s.art));
-    var kind = KINDS[s.type];
-    var ui = kind(s, s.id + (P.path.review ? "r" : "") + (P.opts.round ? "~" + P.opts.round : ""));
+    // A problem can stand on a scene too: the graph or the balance it is
+    // about, live, above the answer.
+    if (s.scene && KINDS[s.scene.type]) {
+      var scn = build(s.scene.type, s.scene, s.id + "s", { explore: true });
+      scn.onChange = function () {};
+      card.appendChild(el("div", "ch-work ch-scene")).appendChild(scn.el);
+    }
+    var ui = build(s.type, s, s.id + (P.path.review ? "r" : "") + (P.opts.round ? "~" + P.opts.round : ""));
     card.appendChild(el("div", "ch-work")).appendChild(ui.el);
 
     var hints = el("div", "ch-hints");
@@ -912,7 +965,9 @@ window.OPLO_CHALLENGE = (function () {
       var prev = result(s.id) || {};
       note(s.id, { solved: true, last: clean, shown: !!(prev.shown || shown), firstAt: prev.firstAt || Date.now(),
                    first: prev.firstAt ? !!prev.first : clean });
-      P.session[s.id] = { solved: true, first: clean };
+      P.session[s.id] = { solved: true, first: clean, shown: !!shown };
+      P.order.push({ step: s, ok: !!ok, first: clean, shown: !!shown, tries: st.tries, hints: st.hints });
+      if (P.opts.onResult) P.opts.onResult(s, P.session[s.id]);
       paintBar();
     }
     function done(ok) {
@@ -921,7 +976,8 @@ window.OPLO_CHALLENGE = (function () {
       var why = s.why ? '<p class="ch-why">' + s.why + "</p>" : "";
       say(ok ? "ok" : "shown",
         (ok ? "<b>" + (st.tries === 1 && !st.hints ? "Right." : "Right — you got there.") + "</b>"
-            : "<b>Here's the answer.</b> It will come back in the unit review.") + why);
+            : "<b>Here's the answer.</b> " + (P.opts.shownNote || (P.opts.path ? "Read it through, then keep going." :
+              "It will come back in the unit review."))) + why);
       armNext();
     }
     function armNext() {
@@ -989,6 +1045,18 @@ window.OPLO_CHALLENGE = (function () {
   function summary() {
     P.ix = P.path.steps.length;
     paintBar();
+    dispose();
+    if (P.opts.onFinish) P.opts.onFinish(P.order, P.path);
+    if (P.opts.summary) {
+      P.stage.innerHTML = "";
+      var own = el("article", "ch-card ch-end" + (reduced() ? "" : " in"));
+      P.opts.summary(own, P.order, P.path);
+      P.stage.appendChild(own);
+      P.live.textContent = own.textContent;
+      P.enter = null;
+      focusSoon(own.querySelector(".primary") || own.querySelector("button"));
+      return;
+    }
     var steps = P.path.steps.filter(isProblem);
     var clean = [], helped = [];
     steps.forEach(function (s) {
@@ -1010,7 +1078,7 @@ window.OPLO_CHALLENGE = (function () {
     var card = el("article", "ch-card ch-end" + (reduced() ? "" : " in"));
     card.appendChild(el("div", "ch-endmark", '<svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23"/>' +
       '<path d="m16 27 7 7 13-15"/></svg>'));
-    card.appendChild(el("h2", "ch-endh", P.path.review ? "Review done." : "Challenge complete."));
+    card.appendChild(el("h2", "ch-endh", P.path.endTitle || (P.path.review ? "Review done." : "Challenge complete.")));
     card.appendChild(el("p", "ch-endsum", clean.length + " of " + steps.length + " solved first try, without a hint."));
     var two = el("div", "ch-endcols");
     var a = skills(clean), b = skills(helped);
@@ -1062,6 +1130,13 @@ window.OPLO_CHALLENGE = (function () {
     title: function (reader, sec) { var p = lessonPath(reader, sec); return p ? p.title : null; },
     blurb: function (reader, sec) { var p = lessonPath(reader, sec); return p ? p.blurb : null; },
     play: function (host, opts) { opts.host = host; play(host, opts); },
+    /* Step types from outside — the math lab's balance, number line and
+       plane are ordinary steps to the player. A factory takes the step and a
+       seed, and returns { el, ready, check, reveal, focus?, destroy? }. */
+    addKind: function (name, factory) { KINDS[name] = factory; },
+    readNum: readNum,
+    kinds: KINDS,
+    stop: function () { dispose(); },
     _merge: merge
   };
 })();

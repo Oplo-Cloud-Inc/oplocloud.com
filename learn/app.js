@@ -595,11 +595,19 @@
     if (!c) return false;
     if (!seg[2]) { openCourse(c); return true; }
     if (sameName(seg[2], "Map")) { openMap(c); return true; }
+    if (sameName(seg[2], "Challenge") && c.lab) { openLab(c, null, "Challenge"); return true; }
     var um = /^u(\d+)$/i.exec(seg[2]);
     if (!um) return false;
     var n = +um[1];
     if (!unitsOf(c).some(function (u) { return u.n === n; })) return false;
     if (!seg[3]) { openUnit(c, n); return true; }
+    var lu = unitsOf(c).filter(function (u) { return u.n === n; })[0];
+    if (lu && lu.lab) {
+      if (/^l\d+$/i.test(seg[3]) && !seg[4]) { openLab(c, n, "l" + (+seg[3].slice(1))); return true; }
+      if (sameName(seg[3], "Practice") && seg[4]) { openLab(c, n, "Practice/" + seg[4]); return true; }
+      if (sameName(seg[3], "Test")) { openLab(c, n, "Test"); return true; }
+      return false;
+    }
     if (sameName(seg[3], "Practice")) {
       S.course = c; S.unitIx = n; S.unit = unitsOf(c).filter(function (u) { return u.n === n; })[0];
       startPractice(false);
@@ -744,7 +752,7 @@
   function unitsOf(c) {
     if (c.units) {
       return c.units.map(function (u, i) {
-        return { n: i + 1, t: u.t, desc: u.desc, play: !!u.play, set: u.set };
+        return { n: i + 1, t: u.t, desc: u.desc, play: !!u.play, set: u.set, lab: !!u.lab };
       });
     }
     var out = [], n = 0;
@@ -771,7 +779,9 @@
     return S.m[k];
   }
   function offers(u) {
-    return { u: !!(u.play || u.read), p: !!(u.play || u.read), r: !!u.set, a: !!u.set };
+    // A lab unit teaches (lessons), practises (skills) and tests (the unit
+    // test); it has no flashcards, so Recall is not offered.
+    return { u: !!(u.play || u.read || u.lab), p: !!(u.play || u.read || u.lab), r: !!u.set, a: !!(u.set || u.lab) };
   }
   function raise(c, n, dim, pct) {
     var d = dims(c, n);
@@ -788,7 +798,7 @@
     return pct >= 85 ? "master" : pct >= 50 ? "prof" : pct > 0 ? "fam" : "";
   }
   function coursePct(c) {
-    var us = unitsOf(c).filter(function (u) { return u.play || u.set; });
+    var us = unitsOf(c).filter(function (u) { return u.play || u.set || u.lab; });
     if (!us.length) return 0;
     return Math.round(us.reduce(function (a, u) { return a + mastery(c, u.n); }, 0) / us.length);
   }
@@ -816,7 +826,7 @@
     courses.forEach(function (c) {
       var pre = (D.PRE || {})[c.id] || {};
       unitsOf(c).forEach(function (u) {
-        if (!(u.play || u.set)) return;
+        if (!(u.play || u.set || u.lab)) return;
         var m = mastery(c, u.n);
         if (m >= 85 || best) return;
         var weak = (pre[u.n] || []).map(function (k) {
@@ -831,7 +841,7 @@
   /* Four dials rather than one bar. A dimension a unit cannot offer is not
      drawn, because averaging in a zero nobody can earn is just a lie. */
   function dimRow(c, units) {
-    var live = units.filter(function (u) { return u.play || u.set; });
+    var live = units.filter(function (u) { return u.play || u.set || u.lab; });
     if (!live.length) return "";
     var out = '<div class="lx-dims">';
     DIMS.forEach(function (dim) {
@@ -863,7 +873,7 @@
     var units = unitsOf(c);
     return window.OPLO_KMAP.build({
       units: units.map(function (u) {
-        return { n: u.n, t: u.t, part: u.part, desc: u.desc, set: u.set, live: !!(u.play || u.set) };
+        return { n: u.n, t: u.t, part: u.part, desc: u.desc, set: u.set, live: !!(u.play || u.set || u.lab) };
       }),
       pre: (D.PRE || {})[c.id] || {},
       mastery: function (n) { return mastery(c, n); },
@@ -1450,7 +1460,7 @@
       dimRow(c, units);
     main.appendChild(mast);
 
-    if (units.some(function (u) { return u.play || u.set; })) {
+    if (units.some(function (u) { return u.play || u.set || u.lab; })) {
       main.appendChild(window.OPLO_KMAP.teaser(mapModel(c), {
         hue: c.hue, onOpen: function () { openMap(c); }
       }));
@@ -1467,6 +1477,7 @@
       b.type = "button";
       var bits = [];
       if (u.play) bits.push("Practice");
+      if (u.lab) bits.push("Interactive lessons · practice · unit test");
       if (u.set) bits.push(SET(u.set).cards.length + " terms");
       if (!bits.length) bits.push("Syllabus only");
       b.innerHTML = '<span class="n">' + u.n + "</span>" +
@@ -1476,6 +1487,15 @@
       list.appendChild(b);
     });
     main.appendChild(list);
+    if (c.lab && window.OPLO_LAB) {
+      var cc = el("button", "lb-test lb-coursebtn");
+      cc.type = "button";
+      cc.innerHTML = '<span class="lb-tico">' + svg(I.star, true) + "</span>" +
+        '<span class="lb-ttxt"><b>Course challenge</b><span>Two problems from every unit, mixed — see what has stuck ' +
+        "and what needs another look.</span></span>" + '<span class="lb-go">Start' + svg(I.arrow, true) + "</span>";
+      cc.addEventListener("click", function () { openLab(c, null, "Challenge"); });
+      main.appendChild(cc);
+    }
     two.appendChild(main);
 
     var side = el("aside", "lx-side");
@@ -1513,6 +1533,12 @@
     if (!silent) enter("unit:" + c.id + ":" + n, trim(u.t), function () { openUnit(c, n, true); },
                        false, coursePath(c) + "/u" + n);
     S.course = c; S.unitIx = n; S.unit = u;
+    if (u.lab && window.OPLO_LAB) {
+      window.OPLO_LAB.renderUnit($("#v-unit"), labCtx(c, n));
+      noFoot(); progress(null);
+      show("unit");
+      return;
+    }
 
     var v = $("#v-unit");
     v.innerHTML = "";
@@ -1582,6 +1608,47 @@
 
     noFoot(); progress(null);
     show("unit");
+  }
+
+  /* ============================================================ The lab
+     Interactive math courses (lab/core.js). A lab unit's page, its lessons,
+     a skill's practice and the tests all live in the lab; the app gives them
+     an address, a place in history, and a way to raise the unit's mastery. */
+  function labCtx(c, n) {
+    var u = n ? unitsOf(c).filter(function (x) { return x.n === n; })[0] : null;
+    return {
+      course: c.id, courseTitle: c.t, n: n, title: u ? u.t : "", desc: u ? u.desc : "", me: S.me,
+      units: unitsOf(c).filter(function (x) { return x.lab; }).map(function (x) { return x.n; }),
+      go: {
+        unit: function () { openUnit(c, n); },
+        lesson: function (k) { openLab(c, n, "l" + k); },
+        practice: function (id) { openLab(c, n, "Practice/" + id); },
+        test: function () { openLab(c, n, "Test"); }
+      },
+      // What was done, as the unit's four dials. Mastery never falls.
+      onProgress: function (d, un) {
+        var nn = un || n;
+        if (!d || !nn) return;
+        raise(c, nn, "u", d.u); raise(c, nn, "p", d.p); raise(c, nn, "a", d.a);
+      }
+    };
+  }
+  function openLab(c, n, what, silent) {
+    var LAB = window.OPLO_LAB;
+    if (!LAB) return;
+    var label = what === "Test" ? "Unit test" : what === "Challenge" ? "Course challenge" :
+      /^Practice\//.test(what) ? "Practice" : "Lesson";
+    if (!silent) enter("lab:" + c.id + ":" + n + ":" + what, label, function () { openLab(c, n, what, true); },
+                       false, coursePath(c) + (n ? "/u" + n : "") + "/" + what);
+    S.course = c;
+    var v = $("#v-lab");
+    var ctx = labCtx(c, n);
+    if (what === "Challenge") LAB.runTest(v, ctx, "course");
+    else if (what === "Test") LAB.runTest(v, ctx, "unit");
+    else if (/^Practice\//.test(what)) LAB.runPractice(v, ctx, what.slice(9));
+    else LAB.runLesson(v, ctx, +what.slice(1));
+    noFoot(); progress(null);
+    show("lab");
   }
 
   /* ================================================================= Sets */
