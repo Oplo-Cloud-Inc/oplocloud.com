@@ -307,3 +307,75 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
 })();
+
+/* ==========================================================================
+   Oplo — the bars' material.
+
+   The bar scrolls away with the top of the page and, on a section page, the
+   chapter bar stays (assets/css/oplo-design.css). Two things follow the
+   scroll here:
+
+     --nav-y      how far the bar has gone off the top (0 to −44px), so its
+                  menus, search and drawer — fixed to the window — still open
+                  right under its edge
+     .bars-dark   on the root while what is just below the lowest bar is
+                  dark: a dark band, a dark card, the photograph at the top
+                  of the front page. The bars are dark glass then, and light
+                  glass over everything else.
+
+   "Dark" is read from the page itself: the first painted background up from
+   whatever is there. A background that is a picture or a gradient says
+   nothing by its colour, so it is read by its text instead — light text is
+   set on something dark.
+
+   OEdu's welcome page scrolls inside itself and does this in
+   learn/landing.js, so this stands aside there.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.OploBars) return;
+  window.OploBars = true;
+
+  function lum(rgb) {
+    var m = /rgba?\(([^)]+)\)/.exec(rgb || "");
+    if (!m) return null;
+    var c = m[1].split(",").map(Number);
+    if (c.length > 3 && c[3] < 0.5) return null;
+    return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+  }
+  function darkAt(y) {
+    var at = document.elementFromPoint(window.innerWidth / 2, y);
+    for (var n = at; n && n.nodeType === 1; n = n.parentElement) {
+      if (n.closest(".nav, .chapter")) continue;
+      var cs = getComputedStyle(n), l = lum(cs.backgroundColor);
+      if (l != null) return l < 0.4;
+      if (cs.backgroundImage && cs.backgroundImage !== "none") {
+        var t = lum(cs.color);
+        if (t != null) return t > 0.6;
+      }
+    }
+    return false;
+  }
+
+  function start() {
+    var nav = document.getElementById("nav");
+    if (!nav || nav.closest(".ld")) return;
+    var root = document.documentElement, chapter = document.querySelector(".chapter"), queued = false;
+    function paint() {
+      queued = false;
+      var y = Math.max(0, window.scrollY || window.pageYOffset || 0), h = nav.offsetHeight;
+      root.style.setProperty("--nav-y", -Math.min(y, h) + "px");
+      // Leave the material alone while a menu or search is open over the page.
+      if (nav.classList.contains("menu-open") || nav.classList.contains("searching")) return;
+      var under = chapter ? chapter.getBoundingClientRect().bottom : h - y;
+      if (under > 0) root.classList.toggle("bars-dark", darkAt(under + 2));
+    }
+    function queue() { if (!queued) { queued = true; requestAnimationFrame(paint); } }
+    window.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("resize", queue);
+    window.addEventListener("load", queue);
+    paint();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
+})();

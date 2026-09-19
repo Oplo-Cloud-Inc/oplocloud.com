@@ -70,8 +70,8 @@
    The way Apple's education page does it:
 
      one bar stays   the site's bar scrolls away with the page, and only the
-                     chapter bar stays, at the very top. Two see-through bars
-                     stacked let the page bleed through both.
+                     chapter bar stays, at the very top (this and the material
+                     come with the site's own bar, oplo-chrome.css).
      dark on dark    the top of the page is dark to meet the photograph: the
                      site's bar, the chapter bar and the ribbon are all dark
                      material, so the picture seems to begin under them.
@@ -80,17 +80,12 @@
      material        opaque enough that nothing behind it can be read, clear
                      enough that its colour and light still come through: a
                      tint at ~80%, blurred hard and saturated. */
-.ld .nav { position: absolute; }
-.ld > .chapter { top: 0; }
 /* Black behind the bars at the top, so dark material over it reads as dark
    rather than grey; the page is white from the photograph down. */
 .ld { background: linear-gradient(#000, #000) 0 0 / 100% 97px no-repeat local, #fff; }
 
 .ld .nav:not(.menu-open):not(.searching) { --ink: #f5f5f7; }
 .ld .nav:not(.menu-open):not(.searching)::before { background-color: rgba(22, 22, 23, .8); }
-.ld .nav::before, .ld .chapter {
-  -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px);
-}
 .ld .chapter {
   --ink: #f5f5f7; --ink-2: #a1a1a6;
   background: rgba(22, 22, 23, .8); color: var(--ink);
