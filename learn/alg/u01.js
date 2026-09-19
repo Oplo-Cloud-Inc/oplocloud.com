@@ -91,7 +91,7 @@
             answer: 0, skill: "Write an expression",
             why: "The one-off cost stands alone; the monthly cost is multiplied by the number of months." },
           { type: "learn",
-            prompt: "**Evaluating** means putting a value in and working it out. After you substitute, the order matters: $$2 + 3x^2 \\text{ when } x = 4$$ Tap the operation you would do **first**, then the next, until one number is left.",
+            prompt: "**Evaluating** means putting a value in and working it out. After you substitute, the order matters: $$2 + 3x^2 \\text{ when } x = 4$$ Click the operation you would do **first**, then the next, until one number is left.",
             scene: { type: "evalsteps",
                      stages: [
                        [{ t: "2" }, { t: "+", op: true, fb: "Adding comes last — the 3 is still being multiplied, and the 4 is still being squared." },
@@ -103,7 +103,7 @@
                      done: "$2 + 3(4)^2 = 2 + 3 \\cdot 16 = 2 + 48 = 50$" },
             gate: true,
             then: "The order is always: **brackets**, then **powers**, then **multiplying and dividing** (left to right), then **adding and subtracting** (left to right)." },
-          { type: "evalsteps", prompt: "Now $(8 - x)^2 \\div 4$ when $x = 2$. Tap each step in order.", skill: "Order of operations",
+          { type: "evalsteps", prompt: "Now $(8 - x)^2 \\div 4$ when $x = 2$. Click each step in order.", skill: "Order of operations",
             stages: [
               [{ t: "(8" }, { t: "-", go: true }, { t: "2)" }, { t: "^{2}", op: true, fb: "The brackets come first: work out $8 - 2$ before squaring." }, { t: "\\div", op: true, fb: "Brackets first, then the power, and only then the division." }, { t: "4" }],
               [{ t: "6", now: true }, { t: "^{2}", go: true }, { t: "\\div", op: true, fb: "Powers come before division." }, { t: "4" }],
@@ -173,7 +173,7 @@
         steps: [
           { type: "learn", prompt: "A fruit bowl has 3 apples and 2 oranges. You add 4 more apples. That's “7 apples and 2 oranges” — never “9 apples”. Algebra counts the same way: $$3x + 2y + 4x = 7x + 2y$$ Terms with the same letter, to the same power, are **like terms**, and only like terms combine." },
           { type: "learn",
-            prompt: "Here is $3x + 2 - x - 5$ as **algebra tiles**: blue bars are $x$, yellow squares are $1$, and red means negative. A positive and a negative of the same kind make a **zero pair** — together they're worth nothing. Tap one tile, then its opposite, until no pairs are left.",
+            prompt: "Here is $3x + 2 - x - 5$ as **algebra tiles**: blue bars are $x$, yellow squares are $1$, and red means negative. A positive and a negative of the same kind make a **zero pair** — together they're worth nothing. Click one tile, then its opposite, until no pairs are left.",
             scene: { type: "tilemat", terms: [[3, "x"], [2, "1"], [-1, "x"], [-5, "1"]] },
             gate: true,
             then: "What's left — two $x$ tiles and three negative units — is $2x - 3$. That's what combining like terms means: $3x - x = 2x$ and $2 - 5 = -3$." },

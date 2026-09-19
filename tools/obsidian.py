@@ -53,7 +53,18 @@ SHEETS = [
     ("exam.css", []),
     ("checks.css", []),
     ("challenge.css", []),
+    ("lab/lab.css", []),
 ]
+
+# Stylesheets that draw their own dark look (lab.css has one under
+# html[data-look="obsidian"] already). Only the blue fills are taken from
+# them, below.
+FILLS_ONLY = {"lab/lab.css"}
+
+# A blue fill with white text on it. On the dark page --blue is lifted so
+# that blue text reads (#409cff), which is too light to carry white text; a
+# fill takes the deeper blue instead, so the label on it keeps 4.5:1.
+FILL = {"var(--blue)": "var(--fill)", "var(--blue-d)": "var(--fill-d)"}
 
 # Dark surfaces, lightest last.
 BG = (21, 22, 24)        # #151618 Obsidian — the page
@@ -461,6 +472,14 @@ def generate(sheet, css, skip_ranges):
             if ".ld" in prelude or under_banner(prelude) or kept_dark(prelude):
                 continue
             ds = decls(body)
+            if sheet in FILLS_ONLY:
+                out = ["%s  %s: %s;" % (indent, p, FILL[v.strip()]) for p, v in ds
+                       if p.lower() in ("background", "background-color") and v.strip() in FILL]
+                if out:
+                    lines.append(indent + scope_selector(prelude).replace("\n", "\n" + indent) + " {")
+                    lines.extend(out)
+                    lines.append(indent + "}")
+                continue
             ctx = rule_context(prelude, ds)
             out = []
             if ctx.get("banner"):
@@ -474,6 +493,9 @@ def generate(sheet, css, skip_ranges):
                 if vv.lower().endswith("!important"):
                     imp = " !important"
                     vv = vv[: -len("!important")].strip()
+                if p.lower() in ("background", "background-color") and vv in FILL:
+                    out.append("%s  %s: %s%s;" % (indent, p, FILL[vv], imp))
+                    continue
                 if not COLOR_RE.search(vv):
                     # A dark-surface rule's white text is flipped even when the
                     # surface is a token (var(--ink) on a primary button).

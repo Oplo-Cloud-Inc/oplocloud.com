@@ -35,8 +35,8 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "093f4933",
-    "alg/u01.js": "33d621b3"
+    "lab/widgets.js": "44b64ed1",
+    "alg/u01.js": "a1547e78"
   };
 
   /* ------------------------------------------------------------ Helpers */

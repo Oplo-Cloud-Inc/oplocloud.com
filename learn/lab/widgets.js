@@ -1070,7 +1070,7 @@
     var row = el("div", "lw-chain");
     box.appendChild(row);
     var tray = el("div", "lw-utray");
-    box.appendChild(el("p", "lw-hint", "Tap a conversion to add it. Tap ⇅ to flip it."));
+    box.appendChild(el("p", "lw-hint", "Click a conversion to add it. Click ⇅ to flip it."));
     box.appendChild(tray);
     var read = el("div", "lw-read");
     box.appendChild(read);

@@ -1787,7 +1787,7 @@
       var k = Object.keys(known).length, l = Object.keys(learning).length;
       tally.textContent = (k || l)
         ? k + " known · " + l + " still learning"
-        : "Tap the card to flip it. Arrow keys move.";
+        : "Click the card to flip it. Arrow keys move.";
     }
     function step(d) {
       i = Math.min(order.length - 1, Math.max(0, i + d));
@@ -3044,7 +3044,7 @@
     });
     list.appendChild(ul);
     list.appendChild(el("p", "hunt-say",
-      "Tap the first letter, then the last. Words run in any direction, " +
+      "Click the first letter, then the last. Words run in any direction, " +
       "including backwards and diagonally."));
     board.appendChild(list);
     wrap.appendChild(board);

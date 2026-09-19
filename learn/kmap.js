@@ -484,7 +484,7 @@ window.OPLO_KMAP = (function () {
     if (u.concepts.length) {
       s.appendChild(el("h3", "km-sub", "Concepts"));
       s.appendChild(el("p", "km-subp", "Each dot is a rung: recognise, recall, explain, apply, transfer. " +
-        "Tap one to see what is missing."));
+        "Click one to see what is missing."));
       var tiers = {};
       u.concepts.forEach(function (c, i) { c.i = i; (tiers[c.depth] = tiers[c.depth] || []).push(c); });
       var keys = Object.keys(tiers).map(Number).sort(num);
