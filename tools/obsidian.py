@@ -66,14 +66,20 @@ FILLS_ONLY = {"lab/lab.css"}
 # fill takes the deeper blue instead, so the label on it keeps 4.5:1.
 FILL = {"var(--blue)": "var(--fill)", "var(--blue-d)": "var(--fill-d)"}
 
-# Dark surfaces, lightest last.
-BG = (21, 22, 24)        # #151618 Obsidian — the page
-S1 = (28, 29, 33)        # a card
-S2 = (34, 35, 40)        # a raised fill inside a card
-S3 = (42, 43, 49)        # a pressed or hovered fill
-S4 = (54, 55, 62)        # a control's track
-ELEV = (44, 45, 51)      # a panel that was ink-dark in the light look
-INK = (245, 245, 247)
+# The palette, darkest first. Black is the page, #161618 a card on it,
+# #212124 a fill inside a card (and anything that floats); the last two are
+# the same greys a step on, for a pressed fill and a control's track.
+BG = (0, 0, 0)           # the page
+S1 = (22, 22, 24)        # #161618 a card
+S2 = (33, 33, 36)        # #212124 a fill inside a card
+S3 = (42, 42, 46)        # a pressed or hovered fill
+S4 = (58, 58, 62)        # a control's track
+ELEV = (33, 33, 36)      # a panel that was ink-dark in the light look
+INK = (255, 255, 255)
+# The quietest text, #818181, reads at 4.6:1 on a card but 4.1:1 on the
+# #212124 fill; anything painted that fill carries a step lighter grey for
+# its quiet text, so it stays at 4.5:1 or better.
+QUIET_ON_FILL = "--ink-3: var(--ink-3-fill);"
 
 # Panels that are dark in the light look (background: var(--ink), white
 # text). Here they stay dark — a step above the page — rather than turning
@@ -163,9 +169,10 @@ def as_surface(c):
     if neutral(c):
         if a < 0.999:
             if L > 0.9:
-                # Mostly-opaque white is glass; faint white was already a
-                # light laid over something dark, and stays one.
-                return fmt(*S1, a=min(1, a * 0.95 + 0.02)) if a >= 0.5 else fmt(r, g, b, a)
+                # Faint white was already a light laid over something dark,
+                # and stays one.
+                # Mostly-opaque white was glass; here it is a solid card.
+                return fmt(*S1) if a >= 0.5 else fmt(r, g, b, a)
             if L < 0.2:        # black: a scrim stays a scrim, a faint shade becomes a faint light
                 return fmt(0, 0, 0, a=min(0.85, a * 1.3)) if a >= 0.3 else fmt(255, 255, 255, a=min(0.14, a * 0.9 + 0.012))
             return fmt(255, 255, 255, a=min(0.2, a * 0.5))
@@ -200,7 +207,8 @@ def as_text(c):
             v = max(0.4, min(0.84, 1.08 - L))
         else:
             v = 0.4
-        return fmt(*from_hls(0.66, v, 0.03), a=a)
+        v = max(v, 0.506)      # never quieter than #818181
+        return fmt(*from_hls(0, v, 0), a=a)
     if L >= 0.85:
         return None            # light coloured text is already on something dark
     h, _, s = hls(c)
@@ -496,6 +504,9 @@ def generate(sheet, css, skip_ranges):
                 if p.lower() in ("background", "background-color") and vv in FILL:
                     out.append("%s  %s: %s%s;" % (indent, p, FILL[vv], imp))
                     continue
+                if p.lower() in ("background", "background-color") and vv == "var(--sunk)":
+                    out.append("%s  %s" % (indent, QUIET_ON_FILL))
+                    continue
                 if not COLOR_RE.search(vv):
                     # A dark-surface rule's white text is flipped even when the
                     # surface is a token (var(--ink) on a primary button).
@@ -503,6 +514,8 @@ def generate(sheet, css, skip_ranges):
                 n = map_value(p, vv, ctx)
                 if n is not None:
                     out.append("%s  %s: %s%s;" % (indent, p, n, imp))
+                    if p.lower() in ("background", "background-color") and n in (fmt(*S2), fmt(*S3), fmt(*mix(S3, S4, 0.5)), fmt(*S4)):
+                        out.append("%s  %s" % (indent, QUIET_ON_FILL))
             # A control that is ink-dark in the light look is light here, so
             # its text goes dark — even when the rule leaves the colour to
             # another rule (.ex-btn.submit takes its white from .primary).
