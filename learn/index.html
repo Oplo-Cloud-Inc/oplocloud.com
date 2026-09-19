@@ -2,17 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<base href="/">
 <script>
 /* The app answers at every address inside it — /student/Science/Biology/u1/l3
    as well as /student/ — but its files all sit beside this page. So relative
    addresses are resolved from the app's own folder, whatever the address bar
-   says, and this runs before anything is fetched. A "#section" link on the
+   says. The plain base above is for the browser, which starts fetching files
+   before any script runs: on edu.oplocloud.com the app's folder is "/", so
+   those early fetches are already right. This corrects it anywhere else (a
+   local preview serves the app from /learn/). A "#section" link on the
    welcome page still means this page, not the folder. */
 (function () {
   var m = /^(.*?\/)(?:admin|teacher|student)(?:\/|$)/.exec(location.pathname);
-  var b = document.createElement("base");
+  var b = document.querySelector("base");
   b.href = m ? m[1] : location.pathname.replace(/[^\/]*$/, "");
-  document.head.appendChild(b);
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest('a[href^="#"]');
     if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
