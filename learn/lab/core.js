@@ -951,7 +951,16 @@ window.OPLO_LAB = (function () {
     bolt: '<path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z"/>',
     target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
     arrow: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
-    lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>'
+    lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+    sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/><path d="M6 8.5h1.2M6 11h1.2M6 13.5h1.2"/>',
+    search: '<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 4.5 4.5"/>',
+    x: '<path d="m7.5 7.5 9 9M16.5 7.5l-9 9"/>',
+    left: '<path d="m14.5 5.5-6.5 6.5 6.5 6.5"/>',
+    right: '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
+    down: '<path d="m6 9.5 6 6 6-6"/>',
+    doc: '<path d="M7 3.5h6.5l5 5V19a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M13.5 3.5v5h5"/>',
+    test: '<rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 3.5h6"/><path d="m8.5 12.5 2.2 2.2 4.8-5"/>',
+    done: '<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.2 9.6"/>'
   };
   function svg(d, fill) {
     return '<svg viewBox="0 0 24 24" fill="' + (fill ? "currentColor" : "none") + '" stroke="' + (fill ? "none" : "currentColor") +
@@ -1068,6 +1077,222 @@ window.OPLO_LAB = (function () {
     return false;
   }
 
+
+  /* ============================================================ The shell
+     Around a lesson, a quiz, a skill's practice or the unit test, the way a
+     Mac app is laid out (Apple's HIG: sidebars, path controls, search
+     fields):
+
+       sidebar     the whole unit, so any lesson is one click away: lessons
+                   and quizzes in the order they are taken, then the unit
+                   test, then the skills to practise. Two sections that fold,
+                   the one you are in as a filled pill, a check on what is
+                   done, a search field that filters as you type. It can be
+                   hidden, and remembers that; it is never hidden to begin
+                   with. On a narrow window it floats over the page instead.
+       path        above the title: course › unit › here. Every part but
+                   the last is a way back up.
+       arrows      either side of the title: the previous and the next thing
+                   in the unit's order. */
+  var SIDE = { q: "", folded: {}, scroll: null };
+  var NARROW = "(max-width: 1099px)";
+  function sideHidden() { try { return localStorage.getItem("oplo.lab.side") === "hidden"; } catch (e) { return false; } }
+  function setSideHidden(v) {
+    try { if (v) localStorage.setItem("oplo.lab.side", "hidden"); else localStorage.removeItem("oplo.lab.side"); } catch (e) { /* private window */ }
+  }
+  // The unit in the order it is taken: lessons, each quiz after its lesson,
+  // then the unit test.
+  function unitSeq(u) {
+    var seq = [];
+    u.lessons.forEach(function (l) {
+      seq.push({ kind: "lesson", k: l.k, title: l.title, label: "Lesson " + l.k, done: lessonDone(l) });
+      u.quizzes.filter(function (q) { return q.after === l.k; }).forEach(function (q) {
+        seq.push({ kind: "quiz", k: q.k, title: q.title, label: q.title, done: !!REC.tests[q.unit + ":q" + q.k] });
+      });
+    });
+    seq.push({ kind: "test", title: "Unit test", label: "Unit test", done: !!REC.tests[u.key] });
+    return seq;
+  }
+  function skillSeq(u) {
+    return u.skills.map(function (sk) { return { kind: "skill", id: sk.id, title: stripMath(sk.title), label: "Practice", lv: level(sk.id) }; });
+  }
+  function isHere(it, here) { return it.kind === here.kind && (it.k === here.k || (it.id != null && it.id === here.id) || it.kind === "test"); }
+  function goItem(ctx, it) {
+    if (it.kind === "lesson") ctx.go.lesson(it.k);
+    else if (it.kind === "quiz") ctx.go.quiz(it.k);
+    else if (it.kind === "test") ctx.go.test();
+    else if (it.kind === "skill") ctx.go.practice(it.id);
+  }
+
+  function frame(host, ctx, u, here) {
+    host.innerHTML = "";
+    var shell = el("div", "lb-shell" + (sideHidden() ? " side-off" : ""));
+    function toggle() {
+      if (window.matchMedia && window.matchMedia(NARROW).matches) { shell.classList.toggle("peek"); return; }
+      var off = !shell.classList.contains("side-off");
+      shell.classList.toggle("side-off", off);
+      setSideHidden(off);
+      (off ? show : hide).focus();
+    }
+
+    var side = el("aside", "lb-side");
+    side.setAttribute("aria-label", "Unit " + u.n + " contents");
+    var top = el("div", "lb-side-top");
+    top.innerHTML = '<div class="lb-side-unit"><span>' + esc(ctx.courseTitle || "") + " · Unit " + u.n + "</span><b>" + fmt(u.title) + "</b></div>";
+    var hide = button("lb-side-btn", svg(ICON.sidebar));
+    hide.setAttribute("aria-label", "Hide sidebar");
+    hide.title = "Hide sidebar";
+    hide.addEventListener("click", toggle);
+    top.appendChild(hide);
+    side.appendChild(top);
+
+    // Search: filters as you type; Escape clears it, Enter opens the first match.
+    var search = el("label", "lb-search");
+    search.innerHTML = svg(ICON.search);
+    var inp = el("input");
+    inp.type = "search";
+    inp.placeholder = "Search this unit";
+    inp.setAttribute("aria-label", "Search lessons, quizzes and skills in this unit");
+    inp.value = SIDE.q;
+    var clear = button("lb-search-x", svg(ICON.x));
+    clear.setAttribute("aria-label", "Clear search");
+    search.appendChild(inp);
+    search.appendChild(clear);
+    side.appendChild(search);
+
+    var list = el("div", "lb-side-list");
+    var none = el("p", "lb-side-none");
+    function section(key, name, items) {
+      var sec = el("section", "lb-sec" + (SIDE.folded[key] ? " folded" : ""));
+      var h = button("lb-sec-h", "<span>" + name + "</span>" + svg(ICON.down));
+      h.setAttribute("aria-expanded", String(!SIDE.folded[key]));
+      h.addEventListener("click", function () {
+        SIDE.folded[key] = !SIDE.folded[key];
+        sec.classList.toggle("folded", SIDE.folded[key]);
+        h.setAttribute("aria-expanded", String(!SIDE.folded[key]));
+      });
+      sec.appendChild(h);
+      var ul = el("ul", "lb-rows");
+      items.forEach(function (it) {
+        var li = el("li");
+        var cur = isHere(it, here);
+        var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : ICON.doc;
+        var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
+        var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
+          '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
+          '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.k + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end);
+        if (cur) b.setAttribute("aria-current", "page");
+        b.title = (it.kind === "lesson" ? it.label + ": " : "") + stripMath(it.title);
+        b.addEventListener("click", function () {
+          SIDE.scroll = list.scrollTop;
+          shell.classList.remove("peek");
+          if (!cur) goItem(ctx, it);
+        });
+        li.dataset.text = (it.label + " " + stripMath(it.title)).toLowerCase();
+        li.appendChild(b);
+        ul.appendChild(li);
+      });
+      sec.appendChild(ul);
+      list.appendChild(sec);
+    }
+    section("path", "Lessons", unitSeq(u));
+    section("skills", "Practice", skillSeq(u));
+    list.appendChild(none);
+    side.appendChild(list);
+
+    function filter() {
+      var q = SIDE.q = inp.value.trim().toLowerCase(), any = false;
+      search.classList.toggle("has", !!q);
+      [].forEach.call(list.querySelectorAll(".lb-sec"), function (sec) {
+        var shown = 0;
+        [].forEach.call(sec.querySelectorAll("li"), function (li) {
+          var ok = !q || li.dataset.text.indexOf(q) > -1;
+          li.hidden = !ok;
+          if (ok) shown++;
+        });
+        sec.hidden = !shown;
+        sec.classList.toggle("searching", !!q);
+        if (shown) any = true;
+      });
+      none.hidden = any;
+      none.textContent = any ? "" : "Nothing in this unit matches “" + inp.value.trim() + "”.";
+    }
+    inp.addEventListener("input", filter);
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && inp.value) { e.preventDefault(); inp.value = ""; filter(); }
+      else if (e.key === "Enter") {
+        var first = list.querySelector("li:not([hidden]) .lb-row");
+        if (first) { e.preventDefault(); first.click(); }
+      }
+    });
+    clear.addEventListener("click", function (e) { e.preventDefault(); inp.value = ""; filter(); inp.focus(); });
+    filter();
+
+    var show = button("lb-side-show", svg(ICON.sidebar));
+    show.setAttribute("aria-label", "Show sidebar");
+    show.title = "Show sidebar";
+    show.addEventListener("click", toggle);
+    var scrim = el("div", "lb-side-scrim");
+    scrim.addEventListener("click", function () { shell.classList.remove("peek"); });
+    side.addEventListener("keydown", function (e) { if (e.key === "Escape" && shell.classList.contains("peek")) { shell.classList.remove("peek"); show.focus(); } });
+
+    var main = el("div", "lb-work");
+    shell.appendChild(side);
+    shell.appendChild(scrim);
+    shell.appendChild(show);
+    shell.appendChild(main);
+    host.appendChild(shell);
+
+    // Keep the list where it was; otherwise bring the current row into view.
+    if (SIDE.scroll != null) { list.scrollTop = SIDE.scroll; SIDE.scroll = null; }
+    else {
+      var at = list.querySelector('[aria-current="page"]');
+      // Scrolled only if it would be out of sight — and only the list, never the page.
+      if (at && at.offsetTop + at.offsetHeight > list.clientHeight) list.scrollTop = at.offsetTop - list.clientHeight / 3;
+    }
+    return main;
+  }
+
+  // The path back up, and the arrows either side of the title.
+  function head(work, ctx, u, here) {
+    var top = work.querySelector(".ch-top"), title = top && top.querySelector(".ch-title");
+    if (!title) return;
+    var seq = here.kind === "skill" ? skillSeq(u) : unitSeq(u);
+    var i = -1;
+    seq.forEach(function (it, j) { if (isHere(it, here)) i = j; });
+    var cur = seq[i] || { label: "" };
+
+    var path = el("nav", "lb-path");
+    path.setAttribute("aria-label", "Where you are");
+    function crumb(text, go) {
+      if (!go) { var s = el("span", "here", esc(text)); s.setAttribute("aria-current", "page"); path.appendChild(s); return; }
+      var b = button("", esc(text));
+      b.addEventListener("click", go);
+      path.appendChild(b);
+      path.appendChild(el("span", "sep", svg(ICON.right)));
+    }
+    if (ctx.go.course) crumb(ctx.courseTitle || "Course", function () { ctx.go.course(); });
+    crumb("Unit " + u.n + ": " + stripMath(u.title), function () { ctx.go.unit(); });
+    crumb(here.kind === "skill" ? "Practice" : cur.label);
+    var eb = title.querySelector(".ch-eyebrow");
+    if (eb) title.replaceChild(path, eb); else title.insertBefore(path, title.firstChild);
+
+    function arrow(it, dir) {
+      var b = button("lb-arrow " + dir, svg(dir === "prev" ? ICON.left : ICON.right));
+      if (!it) { b.disabled = true; b.setAttribute("aria-label", dir === "prev" ? "No previous lesson" : "No next lesson"); return b; }
+      var name = (dir === "prev" ? "Previous: " : "Next: ") + (it.kind === "lesson" ? it.label + ", " : "") + stripMath(it.title);
+      b.setAttribute("aria-label", name);
+      b.title = name;
+      b.addEventListener("click", function () { goItem(ctx, it); });
+      return b;
+    }
+    var row = el("div", "lb-headrow");
+    row.appendChild(arrow(seq[i - 1], "prev"));
+    top.insertBefore(row, title);
+    row.appendChild(title);
+    row.appendChild(arrow(i > -1 ? seq[i + 1] : null, "next"));
+  }
+
   /* ============================================================ Running */
   function lessonPath(u, k) {
     var l = u.lessons[k - 1];
@@ -1095,7 +1320,8 @@ window.OPLO_LAB = (function () {
       var sk = u.skills.filter(function (s) { return s.lesson === k; })[0] || u.skills[0];
       if (sk) after.push({ label: "Practise: " + stripMath(sk.title), go: function () { ctx.go.practice(sk.id); } });
       after.push({ label: "Unit " + u.n + ": " + u.title, go: function () { ctx.go.unit(); } });
-      CH.play(host, {
+      var here = { kind: "lesson", k: k }, work = frame(host, ctx, u, here);
+      CH.play(work, {
         path: path, me: ctx.me, after: after,
         onFinish: function () {
           REC.lessons[lessonKey(u.lessons[k - 1])] = { done: true, at: Date.now() };
@@ -1103,6 +1329,7 @@ window.OPLO_LAB = (function () {
           if (ctx.onProgress) ctx.onProgress(unitDims(u));
         }
       });
+      head(work, ctx, u, here);
       return u;
     }, function (e) { failed(host, e); });
   }
@@ -1128,7 +1355,8 @@ window.OPLO_LAB = (function () {
       var steps = [];
       for (var i = 0; i < 5; i++) steps.push(genStep(sk, seed, i));
       var before = level(sk.id);
-      CH.play(host, {
+      var here = { kind: "skill", id: sk.id }, work = frame(host, ctx, u, here);
+      CH.play(work, {
         path: { eyebrow: "Practice · Unit " + u.n, title: stripMath(sk.title), steps: steps },
         me: ctx.me, record: false, fresh: true,
         shownNote: "Read the working, then try the next one.",
@@ -1149,6 +1377,7 @@ window.OPLO_LAB = (function () {
           });
         }
       });
+      head(work, ctx, u, here);
     }, function (e) { failed(host, e); });
   }
   function nextSkill(u, sk, ctx) {
@@ -1173,7 +1402,10 @@ window.OPLO_LAB = (function () {
         var title = scope === "course" ? "Course challenge" : "Unit " + us[0].n + " test";
         var before = {};
         steps.forEach(function (s) { before[s.skillId] = level(s.skillId); });
-        CH.play(host, {
+        // The unit test sits in the unit's frame; the course challenge spans
+        // every unit, so it has none.
+        var here = { kind: "test" }, work = scope === "course" ? host : frame(host, ctx, us[0], here);
+        CH.play(work, {
           path: { eyebrow: scope === "course" ? ctx.courseTitle : "Unit " + us[0].n + " · " + us[0].title, title: title, steps: steps },
           me: ctx.me, record: false, fresh: true,
           shownNote: "Read the working — this one will count against the skill.",
@@ -1206,6 +1438,7 @@ window.OPLO_LAB = (function () {
             });
           }
         });
+        if (scope !== "course") head(work, ctx, us[0], here);
       }, function (e) { failed(host, e); });
   }
   /* A quiz: two problems from each of a few skills. It can lift a skill as
@@ -1225,7 +1458,8 @@ window.OPLO_LAB = (function () {
       steps = rng(seed).shuffle(steps);
       var before = {};
       steps.forEach(function (s) { before[s.skillId] = level(s.skillId); });
-      CH.play(host, {
+      var here = { kind: "quiz", k: k }, work = frame(host, ctx, u, here);
+      CH.play(work, {
         path: { eyebrow: q.title + " · Unit " + u.n, title: q.name || u.title, steps: steps },
         me: ctx.me, record: false, fresh: true,
         shownNote: "Read the working — the quiz counts this one as missed.",
@@ -1261,6 +1495,7 @@ window.OPLO_LAB = (function () {
           });
         }
       });
+      head(work, ctx, u, here);
     }, function (e) { failed(host, e); });
   }
 

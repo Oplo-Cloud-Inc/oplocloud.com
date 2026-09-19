@@ -616,3 +616,113 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lw-walk .lw-tools { justify-content: center; }
 .lw-walk.solved .lw-wk { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--lw-green) 45%, transparent); }
 @media (prefers-reduced-motion: reduce) { .lw-wk-row.in { animation: none; } }
+
+/* =============================================================== Shell
+   A lesson's frame, laid out like a Mac app: a sidebar at the leading edge
+   with the whole unit in it, and above the work a path back up and arrows
+   to the previous and next lesson. See lab/core.js, frame() and head(). */
+.lb-side {
+  position: fixed; z-index: 30; top: calc(var(--bar) + 13px); left: 12px; bottom: 12px; width: 300px;
+  display: flex; flex-direction: column; gap: 12px; padding: 14px 8px 10px;
+  border-radius: 20px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair);
+}
+/* The page makes room for it, and the work stays centred in what is left. */
+.lx-wrap:has(#v-lab.on .lb-shell:not(.side-off)) { max-width: none; padding-left: calc(12px + 300px + 40px); }
+.lb-shell.side-off .lb-side { display: none; }
+
+.lb-side-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 2px 6px 0 12px; }
+.lb-side-unit { display: grid; gap: 3px; min-width: 0; padding-top: 3px; }
+.lb-side-unit span { font-size: 12px; font-weight: 600; color: var(--ink-3); }
+.lb-side-unit b { font-family: var(--font); font-size: 17px; font-weight: 600; line-height: 1.2; letter-spacing: -.01em; color: var(--ink); }
+.lb-side-btn, .lb-side-show {
+  flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--sunk); color: var(--ink-2); transition: background .15s var(--ease), color .15s var(--ease);
+}
+.lb-side-btn:hover, .lb-side-show:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 12%, var(--paper)); }
+.lb-side-btn svg, .lb-side-show svg { width: 19px; height: 19px; }
+.lb-side-show { display: none; position: fixed; z-index: 30; top: calc(var(--bar) + 13px); left: 12px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair); }
+.lb-shell.side-off .lb-side-show { display: grid; }
+
+/* Search: a capsule with its icon, the words, and a clear button once there
+   is something to clear. */
+.lb-search {
+  display: flex; align-items: center; gap: 8px; height: 38px; margin: 0 4px; padding: 0 6px 0 12px;
+  border-radius: 999px; background: var(--sunk); color: var(--ink-3); cursor: text;
+  transition: box-shadow .15s var(--ease);
+}
+.lb-search:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 40%, transparent); }
+.lb-search > svg { flex: none; width: 17px; height: 17px; }
+.lb-search input {
+  flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; padding: 0;
+  font: inherit; font-size: 14.5px; color: var(--ink);
+}
+.lb-search input::-webkit-search-cancel-button { display: none; }
+.lb-search-x { display: none; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: var(--ink-3); }
+.lb-search-x:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.lb-search-x svg { width: 14px; height: 14px; }
+.lb-search.has .lb-search-x { display: grid; }
+
+.lb-side-list { flex: 1; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: 12px; padding: 0 4px 6px; }
+.lb-sec-h {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 6px 10px;
+  border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--ink-2);
+}
+.lb-sec-h:hover { color: var(--ink); }
+.lb-sec-h svg { width: 15px; height: 15px; color: var(--ink-3); transition: transform .2s var(--ease); }
+.lb-sec.folded:not(.searching) .lb-sec-h svg { transform: rotate(-90deg); }
+.lb-sec.folded:not(.searching) .lb-rows { display: none; }
+.lb-rows { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 2px; }
+.lb-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 12px 8px 10px;
+  border-radius: 12px; text-align: left; color: var(--ink); font-size: 14px; line-height: 1.3;
+  transition: background .12s var(--ease);
+}
+.lb-row:hover { background: var(--sunk); }
+.lb-row-ico { flex: none; display: grid; place-items: center; width: 20px; height: 20px; color: var(--blue); }
+.lb-row-ico svg { width: 18px; height: 18px; }
+.lb-row.k-quiz .lb-row-ico { color: #a78bfa; }
+.lb-row.k-test .lb-row-ico { color: var(--amber); }
+.lb-row.k-skill .lb-row-ico { color: var(--ink-3); }
+.lb-row-t { flex: 1; min-width: 0; }
+.lb-row-t i { display: inline-block; min-width: 16px; margin-right: 6px; font-style: normal; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.lb-row-done { flex: none; display: grid; color: var(--green); }
+.lb-row-done svg { width: 17px; height: 17px; }
+.lb-row .lb-pips { flex: none; gap: 2px; }
+.lb-row .lb-pips i { width: 5px; height: 12px; border-radius: 2px; }
+.lb-side-list { position: relative; }
+/* Where you are: a filled pill in the accent. */
+.lb-row[aria-current="page"] { background: var(--fill, var(--blue)); color: #fff; }
+.lb-row[aria-current="page"] :is(.lb-row-ico, .lb-row-t i, .lb-row-done) { color: #fff; }
+.lb-side-none { margin: 4px 12px; font-size: 14px; color: var(--ink-3); }
+.lb-side-none:empty { display: none; }
+
+/* On a narrow window the sidebar floats over the page when it is asked for,
+   and a click outside it or Escape puts it away. */
+.lb-side-scrim { display: none; }
+@media (max-width: 1099px) {
+  .lx-wrap:has(#v-lab.on .lb-shell:not(.side-off)) { max-width: var(--well); padding-left: max(var(--gut), env(safe-area-inset-left)); }
+  .lb-shell .lb-side { display: none; box-shadow: 0 0 0 1px var(--hair), 0 24px 60px rgba(0,0,0,.35); }
+  .lb-shell .lb-side-show { display: grid; }
+  .lb-shell.peek .lb-side { display: flex; }
+  .lb-shell.peek .lb-side-show { display: none; }
+  .lb-shell.peek .lb-side-scrim { display: block; position: fixed; inset: 0; z-index: 29; background: rgba(0,0,0,.35); }
+}
+
+/* The path: course › unit › here, each part but the last a way back. */
+.lb-path { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px; font-size: 13px; font-weight: 600; }
+.lb-path button { padding: 3px 6px; border-radius: 6px; color: var(--blue); }
+.lb-path button:hover { background: color-mix(in srgb, var(--blue) 12%, transparent); }
+.lb-path .sep { display: grid; color: var(--ink-3); }
+.lb-path .sep svg { width: 12px; height: 12px; }
+.lb-path .here { padding: 3px 6px; color: var(--ink-2); }
+
+/* The title, with the previous and next lesson either side of it. */
+.lb-headrow { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 12px; margin-bottom: 18px; }
+.lb-headrow .ch-title { margin: 0; align-items: center; text-align: center; gap: 6px; }
+.lb-arrow {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--ink-2);
+  transition: background .15s var(--ease), color .15s var(--ease);
+}
+.lb-arrow:hover:not(:disabled) { background: var(--sunk); color: var(--ink); }
+.lb-arrow:disabled { opacity: .3; cursor: default; }
+.lb-arrow svg { width: 22px; height: 22px; }

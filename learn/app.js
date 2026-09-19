@@ -1622,6 +1622,7 @@
       course: c.id, courseTitle: c.t, n: n, title: u ? u.t : "", desc: u ? u.desc : "", me: S.me,
       units: unitsOf(c).filter(function (x) { return x.lab; }).map(function (x) { return x.n; }),
       go: {
+        course: function () { openCourse(c); },
         unit: function () { openUnit(c, n); },
         lesson: function (k) { openLab(c, n, "l" + k); },
         practice: function (id) { openLab(c, n, "Practice/" + id); },
