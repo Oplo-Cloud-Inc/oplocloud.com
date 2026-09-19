@@ -95,6 +95,13 @@
   clip-path: inset(0 calc(var(--p) * 6%) 0 calc(var(--p) * 6%) round calc(var(--p) * 30px));
 }
 .ld-hero-frame > .ld-media { position: absolute; inset: 0; }
+/* The hero photograph is nearly square and the frame is wide, so only a band
+   of it shows. The band sits a little above centre: the whole cathedral tower
+   and the laptop screens stay in, and the headline lands on the dark chairs
+   below, where it reads best. Black behind it, so nothing pale flashes while
+   it loads. */
+.ld-hero-media { background: #000; }
+.ld-hero-media > img { object-position: 50% 30%; }
 .ld-hero-frame > .ld-media.is-empty { align-items: start; padding-top: 12vh; }
 .ld-hero-frame::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
