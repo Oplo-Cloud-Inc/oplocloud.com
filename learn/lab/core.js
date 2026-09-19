@@ -35,8 +35,8 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "44b64ed1",
-    "alg/u01.js": "a1547e78"
+    "lab/widgets.js": "1e6b1214",
+    "alg/u01.js": "36485330"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -932,7 +932,11 @@ window.OPLO_LAB = (function () {
     var test = (REC.tests[u.key] || {}).best || 0;
     return { u: Math.round(lessons * 100), p: Math.round(sk * 100), a: Math.round(test * 100) };
   }
-  function lessonDone(l) { return !!(REC.lessons[l.unit + ":" + l.k] || {}).done; }
+  /* A lesson's key in the record. A lesson that is rewritten carries a
+     version (v: 2), so the old record — which steps were seen, whether it
+     was finished — does not carry over onto different steps. */
+  function lessonKey(l) { return l.unit + ":" + l.k + (l.v ? "~" + l.v : ""); }
+  function lessonDone(l) { return !!(REC.lessons[lessonKey(l)] || {}).done; }
   function unitMastery(u) {
     if (!u.skills.length) return 0;
     return Math.round(u.skills.reduce(function (a, s) { return a + level(s.id); }, 0) / (u.skills.length * 4) * 100);
@@ -1074,7 +1078,7 @@ window.OPLO_LAB = (function () {
       endTitle: "Lesson complete.",
       steps: l.steps.map(function (s, i) {
         var x = fmtStep(s);
-        x.id = x.id || (l.unit + ":" + k + ":" + i);
+        x.id = x.id || (lessonKey(l) + ":" + i);
         return x;
       })
     };
@@ -1094,7 +1098,7 @@ window.OPLO_LAB = (function () {
       CH.play(host, {
         path: path, me: ctx.me, after: after,
         onFinish: function () {
-          REC.lessons[u.key + ":" + k] = { done: true, at: Date.now() };
+          REC.lessons[lessonKey(u.lessons[k - 1])] = { done: true, at: Date.now() };
           changed();
           if (ctx.onProgress) ctx.onProgress(unitDims(u));
         }

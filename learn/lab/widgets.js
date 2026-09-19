@@ -29,6 +29,7 @@
      rectangle   a rectangle sized with sliders; its perimeter and area live
      tester      two expressions side by side at the same x
      share       division as fitting pieces — and why pieces of size 0 can't
+     walk        a worked example, one line at a time, each with its reason
 
    Every draggable thing is keyboard-operable (Tab to it, arrow keys to move
    it), and every scene says in words what it shows.
@@ -1574,6 +1575,49 @@
     api.ready = function () { return mode.explore && spec.gate ? reachedZero : true; };
     api.check = function () { return { ok: true }; };
     api.reveal = function () {};
+    return api;
+  });
+
+  /* ================================================================= Walk
+     A worked example, one line at a time. Each line is a piece of maths and,
+     beside it, the reason for it in plain words; "Next step" shows the next
+     line, so a beginner reads one move at a time instead of a finished
+     calculation. spec: { rows: [{ m: tex, say: text }], start: 1 }. With
+     gate, Continue waits until every line has been shown. */
+  CH.addKind("walk", function (spec, seed, mode) {
+    var api = {}, rows = spec.rows || [], k = Math.min(rows.length, spec.start || 1);
+    var box = el("div", "lw lw-walk");
+    var list = el("ol", "lw-wk");
+    box.appendChild(list);
+    var go = button("lw-btn lw-wk-next", "Next step");
+    var tools = el("div", "lw-tools");
+    tools.appendChild(go);
+    box.appendChild(tools);
+    function row(r, i, fresh) {
+      var li = el("li", "lw-wk-row" + (fresh ? " in" : ""));
+      li.innerHTML = '<span class="lw-wk-n">' + (i + 1) + "</span>" +
+        '<span class="lw-wk-m">' + (r.m != null ? m(r.m) : "") + "</span>" +
+        '<span class="lw-wk-s">' + (r.say || "") + "</span>";
+      list.appendChild(li);
+    }
+    rows.slice(0, k).forEach(function (r, i) { row(r, i, false); });
+    function paint() {
+      tools.hidden = k >= rows.length;
+      box.classList.toggle("solved", k >= rows.length);
+      if (api.onChange) api.onChange();
+    }
+    go.addEventListener("click", function () {
+      if (k >= rows.length) return;
+      row(rows[k], k, true);
+      k++;
+      paint();
+      if (k < rows.length) go.focus();
+    });
+    paint();
+    api.el = box;
+    api.ready = function () { return mode.explore && spec.gate ? k >= rows.length : true; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () { while (k < rows.length) { row(rows[k], k, false); k++; } paint(); };
     return api;
   });
 
