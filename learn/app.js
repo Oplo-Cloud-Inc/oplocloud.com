@@ -606,8 +606,18 @@
       return true;
     }
     var lm = /^l(\d+)$/i.exec(seg[3]), r = readerFor(c.id, n);
+    if (sameName(seg[3], "Challenge")) {
+      if (!r || !hasChallenge(r, "review")) return false;
+      openChallenge(r, "review");
+      return true;
+    }
     if (!lm || !r || !r.sections[+lm[1] - 1]) return false;
     var ix = +lm[1] - 1;
+    if (sameName(seg[4], "Challenge")) {
+      if (!hasChallenge(r, r.sections[ix].n)) return false;
+      openChallenge(r, ix);
+      return true;
+    }
     if (sameName(seg[4], "Questions")) {
       useReader(r);
       S.readIx = ix;
@@ -1543,6 +1553,7 @@
         b0.appendChild(rb);
       });
       v.appendChild(b0);
+      if (hasChallenge(reader, "review")) v.appendChild(challengeBlock(reader));
     }
 
     if (u.set) {
@@ -3672,6 +3683,9 @@
     "media:8": { key: "media:8", course: "media", courseTitle: "Media Arts", unit: 8,
                  title: "Intro to Animation", sections: window.OPLO_UNIT8 || [],
                  doc: "media-u8", set: "media-8" },
+    "media:9": { key: "media:9", course: "media", courseTitle: "Media Arts", unit: 9,
+                 title: "Audio/Video Production", sections: window.OPLO_UNIT9 || [],
+                 doc: "media-u9" },
     "biz:4":   { key: "biz:4", course: "biz", courseTitle: "Introduction to Business", unit: 4,
                  title: "International Business", sections: window.OPLO_BIZ4 || [],
                  doc: "biz-u4", set: "biz-4" },
@@ -4900,6 +4914,86 @@
     draw();
   }
 
+  /* ========================================================== Challenges
+     Problems solved by doing, one to a screen — see challenge.js. The
+     reading is where an idea is met and the challenge is where it is used,
+     so each lesson ends by offering its own, and the unit page lists them
+     all with the mixed unit review. A lesson's challenge is at
+     …/uN/lM/Challenge; the review at …/uN/Challenge. */
+  var CH = window.OPLO_CHALLENGE || null;
+  function hasChallenge(r, n) { return !!(CH && r && CH.has(r.key, n)); }
+  function challengePath(r, ix) {
+    var c = courseById(r.course);
+    return (c ? coursePath(c) : slug(r.courseTitle)) + "/u" + r.unit +
+      (ix === "review" ? "" : "/l" + (ix + 1)) + "/Challenge";
+  }
+  function openChallenge(r, ix, silent) {
+    var review = ix === "review", sec = review ? null : r.sections[ix];
+    if (!review && !sec) return;
+    if (!silent) {
+      enter("challenge:" + r.key + ":" + (review ? "review" : sec.n), review ? "Unit review" : sec.n,
+            function () { openChallenge(r, ix, true); }, false, challengePath(r, ix));
+    }
+    var c = courseById(r.course);
+    // Where to go next: the next lesson, then the review, then the unit.
+    var after = [];
+    if (!review && r.sections[ix + 1]) {
+      var nx = r.sections[ix + 1];
+      after.push({ label: "Read " + nx.n + " " + nx.t, go: function () { openRead(ix + 1, false, r.key); } });
+    } else if (!review && hasChallenge(r, "review")) {
+      after.push({ label: "Unit review", go: function () { openChallenge(r, "review"); } });
+    }
+    if (c) after.push({ label: "Unit " + r.unit + ": " + r.title, go: function () { openUnit(c, r.unit); } });
+    var v = $("#v-challenge");
+    v.innerHTML = "";
+    CH.play(v, { reader: r.key, sec: review ? "review" : sec.n, me: S.me, after: after });
+    noFoot(); progress(null);
+    show("challenge");
+  }
+  var CH_ICON = '<path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/><circle cx="12" cy="12" r="2.2"/>';
+  function challengeCta(r, i) {
+    var sec = r.sections[i], p = CH.progress(r.key, sec.n, S.me);
+    var b = el("button", "chx-cta");
+    b.type = "button";
+    var state = !p.solved ? p.total + " problems · about " + Math.max(3, Math.round(p.total * 1.2)) + " minutes"
+      : p.solved < p.total ? p.solved + " of " + p.total + " solved — pick up where you left off"
+      : "Done · " + p.first + " of " + p.total + " first try — run it again any time";
+    b.innerHTML = '<span class="chx-ico">' + svg(CH_ICON, true) + "</span>" +
+      '<span class="chx-txt"><b>Challenge: use what you just read</b><span>' + esc(CH.blurb(r.key, sec.n) || "") +
+      "</span><span>" + esc(state) + "</span></span>" +
+      '<span class="chx-go">' + svg(I.arrow, true) + "</span>";
+    b.addEventListener("click", function () { openChallenge(r, i); });
+    return b;
+  }
+  function challengeBlock(r) {
+    var box = el("div", "lx-block");
+    box.appendChild(el("h2", null, "Challenges"));
+    var list = el("div", "chx-list");
+    r.sections.forEach(function (sec, k) {
+      if (!hasChallenge(r, sec.n)) return;
+      var p = CH.progress(r.key, sec.n, S.me);
+      var b = el("button", "chx");
+      b.type = "button";
+      var bar = "";
+      for (var j = 0; j < p.total; j++) bar += "<i" + (j < p.first ? ' class="first"' : j < p.solved ? ' class="helped"' : "") + "></i>";
+      b.innerHTML = '<span class="chx-n">' + esc(sec.n) + " · " + p.total + " problems</span>" +
+        '<span class="chx-t">' + esc(sec.t) + "</span>" +
+        '<span class="chx-s">' + esc(!p.solved ? "Not started" : p.solved < p.total ? p.solved + " of " + p.total + " solved"
+          : "Done · " + p.first + " first try") + "</span>" +
+        '<span class="chx-bar" aria-hidden="true">' + bar + "</span>";
+      b.addEventListener("click", function () { openChallenge(r, k); });
+      list.appendChild(b);
+    });
+    var rv = el("button", "chx review");
+    rv.type = "button";
+    rv.innerHTML = '<span class="chx-n">Unit review</span><span class="chx-t">Mixed from every lesson</span>' +
+      '<span class="chx-s">The ones you needed help with come first.</span>';
+    rv.addEventListener("click", function () { openChallenge(r, "review"); });
+    list.appendChild(rv);
+    box.appendChild(list);
+    return box;
+  }
+
   function openRead(i, silent, rkey) {
     if (rkey && READERS[rkey]) useReader(READERS[rkey]);
     var r = RU;
@@ -5014,6 +5108,7 @@
     nb.addEventListener("click", function () { openRetrieve(sec, i); });
     next.appendChild(nb);
     art.appendChild(next);
+    if (hasChallenge(r, sec.n)) art.appendChild(challengeCta(r, i));
 
     three.appendChild(unitRail(i));
     three.appendChild(art);

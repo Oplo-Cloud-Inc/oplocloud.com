@@ -85,11 +85,13 @@ Every student place has an address, and the address is the place — typed, book
 /student/Science/Biology/u1/l3              a lesson
 /student/Science/Biology/u1/l3/Questions    the questions after it
 /student/Science/Biology/u1/Practice        a unit's practice
+/student/English/Media-Arts/u9/l2/Challenge a lesson's challenge
+/student/English/Media-Arts/u9/Challenge    the unit review, mixed from every lesson
 /student/Sets/<id>, /Sets/<id>/Flashcards   a study set and a way of studying it
 /student/Exams, /Exams/<id>, /Progress, /Grades, /Account, /Notebook, /Mistakes
 ```
 
-The Worker answers any `/student/…` address without a file extension with the app itself, and the page sets its own base so its files load from the root at any depth. The console (`/admin/`, `/teacher/`) has no addresses of its own yet.
+The Worker answers any `/student/…` address without a file extension with the app itself, and the page sets its own base so its files load from the root at any depth. The page carries a plain `<base href="/">` too, which the script corrects when the app is served from a folder: the browser starts fetching files before any script runs, and without it a deep link fetched every file twice. The console (`/admin/`, `/teacher/`) has no addresses of its own yet.
 
 ### 3.2 Navigation
 
@@ -122,6 +124,14 @@ Sign-in
 ### 3.4 Checks beside the reading
 
 While a student reads a lesson, a few small checks sit in the right-hand margin at the passages that matter most — the places the text itself warns a reader will slip. They are formative (docs/OEDU_ASSESSMENT_EXPERIENCE_SYSTEM.md §24, §35, §58): always there, never a popup, marked at once with the reason, retryable, and switchable off. They share the margin with the student's own notes and are laid out with them, each level with its line. Results are the progress scope `checks`, so they follow the student between devices and their teachers can see which ideas took two tries. Written so far: Biology Unit 1 (`learn/checks-bio1.js`, 25 checks).
+
+### 3.5 Challenges
+
+Where a check asks whether a passage landed, a challenge asks the student to use it. Each lesson ends by offering its challenge — a short path of problems, one to a screen, solved by doing something with the idea rather than recalling a sentence: building Freytag's pyramid from its parts, crewing a production from its problems, laying clips under the music they belong with, packing a DVD case (`learn/challenge.js`, `learn/challenge.css`). The problem comes first and the explanation after it; every wrong answer a student is likely to give has its own reply aimed at the misunderstanding it shows; hints step down one at a time; "Show me" appears after two tries; a self-explanation is compared with a model answer and rated by the student, never by a machine. The end of a path says what the student showed and what is worth another look — no points, no confetti.
+
+Step types: `choice`, `multi`, `sort` (cards into bins), `order`, `slots` (cards onto a diagram, or against labels), `spot` (tap the sentences that do something), `number`, `explain`, and `learn` idea cards between problems. Every card can be dragged, or tapped and then placed, and every control is a button.
+
+The unit review (`…/uN/Challenge`) is not written; it is drawn from the lessons: problems the student needed help with first, then ones not yet tried, then ones already solid, interleaved so no two in a row come from the same lesson. Results are the progress scope `challenges` — first try, tries, hints, whether the answer was shown, and whether the latest solve was clean — merged across devices like checks. Written so far: Media Arts Unit 9 (`learn/challenges-media9.js`, 46 problems across 9.1–9.9).
 
 ## 4. Design Principles
 
@@ -239,6 +249,8 @@ learn/
 ├── exam.js / exam.css  — Assessment runtime: Exams tab, briefing, tasks, tools, review, submit
 ├── checks.js / .css    — Checks beside the reading: small formative checks in the margin, level with the passage
 ├── checks-<unit>.js    — Their content, per unit, each anchored to a phrase in the lesson text
+├── challenge.js / .css — Challenges: problems solved by doing, one to a screen, and the mixed unit review
+├── challenges-<unit>.js — Their content, per unit, keyed by section
 └── progress.js         — Progress/analytics view
 ```
 

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" width="720" height="360" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Freytag's pyramid. A line starts low on the left at Exposition, turns upward at the Inciting incident, climbs through Rising action to the peak, the Climax, descends through Falling action, and ends low on the right at Resolution, also called Denouement.</title>
+<rect width="720" height="360" fill="#ffffff"/>
+<line x1="40" y1="300" x2="680" y2="300" stroke="#e6e6e8" stroke-width="2"/>
+<path d="M60 290 L180 290 L360 78 L540 290 L660 290" fill="none" stroke="#8f5cff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M180 290 L360 78 L540 290 Z" fill="#8f5cff" fill-opacity="0.07"/>
+<circle cx="180" cy="290" r="8" fill="#ffffff" stroke="#8f5cff" stroke-width="4"/>
+<circle cx="360" cy="78" r="10" fill="#8f5cff"/>
+<text x="100" y="326" font-size="16" font-weight="600" fill="#1d1d1f" text-anchor="middle">Exposition</text>
+<text x="100" y="345" font-size="13" fill="#6e6e73" text-anchor="middle">people, place, time</text>
+<text x="196" y="326" font-size="15" font-weight="600" fill="#1d1d1f">Inciting incident</text>
+<text x="196" y="345" font-size="13" fill="#6e6e73">the problem begins</text>
+<text x="236" y="180" font-size="16" font-weight="600" fill="#1d1d1f" text-anchor="end" transform="rotate(-49.7 236 180)">Rising action</text>
+<text x="360" y="50" font-size="17" font-weight="700" fill="#1d1d1f" text-anchor="middle">Climax</text>
+<text x="360" y="68" font-size="13" fill="#6e6e73" text-anchor="middle">the turning point</text>
+<text x="486" y="180" font-size="16" font-weight="600" fill="#1d1d1f" transform="rotate(49.7 486 180)">Falling action</text>
+<text x="600" y="326" font-size="16" font-weight="600" fill="#1d1d1f" text-anchor="middle">Resolution</text>
+<text x="600" y="345" font-size="13" fill="#6e6e73" text-anchor="middle">(denouement)</text>
+<text x="690" y="30" font-size="12" fill="#86868b" text-anchor="end">tension ↑</text>
+</svg>
