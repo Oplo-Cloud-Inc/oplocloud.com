@@ -71,6 +71,26 @@ Sign-in (Root)
         └── Progress (mastery, streak, badges)
 ```
 
+### 3.1a Addresses
+
+Every student place has an address, and the address is the place — typed, bookmarked, shared or reloaded, it opens the same screen (`learn/app.js`, `route()`). The browser's Back and Forward are the only back; the app draws no back button of its own.
+
+```
+/student/                                   Home
+/student/Explore                            everything on offer
+/student/Science                            a subject
+/student/Science/Biology                    a course (spaces become hyphens)
+/student/Science/Biology/Map                its knowledge map
+/student/Science/Biology/u1                 a unit
+/student/Science/Biology/u1/l3              a lesson
+/student/Science/Biology/u1/l3/Questions    the questions after it
+/student/Science/Biology/u1/Practice        a unit's practice
+/student/Sets/<id>, /Sets/<id>/Flashcards   a study set and a way of studying it
+/student/Exams, /Exams/<id>, /Progress, /Grades, /Account, /Notebook, /Mistakes
+```
+
+The Worker answers any `/student/…` address without a file extension with the app itself, and the page sets its own base so its files load from the root at any depth. The console (`/admin/`, `/teacher/`) has no addresses of its own yet.
+
 ### 3.2 Navigation
 
 The top bar shows four sections, and only four:

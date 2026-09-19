@@ -2,6 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>
+/* The app answers at every address inside it — /student/Science/Biology/u1/l3
+   as well as /student/ — but its files all sit beside this page. So relative
+   addresses are resolved from the app's own folder, whatever the address bar
+   says, and this runs before anything is fetched. A "#section" link on the
+   welcome page still means this page, not the folder. */
+(function () {
+  var m = /^(.*?\/)(?:admin|teacher|student)(?:\/|$)/.exec(location.pathname);
+  var b = document.createElement("base");
+  b.href = m ? m[1] : location.pathname.replace(/[^\/]*$/, "");
+  document.head.appendChild(b);
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
+    if (a.hasAttribute("data-signin") || a.hasAttribute("data-film")) return;   // landing.js owns these
+    var id = a.getAttribute("href").slice(1), t = id ? document.getElementById(id) : null;
+    e.preventDefault();
+    if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+    else if (!id) window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OEdu</title>
 <meta name="description" content="OEdu — courses you work through by solving, and study sets you drill until they stick.">
@@ -432,14 +454,9 @@
 <aside class="cn-rail" id="rail" aria-label="Console"></aside>
 <div class="cn-scrim" id="railScrim" hidden></div>
 
-<!-- The console has no top bar. Going back is a small control at the head of
-     the content, shown only when there is somewhere to go back to; opening the
-     rail on a narrow screen is another. Neither is a bar. -->
-<button class="cn-back" id="cnBack" type="button" hidden>
-  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor"
-       stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
-  <span id="cnBackLabel">Back</span>
-</button>
+<!-- The console has no top bar. Opening the rail on a narrow screen is a
+     small control at the head of the content, not a bar. Going back is the
+     browser's Back, as it is everywhere in OEdu. -->
 <button class="cn-open" id="railOpen" type="button" aria-label="Sections" aria-expanded="false">
   <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
        stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
@@ -447,11 +464,6 @@
 
 <header class="lx-bar">
   <div class="lx-bar-in">
-    <button class="lx-back" id="back" type="button" hidden>
-      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
-           stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
-      <span id="backLabel">Back</span>
-    </button>
     <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
       <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
     </svg>
@@ -611,12 +623,12 @@
 <script src="collab.js?v=45bea90d"></script>
 <script src="tutor.js?v=e36b13da"></script>
 <script src="kmap.js?v=32de7572"></script>
-<script src="home.js?v=6cb47e0b"></script>
+<script src="home.js?v=f44db797"></script>
 <script src="progress.js"></script>
 <script src="oplo-menu.js?v=098abb73"></script>
 <script src="oplo-search.js?v=b2f48c6b"></script>
 <script src="landing.js?v=7b3b8d9a"></script>
-<script src="exam.js?v=e0a38edf"></script>
-<script src="app.js?v=081f0d8c"></script>
+<script src="exam.js?v=65b52660"></script>
+<script src="app.js?v=faa0b5a7"></script>
 </body>
 </html>

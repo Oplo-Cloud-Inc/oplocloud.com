@@ -452,39 +452,78 @@
     return t.length > (n || 20) ? t.slice(0, (n || 20) - 1).trim() + "\u2026" : t;
   }
 
-  /* ------------------------------------------------ The browser's history
-     The stack above was the app's alone. The browser never heard about any
-     of it, so to the browser the whole of OEdu was one page — and its Back
-     button skipped every screen inside it and left the app entirely,
-     landing wherever the student had been before they opened it.
+  /* ------------------------------------------------------------ Addresses
+     Every place a student can be has an address, and the address is the
+     place. /student/Science/Biology/u1/l3 is lesson 3 of Biology's first
+     unit whether it was reached by clicking, typed, bookmarked, shared or
+     reloaded. Moving somewhere pushes its address, and the browser's Back
+     and Forward walk them — the only back there is. The app used to draw its
+     own Back chip in the bar as well, and two backs are one too many: it
+     named the section before last, sat where nobody looked for it, and could
+     disagree with the browser about where the student had been.
 
-     So every place is also a browser history entry. TRAIL mirrors those
-     entries one for one, each holding the place and a copy of the path that
-     led to it, and a popstate replays the entry the browser moved to. The
-     URL is left alone: the places are closures, not addresses, and a URL
-     that looked shareable but opened the home screen would be worse than
-     one that makes no promise. After a reload the old entries still exist
-     in the browser but not in memory, so they land on Home rather than on
-     nothing. */
+     The addresses are the names people see, spaces as hyphens:
+
+       /student/                                   Home
+       /student/Explore                            everything on offer
+       /student/Science                            a subject
+       /student/Science/Biology                    a course
+       /student/Science/Biology/Map                its knowledge map
+       /student/Science/Biology/u1                 a unit
+       /student/Science/Biology/u1/l3              a lesson
+       /student/Science/Biology/u1/l3/Questions    the questions after it
+       /student/Science/Biology/u1/Practice        a unit's practice
+       /student/Sets/<id>                          a study set
+       /student/Sets/<id>/Flashcards               …and a way of studying it
+       /student/Exams, /Exams/<id>, /Progress, /Grades, /Account,
+       /student/Notebook, /Mistakes
+
+     The console has no addresses of its own yet; its places are still
+     history entries, so Back works there, but the address bar stays put. */
   var TRAIL = [], POS = -1, RESTORING = false;
+  // Entries this page made carry this; ones left by an earlier load of the
+  // page do not, and are found by their address instead of by their index.
+  var SESSION = Math.random().toString(36).slice(2, 10);
 
-  function mark(push) {
+  function slug(s) { return String(s == null ? "" : s).trim().replace(/\s+/g, "-"); }
+  function sameName(a, b) { return String(a || "").toLowerCase() === String(b || "").toLowerCase(); }
+  function here() { return window.OPLO_HOME.parse(location.pathname); }
+  /* Where the app's addresses start: /student/, or /learn/student/ locally. */
+  function appBase() {
+    var p = here();
+    return p.mode ? p.root + p.mode + "/" : p.root;
+  }
+  function appRest() { return (here().rest || "").replace(/^\/+/, ""); }
+  function addressOf(path) {
+    return appBase() + String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  }
+  function coursePath(c) { return slug(c.subject || "Other") + "/" + slug(c.t || c.title || c.id); }
+  function courseById(id) {
+    return allCourses().concat(enrolled()).filter(function (c) { return c.id === id; })[0] || null;
+  }
+  function readPath(r, i) {
+    var c = courseById(r.course);
+    return (c ? coursePath(c) : slug(r.courseTitle)) + "/u" + r.unit + "/l" + (i + 1);
+  }
+
+  function mark(push, path) {
     if (RESTORING) return;
-    var entry = { here: S.here, hist: S.hist.slice() };
+    var entry = { here: S.here, hist: S.hist.slice(), path: path };
+    var url = path == null ? undefined : addressOf(path);
     if (push && POS >= 0) {
       TRAIL = TRAIL.slice(0, POS + 1);        // a new step drops the old forward path
       TRAIL.push(entry);
       POS = TRAIL.length - 1;
-      try { history.pushState({ lx: POS }, ""); } catch (e) { /* sandboxed frame */ }
+      try { history.pushState({ lx: POS, s: SESSION }, "", url); } catch (e) { /* sandboxed frame */ }
     } else {
       // The very first place replaces the entry the page already has, so
-      // opening Learn does not cost an extra press of Back to leave it.
+      // opening OEdu does not cost an extra press of Back to leave it.
       if (POS < 0) { TRAIL = [entry]; POS = 0; } else TRAIL[POS] = entry;
-      try { history.replaceState({ lx: POS }, ""); } catch (e) { /* sandboxed frame */ }
+      try { history.replaceState({ lx: POS, s: SESSION }, "", url); } catch (e) { /* sandboxed frame */ }
     }
   }
 
-  function enter(key, label, restore, replace) {
+  function enter(key, label, restore, replace, path) {
     if (S.here && S.here.key === key) { S.here.restore = restore; return; }
     // Replaying a place must not record it again as a new one.
     if (RESTORING) {
@@ -499,18 +538,84 @@
       if (S.hist.length > 40) S.hist.shift();
     }
     S.here = { key: key, label: label, restore: restore };
-    mark(!replace);
+    mark(!replace, path);
   }
 
-  /* A top-level section starts a fresh in-app path — the Back button in the
-     bar hides — but it is still a step in the browser's history, so the
-     browser's Back returns to wherever the student was before they clicked
-     Home. Clicking the section they are already on does not add a step. */
-  function root(key, label, restore) {
+  /* A top-level section starts a fresh in-app path, but it is still a step
+     in the browser's history, so Back returns to wherever the student was
+     before they clicked it. Clicking the section they are already on does
+     not add a step. */
+  function root(key, label, restore, path) {
     var same = S.here && S.here.key === key && !S.hist.length;
     S.hist = [];
     S.here = { key: key, label: label, restore: restore };
-    mark(!same);
+    mark(!same, path);
+  }
+
+  /* Open whatever an address names. Used when the app starts at an address,
+     and when Back or Forward lands on one this page did not make. Returns
+     false for an address that names nothing, so the caller can go home. */
+  function route(rest) {
+    var seg = (rest == null ? appRest() : rest).split("/").filter(Boolean).map(function (x) {
+      try { return decodeURIComponent(x); } catch (e) { return x; }
+    });
+    var a = seg[0] || "";
+    if (!a) { home(); return true; }
+    if (sameName(a, "Explore")) { explore(); return true; }
+    if (sameName(a, "Exams")) {
+      openExams();
+      // /Exams/<id> is the sitting itself, which exam.js owns. While the app
+      // is starting, exam.js is about to be asked what to resume and is told
+      // this one; after that it is opened directly.
+      if (seg[1] && window.OPLO_EXAM) {
+        if (S.booting) S.examAsked = seg[1]; else window.OPLO_EXAM.open(seg[1]);
+      }
+      return true;
+    }
+    if (sameName(a, "Progress")) { openProgress(); return true; }
+    if (sameName(a, "Grades")) { openGrades(); return true; }
+    if (sameName(a, "Account")) { openAccount(); return true; }
+    if (sameName(a, "Notebook")) { openNotebook(); return true; }
+    if (sameName(a, "Mistakes")) { openMistakes(); return true; }
+    if (sameName(a, "Sets") && seg[1]) {
+      if (!SET(seg[1])) return false;
+      openSet(seg[1]);
+      var run = { flashcards: startCards, learn: startLearn, match: startMatch,
+                  "match-the-card": startCardMatch, "word-hunt": startHunt,
+                  hangman: startHangman, test: startTest }[String(seg[2] || "").toLowerCase()];
+      if (run) run(false);
+      return true;
+    }
+    var subject = SC.subjects().filter(function (s) { return sameName(slug(s.n), a); })[0];
+    if (!subject) return false;
+    if (!seg[1]) { openSubject(subject); return true; }
+    var c = allCourses().concat(enrolled()).filter(function (x) {
+      return sameName(slug(x.subject || "Other"), a) && sameName(slug(x.t || x.title || x.id), seg[1]);
+    })[0];
+    if (!c) return false;
+    if (!seg[2]) { openCourse(c); return true; }
+    if (sameName(seg[2], "Map")) { openMap(c); return true; }
+    var um = /^u(\d+)$/i.exec(seg[2]);
+    if (!um) return false;
+    var n = +um[1];
+    if (!unitsOf(c).some(function (u) { return u.n === n; })) return false;
+    if (!seg[3]) { openUnit(c, n); return true; }
+    if (sameName(seg[3], "Practice")) {
+      S.course = c; S.unitIx = n; S.unit = unitsOf(c).filter(function (u) { return u.n === n; })[0];
+      startPractice(false);
+      return true;
+    }
+    var lm = /^l(\d+)$/i.exec(seg[3]), r = readerFor(c.id, n);
+    if (!lm || !r || !r.sections[+lm[1] - 1]) return false;
+    var ix = +lm[1] - 1;
+    if (sameName(seg[4], "Questions")) {
+      useReader(r);
+      S.readIx = ix;
+      openRetrieve(r.sections[ix], ix);
+      return true;
+    }
+    openRead(ix, false, r.key);
+    return true;
   }
 
   function show(view) {
@@ -518,11 +623,6 @@
     [].forEach.call(document.querySelectorAll(".lx-view"), function (v) {
       v.classList.toggle("on", v.id === "v-" + view);
     });
-    var prev = S.hist[S.hist.length - 1];
-    $("#back").hidden = !prev;
-    if (prev) $("#backLabel").textContent = prev.label;
-    $("#cnBack").hidden = !(prev && document.body.classList.contains("is-console"));
-    if (prev) $("#cnBackLabel").textContent = prev.label;
     $("#subbar").hidden = !(view === "explore" || view === "subject");
     if (view !== "admin") leaveConsole();
     $("#wrap").classList.toggle("wide", view === "match" || view === "map");
@@ -535,9 +635,9 @@
     if (typeof Tutor !== "undefined" && Tutor && Tutor.where) Tutor.where();
   }
 
-  /* The Back button in the bar goes through the browser whenever there is a
-     browser entry behind this one, so the two backs can never disagree about
-     where the student is. */
+  /* What a console form does when it is finished with: step back, through
+     the browser whenever there is a browser entry behind this one, so it
+     lands exactly where the browser's own Back would. */
   function goBack() {
     if (S.hist.length && POS > 0 && TRAIL[POS - 1]) { history.back(); return; }
     var prev = S.hist.pop();
@@ -548,14 +648,23 @@
   }
 
   function home() {
-    root("my", "Home", home);
+    root("my", "Home", home, "");
     drawMy();
     show("my");
   }
   function explore() {
-    root("explore", "Explore", explore);
+    root("explore", "Explore", explore, "Explore");
     drawExplore();
     show("explore");
+  }
+  function openProgress() {
+    root("progress", "Progress", openProgress, "Progress");
+    if (window.OPLO_PROGRESS) {
+      if (R) window.OPLO_PROGRESS.setRecord(R);
+      window.OPLO_PROGRESS.draw();
+    }
+    noFoot(); progress(null);
+    show("progress");
   }
 
   function foot(msg, label, on, handler) {
@@ -776,7 +885,7 @@
 
   function openMap(c, silent, focus) {
     if (!c) return;
-    if (!silent) enter("map:" + c.id, "Map", function () { openMap(c, true, focus); });
+    if (!silent) enter("map:" + c.id, "Map", function () { openMap(c, true, focus); }, false, coursePath(c) + "/Map");
     S.course = c;
     var K = window.OPLO_KMAP, model = mapModel(c), prev = null;
     try { prev = JSON.parse(localStorage.getItem(mapSeenKey(c)) || "null"); } catch (e) { /* private mode */ }
@@ -1169,7 +1278,7 @@
 
   /* ------------------------------------------------------- Mistake book */
   function openMistakes(silent) {
-    if (!silent) enter("mistakes", "Mistake book", function () { openMistakes(true); });
+    if (!silent) enter("mistakes", "Mistake book", function () { openMistakes(true); }, false, "Mistakes");
     var v = $("#v-mistakes");
     v.innerHTML = "";
     v.appendChild(el("p", "lx-eyebrow", "Mistake book"));
@@ -1270,7 +1379,7 @@
 
   function openSubject(s, silent) {
     if (!s) { explore(); return; }
-    if (!silent) enter("subject:" + s.n, s.n, function () { openSubject(s, true); });
+    if (!silent) enter("subject:" + s.n, s.n, function () { openSubject(s, true); }, false, slug(s.n));
     S.subject = s;
     var v = $("#v-subject");
     v.innerHTML = "";
@@ -1288,7 +1397,7 @@
   /* ---------------------------------------------------------------- Course */
   function openCourse(c, silent) {
     if (!c) return;
-    if (!silent) enter("course:" + c.id, trim(c.t), function () { openCourse(c, true); });
+    if (!silent) enter("course:" + c.id, trim(c.t), function () { openCourse(c, true); }, false, coursePath(c));
     S.course = c;
     var v = $("#v-course");
     v.innerHTML = "";
@@ -1391,7 +1500,8 @@
   function openUnit(c, n, silent) {
     var u = unitsOf(c).filter(function (x) { return x.n === n; })[0];
     if (!u) return;
-    if (!silent) enter("unit:" + c.id + ":" + n, trim(u.t), function () { openUnit(c, n, true); });
+    if (!silent) enter("unit:" + c.id + ":" + n, trim(u.t), function () { openUnit(c, n, true); },
+                       false, coursePath(c) + "/u" + n);
     S.course = c; S.unitIx = n; S.unit = u;
 
     var v = $("#v-unit");
@@ -1465,7 +1575,7 @@
 
   /* ================================================================= Sets */
   function openSet(id, silent) {
-    if (!silent) enter("set:" + id, trim(SET(id).t), function () { openSet(id, true); });
+    if (!silent) enter("set:" + id, trim(SET(id).t), function () { openSet(id, true); }, false, "Sets/" + id);
     S.setId = id; S.set = SET(id);
     var st = setState(id), cards = S.set.cards;
     var v = $("#v-set");
@@ -1537,7 +1647,7 @@
 
   /* ----------------------------------------------------------- Flashcards */
   function startCards(again) {
-    enter("cards:" + S.setId, "Flashcards", function () { startCards(true); }, again);
+    enter("cards:" + S.setId, "Flashcards", function () { startCards(true); }, again, "Sets/" + S.setId + "/Flashcards");
     var cards = S.set.cards, order = cards.map(function (_, i) { return i; });
     var i = 0, flipped = false, shuffled = false;
     var known = {}, learning = {};
@@ -1680,7 +1790,7 @@
   }
 
   function startLearn(again) {
-    enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again);
+    enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again, "Sets/" + S.setId + "/Learn");
 
     var setId = S.setId;
     var concepts = CN.forSet(setId, S.set.cards);
@@ -2586,7 +2696,7 @@
 
   /* ----------------------------------------------------------------- Match */
   function startMatch(again) {
-    enter("match:" + S.setId, "Match", function () { startMatch(true); }, again);
+    enter("match:" + S.setId, "Match", function () { startMatch(true); }, again, "Sets/" + S.setId + "/Match");
     var st = setState(S.setId);
     var pick = shuffle(S.set.cards).slice(0, Math.min(6, S.set.cards.length));
     var tiles = [];
@@ -2726,7 +2836,7 @@
      Definition on the card, terms underneath. The direction a flashcard deck
      is worst at, and the direction an exam asks in. */
   function startCardMatch(again) {
-    enter("cardmatch:" + S.setId, "Match the card", function () { startCardMatch(true); }, again);
+    enter("cardmatch:" + S.setId, "Match the card", function () { startCardMatch(true); }, again, "Sets/" + S.setId + "/Match-the-card");
     var setId = S.setId, cards = S.set.cards;
     var rounds = GM.cardRounds(cards, weakestFirst(setId), 10);
     var i = 0, right = 0, streak = 0, bestStreak = 0, locked = false;
@@ -2806,7 +2916,7 @@
      "tympanic" for ninety seconds has looked at those letters harder than any
      amount of reading would have made them. */
   function startHunt(again) {
-    enter("hunt:" + S.setId, "Word hunt", function () { startHunt(true); }, again);
+    enter("hunt:" + S.setId, "Word hunt", function () { startHunt(true); }, again, "Sets/" + S.setId + "/Word-hunt");
     var setId = S.setId, cards = S.set.cards;
     var terms = weakestFirst(setId).map(function (ix) { return cards[ix][0]; });
     var size = 12;
@@ -2923,7 +3033,7 @@
      the moment in an exam where you can nearly remember a word. No gallows is
      drawn; what is at stake is the word. */
   function startHangman(again) {
-    enter("hangman:" + S.setId, "Hangman", function () { startHangman(true); }, again);
+    enter("hangman:" + S.setId, "Hangman", function () { startHangman(true); }, again, "Sets/" + S.setId + "/Hangman");
     var setId = S.setId, cards = S.set.cards;
     var queue = weakestFirst(setId).slice(0, 5);
     var at = 0, won = 0, hinted = 0;
@@ -3062,7 +3172,7 @@
      Every question on one page, answered in any order, graded once — the
      point of a test rather than a drill. */
   function startTest(again) {
-    enter("test:" + S.setId, "Test", function () { startTest(true); }, again);
+    enter("test:" + S.setId, "Test", function () { startTest(true); }, again, "Sets/" + S.setId + "/Test");
     var cards = S.set.cards;
     var n = Math.min(10, cards.length);
     var pick = shuffle(cards.map(function (_, i) { return i; })).slice(0, n);
@@ -4799,7 +4909,7 @@
     // reader opens where it was going anyway.
     if (wantsPredict(r)) { openPredict(r, function () { openRead(i, silent, rkey); }); return; }
     $("#wrap").classList.remove("pd-on");
-    if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true, r.key); });
+    if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true, r.key); }, false, readPath(r, i));
     S.readIx = i;
     // S.readIx is a copy, not a reference into the record, so the record has
     // to be written directly — keep() alone saved the old position forever.
@@ -5163,6 +5273,8 @@
 
   function openRetrieve(sec, i) {
     var r = RU;
+    enter("questions:" + sec.n, "Questions", function () { openRetrieve(sec, i); }, false,
+          readPath(r, i) + "/Questions");
     var key = rtKey(r, sec);
     var bag = rtBag();
     var st = (bag[key] && !bag[key].done) ? bag[key]
@@ -5545,7 +5657,7 @@
      evidence and objections a reader linked to them, which is an essay
      outline that happens to have been written while reading. */
   function openNotebook(silent) {
-    if (!silent) enter("notes", "Notebook", function () { openNotebook(true); });
+    if (!silent) enter("notes", "Notebook", function () { openNotebook(true); }, false, "Notebook");
     var v = $("#v-notes");
     v.innerHTML = "";
 
@@ -5869,7 +5981,7 @@
   /* -------------------------------------------------------------- Practice */
   function startPractice(again) {
     enter("practice:" + S.course.id + ":" + S.unitIx, "Practice",
-          function () { startPractice(true); }, again);
+          function () { startPractice(true); }, again, coursePath(S.course) + "/u" + S.unitIx + "/Practice");
     var P = D.PROBLEMS;
     S.p = { i: 0, right: 0, first: 0, tries: 0, picked: null, checked: false };
 
@@ -6078,7 +6190,7 @@
      version did not: opening it as an administrator threw, because the
      enrolment block was read unconditionally from a field only students had. */
   function openAccount(silent) {
-    if (!silent) enter("account", "Account", function () { openAccount(true); });
+    if (!silent) enter("account", "Account", function () { openAccount(true); }, false, "Account");
     var v = $("#v-account");
     v.innerHTML = "";
 
@@ -6248,7 +6360,7 @@
      percentage cannot answer it. */
   function openMyGrades(summary, all) {
     enter("mygrades:" + summary.courseId, trim(summary.courseTitle || "Grades"),
-          function () { openMyGrades(summary, all); });
+          function () { openMyGrades(summary, all); }, false, "Account");
     var v = $("#v-account");
     v.innerHTML = "";
     v.appendChild(el("p", "lx-eyebrow", esc(summary.courseTitle || "Course")));
@@ -6405,7 +6517,7 @@
   }
 
   function openGrades(silent) {
-    root("grades", "Grades", function () { openGrades(true); });
+    root("grades", "Grades", function () { openGrades(true); }, "Grades");
     var v = $("#v-grades");
     v.innerHTML = "";
     v.appendChild(el("p", "lx-eyebrow", "Grades" + (S.me ? " · " + esc(S.me.name) : "")));
@@ -6428,7 +6540,7 @@
      student has been set, runs a sitting and keeps the work safe. This only
      gives it the screen. */
   function openExams(silent) {
-    if (!silent) root("exams", "Exams", function () { openExams(true); });
+    if (!silent) root("exams", "Exams", function () { openExams(true); }, "Exams");
     noFoot(); progress(null);
     show("exams");
     if (window.OPLO_EXAM) window.OPLO_EXAM.hub($("#v-exams"), S.me);
@@ -12954,11 +13066,18 @@
       openAdmin(true, S.tab || "today");
     } else {
       drawSubjectNav();
-      home();
+      /* The address is where they asked to be. A course that only the
+         database knows about is not known yet, so an address naming one is
+         tried again when enrolment arrives. */
+      var asked = appRest();
+      S.booting = true;
+      if (!route(asked)) { home(); S.pendingRoute = asked; }
+      S.booting = false;
       Room.presence();
       Room.fromLink();
       // A sitting that was running when the page went away comes straight back.
-      if (window.OPLO_EXAM) window.OPLO_EXAM.resume(S.me);
+      if (window.OPLO_EXAM) window.OPLO_EXAM.resume(S.me, S.examAsked);
+      S.examAsked = null;
     }
 
     /* Enrolment is the database's answer, not a list in a file. The home
@@ -12977,6 +13096,9 @@
       loadStudySets()
     ]).then(function (out) {
       if (staff) return;
+      var pending = S.pendingRoute;
+      S.pendingRoute = null;
+      if (pending && S.here && S.here.key === "my" && route(pending)) return;
       if ((out[0] || out[1]) && S.view === "my") drawMy();
     });
 
@@ -13387,20 +13509,21 @@
       markSubjectNav(null);
       noFoot(); progress(null);
       if (b.dataset.view === "my") home();
-      else if (b.dataset.view === "progress") { if (window.OPLO_PROGRESS) { if (R) window.OPLO_PROGRESS.setRecord(R); window.OPLO_PROGRESS.draw(); } show("progress"); }
+      else if (b.dataset.view === "progress") openProgress();
       else if (b.dataset.view === "admin") openAdmin();
       else if (b.dataset.view === "grades") openGrades();
       else if (b.dataset.view === "exams") openExams();
       else explore();
     });
   });
-  $("#back").addEventListener("click", goBack);
 
   /* The browser's Back and Forward — including a swipe on a phone. */
   window.addEventListener("popstate", function (e) {
     if (!S.me) return;                         // the sign-in gate is showing
-    var pos = e.state && typeof e.state.lx === "number" ? e.state.lx : null;
+    var st = e.state || {};
+    var pos = st.s === SESSION && typeof st.lx === "number" ? st.lx : null;
     var entry = pos != null ? TRAIL[pos] : null;
+    var found = true;
     RESTORING = true;
     try {
       if (entry) {
@@ -13409,11 +13532,17 @@
         S.here = entry.here;
         entry.here.restore();
       } else {
+        // An entry from before a reload: the address says where it was. An
+        // address that names nothing goes home, and says so.
         S.hist = []; S.here = null;
-        home();
+        if (document.body.classList.contains("is-staff")) openAdmin(true, S.tab);
+        else if (!route()) { home(); found = false; }
       }
     } finally { RESTORING = false; }
-    if (!entry) { TRAIL = []; POS = -1; mark(false); }
+    if (!entry) {
+      TRAIL = []; POS = -1;
+      mark(false, document.body.classList.contains("is-staff") ? undefined : found ? appRest() : "");
+    }
   });
   $("#user").addEventListener("click", function () { openAccount(); });
 
@@ -13425,7 +13554,6 @@
     this.setAttribute("aria-expanded", String(open));
   });
   $("#railScrim").addEventListener("click", closeRail);
-  $("#cnBack").addEventListener("click", goBack);
 
   document.addEventListener("keydown", function (e) {
     /* ⌘K, from anywhere in the console. Not bound outside it: a student

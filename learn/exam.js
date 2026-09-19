@@ -567,11 +567,26 @@
     });
     document.body.classList.remove("ex-on");
   }
+  /* A sitting has an address — /student/Exams/<id> — so a reload, a closed
+     tab or a shared link comes back to it. Opening one replaces the address
+     it was opened over (a sitting is not a step Back should walk out of),
+     and closing it puts that address back. */
+  var returnTo = null;
+  function examBase() {
+    var p = window.OPLO_HOME.parse(location.pathname);
+    return (p.mode ? p.root + p.mode + "/" : p.root) + "Exams";
+  }
   function setUrl(id) {
     try {
-      var u = new URL(location.href);
-      if (id) u.searchParams.set("exam", id); else u.searchParams.delete("exam");
-      history.replaceState(history.state, "", u.pathname + u.search + u.hash);
+      var base = examBase();
+      if (id) {
+        var cur = location.pathname;
+        if (returnTo == null) returnTo = cur.indexOf(base + "/") === 0 ? base : cur + location.search;
+        history.replaceState(history.state, "", base + "/" + encodeURIComponent(id));
+      } else {
+        history.replaceState(history.state, "", returnTo || base);
+        returnTo = null;
+      }
     } catch (e) { /* sandboxed frame */ }
   }
 
@@ -2063,12 +2078,13 @@
      Called when a student arrives in the app. A sitting that was running
      when the page went away comes straight back (§32) — whether that was a
      refresh, a crash or a closed laptop. */
-  function resume(me) {
+  /* `asked` is the sitting the address named (/student/Exams/<id>), passed
+     in by app.js, which has already read the address. */
+  function resume(me, asked) {
     ME = me;
     if (!me) return;
     drainAll();
-    var asked = null;
-    try { asked = new URL(location.href).searchParams.get("exam"); } catch (e) { asked = null; }
+    asked = asked || null;
     manifest().then(function (mine) {
       badgeQuick(mine, me);
       if (asked && mine.some(function (x) { return x.id === asked; })) { open_(asked, "resume"); return; }
