@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 440" width="700" height="440" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>The reindeer of St Matthew Island, plotted from the censuses. Twenty-nine animals were put ashore in 1944. By 1957 there were 1,350; by the summer of 1963 about 6,000. Three years later, in 1966, 42 were left. A dashed line shows the number the island's lichen could have supported — roughly 600 — far below the peak the herd actually reached.</title>
+<rect width="700" height="440" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">What overshoot looks like when it is measured</text>
+<rect x="100.0" y="297.27272727272725" width="466.0" height="22.727272727272748" fill="#e7f0e6"/>
+<line x1="100.0" y1="297.27272727272725" x2="566.0" y2="297.27272727272725" stroke="#12915a" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="7 5"/>
+<text x="574.0" y="293.27272727272725" font-size="12.5" fill="#12915a" font-weight="600">what the island</text>
+<text x="574.0" y="309.27272727272725" font-size="12.5" fill="#12915a" font-weight="600">could feed</text>
+<text x="574.0" y="326.27272727272725" font-size="12.5" fill="#6e6e73">about 600</text>
+<path d="M 100.0 318.9 C 112.9 318.5 151.8 318.6 177.7 316.6 C 203.6 314.6 232.7 311.2 255.3 306.7 C 278.0 302.3 297.4 296.0 313.6 289.7 C 329.8 283.4 336.2 282.8 352.4 268.9 C 368.6 255.0 394.5 228.1 410.7 206.4 C 426.8 184.6 439.8 157.1 449.5 138.2 C 459.2 119.2 465.7 100.3 468.9 92.7" fill="none" stroke="#eb6834" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 468.9 92.7 C 472.2 124.9 481.9 249.3 488.3 285.9 C 494.8 322.5 501.3 307.0 507.8 312.4 C 514.2 317.8 517.5 317.4 527.2 318.4 C 536.9 319.4 559.5 318.4 566.0 318.4" fill="none" stroke="#c0392b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="100.0" cy="318.9" r="5" fill="#1d1d1f"/>
+<circle cx="352.4" cy="268.9" r="5" fill="#1d1d1f"/>
+<circle cx="468.9" cy="92.7" r="5" fill="#1d1d1f"/>
+<circle cx="527.2" cy="318.4" r="5" fill="#1d1d1f"/>
+<line x1="100" y1="320" x2="566" y2="320" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="100" y1="70" x2="100" y2="320" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="100.0" y1="320" x2="100.0" y2="325" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="100.0" y="340" font-size="13.5" fill="#6e6e73" text-anchor="middle">1944</text>
+<line x1="216.5" y1="320" x2="216.5" y2="325" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="216.5" y="340" font-size="13.5" fill="#6e6e73" text-anchor="middle">1950</text>
+<line x1="333.0" y1="320" x2="333.0" y2="325" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="333.0" y="340" font-size="13.5" fill="#6e6e73" text-anchor="middle">1956</text>
+<line x1="449.5" y1="320" x2="449.5" y2="325" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="449.5" y="340" font-size="13.5" fill="#6e6e73" text-anchor="middle">1962</text>
+<line x1="566.0" y1="320" x2="566.0" y2="325" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="566.0" y="340" font-size="13.5" fill="#6e6e73" text-anchor="middle">1968</text>
+<line x1="95" y1="320.0" x2="100" y2="320.0" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="91" y="324.5" font-size="13.5" fill="#6e6e73" text-anchor="end">0</text>
+<line x1="95" y1="244.24242424242425" x2="100" y2="244.24242424242425" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="91" y="248.74242424242425" font-size="13.5" fill="#6e6e73" text-anchor="end">2,000</text>
+<line x1="95" y1="168.48484848484847" x2="100" y2="168.48484848484847" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="91" y="172.98484848484847" font-size="13.5" fill="#6e6e73" text-anchor="end">4,000</text>
+<line x1="95" y1="92.72727272727275" x2="100" y2="92.72727272727275" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="91" y="97.22727272727275" font-size="13.5" fill="#6e6e73" text-anchor="end">6,000</text>
+<text x="333.0" y="352" font-size="14.5" fill="#6e6e73" text-anchor="middle">Year</text>
+<text transform="rotate(-90 42 195.0)" x="42" y="195.0" font-size="14.5" fill="#6e6e73" text-anchor="middle">Reindeer on the island</text>
+<line x1="100.0" y1="311.9" x2="100.0" y2="278.7" stroke="#86868b" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="3 3"/>
+<text x="108.0" y="272.7" font-size="13" fill="#1d1d1f" font-weight="600">29 put ashore, 1944</text>
+<line x1="352.4" y1="261.9" x2="352.4" y2="250.2" stroke="#86868b" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="3 3"/>
+<text x="360.4" y="244.2" font-size="13" fill="#1d1d1f" font-weight="600">1,350 by 1957</text>
+<line x1="468.9" y1="85.7" x2="468.9" y2="80.5" stroke="#86868b" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="3 3"/>
+<text x="463.1" y="74.5" font-size="13" fill="#1d1d1f" font-weight="600" text-anchor="end">about 6,000 — ten times what the island could feed</text>
+<line x1="527.2" y1="311.4" x2="527.2" y2="235.1" stroke="#86868b" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="3 3"/>
+<text x="535.2" y="229.1" font-size="13" fill="#1d1d1f" font-weight="600">42 left, 1966</text>
+<text x="507.75" y="191.21212121212122" font-size="14" fill="#c0392b" font-weight="700">the crash</text>
+<text x="507.75" y="206.36363636363637" font-size="12.5" fill="#6e6e73">one winter</text>
+<text x="22" y="396" font-size="14.5" fill="#1d1d1f">They ate the lichen faster than it could regrow, and a hard winter finished it. Carrying capacity is not a fence</text>
+<text x="22" y="414" font-size="14.5" fill="#1d1d1f">a population cannot climb: it is a level it cannot stay above. And the island came back smaller — lichen</text>
+<text x="22" y="432" font-size="14.5" fill="#1d1d1f">takes decades, so the crash lowered K as well.</text>
+</svg>

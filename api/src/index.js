@@ -36,6 +36,7 @@ import * as studysets from "./routes/studysets.js";
 import * as graduation from "./routes/graduation.js";
 import * as reporting from "./routes/reporting.js";
 import * as family from "./routes/family.js";
+import * as assessments from "./routes/assessments.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -111,7 +112,11 @@ const ROUTES = [
   ["GET",    "/api/v1/progress", progress.list],
   ["PUT",    "/api/v1/progress", progress.put],
   ["GET",    "/api/v1/gamification/standing", progress.standing],
-  ["POST",   "/api/v1/gamification/events",   progress.events]
+  ["POST",   "/api/v1/gamification/events",   progress.events],
+
+  ["GET",    "/api/v1/assessments",                 assessments.list],
+  ["GET",    "/api/v1/assessments/:assessmentId",   assessments.get],
+  ["PUT",    "/api/v1/assessments/:assessmentId",   assessments.put]
 ];
 
 function match(method, path) {

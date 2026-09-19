@@ -1,0 +1,163 @@
+/* ==========================================================================
+   Checks beside the reading — see learn/checks.js.
+
+   Quieter than the text and a step quieter than the student's own notes: a
+   check is an offer, not an instruction. The one level with the line being
+   read comes forward; the rest wait at 80%. Blue marks a check as OEdu's,
+   green says an answer was right, amber says look again — never red, because
+   nothing here is a failure.
+   ========================================================================== */
+
+.kc-layer { position: absolute; left: 0; right: 0; pointer-events: none; }
+.kc-layer > .kc { pointer-events: auto; }
+
+.kc {
+  position: absolute; left: 0; right: 0;
+  padding: 12px 13px 13px; border-radius: 14px;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 0 0 1px var(--hair);
+  opacity: .8;
+  transition: top .28s var(--ease), opacity .25s var(--ease),
+              box-shadow .2s var(--ease), transform .2s var(--ease);
+}
+.kc.near, .kc:hover, .kc:focus-within, .kc.lit {
+  opacity: 1;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 10px 28px rgba(0,0,0,.07), 0 0 0 1px var(--rule);
+}
+.kc:hover, .kc.lit { transform: translateX(-3px); }
+.kc.inline { position: relative; top: auto !important; margin: 20px 0 24px; opacity: 1; }
+
+.kc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.kc-k {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font); font-size: 10.5px; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--blue);
+}
+.kc-k svg { width: 13px; height: 13px; }
+.kc-state { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: var(--green); }
+.kc-state svg { width: 13px; height: 13px; }
+.kc-q { font-size: 13.5px; line-height: 1.45; font-weight: 500; color: var(--ink); letter-spacing: -.003em; }
+.kc-in { margin-top: 10px; display: grid; gap: 6px; }
+.kc-in[hidden] { display: none; }
+
+/* ------------------------------------------------------------ choice */
+.kc-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; text-align: left; padding: 8px 10px; border-radius: 10px;
+  background: var(--canvas); font-size: 12.5px; line-height: 1.38; color: var(--ink);
+  transition: background .15s var(--ease), color .15s var(--ease), box-shadow .15s var(--ease);
+}
+.kc-opt:hover:not(:disabled) { background: var(--sunk); }
+.kc-opt:disabled { cursor: default; }
+.kc-opt svg { width: 14px; height: 14px; flex: none; }
+.kc-opt.right { background: #e8f5ee; color: #0b6b41; box-shadow: inset 0 0 0 1px rgba(18,145,90,.32); }
+.kc-opt.wrong {
+  background: transparent; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--hair);
+  text-decoration: line-through; text-decoration-color: rgba(0,0,0,.22);
+}
+
+/* -------------------------------------------------------------- sort */
+.kc-rows { display: grid; gap: 4px; }
+.kc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 0; }
+.kc-row .kc-item { font-size: 12.5px; line-height: 1.3; color: var(--ink); }
+.kc-rows.many .kc-row { flex-direction: column; align-items: stretch; gap: 4px; padding: 4px 0; }
+.kc-rows.many .kc-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.kc-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--canvas); flex: none; }
+.kc-bin {
+  height: 24px; padding: 0 8px; border-radius: 6px;
+  font-size: 11.5px; font-weight: 500; color: var(--ink-2); white-space: nowrap;
+  transition: background .12s var(--ease), color .12s var(--ease);
+}
+.kc-bin:hover:not(:disabled) { color: var(--ink); }
+.kc-bin[aria-checked="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+.kc-row.off .kc-item { color: var(--amber); }
+.kc-row.off .kc-seg { box-shadow: 0 0 0 1.5px rgba(178,106,0,.45); }
+
+.kc-go {
+  justify-self: start; margin-top: 4px; height: 30px; padding: 0 14px; border-radius: 100px;
+  background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 500;
+  transition: opacity .15s var(--ease), background .15s var(--ease);
+}
+.kc-go:hover:not(:disabled) { background: #000; }
+.kc-go:disabled { opacity: .28; cursor: default; }
+.kc-go.quiet { background: var(--canvas); color: var(--ink); }
+.kc-go.quiet:hover { background: var(--sunk); }
+
+/* ------------------------------------------------------------- order */
+.kc-order { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.kc-step {
+  display: flex; align-items: center; gap: 6px; padding: 4px 5px 4px 8px;
+  border-radius: 9px; background: var(--canvas);
+}
+.kc-step.off { box-shadow: inset 0 0 0 1.5px rgba(178,106,0,.5); }
+.kc-n { width: 14px; font-size: 11px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.kc-step .kc-item { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.3; }
+.kc-mv { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: var(--ink-2); flex: none; }
+.kc-mv:hover:not(:disabled) { background: var(--paper); color: var(--ink); }
+.kc-mv:disabled { opacity: .22; cursor: default; }
+.kc-mv svg { width: 14px; height: 14px; }
+
+/* ----------------------------------------------------------- explain */
+.kc-ta {
+  width: 100%; min-height: 66px; resize: vertical; padding: 8px 10px; border-radius: 10px;
+  border: 1px solid var(--hair); background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 12.5px; line-height: 1.45;
+}
+.kc-ta:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,113,227,.14); }
+.kc-ta[readonly] { background: var(--canvas); border-color: transparent; }
+.kc-model { padding: 9px 10px; border-radius: 10px; background: #f2f7fe; }
+.kc-model span, .kc-self span {
+  display: block; margin-bottom: 3px; font-size: 10.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--blue);
+}
+.kc-model p { font-size: 12.5px; line-height: 1.5; color: var(--ink); }
+.kc-self { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.kc-self span { width: 100%; color: var(--ink-3); }
+.kc-self .kc-bin { height: 28px; padding: 0 12px; border-radius: 100px; background: var(--canvas); color: var(--ink); }
+.kc-self .kc-bin:hover { background: var(--sunk); }
+
+/* ---------------------------------------------------------- feedback */
+.kc-fb { display: none; margin-top: 10px; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+.kc-fb.on { display: block; animation: kc-in .25s var(--ease) both; }
+.kc-fb b { color: var(--ink); font-weight: 600; }
+.kc-fb.ok b { color: var(--green); }
+.kc-fb.no b { color: var(--amber); }
+@keyframes kc-in { from { opacity: 0; transform: translateY(-3px); } }
+.kc-again { display: flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 12px; font-weight: 500; color: var(--blue); }
+.kc-again:hover { text-decoration: underline; }
+.kc-again svg { width: 13px; height: 13px; }
+
+/* A check already answered stays, quieter, as a record of what landed. */
+.kc.was-done { opacity: .6; }
+.kc.was-done.near, .kc.was-done:hover, .kc.was-done:focus-within { opacity: 1; }
+.kc.was-done .kc-q { color: var(--ink-2); }
+
+/* ------------------------------------------------ The line to the text */
+.kc-link { position: absolute; overflow: visible; pointer-events: none; }
+.kc.inline .kc-link { display: none; }
+.kc-link path { fill: none; stroke: var(--rule); stroke-width: 1.2; stroke-dasharray: 2 3; transition: stroke .2s var(--ease); }
+.kc-link circle { fill: var(--rule); transition: fill .2s var(--ease); }
+.kc.near .kc-link path, .kc.lit .kc-link path { stroke: rgba(0,113,227,.55); stroke-dasharray: none; }
+.kc.near .kc-link circle, .kc.lit .kc-link circle { fill: var(--blue); }
+
+/* The passage a check is about, while the student is looking at the check. */
+.rd-body > .kc-anchor { transition: background-color .2s var(--ease), box-shadow .2s var(--ease); }
+.rd-body > .kc-lit { background-color: rgba(0,113,227,.045); box-shadow: 0 0 0 10px rgba(0,113,227,.045); border-radius: 4px; }
+
+/* ------------------------------------------------------------ The head */
+.kc-toggle {
+  flex: none; align-self: center; display: inline-flex; align-items: center; gap: 5px;
+  height: 25px; padding: 0 10px; border-radius: 100px;
+  background: #eef5fe; color: var(--blue); font-size: 12px; font-weight: 500;
+  transition: background .15s var(--ease), color .15s var(--ease);
+}
+.kc-toggle:hover { background: #e2eefc; }
+.kc-toggle svg { width: 13px; height: 13px; }
+.kc-toggle.off { background: var(--paper); color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--hair); }
+.kc-toggle.off:hover { color: var(--ink); }
+.rd-margin.kc-off .kc-layer { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kc, .kc-fb.on, .kc-link path, .rd-body > .kc-anchor { transition: none; animation: none; }
+  .kc:hover, .kc.lit { transform: none; }
+}

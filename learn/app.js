@@ -150,8 +150,8 @@
     citeStyle: "mla",     // what a copied quotation comes out as
     p: {},                // the practice run in flight
     tab: null,            // the console: which section is open
-    courseId: null,       // and which class is on the gradebook
-    reportCourse: null,   // and which class the report list is filtered to
+    courseId: null,       // and which course is on the gradebook
+    reportCourse: null,   // and which course the report list is filtered to
     studentFilter: null,  // the roster's filter, remembered between visits
     studentQuery: null,   // and what was typed into its search
     studentPick: null     // and who was selected, so coming back keeps the place
@@ -452,39 +452,78 @@
     return t.length > (n || 20) ? t.slice(0, (n || 20) - 1).trim() + "\u2026" : t;
   }
 
-  /* ------------------------------------------------ The browser's history
-     The stack above was the app's alone. The browser never heard about any
-     of it, so to the browser the whole of OEdu was one page — and its Back
-     button skipped every screen inside it and left the app entirely,
-     landing wherever the student had been before they opened it.
+  /* ------------------------------------------------------------ Addresses
+     Every place a student can be has an address, and the address is the
+     place. /student/Science/Biology/u1/l3 is lesson 3 of Biology's first
+     unit whether it was reached by clicking, typed, bookmarked, shared or
+     reloaded. Moving somewhere pushes its address, and the browser's Back
+     and Forward walk them — the only back there is. The app used to draw its
+     own Back chip in the bar as well, and two backs are one too many: it
+     named the section before last, sat where nobody looked for it, and could
+     disagree with the browser about where the student had been.
 
-     So every place is also a browser history entry. TRAIL mirrors those
-     entries one for one, each holding the place and a copy of the path that
-     led to it, and a popstate replays the entry the browser moved to. The
-     URL is left alone: the places are closures, not addresses, and a URL
-     that looked shareable but opened the home screen would be worse than
-     one that makes no promise. After a reload the old entries still exist
-     in the browser but not in memory, so they land on Home rather than on
-     nothing. */
+     The addresses are the names people see, spaces as hyphens:
+
+       /student/                                   Home
+       /student/Explore                            everything on offer
+       /student/Science                            a subject
+       /student/Science/Biology                    a course
+       /student/Science/Biology/Map                its knowledge map
+       /student/Science/Biology/u1                 a unit
+       /student/Science/Biology/u1/l3              a lesson
+       /student/Science/Biology/u1/l3/Questions    the questions after it
+       /student/Science/Biology/u1/Practice        a unit's practice
+       /student/Sets/<id>                          a study set
+       /student/Sets/<id>/Flashcards               …and a way of studying it
+       /student/Exams, /Exams/<id>, /Progress, /Grades, /Account,
+       /student/Notebook, /Mistakes
+
+     The console has no addresses of its own yet; its places are still
+     history entries, so Back works there, but the address bar stays put. */
   var TRAIL = [], POS = -1, RESTORING = false;
+  // Entries this page made carry this; ones left by an earlier load of the
+  // page do not, and are found by their address instead of by their index.
+  var SESSION = Math.random().toString(36).slice(2, 10);
 
-  function mark(push) {
+  function slug(s) { return String(s == null ? "" : s).trim().replace(/\s+/g, "-"); }
+  function sameName(a, b) { return String(a || "").toLowerCase() === String(b || "").toLowerCase(); }
+  function here() { return window.OPLO_HOME.parse(location.pathname); }
+  /* Where the app's addresses start: /student/, or /learn/student/ locally. */
+  function appBase() {
+    var p = here();
+    return p.mode ? p.root + p.mode + "/" : p.root;
+  }
+  function appRest() { return (here().rest || "").replace(/^\/+/, ""); }
+  function addressOf(path) {
+    return appBase() + String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  }
+  function coursePath(c) { return slug(c.subject || "Other") + "/" + slug(c.t || c.title || c.id); }
+  function courseById(id) {
+    return allCourses().concat(enrolled()).filter(function (c) { return c.id === id; })[0] || null;
+  }
+  function readPath(r, i) {
+    var c = courseById(r.course);
+    return (c ? coursePath(c) : slug(r.courseTitle)) + "/u" + r.unit + "/l" + (i + 1);
+  }
+
+  function mark(push, path) {
     if (RESTORING) return;
-    var entry = { here: S.here, hist: S.hist.slice() };
+    var entry = { here: S.here, hist: S.hist.slice(), path: path };
+    var url = path == null ? undefined : addressOf(path);
     if (push && POS >= 0) {
       TRAIL = TRAIL.slice(0, POS + 1);        // a new step drops the old forward path
       TRAIL.push(entry);
       POS = TRAIL.length - 1;
-      try { history.pushState({ lx: POS }, ""); } catch (e) { /* sandboxed frame */ }
+      try { history.pushState({ lx: POS, s: SESSION }, "", url); } catch (e) { /* sandboxed frame */ }
     } else {
       // The very first place replaces the entry the page already has, so
-      // opening Learn does not cost an extra press of Back to leave it.
+      // opening OEdu does not cost an extra press of Back to leave it.
       if (POS < 0) { TRAIL = [entry]; POS = 0; } else TRAIL[POS] = entry;
-      try { history.replaceState({ lx: POS }, ""); } catch (e) { /* sandboxed frame */ }
+      try { history.replaceState({ lx: POS, s: SESSION }, "", url); } catch (e) { /* sandboxed frame */ }
     }
   }
 
-  function enter(key, label, restore, replace) {
+  function enter(key, label, restore, replace, path) {
     if (S.here && S.here.key === key) { S.here.restore = restore; return; }
     // Replaying a place must not record it again as a new one.
     if (RESTORING) {
@@ -499,18 +538,103 @@
       if (S.hist.length > 40) S.hist.shift();
     }
     S.here = { key: key, label: label, restore: restore };
-    mark(!replace);
+    mark(!replace, path);
   }
 
-  /* A top-level section starts a fresh in-app path — the Back button in the
-     bar hides — but it is still a step in the browser's history, so the
-     browser's Back returns to wherever the student was before they clicked
-     Home. Clicking the section they are already on does not add a step. */
-  function root(key, label, restore) {
+  /* A top-level section starts a fresh in-app path, but it is still a step
+     in the browser's history, so Back returns to wherever the student was
+     before they clicked it. Clicking the section they are already on does
+     not add a step. */
+  function root(key, label, restore, path) {
     var same = S.here && S.here.key === key && !S.hist.length;
     S.hist = [];
     S.here = { key: key, label: label, restore: restore };
-    mark(!same);
+    mark(!same, path);
+  }
+
+  /* Open whatever an address names. Used when the app starts at an address,
+     and when Back or Forward lands on one this page did not make. Returns
+     false for an address that names nothing, so the caller can go home. */
+  function route(rest) {
+    var seg = (rest == null ? appRest() : rest).split("/").filter(Boolean).map(function (x) {
+      try { return decodeURIComponent(x); } catch (e) { return x; }
+    });
+    var a = seg[0] || "";
+    if (!a) { home(); return true; }
+    if (sameName(a, "Explore")) { explore(); return true; }
+    if (sameName(a, "Exams")) {
+      openExams();
+      // /Exams/<id> is the sitting itself, which exam.js owns. While the app
+      // is starting, exam.js is about to be asked what to resume and is told
+      // this one; after that it is opened directly.
+      if (seg[1] && window.OPLO_EXAM) {
+        if (S.booting) S.examAsked = seg[1]; else window.OPLO_EXAM.open(seg[1]);
+      }
+      return true;
+    }
+    if (sameName(a, "Progress")) { openProgress(); return true; }
+    if (sameName(a, "Grades")) { openGrades(); return true; }
+    if (sameName(a, "Account")) { openAccount(); return true; }
+    if (sameName(a, "Notebook")) { openNotebook(); return true; }
+    if (sameName(a, "Mistakes")) { openMistakes(); return true; }
+    if (sameName(a, "Sets") && seg[1]) {
+      if (!SET(seg[1])) return false;
+      openSet(seg[1]);
+      var run = { flashcards: startCards, learn: startLearn, match: startMatch,
+                  "match-the-card": startCardMatch, "word-hunt": startHunt,
+                  hangman: startHangman, test: startTest }[String(seg[2] || "").toLowerCase()];
+      if (run) run(false);
+      return true;
+    }
+    var subject = SC.subjects().filter(function (s) { return sameName(slug(s.n), a); })[0];
+    if (!subject) return false;
+    if (!seg[1]) { openSubject(subject); return true; }
+    var c = allCourses().concat(enrolled()).filter(function (x) {
+      return sameName(slug(x.subject || "Other"), a) && sameName(slug(x.t || x.title || x.id), seg[1]);
+    })[0];
+    if (!c) return false;
+    if (!seg[2]) { openCourse(c); return true; }
+    if (sameName(seg[2], "Map")) { openMap(c); return true; }
+    if (sameName(seg[2], "Challenge") && c.lab) { openLab(c, null, "Challenge"); return true; }
+    var um = /^u(\d+)$/i.exec(seg[2]);
+    if (!um) return false;
+    var n = +um[1];
+    if (!unitsOf(c).some(function (u) { return u.n === n; })) return false;
+    if (!seg[3]) { openUnit(c, n); return true; }
+    var lu = unitsOf(c).filter(function (u) { return u.n === n; })[0];
+    if (lu && lu.lab) {
+      if (/^l\d+$/i.test(seg[3]) && !seg[4]) { openLab(c, n, "l" + (+seg[3].slice(1))); return true; }
+      if (sameName(seg[3], "Practice") && seg[4]) { openLab(c, n, "Practice/" + seg[4]); return true; }
+      if (sameName(seg[3], "Test")) { openLab(c, n, "Test"); return true; }
+      if (sameName(seg[3], "Quiz") && /^\d+$/.test(seg[4] || "")) { openLab(c, n, "Quiz/" + seg[4]); return true; }
+      return false;
+    }
+    if (sameName(seg[3], "Practice")) {
+      S.course = c; S.unitIx = n; S.unit = unitsOf(c).filter(function (u) { return u.n === n; })[0];
+      startPractice(false);
+      return true;
+    }
+    var lm = /^l(\d+)$/i.exec(seg[3]), r = readerFor(c.id, n);
+    if (sameName(seg[3], "Challenge")) {
+      if (!r || !hasChallenge(r, "review")) return false;
+      openChallenge(r, "review");
+      return true;
+    }
+    if (!lm || !r || !r.sections[+lm[1] - 1]) return false;
+    var ix = +lm[1] - 1;
+    if (sameName(seg[4], "Challenge")) {
+      if (!hasChallenge(r, r.sections[ix].n)) return false;
+      openChallenge(r, ix);
+      return true;
+    }
+    if (sameName(seg[4], "Questions")) {
+      useReader(r);
+      S.readIx = ix;
+      openRetrieve(r.sections[ix], ix);
+      return true;
+    }
+    openRead(ix, false, r.key);
+    return true;
   }
 
   function show(view) {
@@ -518,21 +642,7 @@
     [].forEach.call(document.querySelectorAll(".lx-view"), function (v) {
       v.classList.toggle("on", v.id === "v-" + view);
     });
-    var prev = S.hist[S.hist.length - 1];
-    $("#back").hidden = !prev;
-    if (prev) $("#backLabel").textContent = prev.label;
-    /* The console has no bar, so its back control is its own element. It is
-       shown only when there is somewhere to go back to — a permanently
-       present Back that sometimes does nothing is worse than none. */
-    // Any view inside the console shell, not just #v-admin — Account is one.
-    $("#cnBack").hidden = !(prev && document.body.classList.contains("is-console"));
-    if (prev) $("#cnBackLabel").textContent = prev.label;
-    // The subject bar belongs to browsing. The home screen is a personal
-    // command centre, and a catalogue across the top of it is just noise.
     $("#subbar").hidden = !(view === "explore" || view === "subject");
-    // The console's rail belongs to the console. Every screen it owns —
-    // gradebook, enrolment, a student's report — is drawn into #v-admin, so
-    // one check here keeps the chrome right without every screen knowing.
     if (view !== "admin") leaveConsole();
     $("#wrap").classList.toggle("wide", view === "match" || view === "map");
     $("#wrap").classList.toggle("full", view === "read");
@@ -541,14 +651,12 @@
       b.setAttribute("aria-current", String(b.dataset.view === view));
     });
     window.scrollTo(0, 0);
-    // Tutor is declared later in this scope; hoisting makes it undefined
-    // until the panel is built, which is exactly the case to skip.
     if (typeof Tutor !== "undefined" && Tutor && Tutor.where) Tutor.where();
   }
 
-  /* The Back button in the bar goes through the browser whenever there is a
-     browser entry behind this one, so the two backs can never disagree about
-     where the student is. */
+  /* What a console form does when it is finished with: step back, through
+     the browser whenever there is a browser entry behind this one, so it
+     lands exactly where the browser's own Back would. */
   function goBack() {
     if (S.hist.length && POS > 0 && TRAIL[POS - 1]) { history.back(); return; }
     var prev = S.hist.pop();
@@ -559,14 +667,23 @@
   }
 
   function home() {
-    root("my", "Home", home);
+    root("my", "Home", home, "");
     drawMy();
     show("my");
   }
   function explore() {
-    root("explore", "Explore", explore);
+    root("explore", "Explore", explore, "Explore");
     drawExplore();
     show("explore");
+  }
+  function openProgress() {
+    root("progress", "Progress", openProgress, "Progress");
+    if (window.OPLO_PROGRESS) {
+      if (R) window.OPLO_PROGRESS.setRecord(R);
+      window.OPLO_PROGRESS.draw();
+    }
+    noFoot(); progress(null);
+    show("progress");
   }
 
   function foot(msg, label, on, handler) {
@@ -606,15 +723,17 @@
      that shows courses a student is not enrolled in, and then removes them a
      second later, is worse than one that waits. */
   function enrolled() {
-    var mine = (S.me && S.me.assigned) || [];
-    var shipped = allCourses();
-    var out = [];
-    mine.forEach(function (row) {
-      var match = shipped.filter(function (c) { return c.id === row.code; })[0];
-      if (match) { match.dbId = row.id; out.push(match); }
-      else out.push(fromDbCourse(row));
-    });
-    return out;
+    return ((S.me && S.me.assigned) || []).map(courseFromRow);
+  }
+
+  /* A database course as the catalogue screens know it: the shipped course
+     with the same code, carrying the row's id, or the row itself when nothing
+     was shipped for it. */
+  function courseFromRow(row) {
+    var match = allCourses().filter(function (c) { return c.id === row.code; })[0];
+    if (!match) return fromDbCourse(row);
+    match.dbId = row.id;
+    return match;
   }
 
   /* A database course rendered in the shape the catalogue screens expect. */
@@ -634,7 +753,8 @@
   function unitsOf(c) {
     if (c.units) {
       return c.units.map(function (u, i) {
-        return { n: i + 1, t: u.t, desc: u.desc, play: !!u.play, set: u.set };
+        return { n: i + 1, t: u.t, desc: u.desc, play: !!u.play, set: u.set,
+                 lab: !!u.lab && !!(window.OPLO_LAB && window.OPLO_LAB.has(c.id, i + 1)) };
       });
     }
     var out = [], n = 0;
@@ -661,7 +781,9 @@
     return S.m[k];
   }
   function offers(u) {
-    return { u: !!(u.play || u.read), p: !!(u.play || u.read), r: !!u.set, a: !!u.set };
+    // A lab unit teaches (lessons), practises (skills) and tests (the unit
+    // test); it has no flashcards, so Recall is not offered.
+    return { u: !!(u.play || u.read || u.lab), p: !!(u.play || u.read || u.lab), r: !!u.set, a: !!(u.set || u.lab) };
   }
   function raise(c, n, dim, pct) {
     var d = dims(c, n);
@@ -678,7 +800,7 @@
     return pct >= 85 ? "master" : pct >= 50 ? "prof" : pct > 0 ? "fam" : "";
   }
   function coursePct(c) {
-    var us = unitsOf(c).filter(function (u) { return u.play || u.set; });
+    var us = unitsOf(c).filter(function (u) { return u.play || u.set || u.lab; });
     if (!us.length) return 0;
     return Math.round(us.reduce(function (a, u) { return a + mastery(c, u.n); }, 0) / us.length);
   }
@@ -706,7 +828,7 @@
     courses.forEach(function (c) {
       var pre = (D.PRE || {})[c.id] || {};
       unitsOf(c).forEach(function (u) {
-        if (!(u.play || u.set)) return;
+        if (!(u.play || u.set || u.lab)) return;
         var m = mastery(c, u.n);
         if (m >= 85 || best) return;
         var weak = (pre[u.n] || []).map(function (k) {
@@ -721,7 +843,7 @@
   /* Four dials rather than one bar. A dimension a unit cannot offer is not
      drawn, because averaging in a zero nobody can earn is just a lie. */
   function dimRow(c, units) {
-    var live = units.filter(function (u) { return u.play || u.set; });
+    var live = units.filter(function (u) { return u.play || u.set || u.lab; });
     if (!live.length) return "";
     var out = '<div class="lx-dims">';
     DIMS.forEach(function (dim) {
@@ -753,7 +875,7 @@
     var units = unitsOf(c);
     return window.OPLO_KMAP.build({
       units: units.map(function (u) {
-        return { n: u.n, t: u.t, part: u.part, desc: u.desc, set: u.set, live: !!(u.play || u.set) };
+        return { n: u.n, t: u.t, part: u.part, desc: u.desc, set: u.set, live: !!(u.play || u.set || u.lab) };
       }),
       pre: (D.PRE || {})[c.id] || {},
       mastery: function (n) { return mastery(c, n); },
@@ -785,7 +907,7 @@
 
   function openMap(c, silent, focus) {
     if (!c) return;
-    if (!silent) enter("map:" + c.id, "Map", function () { openMap(c, true, focus); });
+    if (!silent) enter("map:" + c.id, "Map", function () { openMap(c, true, focus); }, false, coursePath(c) + "/Map");
     S.course = c;
     var K = window.OPLO_KMAP, model = mapModel(c), prev = null;
     try { prev = JSON.parse(localStorage.getItem(mapSeenKey(c)) || "null"); } catch (e) { /* private mode */ }
@@ -1178,7 +1300,7 @@
 
   /* ------------------------------------------------------- Mistake book */
   function openMistakes(silent) {
-    if (!silent) enter("mistakes", "Mistake book", function () { openMistakes(true); });
+    if (!silent) enter("mistakes", "Mistake book", function () { openMistakes(true); }, false, "Mistakes");
     var v = $("#v-mistakes");
     v.innerHTML = "";
     v.appendChild(el("p", "lx-eyebrow", "Mistake book"));
@@ -1279,7 +1401,7 @@
 
   function openSubject(s, silent) {
     if (!s) { explore(); return; }
-    if (!silent) enter("subject:" + s.n, s.n, function () { openSubject(s, true); });
+    if (!silent) enter("subject:" + s.n, s.n, function () { openSubject(s, true); }, false, slug(s.n));
     S.subject = s;
     var v = $("#v-subject");
     v.innerHTML = "";
@@ -1297,7 +1419,7 @@
   /* ---------------------------------------------------------------- Course */
   function openCourse(c, silent) {
     if (!c) return;
-    if (!silent) enter("course:" + c.id, trim(c.t), function () { openCourse(c, true); });
+    if (!silent) enter("course:" + c.id, trim(c.t), function () { openCourse(c, true); }, false, coursePath(c));
     S.course = c;
     var v = $("#v-course");
     v.innerHTML = "";
@@ -1340,7 +1462,7 @@
       dimRow(c, units);
     main.appendChild(mast);
 
-    if (units.some(function (u) { return u.play || u.set; })) {
+    if (units.some(function (u) { return u.play || u.set || u.lab; })) {
       main.appendChild(window.OPLO_KMAP.teaser(mapModel(c), {
         hue: c.hue, onOpen: function () { openMap(c); }
       }));
@@ -1357,6 +1479,7 @@
       b.type = "button";
       var bits = [];
       if (u.play) bits.push("Practice");
+      if (u.lab) bits.push("Interactive lessons · practice · unit test");
       if (u.set) bits.push(SET(u.set).cards.length + " terms");
       if (!bits.length) bits.push("Syllabus only");
       b.innerHTML = '<span class="n">' + u.n + "</span>" +
@@ -1366,6 +1489,15 @@
       list.appendChild(b);
     });
     main.appendChild(list);
+    if (c.lab && window.OPLO_LAB) {
+      var cc = el("button", "lb-test lb-coursebtn");
+      cc.type = "button";
+      cc.innerHTML = '<span class="lb-tico">' + svg(I.star, true) + "</span>" +
+        '<span class="lb-ttxt"><b>Course challenge</b><span>Two problems from every unit, mixed — see what has stuck ' +
+        "and what needs another look.</span></span>" + '<span class="lb-go">Start' + svg(I.arrow, true) + "</span>";
+      cc.addEventListener("click", function () { openLab(c, null, "Challenge"); });
+      main.appendChild(cc);
+    }
     two.appendChild(main);
 
     var side = el("aside", "lx-side");
@@ -1400,8 +1532,15 @@
   function openUnit(c, n, silent) {
     var u = unitsOf(c).filter(function (x) { return x.n === n; })[0];
     if (!u) return;
-    if (!silent) enter("unit:" + c.id + ":" + n, trim(u.t), function () { openUnit(c, n, true); });
+    if (!silent) enter("unit:" + c.id + ":" + n, trim(u.t), function () { openUnit(c, n, true); },
+                       false, coursePath(c) + "/u" + n);
     S.course = c; S.unitIx = n; S.unit = u;
+    if (u.lab && window.OPLO_LAB) {
+      window.OPLO_LAB.renderUnit($("#v-unit"), labCtx(c, n));
+      noFoot(); progress(null);
+      show("unit");
+      return;
+    }
 
     var v = $("#v-unit");
     v.innerHTML = "";
@@ -1442,6 +1581,7 @@
         b0.appendChild(rb);
       });
       v.appendChild(b0);
+      if (hasChallenge(reader, "review")) v.appendChild(challengeBlock(reader));
     }
 
     if (u.set) {
@@ -1472,9 +1612,53 @@
     show("unit");
   }
 
+  /* ============================================================ The lab
+     Interactive math courses (lab/core.js). A lab unit's page, its lessons,
+     a skill's practice and the tests all live in the lab; the app gives them
+     an address, a place in history, and a way to raise the unit's mastery. */
+  function labCtx(c, n) {
+    var u = n ? unitsOf(c).filter(function (x) { return x.n === n; })[0] : null;
+    return {
+      course: c.id, courseTitle: c.t, n: n, title: u ? u.t : "", desc: u ? u.desc : "", me: S.me,
+      units: unitsOf(c).filter(function (x) { return x.lab; }).map(function (x) { return x.n; }),
+      go: {
+        course: function () { openCourse(c); },
+        unit: function () { openUnit(c, n); },
+        lesson: function (k) { openLab(c, n, "l" + k); },
+        practice: function (id) { openLab(c, n, "Practice/" + id); },
+        test: function () { openLab(c, n, "Test"); },
+        quiz: function (k) { openLab(c, n, "Quiz/" + k); }
+      },
+      // What was done, as the unit's four dials. Mastery never falls.
+      onProgress: function (d, un) {
+        var nn = un || n;
+        if (!d || !nn) return;
+        raise(c, nn, "u", d.u); raise(c, nn, "p", d.p); raise(c, nn, "a", d.a);
+      }
+    };
+  }
+  function openLab(c, n, what, silent) {
+    var LAB = window.OPLO_LAB;
+    if (!LAB) return;
+    var label = what === "Test" ? "Unit test" : what === "Challenge" ? "Course challenge" :
+      /^Practice\//.test(what) ? "Practice" : /^Quiz\//.test(what) ? "Quiz" : "Lesson";
+    if (!silent) enter("lab:" + c.id + ":" + n + ":" + what, label, function () { openLab(c, n, what, true); },
+                       false, coursePath(c) + (n ? "/u" + n : "") + "/" + what);
+    S.course = c;
+    var v = $("#v-lab");
+    var ctx = labCtx(c, n);
+    if (what === "Challenge") LAB.runTest(v, ctx, "course");
+    else if (what === "Test") LAB.runTest(v, ctx, "unit");
+    else if (/^Practice\//.test(what)) LAB.runPractice(v, ctx, what.slice(9));
+    else if (/^Quiz\//.test(what)) LAB.runQuiz(v, ctx, +what.slice(5));
+    else LAB.runLesson(v, ctx, +what.slice(1));
+    noFoot(); progress(null);
+    show("lab");
+  }
+
   /* ================================================================= Sets */
   function openSet(id, silent) {
-    if (!silent) enter("set:" + id, trim(SET(id).t), function () { openSet(id, true); });
+    if (!silent) enter("set:" + id, trim(SET(id).t), function () { openSet(id, true); }, false, "Sets/" + id);
     S.setId = id; S.set = SET(id);
     var st = setState(id), cards = S.set.cards;
     var v = $("#v-set");
@@ -1546,7 +1730,7 @@
 
   /* ----------------------------------------------------------- Flashcards */
   function startCards(again) {
-    enter("cards:" + S.setId, "Flashcards", function () { startCards(true); }, again);
+    enter("cards:" + S.setId, "Flashcards", function () { startCards(true); }, again, "Sets/" + S.setId + "/Flashcards");
     var cards = S.set.cards, order = cards.map(function (_, i) { return i; });
     var i = 0, flipped = false, shuffled = false;
     var known = {}, learning = {};
@@ -1604,7 +1788,7 @@
       var k = Object.keys(known).length, l = Object.keys(learning).length;
       tally.textContent = (k || l)
         ? k + " known · " + l + " still learning"
-        : "Tap the card to flip it. Arrow keys move.";
+        : "Click the card to flip it. Arrow keys move.";
     }
     function step(d) {
       i = Math.min(order.length - 1, Math.max(0, i + d));
@@ -1689,7 +1873,7 @@
   }
 
   function startLearn(again) {
-    enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again);
+    enter("learn:" + S.setId, "Learn", function () { startLearn(true); }, again, "Sets/" + S.setId + "/Learn");
 
     var setId = S.setId;
     var concepts = CN.forSet(setId, S.set.cards);
@@ -2595,7 +2779,7 @@
 
   /* ----------------------------------------------------------------- Match */
   function startMatch(again) {
-    enter("match:" + S.setId, "Match", function () { startMatch(true); }, again);
+    enter("match:" + S.setId, "Match", function () { startMatch(true); }, again, "Sets/" + S.setId + "/Match");
     var st = setState(S.setId);
     var pick = shuffle(S.set.cards).slice(0, Math.min(6, S.set.cards.length));
     var tiles = [];
@@ -2735,7 +2919,7 @@
      Definition on the card, terms underneath. The direction a flashcard deck
      is worst at, and the direction an exam asks in. */
   function startCardMatch(again) {
-    enter("cardmatch:" + S.setId, "Match the card", function () { startCardMatch(true); }, again);
+    enter("cardmatch:" + S.setId, "Match the card", function () { startCardMatch(true); }, again, "Sets/" + S.setId + "/Match-the-card");
     var setId = S.setId, cards = S.set.cards;
     var rounds = GM.cardRounds(cards, weakestFirst(setId), 10);
     var i = 0, right = 0, streak = 0, bestStreak = 0, locked = false;
@@ -2815,7 +2999,7 @@
      "tympanic" for ninety seconds has looked at those letters harder than any
      amount of reading would have made them. */
   function startHunt(again) {
-    enter("hunt:" + S.setId, "Word hunt", function () { startHunt(true); }, again);
+    enter("hunt:" + S.setId, "Word hunt", function () { startHunt(true); }, again, "Sets/" + S.setId + "/Word-hunt");
     var setId = S.setId, cards = S.set.cards;
     var terms = weakestFirst(setId).map(function (ix) { return cards[ix][0]; });
     var size = 12;
@@ -2861,7 +3045,7 @@
     });
     list.appendChild(ul);
     list.appendChild(el("p", "hunt-say",
-      "Tap the first letter, then the last. Words run in any direction, " +
+      "Click the first letter, then the last. Words run in any direction, " +
       "including backwards and diagonally."));
     board.appendChild(list);
     wrap.appendChild(board);
@@ -2932,7 +3116,7 @@
      the moment in an exam where you can nearly remember a word. No gallows is
      drawn; what is at stake is the word. */
   function startHangman(again) {
-    enter("hangman:" + S.setId, "Hangman", function () { startHangman(true); }, again);
+    enter("hangman:" + S.setId, "Hangman", function () { startHangman(true); }, again, "Sets/" + S.setId + "/Hangman");
     var setId = S.setId, cards = S.set.cards;
     var queue = weakestFirst(setId).slice(0, 5);
     var at = 0, won = 0, hinted = 0;
@@ -3071,7 +3255,7 @@
      Every question on one page, answered in any order, graded once — the
      point of a test rather than a drill. */
   function startTest(again) {
-    enter("test:" + S.setId, "Test", function () { startTest(true); }, again);
+    enter("test:" + S.setId, "Test", function () { startTest(true); }, again, "Sets/" + S.setId + "/Test");
     var cards = S.set.cards;
     var n = Math.min(10, cards.length);
     var pick = shuffle(cards.map(function (_, i) { return i; })).slice(0, n);
@@ -3571,10 +3755,25 @@
     "media:8": { key: "media:8", course: "media", courseTitle: "Media Arts", unit: 8,
                  title: "Intro to Animation", sections: window.OPLO_UNIT8 || [],
                  doc: "media-u8", set: "media-8" },
+    "media:9": { key: "media:9", course: "media", courseTitle: "Media Arts", unit: 9,
+                 title: "Audio/Video Production", sections: window.OPLO_UNIT9 || [],
+                 doc: "media-u9" },
     "biz:4":   { key: "biz:4", course: "biz", courseTitle: "Introduction to Business", unit: 4,
                  title: "International Business", sections: window.OPLO_BIZ4 || [],
                  doc: "biz-u4", set: "biz-4" },
-    "bio:1":   { key: "bio:1", course: "bio", courseTitle: "High School Biology", unit: 1,
+    "biz:1":   { key: "biz:1", course: "biz", courseTitle: "Introduction to Business", unit: 1,
+                 title: "Introduction to Business", sections: window.OPLO_BIZ1 || [],
+                 doc: "biz-u1", set: "biz-1" },
+    "biz:2":   { key: "biz:2", course: "biz", courseTitle: "Introduction to Business", unit: 2,
+                 title: "Economics and Business", sections: window.OPLO_BIZ2 || [],
+                 doc: "biz-u2", set: "biz-2" },
+    "biz:3":   { key: "biz:3", course: "biz", courseTitle: "Introduction to Business", unit: 3,
+                 title: "Business Ethics and Social Responsibility", sections: window.OPLO_BIZ3 || [],
+                 doc: "biz-u3", set: "biz-3" },
+    "biz:5":   { key: "biz:5", course: "biz", courseTitle: "Introduction to Business", unit: 5,
+                 title: "Business Writing", sections: window.OPLO_BIZ5 || [],
+                 doc: "biz-u5", set: "biz-5" },
+    "bio:1":   { key: "bio:1", course: "bio", courseTitle: "Biology", unit: 1,
                  title: "Ecology and Natural Systems", sections: window.OPLO_BIO1 || [],
                  doc: "bio-u1", set: "bio-1" }
   };
@@ -4418,6 +4617,40 @@
       "<span>" + svg(k[1], true) + k[0] + "</span><b>" + esc(b.t) + "</b><p>" + b.d + "</p>");
   }
 
+  /* A common misconception, what the student thinks, and the specific
+     intervention that corrects it. Shown as a callout so it cannot be
+     skipped without being seen. */
+  function misconBlock(b) {
+    return el("aside", "rd-mcon",
+      '<span>' + svg(I.alert, true) + "Common mistake</span>" +
+      "<b>" + esc(b.t) + "</b>" +
+      "<p class=\"why\">" + esc(b.d) + "</p>" +
+      "<p>" + esc(b.i || "") + "</p>");
+  }
+
+  /* A concept from an earlier section the student is about to need again.
+     Kept short enough to answer in thirty seconds. */
+  function flashbackBlock(b) {
+    return el("aside", "rd-fbk",
+      '<span>' + svg(I.learn, true) + "Flashback</span>" +
+      "<b>" + esc(b.t) + "</b>" +
+      "<p>" + esc(b.d) + "</p>");
+  }
+
+  /* Claim, Evidence, Reasoning. The scaffolding the standards ask for,
+     made visible so a student can see the shape of an argument before
+     writing one. */
+  function cerBlock(b) {
+    var parts = b.items || [];
+    var html = '<div class="rd-cer"><b>' + esc(b.t || "Claim, Evidence, Reasoning") + "</b>";
+    parts.forEach(function (p) {
+      html += '<div class="rd-cer-part"><span class="k">' + esc(p.k) +
+              '</span><p>' + esc(p.d) + "</p></div>";
+    });
+    html += "</div>";
+    return el("div", "rd-cer-wrap", html);
+  }
+
   /* ------------------------------------------------------------- Motion
      A figure that moves, for a unit about movement. A still diagram can say
      that twos are choppier than ones; a moving one lets a student see it,
@@ -4753,6 +4986,86 @@
     draw();
   }
 
+  /* ========================================================== Challenges
+     Problems solved by doing, one to a screen — see challenge.js. The
+     reading is where an idea is met and the challenge is where it is used,
+     so each lesson ends by offering its own, and the unit page lists them
+     all with the mixed unit review. A lesson's challenge is at
+     …/uN/lM/Challenge; the review at …/uN/Challenge. */
+  var CH = window.OPLO_CHALLENGE || null;
+  function hasChallenge(r, n) { return !!(CH && r && CH.has(r.key, n)); }
+  function challengePath(r, ix) {
+    var c = courseById(r.course);
+    return (c ? coursePath(c) : slug(r.courseTitle)) + "/u" + r.unit +
+      (ix === "review" ? "" : "/l" + (ix + 1)) + "/Challenge";
+  }
+  function openChallenge(r, ix, silent) {
+    var review = ix === "review", sec = review ? null : r.sections[ix];
+    if (!review && !sec) return;
+    if (!silent) {
+      enter("challenge:" + r.key + ":" + (review ? "review" : sec.n), review ? "Unit review" : sec.n,
+            function () { openChallenge(r, ix, true); }, false, challengePath(r, ix));
+    }
+    var c = courseById(r.course);
+    // Where to go next: the next lesson, then the review, then the unit.
+    var after = [];
+    if (!review && r.sections[ix + 1]) {
+      var nx = r.sections[ix + 1];
+      after.push({ label: "Read " + nx.n + " " + nx.t, go: function () { openRead(ix + 1, false, r.key); } });
+    } else if (!review && hasChallenge(r, "review")) {
+      after.push({ label: "Unit review", go: function () { openChallenge(r, "review"); } });
+    }
+    if (c) after.push({ label: "Unit " + r.unit + ": " + r.title, go: function () { openUnit(c, r.unit); } });
+    var v = $("#v-challenge");
+    v.innerHTML = "";
+    CH.play(v, { reader: r.key, sec: review ? "review" : sec.n, me: S.me, after: after });
+    noFoot(); progress(null);
+    show("challenge");
+  }
+  var CH_ICON = '<path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/><circle cx="12" cy="12" r="2.2"/>';
+  function challengeCta(r, i) {
+    var sec = r.sections[i], p = CH.progress(r.key, sec.n, S.me);
+    var b = el("button", "chx-cta");
+    b.type = "button";
+    var state = !p.solved ? p.total + " problems · about " + Math.max(3, Math.round(p.total * 1.2)) + " minutes"
+      : p.solved < p.total ? p.solved + " of " + p.total + " solved — pick up where you left off"
+      : "Done · " + p.first + " of " + p.total + " first try — run it again any time";
+    b.innerHTML = '<span class="chx-ico">' + svg(CH_ICON, true) + "</span>" +
+      '<span class="chx-txt"><b>Challenge: use what you just read</b><span>' + esc(CH.blurb(r.key, sec.n) || "") +
+      "</span><span>" + esc(state) + "</span></span>" +
+      '<span class="chx-go">' + svg(I.arrow, true) + "</span>";
+    b.addEventListener("click", function () { openChallenge(r, i); });
+    return b;
+  }
+  function challengeBlock(r) {
+    var box = el("div", "lx-block");
+    box.appendChild(el("h2", null, "Challenges"));
+    var list = el("div", "chx-list");
+    r.sections.forEach(function (sec, k) {
+      if (!hasChallenge(r, sec.n)) return;
+      var p = CH.progress(r.key, sec.n, S.me);
+      var b = el("button", "chx");
+      b.type = "button";
+      var bar = "";
+      for (var j = 0; j < p.total; j++) bar += "<i" + (j < p.first ? ' class="first"' : j < p.solved ? ' class="helped"' : "") + "></i>";
+      b.innerHTML = '<span class="chx-n">' + esc(sec.n) + " · " + p.total + " problems</span>" +
+        '<span class="chx-t">' + esc(sec.t) + "</span>" +
+        '<span class="chx-s">' + esc(!p.solved ? "Not started" : p.solved < p.total ? p.solved + " of " + p.total + " solved"
+          : "Done · " + p.first + " first try") + "</span>" +
+        '<span class="chx-bar" aria-hidden="true">' + bar + "</span>";
+      b.addEventListener("click", function () { openChallenge(r, k); });
+      list.appendChild(b);
+    });
+    var rv = el("button", "chx review");
+    rv.type = "button";
+    rv.innerHTML = '<span class="chx-n">Unit review</span><span class="chx-t">Mixed from every lesson</span>' +
+      '<span class="chx-s">The ones you needed help with come first.</span>';
+    rv.addEventListener("click", function () { openChallenge(r, "review"); });
+    list.appendChild(rv);
+    box.appendChild(list);
+    return box;
+  }
+
   function openRead(i, silent, rkey) {
     if (rkey && READERS[rkey]) useReader(READERS[rkey]);
     var r = RU;
@@ -4762,7 +5075,7 @@
     // reader opens where it was going anyway.
     if (wantsPredict(r)) { openPredict(r, function () { openRead(i, silent, rkey); }); return; }
     $("#wrap").classList.remove("pd-on");
-    if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true, r.key); });
+    if (!silent) enter("read:" + sec.n, sec.n, function () { openRead(i, true, r.key); }, false, readPath(r, i));
     S.readIx = i;
     // S.readIx is a copy, not a reference into the record, so the record has
     // to be written directly — keep() alone saved the old position forever.
@@ -4802,13 +5115,10 @@
       if (b.k === "p") body.appendChild(el("p", null, b.t));
       else if (b.k === "h") body.appendChild(el("h2", null, esc(b.t)));
       else if (b.k === "def") {
-        /* A definition may carry a second, plainer sentence. The first line is
-           the definition a course will examine; `p` is the same idea said the
-           way you would say it out loud to somebody who has never met the word.
-           Both are shown, because a student who only gets the plain one cannot
-           answer the paper, and one who only gets the formal one often cannot
-           answer anything. */
-        body.appendChild(el("div", "rd-def", "<b>" + esc(b.t) + "</b><p>" + b.d + "</p>" +
+        var depthBadge = b.depth
+          ? ' <span class="rd-depth" data-depth="' + esc(b.depth) + '">' + esc(b.depth) + '</span>'
+          : "";
+        body.appendChild(el("div", "rd-def", "<b>" + esc(b.t) + "</b>" + depthBadge + "<p>" + b.d + "</p>" +
           (b.p ? '<p class="plain"><span>In plain words</span>' + b.p + "</p>" : "")));
       } else if (b.k === "quote") {
         body.appendChild(el("blockquote", "rd-quote",
@@ -4831,10 +5141,16 @@
         body.appendChild(refsBlock(b));
       } else if (b.k === "words") {
         body.appendChild(wordsBlock(b));
-      } else if (b.k === "try" || b.k === "world") {
+      }       else if (b.k === "try" || b.k === "world") {
         body.appendChild(calloutBlock(b));
       } else if (b.k === "motion") {
         body.appendChild(motionBlock(b));
+      } else if (b.k === "mcon") {
+        body.appendChild(misconBlock(b));
+      } else if (b.k === "fbk") {
+        body.appendChild(flashbackBlock(b));
+      } else if (b.k === "cer") {
+        body.appendChild(cerBlock(b));
       }
     });
     art.appendChild(body);
@@ -4864,6 +5180,7 @@
     nb.addEventListener("click", function () { openRetrieve(sec, i); });
     next.appendChild(nb);
     art.appendChild(next);
+    if (hasChallenge(r, sec.n)) art.appendChild(challengeCta(r, i));
 
     three.appendChild(unitRail(i));
     three.appendChild(art);
@@ -4877,6 +5194,10 @@
     noFoot(); progress(null);
     show("read");
     Ann.arm(body, sec.n, art, margin);
+    // Checks sit in the same margin as the notes, level with their passages.
+    if (window.OPLO_CHECKS) {
+      window.OPLO_CHECKS.arm({ reader: r.key, sec: sec.n, body: body, art: art, margin: margin, me: S.me });
+    }
     // Arrived from a retrieval card to look back. The answer was committed
     // before this was offered, so looking is feedback now rather than a way
     // round the question — and the questions wait where they were left.
@@ -5119,6 +5440,8 @@
 
   function openRetrieve(sec, i) {
     var r = RU;
+    enter("questions:" + sec.n, "Questions", function () { openRetrieve(sec, i); }, false,
+          readPath(r, i) + "/Questions");
     var key = rtKey(r, sec);
     var bag = rtBag();
     var st = (bag[key] && !bag[key].done) ? bag[key]
@@ -5501,7 +5824,7 @@
      evidence and objections a reader linked to them, which is an essay
      outline that happens to have been written while reading. */
   function openNotebook(silent) {
-    if (!silent) enter("notes", "Notebook", function () { openNotebook(true); });
+    if (!silent) enter("notes", "Notebook", function () { openNotebook(true); }, false, "Notebook");
     var v = $("#v-notes");
     v.innerHTML = "";
 
@@ -5825,7 +6148,7 @@
   /* -------------------------------------------------------------- Practice */
   function startPractice(again) {
     enter("practice:" + S.course.id + ":" + S.unitIx, "Practice",
-          function () { startPractice(true); }, again);
+          function () { startPractice(true); }, again, coursePath(S.course) + "/u" + S.unitIx + "/Practice");
     var P = D.PROBLEMS;
     S.p = { i: 0, right: 0, first: 0, tries: 0, picked: null, checked: false };
 
@@ -6034,7 +6357,7 @@
      version did not: opening it as an administrator threw, because the
      enrolment block was read unconditionally from a field only students had. */
   function openAccount(silent) {
-    if (!silent) enter("account", "Account", function () { openAccount(true); });
+    if (!silent) enter("account", "Account", function () { openAccount(true); }, false, "Account");
     var v = $("#v-account");
     v.innerHTML = "";
 
@@ -6204,7 +6527,7 @@
      percentage cannot answer it. */
   function openMyGrades(summary, all) {
     enter("mygrades:" + summary.courseId, trim(summary.courseTitle || "Grades"),
-          function () { openMyGrades(summary, all); });
+          function () { openMyGrades(summary, all); }, false, "Account");
     var v = $("#v-account");
     v.innerHTML = "";
     v.appendChild(el("p", "lx-eyebrow", esc(summary.courseTitle || "Course")));
@@ -6361,7 +6684,7 @@
   }
 
   function openGrades(silent) {
-    root("grades", "Grades", function () { openGrades(true); });
+    root("grades", "Grades", function () { openGrades(true); }, "Grades");
     var v = $("#v-grades");
     v.innerHTML = "";
     v.appendChild(el("p", "lx-eyebrow", "Grades" + (S.me ? " · " + esc(S.me.name) : "")));
@@ -6379,185 +6702,15 @@
     }, function (e) { failed(wait, e, function () { openGrades(true); }); });
   }
 
-  /* ----------------------------------------------------------- Exams ATB
-     The assessment universe. Every exam a student has, sorted
-     into Today, Upcoming, Past — the three states that matter.
-     Every card is one assessment with a clear status: what is
-     happening now, what waits, what is done. */
-
-  var EXAM_ICONS = {
-    today:    '<path d="M12 3v3"/><path d="M12 18v3"/><circle cx="12" cy="12" r="3.5"/><path d="M5 12h2M17 12h2M12 5v2M12 17v2" stroke-width="1.5"/>',
-    upcoming: '<rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/>',
-    past:     '<path d="M20 6 9 17l-5-5"/>'
-  };
-
-  function sortExams(exams) {
-    var now = Date.now();
-    var today = [], upcoming = [], past = [];
-    exams.forEach(function (e) {
-      var t = e.at || e.startsAt || 0;
-      if (t - now < 864e5 && t > now - 864e5) today.push(e);
-      else if (t > now) upcoming.push(e);
-      else past.push(e);
-    });
-    today.sort(function (a, b) { return (a.startsAt || 0) - (b.startsAt || 0); });
-    upcoming.sort(function (a, b) { return (a.startsAt || 0) - (b.startsAt || 0); });
-    past.sort(function (a, b) { return (b.startsAt || 0) - (a.startsAt || 0); });
-    return { today: today, upcoming: upcoming, past: past };
-  }
-
-  function examCard(e) {
-    var isPast = e.status === "past" || (e.score != null);
-    var status = "upcoming";
-    if (e.status === "today" || (!isPast && e.startsAt && e.startsAt - Date.now() < 864e5)) status = "today";
-    else if (isPast) status = "past";
-
-    var card = el("button", "lx-exam-card");
-    card.type = "button";
-    card.addEventListener("click", function () { openExam(e); });
-
-    var iconBg = status === "today" ? "#e8f5ee" : status === "past" ? "var(--canvas)" : "#e2f0fd";
-    var iconColor = status === "today" ? "#12915a" : status === "past" ? "var(--ink-3)" : "#0060c0";
-    var svgPath = status === "past" ? EXAM_ICONS.past : EXAM_ICONS[status] || EXAM_ICONS.upcoming;
-
-    card.innerHTML =
-      '<div class="lx-exam-top">' +
-        '<div class="lx-exam-icon" style="background:' + iconBg + ';color:' + iconColor + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + svgPath + "</svg>" +
-        "</div>" +
-        '<span class="lx-exam-status ' + status + '"><span class="dot"></span>' + esc(status.charAt(0).toUpperCase() + status.slice(1)) + "</span>" +
-      "</div>" +
-      '<div class="lx-exam-title">' + esc(e.title || e.name || "Assessment") + "</div>" +
-      '<div class="lx-exam-sub">' + esc(e.course || "Course") + " · " + esc(e.type || "Exam") + "</div>" +
-      '<div class="lx-exam-when">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' +
-        esc(e.when || "") +
-      "</div>" +
-      '<div class="lx-exam-meta">' +
-        '<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>' + esc(e.questions || "") + " questions</span>" +
-        '<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' + esc(e.duration || "") + "</span>" +
-        (e.score != null ? '<span class="lx-exam-score">' + esc(e.score) + "</span>" : "") +
-      "</div>" +
-      (status !== "past" ?
-        '<span class="lx-exam-go">Begin <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>' :
-        '<span class="lx-exam-go">Review <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>');
-    return card;
-  }
-
-  function drawExamGroup(host, label, items, whenLabel) {
-    if (!items.length) return;
-    var g = el("section", "lx-exam-group");
-    var head = el("div", "lx-exam-group-head");
-    head.innerHTML = "<h2>" + esc(label) + "</h2><p>" + esc(whenLabel) + "</p>";
-    g.appendChild(head);
-    var grid = el("div", "lx-exam-grid");
-    items.forEach(function (e) { grid.appendChild(examCard(e)); });
-    g.appendChild(grid);
-    host.appendChild(g);
-  }
-
-  function drawExams(host, exams) {
-    host.innerHTML = "";
-    var sorted = sortExams(exams);
-    var hasToday = sorted.today.length || sorted.upcoming.length;
-
-    if (hasToday) {
-      var strip = el("div", "lx-today-strip");
-      var nextExam = sorted.today[0] || sorted.upcoming[0];
-      var inMin = nextExam.startsAt ? Math.max(0, Math.round((nextExam.startsAt - Date.now()) / 60000)) : 0;
-      var begins = inMin <= 1 ? "Begins now" : inMin < 60 ? "Begins in " + inMin + " min" : "Today";
-      strip.innerHTML = '<div><p class="k">Exams today</p><h2>' + esc(nextExam.title || nextExam.name || "Assessment") + "</h2>" +
-        '<p>' + esc(begins) + " · " + (nextExam.when || "") + "</p></div>" +
-        '<button class="lx-btn lg" type="button">Begin</button>';
-      strip.querySelector(".lx-btn").addEventListener("click", function () { openExam(sorted.today[0] || sorted.upcoming[0]); });
-      host.appendChild(strip);
-    }
-
-    var tabs = el("div", "lx-exam-tabs");
-    var counts = { today: sorted.today.length, upcoming: sorted.upcoming.length, past: sorted.past.length };
-    ["today", "upcoming", "past"].forEach(function (k) {
-      var b = el("button", "lx-exam-tab" + (k === "today" ? " on" : ""));
-      b.type = "button";
-      b.dataset.examTab = k;
-      b.setAttribute("aria-current", String(k === "today"));
-      b.innerHTML = esc(k.charAt(0).toUpperCase() + k.slice(1)) + '<span class="n">' + counts[k] + "</span>";
-      b.addEventListener("click", function () { switchExamTab(b, sorted); });
-      tabs.appendChild(b);
-    });
-    host.appendChild(tabs);
-
-    var active = sorted.today.length ? sorted.today : sorted.upcoming.length ? sorted.upcoming : sorted.past;
-    var group = el("div");
-    drawExamGroup(group, "Today", sorted.today, "Starting soon");
-    drawExamGroup(group, "Upcoming", sorted.upcoming, "Scheduled");
-    drawExamGroup(group, "Past", sorted.past, "Completed");
-    host.appendChild(group);
-
-    if (!sorted.today.length && !sorted.upcoming.length && !sorted.past.length) {
-      var empty = el("div", "lx-exams-empty");
-      empty.innerHTML = '<div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/><path d="M9 14l2 2 4-4"/></svg></div>' +
-        "<h2>Nothing on your calendar yet.</h2>" +
-        "<p>When your teachers schedule an assessment, it appears here — sorted by when it begins.</p>";
-      group.appendChild(empty);
-    }
-  }
-
-  function switchExamTab(btn, sorted) {
-    var parent = btn.parentElement;
-    [].forEach.call(parent.children, function (b) {
-      b.classList.toggle("on", b === btn);
-      b.setAttribute("aria-current", String(b === btn));
-    });
-    var target = btn.dataset.examTab;
-    var view = btn.closest(".lx-view");
-    var groups = view ? view.querySelectorAll(".lx-exam-group") : [];
-    [].forEach.call(groups, function (g) {
-      var heading = g.querySelector(".lx-exam-group-head h2");
-      if (!heading) return;
-      var show = (target === "today" && heading.textContent === "Today") ||
-                 (target === "upcoming" && heading.textContent === "Upcoming") ||
-                 (target === "past" && heading.textContent === "Past");
-      g.style.display = show ? "" : "none";
-    });
-  }
-
-  function openExam(e) { /* Future: opens exam detail or begins secure session */ }
-
+  /* ---------------------------------------------------------------- Exams
+     The tab belongs to the assessment runtime (exam.js): it lists what this
+     student has been set, runs a sitting and keeps the work safe. This only
+     gives it the screen. */
   function openExams(silent) {
-    if (!silent) root("exams", "Exams", function () { openExams(true); });
-    var v = $("#v-exams");
-    v.innerHTML = "";
-    var head = el("div", "lx-exams-head");
-    head.innerHTML = '<div><p class="lx-eyebrow">Assessment centre</p><h1 class="lx-h1">My Exams</h1>' +
-      '<p class="sub">Every assessment you have — today, upcoming, and past.</p></div>';
-    v.appendChild(head);
-    var host = el("div", "lx-exams-host");
-    v.appendChild(host);
+    if (!silent) root("exams", "Exams", function () { openExams(true); }, "Exams");
     noFoot(); progress(null);
     show("exams");
-    API.exams == null ? drawExams(host, sampleExams()) : API.exams().then(
-      function (data) { drawExams(host, data); },
-      function () { drawExams(host, sampleExams()); }
-    );
-  }
-
-  /* Demo data shown while the server has not answered. */
-  function sampleExams() {
-    var now = Date.now();
-    return [
-      { title: "Algebra I — Unit 4", course: "Algebra I", type: "Unit Exam", score: null, status: "today",
-        startsAt: now + 3600000 * 2, questions: "40", duration: "60 min", when: "Friday · 10:00 AM" },
-      { title: "Algebra I — Midterm", course: "Algebra I", type: "Midterm", score: null, status: "today",
-        startsAt: now + 3600000 * 5, questions: "75", duration: "90 min", when: "Friday · 1:00 PM" },
-      { title: "Biology — Cell Structure", course: "Biology", type: "Quiz", score: null, status: "upcoming",
-        startsAt: now + 86400000 * 1, questions: "12", duration: "20 min", when: "Monday · 9:00 AM" },
-      { title: "Algebra I — Practice Final", course: "Algebra I", type: "Practice Exam", score: null, status: "upcoming",
-        startsAt: now + 86400000 * 2, questions: "35", duration: "75 min", when: "Next Wednesday" },
-      { title: "Algebra I — Unit 3", course: "Algebra I", type: "Unit Exam", score: "87%", status: "past",
-        startsAt: now - 86400000 * 3, questions: "40", duration: "60 min", when: "Tuesday · 10:00 AM" },
-      { title: "Biology — Genetics", course: "Biology", type: "Midterm", score: "91%", status: "past",
-        startsAt: now - 86400000 * 6, questions: "60", duration: "80 min", when: "Last Friday" }
-    ];
+    if (window.OPLO_EXAM) window.OPLO_EXAM.hub($("#v-exams"), S.me);
   }
 
   /* `empty` is what to say when there is nothing yet. The student is spoken to
@@ -8101,22 +8254,25 @@
      numbers on the right are the only thing allowed to be loud, because they
      are the only thing that changes.
 
-     And nothing in the rail is a claim. A count beside a class is a count of
+     And nothing in the rail is a claim. A count beside a course is a count of
      rows the server returned; there is no sparkline, because there is no time
      series behind one and a drawn trend that nothing measured is a decoration
      people read as a fact. */
 
+  var ASSESSMENT_STATES = ["DRAFT", "IN_REVIEW", "APPROVED", "SCHEDULED", "LIVE", "SUBMITTED", "SCORING", "RESULTS_READY", "RELEASED", "ARCHIVED"];
+
+  var ASSESSMENT_TABS = ["Overview", "Experience", "Content", "Students", "Sessions", "Results", "Security", "Activity", "Versions"];
+
   var SECTIONS = [
-    { k: "today",   name: "Today",       group: null,         roles: ["admin", "teacher"] },
-    { k: "roster",  name: "Gradebook",   group: "Teaching",   roles: ["admin", "teacher"] },
-    { k: "students",name: "Students",    group: "Teaching",   roles: ["admin", "teacher"] },
-    { k: "work",    name: "Work",        group: "Teaching",   roles: ["admin", "teacher"] },
-    { k: "sets",    name: "Study sets",  group: "Teaching",   roles: ["admin", "teacher"] },
-    { k: "reports", name: "Report cards",group: "Reporting",  roles: ["admin", "teacher"] },
-    { k: "courses", name: "Courses",     group: "School",     roles: ["admin", "teacher"] },
-    { k: "activity",name: "Activity",    group: "School",     roles: ["admin", "teacher"] },
-    { k: "people",  name: "People",      group: "School",     roles: ["admin"] },
-    { k: "system",  name: "System",      group: "School",     roles: ["admin"] }
+    { k: "today",       name: "Today",         group: null,         roles: ["admin", "teacher"] },
+    { k: "assessments", name: "Assessments",   group: "Academics",  roles: ["admin", "teacher"] },
+    { k: "courses",     name: "Courses",       group: "Academics",  roles: ["admin", "teacher"] },
+    { k: "roster",      name: "Gradebook",     group: "Academics",  roles: ["admin", "teacher"] },
+    { k: "students",    name: "Students",      group: "People",     roles: ["admin", "teacher"] },
+    { k: "activity",    name: "Activity",      group: "Operations", roles: ["admin", "teacher"] },
+    { k: "reports",     name: "Reports",       group: "Reporting",  roles: ["admin", "teacher"] },
+    { k: "people",      name: "People",        group: "School",     roles: ["admin"] },
+    { k: "system",      name: "System",        group: "School",     roles: ["admin"] }
   ];
 
   function allowedTabs() {
@@ -8228,13 +8384,919 @@
     v.innerHTML = "";
     var body = el("div", "admin-body");
     v.appendChild(body);
-    ({ today: consoleHome, roster: tabRoster, students: tabStudents, work: tabWork,
+    ({ today: consoleHome, assessments: tabAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, activity: tabActivity,
        people: tabPeople, system: tabSystem }[S.tab] || consoleHome)(body);
 
     noFoot(); progress(null);
     show("admin");
   }
+
+  /* ============================================================ Assessments
+     Assessments are a first-class system in OEdu. They have states,
+     versions, governance, security policies, and a lifecycle from
+     DRAFT through ARCHIVED. The administrator controls governance,
+     permissions, policies, publishing, monitoring, and auditability.
+     The teacher controls instructional intent and assessment design.
+     The student experiences the assessment itself — not the machinery. */
+
+  /* Assessment state machine */
+  var ASSESSMENT_STATES = ["DRAFT", "IN_REVIEW", "APPROVED", "SCHEDULED", "LIVE", "SUBMITTED", "SCORING", "RESULTS_READY", "RELEASED", "ARCHIVED"];
+
+  var ASSESSMENT_TRANSITIONS = {
+    DRAFT: ["IN_REVIEW", "ARCHIVED"],
+    IN_REVIEW: ["APPROVED", "DRAFT"],
+    APPROVED: ["SCHEDULED", "DRAFT"],
+    SCHEDULED: ["LIVE", "DRAFT"],
+    LIVE: ["SUBMITTED"],
+    SUBMITTED: ["SCORING"],
+    SCORING: ["RESULTS_READY"],
+    RESULTS_READY: ["RELEASED", "SCORING"],
+    RELEASED: ["ARCHIVED"],
+    ARCHIVED: []
+  };
+
+  function canTransition(from, to) {
+    return (ASSESSMENT_TRANSITIONS[from] || []).indexOf(to) > -1;
+  }
+
+  var ASSESSMENT_TABS = ["Overview", "Experience", "Content", "Students", "Sessions", "Results", "Security", "Activity", "Versions"];
+
+  /* Sample assessment data for demo purposes */
+  function sampleAssessments() {
+    var now = Date.now();
+    return [
+      { id: "asm-001", title: "Algebra I — Quadratics Benchmark", course: "Algebra I",
+        state: "LIVE", version: "v2.0", createdBy: "Ms. Rivera",
+        duration: 45, items: 35, students: 126,
+        scheduledAt: now + 86400000 * 2, startsAt: now + 86400000 * 2 + 3600000 * 10,
+        readiness: 98, createdAt: now - 86400000 * 14,
+        approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 5,
+        security: { testingMode: "Secure", internet: false, aiAssistance: false, calculator: true, referenceSheet: true },
+        skills: { "Quadratic equations": 84, "Graph interpretation": 71, "Modeling": 76, "Reasoning": 69, "Communication": 82 },
+        experiences: ["Opening", "Explore", "Investigate", "Apply", "Challenge", "Final Demonstration", "Reflection"],
+        timeline: { created: now - 86400000 * 14, reviewed: now - 86400000 * 10, approved: now - 86400000 * 5, scheduled: now - 86400000 * 2, testing: now + 86400000 * 2, scoring: now + 86400000 * 4, results: now + 86400000 * 5 },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      },
+      { id: "asm-002", title: "Biology — Ecosystems Assessment", course: "Biology",
+        state: "SCHEDULED", version: "v1.1", createdBy: "Mr. Chen",
+        duration: 60, items: 28, students: 94,
+        scheduledAt: now + 86400000 * 5, startsAt: now + 86400000 * 5 + 3600000 * 9,
+        readiness: 92, createdAt: now - 86400000 * 10,
+        approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 3,
+        security: { testingMode: "Secure", internet: false, aiAssistance: false, calculator: true, referenceSheet: false },
+        skills: { "Ecosystem dynamics": 78, "Food webs": 82, "Energy flow": 71, "Biodiversity": 75 },
+        experiences: ["Opening", "Investigate", "Simulation", "Challenge", "Reflection"],
+        timeline: { created: now - 86400000 * 10, reviewed: now - 86400000 * 7, approved: now - 86400000 * 3, scheduled: now - 86400000 * 1, testing: now + 86400000 * 5, scoring: now + 86400000 * 7, results: now + 86400000 * 8 },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      },
+      { id: "asm-003", title: "ELA — Argument & Evidence", course: "ELA",
+        state: "IN_REVIEW", version: "v1.0", createdBy: "Ms. Williams",
+        duration: 50, items: 22, students: 118,
+        scheduledAt: null, startsAt: null,
+        readiness: 85, createdAt: now - 86400000 * 7,
+        approvedBy: null, approvedAt: null,
+        security: { testingMode: "Standard", internet: true, aiAssistance: "configurable", calculator: true, referenceSheet: true },
+        skills: { "Argument structure": 74, "Evidence evaluation": 68, "Counter-argument": 71, "Writing clarity": 79 },
+        experiences: ["Opening", "Case Study", "Challenge", "Reflection"],
+        timeline: { created: now - 86400000 * 7, reviewed: now - 86400000 * 3, approved: null, scheduled: null, testing: null, scoring: null, results: null },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      },
+      { id: "asm-004", title: "Algebra I — Unit 3 Review", course: "Algebra I",
+        state: "DRAFT", version: "v1.2", createdBy: "Ms. Rivera",
+        duration: 30, items: 18, students: 126,
+        scheduledAt: null, startsAt: null,
+        readiness: 72, createdAt: now - 86400000 * 3,
+        approvedBy: null, approvedAt: null,
+        security: { testingMode: "Standard", internet: true, aiAssistance: "configurable", calculator: true, referenceSheet: true },
+        skills: { "Linear equations": 80, "Quadratic equations": 65, "Graph interpretation": 72 },
+        experiences: ["Opening", "Practice", "Challenge", "Reflection"],
+        timeline: { created: now - 86400000 * 3, reviewed: null, approved: null, scheduled: null, testing: null, scoring: null, results: null },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      },
+      { id: "asm-005", title: "Science — Forces & Motion", course: "Science",
+        state: "RESULTS_READY", version: "v1.0", createdBy: "Mr. Patel",
+        duration: 40, items: 25, students: 88,
+        scheduledAt: null, startsAt: null,
+        readiness: 100, createdAt: now - 86400000 * 21,
+        approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 18,
+        security: { testingMode: "Secure", internet: false, aiAssistance: false, calculator: false, referenceSheet: false },
+        skills: { "Newton's laws": 81, "Force diagrams": 76, "Friction": 68, "Gravity": 73 },
+        experiences: ["Opening", "Lab", "Challenge", "Final Demonstration"],
+        timeline: { created: now - 86400000 * 21, reviewed: now - 86400000 * 19, approved: now - 86400000 * 18, scheduled: now - 86400000 * 15, testing: now - 86400000 * 10, scoring: now - 86400000 * 5, results: now - 86400000 * 2 },
+        incidents: 1, sessions: { started: 88, paused: 2, submitted: 85, interrupted: 1 }
+      },
+      { id: "asm-006", title: "History — Civilizations Unit", course: "History",
+        state: "APPROVED", version: "v1.0", createdBy: "Ms. Okafor",
+        duration: 55, items: 30, students: 102,
+        scheduledAt: now + 86400000 * 8, startsAt: now + 86400000 * 8 + 3600000 * 11,
+        readiness: 95, createdAt: now - 86400000 * 12,
+        approvedBy: "Saswat Jimac", approvedAt: now - 86400000 * 2,
+        security: { testingMode: "Standard", internet: true, aiAssistance: "configurable", calculator: true, referenceSheet: true },
+        skills: { "Historical analysis": 77, "Source evaluation": 72, "Timeline reasoning": 80, "Writing": 74 },
+        experiences: ["Opening", "Investigate", "Case Study", "Challenge", "Reflection"],
+        timeline: { created: now - 86400000 * 12, reviewed: now - 86400000 * 8, approved: now - 86400000 * 2, scheduled: now - 86400000 * 1, testing: now + 86400000 * 8, scoring: null, results: null },
+        incidents: 0, sessions: { started: 0, paused: 0, submitted: 0, interrupted: 0 }
+      }
+    ];
+  }
+
+  function stateColor(state) {
+    var colors = {
+      DRAFT: "#6b7280", IN_REVIEW: "#d97706", APPROVED: "#7c5cfc",
+      SCHEDULED: "#0060c0", LIVE: "#12915a", SUBMITTED: "#0060c0",
+      SCORING: "#d97706", RESULTS_READY: "#7c5cfc", RELEASED: "#12915a", ARCHIVED: "#6b7280"
+    };
+    return colors[state] || "#6b7280";
+  }
+
+  function stateLabel(state) {
+    return state.replace(/_/g, " ");
+  }
+
+  /* ----------------------------------------------------------- Assessments List
+     The overview: what exists, in what state, who created it, when. */
+  function tabAssessments(v) {
+    consoleHead(v, "Academics", "Assessments",
+      "Create, review, publish, monitor, and understand every assessment across your school.");
+
+    var host = el("div");
+    v.appendChild(host);
+
+    /* Command area */
+    var cmd = el("div");
+    cmd.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;";
+    var createBtn = el("button", "cn-btn strong");
+    createBtn.type = "button";
+    createBtn.textContent = "Create assessment";
+    createBtn.addEventListener("click", function () { assessmentStudio(host); });
+    cmd.appendChild(createBtn);
+
+    var search = el("input");
+    search.type = "text";
+    search.placeholder = "Search assessments…";
+    search.style.cssText = "padding:8px 14px;border-radius:9px;border:1px solid var(--hair);font-size:13.5px;min-width:220px;background:var(--paper);color:var(--ink);";
+    search.addEventListener("input", function () { filterAssessments(search.value); });
+    cmd.appendChild(search);
+    host.appendChild(cmd);
+
+    /* Status tabs */
+    var tabs = el("div");
+    tabs.style.cssText = "display:flex;gap:4px;margin-bottom:20px;background:var(--canvas);border-radius:100px;padding:3px;width:fit-content;";
+    var filterState = "all";
+    var statusTabs = [["all", "All"], ["DRAFT", "Drafts"], ["SCHEDULED", "Scheduled"], ["LIVE", "Live"], ["RESULTS_READY", "Completed"]];
+    statusTabs.forEach(function (t) {
+      var b = el("button", "asm-tab" + (t[0] === "all" ? " asm-tab-on" : ""));
+      b.type = "button";
+      b.textContent = t[1];
+      b.addEventListener("click", function () {
+        filterState = t[0];
+        [].forEach.call(tabs.children, function (x) { x.classList.remove("asm-tab-on"); });
+        b.classList.add("asm-tab-on");
+        renderAssessments(v, filterState, search.value);
+      });
+      tabs.appendChild(b);
+    });
+    host.appendChild(tabs);
+
+    /* Results area */
+    var results = el("div");
+    results.id = "assess-results";
+    host.appendChild(results);
+
+    renderAssessments(v, "all", "");
+  }
+
+  function renderAssessments(v, filter, search) {
+    var results = $("#assess-results");
+    if (!results) return;
+    results.innerHTML = "";
+    var all = sampleAssessments();
+    if (filter !== "all") {
+      all = all.filter(function (a) { return a.state === filter; });
+    }
+    if (search) {
+      var q = search.toLowerCase();
+      all = all.filter(function (a) {
+        return (a.title || "").toLowerCase().indexOf(q) > -1 ||
+               (a.course || "").toLowerCase().indexOf(q) > -1 ||
+               (a.createdBy || "").toLowerCase().indexOf(q) > -1;
+      });
+    }
+
+    if (!all.length) {
+      results.innerHTML = '<div style="margin-top:40px;padding:48px;text-align:center;color:var(--ink-3);font-size:14px;">No assessments match your search.</div>';
+      return;
+    }
+
+    var head = el("p");
+    head.style.cssText = "font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px;";
+    head.textContent = "Recent assessments";
+    results.appendChild(head);
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+    all.forEach(function (a) {
+      var row = el("button");
+      row.type = "button";
+      row.style.cssText = "display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;background:var(--paper);border:1px solid var(--hair);cursor:pointer;text-align:left;transition:transform .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease);width:100%;";
+      row.addEventListener("mouseenter", function () { row.style.transform = "translateY(-2px)"; row.style.boxShadow = "0 8px 28px rgba(0,0,0,.06)"; });
+      row.addEventListener("mouseleave", function () { row.style.transform = ""; row.style.boxShadow = ""; });
+      row.addEventListener("click", function () { assessmentDetail(v, a.id); });
+
+      var statusColor = stateColor(a.state);
+      row.innerHTML =
+        '<div style="width:4px;height:40px;border-radius:2px;background:' + statusColor + ';flex:none;"></div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-family:var(--font);font-size:15px;font-weight:600;letter-spacing:-.014em;color:var(--ink);">' + esc(a.title) + '</div>' +
+          '<div style="font-size:12.5px;color:var(--ink-3);margin-top:2px;">' + esc(a.course) + ' · ' + esc(a.createdBy) + ' · ' + (a.scheduledAt ? new Date(a.scheduledAt).toLocaleDateString(undefined, {month:"short",day:"numeric"}) : "Not scheduled") + '</div>' +
+        "</div>" +
+        '<div style="display:flex;align-items:center;gap:12px;flex:none;">' +
+          '<span style="font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;">' + a.items + ' items · ' + a.students + ' students</span>' +
+          '<span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:100px;font-size:11px;font-weight:600;background:' + statusColor + '1a;color:' + statusColor + ';">' +
+            '<span style="width:6px;height:6px;border-radius:50%;background:' + statusColor + ';"></span>' +
+            stateLabel(a.state) +
+          "</span>" +
+          '<span style="font-size:11px;color:var(--ink-3);font-family:"Spline Sans Mono",monospace;">' + esc(a.version) + '</span>' +
+        "</div>";
+      list.appendChild(row);
+    });
+    results.appendChild(list);
+  }
+
+  function filterAssessments(query) {
+    var filter = "all";
+    var tabs = $("#assess-results").parentElement.querySelectorAll(".lx-exam-tab");
+    [].forEach.call(tabs, function (t) {
+      if (t.classList.contains("on")) {
+        var text = t.textContent.trim().toLowerCase();
+        if (text === "drafts") filter = "DRAFT";
+        else if (text === "scheduled") filter = "SCHEDULED";
+        else if (text === "live") filter = "LIVE";
+        else if (text === "completed") filter = "RESULTS_READY";
+        else filter = "all";
+      }
+    });
+    renderAssessments($("#v-admin"), filter, query);
+  }
+
+  /* ----------------------------------------------------------- Assessment Detail
+     The assessment's command center. */
+  function assessmentDetail(v, id) {
+    S.tab = "assessments";
+    var asm = sampleAssessments().filter(function (a) { return a.id === id; })[0];
+    if (!asm) return;
+
+    v.innerHTML = "";
+
+    /* Back button */
+    var back = el("button", "cn-back");
+    back.type = "button";
+    back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px;"><path d="M5 12h14"/><path d="m12 5-7 7 7 7"/></svg> Back to Assessments';
+    back.addEventListener("click", function () { tabAssessments(v); });
+    v.appendChild(back);
+
+    /* Header */
+    var head = el("header", "cn-head");
+    var eyebrow = el("p", "cn-eyebrow", "Academics");
+    head.appendChild(eyebrow);
+    var h1 = el("h1", "cn-h1", asm.title);
+    head.appendChild(h1);
+    var sub = el("p", "cn-sub");
+    sub.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:100px;font-size:11px;font-weight:600;background:' + stateColor(asm.state) + '1a;color:' + stateColor(asm.state) + ';"><span style="width:6px;height:6px;border-radius:50%;background:' + stateColor(asm.state) + ';"></span>' + stateLabel(asm.state) + '</span> ' + asm.version + ' · ' + asm.course;
+    head.appendChild(sub);
+    v.appendChild(head);
+
+    /* Stats bar */
+    var stats = el("div");
+    stats.style.cssText = "display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap;";
+    var statItems = [
+      [asm.duration + " min", "duration"],
+      [asm.items, "items"],
+      [asm.students, "students"],
+      [asm.readiness + "%", "readiness"]
+    ];
+    statItems.forEach(function (s) {
+      var d = el("div");
+      d.innerHTML = "<b style='font-size:18px;font-weight:700;color:var(--ink);'>" + s[0] + "</b><span style='font-size:12px;color:var(--ink-3);'>" + s[1] + "</span>";
+      stats.appendChild(d);
+    });
+    v.appendChild(stats);
+
+    /* Tabs */
+    var tabs = el("div");
+    tabs.style.cssText = "display:flex;gap:2px;margin-bottom:24px;background:var(--canvas);border-radius:100px;padding:3px;width:fit-content;";
+    var activeTab = "Overview";
+    asmTabsRender(tabs, asm, activeTab);
+    v.appendChild(tabs);
+
+    /* Tab content */
+    var content = el("div");
+    content.id = "asm-tab-content";
+    asmTabContent(content, asm, activeTab);
+    v.appendChild(content);
+  }
+
+  function asmTabsRender(tabs, asm, active) {
+    tabs.innerHTML = "";
+    ASSESSMENT_TABS.forEach(function (t) {
+      var b = el("button", "lx-exam-tab" + (t === active ? " on" : ""));
+      b.type = "button";
+      b.style.cssText = "height:32px;padding:0 14px;border-radius:100px;font-size:13px;font-weight:500;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px;transition:background .18s var(--ease),color .18s var(--ease);";
+      b.textContent = t;
+      b.addEventListener("click", function () {
+        [].forEach.call(tabs.children, function (x) { x.classList.remove("asm-tab-on"); });
+        b.classList.add("asm-tab-on");
+        asmTabContent($("#asm-tab-content"), asm, t);
+      });
+      tabs.appendChild(b);
+    });
+  }
+
+  function asmTabContent(host, asm, tab) {
+    host.innerHTML = "";
+    switch (tab) {
+      case "Overview": asmOverview(host, asm); break;
+      case "Experience": asmExperience(host, asm); break;
+      case "Content": asmContent(host, asm); break;
+      case "Students": asmStudents(host, asm); break;
+      case "Sessions": asmSessions(host, asm); break;
+      case "Results": asmResults(host, asm); break;
+      case "Security": asmSecurity(host, asm); break;
+      case "Activity": asmActivity(host, asm); break;
+      case "Versions": asmVersions(host, asm); break;
+      default: asmOverview(host, asm);
+    }
+  }
+
+  function asmOverview(host, asm) {
+    /* Status block */
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Assessment status</h3>";
+    var span = el("span"); span.textContent = asm.state; head.appendChild(span);
+    block.appendChild(head);
+
+    var grid = el("div");
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;";
+    var items = [
+      ["Scheduled", asm.scheduledAt ? new Date(asm.scheduledAt).toLocaleDateString(undefined, {weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) : "Not scheduled"],
+      ["Students", asm.students + " assigned"],
+      ["Active", (asm.sessions ? asm.sessions.started : 0) + " started"],
+      ["Submitted", (asm.sessions ? asm.sessions.submitted : 0)],
+      ["Readiness", asm.readiness + "%"]
+    ];
+    items.forEach(function (it) {
+      var d = el("div");
+      d.style.cssText = "padding:14px;border-radius:12px;background:var(--canvas);border:1px solid var(--hair);";
+      d.innerHTML = "<div style='font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;'>" + it[0] + "</div><div style='font-size:14px;font-weight:500;color:var(--ink);'>" + it[1] + "</div>";
+      grid.appendChild(d);
+    });
+    block.appendChild(grid);
+    host.appendChild(block);
+
+    /* Timeline */
+    if (asm.timeline) {
+      var tl = el("div", "cn-block");
+      var tlHead = el("div", "cn-blockhead");
+      tlHead.innerHTML = "<h3>Timeline</h3>";
+      tl.appendChild(tlHead);
+
+      var steps = [
+        ["Created", asm.timeline.created],
+        ["Reviewed", asm.timeline.reviewed],
+        ["Approved", asm.timeline.approved],
+        ["Scheduled", asm.timeline.scheduled],
+        ["Testing", asm.timeline.testing],
+        ["Scoring", asm.timeline.scoring],
+        ["Results", asm.timeline.results]
+      ];
+      var tlList = el("div");
+      tlList.style.cssText = "display:flex;flex-direction:column;gap:0;";
+      steps.forEach(function (s, i) {
+        var row = el("div");
+        row.style.cssText = "display:flex;align-items:center;gap:12px;padding:8px 0;" + (i < steps.length - 1 ? 'border-bottom:1px solid var(--hair);' : "");
+        var dot = el("div");
+        dot.style.cssText = "width:8px;height:8px;border-radius:50%;flex:none;background:" + (s[1] ? "var(--blue)" : "var(--ink-3)") + ";";
+        row.appendChild(dot);
+        var label = el("div");
+        label.style.cssText = "font-size:13px;color:var(--ink);flex:1;";
+        label.textContent = s[0];
+        row.appendChild(label);
+        var date = el("div");
+        date.style.cssText = "font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;";
+        date.textContent = s[1] ? new Date(s[1]).toLocaleDateString(undefined, {month:"short",day:"numeric"}) : "Pending";
+        row.appendChild(date);
+        tlList.appendChild(row);
+      });
+      tl.appendChild(tlList);
+      host.appendChild(tl);
+    }
+
+    /* Governance */
+    var gov = el("div", "cn-block");
+    var govHead = el("div", "cn-blockhead");
+    govHead.innerHTML = "<h3>Governance</h3>";
+    gov.appendChild(govHead);
+    var govGrid = el("div");
+    govGrid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;";
+    var govItems = [
+      ["Created by", asm.createdBy],
+      ["Approved by", asm.approvedBy || "Pending"],
+      ["Version", asm.version],
+      ["State", stateLabel(asm.state)],
+      ["Created", asm.createdAt ? new Date(asm.createdAt).toLocaleDateString() : "—"],
+      ["Incidents", asm.incidents || 0]
+    ];
+    govItems.forEach(function (g) {
+      var d = el("div");
+      d.style.cssText = "padding:10px 14px;border-radius:10px;background:var(--canvas);border:1px solid var(--hair);";
+      d.innerHTML = "<div style='font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;'>" + g[0] + "</div><div style='font-size:13.5px;color:var(--ink);'>" + esc(g[1]) + "</div>";
+      govGrid.appendChild(d);
+    });
+    gov.appendChild(govGrid);
+    host.appendChild(gov);
+  }
+
+  function asmExperience(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Experience</h3><span>" + (asm.experiences ? asm.experiences.length : 0) + " stages</span>";
+    block.appendChild(head);
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+    if (asm.experiences) {
+      asm.experiences.forEach(function (exp, i) {
+        var row = el("div");
+        row.style.cssText = "display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:12px;background:var(--paper);border:1px solid var(--hair);";
+        row.innerHTML =
+          '<div style="width:28px;height:28px;border-radius:8px;background:var(--canvas);display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--ink-3);flex:none;">' + (i + 1) + '</div>' +
+          '<div style="flex:1;font-size:14px;font-weight:500;color:var(--ink);">' + esc(exp) + '</div>' +
+          '<span style="font-size:11px;color:var(--ink-3);">Stage ' + (i + 1) + '</span>';
+        list.appendChild(row);
+      });
+    }
+    block.appendChild(list);
+    host.appendChild(block);
+
+    /* AI panel */
+    var ai = el("div", "cn-block");
+    ai.style.cssText = "padding:18px;border-radius:14px;background:var(--canvas);border:1px solid var(--hair);";
+    ai.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:var(--blue);"></span>' +
+        '<span style="font-size:13px;font-weight:600;color:var(--ink);">Ask OEdu</span>' +
+      "</div>" +
+      '<div style="font-size:13px;color:var(--ink-3);line-height:1.5;margin-bottom:12px;">OEdu understands this assessment. Ask to modify the experience without leaving the builder.</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button type="button" style="padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--paper);font-size:12px;color:var(--ink-2);">Make it more rigorous</button>' +
+        '<button type="button" style="padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--paper);font-size:12px;color:var(--ink-2);">Reduce to 45 min</button>' +
+        '<button type="button" style="padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--paper);font-size:12px;color:var(--ink-2);">Check alignment</button>' +
+      "</div>";
+    host.appendChild(ai);
+  }
+
+  function asmContent(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Content</h3><span>" + (asm.items || 0) + " items</span>";
+    block.appendChild(head);
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+    var skills = asm.skills ? Object.keys(asm.skills) : [];
+    var items = asm.items || 0;
+    var perSkill = Math.ceil(items / Math.max(skills.length, 1));
+    skills.forEach(function (skill, i) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--paper);border:1px solid var(--hair);";
+      row.innerHTML =
+        '<div style="flex:1;font-size:13.5px;color:var(--ink);">' + esc(skill) + '</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);">' + perSkill + ' items</div>' +
+        '<div style="width:60px;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;">' +
+          '<div style="width:' + (asm.skills[skill] || 0) + '%;height:100%;border-radius:3px;background:' + (asm.skills[skill] >= 75 ? '#12915a' : asm.skills[skill] >= 60 ? '#0060c0' : '#d4533b') + ';"></div>' +
+        "</div>" +
+        '<div style="font-size:12px;font-weight:600;color:var(--ink-3);">' + (asm.skills[skill] || 0) + '%</div>';
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  function asmStudents(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Students</h3><span>" + asm.students + " assigned</span>";
+    block.appendChild(head);
+
+    var stats = el("div");
+    stats.style.cssText = "display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;";
+    var sStats = [
+      [asm.students - 4, "Ready", ""],
+      [4, "Not ready", "owe"],
+      [2, "Accommodation review", "late"]
+    ];
+    sStats.forEach(function (s) {
+      var d = el("div");
+      d.style.cssText = "padding:10px 16px;border-radius:10px;background:var(--paper);border:1px solid var(--hair);";
+      d.innerHTML = "<b style='font-size:16px;color:var(--ink);'>" + s[0] + "</b> <span style='font-size:12px;color:var(--ink-3);'>" + s[1] + "</span>";
+      if (s[2]) d.style.borderColor = s[2] === "owe" ? "#d4a017" : "#d4533b";
+      stats.appendChild(d);
+    });
+    block.appendChild(stats);
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:4px;";
+    var students = ["Jordan M.", "Alex K.", "Priya S.", "Marcus T.", "Elena R.", "Sam W.", "Taylor L.", "Rashid N."];
+    students.forEach(function (name, i) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--canvas);";
+      var status = i < 4 ? '<span style="font-size:11px;color:#d4533b;">Not ready</span>' : i < 6 ? '<span style="font-size:11px;color:#d4a017;">Accommodation</span>' : '<span style="font-size:11px;color:var(--green);">Ready</span>';
+      row.innerHTML =
+        '<div style="width:24px;height:24px;border-radius:6px;background:var(--sunk);display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--ink-3);flex:none;">' + name.split(" ").map(function(w){return w[0];}).join("") + '</div>' +
+        '<div style="flex:1;font-size:13px;color:var(--ink);">' + name + '</div>' +
+        status;
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  function asmSessions(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Live sessions</h3><span>" + (asm.sessions ? asm.sessions.started : 0) + " started</span>";
+    block.appendChild(head);
+
+    if (asm.state !== "LIVE") {
+      block.innerHTML += '<div style="margin-top:12px;font-size:13px;color:var(--ink-3);">This assessment is not currently live. Sessions will appear here during testing.</div>';
+      host.appendChild(block);
+      return;
+    }
+
+    var stats = el("div");
+    stats.style.cssText = "display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;";
+    var sStats = [
+      [asm.sessions.started, "Started", ""],
+      [asm.sessions.paused, "Paused", "late"],
+      [asm.sessions.submitted, "Submitted", "done"],
+      [asm.sessions.interrupted, "Interrupted", "owe"]
+    ];
+    sStats.forEach(function (s) {
+      var d = el("div");
+      d.style.cssText = "padding:10px 16px;border-radius:10px;background:var(--paper);border:1px solid var(--hair);";
+      d.innerHTML = "<b style='font-size:16px;color:var(--ink);'>" + s[0] + "</b> <span style='font-size:12px;color:var(--ink-3);'>" + s[1] + "</span>";
+      stats.appendChild(d);
+    });
+    block.appendChild(stats);
+    host.appendChild(block);
+  }
+
+  function asmResults(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Results</h3><span>" + (asm.skills ? Object.keys(asm.skills).length : 0) + " skill areas</span>";
+    block.appendChild(head);
+
+    if (!asm.skills) {
+      block.innerHTML += '<div style="margin-top:12px;font-size:13px;color:var(--ink-3);">Results will appear after the assessment is released.</div>';
+      host.appendChild(block);
+      return;
+    }
+
+    var grid = el("div");
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;";
+    Object.keys(asm.skills).forEach(function (skill) {
+      var val = asm.skills[skill];
+      var d = el("div");
+      d.style.cssText = "padding:14px;border-radius:12px;background:var(--paper);border:1px solid var(--hair);";
+      d.innerHTML =
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">' + esc(skill) + '</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--ink);">' + val + '%</div>' +
+        '<div style="width:100%;height:4px;border-radius:2px;background:var(--sunk);margin-top:8px;">' +
+          '<div style="width:' + val + '%;height:100%;border-radius:2px;background:' + (val >= 75 ? '#12915a' : val >= 60 ? '#0060c0' : '#d4533b') + ';"></div>' +
+        "</div>";
+      grid.appendChild(d);
+    });
+    block.appendChild(grid);
+    host.appendChild(block);
+  }
+
+  function asmSecurity(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Security</h3>";
+    block.appendChild(head);
+
+    var sec = asm.security || {};
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:0;";
+    var items = [
+      ["Testing mode", sec.testingMode || "Standard"],
+      ["Internet", sec.internet === false ? "Blocked" : "Allowed"],
+      ["AI assistance", sec.aiAssistance === false ? "Disabled" : sec.aiAssistance || "Configurable"],
+      ["Calculator", sec.calculator ? "Allowed" : "Blocked"],
+      ["Reference sheet", sec.referenceSheet ? "Allowed" : "Blocked"],
+      ["Navigation", sec.testingMode === "Secure" ? "Restricted" : "Standard"]
+    ];
+    items.forEach(function (it) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;background:var(--paper);border:1px solid var(--hair);";
+      row.innerHTML =
+        '<span style="font-size:13px;color:var(--ink);">' + it[0] + '</span>' +
+        '<span style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:100px;background:' + (it[1] === "Blocked" || it[1] === "Disabled" ? "#e8f5ee" : "var(--sunk)") + ';color:' + (it[1] === "Blocked" || it[1] === "Disabled" ? "#12915a" : "var(--ink-2)") + ';">' + it[1] + '</span>';
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  function asmActivity(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Activity</h3>";
+    block.appendChild(head);
+
+    var events = [
+      [asm.createdAt, asm.createdBy + " created assessment"],
+      [asm.timeline.reviewed, "Entered review"],
+      [asm.timeline.approved, "Approved by " + (asm.approvedBy || "—")],
+      [asm.timeline.scheduled, "Scheduled for " + (asm.scheduledAt ? new Date(asm.scheduledAt).toLocaleDateString() : "—")],
+      [asm.timeline.testing, "Assessment opened"]
+    ].filter(function (e) { return e[0]; });
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:0;";
+    events.forEach(function (e, i) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;gap:12px;padding:8px 0;" + (i < events.length - 1 ? 'border-bottom:1px solid var(--hair);' : "");
+      row.innerHTML =
+        '<div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none;"></div>' +
+        '<div style="flex:1;font-size:13px;color:var(--ink);">' + esc(e[1]) + '</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;">' + new Date(e[0]).toLocaleString() + '</div>';
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  function asmVersions(host, asm) {
+    var block = el("div", "cn-block");
+    var head = el("div", "cn-blockhead");
+    head.innerHTML = "<h3>Versions</h3>";
+    block.appendChild(head);
+
+    var versions = [
+      [asm.version, asm.state, asm.createdBy, asm.createdAt],
+      ["v1.0", "DRAFT", asm.createdBy, asm.createdAt ? asm.createdAt - 86400000 * 4 : null],
+      ["v0.9", "DRAFT", "OEdu AI", asm.createdAt ? asm.createdAt - 86400000 * 7 : null]
+    ];
+
+    var list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:0;";
+    versions.forEach(function (v, i) {
+      var row = el("div");
+      row.style.cssText = "display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--paper);border:1px solid var(--hair);" + (i === 0 ? 'box-shadow:inset 3px 0 0 var(--blue);' : "");
+      row.innerHTML =
+        '<div style="font-family:"Spline Sans Mono",monospace;font-size:13px;font-weight:600;color:var(--ink);flex:none;">' + esc(v[0]) + '</div>' +
+        '<div style="flex:1;font-size:13px;color:var(--ink-2);">' + esc(v[1]) + '</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);">' + esc(v[2]) + '</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;">' + (v[3] ? new Date(v[3]).toLocaleDateString() : "—") + '</div>';
+      list.appendChild(row);
+    });
+    block.appendChild(list);
+    host.appendChild(block);
+  }
+
+  /* ----------------------------------------------------------- Assessment Studio
+     Conversational creation surface. */
+  function assessmentStudio(host) {
+    S.tab = "assessments";
+    host.innerHTML = "";
+
+    /* Back button */
+    var back = el("button", "cn-back");
+    back.type = "button";
+    back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px;"><path d="M5 12h14"/><path d="m12 5-7 7 7 7"/></svg> Back to Assessments';
+    back.addEventListener("click", function () { tabAssessments(host); });
+    host.appendChild(back);
+
+    var studio = el("div");
+    studio.style.cssText = "max-width:800px;";
+
+    /* Header */
+    var head = el("div", "cn-head");
+    head.appendChild(el("p", "cn-eyebrow", "Create"));
+    head.appendChild(el("h1", "cn-h1", "Assessment Studio"));
+    head.appendChild(el("p", "cn-sub", "Describe what you want to assess. OEdu builds the structure, the experience, and the evidence."));
+    studio.appendChild(head);
+
+    /* Goal input */
+    var goalBlock = el("div");
+    goalBlock.style.cssText = "margin-bottom:24px;";
+    var goalLabel = el("p");
+    goalLabel.style.cssText = "font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;";
+    goalLabel.textContent = "What are you trying to assess?";
+    goalBlock.appendChild(goalLabel);
+
+    var textarea = el("textarea");
+    textarea.style.cssText = "width:100%;min-height:120px;padding:16px;border-radius:14px;border:1px solid var(--hair);background:var(--paper);font-size:14.5px;line-height:1.5;color:var(--ink);resize:vertical;font-family:inherit;";
+    textarea.placeholder = "e.g. Create a 60-minute Algebra I assessment on quadratic functions. I want students to demonstrate conceptual understanding, graph interpretation, solving, and reasoning. Make it rigorous and interactive.";
+    goalBlock.appendChild(textarea);
+    studio.appendChild(goalBlock);
+
+    /* Upload */
+    var uploadBlock = el("div");
+    uploadBlock.style.cssText = "margin-bottom:24px;padding:32px;border-radius:14px;border:2px dashed var(--hair);text-align:center;background:var(--paper);";
+    uploadBlock.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Drop files here</div>' +
+      '<div style="font-size:12.5px;color:var(--ink-3);">Past assessments · Curriculum · Standards · Teacher materials · Rubrics · PDFs · Images · Documents</div>' +
+      '<button type="button" style="margin-top:12px;padding:6px 14px;border-radius:8px;background:var(--canvas);border:1px solid var(--hair);font-size:12.5px;color:var(--ink-2);">Browse files</button>';
+    studio.appendChild(uploadBlock);
+
+    /* AI Architect panel */
+    var architect = el("div");
+    architect.style.cssText = "padding:20px;border-radius:14px;background:linear-gradient(135deg,#0d0d12,#1a1a2e);color:#fff;margin-bottom:24px;overflow:hidden;";
+    architect.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:#7c5cfc;"></span>' +
+        '<span style="font-size:13px;font-weight:600;">AI Assessment Architect</span>' +
+      "</div>" +
+      '<div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:14px;line-height:1.5;">OEdu will use your materials to understand the assessment goal before generating anything.</div>' +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.3);margin-bottom:8px;">Proposed blueprint</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,.85);line-height:1.6;">' +
+        '<div style="margin-bottom:8px;"><b>Goal:</b> Measure students ability to apply quadratic functions in unfamiliar contexts.</div>' +
+        '<div style="margin-bottom:8px;"><b>Evidence required:</b></div>' +
+        '<div style="padding-left:12px;margin-bottom:8px;">Conceptual understanding ████████</div>' +
+        '<div style="padding-left:12px;margin-bottom:8px;">Application ██████████</div>' +
+        '<div style="padding-left:12px;margin-bottom:8px;">Reasoning █████████</div>' +
+        '<div style="margin-bottom:8px;"><b>Proposed experience:</b> Quadratic Design Challenge — 6 stages, ~55 minutes</div>' +
+      "</div>" +
+      '<div style="display:flex;gap:8px;margin-top:16px;">' +
+        '<button type="button" id="asm-approve" style="padding:8px 16px;border-radius:9px;background:#fff;color:#0d0d12;font-size:13px;font-weight:600;border:none;cursor:pointer;">Approve blueprint</button>' +
+        '<button type="button" id="asm-modify" style="padding:8px 16px;border-radius:9px;background:rgba(255,255,255,.1);color:#fff;font-size:13px;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Modify</button>' +
+        '<button type="button" id="asm-ask" style="padding:8px 16px;border-radius:9px;background:transparent;color:rgba(255,255,255,.7);font-size:13px;border:none;cursor:pointer;">Ask OEdu</button>' +
+      "</div>";
+    studio.appendChild(architect);
+
+    /* Architect button interactivity */
+    var approveBtn = studio.querySelector("#asm-approve");
+    if (approveBtn) approveBtn.addEventListener("click", function () {
+      if (studioState.approved) return;
+      studioState.approved = true;
+      approveBtn.textContent = "Approved ✓";
+      approveBtn.style.background = "#e8f5ee";
+      approveBtn.style.color = "#12915a";
+      approveBtn.style.border = "none";
+      publishBtn2.disabled = false;
+      toast("Blueprint approved — you can now publish.");
+    });
+    var modifyBtn = studio.querySelector("#asm-modify");
+    if (modifyBtn) modifyBtn.addEventListener("click", function () {
+      var modPanel = studio.querySelector(".asm-modify-panel");
+      if (modPanel) { modPanel.remove(); return; }
+      modPanel = el("div");
+      modPanel.className = "asm-modify-panel";
+      modPanel.style.cssText = "padding:18px;border-radius:14px;background:var(--canvas);border:1px solid var(--hair);margin-bottom:16px;";
+      modPanel.innerHTML =
+        '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:12px;">Modify blueprint</div>' +
+        '<div style="font-size:12px;color:var(--ink-3);margin-bottom:4px;">Content preservation: <b>60%</b></div>' +
+        '<input type="range" min="0" max="100" value="60" style="width:100%;margin-bottom:12px;">' +
+        '<div style="font-size:12px;color:var(--ink-3);margin-bottom:4px;">Experience intensity: <b>Interactive</b></div>' +
+        '<input type="range" min="0" max="100" value="70" style="width:100%;margin-bottom:12px;">' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+          '<button type="button" class="asm-mod-cancel" style="padding:6px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--paper);font-size:12px;color:var(--ink-2);">Cancel</button>' +
+          '<button type="button" class="asm-mod-apply" style="padding:6px 12px;border-radius:8px;background:var(--ink);color:#fff;font-size:12px;border:none;">Apply</button>' +
+        "</div>";
+      studio.insertBefore(modPanel, studio.querySelector(".asm-summary"));
+      modPanel.querySelector(".asm-mod-cancel").addEventListener("click", function () { modPanel.remove(); });
+      modPanel.querySelector(".asm-mod-apply").addEventListener("click", function () {
+        modPanel.remove();
+        toast("Blueprint modified — OEdu is recalculating the design.");
+        summary.innerHTML = '<div class="asm-summary-body"><div style="font-size:13px;font-weight:600;color:#d97706;margin-bottom:10px;">Blueprint modified</div><div style="font-size:13px;color:var(--ink-2);line-height:1.6;">Content preservation adjusted. Experience intensity increased.</div><div style="font-size:13px;color:var(--ink-3);margin-top:8px;">Recalculating timing and complexity…</div></div>';
+      });
+    });
+    var askBtn = studio.querySelector("#asm-ask");
+    if (askBtn) askBtn.addEventListener("click", function () {
+      var chatPanel = studio.querySelector(".asm-chat-panel");
+      if (chatPanel) { chatPanel.remove(); return; }
+      chatPanel = el("div");
+      chatPanel.className = "asm-chat-panel";
+      chatPanel.style.cssText = "padding:18px;border-radius:14px;background:var(--canvas);border:1px solid var(--hair);margin-bottom:16px;";
+      chatPanel.innerHTML =
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+          '<span style="width:8px;height:8px;border-radius:50%;background:#7c5cfc;"></span>' +
+          '<span style="font-size:13px;font-weight:600;color:var(--ink);">Ask OEdu</span>' +
+        "</div>" +
+        '<div style="font-size:13px;color:var(--ink-2);line-height:1.5;margin-bottom:12px;">What would you like to change?</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+          '<button type="button" class="asm-ask-chip" data-msg="Make this more rigorous">Make it more rigorous</button>' +
+          '<button type="button" class="asm-ask-chip" data-msg="Reduce to 45 minutes">Reduce to 45 min</button>' +
+          '<button type="button" class="asm-ask-chip" data-msg="Check alignment with curriculum">Check alignment</button>' +
+          '<button type="button" class="asm-ask-chip" data-msg="Add more interactive tasks">Add interaction</button>' +
+        "</div>" +
+        '<div id="asm-chat-response" style="font-size:13px;color:var(--ink-2);line-height:1.5;min-height:40px;"></div>';
+      studio.insertBefore(chatPanel, studio.querySelector(".asm-summary"));
+      chatPanel.querySelectorAll(".asm-ask-chip").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          var resp = chatPanel.querySelector("#asm-chat-response");
+          resp.innerHTML = '<em style="color:var(--ink-3);">OEdu is thinking…</em>';
+          var msg = chip.dataset.msg;
+          var responses = {
+            "Make this more rigorous": "I'll increase the proportion of transfer and reasoning tasks while preserving the core objectives.",
+            "Reduce to 45 minutes": "I've reduced the number of interaction stages and recalculated the estimated completion time.",
+            "Check alignment with curriculum": "I'll prioritize the uploaded curriculum materials and identify where the proposed tasks align.",
+            "Add more interactive tasks": "I'll add two application tasks and one constructed response to deepen engagement."
+          };
+          setTimeout(function () {
+            resp.innerHTML = '<div style="margin-bottom:4px;"><b>OEdu:</b> ' + (responses[msg] || "I'll adjust the assessment based on your request.") + '</div><div style="font-size:11px;color:var(--ink-3);">Based on: 24 source concepts · 6 skill areas</div>';
+          }, 800);
+        });
+      });
+    });
+
+    /* AI Design Summary */
+    var summary = el("div", "asm-summary");
+    summary.style.cssText = "padding:20px;border-radius:14px;background:var(--canvas);border:1px solid var(--hair);margin-bottom:24px;";
+    summary.innerHTML =
+      '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">AI Design Summary</div>' +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:6px;">Source</div>' +
+      '<div style="font-size:13px;color:var(--ink-2);margin-bottom:14px;">Algebra I Midterm.pdf · 3 files uploaded</div>' +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:6px;">Transformation</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;color:var(--ink-2);">' +
+        '<div>Retained: 24 concepts</div>' +
+        '<div>Redesigned: 18 experiences</div>' +
+        '<div>Combined: 7 items</div>' +
+        '<div>Added: 3 tasks</div>' +
+        '<div>Added: 1 constructed response</div>' +
+        '<div>Requires review: 2 items</div>' +
+      "</div>" +
+      '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-top:14px;margin-bottom:6px;">Requires attention</div>' +
+      '<div style="font-size:13px;color:#d4533b;">1 accessibility concern · 1 timing concern</div>';
+    studio.appendChild(summary);
+
+    /* Studio state */
+    var studioState = { approved: false, transformed: false, previewing: false, published: false };
+
+    /* Action buttons */
+    var actions = el("div");
+    actions.style.cssText = "display:flex;gap:10px;flex-wrap:wrap;";
+    var transformBtn = el("button", "cn-btn strong");
+    transformBtn.type = "button";
+    transformBtn.textContent = "Transform";
+    transformBtn.addEventListener("click", function () {
+      if (studioState.transformed) return;
+      transformBtn.textContent = "Transforming…";
+      transformBtn.disabled = true;
+      summary.innerHTML = '<div class="asm-summary-body"><div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:14px;">OEdu is redesigning the experience architecture…</div><div style="font-size:13px;color:rgba(255,255,255,.7);">Analyzing source materials</div><div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Mapping learning objectives</div><div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Designing interactive tasks</div><div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Checking accessibility</div></div>';
+      setTimeout(function () {
+        studioState.transformed = true;
+        transformBtn.textContent = "Transformed ✓";
+        transformBtn.disabled = false;
+        summary.innerHTML = '<div class="asm-summary-body"><div style="font-size:13px;font-weight:600;color:#12915a;margin-bottom:10px;">Transformation complete</div><div style="font-size:13px;color:var(--ink-2);line-height:1.6;">Retained: <b>24</b> concepts · Redesigned: <b>22</b> experiences · Added: <b>5</b> interactive tasks</div><div style="font-size:13px;color:var(--ink-3);margin-top:8px;">1 accessibility concern resolved · 1 timing concern adjusted</div></div>';
+        toast("Transformation complete — the experience has been redesigned.");
+      }, 2500);
+    });
+    actions.appendChild(transformBtn);
+
+    var previewBtn2 = el("button", "cn-btn");
+    previewBtn2.type = "button";
+    previewBtn2.textContent = "Preview as student";
+    previewBtn2.addEventListener("click", function () {
+      if (!studioState.previewing) {
+        studioState.previewing = true;
+        previewBtn2.textContent = "Exit preview";
+        previewBtn2.classList.add("cn-btn.strong");
+        studio.classList.add("asm-previewing");
+        toast("PREVIEW MODE — You are seeing what students see. No real data is affected.");
+      } else {
+        studioState.previewing = false;
+        previewBtn2.textContent = "Preview as student";
+        previewBtn2.classList.remove("cn-btn.strong");
+        studio.classList.remove("asm-previewing");
+      }
+    });
+    actions.appendChild(previewBtn2);
+
+    var publishBtn2 = el("button", "cn-btn");
+    publishBtn2.type = "button";
+    publishBtn2.textContent = "Publish";
+    publishBtn2.disabled = true;
+    publishBtn2.addEventListener("click", function () {
+      if (!studioState.approved) return;
+      if (studioState.published) return;
+      studioState.published = true;
+      publishBtn2.textContent = "Published ✓";
+      publishBtn2.disabled = true;
+      toast("Assessment published — students can now access it.");
+    });
+    actions.appendChild(publishBtn2);
+    studio.appendChild(actions);
+
+    host.appendChild(studio);
+  }
+
 
   /* Leaving the console puts the student's chrome back. It is one class on the
      body rather than two apps, because a teacher who is also studying should
@@ -8265,7 +9327,7 @@
   }
 
   /* ------------------------------------------------------------------ Today
-     Every class at once, and what each one owes. This is the screen a teacher
+     Every course at once, and what each one owes. This is the screen a teacher
      opens first and it has one job: say where the work is. */
   function consoleHome(v) {
     var when = new Date();
@@ -8273,7 +9335,7 @@
       { weekday: "long", day: "numeric", month: "long" }),
       greeting() + ", " + esc(S.me.first || String(S.me.name).split(" ")[0]) + ".");
 
-    var node = loading(v, "your classes");
+    var node = loading(v, "your courses");
     API.reporting.teaching().then(function (data) {
       node.remove();
       var t = data.totals;
@@ -8285,7 +9347,7 @@
          screen is the one thing there is to do. */
       if (!data.courses.length) {
         var start = el("div", "cn-start");
-        start.appendChild(el("h2", null, "Let’s get your first class in."));
+        start.appendChild(el("h2", null, "Let’s get your first course in."));
         start.appendChild(el("p", null,
           "A course is what carries enrolment, work and grades. Start from one Oplo " +
           "has already written — the units and the grading scheme come with it — or " +
@@ -8307,7 +9369,7 @@
        ["Past due", t.overdue, t.overdue ? "late" : ""],
        ["Below a pass", t.atRisk, ""],
        ["Students", t.students, ""],
-       ["Classes", t.courses, ""]].forEach(function (x) {
+       ["Courses", t.courses, ""]].forEach(function (x) {
         var tile = el("div", "cn-tile" + (x[2] ? " " + x[2] : ""));
         tile.innerHTML = "<b>" + x[1] + "</b><span>" + x[0] + "</span>";
         tiles.appendChild(tile);
@@ -8321,16 +9383,16 @@
             ? "You are not teaching anything yet. Create a course and enrol yourself as its " +
               "teacher, and it appears here."
             : "You are not teaching any courses yet. An administrator enrols you as a " +
-              "teacher, and your classes appear here."));
+              "teacher, and your courses appear here."));
         return;
       }
 
-      v.appendChild(el("h2", "cn-h2", "Your classes"));
+      v.appendChild(el("h2", "cn-h2", "Your courses"));
       var list = el("div", "cn-rows");
       data.courses.forEach(function (c) {
         var row = el("button", "cn-row");
         row.type = "button";
-        /* "All marked" on a class with nobody in it, or nothing set, is a
+        /* "All marked" on a course with nobody in it, or nothing set, is a
            product telling a teacher they are finished before they have
            started. Say what is actually missing. */
         var state = !c.students
@@ -8346,7 +9408,7 @@
             esc(c.subject || c.code) + " · " + c.students +
             (c.students === 1 ? " student" : " students") + "</span></span>" +
           "<span class='m'>" + (c.average == null ? "<i>—</i>" : "<i>" + c.average + "%</i>") +
-            "<span>class average</span></span>" +
+            "<span>course average</span></span>" +
           "<span class='s'>" + state + "</span>";
         row.addEventListener("click", function () {
           S.courseId = c.id;
@@ -8356,7 +9418,7 @@
       });
       v.appendChild(list);
 
-      /* What is owed, named, across every class — the same strip the gradebook
+      /* What is owed, named, across every course — the same strip the gradebook
          shows for one, which is the point: it is the same computation on the
          server, asked over more courses. */
       var needs = [];
@@ -8388,25 +9450,25 @@
   }
 
   /* ------------------------------------------------------------------- Work
-     Everything set, across every class. The gradebook is where work is marked;
+     Everything set, across every course. The gradebook is where work is marked;
      this is where it is kept — renamed, re-weighted, given a due date, or
      removed. */
   function tabWork(v) {
     consoleHead(v, "Teaching", "Work",
-      "Everything set across your classes. A piece of work is a column on the " +
+      "Everything set across your courses. A piece of work is a column on the " +
       "gradebook, and what it is out of is what a mark on it is measured against.");
 
-    var node = loading(v, "your classes");
+    var node = loading(v, "your courses");
     API.courses.mine().then(function (courses) {
       var teaching = S.me.role === "admin" ? courses
         : courses.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
       node.remove();
       if (!teaching.length) {
         v.appendChild(S.me.role === "admin"
-          ? cnEmpty("No classes yet, so there is nothing set.",
+          ? cnEmpty("No courses yet, so there is nothing set.",
               "Work is set on a course. Make one first and its columns appear here.",
               "Explore courses", openCatalogue)
-          : cnEmpty("No classes yet, so there is nothing set.",
+          : cnEmpty("No courses yet, so there is nothing set.",
               "An administrator enrols you as a teacher on a course, and the work you " +
               "set on it appears here."));
         return;
@@ -8490,7 +9552,7 @@
         var pick = el("div", "gb-pick");
         var all = el("button", "gb-pickb" + (S.reportCourse ? "" : " on"));
         all.type = "button";
-        all.innerHTML = "<b>Every class</b><span>" + data.rows.length + " reports</span>";
+        all.innerHTML = "<b>Every course</b><span>" + data.rows.length + " reports</span>";
         all.addEventListener("click", function () {
           S.reportCourse = null; openAdmin(true, "reports");
         });
@@ -8895,12 +9957,12 @@
   }
 
   /* ------------------------------------------------------------- Students
-     The class, as one sheet.
+     The course, as one sheet.
 
      What was here before was a card per student, and a screen per student to
-     mark them on. Marking one quiz for a class of twenty-eight meant opening
+     mark them on. Marking one quiz for twenty-eight students meant opening
      twenty-eight screens, and the arithmetic a teacher actually does — who
-     has not handed this in, what did the class find hard, who is sliding —
+     has not handed this in, what did the students find hard, who is sliding —
      was not on any of them. A gradebook that can only be read one person at a
      time is not a gradebook; it is twenty-eight report cards.
 
@@ -8934,7 +9996,7 @@
 
   function tabRoster(v) {
     /* Every other console screen names itself. This one went straight into
-       the class picker, which made it the one place you could arrive and not
+       the course picker, which made it the one place you could arrive and not
        be told where you were. */
     consoleHead(v, "Teaching", "Gradebook",
       "Students down, work across. Type a score, <b>m</b> for not handed in, " +
@@ -8968,7 +10030,7 @@
         S.courseId = teaching[0].id;
       }
 
-      /* One class at a time. A stack of grids is a stack of things to scroll
+      /* One course at a time. A stack of grids is a stack of things to scroll
          past to reach the one being marked. */
       if (teaching.length > 1) {
         var pick = el("div", "gb-pick");
@@ -8991,12 +10053,12 @@
     }, function (e) { failed(node, e, function () { openAdmin(true, "roster"); }); });
   }
 
-  /* One request for the whole class. It used to be one for the members, one
-     for the work, and two per student — sixty-odd for a class of thirty, each
+  /* One request for the whole course. It used to be one for the members, one
+     for the work, and two per student — sixty-odd for thirty students, each
      able to fail on its own and leave the sheet half true. */
   function loadBook(host, courseId) {
     host.innerHTML = "";
-    var node = loading(host, "the class");
+    var node = loading(host, "the gradebook");
     API.grades.book(courseId).then(function (book) {
       node.remove();
       BOOK = book;
@@ -9226,7 +10288,7 @@
       n.innerHTML = col.average == null ? "<span class='gb-none'>—</span>"
         : "<b>" + col.average + "%</b>";
       n.title = col.average == null ? "Nothing marked yet."
-        : "The class average on " + a.title + ", over what has been marked.";
+        : "The course average on " + a.title + ", over what has been marked.";
     });
   }
 
@@ -9355,7 +10417,7 @@
     setTimeout(function () { node.classList.remove("ok"); }, 900);
   }
 
-  /* The class's own numbers — what each column averages, what is still owed —
+  /* The course's own numbers — what each column averages, what is still owed —
      are the server's arithmetic too, so they are re-read rather than
      recomputed here. Debounced, because they are not what the teacher is
      looking at while they type. */
@@ -9875,10 +10937,17 @@
   }
 
   /* ------------------------------------------------------------ Enrolment */
-  function openEnrol(course) {
-    enter("enrol:" + course.id, trim(course.title), function () { openEnrol(course); });
+  function openEnrol(course, studentName, studentEmail) {
+    enter("enrol:" + course.id, trim(course.title), function () { openEnrol(course, studentName, studentEmail); });
     var v = $("#v-admin");
     v.innerHTML = "";
+
+    /* If student info provided, auto-create and enrol */
+    if (studentName && studentEmail) {
+      openEnrolCreate(course, studentName, studentEmail);
+      return;
+    }
+
     consoleHead(v, course.title, "Who is in this course",
       "A student enrolled here has this course on their own screen, and their work on " +
       "it counts towards their grade.");
@@ -9888,6 +10957,12 @@
       .then(function (out) {
         var people = out[0], members = out[1];
         node.remove();
+
+        var acts = cnActions();
+        acts.appendChild(cnAction("Add student", function () { openEnrolCreate(course); }, true));
+        acts.appendChild(cnAction("Quick assign", function () { openEnrolCreate(course, "Saswat Chen", "saswatc@nycstudents.net"); }, true));
+        v.appendChild(acts);
+
         var inCourse = {};
         members.forEach(function (m) { inCourse[m.id] = m.role; });
 
@@ -9965,6 +11040,77 @@
         show("admin");
       }, function (e) { failed(node, e, function () { openEnrol(course); }); });
     show("admin");
+  }
+
+  /* ---------------------------------------------------------- Enrol by course name */
+  function openEnrolByCourseName(name, studentName, studentEmail) {
+    var node = loading($("#v-admin"), "finding course");
+    API.courses.mine().then(function (courses) {
+      node.remove();
+      var course = courses.filter(function (c) { return c.title === name; })[0];
+      if (!course) { toast("Could not find course: " + name); return; }
+      openEnrol(course, studentName, studentEmail);
+    }, function () { toast("Could not load courses."); });
+  }
+
+  /* ---------------------------------------------------------- Quick enrol student */
+  function openEnrolCreate(course, studentName, studentEmail) {
+    enter("enrol-create:" + course.id, trim(course.title), function () { openEnrolCreate(course); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    consoleHead(v, course.title, "Enrolling a student",
+      "Adding a student gives them access to this course and their work counts toward their grade.");
+
+    var node = loading(v, "checking");
+    API.accounts.list(S.me.orgId).then(function (people) {
+      var existing = people.filter(function (p) {
+        return (p.email || "").toLowerCase() === (studentEmail || "").toLowerCase();
+      });
+      node.remove();
+
+      if (existing.length) {
+        var person = existing[0];
+        attempt(API.courses.enrol(course.id, person.id, "student", false), function () {
+          toast(person.name + " is now enrolled in " + course.title + ".");
+          setTimeout(function () { openEnrol(course); }, 800);
+        });
+        return;
+      }
+
+      /* Create the student account first */
+      var form = el("div", "admin-form");
+      var name = field("Full name", studentName || "");
+      var email = field("Email", studentEmail || "");
+      var pw = field("Password", "");
+      pw.input.type = "password";
+      pw.input.autocomplete = "new-password";
+      [name, email, pw].forEach(function (f) { form.appendChild(f); });
+      v.appendChild(form);
+
+      var acts = el("div", "admin-acts");
+      var save = el("button", "lx-btn lg", "Create and enrol");
+      save.type = "button";
+      save.addEventListener("click", function () {
+        if (!name.input.value.trim()) { toast("A name is needed."); return; }
+        if (!email.input.value.trim()) { toast("An email is needed."); return; }
+        save.disabled = true;
+        attempt(API.accounts.create({
+          email: email.input.value.trim(),
+          name: name.input.value.trim(),
+          password: pw.input.value || "change-me",
+          role: "student",
+          orgId: S.me.orgId
+        }), function (account) {
+          attempt(API.courses.enrol(course.id, account.id, "student", false), function () {
+            toast(name.input.value.trim() + " is now enrolled in " + course.title + ".");
+            setTimeout(function () { openEnrol(course); }, 800);
+          });
+        }).then(function () { save.disabled = false; });
+      });
+      acts.appendChild(save);
+      v.appendChild(acts);
+      show("admin");
+    }, function () { toast("Could not check accounts."); });
   }
 
   /* ---------------------------------------------------------- Assignments */
@@ -10336,12 +11482,12 @@
   }
 
   /* ================================================================ Students
-     The people, across every class, with the comparison a teacher is actually
+     The people, across every course, with the comparison a teacher is actually
      making visible in one screen. Selecting somebody fills the inspector; it
      does not take the list away. */
   function tabStudents(v) {
     consoleHead(v, "Teaching", "Students",
-      "Everyone you teach, once. A student in three of your classes is one " +
+      "Everyone you teach, once. A student in three of your courses is one " +
       "row with three grades on it, not three rows.");
 
     var node = loading(v, "your students");
@@ -10357,7 +11503,7 @@
           v.appendChild(mine.length
             ? cnEmpty("Nobody is enrolled yet.",
                 "Enrol students into " + esc(mine[0].title) + " and they appear here, with " +
-                "their standing in every class you share with them.",
+                "their standing in every course you share with them.",
                 "Enrol students", function () { openEnrol(mine[0]); })
             : cnEmpty("Nobody is enrolled yet.",
                 "Students are enrolled on a course, so there needs to be one first.",
@@ -10365,7 +11511,7 @@
                 S.me.role === "admin" ? openCatalogue : null));
         }, function () {
           v.appendChild(cnEmpty("Nobody is enrolled yet.",
-            "Enrol students into a class and they appear here."));
+            "Enrol students into a course and they appear here."));
         });
         return;
       }
@@ -10475,11 +11621,11 @@
     big.innerHTML = s.standing == null
       ? "<b>—</b><span>nothing marked yet</span>"
       : "<b>" + s.standing + "%</b><span>across " + s.courses.length +
-        (s.courses.length === 1 ? " class" : " classes") + "</span>";
+        (s.courses.length === 1 ? " course" : " courses") + "</span>";
     box.appendChild(big);
 
     var t = cnTable([
-      { label: "Class", w: "minmax(120px, 1fr)" },
+      { label: "Course", w: "minmax(120px, 1fr)" },
       { label: "Grade", w: "78px", align: "right" },
       { label: "Missing", w: "70px", align: "right" }
     ]);
@@ -10517,7 +11663,7 @@
      under which that usually arrives. */
   function tabActivity(v) {
     consoleHead(v, "School", "Activity",
-      "Every change to a mark in your classes. Not a log of what anybody looked " +
+      "Every change to a mark in your courses. Not a log of what anybody looked " +
       "at — only the things that change what a student's grade says.");
 
     var node = loading(v, "what happened");
@@ -10573,6 +11719,7 @@
 
       var acts = cnActions();
       acts.appendChild(cnAction("New course", function () { openCourseEditor(null); }, true));
+      acts.appendChild(cnAction("Create from curriculum", function () { openCourseEditor(null, "biology"); }, true));
       acts.appendChild(cnAction("Explore courses", openCatalogue));
       v.appendChild(acts);
 
@@ -10691,7 +11838,7 @@
       tile("Students", students == null ? "—" : students);
       tile("Work set", work == null ? "—" : work);
       tile("Units", unitNames.length || "—");
-      tile("Class average", avg == null ? "—" : avg + "%");
+      tile("Course average", avg == null ? "—" : avg + "%");
       if (owed) tile("Unmarked", owed, "owe");
 
       /* ------------------------------------------------------ What it is */
@@ -10822,7 +11969,7 @@
       }
       if (!book) {
         slot.appendChild(el("p", "cn-fine",
-          "The class numbers are missing because you do not teach this course — you " +
+          "The course numbers are missing because you do not teach it — you " +
           "wrote it. Enrol yourself as a teacher to see and mark its students."));
       }
       show("admin");
@@ -10995,29 +12142,103 @@
     attemptWith(c.id, 1);
   }
 
-  function openCourseEditor(c) {
+  function openCourseEditor(c, curriculum) {
     var making = !c;
     enter("course-edit:" + (c ? c.id : "new"), making ? "New course" : trim(c.title),
-          function () { openCourseEditor(c); });
+          function () { openCourseEditor(c, curriculum); });
     var v = $("#v-admin");
     v.innerHTML = "";
     consoleHead(v, making ? "New course" : "Course",
       making ? "Create a course" : c.title);
 
     var body = (c && c.body) || {};
+    var isBio = curriculum === "biology";
+
+    /* Back button */
+    if (!making) {
+      var back = el("button", "cn-back");
+      back.type = "button";
+      back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px;"><path d="M5 12h14"/><path d="m12 5-7 7 7 7"/></svg> Back to Courses';
+      back.addEventListener("click", function () { openAdmin(false, "courses"); });
+      v.appendChild(back);
+    }
+
+    /* Pre-populated Biology curriculum */
+    if (isBio && making) {
+      title.value = "Biology";
+      subject.value = "Biology";
+      level.value = "High School";
+      summary.value = "Unit 1: Ecology and Natural Systems — how biotic and abiotic factors interact to shape Earth's natural systems, influence the distribution of life, affect population dynamics, and drive species interactions.";
+      standards.value = "HS-LS2-1\nHS-LS2-2\nHS-LS2-6\nHS-ESS2-7";
+      dcis.value = "HS-LS2.A.1\nHS-LS2.C.1\nHS-ESS2.E.1";
+      practices.value = "Developing and using models\nConstructing explanations and designing solutions\nEngaging in argument from evidence";
+      cccs.value = "Patterns\nCause and effect\nSystems and system models\nStability and change";
+      units.value = "Unit 1: Ecology and Natural Systems";
+      unitPromise.value = "Everything in an ecosystem is connected. A change in temperature can change where a species lives. A change in food can change population size. A change in one species can affect many others.";
+      bigQuestion.value = "How does life interact with the world around it?";
+      unitObjectives.value = "identify the living and nonliving factors that shape ecosystems\nexplain how organisms are organized from populations to the biosphere\nuse data to identify patterns in biodiversity\nexplain how environmental conditions shape where organisms can live\ndistinguish between fundamental and realized niches\nanalyze population growth and carrying capacity\nexplain how competition and other species interactions affect populations\nuse evidence to explain how ecosystems change\napply ecological ideas to real-world problems";
+      unitMap.value = "01 — How Is Life Organized?\n02 — Why Does Life Live Where It Does?\n03 — What Does an Organism Need to Survive?\n04 — How Big Can a Population Get?\n05 — Can We Predict Population Change?\n06 — How Do Species Shape Each Other?";
+      lessons.value = "Lesson 1: How Is Life Organized?\nLesson 2: Why Does Life Live Where It Does?\nLesson 3: What Does an Organism Need to Survive?\nLesson 4: How Big Can a Population Get?\nLesson 5: Investigation — Human-Shark Interactions\nLesson 6: How Do Species Shape Each Other?";
+      phenomena.value = "Bald Eagle: How do biologists know whether a population is changing?\nMonarch Butterfly: Why do monarch butterflies migrate so far?";
+      handsOn.value = "Why are human-shark interactions increasing around Cape Cod?";
+      misconceptions.value = 'A niche is just a habitat.\nPopulations cannot exceed their carrying capacity.\nMore individuals always means higher density.\nCompetition always means fighting.';
+      title.input.disabled = true;
+      subject.input.disabled = true;
+      level.input.disabled = true;
+    }
+
     var form = el("div", "admin-form");
-    var code = field("Code", c ? c.code : "", "a short slug, e.g. media-arts");
+    var code = field("Code", c ? c.code : (isBio ? "biology-eco-1" : ""), "a short slug, e.g. biology");
     if (!making) code.input.disabled = true;
-    var title = field("Title", c ? c.title : "", "Media Arts");
-    var subject = field("Subject", c ? c.subject : "", "English");
-    var level = field("Level", c ? c.level : "Introductory");
+    var title = field("Title", c ? c.title : "Biology", "Biology");
+    if (isBio && making) title.input.disabled = true;
+    var subject = field("Subject", c ? c.subject : "Biology", "Biology");
+    if (isBio && making) subject.input.disabled = true;
+    var level = field("Level", c ? c.level : "High School", "High School");
+    if (isBio && making) level.input.disabled = true;
     var summary = areaField("Summary", c ? c.summary : "", "What this course is, in a sentence.");
+    var standards = areaField("Standards",
+      c && c.body && c.body.standards ? c.body.standards.join("\n") : "",
+      "One standard per line, e.g. HS-LS2-1");
     var grading = areaField("Grading",
       (body.grading || [["Quizzes", 35], ["Assignments", 35], ["Exams", 30]])
         .map(function (g) { return g[0] + " = " + g[1]; }).join("\n"),
       "One category per line, as Name = percent. They should add to 100.", 5);
     var units = areaField("Units", (body.units || []).join("\n"), "One unit per line.", 6);
-    [code, title, subject, level, summary, grading, units].forEach(function (f) {
+    var dcis = areaField("Core Ideas",
+      c && c.body && c.body.dcis ? c.body.dcis.join("\n") : "",
+      "Disciplinary core ideas, one per line");
+    var practices = areaField("Practices",
+      c && c.body && c.body.practices ? c.body.practices.join("\n") : "",
+      "Science and engineering practices, one per line");
+    var cccs = areaField("Crosscutting Concepts",
+      c && c.body && c.body.cccs ? c.body.cccs.join("\n") : "",
+      "Crosscutting concepts, one per line");
+    var unitPromise = areaField("Unit Promise",
+      c && c.body && c.body.unitPromise ? c.body.unitPromise.join("\n") : "",
+      "The core idea students should grasp by the end of the unit");
+    var bigQuestion = field("Big Question",
+      c && c.body && c.body.bigQuestion ? c.body.bigQuestion : "",
+      "The driving question for the unit");
+    var unitObjectives = areaField("Unit Objectives",
+      c && c.body && c.body.unitObjectives ? c.body.unitObjectives.join("\n") : "",
+      "What students will be able to do, one per line");
+    var unitMap = areaField("Unit Map",
+      c && c.body && c.body.unitMap ? c.body.unitMap.join("\n") : "",
+      "Lesson sequence, one per line");
+    var lessons = areaField("Lessons",
+      c && c.body && c.body.lessons ? c.body.lessons.join("\n") : "",
+      "One lesson per line. Format: Lesson N: Title");
+    var phenomena = areaField("Phenomena",
+      c && c.body && c.body.phenomena ? c.body.phenomena.join("\n") : "",
+      "Each phenomenon, one per line");
+    var handsOn = areaField("Hands-on Activity",
+      c && c.body && c.body.handsOn ? c.body.handsOn.join("\n") : "",
+      "Description of the hands-on investigation");
+    var misconceptions = areaField("Common Misconceptions",
+      c && c.body && c.body.misconceptions ? c.body.misconceptions.join("\n") : "",
+      "One misconception per line");
+    [code, title, subject, level, summary, standards, dcis, practices, cccs, units, unitPromise, bigQuestion, unitObjectives, unitMap, lessons, phenomena, handsOn, misconceptions, grading].forEach(function (f) {
       form.appendChild(f);
     });
     v.appendChild(form);
@@ -11046,8 +12267,11 @@
         status: "published",
         body: {
           grading: weights,
-          units: units.input.value.split("\n").map(function (x) { return x.trim(); })
-                      .filter(Boolean)
+          units: units.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
+          lessons: lessons.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
+          standards: standards.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
+          dcis: dcis.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
+          practices: practices.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean)
         }
       };
       if (!payload.title) { toast("A course needs a title."); return; }
@@ -11059,7 +12283,13 @@
       attempt(go, function () {
         toast(making ? "Course created." : "Saved.");
         goBack();
-      }).then(function () { save.disabled = false; });
+      }).then(function () {
+        save.disabled = false;
+        if (making) {
+          var newTitle = title.input.value.trim();
+          openEnrolByCourseName(newTitle);
+        }
+      });
     });
     acts.appendChild(save);
     v.appendChild(acts);
@@ -11067,7 +12297,7 @@
   }
 
   /* ----------------------------------------------------------- Study sets
-     Written by teachers, studied by their classes, stored in the database.
+     Written by teachers, studied by their students, stored in the database.
 
      Until this existed the tab carried a warning saying sets reached nobody
      but the person who wrote them. The warning is gone because the thing it
@@ -11100,7 +12330,7 @@
       } else {
         var t = cnTable([
           { label: "Set", w: "minmax(180px, 1.4fr)" },
-          { label: "Class", w: "minmax(140px, 1fr)" },
+          { label: "Course", w: "minmax(140px, 1fr)" },
           { label: "Terms", w: "80px", align: "right" },
           { label: "Status", w: "100px", align: "right" }
         ]);
@@ -11912,6 +13142,15 @@
       "Your progress saves to your account, so it is the same on every device you sign in on.";
   }
 
+  /* The student side is dark (learn/obsidian.css). The page marks a
+     /student/ address itself before anything is drawn; signing in at the
+     root and signing out change the address without a new page, so they
+     mark it here. */
+  function setLook(mode) {
+    if (mode === "student") document.documentElement.setAttribute("data-look", "obsidian");
+    else document.documentElement.removeAttribute("data-look");
+  }
+
   function boot(who) {
     /* Everybody signs in on this one page; where they belong is read from their
        roles (home.js) — /admin/, /teacher/, /student/, or the family view at
@@ -11925,6 +13164,7 @@
       if (dest.mode === "parent") { location.replace(dest.href); return; }
       history.replaceState(null, "", dest.href);
     }
+    setLook(dest.mode);
     S.me = normaliseAccount(who);
     // The address is the hat: an administrator who opens /teacher/ sees the
     // console as a teacher does. Their roles allowed it, or they would not be here.
@@ -11946,6 +13186,7 @@
     var ru = READERS[R.d.readUnit];
     useReader(ru && ru.sections.length ? ru : READERS["media:5"]);
     Game.attach(R);
+    if (window.OPLO_PROGRESS) window.OPLO_PROGRESS.setRecord(R);
 
     /* The record is written here first and kept in step with the account —
        and so is every set's concept state, through the one hook learn.js
@@ -11982,10 +13223,17 @@
     var staff = who.role === "admin" || who.role === "teacher";
     document.body.classList.toggle("is-admin", staff);
     document.body.classList.toggle("is-staff", staff);
-    $("#navAdmin").hidden = !allowedTabs().length;
-    $("#navGrades").hidden = who.role !== "student";
-    $("#navExams").hidden = who.role !== "student";
-    $("#navAdmin").textContent = who.role === "admin" ? "Console" : "My students";
+    /* The six-section bar (index.html) has no Grades, Exams or Console tab.
+       Each is set only if it is there: a tab missing from the bar must not
+       stop the app from drawing, and it did — every sign-in and every reload
+       died here and left the bar over an empty page. */
+    var navAdmin = $("#navAdmin"), navGrades = $("#navGrades"), navExams = $("#navExams");
+    if (navAdmin) {
+      navAdmin.hidden = !allowedTabs().length;
+      navAdmin.textContent = who.role === "admin" ? "Console" : "My students";
+    }
+    if (navGrades) navGrades.hidden = who.role !== "student";
+    if (navExams) navExams.hidden = who.role !== "student";
     if (R.broken) {
       toast("This browser will not let the page store anything, so progress will not be kept.");
     }
@@ -11995,9 +13243,18 @@
       openAdmin(true, S.tab || "today");
     } else {
       drawSubjectNav();
-      home();
+      /* The address is where they asked to be. A course that only the
+         database knows about is not known yet, so an address naming one is
+         tried again when enrolment arrives. */
+      var asked = appRest();
+      S.booting = true;
+      if (!route(asked)) { home(); S.pendingRoute = asked; }
+      S.booting = false;
       Room.presence();
       Room.fromLink();
+      // A sitting that was running when the page went away comes straight back.
+      if (window.OPLO_EXAM) window.OPLO_EXAM.resume(S.me, S.examAsked);
+      S.examAsked = null;
     }
 
     /* Enrolment is the database's answer, not a list in a file. The home
@@ -12016,6 +13273,9 @@
       loadStudySets()
     ]).then(function (out) {
       if (staff) return;
+      var pending = S.pendingRoute;
+      S.pendingRoute = null;
+      if (pending && S.here && S.here.key === "my" && route(pending)) return;
       if ((out[0] || out[1]) && S.view === "my") drawMy();
     });
 
@@ -12056,6 +13316,7 @@
   }
 
   function signOut() {
+    if (window.OPLO_EXAM) window.OPLO_EXAM.close(true);   // saved first, then closed
     if (R) R.flush();                 // never leave the last few answers unwritten
     Sync.flushNow();
     if (Progress) { Progress.flushNow(); Progress.stop(); Progress = null; }
@@ -12073,14 +13334,16 @@
     TRAIL = []; POS = -1;            // the next person's history starts from nothing
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     document.body.classList.remove("is-admin");
-    $("#navAdmin").hidden = true;
-    $("#navGrades").hidden = true;
-    $("#navExams").hidden = true;
+    ["#navAdmin", "#navGrades", "#navExams"].forEach(function (id) {
+      var tab = $(id);
+      if (tab) tab.hidden = true;
+    });
     $("#rankChip").hidden = true;
     $("#streak").textContent = "0";
     // Signed out, the page is the sign-in page again, at the address everybody
     // signs in at — not at the /admin/ or /student/ the last person left behind.
     history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root);
+    setLook(null);
     // Back to the welcome page from its top, with the sign-in panel closed —
     // it was left open by the sign-in that started this session.
     var gate = $("#gate"), panel = $("#ldSignin");
@@ -12424,19 +13687,21 @@
       markSubjectNav(null);
       noFoot(); progress(null);
       if (b.dataset.view === "my") home();
+      else if (b.dataset.view === "progress") openProgress();
       else if (b.dataset.view === "admin") openAdmin();
       else if (b.dataset.view === "grades") openGrades();
       else if (b.dataset.view === "exams") openExams();
       else explore();
     });
   });
-  $("#back").addEventListener("click", goBack);
 
   /* The browser's Back and Forward — including a swipe on a phone. */
   window.addEventListener("popstate", function (e) {
     if (!S.me) return;                         // the sign-in gate is showing
-    var pos = e.state && typeof e.state.lx === "number" ? e.state.lx : null;
+    var st = e.state || {};
+    var pos = st.s === SESSION && typeof st.lx === "number" ? st.lx : null;
     var entry = pos != null ? TRAIL[pos] : null;
+    var found = true;
     RESTORING = true;
     try {
       if (entry) {
@@ -12445,11 +13710,17 @@
         S.here = entry.here;
         entry.here.restore();
       } else {
+        // An entry from before a reload: the address says where it was. An
+        // address that names nothing goes home, and says so.
         S.hist = []; S.here = null;
-        home();
+        if (document.body.classList.contains("is-staff")) openAdmin(true, S.tab);
+        else if (!route()) { home(); found = false; }
       }
     } finally { RESTORING = false; }
-    if (!entry) { TRAIL = []; POS = -1; mark(false); }
+    if (!entry) {
+      TRAIL = []; POS = -1;
+      mark(false, document.body.classList.contains("is-staff") ? undefined : found ? appRest() : "");
+    }
   });
   $("#user").addEventListener("click", function () { openAccount(); });
 
@@ -12461,7 +13732,6 @@
     this.setAttribute("aria-expanded", String(open));
   });
   $("#railScrim").addEventListener("click", closeRail);
-  $("#cnBack").addEventListener("click", goBack);
 
   document.addEventListener("keydown", function (e) {
     /* ⌘K, from anywhere in the console. Not bound outside it: a student
@@ -12485,4 +13755,10 @@
     else if (S.view === "learn" && S.learnKeys) S.learnKeys(e);
   });
 
+  /* New view navigation */
+  window.OPLO_APP = {
+    enter: enter,
+    show: show,
+    subjectPct: function (name) { return subjectPct(name); }
+  };
 })();

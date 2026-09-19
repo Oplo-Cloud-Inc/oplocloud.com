@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 462" width="700" height="462" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Gause's experiment, drawn as two charts. On the left, each of two species of Paramecium grown on its own: both rise and level off at their own carrying capacity. On the right, the two grown together in the same tube on the same food: P. aurelia levels off a little lower, while P. caudatum rises, falls and is gone by about day 16. Two species with the same requirements in the same place cannot coexist; one wins.</title>
+<rect width="700" height="462" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Two species, one tube, one food supply</text>
+<line x1="58" y1="296" x2="308" y2="296" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="58" y1="96" x2="58" y2="296" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="58.0" y1="296" x2="58.0" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="58.0" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">0</text>
+<line x1="120.5" y1="296" x2="120.5" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="120.5" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">5</text>
+<line x1="183.0" y1="296" x2="183.0" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="183.0" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">10</text>
+<line x1="245.5" y1="296" x2="245.5" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="245.5" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">15</text>
+<line x1="308.0" y1="296" x2="308.0" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="308.0" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">20</text>
+<text x="183.0" y="328" font-size="13" fill="#6e6e73" text-anchor="middle">Days</text>
+<text x="183" y="82" font-size="14.5" fill="#1d1d1f" font-weight="600" text-anchor="middle">Grown on their own</text>
+<path d="M 58.0 288.7 C 62.2 286.9 74.7 284.5 83.0 277.8 C 91.3 271.2 99.7 262.1 108.0 248.7 C 116.3 235.4 124.7 214.2 133.0 197.8 C 141.3 181.5 149.7 162.1 158.0 150.5 C 166.3 139.0 174.7 133.6 183.0 128.7 C 191.3 123.9 195.5 123.3 208.0 121.5 C 220.5 119.6 241.3 118.4 258.0 117.8 C 274.7 117.2 299.7 117.8 308.0 117.8" fill="none" stroke="#2a78d6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="214.25" y="106.9090909090909" font-size="13" fill="#2a78d6" font-weight="600">P. aurelia</text>
+<path d="M 58.0 288.7 C 62.2 287.5 74.7 285.7 83.0 281.5 C 91.3 277.2 99.7 272.4 108.0 263.3 C 116.3 254.2 124.7 239.0 133.0 226.9 C 141.3 214.8 149.7 199.6 158.0 190.5 C 166.3 181.5 174.7 176.6 183.0 172.4 C 191.3 168.1 195.5 166.9 208.0 165.1 C 220.5 163.3 241.3 162.1 258.0 161.5 C 274.7 160.8 299.7 161.5 308.0 161.5" fill="none" stroke="#eb6834" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="214.25" y="183.27272727272728" font-size="13" fill="#eb6834" font-weight="600">P. caudatum</text>
+<line x1="400" y1="296" x2="650" y2="296" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="400" y1="96" x2="400" y2="296" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="400.0" y1="296" x2="400.0" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="400.0" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">0</text>
+<line x1="462.5" y1="296" x2="462.5" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="462.5" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">5</text>
+<line x1="525.0" y1="296" x2="525.0" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="525.0" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">10</text>
+<line x1="587.5" y1="296" x2="587.5" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="587.5" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">15</text>
+<line x1="650.0" y1="296" x2="650.0" y2="301" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="650.0" y="316" font-size="12.5" fill="#6e6e73" text-anchor="middle">20</text>
+<text x="525.0" y="328" font-size="13" fill="#6e6e73" text-anchor="middle">Days</text>
+<text x="525" y="82" font-size="14.5" fill="#1d1d1f" font-weight="600" text-anchor="middle">Grown together</text>
+<path d="M 400.0 288.7 C 404.2 287.2 416.7 285.1 425.0 279.6 C 433.3 274.2 441.7 266.6 450.0 256.0 C 458.3 245.4 466.7 229.3 475.0 216.0 C 483.3 202.7 491.7 186.3 500.0 176.0 C 508.3 165.7 516.7 159.6 525.0 154.2 C 533.3 148.7 537.5 145.7 550.0 143.3 C 562.5 140.8 583.3 140.2 600.0 139.6 C 616.7 139.0 641.7 139.6 650.0 139.6" fill="none" stroke="#2a78d6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="556.25" y="125.0909090909091" font-size="13" fill="#2a78d6" font-weight="600">P. aurelia</text>
+<path d="M 400.0 288.7 C 404.2 287.5 416.7 285.1 425.0 281.5 C 433.3 277.8 441.7 272.4 450.0 266.9 C 458.3 261.5 466.7 251.2 475.0 248.7 C 483.3 246.3 491.7 249.0 500.0 252.4 C 508.3 255.7 516.7 263.6 525.0 268.7 C 533.3 273.9 541.7 279.3 550.0 283.3 C 558.3 287.2 566.7 290.2 575.0 292.4 C 583.3 294.5 587.5 295.4 600.0 296.0 C 612.5 296.6 641.7 296.0 650.0 296.0" fill="none" stroke="#eb6834" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="506.25" y="230.54545454545456" font-size="13" fill="#eb6834" font-weight="600">P. caudatum</text>
+<text transform="rotate(-90 26 196)" x="26" y="196" font-size="13.5" fill="#6e6e73" text-anchor="middle">Population density</text>
+<text x="350" y="210" font-size="22" fill="#86868b" text-anchor="middle">→</text>
+<rect x="58" y="352" width="592" height="58" fill="#f5f5f7" rx="11"/>
+<text x="76" y="377" font-size="14.5" fill="#1d1d1f" font-weight="700">Competitive exclusion principle</text>
+<text x="76" y="397" font-size="13" fill="#6e6e73">Two species that need exactly the same things, in the same place, cannot both stay. One wins.</text>
+<text x="22" y="444" font-size="13.5" fill="#1d1d1f">Unless they split the resource — which is what the warblers do, and why so few real communities look like this tube.</text>
+</svg>

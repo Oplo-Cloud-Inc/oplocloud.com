@@ -1280,6 +1280,17 @@ svg { display: block; }
   .rd-words dd { padding-top: 0; border-top: 0; }
 }
 
+/* A depth marker on a definition. Small, coloured, always secondary. */
+.rd-depth {
+  display: inline-block; margin-left: 8px;
+  font-family: var(--text); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 100px; vertical-align: middle;
+}
+.rd-depth[data-depth="CORE"] { background: rgba(0,113,227,.1); color: var(--blue); }
+.rd-depth[data-depth="MORE"] { background: rgba(212,155,0,.12); color: #9a6d00; }
+.rd-depth[data-depth="DEEP DIVE"] { background: rgba(191,40,40,.1); color: #b12828; }
+
 /* Something to try, and somewhere the idea turns up in the world. */
 .rd-call {
   max-width: var(--measure);
@@ -1298,6 +1309,66 @@ svg { display: block; }
   display: block; font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -.012em;
 }
 .rd-body .rd-call p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+
+/* A common misconception and the specific correction. */
+.rd-mcon {
+  max-width: var(--measure);
+  margin: 1.7em 0; padding: 17px 20px 16px; border-radius: 15px;
+  background: rgba(191,40,40,.05); border: 1px solid rgba(191,40,40,.2);
+}
+.rd-mcon > span {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+  font-family: var(--text); font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: #b12828;
+}
+.rd-mcon > span svg { width: 15px; height: 15px; }
+.rd-mcon > b {
+  display: block; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.012em; margin-bottom: 4px;
+}
+.rd-mcon p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+.rd-mcon p.why { font-style: italic; color: var(--ink-3); }
+
+/* A flashback — a concept from earlier the student is about to need. */
+.rd-fbk {
+  max-width: var(--measure);
+  margin: 1.7em 0; padding: 15px 20px; border-radius: 15px;
+  background: rgba(0,113,227,.05); border: 1px solid rgba(0,113,227,.2);
+}
+.rd-fbk > span {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+  font-family: var(--text); font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--blue);
+}
+.rd-fbk > span svg { width: 15px; height: 15px; }
+.rd-fbk > b {
+  display: block; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.012em; margin-bottom: 4px;
+}
+.rd-fbk p { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+
+/* CER — Claim, Evidence, Reasoning. */
+.rd-cer {
+  max-width: var(--measure);
+  margin: 1.7em 0; padding: 18px 22px; border-radius: 15px;
+  background: var(--paper); border: 1px solid var(--hair);
+}
+.rd-cer > b {
+  display: block; font-family: var(--font); font-size: 17px; font-weight: 600;
+  letter-spacing: -.012em; margin-bottom: 12px;
+}
+.rd-cer-part {
+  padding: 10px 0;
+  border-top: 1px solid var(--hair);
+}
+.rd-cer-part .k {
+  display: inline-block; margin-bottom: 4px;
+  font-family: var(--text); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 100px;
+  background: rgba(0,113,227,.1); color: var(--blue);
+}
+.rd-cer-part p { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--ink-2); }
 
 /* ------------------------------------------------------------ Motion labs
    A figure with a clock: the stage, a strip of frames, the transport, and
@@ -2032,6 +2103,7 @@ mark.hl.theirs:hover { background: var(--wash); }
 .mg-open:hover { border-color: var(--rule); color: var(--ink); }
 
 .mg-wrap { position: relative; }
+
 .mg-empty { padding: 2px 2px 0; font-size: 12.5px; line-height: 1.55; color: var(--ink-3); }
 .mg-empty p + p { margin-top: 9px; }
 .mg-empty .k { font-size: 11.5px; color: var(--rule); }
@@ -5262,3 +5334,195 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
 .lx-exams-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .lx-exams-head .sub { font-size: 14px; color: var(--ink-2); margin-top: 6px; }
 .sw-said span { display: block; margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
+
+/* ============================================================ Assessment Admin
+   Assessment platform styles for the administrator console.
+   Calm, dense, precise — matching the console design language. */
+
+/* Assessment list rows */
+.asm-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 18px; border-radius: 12px;
+  background: var(--paper); border: 1px solid var(--hair);
+  cursor: pointer; text-align: left; width: 100%;
+  transition: transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.asm-row:hover { transform: translateY(-2px); border-color: var(--rule); box-shadow: 0 8px 28px rgba(0,0,0,.06); }
+.asm-row:active { transform: translateY(0); }
+.asm-row .asm-accent { width: 4px; height: 36px; border-radius: 2px; flex: none; }
+.asm-row .asm-title { font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -.014em; color: var(--ink); }
+.asm-row .asm-meta { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.asm-row .asm-info { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none; }
+.asm-row .asm-state {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 22px; padding: 0 9px; border-radius: 100px;
+  font-size: 11px; font-weight: 600; flex: none;
+}
+.asm-row .asm-state .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.asm-row .asm-version { font-size: 11px; color: var(--ink-3); font-family: "Spline Sans Mono", monospace; flex: none; }
+
+/* Assessment detail stats */
+.asm-stats { display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; }
+.asm-stats > div { display: flex; flex-direction: column; }
+.asm-stats b { font-size: 18px; font-weight: 700; color: var(--ink); }
+.asm-stats span { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+
+/* Assessment tabs */
+.asm-tabs { display: flex; gap: 2px; margin-bottom: 24px; background: var(--canvas); border-radius: 100px; padding: 3px; width: fit-content; }
+.asm-tab {
+  height: 32px; padding: 0 14px; border-radius: 100px;
+  font-size: 13px; font-weight: 500; color: var(--ink-2);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.asm-tab:hover { color: var(--ink); background: var(--sunk); }
+.asm-tab[aria-current="true"] { color: var(--ink); background: var(--paper); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+
+/* Assessment detail blocks */
+.asm-block { margin-bottom: 24px; }
+.asm-blockhead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.asm-blockhead h3 { font-family: var(--font); font-size: 16px; font-weight: 600; letter-spacing: -.014em; }
+.asm-blockhead span { font-size: 12px; color: var(--ink-3); }
+
+/* Timeline */
+.asm-timeline-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.asm-timeline-item + .asm-timeline-item { border-top: 1px solid var(--hair); }
+.asm-timeline-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.asm-timeline-label { flex: 1; font-size: 13px; color: var(--ink); }
+.asm-timeline-date { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* Assessment grid (for stats blocks) */
+.asm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.asm-grid > div { padding: 14px; border-radius: 12px; background: var(--canvas); border: 1px solid var(--hair); }
+.asm-grid b { display: block; font-size: 11px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.asm-grid span { font-size: 14px; font-weight: 500; color: var(--ink); }
+
+/* Skill bar */
+.asm-skill-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; background: var(--paper); border: 1px solid var(--hair); }
+.asm-skill-name { flex: 1; font-size: 13.5px; color: var(--ink); }
+.asm-skill-count { font-size: 12px; color: var(--ink-3); flex: none; }
+.asm-skill-bar { width: 60px; height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; flex: none; }
+.asm-skill-bar > div { height: 100%; border-radius: 3px; }
+.asm-skill-pct { font-size: 12px; font-weight: 600; color: var(--ink-3); flex: none; }
+
+/* Assessment studio */
+.asm-studio { max-width: 800px; }
+.asm-goal-label { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.asm-goal-textarea {
+  width: 100%; min-height: 120px; padding: 16px; border-radius: 14px;
+  border: 1px solid var(--hair); background: var(--paper);
+  font-size: 14.5px; line-height: 1.5; color: var(--ink);
+  resize: vertical; font-family: inherit;
+}
+.asm-upload {
+  padding: 32px; border-radius: 14px; border: 2px dashed var(--hair);
+  text-align: center; background: var(--paper); margin-bottom: 24px;
+}
+.asm-upload-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.asm-upload-sub { font-size: 12.5px; color: var(--ink-3); }
+
+/* Student list in assessment detail */
+.asm-student-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: var(--canvas); }
+.asm-student-av {
+  width: 24px; height: 24px; border-radius: 6px; background: var(--sunk);
+  display: grid; place-items: center; font-size: 10px; font-weight: 600; color: var(--ink-3); flex: none;
+}
+.asm-student-name { flex: 1; font-size: 13px; color: var(--ink); }
+.asm-student-status { font-size: 11px; font-weight: 500; flex: none; }
+
+/* AI architect panel */
+.asm-ai {
+  padding: 20px; border-radius: 14px;
+  background: linear-gradient(135deg, #0d0d12, #1a1a2e); color: #fff;
+  overflow: hidden;
+}
+.asm-ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.asm-ai-dot { width: 8px; height: 8px; border-radius: 50%; background: #7c5cfc; }
+.asm-ai-title { font-size: 13px; font-weight: 600; }
+.asm-ai-body { font-size: 13px; color: rgba(255,255,255,.85); line-height: 1.6; }
+.asm-ai-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.asm-ai-btn {
+  padding: 8px 16px; border-radius: 9px; font-size: 13px; cursor: pointer;
+  background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.2);
+}
+.asm-ai-btn.primary { background: #fff; color: #0d0d12; font-weight: 600; border: none; }
+
+/* Assessment session stats */
+.asm-session-stats { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.asm-session-stats > div { padding: 10px 16px; border-radius: 10px; background: var(--paper); border: 1px solid var(--hair); }
+.asm-session-stats b { font-size: 16px; font-weight: 700; color: var(--ink); }
+.asm-session-stats span { font-size: 12px; color: var(--ink-3); }
+
+/* Assessment security row */
+.asm-security-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; background: var(--paper); border: 1px solid var(--hair); }
+.asm-security-row + .asm-security-row { margin-top: 6px; }
+.asm-security-label { font-size: 13px; color: var(--ink); }
+.asm-security-value {
+  font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 100px;
+  background: var(--sunk); color: var(--ink-2);
+}
+.asm-security-value.restricted { background: #e8f5ee; color: #12915a; }
+
+/* Assessment version row */
+.asm-version-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-radius: 10px; background: var(--paper); border: 1px solid var(--hair);
+}
+.asm-version-row.current { box-shadow: inset 3px 0 0 var(--blue); }
+.asm-version-num { font-family: "Spline Sans Mono", monospace; font-size: 13px; font-weight: 600; color: var(--ink); flex: none; }
+.asm-version-state { flex: 1; font-size: 13px; color: var(--ink-2); }
+.asm-version-by { font-size: 12px; color: var(--ink-3); flex: none; }
+.asm-version-date { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none; }
+
+/* Assessment command area */
+.asm-cmd { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+.asm-search {
+  padding: 8px 14px; border-radius: 9px; border: 1px solid var(--hair);
+  font-size: 13.5px; min-width: 220px; background: var(--paper); color: var(--ink);
+}
+
+@media (max-width: 734px) {
+  .asm-stats { gap: 16px; }
+  .asm-grid { grid-template-columns: 1fr 1fr; }
+  .asm-row { flex-wrap: wrap; }
+  .asm-row .asm-info { width: 100%; margin-top: 4px; }
+}
+
+/* Active tab state for assessment tabs */
+.asm-tab-on {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+}
+
+/* Modify panel */
+.asm-modify-panel { animation: lx-card-in .2s var(--ease) both; }
+.asm-modify-panel input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  height: 4px; border-radius: 2px; background: var(--sunk); outline: none;
+}
+.asm-modify-panel input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%; background: var(--blue); cursor: pointer;
+}
+
+/* Chat panel */
+.asm-chat-panel { animation: lx-card-in .2s var(--ease) both; }
+.asm-ask-chip {
+  padding: 5px 10px; border-radius: 8px; border: 1px solid var(--hair);
+  background: var(--paper); font-size: 12px; color: var(--ink-2);
+  cursor: pointer; transition: background .14s var(--ease);
+}
+.asm-ask-chip:hover { background: var(--sunk); }
+
+/* Preview mode */
+  .asm-previewing { position: relative; }
+  .asm-previewing::before {
+    content: 'PREVIEW MODE';
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    padding: 6px 16px; border-radius: 100px; z-index: 100;
+    background: var(--amber); color: #fff; font-size: 11px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+  }
+
+

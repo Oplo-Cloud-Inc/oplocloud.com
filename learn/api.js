@@ -196,7 +196,8 @@ window.OPLO_API = (function () {
         return patch("/assignments/" + assignmentId, data)
           .then(function (r) { return r.assignment; });
       },
-      removeAssignment: function (assignmentId) { return del("/assignments/" + assignmentId); }
+      removeAssignment: function (assignmentId) { return del("/assignments/" + assignmentId); },
+      gradebook: function (id) { return get("/courses/" + id + "/gradebook"); }
     },
 
     /* ----------------------------------------------------------- Grades
@@ -209,7 +210,7 @@ window.OPLO_API = (function () {
         return get("/grades" + q({ courseId: opts.courseId, accountId: opts.accountId }));
       },
 
-      /* A whole class in one call: the students, the work, every mark, each
+      /* A whole course in one call: the students, the work, every mark, each
          student's computed grade, and what is still owed. The console used to
          build this out of sixty requests. */
       book: function (courseId) { return get("/courses/" + courseId + "/gradebook"); },
@@ -261,12 +262,12 @@ window.OPLO_API = (function () {
        there is not going to be one — `report` asks what the record says now,
        and asking again after a mark changes returns something different. */
     reporting: {
-      /* Every class this account teaches, with what each one owes. The
+      /* Every course this account teaches, with what each one owes. The
          console's first screen, in one request. */
       teaching: function () { return get("/teaching"); },
 
       /* Every student the caller teaches, once, with their standing in each
-         class they share. A teacher thinks in people as often as in classes. */
+         course they share. A teacher thinks in people as often as in courses. */
       students: function () { return get("/students"); },
 
       /* Every piece of work set on the courses this person is in, with their
@@ -277,7 +278,7 @@ window.OPLO_API = (function () {
         return get("/coursework" + q({ accountId: accountId }));
       },
 
-      /* What has happened to the marks, across every class. */
+      /* What has happened to the marks, across every course. */
       activity: function (limit) {
         return get("/activity" + q({ limit: limit })).then(function (r) { return r.events; });
       },
@@ -302,10 +303,21 @@ window.OPLO_API = (function () {
       }
     },
 
+    /* ------------------------------------------------------ Assessments
+       What a student has been set, as cards with the rules and no questions;
+       and, only to them and only once it has opened, the questions. Never an
+       answer — the server refuses to store one. */
+    assessments: {
+      mine: function () { return get("/assessments").then(function (r) { return r.assessments; }); },
+      get: function (id) {
+        return get("/assessments/" + encodeURIComponent(id)).then(function (r) { return r.assessment; });
+      }
+    },
+
     /* -------------------------------------------------------- Study sets
-       Authored by teachers, studied by their classes, and stored in the
+       Authored by teachers, studied by their students, and stored in the
        database — which is what makes a set a teacher writes something they
-       can give to a class rather than something that lives in their browser. */
+       can give to a course rather than something that lives in their browser. */
     studySets: {
       /* Everything this account may study: their courses' sets, sets published
          to their organization, and their own drafts. */

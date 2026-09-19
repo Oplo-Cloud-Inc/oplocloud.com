@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 462" width="700" height="462" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>A table of the ways two species can affect each other. Competition: both are harmed, shown minus minus, as two birds after one nest hole. Predation: one gains and one is killed, plus minus, as a lynx and a hare. Herbivory: one gains and the other is damaged but usually lives, plus minus, as a deer browsing a shrub. Mutualism: both gain, plus plus, as a clownfish and its anemone. Commensalism: one gains and the other is unaffected, plus zero, as a bird nesting in a tree. Parasitism: one gains while living on or in the other, plus minus, as a tick on a deer.</title>
+<rect width="700" height="462" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Six ways two species can meet, and who pays</text>
+<text x="38" y="74" font-size="12" fill="#6e6e73" font-weight="700">Interaction</text>
+<text x="196" y="74" font-size="12" fill="#6e6e73" font-weight="700" text-anchor="middle">A</text>
+<text x="232" y="74" font-size="12" fill="#6e6e73" font-weight="700" text-anchor="middle">B</text>
+<text x="268" y="74" font-size="12" fill="#6e6e73" font-weight="700">What is happening</text>
+<rect x="22" y="84" width="656" height="54" fill="#f5f5f7" rx="8"/>
+<text x="38" y="110" font-size="14.5" fill="#1d1d1f" font-weight="600">Competition</text>
+<circle cx="196" cy="105" r="13" fill="#c0392b" opacity="0.14"/>
+<text x="196" y="111" font-size="17" fill="#c0392b" font-weight="700" text-anchor="middle">−</text>
+<circle cx="232" cy="105" r="13" fill="#c0392b" opacity="0.14"/>
+<text x="232" y="111" font-size="17" fill="#c0392b" font-weight="700" text-anchor="middle">−</text>
+<text x="268" y="108" font-size="13" fill="#1d1d1f">Both want the same limited thing, and both do worse for it.</text>
+<text x="268" y="126" font-size="12.5" fill="#c0392b" font-style="italic">Two birds after the same nest hole.</text>
+<text x="38" y="164" font-size="14.5" fill="#1d1d1f" font-weight="600">Predation</text>
+<circle cx="196" cy="159" r="13" fill="#12915a" opacity="0.14"/>
+<text x="196" y="165" font-size="17" fill="#12915a" font-weight="700" text-anchor="middle">+</text>
+<circle cx="232" cy="159" r="13" fill="#c0392b" opacity="0.14"/>
+<text x="232" y="165" font-size="17" fill="#c0392b" font-weight="700" text-anchor="middle">−</text>
+<text x="268" y="162" font-size="13" fill="#1d1d1f">One hunts, kills and eats the other.</text>
+<text x="268" y="180" font-size="12.5" fill="#c0392b" font-style="italic">A lynx and a snowshoe hare.</text>
+<rect x="22" y="192" width="656" height="54" fill="#f5f5f7" rx="8"/>
+<text x="38" y="218" font-size="14.5" fill="#1d1d1f" font-weight="600">Herbivory</text>
+<circle cx="196" cy="213" r="13" fill="#12915a" opacity="0.14"/>
+<text x="196" y="219" font-size="17" fill="#12915a" font-weight="700" text-anchor="middle">+</text>
+<circle cx="232" cy="213" r="13" fill="#c0392b" opacity="0.14"/>
+<text x="232" y="219" font-size="17" fill="#c0392b" font-weight="700" text-anchor="middle">−</text>
+<text x="268" y="216" font-size="13" fill="#1d1d1f">One eats part of a plant. The plant is damaged, and usually</text>
+<text x="268" y="233" font-size="13" fill="#1d1d1f">lives.</text>
+<text x="268" y="252" font-size="12.5" fill="#eb6834" font-style="italic">A deer browsing a willow.</text>
+<text x="38" y="272" font-size="14.5" fill="#1d1d1f" font-weight="600">Mutualism</text>
+<circle cx="196" cy="267" r="13" fill="#12915a" opacity="0.14"/>
+<text x="196" y="273" font-size="17" fill="#12915a" font-weight="700" text-anchor="middle">+</text>
+<circle cx="232" cy="267" r="13" fill="#12915a" opacity="0.14"/>
+<text x="232" y="273" font-size="17" fill="#12915a" font-weight="700" text-anchor="middle">+</text>
+<text x="268" y="270" font-size="13" fill="#1d1d1f">Both gain. Neither is being kind; each is paying for it.</text>
+<text x="268" y="288" font-size="12.5" fill="#12915a" font-style="italic">A clownfish and its anemone.</text>
+<rect x="22" y="300" width="656" height="54" fill="#f5f5f7" rx="8"/>
+<text x="38" y="326" font-size="14.5" fill="#1d1d1f" font-weight="600">Commensalism</text>
+<circle cx="196" cy="321" r="13" fill="#12915a" opacity="0.14"/>
+<text x="196" y="327" font-size="17" fill="#12915a" font-weight="700" text-anchor="middle">+</text>
+<circle cx="232" cy="321" r="13" fill="#6e6e73" opacity="0.14"/>
+<text x="232" y="327" font-size="17" fill="#6e6e73" font-weight="700" text-anchor="middle">0</text>
+<text x="268" y="324" font-size="13" fill="#1d1d1f">One gains. The other is not measurably affected at all.</text>
+<text x="268" y="342" font-size="12.5" fill="#12915a" font-style="italic">A bird nesting in a tree.</text>
+<text x="38" y="380" font-size="14.5" fill="#1d1d1f" font-weight="600">Parasitism</text>
+<circle cx="196" cy="375" r="13" fill="#12915a" opacity="0.14"/>
+<text x="196" y="381" font-size="17" fill="#12915a" font-weight="700" text-anchor="middle">+</text>
+<circle cx="232" cy="375" r="13" fill="#c0392b" opacity="0.14"/>
+<text x="232" y="381" font-size="17" fill="#c0392b" font-weight="700" text-anchor="middle">−</text>
+<text x="268" y="378" font-size="13" fill="#1d1d1f">Lives on or in the other and takes from it, rarely killing it.</text>
+<text x="268" y="396" font-size="12.5" fill="#c0392b" font-style="italic">A tick on a deer.</text>
+<text x="22" y="436" font-size="14.5" fill="#1d1d1f">Read the two signs and you have the interaction. The hard part is proving a zero: showing that a species</text>
+<text x="22" y="455" font-size="14.5" fill="#1d1d1f">genuinely does not care is much harder than showing that it gains or loses.</text>
+</svg>

@@ -203,17 +203,49 @@
 
   /* ------------------------------------------------------------------ Hero */
   var frame = root.querySelector(".ld-hero-frame");
+  var chapter = root.querySelector(".chapter");
+  // Whether the page is dark just below y: the first painted background up
+  // from whatever is there, in the middle of the window.
+  function darkAt(y) {
+    var at = document.elementFromPoint(window.innerWidth / 2, y);
+    for (var n = at; n && n !== root.parentNode; n = n.parentElement) {
+      if (n.classList && (n.classList.contains("chapter") || n.classList.contains("nav"))) continue;
+      var m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(n).backgroundColor);
+      if (!m) continue;
+      var c = m[1].split(",").map(Number);
+      if (c.length > 3 && c[3] < 0.5) continue;
+      return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 < 0.4;
+    }
+    return false;
+  }
   var queued = false;
   function paint() {
     queued = false;
-    if (!frame || reduced) return;
+    if (!frame) return;
     var r = frame.getBoundingClientRect();
+    // The chapter bar takes the colour of what is under it: dark material
+    // over the photograph and the black band, light over the rest.
+    var edge = chapter ? chapter.getBoundingClientRect().bottom : 52;
+    // How far the site's bar has scrolled off, so its menus and search still
+    // open right under its edge (oplo-chrome.css reads it).
+    root.style.setProperty("--nav-y", -Math.min(root.scrollTop, 44) + "px");
+    if (!root.classList.contains("ld-wait")) root.classList.toggle("ld-light", !darkAt(edge + 2));
+    if (reduced) return;
     var p = Math.max(0, Math.min(1, -(r.top - 96) / (r.height * 0.55)));
     frame.style.setProperty("--p", p.toFixed(3));
   }
   root.addEventListener("scroll", function () {
     if (!queued) { queued = true; requestAnimationFrame(paint); }
   }, { passive: true });
+  // The page is blank until the server has answered (.ld-wait), and nothing
+  // can be measured under it until then: paint once it shows.
+  paint();
+  if (root.classList.contains("ld-wait") && typeof MutationObserver === "function") {
+    var shown = new MutationObserver(function () {
+      if (!root.classList.contains("ld-wait")) { shown.disconnect(); paint(); }
+    });
+    shown.observe(root, { attributes: true, attributeFilter: ["class"] });
+  }
 
   /* ------------------------------------------------------------------ Rail */
   var rail = document.getElementById("ldRail");

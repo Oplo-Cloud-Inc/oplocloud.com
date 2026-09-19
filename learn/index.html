@@ -2,6 +2,34 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<base href="/">
+<script>
+/* The app answers at every address inside it — /student/Science/Biology/u1/l3
+   as well as /student/ — but its files all sit beside this page. So relative
+   addresses are resolved from the app's own folder, whatever the address bar
+   says. The plain base above is for the browser, which starts fetching files
+   before any script runs: on edu.oplocloud.com the app's folder is "/", so
+   those early fetches are already right. This corrects it anywhere else (a
+   local preview serves the app from /learn/). A "#section" link on the
+   welcome page still means this page, not the folder.
+   The student side is dark (obsidian.css), and is marked here, before
+   anything is drawn, so a student never sees a light frame first. */
+(function () {
+  var m = /^(.*?\/)(admin|teacher|student)(?:\/|$)/.exec(location.pathname);
+  var b = document.querySelector("base");
+  b.href = m ? m[1] : location.pathname.replace(/[^\/]*$/, "");
+  if (m && m[2] === "student") document.documentElement.setAttribute("data-look", "obsidian");
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
+    if (a.hasAttribute("data-signin") || a.hasAttribute("data-film")) return;   // landing.js owns these
+    var id = a.getAttribute("href").slice(1), t = id ? document.getElementById(id) : null;
+    e.preventDefault();
+    if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+    else if (!id) window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OEdu</title>
 <meta name="description" content="OEdu — courses you work through by solving, and study sets you drill until they stick.">
@@ -11,9 +39,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=0a566245">
-<link rel="stylesheet" href="oplo-chrome.css?v=6fbc58a8">
-<link rel="stylesheet" href="landing.css?v=22fc4b93">
+<link rel="stylesheet" href="app.css?v=a714a9b3">
+<link rel="stylesheet" href="oplo-chrome.css?v=8d3fa801">
+<link rel="stylesheet" href="landing.css?v=8c7377c7">
+<link rel="stylesheet" href="exam.css?v=3869276c">
+<link rel="stylesheet" href="checks.css?v=a381359b">
+<link rel="stylesheet" href="challenge.css?v=2651bace">
+<link rel="stylesheet" href="lab/lab.css?v=aa35a565">
+<link rel="stylesheet" href="obsidian.css?v=99fc3bd3">
 </head>
 <body>
 
@@ -132,7 +165,7 @@
 
     <section class="ld-hero" aria-labelledby="ldHeroTitle">
       <div class="ld-hero-frame">
-        <div class="ld-media ld-dark" data-slot="Hero" data-size="2560 × 1440 · image or film" data-src="" data-alt="" data-eager></div>
+        <div class="ld-media ld-dark ld-hero-media" data-slot="Hero" data-size="2560 × 1440 · image or film" data-src="media/hero/eduhero.jpg" data-alt="Students working on laptops at a long window, a cathedral in the evening light beyond. The nearest screen shows an OEdu lesson." data-eager></div>
         <div class="ld-hero-copy">
           <svg class="ld-hero-mark" viewBox="12 12 76 76" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg>
           <h1 id="ldHeroTitle">Made for <span class="ld-accent">the way you learn.</span></h1>
@@ -430,14 +463,9 @@
 <aside class="cn-rail" id="rail" aria-label="Console"></aside>
 <div class="cn-scrim" id="railScrim" hidden></div>
 
-<!-- The console has no top bar. Going back is a small control at the head of
-     the content, shown only when there is somewhere to go back to; opening the
-     rail on a narrow screen is another. Neither is a bar. -->
-<button class="cn-back" id="cnBack" type="button" hidden>
-  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor"
-       stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
-  <span id="cnBackLabel">Back</span>
-</button>
+<!-- The console has no top bar. Opening the rail on a narrow screen is a
+     small control at the head of the content, not a bar. Going back is the
+     browser's Back, as it is everywhere in OEdu. -->
 <button class="cn-open" id="railOpen" type="button" aria-label="Sections" aria-expanded="false">
   <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
        stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
@@ -445,11 +473,6 @@
 
 <header class="lx-bar">
   <div class="lx-bar-in">
-    <button class="lx-back" id="back" type="button" hidden>
-      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
-           stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
-      <span id="backLabel">Back</span>
-    </button>
     <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
       <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
     </svg>
@@ -458,9 +481,8 @@
     <nav class="lx-top" id="topNav" aria-label="Sections">
       <button type="button" data-view="my" aria-current="true">Home</button>
       <button type="button" data-view="explore">Explore</button>
-      <button type="button" data-view="grades" id="navGrades" hidden>Grades</button>
-      <button type="button" data-view="exams" id="navExams" hidden>Exams <span class="atb-badge">ATB</span></button>
-      <button type="button" data-view="admin" id="navAdmin" hidden>Students</button>
+      <button type="button" data-view="exams" id="navExams">Exams</button>
+      <button type="button" data-view="progress">Progress</button>
     </nav>
 
     <div class="lx-prog" id="barProg" hidden><i></i></div>
@@ -486,9 +508,10 @@
 </header>
 
 <main class="lx-wrap" id="wrap">
-  <section class="lx-view on" id="v-my"></section>
-  <section class="lx-view" id="v-explore"></section>
-  <section class="lx-view" id="v-grades"></section>
+    <section class="lx-view on" id="v-my"></section>
+    <section class="lx-view" id="v-explore"></section>
+    <section class="lx-view" id="v-progress"></section>
+    <section class="lx-view" id="v-grades"></section>
   <section class="lx-view" id="v-exams"></section>
   <section class="lx-view" id="v-subject"></section>
   <section class="lx-view" id="v-course"></section>
@@ -507,6 +530,8 @@
   <section class="lx-view" id="v-account"></section>
   <section class="lx-view" id="v-mistakes"></section>
   <section class="lx-view" id="v-read"></section>
+  <section class="lx-view" id="v-challenge"></section>
+  <section class="lx-view" id="v-lab"></section>
   <section class="lx-view" id="v-notes"></section>
   <section class="lx-view" id="v-admin"></section>
 </main>
@@ -583,8 +608,8 @@
 <div class="lx-xp" id="xpPop" aria-hidden="true"></div>
 <div class="lx-badge" id="badgePop" role="status" aria-live="polite"></div>
 
-<script src="api.js?v=eba06ee8"></script>
-<script src="data.js?v=d9a637a3"></script>
+<script src="api.js?v=b7f4a6ef"></script>
+<script src="data.js?v=bcce3d69"></script>
 <script src="school.js?v=89fed491"></script>
 <script src="store.js?v=b6d4cbcb"></script>
 <script src="game.js?v=f7c044f2"></script>
@@ -592,7 +617,14 @@
 <script src="unit6.js?v=479f6dc7"></script>
 <script src="unit7.js?v=667d9f98"></script>
 <script src="unit8.js?v=519824ea"></script>
+<script src="unit9.js?v=3ac90ac5"></script>
 <script src="biz4.js?v=eba1177e"></script>
+<script src="biz1.js?v=4a8c5d9e"></script>
+<script src="biz2.js?v=7f3b1a2c"></script>
+<script src="biz3.js?v=9e2d4b6a"></script>
+<script src="biz5.js?v=1c5a8f3d"></script>
+<script src="checks.js?v=d1b51c8a"></script>
+<script src="checks-bio1.js?v=b85c71d2"></script>
 <script src="bio1.js?v=dfb657a9"></script>
 <script src="concepts.js?v=5526e00c"></script>
 <script src="ask.js?v=44fe1239"></script>
@@ -602,11 +634,16 @@
 <script src="annotate.js?v=b30c694c"></script>
 <script src="collab.js?v=45bea90d"></script>
 <script src="tutor.js?v=e36b13da"></script>
-<script src="kmap.js?v=32de7572"></script>
-<script src="home.js?v=6cb47e0b"></script>
-<script src="oplo-menu.js?v=098abb73"></script>
+<script src="kmap.js?v=c4438bc2"></script>
+<script src="home.js?v=f44db797"></script>
+<script src="progress.js"></script>
+<script src="oplo-menu.js?v=f2f9f021"></script>
 <script src="oplo-search.js?v=b2f48c6b"></script>
-<script src="landing.js?v=7b3b8d9a"></script>
-<script src="app.js?v=7969e8bc"></script>
+<script src="landing.js?v=c44e5019"></script>
+<script src="challenge.js?v=fa487b95"></script>
+<script src="challenges-media9.js?v=1a1aa6ab"></script>
+<script src="lab/core.js?v=2d7f9be7"></script>
+<script src="exam.js?v=65b52660"></script>
+<script src="app.js?v=2fa0681e"></script>
 </body>
 </html>

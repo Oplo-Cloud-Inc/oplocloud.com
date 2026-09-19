@@ -52,6 +52,7 @@ export const ACTIONS = [
   "mark.read", "mark.write",
   "guardian.read", "guardian.write",
   "record.read", "record.write",
+  "assessment.read", "assessment.write",
   "role.grant"
 ];
 
@@ -262,6 +263,21 @@ export async function can(ctx, action, resource = {}) {
     case "record.write":
       return learnAdmin;
 
+    /* ------------------------------------------------------ Assessments
+       The questions of an exam reach the students it was set for, once it
+       is published and once it has opened — and nobody else who is not an
+       administrator. Not a teacher of the same course, not a family: before
+       a sitting, a question anyone else can read is a question that can be
+       passed on. Publishing is an administrator's act. */
+    case "assessment.read":
+      if (learnAdmin) return true;
+      if (resource.status !== "published") return false;
+      if (resource.opens_at && resource.opens_at > Date.now()) return false;
+      return ctx.repo.isAssessmentAssignee(resource.id, actor.id);
+
+    case "assessment.write":
+      return learnAdmin;
+
     default:
       return false;
   }
@@ -295,7 +311,9 @@ const REASONS = {
   "guardian.write": "Only administrators can link a family to a student.",
   "record.read": "You can only see the school record of yourself, your own children, or students you teach.",
   "record.write": "The school record is kept by administrators. Families and teachers can read it but not change it.",
-  "role.grant": "Only administrators can change roles."
+  "role.grant": "Only administrators can change roles.",
+  "assessment.read": "That assessment has not been set for you, or has not opened yet.",
+  "assessment.write": "Only administrators can publish assessments."
 };
 
 export async function must(ctx, action, resource = {}) {

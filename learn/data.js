@@ -84,8 +84,30 @@ window.OPLO = (function () {
      Term and definition, written to be studied rather than skimmed. Every
      definition stands on its own, because in Match and Test it appears
      without its term next to it. */
-  var SETS = {
-    "seeing-1": { t: "Counting in shapes", cards: [
+   var SETS = {
+     "bio-1": { t: "Ecology and Natural Systems", cards: [
+       ["Biotic factor", "Any living part of an environment, or anything produced by something living."],
+       ["Abiotic factor", "Any non-living part of an environment: temperature, sunlight, water, wind, salt, soil chemistry, rock, pH, oxygen."],
+       ["Population", "All the individuals of one species living in the same area at the same time, able to breed with each other."],
+       ["Community", "All the populations of all the different species living together in one area, and the interactions between them."],
+       ["Ecosystem", "A community plus the abiotic environment it depends on, treated as one working system through which energy flows and matter cycles."],
+       ["Niche", "Everything a species needs and everything it does: the range of every abiotic factor it can tolerate, the resources it consumes, when and how it is active, what eats it, what it competes with, and how it changes the place it lives in."],
+       ["Habitat", "The physical place where an organism lives."],
+       ["Carrying capacity", "The population size an environment can sustain over the long run, given its resources."],
+       ["Limiting factor", "Anything that holds a population below the size it would otherwise reach."],
+       ["Competition", "An interaction in which two organisms use the same limited resource, so that both do worse than either would alone."],
+       ["Predation", "An interaction in which one organism hunts, kills and eats another."],
+       ["Mutualism", "An interaction in which both species gain."],
+       ["Commensalism", "An interaction in which one species gains and the other is not measurably affected."],
+       ["Parasitism", "An interaction in which one species lives on or in another and takes resources from it, usually harming it without killing it outright."],
+       ["Trophic cascade", "A chain of effects that runs down through the levels of a food web when something changes at the top."],
+       ["Exponential growth", "Growth in which a fixed percentage is added each time period, so the increase itself keeps getting bigger. Drawn against time it makes a J."],
+       ["Logistic growth", "Growth that starts exponentially, then slows as resources run short, and levels off at the carrying capacity. Drawn against time it makes an S."],
+       ["Density", "The number of individuals per unit of area or volume."],
+       ["Dispersion", "The pattern in which individuals are spread through that space: clumped, uniform or random."],
+       ["Species richness", "The number of different species found in an area."]
+     ]},
+     "seeing-1": { t: "Counting in shapes", cards: [
       ["Array", "A rectangular arrangement in equal rows and columns, which turns a count into a multiplication."],
       ["Factor", "A number being multiplied. In 6 × 4, both 6 and 4 are factors."],
       ["Product", "The result of a multiplication. The product of 6 and 4 is 24."],
@@ -176,6 +198,41 @@ window.OPLO = (function () {
       ["Profit", "Revenue minus costs. The reason a private business exists and the test of whether it works."],
       ["Goods and services", "Goods are tangible things; services are work performed. Most businesses sell some of each."],
       ["Market economy", "An economy where prices are set by supply and demand rather than by a central authority."]
+    ]},
+    "biz-2": { t: "Economics and Business", cards: [
+      ["Microeconomics", "The study of individual decision-making: households, firms, and how prices are set in specific markets."],
+      ["Macroeconomics", "The study of the economy as a whole: inflation, unemployment, growth, and the role of government."],
+      ["Law of Demand", "As price decreases, quantity demanded increases — and vice versa, all else being equal."],
+      ["Law of Supply", "As price increases, quantity supplied increases — all else being equal."],
+      ["Equilibrium price", "The price at which quantity demanded equals quantity supplied."],
+      ["Opportunity cost", "The value of the next-best alternative given up when a choice is made."],
+      ["Comparative advantage", "Producing a good at a lower opportunity cost than a rival."],
+      ["Absolute advantage", "Being able to produce more of a good than a rival can, using the same resources."],
+      ["Market failure", "A situation in which the market does not allocate resources efficiently on its own."],
+      ["Progressive tax", "A tax where the rate rises as income rises."]
+    ]},
+    "biz-3": { t: "Business Ethics and Social Responsibility", cards: [
+      ["Business ethics", "The principles and standards that guide behaviour in the world of business."],
+      ["Utilitarianism", "The right action produces the greatest good for the greatest number."],
+      ["Deontology", "Certain actions are right or wrong in themselves, regardless of consequences."],
+      ["Corporate Social Responsibility", "A business model where companies consider their impact on all of society, not just shareholders."],
+      ["Triple Bottom Line", "A framework measuring success by people, planet, and profit."],
+      ["Sustainability", "Business practices that meet present needs without compromising future generations."],
+      ["Diversity", "The presence of difference within a group."],
+      ["Equity", "Ensuring fair treatment recognizing different needs."],
+      ["Compliance", "Adhering to laws, regulations, and internal policies."],
+      ["Pigouvian tax", "A tax equal to the external cost of a negative externality."]
+    ]},
+    "biz-5": { t: "Business Writing", cards: [
+      ["Encoding", "The sender translating ideas into words or symbols."],
+      ["Decoding", "The receiver interpreting the message."],
+      ["Feedback", "The receiver's response, which lets the sender know the message was understood."],
+      ["Noise", "Anything that interferes with understanding."],
+      ["Email", "A short written message sent electronically, usually for internal or quick external communication."],
+      ["Memo", "A short internal communication, usually on a specific topic with a clear directive."],
+      ["Report", "A structured document presenting findings, analysis, and recommendations."],
+      ["Proposal", "A document that persuades a client or stakeholder to approve a course of action."],
+      ["Netiquette", "Etiquette for electronic communication: the norms of respectful, professional online behaviour."]
     ]},
     "media-7": { t: "Video Basics", cards: [
       ["Camcorder", "A video camera and a video recorder built into one body."],
@@ -295,6 +352,59 @@ window.OPLO = (function () {
     ]
   };
 
+  /* Algebra I is a lab course: its units are interactive lessons, practice
+     that generates its own problems, and tests (learn/lab/, learn/alg/). */
+  var ALG = {
+    id: "alg", t: "Algebra I", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
+    lab: true,
+    d: "Variables, equations, and the habit of doing the same thing to both sides.",
+    lede: "Algebra as something you do before you write it down: a balance you keep level, lines you drag into place, " +
+          "tiles you arrange into rectangles. Every idea is met by moving something, practised until it is easy, and " +
+          "tested until it sticks.",
+    glyph: '<path d="M17 5H7l6 7-6 7h10"/>',
+    objectives: [
+      "Write, evaluate and simplify expressions, and tell when two expressions are the same.",
+      "Solve linear equations and inequalities, and systems of them — and say how many solutions there are.",
+      "Move between a line's table, graph and equation, and read slope and intercepts in context.",
+      "Use function notation; find domain, range, rate of change and inverses.",
+      "Model growth with arithmetic and geometric sequences, and with linear and exponential functions.",
+      "Multiply and factor polynomials, and solve and graph quadratics every way there is."
+    ],
+    units: [
+      { t: "Algebra foundations", lab: true,
+        desc: "Letters that stand for numbers. Evaluating expressions, combining like terms, telling when two expressions are the same, and why nothing can be divided by zero." },
+      { t: "Solving equations & inequalities", lab: true,
+        desc: "The balance: do the same to both sides. Equations with variables on both sides, brackets and fractions; how many solutions an equation can have; and inequalities, including why the sign flips." },
+      { t: "Working with units", lab: true,
+        desc: "Units as part of the arithmetic: converting rates by multiplying by one, choosing sensible quantities, and letting the units check the answer." },
+      { t: "Linear equations & graphs", lab: true,
+        desc: "An equation in two variables is a line of solutions. Slope as rise over run, intercepts, horizontal and vertical lines, and what each means in a real situation." },
+      { t: "Forms of linear equations", lab: true,
+        desc: "Slope-intercept, point-slope and standard form: what each shows at a glance, how to write a line from what you know, and how to move between them." },
+      { t: "Systems of equations", lab: true,
+        desc: "Two conditions at once. Solving by graphing, substitution and elimination, and systems with no solution or infinitely many." },
+      { t: "Inequalities (systems & graphs)", lab: true,
+        desc: "Inequalities in two variables as shaded half-planes, systems of them as overlaps, and constraints from real situations." },
+      { t: "Functions", lab: true,
+        desc: "A rule that gives one output for each input. Notation, domain and range, recognising functions, maxima and minima, average rate of change and inverses." },
+      { t: "Sequences", lab: true,
+        desc: "Patterns that grow by adding (arithmetic) and by multiplying (geometric), written recursively and explicitly." },
+      { t: "Absolute value & piecewise functions", lab: true,
+        desc: "Absolute value as distance and its V-shaped graph, shifting and stretching it, and functions defined in pieces." },
+      { t: "Exponents & radicals", lab: true,
+        desc: "Why the exponent rules are true, zero and negative exponents, square and cube roots, and simplifying radicals." },
+      { t: "Exponential growth & decay", lab: true,
+        desc: "Adding versus multiplying. Exponential expressions and graphs, growth and decay, and telling linear from exponential in data." },
+      { t: "Quadratics: multiplying & factoring", lab: true,
+        desc: "Polynomials as areas. Multiplying binomials, special products, and factoring by common factors, by grouping, and as differences of squares and perfect squares." },
+      { t: "Quadratic functions & equations", lab: true,
+        desc: "Parabolas and their features. Solving by factoring, square roots, completing the square and the quadratic formula; vertex form; transformations." },
+      { t: "Irrational numbers", lab: true,
+        desc: "Numbers that are not fractions: recognising them, sums and products with rationals, and a proof that √2 is irrational." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
+  };
+
   var MEDIA = {
     id: "media", t: "Media Arts", hue: "#8f5cff", subject: "English", level: "Introductory",
     tag: "Arts and Design",
@@ -328,10 +438,31 @@ window.OPLO = (function () {
       "Weigh financial risks and rewards."
     ],
     parts: [{ name: "Semester A", units: BIZ_A }, { name: "Semester B", units: BIZ_B }],
-    sets: { 1: "biz-1", 4: "biz-4" },
+    sets: { 1: "biz-1", 2: "biz-2", 3: "biz-3", 4: "biz-4", 5: "biz-5" },
     grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
     textbook: "Introduction to Business — Boundless, CC BY-SA 4.0, as taught in the EHS " +
-              "Introduction to Business course, © Excel Education Systems, Inc."
+               "Introduction to Business course, © Excel Education Systems, Inc."
+  };
+
+  var BIO = {
+    id: "bio", t: "Biology", hue: GREEN, subject: "Science", level: "High School",
+    d: "Cells, inheritance and ecosystems — systems that keep themselves going.",
+    lede: "Life interacts with the world around it. Biotic and abiotic factors are connected. Levels of organisation matter. Niches, populations, interactions and community structure are all one system.",
+    glyph: FLASK,
+    units: [
+      { n: 1, t: "Ecology and Natural Systems", play: true, set: "bio-1",
+        desc: "How living and nonliving factors interact to shape ecosystems, influence where species live, drive population dynamics, and determine how species shape each other." }
+    ],
+    sets: { 1: "bio-1" },
+    grading: [["Reading", 30], ["Practice", 30], ["Assessments", 40]],
+    unitPromise: ["Everything in an ecosystem is connected.",
+                  "A change in temperature can change where a species lives.",
+                  "A change in food can change population size.",
+                  "A change in one species can affect many others."],
+    bigQuestion: "How does life interact with the world around it?",
+    unitMap: "01 — How Is Life Organized?\n02 — Why Does Life Live Where It Does?\n03 — What Does an Organism Need to Survive?\n04 — How Big Can a Population Get?\n05 — Investigation — Human-Shark Interactions\n06 — How Do Species Shape Each Other?",
+    phenomena: ["Bald Eagle: How do biologists know whether a population is changing?",
+                "Monarch Butterfly: Why do monarch butterflies migrate so far?"]
   };
 
   var BOOK  = '<path d="M4 4.5h6.5A2.5 2.5 0 0 1 13 7v12a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-6.5A2.5 2.5 0 0 0 11 7v12a2 2 0 0 1 2-2h7z"/>';
@@ -353,12 +484,12 @@ window.OPLO = (function () {
     { n: "Math", hue: BLUE,
       d: "Arithmetic, algebra and geometry, done by seeing why rather than remembering how.",
       courses: [SEEING,
-        stub("alg", "Algebra I", "Math", BLUE, "Variables, equations, and the habit of doing the same thing to both sides.", SIGMA),
+        ALG,
         stub("geo", "Geometry",  "Math", BLUE, "Proof as an argument you could win, not a form to fill in.", SIGMA)] },
     { n: "Science", hue: GREEN,
       d: "Method first: what would have to be true, and how would you find out.",
       courses: [
-        stub("bio",  "Biology",   "Science", GREEN, "Cells, inheritance and ecosystems — systems that keep themselves going.", FLASK),
+        BIO,
         stub("chem", "Chemistry", "Science", GREEN, "Why substances behave as they do, from the structure up.", FLASK),
         stub("phys", "Physics",   "Science", GREEN, "Motion, force and energy, with the algebra kept in service of the idea.", FLASK)] },
     { n: "Social Studies", hue: "#e8a317",
@@ -376,6 +507,8 @@ window.OPLO = (function () {
   var PRE = {
     media: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [2], 7: [6], 8: [6, 7], 9: [5, 7] },
     seeing: { 1: [], 2: [1], 3: [2] },
+    alg: { 1: [], 2: [1], 3: [1], 4: [2], 5: [4], 6: [5], 7: [6], 8: [4], 9: [8], 10: [8], 11: [1], 12: [9, 11],
+           13: [11], 14: [13, 10], 15: [11] },
     biz: {}
   };
 
@@ -412,5 +545,5 @@ window.OPLO = (function () {
   function contacts() { return []; }
 
   return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE, ITERATIONS: ITERATIONS,
-           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, CONTACTS: contacts };
+           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, BIO: BIO, CONTACTS: contacts };
 })();

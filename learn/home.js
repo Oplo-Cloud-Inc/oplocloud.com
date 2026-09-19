@@ -45,13 +45,16 @@
 
   function home(roles) { return allowed(roles)[0]; }
 
-  /* The address a path names, and the root the app is served from:
-     "/admin/" is admin at "/"; "/learn/teacher/" is teacher at "/learn/". */
+  /* The address a path names, the root the app is served from, and the
+     place inside it: "/admin/" is admin at "/"; "/learn/teacher/" is teacher
+     at "/learn/"; "/student/Science/Biology/u1" is student at "/" with the
+     place "/Science/Biology/u1". The first mode segment is the mode, so a
+     place whose name happened to contain one cannot be mistaken for it. */
   function parse(pathname) {
     var p = pathname || "/";
-    var m = /^(.*\/)(admin|teacher|student|parent)(\/.*)?$/.exec(p);
-    if (m) return { mode: m[2], root: m[1] };
-    return { mode: null, root: p.replace(/[^/]*$/, "") };
+    var m = /^(.*?\/)(admin|teacher|student|parent)(\/.*)?$/.exec(p);
+    if (m) return { mode: m[2], root: m[1], rest: m[3] || "" };
+    return { mode: null, root: p.replace(/[^/]*$/, ""), rest: "" };
   }
 
   function pathFor(root, mode) { return root + mode + "/"; }

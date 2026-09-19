@@ -44,7 +44,14 @@ export default {
        address taken off — /admin/ is index.html, /admin/app.css is app.css.
        The family view at /parent/ is a real directory and never reaches here.
        Without the trailing slash, the page's relative links would resolve
-       against the root, so it is added first. */
+       against the root, so it is added first.
+
+       Everything deeper is a place inside the app — /student/Science/Biology
+       /u1/l3 is a lesson — and a place is the app itself: index.html, which
+       reads the address and opens it (app.js, route()). The page sets its own
+       base, so its files load from the root whatever the depth. An address
+       that ends in a file extension is a file, and a missing file stays a
+       404 rather than being answered with the app. */
     const mode = url.pathname.match(/^\/(admin|teacher|student)(\/.*)?$/);
     if (mode) {
       if (!mode[2]) {
@@ -53,7 +60,12 @@ export default {
       }
       const inner = new URL(url);
       inner.pathname = mode[2];
-      return env.ASSETS.fetch(new Request(inner, request));
+      const file = await env.ASSETS.fetch(new Request(inner, request));
+      if (file.status !== 404 || /\.[A-Za-z0-9]{1,8}$/.test(url.pathname)) return file;
+      const app = new URL(url);
+      app.pathname = "/";
+      app.search = "";
+      return env.ASSETS.fetch(new Request(app, request));
     }
 
     // Anything else that reached the Worker matched no file. Asking the asset

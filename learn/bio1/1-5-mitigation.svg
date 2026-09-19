@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 420" width="700" height="420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Four families of solution to human-shark encounters, each with what it costs. Detecting sharks with spotter planes, drones and tag receivers gives warning but only finds sharks that are tagged or visible. Avoiding them by closing beaches or changing swimming hours works but costs a town its summer. Separating people from sharks with barriers or lifeguarded zones is reliable but expensive and can trap or kill wildlife. Responding faster with trauma kits, training and phone coverage saves lives but prevents nothing.</title>
+<rect width="700" height="420" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Four ways to design a solution, and what each one costs</text>
+<rect x="22" y="62" width="320" height="142" fill="#f5f5f7" rx="13"/>
+<circle cx="48" cy="90" r="13" fill="#2a78d6"/>
+<text x="48" y="95" font-size="14" fill="#ffffff" font-weight="700" text-anchor="middle">1</text>
+<text x="72" y="95" font-size="16" fill="#1d1d1f" font-weight="600">Detect</text>
+<text x="42" y="124" font-size="13" fill="#1d1d1f">Spotter planes, drones, tag receivers that</text>
+<text x="42" y="141" font-size="13" fill="#1d1d1f">ping when a tagged shark swims past.</text>
+<line x1="42" y1="162" x2="322" y2="162" stroke="#d2d2d7" stroke-width="1" stroke-linecap="round"/>
+<text x="42" y="180" font-size="11.5" fill="#2a78d6" font-weight="700">The cost</text>
+<text x="106" y="180" font-size="12.5" fill="#6e6e73">Only finds sharks that are tagged or</text>
+<text x="106" y="195" font-size="12.5" fill="#6e6e73">visible from the air. Most are neither.</text>
+<rect x="358" y="62" width="320" height="142" fill="#f5f5f7" rx="13"/>
+<circle cx="384" cy="90" r="13" fill="#12915a"/>
+<text x="384" y="95" font-size="14" fill="#ffffff" font-weight="700" text-anchor="middle">2</text>
+<text x="408" y="95" font-size="16" fill="#1d1d1f" font-weight="600">Avoid</text>
+<text x="378" y="124" font-size="13" fill="#1d1d1f">Close a beach after a sighting. Swim at times</text>
+<text x="378" y="141" font-size="13" fill="#1d1d1f">and places seals do not use.</text>
+<line x1="378" y1="162" x2="658" y2="162" stroke="#d2d2d7" stroke-width="1" stroke-linecap="round"/>
+<text x="378" y="180" font-size="11.5" fill="#12915a" font-weight="700">The cost</text>
+<text x="442" y="180" font-size="12.5" fill="#6e6e73">Costs a seaside town its season, and</text>
+<text x="442" y="195" font-size="12.5" fill="#6e6e73">people ignore signs.</text>
+<rect x="22" y="220" width="320" height="142" fill="#f5f5f7" rx="13"/>
+<circle cx="48" cy="248" r="13" fill="#eb6834"/>
+<text x="48" y="253" font-size="14" fill="#ffffff" font-weight="700" text-anchor="middle">3</text>
+<text x="72" y="253" font-size="16" fill="#1d1d1f" font-weight="600">Separate</text>
+<text x="42" y="282" font-size="13" fill="#1d1d1f">Barriers, nets, lifeguarded swimming areas</text>
+<text x="42" y="299" font-size="13" fill="#1d1d1f">people stay inside.</text>
+<line x1="42" y1="320" x2="322" y2="320" stroke="#d2d2d7" stroke-width="1" stroke-linecap="round"/>
+<text x="42" y="338" font-size="11.5" fill="#eb6834" font-weight="700">The cost</text>
+<text x="106" y="338" font-size="12.5" fill="#6e6e73">Expensive to build and maintain, and</text>
+<text x="106" y="353" font-size="12.5" fill="#6e6e73">nets drown the wildlife they catch.</text>
+<rect x="358" y="220" width="320" height="142" fill="#f5f5f7" rx="13"/>
+<circle cx="384" cy="248" r="13" fill="#8f5cff"/>
+<text x="384" y="253" font-size="14" fill="#ffffff" font-weight="700" text-anchor="middle">4</text>
+<text x="408" y="253" font-size="16" fill="#1d1d1f" font-weight="600">Respond</text>
+<text x="378" y="282" font-size="13" fill="#1d1d1f">Trauma kits at every beach, trained</text>
+<text x="378" y="299" font-size="13" fill="#1d1d1f">lifeguards, phone signal that reaches 911.</text>
+<line x1="378" y1="320" x2="658" y2="320" stroke="#d2d2d7" stroke-width="1" stroke-linecap="round"/>
+<text x="378" y="338" font-size="11.5" fill="#8f5cff" font-weight="700">The cost</text>
+<text x="442" y="338" font-size="12.5" fill="#6e6e73">Saves lives. Prevents nothing.</text>
+<text x="22" y="392" font-size="14.5" fill="#1d1d1f">Engineering is not choosing the solution that works. It is choosing which cost you can live with — and saying</text>
+<text x="22" y="411" font-size="14.5" fill="#1d1d1f">out loud which one you chose.</text>
+</svg>

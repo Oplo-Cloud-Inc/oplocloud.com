@@ -129,8 +129,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .center { text-align: center; }
 
 /* ---------------------------------------------------------------- Nav */
+/* The bar belongs to the top of the page and scrolls away with it, the way
+   Apple's does; on a section page the chapter bar is the one that stays.
+   Two see-through bars stacked let the page bleed through both. Everything
+   the bar opens (menus, search, the phone drawer) is fixed to the window and
+   placed by --nav-y, how far the bar has scrolled off (assets/js/oplo-menu.js),
+   so it still opens right under the bar's edge. */
 .nav {
-  position: fixed; top: 0; left: 0; right: 0;
+  position: absolute; top: 0; left: 0; right: 0;
   height: var(--nav);
   z-index: 9000;
 }
@@ -142,10 +148,20 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav::before {
   content: ""; position: absolute; inset: 0; z-index: -1;
   background-color: rgba(255,255,255,.8);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
   transition: background-color .45s var(--ease);
 }
+/* Material that matches what is under it. Over a dark picture or band the
+   bars are dark glass, over the rest light — each an ~80% tint, blurred hard
+   and saturated, so the colour and light behind come through but nothing
+   behind can be read. oplo-menu.js sets .bars-dark on the root from whatever
+   is just below the lowest bar. An open menu or search is always light. */
+.bars-dark .nav:not(.menu-open):not(.searching) { --ink: var(--ink-lt); }
+.bars-dark .nav:not(.menu-open):not(.searching)::before { background-color: rgba(22,22,23,.8); }
+/* Black behind the bars at the very top of a dark page, so dark glass over
+   it reads dark and not grey. */
+.bars-dark body { background: linear-gradient(#000, #000) 0 0 / 100% 97px no-repeat, var(--paper); }
 .nav-in {
   max-width: 1024px; margin-inline: auto;
   padding-left:  max(var(--gutter), env(safe-area-inset-left));
@@ -237,7 +253,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
    behind them is what grows. The panel takes no pointer itself, only what is
    drawn of it, so the page under the rest of it still closes the menu. */
 .nav-flyout {
-  position: fixed; top: var(--nav); left: 0; right: 0; z-index: 1;
+  position: fixed; top: calc(var(--nav) + var(--nav-y, 0px)); left: 0; right: 0; z-index: 1;
   visibility: hidden; pointer-events: none;
 }
 .nav-flyout.is-open { visibility: visible; }
@@ -321,7 +337,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav.searching::before { background-color: var(--paper); }
 .nav.searching .nav-links { opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
 .nav-find {
-  position: fixed; top: var(--nav); left: 0; right: 0; z-index: 1;
+  position: fixed; top: calc(var(--nav) + var(--nav-y, 0px)); left: 0; right: 0; z-index: 1;
   max-height: calc(100vh - var(--nav)); overflow-y: auto; overscroll-behavior: contain;
   background: var(--paper);
   animation: nav-find-in .28s var(--ease);
@@ -360,7 +376,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .nav-scrim {
-  position: fixed; inset: var(--nav) 0 0 0; z-index: 0;
+  position: fixed; inset: calc(var(--nav) + var(--nav-y, 0px)) 0 0 0; z-index: 0;
   background: rgba(232,232,237,.4);
   -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
   animation: nav-scrim-in .28s var(--ease);
@@ -385,7 +401,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
      it can be animated. `display: none` cannot transition. */
   .nav-links {
     display: flex; flex-direction: column; justify-content: flex-start;
-    position: fixed; inset: var(--nav) 0 0 0;
+    position: fixed; inset: calc(var(--nav) + var(--nav-y, 0px)) 0 0 0;
     background: var(--paper);
     padding: 4px max(var(--gutter), env(safe-area-inset-left))
              max(40px, env(safe-area-inset-bottom));
@@ -626,11 +642,12 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 
 /* ------------------------------------------------------ Anchor offset
-   The bar is fixed, and section pages carry a chapter bar under it. Without
-   this, every in-page link scrolls its target to y=0 — i.e. underneath 96px
-   of furniture — and the heading you clicked for is the one thing hidden. */
-:where(section, div, main)[id] { scroll-margin-top: calc(var(--nav) + 16px); }
-body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(--nav) + 68px); }
+   The bar scrolls away, and on a section page the chapter bar stays at the
+   top. Without this, an in-page link on a section page scrolls its target
+   underneath the chapter bar, and the heading you clicked for is the one
+   thing hidden. */
+:where(section, div, main)[id] { scroll-margin-top: 16px; }
+body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: 68px; }
 
 /* -------------------------------------------------------------- Motion
    Visible by default; hidden only once the script arms the reveal, so no
@@ -649,14 +666,22 @@ body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(
 
 
 /* ------------------------------------------------------- Chapter bar
-   The section-page sub-bar: page name left, its own sections right. Sticks
-   under the global bar so you always know which page you are inside. */
+   The section-page sub-bar: page name left, its own sections right. Once
+   the bar has scrolled away it sticks at the top, so you always know which
+   page you are inside — in the same material as the bar, dark over dark and
+   light over the rest. */
 .chapter {
-  position: sticky; top: var(--nav); z-index: 800;
-  background: rgba(255,255,255,.78);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  backdrop-filter: saturate(180%) blur(14px);
+  position: sticky; top: 0; z-index: 800;
+  background: rgba(255,255,255,.8);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
   border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+  transition: background-color .45s var(--ease), border-color .45s var(--ease), color .45s var(--ease);
+}
+.bars-dark .chapter {
+  --ink: var(--ink-lt); --ink-2: var(--ink-lt-2);
+  background: rgba(22,22,23,.8); border-bottom-color: rgba(255,255,255,.1);
 }
 .chapter-in {
   max-width: 1024px; margin-inline: auto;
@@ -666,7 +691,7 @@ body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(
 }
 .chapter-name { font-family: var(--font); font-size: 21px; font-weight: 600; letter-spacing: .011em; }
 .chapter-links { margin-left: auto; display: flex; align-items: center; gap: 26px; }
-.chapter-links a { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.chapter-links a { font-size: 12px; color: var(--ink-2); white-space: nowrap; transition: color .45s var(--ease); }
 .chapter-links a:hover { color: var(--ink); }
 /* The action lives outside the scrolling link list, so it stays put on a
    phone instead of being pushed off the end with the section anchors. */

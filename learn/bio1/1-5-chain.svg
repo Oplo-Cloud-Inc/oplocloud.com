@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 522" width="700" height="522" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>The chain that put white sharks back off Cape Cod, drawn as five boxes joined by arrows. A law in 1972 stopped the killing of seals. The grey seal population grew from almost none to tens of thousands. Seals are what white sharks eat, so the sharks followed the food and their numbers off the Cape rose. Seals haul out on beaches, so the sharks hunt close to shore. People swim at those same beaches, so encounters rise. Each arrow is labelled with the ecological idea that explains it.</title>
+<rect width="700" height="522" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Not a shark problem. A food problem, four steps back.</text>
+<rect x="22" y="62" width="656" height="52" fill="#ffffff" rx="11" stroke="#2a78d6" stroke-width="1.6"/>
+<rect x="22" y="62" width="7" height="52" fill="#2a78d6" rx="3.5"/>
+<text x="44" y="84" font-size="15" fill="#1d1d1f" font-weight="600">The Marine Mammal Protection Act</text>
+<text x="44" y="103" font-size="12.8" fill="#6e6e73">Killing seals becomes illegal in US waters. Massachusetts had paid a bounty for them until 1962.</text>
+<line x1="80" y1="116" x2="80.0" y2="134.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 80.0 140.0 L 76.3 131.8 L 83.7 131.8 Z" fill="#86868b"/>
+<text x="98" y="126" font-size="12.5" fill="#6e6e73" font-style="italic">protection removes</text>
+<text x="98" y="141" font-size="12.5" fill="#6e6e73" font-style="italic">a limiting factor</text>
+<rect x="22" y="146" width="656" height="52" fill="#ffffff" rx="11" stroke="#12915a" stroke-width="1.6"/>
+<rect x="22" y="146" width="7" height="52" fill="#12915a" rx="3.5"/>
+<text x="44" y="168" font-size="15" fill="#1d1d1f" font-weight="600">Grey seals come back</text>
+<text x="44" y="187" font-size="12.8" fill="#6e6e73">From almost none in the 1970s to tens of thousands hauling out around Monomoy and Muskeget today.</text>
+<line x1="80" y1="200" x2="80.0" y2="218.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 80.0 224.0 L 76.3 215.8 L 83.7 215.8 Z" fill="#86868b"/>
+<text x="98" y="210" font-size="12.5" fill="#6e6e73" font-style="italic">prey abundance raises</text>
+<text x="98" y="225" font-size="12.5" fill="#6e6e73" font-style="italic">the predators' carrying capacity</text>
+<rect x="22" y="230" width="656" height="52" fill="#ffffff" rx="11" stroke="#eb6834" stroke-width="1.6"/>
+<rect x="22" y="230" width="7" height="52" fill="#eb6834" rx="3.5"/>
+<text x="44" y="252" font-size="15" fill="#1d1d1f" font-weight="600">White sharks follow the food</text>
+<text x="44" y="271" font-size="12.8" fill="#6e6e73">A grown white shark eats seals. Where seals gather in numbers, sharks have a reason to stay.</text>
+<line x1="80" y1="284" x2="80.0" y2="302.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 80.0 308.0 L 76.3 299.8 L 83.7 299.8 Z" fill="#86868b"/>
+<text x="98" y="294" font-size="12.5" fill="#6e6e73" font-style="italic">predators hunt where</text>
+<text x="98" y="309" font-size="12.5" fill="#6e6e73" font-style="italic">the prey is, not where it is deep</text>
+<rect x="22" y="314" width="656" height="52" fill="#ffffff" rx="11" stroke="#c0392b" stroke-width="1.6"/>
+<rect x="22" y="314" width="7" height="52" fill="#c0392b" rx="3.5"/>
+<text x="44" y="336" font-size="15" fill="#1d1d1f" font-weight="600">The hunting happens in the shallows</text>
+<text x="44" y="355" font-size="12.8" fill="#6e6e73">Seals rest on beaches and sandbars, so the sharks hunt in water people can stand up in.</text>
+<line x1="80" y1="368" x2="80.0" y2="386.0" stroke="#86868b" stroke-width="2" stroke-linecap="round"/>
+<path d="M 80.0 392.0 L 76.3 383.8 L 83.7 383.8 Z" fill="#86868b"/>
+<text x="98" y="378" font-size="12.5" fill="#6e6e73" font-style="italic">two species using</text>
+<text x="98" y="393" font-size="12.5" fill="#6e6e73" font-style="italic">the same space</text>
+<rect x="22" y="398" width="656" height="52" fill="#ffffff" rx="11" stroke="#1d1d1f" stroke-width="1.6"/>
+<rect x="22" y="398" width="7" height="52" fill="#1d1d1f" rx="3.5"/>
+<text x="44" y="420" font-size="15" fill="#1d1d1f" font-weight="600">Encounters rise</text>
+<text x="44" y="439" font-size="12.8" fill="#6e6e73">Same water, same month, same few metres of depth. More sharks close in means more chances of meeting one.</text>
+<text x="22" y="488" font-size="14.5" fill="#1d1d1f">Every step is an idea from this unit. Read it backwards and the question changes from “why are there sharks?”</text>
+<text x="22" y="507" font-size="14.5" fill="#1d1d1f">to “what did we change, and what did it feed?”</text>
+</svg>
