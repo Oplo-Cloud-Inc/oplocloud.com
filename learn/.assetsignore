@@ -10,3 +10,8 @@ alg2-mp4-qam.json
 *answer-key*
 *answerkey*
 *.key.json
+
+# An author's preview page for the Biology diagrams, and the list it reads.
+# Useful beside the files in the repository; nothing a student should reach.
+bio1/_preview.html
+bio1/list.json
