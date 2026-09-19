@@ -421,11 +421,13 @@ def home():
     out = head(depth, "Oplo", "Oplo builds hardware, software and intelligence designed around one person at a time.", "")
     out += nav(depth)
     out += "<main>\n"
-    # The artwork carries the wordmark and the line, so the heading is there
-    # for screen readers and search engines and the image is marked decorative:
-    # announcing both would read the same words twice.
+    # The artwork carries the wordmark, so the heading is there for screen
+    # readers and search engines and the image is marked decorative: announcing
+    # both would read the same words twice. The picture is stamped like the CSS,
+    # because it is cached for four hours too — a new stylesheet over an old
+    # cached picture is a layout drawn for a different image.
     out += band("opening art", '''  <h1 class="sr">Oplo Cloud — Technology for Human</h1>
-  <img class="hero-art reveal" src="assets/img/hero-nature.svg" alt="" width="1440" height="810" fetchpriority="high" decoding="async">
+  <img class="hero-art reveal" src="assets/img/hero-nature.svg?v=''' + stamp("assets/img/hero-nature.svg") + '''" alt="" width="1440" height="810" fetchpriority="high" decoding="async">
   <div class="well">
     <p class="cta-row reveal d1">
       <a class="cta" href="products/">What we make</a>

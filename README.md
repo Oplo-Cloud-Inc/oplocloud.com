@@ -114,10 +114,13 @@ everywhere else the words and the space are the design.
 - **Hierarchy** — a `.band` is a tall full-bleed statement; a `.card` is half
   as tall and comes in pairs. That size difference *is* the hierarchy, and
   flattening it into one repeating tile is what made the first attempt fail.
-- **Colour is spent once** — the blossom on the front page, and a single soft
-  `.bloom` behind any dark band. The rest of the site is black, white, and grey.
-- **Hero artwork** — `assets/img/hero-nature.svg`, run through svgo. Its ground
-  is the same white as `.band`, so it needs no frame; on a phone `.hero-art`
-  scales it past the viewport and lets `.band`'s overflow crop the edges,
-  because the lettering inside it is unreadable at 375px wide.
+- **Colour is spent once** — the dusk photograph on the front page, and a single
+  soft `.bloom` behind any dark band. The rest of the site is black, white, and grey.
+- **Hero artwork** — `assets/img/hero-nature.svg`: dunes at dusk with the
+  wordmark drawn in, the photograph inside re-encoded at 3240px (a 1440px
+  screen at 2x). On a laptop or desktop it covers the whole opening band, which
+  is painted in the picture's colours so nothing flashes white while it loads;
+  on a phone `.hero-art` scales it past the viewport and lets `.band`'s
+  overflow crop the edges, because the lettering is unreadable at 375px wide.
+  Its URL carries a `?v=` stamp from `tools/build.py`, like the CSS.
 
