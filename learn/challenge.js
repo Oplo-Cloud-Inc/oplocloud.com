@@ -850,7 +850,7 @@ window.OPLO_CHALLENGE = (function () {
       if (s.art) card.appendChild(el("div", "ch-art", s.art));
       // A scene to play with: the idea is met by moving something, and a
       // gated scene holds Continue until the move that shows it is made.
-      var sc = s.scene && KINDS[s.scene.type] ? build(s.scene.type, Object.assign({ gate: !!s.gate }, s.scene), s.id, { explore: true }) : null;
+      var sc = s.scene && KINDS[s.scene.type] ? build(s.scene.type, Object.assign({ gate: s.gateKind || !!s.gate }, s.scene), s.id, { explore: true }) : null;
       if (sc) card.appendChild(el("div", "ch-work")).appendChild(sc.el);
       if (s.after) card.appendChild(el("div", "ch-after", s.after));
       var go = button("ch-btn primary", (P.ix === P.path.steps.length - 1 ? "Finish" : "Continue") + icon(I.right));
@@ -922,6 +922,9 @@ window.OPLO_CHALLENGE = (function () {
       st.hints++;
       hintBtn.querySelector("span").textContent = st.hints < s.hints.length ? "Another hint" : "No more hints";
       hintBtn.disabled = st.hints >= s.hints.length;
+      // Out of hints on a puzzle that only lets you check a solved state:
+      // the worked answer is the next help there is.
+      if (st.hints >= s.hints.length && check.disabled) showBtn.hidden = false;
       note(s.id, { hints: Math.max((result(s.id) || {}).hints || 0, st.hints) });
       P.live.textContent = h.textContent;
     });
@@ -938,7 +941,10 @@ window.OPLO_CHALLENGE = (function () {
       var r = ui.check();
       if (r.rate) { rate(r.model); return; }
       st.tries++;
-      tried(r.ok);
+      // A piece that was solved with slips along the way (a wrong tap on the
+      // order-of-operations board) is right, but not right first time.
+      if (r.ok && r.helped) st.hints = Math.max(st.hints, 1);
+      tried(r.ok && !r.helped);
       if (r.ok) {
         st.done = true;
         record(true);

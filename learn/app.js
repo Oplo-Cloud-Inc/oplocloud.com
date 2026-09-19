@@ -606,6 +606,7 @@
       if (/^l\d+$/i.test(seg[3]) && !seg[4]) { openLab(c, n, "l" + (+seg[3].slice(1))); return true; }
       if (sameName(seg[3], "Practice") && seg[4]) { openLab(c, n, "Practice/" + seg[4]); return true; }
       if (sameName(seg[3], "Test")) { openLab(c, n, "Test"); return true; }
+      if (sameName(seg[3], "Quiz") && /^\d+$/.test(seg[4] || "")) { openLab(c, n, "Quiz/" + seg[4]); return true; }
       return false;
     }
     if (sameName(seg[3], "Practice")) {
@@ -752,7 +753,8 @@
   function unitsOf(c) {
     if (c.units) {
       return c.units.map(function (u, i) {
-        return { n: i + 1, t: u.t, desc: u.desc, play: !!u.play, set: u.set, lab: !!u.lab };
+        return { n: i + 1, t: u.t, desc: u.desc, play: !!u.play, set: u.set,
+                 lab: !!u.lab && !!(window.OPLO_LAB && window.OPLO_LAB.has(c.id, i + 1)) };
       });
     }
     var out = [], n = 0;
@@ -1623,7 +1625,8 @@
         unit: function () { openUnit(c, n); },
         lesson: function (k) { openLab(c, n, "l" + k); },
         practice: function (id) { openLab(c, n, "Practice/" + id); },
-        test: function () { openLab(c, n, "Test"); }
+        test: function () { openLab(c, n, "Test"); },
+        quiz: function (k) { openLab(c, n, "Quiz/" + k); }
       },
       // What was done, as the unit's four dials. Mastery never falls.
       onProgress: function (d, un) {
@@ -1637,7 +1640,7 @@
     var LAB = window.OPLO_LAB;
     if (!LAB) return;
     var label = what === "Test" ? "Unit test" : what === "Challenge" ? "Course challenge" :
-      /^Practice\//.test(what) ? "Practice" : "Lesson";
+      /^Practice\//.test(what) ? "Practice" : /^Quiz\//.test(what) ? "Quiz" : "Lesson";
     if (!silent) enter("lab:" + c.id + ":" + n + ":" + what, label, function () { openLab(c, n, what, true); },
                        false, coursePath(c) + (n ? "/u" + n : "") + "/" + what);
     S.course = c;
@@ -1646,6 +1649,7 @@
     if (what === "Challenge") LAB.runTest(v, ctx, "course");
     else if (what === "Test") LAB.runTest(v, ctx, "unit");
     else if (/^Practice\//.test(what)) LAB.runPractice(v, ctx, what.slice(9));
+    else if (/^Quiz\//.test(what)) LAB.runQuiz(v, ctx, +what.slice(5));
     else LAB.runLesson(v, ctx, +what.slice(1));
     noFoot(); progress(null);
     show("lab");

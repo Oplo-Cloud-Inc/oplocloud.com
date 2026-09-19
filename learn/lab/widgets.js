@@ -23,6 +23,12 @@
      units       a chain of conversion factors whose units cancel
      table       a table with cells to fill
      bars        two ways of growing, side by side: adding and multiplying
+     trick       think of a number: the same steps with a number and a letter
+     evalsteps   order of operations: tap what comes next
+     tilemat     algebra tiles for like terms: zero pairs cancel
+     rectangle   a rectangle sized with sliders; its perimeter and area live
+     tester      two expressions side by side at the same x
+     share       division as fitting pieces — and why pieces of size 0 can't
 
    Every draggable thing is keyboard-operable (Tab to it, arrow keys to move
    it), and every scene says in words what it shows.
@@ -123,6 +129,7 @@
     var hist = [], tipped = false, everTipped = false;
     var box = el("div", "lw lw-balance");
     var svg = svgRoot(680, 330);
+    svg.setAttribute("viewBox", "0 44 680 286");     // the beam never rises above y = 58
     box.appendChild(svg);
     var eqLine = el("div", "lw-eq");
     box.appendChild(eqLine);
@@ -258,7 +265,10 @@
     paint();
     api.el = box;
     api.ready = function () {
-      if (mode.explore) return spec.gate === "tip" ? everTipped : spec.gate === "solve" ? solved() : true;
+      if (mode.explore) {
+        var g = spec.gateKind || spec.gate;
+        return g === "tip" ? everTipped : g === "solve" ? solved() : g ? hist.length > 0 : true;
+      }
       return solved();
     };
     api.check = function () { return { ok: solved(), say: tipped ? "The balance is tipped — put it back and do the same to both sides." : "Keep going until $x$ is alone on one side." }; };
@@ -1212,6 +1222,356 @@
     paint();
     api.el = box;
     api.ready = function () { return mode.explore ? (spec.gate ? n >= N : true) : moved; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () {};
+    return api;
+  });
+
+
+  /* ================================================================ Trick
+     Think of a number. spec: { steps: [{ t: "Double it", e: "2n" }, …],
+     min, max, v }  — each step's value for your number, and, when you ask,
+     the same steps written with a letter and drawn as tiles. */
+  CH.addKind("trick", function (spec, seed, mode) {
+    var api = {}, n = spec.v || 7, tried = {}, shown = false;
+    tried[n] = true;
+    var fns = spec.steps.map(function (s) { return LAB.compile(s.e); });
+    var box = el("div", "lw lw-trick");
+    var ctl = el("div", "lw-sliders");
+    var s = slider("your number", { min: spec.min || 1, max: spec.max || 20, step: 1, v: n }, function (v) { n = v; tried[v] = true; paint(); });
+    ctl.appendChild(s.el);
+    box.appendChild(ctl);
+    var list = el("ol", "lw-tsteps");
+    box.appendChild(list);
+    var tog = button("lw-btn", "Show it with a letter");
+    tog.addEventListener("click", function () { shown = !shown; tog.textContent = shown ? "Hide the letter" : "Show it with a letter"; paint(); });
+    var row = el("div", "lw-tools");
+    row.appendChild(tog);
+    box.appendChild(row);
+    function linParts(f) {                 // a·n + b, read off two points
+      var b = f({ n: 0 }), a = f({ n: 1 }) - b;
+      return { a: Math.round(a * 1000) / 1000, b: Math.round(b * 1000) / 1000 };
+    }
+    function tilesFor(f) {
+      var p = linParts(f), h = "";
+      if (p.a % 1 || p.b % 1 || p.a < 0 || p.b < 0 || p.a > 6 || p.b > 12) return "";
+      for (var i = 0; i < p.a; i++) h += '<i class="tn">n</i>';
+      for (var j = 0; j < p.b; j++) h += '<i class="t1"></i>';
+      return '<span class="lw-ttiles">' + h + "</span>";
+    }
+    function paint() {
+      list.innerHTML = "";
+      spec.steps.forEach(function (st, i) {
+        var v = fns[i]({ n: n });
+        var li = el("li", "lw-tstep" + (i === spec.steps.length - 1 ? " last" : ""));
+        li.innerHTML = '<span class="lw-tn">' + (i + 1) + '</span><span class="lw-tt">' + fmt(st.t) + "</span>" +
+          '<b class="lw-tv">' + m(num(v)) + "</b>" +
+          (shown ? '<span class="lw-te">' + m(st.e.replace(/\*/g, "")) + tilesFor(fns[i]) + "</span>" : "");
+        list.appendChild(li);
+      });
+      box.classList.toggle("shown", shown);
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return mode.explore && spec.gate ? Object.keys(tried).length >= 3 && shown : true; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () {};
+    return api;
+  });
+
+  /* ============================================================ Evalsteps
+     Order of operations, one tap at a time. spec: { stages: [[seg, …], …] }
+     where a seg is { t: tex, go: true } (the operation that comes next),
+     { t: tex, op: true, fb } (an operation that doesn't come next yet), or
+     { t: tex } (just text), and { t, now: true } marks a freshly worked
+     value. Tap the operation you'd do next; the last stage is the answer. */
+  CH.addKind("evalsteps", function (spec, seed, mode) {
+    var api = {}, k = 0, misses = 0;
+    var box = el("div", "lw lw-evs");
+    var stage = el("div", "lw-evs-line");
+    box.appendChild(stage);
+    var msg = el("div", "lw-msg");
+    box.appendChild(msg);
+    var trail = el("ol", "lw-evs-trail");
+    box.appendChild(trail);
+    function paint() {
+      stage.innerHTML = "";
+      var segs = spec.stages[k];
+      segs.forEach(function (sg) {
+        if (sg.go || sg.op) {
+          var b = button("lw-evs-op" + (k === spec.stages.length - 1 ? " done" : ""), m(sg.t));
+          b.addEventListener("click", function () {
+            if (sg.go) {
+              trail.appendChild(el("li", null, m(spec.stages[k].map(function (x) { return x.t; }).join(" "))));
+              k++; msg.innerHTML = ""; msg.className = "lw-msg";
+              paint();
+            } else {
+              misses++;
+              b.classList.remove("bad"); void b.offsetWidth; b.classList.add("bad");
+              msg.className = "lw-msg bad";
+              msg.innerHTML = fmt(sg.fb || "Not yet — something else comes first.");
+            }
+          });
+          stage.appendChild(b);
+        } else stage.appendChild(el("span", "lw-evs-t" + (sg.now ? " now" : ""), m(sg.t)));
+      });
+      var finished = k === spec.stages.length - 1;
+      box.classList.toggle("solved", finished);
+      if (finished) { msg.className = "lw-msg good"; msg.innerHTML = spec.done ? fmt(spec.done) : "Done — that's the value."; }
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return k === spec.stages.length - 1; };
+    api.check = function () { return { ok: api.ready(), helped: misses > 0 }; };
+    api.reveal = function () { k = spec.stages.length - 1; paint(); };
+    api.misses = function () { return misses; };
+    return api;
+  });
+
+  /* ============================================================= Tile mat
+     Algebra tiles for combining like terms. spec: { terms: [[3, "x"], [2, "1"],
+     [-1, "x"], [-5, "1"], [2, "y"]] }. A positive and a negative tile of the
+     same kind are a zero pair: tap one, then its opposite, and both go.
+     Gathering puts like tiles side by side. Done when no zero pairs remain. */
+  CH.addKind("tilemat", function (spec, seed, mode) {
+    var api = {}, tiles = [], sel = null, grouped = false, pairs = 0, id = 0;
+    spec.terms.forEach(function (t, ti) {
+      for (var i = 0; i < Math.abs(t[0]); i++) tiles.push({ id: id++, k: t[1], s: t[0] < 0 ? -1 : 1, term: ti });
+    });
+    var box = el("div", "lw lw-mat");
+    var mat = el("div", "lw-mat-in");
+    box.appendChild(mat);
+    var tools = el("div", "lw-tools");
+    var gb = button("lw-btn", "Gather like tiles");
+    gb.addEventListener("click", function () { grouped = !grouped; gb.textContent = grouped ? "Back to the expression's order" : "Gather like tiles"; paint(); });
+    tools.appendChild(gb);
+    box.appendChild(tools);
+    var msg = el("div", "lw-msg");
+    box.appendChild(msg);
+    var read = el("div", "lw-read");
+    box.appendChild(read);
+    var KIND = { x: "x", y: "y", "1": "1", x2: "x^2" };
+    function exprNow() {
+      // In the expression's own order, or gathered.
+      var groups = [];
+      if (grouped) {
+        ["x2", "x", "y", "1"].forEach(function (k) {
+          var c = tiles.filter(function (t) { return t.k === k; }).reduce(function (a, t) { return a + t.s; }, 0);
+          if (tiles.some(function (t) { return t.k === k; })) groups.push([c, k === "1" ? "" : KIND[k]]);
+        });
+        return LAB.poly(groups);
+      }
+      spec.terms.forEach(function (t, ti) {
+        var left = tiles.filter(function (x) { return x.term === ti; });
+        if (!left.length) return;
+        groups.push([left.reduce(function (a, x) { return a + x.s; }, 0), t[1] === "1" ? "" : KIND[t[1]]]);
+      });
+      return groups.length ? LAB.poly(groups, { keepZero: true }) : "0";
+    }
+    function simplified() {
+      return ["x2", "x", "y", "1"].every(function (k) {
+        var ts = tiles.filter(function (t) { return t.k === k; });
+        return !(ts.some(function (t) { return t.s > 0; }) && ts.some(function (t) { return t.s < 0; }));
+      });
+    }
+    function tileEl(t) {
+      var b = button("lw-tile k-" + t.k + (t.s < 0 ? " neg" : "") + (sel === t ? " sel" : ""),
+        t.k === "1" ? (t.s < 0 ? "−1" : "1") : (t.s < 0 ? "−" : "") + (t.k === "x2" ? "x²" : t.k));
+      b.setAttribute("aria-label", (t.s < 0 ? "negative " : "") + (t.k === "1" ? "one" : t.k === "x2" ? "x squared" : t.k) + " tile");
+      b.addEventListener("click", function () { tap(t, b); });
+      return b;
+    }
+    function tap(t, b) {
+      if (!sel) { sel = t; paint(); return; }
+      if (sel === t) { sel = null; paint(); return; }
+      if (sel.k === t.k && sel.s !== t.s) {
+        var a = sel;
+        sel = null;
+        pairs++;
+        var gone = mat.querySelectorAll(".sel, [data-id='" + t.id + "']");
+        [].forEach.call(mat.querySelectorAll(".lw-tile"), function (n) {
+          if (+n.dataset.id === a.id || +n.dataset.id === t.id) n.classList.add("zap");
+        });
+        msg.className = "lw-msg good";
+        msg.innerHTML = fmt("A zero pair: $" + (t.k === "1" ? "1 + (-1)" : t.k === "x2" ? "x^2 + (-x^2)" : t.k + " + (-" + t.k + ")") + " = 0$. They cancel.");
+        setTimeout(function () { tiles = tiles.filter(function (x) { return x !== a && x !== t; }); paint(); }, reduced() ? 0 : 280);
+        return;
+      }
+      msg.className = "lw-msg bad";
+      msg.innerHTML = sel.k !== t.k ? fmt("$" + (sel.k === "1" ? "1" : KIND[sel.k]) + "$ and $" + (t.k === "1" ? "1" : KIND[t.k]) + "$ are different kinds of tile — they can't cancel or combine.")
+        : "Those two have the same sign. A zero pair is one positive and one negative.";
+      sel = t;
+      paint();
+    }
+    function reduced() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+    function paint() {
+      mat.innerHTML = "";
+      if (grouped) {
+        ["x2", "x", "y", "1"].forEach(function (k) {
+          var ts = tiles.filter(function (t) { return t.k === k; });
+          if (!ts.length) return;
+          var row = el("div", "lw-mat-row");
+          ts.sort(function (a, b) { return b.s - a.s; }).forEach(function (t) { var e = tileEl(t); e.dataset.id = t.id; row.appendChild(e); });
+          mat.appendChild(row);
+        });
+      } else {
+        spec.terms.forEach(function (tm, ti) {
+          var ts = tiles.filter(function (t) { return t.term === ti; });
+          if (!ts.length) return;
+          var g = el("div", "lw-mat-g");
+          ts.forEach(function (t) { var e = tileEl(t); e.dataset.id = t.id; g.appendChild(e); });
+          mat.appendChild(g);
+        });
+      }
+      if (!tiles.length) mat.appendChild(el("div", "lw-mat-empty", "Nothing left: it all cancelled, so the value is 0."));
+      var done = simplified();
+      read.innerHTML = m(exprNow()) + (done ? '<span class="lw-tag good">simplified: ' + m(simplest()) + "</span>" : '<span class="lw-tag">' + pairs + " zero pair" + (pairs === 1 ? "" : "s") + " removed</span>");
+      box.classList.toggle("solved", done);
+      if (api.onChange) api.onChange();
+    }
+    function simplest() {
+      var g = [];
+      ["x2", "x", "y", "1"].forEach(function (k) {
+        var c = tiles.filter(function (t) { return t.k === k; }).reduce(function (a, t) { return a + t.s; }, 0);
+        if (c) g.push([c, k === "1" ? "" : KIND[k]]);
+      });
+      return LAB.poly(g);
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return simplified(); };
+    api.check = function () { return { ok: simplified(), say: "There's still a positive and a negative tile of the same kind. Pair them off." }; };
+    api.reveal = function () {
+      ["x2", "x", "y", "1"].forEach(function (k) {
+        var pos = tiles.filter(function (t) { return t.k === k && t.s > 0; }), neg = tiles.filter(function (t) { return t.k === k && t.s < 0; });
+        var n2 = Math.min(pos.length, neg.length);
+        tiles = tiles.filter(function (t) { return pos.slice(0, n2).indexOf(t) < 0 && neg.slice(0, n2).indexOf(t) < 0; });
+      });
+      grouped = true; paint();
+    };
+    return api;
+  });
+
+  /* ============================================================ Rectangle
+     A rectangle you size with sliders; its perimeter 2l + 2w and area lw
+     worked out live. spec: { l, w: { v, min, max }, target: { P, A } } */
+  CH.addKind("rectangle", function (spec, seed, mode) {
+    var api = {}, l = spec.l.v, w = spec.w.v, moved = false;
+    var box = el("div", "lw lw-rectw");
+    var maxL = spec.l.max, maxW = spec.w.max, u = Math.min(420 / maxL, 220 / maxW);
+    var svg = svgRoot(560, Math.round(maxW * u + 56));
+    box.appendChild(svg);
+    var ctl = el("div", "lw-sliders");
+    ctl.appendChild(slider("length $l$", spec.l, function (v) { l = v; moved = true; paint(); }).el);
+    ctl.appendChild(slider("width $w$", spec.w, function (v) { w = v; moved = true; paint(); }).el);
+    box.appendChild(ctl);
+    var read = el("div", "lw-read lw-rect-read");
+    box.appendChild(read);
+    function paint() {
+      svg.innerHTML = "";
+      var x0 = Math.round((560 - l * u) / 2) - 16, y0 = 32;
+      var g = S("g", {}, svg);
+      for (var i = 0; i <= l; i++) S("line", { x1: x0 + i * u, y1: y0, x2: x0 + i * u, y2: y0 + w * u, class: "lw-rgrid" }, g);
+      for (var j = 0; j <= w; j++) S("line", { x1: x0, y1: y0 + j * u, x2: x0 + l * u, y2: y0 + j * u, class: "lw-rgrid" }, g);
+      S("rect", { x: x0, y: y0, width: l * u, height: w * u, rx: 4, class: "lw-rrect" }, g);
+      var tl = S("text", { x: x0 + l * u / 2, y: y0 - 10, "text-anchor": "middle", class: "lw-dim" }, g); mtext(tl, "l = " + l);
+      var tw = S("text", { x: x0 + l * u + 12, y: y0 + w * u / 2 + 6, class: "lw-dim" }, g); mtext(tw, "w = " + w);
+      var P = 2 * l + 2 * w, A = l * w;
+      var t = spec.target || {};
+      var hitP = t.P == null || P === t.P, hitA = t.A == null || A === t.A;
+      read.innerHTML = '<span class="' + (t.P != null ? (P === t.P ? "ok" : "") : "") + '">' + m("P = 2l + 2w = 2(" + l + ") + 2(" + w + ") = " + P) + "</span>" +
+        '<span class="' + (t.A != null ? (A === t.A ? "ok" : "") : "") + '">' + m("A = lw = " + l + " \\cdot " + w + " = " + A) + "</span>" +
+        (t.P != null || t.A != null ? '<span class="lw-tag' + (hitP && hitA ? " good" : "") + '">aim: ' + (t.P != null ? "P = " + t.P : "") + (t.P != null && t.A != null ? ", " : "") + (t.A != null ? "A = " + t.A : "") + "</span>" : "");
+      box.classList.toggle("solved", (t.P != null || t.A != null) && hitP && hitA);
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    function hit() { var t = spec.target || {}; return (t.P == null || 2 * l + 2 * w === t.P) && (t.A == null || l * w === t.A); }
+    api.el = box;
+    api.ready = function () { return spec.target ? hit() : mode.explore ? (spec.gate ? moved : true) : moved; };
+    api.check = function () { return { ok: hit(), say: "Not yet — check both the perimeter and the area." }; };
+    api.reveal = function () { if (spec.answer) { l = spec.answer[0]; w = spec.answer[1]; ctl.querySelectorAll("input").forEach(function (x, i) { x.value = i ? w : l; x.dispatchEvent(new Event("input")); }); } };
+    return api;
+  });
+
+  /* =============================================================== Tester
+     Two expressions, one value of x, both worked out side by side — the
+     way to test whether they are equivalent. spec: { a, b, x: { v, min, max },
+     goal: "differ" | "agree3" } */
+  CH.addKind("tester", function (spec, seed, mode) {
+    var api = {}, x = spec.x.v, fa = LAB.compile(spec.a), fb = LAB.compile(spec.b), log = [], differed = false;
+    var box = el("div", "lw lw-tester");
+    var cards = el("div", "lw-tcards");
+    box.appendChild(cards);
+    var ctl = el("div", "lw-sliders");
+    ctl.appendChild(slider("$x$", spec.x, function (v) { x = v; record(); paint(); }).el);
+    box.appendChild(ctl);
+    var table = el("div", "lw-tlog");
+    box.appendChild(table);
+    function record() {
+      if (log.some(function (r) { return r[0] === x; })) return;
+      var a = fa({ x: x }), b = fb({ x: x });
+      log.push([x, a, b]);
+      if (Math.abs(a - b) > 1e-9) differed = true;
+    }
+    function paint() {
+      var a = fa({ x: x }), b = fb({ x: x }), same = Math.abs(a - b) < 1e-9;
+      cards.innerHTML = '<div class="lw-tcard"><span>' + m(spec.aTex || spec.a) + "</span><b>" + m(LAB.sub(spec.aTex || spec.a, { x: x }) + " = " + num(a)) + "</b></div>" +
+        '<div class="lw-teq ' + (same ? "same" : "diff") + '">' + (same ? "=" : "≠") + "</div>" +
+        '<div class="lw-tcard"><span>' + m(spec.bTex || spec.b) + "</span><b>" + m(LAB.sub(spec.bTex || spec.b, { x: x }) + " = " + num(b)) + "</b></div>";
+      table.innerHTML = log.length ? "<span class='lw-tlog-h'>Tried</span>" + log.map(function (r) {
+        var eq = Math.abs(r[1] - r[2]) < 1e-9;
+        return '<span class="' + (eq ? "eq" : "ne") + '">' + m("x = " + num(r[0])) + " " + (eq ? "✓" : "✗") + "</span>";
+      }).join("") : "";
+      if (api.onChange) api.onChange();
+    }
+    record();
+    paint();
+    api.el = box;
+    api.ready = function () { return spec.goal === "differ" ? differed : spec.goal === "agree3" ? log.length >= 3 : true; };
+    api.check = function () { return { ok: api.ready() }; };
+    api.reveal = function () {};
+    return api;
+  });
+
+  /* ================================================================ Share
+     Division as fitting pieces: how many pieces of size d fit into 12? As d
+     shrinks the count explodes, and at d = 0 no count is possible.
+     spec: { total, d: { v, min, max, step } } */
+  CH.addKind("share", function (spec, seed, mode) {
+    var api = {}, d = spec.d.v, total = spec.total || 12, reachedZero = false;
+    var box = el("div", "lw lw-share");
+    var svg = svgRoot(640, 110);
+    box.appendChild(svg);
+    var ctl = el("div", "lw-sliders");
+    ctl.appendChild(slider("piece size $d$", Object.assign({ show: function (v) { return "$" + num(v) + "$"; } }, spec.d), function (v) { d = v; if (v === 0) reachedZero = true; paint(); }).el);
+    box.appendChild(ctl);
+    var read = el("div", "lw-read");
+    box.appendChild(read);
+    function paint() {
+      svg.innerHTML = "";
+      var x0 = 20, W = 600, y = 30, h = 40;
+      S("rect", { x: x0, y: y, width: W, height: h, rx: 8, class: "lw-sbar" }, svg);
+      if (d > 0) {
+        var n = total / d, pw = W / n, count = Math.floor(n + 1e-9);
+        if (count <= 240) {
+          for (var i = 0; i < count; i++) S("rect", { x: x0 + i * pw + 1, y: y + 1, width: Math.max(0.6, pw - 2), height: h - 2, rx: Math.min(6, pw / 3), class: "lw-spiece " + (i % 2 ? "b" : "a") }, svg);
+        } else S("rect", { x: x0, y: y, width: W, height: h, rx: 8, class: "lw-spiece dense" }, svg);
+        read.innerHTML = m(total + " \\div " + num(d) + " = " + num(Math.round(total / d * 1000) / 1000)) + " &nbsp;<span class='lw-note'>— that many pieces of size " + num(d) + " fit.</span>";
+      } else {
+        var t = S("text", { x: x0 + W / 2, y: y + h / 2 + 6, "text-anchor": "middle", class: "lw-szero" }, svg);
+        t.textContent = "pieces of size 0 never fill it — no count works";
+        read.innerHTML = m(total + " \\div 0") + " is <b>undefined</b>.";
+      }
+      var ax = S("text", { x: x0, y: y + h + 22, class: "lw-glab" }, svg); ax.textContent = "0";
+      var bx = S("text", { x: x0 + W, y: y + h + 22, "text-anchor": "end", class: "lw-glab" }, svg); bx.textContent = String(total);
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return mode.explore && spec.gate ? reachedZero : true; };
     api.check = function () { return { ok: true }; };
     api.reveal = function () {};
     return api;

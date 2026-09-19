@@ -35,8 +35,8 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "6a6da74e",
-    "alg/u01.js": "24d025ef"
+    "lab/widgets.js": "093f4933",
+    "alg/u01.js": "33d621b3"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -69,7 +69,7 @@ window.OPLO_LAB = (function () {
     Delta: "Δ", delta: "δ", circ: "°", deg: "°", ldots: "…", cdots: "⋯", neq: "≠", leq: "≤", geq: "≥",
     in: "∈", sqrt: "√", checkmark: "✓", cancel: "", quad: " ", qquad: "  ",
     Rightarrow: "⇒", implies: "⇒", iff: "⇔", perp: "⊥", parallel: "∥", angle: "∠", triangle: "△",
-    emptyset: "∅", cup: "∪", cap: "∩", mid: "∣", star: "⋆", bullet: "•"
+    emptyset: "∅", cup: "∪", cap: "∩", mid: "∣", star: "⋆", bullet: "•", square: "□", Box: "□"
   };
   var REL = { "=": 1, "<": 1, ">": 1, "≤": 1, "≥": 1, "≠": 1, "≈": 1, "→": 1, "⇒": 1, "⇔": 1, "∈": 1 };
   var BIN = { "+": 1, "−": 1, "±": 1, "∓": 1, "·": 1, "×": 1, "÷": 1 };
@@ -115,6 +115,8 @@ window.OPLO_LAB = (function () {
           var body = group();
           push('<span class="mr">' + (idx ? '<span class="mr-i">' + mathHTML(idx) + "</span>" : "") +
                '<span class="mr-s">√</span><span class="mr-b">' + mathHTML(body) + "</span></span>", "val");
+        } else if (cmd === "xrightarrow") {
+          push('<span class="marr"><span class="marr-l">' + mathHTML(group()) + "</span><span>⟶</span></span>", "rel");
         } else if (cmd === "text" || cmd === "mathrm" || cmd === "textrm") {
           push('<span class="mt">' + esc(group()) + "</span>", "val");
         } else if (cmd === "mathbf" || cmd === "boldsymbol") {
@@ -896,6 +898,7 @@ window.OPLO_LAB = (function () {
     def.key = key; def.course = courseId; def.n = n;
     def.lessons = (def.lessons || []).map(function (l, i) { l.k = i + 1; l.unit = key; return l; });
     def.skills = (def.skills || []).map(function (sk) { sk.unit = key; return sk; });
+    def.quizzes = (def.quizzes || []).map(function (q, i) { q.k = i + 1; q.unit = key; return q; });
     UNITS[key] = def;
   }
   function fileFor(courseId, n) { return courseId + "/u" + (n < 10 ? "0" + n : n) + ".js"; }
@@ -987,9 +990,19 @@ window.OPLO_LAB = (function () {
       '<div class="lb-legend">' + LEVELS.slice(1).map(function (n, i) { return '<span><i class="l' + (i + 1) + '"></i>' + n + "</span>"; }).join("") + "</div>";
     wrap.appendChild(bar);
 
-    // Up next: the first lesson not done, else the weakest skill.
+    // Up next: the first lesson not done, then a quiz not yet taken, then
+    // the weakest skill, then the unit test.
     var nextLesson = u.lessons.filter(function (l) { return !lessonDone(l); })[0];
     var weakest = u.skills.slice().sort(function (a, b) { return level(a.id) - level(b.id); })[0];
+    var openQuiz = u.quizzes.filter(function (q) { return !REC.tests[q.unit + ":q" + q.k] && u.lessons.slice(0, q.after).every(lessonDone); })[0];
+    var next = nextLesson ? { k: "Lesson " + nextLesson.k, t: nextLesson.title, d: nextLesson.blurb, go: function () { ctx.go.lesson(nextLesson.k); } }
+      : openQuiz ? { k: openQuiz.title, t: "Check what's stuck so far", d: openQuiz.skills.length + " skills, " + openQuiz.skills.length * (openQuiz.per || 2) + " questions.", go: function () { ctx.go.quiz(openQuiz.k); } }
+      : weakest && level(weakest.id) < 3 ? { k: "Practice", t: stripMath(weakest.title), d: "Your weakest skill in this unit — " + LEVELS[level(weakest.id)].toLowerCase() + ".", go: function () { ctx.go.practice(weakest.id); } }
+      : { k: "Unit test", t: "Show what you know", d: "One problem from every skill. Right answers take skills to Mastered.", go: function () { ctx.go.test(); } };
+    var nb = button("lb-next", '<span class="lb-ntxt"><span class="lb-nk">Up next for you · ' + esc(next.k) + "</span><b>" + fmt(next.t) + '</b><span class="lb-nd">' + fmt(next.d || "") + "</span></span>" +
+      '<span class="lb-go">Go' + svg(ICON.arrow) + "</span>");
+    nb.addEventListener("click", next.go);
+    wrap.appendChild(nb);
 
     var lb = el("section", "lb-block");
     lb.appendChild(el("h2", "lb-h2", "Lessons"));
@@ -1006,6 +1019,17 @@ window.OPLO_LAB = (function () {
       b.addEventListener("click", function () { ctx.go.lesson(l.k); });
       li.appendChild(b);
       path.appendChild(li);
+      u.quizzes.filter(function (q) { return q.after === l.k; }).forEach(function (q) {
+        var best = REC.tests[q.unit + ":q" + q.k];
+        var qi = el("li", "lb-node quiz" + (best ? " done" : ""));
+        var qb = button("lb-lesson",
+          '<span class="lb-dot">' + svg(ICON.target) + "</span>" +
+          '<span class="lb-ltxt"><b>' + esc(q.title) + "</b><span>" + fmt(q.blurb || "A short check on the skills so far.") + "</span>" +
+          "<em>" + q.skills.length * (q.per || 2) + " questions" + (best ? " · best " + Math.round(best.best * 100) + "%" : "") + "</em></span>");
+        qb.addEventListener("click", function () { ctx.go.quiz(q.k); });
+        qi.appendChild(qb);
+        path.appendChild(qi);
+      });
     });
     lb.appendChild(path);
     wrap.appendChild(lb);
@@ -1180,6 +1204,62 @@ window.OPLO_LAB = (function () {
         });
       }, function (e) { failed(host, e); });
   }
+  /* A quiz: two problems from each of a few skills. It can lift a skill as
+     far as Proficient; Mastered is for the unit test and the course
+     challenge. */
+  function runQuiz(host, ctx, k) {
+    useAccount(ctx.me);
+    host.innerHTML = '<div class="lb-loading"><span></span><span></span><span></span></div>';
+    return load(ctx.course, ctx.n).then(function (u) {
+      var q = u.quizzes[k - 1];
+      if (!q) throw new Error("There's no quiz " + k + " in this unit.");
+      var seed = Date.now().toString(36), steps = [];
+      q.skills.forEach(function (id) {
+        var sk = u.skills.filter(function (s) { return s.id === id; })[0];
+        for (var i = 0; i < (q.per || 2); i++) steps.push(genStep(sk, seed + "q", i));
+      });
+      steps = rng(seed).shuffle(steps);
+      var before = {};
+      steps.forEach(function (s) { before[s.skillId] = level(s.skillId); });
+      CH.play(host, {
+        path: { eyebrow: q.title + " · Unit " + u.n, title: q.name || u.title, steps: steps },
+        me: ctx.me, record: false, fresh: true,
+        shownNote: "Read the working — the quiz counts this one as missed.",
+        summary: function (card, order) {
+          var right = 0, per = {};
+          order.forEach(function (r) {
+            if (!r.step.skillId) return;
+            var p = per[r.step.skillId] || (per[r.step.skillId] = { n: 0, ok: 0, t: r.step.skill });
+            p.n++; if (r.first) { p.ok++; right++; }
+          });
+          var changes = [];
+          Object.keys(per).forEach(function (id) {
+            var b = before[id], p = per[id], lv;
+            if (p.ok === p.n) lv = Math.min(3, Math.max(2, b + 1));
+            else if (p.ok === 0) lv = Math.max(1, b - 1);
+            else lv = Math.max(1, b);
+            setLevel(id, lv);
+            changes.push({ t: p.t, from: b, to: lv });
+          });
+          var pct = order.length ? right / order.length : 0;
+          var key = u.key + ":q" + q.k, prev = REC.tests[key] || {};
+          REC.tests[key] = { best: Math.max(prev.best || 0, pct), at: Date.now() };
+          changed();
+          if (ctx.onProgress) ctx.onProgress(unitDims(u));
+          var nextL = u.lessons[q.after];
+          endCard(card, {
+            title: pct >= 0.85 ? "Solid." : pct >= 0.6 ? "Good — a couple to revisit." : "Worth another look.",
+            line: right + " of " + order.length + " right first time — " + Math.round(pct * 100) + "%.",
+            changes: changes,
+            again: function () { runQuiz(host, ctx, k); },
+            next: nextL ? { label: "Next lesson: " + nextL.title, go: function () { ctx.go.lesson(nextL.k); } } : null,
+            unit: function () { ctx.go.unit(); }, unitLabel: "Unit " + u.n + ": " + u.title
+          });
+        }
+      });
+    }, function (e) { failed(host, e); });
+  }
+
   function endCard(card, o) {
     card.appendChild(el("div", "ch-endmark", '<svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23"/><path d="m16 27 7 7 13-15"/></svg>'));
     card.appendChild(el("h2", "ch-endh", esc(o.title)));
@@ -1230,9 +1310,10 @@ window.OPLO_LAB = (function () {
     // writing math
     rng: rng, mc: mc, gcd: gcd, frac: frac, fracText: fracText, num: num, poly: poly, lin: lin, signed: signed, sub: subst,
     // pages
-    renderUnit: renderUnit, runLesson: runLesson, runPractice: runPractice, runTest: runTest,
+    renderUnit: renderUnit, runLesson: runLesson, runPractice: runPractice, runTest: runTest, runQuiz: runQuiz,
     dims: function (courseId, n) { var u = UNITS[courseId + ":" + n]; useAccount(ME); return u ? unitDims(u) : null; },
     level: level, levels: LEVELS, useAccount: useAccount,
+    _lessonPath: lessonPath, _genStep: genStep,
     // widgets
     W: W, el: el, esc: esc, button: button, svg: svg
   };
