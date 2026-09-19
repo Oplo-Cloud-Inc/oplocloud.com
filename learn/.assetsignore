@@ -1,3 +1,12 @@
 # A note about why the video is not committed. It explains the folder to
 # somebody reading the repository and means nothing on a hostname.
 media/README.md
+
+# Answer keys are never assets. edu.oplocloud.com publishes this directory to
+# anybody who asks, so a key here is a key on the internet: the Algebra 2 file
+# was live for six hours on 2026-09-18 after a deploy from the working tree.
+# Exam questions are served by /api/v1/assessments; answers are never served.
+alg2-mp4-qam.json
+*answer-key*
+*answerkey*
+*.key.json
