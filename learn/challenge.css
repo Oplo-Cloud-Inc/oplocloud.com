@@ -53,7 +53,8 @@
   font-family: var(--font); font-size: 21px; line-height: 1.38; font-weight: 500;
   letter-spacing: -.012em; color: var(--ink); outline: none; max-width: 40em;
 }
-.ch-prompt p + p { margin-top: 12px; }
+.ch-prompt p + p { margin-top: 10px; }
+.ch-then p + p, .ch-after p + p { margin-top: 8px; }
 .ch-prompt em { font-style: normal; color: var(--blue); }
 .ch-prompt small { display: block; margin-top: 8px; font-size: 15px; font-weight: 400; color: var(--ink-2); letter-spacing: 0; }
 .ch-prompt blockquote {
@@ -115,6 +116,9 @@
 .ch-sheet.shown  { background: var(--canvas); }
 .ch-sheet.model  { background: #eef5fd; box-shadow: inset 0 0 0 1px rgba(0,113,227,.18); }
 .ch-why { margin-top: 6px; color: var(--ink); }
+/* A worked reason, a sentence to a line. */
+.ch-why .ch-ln { display: block; }
+.ch-why .ch-ln + .ch-ln { margin-top: 5px; }
 .ch-why em { font-style: italic; }
 .ch-lbl { display: block; font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 4px; }
 .ch-rateq { margin-top: 10px; font-weight: 600; }

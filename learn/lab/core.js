@@ -195,6 +195,30 @@ window.OPLO_LAB = (function () {
       return p.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^\w*])\*([^*\s][^*]*?)\*(?![\w*])/g, "$1<em>$2</em>");
     }).join("").replace(/\u0001/g, "$");
   }
+  /* One thought to a line. Two or three sentences run together are hard to
+     hold on to, so an explanation, a question and a worked reason are each
+     set with their sentences apart — the way a teacher writes them on a
+     board, not the way a paragraph is printed. Anything that already carries
+     its own blocks (a list, a line break, a quote) is left as it is, and a
+     single sentence is left alone. */
+  function paras(html, tag) {
+    if (typeof html !== "string" || /<(p|ul|ol|li|div|blockquote|h[1-6])\b/i.test(html)) return html;
+    // A written-in break already separates two thoughts; sentences inside
+    // each of them are separated too.
+    var blocks = html.split(/(?:<br\s*\/?>\s*){2,}/);
+    var parts = [];
+    blocks.forEach(function (b) {
+      b.replace(/([.!?])\s+(?=[A-Z“"(<])/g, "$1\u0001").split("\u0001").forEach(function (t) {
+        if (t.trim()) parts.push(t.trim());
+      });
+    });
+    if (parts.length < 2) return html;
+    return parts.map(function (t) {
+      return tag === "p" ? "<p>" + t + "</p>" : '<span class="ch-ln">' + t + "</span>";
+    }).join("");
+  }
+  var PARA_KEYS = { prompt: "p", then: "p", after: "p", why: "span" };
+
   // Every text field of a step, formatted once, before it is played.
   var TEXT_KEYS = ["prompt", "t", "fb", "why", "nudge", "label", "after", "then", "say", "caption", "placeholderHtml", "right"];
   function fmtStep(x) {
@@ -203,7 +227,7 @@ window.OPLO_LAB = (function () {
     var out = {};
     Object.keys(x).forEach(function (k) {
       var v = x[k];
-      if (typeof v === "string" && (TEXT_KEYS.indexOf(k) > -1)) out[k] = fmt(v);
+      if (typeof v === "string" && (TEXT_KEYS.indexOf(k) > -1)) out[k] = PARA_KEYS[k] ? paras(fmt(v), PARA_KEYS[k]) : fmt(v);
       else if (k === "hints" && Array.isArray(v)) out[k] = v.map(fmt);
       else if (k === "items" && Array.isArray(v) && typeof v[0] === "string") out[k] = v.map(fmt);
       else if (k === "parts" && Array.isArray(v) && typeof v[0] === "string") out[k] = v.map(fmt);
