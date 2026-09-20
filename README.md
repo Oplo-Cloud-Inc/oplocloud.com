@@ -17,6 +17,7 @@ apps that each keep their own product colour.
 | `/roxan/` | Roxan — the AI woven through every app |
 | `/learn/` | **OEdu** — the working product: the student's app, and the teacher's Console, which has its own left-rail shell and no top bar at all. See [TEACHER_UX.md](docs/TEACHER_UX.md) |
 | `/api/` | The platform API — identity, courses, grades. See its [README](api/README.md) |
+| `/dev/` | **Oplo Developer** — the developer site at `dev.oplocloud.com`. Black the whole way down, wearing the site's own bar and footer. Every picture and film in it is an empty slot until a file is dropped in `dev/media/` — see its [README](dev/media/README.md). Config: [wrangler.dev.toml](wrangler.dev.toml) |
 | `/oedu/` | OEdu education landing |
 | `/odocs/` `/osheets/` `/omails/` `/omaps/` `/osurf/` `/ophotos/` `/ocanvas/` | Suite app pages (early "coming soon" surfaces) |
 | `/oplo-accounts/` | Oplo Accounts — the ecosystem's single sign-in, over self-hosted [ZITADEL](https://zitadel.com) (OIDC). See its [README](oplo-accounts/README.md) |
@@ -76,6 +77,7 @@ edited — stopping at the first step that fails.
 ```bash
 tools/ship.sh             # the student app at edu.oplocloud.com
 tools/ship.sh --api       # remote D1 migrations, then the API, then the app
+tools/ship.sh --dev       # also the developer site at dev.oplocloud.com
 tools/ship.sh --dry-run   # merge and verify locally; publish nothing
 ```
 

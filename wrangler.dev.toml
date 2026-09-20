@@ -1,0 +1,78 @@
+# ===========================================================================
+# Oplo Developer — the developer site, on its own hostname.
+#
+# `dev.oplocloud.com` serves `dev/` and nothing else. A Worker with almost no
+# code: Cloudflare serves the directory as static assets, the same as the apex
+# does from GitHub Pages, and the only thing worker/dev.js is there for is the
+# redirect described in it.
+#
+# This file sits at the repository root rather than in `dev/`, the way OEdu's
+# does, for a reason that is not taste: the assets directory is published
+# verbatim, so a wrangler.toml inside it is a wrangler.toml served at
+# dev.oplocloud.com/wrangler.toml.
+#
+# ------------------------------------------------------------- Why a split
+#
+#     oplocloud.com          the company, and everything that explains it —
+#                            GitHub Pages
+#     dev.oplocloud.com      the developer site — this
+#     edu.oplocloud.com      OEdu itself, the thing people sign in to
+#     auth.oplocloud.com     Oplo Identity — the authentication portal
+#     api.oplocloud.com      the platform API — api/wrangler.toml
+#
+# All of them sit under one registrable domain, and that is load-bearing
+# rather than tidy: the session cookie is SameSite=Lax, so a request from
+# dev.oplocloud.com to api.oplocloud.com is same-site and carries it.
+#
+# The page's bar, chapter bar and footer are written by tools/build.py, and
+# every link in them is absolute — a relative one would resolve against this
+# hostname rather than against the company site. Run the builder before
+# deploying, or the chrome here is whatever it was the last time somebody did.
+# ===========================================================================
+# The default deploy carries no custom domain, so it lands on workers.dev and
+# takes nothing over. `--env production` is what attaches the hostname.
+#
+#     npx wrangler deploy -c wrangler.dev.toml                  → workers.dev
+#     npx wrangler deploy -c wrangler.dev.toml --env production → dev.oplocloud.com
+name = "oplo-dev"
+main = "worker/dev.js"
+compatibility_date = "2026-05-01"
+workers_dev = true
+
+[assets]
+directory = "./dev"
+# Files are matched before the script runs, so the Worker only sees requests
+# no file answered — which is what makes the redirect cheap.
+binding = "ASSETS"
+# A path that is not a file is not a page. This site has exactly one address,
+# and answering everything with index.html would cost something real: a
+# mistyped stylesheet href would come back as index.html with a 200, and a
+# trivial typo would surface as a page rendering unstyled rather than as a
+# missing file.
+not_found_handling = "none"
+
+# --------------------------------------------------------------- Production
+[env.production]
+name = "oplo-dev"
+main = "worker/dev.js"
+
+[env.production.assets]
+directory = "./dev"
+binding = "ASSETS"
+not_found_handling = "none"
+
+[[env.production.routes]]
+pattern = "dev.oplocloud.com"
+custom_domain = true
+
+# The path on the apex, which GitHub Pages would otherwise serve as a second
+# copy of this site. Two patterns rather than `/dev*`, which would also catch
+# a future /developers — a redirect that fires on a page nobody asked it about
+# is a bug that takes a year to notice.
+[[env.production.routes]]
+pattern = "oplocloud.com/dev"
+zone_name = "oplocloud.com"
+
+[[env.production.routes]]
+pattern = "oplocloud.com/dev/*"
+zone_name = "oplocloud.com"

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Oplo Developer</title>
+<meta name="description" content="Build on Oplo — the platforms, the tools and the documentation, as they are being made.">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://dev.oplocloud.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Oplo Developer">
+<meta property="og:title" content="Oplo Developer">
+<meta property="og:description" content="Build on Oplo — the platforms, the tools and the documentation, as they are being made.">
+<meta property="og:url" content="https://dev.oplocloud.com/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='84.13 107.80 206.73 194.91'%3E%3Cg transform='translate(73.919875, 252.710833)'%3E%3Cpath fill='%23f5f5f7' d='M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="oplo-chrome.css">
+<link rel="stylesheet" href="dev.css">
+</head>
+<body>
+
+<!-- ============================================================== Developer
+     dev.oplocloud.com — what Oplo is to somebody who builds on it. It is not
+     the company site and it is not a product people sign in to: it is the
+     page a developer lands on, and everything under it is a door into work
+     that is mostly still being done. The page says so rather than dressing an
+     empty room.
+
+     It wears oplocloud.com's own bar and footer, written into the oplo:
+     regions below by tools/build.py from the same NAV and FOOTER every page
+     on the site is built from — so the three hostnames cannot drift. Edit
+     them there and run `python3 tools/build.py`; anything typed inside a
+     region is replaced.
+
+     Every picture and film is a slot, the same contract as OEdu's welcome
+     page (learn/index.html):
+
+         <div class="dv-media" data-slot="Name" data-size="1600 × 900" data-src=""></div>
+
+     Put a file in dev/media/ and write its path into data-src —
+     "media/hero/os1.jpg". An image (.jpg .png .webp .avif .gif) is drawn as
+     an image and a film (.mp4 .webm .mov) plays muted and looping. data-alt
+     describes it for screen readers. An empty data-src draws the slot's name
+     and the size it looks best at, so the page is legible before a single
+     picture exists. data-eager turns lazy loading off for anything above the
+     fold. The film behind a "Watch" card goes in data-film-src.
+
+     Slots: hero-1 … hero-4 · film-1 … film-6 · os · studio · silicon ·
+     intelligence · cloud · edu · sdk
+     ======================================================================== -->
+<div class="dv" id="dev">
+
+  <!-- oplo:nav -->
+<nav class="nav" id="nav" aria-label="Oplo">
+  <div class="nav-in">
+    <a class="nav-brand" href="https://oplocloud.com/" aria-label="Oplo home">
+      <svg class="mark" viewBox="84.13 107.80 206.73 194.91" aria-hidden="true" focusable="false"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></svg>
+    </a>
+    <ul class="nav-links" id="navLinks">
+        <li><a href="https://oplocloud.com/products/">Products</a><button class="nav-more" type="button" aria-label="Products menu" aria-expanded="false" aria-controls="navMenu0"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="https://oplocloud.com/solutions/">Solutions</a><button class="nav-more" type="button" aria-label="Solutions menu" aria-expanded="false" aria-controls="navMenu1"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="https://oplocloud.com/resources/">Resources</a><button class="nav-more" type="button" aria-label="Resources menu" aria-expanded="false" aria-controls="navMenu2"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="https://oplocloud.com/company/">Company</a><button class="nav-more" type="button" aria-label="Company menu" aria-expanded="false" aria-controls="navMenu3"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="https://oplocloud.com/support/">Support</a><button class="nav-more" type="button" aria-label="Support menu" aria-expanded="false" aria-controls="navMenu4"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+    </ul>
+    <div class="nav-end"><button class="nav-search" id="navSearch" type="button" aria-label="Search oplocloud.com" aria-expanded="false" aria-controls="navFind"><svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button></div>
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="nav-flyout" id="navFlyout" hidden>
+    <div class="nav-flyout-bg"></div>
+    <div class="nav-flyout-in">
+      <div class="nav-menu" id="navMenu0" role="region" aria-label="Products">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Products</h2><ul><li><a href="https://oplocloud.com/products/">All Products</a></li><li><a href="https://oplocloud.com/hardware/">Hardware</a></li><li><a href="https://oplocloud.com/software/">Software</a></li><li><a href="https://oplocloud.com/intelligence/">Intelligence</a></li><li><a href="https://oplocloud.com/plus/">Oplo+</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Hardware and Software</h2><ul><li><a href="https://oplocloud.com/hardware/#silicon">Silicon</a></li><li><a href="https://oplocloud.com/hardware/#devices">Devices</a></li><li><a href="https://oplocloud.com/hardware/#accessories">Accessories</a></li><li><a href="https://oplocloud.com/software/#apps">Apps</a></li><li><a href="https://oplocloud.com/software/#updates">Updates</a></li><li><a href="https://oplocloud.com/software/#downloads">Downloads</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Oplo+</h2><ul><li><a href="https://oplocloud.com/plus/#plans">Plans</a></li><li><a href="https://oplocloud.com/plus/#perks">What’s Included</a></li><li><a href="https://oplocloud.com/plus/#compare">Compare Plans</a></li><li><a href="https://oplocloud.com/plus/#faq">Questions</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu1" role="region" aria-label="Solutions">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Solutions</h2><ul><li><a href="https://oplocloud.com/solutions/">Who It’s For</a></li><li><a href="https://oplocloud.com/solutions/#personal">Personal</a></li><li><a href="https://edu.oplocloud.com/">Education</a></li><li><a href="https://oplocloud.com/developers/">Developers</a></li><li><a href="https://oplocloud.com/solutions/#institutions">Business and Government</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Education</h2><ul><li><a href="https://edu.oplocloud.com/">OEdu</a></li><li><a href="https://edu.oplocloud.com/#students">Students</a></li><li><a href="https://edu.oplocloud.com/#teachers">Teachers</a></li><li><a href="https://edu.oplocloud.com/#families">Families</a></li><li><a href="https://edu.oplocloud.com/#schools">Schools</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Developers</h2><ul><li><a href="https://oplocloud.com/developers/#docs">Documentation</a></li><li><a href="https://oplocloud.com/developers/#sdks">SDKs</a></li><li><a href="https://oplocloud.com/developers/#design">Design Resources</a></li><li><a href="https://oplocloud.com/developers/#support">Developer Support</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu2" role="region" aria-label="Resources">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Resources</h2><ul><li><a href="https://oplocloud.com/resources/">All Resources</a></li><li><a href="https://oplocloud.com/privacy/">Privacy</a></li><li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li><li><a href="https://oplocloud.com/investor/">Investor Relations</a></li><li><a href="https://oplocloud.com/legal/">Legal</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Privacy</h2><ul><li><a href="https://oplocloud.com/privacy/features/">Features</a></li><li><a href="https://oplocloud.com/privacy/control/">Control</a></li><li><a href="https://oplocloud.com/privacy/labels/">Privacy Labels</a></li><li><a href="https://oplocloud.com/privacy/transparency/">Transparency Report</a></li><li><a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Investors</h2><ul><li><a href="https://oplocloud.com/investor/leadership/">Leadership and Governance</a></li><li><a href="https://oplocloud.com/investor/filings/">Filings</a></li><li><a href="https://oplocloud.com/investor/values/">Our Values</a></li><li><a href="https://oplocloud.com/investor/faq/">FAQ</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu3" role="region" aria-label="Company">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Oplo</h2><ul><li><a href="https://oplocloud.com/company/">About Oplo</a></li><li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li><li><a href="https://oplocloud.com/careers/">Careers</a></li><li><a href="https://oplocloud.com/investor/">Investor Relations</a></li><li><a href="https://oplocloud.com/contact/">Contact</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Quick Links</h2><ul><li><a href="https://oplocloud.com/company/#what">What We’re Building</a></li><li><a href="https://oplocloud.com/company/#where">Where We’re Going</a></li><li><a href="https://oplocloud.com/careers/#roles">Open Roles</a></li><li><a href="https://oplocloud.com/newsroom/#press">Press</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Legal</h2><ul><li><a href="https://oplocloud.com/legal/">Legal</a></li><li><a href="https://oplocloud.com/legal/terms/">Terms of Use</a></li><li><a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu4" role="region" aria-label="Support">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Support</h2><ul><li><a href="https://oplocloud.com/support/">Getting Help</a></li><li><a href="https://oplocloud.com/developers/#support">Developer Support</a></li><li><a href="https://oplocloud.com/contact/">Contact Oplo</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Quick Links</h2><ul><li><a href="https://oplocloud.com/sign-in/">Your Oplo Account</a></li><li><a href="https://oplocloud.com/support/#help">Get Help</a></li><li><a href="https://oplocloud.com/support/#developer-help">Developer Help</a></li><li><a href="https://oplocloud.com/plus/#faq">Oplo+ Questions</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Contact</h2><ul><li><a href="https://oplocloud.com/contact/#general">General Enquiries</a></li><li><a href="https://oplocloud.com/contact/#careers-contact">Careers Enquiries</a></li><li><a href="https://oplocloud.com/investor/contact/">Investor Contact</a></li></ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-find" id="navFind" hidden>
+    <div class="nav-find-in">
+      <form class="nav-find-form" role="search" action="#">
+        <svg viewBox="-1 -1 17 17" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <input id="navFindInput" type="search" placeholder="Search oplocloud.com" aria-label="Search oplocloud.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-controls="navFindList">
+        <button class="nav-find-clear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 8 8" aria-hidden="true" focusable="false"><path d="M1 1l6 6M7 1 1 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+      </form>
+      <p class="nav-find-label" id="navFindLabel">Quick Links</p>
+      <ul class="nav-find-list" id="navFindList" role="listbox" aria-labelledby="navFindLabel">
+          <li role="presentation"><a role="option" href="https://oplocloud.com/products/"><span class="t">Products</span></a></li>
+          <li role="presentation"><a role="option" href="https://edu.oplocloud.com/"><span class="t">OEdu</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/plus/"><span class="t">Oplo+</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/support/"><span class="t">Support</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/contact/"><span class="t">Contact Oplo</span></a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="nav-scrim" id="navScrim" hidden></div>
+</nav>
+<!-- /oplo:nav -->
+
+  <!-- oplo:chapter -->
+<div class="chapter">
+  <div class="chapter-in">
+    <a class="chapter-name" href="#top">Developer</a>
+    <nav class="chapter-links" aria-label="Developer sections"><a href="#start">Get started</a><a href="#platforms">Platforms</a><a href="#technologies">Technologies</a><a href="#downloads">Downloads</a><a href="#community">Community</a><a href="#support">Support</a></nav>
+    <a class="chapter-cta" href="https://oplocloud.com/sign-in/">Sign in</a>
+  </div>
+</div>
+<!-- /oplo:chapter -->
+
+  <main class="dv-main" id="top">
+
+    <!-- ------------------------------------------------------------ Hero
+         Four things worth leading with, in a rail that shows the edges of the
+         next and the last, so it reads as a place you can move through rather
+         than a banner that changes on its own. It does change on its own —
+         and the pause button next to the dots stops it, because a page that
+         moves under somebody reading it is a page that has stopped being
+         read. -->
+    <section class="dv-hero" aria-label="Featured" aria-roledescription="carousel">
+      <div class="dv-hero-track" id="dvHeroTrack" tabindex="0">
+
+        <article class="dv-slide" aria-label="1 of 4" aria-roledescription="slide">
+          <div class="dv-media dv-dark" data-slot="Hero 1" data-size="2560 × 1440 · image or film" data-src="" data-alt="" data-eager></div>
+          <div class="dv-slide-copy">
+            <a class="dv-pill" href="#platforms">Get ready</a>
+            <p><b>Oplo OS 1</b> <span class="dot">•</span> The first SDK is being cut. Here is what will be in it.</p>
+          </div>
+        </article>
+
+        <article class="dv-slide" aria-label="2 of 4" aria-roledescription="slide">
+          <div class="dv-media dv-dark" data-slot="Hero 2" data-size="2560 × 1440 · image or film" data-src="" data-alt="" data-eager></div>
+          <div class="dv-slide-copy">
+            <a class="dv-pill" href="#downloads">Explore now</a>
+            <p><b>OStudio</b> <span class="dot">•</span> The editor, the simulator and the profiler, in one app.</p>
+          </div>
+        </article>
+
+        <article class="dv-slide" aria-label="3 of 4" aria-roledescription="slide">
+          <div class="dv-media dv-dark" data-slot="Hero 3" data-size="2560 × 1440 · image or film" data-src="" data-alt="" data-film-src=""></div>
+          <div class="dv-slide-copy">
+            <button class="dv-pill" type="button" data-film>Replay</button>
+            <p><b>What we are building</b> <span class="dot">•</span> The whole system, and the parts of it that do not exist yet.</p>
+          </div>
+        </article>
+
+        <article class="dv-slide" aria-label="4 of 4" aria-roledescription="slide">
+          <div class="dv-media dv-dark" data-slot="Hero 4" data-size="2560 × 1440 · image or film" data-src="" data-alt=""></div>
+          <div class="dv-slide-copy">
+            <a class="dv-pill" href="#technologies">Learn more</a>
+            <p><b>Intelligence on the device</b> <span class="dot">•</span> Models that run on the machine in your hand.</p>
+          </div>
+        </article>
+
+      </div>
+
+      <div class="dv-hero-ctl">
+        <div class="dv-dots" id="dvDots" role="tablist" aria-label="Featured slides"></div>
+        <button class="dv-pause" id="dvPause" type="button" aria-label="Pause" aria-pressed="false">
+          <svg class="p" viewBox="0 0 16 16" aria-hidden="true"><rect x="4.4" y="3.6" width="2.6" height="8.8" rx="1"/><rect x="9" y="3.6" width="2.6" height="8.8" rx="1"/></svg>
+          <svg class="r" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.4 3.5v9l7.2-4.5z"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------- Get started
+         Apple puts its sessions here, with a date on every card. We have no
+         dates, so the cards carry what is true instead: whether a thing is
+         open, on request, or not built. A badge that says "In 3 days" on a
+         session nobody has scheduled is the one kind of lie a developer page
+         cannot afford. -->
+    <section class="dv-band" id="start">
+      <div class="dv-wrap dv-head-row">
+        <h2 class="dv-h2">Start where there is something to start on.</h2>
+      </div>
+      <div class="dv-rail" data-rail="start" tabindex="0" aria-label="Ways to start">
+        <article class="dv-note">
+          <span class="dv-badge is-open">Open</span>
+          <h3>Read the design system</h3>
+          <p>The type scale, the colour and the layout rules this site is built from, as a working stylesheet rather than a PDF.</p>
+          <span class="dv-note-meta">Documentation<br>No account needed</span>
+        </article>
+        <article class="dv-note">
+          <span class="dv-badge is-open">Open</span>
+          <h3>Look at OEdu</h3>
+          <p>The one Oplo product that is finished enough to sign in to. It is built on the same platform everything else will be.</p>
+          <span class="dv-note-meta">Product<br>edu.oplocloud.com</span>
+        </article>
+        <article class="dv-note">
+          <span class="dv-badge is-ask">On request</span>
+          <h3>Talk to an engineer</h3>
+          <p>There is no forum worth having yet, so developer questions reach the people who wrote the thing the same way everything else does.</p>
+          <span class="dv-note-meta">Conversation<br>Usually within a week</span>
+        </article>
+        <article class="dv-note">
+          <span class="dv-badge is-ask">On request</span>
+          <h3>Early access to the SDK</h3>
+          <p>Small, and chosen by what you are building rather than by who you are. Tell us the thing you want to make.</p>
+          <span class="dv-note-meta">Programme<br>Not yet open</span>
+        </article>
+        <article class="dv-note">
+          <span class="dv-badge">Not built</span>
+          <h3>API reference</h3>
+          <p>There is no API to document until there is an API. When there is, the reference goes here, and it will be the document our own engineers work from.</p>
+          <span class="dv-note-meta">Documentation<br>Nothing to read yet</span>
+        </article>
+        <article class="dv-note">
+          <span class="dv-badge">Not built</span>
+          <h3>App distribution</h3>
+          <p>No store, no review queue, no certificates. Every one of those is a promise about a device that has not shipped.</p>
+          <span class="dv-note-meta">Distribution<br>Nothing to read yet</span>
+        </article>
+      </div>
+      <div class="dv-wrap dv-rail-ctl">
+        <a class="dv-flat" href="https://oplocloud.com/contact/">Get in touch</a>
+        <div class="dv-arrows">
+          <button type="button" data-rail-go="start:-1" aria-label="Previous" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" data-rail-go="start:1" aria-label="Next"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------------- Films -->
+    <section class="dv-band" id="films">
+      <div class="dv-wrap dv-head-row">
+        <h2 class="dv-h2">Latest films.</h2>
+      </div>
+      <div class="dv-rail" data-rail="films" tabindex="0" aria-label="Latest films">
+        <article class="dv-film">
+          <button class="dv-film-btn" type="button" data-film>
+            <div class="dv-media dv-dark" data-slot="Film 1" data-size="1600 × 900" data-src="" data-alt="" data-film-src=""></div>
+            <span class="dv-film-tag">Oplo Developer</span>
+            <span class="dv-film-play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5.6 3.6v8.8l7-4.4z"/></svg></span>
+          </button>
+          <h3>Designing for Oplo OS</h3>
+        </article>
+        <article class="dv-film">
+          <button class="dv-film-btn" type="button" data-film>
+            <div class="dv-media dv-dark" data-slot="Film 2" data-size="1600 × 900" data-src="" data-alt="" data-film-src=""></div>
+            <span class="dv-film-tag">Oplo Developer</span>
+            <span class="dv-film-play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5.6 3.6v8.8l7-4.4z"/></svg></span>
+          </button>
+          <h3>What runs on the device, and what never leaves it</h3>
+        </article>
+        <article class="dv-film">
+          <button class="dv-film-btn" type="button" data-film>
+            <div class="dv-media dv-dark" data-slot="Film 3" data-size="1600 × 900" data-src="" data-alt="" data-film-src=""></div>
+            <span class="dv-film-tag">Oplo Developer</span>
+            <span class="dv-film-play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5.6 3.6v8.8l7-4.4z"/></svg></span>
+          </button>
+          <h3>A tour of OStudio</h3>
+        </article>
+        <article class="dv-film">
+          <button class="dv-film-btn" type="button" data-film>
+            <div class="dv-media dv-dark" data-slot="Film 4" data-size="1600 × 900" data-src="" data-alt="" data-film-src=""></div>
+            <span class="dv-film-tag">Oplo Developer</span>
+            <span class="dv-film-play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5.6 3.6v8.8l7-4.4z"/></svg></span>
+          </button>
+          <h3>Building OEdu on the platform</h3>
+        </article>
+        <article class="dv-film">
+          <button class="dv-film-btn" type="button" data-film>
+            <div class="dv-media dv-dark" data-slot="Film 5" data-size="1600 × 900" data-src="" data-alt="" data-film-src=""></div>
+            <span class="dv-film-tag">Oplo Developer</span>
+            <span class="dv-film-play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5.6 3.6v8.8l7-4.4z"/></svg></span>
+          </button>
+          <h3>Silicon, and the software written for it</h3>
+        </article>
+        <article class="dv-film">
+          <button class="dv-film-btn" type="button" data-film>
+            <div class="dv-media dv-dark" data-slot="Film 6" data-size="1600 × 900" data-src="" data-alt="" data-film-src=""></div>
+            <span class="dv-film-tag">Oplo Developer</span>
+            <span class="dv-film-play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5.6 3.6v8.8l7-4.4z"/></svg></span>
+          </button>
+          <h3>The one account, across every surface</h3>
+        </article>
+      </div>
+      <div class="dv-wrap dv-rail-ctl">
+        <span class="dv-flat is-quiet">Films are being made. None is finished.</span>
+        <div class="dv-arrows">
+          <button type="button" data-rail-go="films:-1" aria-label="Previous" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" data-rail-go="films:1" aria-label="Next"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------ For you -->
+    <section class="dv-band dv-foryou">
+      <div class="dv-wrap">
+        <h2 class="dv-h2">For you.</h2>
+        <div class="dv-glow">
+          <div class="dv-glow-in">
+            <p>Sign in to keep what you are reading, and to be told when a thing on this page stops saying “not yet”.</p>
+            <a class="dv-btn" href="https://oplocloud.com/sign-in/">Sign in</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------- Platforms
+         The grid Apple gives its operating systems. Ours are not all operating
+         systems and only one of them is finished, so each card says what it is
+         and what state it is in, and the state is the subtitle rather than a
+         badge you have to decode. -->
+    <section class="dv-band" id="platforms">
+      <div class="dv-wrap">
+        <h2 class="dv-h2">Platforms.</h2>
+        <div class="dv-grid2">
+          <article class="dv-plat">
+            <header><h3>Oplo OS <span>1</span></h3><p>In development</p></header>
+            <div class="dv-media dv-bare" data-slot="os" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
+          </article>
+          <article class="dv-plat">
+            <header><h3>OStudio</h3><p>In development</p></header>
+            <div class="dv-media dv-bare" data-slot="studio" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
+          </article>
+          <article class="dv-plat">
+            <header><h3>Oplo Silicon</h3><p>In design</p></header>
+            <div class="dv-media dv-bare" data-slot="silicon" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
+          </article>
+          <article class="dv-plat">
+            <header><h3>Oplo Intelligence</h3><p>In development</p></header>
+            <div class="dv-media dv-bare" data-slot="intelligence" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
+          </article>
+          <article class="dv-plat">
+            <header><h3>Oplo Cloud</h3><p>Running the platform API</p></header>
+            <div class="dv-media dv-bare" data-slot="cloud" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
+          </article>
+          <article class="dv-plat">
+            <header><h3>OEdu</h3><p>Shipping today</p></header>
+            <div class="dv-media dv-bare" data-slot="edu" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
+          </article>
+        </div>
+
+        <article class="dv-wide">
+          <div class="dv-media dv-bare dv-mark" data-slot="sdk" data-size="512 × 512 · a transparent PNG works well" data-src="" data-alt=""></div>
+          <h3>What is new for Oplo developers</h3>
+          <p>One page, kept honest: what changed this month, what is about to, and what we
+            said last month that turned out to be wrong.</p>
+          <a class="dv-link" href="https://oplocloud.com/newsroom/">Read the newsroom ›</a>
+        </article>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------- Technologies -->
+    <section class="dv-band dv-soft" id="technologies">
+      <div class="dv-wrap">
+        <h2 class="dv-h2">Technologies.</h2>
+        <p class="dv-lead">One platform learned once, rather than once per device. Everything below is
+          part of the same system — which is why there is one list and not six.</p>
+        <div class="dv-cols">
+          <div class="dv-col">
+            <h3>Interface</h3>
+            <ul>
+              <li>Design system</li><li>Layout and type</li><li>Motion</li>
+              <li>Accessibility</li><li>Dark and light</li>
+            </ul>
+          </div>
+          <div class="dv-col">
+            <h3>Intelligence</h3>
+            <ul>
+              <li>On-device models</li><li>Roxan</li><li>Speech and text</li>
+              <li>Vision</li><li>Private inference</li>
+            </ul>
+          </div>
+          <div class="dv-col">
+            <h3>Data</h3>
+            <ul>
+              <li>Accounts and identity</li><li>The platform API</li><li>Sync</li>
+              <li>Storage</li><li>Export and portability</li>
+            </ul>
+          </div>
+          <div class="dv-col">
+            <h3>System</h3>
+            <ul>
+              <li>Silicon</li><li>Power and thermals</li><li>Security</li>
+              <li>Updates</li><li>Diagnostics</li>
+            </ul>
+          </div>
+        </div>
+        <p class="dv-fine">Each of these is a heading with work behind it and no document in front of it
+          yet. They are listed so the shape of the platform is legible, not so the list can be
+          mistaken for a reference.</p>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------- Downloads -->
+    <section class="dv-band" id="downloads">
+      <div class="dv-wrap dv-split">
+        <div class="dv-split-copy">
+          <h2 class="dv-h2">Downloads.</h2>
+          <p class="dv-lead">Nothing to download yet — and a page of greyed-out buttons would be a worse
+            answer than this sentence. OStudio and the first SDK arrive together, because an SDK with
+            no tools to hold it is a tarball and a wish.</p>
+          <a class="dv-btn" href="https://oplocloud.com/contact/">Ask for early access</a>
+        </div>
+        <div class="dv-media" data-slot="Downloads" data-size="1400 × 1050" data-src="" data-alt=""></div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------- Community -->
+    <section class="dv-band dv-soft" id="community">
+      <div class="dv-wrap">
+        <h2 class="dv-h2">Community.</h2>
+        <div class="dv-grid3">
+          <article class="dv-cell">
+            <h3>Forums</h3>
+            <p>Not open. A forum with four posts in it reads as an abandoned building, so it opens when
+              there are enough people to fill it.</p>
+          </article>
+          <article class="dv-cell">
+            <h3>Open source</h3>
+            <p>The parts of Oplo that are not the product get published as we go. The design system this
+              site is built from is the first of them.</p>
+          </article>
+          <article class="dv-cell">
+            <h3>Office hours</h3>
+            <p>A conversation with whoever wrote the part you are asking about. Ask, and we will find the
+              hour.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------ Support -->
+    <section class="dv-band" id="support">
+      <div class="dv-wrap dv-split is-flip">
+        <div class="dv-media" data-slot="Support" data-size="1400 × 1050" data-src="" data-alt=""></div>
+        <div class="dv-split-copy">
+          <h2 class="dv-h2">Support.</h2>
+          <p class="dv-lead">There is no ticket queue to route you through and nobody in the middle. A
+            developer question reaches the people who built the thing, and the answer comes back from
+            them.</p>
+          <a class="dv-btn" href="https://oplocloud.com/support/">Getting help</a>
+          <a class="dv-link" href="https://oplocloud.com/contact/">Write to us ›</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------- Developer Program
+         The one band on the page that spends colour, the way the front page
+         spends it once on the blossom. -->
+    <section class="dv-program">
+      <div class="dv-wrap">
+        <svg class="dv-program-mark" viewBox="0 0 64 34" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="32" cy="9.5" r="6.5"/><path d="M20.5 32.5a11.5 11.5 0 0 1 23 0"/>
+          <circle cx="11" cy="12" r="5.2"/><path d="M1.5 31a9.6 9.6 0 0 1 12-9.2"/>
+          <circle cx="53" cy="12" r="5.2"/><path d="M62.5 31a9.6 9.6 0 0 0-12-9.2"/>
+        </svg>
+        <h2>Oplo Developer Program</h2>
+        <p>Not open, and we will say so plainly rather than take a name and a fee for a
+          platform that has not shipped. When it opens it will carry the SDK, the tools and a
+          way to put what you make in front of people — and not a day before all three exist.</p>
+        <a class="dv-btn is-light" href="https://oplocloud.com/contact/">Tell us what you would build</a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- oplo:foot -->
+<div class="notes"><details class="notes-d" open><summary>Notes</summary><ol><li>Oplo has not shipped a developer platform. Every section of that page describes work in progress, and one that says a thing is not built means exactly that.</li><li>Nothing on it is an offer, a commitment to a specification, or a date.</li></ol></details></div>
+<footer class="foot" aria-label="Oplo footer">
+  <div class="foot-in">
+    <div class="foot-note">
+      <p>Oplo is building its first hardware, software and intelligence products. Pages on this site describe intent and direction; availability and capability are not final.</p>
+      <p>Questions about any of it? <a href="https://oplocloud.com/contact/">Get in touch</a>.</p>
+    </div>
+    <div class="foot-rule"></div>
+    <div class="foot-cols">
+      <div class="foot-col">
+        <h3>Products</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/products/">All products</a></li>
+          <li><a href="https://oplocloud.com/hardware/">Hardware</a></li>
+          <li><a href="https://oplocloud.com/software/">Software</a></li>
+          <li><a href="https://oplocloud.com/intelligence/">Intelligence</a></li>
+          <li><a href="https://oplocloud.com/plus/">Oplo+</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Solutions</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/solutions/">Who it is for</a></li>
+          <li><a href="https://oplocloud.com/solutions/#personal">Personal</a></li>
+          <li><a href="https://edu.oplocloud.com/">Education</a></li>
+          <li><a href="https://oplocloud.com/developers/">Developers</a></li>
+          <li><a href="https://oplocloud.com/solutions/#institutions">Business and government</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Resources</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/resources/">Everything written down</a></li>
+          <li><a href="https://oplocloud.com/developers/#docs">Developer documentation</a></li>
+          <li><a href="https://oplocloud.com/developers/#design">Design resources</a></li>
+          <li><a href="https://oplocloud.com/privacy/">Privacy</a></li>
+          <li><a href="https://oplocloud.com/privacy/labels/">Privacy labels</a></li>
+          <li><a href="https://oplocloud.com/privacy/transparency/">Transparency report</a></li>
+          <li><a href="https://oplocloud.com/legal/">Legal</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/company/">About Oplo</a></li>
+          <li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li>
+          <li><a href="https://oplocloud.com/careers/">Careers</a></li>
+          <li><a href="https://oplocloud.com/investor/">Investor relations</a></li>
+          <li><a href="https://oplocloud.com/contact/">Contact</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Support</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/support/">Getting help</a></li>
+          <li><a href="https://oplocloud.com/developers/#support">Developer support</a></li>
+          <li><a href="https://oplocloud.com/sign-in/">Your Oplo account</a></li>
+          <li><a href="https://oplocloud.com/plus/#faq">Oplo+ membership</a></li>
+          <li><a href="https://oplocloud.com/contact/">Write to us</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-rule"></div>
+    <div class="foot-bar">
+      <span>Copyright &copy; 2026 Oplo, Inc. All rights reserved.</span>
+      <span class="foot-legal">
+        <a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a>
+        <a href="https://oplocloud.com/legal/terms/">Terms of Use</a>
+        <a href="https://oplocloud.com/legal/">Legal</a>
+        <a href="https://oplocloud.com/sitemap.xml">Site Map</a>
+      </span>
+      <span class="foot-region">United States</span>
+    </div>
+  </div>
+</footer>
+<!-- /oplo:foot -->
+
+  <!-- The film, when there is one to play. -->
+  <div class="dv-film-box" id="dvFilm" hidden>
+    <div class="dv-film-scrim" data-film-close></div>
+    <div class="dv-film-stage" role="dialog" aria-modal="true" aria-label="Film">
+      <button class="dv-film-close" type="button" data-film-close aria-label="Close">
+        <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <video id="dvFilmVideo" controls playsinline></video>
+      <p class="dv-film-none" id="dvFilmNone">No film has been given to this card yet. Put one in
+        <code>dev/media/</code> and write its path into <code>data-film-src</code>.</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="oplo-menu.js" defer></script>
+<script src="oplo-search.js" defer></script>
+<script src="dev.js" defer></script>
+
+</body>
+</html>
