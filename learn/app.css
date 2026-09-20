@@ -240,6 +240,7 @@ svg { display: block; }
 }
 .lx-tag.soon { color: var(--ink-3); }
 .lx-tag.live { background: #e8f5ee; color: var(--green); }
+.lx-tag.late { background: #fdeceb; color: #c9372c; }
 
 /* Resume strip */
 .lx-resume {
@@ -5526,3 +5527,45 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
   }
 
 
+
+/* ==========================================================================
+   Classes
+   The courses a teacher put this student in, and the work set in them. One
+   card to a course, with room to breathe: the course and who teaches it, how
+   far through it they are, then the work — because that is the order the
+   questions come in.
+   ========================================================================== */
+.lx-classes { display: grid; gap: 22px; margin-top: 30px; }
+.lx-class {
+  padding: 26px 28px 22px; border-radius: 22px; background: var(--paper);
+  border: 1px solid var(--hair);
+}
+.lx-class-head { display: flex; align-items: center; gap: 16px; }
+.lx-class-head .ic {
+  flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px;
+}
+.lx-class-head .ic svg { width: 26px; height: 26px; }
+.lx-class-txt { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.lx-class-txt h2 {
+  margin: 0; font-family: var(--font); font-size: 22px; font-weight: 600; letter-spacing: -.02em; color: var(--ink);
+}
+.lx-class-who { margin: 0; font-size: 14px; color: var(--ink-2); }
+.lx-class-head .lx-btn { flex: none; }
+.lx-class-bar { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+.lx-class-pct { flex: none; font-size: 13px; font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lx-class-bar i { flex: 1; height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.lx-class-bar i b { display: block; height: 100%; border-radius: 3px; background: var(--blue); transition: width .5s var(--ease); }
+.lx-class-work { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--hair); }
+.lx-class-h { margin: 0 0 12px; font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.lx-class-none { margin: 0; font-size: 14.5px; color: var(--ink-3); }
+.lx-work { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.lx-work-row {
+  display: flex; align-items: center; gap: 16px; padding: 12px 14px; border-radius: 14px;
+  transition: background .15s var(--ease);
+}
+.lx-work-row:hover { background: var(--sunk); }
+.lx-work-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.lx-work-txt b { font-size: 15.5px; font-weight: 500; color: var(--ink); }
+.lx-work-txt span { font-size: 13px; color: var(--ink-3); }
+.lx-work-txt span:empty { display: none; }
+.lx-work-due { flex: none; }
