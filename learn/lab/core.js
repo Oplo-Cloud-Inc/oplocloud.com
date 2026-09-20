@@ -37,7 +37,8 @@ window.OPLO_LAB = (function () {
   var FILES = {
     "lab/widgets.js": "1e6b1214",
     "alg/u01.js": "36485330",
-    "alg/u02.js": "e1ae3453"
+    "alg/u02.js": "e1ae3453",
+    "g8/u01.js": "01f6613c"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -116,6 +117,9 @@ window.OPLO_LAB = (function () {
           var body = group();
           push('<span class="mr">' + (idx ? '<span class="mr-i">' + mathHTML(idx) + "</span>" : "") +
                '<span class="mr-s">√</span><span class="mr-b">' + mathHTML(body) + "</span></span>", "val");
+        } else if (cmd === "overline" || cmd === "bar") {
+          // The bar over a repeating decimal: 0.\overline{27}.
+          push('<span class="mov">' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "xrightarrow") {
           push('<span class="marr"><span class="marr-l">' + mathHTML(group()) + "</span><span>⟶</span></span>", "rel");
         } else if (cmd === "text" || cmd === "mathrm" || cmd === "textrm") {
@@ -164,6 +168,8 @@ window.OPLO_LAB = (function () {
       if (c === "|") { i++; push('<span class="mbar">|</span>', prev === "val" ? "val" : "open"); continue; }
       if (/[0-9.]/.test(c)) {
         var mm = /^[0-9]*\.?[0-9]+|^[0-9]+/.exec(s.slice(i));
+        // A point with no digits after it — "0.\overline{3}" — is just a point.
+        if (!mm) { i++; push('<span class="mn">' + c + "</span>", "val"); continue; }
         i += mm[0].length;
         push('<span class="mn">' + mm[0] + "</span>", "val");
         continue;

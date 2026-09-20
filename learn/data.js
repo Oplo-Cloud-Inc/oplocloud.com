@@ -405,6 +405,46 @@ window.OPLO = (function () {
     grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
   };
 
+
+  /* 8th Grade Math (New York), a lab course like Algebra I: its units are
+     interactive lessons, practice that generates its own problems, and tests
+     (learn/lab/, learn/g8/). The unit list follows the NY Next Generation
+     standards as Khan Academy arranges them. */
+  var G8 = {
+    id: "g8", t: "8th Grade Math", hue: BLUE, subject: "Math", level: "Grade 8", tag: "Interactive",
+    lab: true,
+    d: "The year arithmetic turns into algebra: roots, powers, lines, and the numbers that are not fractions.",
+    lede: "Eighth grade, done by seeing why. A square you size until its area is what you want, a decimal that repeats " +
+          "until you catch it, powers you can count on your fingers, and lines you drag into place — each idea met by " +
+          "moving something, practised until it is easy, and tested until it sticks.",
+    glyph: '<path d="M4 19h16"/><path d="M6 19V9l5-4 5 4v10"/><path d="M9 19v-5h5v5"/>',
+    objectives: [
+      "Write fractions as repeating decimals and repeating decimals as fractions.",
+      "Find square roots and cube roots, and solve equations that need them.",
+      "Tell rational numbers from irrational ones, and place an irrational number between two rationals.",
+      "Use the exponent rules, including zero and negative exponents.",
+      "Read, write and calculate with numbers in scientific notation.",
+      "Solve linear equations, graph lines and read what their slope and intercepts mean."
+    ],
+    units: [
+      { t: "Numbers and operations", lab: true,
+        desc: "Repeating decimals both ways, square and cube roots, rational against irrational, the exponent rules including negative exponents, and scientific notation." },
+      { t: "Solving equations with one unknown", lab: true,
+        desc: "Equations with variables on both sides and with brackets, and telling whether an equation has one solution, none, or every number." },
+      { t: "Linear equations and functions", lab: true,
+        desc: "Graphing proportional relationships, slope as a rate, slope-intercept form, and what makes a relation a function." },
+      { t: "Systems of equations", lab: true,
+        desc: "Two lines at once: solving by graphing and by substitution, and what it means when they never meet or are the same line." },
+      { t: "Geometry", lab: true,
+        desc: "Angles made by parallel lines, the angles of a triangle, the Pythagorean theorem and its converse, and the volume of cylinders, cones and spheres." },
+      { t: "Geometric transformations", lab: true,
+        desc: "Translations, rotations, reflections and dilations; congruence and similarity as what survives them." },
+      { t: "Data and modeling", lab: true,
+        desc: "Scatter plots, lines of fit, two-way tables, and what a model does and does not say." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
+  };
+
   var MEDIA = {
     id: "media", t: "Media Arts", hue: "#8f5cff", subject: "English", level: "Introductory",
     tag: "Arts and Design",
@@ -485,6 +525,7 @@ window.OPLO = (function () {
       d: "Arithmetic, algebra and geometry, done by seeing why rather than remembering how.",
       courses: [SEEING,
         ALG,
+        G8,
         stub("geo", "Geometry",  "Math", BLUE, "Proof as an argument you could win, not a form to fill in.", SIGMA)] },
     { n: "Science", hue: GREEN,
       d: "Method first: what would have to be true, and how would you find out.",
@@ -509,6 +550,7 @@ window.OPLO = (function () {
     seeing: { 1: [], 2: [1], 3: [2] },
     alg: { 1: [], 2: [1], 3: [1], 4: [2], 5: [4], 6: [5], 7: [6], 8: [4], 9: [8], 10: [8], 11: [1], 12: [9, 11],
            13: [11], 14: [13, 10], 15: [11] },
+    g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
     biz: {}
   };
 
