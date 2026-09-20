@@ -30,6 +30,10 @@
      tester      two expressions side by side at the same x
      share       division as fitting pieces — and why pieces of size 0 can't
      walk        a worked example, one line at a time, each with its reason
+     move        a shape on a grid you slide, turn, flip or scale — the four
+                 transformations, done rather than described
+     solid       a real solid in three dimensions (three.js), built out of
+                 unit cubes and turned with the pointer
 
    Every draggable thing is keyboard-operable (Tab to it, arrow keys to move
    it), and every scene says in words what it shows.
@@ -1618,6 +1622,295 @@
     api.ready = function () { return mode.explore && spec.gate ? k >= rows.length : true; };
     api.check = function () { return { ok: true }; };
     api.reveal = function () { while (k < rows.length) { row(rows[k], k, false); k++; } paint(); };
+    return api;
+  });
+
+  /* ================================================================ Move
+     A transformation you perform. The shape you start with stays on the grid
+     as a ghost; the one you are moving follows the controls, so the four
+     transformations are things you do and watch rather than rules you are
+     told:
+
+       translate   step it left, right, up and down
+       rotate      quarter turns about a centre, either way
+       reflect     flip it over the x-axis, the y-axis or the line y = x
+       dilate      scale it about a centre
+
+     spec: { shape: [[x,y], …], kind, center: [x,y], target: [[x,y], …],
+             x: [lo,hi], y: [lo,hi], gate: bool, hint: text }
+     With a target, it is solved when the image lands on it; without one it
+     is a scene to play with. */
+  CH.addKind("move", function (spec, seed, mode) {
+    var api = {}, kind = spec.kind || "translate";
+    var xr = spec.x || [-8, 8], yr = spec.y || [-8, 8], c = spec.center || [0, 0];
+    var st = { dx: 0, dy: 0, turn: 0, flip: null, k: 1 }, moved = false;
+    var W = 460, H = Math.round(W * (yr[1] - yr[0]) / (xr[1] - xr[0])), pad = 22;
+    function X(v) { return pad + (v - xr[0]) / (xr[1] - xr[0]) * (W - 2 * pad); }
+    function Y(v) { return H - pad - (v - yr[0]) / (yr[1] - yr[0]) * (H - 2 * pad); }
+    var box = el("div", "lw lw-move");
+    var svg = svgRoot(W, H, "lw-mv");
+    box.appendChild(svg);
+    var ctl = el("div", "lw-tools");
+    box.appendChild(ctl);
+    var read = el("div", "lw-read");
+    box.appendChild(read);
+
+    function image() {
+      return spec.shape.map(function (p) {
+        var x = p[0], y = p[1], t;
+        if (kind === "translate") return [x + st.dx, y + st.dy];
+        if (kind === "rotate") {
+          x -= c[0]; y -= c[1];
+          for (var i = 0; i < ((st.turn % 4) + 4) % 4; i++) { t = x; x = -y; y = t; }   // a quarter turn, counterclockwise
+          return [r2(x + c[0]), r2(y + c[1])];
+        }
+        if (kind === "reflect") {
+          if (st.flip === "x") return [x, -y];
+          if (st.flip === "y") return [-x, y];
+          if (st.flip === "yx") return [y, x];
+          return [x, y];
+        }
+        return [r2(c[0] + (x - c[0]) * st.k), r2(c[1] + (y - c[1]) * st.k)];
+      });
+    }
+    function same(a, b) {
+      return a.length === b.length && a.every(function (p, i) { return Math.abs(p[0] - b[i][0]) < 1e-9 && Math.abs(p[1] - b[i][1]) < 1e-9; });
+    }
+    function poly(pts, cls, g) {
+      return S("polygon", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), class: cls }, g);
+    }
+    function paint() {
+      svg.innerHTML = "";
+      var grid = S("g", { class: "lw-grid" }, svg);
+      for (var gx = Math.ceil(xr[0]); gx <= xr[1]; gx++) S("line", { x1: X(gx), y1: Y(yr[0]), x2: X(gx), y2: Y(yr[1]), class: "g" }, grid);
+      for (var gy = Math.ceil(yr[0]); gy <= yr[1]; gy++) S("line", { x1: X(xr[0]), y1: Y(gy), x2: X(xr[1]), y2: Y(gy), class: "g" }, grid);
+      var axes = S("g", { class: "lw-axes" }, svg);
+      S("line", { x1: X(xr[0]), y1: Y(0), x2: X(xr[1]), y2: Y(0) }, axes);
+      S("line", { x1: X(0), y1: Y(yr[0]), x2: X(0), y2: Y(yr[1]) }, axes);
+      if (kind === "reflect" && st.flip) {                       // the mirror
+        var ml = st.flip === "x" ? [[xr[0], 0], [xr[1], 0]] : st.flip === "y" ? [[0, yr[0]], [0, yr[1]]]
+          : [[Math.max(xr[0], yr[0]), Math.max(xr[0], yr[0])], [Math.min(xr[1], yr[1]), Math.min(xr[1], yr[1])]];
+        S("line", { x1: X(ml[0][0]), y1: Y(ml[0][1]), x2: X(ml[1][0]), y2: Y(ml[1][1]), class: "lw-mirror" }, svg);
+      }
+      if (spec.target) poly(spec.target, "lw-mv-target", svg);
+      poly(spec.shape, "lw-mv-ghost", svg);
+      var img = image();
+      poly(img, "lw-mv-img", svg);
+      img.forEach(function (p) { S("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, class: "lw-mv-dot" }, svg); });
+      if (kind === "rotate" || kind === "dilate") {
+        S("circle", { cx: X(c[0]), cy: Y(c[1]), r: 4.5, class: "lw-mv-c" }, svg);
+        var ct = S("text", { x: X(c[0]) + 9, y: Y(c[1]) - 9, class: "lw-pl" }, svg);
+        ct.textContent = "centre";
+      }
+      var hit = spec.target && same(img, spec.target);
+      box.classList.toggle("solved", !!hit);
+      function part(v, name) { return v ? name + " " + LAB.signed(v) : name; }
+      read.innerHTML = (kind === "translate" ? m("(x, y) \\to (" + part(st.dx, "x") + ", " + part(st.dy, "y") + ")")
+        : kind === "rotate" ? m(((((st.turn % 4) + 4) % 4) * 90) + "^\\circ \\text{ counterclockwise}")
+        : kind === "reflect" ? (st.flip ? m("\\text{flipped over the } " + (st.flip === "x" ? "x\\text{-axis}" : st.flip === "y" ? "y\\text{-axis}" : "\\text{line } y = x")) : "<span class='lw-note'>Pick a line to flip over.</span>")
+        : m("\\text{scale factor } " + num(st.k)))
+        + (spec.target ? (hit ? '<span class="lw-tag good">on target</span>' : '<span class="lw-tag">match the outline</span>') : "");
+      if (api.onChange) api.onChange();
+    }
+    function act(label, f, aria) {
+      var b = button("lw-btn", label);
+      if (aria) b.setAttribute("aria-label", aria);
+      b.addEventListener("click", function () { f(); moved = true; paint(); });
+      return b;
+    }
+    if (kind === "translate") {
+      ctl.appendChild(act("←", function () { st.dx--; }, "Left"));
+      ctl.appendChild(act("→", function () { st.dx++; }, "Right"));
+      ctl.appendChild(act("↑", function () { st.dy++; }, "Up"));
+      ctl.appendChild(act("↓", function () { st.dy--; }, "Down"));
+    } else if (kind === "rotate") {
+      ctl.appendChild(act("↺ 90°", function () { st.turn++; }, "Turn 90 degrees counterclockwise"));
+      ctl.appendChild(act("↻ 90°", function () { st.turn--; }, "Turn 90 degrees clockwise"));
+    } else if (kind === "reflect") {
+      ctl.appendChild(act("Over the x-axis", function () { st.flip = st.flip === "x" ? null : "x"; }));
+      ctl.appendChild(act("Over the y-axis", function () { st.flip = st.flip === "y" ? null : "y"; }));
+      ctl.appendChild(act("Over y = x", function () { st.flip = st.flip === "yx" ? null : "yx"; }));
+    } else {
+      ctl.appendChild(act("×2", function () { st.k = r2(st.k * 2); }, "Twice as big"));
+      ctl.appendChild(act("÷2", function () { st.k = r2(st.k / 2); }, "Half the size"));
+    }
+    ctl.appendChild(act("Start again", function () { st = { dx: 0, dy: 0, turn: 0, flip: null, k: 1 }; }));
+    paint();
+    api.el = box;
+    api.state = function () { return { image: image(), move: Object.assign({}, st) }; };
+    api.ready = function () {
+      if (spec.target) return same(image(), spec.target);
+      return mode.explore ? (spec.gate ? moved : true) : moved;
+    };
+    api.check = function () {
+      var ok = spec.target ? same(image(), spec.target) : true;
+      return { ok: ok, say: ok ? null : spec.hint || "Not there yet — keep going until it sits on the outline." };
+    };
+    api.reveal = function () {
+      if (!spec.answer) return;
+      Object.keys(spec.answer).forEach(function (k) { st[k] = spec.answer[k]; });
+      paint();
+    };
+    return api;
+  });
+
+  /* =============================================================== Solid
+     A solid you can turn. Volume is the one idea on paper that paper is bad
+     at: a cube drawn flat is a hexagon with lines in it, and the unit cubes
+     inside are imagined rather than seen. So this one is real 3D — three.js,
+     loaded only when a lesson asks for it (670 KB, fetched once) — built out
+     of the unit cubes it is counting, and turned by dragging.
+
+     spec: { edge: starting edge, max, target: a volume to reach, kind }
+     With a target it is solved when the volume matches; without one it is a
+     scene to play with. Everything it shows is also said in words underneath,
+     so nothing depends on seeing the 3D. */
+  var THREE_URL = "vendor/three.module.min.js", threeLib = null;
+  function three() {
+    if (!threeLib) threeLib = import(new URL(THREE_URL, document.baseURI).href);
+    return threeLib;
+  }
+  CH.addKind("solid", function (spec, seed, mode) {
+    var api = {}, edge = spec.edge || 2, maxE = spec.max || 6, moved = false;
+    var box = el("div", "lw lw-solid");
+    var stage = el("div", "lw-solid-stage");
+    stage.setAttribute("role", "img");
+    box.appendChild(stage);
+    var ctl = el("div", "lw-sliders");
+    box.appendChild(ctl);
+    var read = el("div", "lw-read");
+    box.appendChild(read);
+    var s = slider("edge", { min: 1, max: maxE, step: 1, v: edge }, function (v) { edge = v; moved = true; build(); say(); });
+    ctl.appendChild(s.el);
+
+    var css = getComputedStyle(document.documentElement);
+    function colour(name, fallback) {
+      var v = (css.getPropertyValue(name) || "").trim();
+      return v || fallback;
+    }
+    function say() {
+      var vol = edge * edge * edge;
+      var hit = spec.target != null && vol === spec.target;
+      read.innerHTML = m("\\text{edge } " + edge + " \;\\to\; \\text{volume } " + edge + "^3 = " + vol) +
+        (spec.target != null ? (hit ? '<span class="lw-tag good">volume ' + spec.target + "</span>"
+                                    : '<span class="lw-tag">target volume ' + spec.target + "</span>") : "");
+      stage.setAttribute("aria-label", "A cube " + edge + " by " + edge + " by " + edge + ", made of " + (edge * edge * edge) + " unit cubes.");
+      box.classList.toggle("solved", !!hit);
+      if (api.onChange) api.onChange();
+    }
+
+    var T = null, renderer = null, scene = null, camera = null, group = null, raf = 0, spin = 0, drag = null;
+    var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    stage.appendChild(el("p", "lw-note", "Loading the 3D view…"));
+    three().then(function (lib) {
+      T = lib;
+      stage.innerHTML = "";
+      renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.setSize(stage.clientWidth || 420, 300, false);
+      renderer.domElement.style.width = "100%";
+      renderer.domElement.style.height = "auto";
+      stage.appendChild(renderer.domElement);
+      scene = new T.Scene();
+      camera = new T.PerspectiveCamera(34, (stage.clientWidth || 420) / 300, 0.1, 100);
+      camera.position.set(7, 6, 9);
+      camera.lookAt(0, 0, 0);
+      scene.add(new T.AmbientLight(0xffffff, 1.1));
+      var key = new T.DirectionalLight(0xffffff, 1.5);
+      key.position.set(5, 8, 6);
+      scene.add(key);
+      var fill = new T.DirectionalLight(0xffffff, 0.5);
+      fill.position.set(-6, 2, -4);
+      scene.add(fill);
+      build();
+      turnBy(0, 0);
+      loop();
+      // Dragging turns it; the arrow keys do the same from a keyboard.
+      renderer.domElement.style.touchAction = "none";
+      renderer.domElement.setAttribute("tabindex", "0");
+      renderer.domElement.addEventListener("pointerdown", function (e) {
+        drag = { x: e.clientX, y: e.clientY };
+        try { renderer.domElement.setPointerCapture(e.pointerId); } catch (x) { /* synthetic pointer */ }
+      });
+      renderer.domElement.addEventListener("pointermove", function (e) {
+        if (!drag) return;
+        turnBy((e.clientX - drag.x) * 0.01, (e.clientY - drag.y) * 0.01);
+        drag = { x: e.clientX, y: e.clientY };
+      });
+      ["pointerup", "pointercancel"].forEach(function (k) {
+        renderer.domElement.addEventListener(k, function () { drag = null; });
+      });
+      renderer.domElement.addEventListener("keydown", function (e) {
+        var d = { ArrowLeft: [-0.2, 0], ArrowRight: [0.2, 0], ArrowUp: [0, -0.2], ArrowDown: [0, 0.2] }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        turnBy(d[0], d[1]);
+      });
+    }, function () {
+      stage.innerHTML = "";
+      stage.appendChild(el("p", "lw-note", "The 3D view could not be loaded — the numbers below say the same thing."));
+    });
+
+    function turnBy(dx, dy) {
+      if (!group) return;
+      group.rotation.y += dx;
+      group.rotation.x = Math.max(-0.9, Math.min(0.9, group.rotation.x + dy));
+      moved = true;
+    }
+    function build() {
+      if (!T || !scene) return;
+      if (group) { scene.remove(group); dispose(group); }
+      group = new T.Group();
+      var unit = 1, off = (edge - 1) / 2;
+      var geo = new T.BoxGeometry(unit * 0.94, unit * 0.94, unit * 0.94);
+      var mat = new T.MeshLambertMaterial({ color: new T.Color(colour("--lw-blue", "#5b8cff")) });
+      var edgeGeo = new T.EdgesGeometry(geo);
+      var edgeMat = new T.LineBasicMaterial({ color: new T.Color(colour("--lw-tile", "#ffffff")), transparent: true, opacity: 0.35 });
+      var mesh = new T.InstancedMesh(geo, mat, edge * edge * edge);
+      var dummy = new T.Object3D(), i = 0;
+      for (var x = 0; x < edge; x++) {
+        for (var y = 0; y < edge; y++) {
+          for (var z = 0; z < edge; z++) {
+            dummy.position.set(x - off, y - off, z - off);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i++, dummy.matrix);
+            var ln = new T.LineSegments(edgeGeo, edgeMat);
+            ln.position.copy(dummy.position);
+            group.add(ln);
+          }
+        }
+      }
+      group.add(mesh);
+      var k = 4.2 / Math.max(2, edge);                 // a big cube and a small one both fill the view
+      group.scale.setScalar(k);
+      group.rotation.set(0.35, 0.6, 0);
+      scene.add(group);
+    }
+    function dispose(obj) {
+      obj.traverse && obj.traverse(function (o) {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (mm) { mm.dispose(); });
+      });
+    }
+    function loop() {
+      raf = requestAnimationFrame(loop);
+      // A lesson left behind on a hidden view keeps its scene, but there is
+      // nothing to draw for: no work is done until it is on screen again.
+      if (!renderer || !scene || !camera || document.hidden || box.offsetParent === null) return;
+      if (group && !drag && !reduced) group.rotation.y += 0.0022;
+      renderer.render(scene, camera);
+    }
+    say();
+    api.el = box;
+    api.ready = function () { return spec.target != null ? edge * edge * edge === spec.target : mode.explore ? (spec.gate ? moved : true) : moved; };
+    api.check = function () { return { ok: api.ready() }; };
+    api.reveal = function () { if (spec.target != null) { edge = Math.round(Math.cbrt(spec.target)); s.set(edge); build(); say(); } };
+    api.destroy = function () {
+      cancelAnimationFrame(raf);
+      if (group) dispose(group);
+      if (renderer) { renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); }
+      renderer = scene = camera = group = null;
+    };
     return api;
   });
 

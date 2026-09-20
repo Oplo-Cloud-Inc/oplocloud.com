@@ -144,6 +144,10 @@ html[data-look="obsidian"] .lx-card:hover {
 html[data-look="obsidian"] .lx-tag.live {
   background: rgba(62,224,137,0.147);
 }
+html[data-look="obsidian"] .lx-tag.late {
+  background: rgba(235,61,51,0.115);
+  color: #ea8c85;
+}
 html[data-look="obsidian"] .lx-resume {
   background: #212124;
 }

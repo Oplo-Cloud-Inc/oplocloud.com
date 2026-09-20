@@ -193,16 +193,20 @@ CHEVRON = ('<svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d=
            'stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>')
 
 
-def flyout(depth):
+def flyout(depth, menus_spec=None, labels=None):
+    """The panels the bar's chevrons open. Defaults to this site's; the
+    developer site passes its own, because its bar is its own bar."""
+    menus_spec = MENUS if menus_spec is None else menus_spec
+    labels = NAV if labels is None else labels
     menus = ""
-    for i, cols in enumerate(MENUS):
+    for i, cols in enumerate(menus_spec):
         body = ""
         for c, (heading, links) in enumerate(cols):
             li = "".join(f'<li><a href="{rel(depth, h)}">{l}</a></li>' for l, h in links)
             body += (f'\n        <div class="nav-menu-col{" big" if c == 0 else ""}">'
                      f'<h2 class="nav-menu-h">{heading}</h2><ul>{li}</ul></div>')
         menus += (f'\n      <div class="nav-menu" id="navMenu{i}" role="region" '
-                  f'aria-label="{NAV[i][0]}">{body}\n      </div>')
+                  f'aria-label="{labels[i][0]}">{body}\n      </div>')
     return f'''  <div class="nav-flyout" id="navFlyout" hidden>
     <div class="nav-flyout-bg"></div>
     <div class="nav-flyout-in">{menus}
@@ -211,37 +215,57 @@ def flyout(depth):
 '''
 
 
-def nav(depth, active=""):
+def nav(depth, active="", links=None, menus_spec=None, quick_spec=None,
+        word="", home="", scope="oplocloud.com", cta=None, label="Oplo"):
+    """The bar.
+
+    Everything about it is a parameter because there are now two of them: this
+    site's, and the developer site's, which is its own front door rather than a
+    sub-bar under this one. They are the same markup and the same behaviour —
+    oplo-menu.js and oplo-search.js drive both — differing only in what is in
+    them, so neither can pick up a habit the other does not have.
+
+      word   a wordmark beside the mark ("Developer"), making the lockup say
+             which of the two you are looking at
+      scope  what the search searches, said in the placeholder and read by
+             oplo-search.js from the brand's href
+      cta    (label, target) for a button at the right end of the bar
+    """
+    links = NAV if links is None else links
+    menus_spec = MENUS if menus_spec is None else menus_spec
+    quick_spec = QUICK if quick_spec is None else quick_spec
     mark = (f'<svg class="mark" viewBox="{MARK_VB}" aria-hidden="true" focusable="false">'
             f'<g transform="translate({MARK_TR})"><path fill="currentColor" d="{MARK_D}"/></g></svg>')
+    word_html = f'<span class="nav-word">{word}</span>' if word else ""
     items = "".join(
         f'\n        <li><a href="{rel(depth, href)}"'
         + (' aria-current="page"' if href == active else "")
-        + f'>{label}</a>'
-        + (f'<button class="nav-more" type="button" aria-label="{label} menu" aria-expanded="false" '
-           f'aria-controls="navMenu{i}">{CHEVRON}</button>' if i < len(MENUS) else "")
+        + f'>{label_}</a>'
+        + (f'<button class="nav-more" type="button" aria-label="{label_} menu" aria-expanded="false" '
+           f'aria-controls="navMenu{i}">{CHEVRON}</button>' if i < len(menus_spec) else "")
         + '</li>'
-        for i, (label, href) in enumerate(NAV))
+        for i, (label_, href) in enumerate(links))
     quick = "".join(f'\n          <li role="presentation"><a role="option" href="{rel(depth, href)}">'
-                    f'<span class="t">{label}</span></a></li>' for label, href in QUICK)
+                    f'<span class="t">{label_}</span></a></li>' for label_, href in quick_spec)
+    action = f'<a class="nav-cta" href="{rel(depth, cta[1])}">{cta[0]}</a>' if cta else ""
     big_icon = SEARCH_ICON.replace('viewBox="0 0 15 15"', 'viewBox="-1 -1 17 17"')
-    return f'''<nav class="nav" id="nav" aria-label="Oplo">
+    return f'''<nav class="nav" id="nav" aria-label="{label}">
   <div class="nav-in">
-    <a class="nav-brand" href="{rel(depth, "")}" aria-label="Oplo home">
-      {mark}
+    <a class="nav-brand" href="{rel(depth, home)}" aria-label="{label} home">
+      {mark}{word_html}
     </a>
     <ul class="nav-links" id="navLinks">{items}
     </ul>
-    <div class="nav-end"><button class="nav-search" id="navSearch" type="button" aria-label="Search oplocloud.com" aria-expanded="false" aria-controls="navFind">{SEARCH_ICON}</button></div>
+    <div class="nav-end"><button class="nav-search" id="navSearch" type="button" aria-label="Search {scope}" aria-expanded="false" aria-controls="navFind">{SEARCH_ICON}</button>{action}</div>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
     </button>
   </div>
-{flyout(depth)}  <div class="nav-find" id="navFind" hidden>
+{flyout(depth, menus_spec, links)}  <div class="nav-find" id="navFind" hidden>
     <div class="nav-find-in">
       <form class="nav-find-form" role="search" action="#">
         {big_icon}
-        <input id="navFindInput" type="search" placeholder="Search oplocloud.com" aria-label="Search oplocloud.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-controls="navFindList">
+        <input id="navFindInput" type="search" placeholder="Search {scope}" aria-label="Search {scope}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-controls="navFindList">
         <button class="nav-find-clear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 8 8" aria-hidden="true" focusable="false"><path d="M1 1l6 6M7 1 1 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
       </form>
       <p class="nav-find-label" id="navFindLabel">Quick Links</p>
@@ -2496,9 +2520,51 @@ OEDU_SECTIONS = [("Students", "#students"), ("Teachers", "#teachers"),
 # two front doors that disagree.
 DEV_PAGE = "dev/index.html"
 DEV_CSS = "dev/oplo-chrome.css"
-DEV_SECTIONS = [("Get started", "#start"), ("Platforms", "#platforms"),
-                ("Technologies", "#technologies"), ("Downloads", "#downloads"),
-                ("Community", "#community"), ("Support", "#support")]
+# The developer site's own bar. It is the bar there — not a sub-bar under this
+# site's — because somebody who types dev.oplocloud.com came for the platform,
+# and the first thing they meet should be the platform's own front door. The
+# way back to the company is the footer, which is this site's footer entire.
+DEV_NAV = [("Get started", "#start"), ("Platforms", "#platforms"),
+           ("Technologies", "#technologies"), ("Downloads", "#downloads"),
+           ("Community", "#community"), ("Support", "#support")]
+
+# What each chevron opens, in DEV_NAV's order. Every target is a section or a
+# card that exists on the page, or an absolute link off it — checklinks.py
+# resolves the anchors, so a menu can never point at nothing.
+DEV_MENUS = [
+    [("Explore", [("Ways to start", "#start"), ("Platforms", "#platforms"),
+                  ("Technologies", "#technologies"), ("Latest films", "#films")]),
+     ("Open today", [("Design system", SITE + "developers/#design"), ("OEdu", OEDU),
+                     ("Talk to an engineer", SITE + "contact/")]),
+     ("Not yet", [("API reference", "#start"), ("Early access", "#start"),
+                  ("App distribution", "#start")])],
+    [("Explore Platforms", [("All platforms", "#platforms"), ("Oplo OS", "#p-os"),
+                            ("OStudio", "#p-studio"), ("Oplo Silicon", "#p-silicon"),
+                            ("Oplo Intelligence", "#p-intelligence"), ("Oplo Cloud", "#p-cloud"),
+                            ("OEdu", "#p-edu")]),
+     ("Featured", [("What is new", "#whats-new"), ("Newsroom", SITE + "newsroom/"),
+                   ("Open OEdu", OEDU)])],
+    [("Explore Technologies", [("All technologies", "#technologies"), ("Interface", "#t-interface"),
+                               ("Intelligence", "#t-intelligence"), ("Data", "#t-data"),
+                               ("System", "#t-system")]),
+     ("Elsewhere", [("Oplo intelligence", SITE + "intelligence/"), ("Oplo hardware", SITE + "hardware/"),
+                    ("Oplo software", SITE + "software/"), ("Privacy", SITE + "privacy/")])],
+    [("Downloads", [("What there is", "#downloads"), ("OStudio", "#p-studio"),
+                    ("Ask for early access", SITE + "contact/")]),
+     ("Instead, for now", [("Design system", SITE + "developers/#design"),
+                           ("Look at OEdu", OEDU), ("What is new", "#whats-new")])],
+    [("Explore Community", [("Overview", "#community"), ("Forums", "#c-forums"),
+                            ("Open source", "#c-open-source"), ("Office hours", "#c-office-hours")]),
+     ("Featured", [("Latest films", "#films"), ("Newsroom", SITE + "newsroom/"),
+                   ("Careers", SITE + "careers/")])],
+    [("Get help", [("Developer support", "#support"), ("Getting help", SITE + "support/"),
+                   ("Write to us", SITE + "contact/")]),
+     ("Account", [("Your Oplo account", SITE + "sign-in/"), ("Oplo+", SITE + "plus/")])],
+]
+
+# What the magnifier offers before anything is typed.
+DEV_QUICK = [("Platforms", "#platforms"), ("Technologies", "#technologies"),
+             ("Downloads", "#downloads"), ("OEdu", OEDU), ("oplocloud.com", SITE)]
 DEV_NOTES = [
     "Oplo has not shipped a developer platform. Every section of that page describes "
     "work in progress, and one that says a thing is not built means exactly that.",
@@ -2640,14 +2706,66 @@ def oedu_chrome():
 
 
 def dev_chrome():
-    # The developer site has no sign-in of its own — there is nothing to sign
-    # in to yet — so the chapter bar's action is the site's own account page.
-    sub = absolute(chapter(0, "Developer", DEV_SECTIONS, "#top", ("Sign in", "sign-in/")))
-    regions(DEV_PAGE, (("nav", absolute(nav(0))), ("chapter", sub),
-                       ("foot", site_footer(DEV_NOTES))))
+    # One bar, and it is the developer site's own: the mark with "Developer"
+    # beside it, its own links and menus, its own search, and a Sign in that
+    # goes to the one Oplo account. Not this site's bar with a sub-bar under
+    # it — somebody who typed dev.oplocloud.com came for the platform, and the
+    # first thing they meet should be the platform's front door. The way back
+    # to the company is the footer, which is this site's footer entire.
+    #
+    # It is still built by nav(), from the same parts, so it cannot pick up a
+    # habit the site's bar does not have, or miss a fix the site's bar gets.
+    bar = nav(0, links=DEV_NAV, menus_spec=DEV_MENUS, quick_spec=DEV_QUICK,
+              word="Developer", home=DEV, scope="the developer site",
+              cta=("Sign in", SITE + "sign-in/"), label="Oplo Developer")
+    regions(DEV_PAGE, (("nav", bar), ("foot", site_footer(DEV_NOTES))))
     chrome_css(DEV_CSS, ".dv")
     chrome_js("dev")
-    print(f"  wrote {DEV_PAGE} bar, chapter bar and footer, {DEV_CSS}, dev/oplo-menu.js and dev/oplo-search.js")
+    dev_search_index()
+    print(f"  wrote {DEV_PAGE} bar and footer, {DEV_CSS}, dev/oplo-menu.js and dev/oplo-search.js")
+
+
+def dev_search_index():
+    """What the developer site's magnifier looks through.
+
+    Its own, not this site's: oplo-search.js reads the index from beside the
+    page the brand links to, and the developer bar's brand is the developer
+    site. Searching a developer site should find the developer site — and the
+    two places worth leaving it for are in here by name.
+
+    The page is one page, so its sections are the entries. Each is read back
+    out of the built page rather than listed here, so the index can only ever
+    describe headings that exist."""
+    import html as htmllib, json
+
+    def text(s_):
+        return " ".join(htmllib.unescape(re.sub(r"<[^>]+>", " ", s_ or "")).split())
+
+    page = io.open(os.path.join(ROOT, DEV_PAGE), encoding="utf-8").read()
+    # Only the sections the bar names, in its order, so the two agree.
+    blurb = {
+        "#start": "Where to start: what is open today, what is on request, and what is not built yet.",
+        "#platforms": "Oplo OS, OStudio, Oplo Silicon, Oplo Intelligence, Oplo Cloud and OEdu.",
+        "#technologies": "One platform learned once: interface, intelligence, data and system.",
+        "#downloads": "Nothing to download yet. OStudio and the first SDK arrive together.",
+        "#community": "Forums, open source and office hours — and which of them are open.",
+        "#support": "A developer question reaches the people who built the thing.",
+        "#films": "Films about building on Oplo.",
+    }
+    pages = []
+    for label, anchor in DEV_NAV + [("Latest films", "#films")]:
+        h = re.search(r'id="' + anchor[1:] + r'"[^>]*>.*?<h2[^>]*>(.*?)</h2>', page, re.S)
+        pages.append({"t": label, "d": blurb[anchor],
+                      "k": text(h.group(1)) if h else label, "u": anchor})
+    pages.append({"t": "Oplo", "d": "The company, and everything that explains it.",
+                  "k": "hardware software intelligence products company support", "u": SITE})
+    pages.append({"t": "OEdu", "d": "Sign in to OEdu — courses, the gradebook, and the family view.",
+                  "k": "education students teachers families school", "u": OEDU})
+    out = os.path.join(ROOT, "dev/assets/search-index.json")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    io.open(out, "w", encoding="utf-8").write(
+        json.dumps({"pages": pages}, ensure_ascii=False, separators=(",", ":")) + "\n")
+    print(f"  wrote dev/assets/search-index.json ({len(pages)} entries)")
 
 
 # ----------------------------------------------------------------- Search

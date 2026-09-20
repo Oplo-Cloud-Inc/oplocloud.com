@@ -1,12 +1,16 @@
 /* ==========================================================================
    Oplo Developer — dev.oplocloud.com.
 
-   The developer's door into Oplo. It wears oplocloud.com's own bar, chapter
-   bar and footer — generated into index.html and oplo-chrome.css by
-   tools/build.py, the same way every page on the site gets them — and between
-   them it takes its manners from Apple's developer site: black the whole way
-   down, a peek carousel at the top, rails you swipe, and panels of quiet grey
-   on the black.
+   The developer's door into Oplo. One bar, its own — the mark with
+   "Developer" beside it, its own links, menus and search — and under it
+   oplocloud.com's own footer, which is the way back to the company. Both are
+   generated into index.html and oplo-chrome.css by tools/build.py, from the
+   same nav() and FOOTER every page on the site is built from, so the bar here
+   and the bar there cannot drift apart.
+
+   Between them it takes its manners from Apple's developer site: black the
+   whole way down, a peek carousel at the top, rails you swipe, and panels of
+   quiet grey on the black.
 
    Dark, and not as a theme. A developer site is read at night and read for a
    long time, and the black is what makes the one band of colour at the bottom
@@ -57,26 +61,35 @@ body.dv-locked { overflow: hidden; }
 .dv :focus-visible { outline: 2px solid var(--dv-blue); outline-offset: 3px; border-radius: 6px; }
 .dv-wrap { width: min(var(--dv-wrap), calc(100% - 44px)); margin: 0 auto; }
 
-/* A section link scrolls its heading clear of the chapter bar, which is the
-   one bar still there once the page has scrolled. */
-.dv section[id] { scroll-margin-top: 66px; }
+/* A link from the bar — or from its menus, which point at single cards —
+   scrolls what it names clear of the bar rather than underneath it. */
+.dv [id] { scroll-margin-top: 66px; }
 
-/* ---------------------------------------------------------------- The bars
-   Two bars, so the chapter bar is the one pinned at the top and the site's
-   bar scrolls away above it. The site says this in oplo-design.css with
-   `body:has(.chapter)`; that rule is scoped to `.dv` when the chrome is cut,
-   so it can never match the body. Say it here instead.
+/* ----------------------------------------------------------------- The bar
+   One bar, and it is this site's own: the mark with "Developer" beside it,
+   its own links and menus, its own search, and a Sign in at the end. Not
+   oplocloud.com's bar with a sub-bar under it — somebody who typed
+   dev.oplocloud.com came for the platform, and the first thing they meet
+   should be the platform's front door. The way back to the company is the
+   footer, which is the company's footer entire.
 
-   The whole page is black, so the bars and everything they open are dark
-   material throughout — the same tokens the site turns over on a dark page. */
-/* Room for the site's bar, which is out of flow. The main site gives the body
-   this padding; here the bar is absolute inside a page that owns its own
-   layout, so the chapter bar carries the room as a margin — and still sticks
-   where the site's does once the bar above has scrolled away. */
-.dv > .chapter { margin-top: var(--nav, 44px); }
-.dv .nav { position: absolute; }
-.dv :is(.nav-flyout, .nav-find) { top: calc(var(--nav) + var(--nav-y, 0px)); }
-.dv :is(.nav-scrim, .nav-links) { inset: calc(var(--nav) + var(--nav-y, 0px)) 0 0 0; }
+   It is the site's `.nav` markup and the site's `.nav` rules, built by the
+   same nav() in tools/build.py, so oplo-menu.js and oplo-search.js drive it
+   without knowing which of the two they are looking at.
+
+   Taller than the site's 44px, because the wordmark needs the room —
+   developer.apple.com's bar is 52px for the same reason. The token is set on
+   the bar, on what it opens, and on the page, so the three agree. It is
+   written after oplo-chrome.css in index.html, which is what lets a selector
+   of the same weight win. */
+.dv, .dv .nav, .dv .nav-flyout, .dv .nav-find { --nav: 52px; }
+.dv .nav { position: fixed; }
+/* Room for it. The main site puts this on the body; here the page owns its
+   own layout, so the page carries it. */
+.dv-main { padding-top: var(--nav); }
+/* The page is black the whole way down, so the bar and everything it opens —
+   the menus, the search sheet — are dark material, the same tokens the site
+   turns over on a dark page. */
 .dv .nav {
   --paper: #161617;
   --ink: #f5f5f7;
@@ -86,11 +99,29 @@ body.dv-locked { overflow: hidden; }
   --blue: #2997ff;
 }
 .dv .nav::before { background-color: rgba(22, 22, 23, .72); }
-.dv .chapter {
-  --ink: #f5f5f7; --ink-2: #a1a1a6;
-  background: rgba(22, 22, 23, .72); color: var(--ink);
-  border-bottom-color: rgba(255, 255, 255, .1);
+
+/* The lockup: the mark, then the name of which Oplo site this is. One link,
+   so the whole thing is the way home. */
+.dv .nav-brand { gap: 8px; opacity: 1; }
+.dv .nav-brand .mark { height: 20px; }
+.dv .nav-word {
+  font-family: var(--dv-display);
+  font-size: 21px; font-weight: 600; letter-spacing: .011em; line-height: 1;
+  color: var(--dv-ink); white-space: nowrap;
 }
+.dv .nav-brand:hover .nav-word { opacity: .85; }
+/* The links sit next to the wordmark rather than spread across the bar, the
+   way a product's own nav does — space-evenly is for five doors into a
+   company, not six sections of one site. */
+.dv .nav-links { flex: 0 1 auto; justify-content: flex-start; gap: 26px; padding: 0 30px; }
+.dv .nav-end { margin-left: auto; align-items: center; gap: 16px; }
+.dv .nav-cta {
+  flex: none; padding: 7px 14px; border-radius: 100px;
+  background: var(--dv-blue-solid); color: #fff;
+  font-size: 12px; line-height: 1; white-space: nowrap;
+  transition: background .2s var(--dv-ease);
+}
+.dv .nav-cta:hover { background: #0077ed; }
 
 /* ------------------------------------------------------------- Media slot
    The same contract as OEdu's welcome page: a div that names itself and the

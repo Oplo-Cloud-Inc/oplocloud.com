@@ -180,7 +180,7 @@
         steps: [
           { type: "learn", kicker: "Start here",
             prompt: "A cube's volume is its edge times itself times itself: edge 2 gives $2 \\times 2 \\times 2 = 8$. A **cube root** asks it backwards. Turn the cube, and size it until its volume is $27$.",
-            scene: { type: "cube", side: 1, max: 6, target: 27 },
+            scene: { type: "solid", edge: 1, max: 6, target: 27 },
             gate: true,
             then: "Edge 3, because $3 \\times 3 \\times 3 = 27$. We write $\\sqrt[3]{27} = 3$." },
           { type: "num", prompt: "What is $\\sqrt[3]{64}$?", answer: 4, skill: "Cube roots",

@@ -572,6 +572,7 @@
       }
       return true;
     }
+    if (sameName(a, "Classes")) { openClasses(); return true; }
     if (sameName(a, "Progress")) { openProgress(); return true; }
     if (sameName(a, "Grades")) { openGrades(); return true; }
     if (sameName(a, "Account")) { openAccount(); return true; }
@@ -637,6 +638,16 @@
     return true;
   }
 
+  /* Classes, Grades and Exams belong to a student a teacher has put in a
+     course. Until the server says so, they are not in the bar. */
+  function setEnrolledTabs() {
+    var has = !!(S.me && (S.me.assigned || []).length);
+    ["#navClasses", "#navGrades", "#navExams"].forEach(function (id) {
+      var tab = $(id);
+      if (tab) tab.hidden = !(has && S.me && S.me.role === "student");
+    });
+  }
+
   function show(view) {
     S.view = view;
     [].forEach.call(document.querySelectorAll(".lx-view"), function (v) {
@@ -676,6 +687,138 @@
     drawExplore();
     show("explore");
   }
+
+  /* ========================================================== Classes
+     What a teacher put this student in, and what they set. Enrolment is the
+     database's answer (S.me.assigned), so this screen exists only for a
+     student a teacher has actually added to a course — for everybody else
+     the tab is not in the bar at all.
+
+     One card to a course: who teaches it, how far through it they are, and
+     the work set in it, with what is due next said plainly. */
+  function openClasses(silent) {
+    if (!silent) root("classes", "Classes", function () { openClasses(true); }, "Classes");
+    var v = $("#v-classes");
+    v.innerHTML = "";
+    var mine = enrolled();
+
+    v.appendChild(el("p", "lx-eyebrow", "Classes"));
+    v.appendChild(el("h1", "lx-h1", mine.length === 1 ? "Your class" : "Your classes"));
+    v.appendChild(el("p", "lx-lede",
+      mine.length ? "The courses your teachers put you in, and the work they have set."
+                  : "Nothing yet."));
+
+    if (!mine.length) {
+      var none = el("div", "lx-pending");
+      none.innerHTML = "<b>No classes yet</b><p>When a teacher adds you to a course, it appears here " +
+        "with the work they set. Everything in Explore is yours to work through in the meantime.</p>";
+      v.appendChild(none);
+      noFoot(); progress(null);
+      show("classes");
+      return;
+    }
+
+    var list = el("div", "lx-classes");
+    v.appendChild(list);
+    mine.forEach(function (c) { list.appendChild(classCard(c)); });
+
+    noFoot(); progress(null);
+    show("classes");
+  }
+
+  /* One class. The parts that need the server — who teaches it, what is set
+     — arrive after it is drawn, so the card is never a spinner. */
+  function classCard(c) {
+    var card = el("section", "lx-class");
+    var head = el("div", "lx-class-head");
+    var ic = el("span", "ic");
+    ic.style.background = c.hue + "1a";
+    ic.style.color = c.hue;
+    ic.innerHTML = svg(c.glyph || '<path d="M4 5.5h7v14H4z"/><path d="M13 5.5h7v14h-7z"/>', true);
+    head.appendChild(ic);
+    var txt = el("div", "lx-class-txt");
+    txt.appendChild(el("h2", null, esc(c.t)));
+    var who = el("p", "lx-class-who", "&nbsp;");
+    txt.appendChild(who);
+    head.appendChild(txt);
+    var go = el("button", "lx-btn");
+    go.type = "button";
+    go.textContent = "Open course";
+    go.addEventListener("click", function () { openCourse(c); });
+    head.appendChild(go);
+    card.appendChild(head);
+
+    var pct = coursePct(c);
+    var bar = el("div", "lx-class-bar");
+    bar.innerHTML = '<span class="lx-class-pct">' + pct + '% through</span><i><b style="width:' + pct + '%"></b></i>';
+    card.appendChild(bar);
+
+    var work = el("div", "lx-class-work");
+    work.appendChild(el("p", "lx-class-none", "Looking for work set in this course…"));
+    card.appendChild(work);
+
+    if (c.dbId) {
+      API.courses.members(c.dbId).then(function (rows) {
+        var teachers = (rows || []).filter(function (r) { return r.role === "teacher" || r.role === "assistant"; })
+          .map(function (r) { return r.name || r.email; });
+        who.textContent = teachers.length ? "Taught by " + teachers.join(", ") : "Your course";
+      }, function () { who.textContent = "Your course"; });
+
+      API.courses.assignments(c.dbId).then(function (rows) {
+        drawWork(work, c, rows || []);
+      }, function () {
+        work.innerHTML = "";
+        work.appendChild(el("p", "lx-class-none", "The work set in this course could not be loaded just now."));
+      });
+    } else {
+      who.textContent = "Your course";
+      work.innerHTML = "";
+      work.appendChild(el("p", "lx-class-none", "No work has been set in this course yet."));
+    }
+    return card;
+  }
+
+  /* The work set in one course, soonest first: what it is, when it is due,
+     and — once a teacher has marked it — what it came to. */
+  function drawWork(host, c, rows) {
+    host.innerHTML = "";
+    if (!rows.length) {
+      host.appendChild(el("p", "lx-class-none", "No work has been set in this course yet."));
+      return;
+    }
+    rows = rows.slice().sort(function (a, b) {
+      return (a.dueAt || 8e15) - (b.dueAt || 8e15);
+    });
+    host.appendChild(el("h3", "lx-class-h", rows.length === 1 ? "One piece of work" : rows.length + " pieces of work"));
+    var ul = el("ul", "lx-work");
+    rows.forEach(function (a) {
+      var li = el("li", "lx-work-row");
+      var main = el("div", "lx-work-txt");
+      main.appendChild(el("b", null, esc(a.title || "Untitled")));
+      var sub = [];
+      if (a.kind) sub.push(esc(a.kind));
+      if (a.points != null) sub.push(a.points + " points");
+      main.appendChild(el("span", null, sub.join(" · ")));
+      li.appendChild(main);
+      li.appendChild(el("span", "lx-work-due", dueLabel(a.dueAt)));
+      ul.appendChild(li);
+    });
+    host.appendChild(ul);
+  }
+
+  /* When something is due, said the way a person would say it. */
+  function dueLabel(due) {
+    if (!due) return '<span class="lx-tag">No due date</span>';
+    var day = 86400000, now = Date.now();
+    var left = Math.ceil((due - now) / day);
+    var when = new Date(due).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    if (left < 0) return '<span class="lx-tag late">Overdue · ' + when + "</span>";
+    if (left === 0) return '<span class="lx-tag soon">Due today</span>';
+    if (left === 1) return '<span class="lx-tag soon">Due tomorrow</span>';
+    if (left <= 7) return '<span class="lx-tag">Due ' + when + " · in " + left + " days</span>";
+    return '<span class="lx-tag">Due ' + when + "</span>";
+  }
+
   function openProgress() {
     root("progress", "Progress", openProgress, "Progress");
     if (window.OPLO_PROGRESS) {
@@ -6795,8 +6938,12 @@
         var r = node.getBoundingClientRect(), c = box.getBoundingClientRect();
         var half = tip.offsetWidth / 2;
         var x = Math.max(half, Math.min(c.width - half, r.left - c.left + r.width / 2));
+        // Above the thing it describes, unless the top of the window is in
+        // the way — then below it, so it never covers what you are pointing at.
+        var under = r.top - tip.offsetHeight - 20 < 0;
+        tip.classList.toggle("under", under);
         tip.style.left = x + "px";
-        tip.style.top = (r.top - c.top) + "px";
+        tip.style.top = ((under ? r.bottom : r.top) - c.top) + "px";
       },
       hide: function () { tip.hidden = true; }
     };
@@ -13232,8 +13379,7 @@
       navAdmin.hidden = !allowedTabs().length;
       navAdmin.textContent = who.role === "admin" ? "Console" : "My students";
     }
-    if (navGrades) navGrades.hidden = who.role !== "student";
-    if (navExams) navExams.hidden = who.role !== "student";
+    setEnrolledTabs();
     if (R.broken) {
       toast("This browser will not let the page store anything, so progress will not be kept.");
     }
@@ -13276,7 +13422,9 @@
       var pending = S.pendingRoute;
       S.pendingRoute = null;
       if (pending && S.here && S.here.key === "my" && route(pending)) return;
+      setEnrolledTabs();
       if ((out[0] || out[1]) && S.view === "my") drawMy();
+      if (out[0] && S.view === "classes") openClasses(true);
     });
 
     /* The record on this device is a cache. The server is the truth, so it is
@@ -13334,7 +13482,7 @@
     TRAIL = []; POS = -1;            // the next person's history starts from nothing
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     document.body.classList.remove("is-admin");
-    ["#navAdmin", "#navGrades", "#navExams"].forEach(function (id) {
+    ["#navAdmin", "#navClasses", "#navGrades", "#navExams"].forEach(function (id) {
       var tab = $(id);
       if (tab) tab.hidden = true;
     });
@@ -13687,6 +13835,7 @@
       markSubjectNav(null);
       noFoot(); progress(null);
       if (b.dataset.view === "my") home();
+      else if (b.dataset.view === "classes") openClasses();
       else if (b.dataset.view === "progress") openProgress();
       else if (b.dataset.view === "admin") openAdmin();
       else if (b.dataset.view === "grades") openGrades();

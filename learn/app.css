@@ -240,6 +240,7 @@ svg { display: block; }
 }
 .lx-tag.soon { color: var(--ink-3); }
 .lx-tag.live { background: #e8f5ee; color: var(--green); }
+.lx-tag.late { background: #fdeceb; color: #c9372c; }
 
 /* Resume strip */
 .lx-resume {
@@ -3828,11 +3829,11 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 /* ---------------------------------------------------------- Requirements */
 .gr-areas {
   display: flex; flex-direction: column; border-radius: var(--r); background: var(--paper);
-  box-shadow: 0 0 0 .5px var(--hair); padding: 6px 22px;
+  box-shadow: 0 0 0 .5px var(--hair); padding: 10px 26px; position: relative;
 }
 .gr-area {
-  display: grid; grid-template-columns: 220px 1fr 190px; gap: 18px; align-items: center;
-  padding: 13px 0; border-bottom: 1px solid var(--hair);
+  display: grid; grid-template-columns: 220px 1fr 190px; gap: 24px; align-items: center;
+  padding: 18px 0; border-bottom: 1px solid var(--hair);
 }
 .gr-area:last-child { border-bottom: 0; }
 @media (max-width: 720px) { .gr-area { grid-template-columns: 1fr; gap: 8px; } }
@@ -3898,14 +3899,19 @@ body.is-admin .lx-user .av { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var
 .gr-dot { fill: var(--gr-blue); stroke: var(--paper); stroke-width: 2; }
 .gr-endlabel { font-size: 12px; font-weight: 600; fill: var(--ink); }
 .gr-cross { stroke: var(--ink-3); stroke-width: 1; }
+/* The tooltip floats over the chart it belongs to, so it is above everything
+   drawn there — without a z-index the chips painted after it covered it — and
+   it sits clear of the thing it describes, above by default and below when
+   there is no room above (.under, set in app.js). */
 .gr-tip {
-  position: absolute; transform: translate(-50%, calc(-100% - 12px)); pointer-events: none;
-  display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 10px;
-  border-radius: 9px; background: var(--ink); color: #fff; white-space: nowrap;
-  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  position: absolute; z-index: 30; transform: translate(-50%, calc(-100% - 14px)); pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 14px;
+  border-radius: 12px; background: var(--ink); color: #fff; white-space: nowrap;
+  box-shadow: 0 10px 30px rgba(0,0,0,.28);
 }
+.gr-tip.under { transform: translate(-50%, 14px); }
 .gr-tip b { font-size: 14px; font-weight: 600; }
-.gr-tip span { font-size: 11px; color: rgba(255,255,255,.72); }
+.gr-tip span { font-size: 11.5px; line-height: 1.35; color: rgba(255,255,255,.76); }
 .gr-bar { fill: var(--gr-blue); transition: opacity .15s var(--ease); }
 .gr-col:hover .gr-bar { opacity: .82; }
 .gr-val { font-size: 12px; font-weight: 600; fill: var(--ink); }
@@ -5526,3 +5532,45 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
   }
 
 
+
+/* ==========================================================================
+   Classes
+   The courses a teacher put this student in, and the work set in them. One
+   card to a course, with room to breathe: the course and who teaches it, how
+   far through it they are, then the work — because that is the order the
+   questions come in.
+   ========================================================================== */
+.lx-classes { display: grid; gap: 22px; margin-top: 30px; }
+.lx-class {
+  padding: 26px 28px 22px; border-radius: 22px; background: var(--paper);
+  border: 1px solid var(--hair);
+}
+.lx-class-head { display: flex; align-items: center; gap: 16px; }
+.lx-class-head .ic {
+  flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px;
+}
+.lx-class-head .ic svg { width: 26px; height: 26px; }
+.lx-class-txt { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.lx-class-txt h2 {
+  margin: 0; font-family: var(--font); font-size: 22px; font-weight: 600; letter-spacing: -.02em; color: var(--ink);
+}
+.lx-class-who { margin: 0; font-size: 14px; color: var(--ink-2); }
+.lx-class-head .lx-btn { flex: none; }
+.lx-class-bar { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+.lx-class-pct { flex: none; font-size: 13px; font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lx-class-bar i { flex: 1; height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.lx-class-bar i b { display: block; height: 100%; border-radius: 3px; background: var(--blue); transition: width .5s var(--ease); }
+.lx-class-work { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--hair); }
+.lx-class-h { margin: 0 0 12px; font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.lx-class-none { margin: 0; font-size: 14.5px; color: var(--ink-3); }
+.lx-work { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.lx-work-row {
+  display: flex; align-items: center; gap: 16px; padding: 12px 14px; border-radius: 14px;
+  transition: background .15s var(--ease);
+}
+.lx-work-row:hover { background: var(--sunk); }
+.lx-work-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.lx-work-txt b { font-size: 15.5px; font-weight: 500; color: var(--ink); }
+.lx-work-txt span { font-size: 13px; color: var(--ink-3); }
+.lx-work-txt span:empty { display: none; }
+.lx-work-due { flex: none; }

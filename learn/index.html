@@ -39,14 +39,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=a714a9b3">
+<link rel="stylesheet" href="app.css?v=eb79a3ae">
 <link rel="stylesheet" href="oplo-chrome.css?v=7b3e85b3">
 <link rel="stylesheet" href="landing.css?v=4a55a875">
 <link rel="stylesheet" href="exam.css?v=3869276c">
 <link rel="stylesheet" href="checks.css?v=a381359b">
-<link rel="stylesheet" href="challenge.css?v=2651bace">
-<link rel="stylesheet" href="lab/lab.css?v=aedd16a4">
-<link rel="stylesheet" href="obsidian.css?v=67b91bb7">
+<link rel="stylesheet" href="challenge.css?v=10ab969a">
+<link rel="stylesheet" href="lab/lab.css?v=99c84245">
+<link rel="stylesheet" href="obsidian.css?v=c2087bf9">
 </head>
 <body>
 
@@ -481,7 +481,9 @@
     <nav class="lx-top" id="topNav" aria-label="Sections">
       <button type="button" data-view="my" aria-current="true">Home</button>
       <button type="button" data-view="explore">Explore</button>
-      <button type="button" data-view="exams" id="navExams">Exams</button>
+      <button type="button" data-view="classes" id="navClasses" hidden>Classes</button>
+      <button type="button" data-view="grades" id="navGrades" hidden>Grades</button>
+      <button type="button" data-view="exams" id="navExams" hidden>Exams</button>
       <button type="button" data-view="progress">Progress</button>
     </nav>
 
@@ -532,7 +534,8 @@
   <section class="lx-view" id="v-read"></section>
   <section class="lx-view" id="v-challenge"></section>
   <section class="lx-view" id="v-lab"></section>
-  <section class="lx-view" id="v-notes"></section>
+  <section class="lx-view" id="v-classes"></section>
+<section class="lx-view" id="v-notes"></section>
   <section class="lx-view" id="v-admin"></section>
 </main>
 
@@ -609,7 +612,7 @@
 <div class="lx-badge" id="badgePop" role="status" aria-live="polite"></div>
 
 <script src="api.js?v=b7f4a6ef"></script>
-<script src="data.js?v=c528f14f"></script>
+<script src="data.js?v=5c9644a4"></script>
 <script src="school.js?v=89fed491"></script>
 <script src="store.js?v=b6d4cbcb"></script>
 <script src="game.js?v=f7c044f2"></script>
@@ -642,8 +645,8 @@
 <script src="landing.js?v=c44e5019"></script>
 <script src="challenge.js?v=fa487b95"></script>
 <script src="challenges-media9.js?v=1a1aa6ab"></script>
-<script src="lab/core.js?v=2bed2477"></script>
+<script src="lab/core.js?v=f470d545"></script>
 <script src="exam.js?v=65b52660"></script>
-<script src="app.js?v=2fa0681e"></script>
+<script src="app.js?v=ace74660"></script>
 </body>
 </html>
