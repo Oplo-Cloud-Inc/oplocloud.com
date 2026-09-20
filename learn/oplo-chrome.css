@@ -29,15 +29,21 @@
   position: fixed; top: 0; left: 0; right: 0; height: var(--nav); z-index: 9000;
 }
 .ld .nav::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; background-color: rgba(255,255,255,.8); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); transition: background-color .45s var(--ease);
+  content: ""; position: absolute; inset: 0; z-index: -1; background-color: rgba(255,255,255,.72); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); transition: background-color .45s var(--ease);
 }
 .ld .bars-dark .nav {
   --paper: #161617; --ink: var(--ink-lt); --ink-2: var(--ink-lt-2); --ink-3: var(--ink-lt-2); --rule: var(--rule-dark); --blue: var(--blue-dark);
 }
 .ld .bars-dark .nav::before {
-  background-color: rgba(22,22,23,.8);
+  background-color: rgba(22,22,23,.72);
 }
-.ld .bars-dark body {
+.ld body:has(> main > .band.opening):not(:has(.chapter)) {
+  padding-top: 0;
+}
+.ld body:has(> main > .band.opening):not(:has(.chapter)) > main > .band.opening {
+  min-height: 100vh; min-height: 100svh; padding-top: var(--nav);
+}
+.ld .bars-dark body:not(:has(> main > .band.opening)):not(:has(.chapter)), .ld .bars-dark body:has(.chapter) {
   background: linear-gradient(#000, #000) 0 0 / 100% 97px no-repeat, var(--paper);
 }
 .ld .nav-in {
@@ -392,10 +398,10 @@
 }
 }
 .ld .chapter {
-  position: sticky; top: var(--nav); z-index: 800; background: rgba(255,255,255,.8); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); border-bottom: 1px solid var(--rule); color: var(--ink); transition: background-color .45s var(--ease), border-color .45s var(--ease), color .45s var(--ease);
+  position: sticky; top: var(--nav); z-index: 800; background: rgba(255,255,255,.72); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); border-bottom: 1px solid var(--rule); color: var(--ink); transition: background-color .45s var(--ease), border-color .45s var(--ease), color .45s var(--ease);
 }
 .ld .bars-dark .chapter {
-  --ink: var(--ink-lt); --ink-2: var(--ink-lt-2); background: rgba(22,22,23,.8); border-bottom-color: rgba(255,255,255,.1);
+  --ink: var(--ink-lt); --ink-2: var(--ink-lt-2); background: rgba(22,22,23,.72); border-bottom-color: rgba(255,255,255,.1);
 }
 .ld .chapter-in {
   max-width: 1024px; margin-inline: auto; padding-left: max(var(--gutter), env(safe-area-inset-left)); padding-right: max(var(--gutter), env(safe-area-inset-right)); height: 52px; display: flex; align-items: center; gap: 20px;
