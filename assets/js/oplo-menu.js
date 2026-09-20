@@ -342,8 +342,9 @@
     if (c.length > 3 && c[3] < 0.5) return null;
     return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
   }
-  function darkAt(y) {
-    var at = document.elementFromPoint(window.innerWidth / 2, y);
+  /* Dark at one point across the strip under the bar. */
+  function darkPoint(x, y) {
+    var at = document.elementFromPoint(x, y);
     for (var n = at; n && n.nodeType === 1; n = n.parentElement) {
       if (n.closest(".nav, .chapter")) continue;
       var cs = getComputedStyle(n), l = lum(cs.backgroundColor);
@@ -354,6 +355,15 @@
       }
     }
     return false;
+  }
+  /* The bar is dark only when the whole strip under it is. A single reading in
+     the middle of the window makes a two-column row — a light card beside a
+     dark one — turn the whole bar dark, and then the light card's text shows
+     straight through it. Three readings across the width; any light one and
+     the bar stays light, which is the readable way round. */
+  function darkAt(y) {
+    var w = window.innerWidth;
+    return darkPoint(w * 0.25, y) && darkPoint(w * 0.5, y) && darkPoint(w * 0.75, y);
   }
 
   function start() {
