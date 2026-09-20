@@ -311,17 +311,12 @@
 /* ==========================================================================
    Oplo — the bars' material.
 
-   The bar scrolls away with the top of the page and, on a section page, the
-   chapter bar stays (assets/css/oplo-design.css). Two things follow the
-   scroll here:
-
-     --nav-y      how far the bar has gone off the top (0 to −44px), so its
-                  menus, search and drawer — fixed to the window — still open
-                  right under its edge
-     .bars-dark   on the root while what is just below the lowest bar is
-                  dark: a dark band, a dark card, the photograph at the top
-                  of the front page. The bars are dark glass then, and light
-                  glass over everything else.
+   The bar stays at the top of the window, with the chapter bar under it on
+   a section page (assets/css/oplo-design.css). What follows the scroll is
+   the material: .bars-dark goes on the root while what is just below the
+   lowest bar is dark — a dark band, a dark card, the photograph at the top
+   of the front page. The bars are dark glass then, and light glass over
+   everything else.
 
    "Dark" is read from the page itself: the first painted background up from
    whatever is there. A background that is a picture or a gradient says
@@ -363,12 +358,10 @@
     var root = document.documentElement, chapter = document.querySelector(".chapter"), queued = false;
     function paint() {
       queued = false;
-      var y = Math.max(0, window.scrollY || window.pageYOffset || 0), h = nav.offsetHeight;
-      root.style.setProperty("--nav-y", -Math.min(y, h) + "px");
       // Leave the material alone while a menu or search is open over the page.
       if (nav.classList.contains("menu-open") || nav.classList.contains("searching")) return;
-      var under = chapter ? chapter.getBoundingClientRect().bottom : h - y;
-      if (under > 0) root.classList.toggle("bars-dark", darkAt(under + 2));
+      var bottom = (chapter || nav).getBoundingClientRect().bottom;
+      if (bottom > 0) root.classList.toggle("bars-dark", darkAt(bottom + 2));
     }
     function queue() { if (!queued) { queued = true; requestAnimationFrame(paint); } }
     window.addEventListener("scroll", queue, { passive: true });

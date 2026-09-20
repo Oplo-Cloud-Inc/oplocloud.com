@@ -69,9 +69,9 @@
 /* ---------------------------------------------------------------- The bars
    The way Apple's education page does it:
 
-     one bar stays   the site's bar scrolls away with the page, and only the
-                     chapter bar stays, at the very top (this and the material
-                     come with the site's own bar, oplo-chrome.css).
+     the bars stay   the site's bar stays at the top of the window and the
+                     chapter bar under it, as on every page of the site
+                     (oplo-chrome.css).
      dark on dark    the top of the page is dark to meet the photograph: the
                      site's bar, the chapter bar and the ribbon are all dark
                      material, so the picture seems to begin under them.
@@ -80,7 +80,7 @@
      material        opaque enough that nothing behind it can be read, clear
                      enough that its colour and light still come through: a
                      tint at ~80%, blurred hard and saturated. */
-/* Black behind the bars at the top, so dark material over it reads as dark
+/* Black behind the bars at the top, so dark material over them reads as dark
    rather than grey; the page is white from the photograph down. */
 .ld { background: linear-gradient(#000, #000) 0 0 / 100% 97px no-repeat local, #fff; }
 
