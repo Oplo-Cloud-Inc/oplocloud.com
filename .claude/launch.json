@@ -20,6 +20,12 @@
       "port": 8124
     },
     {
+      "name": "oplo-node-3",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/serve.js", "8125"],
+      "port": 8125
+    },
+    {
       "name": "oplo-api",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["wrangler", "dev", "-c", "api/wrangler.toml", "--port", "8787", "--persist-to", "api/.wrangler/state"],

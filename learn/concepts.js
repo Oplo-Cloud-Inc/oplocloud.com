@@ -26,7 +26,7 @@
      APPLY      use it on a new case           <- needs `apply`
      TRANSFER   predict something unseen       <- needs `xfer`
 
-   Media Arts 5 to 8 and Business 4 are authored in full below.
+   Media Arts 5 to 9 and Business 4 are authored in full below.
    Every other set is derived: a concept with the pair and nothing else, which
    honestly caps that set at the first two levels rather than pretending to
    depth it does not have.
@@ -2877,8 +2877,751 @@ window.OPLO_CONCEPTS = (function () {
     })
   ];
 
+  /* Media Arts, Unit 9. The unit is a pipeline — pitch, plan, style, cut,
+     score, mix, sell — so most of the misconceptions are two neighbouring
+     jobs or two neighbouring beats being mistaken for each other: climax for
+     ending, revelation for recognition, foley for sound effect, ADR for
+     revoicing, producer for director. The questions are written to make a
+     student tell those pairs apart. */
+  var MEDIA9 = [
+    C("Pitch", {
+      why: "Nothing gets made until somebody says yes, and the pitch is what they say yes to.",
+      eg: "Two minutes in a producer's office: who the story is about, what goes wrong, and why an " +
+          "audience will care.",
+      miss: [["A pitch is a summary of everything that happens.",
+              "A pitch is an argument for making it — the hook, the conflict, and why it is worth the " +
+              "money — not a scene-by-scene account."]],
+      pre: [], rel: ["Elevator pitch", "Conflict"],
+      say: ["short", "story", "convince", "backer", "why", "worth making"],
+      apply: { ask: "A student's pitch lists every character and every scene in order, and the producer " +
+                    "stops them halfway. What is missing?",
+               opts: ["A clear conflict and a reason to care", "More characters", "A longer running time",
+                      "A bigger budget"],
+               right: 0,
+               why: "A pitch sells the idea. Detail with no hook gives a listener nothing to say yes to." },
+      xfer: { ask: "A scientist has three minutes to ask a funding panel for a grant. Which part of a " +
+                   "pitch matters most?",
+              opts: ["The full method", "What the problem is and why solving it matters",
+                     "A list of equipment", "Their qualifications"],
+              right: 1,
+              why: "A pitch is a pitch: the problem and the stakes come first, wherever it is delivered." }
+    }),
+
+    C("Elevator pitch", {
+      why: "If you cannot say it in thirty seconds, you do not yet know what your story is about.",
+      eg: "A shark hunts a beach town, and the sheriff who is afraid of water has to kill it.",
+      miss: [["An elevator pitch is the first thirty seconds of a full pitch.",
+              "It is the whole idea compressed — character, problem, hook — not the opening of a longer " +
+              "speech."]],
+      pre: ["Pitch"], rel: ["Pitch"],
+      say: ["thirty seconds", "very short", "whole idea", "hook", "quickly", "one minute"],
+      apply: { ask: "You meet a producer in a lift and have one floor. What do you say?",
+               opts: ["The opening scene in detail", "Who it is about, what goes wrong, and the hook",
+                      "Your background and training", "The budget and schedule"],
+               right: 1,
+               why: "One floor buys you the idea, not the detail." },
+      xfer: { ask: "A salesperson has one minute at a trade stand to describe a product. Which idea are " +
+                   "they using?",
+              opts: ["An elevator pitch", "A storyboard", "A music bed", "A model sheet"],
+              right: 0,
+              why: "The form came out of sales, and works the same way for a product." }
+    }),
+
+    C("Exposition", {
+      why: "An audience that does not know who, where and when cannot follow what happens next.",
+      eg: "The opening minutes: a town, a year on screen, a family at breakfast.",
+      miss: [["Exposition means dull explanation.",
+              "Exposition is a job — establishing people, place and background — and it is usually done " +
+              "through action rather than announcements."]],
+      pre: [], rel: ["Inciting incident", "Rising action"],
+      say: ["beginning", "introduces", "characters", "setting", "background", "before the problem"],
+      apply: { ask: "A short film opens on a busy newsroom, a date on a screen, and a reporter arguing " +
+                    "with an editor. Which part of the plot is this?",
+               opts: ["Exposition", "Climax", "Falling action", "Resolution"],
+               right: 0,
+               why: "People, place and time are being established, and the conflict has not started." },
+      xfer: { ask: "A game begins by letting you walk round your village and talk to neighbours before " +
+                   "anything happens. What is the designer doing?",
+              opts: ["Exposition — establishing people and place", "A reversal of expectations",
+                     "Foley", "A pitch"],
+              right: 0,
+              why: "Different medium, same job: you are being given the world before it is disturbed." }
+    }),
+
+    C("Inciting incident", {
+      why: "It is the moment the story starts. Everything before it is setup.",
+      eg: "The letter arrives. The body is found. The phone rings at three in the morning.",
+      miss: [["The inciting incident is the most exciting moment.",
+              "That is usually the climax. The inciting incident is the disturbance that starts the " +
+              "problem, and it is often quiet."]],
+      pre: ["Exposition"], rel: ["Rising action", "Climax"],
+      say: ["event", "starts", "routine", "problem", "disrupts", "beginning"],
+      apply: { ask: "A woman loses her job in minute eight, and spends the rest of the film trying to " +
+                    "save her house. What is the job loss?",
+               opts: ["The inciting incident", "The climax", "The resolution", "Exposition"],
+               right: 0,
+               why: "It is the event that pushed her out of her routine and into the story's problem." },
+      xfer: { ask: "A documentary spends ten minutes on a quiet fishing town, then the cannery announces " +
+                   "it is closing. What is the announcement?",
+              opts: ["The inciting incident", "Falling action", "A style test", "Exposition"],
+              right: 0,
+              why: "Documentaries use the same shape: the closure is what everything after it reacts to." }
+    }),
+
+    C("Rising action", {
+      why: "It is where an audience's investment is built, because each event raises the cost of failing.",
+      eg: "Every attempt to fix the problem makes it worse, and the next attempt costs more.",
+      miss: [["Rising action is everything after the beginning.",
+              "It is the run of events that raise the stakes toward the climax. What follows the climax " +
+              "is falling action."]],
+      pre: ["Inciting incident"], rel: ["Climax", "Falling action"],
+      say: ["events", "stakes", "build", "toward the climax", "longest", "tension"],
+      apply: { ask: "Three-quarters of a film is a chase that grows more dangerous at every stage, ending " +
+                    "in a rooftop standoff. What is the chase?",
+               opts: ["Rising action", "Resolution", "Exposition", "Falling action"],
+               right: 0,
+               why: "Each stage raises the stakes, and it ends at the point of greatest tension." },
+      xfer: { ask: "In a song built toward a final chorus, each verse is louder and busier than the last. " +
+                   "Which part of plot shape is that like?",
+              opts: ["Rising action", "The resolution", "Exposition", "A cutaway"],
+              right: 0,
+              why: "Building toward a peak is the same structural idea, in sound." }
+    }),
+
+    C("Climax", {
+      why: "The whole shape is built around it: the moment the outcome is decided.",
+      eg: "The duel; the confession; the vote that settles it.",
+      miss: [["The climax is the ending.",
+              "The climax decides the outcome. The ending is what follows it — falling action, then " +
+              "resolution."]],
+      pre: ["Rising action"], rel: ["Falling action", "Resolution"],
+      say: ["greatest tension", "turning point", "decided", "peak", "story turns", "highest"],
+      apply: { ask: "In a courtroom drama the verdict is read with twelve minutes of film left. What is " +
+                    "the verdict?",
+               opts: ["The climax", "The resolution", "Exposition", "The inciting incident"],
+               right: 0,
+               why: "It is the point of greatest tension, and the twelve minutes after it are the unwinding." },
+      xfer: { ask: "A match is decided by a penalty in the 89th minute, and then the crowd files out. " +
+                   "Which part of a story is the penalty?",
+              opts: ["The climax", "Rising action", "Exposition", "Falling action"],
+              right: 0,
+              why: "Maximum tension, outcome decided — everything after it is aftermath." }
+    }),
+
+    C("Falling action", {
+      why: "A story that stops dead at its climax feels unfinished. The falling action lets the tension out.",
+      eg: "After the arrest, the team packs up the office and the families are told.",
+      miss: [["Falling action means the story loses energy.",
+              "It means the conflict is unwinding. It can still be tense — but the outcome has already " +
+              "been decided."]],
+      pre: ["Climax"], rel: ["Resolution", "Climax"],
+      say: ["after the climax", "unwinds", "consequences", "settling", "toward the ending", "eases"],
+      apply: { ask: "A thriller's bomb is defused with fifteen minutes left, and those minutes show the " +
+                    "city reopening and the team debriefed. What are they?",
+               opts: ["Falling action", "Rising action", "The climax", "Exposition"],
+               right: 0,
+               why: "The conflict is decided, and the story is unwinding toward its new normal." },
+      xfer: { ask: "A news broadcast leads with a rescue, then runs interviews about what happens to the " +
+                   "families next. Which part of the shape are the interviews?",
+              opts: ["Falling action", "The inciting incident", "The climax", "A model sheet"],
+              right: 0,
+              why: "They follow the decisive event and deal with its consequences." }
+    }),
+
+    C("Resolution", {
+      why: "It is where an audience finds out what the story was worth: the new normal it leaves people in.",
+      eg: "The town rebuilds; the survivor goes home; the letter is finally opened.",
+      miss: [["The resolution is the same thing as the climax.",
+              "The climax decides. The resolution shows the result — the conflict tied off and a new " +
+              "normal reached."]],
+      pre: ["Falling action"], rel: ["Climax", "Falling action"],
+      say: ["ending", "resolved", "new normal", "denouement", "untying", "conflict over"],
+      apply: { ask: "A film's last four minutes show a family moving into a new flat, with no conflict " +
+                    "left to settle. What is this?",
+               opts: ["The resolution", "The climax", "Rising action", "The inciting incident"],
+               right: 0,
+               why: "The problem is over and the characters have reached their new normal." },
+      xfer: { ask: "Dénouement is French for untying. What does that tell you about this part of a story?",
+              opts: ["It unties the knot the plot tied", "It pulls the knot tighter",
+                     "It is the most tense part", "It comes before the climax"],
+              right: 0,
+              why: "The word is the definition: the tangle of the plot comes undone." }
+    }),
+
+    C("Conflict", {
+      why: "No conflict, no plot. It is the engine every other part of the shape is built on.",
+      eg: "A climber against a storm is character against nature. The same climber deciding whether to " +
+          "leave a partner behind is character against self.",
+      miss: [["Conflict means a fight.",
+              "Conflict is opposed wants or forces. A quiet argument, a blizzard, or a decision inside " +
+              "one person are all conflicts."]],
+      pre: [], rel: ["Climax", "Pitch"],
+      say: ["opposing", "problem", "struggle", "character", "nature", "self"],
+      apply: { ask: "A doctor spends the film unable to decide whether to report a friend's mistake, " +
+                    "arguing with herself. Which conflict is this?",
+               opts: ["Character against self", "Character against nature", "Character against character",
+                      "There is no conflict"],
+               right: 0,
+               why: "The struggle is internal, even though another person is involved." },
+      xfer: { ask: "A survival documentary follows a crew crossing an icefield in a blizzard. Which " +
+                   "conflict is on screen?",
+              opts: ["Character against nature", "Character against self", "Character against character",
+                     "A reversal of expectations"],
+              right: 0,
+              why: "The opposing force is the weather and the terrain." }
+    }),
+
+    C("Iceberg theory", {
+      why: "What a story leaves out can do more work than what it says.",
+      eg: "A couple orders drinks and talks about the weather. Nothing is said about the decision they " +
+          "are avoiding.",
+      miss: [["Leaving things out means the writer has not worked them out.",
+              "The opposite. The writer knows the whole iceberg and shows only the tip on purpose."]],
+      pre: [], rel: ["Revelation", "The gift"],
+      say: ["omission", "surface", "hidden", "implied", "beneath", "Hemingway"],
+      apply: { ask: "A short film never says that a character has lost her job, but shows an unopened " +
+                    "bill, a tidy CV and a missed call. What is this?",
+               opts: ["Iceberg theory", "Exposition", "A reversal of expectations", "Revoicing"],
+               right: 0,
+               why: "The facts are under the surface, and the audience assembles them." },
+      xfer: { ask: "A songwriter cuts the line explaining why the narrator is leaving. What does the " +
+                   "iceberg theory predict?",
+              opts: ["Listeners feel the weight without being told", "The song becomes meaningless",
+                     "The song now needs a narrator", "Nothing changes"],
+              right: 0,
+              why: "Omission, when the rest is solid, makes the unsaid thing felt." }
+    }),
+
+    C("Revelation", {
+      why: "It creates suspense: the audience knows something the characters do not, and waits.",
+      eg: "We see the bomb under the table. The two men talking at it do not.",
+      miss: [["A revelation is when a character finds out.",
+              "That is recognition. A revelation gives the information to the audience first."]],
+      pre: [], rel: ["Recognition", "The gift"],
+      say: ["audience", "learns", "before", "characters", "information", "suspense"],
+      apply: { ask: "The camera shows the intruder hiding in the wardrobe, and then the family comes " +
+                    "home. Which scene type is this?",
+               opts: ["Revelation", "Recognition", "Escape", "Exposition"],
+               right: 0,
+               why: "The audience has been given what the characters do not have." },
+      xfer: { ask: "Hitchcock argued that showing the audience the bomb beats surprising them with it. " +
+                   "Which scene type is he describing?",
+              opts: ["Revelation", "Recognition", "Resolution", "The climax"],
+              right: 0,
+              why: "Telling the audience first is exactly what a revelation does, and it buys suspense." }
+    }),
+
+    C("Recognition", {
+      why: "It pays a revelation off: the character finally catches up with what the audience knows.",
+      eg: "She finds the photograph, and understands who has been lying to her.",
+      miss: [["Recognition and revelation are the same thing.",
+              "A revelation informs the audience. A recognition is the character discovering it, usually " +
+              "later."]],
+      pre: ["Revelation"], rel: ["Revelation"],
+      say: ["character", "discovers", "finds out", "information", "catches up", "realises"],
+      apply: { ask: "The audience learned in minute ten that the mentor had betrayed the hero. In minute " +
+                    "seventy the hero reads the file. Minute seventy is…",
+               opts: ["Recognition", "Revelation", "Exposition", "Falling action"],
+               right: 0,
+               why: "The character is discovering what the audience already knew." },
+      xfer: { ask: "In a mystery, the detective names the murderer at the end and the audience gasps too. " +
+                   "What has happened?",
+              opts: ["Both at once — the character discovers it and the audience learns it",
+                     "Neither", "Only a revelation", "Only exposition"],
+              right: 0,
+              why: "The two can coincide; they are separated by who learns, and when." }
+    }),
+
+    C("The gift", {
+      why: "An object planted early and returned late makes a story feel built rather than assembled.",
+      eg: "The pocket knife a father hands over in the first scene cuts the rope in the last.",
+      miss: [["The gift just means a present given in the story.",
+              "It is a device: an object seen early comes back carrying meaning, and sometimes a clue."]],
+      pre: [], rel: ["Revelation", "Iceberg theory"],
+      say: ["object", "early", "returns", "later", "meaning", "clue"],
+      apply: { ask: "In scene two a boy is given a compass. In the final scene it leads the search party " +
+                    "to him. Which device is this?",
+               opts: ["The gift", "A reversal of expectations", "Exposition", "Foley"],
+               right: 0,
+               why: "The object was planted early and returns carrying meaning." },
+      xfer: { ask: "A writing teacher says that a rifle on the wall in act one must be fired in act " +
+                   "three. Which device is that?",
+              opts: ["The gift", "Recognition", "The music bed", "An elevator pitch"],
+              right: 0,
+              why: "Chekhov's rule is the same idea: plant it early, pay it off later." }
+    }),
+
+    C("Reversal of expectations", {
+      why: "It is how a climax surprises without cheating: what you saw was true, and it means the opposite.",
+      eg: "The rescue party arrives — and it is the people who set the trap.",
+      miss: [["Any twist is a reversal of expectations.",
+              "The pattern is specific: something unexpected happens, and then a second event flips what " +
+              "it meant."]],
+      pre: [], rel: ["Climax", "Revelation"],
+      say: ["unexpected", "flips", "meaning", "second event", "surprise", "climax"],
+      apply: { ask: "A character wins the money, and then learns the money is exactly what the villain " +
+                    "wanted them to take. What is this?",
+               opts: ["A reversal of expectations", "Exposition", "Falling action", "Recognition"],
+               right: 0,
+               why: "The second event reverses the meaning of the first." },
+      xfer: { ask: "A comedian sets up a line, then adds a second that makes the first mean something " +
+                   "else. Which story device has the same shape?",
+              opts: ["Reversal of expectations", "The gift", "A pitch", "A style test"],
+              right: 0,
+              why: "A punchline reverses the meaning of the setup — the same move, compressed." }
+    }),
+
+    C("Storyboard", {
+      why: "It is where a film is seen for the first time, and where mistakes are cheapest to fix.",
+      eg: "Twelve panels on index cards: one shot each, with an arrow for the camera move.",
+      miss: [["A storyboard is concept art.",
+              "Concept art shows how things look. A storyboard shows the shots in order — what the camera " +
+              "sees, and when."]],
+      pre: ["Pre-production"], rel: ["Visual treatment", "Shot list"],
+      say: ["panels", "drawings", "shots", "in order", "comic strip", "plan"],
+      apply: { ask: "A crew has one day to shoot and wants to know whether the idea works before paying " +
+                    "for a location. What should they make first?",
+               opts: ["A storyboard", "A model sheet", "A music bed", "A title card"],
+               right: 0,
+               why: "Drawing the shots costs nothing and shows whether the sequence reads." },
+      xfer: { ask: "An architect draws a walkthrough of a building, room by room, in the order a visitor " +
+                   "meets them. Which film tool is that like?",
+              opts: ["A storyboard", "A shot list", "Foley", "A pitch"],
+              right: 0,
+              why: "Pictures in the order they will be experienced — a storyboard in another trade." }
+    }),
+
+    C("Pre-production", {
+      why: "An hour of planning costs less than an hour on set with a crew standing around.",
+      eg: "Scripts, storyboards, casting, locations and schedules — all before a camera is switched on.",
+      miss: [["Pre-production means writing the script.",
+              "It is everything before shooting: writing, storyboarding, casting, scheduling and budgeting."]],
+      pre: [], rel: ["Storyboard", "Shot list"],
+      say: ["before", "planning", "writing", "casting", "scheduling", "preparation"],
+      apply: { ask: "A producer books actors, locks two locations and signs off a shot list. Which stage " +
+                    "is the production in?",
+               opts: ["Pre-production", "Production", "Post-production", "Distribution"],
+               right: 0,
+               why: "Nothing has been shot yet; this is all preparation." },
+      xfer: { ask: "A restaurant writes its menu, orders stock and trains staff before opening night. " +
+                   "Which production stage is that like?",
+              opts: ["Pre-production", "Post-production", "The climax", "Merchandising"],
+              right: 0,
+              why: "All the work that has to be finished before the doors open." }
+    }),
+
+    C("Visual treatment", {
+      why: "Two crews can read the same storyboard and shoot it completely differently until the camera " +
+           "is written down.",
+      eg: "Panel 6: low angle, medium shot, camera dollies in as she stands.",
+      miss: [["The visual treatment is the drawing.",
+              "The drawing is the storyboard. The visual treatment is the camera information added to " +
+              "each panel — angle, shot size, movement, effects."]],
+      pre: ["Storyboard"], rel: ["Storyboard", "Shot list"],
+      say: ["camera", "angle", "shot type", "movement", "added", "each panel"],
+      apply: { ask: "A storyboard shows two people talking, and on the day the crew argue about whether " +
+                    "to shoot it wide or close. What was missing?",
+               opts: ["The visual treatment", "The music bed", "A model sheet", "The resolution"],
+               right: 0,
+               why: "The shot type and angle should have been written on the panel." },
+      xfer: { ask: "A composer marks a score with tempo, dynamics and which instrument plays each line. " +
+                   "Which film step matches that?",
+              opts: ["The visual treatment", "A style test", "The pitch", "Merchandising"],
+              right: 0,
+              why: "Both turn a plan into instructions precise enough for other people to execute." }
+    }),
+
+    C("Music bed", {
+      why: "It carries the feeling of a piece across the joins, and audiences notice its absence more " +
+           "than its presence.",
+      eg: "The quiet piano under a documentary interview, running through every cut.",
+      miss: [["The music bed is the soundtrack's best song.",
+              "It is the background music running under the piece to set and hold the mood, not a " +
+              "featured track."]],
+      pre: [], rel: ["Sound effect", "Royalty-free music"],
+      say: ["background", "under", "mood", "ties together", "continuous", "music"],
+      apply: { ask: "A three-minute promotional video cuts between six locations, and one piece of music " +
+                    "plays throughout. What is that music doing?",
+               opts: ["Acting as the music bed, tying the scenes together", "Working as a sound effect",
+                      "Replacing the dialogue", "Serving as a title card"],
+               right: 0,
+               why: "Continuous music under changing pictures is what a bed is for." },
+      xfer: { ask: "A radio advert plays quiet music under the presenter's voice for thirty seconds. " +
+                   "What is it?",
+              opts: ["A music bed", "Foley", "ADR", "A closing credit"],
+              right: 0,
+              why: "The term comes from radio, and means the same thing there." }
+    }),
+
+    C("Royalty-free music", {
+      why: "Using a track you do not have the rights to can cost more than the whole production did.",
+      eg: "A library track bought once and used in any number of videos.",
+      miss: [["Royalty-free means free of charge.",
+              "It means no fee for each use. The track itself usually still has to be bought or licensed " +
+              "once."]],
+      pre: ["Music bed"], rel: ["Music bed"],
+      say: ["licence", "rights", "no fee per use", "library", "permission", "paid once"],
+      apply: { ask: "A student puts a chart song under their film and posts it online. What is the likely " +
+                    "problem?",
+               opts: ["They do not hold the rights to the music", "The music bed is too quiet",
+                      "The song has lyrics", "Royalty-free music is not allowed online"],
+               right: 0,
+               why: "Music is rarely free: compose it, license it, or use a royalty-free library." },
+      xfer: { ask: "A café wants background music without paying for every play. What should it look for?",
+              opts: ["A royalty-free or licensed library", "Any song from the radio",
+                     "A foley recording", "A title card"],
+              right: 0,
+              why: "Same problem as a production's: the licence, not the recording, is what is bought." }
+    }),
+
+    C("Style test", {
+      why: "It is cheaper to learn that a technique does not suit a story in five seconds than in five " +
+           "months.",
+      eg: "Twenty frames of the main character animated in clay, to see whether the tone works.",
+      miss: [["A style test is the first part of the finished film.",
+              "It is a sample made to judge the technique, and it is usually thrown away."]],
+      pre: [], rel: ["Model sheet", "Shot list"],
+      say: ["sample", "short", "technique", "test", "before production", "suits the story"],
+      apply: { ask: "A team cannot agree whether their film should be 2D or stop motion. What settles it " +
+                    "fastest?",
+               opts: ["A style test of the same scene in both", "A longer script", "A bigger budget",
+                      "A title card"],
+               right: 0,
+               why: "Make a little of each and look at it, rather than argue about it." },
+      xfer: { ask: "A publisher sets one chapter in three typefaces before choosing. Which production " +
+                   "step is that?",
+              opts: ["A style test", "A model sheet", "A pitch", "Revoicing"],
+              right: 0,
+              why: "A small sample made to choose a treatment before committing." }
+    }),
+
+    C("Model sheet", {
+      why: "Without one, a character's face changes between shots and the audience stops believing in them.",
+      eg: "The same character front, side and back, smiling and furious, in a coat and in a shirt.",
+      miss: [["A model sheet is one good drawing of a character.",
+              "It is many drawings — angles, expressions, outfits — so that everyone draws the character " +
+              "the same way."]],
+      pre: [], rel: ["Style test", "Storyboard"],
+      say: ["character", "angles", "expressions", "consistent", "reference", "outfits"],
+      apply: { ask: "Four animators in different cities are drawing the same character. What keeps them " +
+                    "consistent?",
+               opts: ["A model sheet", "A shot list", "A music bed", "An elevator pitch"],
+               right: 0,
+               why: "It is the reference every one of them draws from." },
+      xfer: { ask: "A company gives suppliers a sheet showing its logo's exact colours, spacing and " +
+                   "misuses. Which film document does that job?",
+              opts: ["A model sheet", "A storyboard", "A title card", "A pitch"],
+              right: 0,
+              why: "Both exist so that many hands produce one consistent thing." }
+    }),
+
+    C("Shot list", {
+      why: "It is the day's work written down, so that nothing is found missing after the crew has gone home.",
+      eg: "Shot 14: close-up, hands opening the envelope. Needed: Anna, prop envelope.",
+      miss: [["A shot list is just a storyboard.",
+              "Same information, different form: the storyboard draws it; the shot list writes it, and " +
+              "names who and what each shot needs."]],
+      pre: [], rel: ["Storyboard", "Pre-production"],
+      say: ["written", "list", "every shot", "in order", "who is needed", "description"],
+      apply: { ask: "A crew shoots out of order across three locations in one day. Which document makes " +
+                    "sure nothing is missed?",
+               opts: ["The shot list", "The music bed", "The model sheet", "The title card"],
+               right: 0,
+               why: "It is the checklist of every shot and what each one needs." },
+      xfer: { ask: "A wedding photographer writes down every photograph the couple wants before the day. " +
+                   "What have they made?",
+              opts: ["A shot list", "A storyboard", "A style test", "A pitch"],
+              right: 0,
+              why: "A written list of required shots is a shot list, wedding or feature film." }
+    }),
+
+    C("Title card", {
+      why: "It is the first thing a film says about itself in words.",
+      eg: "A black screen: the studio, then the title, then three actors' names.",
+      miss: [["A title card is the whole opening credits.",
+              "The title card is a screen carrying the title and the most important names. The opening " +
+              "credits are the wider run of names at the start."]],
+      pre: [], rel: ["Opening credits", "Multiple card"],
+      say: ["screen", "title", "start", "important names", "shown", "film's name"],
+      apply: { ask: "A film opens on a screen reading the studio's name, the title, and two lead actors. " +
+                    "What is that screen?",
+               opts: ["A title card", "A model sheet", "The resolution", "A cutaway"],
+               right: 0,
+               why: "Title plus the most important names, on one screen." },
+      xfer: { ask: "A silent film shows a card reading 'Three years later'. Is that a title card in the " +
+                   "sense used here?",
+              opts: ["No — this term means the screen carrying the title and key names",
+                     "Yes — any card counts", "Yes, because it uses text", "No, because it is silent"],
+              right: 0,
+              why: "A card with story text is an intertitle; the title card names the film and its leads." }
+    }),
+
+    C("Opening credits", {
+      why: "They tell an audience who made the thing they are about to watch, before it has earned their " +
+           "attention.",
+      eg: "Studio, title, four leading actors, then the casting director, composer and production designer.",
+      miss: [["The opening credits list everyone who worked on the film.",
+              "Only the studio, title, leads and key crew. Everyone else is in the closing credits."]],
+      pre: [], rel: ["Closing credits", "Title card"],
+      say: ["beginning", "studio", "title", "leading cast", "key crew", "over footage"],
+      apply: { ask: "A director wants the caterer and the second unit named at the start. What should " +
+                    "they be told?",
+               opts: ["Those names belong in the closing credits", "It is fine, the opening lists everyone",
+                      "They belong on the title card", "They should be left out entirely"],
+               right: 0,
+               why: "The opening carries the leads and key crew; the full list runs at the end." },
+      xfer: { ask: "A television series runs its title sequence over the first scene rather than stopping " +
+                   "for it. Is that still opening credits?",
+              opts: ["Yes — opening credits may be laid over footage", "No, credits must be on black",
+                     "No, that makes them closing credits", "Only if there is music"],
+              right: 0,
+              why: "Where they sit on screen does not change what they are." }
+    }),
+
+    C("Closing credits", {
+      why: "They are the only record that names everyone who made the thing.",
+      eg: "A scroll listing the second unit, the drivers, the licensed songs and the copyright notice.",
+      miss: [["Closing credits are a longer version of the opening credits.",
+              "They carry different material: the rest of the cast and crew, plus sponsors, distributors, " +
+              "music licences and legal notices."]],
+      pre: ["Opening credits"], rel: ["Opening credits", "Credit"],
+      say: ["end", "full list", "cast and crew", "legal", "scrolling", "everyone else"],
+      apply: { ask: "Where would you look to find which company supplied the visual effects and which " +
+                    "song played over the last scene?",
+               opts: ["The closing credits", "The title card", "The opening credits", "The shot list"],
+               right: 0,
+               why: "Suppliers, licences and notices all live at the end." },
+      xfer: { ask: "A game lists every developer, tester and licence holder on a scrolling screen when " +
+                   "you finish it. What is that, in film terms?",
+              opts: ["Closing credits", "A title card", "A style test", "A music bed"],
+              right: 0,
+              why: "Same function, same place: the full record at the end." }
+    }),
+
+    C("Multiple card", {
+      why: "Counting the names on a card is how a production shows who it treats as a lead.",
+      eg: "Three leads get a card each; the rest of the cast share one card.",
+      miss: [["A multiple card means the credits appear more than once.",
+              "It means more than three names on one card. One name is a single card, two a double, " +
+              "three a triple."]],
+      pre: ["Title card"], rel: ["Title card", "Opening credits"],
+      say: ["more than three", "names", "one card", "supporting", "crew", "extras"],
+      apply: { ask: "A title card carries five supporting actors' names. What is it called?",
+               opts: ["A multiple card", "A triple card", "A double card", "A single card"],
+               right: 0,
+               why: "More than three names on one card makes it a multiple card." },
+      xfer: { ask: "A film gives its star a card alone, then a card with two names, then one with seven. " +
+                   "What does that pattern tell you?",
+              opts: ["Billing — the earlier and the fewer the names, the more important the role",
+                     "Nothing; it is decoration", "The seven were paid the most",
+                     "The film had three directors"],
+              right: 0,
+              why: "Order and sharing are how screen billing signals importance." }
+    }),
+
+    C("Sound effect", {
+      why: "Half of what an audience believes it saw, it actually heard.",
+      eg: "A door slamming, a distant siren, a sword drawn.",
+      miss: [["Any sound in a film is a sound effect.",
+              "Speech and music are not. A sound effect is any other added sound."]],
+      pre: [], rel: ["Foley", "Music bed"],
+      say: ["added", "not speech", "not music", "sound", "creative point", "stock"],
+      apply: { ask: "An editor drops distant traffic, a ticking clock and a dog barking into a quiet " +
+                    "scene. What are these?",
+               opts: ["Sound effects", "Dialogue", "A music bed", "Revoicing"],
+               right: 0,
+               why: "Added sound that is neither speech nor music." },
+      xfer: { ask: "In a radio play, coconut shells are knocked together to suggest hooves. Which " +
+                   "category does that sound belong to?",
+              opts: ["A sound effect", "Dialogue", "A music bed", "A closing credit"],
+              right: 0,
+              why: "How it was made does not matter; what matters is that it is added, non-speech sound." }
+    }),
+
+    C("Foley", {
+      why: "Location sound rarely carries the small sounds a scene needs. Foley puts them back.",
+      eg: "An artist walks on gravel in a studio, watching the actor's feet on screen.",
+      miss: [["Foley is another word for sound effects.",
+              "Foley is performed in sync with the picture by someone watching it — footsteps, cloth, " +
+              "handled objects. A stock siren is a sound effect, not foley."]],
+      pre: ["Sound effect"], rel: ["Sound effect", "ADR"],
+      say: ["performed", "in sync", "picture", "everyday sounds", "footsteps", "studio"],
+      apply: { ask: "A scene's footsteps were lost under wind noise on location. What will the sound team " +
+                    "do?",
+               opts: ["Record foley in sync with the picture", "Re-record the dialogue", "Add a music bed",
+                      "Revoice the film"],
+               right: 0,
+               why: "Footsteps performed to picture is precisely the foley artist's job." },
+      xfer: { ask: "Why can a library recording of footsteps not always replace foley?",
+              opts: ["It will not match this actor's rhythm, weight and surface",
+                     "Library sound cannot be licensed", "Footsteps cannot be recorded",
+                     "It would require ADR first"],
+              right: 0,
+              why: "Foley is performed to this performance; stock sound is generic." }
+    }),
+
+    C("ADR", {
+      why: "One unusable line can spoil a take that was otherwise perfect. ADR saves the picture.",
+      eg: "An actor in a booth, watching the scene, repeats the line until it fits their own mouth.",
+      miss: [["ADR is dubbing a film into another language.",
+              "That is revoicing. ADR is the same actor re-recording their own lines to replace unusable " +
+              "production sound."]],
+      pre: [], rel: ["Revoicing", "Foley"],
+      say: ["re-record", "studio", "after filming", "fit to picture", "dialogue", "post-sync"],
+      apply: { ask: "A plane flew over during a key line, and the take is otherwise the best one. What now?",
+               opts: ["ADR — re-record that line in a studio", "Foley", "A music bed",
+                      "Reshoot the whole scene"],
+               right: 0,
+               why: "The picture is good, so only the sound needs replacing." },
+      xfer: { ask: "A documentary interview was recorded in a noisy market and the subject has since " +
+                   "become unavailable. Why is ADR not an option?",
+              opts: ["ADR needs the original performer to re-record", "ADR only works in animation",
+                     "ADR is a kind of music", "ADR requires a storyboard"],
+              right: 0,
+              why: "It is the same voice, re-recorded. No performer, no ADR." }
+    }),
+
+    C("Revoicing", {
+      why: "It is how a film made in one language plays in forty.",
+      eg: "A Japanese animation released with an English cast, timed to the original mouths.",
+      miss: [["Revoicing means adding subtitles.",
+              "Subtitles add text and keep the original voices. Revoicing replaces the voices, fitted to " +
+              "the original mouth movements."]],
+      pre: ["ADR"], rel: ["ADR"],
+      say: ["dubbing", "another language", "voice actors", "mouth movements", "fitted", "replaced"],
+      apply: { ask: "A studio releases its film in Spanish with new actors whose lines match the original " +
+                    "lip movements. What is this?",
+               opts: ["Revoicing", "ADR", "Foley", "A music bed"],
+               right: 0,
+               why: "New voices in another language, fitted to the picture." },
+      xfer: { ask: "Why are revoiced lines often not a literal translation?",
+              opts: ["They must fit the time and mouth shapes on screen", "Translators are careless",
+                     "Literal translation is not allowed", "The music bed forbids it"],
+              right: 0,
+              why: "The constraint is the picture: the line has to land in the same mouth movements." }
+    }),
+
+    C("Merchandising", {
+      why: "For many productions the film is the advertisement and the merchandise is the business.",
+      eg: "Lunchboxes, shirts and toys carrying a film's characters.",
+      miss: [["Merchandising is only about making extra money.",
+              "It also spreads awareness: every shirt someone wears is an advertisement for the production."]],
+      pre: [], rel: ["Franchise"],
+      say: ["products", "for sale", "promotional", "awareness", "brand", "goods"],
+      apply: { ask: "A small studio gives away caps and posters at a festival before its film opens. What " +
+                    "is the main purpose?",
+               opts: ["Promotion — spreading awareness of the film", "Paying the crew",
+                      "Replacing the closing credits", "Licensing the music"],
+               right: 0,
+               why: "Promotional merchandise is advertising that people carry for you." },
+      xfer: { ask: "A football club sells shirts with its badge. Which idea from this unit is that?",
+              opts: ["Merchandising", "Foley", "A style test", "An elevator pitch"],
+              right: 0,
+              why: "Products sold to consumers that also advertise the brand." }
+    }),
+
+    C("Producer", {
+      why: "Somebody has to decide what gets made and find the money to make it.",
+      eg: "Chooses the script, raises the budget, hires the director, and answers for the schedule.",
+      miss: [["The producer directs the actors.",
+              "That is the director. The producer finds the money, chooses the material, hires people and " +
+              "oversees the whole production."]],
+      pre: [], rel: ["Director", "Pitch"],
+      say: ["money", "hires", "oversees", "chooses material", "organises", "whole production"],
+      apply: { ask: "A shoot is a week behind and over budget. Whose problem is that first?",
+               opts: ["The producer's", "The composer's", "The foley artist's", "The voice actor's"],
+               right: 0,
+               why: "Money and schedule are what a producer is responsible for." },
+      xfer: { ask: "A writer with a finished script wants it made. Who do they pitch to first?",
+              opts: ["A producer, who can commit money", "A foley artist", "An extra", "The audience"],
+              right: 0,
+              why: "The pitch goes to whoever can say yes and pay." }
+    }),
+
+    C("Director", {
+      why: "Every shot in a film reflects one person's decision about how that moment should be played.",
+      eg: "Tells the actors how the argument builds, and where the camera will be while it does.",
+      miss: [["The director operates the camera.",
+              "The director decides how the scene is played and shot. The director of photography lights " +
+              "and frames it."]],
+      pre: [], rel: ["Producer", "Director of photography"],
+      say: ["runs the production", "performance", "how each scene", "played", "leads", "decides"],
+      apply: { ask: "An actor asks whether the line should be angry or frightened. Who answers?",
+               opts: ["The director", "The producer", "The editor", "The foley artist"],
+               right: 0,
+               why: "Performance is the director's decision." },
+      xfer: { ask: "On a small student shoot, one person raises the money and another decides how scenes " +
+                   "are played. Which is the director?",
+              opts: ["The one deciding how scenes are played", "The one raising the money",
+                     "Both equally", "Neither"],
+              right: 0,
+              why: "The jobs are defined by the decisions they own, not the size of the crew." }
+    }),
+
+    C("Director of photography", {
+      why: "How a scene is lit and framed decides how it feels before anybody speaks.",
+      eg: "Chooses the lens, the light and the frame for every shot in the film.",
+      miss: [["The director of photography is the same job as the director.",
+              "The director decides what a scene means and how it is played. The DP decides how it is lit " +
+              "and framed."]],
+      pre: ["Director"], rel: ["Director"],
+      say: ["lit", "framed", "camera", "lens", "light", "each shot"],
+      apply: { ask: "A scene must feel cold and exposed. Who chooses the lighting that makes it so?",
+               opts: ["The director of photography", "The producer", "The voice actor", "The editor"],
+               right: 0,
+               why: "Lighting and framing are the DP's craft, worked out with the director." },
+      xfer: { ask: "A photographer is hired to shoot a magazine feature and decides the lighting and " +
+                   "framing of every picture. Which film job is closest?",
+              opts: ["Director of photography", "Producer", "Foley artist", "Editor"],
+              right: 0,
+              why: "Same decisions — light and frame — in a still medium." }
+    }),
+
+    C("Credit", {
+      why: "It is how work in this industry is proved: the next job comes out of the last one's credits.",
+      eg: "Assistant editor — Anna Reyes, on the end roll.",
+      miss: [["A credit is a thank-you at the end.",
+              "It is a formal record that you worked on the production, and it is what the industry hires " +
+              "from."]],
+      pre: [], rel: ["Closing credits", "Opening credits"],
+      say: ["name", "listed", "worked on", "production", "record", "recognition"],
+      apply: { ask: "A student works three days on a short film. Why should they ask to be credited?",
+               opts: ["It is a record of the work that other productions will hire from",
+                      "It pays more", "It gives them copyright", "It makes them the producer"],
+               right: 0,
+               why: "Credits are the portfolio this industry actually reads." },
+      xfer: { ask: "Two people did the same job on a film, but only one is named on screen. What does " +
+                   "that difference cost the other?",
+              opts: ["Provable experience for future work", "Nothing at all", "Their pay for the job",
+                     "The film's rating"],
+              right: 0,
+              why: "The work happened either way; only the credit proves it." }
+    }),
+
+    C("Franchise", {
+      why: "A successful story is now usually the beginning of a business, not the end of a project.",
+      eg: "Films, games, books and toys all built on the same world and characters.",
+      miss: [["A franchise is just a sequel.",
+              "A sequel is one more film. A franchise is the whole family of work built around the same " +
+              "characters or world."]],
+      pre: [], rel: ["Merchandising"],
+      say: ["series", "same characters", "world", "films", "games", "built around"],
+      apply: { ask: "A studio follows one hit film with two sequels, a series, a game and a toy line. " +
+                    "What has it built?",
+               opts: ["A franchise", "A model sheet", "A music bed", "A style test"],
+               right: 0,
+               why: "Many works, one world — that is what the word means." },
+      xfer: { ask: "Why do studios plan merchandising while the first film is still being written?",
+              opts: ["Because a franchise earns from the world, not only from ticket sales",
+                     "Because merchandise is cheaper to make", "Because credits require it",
+                     "Because it shortens post-production"],
+              right: 0,
+              why: "The business case for a franchise counts everything the world can sell." }
+    })
+  ];
+
   var BOOK = { "media-5": MEDIA5, "media-6": MEDIA6, "media-7": MEDIA7, "media-8": MEDIA8,
-               "biz-4": BIZ4 };
+               "media-9": MEDIA9, "biz-4": BIZ4 };
 
   /* A set with no authored concepts still runs, at the three levels a pair can
      honestly support. Saying so in the data is better than a Learn session
