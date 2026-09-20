@@ -30,6 +30,8 @@
      tester      two expressions side by side at the same x
      share       division as fitting pieces — and why pieces of size 0 can't
      walk        a worked example, one line at a time, each with its reason
+     move        a shape on a grid you slide, turn, flip or scale — the four
+                 transformations, done rather than described
 
    Every draggable thing is keyboard-operable (Tab to it, arrow keys to move
    it), and every scene says in words what it shows.
@@ -1618,6 +1620,135 @@
     api.ready = function () { return mode.explore && spec.gate ? k >= rows.length : true; };
     api.check = function () { return { ok: true }; };
     api.reveal = function () { while (k < rows.length) { row(rows[k], k, false); k++; } paint(); };
+    return api;
+  });
+
+  /* ================================================================ Move
+     A transformation you perform. The shape you start with stays on the grid
+     as a ghost; the one you are moving follows the controls, so the four
+     transformations are things you do and watch rather than rules you are
+     told:
+
+       translate   step it left, right, up and down
+       rotate      quarter turns about a centre, either way
+       reflect     flip it over the x-axis, the y-axis or the line y = x
+       dilate      scale it about a centre
+
+     spec: { shape: [[x,y], …], kind, center: [x,y], target: [[x,y], …],
+             x: [lo,hi], y: [lo,hi], gate: bool, hint: text }
+     With a target, it is solved when the image lands on it; without one it
+     is a scene to play with. */
+  CH.addKind("move", function (spec, seed, mode) {
+    var api = {}, kind = spec.kind || "translate";
+    var xr = spec.x || [-8, 8], yr = spec.y || [-8, 8], c = spec.center || [0, 0];
+    var st = { dx: 0, dy: 0, turn: 0, flip: null, k: 1 }, moved = false;
+    var W = 460, H = Math.round(W * (yr[1] - yr[0]) / (xr[1] - xr[0])), pad = 22;
+    function X(v) { return pad + (v - xr[0]) / (xr[1] - xr[0]) * (W - 2 * pad); }
+    function Y(v) { return H - pad - (v - yr[0]) / (yr[1] - yr[0]) * (H - 2 * pad); }
+    var box = el("div", "lw lw-move");
+    var svg = svgRoot(W, H, "lw-mv");
+    box.appendChild(svg);
+    var ctl = el("div", "lw-tools");
+    box.appendChild(ctl);
+    var read = el("div", "lw-read");
+    box.appendChild(read);
+
+    function image() {
+      return spec.shape.map(function (p) {
+        var x = p[0], y = p[1], t;
+        if (kind === "translate") return [x + st.dx, y + st.dy];
+        if (kind === "rotate") {
+          x -= c[0]; y -= c[1];
+          for (var i = 0; i < ((st.turn % 4) + 4) % 4; i++) { t = x; x = -y; y = t; }   // a quarter turn, counterclockwise
+          return [r2(x + c[0]), r2(y + c[1])];
+        }
+        if (kind === "reflect") {
+          if (st.flip === "x") return [x, -y];
+          if (st.flip === "y") return [-x, y];
+          if (st.flip === "yx") return [y, x];
+          return [x, y];
+        }
+        return [r2(c[0] + (x - c[0]) * st.k), r2(c[1] + (y - c[1]) * st.k)];
+      });
+    }
+    function same(a, b) {
+      return a.length === b.length && a.every(function (p, i) { return Math.abs(p[0] - b[i][0]) < 1e-9 && Math.abs(p[1] - b[i][1]) < 1e-9; });
+    }
+    function poly(pts, cls, g) {
+      return S("polygon", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), class: cls }, g);
+    }
+    function paint() {
+      svg.innerHTML = "";
+      var grid = S("g", { class: "lw-grid" }, svg);
+      for (var gx = Math.ceil(xr[0]); gx <= xr[1]; gx++) S("line", { x1: X(gx), y1: Y(yr[0]), x2: X(gx), y2: Y(yr[1]), class: "g" }, grid);
+      for (var gy = Math.ceil(yr[0]); gy <= yr[1]; gy++) S("line", { x1: X(xr[0]), y1: Y(gy), x2: X(xr[1]), y2: Y(gy), class: "g" }, grid);
+      var axes = S("g", { class: "lw-axes" }, svg);
+      S("line", { x1: X(xr[0]), y1: Y(0), x2: X(xr[1]), y2: Y(0) }, axes);
+      S("line", { x1: X(0), y1: Y(yr[0]), x2: X(0), y2: Y(yr[1]) }, axes);
+      if (kind === "reflect" && st.flip) {                       // the mirror
+        var ml = st.flip === "x" ? [[xr[0], 0], [xr[1], 0]] : st.flip === "y" ? [[0, yr[0]], [0, yr[1]]]
+          : [[Math.max(xr[0], yr[0]), Math.max(xr[0], yr[0])], [Math.min(xr[1], yr[1]), Math.min(xr[1], yr[1])]];
+        S("line", { x1: X(ml[0][0]), y1: Y(ml[0][1]), x2: X(ml[1][0]), y2: Y(ml[1][1]), class: "lw-mirror" }, svg);
+      }
+      if (spec.target) poly(spec.target, "lw-mv-target", svg);
+      poly(spec.shape, "lw-mv-ghost", svg);
+      var img = image();
+      poly(img, "lw-mv-img", svg);
+      img.forEach(function (p) { S("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, class: "lw-mv-dot" }, svg); });
+      if (kind === "rotate" || kind === "dilate") {
+        S("circle", { cx: X(c[0]), cy: Y(c[1]), r: 4.5, class: "lw-mv-c" }, svg);
+        var ct = S("text", { x: X(c[0]) + 9, y: Y(c[1]) - 9, class: "lw-pl" }, svg);
+        ct.textContent = "centre";
+      }
+      var hit = spec.target && same(img, spec.target);
+      box.classList.toggle("solved", !!hit);
+      function part(v, name) { return v ? name + " " + LAB.signed(v) : name; }
+      read.innerHTML = (kind === "translate" ? m("(x, y) \\to (" + part(st.dx, "x") + ", " + part(st.dy, "y") + ")")
+        : kind === "rotate" ? m(((((st.turn % 4) + 4) % 4) * 90) + "^\\circ \\text{ counterclockwise}")
+        : kind === "reflect" ? (st.flip ? m("\\text{flipped over the } " + (st.flip === "x" ? "x\\text{-axis}" : st.flip === "y" ? "y\\text{-axis}" : "\\text{line } y = x")) : "<span class='lw-note'>Pick a line to flip over.</span>")
+        : m("\\text{scale factor } " + num(st.k)))
+        + (spec.target ? (hit ? '<span class="lw-tag good">on target</span>' : '<span class="lw-tag">match the outline</span>') : "");
+      if (api.onChange) api.onChange();
+    }
+    function act(label, f, aria) {
+      var b = button("lw-btn", label);
+      if (aria) b.setAttribute("aria-label", aria);
+      b.addEventListener("click", function () { f(); moved = true; paint(); });
+      return b;
+    }
+    if (kind === "translate") {
+      ctl.appendChild(act("←", function () { st.dx--; }, "Left"));
+      ctl.appendChild(act("→", function () { st.dx++; }, "Right"));
+      ctl.appendChild(act("↑", function () { st.dy++; }, "Up"));
+      ctl.appendChild(act("↓", function () { st.dy--; }, "Down"));
+    } else if (kind === "rotate") {
+      ctl.appendChild(act("↺ 90°", function () { st.turn++; }, "Turn 90 degrees counterclockwise"));
+      ctl.appendChild(act("↻ 90°", function () { st.turn--; }, "Turn 90 degrees clockwise"));
+    } else if (kind === "reflect") {
+      ctl.appendChild(act("Over the x-axis", function () { st.flip = st.flip === "x" ? null : "x"; }));
+      ctl.appendChild(act("Over the y-axis", function () { st.flip = st.flip === "y" ? null : "y"; }));
+      ctl.appendChild(act("Over y = x", function () { st.flip = st.flip === "yx" ? null : "yx"; }));
+    } else {
+      ctl.appendChild(act("×2", function () { st.k = r2(st.k * 2); }, "Twice as big"));
+      ctl.appendChild(act("÷2", function () { st.k = r2(st.k / 2); }, "Half the size"));
+    }
+    ctl.appendChild(act("Start again", function () { st = { dx: 0, dy: 0, turn: 0, flip: null, k: 1 }; }));
+    paint();
+    api.el = box;
+    api.state = function () { return { image: image(), move: Object.assign({}, st) }; };
+    api.ready = function () {
+      if (spec.target) return same(image(), spec.target);
+      return mode.explore ? (spec.gate ? moved : true) : moved;
+    };
+    api.check = function () {
+      var ok = spec.target ? same(image(), spec.target) : true;
+      return { ok: ok, say: ok ? null : spec.hint || "Not there yet — keep going until it sits on the outline." };
+    };
+    api.reveal = function () {
+      if (!spec.answer) return;
+      Object.keys(spec.answer).forEach(function (k) { st[k] = spec.answer[k]; });
+      paint();
+    };
     return api;
   });
 

@@ -713,3 +713,16 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 /* The sidebar says where you are, so the work has no header on screen: the
    title stays for screen readers, and the progress bar goes. */
 .lb-work .ch-top { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------------------------------------------------------------- Move
+   A transformation performed: the shape you started with stays as a ghost,
+   the one you are moving is solid, and the outline is where it should land. */
+.lw-mv { width: auto; max-width: 100%; max-height: 440px; margin: 0 auto; border-radius: 14px; background: var(--lw-surface); }
+.lw-mv-ghost { fill: color-mix(in srgb, var(--ink) 8%, transparent); stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.lw-mv-img { fill: color-mix(in srgb, var(--lw-blue) 26%, transparent); stroke: var(--lw-blue); stroke-width: 2.5; stroke-linejoin: round; transition: all .18s var(--ease); }
+.lw-mv-dot { fill: var(--lw-blue); }
+.lw-mv-target { fill: none; stroke: var(--lw-green); stroke-width: 2.5; stroke-dasharray: 7 5; }
+.lw-mv-c { fill: var(--lw-orange); }
+.lw-mirror { stroke: var(--lw-purple); stroke-width: 2; stroke-dasharray: 6 4; }
+.lw-move.solved .lw-mv-img { fill: color-mix(in srgb, var(--lw-green) 26%, transparent); stroke: var(--lw-green); }
+.lw-move.solved .lw-mv-dot { fill: var(--lw-green); }

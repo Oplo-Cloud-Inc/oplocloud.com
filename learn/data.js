@@ -445,6 +445,47 @@ window.OPLO = (function () {
     grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
   };
 
+
+  /* Geometry is a lab course like Algebra I: its units are interactive
+     lessons, practice that generates its own problems, and tests
+     (learn/lab/, learn/geo/). */
+  var GEO = {
+    id: "geo", t: "Geometry", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
+    lab: true,
+    d: "Proof as an argument you could win, not a form to fill in.",
+    lede: "Geometry done with your hands: shapes you slide, turn, flip and scale until the rule is obvious, " +
+          "and then written down. Every idea is met by moving something, practised until it is easy, and tested " +
+          "until it sticks.",
+    glyph: '<path d="M12 4 21 19H3z"/>',
+    objectives: [
+      "Use the words and notation of geometry precisely: point, line, segment, ray, angle, plane.",
+      "Perform translations, rotations, reflections and dilations on the coordinate plane.",
+      "Say which transformation takes one figure to another, and what it keeps the same.",
+      "Prove figures congruent or similar, and use that to find missing lengths and angles.",
+      "Use right-triangle trigonometry and the Pythagorean theorem.",
+      "Work with circles, arcs and solids, and find their areas and volumes."
+    ],
+    units: [
+      { t: "Performing transformations", lab: true,
+        desc: "The words of geometry, then the four moves: sliding, turning, flipping and scaling a figure on the coordinate plane." },
+      { t: "Transformation properties and proofs", lab: true,
+        desc: "What each move keeps the same, rigid motions against dilations, and symmetry as a figure mapped onto itself." },
+      { t: "Congruence", lab: true,
+        desc: "Figures that one rigid motion takes to the other: triangle congruence by SSS, SAS, ASA and AAS, and what that proves." },
+      { t: "Similarity", lab: true,
+        desc: "Same shape, different size: similar triangles, the angle-angle criterion, and solving with proportions." },
+      { t: "Right triangles & trigonometry", lab: true,
+        desc: "The Pythagorean theorem and its converse, special right triangles, and sine, cosine and tangent as ratios." },
+      { t: "Analytic geometry", lab: true,
+        desc: "Distance and midpoint, dividing a segment in a ratio, and proving things about figures with coordinates." },
+      { t: "Circles", lab: true,
+        desc: "Arcs, sectors, inscribed angles, tangents, and the equation of a circle." },
+      { t: "Solid geometry", lab: true,
+        desc: "Volume and surface area, cross sections, and what happens to both when a solid is scaled." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
+  };
+
   var MEDIA = {
     id: "media", t: "Media Arts", hue: "#8f5cff", subject: "English", level: "Introductory",
     tag: "Arts and Design",
@@ -526,7 +567,7 @@ window.OPLO = (function () {
       courses: [SEEING,
         ALG,
         G8,
-        stub("geo", "Geometry",  "Math", BLUE, "Proof as an argument you could win, not a form to fill in.", SIGMA)] },
+        GEO] },
     { n: "Science", hue: GREEN,
       d: "Method first: what would have to be true, and how would you find out.",
       courses: [
@@ -551,6 +592,7 @@ window.OPLO = (function () {
     alg: { 1: [], 2: [1], 3: [1], 4: [2], 5: [4], 6: [5], 7: [6], 8: [4], 9: [8], 10: [8], 11: [1], 12: [9, 11],
            13: [11], 14: [13, 10], 15: [11] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
+    geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [1], 7: [3], 8: [4] },
     biz: {}
   };
 
