@@ -26,7 +26,7 @@
 }
 
 .ld .nav {
-  position: absolute; top: 0; left: 0; right: 0; height: var(--nav); z-index: 9000;
+  position: fixed; top: 0; left: 0; right: 0; height: var(--nav); z-index: 9000;
 }
 .ld .nav::before {
   content: ""; position: absolute; inset: 0; z-index: -1; background-color: rgba(255,255,255,.8); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); transition: background-color .45s var(--ease);
@@ -123,7 +123,7 @@
   transition: opacity .25s var(--ease);
 }
 .ld .nav-flyout {
-  position: fixed; top: calc(var(--nav) + var(--nav-y, 0px)); left: 0; right: 0; z-index: 1; visibility: hidden; pointer-events: none;
+  position: fixed; top: var(--nav); left: 0; right: 0; z-index: 1; visibility: hidden; pointer-events: none;
 }
 .ld .nav-flyout.is-open {
   visibility: visible;
@@ -223,7 +223,7 @@
   opacity: 0; pointer-events: none; transition: opacity .2s var(--ease);
 }
 .ld .nav-find {
-  position: fixed; top: calc(var(--nav) + var(--nav-y, 0px)); left: 0; right: 0; z-index: 1; max-height: calc(100vh - var(--nav)); overflow-y: auto; overscroll-behavior: contain; background: var(--paper); animation: nav-find-in .28s var(--ease);
+  position: fixed; top: var(--nav); left: 0; right: 0; z-index: 1; max-height: calc(100vh - var(--nav)); overflow-y: auto; overscroll-behavior: contain; background: var(--paper); animation: nav-find-in .28s var(--ease);
 }
 .ld .nav-find-in {
   max-width: 692px; margin-inline: auto; padding: 14px max(var(--gutter), env(safe-area-inset-right)) 60px max(var(--gutter), env(safe-area-inset-left));
@@ -274,7 +274,7 @@
   min-width: 0; font-size: 12px; font-weight: 400; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ld .nav-scrim {
-  position: fixed; inset: calc(var(--nav) + var(--nav-y, 0px)) 0 0 0; z-index: 0; background: rgba(0,0,0,.42); animation: nav-scrim-in .28s var(--ease);
+  position: fixed; inset: var(--nav) 0 0 0; z-index: 0; background: rgba(0,0,0,.42); animation: nav-scrim-in .28s var(--ease);
 }
 @keyframes nav-find-in {
 .ld from {
@@ -316,7 +316,7 @@
 }
 @media (max-width: 833px) {
 .ld .nav-links {
-  display: flex; flex-direction: column; justify-content: flex-start; position: fixed; inset: calc(var(--nav) + var(--nav-y, 0px)) 0 0 0; background: var(--paper); padding: 4px max(var(--gutter), env(safe-area-inset-left)) max(40px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; visibility: hidden; opacity: 0; transition: opacity .2s var(--ease), visibility 0s linear .2s;
+  display: flex; flex-direction: column; justify-content: flex-start; position: fixed; inset: var(--nav) 0 0 0; background: var(--paper); padding: 4px max(var(--gutter), env(safe-area-inset-left)) max(40px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; visibility: hidden; opacity: 0; transition: opacity .2s var(--ease), visibility 0s linear .2s;
 }
 .ld .nav-links.open {
   visibility: visible; opacity: 1; transition: opacity .2s var(--ease);
@@ -392,7 +392,7 @@
 }
 }
 .ld .chapter {
-  position: sticky; top: 0; z-index: 800; background: rgba(255,255,255,.8); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); border-bottom: 1px solid var(--rule); color: var(--ink); transition: background-color .45s var(--ease), border-color .45s var(--ease), color .45s var(--ease);
+  position: sticky; top: var(--nav); z-index: 800; background: rgba(255,255,255,.8); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); border-bottom: 1px solid var(--rule); color: var(--ink); transition: background-color .45s var(--ease), border-color .45s var(--ease), color .45s var(--ease);
 }
 .ld .bars-dark .chapter {
   --ink: var(--ink-lt); --ink-2: var(--ink-lt-2); background: rgba(22,22,23,.8); border-bottom-color: rgba(255,255,255,.1);
