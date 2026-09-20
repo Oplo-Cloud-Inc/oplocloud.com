@@ -28,11 +28,15 @@
      that is mostly still being done. The page says so rather than dressing an
      empty room.
 
-     It wears oplocloud.com's own bar and footer, written into the oplo:
-     regions below by tools/build.py from the same NAV and FOOTER every page
-     on the site is built from — so the three hostnames cannot drift. Edit
-     them there and run `python3 tools/build.py`; anything typed inside a
-     region is replaced.
+     The bar is this site's own — DEV_NAV and DEV_MENUS in tools/build.py —
+     not oplocloud.com's with a sub-bar under it: somebody who typed
+     dev.oplocloud.com came for the platform, and the front door should be the
+     platform's. It is built by the same nav() as the company's bar though, so
+     the two behave identically and neither can miss a fix the other gets. The
+     footer under it is the company's, entire, and is the way back.
+
+     Both are written into the oplo: regions below by `python3 tools/build.py`.
+     Edit them there; anything typed inside a region is replaced.
 
      Every picture and film is a slot, the same contract as OEdu's welcome
      page (learn/index.html):
@@ -53,19 +57,20 @@
 <div class="dv" id="dev">
 
   <!-- oplo:nav -->
-<nav class="nav" id="nav" aria-label="Oplo">
+<nav class="nav" id="nav" aria-label="Oplo Developer">
   <div class="nav-in">
-    <a class="nav-brand" href="https://oplocloud.com/" aria-label="Oplo home">
-      <svg class="mark" viewBox="84.13 107.80 206.73 194.91" aria-hidden="true" focusable="false"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></svg>
+    <a class="nav-brand" href="https://dev.oplocloud.com/" aria-label="Oplo Developer home">
+      <svg class="mark" viewBox="84.13 107.80 206.73 194.91" aria-hidden="true" focusable="false"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></svg><span class="nav-word">Developer</span>
     </a>
     <ul class="nav-links" id="navLinks">
-        <li><a href="https://oplocloud.com/products/">Products</a><button class="nav-more" type="button" aria-label="Products menu" aria-expanded="false" aria-controls="navMenu0"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
-        <li><a href="https://oplocloud.com/solutions/">Solutions</a><button class="nav-more" type="button" aria-label="Solutions menu" aria-expanded="false" aria-controls="navMenu1"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
-        <li><a href="https://oplocloud.com/resources/">Resources</a><button class="nav-more" type="button" aria-label="Resources menu" aria-expanded="false" aria-controls="navMenu2"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
-        <li><a href="https://oplocloud.com/company/">Company</a><button class="nav-more" type="button" aria-label="Company menu" aria-expanded="false" aria-controls="navMenu3"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
-        <li><a href="https://oplocloud.com/support/">Support</a><button class="nav-more" type="button" aria-label="Support menu" aria-expanded="false" aria-controls="navMenu4"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="#start">Get started</a><button class="nav-more" type="button" aria-label="Get started menu" aria-expanded="false" aria-controls="navMenu0"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="#platforms">Platforms</a><button class="nav-more" type="button" aria-label="Platforms menu" aria-expanded="false" aria-controls="navMenu1"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="#technologies">Technologies</a><button class="nav-more" type="button" aria-label="Technologies menu" aria-expanded="false" aria-controls="navMenu2"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="#downloads">Downloads</a><button class="nav-more" type="button" aria-label="Downloads menu" aria-expanded="false" aria-controls="navMenu3"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="#community">Community</a><button class="nav-more" type="button" aria-label="Community menu" aria-expanded="false" aria-controls="navMenu4"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="#support">Support</a><button class="nav-more" type="button" aria-label="Support menu" aria-expanded="false" aria-controls="navMenu5"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
     </ul>
-    <div class="nav-end"><button class="nav-search" id="navSearch" type="button" aria-label="Search oplocloud.com" aria-expanded="false" aria-controls="navFind"><svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button></div>
+    <div class="nav-end"><button class="nav-search" id="navSearch" type="button" aria-label="Search the developer site" aria-expanded="false" aria-controls="navFind"><svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button><a class="nav-cta" href="https://oplocloud.com/sign-in/">Sign in</a></div>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
     </button>
@@ -73,30 +78,30 @@
   <div class="nav-flyout" id="navFlyout" hidden>
     <div class="nav-flyout-bg"></div>
     <div class="nav-flyout-in">
-      <div class="nav-menu" id="navMenu0" role="region" aria-label="Products">
-        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Products</h2><ul><li><a href="https://oplocloud.com/products/">All Products</a></li><li><a href="https://oplocloud.com/hardware/">Hardware</a></li><li><a href="https://oplocloud.com/software/">Software</a></li><li><a href="https://oplocloud.com/intelligence/">Intelligence</a></li><li><a href="https://oplocloud.com/plus/">Oplo+</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Hardware and Software</h2><ul><li><a href="https://oplocloud.com/hardware/#silicon">Silicon</a></li><li><a href="https://oplocloud.com/hardware/#devices">Devices</a></li><li><a href="https://oplocloud.com/hardware/#accessories">Accessories</a></li><li><a href="https://oplocloud.com/software/#apps">Apps</a></li><li><a href="https://oplocloud.com/software/#updates">Updates</a></li><li><a href="https://oplocloud.com/software/#downloads">Downloads</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Oplo+</h2><ul><li><a href="https://oplocloud.com/plus/#plans">Plans</a></li><li><a href="https://oplocloud.com/plus/#perks">What’s Included</a></li><li><a href="https://oplocloud.com/plus/#compare">Compare Plans</a></li><li><a href="https://oplocloud.com/plus/#faq">Questions</a></li></ul></div>
+      <div class="nav-menu" id="navMenu0" role="region" aria-label="Get started">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore</h2><ul><li><a href="#start">Ways to start</a></li><li><a href="#platforms">Platforms</a></li><li><a href="#technologies">Technologies</a></li><li><a href="#films">Latest films</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Open today</h2><ul><li><a href="https://oplocloud.com/developers/#design">Design system</a></li><li><a href="https://edu.oplocloud.com/">OEdu</a></li><li><a href="https://oplocloud.com/contact/">Talk to an engineer</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Not yet</h2><ul><li><a href="#start">API reference</a></li><li><a href="#start">Early access</a></li><li><a href="#start">App distribution</a></li></ul></div>
       </div>
-      <div class="nav-menu" id="navMenu1" role="region" aria-label="Solutions">
-        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Solutions</h2><ul><li><a href="https://oplocloud.com/solutions/">Who It’s For</a></li><li><a href="https://oplocloud.com/solutions/#personal">Personal</a></li><li><a href="https://edu.oplocloud.com/">Education</a></li><li><a href="https://oplocloud.com/developers/">Developers</a></li><li><a href="https://oplocloud.com/solutions/#institutions">Business and Government</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Education</h2><ul><li><a href="https://edu.oplocloud.com/">OEdu</a></li><li><a href="https://edu.oplocloud.com/#students">Students</a></li><li><a href="https://edu.oplocloud.com/#teachers">Teachers</a></li><li><a href="https://edu.oplocloud.com/#families">Families</a></li><li><a href="https://edu.oplocloud.com/#schools">Schools</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Developers</h2><ul><li><a href="https://oplocloud.com/developers/#docs">Documentation</a></li><li><a href="https://oplocloud.com/developers/#sdks">SDKs</a></li><li><a href="https://oplocloud.com/developers/#design">Design Resources</a></li><li><a href="https://oplocloud.com/developers/#support">Developer Support</a></li></ul></div>
+      <div class="nav-menu" id="navMenu1" role="region" aria-label="Platforms">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Platforms</h2><ul><li><a href="#platforms">All platforms</a></li><li><a href="#p-os">Oplo OS</a></li><li><a href="#p-studio">OStudio</a></li><li><a href="#p-silicon">Oplo Silicon</a></li><li><a href="#p-intelligence">Oplo Intelligence</a></li><li><a href="#p-cloud">Oplo Cloud</a></li><li><a href="#p-edu">OEdu</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Featured</h2><ul><li><a href="#whats-new">What is new</a></li><li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li><li><a href="https://edu.oplocloud.com/">Open OEdu</a></li></ul></div>
       </div>
-      <div class="nav-menu" id="navMenu2" role="region" aria-label="Resources">
-        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Resources</h2><ul><li><a href="https://oplocloud.com/resources/">All Resources</a></li><li><a href="https://oplocloud.com/privacy/">Privacy</a></li><li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li><li><a href="https://oplocloud.com/investor/">Investor Relations</a></li><li><a href="https://oplocloud.com/legal/">Legal</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Privacy</h2><ul><li><a href="https://oplocloud.com/privacy/features/">Features</a></li><li><a href="https://oplocloud.com/privacy/control/">Control</a></li><li><a href="https://oplocloud.com/privacy/labels/">Privacy Labels</a></li><li><a href="https://oplocloud.com/privacy/transparency/">Transparency Report</a></li><li><a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Investors</h2><ul><li><a href="https://oplocloud.com/investor/leadership/">Leadership and Governance</a></li><li><a href="https://oplocloud.com/investor/filings/">Filings</a></li><li><a href="https://oplocloud.com/investor/values/">Our Values</a></li><li><a href="https://oplocloud.com/investor/faq/">FAQ</a></li></ul></div>
+      <div class="nav-menu" id="navMenu2" role="region" aria-label="Technologies">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Technologies</h2><ul><li><a href="#technologies">All technologies</a></li><li><a href="#t-interface">Interface</a></li><li><a href="#t-intelligence">Intelligence</a></li><li><a href="#t-data">Data</a></li><li><a href="#t-system">System</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Elsewhere</h2><ul><li><a href="https://oplocloud.com/intelligence/">Oplo intelligence</a></li><li><a href="https://oplocloud.com/hardware/">Oplo hardware</a></li><li><a href="https://oplocloud.com/software/">Oplo software</a></li><li><a href="https://oplocloud.com/privacy/">Privacy</a></li></ul></div>
       </div>
-      <div class="nav-menu" id="navMenu3" role="region" aria-label="Company">
-        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Oplo</h2><ul><li><a href="https://oplocloud.com/company/">About Oplo</a></li><li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li><li><a href="https://oplocloud.com/careers/">Careers</a></li><li><a href="https://oplocloud.com/investor/">Investor Relations</a></li><li><a href="https://oplocloud.com/contact/">Contact</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Quick Links</h2><ul><li><a href="https://oplocloud.com/company/#what">What We’re Building</a></li><li><a href="https://oplocloud.com/company/#where">Where We’re Going</a></li><li><a href="https://oplocloud.com/careers/#roles">Open Roles</a></li><li><a href="https://oplocloud.com/newsroom/#press">Press</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Legal</h2><ul><li><a href="https://oplocloud.com/legal/">Legal</a></li><li><a href="https://oplocloud.com/legal/terms/">Terms of Use</a></li><li><a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a></li></ul></div>
+      <div class="nav-menu" id="navMenu3" role="region" aria-label="Downloads">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Downloads</h2><ul><li><a href="#downloads">What there is</a></li><li><a href="#p-studio">OStudio</a></li><li><a href="https://oplocloud.com/contact/">Ask for early access</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Instead, for now</h2><ul><li><a href="https://oplocloud.com/developers/#design">Design system</a></li><li><a href="https://edu.oplocloud.com/">Look at OEdu</a></li><li><a href="#whats-new">What is new</a></li></ul></div>
       </div>
-      <div class="nav-menu" id="navMenu4" role="region" aria-label="Support">
-        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Support</h2><ul><li><a href="https://oplocloud.com/support/">Getting Help</a></li><li><a href="https://oplocloud.com/developers/#support">Developer Support</a></li><li><a href="https://oplocloud.com/contact/">Contact Oplo</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Quick Links</h2><ul><li><a href="https://oplocloud.com/sign-in/">Your Oplo Account</a></li><li><a href="https://oplocloud.com/support/#help">Get Help</a></li><li><a href="https://oplocloud.com/support/#developer-help">Developer Help</a></li><li><a href="https://oplocloud.com/plus/#faq">Oplo+ Questions</a></li></ul></div>
-        <div class="nav-menu-col"><h2 class="nav-menu-h">Contact</h2><ul><li><a href="https://oplocloud.com/contact/#general">General Enquiries</a></li><li><a href="https://oplocloud.com/contact/#careers-contact">Careers Enquiries</a></li><li><a href="https://oplocloud.com/investor/contact/">Investor Contact</a></li></ul></div>
+      <div class="nav-menu" id="navMenu4" role="region" aria-label="Community">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Community</h2><ul><li><a href="#community">Overview</a></li><li><a href="#c-forums">Forums</a></li><li><a href="#c-open-source">Open source</a></li><li><a href="#c-office-hours">Office hours</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Featured</h2><ul><li><a href="#films">Latest films</a></li><li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li><li><a href="https://oplocloud.com/careers/">Careers</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu5" role="region" aria-label="Support">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Get help</h2><ul><li><a href="#support">Developer support</a></li><li><a href="https://oplocloud.com/support/">Getting help</a></li><li><a href="https://oplocloud.com/contact/">Write to us</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Account</h2><ul><li><a href="https://oplocloud.com/sign-in/">Your Oplo account</a></li><li><a href="https://oplocloud.com/plus/">Oplo+</a></li></ul></div>
       </div>
     </div>
   </div>
@@ -104,32 +109,22 @@
     <div class="nav-find-in">
       <form class="nav-find-form" role="search" action="#">
         <svg viewBox="-1 -1 17 17" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-        <input id="navFindInput" type="search" placeholder="Search oplocloud.com" aria-label="Search oplocloud.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-controls="navFindList">
+        <input id="navFindInput" type="search" placeholder="Search the developer site" aria-label="Search the developer site" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-controls="navFindList">
         <button class="nav-find-clear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 8 8" aria-hidden="true" focusable="false"><path d="M1 1l6 6M7 1 1 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
       </form>
       <p class="nav-find-label" id="navFindLabel">Quick Links</p>
       <ul class="nav-find-list" id="navFindList" role="listbox" aria-labelledby="navFindLabel">
-          <li role="presentation"><a role="option" href="https://oplocloud.com/products/"><span class="t">Products</span></a></li>
+          <li role="presentation"><a role="option" href="#platforms"><span class="t">Platforms</span></a></li>
+          <li role="presentation"><a role="option" href="#technologies"><span class="t">Technologies</span></a></li>
+          <li role="presentation"><a role="option" href="#downloads"><span class="t">Downloads</span></a></li>
           <li role="presentation"><a role="option" href="https://edu.oplocloud.com/"><span class="t">OEdu</span></a></li>
-          <li role="presentation"><a role="option" href="https://oplocloud.com/plus/"><span class="t">Oplo+</span></a></li>
-          <li role="presentation"><a role="option" href="https://oplocloud.com/support/"><span class="t">Support</span></a></li>
-          <li role="presentation"><a role="option" href="https://oplocloud.com/contact/"><span class="t">Contact Oplo</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/"><span class="t">oplocloud.com</span></a></li>
       </ul>
     </div>
   </div>
   <div class="nav-scrim" id="navScrim" hidden></div>
 </nav>
 <!-- /oplo:nav -->
-
-  <!-- oplo:chapter -->
-<div class="chapter">
-  <div class="chapter-in">
-    <a class="chapter-name" href="#top">Developer</a>
-    <nav class="chapter-links" aria-label="Developer sections"><a href="#start">Get started</a><a href="#platforms">Platforms</a><a href="#technologies">Technologies</a><a href="#downloads">Downloads</a><a href="#community">Community</a><a href="#support">Support</a></nav>
-    <a class="chapter-cta" href="https://oplocloud.com/sign-in/">Sign in</a>
-  </div>
-</div>
-<!-- /oplo:chapter -->
 
   <main class="dv-main" id="top">
 
@@ -329,33 +324,33 @@
       <div class="dv-wrap">
         <h2 class="dv-h2">Platforms.</h2>
         <div class="dv-grid2">
-          <article class="dv-plat">
+          <article class="dv-plat" id="p-os">
             <header><h3>Oplo OS <span>1</span></h3><p>In development</p></header>
             <div class="dv-media dv-bare" data-slot="os" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
           </article>
-          <article class="dv-plat">
+          <article class="dv-plat" id="p-studio">
             <header><h3>OStudio</h3><p>In development</p></header>
             <div class="dv-media dv-bare" data-slot="studio" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
           </article>
-          <article class="dv-plat">
+          <article class="dv-plat" id="p-silicon">
             <header><h3>Oplo Silicon</h3><p>In design</p></header>
             <div class="dv-media dv-bare" data-slot="silicon" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
           </article>
-          <article class="dv-plat">
+          <article class="dv-plat" id="p-intelligence">
             <header><h3>Oplo Intelligence</h3><p>In development</p></header>
             <div class="dv-media dv-bare" data-slot="intelligence" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
           </article>
-          <article class="dv-plat">
+          <article class="dv-plat" id="p-cloud">
             <header><h3>Oplo Cloud</h3><p>Running the platform API</p></header>
             <div class="dv-media dv-bare" data-slot="cloud" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
           </article>
-          <article class="dv-plat">
+          <article class="dv-plat" id="p-edu">
             <header><h3>OEdu</h3><p>Shipping today</p></header>
             <div class="dv-media dv-bare" data-slot="edu" data-size="1200 × 900 · a transparent PNG works well" data-src="" data-alt=""></div>
           </article>
         </div>
 
-        <article class="dv-wide">
+        <article class="dv-wide" id="whats-new">
           <div class="dv-media dv-bare dv-mark" data-slot="sdk" data-size="512 × 512 · a transparent PNG works well" data-src="" data-alt=""></div>
           <h3>What is new for Oplo developers</h3>
           <p>One page, kept honest: what changed this month, what is about to, and what we
@@ -372,28 +367,28 @@
         <p class="dv-lead">One platform learned once, rather than once per device. Everything below is
           part of the same system — which is why there is one list and not six.</p>
         <div class="dv-cols">
-          <div class="dv-col">
+          <div class="dv-col" id="t-interface">
             <h3>Interface</h3>
             <ul>
               <li>Design system</li><li>Layout and type</li><li>Motion</li>
               <li>Accessibility</li><li>Dark and light</li>
             </ul>
           </div>
-          <div class="dv-col">
+          <div class="dv-col" id="t-intelligence">
             <h3>Intelligence</h3>
             <ul>
               <li>On-device models</li><li>Roxan</li><li>Speech and text</li>
               <li>Vision</li><li>Private inference</li>
             </ul>
           </div>
-          <div class="dv-col">
+          <div class="dv-col" id="t-data">
             <h3>Data</h3>
             <ul>
               <li>Accounts and identity</li><li>The platform API</li><li>Sync</li>
               <li>Storage</li><li>Export and portability</li>
             </ul>
           </div>
-          <div class="dv-col">
+          <div class="dv-col" id="t-system">
             <h3>System</h3>
             <ul>
               <li>Silicon</li><li>Power and thermals</li><li>Security</li>
@@ -426,17 +421,17 @@
       <div class="dv-wrap">
         <h2 class="dv-h2">Community.</h2>
         <div class="dv-grid3">
-          <article class="dv-cell">
+          <article class="dv-cell" id="c-forums">
             <h3>Forums</h3>
             <p>Not open. A forum with four posts in it reads as an abandoned building, so it opens when
               there are enough people to fill it.</p>
           </article>
-          <article class="dv-cell">
+          <article class="dv-cell" id="c-open-source">
             <h3>Open source</h3>
             <p>The parts of Oplo that are not the product get published as we go. The design system this
               site is built from is the first of them.</p>
           </article>
-          <article class="dv-cell">
+          <article class="dv-cell" id="c-office-hours">
             <h3>Office hours</h3>
             <p>A conversation with whoever wrote the part you are asking about. Ask, and we will find the
               hour.</p>
