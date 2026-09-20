@@ -6938,8 +6938,12 @@
         var r = node.getBoundingClientRect(), c = box.getBoundingClientRect();
         var half = tip.offsetWidth / 2;
         var x = Math.max(half, Math.min(c.width - half, r.left - c.left + r.width / 2));
+        // Above the thing it describes, unless the top of the window is in
+        // the way — then below it, so it never covers what you are pointing at.
+        var under = r.top - tip.offsetHeight - 20 < 0;
+        tip.classList.toggle("under", under);
         tip.style.left = x + "px";
-        tip.style.top = (r.top - c.top) + "px";
+        tip.style.top = ((under ? r.bottom : r.top) - c.top) + "px";
       },
       hide: function () { tip.hidden = true; }
     };

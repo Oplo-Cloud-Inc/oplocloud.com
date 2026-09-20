@@ -32,6 +32,8 @@
      walk        a worked example, one line at a time, each with its reason
      move        a shape on a grid you slide, turn, flip or scale — the four
                  transformations, done rather than described
+     solid       a real solid in three dimensions (three.js), built out of
+                 unit cubes and turned with the pointer
 
    Every draggable thing is keyboard-operable (Tab to it, arrow keys to move
    it), and every scene says in words what it shows.
@@ -1748,6 +1750,166 @@
       if (!spec.answer) return;
       Object.keys(spec.answer).forEach(function (k) { st[k] = spec.answer[k]; });
       paint();
+    };
+    return api;
+  });
+
+  /* =============================================================== Solid
+     A solid you can turn. Volume is the one idea on paper that paper is bad
+     at: a cube drawn flat is a hexagon with lines in it, and the unit cubes
+     inside are imagined rather than seen. So this one is real 3D — three.js,
+     loaded only when a lesson asks for it (670 KB, fetched once) — built out
+     of the unit cubes it is counting, and turned by dragging.
+
+     spec: { edge: starting edge, max, target: a volume to reach, kind }
+     With a target it is solved when the volume matches; without one it is a
+     scene to play with. Everything it shows is also said in words underneath,
+     so nothing depends on seeing the 3D. */
+  var THREE_URL = "vendor/three.module.min.js", threeLib = null;
+  function three() {
+    if (!threeLib) threeLib = import(new URL(THREE_URL, document.baseURI).href);
+    return threeLib;
+  }
+  CH.addKind("solid", function (spec, seed, mode) {
+    var api = {}, edge = spec.edge || 2, maxE = spec.max || 6, moved = false;
+    var box = el("div", "lw lw-solid");
+    var stage = el("div", "lw-solid-stage");
+    stage.setAttribute("role", "img");
+    box.appendChild(stage);
+    var ctl = el("div", "lw-sliders");
+    box.appendChild(ctl);
+    var read = el("div", "lw-read");
+    box.appendChild(read);
+    var s = slider("edge", { min: 1, max: maxE, step: 1, v: edge }, function (v) { edge = v; moved = true; build(); say(); });
+    ctl.appendChild(s.el);
+
+    var css = getComputedStyle(document.documentElement);
+    function colour(name, fallback) {
+      var v = (css.getPropertyValue(name) || "").trim();
+      return v || fallback;
+    }
+    function say() {
+      var vol = edge * edge * edge;
+      var hit = spec.target != null && vol === spec.target;
+      read.innerHTML = m("\\text{edge } " + edge + " \;\\to\; \\text{volume } " + edge + "^3 = " + vol) +
+        (spec.target != null ? (hit ? '<span class="lw-tag good">volume ' + spec.target + "</span>"
+                                    : '<span class="lw-tag">target volume ' + spec.target + "</span>") : "");
+      stage.setAttribute("aria-label", "A cube " + edge + " by " + edge + " by " + edge + ", made of " + (edge * edge * edge) + " unit cubes.");
+      box.classList.toggle("solved", !!hit);
+      if (api.onChange) api.onChange();
+    }
+
+    var T = null, renderer = null, scene = null, camera = null, group = null, raf = 0, spin = 0, drag = null;
+    var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    stage.appendChild(el("p", "lw-note", "Loading the 3D view…"));
+    three().then(function (lib) {
+      T = lib;
+      stage.innerHTML = "";
+      renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.setSize(stage.clientWidth || 420, 300, false);
+      renderer.domElement.style.width = "100%";
+      renderer.domElement.style.height = "auto";
+      stage.appendChild(renderer.domElement);
+      scene = new T.Scene();
+      camera = new T.PerspectiveCamera(34, (stage.clientWidth || 420) / 300, 0.1, 100);
+      camera.position.set(7, 6, 9);
+      camera.lookAt(0, 0, 0);
+      scene.add(new T.AmbientLight(0xffffff, 1.1));
+      var key = new T.DirectionalLight(0xffffff, 1.5);
+      key.position.set(5, 8, 6);
+      scene.add(key);
+      var fill = new T.DirectionalLight(0xffffff, 0.5);
+      fill.position.set(-6, 2, -4);
+      scene.add(fill);
+      build();
+      turnBy(0, 0);
+      loop();
+      // Dragging turns it; the arrow keys do the same from a keyboard.
+      renderer.domElement.style.touchAction = "none";
+      renderer.domElement.setAttribute("tabindex", "0");
+      renderer.domElement.addEventListener("pointerdown", function (e) {
+        drag = { x: e.clientX, y: e.clientY };
+        try { renderer.domElement.setPointerCapture(e.pointerId); } catch (x) { /* synthetic pointer */ }
+      });
+      renderer.domElement.addEventListener("pointermove", function (e) {
+        if (!drag) return;
+        turnBy((e.clientX - drag.x) * 0.01, (e.clientY - drag.y) * 0.01);
+        drag = { x: e.clientX, y: e.clientY };
+      });
+      ["pointerup", "pointercancel"].forEach(function (k) {
+        renderer.domElement.addEventListener(k, function () { drag = null; });
+      });
+      renderer.domElement.addEventListener("keydown", function (e) {
+        var d = { ArrowLeft: [-0.2, 0], ArrowRight: [0.2, 0], ArrowUp: [0, -0.2], ArrowDown: [0, 0.2] }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        turnBy(d[0], d[1]);
+      });
+    }, function () {
+      stage.innerHTML = "";
+      stage.appendChild(el("p", "lw-note", "The 3D view could not be loaded — the numbers below say the same thing."));
+    });
+
+    function turnBy(dx, dy) {
+      if (!group) return;
+      group.rotation.y += dx;
+      group.rotation.x = Math.max(-0.9, Math.min(0.9, group.rotation.x + dy));
+      moved = true;
+    }
+    function build() {
+      if (!T || !scene) return;
+      if (group) { scene.remove(group); dispose(group); }
+      group = new T.Group();
+      var unit = 1, off = (edge - 1) / 2;
+      var geo = new T.BoxGeometry(unit * 0.94, unit * 0.94, unit * 0.94);
+      var mat = new T.MeshLambertMaterial({ color: new T.Color(colour("--lw-blue", "#5b8cff")) });
+      var edgeGeo = new T.EdgesGeometry(geo);
+      var edgeMat = new T.LineBasicMaterial({ color: new T.Color(colour("--lw-tile", "#ffffff")), transparent: true, opacity: 0.35 });
+      var mesh = new T.InstancedMesh(geo, mat, edge * edge * edge);
+      var dummy = new T.Object3D(), i = 0;
+      for (var x = 0; x < edge; x++) {
+        for (var y = 0; y < edge; y++) {
+          for (var z = 0; z < edge; z++) {
+            dummy.position.set(x - off, y - off, z - off);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i++, dummy.matrix);
+            var ln = new T.LineSegments(edgeGeo, edgeMat);
+            ln.position.copy(dummy.position);
+            group.add(ln);
+          }
+        }
+      }
+      group.add(mesh);
+      var k = 4.2 / Math.max(2, edge);                 // a big cube and a small one both fill the view
+      group.scale.setScalar(k);
+      group.rotation.set(0.35, 0.6, 0);
+      scene.add(group);
+    }
+    function dispose(obj) {
+      obj.traverse && obj.traverse(function (o) {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (mm) { mm.dispose(); });
+      });
+    }
+    function loop() {
+      raf = requestAnimationFrame(loop);
+      // A lesson left behind on a hidden view keeps its scene, but there is
+      // nothing to draw for: no work is done until it is on screen again.
+      if (!renderer || !scene || !camera || document.hidden || box.offsetParent === null) return;
+      if (group && !drag && !reduced) group.rotation.y += 0.0022;
+      renderer.render(scene, camera);
+    }
+    say();
+    api.el = box;
+    api.ready = function () { return spec.target != null ? edge * edge * edge === spec.target : mode.explore ? (spec.gate ? moved : true) : moved; };
+    api.check = function () { return { ok: api.ready() }; };
+    api.reveal = function () { if (spec.target != null) { edge = Math.round(Math.cbrt(spec.target)); s.set(edge); build(); say(); } };
+    api.destroy = function () {
+      cancelAnimationFrame(raf);
+      if (group) dispose(group);
+      if (renderer) { renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); }
+      renderer = scene = camera = group = null;
     };
     return api;
   });
