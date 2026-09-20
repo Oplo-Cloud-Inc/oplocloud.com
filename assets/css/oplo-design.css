@@ -129,8 +129,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .center { text-align: center; }
 
 /* ---------------------------------------------------------------- Nav */
-/* The bar stays at the top of the window the whole way down the page, and on
-   a section page the chapter bar stays under it. */
+/* The bar stays at the top of the window the whole way down the page — unless
+   the page carries a chapter bar under it. Then the chapter bar is the one
+   that stays, and the bar above it scrolls away with the top of the page, so
+   only one bar is ever pinned. (Below, and in assets/js/oplo-menu.js, which
+   places what the bar opens by --nav-y while it is on its way out.) */
 .nav {
   position: fixed; top: 0; left: 0; right: 0;
   height: var(--nav);
@@ -165,6 +168,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   --blue: var(--blue-dark);
 }
 .bars-dark .nav::before { background-color: rgba(22,22,23,.72); }
+
+/* Two bars: the lower one stays, the upper one goes. */
+body:has(.chapter) .nav { position: absolute; }
+body:has(.chapter) :is(.nav-flyout, .nav-find) { top: calc(var(--nav) + var(--nav-y, 0px)); }
+body:has(.chapter) :is(.nav-scrim, .nav-links) { inset: calc(var(--nav) + var(--nav-y, 0px)) 0 0 0; }
 /* A page that opens on a full-bleed picture runs it under the bars, so the
    glass has something to frost — the picture, blurred, in its own colours —
    instead of sitting on a flat strip. Apple's hero pages do this, and it is
@@ -660,11 +668,11 @@ body:has(> main > .band.opening):not(:has(.chapter)) > main > .band.opening {
 }
 
 /* ------------------------------------------------------ Anchor offset
-   The bar is fixed, and section pages carry a chapter bar under it. Without
-   this, every in-page link scrolls its target to y=0 — i.e. underneath 96px
-   of furniture — and the heading you clicked for is the one thing hidden. */
+   Whatever is pinned at the top has to be cleared, or the heading you clicked
+   for is the one thing hidden: the bar on a page that has only a bar, the
+   chapter bar on a page that has one (the bar itself has gone by then). */
 :where(section, div, main)[id] { scroll-margin-top: calc(var(--nav) + 16px); }
-body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(--nav) + 68px); }
+body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: 68px; }
 
 /* -------------------------------------------------------------- Motion
    Visible by default; hidden only once the script arms the reveal, so no
@@ -687,7 +695,7 @@ body:has(.chapter) :where(section, div, main)[id] { scroll-margin-top: calc(var(
    under the global bar so you always know which page you are inside — in the
    same material as the bar, dark over dark and light over the rest. */
 .chapter {
-  position: sticky; top: var(--nav); z-index: 800;
+  position: sticky; top: 0; z-index: 800;
   background: rgba(255,255,255,.72);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
   backdrop-filter: saturate(180%) blur(30px);

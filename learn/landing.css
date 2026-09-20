@@ -69,8 +69,9 @@
 /* ---------------------------------------------------------------- The bars
    The way Apple's education page does it:
 
-     the bars stay   the site's bar stays at the top of the window and the
-                     chapter bar under it, as on every page of the site
+     one bar stays   this page has a chapter bar, so the chapter bar is the
+                     one pinned at the top and the site's bar scrolls away
+                     above it, as on every page of the site that has two
                      (oplo-chrome.css).
      dark on dark    the top of the page is dark to meet the photograph: the
                      site's bar, the chapter bar and the ribbon are all dark
@@ -80,6 +81,14 @@
      material        opaque enough that nothing behind it can be read, clear
                      enough that its colour and light still come through: a
                      tint at ~80%, blurred hard and saturated. */
+/* This page scrolls inside #gate rather than the window, so the site's rule
+   for a page with two bars cannot reach it: say it here. The chapter bar is
+   the one pinned at the top; the bar above it scrolls away with the page. */
+.ld .nav { position: absolute; }
+/* What the bar opens is fixed to the window, so it follows the bar out. */
+.ld :is(.nav-flyout, .nav-find) { top: calc(var(--nav) + var(--nav-y, 0px)); }
+.ld :is(.nav-scrim, .nav-links) { inset: calc(var(--nav) + var(--nav-y, 0px)) 0 0 0; }
+
 /* Black behind the bars at the top, so dark material over them reads as dark
    rather than grey; the page is white from the photograph down. */
 .ld { background: linear-gradient(#000, #000) 0 0 / 100% 97px no-repeat local, #fff; }
