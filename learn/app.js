@@ -3900,7 +3900,7 @@
                  doc: "media-u8", set: "media-8" },
     "media:9": { key: "media:9", course: "media", courseTitle: "Media Arts", unit: 9,
                  title: "Audio/Video Production", sections: window.OPLO_UNIT9 || [],
-                 doc: "media-u9" },
+                 doc: "media-u9", set: "media-9" },
     "biz:4":   { key: "biz:4", course: "biz", courseTitle: "Introduction to Business", unit: 4,
                  title: "International Business", sections: window.OPLO_BIZ4 || [],
                  doc: "biz-u4", set: "biz-4" },
