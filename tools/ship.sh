@@ -28,8 +28,15 @@
 #     tools/ship.sh --api        also apply remote D1 migrations and deploy the
 #                                API first: migrations, then the API that reads
 #                                them, then the app that calls the API
+#     tools/ship.sh --dev        also publish the developer site at
+#                                dev.oplocloud.com
 #     tools/ship.sh --dry-run    merge and verify locally, publish nothing
 #     tools/ship.sh -m "..."     the merge commit's message
+#
+# --dev is opt-in rather than part of every ship because publishing it
+# attaches dev.oplocloud.com to this Worker and takes two routes on the apex
+# zone — outward-facing changes that should be asked for, not inherited by
+# somebody shipping a fix to the gradebook.
 # ===========================================================================
 set -euo pipefail
 
@@ -37,10 +44,11 @@ BRANCH="${BRANCH:-platform-backend}"
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-API=0; DRY=0; MSG=""
+API=0; DEV=0; DRY=0; MSG=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --api)     API=1 ;;
+    --dev)     DEV=1 ;;
     --dry-run) DRY=1 ;;
     -m)        shift; MSG="${1:-}" ;;
     *)         echo "unknown option: $1" >&2; exit 2 ;;
@@ -92,7 +100,8 @@ fi
 # --------------------------------------------------------------------------
 say "Verify what is about to be published"
 for f in learn/app.js learn/learn.js learn/store.js learn/annotate.js learn/api.js learn/kmap.js \
-         learn/parent/parent.js learn/parent/viz.js learn/home.js learn/landing.js learn/oplo-search.js assets/js/oplo-search.js learn/oplo-menu.js assets/js/oplo-menu.js worker/index.js; do
+         learn/parent/parent.js learn/parent/viz.js learn/home.js learn/landing.js learn/oplo-search.js assets/js/oplo-search.js learn/oplo-menu.js assets/js/oplo-menu.js worker/index.js \
+         dev/dev.js worker/dev.js; do
   node --check "$WT/$f"
 done
 if [ "$API" = 1 ]; then
@@ -129,5 +138,10 @@ fi
 
 say "Student app"
 npx --yes wrangler deploy --env production
+
+if [ "$DEV" = 1 ]; then
+  say "Developer site"
+  npx --yes wrangler deploy --env production -c wrangler.dev.toml
+fi
 
 say "Shipped $(git log --oneline -1)"

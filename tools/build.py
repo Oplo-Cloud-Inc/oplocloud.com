@@ -51,6 +51,10 @@ MARK_D  = ("M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.64843
 # OEdu is a product on its own hostname, not a folder on this site. Every link
 # to it is absolute for that reason, and `rel()` leaves absolute targets alone.
 OEDU = "https://edu.oplocloud.com/"
+# The developer site is the same kind of thing: its own hostname, linked to
+# absolutely from here. It is defined this far up because the pages below link
+# to it; the rest of what builds it is at the bottom, beside OEdu's.
+DEV = "https://dev.oplocloud.com/"
 
 # Five doors, not eight. Hardware, Software, Intelligence, Privacy, Edu and
 # Oplo+ are still whole sections of the site — they now hang off the three hub
@@ -500,8 +504,8 @@ PAGES.append(("developers/index.html", section_page(
     "Developers", "Build on Oplo.",
     "One set of tools across the hardware, the software and the models.",
     [("dark", "docs", "Documentation", "Not written yet.",
-      "There is no API to document until there is an API. When there is, the reference goes here, and it will be the same document our own engineers work from.",
-      None),
+      "There is no API to document until there is an API. When there is, the reference goes here, and it will be the same document our own engineers work from. The developer site is where it will appear, and where the platforms and tools are described as they are built.",
+      [("Open the developer site", DEV)]),
      ("", "sdks", "SDKs", "One surface, not one per platform.",
       "A developer should learn the platform once. Splitting an SDK per device is a tax on everyone who builds for us, and we would rather pay that cost internally.",
       None),
@@ -2485,6 +2489,22 @@ OEDU_CSS = "learn/oplo-chrome.css"
 OEDU_SECTIONS = [("Students", "#students"), ("Teachers", "#teachers"),
                  ("Families", "#families"), ("Schools", "#schools")]
 
+# ------------------------------------------------------- Oplo Developer
+# dev.oplocloud.com — the developer's door into Oplo. A third hostname
+# wearing this site's chrome, for the same reason OEdu does: the bar a
+# developer sees has to be the bar everybody else sees, or the company has
+# two front doors that disagree.
+DEV_PAGE = "dev/index.html"
+DEV_CSS = "dev/oplo-chrome.css"
+DEV_SECTIONS = [("Get started", "#start"), ("Platforms", "#platforms"),
+                ("Technologies", "#technologies"), ("Downloads", "#downloads"),
+                ("Community", "#community"), ("Support", "#support")]
+DEV_NOTES = [
+    "Oplo has not shipped a developer platform. Every section of that page describes "
+    "work in progress, and one that says a thing is not built means exactly that.",
+    "Nothing on it is an offer, a commitment to a specification, or a date.",
+]
+
 
 def absolute(html):
     """Every site-relative href in `html`, pointed at oplocloud.com."""
@@ -2546,25 +2566,37 @@ def scope_css(css, prefix):
     return "\n".join(out) + "\n"
 
 
-def oedu_chrome():
-    # The bar is the site's, search and all. OEdu's own "Sign in" is the
-    # chapter bar's, below it, because that is the product's sign-in.
-    bar = absolute(nav(0))
+# Three things every such page needs, said once. Which regions a page has and
+# what goes in them is the page's business; how a region is written, how the
+# stylesheet is cut and where the scripts land is this site's.
 
-    sub = chapter(0, "OEdu", OEDU_SECTIONS, "#top", ("Sign in", "#signin"))
-    sub = sub.replace('class="chapter-cta" href="#signin"', 'class="chapter-cta" href="#signin" data-signin')
+def regions(path, parts):
+    """Write each <!-- oplo:name --> region of `path` from `parts`.
 
-    foot = footer(0)
-    foot = absolute(foot[:foot.index("<script src=")]).strip() + "\n"
-
-    page = io.open(os.path.join(ROOT, OEDU_PAGE), encoding="utf-8").read()
-    for name, html in (("nav", bar), ("chapter", sub), ("foot", foot)):
+    Only the regions are replaced, because these pages are not ours — the app
+    owns learn/index.html and the developer site owns dev/index.html. Exactly
+    one of each marker, so a page that has quietly lost a region fails the
+    build instead of silently going without a footer."""
+    page = io.open(os.path.join(ROOT, path), encoding="utf-8").read()
+    for name, html in parts:
         pattern = re.compile(r"(<!-- oplo:" + name + r" -->\n).*?(<!-- /oplo:" + name + r" -->)", re.S)
         if len(pattern.findall(page)) != 1:
-            raise SystemExit(f"{OEDU_PAGE} needs exactly one <!-- oplo:{name} --> region")
+            raise SystemExit(f"{path} needs exactly one <!-- oplo:{name} --> region")
         page = pattern.sub(lambda m, h=html: m.group(1) + h + m.group(2), page)
-    io.open(os.path.join(ROOT, OEDU_PAGE), "w", encoding="utf-8").write(page)
+    io.open(os.path.join(ROOT, path), "w", encoding="utf-8").write(page)
 
+
+def site_footer(notes=None):
+    """The footer, with every link absolute and without the scripts that
+    follow it on this site — a page on another host loads its own."""
+    foot = footer(0, notes)
+    return absolute(foot[:foot.index("<script src=")]).strip() + "\n"
+
+
+def chrome_css(path, scope):
+    """This site's bar, chapter bar and footer, cut from oplo-design.css by
+    section heading and scoped under `scope`, so none of it can reach the page
+    around it and nothing there can reach it."""
     src = io.open(os.path.join(ROOT, "assets/css/oplo-design.css"), encoding="utf-8").read()
     tokens = re.sub(r"/\*.*?\*/", "", re.search(r":root\s*\{(.*?)\}", src, re.S).group(1), flags=re.S)
     # One declaration per line. A value may run over several lines in the
@@ -2572,22 +2604,50 @@ def oedu_chrome():
     # written — splitting on newlines would cut a font stack in two.
     tokens = "\n".join("  " + " ".join(t.split()) + ";" for t in tokens.split(";") if t.strip())
     css = ("/* Generated by tools/build.py from assets/css/oplo-design.css — the site's bar,\n"
-           "   chapter bar and footer, scoped to OEdu's welcome page. Edit the source and\n"
-           "   rebuild; changes made here are overwritten. */\n\n"
-           ".ld .nav, .ld .chapter, .ld .foot {\n" + tokens + "\n}\n\n"
+           "   chapter bar and footer, scoped to this page. Edit the source and rebuild;\n"
+           "   changes made here are overwritten. */\n\n"
+           # The notes sit above the footer and are cut with it, so they need
+           # the tokens too — without them `padding: 0 var(--gutter)` is an
+           # invalid declaration and the list falls back to the browser's
+           # indent.
+           + ", ".join(f"{scope} .{p}" for p in ("nav", "chapter", "foot", "notes")) + " {\n"
+           + tokens + "\n}\n\n"
            + scope_css(css_section(src, "Nav") + css_section(src, "Chapter bar")
-                       + css_section(src, "Footer"), ".ld")
+                       + css_section(src, "Footer") + css_section(src, "Notes"), scope)
            + "@media (prefers-reduced-motion: reduce) {\n"
-             "  .ld .nav-links, .ld .nav-links a { transition: none !important; }\n}\n")
-    io.open(os.path.join(ROOT, OEDU_CSS), "w", encoding="utf-8").write(css)
+             f"  {scope} .nav-links, {scope} .nav-links a {{ transition: none !important; }}\n}}\n")
+    io.open(os.path.join(ROOT, path), "w", encoding="utf-8").write(css)
 
-    # The bar's menus and the search behind its magnifier, copied beside the
-    # page so OEdu stays served from its own directory. The search index it
-    # reads is this site's.
+
+def chrome_js(folder):
+    """The bar's menus and the search behind its magnifier, copied beside the
+    page so another host stays served from its own directory. The search index
+    they read is this site's."""
     for name in ("oplo-menu.js", "oplo-search.js"):
         js = io.open(os.path.join(ROOT, "assets/js", name), encoding="utf-8").read()
-        io.open(os.path.join(ROOT, "learn", name), "w", encoding="utf-8").write(js)
+        io.open(os.path.join(ROOT, folder, name), "w", encoding="utf-8").write(js)
+
+
+def oedu_chrome():
+    # The bar is the site's, search and all. OEdu's own "Sign in" is the
+    # chapter bar's, below it, because that is the product's sign-in.
+    sub = chapter(0, "OEdu", OEDU_SECTIONS, "#top", ("Sign in", "#signin"))
+    sub = sub.replace('class="chapter-cta" href="#signin"', 'class="chapter-cta" href="#signin" data-signin')
+    regions(OEDU_PAGE, (("nav", absolute(nav(0))), ("chapter", sub), ("foot", site_footer())))
+    chrome_css(OEDU_CSS, ".ld")
+    chrome_js("learn")
     print(f"  wrote {OEDU_PAGE} bar, chapter bar and footer, {OEDU_CSS}, learn/oplo-menu.js and learn/oplo-search.js")
+
+
+def dev_chrome():
+    # The developer site has no sign-in of its own — there is nothing to sign
+    # in to yet — so the chapter bar's action is the site's own account page.
+    sub = absolute(chapter(0, "Developer", DEV_SECTIONS, "#top", ("Sign in", "sign-in/")))
+    regions(DEV_PAGE, (("nav", absolute(nav(0))), ("chapter", sub),
+                       ("foot", site_footer(DEV_NOTES))))
+    chrome_css(DEV_CSS, ".dv")
+    chrome_js("dev")
+    print(f"  wrote {DEV_PAGE} bar, chapter bar and footer, {DEV_CSS}, dev/oplo-menu.js and dev/oplo-search.js")
 
 
 # ----------------------------------------------------------------- Search
@@ -2619,6 +2679,8 @@ def search_index():
         })
     pages.append({"t": "OEdu", "d": "Sign in to OEdu — courses, the gradebook, and the family view.",
                   "k": "students teachers families school sign in learn", "u": OEDU})
+    pages.append({"t": "Oplo Developer", "d": "Build on Oplo — the platforms, the tools and the documentation, as they are being made.",
+                  "k": "developer sdk api documentation downloads platforms technologies ostudio", "u": DEV})
     io.open(os.path.join(ROOT, SEARCH_INDEX), "w", encoding="utf-8").write(
         json.dumps({"pages": pages}, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"  wrote {SEARCH_INDEX} ({len(pages)} pages)")
@@ -2633,3 +2695,4 @@ if __name__ == "__main__":
     print(f"\n{len(PAGES)} pages built")
     search_index()
     oedu_chrome()
+    dev_chrome()
