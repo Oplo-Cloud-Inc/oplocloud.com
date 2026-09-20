@@ -311,10 +311,14 @@
 /* ==========================================================================
    Oplo — the bars' material.
 
-   The bar stays at the top of the window, with the chapter bar under it on
-   a section page (assets/css/oplo-design.css). What follows the scroll is
-   the material: .bars-dark goes on the root while what is just below the
-   lowest bar is dark — a dark band, a dark card, the photograph at the top
+   The bar stays at the top of the window, unless the page has a chapter bar,
+   in which case that one stays and the bar scrolls away above it
+   (assets/css/oplo-design.css). Two things follow the scroll here:
+
+     --nav-y      how far a scrolling bar has gone off the top (0 to −44px),
+                  so its menus, search and drawer — fixed to the window —
+                  still open right under its edge
+     .bars-dark   on the root while what is just below the lowest bar is dark — a dark band, a dark card, the photograph at the top
    of the front page. The bars are dark glass then, and light glass over
    everything else.
 
@@ -358,6 +362,10 @@
     var root = document.documentElement, chapter = document.querySelector(".chapter"), queued = false;
     function paint() {
       queued = false;
+      if (chapter) {
+        var y = Math.max(0, window.scrollY || window.pageYOffset || 0);
+        root.style.setProperty("--nav-y", -Math.min(y, nav.offsetHeight) + "px");
+      }
       // Leave the material alone while a menu or search is open over the page.
       if (nav.classList.contains("menu-open") || nav.classList.contains("searching")) return;
       var bottom = (chapter || nav).getBoundingClientRect().bottom;

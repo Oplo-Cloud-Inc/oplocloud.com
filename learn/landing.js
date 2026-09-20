@@ -226,6 +226,9 @@
     // The chapter bar takes the colour of what is under it: dark material
     // over the photograph and the black band, light over the rest.
     var edge = chapter ? chapter.getBoundingClientRect().bottom : 52;
+    // How far the site's bar has scrolled off, so its menus and search still
+    // open right under its edge (oplo-chrome.css reads it).
+    root.style.setProperty("--nav-y", -Math.min(root.scrollTop, 44) + "px");
     if (!root.classList.contains("ld-wait")) root.classList.toggle("ld-light", !darkAt(edge + 2));
     if (reduced) return;
     var p = Math.max(0, Math.min(1, -(r.top - 96) / (r.height * 0.55)));
