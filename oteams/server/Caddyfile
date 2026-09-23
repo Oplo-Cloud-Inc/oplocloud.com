@@ -8,18 +8,25 @@
 api.oteams.oplocloud.com {
 	encode zstd gzip
 
+	# Enforce HTTPS with HSTS
+	header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always
+
+	# Security headers
+	header X-Content-Type-Options "nosniff" always
+	header X-Frame-Options "DENY" always
+	header X-XSS-Protection "1; mode=block" always
+	header Referrer-Policy "strict-origin-when-cross-origin" always
+	header Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()" always
+	header -Server always
+
+	# Content Security Policy - restricts resource loading to prevent XSS
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https://*.oplocloud.com; img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" always
+
 	# WebSocket upgrade and REST share one origin.
 	reverse_proxy 127.0.0.1:8787 {
 		header_up X-Real-IP {remote_host}
 		header_up X-Forwarded-Proto {scheme}
-	}
-
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		-Server
+		header_up X-Forwarded-For {remote_host}
 	}
 
 	log {

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.oplocloud.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
 <title>Sign in · OTeams</title>
 <meta name="description" content="Sign in to your OTeams workspace.">
 <meta name="theme-color" content="#07060E">
@@ -209,7 +210,7 @@
         </form>
 
         <div class="demo">
-          <button type="button" id="demoFill">Demo access — <b>saswatc@oplo</b> · <b>oplo</b></button>
+          <button type="button" id="demoFill" style="display:none">Demo access</button>
         </div>
       </div>
 
@@ -286,8 +287,8 @@
   }
 
   /* ---------- Form ---------- */
-  // Demo access gate — front-end only, not real authentication.
-  var CRED = { user:"saswatc@oplo", pass:"oplo" };
+  // Authentication is handled exclusively via Oplo Accounts (OIDC).
+  // Username/password authentication has been removed for security.
   var form = $("#form"), userEl = $("#user"), passEl = $("#pass"), submit = $("#submit"),
       error = $("#error"), errorTxt = $("#errorTxt"), card = $("#card");
 
@@ -299,33 +300,39 @@
     passEl.focus();
   });
 
-  $("#demoFill").addEventListener("click", function(){ userEl.value = CRED.user; passEl.value = CRED.pass; clearErr(); passEl.focus(); });
-  $("#ssoBtn").addEventListener("click", function(){ flash("Single sign-on isn't wired in this demo — use the credentials below.", true); });
-  $("#forgot").addEventListener("click", function(e){ e.preventDefault(); flash("Password recovery is a demo stub. Hint: it's very short.", false); });
+  // Hide demo button - no longer needed since we use OIDC only
+  var demoBtn = $("#demoFill");
+  if (demoBtn) demoBtn.style.display = "none";
+
+  // All authentication now goes through OIDC (Oplo Accounts)
+  $("#ssoBtn").addEventListener("click", function(){
+    // Redirect to OIDC provider for authentication
+    flash("Redirecting to Oplo Accounts for secure authentication...", false);
+    submit.classList.add("loading");
+    submit.disabled = true;
+    // In production, this would redirect to the OIDC authorization endpoint
+    // window.location.href = config.oidc.authorizationUrl;
+    setTimeout(function(){
+      submit.classList.remove("loading");
+      submit.disabled = false;
+      flash("OIDC authentication endpoint not configured. Contact your administrator.", true);
+    }, 1500);
+  });
+
+  $("#forgot").addEventListener("click", function(e){
+    e.preventDefault();
+    flash("Password management is handled by Oplo Accounts. Please contact your administrator.", false);
+  });
 
   function clearErr(){ error.classList.remove("show"); $("#fUser").classList.remove("bad"); $("#fPass").classList.remove("bad"); }
   function flash(msg, bad){ errorTxt.textContent = msg; error.classList.add("show"); if(bad){ $("#fUser").classList.add("bad"); $("#fPass").classList.add("bad"); } }
   userEl.addEventListener("input", clearErr); passEl.addEventListener("input", clearErr);
 
+  // Disable traditional form submission - OIDC only
   form.addEventListener("submit", function(e){
     e.preventDefault();
-    var u = userEl.value.trim().toLowerCase(), p = passEl.value;
-    if (!u || !p){ flash("Enter your username and password.", true); shake(); return; }
-    if (u !== CRED.user || p !== CRED.pass){
-      flash("Those credentials don't match. Try the demo access below.", true);
-      shake(); passEl.value = ""; passEl.focus();
-      return;
-    }
-    // success
-    clearErr();
-    submit.classList.add("loading"); submit.disabled = true; submit.querySelector(".txt").textContent = "Entering workspace";
-    try {
-      localStorage.setItem("oteams.session", JSON.stringify({ user:CRED.user, name:"Saswat C", ts:Date.now() }));
-    } catch(err){}
-    setTimeout(function(){
-      document.body.classList.add("warp");
-      setTimeout(function(){ location.href = "/oteams/app/"; }, reduce ? 60 : 1000);
-    }, 520);
+    flash("Username/password authentication is disabled. Please use 'Continue with Oplo Accounts' for secure sign-in.", true);
+    shake();
   });
 
   function shake(){ card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake"); }
