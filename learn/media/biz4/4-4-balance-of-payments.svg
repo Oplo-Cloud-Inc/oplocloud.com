@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 420" width="1100" height="420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>A country's balance of payments for one year. Money in: 300 billion from exports and 150 billion of investment from abroad, 450 billion in all. Money out: 380 billion for imports and 70 billion invested abroad, 450 billion in all. The trade deficit of 80 billion is paid for by a net 80 billion of investment coming in, so the totals are equal</title>
+<text x="40" y="38" font-size="19" font-weight="600" fill="#12915a">Money coming in</text>
+<text x="40" y="60" font-size="14" fill="#6e6e73">Sources of funds (+)</text>
+<rect x="40" y="80" width="600" height="60" rx="6" fill="#12915a"/>
+<text x="60" y="116" font-size="17" font-weight="600" fill="#ffffff">Exports sold · $300bn</text>
+<rect x="640" y="80" width="300" height="60" rx="6" fill="#7cc4a0"/>
+<text x="660" y="106" font-size="15" font-weight="600" fill="#0b4d31">Investment from abroad</text>
+<text x="660" y="126" font-size="15" fill="#0b4d31">$150bn</text>
+<text x="960" y="118" font-size="20" font-weight="600" fill="#1d1d1f">$450bn</text>
+<text x="40" y="196" font-size="19" font-weight="600" fill="#c9342f">Money going out</text>
+<text x="40" y="218" font-size="14" fill="#6e6e73">Uses of funds (−)</text>
+<rect x="40" y="238" width="760" height="60" rx="6" fill="#c9342f"/>
+<text x="60" y="274" font-size="17" font-weight="600" fill="#ffffff">Imports bought · $380bn</text>
+<rect x="800" y="238" width="140" height="60" rx="6" fill="#eba39f"/>
+<text x="812" y="264" font-size="14" font-weight="600" fill="#6b1512">Invested</text>
+<text x="812" y="284" font-size="14" fill="#6b1512">abroad $70bn</text>
+<text x="960" y="276" font-size="20" font-weight="600" fill="#1d1d1f">$450bn</text>
+<line x1="640" y1="70" x2="640" y2="310" stroke="#1d1d1f" stroke-width="1.5" stroke-dasharray="5 5"/>
+<line x1="800" y1="150" x2="800" y2="310" stroke="#1d1d1f" stroke-width="1.5" stroke-dasharray="5 5"/>
+<path d="M644 320 L796 320" stroke="#1d1d1f" stroke-width="1.5"/>
+<text x="720" y="342" font-size="14" text-anchor="middle" fill="#1d1d1f">$80bn trade deficit</text>
+<text x="40" y="380" font-size="17" fill="#1d1d1f">The totals always match. This country buys $80bn more than it sells, and a net $80bn</text>
+<text x="40" y="404" font-size="17" fill="#1d1d1f">of investment flowing in is what pays for it.</text>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 340" font-family="sans-serif" font-size="12">
+  <rect width="420" height="340" fill="#fafaf8"/>
+  <text x="210" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="#264653">Market Structures</text>
+  <text x="210" y="42" text-anchor="middle" font-size="11" fill="#888">From many competitors to one</text>
+  <rect x="20" y="60" width="380" height="55" rx="5" fill="#2a9d8f" opacity="0.85"/>
+  <text x="30" y="82" font-size="12" font-weight="bold" fill="#fff">Perfect Competition</text>
+  <text x="30" y="99" font-size="10" fill="#e0f0ec">Many sellers, identical product, no one controls price</text>
+  <text x="250" y="82" font-size="10" fill="#e0f0ec">Farm products, Forex</text>
+  <rect x="20" y="125" width="380" height="55" rx="5" fill="#e8a317" opacity="0.85"/>
+  <text x="30" y="147" font-size="12" font-weight="bold" fill="#fff">Monopolistic Competition</text>
+  <text x="30" y="164" font-size="10" fill="#402810">Many sellers, differentiated product, some price control</text>
+  <text x="250" y="147" font-size="10" fill="#402810">Restaurants, clothing brands</text>
+  <rect x="20" y="190" width="380" height="55" rx="5" fill="#c97b24" opacity="0.85"/>
+  <text x="30" y="212" font-size="12" font-weight="bold" fill="#fff">Oligopoly</text>
+  <text x="30" y="229" font-size="10" fill="#fff">Few large sellers, interdependent pricing</text>
+  <text x="250" y="212" font-size="10" fill="#fff">Airlines, soft drinks, wireless</text>
+  <rect x="20" y="255" width="380" height="55" rx="5" fill="#e76f51" opacity="0.85"/>
+  <text x="30" y="277" font-size="12" font-weight="bold" fill="#fff">Monopoly</text>
+  <text x="30" y="294" font-size="10" fill="#fff">One seller, no close substitutes, price maker</text>
+  <text x="250" y="277" font-size="10" fill="#fff">Utilities, patents</text>
+  <text x="210" y="330" text-anchor="middle" font-size="10" fill="#888">Fewer competitors &#8594; more price power</text>
+</svg>

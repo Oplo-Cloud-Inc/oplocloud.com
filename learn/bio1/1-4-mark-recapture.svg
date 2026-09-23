@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 400" width="700" height="400" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>How mark and recapture estimates the size of a population nobody can count. Step one: catch 40 animals, mark them and let them go. Step two: wait, and let them mix back into the population. Step three: catch 50 again and count how many carry a mark — here, 10. If 10 out of 50 in the second catch are marked, then the 40 marked animals are about a fifth of everything out there, so the population is about 200.</title>
+<rect width="700" height="400" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Counting a population you cannot line up and count</text>
+<rect x="22" y="60" width="208" height="156" fill="#f5f5f7" rx="12"/>
+<circle cx="50" cy="88" r="15" fill="#2a78d6"/>
+<text x="50" y="94" font-size="16" fill="#ffffff" font-weight="700" text-anchor="middle">1</text>
+<text x="74" y="94" font-size="15" fill="#1d1d1f" font-weight="600">Catch and mark</text>
+<text x="42" y="126" font-size="13" fill="#6e6e73">Catch 40. Mark each one</text>
+<text x="42" y="144" font-size="13" fill="#6e6e73">and let it go.</text>
+<circle cx="44" cy="172" r="7" fill="#2a78d6"/>
+<line x1="40.5" y1="168.5" x2="47.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="47.5" y1="168.5" x2="40.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="65" cy="172" r="7" fill="#2a78d6"/>
+<line x1="61.5" y1="168.5" x2="68.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="68.5" y1="168.5" x2="61.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="86" cy="172" r="7" fill="#2a78d6"/>
+<line x1="82.5" y1="168.5" x2="89.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="89.5" y1="168.5" x2="82.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="107" cy="172" r="7" fill="#2a78d6"/>
+<line x1="103.5" y1="168.5" x2="110.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="110.5" y1="168.5" x2="103.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="128" cy="172" r="7" fill="#2a78d6"/>
+<line x1="124.5" y1="168.5" x2="131.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="131.5" y1="168.5" x2="124.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="149" cy="172" r="7" fill="#2a78d6"/>
+<line x1="145.5" y1="168.5" x2="152.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="152.5" y1="168.5" x2="145.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="170" cy="172" r="7" fill="#2a78d6"/>
+<line x1="166.5" y1="168.5" x2="173.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="173.5" y1="168.5" x2="166.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="191" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="212" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="44" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="65" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="86" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="107" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="128" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="149" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="170" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="191" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="212" cy="194" r="7" fill="#c9c9cf"/>
+<rect x="244" y="60" width="208" height="156" fill="#f5f5f7" rx="12"/>
+<circle cx="272" cy="88" r="15" fill="#6e6e73"/>
+<text x="272" y="94" font-size="16" fill="#ffffff" font-weight="700" text-anchor="middle">2</text>
+<text x="296" y="94" font-size="15" fill="#1d1d1f" font-weight="600">Wait and mix</text>
+<text x="264" y="126" font-size="13" fill="#6e6e73">Give them time to mix</text>
+<text x="264" y="144" font-size="13" fill="#6e6e73">back in with the rest.</text>
+<circle cx="266" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="287" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="308" cy="172" r="7" fill="#2a78d6"/>
+<line x1="304.5" y1="168.5" x2="311.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="311.5" y1="168.5" x2="304.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="329" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="350" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="371" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="392" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="413" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="434" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="266" cy="194" r="7" fill="#2a78d6"/>
+<line x1="262.5" y1="190.5" x2="269.5" y2="197.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="269.5" y1="190.5" x2="262.5" y2="197.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="287" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="308" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="329" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="350" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="371" cy="194" r="7" fill="#2a78d6"/>
+<line x1="367.5" y1="190.5" x2="374.5" y2="197.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="374.5" y1="190.5" x2="367.5" y2="197.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="392" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="413" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="434" cy="194" r="7" fill="#c9c9cf"/>
+<rect x="466" y="60" width="208" height="156" fill="#f5f5f7" rx="12"/>
+<circle cx="494" cy="88" r="15" fill="#eb6834"/>
+<text x="494" y="94" font-size="16" fill="#ffffff" font-weight="700" text-anchor="middle">3</text>
+<text x="518" y="94" font-size="15" fill="#1d1d1f" font-weight="600">Catch again</text>
+<text x="486" y="126" font-size="13" fill="#6e6e73">Catch 50. Count the marks:</text>
+<text x="486" y="144" font-size="13" fill="#6e6e73">10 of them are marked.</text>
+<circle cx="488" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="509" cy="172" r="7" fill="#eb6834"/>
+<line x1="505.5" y1="168.5" x2="512.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="512.5" y1="168.5" x2="505.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="530" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="551" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="572" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="593" cy="172" r="7" fill="#eb6834"/>
+<line x1="589.5" y1="168.5" x2="596.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="596.5" y1="168.5" x2="589.5" y2="175.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="614" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="635" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="656" cy="172" r="7" fill="#c9c9cf"/>
+<circle cx="488" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="509" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="530" cy="194" r="7" fill="#eb6834"/>
+<line x1="526.5" y1="190.5" x2="533.5" y2="197.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="533.5" y1="190.5" x2="526.5" y2="197.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="551" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="572" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="593" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="614" cy="194" r="7" fill="#c9c9cf"/>
+<circle cx="635" cy="194" r="7" fill="#eb6834"/>
+<line x1="631.5" y1="190.5" x2="638.5" y2="197.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<line x1="638.5" y1="190.5" x2="631.5" y2="197.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="656" cy="194" r="7" fill="#c9c9cf"/>
+<rect x="22" y="236" width="656" height="96" fill="#ffffff" rx="12" stroke="#d2d2d7" stroke-width="1.4"/>
+<text x="44" y="268" font-size="13.5" fill="#6e6e73">marked in the second catch</text>
+<text x="44" y="292" font-size="13.5" fill="#6e6e73">size of the second catch</text>
+<line x1="40" y1="276" x2="236" y2="276" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round"/>
+<text x="252" y="282" font-size="19" fill="#1d1d1f" font-weight="600">=</text>
+<text x="286" y="268" font-size="13.5" fill="#6e6e73">all the marked animals</text>
+<text x="286" y="292" font-size="13.5" fill="#6e6e73">the whole population</text>
+<line x1="282" y1="276" x2="452" y2="276" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round"/>
+<text x="470" y="282" font-size="19" fill="#6e6e73">→</text>
+<text x="506" y="268" font-size="15" fill="#1d1d1f" font-weight="700" text-anchor="middle">10</text>
+<text x="506" y="292" font-size="15" fill="#1d1d1f" font-weight="700" text-anchor="middle">50</text>
+<line x1="492" y1="276" x2="520" y2="276" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round"/>
+<text x="536" y="282" font-size="17" fill="#1d1d1f" font-weight="600">=</text>
+<text x="576" y="268" font-size="15" fill="#1d1d1f" font-weight="700" text-anchor="middle">40</text>
+<text x="576" y="292" font-size="15" fill="#1d1d1f" font-weight="700" text-anchor="middle">N</text>
+<line x1="562" y1="276" x2="590" y2="276" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round"/>
+<text x="608" y="282" font-size="17" fill="#12915a" font-weight="700">N ≈ 200</text>
+<text x="22" y="358" font-size="14.5" fill="#1d1d1f">It only works if the marks stay on, the marked animals mix back in, and being caught once does not make an</text>
+<text x="22" y="377" font-size="14.5" fill="#1d1d1f">animal easier or harder to catch again. Every one of those is an assumption a biologist has to defend.</text>
+</svg>

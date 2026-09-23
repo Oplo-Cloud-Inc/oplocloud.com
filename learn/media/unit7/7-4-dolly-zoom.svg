@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 520" width="700" height="520" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>How a dolly zoom works, seen from above. The camera starts close with a wide lens, then moves back while zooming in so the subject stays the same width in the frame. Because the far camera takes in a narrower slice of the background, the background fills more of the frame, so it seems to swell up behind a subject who has not changed size.</title>
+<rect width="700" height="520" fill="#ffffff"/>
+<text x="24" y="34" font-size="18" font-weight="600" fill="#1d1d1f">Seen from above</text>
+<rect x="24" y="56" width="436" height="26" rx="4" fill="#d2d2d7"/>
+<text x="242" y="75" font-size="15" font-weight="600" fill="#1d1d1f" text-anchor="middle">Background: mountains, far away</text>
+<path d="M242 424 L180 82 L304 82 Z" fill="#2a78d6" opacity=".14"/>
+<path d="M242 424 L180 82 M242 424 L304 82" stroke="#2a78d6" stroke-width="2.5"/>
+<path d="M242 500 L208 82 L276 82 Z" fill="#eb6834" opacity=".2"/>
+<path d="M242 500 L208 82 M242 500 L276 82" stroke="#eb6834" stroke-width="2.5"/>
+<rect x="224" y="244" width="36" height="12" rx="6" fill="#1d1d1f"/>
+<text x="272" y="255" font-size="15" font-weight="600" fill="#1d1d1f">Subject</text>
+<rect x="228" y="414" width="28" height="20" rx="4" fill="#2a78d6"/>
+<text x="266" y="430" font-size="15" font-weight="600" fill="#1d1d1f">Start: close, wide lens</text>
+<rect x="228" y="490" width="28" height="20" rx="4" fill="#eb6834"/>
+<text x="266" y="506" font-size="15" font-weight="600" fill="#1d1d1f">End: far back, zoomed in</text>
+<path d="M214 432 V486" stroke="#1d1d1f" stroke-width="2" marker-end="url(#ar)"/>
+<text x="206" y="466" font-size="14" fill="#6e6e73" text-anchor="end">dolly out</text>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1d1d1f"/></marker></defs>
+<g font-size="14" font-weight="600">
+  <text x="180" y="100" fill="#2a78d6" text-anchor="end">wide slice</text>
+  <text x="304" y="100" fill="#2a78d6">of background</text>
+  <text x="242" y="122" fill="#a24f24" text-anchor="middle">narrow slice</text>
+</g>
+<line x1="480" y1="20" x2="480" y2="510" stroke="#e6e6e8" stroke-width="1.5"/>
+<text x="500" y="34" font-size="18" font-weight="600" fill="#1d1d1f">What the frame shows</text>
+<text x="500" y="72" font-size="15" font-weight="600" fill="#2a78d6">Start</text>
+<svg x="500" y="80" width="180" height="120" viewBox="0 0 180 120">
+  <rect width="180" height="120" fill="#e8f1fb"/>
+  <path d="M0 92 L30 70 L52 84 L84 58 L112 82 L140 64 L180 90 V120 H0 Z" fill="#8a9bb0"/>
+  <rect x="0" y="100" width="180" height="20" fill="#c7c7cc"/>
+  <circle cx="90" cy="58" r="11" fill="#1d1d1f"/>
+  <rect x="76" y="70" width="28" height="50" rx="6" fill="#1d1d1f"/>
+</svg>
+<rect x="500" y="80" width="180" height="120" fill="none" stroke="#2a78d6" stroke-width="3"/>
+<text x="500" y="240" font-size="15" font-weight="600" fill="#a24f24">End</text>
+<svg x="500" y="248" width="180" height="120" viewBox="0 0 180 120">
+  <rect width="180" height="120" fill="#e8f1fb"/>
+  <path d="M-80 150 L-24 70 L16 102 L76 18 L128 94 L180 40 L260 150 Z" fill="#8a9bb0"/>
+  <rect x="0" y="100" width="180" height="20" fill="#c7c7cc"/>
+  <circle cx="90" cy="58" r="11" fill="#1d1d1f"/>
+  <rect x="76" y="70" width="28" height="50" rx="6" fill="#1d1d1f"/>
+</svg>
+<rect x="500" y="248" width="180" height="120" fill="none" stroke="#eb6834" stroke-width="3"/>
+<g font-size="15" fill="#1d1d1f">
+  <text x="500" y="400">The subject stays</text>
+  <text x="500" y="420">the same size.</text>
+  <text x="500" y="452">The mountains swell</text>
+  <text x="500" y="472">up behind them.</text>
+</g>
+</svg>

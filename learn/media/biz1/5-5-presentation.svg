@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 340" font-family="sans-serif" font-size="12">
+  <rect width="420" height="340" fill="#fafaf8"/>
+  <text x="210" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="#264653">Presentation Principles</text>
+  <rect x="45" y="50" width="330" height="75" rx="6" fill="#f5f0e8" stroke="#e8a317" stroke-width="2"/>
+  <text x="210" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#264653">One slide &#x2014; one idea</text>
+  <text x="210" y="100" text-anchor="middle" font-size="10" fill="#888">Keep it simple. If you can't say it in a headline, split it.</text>
+  <rect x="45" y="140" width="100" height="140" rx="6" fill="#e76f51" opacity="0.12" stroke="#e76f51"/>
+  <text x="95" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#e76f51">VISUAL</text>
+  <text x="95" y="182" text-anchor="middle" font-size="9" fill="#888">6&#x2013;8 words</text>
+  <text x="95" y="196" text-anchor="middle" font-size="9" fill="#888">per line</text>
+  <text x="95" y="212" text-anchor="middle" font-size="9" fill="#888">Large font</text>
+  <text x="95" y="228" text-anchor="middle" font-size="9" fill="#888">No clutter</text>
+  <text x="95" y="248" text-anchor="middle" font-size="9" fill="#888">20% text</text>
+  <text x="95" y="262" text-anchor="middle" font-size="9" fill="#888">80% visual</text>
+  <rect x="160" y="140" width="100" height="140" rx="6" fill="#2a9d8f" opacity="0.12" stroke="#2a9d8f"/>
+  <text x="210" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#2a9d8f">ORAL</text>
+  <text x="210" y="182" text-anchor="middle" font-size="9" fill="#888">Slide is cue,</text>
+  <text x="210" y="196" text-anchor="middle" font-size="9" fill="#888">not script.</text>
+  <text x="210" y="212" text-anchor="middle" font-size="9" fill="#888">Speak to</text>
+  <text x="210" y="228" text-anchor="middle" font-size="9" fill="#888">the audience,</text>
+  <text x="210" y="248" text-anchor="middle" font-size="9" fill="#888">Not to screen</text>
+  <text x="210" y="262" text-anchor="middle" font-size="9" fill="#888">Pause &amp; pace</text>
+  <rect x="275" y="140" width="100" height="140" rx="6" fill="#264653" opacity="0.12" stroke="#264653"/>
+  <text x="325" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#264653">STRUCTURE</text>
+  <text x="325" y="182" text-anchor="middle" font-size="9" fill="#888">Tell &#x2014;</text>
+  <text x="325" y="196" text-anchor="middle" font-size="9" fill="#888">Show &#x2014;</text>
+  <text x="325" y="212" text-anchor="middle" font-size="9" fill="#888">Tell again</text>
+  <text x="325" y="228" text-anchor="middle" font-size="9" fill="#888">Opening</text>
+  <text x="325" y="248" text-anchor="middle" font-size="9" fill="#888">hook &#8594;</text>
+  <text x="325" y="262" text-anchor="middle" font-size="9" fill="#888">close WIFM</text>
+</svg>

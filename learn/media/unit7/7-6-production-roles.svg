@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 450" width="700" height="450" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Who does what, in the three stages of a video production. Before shooting, in pre-production: the producer, who plans, funds and hires, and the writer. During shooting, in production: the videographer, who records the video, the sound recordist, who captures dialogue on set, and the people on camera, such as anchors and reporters. After shooting, in post-production: the video editor, who shapes the footage, the sound editor, who chooses and places sounds, the Foley artist, who performs sound effects, and the re-recording mixer, who balances the final mix.</title>
+<rect width="700" height="450" fill="#ffffff"/>
+<defs><marker id="m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#86868b"/></marker></defs>
+<g font-size="19" font-weight="700" fill="#1d1d1f">
+  <text x="24" y="34">Before</text><text x="256" y="34">During</text><text x="488" y="34">After</text>
+</g>
+<g font-size="14" fill="#6e6e73">
+  <text x="24" y="54">pre-production</text><text x="256" y="54">production</text><text x="488" y="54">post-production</text>
+</g>
+<g stroke="#86868b" stroke-width="2" marker-end="url(#m)">
+  <line x1="170" y1="28" x2="244" y2="28"/><line x1="402" y1="28" x2="476" y2="28"/>
+</g>
+<g>
+  <rect x="24" y="74" width="188" height="70" rx="10" fill="#e8f1fb"/>
+  <rect x="24" y="156" width="188" height="70" rx="10" fill="#e8f1fb"/>
+  <rect x="256" y="74" width="188" height="70" rx="10" fill="#e7f5e7"/>
+  <rect x="256" y="156" width="188" height="70" rx="10" fill="#e7f5e7"/>
+  <rect x="256" y="238" width="188" height="70" rx="10" fill="#e7f5e7"/>
+  <rect x="488" y="74" width="188" height="70" rx="10" fill="#fdf1e0"/>
+  <rect x="488" y="156" width="188" height="70" rx="10" fill="#fdf1e0"/>
+  <rect x="488" y="238" width="188" height="70" rx="10" fill="#fdf1e0"/>
+  <rect x="488" y="320" width="188" height="70" rx="10" fill="#fdf1e0"/>
+</g>
+<g font-size="16" font-weight="700" fill="#1d1d1f">
+  <text x="40" y="102">Producer</text><text x="40" y="184">Writer</text>
+  <text x="272" y="102">Videographer</text><text x="272" y="184">Sound recordist</text><text x="272" y="266">On camera</text>
+  <text x="504" y="102">Video editor</text><text x="504" y="184">Sound editor</text><text x="504" y="266">Foley artist</text><text x="504" y="348">Re-recording mixer</text>
+</g>
+<g font-size="14" fill="#3a3a3c">
+  <text x="40" y="124">plans, funds, hires</text><text x="40" y="206">the script</text>
+  <text x="272" y="124">records the video</text><text x="272" y="206">dialogue on set</text><text x="272" y="288">anchors, reporters</text>
+  <text x="504" y="124">shapes the footage</text><text x="504" y="206">chooses the sounds</text><text x="504" y="288">performs sound effects</text><text x="504" y="370">the final balance</text>
+</g>
+<text x="24" y="430" font-size="14" fill="#6e6e73">On a small shoot one person may do several of these jobs; on a film, each can be a whole department.</text>
+</svg>

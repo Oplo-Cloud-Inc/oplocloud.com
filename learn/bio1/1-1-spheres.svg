@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 482" width="700" height="482" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Earth's four spheres drawn as one scene: air above, a hill of rock and soil on the left, the sea filling the basin on the right. The biosphere is not drawn as a fourth layer. Living things appear inside all three at once — birds in the air, a tree rooted in the rock, kelp and fish in the sea, and a burrowing animal underground. Below the scene, three cards name interactions between the spheres: leaves take carbon dioxide from the air and give back oxygen; rain falls from the air into the sea and water evaporates back; rivers carry minerals out of the rock into the sea.</title>
+<rect width="700" height="482" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Four spheres, one scene — and life runs through all of them</text>
+<rect x="22" y="50" width="656" height="298" fill="#e8f1fb"/>
+<path d="M 340 196 L 678 196 L 678 348 L 340 348 Z" fill="#cfe3f4"/>
+<path d="M 22 348 L 22 236 C 84 206 142 190 202 186 C 268 182 306 178 352 200 C 402 224 436 286 500 312 C 556 334 620 338 678 340 L 678 348 Z" fill="#ded6c7"/>
+<rect x="22" y="50" width="656" height="298" fill="none" stroke="#d2d2d7" stroke-width="1"/>
+<circle cx="626" cy="80" r="12" fill="#eb6834"/>
+<line x1="641.5" y1="80.0" x2="646.0" y2="80.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="636.9601551083915" y1="90.96015510839149" x2="640.142135623731" y2="94.14213562373095" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="626.0" y1="95.5" x2="626.0" y2="100.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="615.0398448916085" y1="90.96015510839149" x2="611.857864376269" y2="94.14213562373095" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="610.5" y1="80.0" x2="606.0" y2="80.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="615.0398448916085" y1="69.03984489160851" x2="611.857864376269" y2="65.85786437626905" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="626.0" y1="64.5" x2="626.0" y2="60.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<line x1="636.9601551083915" y1="69.03984489160851" x2="640.142135623731" y2="65.85786437626905" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<text x="36" y="72" font-size="13" fill="#2a78d6" font-weight="700">ATMOSPHERE · air</text>
+<text x="500" y="216" font-size="13" fill="#14507f" font-weight="700">HYDROSPHERE · water</text>
+<text x="36" y="334" font-size="13" fill="#6b5b3e" font-weight="700">GEOSPHERE · rock and soil</text>
+<path d="M 92 108 q 13 -12 26 0 q 13 -12 26 0" fill="none" stroke="#1d1d1f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 158 134 q 10 -9 20 0 q 10 -9 20 0" fill="none" stroke="#1d1d1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="196" y="154" width="11" height="42" fill="#7a5a3a"/>
+<circle cx="201" cy="142" r="28" fill="#2f8f52"/>
+<circle cx="180" cy="156" r="19" fill="#3aa05e"/>
+<circle cx="222" cy="156" r="18" fill="#3aa05e"/>
+<path d="M 201 196 C 194 218 184 226 179 248 M 201 196 C 209 220 220 228 226 252" fill="none" stroke="#7a5a3a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 452 330 C 443 293.2 461 265.6 452 238" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 452 330 C 462 288.6 446 261.0 455 242.60000000000002" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 488 336 C 479 308.8 497 288.4 488 268" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 488 336 C 498 305.4 482 285.0 491 271.4" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 526 326 C 517 285.2 535 254.60000000000002 526 224" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 526 326 C 536 280.1 520 249.5 529 229.10000000000002" fill="none" stroke="#12915a" stroke-width="2.4" stroke-linecap="round"/>
+<g transform="translate(412 264) scale(0.95 0.95)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(596 286) scale(-0.8 0.8)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<g transform="translate(556 232) scale(0.7 0.7)">
+<ellipse cx="0" cy="0" rx="13" ry="6.5" fill="#2a78d6"/>
+<path d="M -12 0 L -21 -7 L -21 7 Z" fill="#2a78d6"/>
+<circle cx="7" cy="-1.6" r="1.7" fill="#ffffff"/>
+</g>
+<circle cx="292" cy="300" r="9" fill="#6b5b3e"/>
+<path d="M 278 300 q 14 -14 28 0" fill="none" stroke="#4a3f2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="268" y="326" font-size="12.5" fill="#4a3f2a">life in the soil</text>
+<rect x="22" y="372" width="212" height="62" fill="#ffffff" rx="10" stroke="#12915a" stroke-width="1.4"/>
+<text x="35" y="393" font-size="13.5" fill="#12915a" font-weight="600">Biosphere ↔ atmosphere</text>
+<text x="35" y="411" font-size="13" fill="#6e6e73">leaves take in CO₂,</text>
+<text x="35" y="427" font-size="13" fill="#6e6e73">give back O₂</text>
+<line x1="128" y1="370" x2="170.72301243580046" y2="173.8625338174615" stroke="#12915a" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="5 5"/>
+<path d="M 172.0 168.0 L 173.8 176.8 L 166.7 175.2 Z" fill="#12915a"/>
+<rect x="244" y="372" width="212" height="62" fill="#ffffff" rx="10" stroke="#6b5b3e" stroke-width="1.4"/>
+<text x="257" y="393" font-size="13.5" fill="#6b5b3e" font-weight="600">Geosphere ↔ hydrosphere</text>
+<text x="257" y="411" font-size="13" fill="#6e6e73">rivers carry minerals</text>
+<text x="257" y="427" font-size="13" fill="#6e6e73">to the sea</text>
+<line x1="350" y1="370" x2="355.78063456489565" y2="211.9959885595189" stroke="#6b5b3e" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="5 5"/>
+<path d="M 356.0 206.0 L 359.4 214.3 L 352.0 214.1 Z" fill="#6b5b3e"/>
+<rect x="466" y="372" width="212" height="62" fill="#ffffff" rx="10" stroke="#2a78d6" stroke-width="1.4"/>
+<text x="479" y="393" font-size="13.5" fill="#2a78d6" font-weight="600">Atmosphere ↔ hydrosphere</text>
+<text x="479" y="411" font-size="13" fill="#6e6e73">rain falls,</text>
+<text x="479" y="427" font-size="13" fill="#6e6e73">water evaporates</text>
+<line x1="572" y1="370" x2="593.1725398203256" y2="217.9426685631165" stroke="#2a78d6" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="5 5"/>
+<path d="M 594.0 212.0 L 596.5 220.6 L 589.2 219.6 Z" fill="#2a78d6"/>
+<text x="22" y="460" font-size="14.5" fill="#1d1d1f">The biosphere is not a fourth layer stacked on the others. It is the life inside them — which is why a change</text>
+<text x="22" y="478" font-size="14.5" fill="#1d1d1f">in any one sphere is felt in all four.</text>
+</svg>

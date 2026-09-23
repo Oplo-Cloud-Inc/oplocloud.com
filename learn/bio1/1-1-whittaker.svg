@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 500" width="700" height="500" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Whittaker's biome diagram. The horizontal axis is average yearly temperature from minus 15 to 30 degrees Celsius; the vertical axis is average yearly rainfall from 0 to 450 centimetres. Nine biomes fill a triangular area: tundra and boreal forest in the cold and dry corner, temperate grassland, desert, woodland and temperate forest in the middle, and tropical seasonal forest and tropical rainforest in the hot, wet corner. The top left is empty: nowhere on Earth is both freezing and soaking wet.</title>
+<rect width="700" height="500" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Two numbers decide which biome you are standing in</text>
+<line x1="116" y1="402" x2="602" y2="402" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="116" y1="62" x2="116" y2="402" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="126.34042553191489" y1="402" x2="126.34042553191489" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="126.34042553191489" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">-15</text>
+<line x1="178.04255319148936" y1="402" x2="178.04255319148936" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="178.04255319148936" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">-10</text>
+<line x1="229.74468085106383" y1="402" x2="229.74468085106383" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="229.74468085106383" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">-5</text>
+<line x1="281.44680851063833" y1="402" x2="281.44680851063833" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="281.44680851063833" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">0</text>
+<line x1="333.1489361702128" y1="402" x2="333.1489361702128" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="333.1489361702128" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">5</text>
+<line x1="384.8510638297872" y1="402" x2="384.8510638297872" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="384.8510638297872" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">10</text>
+<line x1="436.55319148936167" y1="402" x2="436.55319148936167" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="436.55319148936167" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">15</text>
+<line x1="488.25531914893617" y1="402" x2="488.25531914893617" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="488.25531914893617" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">20</text>
+<line x1="539.9574468085107" y1="402" x2="539.9574468085107" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="539.9574468085107" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">25</text>
+<line x1="591.6595744680851" y1="402" x2="591.6595744680851" y2="407" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="591.6595744680851" y="422" font-size="13.5" fill="#6e6e73" text-anchor="middle">30</text>
+<line x1="111" y1="402.0" x2="116" y2="402.0" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="107" y="406.5" font-size="13.5" fill="#6e6e73" text-anchor="end">0</text>
+<line x1="111" y1="328.0869565217391" x2="116" y2="328.0869565217391" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="107" y="332.5869565217391" font-size="13.5" fill="#6e6e73" text-anchor="end">100</text>
+<line x1="111" y1="254.17391304347825" x2="116" y2="254.17391304347825" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="107" y="258.67391304347825" font-size="13.5" fill="#6e6e73" text-anchor="end">200</text>
+<line x1="111" y1="180.26086956521738" x2="116" y2="180.26086956521738" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="107" y="184.76086956521738" font-size="13.5" fill="#6e6e73" text-anchor="end">300</text>
+<line x1="111" y1="106.3478260869565" x2="116" y2="106.3478260869565" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="107" y="110.8478260869565" font-size="13.5" fill="#6e6e73" text-anchor="end">400</text>
+<text x="359.0" y="440" font-size="14.5" fill="#6e6e73" text-anchor="middle">Average temperature over a year (°C)</text>
+<text transform="rotate(-90 64 232.0)" x="64" y="232.0" font-size="14.5" fill="#6e6e73" text-anchor="middle">Rainfall over a year (cm)</text>
+<path d="M 116.0 402.0 L 116.0 372.4 L 240.1 361.3 L 260.8 402.0 Z" fill="#cfd8dd" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 116.0 372.4 L 116.0 324.4 L 250.4 313.3 L 260.8 361.3 L 240.1 361.3 Z" fill="#bcd2c0" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 260.8 402.0 L 240.1 361.3 L 250.4 313.3 L 395.2 328.1 L 415.9 402.0 Z" fill="#e8dfc0" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 395.2 328.1 L 415.9 402.0 L 498.6 402.0 L 508.9 361.3 L 477.9 313.3 Z" fill="#ded0ad" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 250.4 313.3 L 271.1 254.2 L 446.9 217.2 L 477.9 313.3 L 395.2 328.1 Z" fill="#bcd8b4" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 271.1 254.2 L 302.1 180.3 L 446.9 158.1 L 446.9 217.2 Z" fill="#a8cfc0" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 498.6 402.0 L 602.0 402.0 L 602.0 357.7 L 508.9 361.3 Z" fill="#f0dfb2" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 508.9 361.3 L 602.0 357.7 L 602.0 246.8 L 477.9 272.7 L 477.9 313.3 Z" fill="#d8d79a" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 477.9 272.7 L 602.0 246.8 L 602.0 69.4 L 488.3 106.3 L 446.9 158.1 L 446.9 217.2 Z" fill="#9ecfa0" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="183.2127659574468" y="388.445652173913" font-size="13.5" fill="#4a5a63" font-weight="600" text-anchor="middle">Tundra</text>
+<text x="196.65531914893617" y="350.5652173913044" font-size="13.5" fill="#2c5e3d" font-weight="600" text-anchor="middle">Boreal forest</text>
+<text x="312.468085106383" y="358.3478260869565" font-size="13.5" fill="#7a6a2a" font-weight="600" text-anchor="middle">Temperate</text>
+<text x="312.468085106383" y="373.3478260869565" font-size="13.5" fill="#7a6a2a" font-weight="600" text-anchor="middle">grassland / desert</text>
+<text x="459.30212765957447" y="358.3478260869565" font-size="13.5" fill="#7a5f28" font-weight="600" text-anchor="middle">Woodland</text>
+<text x="459.30212765957447" y="373.3478260869565" font-size="13.5" fill="#7a5f28" font-weight="600" text-anchor="middle">and shrub</text>
+<text x="368.3063829787235" y="289.2173913043478" font-size="13.5" fill="#2e6b34" font-weight="600" text-anchor="middle">Temperate forest</text>
+<text x="366.7553191489362" y="199.43478260869566" font-size="13.5" fill="#1d6b57" font-weight="600" text-anchor="middle">Temperate</text>
+<text x="366.7553191489362" y="214.43478260869566" font-size="13.5" fill="#1d6b57" font-weight="600" text-anchor="middle">rainforest</text>
+<text x="552.8829787234042" y="377.75" font-size="13.5" fill="#8a6a1f" font-weight="600" text-anchor="middle">Subtropical</text>
+<text x="552.8829787234042" y="392.75" font-size="13.5" fill="#8a6a1f" font-weight="600" text-anchor="middle">desert</text>
+<text x="533.7531914893617" y="307.34782608695656" font-size="13.5" fill="#6f7a22" font-weight="600" text-anchor="middle">Tropical seasonal</text>
+<text x="533.7531914893617" y="322.34782608695656" font-size="13.5" fill="#6f7a22" font-weight="600" text-anchor="middle">forest / savanna</text>
+<text x="510.65957446808505" y="175.41304347826087" font-size="13.5" fill="#1c6b34" font-weight="600" text-anchor="middle">Tropical</text>
+<text x="510.65957446808505" y="190.41304347826087" font-size="13.5" fill="#1c6b34" font-weight="600" text-anchor="middle">rainforest</text>
+<text x="136.68085106382978" y="106.3478260869565" font-size="14" fill="#86868b" font-weight="600">Nowhere on Earth</text>
+<text x="136.68085106382978" y="128.52173913043475" font-size="14" fill="#86868b">is this cold and this wet.</text>
+<text x="116" y="434" font-size="13.5" fill="#6e6e73">colder</text>
+<text x="602" y="434" font-size="13.5" fill="#6e6e73" text-anchor="end">hotter</text>
+<text x="22" y="466" font-size="14.5" fill="#1d1d1f">A biome is not decided by which continent you are on. Deserts on four continents match each other more closely</text>
+<text x="22" y="486" font-size="14.5" fill="#1d1d1f">than a desert matches the forest 200 km away, because the two numbers on these axes are what life has to survive.</text>
+</svg>

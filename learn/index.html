@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<base href="/">
+<script>
+/* The app answers at every address inside it — /student/Science/Biology/u1/l3
+   as well as /student/ — but its files all sit beside this page. So relative
+   addresses are resolved from the app's own folder, whatever the address bar
+   says. The plain base above is for the browser, which starts fetching files
+   before any script runs: on edu.oplocloud.com the app's folder is "/", so
+   those early fetches are already right. This corrects it anywhere else (a
+   local preview serves the app from /learn/). A "#section" link on the
+   welcome page still means this page, not the folder.
+   The student side is dark (obsidian.css), and is marked here, before
+   anything is drawn, so a student never sees a light frame first. */
+(function () {
+  var m = /^(.*?\/)(admin|teacher|student)(?:\/|$)/.exec(location.pathname);
+  var b = document.querySelector("base");
+  b.href = m ? m[1] : location.pathname.replace(/[^\/]*$/, "");
+  if (m && m[2] === "student") document.documentElement.setAttribute("data-look", "obsidian");
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
+    if (a.hasAttribute("data-signin") || a.hasAttribute("data-film")) return;   // landing.js owns these
+    var id = a.getAttribute("href").slice(1), t = id ? document.getElementById(id) : null;
+    e.preventDefault();
+    if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+    else if (!id) window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OEdu</title>
+<meta name="description" content="OEdu — courses you work through by solving, and study sets you drill until they stick.">
+<meta name="theme-color" content="#ffffff">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='12 12 76 76'%3E%3Cpath fill='%231d1d1f' fill-rule='evenodd' d='M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=eb79a3ae">
+<link rel="stylesheet" href="oplo-chrome.css?v=7b3e85b3">
+<link rel="stylesheet" href="landing.css?v=4a55a875">
+<link rel="stylesheet" href="exam.css?v=3869276c">
+<link rel="stylesheet" href="checks.css?v=a381359b">
+<link rel="stylesheet" href="challenge.css?v=10ab969a">
+<link rel="stylesheet" href="lab/lab.css?v=99c84245">
+<link rel="stylesheet" href="obsidian.css?v=c2087bf9">
+</head>
+<body>
+
+<!-- ================================================================ Welcome
+     What edu.oplocloud.com is to somebody who is not signed in: the page that
+     says what OEdu is, with the one sign-in in a panel on top of it. The form
+     in that panel is the form it always was (#gateForm, #gEmail, #gPass,
+     #gErr) and app.js drives it unchanged. A signed-in visitor never sees
+     this page: the moment the server answers /me they are sent to their own
+     address, and until it answers the page stays blank (.ld-wait).
+
+     Every picture and film is a slot:
+
+         <div class="ld-media" data-slot="Name" data-size="1600 × 900" data-src=""></div>
+
+     Put a file in learn/media/landing/ and write its path into data-src —
+     "media/landing/hero.jpg". An image (.jpg .png .webp .avif .gif) is drawn
+     as an image and a film (.mp4 .webm .mov) plays muted and looping. data-alt
+     describes it for screen readers. An empty data-src shows the slot's name
+     and the size it looks best at. The film behind "Watch the film" goes in
+     data-film-src on the film slot.
+
+     Slots: hero · film · course · practice · gradebook · family-record ·
+     students · teachers · families · inside-1 … inside-5 · schools
+     ======================================================================== -->
+<div class="ld ld-wait" id="gate">
+
+  <!-- The bar, the chapter bar and the footer are oplocloud.com's own, written
+       into the oplo: regions below by tools/build.py from the same NAV and
+       FOOTER every page on the site is built from. Edit them there and run
+       `python3 tools/build.py`; anything typed inside a region is replaced. -->
+  <!-- oplo:nav -->
+<nav class="nav" id="nav" aria-label="Oplo">
+  <div class="nav-in">
+    <a class="nav-brand" href="https://oplocloud.com/" aria-label="Oplo home">
+      <svg class="mark" viewBox="84.13 107.80 206.73 194.91" aria-hidden="true" focusable="false"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></svg>
+    </a>
+    <ul class="nav-links" id="navLinks">
+        <li><a href="https://oplocloud.com/products/">Products</a><button class="nav-more" type="button" aria-label="Products menu" aria-expanded="false" aria-controls="navMenu0"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="https://oplocloud.com/solutions/">Solutions</a><button class="nav-more" type="button" aria-label="Solutions menu" aria-expanded="false" aria-controls="navMenu1"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="https://oplocloud.com/resources/">Resources</a><button class="nav-more" type="button" aria-label="Resources menu" aria-expanded="false" aria-controls="navMenu2"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="https://oplocloud.com/company/">Company</a><button class="nav-more" type="button" aria-label="Company menu" aria-expanded="false" aria-controls="navMenu3"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+        <li><a href="https://oplocloud.com/support/">Support</a><button class="nav-more" type="button" aria-label="Support menu" aria-expanded="false" aria-controls="navMenu4"><svg viewBox="0 0 8 5" aria-hidden="true" focusable="false"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></li>
+    </ul>
+    <div class="nav-end"><button class="nav-search" id="navSearch" type="button" aria-label="Search oplocloud.com" aria-expanded="false" aria-controls="navFind"><svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button></div>
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="nav-flyout" id="navFlyout" hidden>
+    <div class="nav-flyout-bg"></div>
+    <div class="nav-flyout-in">
+      <div class="nav-menu" id="navMenu0" role="region" aria-label="Products">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Products</h2><ul><li><a href="https://oplocloud.com/products/">All Products</a></li><li><a href="https://oplocloud.com/hardware/">Hardware</a></li><li><a href="https://oplocloud.com/software/">Software</a></li><li><a href="https://oplocloud.com/intelligence/">Intelligence</a></li><li><a href="https://oplocloud.com/plus/">Oplo+</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Hardware and Software</h2><ul><li><a href="https://oplocloud.com/hardware/#silicon">Silicon</a></li><li><a href="https://oplocloud.com/hardware/#devices">Devices</a></li><li><a href="https://oplocloud.com/hardware/#accessories">Accessories</a></li><li><a href="https://oplocloud.com/software/#apps">Apps</a></li><li><a href="https://oplocloud.com/software/#updates">Updates</a></li><li><a href="https://oplocloud.com/software/#downloads">Downloads</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Oplo+</h2><ul><li><a href="https://oplocloud.com/plus/#plans">Plans</a></li><li><a href="https://oplocloud.com/plus/#perks">What’s Included</a></li><li><a href="https://oplocloud.com/plus/#compare">Compare Plans</a></li><li><a href="https://oplocloud.com/plus/#faq">Questions</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu1" role="region" aria-label="Solutions">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Solutions</h2><ul><li><a href="https://oplocloud.com/solutions/">Who It’s For</a></li><li><a href="https://oplocloud.com/solutions/#personal">Personal</a></li><li><a href="https://edu.oplocloud.com/">Education</a></li><li><a href="https://oplocloud.com/developers/">Developers</a></li><li><a href="https://oplocloud.com/solutions/#institutions">Business and Government</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Education</h2><ul><li><a href="https://edu.oplocloud.com/">OEdu</a></li><li><a href="https://edu.oplocloud.com/#students">Students</a></li><li><a href="https://edu.oplocloud.com/#teachers">Teachers</a></li><li><a href="https://edu.oplocloud.com/#families">Families</a></li><li><a href="https://edu.oplocloud.com/#schools">Schools</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Developers</h2><ul><li><a href="https://oplocloud.com/developers/#docs">Documentation</a></li><li><a href="https://oplocloud.com/developers/#sdks">SDKs</a></li><li><a href="https://oplocloud.com/developers/#design">Design Resources</a></li><li><a href="https://oplocloud.com/developers/#support">Developer Support</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu2" role="region" aria-label="Resources">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Resources</h2><ul><li><a href="https://oplocloud.com/resources/">All Resources</a></li><li><a href="https://oplocloud.com/privacy/">Privacy</a></li><li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li><li><a href="https://oplocloud.com/investor/">Investor Relations</a></li><li><a href="https://oplocloud.com/legal/">Legal</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Privacy</h2><ul><li><a href="https://oplocloud.com/privacy/features/">Features</a></li><li><a href="https://oplocloud.com/privacy/control/">Control</a></li><li><a href="https://oplocloud.com/privacy/labels/">Privacy Labels</a></li><li><a href="https://oplocloud.com/privacy/transparency/">Transparency Report</a></li><li><a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Investors</h2><ul><li><a href="https://oplocloud.com/investor/leadership/">Leadership and Governance</a></li><li><a href="https://oplocloud.com/investor/filings/">Filings</a></li><li><a href="https://oplocloud.com/investor/values/">Our Values</a></li><li><a href="https://oplocloud.com/investor/faq/">FAQ</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu3" role="region" aria-label="Company">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Oplo</h2><ul><li><a href="https://oplocloud.com/company/">About Oplo</a></li><li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li><li><a href="https://oplocloud.com/careers/">Careers</a></li><li><a href="https://oplocloud.com/investor/">Investor Relations</a></li><li><a href="https://oplocloud.com/contact/">Contact</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Quick Links</h2><ul><li><a href="https://oplocloud.com/company/#what">What We’re Building</a></li><li><a href="https://oplocloud.com/company/#where">Where We’re Going</a></li><li><a href="https://oplocloud.com/careers/#roles">Open Roles</a></li><li><a href="https://oplocloud.com/newsroom/#press">Press</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Legal</h2><ul><li><a href="https://oplocloud.com/legal/">Legal</a></li><li><a href="https://oplocloud.com/legal/terms/">Terms of Use</a></li><li><a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a></li></ul></div>
+      </div>
+      <div class="nav-menu" id="navMenu4" role="region" aria-label="Support">
+        <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Support</h2><ul><li><a href="https://oplocloud.com/support/">Getting Help</a></li><li><a href="https://oplocloud.com/developers/#support">Developer Support</a></li><li><a href="https://oplocloud.com/contact/">Contact Oplo</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Quick Links</h2><ul><li><a href="https://oplocloud.com/sign-in/">Your Oplo Account</a></li><li><a href="https://oplocloud.com/support/#help">Get Help</a></li><li><a href="https://oplocloud.com/support/#developer-help">Developer Help</a></li><li><a href="https://oplocloud.com/plus/#faq">Oplo+ Questions</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Contact</h2><ul><li><a href="https://oplocloud.com/contact/#general">General Enquiries</a></li><li><a href="https://oplocloud.com/contact/#careers-contact">Careers Enquiries</a></li><li><a href="https://oplocloud.com/investor/contact/">Investor Contact</a></li></ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-find" id="navFind" hidden>
+    <div class="nav-find-in">
+      <form class="nav-find-form" role="search" action="#">
+        <svg viewBox="-1 -1 17 17" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <input id="navFindInput" type="search" placeholder="Search oplocloud.com" aria-label="Search oplocloud.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-controls="navFindList">
+        <button class="nav-find-clear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 8 8" aria-hidden="true" focusable="false"><path d="M1 1l6 6M7 1 1 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+      </form>
+      <p class="nav-find-label" id="navFindLabel">Quick Links</p>
+      <ul class="nav-find-list" id="navFindList" role="listbox" aria-labelledby="navFindLabel">
+          <li role="presentation"><a role="option" href="https://oplocloud.com/products/"><span class="t">Products</span></a></li>
+          <li role="presentation"><a role="option" href="https://edu.oplocloud.com/"><span class="t">OEdu</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/plus/"><span class="t">Oplo+</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/support/"><span class="t">Support</span></a></li>
+          <li role="presentation"><a role="option" href="https://oplocloud.com/contact/"><span class="t">Contact Oplo</span></a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="nav-scrim" id="navScrim" hidden></div>
+</nav>
+<!-- /oplo:nav -->
+  <!-- oplo:chapter -->
+<div class="chapter">
+  <div class="chapter-in">
+    <a class="chapter-name" href="#top">OEdu</a>
+    <nav class="chapter-links" aria-label="OEdu sections"><a href="#students">Students</a><a href="#teachers">Teachers</a><a href="#families">Families</a><a href="#schools">Schools</a></nav>
+    <a class="chapter-cta" href="#signin" data-signin>Sign in</a>
+  </div>
+</div>
+<!-- /oplo:chapter -->
+
+  <aside class="ld-ribbon">
+    <p>New this term: families can follow grades, exams and the road to graduation in the family view.
+      <button class="ld-inline" type="button" data-signin>Sign in ›</button></p>
+  </aside>
+
+  <main class="ld-main" id="top">
+
+    <section class="ld-hero" aria-labelledby="ldHeroTitle">
+      <div class="ld-hero-frame">
+        <div class="ld-media ld-dark ld-hero-media" data-slot="Hero" data-size="2560 × 1440 · image or film" data-src="media/hero/eduhero.jpg" data-alt="Students working on laptops at a long window, a cathedral in the evening light beyond. The nearest screen shows an OEdu lesson." data-eager></div>
+        <div class="ld-hero-copy">
+          <svg class="ld-hero-mark" viewBox="12 12 76 76" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg>
+          <h1 id="ldHeroTitle">Made for <span class="ld-accent">the way you learn.</span></h1>
+          <p>Courses you work through by solving, practice that sticks, and one record that
+            students, teachers and families all read the same way.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-film">
+      <div class="ld-wrap">
+        <div class="ld-film-card ld-reveal">
+          <div class="ld-film-copy">
+            <h2>See OEdu in action.</h2>
+            <button class="ld-play" type="button" data-film>
+              Watch the film
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="10" cy="10" r="8.3"/><path d="M8.3 6.8v6.4l5-3.2z" fill="currentColor" stroke="none"/></svg>
+            </button>
+          </div>
+          <div class="ld-media" data-slot="Film poster" data-size="1600 × 900" data-src="" data-alt="" data-film-src=""></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-band ld-soft" id="students">
+      <div class="ld-wrap">
+        <header class="ld-head ld-reveal">
+          <h2>Learning that’s <span class="ld-accent">a grade ahead.</span></h2>
+          <p>OEdu brings courses, practice, marks and the record into one place — for the student
+            doing the work, the teacher setting it, and the family following along.</p>
+        </header>
+        <div class="ld-grid2">
+          <article class="ld-card ld-reveal">
+            <div class="ld-media" data-slot="Courses" data-size="1400 × 1000" data-src="" data-alt=""></div>
+            <div class="ld-card-copy">
+              <h3>Courses built <br>for <span class="ld-accent">solving.</span></h3>
+              <p>Every unit is worked through rather than read past: questions before the lesson,
+                a repair when an answer goes wrong, and one grade that counts.</p>
+            </div>
+          </article>
+          <article class="ld-card ld-reveal">
+            <div class="ld-media" data-slot="Practice" data-size="1400 × 1000" data-src="" data-alt=""></div>
+            <div class="ld-card-copy">
+              <h3>Practice that <br><span class="ld-accent">sticks.</span></h3>
+              <p>Study sets drilled until they hold, and a tutor that offers a hint before it
+                offers an answer.</p>
+            </div>
+          </article>
+          <article class="ld-card ld-reveal">
+            <div class="ld-media" data-slot="Gradebook" data-size="1400 × 1000" data-src="" data-alt=""></div>
+            <div class="ld-card-copy">
+              <h3>A gradebook that <br><span class="ld-accent">explains itself.</span></h3>
+              <p>Missing, excused and late mean what they say, and every change to a mark is kept —
+                what it was, who changed it, and why.</p>
+            </div>
+          </article>
+          <article class="ld-card ld-reveal">
+            <div class="ld-media" data-slot="Family record" data-size="1400 × 1000" data-src="" data-alt=""></div>
+            <div class="ld-card-copy">
+              <h3>A record families <br><span class="ld-accent">can read.</span></h3>
+              <p>Grades, state exams and the road to a diploma in the family view — computed from
+                the record, and never estimated to fill a gap.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-band ld-black" id="teachers">
+      <div class="ld-wrap">
+        <h2 class="ld-h2 ld-reveal">From <span class="ld-accent">first lesson to graduation.</span></h2>
+        <div class="ld-row3 ld-tiles">
+          <button class="ld-tile ld-reveal" type="button" data-signin>
+            <div class="ld-media" data-slot="Students" data-size="900 × 860" data-src="" data-alt=""></div>
+            <span class="ld-tile-copy"><span class="k">Students</span><span class="t">Learn by doing.</span></span>
+            <span class="ld-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg></span>
+          </button>
+          <button class="ld-tile ld-reveal" type="button" data-signin>
+            <div class="ld-media" data-slot="Teachers" data-size="900 × 860" data-src="" data-alt=""></div>
+            <span class="ld-tile-copy"><span class="k">Teachers</span><span class="t">Teach, mark and report <br>in one place.</span></span>
+            <span class="ld-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg></span>
+          </button>
+          <button class="ld-tile ld-reveal" type="button" data-signin>
+            <div class="ld-media" data-slot="Families" data-size="900 × 860" data-src="" data-alt=""></div>
+            <span class="ld-tile-copy"><span class="k">Families</span><span class="t">The whole record, <br>in one view.</span></span>
+            <span class="ld-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-band ld-soft ld-stories" id="families">
+      <div class="ld-wrap">
+        <div class="ld-head-row ld-reveal">
+          <h2 class="ld-h2">Inside OEdu. <span class="ld-accent">Every day.</span></h2>
+        </div>
+      </div>
+      <div class="ld-rail ld-reveal" id="ldRail" tabindex="0" aria-label="Inside OEdu">
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 1" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Students</span><span class="t">Read with a pencil in hand.</span></span>
+        </article>
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 2" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Students</span><span class="t">A tutor that asks back.</span></span>
+        </article>
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 3" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Teachers</span><span class="t">A whole column, marked at once.</span></span>
+        </article>
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 4" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Families</span><span class="t">Every mark, where the family can see it.</span></span>
+        </article>
+        <article class="ld-wide">
+          <div class="ld-media" data-slot="Inside 5" data-size="1600 × 1040" data-src="" data-alt=""></div>
+          <span class="ld-wide-copy"><span class="k">Schools</span><span class="t">One sign-in for everybody.</span></span>
+        </article>
+      </div>
+      <div class="ld-wrap ld-rail-ctl">
+        <button type="button" data-rail="-1" aria-label="Previous" disabled>
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5"/></svg>
+        </button>
+        <button type="button" data-rail="1" aria-label="Next">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <section class="ld-band ld-white" id="schools">
+      <div class="ld-wrap ld-split">
+        <div class="ld-split-copy ld-reveal">
+          <h2 class="ld-h2">Bring OEdu <br>to your school.</h2>
+          <p>Courses, the gradebook, reporting and the family view — set up for your students,
+            teachers and families.</p>
+          <a class="ld-btn" href="https://oplocloud.com/contact/">Get in touch</a>
+        </div>
+        <div class="ld-media ld-bare ld-reveal" data-slot="Schools" data-size="1600 × 1200 · a transparent PNG works well" data-src="" data-alt=""></div>
+      </div>
+    </section>
+
+    <section class="ld-band ld-soft">
+      <div class="ld-wrap">
+        <h2 class="ld-h2 ld-reveal">What we hold to.</h2>
+        <div class="ld-row3 ld-values">
+          <article class="ld-value ld-reveal">
+            <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="12.5" width="16" height="11" rx="2.5"/><path d="M9.5 12.5V9a4.5 4.5 0 0 1 9 0v3.5"/></svg>
+            <h3>Private by design.</h3>
+            <p>Your session is a cookie no page can read, and a student’s record is shown only to
+              the people it belongs to.</p>
+            <a href="https://oplocloud.com/privacy/">Learn more ›</a>
+          </article>
+          <article class="ld-value ld-reveal">
+            <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="14" r="10"/><path d="m9.5 14.3 3 3 6-6.3"/></svg>
+            <h3>Honest about <br>every number.</h3>
+            <p>A figure the record cannot support is left out rather than estimated, and every
+              page says where its numbers came from.</p>
+          </article>
+          <article class="ld-value ld-reveal">
+            <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="14" r="10"/><circle cx="14" cy="8.6" r="1.3" fill="currentColor"/><path d="M8.5 11.5c3.6 1 7.4 1 11 0M14 12.2v4.6M14 16.8l-2.6 5M14 16.8l2.6 5"/></svg>
+            <h3>Made for <br>every learner.</h3>
+            <p>Every chart can be read as a table, every screen works from a keyboard, and nothing
+              depends on colour alone.</p>
+            <a href="https://oplocloud.com/support/">Learn more ›</a>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- oplo:foot -->
+<footer class="foot" aria-label="Oplo footer">
+  <div class="foot-in">
+    <div class="foot-note">
+      <p>Oplo is building its first hardware, software and intelligence products. Pages on this site describe intent and direction; availability and capability are not final.</p>
+      <p>Questions about any of it? <a href="https://oplocloud.com/contact/">Get in touch</a>.</p>
+    </div>
+    <div class="foot-rule"></div>
+    <div class="foot-cols">
+      <div class="foot-col">
+        <h3>Products</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/products/">All products</a></li>
+          <li><a href="https://oplocloud.com/hardware/">Hardware</a></li>
+          <li><a href="https://oplocloud.com/software/">Software</a></li>
+          <li><a href="https://oplocloud.com/intelligence/">Intelligence</a></li>
+          <li><a href="https://oplocloud.com/plus/">Oplo+</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Solutions</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/solutions/">Who it is for</a></li>
+          <li><a href="https://oplocloud.com/solutions/#personal">Personal</a></li>
+          <li><a href="https://edu.oplocloud.com/">Education</a></li>
+          <li><a href="https://oplocloud.com/developers/">Developers</a></li>
+          <li><a href="https://oplocloud.com/solutions/#institutions">Business and government</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Resources</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/resources/">Everything written down</a></li>
+          <li><a href="https://oplocloud.com/developers/#docs">Developer documentation</a></li>
+          <li><a href="https://oplocloud.com/developers/#design">Design resources</a></li>
+          <li><a href="https://oplocloud.com/privacy/">Privacy</a></li>
+          <li><a href="https://oplocloud.com/privacy/labels/">Privacy labels</a></li>
+          <li><a href="https://oplocloud.com/privacy/transparency/">Transparency report</a></li>
+          <li><a href="https://oplocloud.com/legal/">Legal</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/company/">About Oplo</a></li>
+          <li><a href="https://oplocloud.com/newsroom/">Newsroom</a></li>
+          <li><a href="https://oplocloud.com/careers/">Careers</a></li>
+          <li><a href="https://oplocloud.com/investor/">Investor relations</a></li>
+          <li><a href="https://oplocloud.com/contact/">Contact</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h3>Support</h3>
+        <ul>
+          <li><a href="https://oplocloud.com/support/">Getting help</a></li>
+          <li><a href="https://oplocloud.com/developers/#support">Developer support</a></li>
+          <li><a href="https://oplocloud.com/sign-in/">Your Oplo account</a></li>
+          <li><a href="https://oplocloud.com/plus/#faq">Oplo+ membership</a></li>
+          <li><a href="https://oplocloud.com/contact/">Write to us</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-rule"></div>
+    <div class="foot-bar">
+      <span>Copyright &copy; 2026 Oplo, Inc. All rights reserved.</span>
+      <span class="foot-legal">
+        <a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a>
+        <a href="https://oplocloud.com/legal/terms/">Terms of Use</a>
+        <a href="https://oplocloud.com/legal/">Legal</a>
+        <a href="https://oplocloud.com/sitemap.xml">Site Map</a>
+      </span>
+      <span class="foot-region">United States</span>
+    </div>
+  </div>
+</footer>
+<!-- /oplo:foot -->
+
+  <div class="ld-modal" id="ldSignin" hidden>
+    <div class="ld-scrim" data-close></div>
+    <div class="ld-sheet" role="dialog" aria-modal="true" aria-labelledby="ldSigninTitle">
+      <button class="ld-x" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+      <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
+        <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
+      </svg>
+      <h2 id="ldSigninTitle">Sign in to OEdu</h2>
+      <p class="sub">Students, teachers, families and administrators all sign in here, with their Oplo Account.</p>
+      <form class="lx-form" id="gateForm" novalidate>
+        <div class="lx-field">
+          <label for="gEmail">Email</label>
+          <input id="gEmail" name="email" type="email" autocomplete="username"
+                 autocapitalize="none" spellcheck="false" required>
+        </div>
+        <div class="lx-field">
+          <label for="gPass">Password</label>
+          <input id="gPass" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="lx-btn lg" type="submit">Sign in</button>
+        <p class="err" id="gErr" role="alert"></p>
+      </form>
+      <p class="fine">
+        One Oplo Account signs you in to OEdu and to every other Oplo product you are
+        authorised for. Your password is sent once over an encrypted connection, checked on
+        the Oplo platform, and never stored in this browser. Your session is a cookie this
+        page cannot read.
+      </p>
+    </div>
+  </div>
+
+  <div class="ld-lightbox" id="ldFilm" hidden>
+    <div class="ld-scrim" data-close></div>
+    <div class="ld-film-player" role="dialog" aria-modal="true" aria-label="OEdu film">
+      <button class="ld-x" type="button" data-close aria-label="Close the film">
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+      <video controls playsinline></video>
+    </div>
+  </div>
+</div>
+
+<!-- The console's rail. Empty here and filled by app.js, because what is in
+     it depends on who signed in — and a nav written into the page is a nav
+     that has to be hidden from the people it does not belong to. -->
+<aside class="cn-rail" id="rail" aria-label="Console"></aside>
+<div class="cn-scrim" id="railScrim" hidden></div>
+
+<!-- The console has no top bar. Opening the rail on a narrow screen is a
+     small control at the head of the content, not a bar. Going back is the
+     browser's Back, as it is everywhere in OEdu. -->
+<button class="cn-open" id="railOpen" type="button" aria-label="Sections" aria-expanded="false">
+  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+       stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+</button>
+
+<header class="lx-bar">
+  <div class="lx-bar-in">
+    <svg class="lx-mark" viewBox="12 12 76 76" aria-hidden="true">
+      <path fill="currentColor" fill-rule="evenodd" d="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/>
+    </svg>
+    <span class="lx-name">OEdu</span>
+
+    <nav class="lx-top" id="topNav" aria-label="Sections">
+      <button type="button" data-view="my" aria-current="true">Home</button>
+      <button type="button" data-view="explore">Explore</button>
+      <button type="button" data-view="classes" id="navClasses" hidden>Classes</button>
+      <button type="button" data-view="grades" id="navGrades" hidden>Grades</button>
+      <button type="button" data-view="exams" id="navExams" hidden>Exams</button>
+      <button type="button" data-view="progress">Progress</button>
+    </nav>
+
+    <div class="lx-prog" id="barProg" hidden><i></i></div>
+    <span class="lx-spacer"></span>
+
+    <button class="lx-rank" id="rankChip" type="button" hidden
+            aria-label="Your rank"></button>
+    <span class="lx-streak" title="Days in a row">
+      <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1.5s3.4 3 3.4 6.1A3.4 3.4 0 0 1 8 11a3.4 3.4 0 0 1-3.4-3.4C4.6 4.5 8 1.5 8 1.5z"/><path d="M8 14.5c2.6 0 4.6-1.6 4.6-3.9 0 0-1.3 1.4-2.8 1.4-1.9 0-1.6-2.4-1.6-2.4S6 11 6 12.6c0 .8.3 1.4.7 1.8-1.4-.5-2.3-1.6-2.3-3.1 0 0-1 1-1 2.1 0 .4.1.7.2 1z"/></svg>
+      <span id="streak">0</span>
+    </span>
+    <span class="lx-presence" id="presence" hidden></span>
+    <button class="lx-user" type="button" id="user">
+      <span class="av" aria-hidden="true"></span>
+      <span class="nm"></span>
+    </button>
+  </div>
+  <div class="rd-rail" id="rdRail" hidden><i></i></div>
+  <div class="fb" id="followBar" hidden></div>
+  <div class="lx-subbar" id="subbar">
+    <nav class="lx-subbar-in" id="subjectNav" aria-label="Subjects"></nav>
+  </div>
+</header>
+
+<main class="lx-wrap" id="wrap">
+    <section class="lx-view on" id="v-my"></section>
+    <section class="lx-view" id="v-explore"></section>
+    <section class="lx-view" id="v-progress"></section>
+    <section class="lx-view" id="v-grades"></section>
+  <section class="lx-view" id="v-exams"></section>
+  <section class="lx-view" id="v-subject"></section>
+  <section class="lx-view" id="v-course"></section>
+  <section class="lx-view" id="v-map"></section>
+  <section class="lx-view" id="v-unit"></section>
+  <section class="lx-view" id="v-set"></section>
+  <section class="lx-view" id="v-cards"></section>
+  <section class="lx-view" id="v-learn"></section>
+  <section class="lx-view" id="v-match"></section>
+  <section class="lx-view" id="v-cardmatch"></section>
+  <section class="lx-view" id="v-hunt"></section>
+  <section class="lx-view" id="v-hangman"></section>
+  <section class="lx-view" id="v-test"></section>
+  <section class="lx-view" id="v-practice"></section>
+  <section class="lx-view" id="v-result"></section>
+  <section class="lx-view" id="v-account"></section>
+  <section class="lx-view" id="v-mistakes"></section>
+  <section class="lx-view" id="v-read"></section>
+  <section class="lx-view" id="v-challenge"></section>
+  <section class="lx-view" id="v-lab"></section>
+  <section class="lx-view" id="v-classes"></section>
+<section class="lx-view" id="v-notes"></section>
+  <section class="lx-view" id="v-admin"></section>
+</main>
+
+<div class="lx-foot" id="foot" hidden>
+  <div class="lx-foot-in">
+    <span class="msg" id="footMsg"></span>
+    <span class="lx-spacer"></span>
+    <button class="lx-btn lg" id="footBtn" type="button">Check</button>
+  </div>
+</div>
+
+  <!-- Both are filled by annotate.js's taxonomy rather than written out here,
+       so adding a reading pass is one line in one file. -->
+  <div class="rd-tools" id="rdTools" role="toolbar" aria-label="Mark up this passage"></div>
+  <div class="rd-pop" id="rdPop" role="dialog" aria-label="Annotation"></div>
+
+<!-- The tutor. Bottom right, out of the way until it is wanted. -->
+<button class="tt-open" id="ttOpen" type="button" aria-label="Open the tutor" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 3 3 7.5l9 4.5 9-4.5z"/><path d="M6 10v5.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V10"/>
+  </svg>
+  <span>Tutor</span>
+</button>
+
+<section class="tt" id="tt" aria-label="Oplo Tutor" hidden>
+  <header class="tt-head">
+    <span class="tt-dot" id="ttDot" title="Not connected"></span>
+    <div class="tt-title">
+      <b>Tutor</b>
+      <span id="ttWhere">OEdu</span>
+    </div>
+    <button class="tt-icon" id="ttReset" type="button" title="Start again" aria-label="Start again">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 1 2.6 6.1"/><path d="M3.5 19v-5h5"/></svg>
+    </button>
+    <button class="tt-icon" id="ttClose" type="button" title="Close" aria-label="Close the tutor">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+
+  <div class="tt-ladder" id="ttLadder" hidden>
+    <span class="rungs" id="ttRungs"></span>
+    <span class="lbl" id="ttRungName">Ask back</span>
+  </div>
+
+  <div class="tt-log" id="ttLog"></div>
+
+  <div class="tt-ask">
+    <div class="tt-quick" id="ttQuick">
+      <button type="button" data-ask="think">Think</button>
+      <button type="button" data-ask="hint">Hint</button>
+      <button type="button" data-ask="explain">Explain</button>
+    </div>
+    <form class="tt-form" id="ttForm">
+      <textarea id="ttIn" rows="1" placeholder="What are you stuck on?" aria-label="Ask the tutor"></textarea>
+      <button class="tt-send" id="ttSend" type="submit" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- ⌘K. It goes to a place; it does not answer questions. -->
+<div class="cn-finderwrap" id="finder" hidden></div>
+
+<div class="lx-toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Experience and badges. Both sit outside the question card on purpose:
+     nothing in this app is allowed to move while a student is thinking. -->
+<div class="lx-xp" id="xpPop" aria-hidden="true"></div>
+<div class="lx-badge" id="badgePop" role="status" aria-live="polite"></div>
+
+<script src="api.js?v=b7f4a6ef"></script>
+<script src="data.js?v=f8b06e52"></script>
+<script src="school.js?v=89fed491"></script>
+<script src="store.js?v=b6d4cbcb"></script>
+<script src="game.js?v=f7c044f2"></script>
+<script src="unit5.js?v=57aa3e10"></script>
+<script src="unit6.js?v=479f6dc7"></script>
+<script src="unit7.js?v=667d9f98"></script>
+<script src="unit8.js?v=519824ea"></script>
+<script src="unit9.js?v=3ac90ac5"></script>
+<script src="biz4.js?v=eba1177e"></script>
+<script src="biz1.js?v=4a8c5d9e"></script>
+<script src="biz2.js?v=7f3b1a2c"></script>
+<script src="biz3.js?v=9e2d4b6a"></script>
+<script src="biz5.js?v=1c5a8f3d"></script>
+<script src="checks.js?v=d1b51c8a"></script>
+<script src="checks-bio1.js?v=b85c71d2"></script>
+<script src="bio1.js?v=dfb657a9"></script>
+<script src="concepts.js?v=44afc6fe"></script>
+<script src="ask.js?v=44fe1239"></script>
+<script src="games.js?v=946b37ab"></script>
+<script src="learn.js?v=2cbb2c2f"></script>
+<script src="sync.js?v=f87ba971"></script>
+<script src="annotate.js?v=b30c694c"></script>
+<script src="collab.js?v=45bea90d"></script>
+<script src="tutor.js?v=e36b13da"></script>
+<script src="kmap.js?v=c4438bc2"></script>
+<script src="home.js?v=f44db797"></script>
+<script src="progress.js"></script>
+<script src="oplo-menu.js?v=1f5af215"></script>
+<script src="oplo-search.js?v=b2f48c6b"></script>
+<script src="landing.js?v=c44e5019"></script>
+<script src="challenge.js?v=fa487b95"></script>
+<script src="challenges-media9.js?v=1a1aa6ab"></script>
+<script src="lab/core.js?v=f470d545"></script>
+<script src="exam.js?v=65b52660"></script>
+<script src="app.js?v=72c3449f"></script>
+</body>
+</html>

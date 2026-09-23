@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 500" width="700" height="500" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Linear and non-linear editing compared. In linear editing, shots are copied one after another from a source tape onto a master tape, so changing shot 2 means re-recording everything after it. In non-linear editing, clips sit on a timeline in software, and any clip can be moved to any point without touching the others or copying anything again.</title>
+<rect width="700" height="500" fill="#ffffff"/>
+<defs>
+  <marker id="k" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1d1d1f"/></marker>
+  <marker id="o" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#eb6834"/></marker>
+</defs>
+<text x="24" y="36" font-size="19" font-weight="700" fill="#1d1d1f">Linear editing</text>
+<text x="24" y="58" font-size="15" fill="#6e6e73">Tape to tape, one shot after another, in order</text>
+<rect x="24" y="84" width="150" height="92" rx="10" fill="#3a3a3c"/>
+<circle cx="66" cy="130" r="24" fill="#ececee"/><circle cx="132" cy="130" r="24" fill="#ececee"/>
+<text x="99" y="200" font-size="15" font-weight="600" fill="#1d1d1f" text-anchor="middle">Source deck</text>
+<line x1="186" y1="130" x2="262" y2="130" stroke="#1d1d1f" stroke-width="2.5" marker-end="url(#k)"/>
+<text x="224" y="118" font-size="14" fill="#6e6e73" text-anchor="middle">copy</text>
+<rect x="272" y="84" width="150" height="92" rx="10" fill="#3a3a3c"/>
+<circle cx="314" cy="130" r="24" fill="#ececee"/><circle cx="380" cy="130" r="24" fill="#ececee"/>
+<text x="347" y="200" font-size="15" font-weight="600" fill="#1d1d1f" text-anchor="middle">Record deck</text>
+<g font-size="16" font-weight="700" text-anchor="middle">
+  <rect x="448" y="104" width="66" height="52" fill="#2a78d6"/><text x="481" y="136" fill="#fff">1</text>
+  <rect x="516" y="104" width="66" height="52" fill="#d03b3b"/><text x="549" y="136" fill="#fff">2</text>
+  <rect x="584" y="104" width="66" height="52" fill="#8f8e86"/><text x="617" y="136" fill="#fff">3</text>
+</g>
+<text x="448" y="94" font-size="15" font-weight="600" fill="#1d1d1f">Master tape</text>
+<path d="M549 164 C 549 196, 617 196, 617 170" fill="none" stroke="#d03b3b" stroke-width="2.5" marker-end="url(#k)"/>
+<text x="448" y="214" font-size="14" fill="#a3262a">Change shot 2 and everything</text>
+<text x="448" y="232" font-size="14" fill="#a3262a">after it must be recorded again.</text>
+<line x1="24" y1="266" x2="676" y2="266" stroke="#e6e6e8" stroke-width="1.5"/>
+<text x="24" y="306" font-size="19" font-weight="700" fill="#1d1d1f">Non-linear editing</text>
+<text x="24" y="328" font-size="15" fill="#6e6e73">Clips on a timeline in software — any clip, any place, any order</text>
+<rect x="24" y="352" width="652" height="118" rx="12" fill="#f5f5f7"/>
+<g font-size="13" fill="#6e6e73">
+  <text x="44" y="378">V1</text><text x="44" y="440">A1</text>
+</g>
+<g font-size="16" font-weight="700" text-anchor="middle">
+  <rect x="80" y="362" width="120" height="40" rx="6" fill="#2a78d6"/><text x="140" y="388" fill="#fff">1</text>
+  <rect x="204" y="362" width="90" height="40" rx="6" fill="#8f8e86"/><text x="249" y="388" fill="#fff">3</text>
+  <rect x="440" y="362" width="150" height="40" rx="6" fill="#d03b3b"/><text x="515" y="388" fill="#fff">2</text>
+  <rect x="80" y="422" width="510" height="30" rx="6" fill="#86b6ef"/>
+</g>
+<text x="335" y="442" font-size="14" font-weight="600" fill="#1d1d1f" text-anchor="middle">sound</text>
+<path d="M440 382 C 380 382, 340 382, 304 382" fill="none" stroke="#eb6834" stroke-width="3" stroke-dasharray="7 5" marker-end="url(#o)"/>
+<text x="366" y="372" font-size="14" font-weight="600" fill="#a24f24" text-anchor="middle">drag</text>
+<text x="610" y="388" font-size="14" fill="#1d1d1f">Nothing else</text>
+<text x="610" y="406" font-size="14" fill="#1d1d1f">is copied.</text>
+</svg>

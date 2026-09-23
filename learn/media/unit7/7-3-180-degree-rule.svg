@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 540" width="700" height="540" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>The 180-degree rule seen from above. Two people, A and B, face each other across an imaginary line. Cameras 1, 2 and 3 all stay on one side of the line, and in all three shots A is on the left of the frame and B on the right. Camera 4 has crossed the line, and in its shot the two have swapped sides.</title>
+<rect width="700" height="540" fill="#ffffff"/>
+<text x="24" y="34" font-size="18" font-weight="600" fill="#1d1d1f">Seen from above</text>
+<rect x="24" y="252" width="436" height="264" rx="10" fill="#e7f5e7"/>
+<text x="40" y="504" font-size="15" font-weight="600" fill="#006300">Cameras stay on this side of the line</text>
+<line x1="24" y1="252" x2="460" y2="252" stroke="#1d1d1f" stroke-width="2.5" stroke-dasharray="10 7"/>
+<text x="452" y="292" font-size="15" font-weight="600" fill="#1d1d1f" text-anchor="end">The line (axis of action)</text>
+<g>
+  <circle cx="150" cy="252" r="24" fill="#2a78d6" stroke="#ffffff" stroke-width="3"/>
+  <text x="150" y="258" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">A</text>
+  <circle cx="340" cy="252" r="24" fill="#eb6834" stroke="#ffffff" stroke-width="3"/>
+  <text x="340" y="258" font-size="18" font-weight="700" fill="#1d1d1f" text-anchor="middle">B</text>
+  <path d="M178 252 l12 -7 v14 z" fill="#2a78d6"/>
+  <path d="M312 252 l-12 -7 v14 z" fill="#eb6834"/>
+</g>
+<g fill="#1d1d1f">
+  <path d="M245 432 L205 372 L285 372 Z" fill="#1d1d1f" opacity=".12"/>
+  <rect x="231" y="432" width="28" height="22" rx="4"/>
+  <text x="245" y="478" font-size="16" font-weight="700" text-anchor="middle">1</text>
+  <path d="M112 380 L178 300 L228 346 Z" fill="#1d1d1f" opacity=".12"/>
+  <rect x="98" y="376" width="26" height="20" rx="4" transform="rotate(-40 111 386)"/>
+  <text x="84" y="420" font-size="16" font-weight="700" text-anchor="middle">2</text>
+  <path d="M380 380 L262 346 L312 300 Z" fill="#1d1d1f" opacity=".12"/>
+  <rect x="368" y="376" width="26" height="20" rx="4" transform="rotate(40 381 386)"/>
+  <text x="410" y="420" font-size="16" font-weight="700" text-anchor="middle">3</text>
+</g>
+<g>
+  <path d="M245 86 L205 146 L285 146 Z" fill="#d03b3b" opacity=".16"/>
+  <rect x="231" y="64" width="28" height="22" rx="4" fill="#d03b3b"/>
+  <text x="275" y="82" font-size="16" font-weight="700" fill="#d03b3b">4</text>
+  <text x="245" y="118" font-size="14" font-weight="600" fill="#a3262a" text-anchor="middle">crossed</text>
+</g>
+<line x1="480" y1="20" x2="480" y2="520" stroke="#e6e6e8" stroke-width="1.5"/>
+<text x="496" y="34" font-size="17" font-weight="600" fill="#1d1d1f">What each camera sees</text>
+<g font-size="15" font-weight="600">
+  <text x="500" y="72" fill="#1d1d1f">Camera 1</text>
+  <rect x="500" y="80" width="176" height="72" rx="6" fill="#f5f5f7" stroke="#006300" stroke-width="2.5"/>
+  <circle cx="548" cy="116" r="17" fill="#2a78d6"/><text x="548" y="121" text-anchor="middle" fill="#fff">A</text>
+  <circle cx="628" cy="116" r="17" fill="#eb6834"/><text x="628" y="121" text-anchor="middle" fill="#1d1d1f">B</text>
+
+  <text x="500" y="186" fill="#1d1d1f">Camera 2</text>
+  <rect x="500" y="194" width="176" height="72" rx="6" fill="#f5f5f7" stroke="#006300" stroke-width="2.5"/>
+  <circle cx="530" cy="240" r="26" fill="#2a78d6" opacity=".55"/><text x="532" y="245" text-anchor="middle" fill="#fff">A</text>
+  <circle cx="628" cy="230" r="17" fill="#eb6834"/><text x="628" y="235" text-anchor="middle" fill="#1d1d1f">B</text>
+
+  <text x="500" y="300" fill="#1d1d1f">Camera 3</text>
+  <rect x="500" y="308" width="176" height="72" rx="6" fill="#f5f5f7" stroke="#006300" stroke-width="2.5"/>
+  <circle cx="548" cy="344" r="17" fill="#2a78d6"/><text x="548" y="349" text-anchor="middle" fill="#fff">A</text>
+  <circle cx="646" cy="354" r="26" fill="#eb6834" opacity=".55"/><text x="644" y="359" text-anchor="middle" fill="#1d1d1f">B</text>
+
+  <text x="500" y="414" fill="#d03b3b">Camera 4 · crossed the line</text>
+  <rect x="500" y="422" width="176" height="72" rx="6" fill="#fdecec" stroke="#d03b3b" stroke-width="2.5"/>
+  <circle cx="548" cy="458" r="17" fill="#eb6834"/><text x="548" y="463" text-anchor="middle" fill="#1d1d1f">B</text>
+  <circle cx="628" cy="458" r="17" fill="#2a78d6"/><text x="628" y="463" text-anchor="middle" fill="#fff">A</text>
+</g>
+<text x="500" y="516" font-size="14" fill="#a3262a">A and B jump sides</text>
+</svg>

@@ -1,0 +1,404 @@
+/* ==========================================================================
+   Challenges — see learn/challenge.js.
+
+   One problem at a time on a quiet page, the work the biggest thing on it.
+   Blue is what the student has chosen, green is right, amber is "look
+   again" — never red, because a wrong first try is how a challenge is meant
+   to go. Nothing flashes, nothing counts points, nothing celebrates: the
+   end of a path says what was shown, and that is enough.
+   ========================================================================== */
+
+.ch .sr, .ch.sr, .ch-place .sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.ch { max-width: 760px; margin: 0 auto; padding: 6px 0 40px; }
+
+/* ------------------------------------------------------------ Header */
+.ch-top { margin-bottom: 18px; }
+.ch-title { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+.ch-title b {
+  font-family: var(--font); font-size: 28px; font-weight: 600;
+  line-height: 1.12; letter-spacing: -.02em; color: var(--ink);
+}
+.ch-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--blue);
+}
+.ch-eyebrow svg { width: 14px; height: 14px; }
+.ch-prog { display: flex; gap: 4px; }
+.ch-prog i {
+  flex: 1; height: 5px; border-radius: 3px; background: var(--sunk);
+  transition: background .3s var(--ease), transform .3s var(--ease);
+}
+.ch-prog i.seen   { background: #b9d6f6; }
+.ch-prog i.first  { background: var(--green); }
+.ch-prog i.helped { background: #e0a43c; }
+.ch-prog i.cur    { background: var(--blue); transform: scaleY(1.35); }
+
+/* -------------------------------------------------------------- Card */
+.ch-card {
+  position: relative; padding: 34px 38px 26px; border-radius: 22px;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 40px rgba(0,0,0,.05), 0 0 0 1px var(--hair);
+}
+.ch-card.in { animation: ch-in .38s var(--ease); }
+@keyframes ch-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.ch-kind {
+  font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--ink-3);
+  letter-spacing: .005em; margin-bottom: 12px;
+}
+.ch-kind span { font-weight: 500; }
+.ch-prompt {
+  font-family: var(--font); font-size: 21px; line-height: 1.38; font-weight: 500;
+  letter-spacing: -.012em; color: var(--ink); outline: none; max-width: 40em;
+}
+.ch-prompt p + p { margin-top: 10px; }
+.ch-then p + p, .ch-after p + p { margin-top: 8px; }
+.ch-prompt em { font-style: normal; color: var(--blue); }
+.ch-prompt small { display: block; margin-top: 8px; font-size: 15px; font-weight: 400; color: var(--ink-2); letter-spacing: 0; }
+.ch-prompt blockquote {
+  margin-top: 14px; padding: 12px 16px; border-radius: 12px; background: var(--canvas);
+  font-family: var(--text); font-size: 16px; line-height: 1.5; font-weight: 400; color: var(--ink);
+}
+.ch-art { margin-top: 20px; }
+.ch-art svg { display: block; width: 100%; height: auto; }
+.ch-art .ch-cap { margin-top: 8px; font-size: 13px; color: var(--ink-3); }
+.ch-work { margin-top: 24px; }
+
+/* ----------------------------------------------------------- Buttons */
+.ch-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 44px; padding: 0 22px; border-radius: 100px;
+  background: var(--canvas); color: var(--ink);
+  font-family: var(--font); font-size: 15px; font-weight: 500; letter-spacing: -.01em; white-space: nowrap;
+  transition: background .15s var(--ease), color .15s var(--ease), opacity .15s var(--ease), transform .1s var(--ease);
+}
+.ch-btn svg { width: 17px; height: 17px; flex: none; }
+.ch-btn:hover:not(:disabled) { background: var(--sunk); }
+.ch-btn:active:not(:disabled) { transform: scale(.975); }
+.ch-btn:disabled { opacity: .35; cursor: default; }
+.ch-btn.primary { background: var(--blue); color: #fff; min-width: 132px; }
+.ch-btn.primary:hover:not(:disabled) { background: var(--blue-d); }
+.ch-btn.ghost { background: transparent; color: var(--ink-2); padding: 0 14px; }
+.ch-btn.ghost:hover:not(:disabled) { background: var(--canvas); color: var(--ink); }
+.ch-btn[hidden] { display: none; }
+
+.ch-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--hair);
+}
+.ch-foot-l { display: flex; gap: 2px; margin-left: -14px; }
+.ch-foot .ch-btn.primary { margin-left: auto; }
+
+/* ------------------------------------------------------ Hints, sheet */
+.ch-hints { display: grid; gap: 8px; margin-top: 18px; }
+.ch-hints:empty { display: none; }
+.ch-hintline {
+  display: block; padding: 11px 15px; border-radius: 12px;
+  background: #fff8e6; color: #5c4200; font-size: 14.5px; line-height: 1.5;
+}
+.ch-hintline b { font-weight: 600; }
+.ch-hintline.in { animation: ch-drop .3s var(--ease); }
+@keyframes ch-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.ch-sheet { display: none; }
+.ch-sheet.on {
+  display: block; margin-top: 18px; padding: 15px 18px; border-radius: 14px;
+  font-size: 15px; line-height: 1.55; color: var(--ink);
+}
+.ch-sheet.in { animation: ch-drop .3s var(--ease); }
+.ch-sheet b { font-weight: 600; }
+.ch-sheet.ok     { background: #e9f6ef; box-shadow: inset 0 0 0 1px rgba(18,145,90,.22); }
+.ch-sheet.ok > b:first-child { color: #0b6b41; }
+.ch-sheet.no     { background: #fff6e6; box-shadow: inset 0 0 0 1px rgba(178,106,0,.22); }
+.ch-sheet.no > b:first-child { color: var(--amber); }
+.ch-sheet.shown  { background: var(--canvas); }
+.ch-sheet.model  { background: #eef5fd; box-shadow: inset 0 0 0 1px rgba(0,113,227,.18); }
+.ch-why { margin-top: 6px; color: var(--ink); }
+/* A worked reason, a sentence to a line. */
+.ch-why .ch-ln { display: block; }
+.ch-why .ch-ln + .ch-ln { margin-top: 5px; }
+.ch-why em { font-style: italic; }
+.ch-lbl { display: block; font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 4px; }
+.ch-rateq { margin-top: 10px; font-weight: 600; }
+.ch-rate { display: flex; gap: 8px; margin-top: 10px; }
+.ch-rate .ch-btn { height: 38px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); }
+.ch-rate .ch-btn:hover { background: var(--paper); box-shadow: inset 0 0 0 1px var(--ink-3); }
+.ch-selfnote { margin-bottom: 8px; color: var(--ink-2); font-size: 14px; }
+
+/* ---------------------------------------------------- Choice & multi */
+.ch-options { display: grid; gap: 9px; }
+.ch-opt {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  padding: 14px 16px; border-radius: 14px; background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--hair);
+  font-size: 16px; line-height: 1.42; color: var(--ink);
+  transition: box-shadow .15s var(--ease), background .15s var(--ease), color .15s var(--ease), transform .1s var(--ease);
+}
+.ch-opt:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--rule); background: #fcfcfd; }
+.ch-opt:active:not(:disabled) { transform: scale(.995); }
+.ch-opt:disabled { cursor: default; }
+.ch-mark, .ch-box {
+  flex: none; width: 20px; height: 20px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--rule); background: var(--paper);
+  transition: box-shadow .15s var(--ease), background .15s var(--ease);
+}
+.ch-box { border-radius: 6px; }
+.ch-opt.on { box-shadow: inset 0 0 0 2px var(--blue); background: #f5f9ff; }
+.ch-opt.on .ch-mark { box-shadow: inset 0 0 0 6px var(--blue); }
+.ch-opt.on .ch-box  { background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 14px no-repeat; box-shadow: none; }
+.ch-opt.yes { box-shadow: inset 0 0 0 2px var(--green); background: #effaf4; color: #0b5b38; }
+.ch-opt.yes .ch-mark { box-shadow: inset 0 0 0 6px var(--green); }
+.ch-opt.yes .ch-box  { background-color: var(--green); box-shadow: none; }
+.ch-opt.no {
+  box-shadow: inset 0 0 0 1.5px rgba(178,106,0,.4); background: #fffaf0; color: var(--ink-2);
+}
+.ch-opt.no:disabled { opacity: .7; }
+.ch-opt.no .ch-mark, .ch-opt.no .ch-box { box-shadow: inset 0 0 0 1.5px rgba(178,106,0,.5); }
+
+/* ---------------------------------------------- Sort, slots, matching */
+.ch-cardlet {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px;
+  border-radius: 11px; background: var(--paper); color: var(--ink);
+  font-size: 14.5px; line-height: 1.3; text-align: left;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 0 0 1px var(--rule);
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  transition: box-shadow .15s var(--ease), transform .12s var(--ease), background .15s var(--ease), opacity .15s var(--ease);
+}
+.ch-cardlet:hover:not(:disabled) { box-shadow: 0 3px 10px rgba(0,0,0,.08), 0 0 0 1px var(--ink-3); transform: translateY(-1px); }
+.ch-cardlet.sel { box-shadow: 0 0 0 2px var(--blue), 0 6px 16px rgba(0,113,227,.18); background: #f5f9ff; transform: translateY(-2px); }
+.ch-cardlet.no  { box-shadow: 0 0 0 1.5px rgba(178,106,0,.6); background: #fff7e8; }
+.ch-cardlet.ok  { box-shadow: 0 0 0 1.5px rgba(18,145,90,.45); background: #effaf4; color: #0b5b38; cursor: default; }
+.ch-cardlet:disabled { cursor: default; }
+.ch-cardlet.ch-lifted { opacity: .35; }
+.ch-ghost {
+  position: fixed; z-index: 1000; pointer-events: none; margin: 0;
+  box-shadow: 0 14px 34px rgba(0,0,0,.18), 0 0 0 1.5px var(--blue); transform: rotate(-1.5deg) scale(1.03);
+}
+
+.ch-tray {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; min-height: 58px;
+  padding: 10px; border-radius: 14px; background: var(--canvas);
+  transition: background .15s var(--ease), box-shadow .15s var(--ease);
+}
+.ch-tray.empty { min-height: 0; padding: 0; background: transparent; }
+.ch-tray.empty::after { content: none; }
+.ch-place.picking .ch-tray:not(.empty) { box-shadow: inset 0 0 0 1.5px var(--hair); }
+.ch-tray.ch-over { box-shadow: inset 0 0 0 2px var(--blue); }
+
+.ch-target { position: relative; transition: box-shadow .15s var(--ease), background .15s var(--ease); }
+.ch-holder:empty { display: none; }
+.ch-target-head {
+  display: block; width: 100%; text-align: left;
+  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--ink-2);
+}
+.ch-holder { display: flex; flex-wrap: wrap; gap: 7px; }
+.ch-place.picking .ch-target { cursor: pointer; }
+.ch-place.picking .ch-target-head { color: var(--blue); }
+
+/* Bins */
+.ch-bins { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: 12px; }
+.ch-bins .ch-target {
+  min-height: 150px; padding: 12px; border-radius: 16px;
+  box-shadow: inset 0 0 0 1.5px var(--hair); background: var(--paper);
+}
+.ch-bins .ch-target-head { padding: 2px 2px 10px; font-size: 14px; color: var(--ink); }
+.ch-bins .ch-holder { flex-direction: column; align-items: stretch; }
+.ch-bins .ch-cardlet { width: 100%; }
+.ch-place.picking .ch-bins .ch-target { box-shadow: inset 0 0 0 1.5px rgba(0,113,227,.35); background: #fafcff; }
+.ch-bins .ch-target.ch-over, .ch-place.picking .ch-bins .ch-target:hover { box-shadow: inset 0 0 0 2px var(--blue); background: #f3f8ff; }
+
+/* Slots: an empty place to press until a card fills it */
+.ch-slot {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 42px;
+  border-radius: 11px; font-size: 13px; color: var(--ink-3);
+  background: rgba(255,255,255,.7);
+  box-shadow: inset 0 0 0 1.5px var(--rule);
+  outline-offset: 2px;
+  background-image: repeating-linear-gradient(135deg, transparent 0 7px, rgba(0,0,0,.018) 7px 14px);
+  transition: box-shadow .15s var(--ease), background-color .15s var(--ease), color .15s var(--ease);
+}
+.ch-slot[hidden] { display: none; }
+.ch-slot:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.ch-place.picking .ch-slot { box-shadow: inset 0 0 0 1.5px rgba(0,113,227,.6); color: var(--blue); background-color: rgba(243,248,255,.9); }
+.ch-place.picking .ch-slot:hover, .ch-target.ch-over .ch-slot { box-shadow: inset 0 0 0 2px var(--blue); background-color: #eaf3ff; }
+.ch-target.ch-over.filled .ch-cardlet { box-shadow: 0 0 0 2px var(--blue); }
+.ch-target-label { font-family: var(--font); font-weight: 600; color: var(--ink-2); }
+
+/* Rows: match each label to a card */
+.ch-rows { display: grid; gap: 8px; }
+.ch-target.row {
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: 16px;
+  padding: 8px 8px 8px 16px; border-radius: 14px; box-shadow: inset 0 0 0 1.5px var(--hair);
+}
+.ch-target.row .ch-target-label { font-family: var(--text); font-size: 15px; font-weight: 400; line-height: 1.45; color: var(--ink); }
+.ch-target.row .ch-cardlet { width: 100%; }
+.ch-place.picking .ch-target.row:not(.filled) { box-shadow: inset 0 0 0 1.5px rgba(0,113,227,.28); }
+.ch-target.row.ch-over { box-shadow: inset 0 0 0 2px var(--blue); background: #f7faff; }
+
+/* A title card, drawn as one */
+.ch-tc {
+  display: grid; place-items: center; gap: 2px; min-height: 58px; padding: 10px 14px; border-radius: 8px;
+  background: #16161a; color: #f5f1e6; text-align: center;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 13px; letter-spacing: .14em; text-transform: uppercase; line-height: 1.5;
+}
+.ch-tc small { font-size: 9.5px; letter-spacing: .2em; color: #a9a49a; }
+
+/* Board: slots over a diagram */
+.ch-board { position: relative; width: 100%; border-radius: 16px; background: var(--canvas); }
+.ch-board > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ch-target.on-board {
+  position: absolute; transform: translate(-50%, -50%); width: 22%;
+  display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+}
+.ch-target.on-board .ch-target-label { text-align: center; font-size: 11.5px; line-height: 1.2; color: var(--ink-2); }
+.ch-target.on-board .ch-slot { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.ch-target.on-board .ch-cardlet { width: 100%; justify-content: center; text-align: center; font-size: 13.5px; }
+
+/* The shapes a board is drawn with, painted from the tokens so a board
+   follows the page's look (see learn/obsidian.css). */
+.ch-board .chb-card   { fill: var(--paper); stroke: var(--rule); }
+.ch-board .chb-well   { fill: var(--canvas); stroke: var(--rule); }
+.ch-board .chb-soft   { stroke: var(--hair); }
+.ch-board .chb-line   { stroke: var(--rule); }
+.ch-board .chb-accent { stroke: var(--blue); }
+.ch-board .chb-stop   { stop-color: var(--blue); }
+.ch-board .chb-dot    { fill: var(--paper); stroke: var(--blue); }
+.ch-board .chb-ink    { fill: var(--ink); }
+.ch-board .chb-faint  { fill: var(--ink-3); }
+
+/* ------------------------------------------------------------- Order */
+.ch-order { list-style: none; display: grid; gap: 8px; margin: 0; padding: 0; }
+.ch-step {
+  display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 8px;
+  border-radius: 14px; background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--hair);
+  transition: box-shadow .15s var(--ease), background .15s var(--ease), transform .15s var(--ease);
+}
+.ch-step.dragging { box-shadow: 0 10px 28px rgba(0,0,0,.12), inset 0 0 0 2px var(--blue); background: #f9fbff; transform: scale(1.01); z-index: 1; position: relative; }
+.ch-step.no { box-shadow: inset 0 0 0 1.5px rgba(178,106,0,.55); background: #fffaf0; }
+.ch-grip {
+  display: grid; place-items: center; width: 24px; height: 34px; color: var(--ink-3);
+  cursor: grab; touch-action: none; flex: none;
+}
+.ch-grip svg { width: 18px; height: 18px; stroke-width: 3; }
+.ch-n {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; flex: none;
+  background: var(--canvas); font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--ink-2);
+}
+.ch-item { flex: 1; font-size: 15.5px; line-height: 1.4; color: var(--ink); }
+.ch-mv {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex: none;
+  color: var(--ink-2); transition: background .15s var(--ease), color .15s var(--ease);
+}
+.ch-mv svg { width: 18px; height: 18px; }
+.ch-mv:hover:not(:disabled) { background: var(--canvas); color: var(--ink); }
+.ch-mv:disabled { opacity: .25; cursor: default; }
+.ch-order.done .ch-step { box-shadow: inset 0 0 0 1.5px rgba(18,145,90,.35); background: #f3fbf7; }
+.ch-order.done .ch-n { background: #dff3e8; color: #0b6b41; }
+.ch-order.done .ch-grip { visibility: hidden; }
+
+/* -------------------------------------------------------------- Spot */
+.ch-spot {
+  padding: 18px 20px; border-radius: 14px; background: var(--canvas);
+  font-family: var(--text); font-size: 17px; line-height: 1.9; color: var(--ink);
+}
+.ch-seg {
+  display: inline; padding: 2px 3px; margin: 0 -3px; border-radius: 5px; text-align: left;
+  font: inherit; line-height: inherit; color: inherit;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+  transition: background .15s var(--ease), box-shadow .15s var(--ease);
+}
+.ch-seg:hover:not(:disabled) { background: rgba(0,113,227,.08); }
+.ch-seg.on  { background: rgba(0,113,227,.14); box-shadow: inset 0 -2px 0 var(--blue); }
+.ch-seg.yes { background: rgba(18,145,90,.14); box-shadow: inset 0 -2px 0 var(--green); }
+.ch-seg.no  { background: rgba(178,106,0,.12); box-shadow: inset 0 -2px 0 var(--amber); }
+.ch-seg:disabled { cursor: default; }
+
+/* ------------------------------------------------------------ Number */
+.ch-num {
+  display: inline-flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px;
+  border-radius: 14px; box-shadow: inset 0 0 0 1.5px var(--rule); background: var(--paper);
+  transition: box-shadow .15s var(--ease);
+}
+.ch-num:focus-within { box-shadow: inset 0 0 0 2px var(--blue); }
+.ch-num input {
+  width: 140px; height: 44px; padding: 0 12px; border: 0; outline: 0; background: transparent;
+  font-family: var(--font); font-size: 24px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+}
+.ch-unit { font-size: 16px; color: var(--ink-2); }
+.ch-num.no  { box-shadow: inset 0 0 0 2px rgba(178,106,0,.55); }
+.ch-num.yes { box-shadow: inset 0 0 0 2px var(--green); background: #effaf4; }
+
+/* ----------------------------------------------------------- Explain */
+.ch-ta {
+  display: block; width: 100%; resize: vertical; min-height: 116px; padding: 14px 16px;
+  border: 0; border-radius: 14px; outline: 0; background: var(--canvas);
+  font-family: var(--text); font-size: 16px; line-height: 1.55; color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow .15s var(--ease), background .15s var(--ease);
+}
+.ch-ta:focus { background: var(--paper); box-shadow: inset 0 0 0 2px var(--blue); }
+.ch-ta[readonly] { background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--hair); }
+
+/* ---------------------------------------------------------- The end */
+.ch-end { text-align: center; padding: 44px 44px 34px; }
+.ch-endmark svg { width: 52px; height: 52px; fill: none; stroke: var(--green); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.ch-endmark circle { stroke: #cfeadb; }
+.ch-end.in .ch-endmark path { stroke-dasharray: 32; stroke-dashoffset: 32; animation: ch-tick .5s .15s var(--ease) forwards; }
+@keyframes ch-tick { to { stroke-dashoffset: 0; } }
+.ch-endh { margin-top: 14px; font-family: var(--font); font-size: 30px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
+.ch-endsum { margin-top: 6px; font-size: 16px; color: var(--ink-2); }
+.ch-endcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 26px; text-align: left; }
+.ch-endcol { padding: 16px 18px; border-radius: 16px; background: var(--canvas); }
+.ch-endcol h3 { font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 10px; }
+.ch-endcol ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ch-endcol li { display: flex; gap: 9px; font-size: 14.5px; line-height: 1.4; color: var(--ink); }
+.ch-endcol li svg { width: 17px; height: 17px; flex: none; margin-top: 1px; }
+.ch-endcol.good li svg { color: var(--green); }
+.ch-endcol.again li svg { color: var(--amber); }
+.ch-endacts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 28px; }
+.ch-none { padding: 40px; border-radius: 20px; background: var(--paper); text-align: center; color: var(--ink-2); }
+.ch-none b { display: block; color: var(--ink); font-size: 17px; margin-bottom: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-card.in, .ch-sheet.in, .ch-hintline.in { animation: none; }
+  .ch-end.in .ch-endmark path { animation: none; stroke-dashoffset: 0; }
+}
+
+/* --------------------------------------------------- Entry points
+   On a unit page and at the foot of a lesson. */
+.chx-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.chx {
+  display: flex; flex-direction: column; gap: 6px; padding: 15px 16px 14px; border-radius: 16px;
+  background: var(--paper); text-align: left; box-shadow: 0 0 0 1px var(--hair);
+  transition: box-shadow .15s var(--ease), transform .12s var(--ease);
+}
+.chx:hover { box-shadow: 0 6px 20px rgba(0,0,0,.07), 0 0 0 1px var(--rule); transform: translateY(-1px); }
+.chx-n { font-family: var(--font); font-size: 11.5px; font-weight: 600; color: var(--ink-3); }
+.chx-t { font-family: var(--font); font-size: 15.5px; font-weight: 600; line-height: 1.3; letter-spacing: -.01em; color: var(--ink); }
+.chx-bar { display: flex; gap: 3px; margin-top: 6px; }
+.chx-bar i { flex: 1; height: 4px; border-radius: 2px; background: var(--sunk); }
+.chx-bar i.first { background: var(--green); }
+.chx-bar i.helped { background: #e0a43c; }
+.chx-s { font-size: 12.5px; color: var(--ink-2); }
+.chx.review { background: linear-gradient(135deg, #f4f8ff, #fff 60%); box-shadow: 0 0 0 1px rgba(0,113,227,.2); }
+.chx.review .chx-n { color: var(--blue); }
+
+.chx-cta {
+  display: flex; align-items: center; gap: 18px; margin-top: 18px; padding: 18px 20px;
+  border-radius: 18px; background: linear-gradient(135deg, #f2f7ff, #fbfdff);
+  box-shadow: 0 0 0 1px rgba(0,113,227,.18); text-align: left; width: 100%;
+  transition: box-shadow .15s var(--ease), transform .12s var(--ease);
+}
+.chx-cta:hover { box-shadow: 0 8px 24px rgba(0,113,227,.12), 0 0 0 1px rgba(0,113,227,.35); transform: translateY(-1px); }
+.chx-cta .chx-ico {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; flex: none;
+  background: var(--blue); color: #fff;
+}
+.chx-cta .chx-ico svg { width: 22px; height: 22px; }
+.chx-cta .chx-txt { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.chx-cta b { font-family: var(--font); font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.chx-cta span { font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+.chx-cta .chx-go { color: var(--blue); flex: none; }
+.chx-cta .chx-go svg { width: 20px; height: 20px; }

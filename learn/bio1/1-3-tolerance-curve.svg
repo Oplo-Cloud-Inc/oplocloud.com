@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 472" width="700" height="472" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>A tolerance curve: the number of individuals of a species plotted against temperature. The curve is a hump. In the middle is the optimal range, where most individuals live. On each side is a zone of stress, where a few survive but grow slowly and rarely breed. Beyond that, at each end, is a zone of intolerance where none survive at all. The two outer edges are the limits of the species' tolerance range.</title>
+<rect width="700" height="472" fill="#ffffff"/>
+<text x="22" y="30" font-size="17" fill="#1d1d1f" font-weight="600">Every species has a range it can stand, and a narrower one it does well in</text>
+<rect x="92.0" y="78" width="88.9" height="250" fill="#f2dcd4"/>
+<rect x="180.9" y="78" width="88.9" height="250" fill="#f6e7cf"/>
+<rect x="269.8" y="78" width="152.4" height="250" fill="#dcecd9"/>
+<rect x="422.2" y="78" width="88.9" height="250" fill="#f6e7cf"/>
+<rect x="511.1" y="78" width="88.9" height="250" fill="#f2dcd4"/>
+<text x="136.45" y="92" font-size="13" fill="#5f5245" font-weight="600" text-anchor="middle">Zone of</text>
+<text x="136.45" y="108" font-size="13" fill="#5f5245" font-weight="600" text-anchor="middle">intolerance</text>
+<text x="225.34999999999997" y="92" font-size="13" fill="#5f5245" font-weight="600" text-anchor="middle">Zone of</text>
+<text x="225.34999999999997" y="108" font-size="13" fill="#5f5245" font-weight="600" text-anchor="middle">stress</text>
+<text x="346.0" y="100" font-size="13" fill="#2c5e3d" font-weight="600" text-anchor="middle">Optimal range</text>
+<text x="466.65" y="92" font-size="13" fill="#5f5245" font-weight="600" text-anchor="middle">Zone of</text>
+<text x="466.65" y="108" font-size="13" fill="#5f5245" font-weight="600" text-anchor="middle">stress</text>
+<text x="555.55" y="92" font-size="13" fill="#5f5245" font-weight="600" text-anchor="middle">Zone of</text>
+<text x="555.55" y="108" font-size="13" fill="#5f5245" font-weight="600" text-anchor="middle">intolerance</text>
+<path d="M 92.0 328.0 C 104.7 328.0 151.3 329.2 168.2 328.0 C 185.1 326.8 185.1 324.5 193.6 321.1 C 202.1 317.6 210.5 314.5 219.0 307.2 C 227.5 299.8 235.9 291.3 244.4 277.1 C 252.9 262.8 259.2 243.1 269.8 221.5 C 280.4 199.9 295.2 165.2 307.9 147.4 C 320.6 129.7 333.3 115.0 346.0 115.0 C 358.7 115.0 371.4 129.7 384.1 147.4 C 396.8 165.2 411.6 199.9 422.2 221.5 C 432.8 243.1 439.1 262.8 447.6 277.1 C 456.1 291.3 464.5 299.8 473.0 307.2 C 481.5 314.5 489.9 317.6 498.4 321.1 C 506.9 324.5 506.9 326.8 523.8 328.0 C 540.7 329.2 587.3 328.0 600.0 328.0" fill="none" stroke="#12915a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="92" y1="328" x2="600" y2="328" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="92" y1="78" x2="92" y2="328" stroke="#1d1d1f" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="92.0" y1="328" x2="92.0" y2="333" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="92.0" y="348" font-size="13.5" fill="#6e6e73" text-anchor="middle">0°C</text>
+<line x1="219.0" y1="328" x2="219.0" y2="333" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="219.0" y="348" font-size="13.5" fill="#6e6e73" text-anchor="middle">10°C</text>
+<line x1="346.0" y1="328" x2="346.0" y2="333" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="346.0" y="348" font-size="13.5" fill="#6e6e73" text-anchor="middle">20°C</text>
+<line x1="473.0" y1="328" x2="473.0" y2="333" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="473.0" y="348" font-size="13.5" fill="#6e6e73" text-anchor="middle">30°C</text>
+<line x1="600.0" y1="328" x2="600.0" y2="333" stroke="#1d1d1f" stroke-width="1.2" stroke-linecap="round"/>
+<text x="600.0" y="348" font-size="13.5" fill="#6e6e73" text-anchor="middle">40°C</text>
+<text x="346.0" y="368" font-size="14.5" fill="#6e6e73" text-anchor="middle">Temperature</text>
+<text transform="rotate(-90 62 203.0)" x="62" y="203.0" font-size="14.5" fill="#6e6e73" text-anchor="middle">Number of individuals that survive</text>
+<line x1="180.9" y1="78" x2="180.9" y2="328" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="6 5"/>
+<text x="180.9" y="70" font-size="13" fill="#1d1d1f" font-weight="600" text-anchor="middle">lower limit</text>
+<line x1="511.1" y1="78" x2="511.1" y2="328" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="6 5"/>
+<text x="511.1" y="70" font-size="13" fill="#1d1d1f" font-weight="600" text-anchor="middle">upper limit</text>
+<line x1="180.89999999999998" y1="378" x2="511.09999999999997" y2="378" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="180.89999999999998" y1="372" x2="180.89999999999998" y2="384" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round"/>
+<line x1="511.09999999999997" y1="372" x2="511.09999999999997" y2="384" stroke="#1d1d1f" stroke-width="1.6" stroke-linecap="round"/>
+<text x="346.0" y="368" font-size="13.5" fill="#1d1d1f" font-weight="600" text-anchor="middle">Tolerance range — where it can survive at all</text>
+<text x="22" y="436" font-size="14.5" fill="#1d1d1f">A species does not stop at a wall. It thins out. That is why warming of two degrees can empty a place of a species</text>
+<text x="22" y="424" font-size="14.5" fill="#1d1d1f">that is still, on paper, inside its limits — surviving is not the same as breeding.</text>
+</svg>

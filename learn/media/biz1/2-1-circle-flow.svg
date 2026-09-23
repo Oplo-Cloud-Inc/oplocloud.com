@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 400" font-family="sans-serif" font-size="13">
+  <rect width="700" height="400" fill="#fafaf8"/>
+  <circle cx="350" cy="200" r="110" fill="none" stroke="#ccc" stroke-width="2"/>
+  <path d="M350 90 A110 110 0 0 1 460 200" fill="none" stroke="#e8a317" stroke-width="4" marker-end="url(#arr1)"/>
+  <path d="M460 200 A110 110 0 0 1 350 310" fill="none" stroke="#2a9d8f" stroke-width="4" marker-end="url(#arr1)"/>
+  <path d="M350 310 A110 110 0 0 1 240 200" fill="none" stroke="#e76f51" stroke-width="4" marker-end="url(#arr1)"/>
+  <path d="M240 200 A110 110 0 0 1 350 90" fill="none" stroke="#264653" stroke-width="4" marker-end="url(#arr1)"/>
+  <defs><marker id="arr1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0 0 L8 3 L0 6 Z" fill="#888"/></marker></defs>
+  <text x="350" y="68" text-anchor="middle" font-weight="bold" font-size="15" fill="#264653">Households</text>
+  <text x="350" y="58" text-anchor="middle" font-size="11" fill="#666">buy goods &amp; services</text>
+  <text x="500" y="205" text-anchor="middle" font-weight="bold" font-size="15" fill="#e8a317">Firms</text>
+  <text x="500" y="218" text-anchor="middle" font-size="11" fill="#666">produce &amp; hire</text>
+  <text x="350" y="342" text-anchor="middle" font-weight="bold" font-size="15" fill="#e76f51">Factor Market</text>
+  <text x="350" y="356" text-anchor="middle" font-size="11" fill="#666">labour, land, capital</text>
+  <text x="200" y="205" text-anchor="middle" font-weight="bold" font-size="15" fill="#2a9d8f">Product Market</text>
+  <text x="200" y="218" text-anchor="middle" font-size="11" fill="#666">goods &amp; services</text>
+  <text x="350" y="195" text-anchor="middle" font-size="11" fill="#888" font-style="italic">money flows</text>
+  <text x="350" y="210" text-anchor="middle" font-size="11" fill="#888" font-style="italic">inner circle</text>
+  <text x="350" y="200" text-anchor="middle" font-size="24">&#x21BB;</text>
+</svg>
