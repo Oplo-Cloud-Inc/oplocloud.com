@@ -1132,7 +1132,7 @@ window.OPLO_LAB = (function () {
   function unitSeq(u) {
     var seq = [];
     u.lessons.forEach(function (l) {
-      seq.push({ kind: "lesson", k: l.k, title: l.title, label: "Lesson " + l.k, done: lessonDone(l) });
+      seq.push({ kind: "lesson", k: l.k, title: l.title, label: u.n + "." + l.k, done: lessonDone(l) });
       u.quizzes.filter(function (q) { return q.after === l.k; }).forEach(function (q) {
         seq.push({ kind: "quiz", k: q.k, title: q.title, label: q.title, done: !!REC.tests[q.unit + ":q" + q.k] });
       });
@@ -1189,7 +1189,8 @@ window.OPLO_LAB = (function () {
 
     var list = el("div", "lb-side-list");
     var none = el("p", "lb-side-none");
-    function section(key, name, items) {
+    function section(key, name, items, parent = null) {
+      var target = parent || list;
       var sec = el("section", "lb-sec" + (SIDE.folded[key] ? " folded" : ""));
       var h = button("lb-sec-h", "<span>" + name + "</span>" + svg(ICON.down));
       h.setAttribute("aria-expanded", String(!SIDE.folded[key]));
@@ -1201,28 +1202,38 @@ window.OPLO_LAB = (function () {
       sec.appendChild(h);
       var ul = el("ul", "lb-rows");
       items.forEach(function (it) {
-        var li = el("li");
-        var cur = isHere(it, here);
-        var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : ICON.doc;
-        var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
-        var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
-          '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
-          '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.k + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end);
-        if (cur) b.setAttribute("aria-current", "page");
-        b.title = (it.kind === "lesson" ? it.label + ": " : "") + stripMath(it.title);
-        b.addEventListener("click", function () {
-          SIDE.scroll = list.scrollTop;
-          shell.classList.remove("peek");
-          if (!cur) goItem(ctx, it);
-        });
-        li.dataset.text = (it.label + " " + stripMath(it.title)).toLowerCase();
-        li.appendChild(b);
-        ul.appendChild(li);
+        if (it.children) {
+          section(it.key, it.title, it.children, ul);
+        } else {
+          var li = el("li");
+          var cur = isHere(it, here);
+          var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : ICON.doc;
+          var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
+          var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
+            '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
+            '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.label + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end);
+          if (cur) b.setAttribute("aria-current", "page");
+          b.title = (it.kind === "lesson" ? it.label + ": " : "") + stripMath(it.title);
+          b.addEventListener("click", function () {
+            SIDE.scroll = list.scrollTop;
+            shell.classList.remove("peek");
+            if (!cur) goItem(ctx, it);
+          });
+          li.dataset.text = (it.label + " " + stripMath(it.title)).toLowerCase();
+          li.appendChild(b);
+          ul.appendChild(li);
+        }
       });
       sec.appendChild(ul);
-      list.appendChild(sec);
+      target.appendChild(sec);
     }
-    section("path", "Lessons", unitSeq(u));
+    section("course", ctx.courseTitle, [
+      {
+        key: "unit-" + u.n,
+        title: "Unit " + u.n,
+        children: unitSeq(u)
+      }
+    ]);
     section("skills", "Practice", skillSeq(u));
     list.appendChild(none);
     side.appendChild(list);
