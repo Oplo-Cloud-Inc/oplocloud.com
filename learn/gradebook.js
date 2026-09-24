@@ -1718,6 +1718,8 @@ window.OPLO_GRADEBOOK = (function () {
       row2.appendChild(rise(heatmap()));
       row2.appendChild(rise(gradeMix()));
       wrap.appendChild(row2);
+    } else if (G.record && G.record.gpa && G.record.gpa.distribution) {
+      wrap.appendChild(rise(recordMix()));
     }
     if (G.years.length) wrap.appendChild(rise(journey()));
     G.body.appendChild(wrap);
@@ -1923,8 +1925,11 @@ window.OPLO_GRADEBOOK = (function () {
     }
     if (G.record && G.record.track) {
       var r = G.record;
-      card("info", ICON.cap, Math.round(r.totals.earned / r.track.total * 100) + "% of the way to your diploma",
-        num(r.totals.earned) + " of " + num(r.track.total) + " credits earned; " + num(r.totals.remaining) + " to go.",
+      var extra = Math.round((r.totals.earned - r.totals.applied) * 1000) / 1000;
+      card("info", ICON.cap, Math.round(r.totals.applied / r.track.total * 100) + "% of the way to your diploma",
+        num(r.totals.earned) + " credits earned; " + num(r.totals.remaining) + " still to go." +
+        (extra > 0 ? " " + num(extra) + (extra === 1 ? " credit is" : " credits are") + " extra in areas you've " +
+                     "already finished, so " + (extra === 1 ? "it doesn't" : "they don't") + " count toward the others." : ""),
         { label: "See the plan", go: function () { setTab("grad"); } });
     }
     if (!n) sec.appendChild(el("p", "sgb-muted", "Insights appear as marks come in: trends, what's missing, and what's worth your next hour."));
@@ -2038,6 +2043,30 @@ window.OPLO_GRADEBOOK = (function () {
     });
     sec.appendChild(list);
     sec.appendChild(el("p", "sgb-muted", "Missing work counts in F, because it counts as zero."));
+    return sec;
+  }
+
+  /* ---- The record's grades by letter, for a student with no live classes
+     yet: every lettered course on the transcript, as the server counted
+     them for the GPA. A pass carries credit and no letter, so it is not here. */
+  function recordMix() {
+    var gp = G.record.gpa;
+    var sec = section("Your record by letter", (gp.courses || 0) + " lettered courses · " + esc(gp.scale || ""), "sgb-card");
+    var dist = gp.distribution || {}, cred = gp.distributionCredits || {};
+    var letters = ["A", "B", "C", "D", "F"];
+    var total = letters.reduce(function (a, l) { return a + (dist[l] || 0); }, 0);
+    var max = Math.max.apply(null, letters.map(function (l) { return dist[l] || 0; }));
+    var list = el("div", "sgb-mix");
+    letters.forEach(function (l) {
+      var n = dist[l] || 0;
+      var row = el("div", "mx b-" + l.toLowerCase());
+      row.innerHTML = '<span class="l"><b>' + l + "</b><span>" + num(cred[l] || 0) + ' cr</span></span><span class="trk"><i style="width:' +
+        (max ? n / max * 100 : 0) + '%"></i></span><span class="v"><b>' + n + "</b> · " + (total ? Math.round(n / total * 100) : 0) + "%</span>";
+      list.appendChild(row);
+    });
+    sec.appendChild(list);
+    sec.appendChild(el("p", "sgb-muted", "GPA " + (gp.value != null ? Number(gp.value).toFixed(2) : "—") + " over " +
+      num(gp.credits || 0) + " lettered credits" + (gp.matchesIssued ? ", the same as your school issued." : ".")));
     return sec;
   }
 
