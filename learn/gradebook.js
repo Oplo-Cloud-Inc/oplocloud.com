@@ -28,9 +28,13 @@ window.OPLO_GRADEBOOK = (function () {
   var PREF_KEY = "oplo.gradebook.v1";
   var NS = "http://www.w3.org/2000/svg";
   var DAY = 86400000;
+  var CALM = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
 
   var TABS = [
-    { key: "book", label: "Gradebook" },
+    { key: "overview", label: "Overview" },
+    { key: "book", label: "Classes" },
+    { key: "goals", label: "Goals" },
     { key: "report", label: "Report card" },
     { key: "standards", label: "Standards" },
     { key: "grad", label: "Graduation" }
@@ -53,7 +57,8 @@ window.OPLO_GRADEBOOK = (function () {
     [["W"], "Turn the what-if calculator on or off"],
     [["E"], "Export this class as a spreadsheet"],
     [["P"], "Print the report card"],
-    [["1", "2", "3", "4"], "Gradebook, Report card, Standards, Graduation"],
+    [[MAC ? "⌘" : "Ctrl", "K"], "Search or jump to anything"],
+    [["1", "–", "6"], "Overview, Classes, Goals, Report card, Standards, Graduation"],
     [["?"], "Show these shortcuts"],
     [["Esc"], "Close a panel, or leave what-if"]
   ];
@@ -160,7 +165,7 @@ window.OPLO_GRADEBOOK = (function () {
     opts = opts || {};
     G = {
       host: host, me: opts.me || {}, opts: opts,
-      tab: opts.tab || "book",
+      tab: opts.tab || "overview",
       prefs: loadPrefs(),
       classes: [], byId: {}, sel: null,
       filter: { q: "", cat: "", status: "all" },
@@ -174,18 +179,9 @@ window.OPLO_GRADEBOOK = (function () {
     host.classList.add("sgb");
     host.classList.toggle("dense", !!G.prefs.dense);
 
-    var top = el("div", "sgb-top");
-    var titles = el("div", "sgb-titles");
-    titles.appendChild(el("p", "lx-eyebrow", "Grades" + (G.me.name ? " · " + esc(G.me.name) : "")));
-    titles.appendChild(el("h1", "lx-h1", "Gradebook"));
-    top.appendChild(titles);
-    var help = btn("sgb-icon-btn", "?", "Keyboard shortcuts");
-    help.addEventListener("click", shortcuts);
-    top.appendChild(help);
-    host.appendChild(top);
-
-    G.kpis = el("div", "sgb-kpis");
-    host.appendChild(G.kpis);
+    G.hero = el("section", "sgb-hero");
+    host.appendChild(G.hero);
+    paintHero();
 
     G.tabs = el("div", "sgb-tabs");
     G.tabs.setAttribute("role", "tablist");
@@ -217,10 +213,13 @@ window.OPLO_GRADEBOOK = (function () {
       // a record that cannot be read leaves this year's gradebook standing.
       API.graduation.get().catch(function () { return null; })
     ]).then(function (out) {
+      G.loaded = true;
       build(out[0] || {}, out[1] || {}, out[2], out[3]);
-      paintKpis();
+      paintHero();
       paint();
     }, function (e) {
+      G.failed = true;
+      paintHero();
       G.body.innerHTML = "";
       var box = el("div", "sgb-failed");
       box.appendChild(el("b", null, e && e.code === "offline"
@@ -303,6 +302,16 @@ window.OPLO_GRADEBOOK = (function () {
     buildRecord(record, byId);
     G.classes = Object.keys(byId).map(function (k) { return byId[k]; })
       .sort(function (a, b) { return String(a.title).localeCompare(String(b.title)); });
+    var nowMs = Date.now();
+    G.classes.forEach(function (c, i) {
+      c.slot = (i % 8) + 1;
+      c.points = c.work.filter(function (w) { return w.state === "graded" && w.pct != null && !w.extraCredit; })
+        .map(function (w) { return { w: w, t: ms(w.gradedAt) || w.dueMs || 0 }; })
+        .sort(function (a, b) { return a.t - b.t; });
+      c.trend = trendOf(c.points);
+      c.next = c.work.filter(function (w) { return w.state === "upcoming" && w.dueMs != null && w.dueMs >= nowMs - DAY; })
+        .sort(function (a, b) { return a.dueMs - b.dueMs; })[0] || null;
+    });
     var want = G.prefs.sel && byId[G.prefs.sel] ? G.prefs.sel : null;
     G.sel = want || (G.classes[0] && G.classes[0].id) || null;
     G.year = G.classes.length || !G.years.length ? "current" : G.years[0].key;
@@ -428,52 +437,151 @@ window.OPLO_GRADEBOOK = (function () {
     return { gpa: sum(pts) / pts.length, avg: sum(pcts) / pcts.length, n: pts.length };
   }
 
-  function paintKpis() {
-    var k = G.kpis;
-    k.innerHTML = "";
-    if (!G.classes.length && !G.record) return;
-    var g = gpa();
-    var now = Date.now();
+  /* ------------------------------------------------------------ The hero
+     Where a student stands, in one look: three rings — GPA, credits toward the
+     diploma, this year's average — one sentence that says it in words, and
+     the three counts that need doing something about. Every number is one the
+     server already gave; the rings only draw them. */
+  function standing() {
+    var g = gpa(), r = G.record, now = Date.now();
     var missing = 0, pastdue = 0, soon = 0;
     G.classes.forEach(function (c) {
       missing += c.missing; pastdue += c.pastdue;
       c.work.forEach(function (w) {
-        if (w.state === "upcoming" && w.dueMs != null && w.dueMs - now < 7 * DAY) soon++;
+        if (w.state === "upcoming" && w.dueMs != null && w.dueMs >= now - DAY && w.dueMs - now < 7 * DAY) soon++;
       });
     });
-    function tile(label, value, sub, tone) {
-      var t = el("div", "sgb-kpi" + (tone ? " " + tone : ""));
-      t.appendChild(el("span", "l", esc(label)));
-      t.appendChild(el("b", null, value));
-      t.appendChild(el("span", "s", sub));
-      k.appendChild(t);
-    }
-    /* The record's numbers first when there is one: they are what the school
-       prints. This year's live classes follow. */
-    var r = G.record;
     var rg = r && r.gpa ? (r.gpa.issued != null ? r.gpa.issued : r.gpa.value) : null;
-    if (rg != null) {
-      tile("Cumulative GPA", Number(rg).toFixed(2),
-           r.gpa.issued != null ? "As issued on your transcript" : "From your record, 4.0 scale");
+    return { g: g, r: r, rg: rg, missing: missing, pastdue: pastdue, soon: soon };
+  }
+
+  function gpaBand(v) { return v >= 3.5 ? "a" : v >= 2.5 ? "b" : v >= 1.5 ? "c" : "f"; }
+
+  function ring(label, value, max, text, sub, bandCls) {
+    var R = 44, C = 2 * Math.PI * R;
+    var f = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+    var wrap = el("div", "sgb-ring " + (bandCls || ""));
+    var s = svg("svg", { viewBox: "0 0 100 100", "aria-hidden": "true" });
+    s.appendChild(svg("circle", { cx: 50, cy: 50, r: R, class: "trk" }));
+    var arc = svg("circle", { cx: 50, cy: 50, r: R, class: "arc",
+      "stroke-dasharray": C.toFixed(2), "stroke-dashoffset": C.toFixed(2), transform: "rotate(-90 50 50)" });
+    s.appendChild(arc);
+    wrap.appendChild(s);
+    var mid = el("div", "mid");
+    var big = el("b");
+    mid.appendChild(big);
+    mid.appendChild(el("span", null, esc(sub)));
+    wrap.appendChild(mid);
+    wrap.appendChild(el("p", "lbl", esc(label)));
+    wrap.setAttribute("role", "img");
+    wrap.setAttribute("aria-label", label + ": " + text.replace(/<[^>]+>/g, "") + ", " + sub);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { arc.setAttribute("stroke-dashoffset", (C * (1 - f)).toFixed(2)); });
+    });
+    countUp(big, text);
+    return wrap;
+  }
+
+  /* A number arrives already right, and then — if the tab is being painted
+     and nobody asked for less motion — counts up into place. */
+  function countUp(node, text) {
+    node.innerHTML = text;
+    var m = String(text).match(/^(\d+(?:\.\d+)?)(.*)$/);
+    if (!m || CALM || document.hidden) return;
+    var to = Number(m[1]), dec = (m[1].split(".")[1] || "").length, rest = m[2], t0 = null;
+    function step(ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / 900);
+      p = 1 - Math.pow(1 - p, 3);
+      node.innerHTML = (to * p).toFixed(dec) + rest;
+      if (p < 1) requestAnimationFrame(step); else node.innerHTML = text;
     }
-    if (r && r.track) {
-      tile("Credits", num(r.totals.earned) + '<span class="of"> / ' + num(r.track.total) + "</span>",
-           r.totals.remaining > 0 ? num(r.totals.remaining) + " to go · " + esc(r.track.name) : "Requirements met");
+    requestAnimationFrame(step);
+  }
+
+  function greeting() {
+    var h = new Date().getHours();
+    var first = G.me.firstName || String(G.me.name || "").split(" ")[0];
+    return (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening") + (first ? ", " + first : "");
+  }
+
+  function paintHero() {
+    var h = G.hero;
+    if (!h) return;
+    h.innerHTML = "";
+    var loaded = !!(G.classes.length || G.record || G.loaded);
+    var left = el("div", "sgb-hero-l");
+    left.appendChild(el("p", "lx-eyebrow", "Grades" + (G.me.name ? " · " + esc(G.me.name) : "")));
+    left.appendChild(el("h1", "lx-h1", "Gradebook"));
+    var st = standing();
+    if (loaded) {
+      var bits = [];
+      if (st.g) bits.push("you're averaging <b>" + num(Math.round(st.g.avg * 10) / 10) + "%</b> (" +
+        esc(letterFor(st.g.avg)) + ") across " + st.g.n + (st.g.n === 1 ? " class" : " classes") + " this year");
+      if (st.r && st.r.track) bits.push("you've earned <b>" + num(st.r.totals.earned) + " of " +
+        num(st.r.track.total) + "</b> diploma credits");
+      var say = greeting() + (bits.length ? " — " + bits.join(", and ") + "." : ".");
+      say += " " + (st.missing
+        ? "<b class=\"bad\">" + st.missing + (st.missing === 1 ? " assignment is" : " assignments are") + " missing.</b>"
+        : "Nothing is missing.");
+      if (st.soon) say += " " + st.soon + (st.soon === 1 ? " thing is" : " things are") + " due in the next 7 days.";
+      left.appendChild(el("p", "sgb-hero-say", say));
+
+      var chips = el("div", "sgb-chips");
+      function chip(n, label, tone, go) {
+        var b = btn("sgb-chip " + (n ? tone : "ok"), "<b>" + n + "</b> " + esc(label));
+        b.addEventListener("click", go);
+        chips.appendChild(b);
+      }
+      chip(st.missing, "missing", "bad", function () { jumpTo("missing"); });
+      chip(st.pastdue, "past due", "warn", function () { jumpTo("todo"); });
+      chip(st.soon, "due this week", "info", function () { setTab("overview"); });
+      left.appendChild(chips);
+    } else {
+      left.appendChild(el("p", "sgb-hero-say", G.failed ? "Your grades could not be read just now." : "Reading your grades…"));
     }
-    if (g || !r) {
-      tile(r ? "This year" : "GPA (estimate)", r ? (Math.round(g.avg * 10) / 10) + "%" : g ? g.gpa.toFixed(2) : "—",
-           r ? esc(letterFor(g.avg)) + " across " + g.n + (g.n === 1 ? " class" : " classes")
-             : g ? "Unweighted, 4.0 scale, " + g.n + (g.n === 1 ? " class" : " classes") : "No graded classes yet");
+    var tools = el("div", "sgb-hero-tools");
+    var k = btn("sgb-kbtn", '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.7"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.7" ' +
+      'stroke-linecap="round"/></svg><span>Search or jump</span><kbd>' + (MAC ? "⌘" : "Ctrl") + "</kbd><kbd>K</kbd>",
+      "Search or jump to anything");
+    k.addEventListener("click", palette);
+    tools.appendChild(k);
+    var help = btn("sgb-icon-btn", "?", "Keyboard shortcuts");
+    help.addEventListener("click", shortcuts);
+    tools.appendChild(help);
+    left.appendChild(tools);
+    h.appendChild(left);
+
+    if (!loaded) return;
+    var rings = el("div", "sgb-rings");
+    var gv = st.rg != null ? Number(st.rg) : st.g ? st.g.gpa : null;
+    if (gv != null) {
+      rings.appendChild(ring("GPA", gv, 4, gv.toFixed(2), st.rg != null ? "cumulative" : "estimate", "b-" + gpaBand(gv)));
     }
-    if (!r) {
-      tile("Average", g ? (Math.round(g.avg * 10) / 10) + "%" : "—",
-           g ? esc(letterFor(g.avg)) + " across your classes" : "Nothing marked yet");
+    if (st.r && st.r.track) {
+      rings.appendChild(ring("Credits", st.r.totals.earned, st.r.track.total, num(st.r.totals.earned),
+        "of " + num(st.r.track.total), "b-credit"));
     }
-    tile("Missing", String(missing), missing ? "Counted as zero until handed in" : "Nothing missing",
-         missing ? "bad" : "good");
-    tile("Past due", String(pastdue), pastdue ? "Due date passed, not marked yet" : "All caught up",
-         pastdue ? "warn" : "");
-    tile("Due this week", String(soon), "Across every class", "");
+    if (st.g) {
+      rings.appendChild(ring("This year", st.g.avg, 100, num(Math.round(st.g.avg)) + "%",
+        letterFor(st.g.avg), "b-" + band(st.g.avg)));
+    }
+    if (rings.children.length) h.appendChild(rings);
+  }
+
+  /* From a chip to the work it counts: the first class that has some, with
+     the table filtered to it. */
+  function jumpTo(status) {
+    var key = status === "missing" ? "missing" : "pastdue";
+    var c = G.classes.filter(function (x) { return x[key]; })[0];
+    if (!c) { setTab("overview"); return; }
+    G.filter = { q: "", cat: "", status: status };
+    G.year = "current";
+    G.sel = c.id;
+    G.open = {};
+    if (G.tab !== "book") { G.tab = "book"; paintTabs(); }
+    paint();
   }
 
   function paintTabs() {
@@ -506,7 +614,9 @@ window.OPLO_GRADEBOOK = (function () {
         "every mark appears here — on this device and on every other one you sign in on."));
       return;
     }
-    if (G.tab === "book") paintBook();
+    if (G.tab === "overview") paintOverview();
+    else if (G.tab === "goals") paintGoals();
+    else if (G.tab === "book") paintBook();
     else if (G.tab === "report") paintReport();
     else if (G.tab === "standards") {
       if (G.classes.length) paintStandards();
@@ -1526,6 +1636,746 @@ window.OPLO_GRADEBOOK = (function () {
     G.body.appendChild(wrap);
   }
 
+  /* ================================================================ Overview
+     Every class at once, and what the whole of it says: the tiles, what is
+     coming, what the marks point to, the semester as a calendar, the mix of
+     grades, and — when there is a record — the years behind this one.
+
+     Nothing here re-adds a grade. A class's grade is the server's; a trend is
+     the plain mean of the student's own recent marks against all of them,
+     labelled as that; and anything that answers "what would happen if" is
+     asked of the server's what-if, which writes nothing. */
+  function trendOf(points) {
+    if (points.length < 4) return null;
+    var mean = function (a) { return a.reduce(function (s, p) { return s + p.w.pct; }, 0) / a.length; };
+    var d = Math.round((mean(points.slice(-3)) - mean(points)) * 10) / 10;
+    return { delta: d, dir: d >= 1.5 ? "up" : d <= -1.5 ? "down" : "flat" };
+  }
+  function initials(t) {
+    var w = String(t || "").replace(/[^A-Za-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+    if (!w.length) return "·";
+    return (w.length === 1 ? w[0].slice(0, 2) : w[0][0] + (/^\d/.test(w[1]) ? w[1] : w[1][0])).toUpperCase().slice(0, 3);
+  }
+  function spark(points, w, h) {
+    w = w || 132; h = h || 34;
+    var s = svg("svg", { viewBox: "0 0 " + w + " " + h, class: "sgb-spark", "aria-hidden": "true" });
+    if (points.length < 2) return s;
+    var vals = points.map(function (p) { return p.w.pct; });
+    var lo = Math.min(60, Math.min.apply(null, vals)), hi = Math.max(100, Math.max.apply(null, vals));
+    function x(i) { return 3 + (w - 6) * i / (vals.length - 1); }
+    function y(v) { return 3 + (h - 6) * (1 - (v - lo) / (hi - lo)); }
+    var d = vals.map(function (v, i) { return (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); }).join(" ");
+    s.appendChild(svg("path", { d: d + " L" + x(vals.length - 1).toFixed(1) + " " + h + " L3 " + h + " Z", class: "fill" }));
+    s.appendChild(svg("path", { d: d, class: "ln" }));
+    var last = vals[vals.length - 1];
+    s.appendChild(svg("circle", { cx: x(vals.length - 1), cy: y(last), r: 3, class: "dot b-" + band(last) }));
+    return s;
+  }
+  function trendHtml(t) {
+    if (!t) return '<span class="sgb-trend flat" title="Trends appear after four marks">—</span>';
+    var arrow = t.dir === "up" ? "▲" : t.dir === "down" ? "▼" : "▬";
+    return '<span class="sgb-trend ' + t.dir + '" title="Your last three marks against your average in this class">' +
+      arrow + " " + (t.delta > 0 ? "+" : "") + num(t.delta) + "</span>";
+  }
+
+  function section(title, aside, cls) {
+    var sec = el("section", "sgb-sec" + (cls ? " " + cls : ""));
+    var h = el("header", "sgb-sec-h");
+    h.appendChild(el("h2", null, esc(title)));
+    if (aside) h.appendChild(el("span", null, aside));
+    sec.appendChild(h);
+    return sec;
+  }
+
+  function paintOverview() {
+    var wrap = el("div", "sgb-ov");
+    var i = 0;
+    function rise(n) {
+      if (CALM || document.hidden) return n;
+      n.classList.add("sgb-rise");
+      n.style.setProperty("--i", Math.min(i++, 8));
+      return n;
+    }
+
+    if (G.classes.length) {
+      var sec = section("Your classes", G.classes.length + (G.classes.length === 1 ? " class" : " classes") + " this year");
+      var grid = el("div", "sgb-tiles");
+      G.classes.forEach(function (c) { grid.appendChild(rise(tile(c))); });
+      sec.appendChild(grid);
+      wrap.appendChild(sec);
+    } else {
+      wrap.appendChild(el("div", "lx-empty", "No classes this year yet. When a teacher enrols you and sets " +
+        "work, each class appears here as a card. Your earlier years are below."));
+    }
+
+    var row = el("div", "sgb-ov-row");
+    row.appendChild(rise(comingUp()));
+    row.appendChild(rise(insightsCard()));
+    wrap.appendChild(row);
+
+    if (G.classes.some(function (c) { return c.work.length; })) {
+      var row2 = el("div", "sgb-ov-row wide-l");
+      row2.appendChild(rise(heatmap()));
+      row2.appendChild(rise(gradeMix()));
+      wrap.appendChild(row2);
+    }
+    if (G.years.length) wrap.appendChild(rise(journey()));
+    G.body.appendChild(wrap);
+  }
+
+  function tile(c) {
+    var s = c.summary;
+    var t = btn("sgb-tile slot" + c.slot);
+    t.title = "Open " + c.title;
+    var head = el("div", "hd");
+    head.appendChild(el("span", "mono", esc(initials(c.title))));
+    var nm = el("div", "nm");
+    nm.appendChild(el("b", null, esc(c.title)));
+    nm.appendChild(el("span", null, c.recordOnly
+      ? esc(c.school) + " · in progress"
+      : (c.code ? esc(c.code) + " · " : "") + c.graded + " of " + c.work.length + " graded"));
+    head.appendChild(nm);
+    var med = el("div", "med " + (s ? "b-" + band(s.percent) : "b-none"));
+    med.innerHTML = "<b>" + (s ? esc(s.letter) : "—") + "</b><span>" + (s ? s.percent + "%" : c.recordOnly ? "In progress" : "No grade") + "</span>";
+    head.appendChild(med);
+    t.appendChild(head);
+
+    var mid = el("div", "sp");
+    mid.appendChild(spark(c.points));
+    mid.appendChild(el("div", "tr", trendHtml(c.trend) + '<span class="lb">recent vs average</span>'));
+    t.appendChild(mid);
+
+    var parts = (s && s.parts) || [];
+    if (parts.length) {
+      var cats = el("div", "cats");
+      parts.slice(0, 4).forEach(function (x) {
+        cats.appendChild(el("div", "cat", '<span class="n">' + esc(x.category) + '</span><span class="trk"><i class="b-' +
+          band(x.percent) + '" style="width:' + Math.max(0, Math.min(100, x.percent)) + '%"></i></span><span class="v">' +
+          x.percent + "%</span>"));
+      });
+      t.appendChild(cats);
+    }
+    var foot = el("div", "ft");
+    var fl = "";
+    if (c.missing) fl += '<em class="sgb-pill bad">' + c.missing + " missing</em>";
+    if (c.pastdue) fl += '<em class="sgb-pill warn">' + c.pastdue + " past due</em>";
+    foot.innerHTML = (c.next
+      ? '<span class="nx">Next: <b>' + esc(c.next.title) + "</b> · " + esc(dueWord(c.next.dueMs)) + "</span>"
+      : '<span class="nx dim">' + (c.recordOnly ? "Marks appear as work is graded" : "Nothing scheduled") + "</span>") + fl;
+    t.appendChild(foot);
+    t.addEventListener("click", function () { select(c.id); });
+    return t;
+  }
+
+  function dueWord(t) {
+    var d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    var d = new Date(t); d.setHours(0, 0, 0, 0);
+    var n = Math.round((d - d0) / DAY);
+    if (n === 0) return "today";
+    if (n === 1) return "tomorrow";
+    if (n === -1) return "yesterday";
+    if (n > 1 && n < 7) return new Date(t).toLocaleDateString(undefined, { weekday: "long" });
+    return day(t);
+  }
+
+  /* ---- Coming up: the next fourteen days, across every class, by day */
+  function comingUp() {
+    var sec = section("Coming up", "Next 14 days", "sgb-card");
+    var now = Date.now();
+    var items = [];
+    G.classes.forEach(function (c) {
+      c.work.forEach(function (w) {
+        if ((w.state === "upcoming" || w.state === "pastdue") && w.dueMs != null &&
+            w.dueMs >= now - 7 * DAY && w.dueMs <= now + 14 * DAY) items.push({ c: c, w: w });
+      });
+    });
+    items.sort(function (a, b) { return a.w.dueMs - b.w.dueMs; });
+    if (!items.length) {
+      sec.appendChild(el("p", "sgb-muted", "Nothing due in the next two weeks. When teachers set work with a due date, it lines up here."));
+      return sec;
+    }
+    var list = el("ol", "sgb-agenda");
+    var lastDay = null;
+    items.slice(0, 12).forEach(function (it) {
+      var key = new Date(it.w.dueMs).toDateString();
+      if (key !== lastDay) {
+        lastDay = key;
+        var word = it.w.state === "pastdue" ? "Past due" : dueWord(it.w.dueMs);
+        list.appendChild(el("li", "day", esc(word) +
+          (it.w.state === "pastdue" || word === day(it.w.dueMs) ? "" : " <span>" + esc(day(it.w.dueMs)) + "</span>")));
+      }
+      var li = el("li", "it slot" + it.c.slot + (it.w.state === "pastdue" ? " late" : ""));
+      var b = btn("", '<i class="sw"></i><span class="t"><b>' + esc(it.w.title) + "</b><span>" + esc(it.c.title) +
+        (it.w.category ? " · " + esc(it.w.category) : "") + '</span></span><span class="pts">' + num(it.w.outOf) + " pts</span>");
+      b.addEventListener("click", function () { select(it.c.id); openRow(it.w.assignmentId); });
+      li.appendChild(b);
+      list.appendChild(li);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  /* ---- Insights: what the marks point to, said in a sentence each */
+  function insightsCard() {
+    var sec = section("Insights", "From your marks", "sgb-card");
+    var list = el("div", "sgb-ins");
+    var n = 0;
+    function card(tone, icon, title, body, action) {
+      if (n >= 6) return null;
+      n++;
+      var d = el("div", "in " + tone);
+      d.appendChild(el("span", "ic", icon));
+      var t = el("div", "tx");
+      t.appendChild(el("b", null, title));
+      var p = el("p", null, body);
+      t.appendChild(p);
+      if (action) {
+        var a = btn("sgb-link", esc(action.label));
+        a.addEventListener("click", action.go);
+        t.appendChild(a);
+      }
+      d.appendChild(t);
+      list.appendChild(d);
+      return p;
+    }
+    function ic(d) {
+      return '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + d + '" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    var ICON = {
+      miss: ic("M10 5v6M10 14.5v.5"),
+      up: ic("M3 14l5-5 3 3 6-6M12 6h5v5"),
+      down: ic("M3 6l5 5 3-3 6 6M12 14h5V9"),
+      star: ic("M10 3l2.1 4.4 4.9.6-3.6 3.3.9 4.8L10 13.8 5.7 16.1l.9-4.8L3 8l4.9-.6z"),
+      weak: ic("M10 3a7 7 0 1 0 0 14a7 7 0 1 0 0-14M10 7a3 3 0 1 0 0 6a3 3 0 1 0 0-6"),
+      big: ic("M5 17V3M5 4h10l-2 3.5L15 11H5"),
+      cap: ic("M2 8l8-4 8 4-8 4zM5.5 9.8V14c1.4 1.3 3 2 4.5 2s3.1-.7 4.5-2V9.8")
+    };
+
+    // Missing work, with what handing it in would do — asked of the server.
+    var asked = 0;
+    G.classes.forEach(function (c) {
+      c.work.filter(function (w) { return w.state === "missing"; }).forEach(function (w) {
+        var p = card("bad", ICON.miss, esc(w.title) + " is missing",
+          "In " + esc(c.title) + " it counts as 0 of " + num(w.outOf) + " until it is handed in.",
+          { label: "Open it", go: function () { select(c.id); openRow(w.assignmentId); } });
+        if (p && c.summary && asked < 3) {
+          asked++;
+          var at = Math.max(60, Math.min(100, c.summary.percent));
+          API.grades.whatif(c.id, G.me.id, [{ assignmentId: w.assignmentId, score: Math.round(at * w.outOf) / 100, status: "marked" }])
+            .then(function (r) {
+              if (!r || !r.then || !r.now) return;
+              var d = r.then.percent - r.now.percent;
+              if (d <= 0) return;
+              p.innerHTML = "In " + esc(c.title) + " it counts as 0 of " + num(w.outOf) + ". Handed in at your usual " +
+                num(at) + "%, your grade would go from <b>" + esc(r.now.letter) + " · " + r.now.percent + "%</b> to <b class=\"b-" +
+                band(r.then.percent) + '">' + esc(r.then.letter) + " · " + r.then.percent + "%</b> (+" + num(d) + ").";
+            }, function () { /* the plain sentence stands */ });
+        }
+      });
+    });
+    // Trends
+    G.classes.forEach(function (c) {
+      if (c.trend && c.trend.dir === "up") {
+        card("good", ICON.up, "Climbing in " + esc(c.title),
+          "Your last three marks average " + num(Math.abs(c.trend.delta)) + " points above your usual in this class.");
+      } else if (c.trend && c.trend.dir === "down") {
+        card("warn", ICON.down, "Slipping in " + esc(c.title),
+          "Your last three marks are " + num(Math.abs(c.trend.delta)) + " points below your usual here — worth a look before it moves the grade.",
+          { label: "See the marks", go: function () { select(c.id); } });
+      }
+    });
+    // The category holding a class down
+    G.classes.forEach(function (c) {
+      var s = c.summary;
+      if (!s || !s.parts || s.parts.length < 2) return;
+      var low = s.parts.slice().sort(function (a, b) { return a.percent - b.percent; })[0];
+      if (s.percent - low.percent >= 6) {
+        card("warn", ICON.weak, "Lowest area in " + esc(c.title) + ": " + esc(low.category),
+          "You're at " + low.percent + "% there against " + s.percent + "% overall, and it's " + low.weight +
+          "% of the grade.", { label: "Show " + low.category, go: function () {
+            G.filter = { q: "", cat: low.category, status: "all" }; G.year = "current"; G.sel = c.id;
+            if (G.tab !== "book") { G.tab = "book"; paintTabs(); } paint();
+          } });
+      }
+    });
+    // A run of strong marks
+    G.classes.forEach(function (c) {
+      var run = 0;
+      for (var i = c.points.length - 1; i >= 0 && c.points[i].w.pct >= 90; i--) run++;
+      if (run >= 3) card("good", ICON.star, run + " in a row at 90%+ in " + esc(c.title), "Your last " + run + " marks here are all A-range.");
+    });
+    // The biggest thing left
+    var big = null;
+    G.classes.forEach(function (c) {
+      if (c.recordOnly) return;
+      var total = c.work.reduce(function (s2, w) { return s2 + (w.extraCredit ? 0 : Number(w.outOf || 0)); }, 0);
+      c.work.forEach(function (w) {
+        if (w.state !== "upcoming" || !total) return;
+        var share = w.outOf / total;
+        if (!big || share > big.share) big = { c: c, w: w, share: share };
+      });
+    });
+    if (big && big.share >= 0.15) {
+      card("info", ICON.big, esc(big.w.title) + " is the biggest thing left",
+        "It's " + num(big.w.outOf) + " points in " + esc(big.c.title) + (big.w.dueMs ? ", due " + esc(dueWord(big.w.dueMs)) : "") +
+        ". Set a goal to see what you need on it.", { label: "Set a goal", go: function () { setTab("goals"); } });
+    }
+    if (G.record && G.record.track) {
+      var r = G.record;
+      card("info", ICON.cap, Math.round(r.totals.earned / r.track.total * 100) + "% of the way to your diploma",
+        num(r.totals.earned) + " of " + num(r.track.total) + " credits earned; " + num(r.totals.remaining) + " to go.",
+        { label: "See the plan", go: function () { setTab("grad"); } });
+    }
+    if (!n) sec.appendChild(el("p", "sgb-muted", "Insights appear as marks come in: trends, what's missing, and what's worth your next hour."));
+    sec.appendChild(list);
+    return sec;
+  }
+
+  /* ---- The semester as a calendar: every assignment on its due date, the
+     colour its mark earned. One mark per cell carries the value in its
+     tooltip; the colour is the band, and the band has a key. */
+  function heatmap() {
+    var sec = section("Semester at a glance", "Every assignment, on its due date", "sgb-card");
+    var now = Date.now();
+    var byDay = {};
+    var first = null, last = now + 21 * DAY;
+    G.classes.forEach(function (c) {
+      c.work.forEach(function (w) {
+        if (w.dueMs == null) return;
+        var d = new Date(w.dueMs); d.setHours(0, 0, 0, 0);
+        var k = d.getTime();
+        (byDay[k] = byDay[k] || []).push({ c: c, w: w });
+        if (first == null || k < first) first = k;
+        if (k > last) last = k;
+      });
+    });
+    if (first == null) { sec.appendChild(el("p", "sgb-muted", "No due dates yet.")); return sec; }
+    var start = new Date(Math.max(first, now - 26 * 7 * DAY)); start.setHours(0, 0, 0, 0);
+    start = new Date(start.getTime() - ((start.getDay() + 6) % 7) * DAY);      // back to Monday
+    var weeks = Math.ceil((last - start.getTime()) / (7 * DAY)) + 1;
+    if (weeks < 26) {                                   // a semester's worth, at least
+      start = new Date(start.getTime() - (26 - weeks) * 7 * DAY);
+      weeks = 26;
+    }
+    weeks = Math.min(44, weeks);
+    var CELL = 15, GAP = 3, L = 26, T = 18;
+    var W = L + weeks * (CELL + GAP), H = T + 7 * (CELL + GAP);
+    var s = svg("svg", { viewBox: "0 0 " + W + " " + H, class: "sgb-heat", role: "img",
+      "aria-label": "Calendar of assignments by due date, coloured by the mark each earned." });
+    // Cells stay cells: the calendar fills its card up to half again its
+    // drawn size, and scrolls rather than squashing on a phone.
+    s.style.maxWidth = Math.round(W * 1.5) + "px";
+    ["Mon", "", "Wed", "", "Fri", "", ""].forEach(function (lab, r) {
+      if (!lab) return;
+      var t = svg("text", { x: 0, y: T + r * (CELL + GAP) + CELL - 3, class: "ax" });
+      t.textContent = lab;
+      s.appendChild(t);
+    });
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var lastMonth = -1;
+    for (var wk = 0; wk < weeks; wk++) {
+      for (var r = 0; r < 7; r++) {
+        var dt = new Date(start.getTime() + (wk * 7 + r) * DAY);
+        var k = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+        if (r === 0 && dt.getMonth() !== lastMonth) {
+          lastMonth = dt.getMonth();
+          var mt = svg("text", { x: L + wk * (CELL + GAP), y: 11, class: "ax" });
+          mt.textContent = dt.toLocaleDateString(undefined, { month: "short" });
+          s.appendChild(mt);
+        }
+        var items = byDay[k] || [];
+        var graded = items.filter(function (x) { return x.w.state === "graded" && x.w.pct != null; });
+        var cls = "cell";
+        if (graded.length) {
+          var avg = graded.reduce(function (a, x) { return a + x.w.pct; }, 0) / graded.length;
+          cls += " b-" + band(avg) + " has";
+        } else if (items.some(function (x) { return x.w.state === "missing"; })) cls += " miss";
+        else if (items.length) cls += k < today.getTime() ? " late" : " due";
+        if (k === today.getTime()) cls += " today";
+        var g = svg("g", {});
+        var tip = svg("title", {});
+        tip.textContent = dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) +
+          (items.length ? "\n" + items.map(function (x) {
+            return x.w.title + " (" + x.c.title + "): " + (x.w.state === "graded" ? x.w.pct + "%" :
+              x.w.state === "missing" ? "missing" : x.w.state === "excused" ? "excused" : "not graded");
+          }).join("\n") : "");
+        g.appendChild(tip);
+        g.appendChild(svg("rect", { x: L + wk * (CELL + GAP), y: T + r * (CELL + GAP), width: CELL, height: CELL, rx: 3, class: cls }));
+        s.appendChild(g);
+      }
+    }
+    var box = el("div", "sgb-heat-wrap");
+    box.appendChild(s);
+    sec.appendChild(box);
+    var key = el("div", "sgb-key");
+    key.innerHTML = '<span><i class="b-a"></i>90+</span><span><i class="b-b"></i>80s</span><span><i class="b-c"></i>70s</span>' +
+      '<span><i class="b-f"></i>below 70</span><span><i class="miss"></i>missing</span><span><i class="due"></i>not graded</span>';
+    sec.appendChild(key);
+    return sec;
+  }
+
+  /* ---- Grade mix: every graded assignment, by the band its mark is in */
+  function gradeMix() {
+    var sec = section("Grade mix", "Every graded assignment", "sgb-card");
+    var bands = [["a", "A", "90–100"], ["b", "B", "80–89"], ["c", "C", "70–79"], ["d", "D", "60–69"], ["f", "F", "below 60"]];
+    var count = { a: 0, b: 0, c: 0, d: 0, f: 0 }, total = 0;
+    G.classes.forEach(function (c) {
+      c.work.forEach(function (w) {
+        if (w.state === "graded" && w.pct != null) { count[band(w.pct)]++; total++; }
+        else if (w.state === "missing") { count.f++; total++; }
+      });
+    });
+    if (!total) { sec.appendChild(el("p", "sgb-muted", "Nothing graded yet.")); return sec; }
+    var max = Math.max.apply(null, bands.map(function (b) { return count[b[0]]; }));
+    var list = el("div", "sgb-mix");
+    bands.forEach(function (b) {
+      var n = count[b[0]];
+      var row = el("div", "mx b-" + b[0]);
+      row.innerHTML = '<span class="l"><b>' + b[1] + "</b><span>" + b[2] + '</span></span><span class="trk"><i style="width:' +
+        (max ? n / max * 100 : 0) + '%"></i></span><span class="v"><b>' + n + "</b> · " + Math.round(n / total * 100) + "%</span>";
+      list.appendChild(row);
+    });
+    sec.appendChild(list);
+    sec.appendChild(el("p", "sgb-muted", "Missing work counts in F, because it counts as zero."));
+    return sec;
+  }
+
+  /* ---- The years behind this one */
+  function journey() {
+    var sec = section("Your journey", G.record && G.record.track
+      ? num(G.record.totals.earned) + " of " + num(G.record.track.total) + " credits" : "", "sgb-card");
+    var line = el("div", "sgb-journey");
+    var yrs = G.years.slice().reverse();
+    var g = gpa();
+    yrs.forEach(function (y) {
+      var b = btn("node");
+      var avg = y.average;
+      b.innerHTML = '<i class="pip b-' + (avg != null ? band(avg) : "none") + '"></i><b>' + esc(y.label) + "</b><span>" + esc(y.school) +
+        "</span><span class=\"st\">" + num(y.credits) + (y.credits === 1 ? " credit" : " credits") +
+        (avg != null ? " · " + num(avg) + "% · " + esc(ehsLetter(avg)) : "") + "</span>";
+      b.addEventListener("click", function () { setYear(y.key); });
+      line.appendChild(b);
+    });
+    var now = btn("node now");
+    now.innerHTML = '<i class="pip ' + (g ? "b-" + band(g.avg) : "b-none") + '"></i><b>' + esc(thisYear()) + "</b><span>This year</span>" +
+      '<span class="st">' + (g ? num(Math.round(g.avg * 10) / 10) + "% · " + esc(letterFor(g.avg)) : "In progress") + "</span>";
+    now.addEventListener("click", function () { setYear("current"); });
+    line.appendChild(now);
+    if (G.record && G.record.track) {
+      var end = el("div", "node goal");
+      end.innerHTML = '<i class="pip goal"></i><b>Diploma</b><span>' + esc(G.record.track.name) + '</span><span class="st">' +
+        num(G.record.totals.remaining) + " credits to go</span>";
+      line.appendChild(end);
+    }
+    sec.appendChild(line);
+    return sec;
+  }
+
+  /* ================================================================ Goals
+     "What do I need on the rest to get an A?" — the question every student
+     does on the back of an envelope, and gets wrong, because the weighting,
+     the drops and the late rules are not on the envelope. So it is asked of
+     the server: the same what-if the calculator uses, searched for the
+     average on the remaining work that reaches the target. Nothing is
+     written, and every number shown is one the server computed. */
+  var TARGETS = [["A", 93], ["A-", 90], ["B+", 87], ["B", 83], ["B-", 80], ["C+", 77], ["C", 73], ["C-", 70], ["D", 63], ["D-", 60]];
+
+  function remainingOf(c) {
+    return c.work.filter(function (w) {
+      return (w.state === "upcoming" || w.state === "pastdue") && w.outOf > 0 && !w.extraCredit;
+    });
+  }
+  function whatAt(c, rest, pct) {
+    return API.grades.whatif(c.id, G.me.id, rest.map(function (w) {
+      return { assignmentId: w.assignmentId, score: Math.round(pct * w.outOf) / 100, status: "marked" };
+    })).then(function (r) { return r && r.then; });
+  }
+  /* The lowest average on what is left that reaches `min`, to the nearest
+     point: the ends first, then halving — nine questions at most. */
+  function solve(c, min) {
+    var key = c.id + ":" + min;
+    G.goalCache = G.goalCache || {};
+    if (G.goalCache[key]) return G.goalCache[key];
+    var rest = remainingOf(c);
+    var p = whatAt(c, rest, 100).then(function (top) {
+      if (!top) throw new Error("no answer");
+      if (top.percent < min) return { kind: "out", best: top };
+      return whatAt(c, rest, 0).then(function (floor) {
+        if (floor && floor.percent >= min) return { kind: "safe", floor: floor };
+        var lo = 0, hi = 100, at = top;
+        function step() {
+          if (hi - lo <= 1) return { kind: "need", pct: hi, at: at };
+          var mid = Math.round((lo + hi) / 2);
+          return whatAt(c, rest, mid).then(function (r) {
+            if (r && r.percent >= min) { hi = mid; at = r; } else lo = mid;
+            return step();
+          });
+        }
+        return step();
+      });
+    });
+    G.goalCache[key] = p;
+    p.catch(function () { delete G.goalCache[key]; });
+    return p;
+  }
+
+  function paintGoals() {
+    var wrap = el("div", "sgb-goals");
+    wrap.appendChild(el("p", "sgb-lede", "Pick the grade you're aiming for in each class. OEdu asks your teacher's own " +
+      "grading rules what you need on everything that's left — weights, drops and all — and nothing you try here is saved."));
+    var list = G.classes.filter(function (c) { return !c.recordOnly; });
+    if (!list.length) {
+      wrap.appendChild(el("div", "lx-empty", "Goals work on this year's classes, and you have none with work set yet."));
+      G.body.appendChild(wrap);
+      return;
+    }
+    var grid = el("div", "sgb-goal-grid");
+    list.forEach(function (c, i) {
+      var card = goalCard(c);
+      if (!CALM && !document.hidden) {
+        card.classList.add("sgb-rise");
+        card.style.setProperty("--i", Math.min(i, 8));
+      }
+      grid.appendChild(card);
+    });
+    wrap.appendChild(grid);
+    G.body.appendChild(wrap);
+  }
+
+  function goalCard(c) {
+    var s = c.summary;
+    var rest = remainingOf(c);
+    var card = el("div", "sgb-goal slot" + c.slot);
+    var head = el("div", "hd");
+    head.appendChild(el("span", "mono", esc(initials(c.title))));
+    var nm = el("div", "nm");
+    nm.appendChild(el("b", null, esc(c.title)));
+    nm.appendChild(el("span", null, s ? "Now " + esc(s.letter) + " · " + s.percent + "%" : "No grade yet"));
+    head.appendChild(nm);
+    card.appendChild(head);
+
+    if (!rest.length) {
+      card.appendChild(el("p", "sgb-muted", "Nothing left to grade here, so the grade moves only if a mark changes."));
+      return card;
+    }
+    var pts = rest.reduce(function (a, w) { return a + Number(w.outOf); }, 0);
+    card.appendChild(el("p", "left", rest.length + (rest.length === 1 ? " assignment" : " assignments") + " left · " +
+      num(pts) + " points"));
+
+    var pick = el("div", "pick");
+    pick.appendChild(el("span", null, "I'm aiming for"));
+    var seg = el("div", "sgb-seg targets");
+    G.prefs.targets = G.prefs.targets || {};
+    var want = G.prefs.targets[c.id];
+    if (!want) {
+      // One step up from where they are, which is the goal most people set.
+      var cur = s ? s.percent : 0;
+      var up = TARGETS.slice().reverse().filter(function (t) { return t[1] > cur; })[0];
+      want = (up || TARGETS[0])[0];
+    }
+    var out = el("div", "res");
+    TARGETS.forEach(function (t) {
+      var b = btn(t[0] === want ? "on" : "", esc(t[0]));
+      b.title = t[1] + "% or above";
+      b.addEventListener("click", function () {
+        G.prefs.targets[c.id] = t[0]; savePrefs();
+        [].forEach.call(seg.children, function (x) { x.classList.toggle("on", x === b); });
+        answer(t);
+      });
+      seg.appendChild(b);
+    });
+    pick.appendChild(seg);
+    card.appendChild(pick);
+    card.appendChild(out);
+
+    function answer(t) {
+      out.className = "res busy";
+      out.innerHTML = '<span class="sgb-muted">Asking your teacher’s grading rules…</span>';
+      solve(c, t[1]).then(function (r) {
+        if (r.kind === "out") {
+          out.className = "res out";
+          out.innerHTML = "<b>Out of reach this term</b><p>Even 100% on everything left reaches <b>" + esc(r.best.letter) +
+            " · " + r.best.percent + "%</b>. That's the ceiling — and still worth chasing.</p>";
+        } else if (r.kind === "safe") {
+          out.className = "res safe";
+          out.innerHTML = "<b>Already secured</b><p>Your marks so far keep you at " + esc(t[0]) +
+            " or above whatever happens on the rest (" + esc(r.floor.letter) + " · " + r.floor.percent + "% at worst).</p>";
+        } else {
+          var mine = s ? s.percent : null;
+          var tone = mine == null ? "need" : r.pct <= mine ? "ok" : r.pct - mine <= 8 ? "stretch" : "hard";
+          out.className = "res " + tone;
+          out.innerHTML = '<div class="big"><b>' + r.pct + "%</b><span>average needed on what's left</span></div>" +
+            '<div class="meter"><i class="need" style="left:' + r.pct + '%"></i>' +
+            (mine != null ? '<i class="mine" style="left:' + Math.min(100, mine) + '%"></i>' : "") + "</div>" +
+            '<p class="legend"><span><i class="need"></i>needed</span>' +
+            (mine != null ? '<span><i class="mine"></i>your ' + mine + "% now</span>" : "") + "</p>" +
+            '<p class="why">' + (tone === "ok" ? "Right on track — that's at or below the " + mine + "% you're averaging now."
+              : tone === "stretch" ? "A stretch — about " + (r.pct - mine) + " points above your current " + mine + "%."
+              : tone === "hard" ? "A big climb — " + (r.pct - mine) + " points above your current " + mine + "%. Every point on the biggest assignment counts most."
+              : "") + " That would land you at <b>" + esc(r.at.letter) + " · " + r.at.percent + "%</b>.</p>";
+        }
+      }, function () {
+        out.className = "res";
+        out.innerHTML = '<span class="sgb-muted">The calculator could not answer just now.</span>';
+      });
+    }
+    answer(TARGETS.filter(function (t) { return t[0] === want; })[0] || TARGETS[0]);
+
+    // And the slider: "if I average this much on the rest".
+    var sl = el("div", "slide");
+    var lab = el("label");
+    lab.appendChild(el("span", null, "If I average"));
+    var r = el("input");
+    r.type = "range"; r.min = "0"; r.max = "100"; r.step = "1";
+    r.value = String(s ? Math.max(0, Math.min(100, Math.round(s.percent))) : 80);
+    r.setAttribute("aria-label", "Average on the remaining work in " + c.title);
+    var val = el("b", null, r.value + "%");
+    lab.appendChild(r);
+    lab.appendChild(val);
+    sl.appendChild(lab);
+    var res = el("p", "sres", "&nbsp;");
+    sl.appendChild(res);
+    card.appendChild(sl);
+    var seq = 0, timer = null;
+    function run() {
+      var my = ++seq, pct = Number(r.value);
+      val.textContent = pct + "%";
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        res.innerHTML = '<span class="sgb-muted">…</span>';
+        whatAt(c, rest, pct).then(function (t) {
+          if (my !== seq || !t) return;
+          res.innerHTML = "on the rest → <b class=\"b-" + band(t.percent) + '">' + esc(t.letter) + " · " + t.percent + "%</b>";
+        }, function () { if (my === seq) res.textContent = "Could not work that out just now."; });
+      }, 220);
+    }
+    r.addEventListener("input", run);
+    run();
+    return card;
+  }
+
+  /* ================================================================ Palette
+     ⌘K. Every class, every assignment, every past course and every action,
+     one search box away. */
+  var pal = null;
+  function palette() {
+    if (pal) { closePalette(); return; }
+    if (sheet) shortcuts();
+    closePop();
+    var items = [];
+    TABS.forEach(function (t, i) {
+      items.push({ k: "Go to", t: t.label, s: "Tab " + (i + 1), go: function () { setTab(t.key); } });
+    });
+    G.classes.forEach(function (c) {
+      items.push({ k: "Class", t: c.title, s: c.summary ? c.summary.letter + " · " + c.summary.percent + "%" : "No grade yet",
+                   slot: c.slot, go: function () { select(c.id); } });
+      c.work.forEach(function (w) {
+        items.push({ k: "Assignment", t: w.title, s: c.title + " · " + (w.state === "graded" ? num(w.score) + "/" + num(w.outOf)
+          : { missing: "missing", excused: "excused", pastdue: "past due", upcoming: w.dueMs ? "due " + day(w.dueMs) : "not graded" }[w.state]),
+          slot: c.slot, go: function () { select(c.id); openRow(w.assignmentId); } });
+      });
+    });
+    G.years.forEach(function (y) {
+      y.courses.forEach(function (x) {
+        items.push({ k: y.label, t: x.title, s: x.school + " · " + (x.letter || "—") + (x.pct != null ? " · " + num(x.pct) + "%" : ""),
+                     go: function () { setYear(y.key, x.id); } });
+      });
+    });
+    items.push({ k: "Action", t: "Set a goal", s: "What do I need on the rest?", go: function () { setTab("goals"); } });
+    items.push({ k: "Action", t: "What-if calculator", s: "Try scores on the open class", go: function () {
+      if (!G.classes.length) return;
+      if (G.tab !== "book" || G.year !== "current") { G.year = "current"; G.tab = "book"; paintTabs(); paint(); }
+      if (!G.whatif && !current().recordOnly) toggleWhatif();
+    } });
+    items.push({ k: "Action", t: "Export everything as a spreadsheet", s: "Every class and year", go: exportAll });
+    items.push({ k: "Action", t: "Print the report card", s: "A clean page for paper", go: printReport });
+    items.push({ k: "Action", t: (G.prefs.dense ? "Comfortable" : "Compact") + " rows", s: "Table density", go: function () {
+      G.prefs.dense = !G.prefs.dense; savePrefs(); G.host.classList.toggle("dense", G.prefs.dense); paint();
+    } });
+    items.push({ k: "Action", t: "Keyboard shortcuts", s: "Everything the keys do", go: shortcuts });
+
+    pal = el("div", "sgb-pal");
+    pal.setAttribute("role", "dialog");
+    pal.setAttribute("aria-modal", "true");
+    pal.setAttribute("aria-label", "Search or jump");
+    var box = el("div", "sgb-pal-box");
+    var inp = el("input");
+    inp.type = "text";
+    inp.placeholder = "Search classes, assignments, past courses, actions…";
+    inp.setAttribute("aria-label", "Search");
+    inp.setAttribute("role", "combobox");
+    inp.setAttribute("aria-expanded", "true");
+    box.appendChild(inp);
+    var ul = el("ul", "list");
+    ul.setAttribute("role", "listbox");
+    ul.id = "sgbPalList";
+    inp.setAttribute("aria-controls", ul.id);
+    box.appendChild(ul);
+    box.appendChild(el("p", "hint", "<kbd>↑</kbd><kbd>↓</kbd> to move · <kbd>Enter</kbd> to open · <kbd>Esc</kbd> to close"));
+    pal.appendChild(box);
+    document.body.appendChild(pal);
+    var shown = [], at = 0;
+    function draw() {
+      var q = inp.value.trim().toLowerCase();
+      var words = q.split(/\s+/).filter(Boolean);
+      shown = items.map(function (it, i) {
+        var title = it.t.toLowerCase(), hay = (it.t + " " + it.s + " " + it.k).toLowerCase();
+        if (!words.every(function (w) { return hay.indexOf(w) > -1; })) return null;
+        var rank = !q ? 0 : title.indexOf(q) === 0 ? 0 : title.indexOf(q) > -1 ? 1
+          : words.every(function (w) { return title.indexOf(w) > -1; }) ? 2 : 3;
+        return { it: it, rank: rank, i: i };
+      }).filter(Boolean).sort(function (a, b) { return a.rank - b.rank || a.i - b.i; })
+        .map(function (x) { return x.it; });
+      if (!q) shown = shown.filter(function (it) { return it.k !== "Assignment" && !/^\d{4}/.test(it.k); });
+      shown = shown.slice(0, 50);
+      at = Math.min(at, Math.max(0, shown.length - 1));
+      ul.innerHTML = "";
+      if (!shown.length) ul.appendChild(el("li", "none", "Nothing matches “" + esc(inp.value) + "”."));
+      shown.forEach(function (it, i) {
+        var li = el("li", "opt" + (i === at ? " on" : "") + (it.slot ? " slot" + it.slot : ""));
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", String(i === at));
+        li.id = "sgbPal" + i;
+        li.innerHTML = '<span class="k">' + esc(it.k) + '</span><span class="t"><b>' + esc(it.t) + "</b><span>" + esc(it.s) + "</span></span>";
+        li.addEventListener("mousemove", function () { if (at !== i) { at = i; mark(); } });
+        li.addEventListener("click", function () { choose(i); });
+        ul.appendChild(li);
+      });
+      if (shown.length) inp.setAttribute("aria-activedescendant", "sgbPal" + at);
+    }
+    function mark() {
+      [].forEach.call(ul.children, function (li, i) {
+        li.classList.toggle("on", i === at);
+        li.setAttribute("aria-selected", String(i === at));
+      });
+      var on = ul.children[at];
+      if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest" });
+      inp.setAttribute("aria-activedescendant", "sgbPal" + at);
+    }
+    function choose(i) {
+      var it = shown[i];
+      closePalette();
+      if (it) it.go();
+    }
+    inp.addEventListener("input", function () { at = 0; draw(); });
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown") { at = Math.min(shown.length - 1, at + 1); mark(); e.preventDefault(); }
+      else if (e.key === "ArrowUp") { at = Math.max(0, at - 1); mark(); e.preventDefault(); }
+      else if (e.key === "Enter") { choose(at); e.preventDefault(); }
+      else if (e.key === "Escape") { closePalette(); e.preventDefault(); }
+      else if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) { closePalette(); e.preventDefault(); }
+    });
+    pal.addEventListener("mousedown", function (e) { if (e.target === pal) closePalette(); });
+    draw();
+    inp.focus();
+  }
+  function closePalette() {
+    if (!pal) return;
+    pal.remove();
+    pal = null;
+  }
+
   /* ================================================================ Files */
   function csvCell(v) {
     var s = v == null ? "" : String(v);
@@ -1731,6 +2581,10 @@ window.OPLO_GRADEBOOK = (function () {
     keysBound = true;
     document.addEventListener("keydown", function (e) {
       if (!live()) return;
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "k" || e.key === "K")) {
+        palette(); e.preventDefault(); return;
+      }
+      if (pal) return;          // the palette owns the keyboard while it is open
       if (e.key === "Escape") {
         if (sheet) { shortcuts(); e.preventDefault(); return; }
         if (pop) { closePop(); e.preventDefault(); return; }
@@ -1741,7 +2595,7 @@ window.OPLO_GRADEBOOK = (function () {
       var k = e.key;
       if (k === "?") { shortcuts(); e.preventDefault(); return; }
       if (sheet) return;
-      if (k >= "1" && k <= "4") { setTab(TABS[+k - 1].key); e.preventDefault(); return; }
+      if (k >= "1" && k <= String(TABS.length)) { setTab(TABS[+k - 1].key); e.preventDefault(); return; }
       if (k === "p" || k === "P") { printReport(); e.preventDefault(); return; }
       if (G.tab !== "book" || (!G.classes.length && !G.years.length)) return;
       if (k === "j" || k === "J") { step(1); e.preventDefault(); }
