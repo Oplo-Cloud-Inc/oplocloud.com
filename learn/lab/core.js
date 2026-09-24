@@ -49,6 +49,7 @@ window.OPLO_LAB = (function () {
     "alg/u11.js": "a429089b",
     "alg/u12.js": "f4f424a0",
     "alg/u13.js": "0dd98c8b",
+    "alg/u14.js": "a684fce9",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "b53b1cdc"
   };
@@ -877,9 +878,9 @@ window.OPLO_LAB = (function () {
       });
       return vals;
     }
-    var shown = s.shown || (s.answer.length ? s.answer.map(num).join(", ") : "no solution");
+    var shown = s.shown || (s.answer.length ? s.answer.map(shownNum).join(", ") : "no solution");
     return answerBox(s, {
-      placeholder: s.placeholder || "e.g. −3, 3", keys: false, shown: shown,
+      placeholder: s.placeholder || "e.g. −3, 3", keys: s.keys || false, shown: shown,
       parse: read,
       preview: function (t) { var v = read(t); return v.length ? m(v.map(num).join(", ")) : "No solution"; },
       check: function (t) {
