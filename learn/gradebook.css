@@ -18,11 +18,13 @@
   padding-inline: max(var(--gut), 4vw, env(safe-area-inset-left)) max(var(--gut), 4vw, env(safe-area-inset-right));
 }
 
-.sg {
-  max-width: 1400px; margin: 0 auto; padding-bottom: 60px;
-  display: flex; flex-direction: column; gap: 22px;
-}
-.lx-view.on.sg { display: flex; }
+/* No `display` on .sg itself. The host is the app's #v-grades view, which
+   app.css hides with `.lx-view { display: none }` whenever another tab is
+   open; a `display` here would outrank that rule and draw the gradebook on
+   top of every other tab. It takes its flex layout only while it is the
+   view that is on. */
+.sg { max-width: 1400px; margin: 0 auto; padding-bottom: 60px; }
+.lx-view.on.sg, .sg:not(.lx-view) { display: flex; flex-direction: column; gap: 22px; }
 .sg .b-a { --band: var(--green); }
 .sg .b-b { --band: var(--blue); }
 .sg .b-c { --band: var(--amber); }
