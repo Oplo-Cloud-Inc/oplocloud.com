@@ -20,7 +20,8 @@
 
    Eleven skills practise it, Khan-style: every sitting is freshly generated,
    with hints and a worked solution. Two quizzes check it along the way, and
-   the unit test at the end draws from every skill.
+   the unit test at the end draws from every skill. The notes put the whole
+   unit on one page, a card per idea.
    ========================================================================== */
 (function () {
   "use strict";
@@ -444,6 +445,59 @@
         skills: ["a1-like1", "a1-like2", "a1-like3", "a1-dist", "a1-equiv"], per: 2 }
     ],
 
+    /* ================================================================= Notes */
+    notes: [
+      { t: "Variables and algebra's shorthand",
+        say: ["A **variable** is a letter that stands for a number. Any letter will do — $x$, $n$, $a$ — it is just a name for a number you don't know yet, or one that can change.",
+              "Algebra leaves the multiplication sign out, because $\\times$ looks too much like the letter $x$. A number written against a letter means multiply."],
+        keys: [["$3n$", "$3 \\times n$"], ["$ab$", "$a \\times b$"], ["$\\frac{n}{2}$", "$n \\div 2$ — a fraction bar means divide"],
+               ["$n^2$", "$n \\times n$, said “$n$ squared”"], ["$n^3$", "$n \\times n \\times n$, said “$n$ cubed”"]],
+        watch: "With $n = 5$, $4n$ is $4 \\times 5 = 20$ — not $45$. The digits don't sit side by side; they multiply." },
+      { t: "Evaluating an expression",
+        say: ["An **expression** is a calculation written with numbers, letters and operations, like $2x + 5$. It has no equals sign.",
+              "To **evaluate** it, put the number in place of the letter — in brackets — and work it out.",
+              "Work it out in the usual order: **brackets** first, then **powers**, then **multiply and divide** from left to right, then **add and subtract** from left to right."],
+        eg: { q: "Evaluate $2 + 3x^2$ when $x = 4$.",
+              rows: [["2 + 3(4)^2", "Put $4$ in for $x$, in brackets."], ["2 + 3(16)", "Power first: $4^2 = 16$."],
+                     ["2 + 48", "Then multiply."], ["50", "Add last."]] },
+        watch: "$3x^2$ squares only the $x$. With $x = 4$ it is $3 \\times 16 = 48$, not $12^2 = 144$." },
+      { t: "Several letters, fractions and decimals",
+        say: ["When an expression has more than one letter, each letter gets its own number. Swap every one of them in, then work it out as before.",
+              "Put negative numbers in brackets when you swap them in, so their signs are kept. Fractions and decimals are handled exactly like whole numbers."],
+        eg: { q: "Evaluate $a^2 - 3b$ when $a = -2$ and $b = \\frac{1}{3}$.",
+              rows: [["(-2)^2 - 3(\\frac{1}{3})", "Each letter replaced, in brackets."], ["4 - 1", "$(-2)^2 = 4$ and $3 \\times \\frac{1}{3} = 1$."], ["3", ""]] },
+        watch: "$(-2)^2 = 4$, but $-2^2 = -4$: without the brackets only the $2$ is squared, and the minus is put on afterwards." },
+      { t: "Like terms",
+        say: ["A **term** is one piece of an expression, between the $+$ and $-$ signs, and it carries the sign in front of it. In $4x - 7$ the terms are $4x$ and $-7$.",
+              "The number in front of a letter is its **coefficient**; a term with no letter is a **constant**.",
+              "**Like terms** have exactly the same letters raised to the same powers: $3x$ and $-5x$ are alike, $3x$ and $3x^2$ are not. Combine like terms by adding their coefficients and keeping the letter."],
+        eg: { q: "Simplify $4x - 7 - 6x + 2$.",
+              rows: [["4x - 6x - 7 + 2", "Gather the like terms, each with its own sign."], ["-2x - 5", "$4 - 6 = -2$ and $-7 + 2 = -5$."]] },
+        watch: "$2x + 3y$ can't be combined — the letters are different. And $x + x = 2x$, not $x^2$: adding $x$'s gives more $x$'s." },
+      { t: "The distributive property",
+        say: ["A number outside a bracket multiplies **every** term inside it: $a(b + c) = ab + ac$. Multiplying out a bracket is called **expanding** it.",
+              "Going the other way — taking a common factor out and putting the bracket back — is **factoring**: $6x + 9 = 3(2x + 3)$.",
+              "A negative number outside multiplies every term inside, sign and all."],
+        eg: { q: "Expand and simplify $-3(2x - 4) + 5x$.",
+              rows: [["-6x + 12 + 5x", "$-3 \\times 2x = -6x$ and $-3 \\times (-4) = +12$."], ["-x + 12", "Combine $-6x + 5x$."]] },
+        watch: "$2(x + 3)$ is $2x + 6$, not $2x + 3$: the $2$ multiplies the $3$ as well." },
+      { t: "Equivalent expressions",
+        say: ["Two expressions are **equivalent** if they give the same value for **every** number you put in — like $2(x + 3)$ and $2x + 6$.",
+              "To tell, simplify both and compare. To prove two expressions are **not** equivalent, one number where they disagree is enough."],
+        eg: { q: "Is $3(x + 2) - x$ equivalent to $2x + 6$?",
+              rows: [["3x + 6 - x", "Expand the bracket."], ["2x + 6", "Combine like terms."]],
+              a: "They simplify to the same thing, so yes." },
+        watch: "Agreeing at one number isn't enough: $2x$ and $x^2$ both give $4$ at $x = 2$, but at $x = 3$ they give $6$ and $9$." },
+      { t: "Why you can't divide by zero",
+        say: ["Division undoes multiplication: $12 \\div 3 = 4$ because $4 \\times 3 = 12$.",
+              "So $12 \\div 0$ would need a number that makes $12$ when it is multiplied by $0$. There isn't one — every number times $0$ is $0$ — so $12 \\div 0$ is **undefined**.",
+              "$0 \\div 0$ is different: every number times $0$ gives $0$, so no single answer can be picked. It is called **indeterminate**.",
+              "An expression with a letter on the bottom of a fraction is undefined at any value that makes the bottom zero."],
+        eg: { q: "For which value of $x$ is $\\frac{5}{x - 3}$ undefined?",
+              rows: [["x - 3 = 0", "It is undefined when the bottom is zero…"], ["x = 3", "…which happens when $x$ is $3$."]] },
+        watch: "Zero on **top** is fine: $\\frac{0}{5} = 0$. Only zero on the bottom has no answer." }
+    ],
+
     /* ================================================================ Skills */
     skills: [
       { id: "a1-words", title: "Writing expressions from words", lesson: 2,
@@ -527,9 +581,11 @@
         } },
       { id: "a1-like3", title: "Combining like terms with rational coefficients", lesson: 4,
         gen: function (R) {
-          var d1 = R.pick([2, 3, 4, 5, 6]), d2 = R.pick([2, 3, 4, 5]), n1, n2;
+          // Two different denominators, so there is always a common one to
+          // find (with two halves the only choice would repeat forever).
+          var d1 = R.pick([2, 3, 4, 5, 6]), d2 = R.pick([2, 3, 4, 5].filter(function (d) { return d !== d1; })), n1, n2;
           do { n1 = R.int(1, d1 - 1); } while (L.gcd(n1, d1) !== 1);
-          do { n2 = R.int(1, d2 - 1); } while (L.gcd(n2, d2) !== 1 || d2 === d1 && n2 === n1);
+          do { n2 = R.int(1, d2 - 1); } while (L.gcd(n2, d2) !== 1);
           n2 *= R.sign();
           var top = n1 * d2 + n2 * d1, bot = d1 * d2;
           if (top === 0) top = bot;
