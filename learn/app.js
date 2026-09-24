@@ -655,7 +655,7 @@
     });
     $("#subbar").hidden = !(view === "explore" || view === "subject");
     if (view !== "admin") leaveConsole();
-    $("#wrap").classList.toggle("wide", view === "match" || view === "map");
+    $("#wrap").classList.toggle("wide", view === "match" || view === "map" || view === "grades");
     $("#wrap").classList.toggle("full", view === "read");
     if (view !== "read") { railOff(); if (S.hideAnn) S.hideAnn(); }
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
@@ -6826,23 +6826,37 @@
     }, function () { return null; });
   }
 
-  function openGrades(silent) {
+  /* The Grades tab is a gradebook: every class, every assignment, the
+     what-if calculator, the report card (gradebook.js). The path to
+     graduation is its last tab, drawn here as it always was. */
+  function openGrades(silent, tab) {
     root("grades", "Grades", function () { openGrades(true); }, "Grades");
     var v = $("#v-grades");
     v.innerHTML = "";
+    noFoot(); progress(null);
+    show("grades");
+    if (!window.OPLO_GRADEBOOK) { openGraduation(v); return; }
+    window.OPLO_GRADEBOOK.mount(v, {
+      me: S.me || {}, toast: toast, tab: tab,
+      graduation: function (host) { drawGraduation(host, function () { openGrades(true, "grad"); }); }
+    });
+  }
+
+  function openGraduation(v) {
     v.appendChild(el("p", "lx-eyebrow", "Grades" + (S.me ? " · " + esc(S.me.name) : "")));
     v.appendChild(el("h1", "lx-h1", "Your path to graduation"));
+    drawGraduation(v, function () { openGrades(true); });
+  }
+
+  function drawGraduation(v, again) {
     var host = el("div", "gr");
     v.appendChild(host);
     var wait = el("div", "admin-loading", "Reading your record…");
     host.appendChild(wait);
-    noFoot(); progress(null);
-    show("grades");
     Promise.all([API.graduation.get(), planLoad()]).then(function (out) {
       wait.remove();
-      drawGrades(host, out[0], null, { canCommit: true, plan: out[1],
-                                       again: function () { openGrades(true); } });
-    }, function (e) { failed(wait, e, function () { openGrades(true); }); });
+      drawGrades(host, out[0], null, { canCommit: true, plan: out[1], again: again });
+    }, function (e) { failed(wait, e, again); });
   }
 
   /* ---------------------------------------------------------------- Exams
