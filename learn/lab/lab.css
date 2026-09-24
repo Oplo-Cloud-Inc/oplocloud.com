@@ -229,6 +229,10 @@ html[data-look="obsidian"] .lw-log li { background: rgba(255,255,255,.05); }
 .lw-tri { fill: none; stroke: var(--lw-orange); stroke-width: 2.5; stroke-dasharray: 6 5; }
 .lw-run, .lw-rise { font-family: var(--text); font-size: 12.5px; font-weight: 700; fill: var(--lw-orange); paint-order: stroke; stroke: var(--lw-surface); stroke-width: 4px; }
 .lw-mark circle { fill: var(--c); }
+.lw-mark.open circle { fill: var(--lw-surface); stroke: var(--c); stroke-width: 2.5; }
+/* A function defined in pieces, one row per piece */
+.lb-pw { display: inline-grid; grid-template-columns: auto auto; gap: 6px 18px; margin: 10px 0 4px; padding: 4px 0 4px 14px; border-left: 2.5px solid var(--ink-3); vertical-align: middle; }
+.lb-pw > span:nth-child(even) { color: var(--ink-2); }
 .lw-plane .lw-svg.clickable { cursor: crosshair; }
 
 /* --------------------------------------------------------------- Tiles */

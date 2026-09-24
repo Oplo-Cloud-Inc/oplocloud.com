@@ -454,7 +454,8 @@
                      shade: "above"|"below", strict, domain: [a, b] }],
              points: [{ id, x, y, drag: true|"x"|"y", snap, snapY, label, color, coords }],
              lines: [{ through: [id, id], slope: true, color }],
-             marks: [{ x, y, label }]   fixed dots
+             marks: [{ x, y, label, open }]   fixed dots (open: a hollow
+                                                  circle, an end left out)
              hline / vline: [values], segs: [[x1,y1,x2,y2]],
              grid (1), gridY (grid): spacing of the grid lines, so a word
              problem's axes (hours against dollars) can be drawn to scale,
@@ -583,7 +584,7 @@
       (spec.marks || []).forEach(function (mk) {
         var yv = typeof mk.y === "function" ? mk.y(P) : mk.y, xv = typeof mk.x === "function" ? mk.x(P) : mk.x;
         if (!isFinite(xv) || !isFinite(yv)) return;
-        var g = S("g", { class: "lw-mark c-" + (mk.color || "ink"), transform: "translate(" + X(xv) + "," + Y(yv) + ")" }, markG);
+        var g = S("g", { class: "lw-mark c-" + (mk.color || "ink") + (mk.open ? " open" : ""), transform: "translate(" + X(xv) + "," + Y(yv) + ")" }, markG);
         S("circle", { r: mk.r || 5 }, g);
         if (mk.label) { var tl = S("text", { x: 9, y: -9, class: "lw-pl" }, g); tl.textContent = typeof mk.label === "function" ? mk.label(P) : mk.label; }
       });

@@ -35,7 +35,7 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "7666304b",
+    "lab/widgets.js": "e8d2e7f7",
     "alg/u01.js": "3c28ffd1",
     "alg/u02.js": "33c5a4df",
     "alg/u03.js": "e8d25f48",
@@ -44,6 +44,8 @@ window.OPLO_LAB = (function () {
     "alg/u06.js": "d8f7c775",
     "alg/u07.js": "e5d5f1e5",
     "alg/u08.js": "e322a8a6",
+    "alg/u09.js": "c44de169",
+    "alg/u10.js": "023a63d5",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "b53b1cdc"
   };
@@ -838,6 +840,18 @@ window.OPLO_LAB = (function () {
     });
   }
 
+  /* How Show me writes a number answer: a decimal if it ends within four
+     places, otherwise the fraction it is (1/3, not 0.33333333333333326). */
+  function shownNum(v) {
+    if (typeof v !== "number" || !isFinite(v)) return String(v);
+    if (Math.abs(v * 1e4 - Math.round(v * 1e4)) < 1e-6) return num(Math.round(v * 1e4) / 1e4);
+    for (var d = 2; d <= 1000; d++) {
+      var n = Math.round(v * d);
+      if (Math.abs(n / d - v) < 1e-9) return fracText(n, d);
+    }
+    return num(v);
+  }
+
   function register() {
     CH.addKind("expr", kindExpr);
     CH.addKind("equation", kindEquation);
@@ -850,7 +864,7 @@ window.OPLO_LAB = (function () {
     // slope worked out as 7 ÷ 6, and a likely mistake is caught the same way.
     CH.addKind("num", function (s, seed) {
       var x = base(Object.assign({}, s, { label: s.label ? String(s.label).replace(/<[^>]+>|\$/g, "") : null,
-        tol: s.tol != null ? s.tol : 1e-6,
+        tol: s.tol != null ? s.tol : 1e-6, shown: s.shown || shownNum(s.answer),
         near: (s.near || []).map(function (n) { return n.tol != null ? n : Object.assign({ tol: 1e-6 }, n); }) }), seed);
       if (s.pre || s.post) {
         var row = el("div", "lb-ans-row");
