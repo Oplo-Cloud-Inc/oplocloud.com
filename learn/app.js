@@ -477,6 +477,8 @@
        /student/Sets/<id>/Flashcards               …and a way of studying it
        /student/Exams, /Exams/<id>, /Progress, /Grades, /Account,
        /student/Notebook, /Mistakes
+       /student/Grades/<Class>, /Grades/<2025-26>, /Grades/Plan
+                                                   a class, a past year, the plan
 
      The console has no addresses of its own yet; its places are still
      history entries, so Back works there, but the address bar stays put. */
@@ -574,7 +576,7 @@
     }
     if (sameName(a, "Classes")) { openClasses(); return true; }
     if (sameName(a, "Progress")) { openProgress(); return true; }
-    if (sameName(a, "Grades")) { openGrades(); return true; }
+    if (sameName(a, "Grades")) { openGrades(false, seg.slice(1)); return true; }
     if (sameName(a, "Account")) { openAccount(); return true; }
     if (sameName(a, "Notebook")) { openNotebook(); return true; }
     if (sameName(a, "Mistakes")) { openMistakes(); return true; }
@@ -6831,16 +6833,27 @@
   /* The Grades tab is a gradebook: every class, every assignment, the
      what-if calculator, the report card (gradebook.js). The path to
      graduation is its last tab, drawn here as it always was. */
-  function openGrades(silent, tab) {
+  function openGrades(silent, at) {
     root("grades", "Grades", function () { openGrades(true); }, "Grades");
     var v = $("#v-grades");
     v.innerHTML = "";
     noFoot(); progress(null);
     show("grades");
     if (!window.OPLO_GRADEBOOK) { openGraduation(v); return; }
-    window.OPLO_GRADEBOOK.mount(v, {
-      me: S.me || {}, toast: toast, tab: tab,
-      graduation: function (host) { drawGraduation(host, function () { openGrades(true, "grad"); }); }
+    var GB = window.OPLO_GRADEBOOK;
+    GB.mount(v, {
+      me: S.me || {}, toast: toast, at: at,
+      graduation: function (host) { drawGraduation(host, function () { openGrades(true, ["Plan"]); }); },
+      /* A place inside the gradebook — a class, a past year, the plan — is a
+         step in the app's history with its own address, so Back, the bar's
+         back button and a refresh all land where the student expects. */
+      go: function (segs, label, replace) {
+        enter("grades:" + segs.join("/"), label, function () {
+          show("grades"); noFoot(); progress(null);
+          if (!GB.view(segs)) openGrades(true, segs);
+        }, replace, ["Grades"].concat(segs).join("/"));
+      },
+      back: function () { if (S.hist.length) goBack(); else openGrades(true); }
     });
   }
 
