@@ -35,9 +35,22 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "8dc69731",
-    "alg/u01.js": "36485330",
-    "alg/u02.js": "e1ae3453",
+    "lab/widgets.js": "e8d2e7f7",
+    "alg/u01.js": "3c28ffd1",
+    "alg/u02.js": "33c5a4df",
+    "alg/u03.js": "e8d25f48",
+    "alg/u04.js": "aa279aaa",
+    "alg/u05.js": "b6cf433d",
+    "alg/u06.js": "d8f7c775",
+    "alg/u07.js": "e5d5f1e5",
+    "alg/u08.js": "e322a8a6",
+    "alg/u09.js": "c44de169",
+    "alg/u10.js": "023a63d5",
+    "alg/u11.js": "a429089b",
+    "alg/u12.js": "f4f424a0",
+    "alg/u13.js": "0dd98c8b",
+    "alg/u14.js": "54f880ce",
+    "alg/u15.js": "b0562134",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "b53b1cdc"
   };
@@ -504,6 +517,47 @@ window.OPLO_LAB = (function () {
     return hasSumInside(n);
   }
   function termCount(tree) { return flatTerms(tree).length; }
+  /* Factored all the way, for a polynomial in one letter: a product whose
+     bracketed factors are all first-degree, none with a whole-number common
+     factor left in it — 2(x + 2)(x + 3), not 2(x² + 5x + 6) or (2x + 4)(x + 3).
+     Returns true, or what is still to do. */
+  function factorsOf(n) {
+    while (n.t === "par") n = n.a;
+    if (n.t === "neg") return factorsOf(n.a);
+    if (n.t === "mul") return factorsOf(n.a).concat(factorsOf(n.b));
+    if (n.t === "pow" && n.b.t === "num") return factorsOf(n.a);
+    return [n];
+  }
+  function fullyFactored(tree) {
+    if (!isFactored(tree)) return "That's equal, but it isn't factored. Write it as a product.";
+    var names = Object.keys(varsOf(tree));
+    if (names.length !== 1) return true;
+    var v = names[0], fs = factorsOf(tree);
+    for (var i = 0; i < fs.length; i++) {
+      var f = fs[i];
+      if (!hasSumInside(f)) continue;
+      var e0 = {}, e1 = {}, e2 = {}, e3 = {};
+      e0[v] = 0; e1[v] = 1; e2[v] = 100; e3[v] = 1000;
+      var big = Math.abs(evalTree(f, e3)), mid = Math.abs(evalTree(f, e2));
+      var deg = mid > 0 ? Math.round(Math.log(big / mid) / Math.LN10) : 0;
+      if (deg === 2) {
+        // A quadratic factor is finished only if it has no rational roots.
+        var q0 = evalTree(f, e0), q1 = evalTree(f, e1), em = {}; em[v] = -1;
+        var qm = evalTree(f, em), qa = (q1 + qm) / 2 - q0, qb = (q1 - qm) / 2, disc = qb * qb - 4 * qa * q0;
+        if (disc >= 0 && Math.abs(Math.sqrt(disc) - Math.round(Math.sqrt(disc))) < 1e-9) return "That's equal — but one of the factors can still be factored.";
+        if ([qa, qb, q0].every(function (c) { return Math.abs(c - Math.round(c)) < 1e-9; }) && gcd(gcd(Math.round(qa), Math.round(qb)), Math.round(q0)) > 1)
+          return "That's equal — but one of the factors still has a common factor. Take it out.";
+        continue;
+      }
+      if (deg > 2) return "That's equal — but one of the factors can still be factored.";
+      if (deg === 1) {
+        var b = evalTree(f, e0), a = evalTree(f, e1) - b;
+        if (Math.abs(a - Math.round(a)) < 1e-9 && Math.abs(b - Math.round(b)) < 1e-9 && gcd(Math.round(a), Math.round(b)) > 1)
+          return "That's equal — but $" + String(Math.round(a)) + v + (b < 0 ? " - " + Math.abs(Math.round(b)) : " + " + Math.round(b)) + "$ still has a common factor. Take it out.";
+      }
+    }
+    return true;
+  }
 
   /* ================================================================ Random
      Seeded, so a problem can be shown again exactly as it was. */
@@ -715,9 +769,18 @@ window.OPLO_LAB = (function () {
         var eq = equivalent(tree, target);
         var near = (s.near || []).filter(function (n) { try { return equivalent(tree, parse(n.v)); } catch (e) { return false; } })[0];
         if (!eq) return { ok: false, say: near ? near.fb : null };
-        if (s.form === "simplified" && !isSimplified(tree)) return { ok: false, say: s.formFb || "That's equal — now finish simplifying: combine like terms and clear the brackets." };
-        if (s.form === "factored" && !isFactored(tree)) return { ok: false, say: s.formFb || "That's equal, but it isn't factored. Write it as a product." };
-        if (s.maxTerms && termCount(tree) > s.maxTerms) return { ok: false, say: s.formFb || "That's equal — can it be written with fewer terms?" };
+        // Equal but not yet in the form asked for. A likely half-way answer
+        // (typed as the step lists it) gets its own reply.
+        var norm = function (x) { return String(x).replace(/[\s*]/g, "").replace(/\u2212/g, "-"); };
+        var half = (s.near || []).filter(function (n) { return norm(n.v) === norm(t); })[0];
+        function form(fb) { return { ok: false, say: half ? half.fb : s.formFb || fb }; }
+        if (s.form === "simplified" && !isSimplified(tree)) return form("That's equal — now finish simplifying: combine like terms and clear the brackets.");
+        if (s.form === "factored" && !isFactored(tree)) return form("That's equal, but it isn't factored. Write it as a product.");
+        if (s.form === "fully-factored") {
+          var ff = fullyFactored(tree);
+          if (ff !== true) return form(ff);
+        }
+        if (s.maxTerms && termCount(tree) > s.maxTerms) return form("That's equal — can it be written with fewer terms?");
         return { ok: true };
       }
     });
@@ -741,6 +804,23 @@ window.OPLO_LAB = (function () {
         if (s.form === "slope-intercept") {
           var lhs = r.sides[0];
           if (!(lhs.t === "var" && lhs.n === "y") || varsOf(r.sides[1]).y) return { ok: false, say: "Same line — now write it as $y = mx + b$, with $y$ on its own." };
+        }
+        // y − y₁ = m(x − x₁): y less a number on the left, a number times a
+        // bracket with x in it on the right.
+        if (s.form === "point-slope") {
+          var pl = r.sides[0], pr = r.sides[1];
+          var yAlone = pl.t === "var" && pl.n === "y";
+          var yLess = (pl.t === "sub" || pl.t === "add") && pl.a.t === "var" && pl.a.n === "y" && !Object.keys(varsOf(pl.b)).length;
+          var rv = varsOf(pr), bare = pr.t === "neg" ? pr.a : pr;     // a slope of 1 or −1: (x − 3), −(x − 3)
+          if (!(yAlone || yLess) || !rv.x || rv.y || !(isFactored(pr) || bare.t === "par")) return { ok: false, say: s.formFb || "Same line — now write it in point-slope form, $y - y_1 = m(x - x_1)$." };
+        }
+        // Ax + By = C with whole numbers: the letters on the left, a number on the right.
+        if (s.form === "standard") {
+          var sl = r.sides[0], sr = r.sides[1], lv = varsOf(sl);
+          var c0 = evalTree(sl, { x: 0, y: 0 }), A = evalTree(sl, { x: 1, y: 0 }) - c0, B = evalTree(sl, { x: 0, y: 1 }) - c0, C = evalTree(sr, {});
+          var whole = [A, B, C].every(function (v) { return isFinite(v) && Math.abs(v - Math.round(v)) < 1e-9; });
+          if (Object.keys(varsOf(sr)).length || !lv.x || !lv.y || Math.abs(c0) > 1e-9 || !whole)
+            return { ok: false, say: s.formFb || "Same line — now write it in standard form, $Ax + By = C$, with whole numbers and the number on the right." };
         }
         return { ok: true };
       }
@@ -799,9 +879,9 @@ window.OPLO_LAB = (function () {
       });
       return vals;
     }
-    var shown = s.shown || (s.answer.length ? s.answer.map(num).join(", ") : "no solution");
+    var shown = s.shown || (s.answer.length ? s.answer.map(shownNum).join(", ") : "no solution");
     return answerBox(s, {
-      placeholder: s.placeholder || "e.g. −3, 3", keys: false, shown: shown,
+      placeholder: s.placeholder || "e.g. −3, 3", keys: s.keys || false, shown: shown,
       parse: read,
       preview: function (t) { var v = read(t); return v.length ? m(v.map(num).join(", ")) : "No solution"; },
       check: function (t) {
@@ -815,6 +895,18 @@ window.OPLO_LAB = (function () {
     });
   }
 
+  /* How Show me writes a number answer: a decimal if it ends within four
+     places, otherwise the fraction it is (1/3, not 0.33333333333333326). */
+  function shownNum(v) {
+    if (typeof v !== "number" || !isFinite(v)) return String(v);
+    if (Math.abs(v * 1e4 - Math.round(v * 1e4)) < 1e-6) return num(Math.round(v * 1e4) / 1e4);
+    for (var d = 2; d <= 1000; d++) {
+      var n = Math.round(v * d);
+      if (Math.abs(n / d - v) < 1e-9) return fracText(n, d);
+    }
+    return num(v);
+  }
+
   function register() {
     CH.addKind("expr", kindExpr);
     CH.addKind("equation", kindEquation);
@@ -823,8 +915,12 @@ window.OPLO_LAB = (function () {
     CH.addKind("numbers", kindNumbers);
     // A number with math in its label, and fractions accepted.
     var base = CH.kinds.number;
+    // Answers match to a millionth, so 7/6 typed as a fraction matches a
+    // slope worked out as 7 ÷ 6, and a likely mistake is caught the same way.
     CH.addKind("num", function (s, seed) {
-      var x = base(Object.assign({}, s, { label: s.label ? String(s.label).replace(/<[^>]+>|\$/g, "") : null }), seed);
+      var x = base(Object.assign({}, s, { label: s.label ? String(s.label).replace(/<[^>]+>|\$/g, "") : null,
+        tol: s.tol != null ? s.tol : 1e-6, shown: s.shown || shownNum(s.answer),
+        near: (s.near || []).map(function (n) { return n.tol != null ? n : Object.assign({ tol: 1e-6 }, n); }) }), seed);
       if (s.pre || s.post) {
         var row = el("div", "lb-ans-row");
         if (s.pre) row.appendChild(el("span", "lb-pre", fmt(s.pre)));
@@ -1077,6 +1173,8 @@ window.OPLO_LAB = (function () {
     lb.appendChild(path);
     wrap.appendChild(lb);
 
+    if (u.notes && u.notes.length) wrap.appendChild(notesBlock(u));
+
     var pb = el("section", "lb-block");
     pb.appendChild(el("h2", "lb-h2", "Practice"));
     pb.appendChild(el("p", "lb-sub", "Five fresh problems each time. Get four right to level a skill up; the unit test takes it the rest of the way."));
@@ -1105,6 +1203,92 @@ window.OPLO_LAB = (function () {
   }
   function hasStarted(l) {
     return false;
+  }
+
+  /* ================================================================ Notes
+     The unit on one page, to read before practice or the night before the
+     test. A unit's notes are a list of cards, one per idea:
+
+       { t: "Slope",                         the idea's name
+         say: ["…", "…"],                    what it is, one thought each
+         keys: [["$m$", "the slope"], …],    words and symbols, and what they mean
+         eg: { q: "…", rows: [["tex", "reason"], …] },   a worked example
+         watch: "…" }                        the mistake to look out for
+
+     Cards fold; the ones a student opens stay open while the page is
+     redrawn. Print sets every card open and prints the notes alone. */
+  var NOTES_OPEN = {};
+  function notesBlock(u) {
+    var open = NOTES_OPEN[u.key] || (NOTES_OPEN[u.key] = {});
+    var sec = el("section", "lb-block lb-notes");
+    sec.id = "notes";
+    var top = el("div", "lb-notes-top");
+    top.appendChild(el("h2", "lb-h2", "Notes"));
+    var tools = el("div", "lb-notes-tools");
+    var all = button("lb-nbtn", "Open all");
+    var print = button("lb-nbtn", "Print");
+    tools.appendChild(all); tools.appendChild(print);
+    top.appendChild(tools);
+    sec.appendChild(top);
+    sec.appendChild(el("p", "lb-sub", "The whole unit on one page: each idea in plain words, a worked example, and the mistake to watch for."));
+    var list = el("div", "lb-nlist");
+    var cards = u.notes.map(function (n, i) {
+      var d = el("details", "lb-note");
+      if (open[i]) d.open = true;
+      var sum = el("summary", null,
+        '<span class="lb-nnum">' + (i + 1) + "</span><b>" + fmt(n.t) + "</b>" + svg(ICON.down));
+      d.appendChild(sum);
+      var body = el("div", "lb-nbody");
+      (n.say || []).forEach(function (p) { body.appendChild(el("p", null, fmt(p))); });
+      if (n.keys && n.keys.length) {
+        var dl = el("dl", "lb-nkeys");
+        n.keys.forEach(function (k) {
+          dl.appendChild(el("dt", null, fmt(k[0])));
+          dl.appendChild(el("dd", null, fmt(k[1])));
+        });
+        body.appendChild(dl);
+      }
+      if (n.eg) {
+        var eg = el("div", "lb-neg");
+        eg.appendChild(el("p", "lb-neg-q", '<span class="lb-nk">Example</span>' + fmt(n.eg.q)));
+        if (n.eg.rows && n.eg.rows.length) {
+          var ol = el("ol");
+          n.eg.rows.forEach(function (r) {
+            ol.appendChild(el("li", null, '<span class="lb-nm">' + (r[0] ? m(r[0]) : "") + '</span><span class="lb-nr">' + (r[1] ? fmt(r[1]) : "") + "</span>"));
+          });
+          eg.appendChild(ol);
+        }
+        if (n.eg.a) eg.appendChild(el("p", "lb-neg-a", fmt(n.eg.a)));
+        body.appendChild(eg);
+      }
+      if (n.watch) body.appendChild(el("p", "lb-nwatch", '<span class="lb-nk">Watch out</span>' + fmt(n.watch)));
+      d.appendChild(body);
+      d.addEventListener("toggle", function () { open[i] = d.open; label(); });
+      list.appendChild(d);
+      return d;
+    });
+    sec.appendChild(list);
+    function label() { all.textContent = cards.every(function (c) { return c.open; }) ? "Close all" : "Open all"; }
+    all.addEventListener("click", function () {
+      var to = !cards.every(function (c) { return c.open; });
+      cards.forEach(function (c, i) { c.open = to; open[i] = to; });
+      label();
+    });
+    print.addEventListener("click", function () {
+      var was = cards.map(function (c) { return c.open; });
+      cards.forEach(function (c) { c.open = true; });
+      var root = document.documentElement;
+      root.classList.add("lb-printing");
+      function done() {
+        root.classList.remove("lb-printing");
+        cards.forEach(function (c, i) { c.open = was[i]; });
+        window.removeEventListener("afterprint", done);
+      }
+      window.addEventListener("afterprint", done);
+      window.print();
+    });
+    label();
+    return sec;
   }
 
 

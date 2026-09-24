@@ -18,7 +18,8 @@
    inequality when both sides are multiplied by a negative, and reading AND
    as OR.
 
-   Six lessons, ten skills, two quizzes, and the unit test at the end.
+   Six lessons, thirteen skills (Khan's list for the unit), three quizzes,
+   the unit test at the end, and notes that put the unit on one page.
    Standards: 8.EE.C.7, 8.EE.C.7.a, 8.EE.C.7.b, HSA.CED.A.1, HSA.REI.A.1,
    HSA.REI.B.3.
    ========================================================================== */
@@ -418,10 +419,59 @@
     ],
 
     quizzes: [
-      { title: "Quiz 1", after: 2, blurb: "Solving equations — variables on both sides, brackets, fractions and decimals.",
-        skills: ["a2-both", "a2-both-rat", "a2-paren", "a2-paren-both"], per: 2 },
+      { title: "Quiz 1", after: 2, blurb: "Solving equations — variables on both sides, brackets, fractions and decimals, and which steps keep the solution.",
+        skills: ["a2-both", "a2-both-rat", "a2-paren", "a2-paren-both", "a2-paren-rat", "a2-reason"], per: 2 },
       { title: "Quiz 2", after: 4, blurb: "How many solutions an equation has, and rearranging a formula for one letter.",
-        skills: ["a2-nsol", "a2-make", "a2-unknown"], per: 2 }
+        skills: ["a2-nsol", "a2-make", "a2-unknown"], per: 2 },
+      { title: "Quiz 3", after: 6, blurb: "Inequalities — solving them, flipping the sign, word problems and compound inequalities.",
+        skills: ["a2-ineq", "a2-ineq-neg", "a2-ineq-words", "a2-compound"], per: 2 }
+    ],
+
+    /* ================================================================= Notes */
+    notes: [
+      { t: "Solving an equation: the same to both sides",
+        say: ["An **equation** says two expressions are equal. A **solution** is a value of the letter that makes it true.",
+              "Think of a balance: whatever you do to one side, do to the other, and it stays level. Gather the letter on one side — the side with more of it keeps the numbers positive — put the plain numbers on the other, then divide.",
+              "Put your answer back into the first equation. If both sides come out the same, it is right."],
+        eg: { q: "Solve $7 - 2x = 3x - 8$.",
+              rows: [["7 = 5x - 8", "Add $2x$ to both sides."], ["15 = 5x", "Add $8$ to both sides."], ["3 = x", "Divide both sides by $5$."]],
+              a: "Check: $7 - 2(3) = 1$ and $3(3) - 8 = 1$ ✓" },
+        watch: "Terms on opposite sides of the $=$ can't be combined. $3 + 4x = 5 - 2x$ does **not** become $8 + 2x$ — add $2x$ to both sides instead." },
+      { t: "Brackets, fractions and decimals",
+        say: ["Multiply out brackets first. A negative number outside a bracket multiplies every term inside, sign and all.",
+              "To clear fractions, multiply **every** term on both sides by a number all the denominators go into. Decimals clear the same way, by $10$ or $100$ — or just work with them as they are."],
+        eg: { q: "Solve $\\frac{1}{2}(x + 4) = \\frac{1}{3}x + 3$.",
+              rows: [["3(x + 4) = 2x + 18", "Multiply every term by $6$."], ["3x + 12 = 2x + 18", "Expand the bracket."], ["x = 6", "Take $2x$ and $12$ from both sides."]] },
+        watch: "When you multiply through by a denominator, the plain numbers get multiplied too: $\\frac{1}{3}x + 3$ times $6$ is $2x + 18$, not $2x + 3$." },
+      { t: "None, one, or infinitely many solutions",
+        say: ["Tidy both sides into the form $ax + b = cx + d$ and you can tell how many solutions there are before you finish.",
+              "When the $x$'s cancel out, you haven't made a mistake — read what is left. Something false means nothing works; something true means everything does."],
+        keys: [["$a \\ne c$", "**one** solution"], ["$a = c$ and $b \\ne d$", "**no** solution — it ends in something false, like $10 = -3$"],
+               ["$a = c$ and $b = d$", "**infinitely many** — it ends in something true, like $-7 = -7$"]],
+        eg: { q: "How many solutions does $2(x + 5) = 2x - 3$ have?",
+              rows: [["2x + 10 = 2x - 3", "Expand."], ["10 = -3", "Take $2x$ from both sides: false."]],
+              a: "No solution — the left side is always $13$ more than the right." },
+        watch: "Ending with $5 = 5$ doesn't mean $x = 5$. There is no $x$ left, and the statement is true: every number is a solution." },
+      { t: "Solving for a letter",
+        say: ["A formula can be rearranged to give any one of its letters. The moves are exactly the moves for solving an equation; the answer just keeps its letters.",
+              "Solving for a letter means getting that letter alone on one side."],
+        eg: { q: "Solve $y = mx + b$ for $x$.",
+              rows: [["y - b = mx", "Take $b$ from both sides."], ["\\frac{y - b}{m} = x", "Divide both sides by $m$ — the whole side goes over the bar."]] },
+        watch: "Divide the **whole** side: $\\frac{y - b}{m}$, not $\\frac{y}{m} - b$." },
+      { t: "Inequalities",
+        say: ["An **inequality** compares two sides with $<$, $>$, $\\le$ or $\\ge$. Its solution is a whole range of numbers, drawn on a number line: an **open** circle for $<$ and $>$ (the end is not included), a **filled** circle for $\\le$ and $\\ge$ (it is).",
+              "Solve it like an equation, with one exception: multiplying or dividing both sides by a **negative** number flips the sign.",
+              "In word problems, “at most” is $\\le$ and “at least” is $\\ge$. When the answer must be a whole number, round the way that keeps the inequality true."],
+        eg: { q: "Solve $8 - 3x \\ge 20$.",
+              rows: [["-3x \\ge 12", "Take $8$ from both sides."], ["x \\le -4", "Divide by $-3$, and flip the sign."]] },
+        watch: "Only multiplying or dividing by a negative flips the sign. Adding or subtracting never does, and neither does dividing by a positive." },
+      { t: "Compound inequalities",
+        say: ["Two inequalities joined by **and** need both to be true: the answer is where they overlap, often written in one line like $-2 < x \\le 4$.",
+              "Joined by **or**, either one is enough: the answer is two separate stretches of the line.",
+              "Solve a three-part inequality by doing the same thing to all three parts."],
+        eg: { q: "Solve $-5 < 3x + 1 < 7$.",
+              rows: [["-6 < 3x < 6", "Take $1$ from all three parts."], ["-2 < x < 2", "Divide all three parts by $3$."]] },
+        watch: "“$x < -1$ **and** $x > 3$” has no solution — no number is both. “$x \\ge -1$ **or** $x < 3$” is every number." }
     ],
 
     /* ================================================================ Skills */
@@ -441,7 +491,7 @@
       { id: "a2-both-rat", title: "Both sides, with fractions & decimals", lesson: 2,
         gen: function (R) {
           if (R.chance(0.5)) {
-            var d1 = R.pick([2, 3, 4, 5]), x = d1 * R.nz(-4, 5), b = R.int(-8, 9), c = R.nz(-4, 4);
+            var d1 = R.pick([2, 3, 4, 5]), x = d1 * R.nz(-4, 5), b = R.nz(-8, 9), c = R.nz(-4, 4);
             var right = x / d1 * 1 + b - c * x;                    // (1/d1)x + b = c x + right
             var tex = "\\frac{1}{" + d1 + "}x " + signed(b) + " = " + poly([[c, "x"], [right, ""]], { keepZero: true });
             return { type: "num", prompt: "Solve $" + tex + "$.", pre: "$x =$", answer: x,
@@ -452,19 +502,19 @@
           var p = R.pick([0.2, 0.5, 1.5, 2.5]), q = R.pick([0.5, 1, 1.5, 2]), xv = R.int(-6, 8), k = R.int(-8, 9);
           while (Math.abs(p - q) < 1e-9) q = R.pick([0.5, 1, 1.5, 2]);
           var rhs = Math.round(((p - q) * xv + k) * 100) / 100;
-          var tex2 = num(p) + "x " + signed(k) + " = " + num(q) + "x " + signed(rhs);
+          var tex2 = poly([[p, "x"], [k, ""]], { keepZero: true }) + " = " + poly([[q, "x"], [rhs, ""]], { keepZero: true });
           return { type: "num", prompt: "Solve $" + tex2 + "$.", pre: "$x =$", answer: xv,
-            hints: ["Take $" + num(q) + "x$ from both sides.", "Then take " + num(k) + " from both sides and divide."],
-            why: "$" + num(p - q) + "x = " + num(rhs - k) + "$, so $x = " + num(xv) + "$." };
+            hints: ["Take $" + poly([[q, "x"]]) + "$ from both sides.", "Then take " + num(k) + " from both sides and divide."],
+            why: "$" + poly([[Math.round((p - q) * 100) / 100, "x"]]) + " = " + num(rhs - k) + "$, so $x = " + num(xv) + "$." };
         } },
       { id: "a2-paren", title: "Equations with brackets", lesson: 2,
         gen: function (R) {
-          var k = R.nz(-5, 6), a = R.nz(-6, 7), x = R.nz(-6, 8);
+          var k = R.int(2, 6) * R.sign(), a = R.nz(-6, 7), x = R.nz(-6, 8);
           var inside = poly([[1, "x"], [a, ""]], { keepZero: true });
           var rhs = k * (x + a);
           var tex = k + "(" + inside + ") = " + rhs;
           return { type: "num", prompt: "Solve $" + tex + "$.", pre: "$x =$", answer: x,
-            near: [{ v: rhs - a, fb: "Multiply out first: $" + poly([[k, "x"], [k * a, ""]], { keepZero: true }) + " = " + rhs + "$." }],
+            near: rhs - a === x ? [] : [{ v: rhs - a, fb: "Multiply out first: $" + poly([[k, "x"], [k * a, ""]], { keepZero: true }) + " = " + rhs + "$." }],
             hints: ["Divide both sides by " + k + " first: $" + inside + " = " + num(rhs / k) + "$.",
                     "Or multiply out: $" + poly([[k, "x"], [k * a, ""]], { keepZero: true }) + " = " + rhs + "$."],
             why: lines([tex, poly([[k, "x"], [k * a, ""]], { keepZero: true }) + " = " + rhs,
@@ -472,8 +522,8 @@
         } },
       { id: "a2-paren-both", title: "Brackets on both sides", lesson: 2,
         gen: function (R) {
-          var x = R.nz(-6, 7), j = R.nz(-4, 5), k = R.nz(-4, 5);
-          while (j === k) k = R.nz(-4, 5);
+          var x = R.nz(-6, 7), j = R.int(2, 5) * R.sign(), k = R.int(2, 5) * R.sign();
+          while (j === k) k = R.int(2, 5) * R.sign();
           var a = R.int(-6, 6), b = Math.round((j * (x + a) - k * x) / k * 100) / 100;
           while (b % 1 !== 0) { a++; b = (j * (x + a) - k * x) / k; }
           var tex = j + "(" + poly([[1, "x"], [a, ""]], { keepZero: true }) + ") = " + k + "(" + poly([[1, "x"], [b, ""]], { keepZero: true }) + ")";
@@ -482,6 +532,48 @@
                     "Then gather the $x$'s on one side and the numbers on the other."],
             why: lines([tex, poly([[j, "x"], [j * a, ""]], { keepZero: true }) + " = " + poly([[k, "x"], [k * b, ""]], { keepZero: true }),
                         poly([[j - k, "x"]]) + " = " + (k * b - j * a), "x = " + num(x)]) };
+        } },
+      { id: "a2-paren-rat", title: "Brackets with fractions & decimals", lesson: 2,
+        gen: function (R) {
+          if (R.chance(0.5)) {
+            // (n/d)(x + a) = r, with x a whole number
+            var d = R.pick([2, 3, 4, 5]), n = R.pick([1, 1, 2, 3].filter(function (v) { return L.gcd(v, d) === 1; })), a = R.nz(-6, 7);
+            var x = d * R.int(-3, 4) - a;
+            if (x === 0) x = d - a;
+            var r = n * (x + a) / d;
+            var f = "\\frac{" + n + "}{" + d + "}";
+            var tex = f + "(" + poly([[1, "x"], [a, ""]]) + ") = " + num(r);
+            return { type: "num", prompt: "Solve $" + tex + "$.", pre: "$x =$", answer: x,
+              near: [{ v: r - a, fb: "The fraction multiplies the whole bracket. Undo it first: multiply both sides by $\\frac{" + d + "}{" + n + "}$." }].filter(function (z) { return z.v !== x; }),
+              hints: ["Multiply both sides by " + (n === 1 ? d : "$\\frac{" + d + "}{" + n + "}$") + " to clear the fraction: $" + poly([[1, "x"], [a, ""]]) + " = " + num(r * d / n) + "$.",
+                      "Then take " + num(a) + " from both sides."],
+              why: lines([tex, poly([[1, "x"], [a, ""]]) + " = " + num(r * d / n), "x = " + num(x)]) };
+          }
+          // p(bx + c) = q with p a decimal
+          var p = R.pick([0.5, 1.5, 2.5, 0.2, 0.4]), b = R.pick([2, 4]), c = R.nz(-6, 6), xv = R.nz(-5, 6);
+          var q = Math.round(p * (b * xv + c) * 100) / 100;
+          var tex2 = num(p) + "(" + poly([[b, "x"], [c, ""]]) + ") = " + num(q);
+          return { type: "num", prompt: "Solve $" + tex2 + "$.", pre: "$x =$", answer: xv,
+            hints: ["Multiply out: $" + num(p) + " \\times " + b + "x = " + poly([[Math.round(p * b * 100) / 100, "x"]]) + "$ and $" + num(p) + " \\times " + (c < 0 ? "(" + c + ")" : c) + " = " + num(Math.round(p * c * 100) / 100) + "$.",
+                    "Or divide both sides by " + num(p) + " first: $" + poly([[b, "x"], [c, ""]]) + " = " + num(Math.round(q / p * 100) / 100) + "$."],
+            why: lines([tex2, poly([[b, "x"], [c, ""]]) + " = " + num(Math.round(q / p * 100) / 100), poly([[b, "x"]]) + " = " + num(b * xv), "x = " + num(xv)]) };
+        } },
+      { id: "a2-reason", title: "Reasoning with linear equations", lesson: 2,
+        gen: function (R) {
+          var a = R.int(2, 6), x = R.nz(-5, 6), b = R.nz(-9, 9), c = a * x + b, k = R.int(2, 5);
+          var E = poly([[a, "x"], [b, ""]]) + " = " + c;
+          var right = R.pick([
+            { t: poly([[a, "x"]]) + " = " + (c - b), how: "take " + b + " from both sides" },
+            { t: poly([[k * a, "x"], [k * b, ""]]) + " = " + k * c, how: "multiply both sides by " + k },
+            { t: poly([[a, "x"], [b + k, ""]]) + " = " + (c + k), how: "add " + k + " to both sides" }]);
+          var wrong = [
+            { t: "$" + poly([[a, "x"]]) + " = " + (c + b) + "$", fb: "To undo $" + signed(b).replace(/\s/g, "") + "$, do the opposite to **both** sides: that gives $" + (c - b) + "$ on the right, not $" + (c + b) + "$." },
+            { t: "$" + poly([[k * a, "x"], [b, ""]]) + " = " + k * c + "$", fb: "Multiplying by " + k + " has to multiply **every** term — the $" + b + "$ as well." },
+            { t: "$" + poly([[a, "x"], [b + k, ""]]) + " = " + c + "$", fb: "Adding " + k + " to one side only tips the balance. The right side needs it too." }];
+          return mc(R, { prompt: "Which equation has the same solution as $" + E + "$?",
+            right: "$" + right.t + "$", wrong: wrong.filter(function (w) { return w.t !== "$" + right.t + "$"; }),
+            hints: ["An equation keeps its solution when you do the same thing to **both** sides.", "Check each option: what was done to get it, and was it done to both sides?"],
+            why: "$" + right.t + "$: " + right.how + ". The solution is still $x = " + x + "$." });
         } },
       { id: "a2-nsol", title: "How many solutions", lesson: 3,
         gen: function (R) {
@@ -558,6 +650,35 @@
                     "Now divide by $" + a + "$ — and flip the sign, because it is negative."],
             why: lines([tex, poly([[a, "x"]]) + " " + relTex(rel) + " " + (c - b),
                         "x " + relTex(flip(rel)) + " " + num(x) + " \\;\\text{(divided by a negative)}"]) };
+        } },
+      { id: "a2-ineq-words", title: "Using inequalities to solve problems", lesson: 5,
+        gen: function (R) {
+          var T = R.pick([
+            function () {                      // at most: a budget
+              var fee = R.int(2, 9) * 5, per = R.pick([3, 4, 6, 8, 12]), n = R.int(4, 15), extra = R.int(0, per - 1), budget = fee + per * n + extra;
+              return { p: "A climbing gym charges \\$" + fee + " to join and \\$" + per + " a visit. Maya can spend at most \\$" + budget + ". What is the greatest number of visits she can pay for?",
+                       a: n, ineq: fee + " + " + per + "v \\le " + budget, solve: "v \\le " + num((budget - fee) / per),
+                       round: "Visits are whole, so she can afford " + n + ".",
+                       near: [{ v: n + 1, fb: n + 1 + " visits cost $" + fee + " + " + per * (n + 1) + " = " + (fee + per * (n + 1)) + "$, more than \\$" + budget + "." }] };
+            },
+            function () {                      // at least: saving up
+              var have = R.int(2, 12) * 10, per = R.pick([15, 20, 25, 30, 40]), n = R.int(3, 12), goal = have + per * n - R.int(0, per - 1);
+              return { p: "Leo has \\$" + have + " saved and puts in \\$" + per + " every week. He wants at least \\$" + goal + " for a bike. What is the fewest number of weeks he must save?",
+                       a: n, ineq: have + " + " + per + "w \\ge " + goal, solve: "w \\ge " + num(Math.round((goal - have) / per * 100) / 100),
+                       round: "Weeks are whole, so he needs " + n + ".",
+                       near: [{ v: n - 1, fb: "After " + (n - 1) + " weeks he has $" + have + " + " + per * (n - 1) + " = " + (have + per * (n - 1)) + "$, still short of \\$" + goal + "." }].filter(function (z) { return z.v > 0; }) };
+            },
+            function () {                      // at most: a weight limit
+              var cap = R.pick([450, 500, 600, 750]), me = R.int(60, 95), box = R.pick([12, 15, 18, 20, 25]);
+              var n = Math.floor((cap - me) / box);
+              return { p: "A lift can carry at most $" + cap + "$ kg. A worker weighing $" + me + "$ kg loads boxes of $" + box + "$ kg each. How many boxes, at most, can go up with the worker?",
+                       a: n, ineq: me + " + " + box + "b \\le " + cap, solve: "b \\le " + num(Math.round((cap - me) / box * 100) / 100),
+                       round: "Boxes are whole, so " + n + ".",
+                       near: [{ v: n + 1, fb: (n + 1) + " boxes would make $" + me + " + " + box * (n + 1) + " = " + (me + box * (n + 1)) + "$ kg — over the limit." }] };
+            }])();
+          return { type: "num", prompt: T.p, answer: T.a, near: T.near,
+            hints: ["Write the inequality: $" + T.ineq + "$.", "Solve it: $" + T.solve + "$. Then think about whole numbers."],
+            why: lines([T.ineq, T.solve]) + "<br>" + T.round };
         } },
       { id: "a2-compound", title: "Compound inequalities", lesson: 6,
         gen: function (R) {

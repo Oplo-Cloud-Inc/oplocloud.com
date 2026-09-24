@@ -229,6 +229,10 @@ html[data-look="obsidian"] .lw-log li { background: rgba(255,255,255,.05); }
 .lw-tri { fill: none; stroke: var(--lw-orange); stroke-width: 2.5; stroke-dasharray: 6 5; }
 .lw-run, .lw-rise { font-family: var(--text); font-size: 12.5px; font-weight: 700; fill: var(--lw-orange); paint-order: stroke; stroke: var(--lw-surface); stroke-width: 4px; }
 .lw-mark circle { fill: var(--c); }
+.lw-mark.open circle { fill: var(--lw-surface); stroke: var(--c); stroke-width: 2.5; }
+/* A function defined in pieces, one row per piece */
+.lb-pw { display: inline-grid; grid-template-columns: auto auto; gap: 6px 18px; margin: 10px 0 4px; padding: 4px 0 4px 14px; border-left: 2.5px solid var(--ink-3); vertical-align: middle; }
+.lb-pw > span:nth-child(even) { color: var(--ink-2); }
 .lw-plane .lw-svg.clickable { cursor: crosshair; }
 
 /* --------------------------------------------------------------- Tiles */
@@ -582,6 +586,64 @@ html[data-look="obsidian"] .lb-pips i:not(.on), html[data-look="obsidian"] .lb-u
 .lb-ttxt b { font-family: var(--font); font-size: 17px; font-weight: 600; }
 .lb-ttxt span { font-size: 14px; color: var(--ink-2); }
 .lb-test .lb-go { background: var(--lw-purple); }
+
+/* Notes: the unit on one page, a card per idea */
+.lb-notes-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lb-notes-tools { display: flex; gap: 8px; }
+.lb-nbtn {
+  height: 32px; padding: 0 14px; border-radius: 100px; font-size: 13px; font-weight: 600; color: var(--ink-2);
+  background: var(--paper); box-shadow: 0 0 0 1px var(--hair); transition: box-shadow .15s var(--ease), color .15s var(--ease);
+}
+.lb-nbtn:hover { color: var(--ink); box-shadow: 0 0 0 1px var(--rule); }
+.lb-nlist { display: grid; gap: 8px; }
+.lb-note { border-radius: 16px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair); }
+.lb-note[open] { box-shadow: 0 0 0 1px var(--rule), 0 14px 34px -24px rgba(0,0,0,.45); }
+.lb-note summary {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; border-radius: 16px;
+}
+.lb-note summary::-webkit-details-marker { display: none; }
+.lb-note summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.lb-note summary b { flex: 1; font-family: var(--font); font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.lb-note summary svg { width: 18px; height: 18px; flex: none; color: var(--ink-3); transition: transform .18s var(--ease); }
+.lb-note[open] summary svg { transform: rotate(180deg); }
+.lb-nnum {
+  display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 9px;
+  background: color-mix(in srgb, var(--lw-blue) 14%, transparent); color: var(--lw-blue); font-family: var(--font); font-size: 13.5px; font-weight: 600;
+}
+.lb-nbody { padding: 0 18px 18px 56px; display: grid; gap: 10px; font-size: 15px; line-height: 1.55; color: var(--ink); }
+.lb-nbody p { margin: 0; }
+.lb-nkeys { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 2px 0; padding: 12px 14px; border-radius: 12px; background: var(--canvas); }
+.lb-nkeys dt { font-weight: 600; }
+.lb-nkeys dd { margin: 0; color: var(--ink-2); }
+.lb-neg { padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--lw-blue) 7%, var(--canvas)); box-shadow: inset 3px 0 0 color-mix(in srgb, var(--lw-blue) 55%, transparent); }
+.lb-neg-q { margin: 0 0 8px !important; }
+.lb-nk { display: inline-block; margin-right: 8px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--lw-blue); }
+.lb-neg ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 22px; align-items: center; }
+.lb-neg li { display: contents; }
+.lb-nr { font-size: 14px; color: var(--ink-2); }
+.lb-neg-a { margin: 8px 0 0 !important; font-weight: 600; }
+.lb-nwatch { padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, var(--lw-orange) 10%, var(--canvas)); font-size: 14.5px; }
+.lb-nwatch .lb-nk { display: block; margin: 0 0 2px; color: var(--lw-orange); }
+html[data-look="obsidian"] .lb-nkeys { background: rgba(255,255,255,.04); }
+html[data-look="obsidian"] .lb-neg { background: color-mix(in srgb, var(--lw-blue) 10%, rgba(255,255,255,.03)); }
+html[data-look="obsidian"] .lb-nwatch { background: color-mix(in srgb, var(--lw-orange) 12%, rgba(255,255,255,.03)); }
+@media (max-width: 640px) {
+  .lb-nbody { padding: 0 14px 16px; }
+  .lb-neg ol { grid-template-columns: 1fr; gap: 2px; }
+  .lb-nr { margin-bottom: 6px; }
+  .lb-nr:empty { display: none; }
+  .lb-nkeys { grid-template-columns: 1fr; }
+  .lb-nkeys dd { margin-bottom: 6px; }
+}
+/* Print the notes on their own, every card open */
+@media print {
+  html.lb-printing body * { visibility: hidden !important; }
+  html.lb-printing .lb-notes, html.lb-printing .lb-notes * { visibility: visible !important; }
+  html.lb-printing .lb-notes { position: absolute; left: 0; top: 0; width: 100%; margin: 0; color: #000; }
+  html.lb-printing .lb-notes-tools, html.lb-printing .lb-note summary svg { display: none; }
+  html.lb-printing .lb-note { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; margin-bottom: 8px; background: #fff; }
+  html.lb-printing .lb-nbody { color: #000; }
+}
 
 /* End of a practice or test */
 .lb-changes { display: grid; gap: 8px; max-width: 520px; margin: 22px auto 0; text-align: left; }

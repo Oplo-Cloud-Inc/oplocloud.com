@@ -452,10 +452,13 @@
              params: { m: { v, min, max, step, label } },     sliders
              fns: [{ f: "m*x + b" | function (x, p), color, dashed, label,
                      shade: "above"|"below", strict, domain: [a, b] }],
-             points: [{ id, x, y, drag: true|"x"|"y", snap, label, color, coords }],
+             points: [{ id, x, y, drag: true|"x"|"y", snap, snapY, label, color, coords }],
              lines: [{ through: [id, id], slope: true, color }],
-             marks: [{ x, y, label }]   fixed dots
+             marks: [{ x, y, label, open }]   fixed dots (open: a hollow
+                                                  circle, an end left out)
              hline / vline: [values], segs: [[x1,y1,x2,y2]],
+             grid (1), gridY (grid): spacing of the grid lines, so a word
+             problem's axes (hours against dollars) can be drawn to scale,
              readout: function (state) → text,  goal: function (state) → bool,
              check: function (state) → { ok, say },  answer: { params, points },
              click: "point"  → the answer is a clicked lattice point } */
@@ -483,6 +486,7 @@
     Object.keys(spec.params || {}).forEach(function (k) { P[k] = spec.params[k].v; });
     var pts = (spec.points || []).map(function (p, i) {
       return { id: p.id || String.fromCharCode(65 + i), x: p.x, y: p.y, drag: p.drag, snap: p.snap != null ? p.snap : (spec.snap || 1),
+               snapY: p.snapY != null ? p.snapY : spec.snapY,
                label: p.label, color: p.color || "blue", coords: p.coords !== false, hidden: p.hidden };
     });
     var clicked = null, moved = false;
@@ -495,9 +499,9 @@
 
     // Static layers: grid, axes.
     var gridG = S("g", { class: "lw-grid" }, svg);
-    var gstep = spec.grid || 1, lstep = spec.labelEvery || (xr[1] - xr[0] > 24 ? 5 : xr[1] - xr[0] > 12 ? 2 : 1);
+    var gstep = spec.grid || 1, gstepY = spec.gridY || gstep, lstep = spec.labelEvery || (xr[1] - xr[0] > 24 ? 5 : xr[1] - xr[0] > 12 ? 2 : 1);
     for (var gx = Math.ceil(xr[0] / gstep) * gstep; gx <= xr[1] + 1e-9; gx += gstep) S("line", { x1: X(gx), y1: Y(yr[0]), x2: X(gx), y2: Y(yr[1]), class: Math.abs(gx) < 1e-9 ? "" : "g" }, gridG);
-    for (var gy = Math.ceil(yr[0] / gstep) * gstep; gy <= yr[1] + 1e-9; gy += gstep) S("line", { x1: X(xr[0]), y1: Y(gy), x2: X(xr[1]), y2: Y(gy), class: Math.abs(gy) < 1e-9 ? "" : "g" }, gridG);
+    for (var gy = Math.ceil(yr[0] / gstepY) * gstepY; gy <= yr[1] + 1e-9; gy += gstepY) S("line", { x1: X(xr[0]), y1: Y(gy), x2: X(xr[1]), y2: Y(gy), class: Math.abs(gy) < 1e-9 ? "" : "g" }, gridG);
     var axG = S("g", { class: "lw-axes" }, svg);
     if (yr[0] <= 0 && yr[1] >= 0) S("line", { x1: X(xr[0]) - 8, y1: Y(0), x2: X(xr[1]) + 10, y2: Y(0) }, axG);
     if (xr[0] <= 0 && xr[1] >= 0) S("line", { x1: X(0), y1: Y(yr[0]) + 8, x2: X(0), y2: Y(yr[1]) - 10 }, axG);
@@ -580,7 +584,7 @@
       (spec.marks || []).forEach(function (mk) {
         var yv = typeof mk.y === "function" ? mk.y(P) : mk.y, xv = typeof mk.x === "function" ? mk.x(P) : mk.x;
         if (!isFinite(xv) || !isFinite(yv)) return;
-        var g = S("g", { class: "lw-mark c-" + (mk.color || "ink"), transform: "translate(" + X(xv) + "," + Y(yv) + ")" }, markG);
+        var g = S("g", { class: "lw-mark c-" + (mk.color || "ink") + (mk.open ? " open" : ""), transform: "translate(" + X(xv) + "," + Y(yv) + ")" }, markG);
         S("circle", { r: mk.r || 5 }, g);
         if (mk.label) { var tl = S("text", { x: 9, y: -9, class: "lw-pl" }, g); tl.textContent = typeof mk.label === "function" ? mk.label(P) : mk.label; }
       });
@@ -598,13 +602,13 @@
           draggable(svg, g, {
             move: function (q) {
               if (p.drag !== "y") p.x = clamp(snapTo(VX(q.x), p.snap), xr[0], xr[1]);
-              if (p.drag !== "x") p.y = clamp(snapTo(VY(q.y), p.snap), yr[0], yr[1]);
+              if (p.drag !== "x") p.y = clamp(snapTo(VY(q.y), p.snapY || p.snap), yr[0], yr[1]);
               moved = true;
               paint();
             },
             key: function (dx, dy) {
               if (p.drag !== "y") p.x = clamp(r2(p.x + dx * (p.snap || 1)), xr[0], xr[1]);
-              if (p.drag !== "x") p.y = clamp(r2(p.y + dy * (p.snap || 1)), yr[0], yr[1]);
+              if (p.drag !== "x") p.y = clamp(r2(p.y + dy * (p.snapY || p.snap || 1)), yr[0], yr[1]);
               moved = true; paint();
               var again = ptG.querySelector('[aria-label^="' + (p.label || "Point") + '"]'); if (again) again.focus();
             }
