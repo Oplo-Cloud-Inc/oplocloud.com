@@ -48,6 +48,7 @@ window.OPLO_LAB = (function () {
     "alg/u10.js": "023a63d5",
     "alg/u11.js": "a429089b",
     "alg/u12.js": "f4f424a0",
+    "alg/u13.js": "0dd98c8b",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "b53b1cdc"
   };
@@ -514,6 +515,47 @@ window.OPLO_LAB = (function () {
     return hasSumInside(n);
   }
   function termCount(tree) { return flatTerms(tree).length; }
+  /* Factored all the way, for a polynomial in one letter: a product whose
+     bracketed factors are all first-degree, none with a whole-number common
+     factor left in it — 2(x + 2)(x + 3), not 2(x² + 5x + 6) or (2x + 4)(x + 3).
+     Returns true, or what is still to do. */
+  function factorsOf(n) {
+    while (n.t === "par") n = n.a;
+    if (n.t === "neg") return factorsOf(n.a);
+    if (n.t === "mul") return factorsOf(n.a).concat(factorsOf(n.b));
+    if (n.t === "pow" && n.b.t === "num") return factorsOf(n.a);
+    return [n];
+  }
+  function fullyFactored(tree) {
+    if (!isFactored(tree)) return "That's equal, but it isn't factored. Write it as a product.";
+    var names = Object.keys(varsOf(tree));
+    if (names.length !== 1) return true;
+    var v = names[0], fs = factorsOf(tree);
+    for (var i = 0; i < fs.length; i++) {
+      var f = fs[i];
+      if (!hasSumInside(f)) continue;
+      var e0 = {}, e1 = {}, e2 = {}, e3 = {};
+      e0[v] = 0; e1[v] = 1; e2[v] = 100; e3[v] = 1000;
+      var big = Math.abs(evalTree(f, e3)), mid = Math.abs(evalTree(f, e2));
+      var deg = mid > 0 ? Math.round(Math.log(big / mid) / Math.LN10) : 0;
+      if (deg === 2) {
+        // A quadratic factor is finished only if it has no rational roots.
+        var q0 = evalTree(f, e0), q1 = evalTree(f, e1), em = {}; em[v] = -1;
+        var qm = evalTree(f, em), qa = (q1 + qm) / 2 - q0, qb = (q1 - qm) / 2, disc = qb * qb - 4 * qa * q0;
+        if (disc >= 0 && Math.abs(Math.sqrt(disc) - Math.round(Math.sqrt(disc))) < 1e-9) return "That's equal — but one of the factors can still be factored.";
+        if ([qa, qb, q0].every(function (c) { return Math.abs(c - Math.round(c)) < 1e-9; }) && gcd(gcd(Math.round(qa), Math.round(qb)), Math.round(q0)) > 1)
+          return "That's equal — but one of the factors still has a common factor. Take it out.";
+        continue;
+      }
+      if (deg > 2) return "That's equal — but one of the factors can still be factored.";
+      if (deg === 1) {
+        var b = evalTree(f, e0), a = evalTree(f, e1) - b;
+        if (Math.abs(a - Math.round(a)) < 1e-9 && Math.abs(b - Math.round(b)) < 1e-9 && gcd(Math.round(a), Math.round(b)) > 1)
+          return "That's equal — but $" + String(Math.round(a)) + v + (b < 0 ? " - " + Math.abs(Math.round(b)) : " + " + Math.round(b)) + "$ still has a common factor. Take it out.";
+      }
+    }
+    return true;
+  }
 
   /* ================================================================ Random
      Seeded, so a problem can be shown again exactly as it was. */
@@ -725,9 +767,18 @@ window.OPLO_LAB = (function () {
         var eq = equivalent(tree, target);
         var near = (s.near || []).filter(function (n) { try { return equivalent(tree, parse(n.v)); } catch (e) { return false; } })[0];
         if (!eq) return { ok: false, say: near ? near.fb : null };
-        if (s.form === "simplified" && !isSimplified(tree)) return { ok: false, say: s.formFb || "That's equal — now finish simplifying: combine like terms and clear the brackets." };
-        if (s.form === "factored" && !isFactored(tree)) return { ok: false, say: s.formFb || "That's equal, but it isn't factored. Write it as a product." };
-        if (s.maxTerms && termCount(tree) > s.maxTerms) return { ok: false, say: s.formFb || "That's equal — can it be written with fewer terms?" };
+        // Equal but not yet in the form asked for. A likely half-way answer
+        // (typed as the step lists it) gets its own reply.
+        var norm = function (x) { return String(x).replace(/[\s*]/g, "").replace(/\u2212/g, "-"); };
+        var half = (s.near || []).filter(function (n) { return norm(n.v) === norm(t); })[0];
+        function form(fb) { return { ok: false, say: half ? half.fb : s.formFb || fb }; }
+        if (s.form === "simplified" && !isSimplified(tree)) return form("That's equal — now finish simplifying: combine like terms and clear the brackets.");
+        if (s.form === "factored" && !isFactored(tree)) return form("That's equal, but it isn't factored. Write it as a product.");
+        if (s.form === "fully-factored") {
+          var ff = fullyFactored(tree);
+          if (ff !== true) return form(ff);
+        }
+        if (s.maxTerms && termCount(tree) > s.maxTerms) return form("That's equal — can it be written with fewer terms?");
         return { ok: true };
       }
     });
