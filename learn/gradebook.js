@@ -47,8 +47,8 @@ window.OPLO_GRADEBOOK = (function () {
   ];
 
   var SHORTCUTS = [
-    [["J"], "Next class"],
-    [["K"], "Previous class"],
+    [["J"], "Next class or course"],
+    [["K"], "Previous class or course"],
     [["/"], "Search assignments"],
     [["W"], "Turn the what-if calculator on or off"],
     [["E"], "Export this class as a spreadsheet"],
@@ -114,6 +114,12 @@ window.OPLO_GRADEBOOK = (function () {
          : p >= 80 ? "B-" : p >= 77 ? "C+" : p >= 73 ? "C" : p >= 70 ? "C-"
          : p >= 67 ? "D+" : p >= 63 ? "D" : p >= 60 ? "D-" : "F";
   }
+  /* Excel High School's scale, which a transcript's letters are on: A to F,
+     no plus or minus. This year's live classes use the finer scale above,
+     because that is what the server gives them. */
+  function ehsLetter(p) {
+    return p >= 90 ? "A" : p >= 80 ? "B" : p >= 70 ? "C" : p >= 60 ? "D" : "F";
+  }
   function level(p) {
     for (var i = 0; i < LEVELS.length; i++) if (p >= LEVELS[i].min) return LEVELS[i];
     return LEVELS[LEVELS.length - 1];
@@ -160,7 +166,8 @@ window.OPLO_GRADEBOOK = (function () {
       filter: { q: "", cat: "", status: "all" },
       sort: { key: "due", dir: 1 },
       whatif: false, hypo: {}, wiResult: null, wiSeq: 0,
-      open: {}
+      open: {},
+      record: null, years: [], year: "current", pastSel: null
     };
     bindKeys();
     host.innerHTML = "";
@@ -205,9 +212,12 @@ window.OPLO_GRADEBOOK = (function () {
     Promise.all([
       API.reporting.coursework(me.id),
       API.grades.list(),
-      API.reporting.report(me.id).catch(function () { return null; })
+      API.reporting.report(me.id).catch(function () { return null; }),
+      // The record — previous schools and EHS's own — is an addition here, so
+      // a record that cannot be read leaves this year's gradebook standing.
+      API.graduation.get().catch(function () { return null; })
     ]).then(function (out) {
-      build(out[0] || {}, out[1] || {}, out[2]);
+      build(out[0] || {}, out[1] || {}, out[2], out[3]);
       paintKpis();
       paint();
     }, function (e) {
@@ -229,7 +239,7 @@ window.OPLO_GRADEBOOK = (function () {
   /* One object per class, holding everything the screens need: the server's
      computed grade, every assignment with the student's mark on it, and what
      the teacher wrote on the report. */
-  function build(cw, gl, report) {
+  function build(cw, gl, report, record) {
     var byId = {};
     function cls(id, title, code) {
       if (!byId[id]) {
@@ -290,10 +300,119 @@ window.OPLO_GRADEBOOK = (function () {
       });
     });
     G.byId = byId;
+    buildRecord(record, byId);
     G.classes = Object.keys(byId).map(function (k) { return byId[k]; })
       .sort(function (a, b) { return String(a.title).localeCompare(String(b.title)); });
     var want = G.prefs.sel && byId[G.prefs.sel] ? G.prefs.sel : null;
     G.sel = want || (G.classes[0] && G.classes[0].id) || null;
+    G.year = G.classes.length || !G.years.length ? "current" : G.years[0].key;
+    G.pastSel = null;
+  }
+
+  /* ------------------------------------------------------------ Previous years
+     The record the Graduation tab draws — courses from a previous school, and
+     EHS's own — laid out as past years of the gradebook. A transfer record
+     carries final grades only, so a past year is a list of courses, each with
+     its final mark and the credit it earned; the assignments behind them stay
+     with the school that set them. An EHS course still in progress belongs to
+     this year, so it joins this year's classes instead. */
+  var AREA_NAMES = { english: "English", math: "Math", science: "Science",
+                     social_studies: "Social Studies", health: "Health", pe: "Physical Education",
+                     fine_art: "Fine Art", world_language: "World Language", elective: "Electives" };
+
+  var AREA_ORDER = ["english", "math", "science", "social_studies", "world_language",
+                    "fine_art", "health", "pe", "elective"];
+  function areaRank(k) { var i = AREA_ORDER.indexOf(k); return i < 0 ? AREA_ORDER.length : i; }
+
+  function yearName(y) {
+    var m = String(y || "").match(/^(\d{4})\D+(\d{2,4})$/);
+    return m ? m[1] + "–" + m[2].slice(-2) : String(y || "Undated");
+  }
+  function thisYear() {
+    var d = new Date(), y = d.getFullYear();
+    return d.getMonth() >= 6 ? y + "–" + String(y + 1).slice(-2) : (y - 1) + "–" + String(y).slice(-2);
+  }
+
+  function buildRecord(g, byId) {
+    G.record = g && g.totals ? g : null;
+    G.years = [];
+    if (!G.record) return;
+    var names = {};
+    (g.areas || []).forEach(function (a) { names[a.key] = a.name; });
+    function area(k) { return names[k] || AREA_NAMES[k] || (k ? String(k).replace(/_/g, " ") : "—"); }
+    var school = (g.transfer && g.transfer.school) || "Previous school";
+    var accepted = !!(g.transfer && g.transfer.status === "evaluated");
+    var byYear = {};
+    function put(item) {
+      var k = item.year || "Undated";
+      (byYear[k] = byYear[k] || []).push(item);
+    }
+    (g.courses || []).forEach(function (c) {
+      put({ id: "t:" + c.id, source: "transfer", school: school, title: c.title,
+            code: c.code && c.code !== "TR" ? c.code : "", year: c.year, term: c.term,
+            pct: c.markNumeric, mark: c.mark,
+            letter: c.letter || (c.mark && !/\d/.test(c.mark) ? c.mark : null),
+            attempted: Number(c.attempted || 0),
+            credits: c.decision === "declined" ? 0 : Number(c.ehsCredits || 0),
+            area: area(c.area), areaKey: c.area, decision: c.decision, accepted: accepted,
+            flags: c.flags || [], note: c.note || null });
+    });
+    (g.ehsCourses || []).forEach(function (c) {
+      // Already here as a live OEdu class, with its assignments.
+      if (c.courseId && byId[c.courseId]) return;
+      if (c.status === "in_progress") {
+        var id = "rec:" + c.id;
+        byId[id] = { id: id, title: c.title, code: c.code || "", work: [], summary: null,
+                     comment: null, gradeRow: {}, recordOnly: true, school: "Excel High School",
+                     credits: Number(c.credits || 0), area: area(c.area),
+                     missing: 0, pastdue: 0, graded: 0, late: 0, cats: [] };
+        return;
+      }
+      put({ id: "e:" + c.id, source: "ehs", school: "Excel High School", title: c.title,
+            code: c.code || "", year: c.year, term: c.term, pct: c.markNumeric, mark: c.mark,
+            letter: c.letter, attempted: Number(c.credits || 0),
+            credits: c.status === "completed" ? Number(c.credits || 0) : 0,
+            area: area(c.area), areaKey: c.area, status: c.status, flags: [] });
+    });
+    var meta = {};
+    (g.years || []).forEach(function (y) { meta[y.year] = y; });
+    G.years = Object.keys(byYear).sort(function (a, b) {
+      if (a === "Undated") return 1;
+      if (b === "Undated") return -1;
+      return a < b ? 1 : -1;
+    }).map(function (k) {
+      var list = byYear[k].sort(function (a, b) {
+        return areaRank(a.areaKey) - areaRank(b.areaKey) || String(a.title).localeCompare(String(b.title));
+      });
+      var schools = [];
+      list.forEach(function (c) { if (schools.indexOf(c.school) < 0) schools.push(c.school); });
+      var m = meta[k] || {};
+      var credits = list.reduce(function (s, c) { return s + c.credits; }, 0);
+      return { key: k, label: yearName(k), school: schools.join(" & "), courses: list,
+               credits: Math.round((m.credits != null ? m.credits : credits) * 1000) / 1000,
+               average: m.average != null ? m.average : null };
+    });
+  }
+
+  function yearOf(key) {
+    for (var i = 0; i < G.years.length; i++) if (G.years[i].key === key) return G.years[i];
+    return null;
+  }
+  function pastCurrent() {
+    var y = yearOf(G.year);
+    if (!y) return null;
+    for (var i = 0; i < y.courses.length; i++) if (y.courses[i].id === G.pastSel) return y.courses[i];
+    return y.courses[0] || null;
+  }
+  function setYear(key, courseId) {
+    var jump = !courseId || G.tab !== "book" || G.year !== key;
+    G.year = yearOf(key) ? key : "current";
+    G.pastSel = courseId || null;
+    if (G.tab !== "book") { G.tab = "book"; paintTabs(); }
+    paint();
+    if (jump && G.tabs.getBoundingClientRect().top < 0 && G.tabs.scrollIntoView) {
+      G.tabs.scrollIntoView({ block: "start" });
+    }
   }
 
   /* ------------------------------------------------------------ Top strip */
@@ -312,7 +431,7 @@ window.OPLO_GRADEBOOK = (function () {
   function paintKpis() {
     var k = G.kpis;
     k.innerHTML = "";
-    if (!G.classes.length) return;
+    if (!G.classes.length && !G.record) return;
     var g = gpa();
     var now = Date.now();
     var missing = 0, pastdue = 0, soon = 0;
@@ -329,10 +448,27 @@ window.OPLO_GRADEBOOK = (function () {
       t.appendChild(el("span", "s", sub));
       k.appendChild(t);
     }
-    tile("GPA (estimate)", g ? g.gpa.toFixed(2) : "—",
-         g ? "Unweighted, 4.0 scale, " + g.n + (g.n === 1 ? " class" : " classes") : "No graded classes yet");
-    tile("Average", g ? (Math.round(g.avg * 10) / 10) + "%" : "—",
-         g ? esc(letterFor(g.avg)) + " across your classes" : "Nothing marked yet");
+    /* The record's numbers first when there is one: they are what the school
+       prints. This year's live classes follow. */
+    var r = G.record;
+    var rg = r && r.gpa ? (r.gpa.issued != null ? r.gpa.issued : r.gpa.value) : null;
+    if (rg != null) {
+      tile("Cumulative GPA", Number(rg).toFixed(2),
+           r.gpa.issued != null ? "As issued on your transcript" : "From your record, 4.0 scale");
+    }
+    if (r && r.track) {
+      tile("Credits", num(r.totals.earned) + '<span class="of"> / ' + num(r.track.total) + "</span>",
+           r.totals.remaining > 0 ? num(r.totals.remaining) + " to go · " + esc(r.track.name) : "Requirements met");
+    }
+    if (g || !r) {
+      tile(r ? "This year" : "GPA (estimate)", r ? (Math.round(g.avg * 10) / 10) + "%" : g ? g.gpa.toFixed(2) : "—",
+           r ? esc(letterFor(g.avg)) + " across " + g.n + (g.n === 1 ? " class" : " classes")
+             : g ? "Unweighted, 4.0 scale, " + g.n + (g.n === 1 ? " class" : " classes") : "No graded classes yet");
+    }
+    if (!r) {
+      tile("Average", g ? (Math.round(g.avg * 10) / 10) + "%" : "—",
+           g ? esc(letterFor(g.avg)) + " across your classes" : "Nothing marked yet");
+    }
     tile("Missing", String(missing), missing ? "Counted as zero until handed in" : "Nothing missing",
          missing ? "bad" : "good");
     tile("Past due", String(pastdue), pastdue ? "Due date passed, not marked yet" : "All caught up",
@@ -364,7 +500,7 @@ window.OPLO_GRADEBOOK = (function () {
       if (G.opts.graduation) G.opts.graduation(h);
       return;
     }
-    if (!G.classes.length) {
+    if (!G.classes.length && !G.years.length) {
       G.body.appendChild(el("div", "lx-empty",
         "No classes with grades yet. When a teacher enrols you and sets work, every class and " +
         "every mark appears here — on this device and on every other one you sign in on."));
@@ -372,14 +508,20 @@ window.OPLO_GRADEBOOK = (function () {
     }
     if (G.tab === "book") paintBook();
     else if (G.tab === "report") paintReport();
-    else if (G.tab === "standards") paintStandards();
+    else if (G.tab === "standards") {
+      if (G.classes.length) paintStandards();
+      else G.body.appendChild(el("div", "lx-empty",
+        "Mastery levels are read from this year's classes, and you have none yet. Your earlier " +
+        "years are on the Gradebook and Report card tabs."));
+    }
   }
 
   /* ================================================================ Gradebook */
   function current() { return G.byId[G.sel] || G.classes[0]; }
 
   function select(id) {
-    if (!G.byId[id] || G.sel === id) return;
+    if (!G.byId[id] || (G.sel === id && G.year === "current" && G.tab === "book")) return;
+    G.year = "current";
     G.sel = id;
     G.prefs.sel = id; savePrefs();
     G.whatif = false; G.hypo = {}; G.wiResult = null; G.open = {};
@@ -389,40 +531,230 @@ window.OPLO_GRADEBOOK = (function () {
   }
 
   function step(d) {
-    if (!G.classes.length) return;
-    var i = G.classes.indexOf(current());
-    var j = Math.max(0, Math.min(G.classes.length - 1, i + d));
-    if (j !== i) {
-      select(G.classes[j].id);
-      var b = G.body.querySelector('.sgb-class[data-id="' + G.classes[j].id + '"]');
-      if (b) b.focus();
-    }
+    var y = G.year !== "current" && yearOf(G.year);
+    var list = y ? y.courses : G.classes;
+    if (!list.length) return;
+    var i = list.indexOf(y ? pastCurrent() : current());
+    var j = Math.max(0, Math.min(list.length - 1, i + d));
+    if (j === i) return;
+    if (y) setYear(y.key, list[j].id);
+    else select(list[j].id);
+    var b = G.body.querySelector('.sgb-class[data-id="' + list[j].id + '"]');
+    if (b) b.focus();
   }
 
   function paintBook() {
     var grid = el("div", "sgb-grid");
-    grid.appendChild(classList());
+    var side = el("div", "sgb-side");
+    if (G.years.length) side.appendChild(yearPicker());
+    var y = G.year !== "current" && yearOf(G.year);
+    side.appendChild(y ? pastList(y) : classList());
+    if (!y && G.years.length) side.appendChild(earlierYears());
+    grid.appendChild(side);
     G.panel = el("section", "sgb-panel");
     grid.appendChild(G.panel);
     G.body.appendChild(grid);
-    paintPanel();
+    if (y) paintPast(y, pastCurrent());
+    else if (!G.classes.length) {
+      G.panel.appendChild(el("div", "lx-empty",
+        "No classes this year yet. When a teacher enrols you and sets work, it appears here. " +
+        "Your earlier years are in the list on the left."));
+    }
+    else if (current().recordOnly) paintRecordOnly(current());
+    else paintPanel();
+  }
+
+  function yearPicker() {
+    var wrap = el("label", "sgb-yearpick");
+    wrap.appendChild(el("span", null, "School year"));
+    var sel = el("select", "sgb-select");
+    sel.appendChild(new Option(thisYear() + " · This year", "current"));
+    G.years.forEach(function (y) {
+      sel.appendChild(new Option(y.label + " · " + y.school, y.key));
+    });
+    sel.value = G.year;
+    sel.addEventListener("change", function () { setYear(sel.value); });
+    wrap.appendChild(sel);
+    return wrap;
+  }
+
+  /* The way into earlier years from this year's list, so a student who never
+     opens the picker still sees that their record goes back further. */
+  function earlierYears() {
+    var box = el("div", "sgb-earlier");
+    box.appendChild(el("p", "sgb-side-h", "Earlier years"));
+    G.years.forEach(function (y) {
+      var b = btn("sgb-yearbtn");
+      b.innerHTML = "<b>" + esc(y.label) + "</b><span>" + esc(y.school) + " · " + y.courses.length +
+        (y.courses.length === 1 ? " course" : " courses") + " · " + num(y.credits) +
+        (y.credits === 1 ? " credit" : " credits") + "</span>";
+      b.addEventListener("click", function () { setYear(y.key); });
+      box.appendChild(b);
+    });
+    return box;
+  }
+
+  function pastList(y) {
+    var nav = el("nav", "sgb-classes");
+    nav.setAttribute("aria-label", "Courses in " + y.label);
+    var sel = pastCurrent();
+    y.courses.forEach(function (c) {
+      var on = sel && c.id === sel.id;
+      var b = btn("sgb-class" + (on ? " on" : ""));
+      b.dataset.id = c.id;
+      b.setAttribute("aria-current", String(!!on));
+      var p = c.pct;
+      b.innerHTML =
+        '<span class="t"><b>' + esc(c.title) + "</b>" +
+        '<span class="sub">' + esc(c.area) + " · " + num(c.credits) + (c.credits === 1 ? " credit" : " credits") +
+        "</span></span>" +
+        '<span class="g b-' + band(p) + '"><b>' + esc(c.letter || "—") + "</b><span>" +
+        (p != null ? num(p) + "%" : esc(c.mark || "—")) + "</span></span>" +
+        '<span class="bar"><i class="b-' + band(p) + '" style="width:' +
+        (p != null ? Math.max(0, Math.min(100, p)) : 0) + '%"></i></span>';
+      b.addEventListener("click", function () { setYear(y.key, c.id); });
+      nav.appendChild(b);
+    });
+    return nav;
+  }
+
+  function decisionSays(c) {
+    if (c.source === "ehs") {
+      return c.status === "withdrawn" ? "Withdrawn at Excel High School" : "Completed at Excel High School";
+    }
+    if (c.decision === "declined") return "Not accepted by Excel High School";
+    if (c.accepted || c.decision === "accepted") return "Transferred and accepted by Excel High School";
+    return "Transferred · awaiting Excel High School's evaluation";
+  }
+
+  /* One past course, and the rest of its year around it. */
+  function paintPast(y, c) {
+    var p = G.panel;
+    p.innerHTML = "";
+    if (!c) { p.appendChild(el("div", "lx-empty", "No courses on the record for this year.")); return; }
+    var head = el("header", "sgb-head");
+    var name = el("div", "sgb-name");
+    name.appendChild(el("p", "sgb-code", esc(y.label + " · " + c.school + (c.code ? " · " + c.code : ""))));
+    name.appendChild(el("h2", null, esc(c.title)));
+    name.appendChild(el("p", "sgb-facts", esc(c.area) + " · " + num(c.credits) +
+      (c.credits === 1 ? " credit earned" : " credits earned") +
+      (c.attempted && c.attempted !== c.credits ? " of " + num(c.attempted) + " attempted" : "")));
+    head.appendChild(name);
+    var grade = el("div", "sgb-grade b-" + band(c.pct));
+    grade.innerHTML = "<b>" + esc(c.letter || "—") + "</b><span>" +
+      (c.pct != null ? num(c.pct) + "%" : esc(c.mark || "No mark")) + "</span><em>Final grade</em>";
+    head.appendChild(grade);
+    p.appendChild(head);
+
+    var row = el("div", "sgb-row");
+    var about = el("div", "sgb-card");
+    about.appendChild(el("h3", null, "On your record"));
+    var dl = el("dl", "sgb-dl");
+    function fact(k, v) { dl.appendChild(el("dt", null, esc(k))); dl.appendChild(el("dd", null, v)); }
+    fact("School", esc(c.school));
+    var term = c.term && yearName(c.term) !== y.label && c.term !== c.year ? c.term : null;
+    fact("School year", esc(y.label) + (term ? " · " + esc(term) : ""));
+    fact("Subject area", esc(c.area));
+    fact("Final mark", c.pct != null ? num(c.pct) + "% · " + esc(c.letter || "") : esc(c.mark || "—"));
+    fact("Credits", num(c.credits) + " earned" + (c.attempted ? " · " + num(c.attempted) + " attempted" : ""));
+    fact("Status", esc(decisionSays(c)));
+    if (c.flags && c.flags.length) fact("Notes", esc(c.flags.join(", ").replace(/_/g, " ")));
+    if (c.note) fact("Note", esc(c.note));
+    about.appendChild(dl);
+    row.appendChild(about);
+
+    var yr = el("div", "sgb-card");
+    yr.appendChild(el("h3", null, "The year"));
+    var stats = el("div", "sgb-ystats");
+    stats.innerHTML =
+      "<div><b>" + y.courses.length + "</b><span>" + (y.courses.length === 1 ? "course" : "courses") + "</span></div>" +
+      "<div><b>" + num(y.credits) + "</b><span>credits earned</span></div>" +
+      "<div><b>" + (y.average != null ? num(y.average) + "%" : "—") + "</b><span>average" +
+      (y.average != null ? " · " + esc(ehsLetter(y.average)) : "") + "</span></div>";
+    yr.appendChild(stats);
+    yr.appendChild(el("p", "sgb-muted", "The average is weighted by credit, over the courses with a numeric mark."));
+    row.appendChild(yr);
+    p.appendChild(row);
+
+    var wrap = el("div", "sgb-table-wrap");
+    var t = el("table", "sgb-table sgb-rtable");
+    t.innerHTML = "<thead><tr><th>Course</th><th>Subject</th><th class=\"num\">Final</th>" +
+      "<th class=\"num\">Grade</th><th class=\"num\">Credits</th></tr></thead>";
+    var tb = el("tbody");
+    y.courses.forEach(function (x) {
+      var tr = el("tr", "sgb-tr" + (x.id === c.id ? " open" : ""));
+      tr.innerHTML = "<td><b>" + esc(x.title) + "</b>" +
+        (y.school.indexOf("&") > -1 ? '<span class="sgb-fbp">' + esc(x.school) + "</span>" : "") + "</td>" +
+        "<td>" + esc(x.area) + '</td><td class="num">' +
+        (x.pct != null ? '<span class="sgb-pct b-' + band(x.pct) + '">' + num(x.pct) + "%</span>" : esc(x.mark || "—")) +
+        '</td><td class="num">' + (x.letter ? '<span class="sgb-letter b-' + band(x.pct) + '">' + esc(x.letter) + "</span>" : "—") +
+        '</td><td class="num">' + num(x.credits) + "</td>";
+      tr.addEventListener("click", function () { setYear(y.key, x.id); });
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    var tf = el("tfoot");
+    tf.innerHTML = "<tr><td colspan=\"2\"><b>" + esc(y.label) + "</b> <span class=\"sgb-muted\">" + esc(y.school) +
+      '</span></td><td class="num">' + (y.average != null ? num(y.average) + "%" : "—") + '</td><td class="num">' +
+      (y.average != null ? esc(ehsLetter(y.average)) : "—") + '</td><td class="num"><b>' + num(y.credits) + "</b></td></tr>";
+    t.appendChild(tf);
+    wrap.appendChild(t);
+    p.appendChild(wrap);
+
+    p.appendChild(el("p", "sgb-lock",
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/>' +
+      '<path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>' +
+      (c.source === "transfer"
+        ? "A transcript carries final grades only, so the assignments behind these marks stay with " +
+          esc(c.school) + ". The Graduation tab shows how each credit counts toward your diploma."
+        : "Final grades from your Excel High School record. The Graduation tab shows how each credit " +
+          "counts toward your diploma.") + "</span>"));
+  }
+
+  /* An Excel High School course still in progress that has no OEdu class
+     behind it yet: on the record, with nothing to mark until work is set. */
+  function paintRecordOnly(c) {
+    var p = G.panel;
+    p.innerHTML = "";
+    var head = el("header", "sgb-head");
+    var name = el("div", "sgb-name");
+    name.appendChild(el("p", "sgb-code", esc(c.school + (c.code ? " · " + c.code : ""))));
+    name.appendChild(el("h2", null, esc(c.title)));
+    name.appendChild(el("p", "sgb-facts", esc(c.area) + " · " + num(c.credits) +
+      (c.credits === 1 ? " credit" : " credits") + " · in progress"));
+    head.appendChild(name);
+    var grade = el("div", "sgb-grade b-none");
+    grade.innerHTML = "<span>In progress</span><em>No marks yet</em>";
+    head.appendChild(grade);
+    p.appendChild(head);
+    var note = el("div", "sgb-note");
+    note.appendChild(el("b", null, "On your record"));
+    note.appendChild(el("p", null, "This course is on your Excel High School record as in progress. " +
+      "Marks appear here as your teacher grades work, and the final grade is added to your record " +
+      "when you finish it."));
+    p.appendChild(note);
   }
 
   function classList() {
     var nav = el("nav", "sgb-classes");
     nav.setAttribute("aria-label", "Your classes");
+    var cur = current(), curId = cur && cur.id;
     G.classes.forEach(function (c) {
       var s = c.summary;
-      var b = btn("sgb-class" + (c.id === current().id ? " on" : ""));
+      var b = btn("sgb-class" + (c.id === curId ? " on" : ""));
       b.dataset.id = c.id;
-      b.setAttribute("aria-current", String(c.id === current().id));
+      b.setAttribute("aria-current", String(c.id === curId));
       var flags = "";
       if (c.missing) flags += '<em class="sgb-pill bad">' + c.missing + " missing</em>";
       if (c.pastdue) flags += '<em class="sgb-pill warn">' + c.pastdue + " past due</em>";
+      if (c.recordOnly) flags += '<em class="sgb-pill">In progress</em>';
       b.innerHTML =
         '<span class="t"><b>' + esc(c.title) + "</b>" +
-        '<span class="sub">' + (c.code ? esc(c.code) + " · " : "") + c.graded + " of " +
-        c.work.length + " graded</span>" + (flags ? '<span class="fl">' + flags + "</span>" : "") +
+        '<span class="sub">' + (c.code ? esc(c.code) + " · " : "") +
+        (c.recordOnly ? esc(c.school) + " · " + num(c.credits) + (c.credits === 1 ? " credit" : " credits")
+                      : c.graded + " of " + c.work.length + " graded") +
+        "</span>" + (flags ? '<span class="fl">' + flags + "</span>" : "") +
         "</span>" +
         '<span class="g ' + (s ? "b-" + band(s.percent) : "b-none") + '">' +
         "<b>" + (s ? esc(s.letter) : "—") + "</b><span>" + (s ? s.percent + "%" : "No grade") +
@@ -1040,6 +1372,82 @@ window.OPLO_GRADEBOOK = (function () {
     head.appendChild(acts);
     wrap.appendChild(head);
 
+    if (G.record) wrap.appendChild(recordStrip());
+    wrap.appendChild(el("h3", "sgb-h3", esc(thisYear()) + " · This year"));
+    if (G.classes.length) wrap.appendChild(thisYearTable());
+    else wrap.appendChild(el("p", "sgb-muted", "No classes this year yet."));
+
+    G.years.forEach(function (y) { wrap.appendChild(yearBlock(y)); });
+
+    var said = G.classes.filter(function (c) { return c.comment; });
+    wrap.appendChild(el("h3", "sgb-h3", "Teacher comments"));
+    if (!said.length) {
+      wrap.appendChild(el("p", "sgb-muted", "No comments on this term's report yet."));
+    } else {
+      said.forEach(function (c) {
+        var box = el("div", "sgb-said");
+        box.appendChild(el("b", null, esc(c.title)));
+        box.appendChild(el("p", null, esc(c.comment.body)));
+        box.appendChild(el("span", null, esc(c.comment.author || "Your teacher") +
+          (c.comment.updatedAt ? " · " + esc(dayLong(c.comment.updatedAt)) : "")));
+        wrap.appendChild(box);
+      });
+    }
+    wrap.appendChild(el("p", "sgb-muted sgb-foot",
+      "This year's GPA is an estimate on an unweighted 4.0 scale from each class's current letter. " +
+      (G.record ? "Cumulative GPA and credits come from your record; the Graduation tab shows how each " +
+                  "credit counts toward your diploma."
+                : "Your school's official transcript is on the Graduation tab.")));
+    G.body.appendChild(wrap);
+  }
+
+  /* The record's totals, as the school prints them. */
+  function recordStrip() {
+    var r = G.record;
+    var rg = r.gpa ? (r.gpa.issued != null ? r.gpa.issued : r.gpa.value) : null;
+    var s = el("div", "sgb-ystats sgb-card");
+    s.innerHTML =
+      "<div><b>" + (rg != null ? Number(rg).toFixed(2) : "—") + "</b><span>cumulative GPA</span></div>" +
+      "<div><b>" + num(r.totals.earned) + '<span class="of"> / ' + num(r.track.total) +
+      "</span></b><span>credits · " + esc(r.track.name) + "</span></div>" +
+      "<div><b>" + num(r.totals.remaining) + "</b><span>credits to go</span></div>" +
+      "<div><b>" + G.years.reduce(function (n, y) { return n + y.courses.length; }, 0) +
+      "</b><span>courses on record</span></div>";
+    return s;
+  }
+
+  function yearBlock(y) {
+    var box = el("div");
+    var h = el("h3", "sgb-h3 sgb-yearh", esc(y.label) + " · " + esc(y.school));
+    box.appendChild(h);
+    var tw = el("div", "sgb-table-wrap");
+    var t = el("table", "sgb-table sgb-rtable");
+    t.innerHTML = "<thead><tr><th>Course</th><th>Subject</th><th class=\"num\">Final</th>" +
+      "<th class=\"num\">Grade</th><th class=\"num\">Credits</th></tr></thead>";
+    var tb = el("tbody");
+    y.courses.forEach(function (c) {
+      var tr = el("tr", "sgb-tr");
+      tr.innerHTML = "<td><b>" + esc(c.title) + "</b></td><td>" + esc(c.area) + '</td><td class="num">' +
+        (c.pct != null ? num(c.pct) + "%" : esc(c.mark || "—")) + '</td><td class="num">' +
+        (c.letter ? '<span class="sgb-letter b-' + band(c.pct) + '">' + esc(c.letter) + "</span>" : "—") +
+        '</td><td class="num">' + num(c.credits) + "</td>";
+      tr.title = "Open " + c.title;
+      tr.addEventListener("click", function () { setYear(y.key, c.id); });
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    var tf = el("tfoot");
+    tf.innerHTML = "<tr><td colspan=\"2\"><b>Year</b></td><td class=\"num\">" +
+      (y.average != null ? num(y.average) + "%" : "—") + '</td><td class="num">' +
+      (y.average != null ? esc(ehsLetter(y.average)) : "—") + '</td><td class="num"><b>' + num(y.credits) +
+      "</b></td></tr>";
+    t.appendChild(tf);
+    tw.appendChild(t);
+    box.appendChild(tw);
+    return box;
+  }
+
+  function thisYearTable() {
     var tw = el("div", "sgb-table-wrap");
     var table = el("table", "sgb-table sgb-rtable");
     table.innerHTML = "<thead><tr><th>Class</th><th>Categories</th><th class=\"num\">Missing</th>" +
@@ -1070,26 +1478,7 @@ window.OPLO_GRADEBOOK = (function () {
       (g ? esc(letterFor(g.avg)) : "—") + '</td><td class="num"><b>' + (g ? g.gpa.toFixed(2) : "—") + "</b></td></tr>";
     table.appendChild(tf);
     tw.appendChild(table);
-    wrap.appendChild(tw);
-
-    var said = G.classes.filter(function (c) { return c.comment; });
-    wrap.appendChild(el("h3", "sgb-h3", "Teacher comments"));
-    if (!said.length) {
-      wrap.appendChild(el("p", "sgb-muted", "No comments on this term's report yet."));
-    } else {
-      said.forEach(function (c) {
-        var box = el("div", "sgb-said");
-        box.appendChild(el("b", null, esc(c.title)));
-        box.appendChild(el("p", null, esc(c.comment.body)));
-        box.appendChild(el("span", null, esc(c.comment.author || "Your teacher") +
-          (c.comment.updatedAt ? " · " + esc(dayLong(c.comment.updatedAt)) : "")));
-        wrap.appendChild(box);
-      });
-    }
-    wrap.appendChild(el("p", "sgb-muted sgb-foot",
-      "GPA is an estimate on an unweighted 4.0 scale from each class's current letter. Your school's " +
-      "official transcript is on the Graduation tab."));
-    G.body.appendChild(wrap);
+    return tw;
   }
 
   /* ================================================================ Standards
@@ -1154,33 +1543,52 @@ window.OPLO_GRADEBOOK = (function () {
   function stamp() { return new Date().toISOString().slice(0, 10); }
   function workRows(c) {
     return c.work.map(function (w) {
-      return [c.title, w.title, w.category || "", w.dueMs != null ? new Date(w.dueMs).toISOString().slice(0, 10) : "",
+      return [thisYear(), c.school || "", c.title, w.title, w.category || "",
+              w.dueMs != null ? new Date(w.dueMs).toISOString().slice(0, 10) : "",
               w.state === "graded" ? w.score : w.state === "missing" ? 0 : "", w.outOf,
-              w.state === "graded" ? w.pct : w.state === "missing" ? 0 : "",
+              w.state === "graded" ? w.pct : w.state === "missing" ? 0 : "", "",
               { graded: "Graded", missing: "Missing", excused: "Excused", pastdue: "Past due", upcoming: "Not graded" }[w.state],
-              w.late ? "Yes" : "", w.extraCredit ? "Yes" : "", w.dropped ? "Yes" : "", w.feedback || ""]
+              "", w.late ? "Yes" : "", w.extraCredit ? "Yes" : "", w.dropped ? "Yes" : "", w.feedback || ""]
         .map(csvCell).join(",");
     });
   }
-  var HEAD = ["Class", "Assignment", "Category", "Due", "Score", "Out of", "Percent", "Status",
-              "Late", "Extra credit", "Dropped", "Feedback"].join(",");
+  /* A past course is one row: its final grade, as the record carries it. */
+  function yearRows(y) {
+    return y.courses.map(function (c) {
+      return [y.label, c.school, c.title, "Final grade", c.area, "", c.pct != null ? c.pct : (c.mark || ""),
+              c.pct != null ? 100 : "", c.pct != null ? c.pct : "", c.letter || "", decisionSays(c),
+              c.credits, "", "", "", ""]
+        .map(csvCell).join(",");
+    });
+  }
+  var HEAD = ["Year", "School", "Class", "Assignment", "Category", "Due", "Score", "Out of", "Percent",
+              "Grade", "Status", "Credits", "Late", "Extra credit", "Dropped", "Feedback"].join(",");
   function exportClass(c) {
     if (!c) return;
-    download("Grades - " + c.title.replace(/[\\/:*?"<>|]/g, "") + " - " + stamp() + ".csv",
+    download("Grades - " + c.title.replace(/[\\/:*?"<>|]/g, "").replace(/[\u2010-\u2015]/g, "-") + " - " +
+             stamp() + ".csv",
              [HEAD].concat(workRows(c)).join("\n"));
     toast("Downloaded " + c.title + " as a spreadsheet.");
+  }
+  function exportYear(y) {
+    // Plain hyphens: a browser drops the name of a download that carries an en dash.
+    download("Grades - " + y.label.replace(/[\u2010-\u2015]/g, "-") + " - " + stamp() + ".csv",
+             [HEAD].concat(yearRows(y)).join("\n"));
+    toast("Downloaded " + y.label + " as a spreadsheet.");
   }
   function exportAll() {
     var lines = [HEAD];
     G.classes.forEach(function (c) { lines = lines.concat(workRows(c)); });
-    download("Grades - all classes - " + stamp() + ".csv", lines.join("\n"));
-    toast("Downloaded every class as one spreadsheet.");
+    G.years.forEach(function (y) { lines = lines.concat(yearRows(y)); });
+    download("Grades - all years - " + stamp() + ".csv", lines.join("\n"));
+    toast(G.years.length ? "Downloaded every class and every earlier year as one spreadsheet."
+                         : "Downloaded every class as one spreadsheet.");
   }
 
   /* A printed report card is its own page, written for paper — light, plain,
      one table — rather than the dark screen with its chrome hidden. */
   function printReport() {
-    if (!G.classes.length) return;
+    if (!G.classes.length && !G.years.length) return;
     var g = gpa();
     var rowsHtml = G.classes.map(function (c) {
       var s = c.summary;
@@ -1190,17 +1598,41 @@ window.OPLO_GRADEBOOK = (function () {
         "</b></td></tr>" + (c.comment ? '<tr class="cm"><td colspan="5"><i>' + esc(c.comment.body) + "</i> — " +
         esc(c.comment.author || "Teacher") + "</td></tr>" : "");
     }).join("");
+    var r = G.record;
+    var rg = r && r.gpa ? (r.gpa.issued != null ? r.gpa.issued : r.gpa.value) : null;
+    var summaryHtml = r
+      ? "<p class=\"sum\"><b>Cumulative GPA " + (rg != null ? Number(rg).toFixed(2) : "—") + "</b> · " +
+        num(r.totals.earned) + " of " + num(r.track.total) + " credits (" + esc(r.track.name) + ") · " +
+        num(r.totals.remaining) + " to go</p>"
+      : "";
     var html = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Report card — " + esc(G.me.name || "") +
       "</title><style>body{font:13px/1.45 -apple-system,BlinkMacSystemFont,Inter,Helvetica,Arial,sans-serif;color:#111;margin:32px}" +
       "h1{font-size:22px;margin:0 0 4px}p{margin:0 0 18px;color:#555}table{width:100%;border-collapse:collapse}" +
       "th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #ddd;vertical-align:top}th{font-size:11px;" +
       "text-transform:uppercase;letter-spacing:.06em;color:#555}tr.cm td{color:#333;border-bottom:1px solid #bbb}" +
-      "tfoot td{font-weight:600;border-top:2px solid #111}small{color:#666}</style></head><body>" +
+      "tfoot td{font-weight:600;border-top:2px solid #111}small{color:#666}h2{font-size:15px;margin:26px 0 8px}" +
+      "p.sum{color:#111;font-size:14px}</style></head><body>" +
       "<h1>Report card</h1><p>" + esc(G.me.name || "") + " · " + esc(dayLong(Date.now())) + " · OEdu</p>" +
-      "<table><thead><tr><th>Class</th><th>Categories</th><th>Missing</th><th>Percent</th><th>Grade</th></tr></thead><tbody>" +
-      rowsHtml + "</tbody><tfoot><tr><td colspan=\"3\">GPA (unweighted estimate)</td><td>" +
-      (g ? Math.round(g.avg * 10) / 10 + "%" : "—") + "</td><td>" + (g ? g.gpa.toFixed(2) : "—") +
-      "</td></tr></tfoot></table></body></html>";
+      summaryHtml +
+      (G.classes.length
+        ? "<h2>" + esc(thisYear()) + " · This year</h2>" +
+          "<table><thead><tr><th>Class</th><th>Categories</th><th>Missing</th><th>Percent</th><th>Grade</th></tr></thead><tbody>" +
+          rowsHtml + "</tbody><tfoot><tr><td colspan=\"3\">GPA (unweighted estimate)</td><td>" +
+          (g ? Math.round(g.avg * 10) / 10 + "%" : "—") + "</td><td>" + (g ? g.gpa.toFixed(2) : "—") +
+          "</td></tr></tfoot></table>"
+        : "") +
+      G.years.map(function (y) {
+        return "<h2>" + esc(y.label) + " · " + esc(y.school) + "</h2><table><thead><tr><th>Course</th>" +
+          "<th>Subject</th><th>Final</th><th>Grade</th><th>Credits</th></tr></thead><tbody>" +
+          y.courses.map(function (c) {
+            return "<tr><td>" + esc(c.title) + "</td><td>" + esc(c.area) + "</td><td>" +
+              (c.pct != null ? num(c.pct) + "%" : esc(c.mark || "—")) + "</td><td><b>" + esc(c.letter || "—") +
+              "</b></td><td>" + num(c.credits) + "</td></tr>";
+          }).join("") + "</tbody><tfoot><tr><td colspan=\"2\">Year</td><td>" +
+          (y.average != null ? num(y.average) + "%" : "—") + "</td><td>" +
+          (y.average != null ? esc(ehsLetter(y.average)) : "—") + "</td><td>" + num(y.credits) +
+          "</td></tr></tfoot></table>";
+      }).join("") + "</body></html>";
     var w = window.open("", "_blank");
     if (!w) { toast("Your browser blocked the print window. Allow pop-ups for this site and try again."); return; }
     w.document.open();
@@ -1311,15 +1743,23 @@ window.OPLO_GRADEBOOK = (function () {
       if (sheet) return;
       if (k >= "1" && k <= "4") { setTab(TABS[+k - 1].key); e.preventDefault(); return; }
       if (k === "p" || k === "P") { printReport(); e.preventDefault(); return; }
-      if (G.tab !== "book" || !G.classes.length) return;
+      if (G.tab !== "book" || (!G.classes.length && !G.years.length)) return;
       if (k === "j" || k === "J") { step(1); e.preventDefault(); }
       else if (k === "k" || k === "K") { step(-1); e.preventDefault(); }
       else if (k === "/") {
         var q = G.panel && G.panel.querySelector(".sgb-search");
         if (q) { q.focus(); e.preventDefault(); }
       }
-      else if (k === "w" || k === "W") { toggleWhatif(); e.preventDefault(); }
-      else if (k === "e" || k === "E") { exportClass(current()); e.preventDefault(); }
+      else if (k === "w" || k === "W") {
+        // What-if belongs to a live class; a past year's grades are final.
+        if (G.year === "current" && current() && !current().recordOnly) toggleWhatif();
+        e.preventDefault();
+      }
+      else if (k === "e" || k === "E") {
+        var py = G.year !== "current" && yearOf(G.year);
+        if (py) exportYear(py); else if (current()) exportClass(current());
+        e.preventDefault();
+      }
     });
   }
 

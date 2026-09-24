@@ -40,7 +40,7 @@
 }
 .sgb-icon-btn:hover { color: var(--ink); }
 
-.sgb-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.sgb-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
 .sgb-kpis:empty { display: none; }
 .sgb-kpi {
   background: var(--paper); border-radius: var(--gb-r); padding: 14px 16px;
@@ -52,6 +52,7 @@
   line-height: 1.15; font-variant-numeric: tabular-nums;
 }
 .sgb-kpi .s { font-size: 12.5px; color: var(--ink-3); line-height: 1.35; }
+.sgb-kpi b .of, .sgb-ystats b .of { font-size: .6em; color: var(--ink-3); font-weight: 500; }
 .sgb-kpi.bad b { color: var(--red); }
 .sgb-kpi.warn b { color: var(--amber); }
 .sgb-kpi.good b { color: var(--green); }
@@ -77,11 +78,25 @@
 /* ------------------------------------------------------------------ Grid */
 .sgb-grid { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; align-items: start; }
 
-.sgb-classes {
-  display: flex; flex-direction: column; gap: 6px;
+.sgb-side {
+  display: flex; flex-direction: column; gap: 10px; min-width: 0;
   position: sticky; top: calc(var(--bar) + 14px);
   max-height: calc(100vh - var(--bar) - 28px); overflow-y: auto;
 }
+.sgb-classes { display: flex; flex-direction: column; gap: 6px; }
+.sgb-yearpick { display: flex; flex-direction: column; gap: 4px; }
+.sgb-yearpick > span, .sgb-side-h {
+  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3);
+}
+.sgb-yearpick .sgb-select { max-width: none; width: 100%; }
+.sgb-earlier { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.sgb-yearbtn {
+  display: flex; flex-direction: column; gap: 1px; text-align: left; padding: 10px 14px;
+  border-radius: 12px; border: 1px dashed var(--rule); background: transparent;
+}
+.sgb-yearbtn:hover { background: var(--paper); }
+.sgb-yearbtn b { font-size: 14.5px; font-weight: 600; }
+.sgb-yearbtn span { font-size: 12.5px; color: var(--ink-3); }
 .sgb-class {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; text-align: left;
   background: var(--paper); border-radius: 12px; padding: 12px 14px;
@@ -298,6 +313,15 @@
 .sgb-mini span { color: var(--ink-3); }
 .sgb-foot { margin-top: 4px; }
 
+/* ------------------------------------------------------------------ Past years */
+.sgb-ystats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.sgb-ystats div { display: flex; flex-direction: column; }
+.sgb-ystats b { font-family: var(--font); font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.sgb-ystats span { font-size: 12.5px; color: var(--ink-3); }
+.sgb-report > .sgb-ystats { padding: 16px 18px; margin: 0; }
+.sgb-yearh { margin-top: 18px; }
+.sgb-rtable tr.open td { background: var(--sunk); }
+
 /* ------------------------------------------------------------------ Standards */
 .sgb-std { display: flex; flex-direction: column; gap: 12px; }
 .sgb-std-key { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13.5px; color: var(--ink-2); }
@@ -329,10 +353,14 @@
 }
 @media (max-width: 900px) {
   .sgb-grid { grid-template-columns: minmax(0, 1fr); }
+  .sgb-side { position: static; max-height: none; overflow: visible; }
   .sgb-classes {
-    position: static; max-height: none; flex-direction: row; overflow-x: auto;
+    flex-direction: row; overflow-x: auto;
     scroll-snap-type: x mandatory; padding-bottom: 4px; scrollbar-width: thin;
   }
+  .sgb-earlier { flex-direction: row; overflow-x: auto; margin-top: 0; }
+  .sgb-earlier .sgb-side-h { display: none; }
+  .sgb-yearbtn { flex: 0 0 220px; }
   .sgb-class { flex: 0 0 230px; scroll-snap-align: start; }
   .sgb-det { grid-template-columns: minmax(0, 1fr); }
 }
