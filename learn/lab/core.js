@@ -49,7 +49,8 @@ window.OPLO_LAB = (function () {
     "alg/u11.js": "a429089b",
     "alg/u12.js": "f4f424a0",
     "alg/u13.js": "0dd98c8b",
-    "alg/u14.js": "a684fce9",
+    "alg/u14.js": "54f880ce",
+    "alg/u15.js": "b0562134",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "b53b1cdc"
   };
