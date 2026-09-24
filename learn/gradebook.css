@@ -19,6 +19,15 @@
   display: flex; flex-direction: column; gap: 18px; padding-bottom: 60px;
 }
 .sgb.dense { --gb-pad: 7px; }
+
+/* The page the gradebook sits on. A gradebook is a wide thing — a class list
+   beside a table of every assignment — so instead of the app's 980px column
+   it grows with the window, centred: the gutters widen with the screen, and
+   it stops at a width past which a row of marks gets harder to read. */
+.lx-wrap.sgb-wide {
+  max-width: 1960px;
+  padding-inline: max(var(--gut), 4vw, env(safe-area-inset-left)) max(var(--gut), 4vw, env(safe-area-inset-right));
+}
 .sgb .b-a { --band: var(--gb-a); }
 .sgb .b-b { --band: var(--gb-b); }
 .sgb .b-c { --band: var(--gb-c); }
@@ -76,7 +85,10 @@
 .sgb-failed { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 
 /* ------------------------------------------------------------------ Grid */
-.sgb-grid { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; align-items: start; }
+.sgb-grid {
+  display: grid; grid-template-columns: clamp(280px, 22%, 400px) minmax(0, 1fr);
+  gap: clamp(18px, 1.4vw, 28px); align-items: start;
+}
 
 .sgb-side {
   display: flex; flex-direction: column; gap: 10px; min-width: 0;
@@ -150,7 +162,7 @@
 .sgb-cat .trk { grid-column: 1 / -1; height: 6px; border-radius: 6px; background: var(--sunk); overflow: hidden; }
 .sgb-cat .trk i { display: block; height: 100%; border-radius: 6px; background: var(--band); }
 
-.sgb-chart { width: 100%; height: auto; overflow: visible; }
+.sgb-chart { width: 100%; height: auto; max-height: 300px; overflow: visible; }
 .sgb-chart .grid { stroke: var(--hair); stroke-width: 1; }
 .sgb-chart .ax { fill: var(--ink-3); font-size: 10.5px; font-family: var(--text); }
 .sgb-chart .ln { fill: none; stroke: var(--ink-3); stroke-width: 1.5; stroke-linejoin: round; opacity: .6; }

@@ -655,7 +655,9 @@
     });
     $("#subbar").hidden = !(view === "explore" || view === "subject");
     if (view !== "admin") leaveConsole();
-    $("#wrap").classList.toggle("wide", view === "match" || view === "map" || view === "grades");
+    $("#wrap").classList.toggle("wide", view === "match" || view === "map");
+    // The gradebook grows with the window, centred (gradebook.css).
+    $("#wrap").classList.toggle("sgb-wide", view === "grades");
     $("#wrap").classList.toggle("full", view === "read");
     if (view !== "read") { railOff(); if (S.hideAnn) S.hideAnn(); }
     [].forEach.call(document.querySelectorAll("#topNav button"), function (b) {
