@@ -81,6 +81,16 @@ tools/ship.sh --dev       # also the developer site at dev.oplocloud.com
 tools/ship.sh --dry-run   # merge and verify locally; publish nothing
 ```
 
+**Anything that lands on `main` also goes live by itself** —
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs ship.sh's
+checks and publishes the student app to edu.oplocloud.com, running the D1
+migrations and deploying the API first when the push changed `api/`. (A pull
+request merged on GitHub doesn't publish anything otherwise: the Cloudflare
+build that comments on pull requests is a different Worker.) It needs the
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets, and can
+be run by hand from the Actions tab (Deploy → Run workflow) to publish `main`
+without a new merge. The developer site stays a deliberate `ship.sh --dev`.
+
 ## Deploy — GitHub Pages on oplocloud.com
 
 This repo is set up to publish to **GitHub Pages** at the apex domain
