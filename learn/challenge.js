@@ -68,6 +68,8 @@ window.OPLO_CHALLENGE = (function () {
     down:  '<path d="m7 10 5 5 5-5"/>',
     grip:  '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/>',
     right: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+    left:  '<path d="m14.5 6-6 6 6 6"/>',
+    fwd:   '<path d="m9.5 6 6 6-6 6"/>',
     again: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5V9h4.5"/>',
     spark: '<path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/><circle cx="12" cy="12" r="2.2"/>',
     eye:   '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>'
@@ -796,7 +798,7 @@ window.OPLO_CHALLENGE = (function () {
     root.appendChild(live);
     host.appendChild(root);
 
-    P = { path: path, opts: opts, root: root, stage: stage, bar: bar, live: live, ix: 0, session: {}, order: [] };
+    P = { path: path, opts: opts, root: root, stage: stage, bar: bar, live: live, ix: 0, session: {}, order: [], slip: {} };
 
     // Start at the first step not yet done, unless it has all been done —
     // then it is a fresh run.
@@ -807,16 +809,78 @@ window.OPLO_CHALLENGE = (function () {
     // A review or a retry is always a fresh run from the top.
     P.fresh = !!(path.review || opts.only || opts.fresh || opts.record === false || firstOpen < 0);
     P.ix = P.fresh ? 0 : firstOpen;
+    /* With `nav`, a lesson can be walked back and forth: any step already
+       reached, and the one after a step just finished — never past the
+       first step not yet done, so a lesson is still finished by doing it.
+       A retry of a few of its problems is a plain path of its own. `at`
+       opens it on a step already reached. */
+    P.nav = !!opts.nav && !opts.only;
+    P.reach = firstOpen < 0 ? path.steps.length - 1 : P.ix;
+    if (P.nav && opts.at != null) P.ix = Math.max(0, Math.min(opts.at, P.reach));
     paintBar();
     step();
   }
 
+  function isDone(s) {
+    var r = P.session[s.id] || result(s.id);
+    return !!(r && (r.solved || (s.type === "learn" && r.seen)));
+  }
   function paintBar() {
     [].forEach.call(P.bar.children, function (seg, i) {
       var s = P.path.steps[i], r = P.session[s.id] || (!P.fresh && result(s.id));
       seg.className = (i === P.ix ? "cur " : "") +
         (r && (r.solved || r.seen) ? (s.type === "learn" ? "seen" : r.first ? "first" : "helped") : "");
     });
+    if (P.pager) {
+      var last = P.path.steps.length - 1;
+      P.pager.back.disabled = P.ix <= 0;
+      P.pager.fwd.disabled = P.ix >= last || P.ix + 1 > P.reach;
+      P.pager.back.title = P.ix > 0 ? "Back to " + stepName(P.ix - 1) : "This is the first step";
+      P.pager.fwd.title = P.ix >= last ? "This is the last step" : P.ix + 1 > P.reach ? "Finish this step to go on" : "On to " + stepName(P.ix + 1);
+    }
+    if (P.nav && P.opts.onStep) P.opts.onStep({ ix: P.ix, reach: P.reach, done: P.path.steps.map(isDone) });
+  }
+  // What each step is called, the kicker shortened: a lesson step by its
+  // heading, a problem by its number.
+  function names(steps) {
+    var n = 0;
+    return steps.map(function (s) { return isProblem(s) ? "Problem " + (++n) : s.kicker || "The idea"; });
+  }
+  function stepName(i) { return names(P.path.steps)[i]; }
+  // The step after one just finished can be reached without the Continue.
+  function opened() { P.reach = Math.max(P.reach, Math.min(P.ix + 1, P.path.steps.length - 1)); }
+  // False when the path being played can't be walked (a retry round).
+  function goTo(i) {
+    if (!P || !P.nav) return false;
+    if (i < 0 || i > P.reach || i === P.ix) return true;
+    P.ix = i;
+    step();
+    toTop();
+    return true;
+  }
+  /* Back and forward, top right of the card: Mail's arrows between
+     messages. The step count is the kicker's to say. */
+  function pager(card) {
+    if (!P.nav) { P.pager = null; return; }
+    var box = el("nav", "ch-pager");
+    box.setAttribute("aria-label", "Steps");
+    var back = button("ch-pg", icon(I.left)), fwd = button("ch-pg", icon(I.fwd));
+    // Not "Next step": a worked example's own button already says that.
+    back.setAttribute("aria-label", "Go back a step");
+    fwd.setAttribute("aria-label", "Go forward a step");
+    // From the keyboard, focus stays on the arrows so they can be pressed
+    // again; a click leaves it where the step puts it, so Enter still checks.
+    function move(d, e) {
+      goTo(P.ix + d);
+      if (e.detail === 0 && P.pager) focusSoon(d < 0 && !P.pager.back.disabled ? P.pager.back : P.pager.fwd.disabled ? P.pager.back : P.pager.fwd);
+    }
+    back.addEventListener("click", function (e) { move(-1, e); });
+    fwd.addEventListener("click", function (e) { move(1, e); });
+    box.appendChild(back);
+    box.appendChild(fwd);
+    card.classList.add("paged");
+    card.appendChild(box);
+    P.pager = { back: back, fwd: fwd };
   }
 
   /* A step's interactive piece may hold on to things (timers, listeners on
@@ -834,13 +898,14 @@ window.OPLO_CHALLENGE = (function () {
   function step() {
     var s = P.path.steps[P.ix];
     if (!s) { summary(); return; }
-    paintBar();
     dispose();
     P.stage.innerHTML = "";
     var card = el("article", "ch-card" + (reduced() ? "" : " in"));
     var probs = P.path.steps.filter(isProblem), n = probs.indexOf(s) + 1;
     var kicker = s.kicker || (s.type === "learn" ? "The idea" : "Problem " + n + " of " + probs.length);
     card.appendChild(el("p", "ch-kind", kicker + (s.skill && s.type !== "learn" ? ' <span>· ' + esc(s.skill) + "</span>" : "")));
+    pager(card);
+    paintBar();
     var prompt = el("div", "ch-prompt", s.prompt || s.t || "");
     prompt.tabIndex = -1;
     card.appendChild(prompt);
@@ -920,6 +985,7 @@ window.OPLO_CHALLENGE = (function () {
         '<b>Hint ' + (st.hints + 1) + (s.hints.length > 1 ? " of " + s.hints.length : "") + ".</b> " + s.hints[st.hints]);
       hints.appendChild(h);
       st.hints++;
+      P.slip[s.id] = true;
       hintBtn.querySelector("span").textContent = st.hints < s.hints.length ? "Another hint" : "No more hints";
       hintBtn.disabled = st.hints >= s.hints.length;
       // Out of hints on a puzzle that only lets you check a solved state:
@@ -961,19 +1027,26 @@ window.OPLO_CHALLENGE = (function () {
        whether the latest solve was clean, so the review can let go of a
        problem once it has been solved without help. */
     function tried(ok) {
+      // A slip or a hint stays with the problem for the sitting, even when
+      // it is left and come back to: coming back is not a first try.
+      if (!ok) P.slip[s.id] = true;
       var prev = result(s.id) || {};
       var patch = { tries: (prev.tries || 0) + 1 };
       if (!prev.firstAt) { patch.firstAt = Date.now(); patch.first = ok && st.hints === 0; }
       note(s.id, patch);
     }
     function record(ok, shown) {
-      var clean = ok && !shown && st.tries === 1 && st.hints === 0;
+      var clean = ok && !shown && st.tries === 1 && st.hints === 0 && !P.slip[s.id];
       var prev = result(s.id) || {};
       note(s.id, { solved: true, last: clean, shown: !!(prev.shown || shown), firstAt: prev.firstAt || Date.now(),
                    first: prev.firstAt ? !!prev.first : clean });
-      P.session[s.id] = { solved: true, first: clean, shown: !!shown };
+      /* In a lesson walked back and forth, a problem is summed up by where
+         it stands — solved cleanly the first time, or cleanly since — so
+         going back to one is review, and a slip then takes nothing away. */
+      P.session[s.id] = { solved: true, first: P.nav ? !shaky(s.id) : clean, shown: !!shown };
       P.order.push({ step: s, ok: !!ok, first: clean, shown: !!shown, tries: st.tries, hints: st.hints });
       if (P.opts.onResult) P.opts.onResult(s, P.session[s.id]);
+      opened();
       paintBar();
     }
     function done(ok) {
@@ -1035,9 +1108,13 @@ window.OPLO_CHALLENGE = (function () {
   }
 
   function next() {
+    opened();
     P.ix++;
     if (P.ix >= P.path.steps.length) { summary(); return; }
     step();
+    toTop();
+  }
+  function toTop() {
     var y = P.root.getBoundingClientRect().top + window.scrollY - 80;
     if (window.scrollY > y) window.scrollTo({ top: y, behavior: reduced() ? "auto" : "smooth" });
   }
@@ -1050,6 +1127,7 @@ window.OPLO_CHALLENGE = (function () {
      again — honest, specific, and no confetti. */
   function summary() {
     P.ix = P.path.steps.length;
+    P.pager = null;
     paintBar();
     dispose();
     if (P.opts.onFinish) P.opts.onFinish(P.order, P.path);
@@ -1066,8 +1144,9 @@ window.OPLO_CHALLENGE = (function () {
     var steps = P.path.steps.filter(isProblem);
     var clean = [], helped = [];
     steps.forEach(function (s) {
-      // Solved in an earlier sitting of the same path: that sitting counts.
-      var r = P.session[s.id], old = !P.fresh && !P.opts.only && result(s.id);
+      // Solved in an earlier sitting of the same path: that sitting counts —
+      // in a lesson walked back and forth too, where steps can be skipped past.
+      var r = P.session[s.id], old = (!P.fresh || P.nav) && !P.opts.only && result(s.id);
       if (!r && old && old.solved) r = { first: !shaky(s.id) };
       if (!r) return;
       (r.first ? clean : helped).push(s);
@@ -1084,6 +1163,8 @@ window.OPLO_CHALLENGE = (function () {
     var card = el("article", "ch-card ch-end" + (reduced() ? "" : " in"));
     card.appendChild(el("div", "ch-endmark", '<svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23"/>' +
       '<path d="m16 27 7 7 13-15"/></svg>'));
+    pager(card);
+    paintBar();
     card.appendChild(el("h2", "ch-endh", P.path.endTitle || (P.path.review ? "Review done." : "Challenge complete.")));
     card.appendChild(el("p", "ch-endsum", clean.length + " of " + steps.length + " solved first try, without a hint."));
     var two = el("div", "ch-endcols");
@@ -1136,6 +1217,9 @@ window.OPLO_CHALLENGE = (function () {
     title: function (reader, sec) { var p = lessonPath(reader, sec); return p ? p.title : null; },
     blurb: function (reader, sec) { var p = lessonPath(reader, sec); return p ? p.blurb : null; },
     play: function (host, opts) { opts.host = host; play(host, opts); },
+    // Jump to a step of the path being played, if it has been reached.
+    go: function (i) { goTo(i); },
+    names: names,
     /* Step types from outside — the math lab's balance, number line and
        plane are ordinary steps to the player. A factory takes the step and a
        seed, and returns { el, ready, check, reveal, focus?, destroy? }. */

@@ -49,6 +49,16 @@
   letter-spacing: .005em; margin-bottom: 12px;
 }
 .ch-kind span { font-weight: 500; }
+/* Back and forward between a lesson's steps, top right of the card. */
+.ch-pager { position: absolute; top: 24px; right: 24px; display: flex; gap: 4px; }
+.ch-pg {
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+  color: var(--ink-2); transition: background .15s var(--ease), color .15s var(--ease);
+}
+.ch-pg svg { width: 18px; height: 18px; }
+.ch-pg:hover:not(:disabled) { background: var(--sunk); color: var(--ink); }
+.ch-pg:disabled { opacity: .3; cursor: default; }
+.ch-card.paged .ch-kind { padding-right: 80px; }
 .ch-prompt {
   font-family: var(--font); font-size: 21px; line-height: 1.38; font-weight: 500;
   letter-spacing: -.012em; color: var(--ink); outline: none; max-width: 40em;

@@ -1121,7 +1121,7 @@ window.OPLO_LAB = (function () {
 
      The sidebar says where you are, so the work has no header of its own:
      the player's title and progress bar are kept for screen readers only. */
-  var SIDE = { q: "", folded: {}, scroll: null };
+  var SIDE = { q: "", folded: {}, scroll: null, stepsFolded: false };
   var NARROW = "(max-width: 1099px)";
   function sideHidden() { try { return localStorage.getItem("oplo.lab.side") === "hidden"; } catch (e) { return false; } }
   function setSideHidden(v) {
@@ -1189,8 +1189,7 @@ window.OPLO_LAB = (function () {
 
     var list = el("div", "lb-side-list");
     var none = el("p", "lb-side-none");
-    function section(key, name, items, parent = null) {
-      var target = parent || list;
+    function section(key, name, items) {
       var sec = el("section", "lb-sec" + (SIDE.folded[key] ? " folded" : ""));
       var h = button("lb-sec-h", "<span>" + name + "</span>" + svg(ICON.down));
       h.setAttribute("aria-expanded", String(!SIDE.folded[key]));
@@ -1202,38 +1201,59 @@ window.OPLO_LAB = (function () {
       sec.appendChild(h);
       var ul = el("ul", "lb-rows");
       items.forEach(function (it) {
-        if (it.children) {
-          section(it.key, it.title, it.children, ul);
-        } else {
-          var li = el("li");
-          var cur = isHere(it, here);
-          var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : ICON.doc;
-          var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
-          var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
-            '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
-            '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.label + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end);
-          if (cur) b.setAttribute("aria-current", "page");
-          b.title = (it.kind === "lesson" ? it.label + ": " : "") + stripMath(it.title);
-          b.addEventListener("click", function () {
-            SIDE.scroll = list.scrollTop;
-            shell.classList.remove("peek");
-            if (!cur) goItem(ctx, it);
-          });
-          li.dataset.text = (it.label + " " + stripMath(it.title)).toLowerCase();
-          li.appendChild(b);
-          ul.appendChild(li);
-        }
+        var li = el("li");
+        var cur = isHere(it, here);
+        var open = cur && here.steps;
+        var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : ICON.doc;
+        var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
+        var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
+          '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
+          '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.label + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end +
+          (open ? '<span class="lb-row-fold">' + svg(ICON.down) + "</span>" : ""));
+        if (cur) b.setAttribute("aria-current", "page");
+        b.title = (it.kind === "lesson" ? it.label + ": " : "") + stripMath(it.title);
+        b.addEventListener("click", function () {
+          if (open) { foldSteps(li, b, !SIDE.stepsFolded); return; }
+          SIDE.scroll = list.scrollTop;
+          shell.classList.remove("peek");
+          if (!cur) goItem(ctx, it);
+        });
+        li.dataset.text = (it.label + " " + stripMath(it.title)).toLowerCase();
+        li.appendChild(b);
+        if (open) steps(li, b);
+        ul.appendChild(li);
       });
       sec.appendChild(ul);
-      target.appendChild(sec);
+      list.appendChild(sec);
     }
-    section("course", ctx.courseTitle, [
-      {
-        key: "unit-" + u.n,
-        title: "Unit " + u.n,
-        children: unitSeq(u)
-      }
-    ]);
+    /* The lesson you are in opens to its steps, so any step already reached
+       is one click away — back to the idea, forward to the problem you were
+       on. The player paints which is current and which are done (onStep);
+       clicking the lesson itself folds them away. */
+    function steps(li, b) {
+      li.classList.add("lb-open");
+      var ol = el("ol", "lb-steps");
+      ol.setAttribute("aria-label", "Steps in this lesson");
+      here.steps.forEach(function (name, i) {
+        var sli = el("li");
+        var sb = button("lb-step", '<span class="lb-step-dot"></span><span class="lb-step-t">' + esc(name) + "</span>");
+        sb.addEventListener("click", function () {
+          shell.classList.remove("peek");
+          // In a retry of a few problems, the whole lesson opens on that step.
+          if (!CH.go(i)) runLesson(host, ctx, here.k, i);
+        });
+        sli.appendChild(sb);
+        ol.appendChild(sli);
+      });
+      li.appendChild(ol);
+      foldSteps(li, b, SIDE.stepsFolded);
+    }
+    function foldSteps(li, b, folded) {
+      SIDE.stepsFolded = folded;
+      li.classList.toggle("folded", folded);
+      b.setAttribute("aria-expanded", String(!folded));
+    }
+    section("path", "Lessons", unitSeq(u));
     section("skills", "Practice", skillSeq(u));
     list.appendChild(none);
     side.appendChild(list);
@@ -1243,7 +1263,7 @@ window.OPLO_LAB = (function () {
       search.classList.toggle("has", !!q);
       [].forEach.call(list.querySelectorAll(".lb-sec"), function (sec) {
         var shown = 0;
-        [].forEach.call(sec.querySelectorAll("li"), function (li) {
+        [].forEach.call(sec.querySelectorAll(".lb-rows > li"), function (li) {
           var ok = !q || li.dataset.text.indexOf(q) > -1;
           li.hidden = !ok;
           if (ok) shown++;
@@ -1290,6 +1310,31 @@ window.OPLO_LAB = (function () {
     }
     return main;
   }
+  // The lesson's steps as the player moves through them (its onStep): the
+  // one you are on, the ones done, and the ones not reached yet, locked.
+  function paintSteps(host, st) {
+    var rows = host.querySelectorAll(".lb-step");
+    if (!rows.length) return;
+    [].forEach.call(rows, function (b, i) {
+      b.disabled = i > st.reach;
+      b.classList.toggle("done", !!st.done[i]);
+      if (i === st.ix) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+      b.title = i > st.reach ? "Finish the steps before this one first" : "";
+    });
+    // On the summary no step is current, and the lesson row says where you are.
+    var open = host.querySelector(".lb-open");
+    open.classList.toggle("on-step", st.ix < rows.length);
+    /* The lesson and the step you are on stay in sight when the step
+       changes — scrolling the list, never the page, and not while you are
+       only answering (the list may have been scrolled to look at something). */
+    if (open.dataset.ix === String(st.ix)) return;
+    open.dataset.ix = st.ix;
+    var at = rows[st.ix] || open, list = host.querySelector(".lb-side-list");
+    if (!list || !at.offsetParent) return;
+    var box = list.getBoundingClientRect(), a = open.getBoundingClientRect(), b = at.getBoundingClientRect();
+    if (a.top >= box.top && b.bottom <= box.bottom) return;
+    list.scrollTop += b.bottom - a.top <= list.clientHeight - 16 ? a.top - box.top - 8 : b.top - box.top - list.clientHeight / 3;
+  }
 
 
   /* ============================================================ Running */
@@ -1307,7 +1352,7 @@ window.OPLO_LAB = (function () {
       })
     };
   }
-  function runLesson(host, ctx, k) {
+  function runLesson(host, ctx, k, at) {
     useAccount(ctx.me);
     host.innerHTML = '<div class="lb-loading"><span></span><span></span><span></span></div>';
     return load(ctx.course, ctx.n).then(function (u) {
@@ -1319,12 +1364,19 @@ window.OPLO_LAB = (function () {
       var sk = u.skills.filter(function (s) { return s.lesson === k; })[0] || u.skills[0];
       if (sk) after.push({ label: "Practise: " + stripMath(sk.title), go: function () { ctx.go.practice(sk.id); } });
       after.push({ label: "Unit " + u.n + ": " + u.title, go: function () { ctx.go.unit(); } });
-      var here = { kind: "lesson", k: k }, work = frame(host, ctx, u, here);
+      var here = { kind: "lesson", k: k, steps: CH.names(path.steps) }, work = frame(host, ctx, u, here);
       CH.play(work, {
-        path: path, me: ctx.me, after: after,
+        path: path, me: ctx.me, after: after, nav: true, at: at,
+        onStep: function (st) { paintSteps(host, st); },
         onFinish: function () {
           REC.lessons[lessonKey(u.lessons[k - 1])] = { done: true, at: Date.now() };
           changed();
+          // The sidebar was drawn before the lesson was finished.
+          var row = host.querySelector('.lb-row[aria-current="page"]');
+          if (row && !row.querySelector(".lb-row-done")) {
+            row.classList.add("done");
+            row.querySelector(".lb-row-t").insertAdjacentHTML("afterend", '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>");
+          }
           if (ctx.onProgress) ctx.onProgress(unitDims(u));
         }
       });
