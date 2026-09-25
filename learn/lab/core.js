@@ -35,11 +35,11 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "8dc69731",
+    "lab/widgets.js": "42c4d6c4",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
-    "geo/u01.js": "b53b1cdc"
+    "geo/u01.js": "99bffc9c"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -72,9 +72,10 @@ window.OPLO_LAB = (function () {
     Delta: "Δ", delta: "δ", circ: "°", deg: "°", ldots: "…", cdots: "⋯", neq: "≠", leq: "≤", geq: "≥",
     in: "∈", sqrt: "√", checkmark: "✓", cancel: "", quad: " ", qquad: "  ",
     Rightarrow: "⇒", implies: "⇒", iff: "⇔", perp: "⊥", parallel: "∥", angle: "∠", triangle: "△",
-    emptyset: "∅", cup: "∪", cap: "∩", mid: "∣", star: "⋆", bullet: "•", square: "□", Box: "□"
+    emptyset: "∅", cup: "∪", cap: "∩", mid: "∣", star: "⋆", bullet: "•", square: "□", Box: "□",
+    cong: "≅", sim: "∼", prime: "′", odot: "⊙"
   };
-  var REL = { "=": 1, "<": 1, ">": 1, "≤": 1, "≥": 1, "≠": 1, "≈": 1, "→": 1, "⇒": 1, "⇔": 1, "∈": 1 };
+  var REL = { "=": 1, "<": 1, ">": 1, "≤": 1, "≥": 1, "≠": 1, "≈": 1, "→": 1, "⇒": 1, "⇔": 1, "∈": 1, "≅": 1, "∼": 1 };
   var BIN = { "+": 1, "−": 1, "±": 1, "∓": 1, "·": 1, "×": 1, "÷": 1 };
 
   function mathHTML(src) {
@@ -119,8 +120,14 @@ window.OPLO_LAB = (function () {
           push('<span class="mr">' + (idx ? '<span class="mr-i">' + mathHTML(idx) + "</span>" : "") +
                '<span class="mr-s">√</span><span class="mr-b">' + mathHTML(body) + "</span></span>", "val");
         } else if (cmd === "overline" || cmd === "bar") {
-          // The bar over a repeating decimal: 0.\overline{27}.
+          // The bar over a repeating decimal: 0.\overline{27} — and over a
+          // segment's two letters: \overline{AB}.
           push('<span class="mov">' + mathHTML(group()) + "</span>", "val");
+        } else if (cmd === "overrightarrow" || cmd === "overleftrightarrow") {
+          // A ray, \overrightarrow{AB}: one arrowhead. A line,
+          // \overleftrightarrow{AB}: one at each end.
+          push('<span class="mray' + (cmd === "overleftrightarrow" ? " both" : "") + '"><span class="mrh" aria-hidden="true"></span>' +
+               mathHTML(group()) + "</span>", "val");
         } else if (cmd === "xrightarrow") {
           push('<span class="marr"><span class="marr-l">' + mathHTML(group()) + "</span><span>⟶</span></span>", "rel");
         } else if (cmd === "text" || cmd === "mathrm" || cmd === "textrm") {
@@ -155,6 +162,7 @@ window.OPLO_LAB = (function () {
         continue;
       }
       if (c === " ") { i++; continue; }
+      if (c === "'") { i++; push("′", "val"); continue; }     // A' — a prime, not an apostrophe
       if (c === "\u0001") { i++; push("$", "val"); continue; }
       if (c === "-" || c === "−") { i++; op("−"); continue; }
       if (c === "+") { i++; op("+"); continue; }
@@ -763,7 +771,7 @@ window.OPLO_LAB = (function () {
       }
     });
   }
-  /* pair: an ordered pair (x, y). */
+  /* pair: an ordered pair (x, y). near: [{ v: [x, y], fb }] answers a known slip. */
   function kindPair(s) {
     function read(t) {
       var mm = /^\(?\s*([^,()]+)\s*,\s*([^,()]+)\s*\)?$/.exec(t);
@@ -780,7 +788,9 @@ window.OPLO_LAB = (function () {
         var p = read(t);
         var ok = Math.abs(p[0] - s.answer[0]) < 1e-6 && Math.abs(p[1] - s.answer[1]) < 1e-6;
         var swapped = Math.abs(p[1] - s.answer[0]) < 1e-6 && Math.abs(p[0] - s.answer[1]) < 1e-6;
-        return { ok: ok, say: ok ? null : swapped ? "Those are the right numbers in the wrong order — $x$ comes first." : null };
+        // A known slip gets its own reply: near: [{ v: [x, y], fb }].
+        var near = !ok && (s.near || []).filter(function (n) { return Math.abs(p[0] - n.v[0]) < 1e-6 && Math.abs(p[1] - n.v[1]) < 1e-6; })[0];
+        return { ok: ok, say: ok ? null : near ? near.fb : swapped ? fmt("Those are the right numbers in the wrong order — $x$ comes first.") : null };
       }
     });
   }

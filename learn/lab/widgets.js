@@ -29,9 +29,13 @@
      rectangle   a rectangle sized with sliders; its perimeter and area live
      tester      two expressions side by side at the same x
      share       division as fitting pieces — and why pieces of size 0 can't
-     walk        a worked example, one line at a time, each with its reason
+     walk        a worked example, one line at a time, each with its reason —
+                 and, beside it, a picture that builds up with the lines
      move        a shape on a grid you slide, turn, flip or scale — the four
                  transformations, done rather than described
+
+   And one that is not a step: LAB.fig, a still picture (a figure on graph
+   paper, a ray, a mirror line) for a lesson's words or an answer choice.
      solid       a real solid in three dimensions (three.js), built out of
                  unit cubes and turned with the pointer
 
@@ -1586,11 +1590,25 @@
      A worked example, one line at a time. Each line is a piece of maths and,
      beside it, the reason for it in plain words; "Next step" shows the next
      line, so a beginner reads one move at a time instead of a finished
-     calculation. spec: { rows: [{ m: tex, say: text }], start: 1 }. With
+     calculation. spec: { rows: [{ m: tex, say: text, fig }], start: 1 }. With
      gate, Continue waits until every line has been shown. */
   CH.addKind("walk", function (spec, seed, mode) {
     var api = {}, rows = spec.rows || [], k = Math.min(rows.length, spec.start || 1);
     var box = el("div", "lw lw-walk");
+    // A row may carry a picture (`fig`, from LAB.fig): the drawing beside the
+    // lines shows the latest one, so it builds up a line at a time, the way a
+    // teacher adds to the board while talking.
+    var pic = rows.some(function (r) { return r.fig; }) ? el("div", "lw-wk-fig") : null;
+    if (pic) { box.classList.add("has-fig"); box.appendChild(pic); }
+    var shown = -1;
+    function showFig() {
+      if (!pic) return;
+      for (var j = k - 1; j >= 0; j--) if (rows[j].fig) break;
+      if (j < 0 || j === shown) return;
+      shown = j;
+      pic.innerHTML = rows[j].fig;
+      pic.classList.remove("in"); void pic.offsetWidth; pic.classList.add("in");
+    }
     var list = el("ol", "lw-wk");
     box.appendChild(list);
     var go = button("lw-btn lw-wk-next", "Next step");
@@ -1608,6 +1626,7 @@
     function paint() {
       tools.hidden = k >= rows.length;
       box.classList.toggle("solved", k >= rows.length);
+      showFig();
       if (api.onChange) api.onChange();
     }
     go.addEventListener("click", function () {
@@ -1625,31 +1644,301 @@
     return api;
   });
 
+  /* ============================================================== Figure
+     A still picture: what a teacher draws on the board beside the words. It
+     is SVG markup rather than a live piece, so one drawing can sit in a
+     step's `art`, beside a worked example's lines (a row's `fig`), or be an
+     answer choice itself ("which picture shows a ray?"). Colours are the lab
+     palette's, so a figure reads on the light look and the dark alike, and
+     every figure says in words what it shows (`alt`) for a screen reader.
+
+       LAB.fig({ x: [lo, hi], y: [lo, hi], grid, axes, nums, u, w, alt, cap, items })
+
+     x, y    the window, in grid units (default −6…6)
+     grid    graph paper (default true); the axes and their numbers go with it
+     u       pixels to a unit (default 26); w caps the width it is shown at
+     items   drawn in order, each one of:
+       { pt: [x, y], name, at: "ne", c, open }        a point and its name
+       { seg: [p, q], c, dash, marks }                  a segment (marks: tick marks)
+       { ray: [p, q], c, dash }                         from p, through q, off the edge
+       { line: [p, q], c, dash, bare }                  through p and q, both ways (bare: no
+                                                        arrowheads — a line drawn to find something)
+       { poly: [p, …], c, dash, names, fill }           a figure, its corners named
+       { arrow: [p, q], c, dash, say }                  a move from p to q
+       { steps: [p, q], c }                             the same move as two legs, across
+                                                        then up, each labelled ("3 right")
+       { mirror: "x" | "y" | "yx" | "y-x" | {x: a} | {y: b}, say }
+       { centre: [x, y], say }
+       { turn: [centre, r, from°, to°], c, say, cw }    an arc, counterclockwise (cw: clockwise)
+       { angle: [a, v, b], say, right, c }              the angle at v, between va and vb
+       { circle: [centre, r], c, dash }
+       { text: "…", at: [x, y], c, anchor, eq }         words (eq: set as maths)
+     Colours (c): ink (default), soft, blue, green, red, purple, orange.
+     LAB.figs([fig, fig, …]) sets several side by side. */
+  var FIG_C = { ink: 1, soft: 1, blue: 1, green: 1, red: 1, purple: 1, orange: 1 };
+  function figEsc(s) { return esc(String(s == null ? "" : s)); }
+  /* Words for a drawing. In an equation or an axis's name ("y = −x",
+     "x-axis") the letters are set in italics, as maths; in plain words ("3
+     right", "a quarter turn") nothing is. */
+  function figEq(s) {
+    s = String(s);
+    if (!/=|axis/.test(s)) return figEsc(s);
+    return s.replace(/-(?=\d|[a-z](?![a-z]))/g, "−").split(/(\b[a-zA-Z]\b)/).map(function (p) {
+      if (!p) return "";
+      return /^[a-zA-Z]$/.test(p) ? '<tspan class="lf-it">' + p + "</tspan>" : figEsc(p);
+    }).join("");
+  }
+  function mirrorLine(key) {
+    // A mirror as a line through two points, what it does to a point, and its name.
+    if (key === "x") return { p: [0, 0], q: [1, 0], f: function (x, y) { return [x, -y]; }, name: "x-axis", say: "the $x$-axis" };
+    if (key === "y") return { p: [0, 0], q: [0, 1], f: function (x, y) { return [-x, y]; }, name: "y-axis", say: "the $y$-axis" };
+    if (key === "yx") return { p: [0, 0], q: [1, 1], f: function (x, y) { return [y, x]; }, name: "y = x", say: "the line $y = x$" };
+    if (key === "y-x") return { p: [0, 0], q: [1, -1], f: function (x, y) { return [-y, -x]; }, name: "y = -x", say: "the line $y = -x$" };
+    if (key && key.x != null) return { p: [key.x, 0], q: [key.x, 1], f: function (x, y) { return [2 * key.x - x, y]; }, name: "x = " + key.x, say: "the line $x = " + key.x + "$" };
+    if (key && key.y != null) return { p: [0, key.y], q: [1, key.y], f: function (x, y) { return [x, 2 * key.y - y]; }, name: "y = " + key.y, say: "the line $y = " + key.y + "$" };
+    return null;
+  }
+  function fig(o) {
+    o = o || {};
+    var xr = o.x || [-6, 6], yr = o.y || [-6, 6], u = o.u || 26;
+    var grid = o.grid !== false, axes = grid && o.axes !== false, nums = axes && o.nums !== false;
+    var pad = o.pad != null ? o.pad : nums ? 24 : 16;
+    var W = Math.round((xr[1] - xr[0]) * u + 2 * pad), H = Math.round((yr[1] - yr[0]) * u + 2 * pad);
+    function X(v) { return +(pad + (v - xr[0]) * u).toFixed(1); }
+    function Y(v) { return +(pad + (yr[1] - v) * u).toFixed(1); }
+    function P(p) { return X(p[0]) + " " + Y(p[1]); }
+    var out = [];
+    function g(c, body) { out.push('<g class="lf-' + (FIG_C[c] ? c : "ink") + '">' + body + "</g>"); }
+    function dash(d) { return d ? ' stroke-dasharray="' + (d === true ? "6 5" : d) + '"' : ""; }
+    function head(x2, y2, x1, y1, s) {          // an arrowhead at (x2, y2), coming from (x1, y1), in pixels
+      var a = Math.atan2(y2 - y1, x2 - x1), w = 0.42;
+      s = s || 10;
+      return '<path class="lf-head" d="M' + (x2 - s * Math.cos(a - w)).toFixed(1) + " " + (y2 - s * Math.sin(a - w)).toFixed(1) +
+        "L" + x2.toFixed(1) + " " + y2.toFixed(1) + "L" + (x2 - s * Math.cos(a + w)).toFixed(1) + " " + (y2 - s * Math.sin(a + w)).toFixed(1) + 'Z"/>';
+    }
+    function label(str, x, y, at, cls) {        // a name beside a place, on the side `at` says
+      var d = { n: [0, -9, "middle"], s: [0, 18, "middle"], e: [9, 5, "start"], w: [-9, 5, "end"],
+                ne: [6, -7, "start"], nw: [-6, -7, "end"], se: [6, 17, "start"], sw: [-6, 17, "end"] }[at || "ne"] || [6, -7, "start"];
+      return '<text x="' + (x + d[0]).toFixed(1) + '" y="' + (y + d[1]).toFixed(1) + '" text-anchor="' + d[2] + '" class="' + (cls || "lf-name") + '">' +
+        (cls === "lf-word" ? figEq(str) : figEsc(String(str).replace(/'/g, "′"))) + "</text>";
+    }
+    // The part of the line through p and q inside the window: from p onwards
+    // (a ray), or both ways (a line). Kept a little in from the edge.
+    function clip(p, q, both) {
+      var m = 0.3, lo = both ? -1e9 : 0, hi = 1e9, dx = q[0] - p[0], dy = q[1] - p[1];
+      [[dx, p[0], xr[0] + m, xr[1] - m], [dy, p[1], yr[0] + m, yr[1] - m]].forEach(function (a) {
+        if (Math.abs(a[0]) < 1e-12) return;
+        var t1 = (a[2] - a[1]) / a[0], t2 = (a[3] - a[1]) / a[0];
+        lo = Math.max(lo, Math.min(t1, t2)); hi = Math.min(hi, Math.max(t1, t2));
+      });
+      return [[p[0] + lo * dx, p[1] + lo * dy], [p[0] + hi * dx, p[1] + hi * dy]];
+    }
+
+    out.push('<rect class="lf-bg" width="' + W + '" height="' + H + '" rx="12"/>');
+    if (grid) {
+      var gd = "";
+      for (var gx = Math.ceil(xr[0]); gx <= xr[1]; gx++) gd += "M" + X(gx) + " " + Y(yr[0]) + "V" + Y(yr[1]);
+      for (var gy = Math.ceil(yr[0]); gy <= yr[1]; gy++) gd += "M" + X(xr[0]) + " " + Y(gy) + "H" + X(xr[1]);
+      out.push('<path class="lf-grid" d="' + gd + '"/>');
+    }
+    var hasX = 0 >= yr[0] && 0 <= yr[1], hasY = 0 >= xr[0] && 0 <= xr[1];
+    if (axes) {
+      if (hasX) out.push('<path class="lf-axis" d="M' + X(xr[0]) + " " + Y(0) + "H" + X(xr[1]) + '"/>');
+      if (hasY) out.push('<path class="lf-axis" d="M' + X(0) + " " + Y(yr[0]) + "V" + Y(yr[1]) + '"/>');
+    }
+    if (nums) {
+      var step = o.step || (xr[1] - xr[0] > 14 ? 2 : 1), ny = hasX ? Y(0) : Y(yr[0]), nx = hasY ? X(0) : X(xr[0]), v;
+      for (v = Math.ceil(xr[0] / step) * step; v <= xr[1]; v += step) {
+        if (v === 0 && hasY) continue;
+        out.push('<text class="lf-num" x="' + X(v) + '" y="' + (ny + 13) + '" text-anchor="middle">' + String(v).replace("-", "−") + "</text>");
+      }
+      for (v = Math.ceil(yr[0] / step) * step; v <= yr[1]; v += step) {
+        if (v === 0 && hasX) continue;
+        out.push('<text class="lf-num" x="' + (nx - 5) + '" y="' + (Y(v) + 3.5) + '" text-anchor="end">' + String(v).replace("-", "−") + "</text>");
+      }
+      if (hasX && hasY) out.push('<text class="lf-num" x="' + (X(0) - 5) + '" y="' + (Y(0) + 13) + '" text-anchor="end">0</text>');
+    }
+
+    (o.items || []).forEach(function (it) {
+      var c = it.c, a, b, s;
+      if (it.pt) {
+        s = '<circle class="' + (it.open ? "lf-open" : "lf-dot") + '" cx="' + X(it.pt[0]) + '" cy="' + Y(it.pt[1]) + '" r="' + (it.r || 4.2) + '"/>';
+        if (it.name) s += label(it.name, X(it.pt[0]), Y(it.pt[1]), it.at);
+        g(c || "ink", s);
+      } else if (it.seg) {
+        s = '<path class="lf-stroke" d="M' + P(it.seg[0]) + "L" + P(it.seg[1]) + '"' + dash(it.dash) + "/>";
+        if (it.marks) {
+          var mx = (X(it.seg[0][0]) + X(it.seg[1][0])) / 2, my = (Y(it.seg[0][1]) + Y(it.seg[1][1])) / 2;
+          var ang = Math.atan2(Y(it.seg[1][1]) - Y(it.seg[0][1]), X(it.seg[1][0]) - X(it.seg[0][0]));
+          for (var k = 0; k < it.marks; k++) {
+            var off = (k - (it.marks - 1) / 2) * 5, cx = mx + off * Math.cos(ang), cy = my + off * Math.sin(ang);
+            s += '<path class="lf-stroke" d="M' + (cx - 6 * Math.sin(ang)).toFixed(1) + " " + (cy + 6 * Math.cos(ang)).toFixed(1) +
+              "L" + (cx + 6 * Math.sin(ang)).toFixed(1) + " " + (cy - 6 * Math.cos(ang)).toFixed(1) + '"/>';
+          }
+        }
+        g(c || "ink", s);
+      } else if (it.ray || it.line) {
+        var both = !!it.line, pq = clip((it.ray || it.line)[0], (it.ray || it.line)[1], both);
+        a = [X(pq[0][0]), Y(pq[0][1])]; b = [X(pq[1][0]), Y(pq[1][1])];
+        s = '<path class="lf-stroke" d="M' + a.join(" ") + "L" + b.join(" ") + '"' + dash(it.dash) + "/>";
+        if (!it.bare) s += head(b[0], b[1], a[0], a[1]) + (both ? head(a[0], a[1], b[0], b[1]) : "");
+        g(c || "ink", s);
+      } else if (it.poly) {
+        var pts = it.poly.map(P).join(" ");
+        s = '<polygon class="' + (it.fill === false ? "lf-stroke" : "lf-shape") + '" points="' + pts + '"' + dash(it.dash) + "/>";
+        if (it.names) {
+          var cxm = 0, cym = 0;
+          it.poly.forEach(function (p) { cxm += X(p[0]) / it.poly.length; cym += Y(p[1]) / it.poly.length; });
+          it.poly.forEach(function (p, i) {
+            if (!it.names[i]) return;
+            var px = X(p[0]), py = Y(p[1]), dx = px - cxm, dy = py - cym, d = Math.sqrt(dx * dx + dy * dy) || 1;
+            s += '<circle class="lf-dot" cx="' + px + '" cy="' + py + '" r="3.4"/>';
+            s += '<text class="lf-name" x="' + (px + dx / d * 13).toFixed(1) + '" y="' + (py + dy / d * 13 + 5).toFixed(1) + '" text-anchor="middle">' +
+              figEsc(String(it.names[i]).replace(/'/g, "′")) + "</text>";
+          });
+        }
+        g(c || "blue", s);
+      } else if (it.arrow) {
+        a = [X(it.arrow[0][0]), Y(it.arrow[0][1])]; b = [X(it.arrow[1][0]), Y(it.arrow[1][1])];
+        var L = Math.sqrt(Math.pow(b[0] - a[0], 2) + Math.pow(b[1] - a[1], 2)) || 1, ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L;
+        var a2 = [a[0] + ux * 6, a[1] + uy * 6], b2 = [b[0] - ux * 6, b[1] - uy * 6];
+        s = '<path class="lf-stroke" d="M' + a2[0].toFixed(1) + " " + a2[1].toFixed(1) + "L" + b2[0].toFixed(1) + " " + b2[1].toFixed(1) + '"' + dash(it.dash) + "/>" + head(b2[0], b2[1], a2[0], a2[1]);
+        if (it.say) s += '<text class="lf-word" x="' + ((a[0] + b[0]) / 2 - uy * 12).toFixed(1) + '" y="' + ((a[1] + b[1]) / 2 + ux * 12 + 4).toFixed(1) + '" text-anchor="middle">' + figEq(it.say) + "</text>";
+        g(c || "orange", s);
+      } else if (it.steps) {
+        var p0 = it.steps[0], p1 = it.steps[1], mid = [p1[0], p0[1]], dxs = p1[0] - p0[0], dys = p1[1] - p0[1];
+        s = "";
+        if (dxs) {
+          s += '<path class="lf-stroke" d="M' + P(p0) + "L" + (X(mid[0]) - Math.sign(dxs) * 5) + " " + Y(mid[1]) + '" stroke-dasharray="5 4"/>' +
+            head(X(mid[0]) - Math.sign(dxs) * 5, Y(mid[1]), X(p0[0]), Y(p0[1]), 9);
+          s += '<text class="lf-word" x="' + ((X(p0[0]) + X(mid[0])) / 2).toFixed(1) + '" y="' + (Y(mid[1]) + (dys > 0 ? 17 : -8)) + '" text-anchor="middle">' +
+            Math.abs(dxs) + (dxs > 0 ? " right" : " left") + "</text>";
+        }
+        if (dys) {
+          s += '<path class="lf-stroke" d="M' + P(mid) + "L" + X(p1[0]) + " " + (Y(p1[1]) + Math.sign(dys) * 5) + '" stroke-dasharray="5 4"/>' +
+            head(X(p1[0]), Y(p1[1]) + Math.sign(dys) * 5, X(mid[0]), Y(mid[1]), 9);
+          s += '<text class="lf-word" x="' + (X(p1[0]) + (dxs < 0 ? -8 : 8)) + '" y="' + ((Y(mid[1]) + Y(p1[1])) / 2 + 4).toFixed(1) + '" text-anchor="' + (dxs < 0 ? "end" : "start") + '">' +
+            Math.abs(dys) + (dys > 0 ? " up" : " down") + "</text>";
+        }
+        g(c || "orange", s);
+      } else if (it.mirror != null) {
+        var ml = mirrorLine(it.mirror);
+        if (!ml) return;
+        var ends = clip(ml.p, ml.q, true);
+        a = [X(ends[0][0]), Y(ends[0][1])]; b = [X(ends[1][0]), Y(ends[1][1])];
+        s = '<path class="lf-mirror" d="M' + a.join(" ") + "L" + b.join(" ") + '"/>';
+        if (it.say !== "") {
+          // The name sits at the top end of the mirror, on the side away from
+          // the frame's edge; a flat one's at its left end, on the side away
+          // from the x-axis and its numbers.
+          var flat = Math.abs(a[1] - b[1]) < 1, top = flat ? (a[0] < b[0] ? a : b) : a[1] < b[1] ? a : b;
+          var right = !flat && top[0] > W / 2;
+          s += '<text class="lf-word" x="' + (top[0] + (right ? -7 : 7)).toFixed(1) + '" y="' + (top[1] + (flat ? (ml.p[1] < 0 ? 17 : -7) : 14)).toFixed(1) +
+            '" text-anchor="' + (right ? "end" : "start") + '">' + figEq(it.say || ml.name) + "</text>";
+        }
+        g("purple", s);
+      } else if (it.centre) {
+        s = '<circle class="lf-dot" cx="' + X(it.centre[0]) + '" cy="' + Y(it.centre[1]) + '" r="5"/>' +
+          '<circle class="lf-ring" cx="' + X(it.centre[0]) + '" cy="' + Y(it.centre[1]) + '" r="8.5"/>';
+        if (it.say !== "") s += label(it.say || "centre", X(it.centre[0]), Y(it.centre[1]), it.at || "sw", "lf-word");
+        g("orange", s);
+      } else if (it.turn) {
+        // An arc round a centre, counterclockwise from one angle to another
+        // (cw: clockwise), with its head at the end.
+        var ct = it.turn[0], r = it.turn[1] * u, a0 = it.turn[2], a1 = it.turn[3], cw = !!it.cw;
+        var span = cw ? (((a0 - a1) % 360) + 360) % 360 : (((a1 - a0) % 360) + 360) % 360;
+        var onArc = function (deg) { var t = deg * Math.PI / 180; return [X(ct[0]) + r * Math.cos(t), Y(ct[1]) - r * Math.sin(t)]; };
+        var s0 = onArc(a0), s1 = onArc(a1), back = onArc(a1 + (cw ? 1 : -1) * 8 / r * 180 / Math.PI);
+        s = '<path class="lf-stroke" fill="none" d="M' + s0[0].toFixed(1) + " " + s0[1].toFixed(1) + "A" + r.toFixed(1) + " " + r.toFixed(1) + " 0 " +
+          (span > 180 ? 1 : 0) + " " + (cw ? 1 : 0) + " " + s1[0].toFixed(1) + " " + s1[1].toFixed(1) + '"' + dash(it.dash) + "/>" + head(s1[0], s1[1], back[0], back[1], 10);
+        if (it.say) {
+          var lm = onArc(a0 + (cw ? -1 : 1) * span / 2), lc = [X(ct[0]), Y(ct[1])], ld = Math.sqrt(Math.pow(lm[0] - lc[0], 2) + Math.pow(lm[1] - lc[1], 2)) || 1;
+          s += '<text class="lf-word" x="' + (lm[0] + (lm[0] - lc[0]) / ld * 16).toFixed(1) + '" y="' + (lm[1] + (lm[1] - lc[1]) / ld * 16 + 4).toFixed(1) + '" text-anchor="middle">' + figEq(it.say) + "</text>";
+        }
+        g(c || "orange", s);
+      } else if (it.angle) {
+        var A = it.angle[0], V = it.angle[1], B = it.angle[2], vx = X(V[0]), vy = Y(V[1]);
+        var ta = Math.atan2(Y(A[1]) - vy, X(A[0]) - vx), tb = Math.atan2(Y(B[1]) - vy, X(B[0]) - vx);
+        var d = tb - ta;
+        while (d <= -Math.PI) d += 2 * Math.PI;
+        while (d > Math.PI) d -= 2 * Math.PI;
+        var rr = it.r || 20;
+        if (it.right) {
+          var q = 12, ua = [Math.cos(ta), Math.sin(ta)], ub = [Math.cos(tb), Math.sin(tb)];
+          s = '<path class="lf-stroke" fill="none" d="M' + (vx + q * ua[0]).toFixed(1) + " " + (vy + q * ua[1]).toFixed(1) + "L" +
+            (vx + q * ua[0] + q * ub[0]).toFixed(1) + " " + (vy + q * ua[1] + q * ub[1]).toFixed(1) + "L" + (vx + q * ub[0]).toFixed(1) + " " + (vy + q * ub[1]).toFixed(1) + '"/>';
+        } else {
+          s = '<path class="lf-arc" d="M' + vx + " " + vy + "L" + (vx + rr * Math.cos(ta)).toFixed(1) + " " + (vy + rr * Math.sin(ta)).toFixed(1) +
+            "A" + rr + " " + rr + " 0 0 " + (d > 0 ? 1 : 0) + " " + (vx + rr * Math.cos(tb)).toFixed(1) + " " + (vy + rr * Math.sin(tb)).toFixed(1) + 'Z"/>';
+        }
+        if (it.say) {
+          var tm = ta + d / 2;
+          s += '<text class="lf-word" x="' + (vx + (rr + 14) * Math.cos(tm)).toFixed(1) + '" y="' + (vy + (rr + 14) * Math.sin(tm) + 4).toFixed(1) + '" text-anchor="middle">' + figEq(it.say) + "</text>";
+        }
+        g(c || "orange", s);
+      } else if (it.circle) {
+        g(c || "blue", '<circle class="lf-stroke" fill="none" cx="' + X(it.circle[0][0]) + '" cy="' + Y(it.circle[0][1]) + '" r="' + (it.circle[1] * u).toFixed(1) + '"' + dash(it.dash) + "/>");
+      } else if (it.text != null) {
+        g(c || "ink", '<text class="' + (it.eq ? "lf-eqt" : "lf-word") + '" x="' + X(it.at[0]) + '" y="' + Y(it.at[1]) + '" text-anchor="' + (it.anchor || "middle") + '">' + figEq(it.text) + "</text>");
+      }
+    });
+    // The words for a screen reader, and the caption. A figure can sit in text
+    // that is later split into sentences (a worked answer), so a full stop in
+    // them is kept from reading as the end of one.
+    function keep(t) { return String(t).replace(/([.!?])(\s)/g, "$1\u200b$2"); }
+    var alt = String(o.alt || "A diagram.").replace(/\$/g, "").replace(/\\[a-zA-Z]+/g, "").replace(/[{}]/g, "");
+    return '<figure class="lf" style="max-width:' + (o.w || W) + 'px">' +
+      '<svg class="lf-svg" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + keep(figEsc(alt)) + '">' + out.join("") + "</svg>" +
+      (o.cap ? "<figcaption>" + keep(fmt(o.cap)) + "</figcaption>" : "") + "</figure>";
+  }
+  LAB.fig = fig;
+  LAB.figs = function (list) { return '<div class="lf-row">' + list.join("") + "</div>"; };
+  LAB.mirrorLine = mirrorLine;
+
   /* ================================================================ Move
      A transformation you perform. The shape you start with stays on the grid
-     as a ghost; the one you are moving follows the controls, so the four
+     as a grey ghost; the one you are moving is blue and follows the controls;
+     a target, when there is one, is a green outline. So the four
      transformations are things you do and watch rather than rules you are
-     told:
+     told — and under the grid, the numbers change as you do it: the rule so
+     far, and where each corner is now (A goes to A′).
 
        translate   step it left, right, up and down
        rotate      quarter turns about a centre, either way
-       reflect     flip it over the x-axis, the y-axis or the line y = x
+       reflect     flip it over a line: the axes, y = x, y = −x, x = a, y = b
        dilate      scale it about a centre
 
      spec: { shape: [[x,y], …], kind, center: [x,y], target: [[x,y], …],
-             x: [lo,hi], y: [lo,hi], gate: bool, hint: text }
-     With a target, it is solved when the image lands on it; without one it
-     is a scene to play with. */
+             x: [lo,hi], y: [lo,hi], gate: bool, hint: text,
+             names: ["A", …]  (default A, B, C…),
+             lines: ["x", "y", "yx", "y-x", {x: a}, {y: b}]   (reflect; default the first three),
+             factors: [2, 0.5]  (dilate: each button multiplies the scale factor) }
+     With a target, it is solved when the image lands on it, and Show me
+     finds the move itself; without one it is a scene to play with. */
+  var FRAC = { 0.5: "½", 0.25: "¼", 0.75: "¾", 1.5: "1½", 2.5: "2½" };
+  var FRACWORD = { 0.5: "one half", 0.25: "one quarter", 0.75: "three quarters", 1.5: "one and a half", 2.5: "two and a half" };
+  function fracTex(k) {
+    for (var d = 1; d <= 12; d++) if (Math.abs(k * d - Math.round(k * d)) < 1e-6) return d === 1 ? String(Math.round(k)) : "\\frac{" + Math.round(k * d) + "}{" + d + "}";
+    return num(k);
+  }
   CH.addKind("move", function (spec, seed, mode) {
     var api = {}, kind = spec.kind || "translate";
     var xr = spec.x || [-8, 8], yr = spec.y || [-8, 8], c = spec.center || [0, 0];
-    var st = { dx: 0, dy: 0, turn: 0, flip: null, k: 1 }, moved = false;
-    var W = 460, H = Math.round(W * (yr[1] - yr[0]) / (xr[1] - xr[0])), pad = 22;
-    function X(v) { return pad + (v - xr[0]) / (xr[1] - xr[0]) * (W - 2 * pad); }
-    function Y(v) { return H - pad - (v - yr[0]) / (yr[1] - yr[0]) * (H - 2 * pad); }
+    var lines = (spec.lines || ["x", "y", "yx"]).map(mirrorLine);
+    var factors = spec.factors || [2, 0.5];
+    var names = spec.names || "ABCDEFGH".split("").slice(0, spec.shape.length);
+    function fresh() { return { dx: 0, dy: 0, turn: 0, flip: null, k: 1 }; }
+    var st = fresh(), moved = false;
+    var pad = 26, W = 460, unit = (W - 2 * pad) / (xr[1] - xr[0]), H = Math.round((yr[1] - yr[0]) * unit + 2 * pad);
+    function X(v) { return pad + (v - xr[0]) * unit; }
+    function Y(v) { return H - pad - (v - yr[0]) * unit; }
     var box = el("div", "lw lw-move");
     var svg = svgRoot(W, H, "lw-mv");
     box.appendChild(svg);
+    var key = el("div", "lw-legend");
+    key.innerHTML = '<span><i class="k-start"></i>start</span><span><i class="k-you"></i>' + (spec.target ? "your move" : "moved") + "</span>" +
+      (spec.target ? '<span><i class="k-goal"></i>target</span>' : "");
+    box.appendChild(key);
     var ctl = el("div", "lw-tools");
     box.appendChild(ctl);
     var read = el("div", "lw-read");
@@ -1664,52 +1953,97 @@
           for (var i = 0; i < ((st.turn % 4) + 4) % 4; i++) { t = x; x = -y; y = t; }   // a quarter turn, counterclockwise
           return [r2(x + c[0]), r2(y + c[1])];
         }
-        if (kind === "reflect") {
-          if (st.flip === "x") return [x, -y];
-          if (st.flip === "y") return [-x, y];
-          if (st.flip === "yx") return [y, x];
-          return [x, y];
-        }
+        if (kind === "reflect") return st.flip == null ? [x, y] : lines[st.flip].f(x, y);
         return [r2(c[0] + (x - c[0]) * st.k), r2(c[1] + (y - c[1]) * st.k)];
       });
     }
     function same(a, b) {
-      return a.length === b.length && a.every(function (p, i) { return Math.abs(p[0] - b[i][0]) < 1e-9 && Math.abs(p[1] - b[i][1]) < 1e-9; });
+      return a.length === b.length && a.every(function (p, i) { return Math.abs(p[0] - b[i][0]) < 2e-3 && Math.abs(p[1] - b[i][1]) < 2e-3; });
     }
     function poly(pts, cls, g) {
       return S("polygon", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), class: cls }, g);
     }
+    function nameAt(pts, i, txt, cls) {
+      var cx = 0, cy = 0;
+      pts.forEach(function (p) { cx += X(p[0]) / pts.length; cy += Y(p[1]) / pts.length; });
+      var px = X(pts[i][0]), py = Y(pts[i][1]), dx = px - cx, dy = py - cy, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      var t = S("text", { x: px + dx / d * 14, y: py + dy / d * 14 + 5, "text-anchor": "middle", class: "lw-mv-name " + cls }, svg);
+      t.textContent = txt;
+    }
+    function pt(p) { return "(" + num(p[0]) + ", " + num(p[1]) + ")"; }
     function paint() {
       svg.innerHTML = "";
       var grid = S("g", { class: "lw-grid" }, svg);
       for (var gx = Math.ceil(xr[0]); gx <= xr[1]; gx++) S("line", { x1: X(gx), y1: Y(yr[0]), x2: X(gx), y2: Y(yr[1]), class: "g" }, grid);
       for (var gy = Math.ceil(yr[0]); gy <= yr[1]; gy++) S("line", { x1: X(xr[0]), y1: Y(gy), x2: X(xr[1]), y2: Y(gy), class: "g" }, grid);
       var axes = S("g", { class: "lw-axes" }, svg);
-      S("line", { x1: X(xr[0]), y1: Y(0), x2: X(xr[1]), y2: Y(0) }, axes);
-      S("line", { x1: X(0), y1: Y(yr[0]), x2: X(0), y2: Y(yr[1]) }, axes);
-      if (kind === "reflect" && st.flip) {                       // the mirror
-        var ml = st.flip === "x" ? [[xr[0], 0], [xr[1], 0]] : st.flip === "y" ? [[0, yr[0]], [0, yr[1]]]
-          : [[Math.max(xr[0], yr[0]), Math.max(xr[0], yr[0])], [Math.min(xr[1], yr[1]), Math.min(xr[1], yr[1])]];
-        S("line", { x1: X(ml[0][0]), y1: Y(ml[0][1]), x2: X(ml[1][0]), y2: Y(ml[1][1]), class: "lw-mirror" }, svg);
+      var hasX = yr[0] <= 0 && yr[1] >= 0, hasY = xr[0] <= 0 && xr[1] >= 0;
+      if (hasX) S("line", { x1: X(xr[0]), y1: Y(0), x2: X(xr[1]), y2: Y(0) }, axes);
+      if (hasY) S("line", { x1: X(0), y1: Y(yr[0]), x2: X(0), y2: Y(yr[1]) }, axes);
+      // The numbers along the axes, so a corner's coordinates can be read off.
+      var step = xr[1] - xr[0] > 14 ? 2 : 1, v, t;
+      for (v = Math.ceil(xr[0] / step) * step; v <= xr[1]; v += step) {
+        if (v === 0 && hasY) continue;
+        t = S("text", { x: X(v), y: (hasX ? Y(0) : Y(yr[0])) + 14, "text-anchor": "middle", class: "lw-num" }, svg);
+        t.textContent = String(v).replace("-", "−");
+      }
+      for (v = Math.ceil(yr[0] / step) * step; v <= yr[1]; v += step) {
+        if (v === 0 && hasX) continue;
+        t = S("text", { x: (hasY ? X(0) : X(xr[0])) - 5, y: Y(v) + 4, "text-anchor": "end", class: "lw-num" }, svg);
+        t.textContent = String(v).replace("-", "−");
+      }
+      if (kind === "reflect" && st.flip != null) {                // the mirror
+        var ml = lines[st.flip], d = [ml.q[0] - ml.p[0], ml.q[1] - ml.p[1]], lo = -1e9, hi = 1e9;
+        [[d[0], ml.p[0], xr[0], xr[1]], [d[1], ml.p[1], yr[0], yr[1]]].forEach(function (a) {
+          if (Math.abs(a[0]) < 1e-12) return;
+          var t1 = (a[2] - a[1]) / a[0], t2 = (a[3] - a[1]) / a[0];
+          lo = Math.max(lo, Math.min(t1, t2)); hi = Math.min(hi, Math.max(t1, t2));
+        });
+        S("line", { x1: X(ml.p[0] + lo * d[0]), y1: Y(ml.p[1] + lo * d[1]), x2: X(ml.p[0] + hi * d[0]), y2: Y(ml.p[1] + hi * d[1]), class: "lw-mirror" }, svg);
+      }
+      var img = image(), away = !same(img, spec.shape);
+      // Guides: a dilation's corners stay on rays from the centre; a
+      // rotation keeps each corner the same distance from it.
+      if (kind === "dilate" && away) img.forEach(function (p, i) {
+        var q = spec.shape[i], far = Math.abs(st.k) >= 1 ? p : q;
+        S("line", { x1: X(c[0]), y1: Y(c[1]), x2: X(far[0]), y2: Y(far[1]), class: "lw-mv-guide" }, svg);
+      });
+      if (kind === "rotate" && away) {
+        S("line", { x1: X(c[0]), y1: Y(c[1]), x2: X(spec.shape[0][0]), y2: Y(spec.shape[0][1]), class: "lw-mv-guide" }, svg);
+        S("line", { x1: X(c[0]), y1: Y(c[1]), x2: X(img[0][0]), y2: Y(img[0][1]), class: "lw-mv-guide" }, svg);
       }
       if (spec.target) poly(spec.target, "lw-mv-target", svg);
       poly(spec.shape, "lw-mv-ghost", svg);
-      var img = image();
       poly(img, "lw-mv-img", svg);
       img.forEach(function (p) { S("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, class: "lw-mv-dot" }, svg); });
+      names.forEach(function (n, i) {
+        if (away) nameAt(spec.shape, i, n, "pre");
+        nameAt(img, i, n + (away ? "′" : ""), "img");
+      });
       if (kind === "rotate" || kind === "dilate") {
         S("circle", { cx: X(c[0]), cy: Y(c[1]), r: 4.5, class: "lw-mv-c" }, svg);
-        var ct = S("text", { x: X(c[0]) + 9, y: Y(c[1]) - 9, class: "lw-pl" }, svg);
+        var ct = S("text", { x: X(c[0]) - 6, y: Y(c[1]) + 30, "text-anchor": "end", class: "lw-pl lw-mv-cl" }, svg);
         ct.textContent = "centre";
       }
       var hit = spec.target && same(img, spec.target);
       box.classList.toggle("solved", !!hit);
-      function part(v, name) { return v ? name + " " + LAB.signed(v) : name; }
-      read.innerHTML = (kind === "translate" ? m("(x, y) \\to (" + part(st.dx, "x") + ", " + part(st.dy, "y") + ")")
-        : kind === "rotate" ? m(((((st.turn % 4) + 4) % 4) * 90) + "^\\circ \\text{ counterclockwise}")
-        : kind === "reflect" ? (st.flip ? m("\\text{flipped over the } " + (st.flip === "x" ? "x\\text{-axis}" : st.flip === "y" ? "y\\text{-axis}" : "\\text{line } y = x")) : "<span class='lw-note'>Pick a line to flip over.</span>")
-        : m("\\text{scale factor } " + num(st.k)))
-        + (spec.target ? (hit ? '<span class="lw-tag good">on target</span>' : '<span class="lw-tag">match the outline</span>') : "");
+      var how;
+      if (kind === "translate") {
+        var words = [st.dx ? Math.abs(st.dx) + (st.dx > 0 ? " right" : " left") : "", st.dy ? Math.abs(st.dy) + (st.dy > 0 ? " up" : " down") : ""].filter(Boolean).join(", ");
+        how = m("(x, y) \\to (" + (st.dx ? "x " + LAB.signed(st.dx) : "x") + ", " + (st.dy ? "y " + LAB.signed(st.dy) : "y") + ")") +
+          '<span class="lw-note lw-how">' + (words || "Use the arrows to slide it.") + "</span>";
+      } else if (kind === "rotate") {
+        var q4 = ((st.turn % 4) + 4) % 4;
+        how = q4 === 0 ? '<span class="lw-note">Turn it with the buttons.</span>'
+          : '<span class="lw-note lw-how">Turned ' + (q4 === 1 ? "90° counterclockwise" : q4 === 2 ? "180° (a half turn)" : "90° clockwise") + " about the centre</span>";
+      } else if (kind === "reflect") {
+        how = st.flip == null ? '<span class="lw-note">Pick a line to flip over.</span>' : '<span class="lw-note lw-how">Flipped over ' + fmt(lines[st.flip].say) + "</span>";
+      } else {
+        how = st.k === 1 ? '<span class="lw-note">Scale it with the buttons.</span>' : '<span class="lw-note lw-how">Scale factor ' + m(fracTex(st.k)) + " about the centre</span>";
+      }
+      read.innerHTML = '<div class="lw-rule">' + how +
+        (spec.target ? (hit ? '<span class="lw-tag good">on target</span>' : '<span class="lw-tag">match the green outline</span>') : "") + "</div>" +
+        '<div class="lw-coords">' + img.map(function (p, i) { return m(names[i] + (away ? "'" : "") + pt(p)); }).join('<span class="lw-sep"></span>') + "</div>";
       if (api.onChange) api.onChange();
     }
     function act(label, f, aria) {
@@ -1727,29 +2061,56 @@
       ctl.appendChild(act("↺ 90°", function () { st.turn++; }, "Turn 90 degrees counterclockwise"));
       ctl.appendChild(act("↻ 90°", function () { st.turn--; }, "Turn 90 degrees clockwise"));
     } else if (kind === "reflect") {
-      ctl.appendChild(act("Over the x-axis", function () { st.flip = st.flip === "x" ? null : "x"; }));
-      ctl.appendChild(act("Over the y-axis", function () { st.flip = st.flip === "y" ? null : "y"; }));
-      ctl.appendChild(act("Over y = x", function () { st.flip = st.flip === "yx" ? null : "yx"; }));
+      lines.forEach(function (ml, i) {
+        var b = act("<span>" + fmt("Over " + ml.say.replace(/^the line /, "")) + "</span>", function () { st.flip = st.flip === i ? null : i; });
+        ctl.appendChild(b);
+      });
     } else {
-      ctl.appendChild(act("×2", function () { st.k = r2(st.k * 2); }, "Twice as big"));
-      ctl.appendChild(act("÷2", function () { st.k = r2(st.k / 2); }, "Half the size"));
+      factors.forEach(function (f) {
+        var inv = Math.round(1 / f), unitFrac = f < 1 && Math.abs(1 / f - inv) < 1e-9;
+        ctl.appendChild(act("×" + (FRAC[f] || (unitFrac ? "1/" + inv : num(f))), function () { st.k = st.k * f; },
+          "Scale by " + (FRACWORD[f] || (unitFrac ? "one over " + inv : num(f)))));
+      });
     }
-    ctl.appendChild(act("Start again", function () { st = { dx: 0, dy: 0, turn: 0, flip: null, k: 1 }; }));
+    ctl.appendChild(act("Start again", function () { st = fresh(); }));
     paint();
+    // The move that lands on the target, for Show me.
+    function solve() {
+      if (!spec.target) return null;
+      var tries = [];
+      if (kind === "translate") tries.push({ dx: r2(spec.target[0][0] - spec.shape[0][0]), dy: r2(spec.target[0][1] - spec.shape[0][1]) });
+      else if (kind === "rotate") [1, -1, 2].forEach(function (t) { tries.push({ turn: t }); });
+      else if (kind === "reflect") lines.forEach(function (l, i) { tries.push({ flip: i }); });
+      else spec.shape.some(function (p, i) {
+        var dx = p[0] - c[0], dy = p[1] - c[1];
+        if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) return false;
+        tries.push({ k: Math.abs(dx) > Math.abs(dy) ? (spec.target[i][0] - c[0]) / dx : (spec.target[i][1] - c[1]) / dy });
+        return true;
+      });
+      for (var i = 0; i < tries.length; i++) {
+        st = Object.assign(fresh(), tries[i]);
+        if (same(image(), spec.target)) return st;
+      }
+      st = fresh();
+      return null;
+    }
     api.el = box;
     api.state = function () { return { image: image(), move: Object.assign({}, st) }; };
+    api.solve = solve;
     api.ready = function () {
       if (spec.target) return same(image(), spec.target);
       return mode.explore ? (spec.gate ? moved : true) : moved;
     };
     api.check = function () {
       var ok = spec.target ? same(image(), spec.target) : true;
-      return { ok: ok, say: ok ? null : spec.hint || "Not there yet — keep going until it sits on the outline." };
+      return { ok: ok, say: ok ? null : spec.hint || "Not there yet — keep going until it sits on the green outline." };
     };
     api.reveal = function () {
-      if (!spec.answer) return;
-      Object.keys(spec.answer).forEach(function (k) { st[k] = spec.answer[k]; });
+      if (spec.answer) st = Object.assign(fresh(), spec.answer);
+      else solve();
+      moved = true;
       paint();
+      [].forEach.call(ctl.querySelectorAll("button"), function (b) { b.disabled = true; });
     };
     return api;
   });
