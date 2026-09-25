@@ -61,6 +61,20 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
 .m .mr-b { border-top: .07em solid currentColor; padding: .08em .08em 0 .06em; margin-top: .14em; line-height: 1.05; }
 .m .mr-i { font-size: .6em; margin-right: -.3em; margin-top: -.1em; }
 .m .mol { text-decoration: overline; }
+/* A ray, AB with an arrow over it (one head); a line (a head at each end). */
+.m .mray { position: relative; display: inline-block; padding-top: .34em; }
+.m .mray::before {
+  content: ""; position: absolute; left: .06em; right: .08em; top: .12em;
+  border-top: .075em solid currentColor;
+}
+.m .mray::after, .m .mray.both > .mrh {
+  content: ""; position: absolute; top: .12em; width: .2em; height: .2em;
+  border-top: .075em solid currentColor; border-right: .075em solid currentColor;
+  transform: translate(0, -44%) rotate(45deg); transform-origin: center;
+}
+.m .mray::after { right: .06em; }
+.m .mray > .mrh { display: none; }
+.m .mray.both > .mrh { display: block; left: .06em; transform: translate(0, -44%) rotate(-135deg); }
 .m .marr { display: inline-flex; flex-direction: column; align-items: center; margin: 0 .5em; vertical-align: -.1em; line-height: 1; }
 .m .marr-l { font-size: .62em; color: var(--ink-2); margin-bottom: -.1em; }
 .m .mcx { text-decoration: line-through; text-decoration-color: var(--lw-red); text-decoration-thickness: .08em; opacity: .7; }
@@ -69,7 +83,7 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
 .ch-prompt .m.md { font-size: 1.5em; margin: 16px 0 4px; }
 
 /* ============================================================= Answers */
-.lb-ans { display: grid; gap: 10px; }
+.lb-ans { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .lb-ans-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .lb-pre, .lb-post { font-size: 22px; color: var(--ink); }
 .lb-in {
@@ -646,6 +660,9 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lb-side-btn svg, .lb-side-show svg { width: 19px; height: 19px; }
 .lb-side-show { display: none; position: fixed; z-index: 30; top: calc(var(--bar) + 13px); left: 12px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair); }
 .lb-shell.side-off .lb-side-show { display: grid; }
+/* The button that brings the sidebar back sits in the top corner; a
+   lesson's step bar makes room for it. */
+.lb-shell.side-off .ch-stepnav { padding-left: 46px; }
 
 /* Search: a capsule with its icon, the words, and a clear button once there
    is something to clear. */
@@ -689,6 +706,25 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lb-row.k-skill .lb-row-ico { color: var(--ink-3); }
 .lb-row-t { flex: 1; min-width: 0; }
 .lb-row-t i { display: inline-block; min-width: 16px; margin-right: 6px; font-style: normal; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+/* The lesson being played, opened out into its steps: a line down the side,
+   a dot for each step (blue where you are, green solved first time, amber
+   solved with help, pale blue read), and the steps not reached yet faded. */
+.lb-steps { list-style: none; margin: 4px 0 6px 19px; padding: 0 0 0 12px; border-left: 1.5px solid var(--hair); display: grid; gap: 1px; }
+.lb-step {
+  display: flex; align-items: center; gap: 9px; width: 100%; min-height: 32px; padding: 5px 10px;
+  border-radius: 9px; text-align: left; font-size: 13px; line-height: 1.25; color: var(--ink-2);
+  transition: background .12s var(--ease), color .12s var(--ease);
+}
+.lb-step:hover:not(:disabled) { background: var(--sunk); color: var(--ink); }
+.lb-step:disabled { opacity: .45; cursor: default; }
+.lb-step-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.lb-step.seen .lb-step-dot { background: #b9d6f6; box-shadow: none; }
+.lb-step.first .lb-step-dot { background: var(--green); box-shadow: none; }
+.lb-step.helped .lb-step-dot { background: #e0a43c; box-shadow: none; }
+.lb-step.cur { color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--blue) 10%, transparent); }
+.lb-step.cur .lb-step-dot { background: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 25%, transparent); }
+.lb-step-t { flex: 1; min-width: 0; }
+html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,229,0.45); }
 .lb-row-done { flex: none; display: grid; color: var(--green); }
 .lb-row-done svg { width: 17px; height: 17px; }
 .lb-row .lb-pips { flex: none; gap: 2px; }
@@ -707,6 +743,7 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
   .lx-wrap:has(#v-lab.on .lb-shell) { max-width: var(--well); padding-left: max(var(--gut), env(safe-area-inset-left)); }
   .lb-shell .lb-side { display: none; box-shadow: 0 0 0 1px var(--hair), 0 24px 60px rgba(0,0,0,.35); }
   .lb-shell .lb-side-show { display: grid; }
+  .lb-shell .ch-stepnav { padding-left: 46px; }
   .lb-shell.peek .lb-side { display: flex; }
   .lb-shell.peek .lb-side-show { display: none; }
   .lb-shell.peek .lb-side-scrim { display: block; position: fixed; inset: 0; z-index: 29; background: rgba(0,0,0,.35); }
@@ -726,6 +763,77 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lw-mv-target { fill: none; stroke: var(--lw-green); stroke-width: 2.5; stroke-dasharray: 7 5; }
 .lw-mv-c { fill: var(--lw-orange); }
 .lw-mirror { stroke: var(--lw-purple); stroke-width: 2; stroke-dasharray: 6 4; }
+/* The grid's numbers, the corners' names (grey where it started, blue where
+   it is now), the guides, and the key and read-out under it. */
+.lw-num { font-family: var(--text); font-size: 11px; fill: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lw-mv-name { font-family: var(--lw-mathf); font-style: italic; font-size: 16px; paint-order: stroke; stroke: var(--lw-surface); stroke-width: 4px; stroke-linejoin: round; }
+.lw-mv-name.pre { fill: var(--ink-3); }
+.lw-mv-name.img { fill: var(--lw-blue); font-weight: 600; }
+.lw-mv-cl { font-family: var(--text); font-size: 12px; font-weight: 600; fill: var(--lw-orange); }
+.lw-mv-guide { stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 3 4; opacity: .7; }
+.lw-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; margin: 10px 0 12px; font-size: 13px; color: var(--ink-2); }
+.lw-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lw-legend i { display: inline-block; width: 18px; height: 12px; border-radius: 3px; }
+.lw-legend .k-start { background: color-mix(in srgb, var(--ink) 8%, transparent); border: 1.5px dashed var(--ink-3); }
+.lw-legend .k-you { background: color-mix(in srgb, var(--lw-blue) 26%, transparent); border: 2px solid var(--lw-blue); }
+.lw-legend .k-goal { border: 2px dashed var(--lw-green); }
+.lw-move .lw-read { margin-top: 12px; }
+.lw-rule { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 12px; }
+.lw-rule .lw-tag { margin-left: 0; }
+.lw-how { font-size: 15px; color: var(--ink); }
+.lw-coords { margin-top: 4px; font-size: 16px; color: var(--ink-2); }
+.lw-coords .lw-sep { margin: 0 8px; }
+
+/* -------------------------------------------------------------- Figure
+   A still picture on graph paper (LAB.fig in widgets.js): the lab palette,
+   so it sits on either look. */
+.lf { margin: 0 auto; width: 100%; }
+.lf-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.lf figcaption { margin-top: 8px; text-align: center; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+.lf-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 16px 20px; }
+.lf-row > .lf { flex: 1 1 150px; margin: 0; }
+.lf-bg { fill: var(--lw-surface); }
+.lf-grid { stroke: var(--lw-grid); stroke-width: 1; fill: none; }
+.lf-axis { stroke: var(--lw-axis); stroke-width: 1.4; fill: none; }
+.lf-num { font-family: var(--text); font-size: 10.5px; fill: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lf-ink { color: var(--ink); } .lf-soft { color: var(--ink-3); } .lf-blue { color: var(--lw-blue); }
+.lf-green { color: var(--lw-green); } .lf-red { color: var(--lw-red); } .lf-purple { color: var(--lw-purple); }
+.lf-orange { color: var(--lw-orange); }
+.lf-stroke { stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.lf-shape { stroke: currentColor; stroke-width: 2.2; fill: currentColor; fill-opacity: .16; stroke-linejoin: round; }
+.lf-soft .lf-shape { fill-opacity: .1; }
+.lf-head { fill: currentColor; stroke: currentColor; stroke-width: 1; stroke-linejoin: round; }
+.lf-dot { fill: currentColor; }
+.lf-open { fill: var(--lw-surface); stroke: currentColor; stroke-width: 2; }
+.lf-ring { fill: none; stroke: currentColor; stroke-width: 1.5; opacity: .45; }
+.lf-arc { fill: currentColor; fill-opacity: .18; stroke: currentColor; stroke-width: 1.8; }
+.lf-mirror { stroke: currentColor; stroke-width: 2.2; stroke-dasharray: 7 5; fill: none; }
+.lf-name { font-family: var(--lw-mathf); font-style: italic; font-size: 16px; fill: currentColor; paint-order: stroke; stroke: var(--lw-surface); stroke-width: 4px; stroke-linejoin: round; }
+.lf-eqt { font-family: var(--lw-mathf); font-size: 16px; fill: currentColor; paint-order: stroke; stroke: var(--lw-surface); stroke-width: 4px; stroke-linejoin: round; }
+.lf-word { font-family: var(--text); font-size: 12.5px; font-weight: 600; fill: currentColor; paint-order: stroke; stroke: var(--lw-surface); stroke-width: 4px; stroke-linejoin: round; }
+.lf-it { font-family: var(--lw-mathf); font-style: italic; font-weight: 400; font-size: 1.2em; }
+.ch-art .lf { margin-top: 4px; }
+/* A picture as an answer: the choices sit in a grid of cards. */
+.ch-options:has(.lf) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+.ch-opt .lf { width: 100%; max-width: 220px; margin: 0; }
+.ch-opt:has(.lf) { align-items: flex-start; }
+.ch-cardlet .lf { width: 110px; }
+.ch-cardlet:has(.lf) { padding: 6px; }
+
+/* A worked example with a picture: the drawing beside the lines on a wide
+   card (and kept in view while they are read), above them on a narrow one. */
+.lw-walk.has-fig { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-areas: "fig list" "fig tools"; gap: 14px 18px; align-items: start; }
+.lw-walk.has-fig .lw-wk-fig { grid-area: fig; position: sticky; top: 16px; }
+.lw-walk.has-fig .lw-wk { grid-area: list; }
+.lw-walk.has-fig .lw-tools { grid-area: tools; }
+.lw-walk.has-fig .lw-wk-m { font-size: 22px; }
+.lw-wk-fig.in { animation: lw-figin .35s var(--ease); }
+@keyframes lw-figin { from { opacity: .35; } to { opacity: 1; } }
+@media (max-width: 720px) {
+  .lw-walk.has-fig { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fig" "list" "tools"; }
+  .lw-walk.has-fig .lw-wk-fig { position: static; }
+}
+@media (prefers-reduced-motion: reduce) { .lw-wk-fig.in { animation: none; } }
 .lw-move.solved .lw-mv-img { fill: color-mix(in srgb, var(--lw-green) 26%, transparent); stroke: var(--lw-green); }
 .lw-move.solved .lw-mv-dot { fill: var(--lw-green); }
 

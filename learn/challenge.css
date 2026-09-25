@@ -36,6 +36,38 @@
 .ch-prog i.helped { background: #e0a43c; }
 .ch-prog i.cur    { background: var(--blue); transform: scaleY(1.35); }
 
+/* Step navigation (a lesson in the math lab): back, forward, and a segment
+   for each step — the same colours as the progress bar — to jump to any
+   step already reached. Steps not reached yet are faded and shut. */
+.ch-stepnav { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
+.ch-sn-btn {
+  flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
+  background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1px var(--hair);
+  transition: background .15s var(--ease), opacity .15s var(--ease);
+}
+.ch-sn-btn svg { width: 18px; height: 18px; }
+.ch-sn-btn:hover:not(:disabled) { background: var(--sunk); }
+.ch-sn-btn:disabled { opacity: .35; cursor: default; }
+.ch-sn-mid { flex: 1; min-width: 0; display: grid; gap: 7px; }
+.ch-sn-lab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0; font-family: var(--font); font-size: 13px; color: var(--ink-3); }
+.ch-sn-lab b { font-weight: 600; color: var(--ink); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-sn-lab span { flex: none; font-variant-numeric: tabular-nums; }
+.ch-sn-dots { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }
+.ch-sn-dots li { flex: 1; display: flex; min-width: 0; }
+.ch-sn-dot { flex: 1; position: relative; height: 18px; padding: 0; border-radius: 4px; background: none; }
+.ch-sn-dot::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 6px; height: 6px; border-radius: 3px;
+  background: var(--sunk); transition: background .2s var(--ease), transform .2s var(--ease);
+}
+.ch-sn-dot.seen::before   { background: #b9d6f6; }
+.ch-sn-dot.first::before  { background: var(--green); }
+.ch-sn-dot.helped::before { background: #e0a43c; }
+.ch-sn-dot.cur::before    { background: var(--blue); transform: scaleY(1.5); }
+.ch-sn-dot:hover:not(:disabled)::before { transform: scaleY(1.5); }
+.ch-sn-dot:disabled { cursor: default; }
+.ch-sn-dot:disabled::before { opacity: .5; }
+.ch-sn-dot:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
 /* -------------------------------------------------------------- Card */
 .ch-card {
   position: relative; padding: 34px 38px 26px; border-radius: 22px;

@@ -68,6 +68,8 @@ window.OPLO_CHALLENGE = (function () {
     down:  '<path d="m7 10 5 5 5-5"/>',
     grip:  '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/>',
     right: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+    prev:  '<path d="m14.5 6-6 6 6 6"/>',
+    next:  '<path d="m9.5 6 6 6-6 6"/>',
     again: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5V9h4.5"/>',
     spark: '<path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/><circle cx="12" cy="12" r="2.2"/>',
     eye:   '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>'
@@ -807,8 +809,79 @@ window.OPLO_CHALLENGE = (function () {
     // A review or a retry is always a fresh run from the top.
     P.fresh = !!(path.review || opts.only || opts.fresh || opts.record === false || firstOpen < 0);
     P.ix = P.fresh ? 0 : firstOpen;
+    // How far the step navigation may go: back to any step, and forward as
+    // far as the student has already been — all of it, on a path finished
+    // before. A step not yet reached stays shut, so nothing is skipped.
+    P.max = firstOpen < 0 && !path.review && !opts.only && opts.record !== false ? path.steps.length - 1 : P.ix;
+    if (opts.stepNav) buildNav();
     paintBar();
     step();
+  }
+
+  /* Step navigation (opts.stepNav): back and forward a step, and a segment
+     for every step to jump straight to it. Each step is named the way the
+     lesson names it — "Start here", "Watch" — and a problem by its number. */
+  function stepInfo() {
+    var n = 0;
+    return P.path.steps.map(function (s, i) {
+      var r = P.session[s.id] || (P.opts.record !== false && result(s.id));
+      var prob = isProblem(s);
+      if (prob) n++;
+      return { i: i, problem: prob, n: prob ? n : null,
+               label: prob ? "Problem " + n : String(s.kicker || "The idea").replace(/<[^>]+>/g, ""),
+               state: r && (r.solved || r.seen) ? (s.type === "learn" ? "seen" : r.first ? "first" : "helped") : "",
+               current: i === P.ix, open: i <= P.max };
+    });
+  }
+  function buildNav() {
+    var nav = el("nav", "ch-stepnav");
+    nav.setAttribute("aria-label", "Steps");
+    var prev = button("ch-sn-btn", icon(I.prev));
+    prev.setAttribute("aria-label", "Previous step");
+    var nxt = button("ch-sn-btn", icon(I.next));
+    nxt.setAttribute("aria-label", "Next step");
+    var mid = el("div", "ch-sn-mid");
+    var lab = el("p", "ch-sn-lab");
+    var dots = el("ol", "ch-sn-dots");
+    P.path.steps.forEach(function (s, i) {
+      var li = el("li"), d = button("ch-sn-dot", "");
+      d.addEventListener("click", function () { go(i); });
+      li.appendChild(d);
+      dots.appendChild(li);
+    });
+    prev.addEventListener("click", function () { go(Math.min(P.ix, P.path.steps.length) - 1); });
+    nxt.addEventListener("click", function () { go(P.ix + 1); });
+    mid.appendChild(lab);
+    mid.appendChild(dots);
+    nav.appendChild(prev);
+    nav.appendChild(mid);
+    nav.appendChild(nxt);
+    P.root.insertBefore(nav, P.stage);
+    P.nav = { prev: prev, next: nxt, lab: lab, dots: dots };
+  }
+  function paintNav(info) {
+    var nv = P.nav, count = P.path.steps.length, here = info[P.ix];
+    [].forEach.call(nv.dots.children, function (li, i) {
+      var s = info[i], d = li.firstChild;
+      d.className = "ch-sn-dot" + (s.current ? " cur" : "") + (s.state ? " " + s.state : "");
+      d.disabled = !s.open;
+      d.setAttribute("aria-label", s.label + (s.state ? ", done" : "") + (s.open ? "" : " — not reached yet"));
+      if (s.current) d.setAttribute("aria-current", "step"); else d.removeAttribute("aria-current");
+      d.title = s.open ? s.label : s.label + " — not reached yet";
+    });
+    var probs = info.filter(function (s) { return s.problem; }).length;
+    nv.lab.innerHTML = here ? "<b>" + esc(here.label) + (here.problem ? " of " + probs : "") + "</b><span>Step " + (P.ix + 1) + " of " + count + "</span>"
+      : "<b>" + esc(P.path.endTitle || "Done") + "</b><span>" + count + " steps</span>";
+    nv.prev.disabled = P.ix <= 0;
+    nv.next.disabled = P.ix + 1 > P.max || P.ix >= count - 1;
+  }
+  // Go to a step already reached.
+  function go(i) {
+    if (!P || i < 0 || i >= P.path.steps.length || i > P.max || i === P.ix) return;
+    P.ix = i;
+    step();
+    var y = P.root.getBoundingClientRect().top + window.scrollY - 80;
+    if (window.scrollY > y) window.scrollTo({ top: y, behavior: reduced() ? "auto" : "smooth" });
   }
 
   function paintBar() {
@@ -817,6 +890,11 @@ window.OPLO_CHALLENGE = (function () {
       seg.className = (i === P.ix ? "cur " : "") +
         (r && (r.solved || r.seen) ? (s.type === "learn" ? "seen" : r.first ? "first" : "helped") : "");
     });
+    if (P.nav || P.opts.onStep) {
+      var info = stepInfo();
+      if (P.nav) paintNav(info);
+      if (P.opts.onStep) P.opts.onStep(info, P.ix);
+    }
   }
 
   /* A step's interactive piece may hold on to things (timers, listeners on
@@ -1036,6 +1114,7 @@ window.OPLO_CHALLENGE = (function () {
 
   function next() {
     P.ix++;
+    P.max = Math.max(P.max, Math.min(P.ix, P.path.steps.length - 1));
     if (P.ix >= P.path.steps.length) { summary(); return; }
     step();
     var y = P.root.getBoundingClientRect().top + window.scrollY - 80;
@@ -1136,6 +1215,8 @@ window.OPLO_CHALLENGE = (function () {
     title: function (reader, sec) { var p = lessonPath(reader, sec); return p ? p.title : null; },
     blurb: function (reader, sec) { var p = lessonPath(reader, sec); return p ? p.blurb : null; },
     play: function (host, opts) { opts.host = host; play(host, opts); },
+    /* Jump to a step of the path being played, if it has been reached. */
+    go: function (i) { go(i); },
     /* Step types from outside — the math lab's balance, number line and
        plane are ordinary steps to the player. A factory takes the step and a
        seed, and returns { el, ready, check, reveal, focus?, destroy? }. */
