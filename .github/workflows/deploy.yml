@@ -17,15 +17,17 @@
 #
 # The developer site (dev.oplocloud.com) stays a deliberate `ship.sh --dev`.
 #
-# It needs two repository secrets (Settings → Secrets and variables →
-# Actions):
+# Publishing needs two repository secrets (Settings → Secrets and variables
+# → Actions):
 #   CLOUDFLARE_API_TOKEN    a token that can deploy Workers — and edit D1, for
 #                           the API's migrations
 #   CLOUDFLARE_ACCOUNT_ID   the Cloudflare account the Workers live in
+# Without them the checks still run, and publishing is skipped quietly — a
+# note on the run, not a failure — for a team that deploys from a machine
+# with tools/ship.sh. Add them and every push to main publishes itself.
 #
-# To publish main without a new merge — the first time, or after adding the
-# secrets — run it from the Actions tab: Deploy → Run workflow (tick "api" to
-# include the API).
+# To publish main without a new merge (after adding the secrets), run it from
+# the Actions tab: Deploy → Run workflow (tick "api" to include the API).
 # ===========================================================================
 name: Deploy
 
@@ -57,6 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.changes.outputs.api }}
+      publish: ${{ steps.key.outputs.publish }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -94,11 +97,26 @@ jobs:
           fi
           echo "api=$api" >> "$GITHUB_OUTPUT"
           echo "API changed: $api"
+      # Secrets can't be read in a job's `if`, so this step says whether there
+      # is a key to publish with, and the publishing jobs follow it.
+      - name: Is there a Cloudflare key to publish with?
+        id: key
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Checks passed. Not published: no Cloudflare secrets are set, so publish from your machine with tools/ship.sh (or npx wrangler deploy --env production)."
+            echo "Checks passed. **Not published** — no Cloudflare secrets are set. Publish from your machine with \`tools/ship.sh\`." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   api:
     name: Database migrations, then the API
     needs: verify
-    if: needs.verify.outputs.api == 'true'
+    if: needs.verify.outputs.publish == 'true' && needs.verify.outputs.api == 'true'
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -108,10 +126,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Cloudflare credentials are set
-        run: |
-          [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] \
-            || { echo "::error::Add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets (Settings → Secrets and variables → Actions)."; exit 1; }
       - name: Database migrations (production)
         run: npx --yes "$WRANGLER" d1 migrations apply oplo-platform-db --remote -c api/wrangler.toml
       - name: API
@@ -121,7 +135,7 @@ jobs:
     name: Student app — edu.oplocloud.com
     needs: [verify, api]
     # After the API when it ran; straight after verify when it had nothing to do.
-    if: ${{ !cancelled() && needs.verify.result == 'success' && (needs.api.result == 'success' || needs.api.result == 'skipped') }}
+    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.verify.outputs.publish == 'true' && (needs.api.result == 'success' || needs.api.result == 'skipped') }}
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -131,10 +145,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Cloudflare credentials are set
-        run: |
-          [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] \
-            || { echo "::error::Add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets (Settings → Secrets and variables → Actions)."; exit 1; }
       - name: Publish
         run: npx --yes "$WRANGLER" deploy --env production
       - name: Say what went out
