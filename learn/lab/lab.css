@@ -83,7 +83,7 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
 .ch-prompt .m.md { font-size: 1.5em; margin: 16px 0 4px; }
 
 /* ============================================================= Answers */
-.lb-ans { display: grid; gap: 10px; }
+.lb-ans { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .lb-ans-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .lb-pre, .lb-post { font-size: 22px; color: var(--ink); }
 .lb-in {
@@ -660,6 +660,9 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lb-side-btn svg, .lb-side-show svg { width: 19px; height: 19px; }
 .lb-side-show { display: none; position: fixed; z-index: 30; top: calc(var(--bar) + 13px); left: 12px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair); }
 .lb-shell.side-off .lb-side-show { display: grid; }
+/* The button that brings the sidebar back sits in the top corner; a
+   lesson's step bar makes room for it. */
+.lb-shell.side-off .ch-stepnav { padding-left: 46px; }
 
 /* Search: a capsule with its icon, the words, and a clear button once there
    is something to clear. */
@@ -703,6 +706,25 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lb-row.k-skill .lb-row-ico { color: var(--ink-3); }
 .lb-row-t { flex: 1; min-width: 0; }
 .lb-row-t i { display: inline-block; min-width: 16px; margin-right: 6px; font-style: normal; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+/* The lesson being played, opened out into its steps: a line down the side,
+   a dot for each step (blue where you are, green solved first time, amber
+   solved with help, pale blue read), and the steps not reached yet faded. */
+.lb-steps { list-style: none; margin: 4px 0 6px 19px; padding: 0 0 0 12px; border-left: 1.5px solid var(--hair); display: grid; gap: 1px; }
+.lb-step {
+  display: flex; align-items: center; gap: 9px; width: 100%; min-height: 32px; padding: 5px 10px;
+  border-radius: 9px; text-align: left; font-size: 13px; line-height: 1.25; color: var(--ink-2);
+  transition: background .12s var(--ease), color .12s var(--ease);
+}
+.lb-step:hover:not(:disabled) { background: var(--sunk); color: var(--ink); }
+.lb-step:disabled { opacity: .45; cursor: default; }
+.lb-step-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.lb-step.seen .lb-step-dot { background: #b9d6f6; box-shadow: none; }
+.lb-step.first .lb-step-dot { background: var(--green); box-shadow: none; }
+.lb-step.helped .lb-step-dot { background: #e0a43c; box-shadow: none; }
+.lb-step.cur { color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--blue) 10%, transparent); }
+.lb-step.cur .lb-step-dot { background: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 25%, transparent); }
+.lb-step-t { flex: 1; min-width: 0; }
+html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,229,0.45); }
 .lb-row-done { flex: none; display: grid; color: var(--green); }
 .lb-row-done svg { width: 17px; height: 17px; }
 .lb-row .lb-pips { flex: none; gap: 2px; }
@@ -721,6 +743,7 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
   .lx-wrap:has(#v-lab.on .lb-shell) { max-width: var(--well); padding-left: max(var(--gut), env(safe-area-inset-left)); }
   .lb-shell .lb-side { display: none; box-shadow: 0 0 0 1px var(--hair), 0 24px 60px rgba(0,0,0,.35); }
   .lb-shell .lb-side-show { display: grid; }
+  .lb-shell .ch-stepnav { padding-left: 46px; }
   .lb-shell.peek .lb-side { display: flex; }
   .lb-shell.peek .lb-side-show { display: none; }
   .lb-shell.peek .lb-side-scrim { display: block; position: fixed; inset: 0; z-index: 29; background: rgba(0,0,0,.35); }
