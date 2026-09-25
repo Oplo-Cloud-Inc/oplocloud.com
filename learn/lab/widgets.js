@@ -33,6 +33,8 @@
                  and, beside it, a picture that builds up with the lines
      move        a shape on a grid you slide, turn, flip or scale — the four
                  transformations, done rather than described
+     plot        draw the image: click the grid where A′, B′, C′ go
+     map         drag a point and watch its image, to find a rule in a table
 
    And one that is not a step: LAB.fig, a still picture (a figure on graph
    paper, a ray, a mirror line) for a lesson's words or an answer choice.
@@ -1657,6 +1659,7 @@
      x, y    the window, in grid units (default −6…6)
      grid    graph paper (default true); the axes and their numbers go with it
      u       pixels to a unit (default 26); w caps the width it is shown at
+     bg      false for no paper behind it — a layer drawn over another figure
      items   drawn in order, each one of:
        { pt: [x, y], name, at: "ne", c, open }        a point and its name
        { seg: [p, q], c, dash, marks }                  a segment (marks: tick marks)
@@ -1734,7 +1737,7 @@
       return [[p[0] + lo * dx, p[1] + lo * dy], [p[0] + hi * dx, p[1] + hi * dy]];
     }
 
-    out.push('<rect class="lf-bg" width="' + W + '" height="' + H + '" rx="12"/>');
+    if (o.bg !== false) out.push('<rect class="lf-bg" width="' + W + '" height="' + H + '" rx="12"/>');
     if (grid) {
       var gd = "";
       for (var gx = Math.ceil(xr[0]); gx <= xr[1]; gx++) gd += "M" + X(gx) + " " + Y(yr[0]) + "V" + Y(yr[1]);
@@ -2112,6 +2115,280 @@
       paint();
       [].forEach.call(ctl.querySelectorAll("button"), function (b) { b.disabled = true; });
     };
+    return api;
+  });
+
+  /* ======================================================= Plot and Map
+     Two pieces drawn as layers over a LAB.fig, so they look like every other
+     picture in the unit: the paper and whatever is given (a pre-image, a
+     mirror, a centre) underneath, and a live layer on top that redraws as
+     the student works. The pointer and the keyboard act on the stage that
+     holds both. */
+  function stage(spec, under) {
+    var o = { x: spec.x || [-8, 8], y: spec.y || [-8, 8], u: spec.u || 24, pad: 24 };
+    var W = Math.round((o.x[1] - o.x[0]) * o.u + 2 * o.pad), H = Math.round((o.y[1] - o.y[0]) * o.u + 2 * o.pad);
+    var box = el("div", "lw-stage");
+    box.style.maxWidth = W + "px";
+    var base = el("div", "lw-layer"), top = el("div", "lw-layer top");
+    base.innerHTML = fig(Object.assign({}, o, { items: under || [], alt: spec.alt || "A coordinate grid." }));
+    box.appendChild(base);
+    box.appendChild(top);
+    return {
+      el: box, o: o,
+      paint: function (items) { top.innerHTML = fig(Object.assign({}, o, { items: items, grid: false, bg: false, alt: "" })); },
+      // Where on the grid a pointer is, snapped and kept inside the window.
+      at: function (e, snap) {
+        var svg = base.querySelector("svg"), r = svg.getBoundingClientRect(), sc = r.width / W;
+        var gx = o.x[0] + ((e.clientX - r.left) / sc - o.pad) / o.u, gy = o.y[1] - ((e.clientY - r.top) / sc - o.pad) / o.u;
+        return [clamp(snapTo(gx, snap), o.x[0], o.x[1]), clamp(snapTo(gy, snap), o.y[0], o.y[1])];
+      },
+      // How far apart two grid points are on screen, in pixels.
+      px: function (a, b) {
+        var r = base.querySelector("svg").getBoundingClientRect(), sc = r.width / W;
+        return Math.sqrt(Math.pow((a[0] - b[0]) * o.u * sc, 2) + Math.pow((a[1] - b[1]) * o.u * sc, 2));
+      }
+    };
+  }
+  function ptTex(name, p) { return name + "(" + num(p[0]) + ", " + num(p[1]) + ")"; }
+
+  /* ---------------------------------------------------------------- Plot
+     Draw the image: click the grid where each point of the image goes — A′,
+     then B′, then C′ — the way it is done on paper, instead of pressing a
+     button until a shape fits. A placed point can be dragged; Undo takes back
+     the last one. From the keyboard, the arrows move a cursor and Enter
+     places a point (Backspace undoes).
+
+     spec: { x, y, u, show: [LAB.fig items under it], target: [[x, y], …],
+             names: ["A'", …], snap: 1 }
+     Right when every point is where it belongs, in order — A′ is where A
+     goes — and a wrong one is marked, so it can be moved rather than
+     started again. */
+  CH.addKind("plot", function (spec, seed, mode) {
+    var api = {}, n = spec.target.length, snap = spec.snap || 1;
+    var names = spec.names || "ABCDEFGH".split("").slice(0, n).map(function (c) { return c + "'"; });
+    var pts = [], bad = {}, cursor = null, drag = -1, locked = false, revealed = false, byPointer = false;
+    var box = el("div", "lw lw-plot");
+    var st = stage(spec, spec.show);
+    st.el.tabIndex = 0;
+    st.el.setAttribute("role", "application");
+    st.el.setAttribute("aria-label", "Grid: click where each point goes, or use the arrow keys and Enter");
+    box.appendChild(st.el);
+    var tools = el("div", "lw-tools");
+    var undo = button("lw-btn", "Undo"), clear = button("lw-btn ghost", "Clear");
+    tools.appendChild(undo);
+    tools.appendChild(clear);
+    box.appendChild(tools);
+    var read = el("div", "lw-read lw-plot-read");
+    read.setAttribute("aria-live", "polite");
+    box.appendChild(read);
+
+    function paint() {
+      var items = [];
+      if (revealed) items.push({ poly: spec.target, c: "green", dash: true, fill: false });
+      if (n > 1 && pts.length === n) items.push({ poly: pts, c: "blue", names: names });
+      else {
+        for (var i = 1; i < pts.length; i++) items.push({ seg: [pts[i - 1], pts[i]], c: "blue" });
+        pts.forEach(function (p, i) { items.push({ pt: p, name: names[i], c: bad[i] ? "orange" : "blue" }); });
+      }
+      if (n > 1 && pts.length === n) pts.forEach(function (p, i) { if (bad[i]) items.push({ pt: p, c: "orange", r: 6 }); });
+      if (n === 1 && pts.length === 1 && bad[0]) items.push({ pt: pts[0], c: "orange", r: 6 });
+      if (cursor) items.push({ pt: cursor, open: true, c: "blue", r: 7 });
+      st.paint(items);
+      var next = pts.length < n ? names[pts.length] : null;
+      read.innerHTML = '<div class="lw-rule">' + (locked ? "" : next
+        ? '<span class="lw-note lw-how">' + fmt("Click where $" + next + "$ goes.") + "</span>"
+        : '<span class="lw-note lw-how">All placed. Drag any point to move it, then check.</span>') + "</div>" +
+        (pts.length ? '<div class="lw-coords">' + pts.map(function (p, i) { return m(ptTex(names[i], p)); }).join('<span class="lw-sep"></span>') + "</div>" : "");
+      undo.disabled = locked || !pts.length;
+      clear.disabled = locked || !pts.length;
+      box.classList.toggle("solved", locked && !revealed);
+      if (api.onChange) api.onChange();
+    }
+    function place(p) {
+      if (locked) return -1;
+      bad = {};
+      for (var i = 0; i < pts.length; i++) if (pts[i][0] === p[0] && pts[i][1] === p[1]) return i;
+      if (pts.length >= n) return -1;
+      pts.push(p);
+      return pts.length - 1;
+    }
+    st.el.addEventListener("pointerdown", function (e) {
+      if (locked) return;
+      e.preventDefault();
+      byPointer = true;
+      st.el.focus({ preventScroll: true });
+      byPointer = false;
+      var p = st.at(e, snap), near = -1, best = 16;
+      pts.forEach(function (q, i) { var d = st.px(p, q); if (d < best) { best = d; near = i; } });
+      drag = near >= 0 ? near : place(p);
+      cursor = null;
+      try { st.el.setPointerCapture(e.pointerId); } catch (x) { /* synthetic */ }
+      paint();
+    });
+    st.el.addEventListener("pointermove", function (e) {
+      if (drag < 0 || locked) return;
+      var p = st.at(e, snap);
+      if (p[0] !== pts[drag][0] || p[1] !== pts[drag][1]) { pts[drag] = p; bad = {}; paint(); }
+    });
+    function end() { drag = -1; }
+    st.el.addEventListener("pointerup", end);
+    st.el.addEventListener("pointercancel", end);
+    // The keyboard's cursor shows when the grid is reached from the keyboard,
+    // not when it is clicked.
+    st.el.addEventListener("focus", function () { if (!byPointer && !cursor && !locked) { cursor = pts.length ? pts[pts.length - 1].slice() : [0, 0]; paint(); } });
+    st.el.addEventListener("blur", function () { if (cursor) { cursor = null; paint(); } });
+    st.el.addEventListener("keydown", function (e) {
+      if (locked) return;
+      var d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+      if (d) {
+        e.preventDefault();
+        cursor = cursor || [0, 0];
+        cursor = [clamp(cursor[0] + d[0] * snap, st.o.x[0], st.o.x[1]), clamp(cursor[1] + d[1] * snap, st.o.y[0], st.o.y[1])];
+        paint();
+      } else if ((e.key === "Enter" || e.key === " ") && cursor) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (pts.length < n) place(cursor.slice());
+        paint();
+      } else if (e.key === "Backspace" && pts.length) {
+        e.preventDefault();
+        pts.pop(); bad = {};
+        paint();
+      }
+    });
+    undo.addEventListener("click", function () { pts.pop(); bad = {}; paint(); });
+    clear.addEventListener("click", function () { pts = []; bad = {}; paint(); });
+    paint();
+
+    function same(a, b) { return Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6; }
+    api.el = box;
+    api.ready = function () { return pts.length === n; };
+    api.check = function () {
+      bad = {};
+      var right = pts.every(function (p, i) { return same(p, spec.target[i]); });
+      if (right) { locked = true; paint(); return { ok: true }; }
+      var anyOrder = pts.every(function (p) { return spec.target.some(function (t) { return same(p, t); }); });
+      pts.forEach(function (p, i) { if (!same(p, spec.target[i])) bad[i] = true; });
+      paint();
+      if (anyOrder && n > 1) return { ok: false, say: fmt("Those are the right points, but the names are mixed up: $" + names[0] + "$ has to be where $" + names[0].replace(/'/g, "") + "$ goes, and so on. Drag them to swap.") };
+      var wrongNames = Object.keys(bad).map(function (i) { return "$" + names[i] + "$"; });
+      return { ok: false, say: fmt((wrongNames.length === 1 ? wrongNames[0] + " isn't" : wrongNames.join(" and ") + " aren't") +
+        " in the right place (marked in orange). Work that one out again and drag it there.") };
+    };
+    api.reveal = function () {
+      pts = spec.target.map(function (p) { return p.slice(); });
+      bad = {}; locked = true; revealed = true; cursor = null;
+      paint();
+    };
+    api.focus = function () { st.el.focus(); };
+    return api;
+  });
+
+  /* ----------------------------------------------------------------- Map
+     A rule to find, not to be told: drag a point P and watch where the
+     transformation sends it, with the numbers of both underneath and a
+     table of the points tried. After a few, the rule is there in the table
+     — and the lesson asks for it next.
+
+     spec: { x, y, u, map: { kind: "translate", by: [a, b] }
+                          | { kind: "rotate", turns: n, c: [x, y] }   (quarter turns, counterclockwise)
+                          | { kind: "reflect", over: "x" | "y" | "yx" | "y-x" | {x: a} | {y: b} }
+                          | { kind: "dilate", k, c: [x, y] },
+             start: [x, y], name: "P", need: 4, show: [LAB.fig items under it] }
+     With gate, Continue waits until `need` different points have been
+     tried. */
+  function mapPoint(mp, p) {
+    var c = mp.c || [0, 0], x, y, t;
+    if (mp.kind === "translate") return [p[0] + mp.by[0], p[1] + mp.by[1]];
+    if (mp.kind === "rotate") {
+      x = p[0] - c[0]; y = p[1] - c[1];
+      for (var i = 0; i < ((mp.turns % 4) + 4) % 4; i++) { t = x; x = -y; y = t; }
+      return [x + c[0], y + c[1]];
+    }
+    if (mp.kind === "reflect") return mirrorLine(mp.over).f(p[0], p[1]);
+    return [r2(c[0] + (p[0] - c[0]) * mp.k), r2(c[1] + (p[1] - c[1]) * mp.k)];
+  }
+  LAB.mapPoint = mapPoint;
+  CH.addKind("map", function (spec, seed, mode) {
+    var api = {}, mp = spec.map, name = spec.name || "P", need = spec.need || 4;
+    var c = mp.c || [0, 0], p = (spec.start || [3, 1]).slice(), tried = [[p.slice(), mapPoint(mp, p)]], drag = false;
+    var under = (spec.show || []).slice();
+    if (mp.kind === "reflect") under.unshift({ mirror: mp.over });
+    if (mp.kind === "rotate" || mp.kind === "dilate") under.push({ centre: c, say: "", at: "sw" });
+    var box = el("div", "lw lw-map");
+    var st = stage(spec, under);
+    st.el.tabIndex = 0;
+    st.el.setAttribute("role", "application");
+    st.el.setAttribute("aria-label", "Grid: drag point " + name + ", or move it with the arrow keys");
+    box.appendChild(st.el);
+    var read = el("div", "lw-read lw-map-read");
+    read.setAttribute("aria-live", "polite");
+    box.appendChild(read);
+    var table = el("div", "lw-map-table");
+    box.appendChild(table);
+    var xr = st.o.x, yr = st.o.y;
+    function inside(q) { return q[0] >= xr[0] && q[0] <= xr[1] && q[1] >= yr[0] && q[1] <= yr[1]; }
+
+    function paint() {
+      var q = mapPoint(mp, p), items = [], same = q[0] === p[0] && q[1] === p[1];
+      if (!same && inside(q)) {
+        if (mp.kind === "translate") items.push({ steps: [p, q] });
+        else if (mp.kind === "reflect") items.push({ seg: [p, q], c: "orange", dash: "4 4" });
+        else if (mp.kind === "rotate" && (p[0] !== c[0] || p[1] !== c[1])) {
+          items.push({ seg: [c, p], c: "soft", dash: "3 4" }, { seg: [c, q], c: "soft", dash: "3 4" });
+          var a0 = Math.atan2(p[1] - c[1], p[0] - c[0]) * 180 / Math.PI, turns = ((mp.turns % 4) + 4) % 4;
+          var r = Math.min(1.4, Math.sqrt(Math.pow(p[0] - c[0], 2) + Math.pow(p[1] - c[1], 2)) * 0.45);
+          items.push(turns === 3 ? { turn: [c, r, a0, a0 - 90], cw: true } : { turn: [c, r, a0, a0 + turns * 90] });
+        } else if (mp.kind === "dilate") items.push({ ray: [c, Math.abs(mp.k) >= 1 ? q : p], c: "soft", dash: "3 4", bare: true });
+      }
+      items.push({ pt: p, name: name, r: 6 });
+      if (inside(q)) items.push({ pt: q, name: name + "'", c: "blue", r: 5 });
+      st.paint(items);
+      read.innerHTML = m(ptTex(name, p) + " \\to " + ptTex(name + "'", q)) +
+        (inside(q) ? "" : '<span class="lw-note"> — off the grid; bring ' + name + " closer in</span>") +
+        '<span class="lw-tag' + (tried.length >= need ? " good" : "") + '">' + Math.min(tried.length, need) + " of " + need + " points tried</span>";
+      table.innerHTML = tried.length ? '<table><thead><tr><th>' + name + "</th><th></th><th>" + name + "′</th></tr></thead><tbody>" +
+        tried.slice(-6).map(function (t) {
+          return "<tr><td>" + m("(" + num(t[0][0]) + ", " + num(t[0][1]) + ")") + "</td><td>" + m("\\to") + "</td><td>" + m("(" + num(t[1][0]) + ", " + num(t[1][1]) + ")") + "</td></tr>";
+        }).join("") + "</tbody></table>" : '<p class="lw-note">Drag ' + name + " to a few different places. Each one you leave it at goes in a table here.</p>";
+      if (api.onChange) api.onChange();
+    }
+    function settle() {
+      var q = mapPoint(mp, p);
+      if (!inside(q)) return;
+      if (!tried.some(function (t) { return t[0][0] === p[0] && t[0][1] === p[1]; })) tried.push([p.slice(), q]);
+      paint();
+    }
+    st.el.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      st.el.focus({ preventScroll: true });
+      drag = true;
+      try { st.el.setPointerCapture(e.pointerId); } catch (x) { /* synthetic */ }
+      var g = st.at(e, 1);
+      if (g[0] !== p[0] || g[1] !== p[1]) { p = g; paint(); }
+    });
+    st.el.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      var g = st.at(e, 1);
+      if (g[0] !== p[0] || g[1] !== p[1]) { p = g; paint(); }
+    });
+    function end() { if (drag) { drag = false; settle(); } }
+    st.el.addEventListener("pointerup", end);
+    st.el.addEventListener("pointercancel", end);
+    st.el.addEventListener("keydown", function (e) {
+      var d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      p = [clamp(p[0] + d[0], xr[0], xr[1]), clamp(p[1] + d[1], yr[0], yr[1])];
+      settle();
+      paint();
+    });
+    paint();
+    api.el = box;
+    api.state = function () { return { p: p.slice(), tried: tried.slice() }; };
+    api.ready = function () { return mode.explore && spec.gate ? tried.length >= need : true; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () {};
     return api;
   });
 

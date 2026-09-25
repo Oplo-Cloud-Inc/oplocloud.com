@@ -784,6 +784,22 @@ html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,
 .lw-coords { margin-top: 4px; font-size: 16px; color: var(--ink-2); }
 .lw-coords .lw-sep { margin: 0 8px; }
 
+/* ------------------------------------------------------- Plot and Map
+   A live layer over a figure: the pointer works on the stage that holds both. */
+.lw-stage { position: relative; margin: 0 auto; touch-action: none; cursor: crosshair; border-radius: 12px; outline: none; }
+.lw-stage:focus-visible { box-shadow: 0 0 0 2px var(--blue); }
+.lw-layer .lf { max-width: none !important; }
+.lw-layer.top { position: absolute; inset: 0; pointer-events: none; }
+.lw-plot .lw-tools, .lw-map .lw-map-table { margin-top: 12px; }
+.lw-plot-read, .lw-map-read { margin-top: 10px; }
+.lw-map-read .lw-tag { margin-left: 12px; vertical-align: 2px; }
+.lw-map-table table { margin: 0 auto; border-collapse: collapse; font-size: 17px; }
+.lw-map-table th { padding: 4px 14px; font-size: 12px; font-weight: 600; color: var(--ink-3); text-align: center; }
+.lw-map-table td { padding: 5px 14px; text-align: center; border-top: 1px solid var(--hair); }
+.lw-map-table .lw-note { text-align: center; }
+.lw-plot.solved .lw-stage, .lw-map .lw-stage { transition: box-shadow .2s var(--ease); }
+.lw-plot.solved .lw-stage { box-shadow: 0 0 0 2px color-mix(in srgb, var(--lw-green) 55%, transparent); }
+
 /* -------------------------------------------------------------- Figure
    A still picture on graph paper (LAB.fig in widgets.js): the lab palette,
    so it sits on either look. */
