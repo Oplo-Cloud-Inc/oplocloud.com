@@ -598,6 +598,8 @@
     if (!c) return false;
     if (!seg[2]) { openCourse(c); return true; }
     if (sameName(seg[2], "Map")) { openMap(c); return true; }
+    // A course with a page of its own (SAT Math) has its own places below it.
+    if (c.hub && !/^u\d+$/i.test(seg[2]) && !sameName(seg[2], "Challenge")) { openHub(c, seg.slice(2).join("/")); return true; }
     if (sameName(seg[2], "Challenge") && c.lab) { openLab(c, null, "Challenge"); return true; }
     var um = /^u(\d+)$/i.exec(seg[2]);
     if (!um) return false;
@@ -1571,6 +1573,14 @@
     if (!c) return;
     if (!silent) enter("course:" + c.id, trim(c.t), function () { openCourse(c, true); }, false, coursePath(c));
     S.course = c;
+    // A course with a page of its own draws it here instead: SAT Math's hub.
+    if (c.hub && window.OPLO_LAB && window.OPLO_LAB.hub) {
+      window.OPLO_LAB.hub($("#v-course"), hubCtx(c), "");
+      markSubjectNav(c.subject);
+      noFoot(); progress(null);
+      show("course");
+      return;
+    }
     var v = $("#v-course");
     v.innerHTML = "";
     var units = unitsOf(c);
@@ -1787,6 +1797,38 @@
       }
     };
   }
+  /* A course's own page and the places below it (SAT-Math/Scan,
+     SAT-Math/Fix/<skill>, …) — drawn by the course's kit (lab/core.js, hub). */
+  var HUB_LABEL = { Scan: "Brain Scan", Results: "Scan results", Mission: "Today's mission", Time: "Session", Fix: "Fix a skill",
+                    Skill: "Skill", Drill: "Practice", Module: "Practice module", Errors: "Error Lab", Library: "Strategy Library",
+                    Try: "Strategy", Spot: "Pattern Spotter", Target: "Target score" };
+  function hubCtx(c) {
+    var ctx = labCtx(c, null);
+    ctx.go.hub = function () { openCourse(c); };
+    ctx.go.page = function (what) { openHub(c, what); };
+    ctx.go.unit = function (n) { openUnit(c, n); };
+    ctx.go.lesson = function (n, k) { openLab(c, n, "l" + k); };
+    ctx.go.practice = function (n, id) { openLab(c, n, "Practice/" + id); };
+    ctx.go.course = function (id, n) {
+      var cc = courseById(id);
+      if (!cc) return;
+      if (n && unitsOf(cc).some(function (u) { return u.n === n; })) openUnit(cc, n); else openCourse(cc);
+    };
+    ctx.onProgress = function (d, n) { if (d && n) { raise(c, n, "u", d.u); raise(c, n, "p", d.p); raise(c, n, "a", d.a); } };
+    return ctx;
+  }
+  function openHub(c, what, silent) {
+    if (!what) { openCourse(c, silent); return; }
+    if (!window.OPLO_LAB || !window.OPLO_LAB.hub) return;
+    if (!silent) enter("hub:" + c.id + ":" + what, HUB_LABEL[what.split("/")[0]] || trim(c.t), function () { openHub(c, what, true); },
+                       false, coursePath(c) + "/" + what);
+    S.course = c;
+    window.OPLO_LAB.hub($("#v-lab"), hubCtx(c), what);
+    markSubjectNav(c.subject);
+    noFoot(); progress(null);
+    show("lab");
+  }
+
   function openLab(c, n, what, silent) {
     var LAB = window.OPLO_LAB;
     if (!LAB) return;
