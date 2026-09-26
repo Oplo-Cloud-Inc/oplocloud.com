@@ -35,11 +35,11 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "8dc69731",
+    "lab/widgets.js": "ed7a4947",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
-    "geo/u01.js": "b53b1cdc"
+    "geo/u01.js": "637e74c0"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -72,9 +72,10 @@ window.OPLO_LAB = (function () {
     Delta: "Δ", delta: "δ", circ: "°", deg: "°", ldots: "…", cdots: "⋯", neq: "≠", leq: "≤", geq: "≥",
     in: "∈", sqrt: "√", checkmark: "✓", cancel: "", quad: " ", qquad: "  ",
     Rightarrow: "⇒", implies: "⇒", iff: "⇔", perp: "⊥", parallel: "∥", angle: "∠", triangle: "△",
-    emptyset: "∅", cup: "∪", cap: "∩", mid: "∣", star: "⋆", bullet: "•", square: "□", Box: "□"
+    emptyset: "∅", cup: "∪", cap: "∩", mid: "∣", star: "⋆", bullet: "•", square: "□", Box: "□",
+    cong: "≅", sim: "∼", prime: "′", odot: "⊙"
   };
-  var REL = { "=": 1, "<": 1, ">": 1, "≤": 1, "≥": 1, "≠": 1, "≈": 1, "→": 1, "⇒": 1, "⇔": 1, "∈": 1 };
+  var REL = { "=": 1, "<": 1, ">": 1, "≤": 1, "≥": 1, "≠": 1, "≈": 1, "→": 1, "⇒": 1, "⇔": 1, "∈": 1, "≅": 1, "∼": 1 };
   var BIN = { "+": 1, "−": 1, "±": 1, "∓": 1, "·": 1, "×": 1, "÷": 1 };
 
   function mathHTML(src) {
@@ -119,8 +120,14 @@ window.OPLO_LAB = (function () {
           push('<span class="mr">' + (idx ? '<span class="mr-i">' + mathHTML(idx) + "</span>" : "") +
                '<span class="mr-s">√</span><span class="mr-b">' + mathHTML(body) + "</span></span>", "val");
         } else if (cmd === "overline" || cmd === "bar") {
-          // The bar over a repeating decimal: 0.\overline{27}.
+          // The bar over a repeating decimal: 0.\overline{27} — and over a
+          // segment's two letters: \overline{AB}.
           push('<span class="mov">' + mathHTML(group()) + "</span>", "val");
+        } else if (cmd === "overrightarrow" || cmd === "overleftrightarrow") {
+          // A ray, \overrightarrow{AB}: one arrowhead. A line,
+          // \overleftrightarrow{AB}: one at each end.
+          push('<span class="mray' + (cmd === "overleftrightarrow" ? " both" : "") + '"><span class="mrh" aria-hidden="true"></span>' +
+               mathHTML(group()) + "</span>", "val");
         } else if (cmd === "xrightarrow") {
           push('<span class="marr"><span class="marr-l">' + mathHTML(group()) + "</span><span>⟶</span></span>", "rel");
         } else if (cmd === "text" || cmd === "mathrm" || cmd === "textrm") {
@@ -155,6 +162,7 @@ window.OPLO_LAB = (function () {
         continue;
       }
       if (c === " ") { i++; continue; }
+      if (c === "'") { i++; push("′", "val"); continue; }     // A' — a prime, not an apostrophe
       if (c === "\u0001") { i++; push("$", "val"); continue; }
       if (c === "-" || c === "−") { i++; op("−"); continue; }
       if (c === "+") { i++; op("+"); continue; }
@@ -763,7 +771,7 @@ window.OPLO_LAB = (function () {
       }
     });
   }
-  /* pair: an ordered pair (x, y). */
+  /* pair: an ordered pair (x, y). near: [{ v: [x, y], fb }] answers a known slip. */
   function kindPair(s) {
     function read(t) {
       var mm = /^\(?\s*([^,()]+)\s*,\s*([^,()]+)\s*\)?$/.exec(t);
@@ -780,7 +788,9 @@ window.OPLO_LAB = (function () {
         var p = read(t);
         var ok = Math.abs(p[0] - s.answer[0]) < 1e-6 && Math.abs(p[1] - s.answer[1]) < 1e-6;
         var swapped = Math.abs(p[1] - s.answer[0]) < 1e-6 && Math.abs(p[0] - s.answer[1]) < 1e-6;
-        return { ok: ok, say: ok ? null : swapped ? "Those are the right numbers in the wrong order — $x$ comes first." : null };
+        // A known slip gets its own reply: near: [{ v: [x, y], fb }].
+        var near = !ok && (s.near || []).filter(function (n) { return Math.abs(p[0] - n.v[0]) < 1e-6 && Math.abs(p[1] - n.v[1]) < 1e-6; })[0];
+        return { ok: ok, say: ok ? null : near ? near.fb : swapped ? fmt("Those are the right numbers in the wrong order — $x$ comes first.") : null };
       }
     });
   }
@@ -1115,12 +1125,16 @@ window.OPLO_LAB = (function () {
      click away — lessons and quizzes in the order they are taken, then the
      unit test, then the skills to practise. Two sections that fold, the one
      you are in as a filled pill, a check on what is done, a search field
-     that filters as you type. It can be hidden, and remembers that; it is
-     never hidden to begin with. On a narrow window it floats over the page
-     instead.
+     that filters as you type. The lesson being played opens out into its
+     steps — "Start here", "Problem 1", "Problem 2" — so a student can go
+     back to any of them and forward again as far as they have been. It can
+     be hidden, and remembers that; it is never hidden to begin with. On a
+     narrow window it floats over the page instead.
 
      The sidebar says where you are, so the work has no header of its own:
-     the player's title and progress bar are kept for screen readers only. */
+     the player's title and progress bar are kept for screen readers only.
+     A lesson has the player's step bar instead: back, forward, and a
+     segment for each step. */
   var SIDE = { q: "", folded: {}, scroll: null, stepsFolded: false };
   var NARROW = "(max-width: 1099px)";
   function sideHidden() { try { return localStorage.getItem("oplo.lab.side") === "hidden"; } catch (e) { return false; } }
@@ -1189,6 +1203,10 @@ window.OPLO_LAB = (function () {
 
     var list = el("div", "lb-side-list");
     var none = el("p", "lb-side-none");
+    // The lesson being played lists its own steps under its row, so a
+    // student can go back to a problem, and forward again. Clicking the
+    // lesson itself folds them away.
+    var stepsEl = null;
     function section(key, name, items) {
       var sec = el("section", "lb-sec" + (SIDE.folded[key] ? " folded" : ""));
       var h = button("lb-sec-h", "<span>" + name + "</span>" + svg(ICON.down));
@@ -1203,13 +1221,13 @@ window.OPLO_LAB = (function () {
       items.forEach(function (it) {
         var li = el("li");
         var cur = isHere(it, here);
-        var open = cur && here.steps;
+        var open = cur && it.kind === "lesson";
         var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : ICON.doc;
         var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
         var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
           '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
           '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.label + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end +
-          (open ? '<span class="lb-row-fold">' + svg(ICON.down) + "</span>" : ""));
+          (open ? '<span class="lb-row-fold" aria-hidden="true">' + svg(ICON.down) + "</span>" : ""));
         if (cur) b.setAttribute("aria-current", "page");
         b.title = (it.kind === "lesson" ? it.label + ": " : "") + stripMath(it.title);
         b.addEventListener("click", function () {
@@ -1220,40 +1238,27 @@ window.OPLO_LAB = (function () {
         });
         li.dataset.text = (it.label + " " + stripMath(it.title)).toLowerCase();
         li.appendChild(b);
-        if (open) steps(li, b);
+        if (open) {
+          li.classList.add("lb-open");
+          stepsEl = el("ol", "lb-steps");
+          stepsEl.setAttribute("aria-label", "Steps in this lesson");
+          li.appendChild(stepsEl);
+          foldSteps(li, b, SIDE.stepsFolded);
+        }
         ul.appendChild(li);
       });
       sec.appendChild(ul);
       list.appendChild(sec);
-    }
-    /* The lesson you are in opens to its steps, so any step already reached
-       is one click away — back to the idea, forward to the problem you were
-       on. The player paints which is current and which are done (onStep);
-       clicking the lesson itself folds them away. */
-    function steps(li, b) {
-      li.classList.add("lb-open");
-      var ol = el("ol", "lb-steps");
-      ol.setAttribute("aria-label", "Steps in this lesson");
-      here.steps.forEach(function (name, i) {
-        var sli = el("li");
-        var sb = button("lb-step", '<span class="lb-step-dot"></span><span class="lb-step-t">' + esc(name) + "</span>");
-        sb.addEventListener("click", function () {
-          shell.classList.remove("peek");
-          // In a retry of a few problems, the whole lesson opens on that step.
-          if (!CH.go(i)) runLesson(host, ctx, here.k, i);
-        });
-        sli.appendChild(sb);
-        ol.appendChild(sli);
-      });
-      li.appendChild(ol);
-      foldSteps(li, b, SIDE.stepsFolded);
     }
     function foldSteps(li, b, folded) {
       SIDE.stepsFolded = folded;
       li.classList.toggle("folded", folded);
       b.setAttribute("aria-expanded", String(!folded));
     }
-    section("path", "Lessons", unitSeq(u));
+    // The header already names the course and the unit, so the list is just
+    // what is in it: the lessons (with the quizzes and the test in their
+    // places), then practice.
+    section("unit", "Lessons", unitSeq(u));
     section("skills", "Practice", skillSeq(u));
     list.appendChild(none);
     side.appendChild(list);
@@ -1295,6 +1300,43 @@ window.OPLO_LAB = (function () {
     side.addEventListener("keydown", function (e) { if (e.key === "Escape" && shell.classList.contains("peek")) { shell.classList.remove("peek"); show.focus(); } });
 
     var main = el("div", "lb-work");
+    // The player reports each step as it is shown or answered (see
+    // runLesson); the lesson's step list redraws to match.
+    main.paintSteps = function (info, ix) {
+      if (!stepsEl) return;
+      stepsEl.innerHTML = "";
+      info.forEach(function (st) {
+        var li = el("li");
+        var b = button("lb-step" + (st.current ? " cur" : "") + (st.state ? " " + st.state : ""),
+          '<span class="lb-step-dot" aria-hidden="true"></span><span class="lb-step-t">' + esc(st.label) + "</span>");
+        b.disabled = !st.open;
+        if (st.current) b.setAttribute("aria-current", "step");
+        b.title = st.open ? st.label : st.label + " — not reached yet";
+        b.setAttribute("aria-label", st.label + (st.state ? ", done" : "") + (st.open ? "" : ", not reached yet"));
+        b.addEventListener("click", function () {
+          shell.classList.remove("peek");
+          // In a retry of a few problems, the whole lesson opens on that step.
+          if (!CH.go(st.i)) runLesson(host, ctx, here.k, st.i);
+        });
+        li.appendChild(b);
+        stepsEl.appendChild(li);
+      });
+      // On a step, the step has the highlight; on the summary, the lesson.
+      var open = stepsEl.parentNode;
+      open.classList.toggle("on-step", ix < info.length);
+      /* The lesson and the step you are on stay in sight when the step
+         changes — scrolling the list, never the page, and not while you are
+         only answering (the list may have been scrolled to look at something). */
+      if (stepsEl.dataset.ix === String(ix)) return;
+      stepsEl.dataset.ix = ix;
+      afterSlide(host, function () {
+        var at = stepsEl.children[ix] || open;
+        if (!at.offsetParent) return;
+        var box = list.getBoundingClientRect(), a = open.getBoundingClientRect(), c = at.getBoundingClientRect();
+        if (a.top >= box.top && c.bottom <= box.bottom) return;
+        list.scrollTop += c.bottom - a.top <= list.clientHeight - 16 ? a.top - box.top - 8 : c.top - box.top - list.clientHeight / 3;
+      });
+    };
     shell.appendChild(side);
     shell.appendChild(scrim);
     shell.appendChild(show);
@@ -1303,37 +1345,20 @@ window.OPLO_LAB = (function () {
 
     // Keep the list where it was; otherwise bring the current row into view.
     if (SIDE.scroll != null) { list.scrollTop = SIDE.scroll; SIDE.scroll = null; }
-    else {
+    else afterSlide(host, function () {
       var at = list.querySelector('[aria-current="page"]');
       // Scrolled only if it would be out of sight — and only the list, never the page.
       if (at && at.offsetTop + at.offsetHeight > list.clientHeight) list.scrollTop = at.offsetTop - list.clientHeight / 3;
-    }
+    });
     return main;
   }
-  // The lesson's steps as the player moves through them (its onStep): the
-  // one you are on, the ones done, and the ones not reached yet, locked.
-  function paintSteps(host, st) {
-    var rows = host.querySelectorAll(".lb-step");
-    if (!rows.length) return;
-    [].forEach.call(rows, function (b, i) {
-      b.disabled = i > st.reach;
-      b.classList.toggle("done", !!st.done[i]);
-      if (i === st.ix) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
-      b.title = i > st.reach ? "Finish the steps before this one first" : "";
-    });
-    // On the summary no step is current, and the lesson row says where you are.
-    var open = host.querySelector(".lb-open");
-    open.classList.toggle("on-step", st.ix < rows.length);
-    /* The lesson and the step you are on stay in sight when the step
-       changes — scrolling the list, never the page, and not while you are
-       only answering (the list may have been scrolled to look at something). */
-    if (open.dataset.ix === String(st.ix)) return;
-    open.dataset.ix = st.ix;
-    var at = rows[st.ix] || open, list = host.querySelector(".lb-side-list");
-    if (!list || !at.offsetParent) return;
-    var box = list.getBoundingClientRect(), a = open.getBoundingClientRect(), b = at.getBoundingClientRect();
-    if (a.top >= box.top && b.bottom <= box.bottom) return;
-    list.scrollTop += b.bottom - a.top <= list.clientHeight - 16 ? a.top - box.top - 8 : b.top - box.top - list.clientHeight / 3;
+  /* A view slides in on a transform, and until it has, the sidebar — fixed
+     to the window — is laid out against the view instead, a few pixels
+     tall. Anything that measures the sidebar waits for the slide. */
+  function afterSlide(host, fn) {
+    var view = host.closest(".lx-view"), a = view && view.getAnimations ? view.getAnimations() : [];
+    if (!a.length) { fn(); return; }
+    Promise.all(a.map(function (x) { return x.finished; })).then(fn, fn);
   }
 
 
@@ -1364,10 +1389,9 @@ window.OPLO_LAB = (function () {
       var sk = u.skills.filter(function (s) { return s.lesson === k; })[0] || u.skills[0];
       if (sk) after.push({ label: "Practise: " + stripMath(sk.title), go: function () { ctx.go.practice(sk.id); } });
       after.push({ label: "Unit " + u.n + ": " + u.title, go: function () { ctx.go.unit(); } });
-      var here = { kind: "lesson", k: k, steps: CH.names(path.steps) }, work = frame(host, ctx, u, here);
+      var here = { kind: "lesson", k: k }, work = frame(host, ctx, u, here);
       CH.play(work, {
-        path: path, me: ctx.me, after: after, nav: true, at: at,
-        onStep: function (st) { paintSteps(host, st); },
+        path: path, me: ctx.me, after: after, stepNav: true, at: at, onStep: work.paintSteps,
         onFinish: function () {
           REC.lessons[lessonKey(u.lessons[k - 1])] = { done: true, at: Date.now() };
           changed();

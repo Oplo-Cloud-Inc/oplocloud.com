@@ -1,0 +1,151 @@
+# ===========================================================================
+# Deploy — what lands on main goes live.
+#
+# edu.oplocloud.com is the `oedu` Worker (wrangler.toml, env production).
+# Until this workflow, nothing published it when work merged into main: the
+# Cloudflare build that runs on pull requests is a different Worker
+# (oplocloud-com), so a merge could sit on main while students kept getting
+# the app from before it. This publishes on every push to main, the way
+# tools/ship.sh does by hand, stopping at the first step that fails:
+#
+#   verify   what ship.sh checks — the scripts parse, every site link
+#            resolves — and that the math lab's file stamps are current
+#   api      only when the push changed api/: remote D1 migrations, then the
+#            API (ship.sh --api's order), so the app never goes live ahead
+#            of the API it calls
+#   app      the student app at edu.oplocloud.com
+#
+# The developer site (dev.oplocloud.com) stays a deliberate `ship.sh --dev`.
+#
+# Publishing needs two repository secrets (Settings → Secrets and variables
+# → Actions):
+#   CLOUDFLARE_API_TOKEN    a token that can deploy Workers — and edit D1, for
+#                           the API's migrations
+#   CLOUDFLARE_ACCOUNT_ID   the Cloudflare account the Workers live in
+# Without them the checks still run, and publishing is skipped quietly — a
+# note on the run, not a failure — for a team that deploys from a machine
+# with tools/ship.sh. Add them and every push to main publishes itself.
+#
+# To publish main without a new merge (after adding the secrets), run it from
+# the Actions tab: Deploy → Run workflow (tick "api" to include the API).
+# ===========================================================================
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      api:
+        description: "Also apply the D1 migrations and deploy the API"
+        type: boolean
+        default: false
+
+# One deploy at a time and in order: a newer push waits for the one ahead of
+# it rather than racing it to the same Worker.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WRANGLER: wrangler@4
+
+jobs:
+  verify:
+    name: Verify what is about to be published
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.changes.outputs.api }}
+      publish: ${{ steps.key.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The scripts parse
+        run: |
+          # ship.sh's list, and the math lab's files.
+          for f in learn/app.js learn/learn.js learn/store.js learn/annotate.js learn/api.js learn/kmap.js \
+                   learn/parent/parent.js learn/parent/viz.js learn/home.js learn/landing.js learn/oplo-search.js \
+                   assets/js/oplo-search.js learn/oplo-menu.js assets/js/oplo-menu.js worker/index.js dev/dev.js worker/dev.js \
+                   learn/challenge.js learn/lab/core.js learn/lab/widgets.js learn/alg/u*.js learn/g8/u*.js learn/geo/u*.js; do
+            node --check "$f"
+          done
+      - name: Every site link resolves
+        run: python3 tools/checklinks.py
+      - name: The math lab's file stamps are current
+        run: |
+          python3 tools/lab_stamps.py --check \
+            || { echo "::error::learn/lab/core.js lists out-of-date file stamps. Run python3 tools/lab_stamps.py and commit."; exit 1; }
+      - name: Did this change the API?
+        id: changes
+        env:
+          BEFORE: ${{ github.event.before }}
+          ASKED: ${{ inputs.api }}
+        run: |
+          if [ "$ASKED" = "true" ]; then
+            api=true
+          elif [ -n "$BEFORE" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            if git diff --quiet "$BEFORE" "$GITHUB_SHA" -- api/; then api=false; else api=true; fi
+          else
+            api=false        # run by hand, or no earlier commit to compare with
+          fi
+          echo "api=$api" >> "$GITHUB_OUTPUT"
+          echo "API changed: $api"
+      # Secrets can't be read in a job's `if`, so this step says whether there
+      # is a key to publish with, and the publishing jobs follow it.
+      - name: Is there a Cloudflare key to publish with?
+        id: key
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Checks passed. Not published: no Cloudflare secrets are set, so publish from your machine with tools/ship.sh (or npx wrangler deploy --env production)."
+            echo "Checks passed. **Not published** — no Cloudflare secrets are set. Publish from your machine with \`tools/ship.sh\`." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  api:
+    name: Database migrations, then the API
+    needs: verify
+    if: needs.verify.outputs.publish == 'true' && needs.verify.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Database migrations (production)
+        run: npx --yes "$WRANGLER" d1 migrations apply oplo-platform-db --remote -c api/wrangler.toml
+      - name: API
+        run: npx --yes "$WRANGLER" deploy --env production -c api/wrangler.toml
+
+  app:
+    name: Student app — edu.oplocloud.com
+    needs: [verify, api]
+    # After the API when it ran; straight after verify when it had nothing to do.
+    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.verify.outputs.publish == 'true' && (needs.api.result == 'success' || needs.api.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Publish
+        run: npx --yes "$WRANGLER" deploy --env production
+      - name: Say what went out
+        run: echo "Published \`$(git log --oneline -1)\` to https://edu.oplocloud.com" >> "$GITHUB_STEP_SUMMARY"

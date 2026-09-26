@@ -1,0 +1,222 @@
+/* ==========================================================================
+   OEdu — the student's gradebook (gradebook.js).
+
+   Simple on purpose: big rows, big grades, plain sentences, one idea per
+   box. Written only in the app's tokens (--paper, --ink, --blue, ...), so it
+   draws on the light console and on the dark student side alike, where
+   obsidian.css re-points every token.
+
+   A grade's colour is its band — green 90+, blue 80s, amber 70s, red below —
+   and a colour never travels alone: the letter or the number is always
+   printed with it.
+   ========================================================================== */
+
+/* The page it sits on: centred, and wider than the app's reading column on
+   a big screen, with gutters that grow with the window. */
+.lx-wrap.sgb-wide {
+  max-width: 1760px;
+  padding-inline: max(var(--gut), 4vw, env(safe-area-inset-left)) max(var(--gut), 4vw, env(safe-area-inset-right));
+}
+
+/* No `display` on .sg itself. The host is the app's #v-grades view, which
+   app.css hides with `.lx-view { display: none }` whenever another tab is
+   open; a `display` here would outrank that rule and draw the gradebook on
+   top of every other tab. It takes its flex layout only while it is the
+   view that is on. */
+.sg { max-width: 1400px; margin: 0 auto; padding-bottom: 60px; }
+.lx-view.on.sg, .sg:not(.lx-view) { display: flex; flex-direction: column; gap: 22px; }
+.sg .b-a { --band: var(--green); }
+.sg .b-b { --band: var(--blue); }
+.sg .b-c { --band: var(--amber); }
+.sg .b-d, .sg .b-f { --band: var(--red); }
+.sg .b-none { --band: var(--ink-3); }
+.sg .b-credit { --band: var(--blue); }
+.sg-muted { font-size: 14.5px; color: var(--ink-3); }
+.sg-wait { font-size: 16px; color: var(--ink-3); padding: 24px 0; }
+.sg em { font-style: normal; font-weight: 600; }
+.sg em.bad { color: var(--red); }
+.sg em.warn { color: var(--amber); }
+.sg em.sg-fbtag { color: var(--blue); }
+.sg .chev { width: 16px; height: 16px; color: var(--ink-3); flex: none; }
+
+.sg-box {
+  background: var(--paper); border-radius: 20px; padding: 20px 22px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.sg-box h2, .sg-sec > h2 { font-family: var(--font); font-size: 20px; font-weight: 600; letter-spacing: -.015em; }
+.sg-sec { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sg-btn {
+  align-self: flex-start; height: 42px; padding: 0 18px; border-radius: 12px;
+  background: var(--blue); color: #fff; font-weight: 600; font-size: 15px;
+}
+html[data-look="obsidian"] .sg-btn { background: var(--fill); }
+.sg-empty b, .sg-failed b { font-size: 18px; }
+.sg-empty p, .sg-failed p { color: var(--ink-2); }
+
+/* ------------------------------------------------------------------ Numbers */
+.sg-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.sg-stat { background: var(--paper); border-radius: 20px; padding: 18px 22px; display: flex; flex-direction: column; gap: 4px; }
+.sg-stat .l { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.sg-stat b {
+  font-family: var(--font); font-size: 42px; font-weight: 600; line-height: 1.05; letter-spacing: -.025em;
+  color: var(--band); font-variant-numeric: tabular-nums;
+}
+.sg-stat b small { font-size: 20px; color: var(--ink-3); font-weight: 500; letter-spacing: 0; }
+.sg-stat .s { font-size: 14px; color: var(--ink-3); }
+.sg-bar { height: 8px; border-radius: 8px; background: var(--sunk); overflow: hidden; margin-top: 6px; }
+.sg-bar i { display: block; height: 100%; border-radius: 8px; background: var(--band); }
+
+/* ------------------------------------------------------------------ Home */
+.sg-home { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 28%, 400px); gap: 22px; align-items: start; }
+.sg-main, .sg-side { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.sg-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* A row: a thing on the left, its grade on the right, a chevron if it opens. */
+.sg-row, .sg-arow {
+  width: 100%; text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 16px; align-items: center; background: var(--paper); border-radius: 16px; padding: 16px 18px 16px 20px;
+  border: 1px solid transparent; transition: border-color .15s, background .15s;
+}
+.sg-row:hover, .sg-arow:hover { border-color: var(--rule); }
+.sg-row.static { grid-template-columns: minmax(0, 1fr) auto; }
+.sg-row.static:hover { border-color: transparent; }
+.sg-row .t, .sg-arow .t { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sg-row .t b, .sg-arow .t b { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.sg-row .t small, .sg-arow .t small { font-size: 14px; color: var(--ink-3); line-height: 1.4; }
+.sg-row .g { display: flex; flex-direction: column; align-items: flex-end; min-width: 64px; }
+.sg-row .g b { font-family: var(--font); font-size: 30px; font-weight: 600; line-height: 1; color: var(--band); }
+.sg-row .g small { font-size: 13.5px; color: var(--ink-2); margin-top: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ To do */
+.sg-todo-list { display: flex; flex-direction: column; gap: 8px; }
+.sg-todo-item {
+  text-align: left; display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 14px;
+  background: var(--sunk); border: 1px solid transparent;
+}
+.sg-todo-item:hover { border-color: var(--rule); }
+.sg-todo-item .tag {
+  align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 100px; margin-bottom: 2px;
+  color: var(--tone); background: color-mix(in srgb, var(--tone) 16%, transparent);
+}
+.sg-todo-item.k0 { --tone: var(--red); }
+.sg-todo-item.k1 { --tone: var(--amber); }
+.sg-todo-item.k2 { --tone: var(--blue); }
+.sg-todo-item b { font-size: 16px; font-weight: 600; }
+.sg-todo-item small { font-size: 13.5px; color: var(--ink-3); }
+.sg-done { font-size: 16px; color: var(--ink-2); line-height: 1.5; }
+.sg-done span { color: var(--green); font-weight: 700; margin-right: 4px; }
+
+.sg-more { gap: 4px; }
+.sg-more h2 { margin-bottom: 4px; }
+.sg-more-btn {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; text-align: left;
+  padding: 12px 10px; margin: 0 -10px; border-radius: 12px;
+}
+.sg-more-btn:hover { background: var(--sunk); }
+.sg-more-btn .t { display: flex; flex-direction: column; }
+.sg-more-btn b { font-size: 16px; font-weight: 600; color: var(--blue); }
+.sg-more-btn small { font-size: 13.5px; color: var(--ink-3); }
+
+/* ------------------------------------------------------------------ A class */
+.sg-back {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px 0 10px;
+  border-radius: 100px; background: var(--paper); color: var(--blue); font-size: 15px; font-weight: 600;
+}
+.sg-back svg { width: 16px; height: 16px; }
+.sg-back:hover { background: var(--sunk); }
+.sg-head { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.sg-head .t { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sg-say { font-size: 18px; line-height: 1.5; color: var(--ink-2); max-width: 760px; }
+.sg-say b { color: var(--band, var(--ink)); }
+.sg-big {
+  flex: none; min-width: 150px; padding: 18px 24px; border-radius: 22px; background: var(--paper);
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.sg-big b { font-family: var(--font); font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -.03em; color: var(--band); }
+.sg-big span { font-size: 20px; font-weight: 600; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+.sg-alert {
+  background: color-mix(in srgb, var(--red) 11%, var(--paper));
+  border: 1px solid color-mix(in srgb, var(--red) 35%, transparent);
+}
+.sg-alert h2 { color: var(--red); font-size: 18px; }
+.sg-alert p { font-size: 15.5px; color: var(--ink-2); }
+.sg-alert p b { color: var(--ink); }
+
+/* An assignment row, and what opens under it. */
+.sg-a { display: flex; flex-direction: column; }
+.sg-a.open .sg-arow { border-radius: 16px 16px 0 0; border-color: var(--rule); border-bottom-color: transparent; }
+.sg-arow .sc { display: flex; flex-direction: column; align-items: flex-end; }
+.sg-arow .sc b { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sg-arow .sc small { font-size: 14px; font-weight: 600; color: var(--band); }
+.sg-arow .tag { font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 100px; white-space: nowrap; }
+.sg-arow .tag.missing { color: var(--red); background: color-mix(in srgb, var(--red) 15%, transparent); }
+.sg-arow .tag.late { color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); }
+.sg-arow .tag.coming, .sg-arow .tag.excused { color: var(--ink-2); background: var(--sunk); }
+.sg-a .chev { transition: transform .2s var(--ease); transform: rotate(90deg); }
+.sg-a.open .chev { transform: rotate(-90deg); }
+.sg-a.s-missing .t b { color: var(--red); }
+.sg-amore {
+  background: var(--paper); border: 1px solid var(--rule); border-top: 1px solid var(--hair);
+  border-radius: 0 0 16px 16px; padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px;
+}
+.sg-amore > p { font-size: 15.5px; color: var(--ink-2); line-height: 1.55; }
+.sg-amore > p b { color: var(--ink); }
+.sg-fb { background: var(--sunk); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.sg-fb small, .sg-hist small { font-size: 12.5px; font-weight: 700; color: var(--ink-3); }
+.sg-fb p { font-size: 15.5px; white-space: pre-wrap; }
+.sg-hist { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--ink-2); }
+
+.sg-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.sg-part { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; }
+.sg-part .t { display: flex; flex-direction: column; }
+.sg-part .t b { font-size: 16px; font-weight: 600; }
+.sg-part .t small { font-size: 13.5px; color: var(--ink-3); }
+.sg-part .v { font-size: 18px; font-weight: 700; color: var(--band); font-variant-numeric: tabular-nums; }
+.sg-part .sg-bar { grid-column: 1 / -1; margin-top: 0; }
+
+.sg-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.sg-pick button {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px; border-radius: 14px;
+  background: var(--sunk); border: 2px solid transparent;
+}
+.sg-pick button b { font-family: var(--font); font-size: 26px; font-weight: 600; line-height: 1.1; }
+.sg-pick button small { font-size: 12px; color: var(--ink-3); }
+.sg-pick button:hover { border-color: var(--rule); }
+.sg-pick button.on { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 14%, var(--sunk)); }
+.sg-answer { display: flex; flex-direction: column; gap: 4px; min-height: 64px; }
+.sg-answer:empty { display: none; }
+.sg-answer p { font-size: 15px; color: var(--ink-2); }
+.sg-answer p b { color: var(--ink); }
+.sg-answer .res { font-size: 19px; font-weight: 600; color: var(--ink); }
+.sg-answer .res b { font-size: 26px; }
+.sg-answer .res.ok b { color: var(--green); }
+.sg-answer .res.mid b { color: var(--amber); }
+.sg-answer .res.hard, .sg-answer .res.hard b { color: var(--red); }
+
+.sg-said p { font-size: 16px; white-space: pre-wrap; }
+.sg-said small { font-size: 13.5px; color: var(--ink-3); }
+.sg-note { max-width: 760px; }
+.sg-plan { min-width: 0; }
+
+/* ------------------------------------------------------------------ Narrow */
+@media (max-width: 1000px) {
+  .sg-home, .sg-two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .sg { gap: 18px; }
+  .sg-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sg-stat { padding: 14px 16px; }
+  .sg-stat b { font-size: 32px; }
+  .sg-row, .sg-arow { gap: 12px; padding: 14px 14px 14px 16px; }
+  .sg-row .g b { font-size: 26px; }
+  .sg-head { flex-direction: column; align-items: stretch; gap: 14px; }
+  .sg-big { flex-direction: row; justify-content: center; align-items: baseline; gap: 14px; padding: 14px 18px; }
+  .sg-big b { font-size: 48px; }
+  .sg-big span { margin-top: 0; }
+  .sg-say { font-size: 16.5px; }
+  .sg-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sg-a .chev, .sg-row, .sg-arow { transition: none; }
+}
