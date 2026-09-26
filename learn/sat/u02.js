@@ -128,6 +128,46 @@
       autopsy: { hard: "It looks like it needs a full expansion.", clue: "\"$a + b + c$\" — that's the expression at $x = 1$.", remember: "Equivalent expressions agree at every $x$; pick a helpful one." }
     };
   }
+  function rootTex(m2, n2) { return n2 === 2 ? "\\sqrt{x" + (m2 === 1 ? "" : "^{" + m2 + "}") + "}" : "\\sqrt[" + n2 + "]{x" + (m2 === 1 ? "" : "^{" + m2 + "}") + "}"; }
+  function eqvRatExp(R) {
+    var pr = R.pick([[1, 2], [1, 3], [2, 3], [3, 2], [3, 4], [5, 2], [2, 5], [4, 3]]), mm = pr[0], nn = pr[1], neg = R.chance(0.3);
+    var e = "x^{" + (neg ? "-" : "") + "\\frac{" + mm + "}{" + nn + "}}", right = neg ? "\\frac{1}{" + rootTex(mm, nn) + "}" : rootTex(mm, nn);
+    var ok = x(right, { ok: true });
+    return {
+      stem: "For $x > 0$, which expression is equivalent to $" + e + "$?",
+      choices: [ok].concat(H.distinct(ok, [
+        mm > 1 ? x(neg ? "\\frac{1}{" + rootTex(nn, mm) + "}" : rootTex(nn, mm), { err: "formula", tr: "swapped the root and the power", why: "In $x^{\\frac{m}{n}}$ the bottom number is the root and the top is the power: $\\sqrt[n]{x^m}$." }) : null,
+        neg ? x("-" + rootTex(mm, nn), { err: "concept", tr: "read a negative exponent as a negative number", why: "A negative exponent means a reciprocal, not a negative: $x^{-a} = \\frac{1}{x^a}$." }) : null,
+        x((neg ? "-" : "") + "\\frac{x^{" + mm + "}}{" + nn + "}", { err: "concept", tr: "divided by the denominator instead of taking a root", why: "The " + nn + " in the exponent means a " + (nn === 2 ? "square" : nn === 3 ? "cube" : nn + "th") + " root, not division by " + nn + "." }),
+        x((neg ? "-" : "") + "\\frac{" + mm + "}{" + nn + "}x", { err: "concept", tr: "multiplied by the exponent", why: "An exponent isn't a coefficient: $x^{\\frac{" + mm + "}{" + nn + "}}$ is a root of a power, not $\\frac{" + mm + "}{" + nn + "}$ times $x$." }),
+        x("x^{" + (mm * nn) + "}", { err: "formula", tr: "multiplied the parts of the exponent", why: "The fraction stays a fraction: top number = power, bottom number = root." })].filter(Boolean), 3)),
+      hint: "In a fractional exponent, which number is the root and which is the power?",
+      strategy: "$x^{\\frac{m}{n}} = \\sqrt[n]{x^m}$ — \"power over root\". A negative exponent puts it in the denominator.",
+      walk: W([[e, "Start."], ["x^{\\frac{" + mm + "}{" + nn + "}} = " + rootTex(mm, nn), "Bottom " + nn + " → the root; top " + mm + " → the power."]].concat(neg ? [[e + " = \\frac{1}{" + rootTex(mm, nn) + "}", "Negative exponent → reciprocal."]] : [])),
+      concept: "$x^{\\frac{1}{n}}$ is the number whose $n$th power is $x$ — the $n$th root — because $(x^{\\frac{1}{n}})^n = x^1$. Then $x^{\\frac{m}{n}} = (x^{\\frac{1}{n}})^m$.",
+      rebuild: [{ q: "In $x^{\\frac{" + mm + "}{" + nn + "}}$, which number tells you the root?", opts: [String(nn), String(mm)], a: 0, ok: "The denominator, " + nn + "." }, { q: "So $x^{\\frac{" + mm + "}{" + nn + "}}$ is…", opts: ["$" + rootTex(mm, nn) + "$", "$\\frac{x^{" + mm + "}}{" + nn + "}$"], a: 0, ok: neg ? "And the negative exponent puts it under 1." : "Power over root." }],
+      autopsy: { clue: "A fraction in the exponent.", remember: "$x^{m/n} = \\sqrt[n]{x^m}$; $x^{-a} = \\frac{1}{x^a}$." }
+    };
+  }
+  function eqvRatExpr(R) {
+    var pp = R.nz(-8, 8), qq = R.nz(-8, 8);
+    while (pp === qq || pp === -qq) qq = R.nz(-8, 8);
+    var num2 = quad(1, pp + qq, pp * qq), ok = x("x " + sgn(qq), { ok: true });
+    return {
+      stem: "For $x \\ne " + (-pp) + "$, which expression is equivalent to $\\frac{" + num2 + "}{x " + sgn(pp) + "}$?",
+      choices: [ok].concat(H.distinct(ok, [
+        x("x " + sgn(pp), { err: "calc", tr: "kept the factor that cancels", why: "Factor the top: $(x " + sgn(pp) + ")(x " + sgn(qq) + ")$. The $(x " + sgn(pp) + ")$ cancels with the bottom; $(x " + sgn(qq) + ")$ is left." }),
+        x(quad(1, pp + qq, qq), { err: "concept", tr: "cancelled a number inside the terms", why: "Only whole factors cancel. Factor first, then cancel $(x " + sgn(pp) + ")$." }),
+        x("x " + sgn(-qq), { err: "calc", tr: "got a sign wrong factoring", why: "$(x " + sgn(pp) + ")(x " + sgn(-qq) + ")$ expands to a different middle term. Check by expanding." }),
+        x("x " + sgn(pp + qq), { err: "concept", tr: "divided term by term", why: "You can't divide the pieces of a sum separately by $(x " + sgn(pp) + ")$. Factor the top instead." })], 3)),
+      hint: "Can the top be factored — and does one factor match the bottom?",
+      strategy: "Factor the numerator, then cancel the factor it shares with the denominator (that's why $x \\ne " + (-pp) + "$).",
+      walk: W([["\\frac{" + num2 + "}{x " + sgn(pp) + "}", "Start."], ["\\frac{(x " + sgn(pp) + ")(x " + sgn(qq) + ")}{x " + sgn(pp) + "}", "Factor the top."], ["x " + sgn(qq), "Cancel the common factor."]]),
+      concept: "A rational expression simplifies by cancelling common **factors** — never pieces of a sum.",
+      rebuild: [{ q: "Factor $" + num2 + "$.", opts: ["$(x " + sgn(pp) + ")(x " + sgn(qq) + ")$", "$(x " + sgn(-pp) + ")(x " + sgn(-qq) + ")$"], a: 0, ok: "One factor matches the bottom." }, { q: "After cancelling, what's left?", opts: ["$x " + sgn(qq) + "$", "$x " + sgn(pp) + "$"], a: 0, ok: "Right." }],
+      autopsy: { clue: "A quadratic over a binomial.", remember: "Factor, then cancel factors." }
+    };
+  }
   var EQV = {
     id: "m-equiv", t: "Equivalent expressions", short: "Equivalent expressions", kind: "Rewrite an expression",
     blurb: "Expand, factor and simplify — brackets, exponents, differences of squares — and spot when two expressions are the same.",
@@ -154,6 +194,11 @@
           { m: "x^3 \\cdot x^2 = x^5", say: "Three $x$'s times two $x$'s is five: **add** the exponents." },
           { m: "\\frac{x^5}{x^2} = x^3", say: "Two of the five cancel: **subtract**." },
           { m: "(x^3)^2 = x^6", say: "Two groups of three: **multiply**." }] }, gate: true },
+      { type: "learn", kicker: "Roots are exponents",
+        prompt: "A fraction in the exponent is a root: the bottom number is the root, the top is the power.",
+        scene: { type: "walk", rows: [
+          { m: "x^{\\frac{1}{2}} = \\sqrt{x}", say: "Because $(x^{\\frac{1}{2}})^2 = x$." }, { m: "x^{\\frac{2}{3}} = \\sqrt[3]{x^2}", say: "Power over root." },
+          { m: "x^{-2} = \\frac{1}{x^2}", say: "A negative exponent is a reciprocal — not a negative number." }, { m: "\\frac{x^2 + 7x + 12}{x + 3} = x + 4", say: "And fractions of polynomials: factor the top, cancel the shared factor." }] }, gate: true },
       { type: "learn", kicker: "The SAT shortcut",
         prompt: "Two expressions are equivalent if they agree for **every** $x$. So you can test with a number:",
         scene: { type: "walk", rows: [
@@ -163,7 +208,8 @@
     ],
     gen: function (R, o) {
       if (o.form === "twist") return eqvTwist(R, o.diff);
-      return o.diff === 1 ? eqvExpand(R) : o.diff === 2 ? (R.chance(0.5) ? eqvFactor(R) : eqvExp(R)) : eqvSquares(R);
+      var k = R.int(0, 2);
+      return o.diff === 1 ? eqvExpand(R) : o.diff === 2 ? [eqvFactor, eqvExp, eqvRatExp][k](R) : (k === 0 ? eqvRatExpr(R) : k === 1 ? eqvRatExp(R) : eqvSquares(R));
     }
   };
 
@@ -296,6 +342,42 @@
       autopsy: { trap: "Keeping the negative time.", clue: "\"Hit the ground\" → height 0.", remember: "In context, check each solution makes sense." }
     };
   }
+  function quadSqrt(R) {
+    var pp = R.nz(-7, 7), qq = R.int(2, 9), a1 = -pp - qq, a2 = -pp + qq;
+    return {
+      stem: "What are the solutions to $(x " + sgn(pp) + ")^2 = " + (qq * qq) + "$?",
+      choices: [w(pair(a1, a2), { ok: true }),
+        w("$x = " + a2 + "$ only", { err: "concept", tr: "forgot the negative square root", why: "Both " + qq + " and $-" + qq + "$ square to " + (qq * qq) + ", so $x " + sgn(pp) + " = \\pm " + qq + "$ — two solutions." }),
+        w(pair(pp - qq, pp + qq), { err: "calc", tr: "moved the constant with the wrong sign", why: "From $x " + sgn(pp) + " = \\pm " + qq + "$, " + (pp > 0 ? "subtract " + pp : "add " + (-pp)) + ": $x = " + (-pp) + " \\pm " + qq + "$." }),
+        w(pair(-pp - qq * qq, -pp + qq * qq), { err: "concept", tr: "didn't take the square root of the right side", why: "Undo the square on the left with a square root on the right: $\\sqrt{" + (qq * qq) + "} = " + qq + "$." })],
+      order: "keep",
+      hint: "What undoes a square? How many numbers square to " + (qq * qq) + "?",
+      strategy: "Take the square root of both sides — and remember $\\pm$: $x " + sgn(pp) + " = \\pm " + qq + "$.",
+      walk: W([["(x " + sgn(pp) + ")^2 = " + (qq * qq), "Start."], ["x " + sgn(pp) + " = \\pm " + qq, "Square root of both sides: two options."], ["x = " + a1 + " \\;\\text{or}\\; x = " + a2, (pp > 0 ? "Subtract " + pp : "Add " + (-pp)) + "."]]),
+      concept: "Squaring loses the sign, so undoing it gives two answers: if $u^2 = 49$, then $u = 7$ or $u = -7$. (But $\\sqrt{49}$ alone means just 7.)",
+      rebuild: [{ q: "Which numbers square to " + (qq * qq) + "?", opts: ["$" + qq + "$ and $-" + qq + "$", "Only $" + qq + "$", "$" + (qq * qq / 2) + "$"], a: 0, ok: "So $x " + sgn(pp) + " = \\pm " + qq + "$." }, { q: "So the solutions are…", opts: [pair(a1, a2), pair(pp - qq, pp + qq)], a: 0, ok: "Two solutions." }],
+      autopsy: { trap: "Forgetting the negative root.", clue: "A squared bracket equal to a number.", remember: "$u^2 = k \\Rightarrow u = \\pm\\sqrt{k}$." }
+    };
+  }
+  function quadFormula(R) {
+    var h = R.nz(-6, 6), k = R.pick([2, 3, 5, 6, 7, 10, 11, 13]);
+    var e = quad(1, -2 * h, h * h - k) + " = 0";
+    function sol(a, b, c2) { return "$x = " + a + " \\pm " + (b === 1 ? "" : b) + "\\sqrt{" + c2 + "}$"; }
+    return {
+      stem: "What are the solutions to $" + e + "$?",
+      choices: [w(sol(h, 1, k), { ok: true }),
+        w(sol(-h, 1, k), { err: "formula", tr: "dropped the minus in −b", why: "The formula starts with $-b$: here $b = " + (-2 * h) + "$, so $-b = " + (2 * h) + "$." }),
+        w(sol(h, 2, k), { err: "calc", tr: "didn't divide the square root by 2a", why: "$\\sqrt{b^2 - 4ac} = \\sqrt{" + (4 * k) + "} = 2\\sqrt{" + k + "}$ — and it's divided by $2a = 2$ too." }),
+        w(sol(2 * h, 2, k), { err: "formula", tr: "forgot to divide by 2a", why: "Everything on top is divided by $2a = 2$." })],
+      order: "shuffle",
+      hint: "It doesn't factor nicely. Which tool always works?",
+      strategy: "$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$. Radicals in the answer choices are the SAT's hint to use it (or to complete the square).",
+      walk: W([["x = \\frac{" + (2 * h) + " \\pm \\sqrt{" + (4 * h * h) + " - 4(" + (h * h - k) + ")}}{2}", "Substitute $a = 1$, $b = " + (-2 * h) + "$, $c = " + (h * h - k) + "$."], ["= \\frac{" + (2 * h) + " \\pm \\sqrt{" + (4 * k) + "}}{2} = \\frac{" + (2 * h) + " \\pm 2\\sqrt{" + k + "}}{2}", "Simplify the root."], ["x = " + h + " \\pm \\sqrt{" + k + "}", "Divide by 2."]]),
+      concept: "The quadratic formula is completing the square done once in general — it solves every quadratic, factorable or not.",
+      rebuild: [{ q: "What are $a$, $b$ and $c$? What is $-b$?", num: 2 * h, ok: "$-b = " + (2 * h) + "$." }, { q: "What is the discriminant $b^2 - 4ac$?", num: 4 * k, ok: "$\\sqrt{" + (4 * k) + "} = 2\\sqrt{" + k + "}$." }, { q: "Divide everything by $2a = 2$. The solutions are…", opts: [sol(h, 1, k), sol(h, 2, k)], a: 0, ok: "Right." }],
+      autopsy: { hard: "It doesn't factor over the integers.", clue: "Square roots in the answer choices.", remember: "$-b$, and divide ALL of the top by $2a$." }
+    };
+  }
   var QUAD = {
     id: "m-quad", t: "Quadratics: solutions & factors", short: "Quadratic solutions", kind: "Quadratic: solutions & roots",
     blurb: "Solve quadratics by factoring, read roots from a graph, count solutions with the discriminant, and use $-\\frac{b}{a}$ when only the sum is asked.",
@@ -331,13 +413,20 @@
         scene: { type: "walk", rows: [
           { m: "b^2 - 4ac", say: "**How many** real solutions? Positive → 2, zero → 1, negative → 0." },
           { m: "-\\frac{b}{a}", say: "**Sum** of the solutions — no solving needed." },
-          { m: "\\frac{c}{a}", say: "**Product** of the solutions." }] }, gate: true }
+          { m: "\\frac{c}{a}", say: "**Product** of the solutions." }] }, gate: true },
+      { type: "learn", kicker: "When it won't factor",
+        prompt: "Two more ways in:",
+        scene: { type: "walk", rows: [
+          { m: "(x + 3)^2 = 49 \\Rightarrow x + 3 = \\pm 7", say: "Square-root both sides — **two** answers: $x = 4$ or $x = -10$." },
+          { m: "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}", say: "The quadratic formula always works." },
+          { m: "x^2 - 6x + 4 = 0 \\Rightarrow x = 3 \\pm \\sqrt{5}", say: "Radicals in the choices are a hint to use it." }] }, gate: true }
     ],
     gen: function (R, o) {
       if (o.form === "graph") return quadGraph(R);
       if (o.form === "word") return quadWord(R);
       if (o.form === "twist") return o.diff >= 3 ? quadSum(R) : quadDisc(R);
-      return o.diff === 1 ? quadCommon(R) : o.diff === 2 ? quadMonic(R, 2) : (R.chance(0.5) ? quadDisc(R) : quadSum(R));
+      var k = R.int(0, 2);
+      return o.diff === 1 ? quadCommon(R) : o.diff === 2 ? (k === 2 ? quadSqrt(R) : quadMonic(R, 2)) : [quadDisc, quadSum, quadFormula][k](R);
     }
   };
 
@@ -429,10 +518,28 @@
       autopsy: { trap: "Answering with the time instead of the height.", clue: "\"Maximum height\" is a value of $h$.", remember: "Vertex: $t$ tells when, $h(t)$ tells how high." }
     };
   }
+  function vtxAxis(R) {
+    var pp = R.nz(-8, 6), qq = R.nz(-4, 10);
+    while (pp === qq || pp === -qq || (pp + qq) % 2) qq = R.nz(-4, 10);
+    var mid = (pp + qq) / 2, a = R.pick([1, 2, -1, -3]);
+    return {
+      stem: "The function $f$ is defined by $f(x) = " + (a === 1 ? "" : a === -1 ? "-" : a) + fac(pp) + fac(qq) + "$. What is the $x$-coordinate of the vertex of the graph of $y = f(x)$?",
+      choices: [c(mid, { ok: true }),
+        c(-mid, { err: "calc", tr: "used the signs inside the factors", why: "The zeros are $x = " + pp + "$ and $x = " + qq + "$ — the signs flip from the factors." }),
+        c(pp + qq, { err: "calc", tr: "forgot to halve", why: "The vertex is halfway between the zeros: their average." }),
+        c((pp - qq) / 2 === mid ? mid + 3 : (qq - pp) / 2, { err: "concept", tr: "took half the distance between the zeros", why: "That's how far each zero is from the vertex, not where the vertex is." })],
+      hint: "Where are the zeros? Where is the vertex relative to them?",
+      strategy: "A parabola is symmetric: its vertex is exactly halfway between its two $x$-intercepts, $x = \\frac{r + s}{2}$.",
+      walk: W([["x = " + pp + ",\\; x = " + qq, "The zeros (flip the signs)."], ["\\frac{" + pp + " + " + (qq < 0 ? "(" + qq + ")" : qq) + "}{2} = " + tex(mid), "Halfway between them."]]),
+      concept: "The axis of symmetry passes through the vertex, halfway between the zeros — so factored form shows the vertex's $x$ at a glance.",
+      rebuild: [{ q: "What are the zeros of $f$?", opts: ["$" + pp + "$ and $" + qq + "$", "$" + (-pp) + "$ and $" + (-qq) + "$"], a: 0, ok: "Sign flipped from the factors." }, { q: "The vertex is halfway between them, at $x =$", num: mid, ok: "$x = " + tex(mid) + "$." }],
+      autopsy: { clue: "Factored form and a question about the vertex.", remember: "Vertex $x$ = average of the zeros." }
+    };
+  }
   var VTX = {
     id: "m-vertex", t: "Quadratics: graphs & the vertex", short: "Parabolas", kind: "Parabola: vertex & graph",
     blurb: "Read the vertex from vertex form, find it with $-\\frac{b}{2a}$, match a parabola to its equation, and find maximums in real models.",
-    forms: ["equation", "graph", "model"], pace: 1.1,
+    forms: ["equation", "graph", "model", "twist"], pace: 1.1,
     school: { course: "alg", unit: 14, t: "Algebra I, Unit 14: Quadratic functions & equations" },
     autopsy: { testing: "The vertex and shape of a parabola", clue: "A quadratic, and a question about its highest or lowest point, or its graph.", remember: "Vertex form $a(x - h)^2 + k$; vertex at $x = -\\frac{b}{2a}$.", spotQ: "Is each of these about a parabola's vertex or shape?" },
     spot: function (R) {
@@ -455,11 +562,16 @@
           { m: "f(3) = 9 - 18 + 5 = -4", say: "Its $y$: the minimum value." }] }, gate: true },
       { type: "num", prompt: "What is the minimum value of $f(x) = x^2 + 4x + 10$?", answer: 6,
         near: [{ v: -2, fb: "That's where the minimum happens. The value is $f(-2)$." }, { v: 10, fb: "That's $f(0)$, the $y$-intercept." }],
-        hints: ["$x = -\\frac{4}{2} = -2$.", "Now find $f(-2)$."], why: "$f(-2) = 4 - 8 + 10 = 6$." }
+        hints: ["$x = -\\frac{4}{2} = -2$.", "Now find $f(-2)$."], why: "$f(-2) = 4 - 8 + 10 = 6$." },
+      { type: "learn", kicker: "Halfway between the zeros",
+        prompt: "A parabola is symmetric, so its vertex sits exactly halfway between its $x$-intercepts.",
+        scene: { type: "walk", rows: [
+          { m: "f(x) = (x - 2)(x - 8)", say: "Zeros at 2 and 8." }, { m: "x = \\frac{2 + 8}{2} = 5", say: "The vertex's $x$ — the axis of symmetry." }, { m: "f(5) = (3)(-3) = -9", say: "And its $y$: the minimum." }] }, gate: true }
     ],
     gen: function (R, o) {
       if (o.form === "graph") return vtxGraph(R);
       if (o.form === "model") return vtxModel(R);
+      if (o.form === "twist") return o.diff >= 3 ? vtxK(R) : vtxAxis(R);
       return o.diff === 1 ? vtxForm(R) : o.diff === 2 ? vtxStd(R) : vtxK(R);
     }
   };
@@ -654,6 +766,75 @@
       autopsy: { clue: "Fraction = fraction.", remember: "Cross-multiply, then solve; exclude values that make a denominator 0." }
     };
   }
+  function nlAbs(R, diff) {
+    var k = diff >= 3 ? 2 : 1, a = R.nz(-6, 8), b = R.int(1, 9), none = diff >= 3 && R.chance(0.35);
+    if (k === 2 && (a + b) % 2) b++;
+    if (none) {
+      var cst = R.int(3, 9), rhs = cst - R.int(1, 5);
+      return {
+        stem: "How many solutions does the equation $|x " + sgn(-a) + "| + " + cst + " = " + rhs + "$ have?",
+        choices: ["Zero", "Exactly one", "Exactly two", "Infinitely many"].map(function (t, i) { return i === 0 ? w(t, { ok: true }) : w(t, { err: "concept", tr: "missed that an absolute value can't be negative", why: "Subtract " + cst + ": $|x " + sgn(-a) + "| = " + (rhs - cst) + "$. An absolute value is a distance — never negative — so nothing works." }); }),
+        order: "keep",
+        hint: "Isolate the absolute value first. What can an absolute value never be?",
+        strategy: "Get $|\\ldots|$ alone. If it equals a negative number, there's no solution; if 0, one; if positive, two.",
+        walk: W([["|x " + sgn(-a) + "| = " + (rhs - cst), "Subtract " + cst + "."], ["|u| \\ge 0", "An absolute value is never negative: no solution."]]),
+        concept: "$|u|$ is the distance from $u$ to 0, so it can't be negative.",
+        rebuild: [{ q: "After subtracting " + cst + ", $|x " + sgn(-a) + "|$ equals…", num: rhs - cst, ok: "A negative number." }, { q: "Can a distance be negative?", opts: ["No", "Yes"], a: 0, ok: "So there are no solutions." }],
+        autopsy: { clue: "An absolute value equal to a negative.", remember: "$|u| = $ negative → no solution." }
+      };
+    }
+    var s1 = (a * k - b) / k, s2 = (a * k + b) / k, inner = k === 1 ? "x " + sgn(-a) : "2x " + sgn(-a * 2);
+    return {
+      stem: "What are all the solutions to $|" + inner + "| = " + b + "$?",
+      choices: [w(pair(s1, s2), { ok: true }),
+        w("$x = " + tex(s2) + "$ only", { err: "concept", tr: "forgot the negative case", why: "Two numbers have absolute value " + b + ": " + b + " and $-" + b + "$. Solve both $" + inner + " = " + b + "$ and $" + inner + " = -" + b + "$." }),
+        w(pair(-s1, -s2), { err: "calc", tr: "solved with the sign inside flipped", why: "Check one: put it into $|" + inner + "|$ — it doesn't give " + b + "." }),
+        w(pair((-b - a * k) / k, s2), { err: "calc", tr: "a sign slip in the negative case", why: "From $" + inner + " = -" + b + "$: " + (k === 1 ? "$x = " + a + " - " + b + " = " + tex(s1) + "$." : "$2x = " + (2 * a) + " - " + b + "$, so $x = " + tex(s1) + "$.") })],
+      order: "keep",
+      hint: "Which two numbers have an absolute value of " + b + "?",
+      strategy: "Split into two equations: $" + inner + " = " + b + "$ or $" + inner + " = -" + b + "$. (Or think distance: $x$ is " + tex(b / k) + " away from " + a + ".)",
+      walk: W([[inner + " = " + b + " \\;\\text{or}\\; " + inner + " = -" + b, "Two cases."], ["x = " + tex(s2) + " \\;\\text{or}\\; x = " + tex(s1), "Solve each."]]),
+      concept: "$|u| = b$ (with $b > 0$) means $u$ is $b$ away from zero — on either side — so there are two solutions.",
+      rebuild: [{ q: "Which values can $" + inner + "$ equal?", opts: ["$" + b + "$ or $-" + b + "$", "Only $" + b + "$"], a: 0, ok: "Two cases." }, { q: "Solving the negative case gives $x =$", num: s1, shown: tex(s1), ok: "And the positive case gives " + tex(s2) + "." }],
+      autopsy: { trap: "Losing the negative case.", clue: "Absolute value bars equal to a positive number.", remember: "$|u| = b$: $u = b$ or $u = -b$." }
+    };
+  }
+  function nlPoly(R, graph) {
+    var pp = R.nz(-3, 3), qq = R.nz(-3, 3);
+    while (qq === pp || qq === -pp) qq = R.nz(-3, 3);
+    if (!graph) {
+      return {
+        stem: "The function $f$ is defined by $f(x) = " + fac(pp) + fac(qq) + "^2$. At which value of $x$ does the graph of $y = f(x)$ touch the $x$-axis without crossing it?",
+        choices: [c(qq, { ok: true }),
+          c(pp, { err: "concept", tr: "picked a zero that crosses", why: "$x = " + pp + "$ comes from a factor used once: the graph passes through the axis there." }),
+          c(-qq, { err: "calc", tr: "flipped the sign of the zero", why: "$" + fac(qq) + " = 0$ when $x = " + qq + "$." }),
+          c(-pp, { err: "calc", tr: "flipped the sign of the zero", why: "The zeros are the values that make a factor 0 — signs flip from the factors." })],
+        hint: "Which factor appears twice?",
+        strategy: "A zero from a squared factor (even multiplicity) touches and turns; a zero from a factor used once crosses.",
+        walk: W([[fac(pp) + " \\Rightarrow x = " + pp, "Used once: crosses."], [fac(qq) + "^2 \\Rightarrow x = " + qq, "Used twice: touches and turns back."]]),
+        concept: "Near a double zero, the squared factor is never negative, so the graph stays on one side — it touches the axis and turns.",
+        rebuild: [{ q: "Which factor is squared?", opts: ["$" + fac(qq) + "$", "$" + fac(pp) + "$"], a: 0, ok: "Its zero repeats." }, { q: "That factor is zero when $x =$", num: qq, ok: "The graph touches there." }],
+        autopsy: { clue: "A squared factor.", remember: "Even multiplicity touches; odd crosses." }
+      };
+    }
+    var fn = function (t) { return 0.35 * (t - pp) * (t - qq) * (t - qq); };
+    function e(u, v) { return "f(x) = k" + fac(u) + fac(v) + "^2"; }
+    var ok = x(e(pp, qq), { ok: true });
+    return {
+      stem: "The graph of the polynomial function $f$ is shown. Which of the following could define $f$, where $k$ is a positive constant?",
+      fig: F.graph({ x: [-5, 5], y: [-6, 6], fns: [{ f: fn }], pts: [{ x: pp, y: 0 }, { x: qq, y: 0 }], w: 340 }),
+      choices: [ok].concat(H.distinct(ok, [
+        x(e(qq, pp), { err: "graph", tr: "swapped which zero repeats", why: "The graph touches the axis at $x = " + qq + "$ and crosses at $x = " + pp + "$: the squared factor goes with the touch." }),
+        x("f(x) = k" + fac(-pp) + fac(-qq) + "^2", { err: "graph", tr: "put the zeros into the factors with their own signs", why: "A zero at $x = " + pp + "$ comes from $" + fac(pp) + "$." }),
+        x("f(x) = k" + fac(pp) + fac(qq), { err: "concept", tr: "missed the touch at the repeated zero", why: "With each factor used once, the graph would cross at both zeros. It only touches at $x = " + qq + "$." })], 3)),
+      hint: "Where does the graph cross the axis, and where does it only touch?",
+      strategy: "Crossing zero → factor to the first power. Touching zero → squared factor. Then flip signs to write the factors.",
+      walk: W([["x = " + pp + "\\ (\\text{crosses}),\\ x = " + qq + "\\ (\\text{touches})", "Read the zeros and how the graph meets the axis."], [e(pp, qq), "Squared factor at the touch."]]),
+      concept: "The zeros of a polynomial and how the graph meets the axis there tell you its factors and their multiplicities.",
+      rebuild: [{ q: "At which zero does the graph only touch the axis?", num: qq, ok: "That factor is squared." }, { q: "So the factors are…", opts: ["$" + fac(pp) + fac(qq) + "^2$", "$" + fac(qq) + fac(pp) + "^2$"], a: 0, ok: "Right." }],
+      autopsy: { hard: "Matching a polynomial's graph to its factors.", clue: "Touch versus cross at the zeros.", remember: "Touch = even power; cross = odd." }
+    };
+  }
   var NL = {
     id: "m-nonlin", t: "Nonlinear equations & systems", short: "Nonlinear equations", kind: "Nonlinear equation or system",
     blurb: "Radical and rational equations (and the extraneous solutions they can hide), and systems where a line meets a parabola.",
@@ -678,12 +859,17 @@
         scene: { type: "plane", x: [-5, 5], y: [-3, 9], params: { n: { v: 2, min: -3, max: 6, step: 0.5, label: "$n$" } },
                  fns: [{ f: "x^2", color: "blue", label: "y = x²" }, { f: "x + n", color: "red" }],
                  readout: function (s) { var D = 1 + 4 * s.params.n; return "$x^2 = x + " + s.params.n + "$ has " + (D > 0 ? "**two** solutions" : D === 0 ? "**one** solution" : "**no** real solutions") + " — the graphs meet " + (D > 0 ? "twice." : D === 0 ? "once (the line just touches)." : "nowhere."); } },
-        gate: true, then: "Set the two expressions equal and you get a quadratic. Its number of solutions is the number of meeting points." }
+        gate: true, then: "Set the two expressions equal and you get a quadratic. Its number of solutions is the number of meeting points." },
+      { type: "learn", kicker: "Two more kinds",
+        prompt: "Absolute value and factored polynomials:",
+        scene: { type: "walk", rows: [
+          { m: "|x - 3| = 5", say: "$x$ is 5 away from 3 — on either side." }, { m: "x = 8 \\;\\text{or}\\; x = -2", say: "Always two cases (none if it equals a negative)." },
+          { m: "f(x) = (x + 1)(x - 2)^2", say: "Zeros at $-1$ and 2." }, { m: "\\text{crosses at } -1,\\ \\text{touches at } 2", say: "A squared factor touches the axis and turns back." }] }, gate: true }
     ],
     gen: function (R, o) {
-      if (o.form === "twist") return o.diff >= 2 ? nlRadical(R, 3) : nlRational(R);
-      if (o.form === "graph") return nlSystem(R, o.diff);
-      return o.diff === 1 ? nlRadical(R, 1) : o.diff === 2 ? nlSystem(R, 2) : nlRadical(R, 3);
+      if (o.form === "twist") return o.diff === 1 ? nlRational(R) : o.diff === 2 ? nlPoly(R, false) : nlRadical(R, 3);
+      if (o.form === "graph") return o.diff >= 3 ? nlPoly(R, true) : nlSystem(R, o.diff);
+      return o.diff === 1 ? (R.chance(0.5) ? nlRadical(R, 1) : nlAbs(R, 1)) : o.diff === 2 ? (R.chance(0.5) ? nlSystem(R, 2) : nlAbs(R, 2)) : (R.chance(0.5) ? nlRadical(R, 3) : nlAbs(R, 3));
     }
   };
 
@@ -764,10 +950,87 @@
       autopsy: { clue: "$f(x - " + h + ")$: the input is shifted.", remember: "Inside the brackets first, then the outside." }
     };
   }
+  function fnGraph(R, diff) {
+    var xs = [-4, -3, -2, -1, 0, 1, 2, 3, 4], ys = [], y0 = R.int(-3, 3);
+    xs.forEach(function (xx, i) { y0 = i ? Math.max(-4, Math.min(4, y0 + R.pick([-2, -1, 0, 1, 1, 2]))) : y0; ys.push(y0); });
+    var f = function (t) { if (t <= xs[0]) return ys[0]; for (var i = 0; i < xs.length - 1; i++) if (t <= xs[i + 1]) return ys[i] + (ys[i + 1] - ys[i]) * (t - xs[i]); return ys[ys.length - 1]; };
+    var fig = F.graph({ x: [-5, 5], y: [-5, 5], fns: [{ f: f, domain: [-4, 4] }], pts: [{ x: -4, y: ys[0] }, { x: 4, y: ys[8] }], w: 340 });
+    if (diff >= 3) {
+      var vals = {}; ys.forEach(function (v) { vals[v] = 1; });
+      var lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys), cand = [];
+      for (var v = lo + 1; v < hi; v++) if (!vals[v]) cand.push(v);
+      if (cand.length) {
+        var vv = R.pick(cand), count = 0;
+        for (var i = 0; i < 8; i++) if ((ys[i] - vv) * (ys[i + 1] - vv) < 0) count++;
+        return {
+          stem: "The graph of $y = f(x)$ is shown for $-4 \\le x \\le 4$. For how many values of $x$ does $f(x) = " + vv + "$?",
+          fig: fig, answer: count, shown: String(count),
+          near: [{ v: 1, tr: "counted only one crossing" }],
+          hint: "$f(x) = " + vv + "$ means the height of the graph is " + vv + ". Draw the horizontal line $y = " + vv + "$.",
+          strategy: "Count where the horizontal line $y = " + vv + "$ meets the graph: each meeting point is one value of $x$.",
+          walk: W([["y = " + vv, "A horizontal line at height " + vv + "."], [String(count), "It meets the graph " + count + " time" + (count === 1 ? "" : "s") + "."]]),
+          concept: "An equation $f(x) = k$ asks which inputs give output $k$ — on a graph, where the curve is at height $k$.",
+          rebuild: [{ q: "On the graph, $f(x) = " + vv + "$ means…", opts: ["the curve is at height " + vv, "the curve is at $x = " + vv + "$"], a: 0, ok: "A horizontal line." }, { q: "How many times does $y = " + vv + "$ meet the graph?", num: count, ok: count + "." }],
+          autopsy: { clue: "\"How many values of $x$\" — count intersections.", remember: "Output on the $y$-axis; input on the $x$-axis." }
+        };
+      }
+    }
+    var k = R.int(-3, 3), val = ys[xs.indexOf(k)];
+    var cands = [c(val, { ok: true }), c(ys[xs.indexOf(k) + 1], { err: "graph", tr: "read the wrong gridline", why: "Find $x = " + k + "$ on the horizontal axis first, then go straight up or down to the graph." }),
+      c(-val, { err: "graph", tr: "read the sign wrong", why: "The graph at $x = " + k + "$ is " + (val > 0 ? "above" : val < 0 ? "below" : "on") + " the $x$-axis." }),
+      c(k, { err: "misread", tr: "gave the input instead of the output", why: "$f(" + k + ")$ is the height of the graph at $x = " + k + "$, not " + k + " itself." }),
+      c(ys[xs.indexOf(k) - 1] != null ? ys[xs.indexOf(k) - 1] : val + 3, { err: "graph", tr: "read the wrong gridline", why: "Go straight up or down from $x = " + k + "$." })];
+    var ok = cands[0];
+    return {
+      stem: "The graph of $y = f(x)$ is shown. What is the value of $f(" + k + ")$?",
+      fig: fig,
+      choices: [ok].concat(H.distinct(ok, cands.slice(1), 3)),
+      hint: "Find " + k + " on the $x$-axis. How high is the graph there?",
+      strategy: "$f(a)$ is the $y$-value of the graph above (or below) $x = a$.",
+      walk: W([["x = " + k, "Start on the $x$-axis."], ["f(" + k + ") = " + val, "Go vertically to the graph and read across."]]),
+      concept: "A function's graph is all the points $(x, f(x))$: the input is across, the output is up.",
+      rebuild: [{ q: "Which axis do you find the input " + k + " on?", opts: ["The $x$-axis", "The $y$-axis"], a: 0, ok: "Then go vertically." }, { q: "The graph's height at $x = " + k + "$ is…", num: val, ok: "$f(" + k + ") = " + val + "$." }],
+      autopsy: { clue: "$f$ of a number, and a graph.", remember: "Input across, output up." }
+    };
+  }
+  function fnReflect(R) {
+    var axis = R.pick(["x", "y"]), stretch = R.chance(0.35), k = R.pick([2, 3]);
+    if (stretch) {
+      var vert = R.chance(0.5);
+      return {
+        stem: "The graph of $y = g(x)$ is the graph of $y = f(x)$ stretched " + (vert ? "vertically" : "horizontally") + " by a factor of " + k + ". Which equation could define $g$?",
+        choices: [x(vert ? "g(x) = " + k + "f(x)" : "g(x) = f\\left(\\frac{x}{" + k + "}\\right)", { ok: true }),
+          x(vert ? "g(x) = f(" + k + "x)" : "g(x) = f(" + k + "x)", { err: "concept", tr: vert ? "put the stretch inside the function" : "used the factor instead of its reciprocal inside", why: vert ? "Inside the brackets changes $x$ — a horizontal change. A vertical stretch multiplies the output: $" + k + "f(x)$." : "Inside works backwards: $f(" + k + "x)$ squeezes the graph. Stretching by " + k + " needs $f(\\frac{x}{" + k + "})$." }),
+          x(vert ? "g(x) = f(x) + " + k : "g(x) = " + k + "f(x)", { err: "concept", tr: vert ? "shifted instead of stretching" : "stretched vertically instead", why: vert ? "Adding " + k + " moves the graph up; multiplying by " + k + " stretches it." : "Multiplying the output stretches up and down, not left and right." }),
+          x(vert ? "g(x) = \\frac{1}{" + k + "}f(x)" : "g(x) = f(x + " + k + ")", { err: "concept", tr: vert ? "shrank instead of stretching" : "shifted instead of stretching", why: vert ? "A factor less than 1 compresses the graph." : "Adding inside shifts the graph left." })],
+        order: "shuffle",
+        hint: "Is the change inside the function (to $x$) or outside (to the output)?",
+        strategy: "Outside the function: vertical changes, as they look. Inside: horizontal changes, backwards.",
+        walk: W([[vert ? k + "f(x)" : "f\\left(\\frac{x}{" + k + "}\\right)", vert ? "Every output multiplied by " + k + ": taller." : "Each output now happens at " + k + " times the input: wider."]]),
+        concept: "Multiplying outside scales outputs (vertical); multiplying inside scales inputs (horizontal, by the reciprocal).",
+        rebuild: [{ q: "A " + (vert ? "vertical" : "horizontal") + " change goes…", opts: [vert ? "outside the function" : "inside the function", vert ? "inside the function" : "outside the function"], a: 0, ok: "Right." }],
+        autopsy: { clue: "\"Stretched by a factor of " + k + "\".", remember: "Outside = vertical; inside = horizontal and backwards." }
+      };
+    }
+    var ok = x("g(x) = " + (axis === "x" ? "-f(x)" : "f(-x)"), { ok: true });
+    return {
+      stem: "The graph of $y = g(x)$ is the reflection of the graph of $y = f(x)$ across the $" + axis + "$-axis. Which equation defines $g$?",
+      choices: [ok, x("g(x) = " + (axis === "x" ? "f(-x)" : "-f(x)"), { err: "concept", tr: "reflected across the wrong axis", why: axis === "x" ? "Flipping over the $x$-axis turns each output upside down: $-f(x)$. $f(-x)$ flips left and right." : "Flipping over the $y$-axis swaps left and right, which changes the input: $f(-x)$." }),
+        x("g(x) = -f(-x)", { err: "concept", tr: "reflected across both axes", why: "That flips the graph both ways — a half-turn about the origin." }),
+        x("g(x) = \\frac{1}{f(x)}", { err: "concept", tr: "took the reciprocal", why: "A reciprocal isn't a reflection; it changes the shape of the graph." })],
+      order: "shuffle",
+      hint: "Across the $" + axis + "$-axis: does the input change, or the output?",
+      strategy: "Across the $x$-axis: outputs change sign, $-f(x)$. Across the $y$-axis: inputs change sign, $f(-x)$.",
+      walk: W([[axis === "x" ? "(a, b) \\to (a, -b)" : "(a, b) \\to (-a, b)", "What a reflection does to a point."], [axis === "x" ? "g(x) = -f(x)" : "g(x) = f(-x)", axis === "x" ? "Every output negated." : "Every input negated."]]),
+      concept: "Reflecting over the $x$-axis negates $y$; over the $y$-axis negates $x$.",
+      rebuild: [{ q: "Reflecting $(3, 5)$ across the $" + axis + "$-axis gives…", opts: axis === "x" ? ["$(3, -5)$", "$(-3, 5)$"] : ["$(-3, 5)$", "$(3, -5)$"], a: 0, ok: axis === "x" ? "The output changes sign." : "The input changes sign." }, { q: "So $g(x) =$", opts: ["$" + (axis === "x" ? "-f(x)" : "f(-x)") + "$", "$" + (axis === "x" ? "f(-x)" : "-f(x)") + "$"], a: 0, ok: "Right." }],
+      autopsy: { trap: "Using the other axis's rule.", clue: "\"Reflection across the $" + axis + "$-axis\".", remember: "$x$-axis → $-f(x)$; $y$-axis → $f(-x)$." }
+    };
+  }
   var FN = {
     id: "m-func", t: "Function notation & transformations", short: "Functions", kind: "Function notation",
     blurb: "Evaluate $f(-3)$ without slipping, compose $f(g(x))$ inside out, read functions from tables, and shift graphs the right way.",
-    forms: ["equation", "table", "twist"],
+    forms: ["equation", "table", "graph", "twist"],
     school: { course: "alg", unit: 8, t: "Algebra I, Unit 8: Functions" },
     autopsy: { testing: "Function notation and transformations", clue: "$f(\\cdot)$ notation — inputs and outputs.", remember: "Substitute with brackets; inside first.", spotQ: "Is each of these about function notation?" },
     spot: function (R) {
@@ -790,11 +1053,19 @@
         gate: true, then: "Outside the brackets does what it says: $+k$ is up. **Inside** works backwards: $x - h$ moves it **right** by $h$." },
       { type: "choice", prompt: "Which equation shifts the graph of $y = f(x)$ 4 units to the left?",
         options: [{ t: "$y = f(x + 4)$" }, { t: "$y = f(x - 4)$", fb: "$x - 4$ moves it right. Inside works backwards." }, { t: "$y = f(x) - 4$", fb: "That moves it down 4." }, { t: "$y = f(x) + 4$", fb: "That moves it up 4." }],
-        answer: 0, hints: ["Inside the brackets works the opposite way."], why: "$f(x + 4)$ reaches each output 4 units sooner: left 4." }
+        answer: 0, hints: ["Inside the brackets works the opposite way."], why: "$f(x + 4)$ reaches each output 4 units sooner: left 4." },
+      { type: "learn", kicker: "Reading and flipping",
+        prompt: "Two more things the SAT does with functions:",
+        scene: { type: "walk", rows: [
+          { m: "f(3) \\text{ from a graph}", say: "Find 3 on the $x$-axis, go straight up or down to the curve, read the height." },
+          { m: "f(x) = 2 \\text{ from a graph}", say: "Draw the horizontal line $y = 2$: every meeting point is a solution." },
+          { m: "-f(x)", say: "Reflect across the $x$-axis (outputs flip)." }, { m: "f(-x)", say: "Reflect across the $y$-axis (inputs flip)." },
+          { m: "2f(x) \\ \\text{vs}\\ f(2x)", say: "Outside: twice as tall. Inside: squeezed to half the width." }] }, gate: true }
     ],
     gen: function (R, o) {
       if (o.form === "table") return fnTable(R);
-      if (o.form === "twist") return fnShift(R);
+      if (o.form === "graph") return fnGraph(R, o.diff);
+      if (o.form === "twist") return o.diff >= 3 ? fnReflect(R) : fnShift(R);
       return o.diff === 1 ? fnEval(R) : o.diff === 2 ? fnCompose(R) : (R.chance(0.5) ? fnTable(R) : fnCompose(R));
     }
   };
@@ -826,6 +1097,21 @@
       { id: "plugone", t: "Test with a number", rule: "Equivalent expressions agree for every $x$. Plug in an easy value (like $x = 1$ or $x = 2$) into the question and the choices; the one that matches is right.",
         when: "you're asked which expression is equivalent, or for $a + b + c$.", skills: ["m-equiv"],
         ex: "Which is equivalent to $(x + 2)^2 - 4$? A) $x^2$ B) $x^2 + 4x$", walk: W([["x = 1: 9 - 4 = 5", "The question at $x = 1$."], ["1^2 + 4(1) = 5", "Choice B matches."]]) },
+      { id: "plusminus", t: "Two square roots", rule: "Undoing a square gives two answers: $u^2 = 49 \\Rightarrow u = \\pm 7$. And $|u| = 5 \\Rightarrow u = \\pm 5$.",
+        when: "a squared expression or an absolute value equals a positive number.", skills: ["m-quad", "m-nonlin"],
+        ex: "$(x - 1)^2 = 16$", walk: W([["x - 1 = \\pm 4", "Both roots."], ["x = 5 \\;\\text{or}\\; -3", "Two solutions."]]) },
+      { id: "formula", t: "Formula when it won't factor", rule: "$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$. Square roots in the choices are the signal. Watch $-b$, and divide the whole top by $2a$.",
+        when: "a quadratic doesn't factor over the integers.", skills: ["m-quad"],
+        ex: "$x^2 - 4x + 1 = 0$", walk: W([["\\frac{4 \\pm \\sqrt{12}}{2}", "Substitute."], ["2 \\pm \\sqrt{3}", "Simplify."]]) },
+      { id: "multiplicity", t: "Touch or cross", rule: "A zero from a squared (even-power) factor touches the $x$-axis and turns; from a single (odd-power) factor it crosses.",
+        when: "matching a polynomial to its graph, or counting how its graph meets the axis.", skills: ["m-nonlin"],
+        ex: "$f(x) = x(x - 3)^2$", walk: W([["x = 0 \\ \\text{crosses},\\ x = 3 \\ \\text{touches}", "Read the powers."]]) },
+      { id: "ratexp", t: "Power over root", rule: "$x^{\\frac{m}{n}} = \\sqrt[n]{x^m}$: the bottom is the root, the top the power. $x^{-a} = \\frac{1}{x^a}$.",
+        when: "a fractional or negative exponent appears.", skills: ["m-equiv"],
+        ex: "$x^{\\frac{3}{2}}$", walk: W([["\\sqrt{x^3}", "Square root of $x$ cubed."]]) },
+      { id: "readgraph", t: "Input across, output up", rule: "$f(a)$: find $a$ on the $x$-axis and read the graph's height. $f(x) = k$: draw $y = k$ and read the $x$-values where it meets the graph.",
+        when: "a function is given only as a graph.", skills: ["m-func"],
+        ex: "How many solutions does $f(x) = 1$ have?", walk: W([["y = 1", "Draw the line."], ["\\text{count the meetings}", "Each one is a solution."]]) },
       { id: "shifts", t: "Inside works backwards", rule: "$f(x - h) + k$: the graph moves right $h$ and up $k$. Inside the brackets the sign is opposite to the direction.",
         when: "a function is shifted, or $g(x)$ is written in terms of $f$.", skills: ["m-func"],
         ex: "Shift $y = f(x)$ left 2 and down 5.", walk: W([["y = f(x + 2) - 5", "Left 2 → $+2$ inside; down 5 → $-5$ outside."]]) }

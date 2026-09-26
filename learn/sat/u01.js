@@ -819,10 +819,58 @@
       autopsy: { clue: "Both inequalities must be true.", remember: "Use the answer eliminator: cross out a point as soon as one inequality fails." }
     };
   }
+  /* A shaded half-plane: which inequality is it? Solid or dashed boundary,
+     above or below — read the picture, then check with a test point. */
+  function ineqGraph(R, diff) {
+    var m = R.pick([-2, -1, -0.5, 0.5, 1, 2, 3]), b = R.int(-3, 3), rel = R.pick([">", "<", "\\ge", "\\le"]);
+    var above = rel === ">" || rel === "\\ge", strict = rel === ">" || rel === "<";
+    var flip = { ">": "<", "<": ">", "\\ge": "\\le", "\\le": "\\ge" }, loose = { ">": "\\ge", "<": "\\le", "\\ge": ">", "\\le": "<" };
+    function iq(r, mm, bb) { return "y " + r + " " + linq(mm, bb); }
+    var test0 = 0 > m * 0 + b ? above : 0 < b ? !above : null;
+    var ok = x(iq(rel, m, b), { ok: true });
+    return {
+      stem: "Which inequality is represented by the shaded region and its boundary line in the $xy$-plane?",
+      fig: F.graph({ x: [-6, 6], y: [-6, 6], fns: [{ f: function (t) { return m * t + b; }, shade: above ? "above" : "below", dash: strict }], w: 340 }),
+      choices: [ok].concat(H.distinct(ok, [
+        x(iq(flip[rel], m, b), { err: "graph", tr: "read the shaded side backwards", why: "The shading is " + (above ? "above" : "below") + " the line, so $y$ is " + (above ? "greater" : "less") + " than the line's values. Test $(0, " + (above ? b + 2 : b - 2) + ")$ — it's in the shaded region." }),
+        x(iq(loose[rel], m, b), { err: "graph", tr: "mixed up solid and dashed boundaries", why: strict ? "The boundary is dashed, so points on the line are NOT included: a strict inequality." : "The boundary is solid, so points on the line ARE included: $\\le$ or $\\ge$." }),
+        x(iq(rel, -m, b), { err: "graph", tr: "misread the slope of the boundary", why: "The line goes " + (m > 0 ? "up" : "down") + " from left to right: its slope is " + (m > 0 ? "positive" : "negative") + "." }),
+        x(iq(rel, m, -b === b ? b + 2 : -b), { err: "graph", tr: "misread the y-intercept of the boundary", why: "The boundary crosses the $y$-axis at $" + b + "$." })], 3)),
+      hint: "Two things to read: is the boundary solid or dashed, and which side is shaded?",
+      strategy: "Dashed boundary → $<$ or $>$; solid → $\\le$ or $\\ge$. Then test a point in the shaded region (the origin, if it isn't on the line) in each choice.",
+      walk: W([["y = " + linq(m, b), "The boundary: slope " + tex(m) + ", $y$-intercept " + b + "."], [strict ? "\\text{dashed} \\to <\\text{ or }>" : "\\text{solid} \\to \\le\\text{ or }\\ge", "Is the line itself included?"], [iq(rel, m, b), "Shaded " + (above ? "above" : "below") + " the line: $y$ is " + (above ? "greater" : "less") + "."]]),
+      concept: "An inequality in two variables is a half-plane: every point on one side of the boundary line. The boundary is drawn solid when it's included and dashed when it isn't.",
+      rebuild: [
+        { q: "Is the boundary line solid or dashed?", opts: ["Solid", "Dashed"], a: strict ? 1 : 0, ok: strict ? "Dashed: $<$ or $>$." : "Solid: $\\le$ or $\\ge$." },
+        { q: "Is the shading above or below the line?", opts: ["Above", "Below"], a: above ? 0 : 1, ok: above ? "Above: $y$ is greater." : "Below: $y$ is less." },
+        { q: "The boundary is $y = " + linq(m, b) + "$. So the inequality is…", opts: ["$" + iq(rel, m, b) + "$", "$" + iq(flip[rel], m, b) + "$"], a: 0, ok: "Right." }],
+      autopsy: { hard: "Four inequalities that differ by one symbol.", trap: "Mixing up solid and dashed, or the shaded side.", clue: "Line style and shading side.", remember: "Dashed = strict. Shaded above = greater. Test $(0, 0)$ when it's off the line." }
+    };
+  }
+  function ineqCompound(R) {
+    var a = R.pick([2, 3, 4, 5]), b = R.nz(-7, 7), lo = R.int(-6, 0), hi = lo + R.int(3, 8);
+    var L0 = a * lo + b, H0 = a * hi + b, rl = R.pick(["<", "\\le"]), rh = R.pick(["<", "\\le"]);
+    function ci(l, r1, r2, h) { return l + " " + r1 + " x " + r2 + " " + h; }
+    var ok = x(ci(lo, rl, rh, hi), { ok: true });
+    return {
+      stem: "Which of the following describes all solutions to $" + L0 + " " + rl + " " + lin(a, b) + " " + rh + " " + H0 + "$?",
+      choices: [ok].concat(H.distinct(ok, [
+        x(ci(tex(L0 / a - b), rl, rh, tex(H0 / a - b)), { err: "concept", tr: "divided before undoing the constant", why: "Undo $" + sgn(b) + "$ in all three parts first, then divide all three by " + a + "." }),
+        x(ci(tex((L0 - b) / a), rl, rh, tex((H0 + b) / a)), { err: "calc", tr: "did different things to the two ends", why: "Whatever you do to the middle, do to BOTH ends: " + (b > 0 ? "subtract " + b : "add " + (-b)) + " on each side." }),
+        x(ci(L0 - b, rl, rh, H0 - b), { err: "misread", tr: "stopped before dividing", why: "That's the range of $" + a + "x$. Divide all three parts by " + a + "." }),
+        x(ci(lo, rl === "<" ? "\\le" : "<", rh === "<" ? "\\le" : "<", hi), { err: "misread", tr: "changed which ends are included", why: "Dividing by a positive number keeps each symbol exactly as it was." })], 3)),
+      hint: "A compound inequality is three parts. What do you have to do to each one?",
+      strategy: "Solve it like an equation, but do every step to all three parts. (Dividing by a negative would flip both symbols.)",
+      walk: W([[L0 + " " + rl + " " + lin(a, b) + " " + rh + " " + H0, "Three parts."], [(L0 - b) + " " + rl + " " + a + "x " + rh + " " + (H0 - b), (b > 0 ? "Subtract " + b : "Add " + (-b)) + " from every part."], [ci(lo, rl, rh, hi), "Divide every part by " + a + "."]]),
+      concept: "A compound inequality says $x$ is between two numbers. Keeping all three parts in step keeps the statement true.",
+      rebuild: [{ q: (b > 0 ? "Subtract " + b + " from" : "Add " + (-b) + " to") + " all three parts. What is the left end now?", num: L0 - b, ok: "And the right end is " + (H0 - b) + "." }, { q: "Now divide all three parts by " + a + ". The left end is…", num: lo, ok: "So $" + ci(lo, rl, rh, hi) + "$." }],
+      autopsy: { clue: "Two inequality symbols around one expression.", remember: "Do each step to all three parts." }
+    };
+  }
   var INEQ = {
     id: "a-ineq", t: "Linear inequalities", short: "Inequalities", kind: "Linear inequality",
     blurb: "Solve inequalities (and flip the sign when it matters), translate \"at most\" and \"at least\", and test points in a system.",
-    forms: ["equation", "model", "twist"],
+    forms: ["equation", "model", "twist", "graph"],
     school: { course: "alg", unit: 7, t: "Algebra I, Unit 7: Inequalities (systems & graphs)" },
     autopsy: { testing: "Linear inequalities", clue: "An inequality sign, or words like at most / at least.", remember: "Flip the sign when multiplying or dividing by a negative.", spotQ: "Is each of these an inequality question?" },
     spot: function (R) {
@@ -848,12 +896,23 @@
         prompt: "In context, the answer is often a whole number — and it must still fit.",
         scene: { type: "walk", rows: [
           { m: "80 + 25b \\le 1200", say: "A van holds at most 1,200 lb; driver 80 lb; boxes 25 lb each." },
-          { m: "b \\le 44.8", say: "Solve." }, { m: "b = 44", say: "Round **down**: 45 boxes would weigh 1,205 lb — over the limit." }] }, gate: true }
+          { m: "b \\le 44.8", say: "Solve." }, { m: "b = 44", say: "Round **down**: 45 boxes would weigh 1,205 lb — over the limit." }] }, gate: true },
+      { type: "learn", kicker: "Inequalities you can see",
+        prompt: "In the $xy$-plane an inequality is a shaded half-plane. Slide $b$ and watch; the dashed line means the boundary itself is left out.",
+        scene: { type: "plane", x: [-6, 6], y: [-6, 6], params: { b: { v: 1, min: -4, max: 4, step: 1, label: "$b$" } },
+                 fns: [{ f: "2*x + b", color: "blue", shade: "above", strict: true }],
+                 readout: function (st) { var bb = st.params.b; return "$y > 2x " + (bb < 0 ? "- " + (-bb) : "+ " + bb) + "$: shaded **above** a **dashed** line. Test $(0, 0)$: $0 > " + bb + "$ is " + (0 > bb ? "true — the origin is shaded." : "false — the origin isn't shaded.") ; } },
+        gate: true, then: "Dashed → $<$ or $>$ (line not included). Solid → $\\le$ or $\\ge$. Shaded above → $y$ is greater. Not sure? Test a point." },
+      { type: "learn", kicker: "Between two numbers",
+        prompt: "A compound inequality squeezes $x$ between two values. Do every step to **all three** parts.",
+        scene: { type: "walk", rows: [
+          { m: "-5 < 2x + 1 \\le 11", say: "Three parts." }, { m: "-6 < 2x \\le 10", say: "Subtract 1 from each." }, { m: "-3 < x \\le 5", say: "Divide each by 2." }] }, gate: true }
     ],
     gen: function (R, o) {
       if (o.form === "model") return ineqModel(R, o.diff);
       if (o.form === "twist") return ineqPoint(R, o.diff);
-      return ineqSolve(R, o.diff);
+      if (o.form === "graph") return ineqGraph(R, o.diff);
+      return o.diff >= 3 ? ineqCompound(R) : ineqSolve(R, o.diff);
     }
   };
 
@@ -881,6 +940,21 @@
       { id: "parallel", t: "Compare slopes for \"how many solutions\"", rule: "Different slopes → one solution. Same slope, different intercept → none. Same line → infinitely many.",
         when: "the question asks how many solutions, or for a constant that makes it have none.", skills: ["a-sys", "a-lin1"],
         ex: "For what $k$ do $2x + 3y = 5$ and $4x + ky = 7$ have no solution?", walk: W([["4 = 2 \\times 2", "The $x$ coefficient doubled."], ["k = 2 \\times 3 = 6", "Double the $y$ coefficient too — same slope; $7 \\ne 10$, so parallel."]]) },
+      { id: "fourq", t: "Four questions before you solve", rule: "What exactly is being asked? What have I been given? Which approach is fastest here — algebra, testing the choices, picking numbers, estimating, or graphing? And at the end: did I answer the question that was asked?",
+        when: "any question — especially one that feels long or unfamiliar.", skills: ["a-lin1", "a-sys", "d-pct", "m-quad"],
+        ex: "Some 40% acid solution is mixed with some 10% acid solution to make a 30% solution. What fraction of the mixture is the 40% solution?", walk: W([["\\text{asked: the fraction that is 40\\%}", "Circle what's asked."], ["30 \\text{ is } \\tfrac{2}{3} \\text{ of the way from 10 to 40}", "Estimate: about two thirds."], ["\\tfrac{2}{3}(40) + \\tfrac{1}{3}(10) = 30 \\;\\checkmark", "Confirm, and check it answers what was asked."]]) },
+      { id: "picknumbers", t: "Pick numbers", rule: "When the question and choices are full of variables or percents, pick easy numbers (like 10, 100, or 2), work the question with them, and see which choice gives the same result.",
+        when: "the answer choices are expressions, or a percent is applied to an unknown amount.", skills: ["m-equiv", "d-pct", "a-linf"],
+        ex: "A shop charges $c = 6b + 15$ dollars for $b$ bracelets. How much more does each additional bracelet cost?", walk: W([["b = 1 \\Rightarrow c = 21", "Pick $b = 1$."], ["b = 2 \\Rightarrow c = 27", "Pick $b = 2$."], ["27 - 21 = 6", "Each extra bracelet adds \\$6."]]) },
+      { id: "estimate", t: "Estimate first", rule: "Before calculating, guess roughly what the answer should be. Cross out choices that are far off — then any calculation only has to choose between the survivors.",
+        when: "choices are spread out, or a figure is drawn to scale.", skills: ["d-ratio", "d-pct", "g-area"],
+        ex: "About 19% of 612?", walk: W([["20\\% \\text{ of } 600 = 120", "Round both."], ["\\approx 116", "Pick the choice near 120."]]) },
+      { id: "guess", t: "Guess strategically", rule: "There's no penalty for a wrong answer. If a question is eating your time, eliminate what you can, pick from what's left, flag it, and move on.",
+        when: "a question passes your time threshold, or the module clock is almost out.", skills: ["a-lin1", "m-nonlin", "g-circle"],
+        ex: "2:30 gone on one question.", walk: W([["\\text{eliminate, guess, flag}", "Bank the question and move on; come back if there's time."]]) },
+      { id: "testpoint", t: "Test a point for the shaded side", rule: "Dashed boundary means strict ($<$, $>$); solid means $\\le$ or $\\ge$. To see which side is shaded, test a point — the origin is easiest when it's not on the line.",
+        when: "an inequality is graphed, or you must match a graph to an inequality.", skills: ["a-ineq"],
+        ex: "Which side of $y = 2x - 3$ is $y > 2x - 3$?", walk: W([["(0, 0): 0 > -3 \\checkmark", "True, so the origin's side is shaded."]]) },
       { id: "flip", t: "Flip on negatives, round for the context", rule: "Solve inequalities like equations, but reverse the sign when multiplying or dividing by a negative. In context, round to the answer that still fits.",
         when: "an inequality has a negative coefficient, or the answer must be a whole number.", skills: ["a-ineq"],
         ex: "Solve $-5x + 2 > 17$.", walk: W([["-5x > 15", "Subtract 2."], ["x < -3", "Divide by $-5$ — flip."]]) }
