@@ -85,6 +85,39 @@
       autopsy: { clue: "Two units change: meters→km and seconds→hours.", remember: "Write units on every factor; cancel them." }
     };
   }
+  function ratioDRT(R) {
+    var r = R.pick([45, 50, 55, 60, 65]), t1 = R.pick([1.5, 2, 2.5, 3]), d1 = r * t1, t2 = R.pick([4, 5, 6, 3.5]);
+    while (t2 === t1) t2 += 1;
+    var d2 = r * t2;
+    return {
+      stem: "A train travels " + num(d1) + " miles in " + num(t1) + " hours at a constant speed. At the same speed, how many miles does it travel in " + num(t2) + " hours?",
+      choices: [c(d2, { ok: true }),
+        c(H.round(d1 * t1 / t2, 2), { err: "concept", tr: "set up the proportion upside down", why: "Distance grows with time: more hours, more miles. The speed is $\\frac{" + num(d1) + "}{" + num(t1) + "} = " + r + "$ miles per hour." }),
+        c(d1 + (t2 - t1) === d2 ? d1 + t2 : d1 + (t2 - t1), { err: "concept", tr: "added the extra hours as miles", why: "Each extra hour adds " + r + " miles, not 1." }),
+        c(r, { err: "misread", tr: "gave the speed, not the distance", why: "That's miles per hour. Multiply by " + num(t2) + " hours." })],
+      hint: "How far does the train go in one hour?",
+      strategy: "Distance = rate × time. Find the rate first: $\\frac{" + num(d1) + "}{" + num(t1) + "}$.",
+      walk: W([["r = \\frac{" + num(d1) + "}{" + num(t1) + "} = " + r, "Speed in miles per hour."], ["d = " + r + " \\times " + num(t2) + " = " + num(d2), "Distance = rate × time."]]),
+      concept: "Distance, rate and time are linked by $d = rt$: know any two and you have the third.",
+      rebuild: [{ q: "What is the train's speed, in miles per hour?", num: r, ok: r + " mph." }, { q: "How far does it go in " + num(t2) + " hours?", num: d2, ok: num(d2) + " miles." }],
+      autopsy: { clue: "A distance, a time, and a new time.", remember: "$d = rt$ — find the rate first." }
+    };
+  }
+  function ratioDerived(R) {
+    var kw = R.pick([1.2, 1.5, 2, 2.5]), hrs = R.pick([4, 5, 6, 8]), price = R.pick([0.12, 0.15, 0.2, 0.25]);
+    var kwh = kw * hrs, cost = H.round(kwh * price, 2);
+    return {
+      stem: "A space heater uses " + num(kw) + " kilowatts of power. Electricity costs \\$" + price.toFixed(2) + " per kilowatt-hour. How much does it cost, in dollars, to run the heater for " + hrs + " hours?",
+      answer: cost, shown: String(cost), secs: 110,
+      near: [{ v: kwh, tr: "stopped at kilowatt-hours" }, { v: H.round(kw * price, 2), tr: "forgot the hours" }],
+      hint: "Kilowatts times hours gives kilowatt-hours. Then use the price.",
+      strategy: "Follow the units: kW × h = kWh; kWh × \\$/kWh = \\$.",
+      walk: W([[num(kw) + " \\times " + hrs + " = " + num(kwh) + "\\ \\text{kWh}", "Energy used."], [num(kwh) + " \\times " + price.toFixed(2) + " = " + cost.toFixed(2), "Cost."]]),
+      concept: "Derived units are made from others — a kilowatt-hour is a kilowatt used for an hour — and they multiply and cancel like numbers.",
+      rebuild: [{ q: "How many kilowatt-hours does it use?", num: kwh, ok: num(kwh) + " kWh." }, { q: "At \\$" + price.toFixed(2) + " each, the cost is…", num: cost, tol: 0.005, ok: "\\$" + cost.toFixed(2) + "." }],
+      autopsy: { clue: "\"Per kilowatt-hour\" — a derived unit.", remember: "Let the units tell you what to multiply." }
+    };
+  }
   var RATIO = {
     id: "d-ratio", t: "Ratios, rates & units", short: "Ratios & rates", kind: "Ratio, rate or unit conversion",
     blurb: "Scale recipes and mixtures, split totals by a ratio, and convert units by letting them cancel.",
@@ -108,12 +141,18 @@
         scene: { type: "units", start: [20, "m", "s"], target: ["km", "h"], factors: [[1, "km", 1000, "m"], [3600, "s", 1, "h"], [60, "s", 1, "min"]] },
         gate: true, then: "$\\frac{20 \\text{ m}}{1 \\text{ s}} \\times \\frac{3600 \\text{ s}}{1 \\text{ h}} \\times \\frac{1 \\text{ km}}{1000 \\text{ m}} = 72 \\text{ km/h}$. Each factor is worth 1, so the speed never changed — only its units." },
       { type: "num", prompt: "A ratio of red to blue marbles is $2 : 5$, and there are 42 marbles in all. How many are blue?", answer: 30,
-        near: [{ v: 12, fb: "That's the red ones." }, { v: 105, fb: "42 is the total, not the red part: $2 + 5 = 7$ shares." }], hints: ["$2 + 5 = 7$ shares.", "One share is $42 \\div 7 = 6$."], why: "$42 \\div 7 = 6$ per share; blue is $5 \\times 6 = 30$." }
+        near: [{ v: 12, fb: "That's the red ones." }, { v: 105, fb: "42 is the total, not the red part: $2 + 5 = 7$ shares." }], hints: ["$2 + 5 = 7$ shares.", "One share is $42 \\div 7 = 6$."], why: "$42 \\div 7 = 6$ per share; blue is $5 \\times 6 = 30$." },
+      { type: "learn", kicker: "Rates you'll meet",
+        prompt: "Two more rate ideas the SAT uses:",
+        scene: { type: "walk", rows: [
+          { m: "d = rt", say: "Distance = rate × time. 150 miles in 2.5 hours is 60 mph; in 4 hours that's 240 miles." },
+          { m: "\\text{kW} \\times \\text{h} = \\text{kWh}", say: "Derived units multiply like numbers: 1.5 kW for 6 hours is 9 kWh." },
+          { m: "9\\ \\text{kWh} \\times \\$0.20/\\text{kWh} = \\$1.80", say: "Units cancel down to dollars." }] }, gate: true }
     ],
     gen: function (R, o) {
-      if (o.form === "model") return ratioUnits(R, o.diff);
-      if (o.form === "twist") return ratioParts(R);
-      return o.diff >= 3 ? ratioUnits(R, 3) : o.diff === 2 ? ratioParts(R) : ratioRecipe(R);
+      if (o.form === "model") return o.diff === 1 ? ratioDRT(R) : o.diff === 2 ? ratioUnits(R, 2) : ratioDerived(R);
+      if (o.form === "twist") return o.diff >= 3 ? ratioUnits(R, 3) : ratioParts(R);
+      return o.diff >= 3 ? ratioUnits(R, 3) : o.diff === 2 ? (R.chance(0.5) ? ratioParts(R) : ratioDRT(R)) : ratioRecipe(R);
     }
   };
 
@@ -122,10 +161,10 @@
     var P = R.pick([40, 60, 80, 120, 160, 240]), p = R.pick([10, 15, 20, 25, 30, 40]), off = P * p / 100, sale = P - off;
     return {
       stem: "A jacket normally costs " + money(P) + ". During a sale, its price is reduced by " + p + "%. What is the sale price?",
-      choices: [H.c(sale, { ok: true, t: "$\\$" + num(sale) + "$" }),
-        H.c(off, { t: "$\\$" + num(off) + "$", err: "misread", tr: "gave the discount, not the new price", why: "That's how much is taken off. The sale price is what's left." }),
-        H.c(P - p, { t: "$\\$" + num(P - p) + "$", err: "concept", tr: "subtracted the percent as dollars", why: p + "% of " + money(P) + " is " + money(off) + ", not " + money(p) + "." }),
-        H.c(P + off, { t: "$\\$" + num(P + off) + "$", err: "misread", tr: "increased instead of decreasing", why: "A reduction makes the price smaller." })],
+      choices: [H.c(sale, { ok: true, t: "$" + H.money(sale) + "$" }),
+        H.c(off, { t: "$" + H.money(off) + "$", err: "misread", tr: "gave the discount, not the new price", why: "That's how much is taken off. The sale price is what's left." }),
+        H.c(P - p, { t: "$" + H.money(P - p) + "$", err: "concept", tr: "subtracted the percent as dollars", why: p + "% of " + money(P) + " is " + money(off) + ", not " + money(p) + "." }),
+        H.c(P + off, { t: "$" + H.money(P + off) + "$", err: "misread", tr: "increased instead of decreasing", why: "A reduction makes the price smaller." })],
       hint: "What percent of the price is left after the sale?",
       strategy: "A " + p + "% decrease leaves " + (100 - p) + "%: multiply by $" + num(1 - p / 100) + "$ in one step.",
       walk: W([[num(P) + " \\times " + num(1 - p / 100) + " = " + num(sale), "Keep " + (100 - p) + "%."]]),
@@ -153,10 +192,10 @@
     var orig = R.pick([40, 50, 60, 75, 80, 120, 150]), p = R.pick([10, 20, 25, 40]), sale = orig * (1 - p / 100);
     return {
       stem: "After a " + p + "% discount, a pair of shoes costs " + money(sale) + ". What was the price before the discount?",
-      choices: [H.c(orig, { ok: true, t: "$\\$" + num(orig) + "$" }),
-        H.c(H.round(sale * (1 + p / 100), 2), { t: "$\\$" + num(H.round(sale * (1 + p / 100), 2)) + "$", err: "concept", tr: "added the percent back to the sale price", why: p + "% of the sale price isn't " + p + "% of the original. The sale price is " + (100 - p) + "% of the original: divide by " + num(1 - p / 100) + "." }),
-        H.c(sale + p, { t: "$\\$" + num(sale + p) + "$", err: "concept", tr: "added the percent as dollars", why: "The discount was " + p + "% of the original price, not " + money(p) + "." }),
-        H.c(H.round(sale * (1 - p / 100), 2), { t: "$\\$" + num(H.round(sale * (1 - p / 100), 2)) + "$", err: "misread", tr: "applied the discount again", why: "The discount has already been taken. Work backwards." })],
+      choices: [H.c(orig, { ok: true, t: "$" + H.money(orig) + "$" }),
+        H.c(H.round(sale * (1 + p / 100), 2), { t: "$" + H.money(H.round(sale * (1 + p / 100), 2)) + "$", err: "concept", tr: "added the percent back to the sale price", why: p + "% of the sale price isn't " + p + "% of the original. The sale price is " + (100 - p) + "% of the original: divide by " + num(1 - p / 100) + "." }),
+        H.c(sale + p, { t: "$" + H.money(sale + p) + "$", err: "concept", tr: "added the percent as dollars", why: "The discount was " + p + "% of the original price, not " + money(p) + "." }),
+        H.c(H.round(sale * (1 - p / 100), 2), { t: "$" + H.money(H.round(sale * (1 - p / 100), 2)) + "$", err: "misread", tr: "applied the discount again", why: "The discount has already been taken. Work backwards." })],
       hint: "The sale price is what percent of the original?",
       strategy: "Sale price $= " + num(1 - p / 100) + " \\times$ original, so original $= \\frac{\\text{sale price}}{" + num(1 - p / 100) + "}$.",
       walk: W([[num(1 - p / 100) + "x = " + num(sale), "The sale price is " + (100 - p) + "% of the original."], ["x = " + num(orig), "Divide by " + num(1 - p / 100) + "."]]),
@@ -197,6 +236,21 @@
       autopsy: { trap: "Thinking the changes cancel.", clue: "Two percent changes in a row.", remember: "Multiply the multipliers — or test with 100." }
     };
   }
+  function pctTaxTip(R) {
+    var meal = R.pick([40, 48, 60, 64, 75, 80]), tax = R.pick([6, 8, 10]), tip = R.pick([15, 18, 20]);
+    var total = H.round(meal * (1 + tax / 100 + tip / 100), 2);
+    return {
+      stem: "A restaurant bill is " + money(meal) + " before tax. The sales tax is " + tax + "%, and a tip of " + tip + "% of the pre-tax amount is added. What is the total amount paid, in dollars?",
+      answer: total, shown: String(total), secs: 100,
+      near: [{ v: H.round(meal * (1 + tax / 100) * (1 + tip / 100), 2), tr: "took the tip on the taxed amount" }, { v: meal + tax + tip, tr: "added the percents as dollars" }],
+      hint: "Both the tax and the tip are percents of the same " + money(meal) + ".",
+      strategy: "Add the percents that share a base: " + money(meal) + " × (1 + " + num(tax / 100) + " + " + num(tip / 100) + ").",
+      walk: W([[num(meal) + " \\times " + num(tax / 100) + " = " + num(meal * tax / 100), "Tax."], [num(meal) + " \\times " + num(tip / 100) + " = " + num(meal * tip / 100), "Tip on the pre-tax amount."], [num(meal) + " + " + num(meal * tax / 100) + " + " + num(meal * tip / 100) + " = " + num(total), "Total."]]),
+      concept: "Percents of the same amount can be added before multiplying; percents applied one after another must be multiplied.",
+      rebuild: [{ q: "What is the tax, in dollars?", num: meal * tax / 100, ok: "Now the tip." }, { q: "What is the tip, in dollars?", num: meal * tip / 100, ok: "Now add everything." }, { q: "Total paid:", num: total, tol: 0.005, ok: money(total) + "." }],
+      autopsy: { trap: "Taking the tip on the taxed amount.", clue: "\"Of the pre-tax amount\".", remember: "Same base → add the percents first." }
+    };
+  }
   var PCT = {
     id: "d-pct", t: "Percentages", short: "Percentages", kind: "Percent or percent change",
     blurb: "Discounts, increases, percent change from the original, working backwards, and why +20% then −20% isn't zero.",
@@ -225,7 +279,7 @@
         answer: 0, hints: ["Try it with \\$100."], why: "$1.1 \\times 0.9 = 0.99$: 1% less." }
     ],
     gen: function (R, o) {
-      if (o.form === "model") return o.diff >= 2 ? pctReverse(R) : pctSale(R);
+      if (o.form === "model") return o.diff === 1 ? pctSale(R) : o.diff === 2 ? pctTaxTip(R) : pctReverse(R);
       if (o.form === "twist") return pctChain(R);
       return o.diff === 1 ? pctSale(R) : o.diff === 2 ? pctChange(R) : pctReverse(R);
     }
@@ -325,10 +379,90 @@
       autopsy: { hard: "It sounds like a big calculation.", clue: "\"Compare the standard deviations\" — compare spread by eye.", remember: "Standard deviation = spread. Compare, don't compute." }
     };
   }
+  function dataFreq(R, diff) {
+    var vals = [], lo = R.int(0, 3);
+    for (var v = lo; v < lo + 5; v++) vals.push(v);
+    var fr = vals.map(function () { return R.int(1, 7); }), n = fr.reduce(function (a, b) { return a + b; }, 0);
+    var all = []; vals.forEach(function (v, i) { for (var k = 0; k < fr[i]; k++) all.push(v); });
+    var st = stats(all), askMean = diff >= 2 && R.chance(0.5);
+    var what = R.pick(["number of pets", "number of siblings", "number of books read"]);
+    var right = askMean ? H.round(st.mean, 2) : st.med;
+    var cands = [c(right, { ok: true }),
+      c(askMean ? H.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length, 2) : vals[2], { err: "concept", tr: "ignored the frequencies", why: "Each value counts as many times as its frequency: there are " + n + " data values, not 5." }),
+      c(askMean ? st.med : H.round(st.mean, 2), { err: "concept", tr: askMean ? "gave the median instead of the mean" : "gave the mean instead of the median", why: askMean ? "The mean is the total of all " + n + " values divided by " + n + "." : "The median is the middle value of the " + n + " data values in order." }),
+      c(fr.slice().sort(function (a, b) { return a - b; })[2], { err: "misread", tr: "found the middle of the frequency column", why: "The frequencies are counts, not data values. The data are the values in the first column." }),
+      c(vals[fr.indexOf(Math.max.apply(null, fr))], { err: "concept", tr: "gave the mode", why: "That's the most common value." })];
+    var ok = cands[0];
+    return {
+      stem: "The frequency table summarizes the " + what + " reported by " + n + " students. What is the " + (askMean ? "mean" : "median") + " of the data?" + (askMean ? " (Round to the nearest hundredth if needed.)" : ""),
+      fig: F.table({ head: ["Number", "Frequency"], rows: vals.map(function (v, i) { return [String(v), String(fr[i])]; }) }),
+      choices: [ok].concat(H.distinct(ok, cands.slice(1), 3)),
+      hint: "How many data values are there in all? Each row's value appears as many times as its frequency.",
+      strategy: askMean ? "Mean = (sum of value × frequency) ÷ (total frequency)." : "Total frequency " + n + ": the median is value number " + ((n + 1) / 2) + " in order — count down the frequencies to reach it.",
+      walk: askMean ? W([["\\sum vf = " + st.sum, "Each value times its frequency, added."], ["\\frac{" + st.sum + "}{" + n + "} = " + num(H.round(st.mean, 2)), "Divide by the number of values."]])
+        : W([["n = " + n, "Add the frequencies."], [n % 2 ? "\\text{value } " + ((n + 1) / 2) : "\\text{values } " + (n / 2) + "\\text{ and } " + (n / 2 + 1), "The middle position."], ["\\text{median} = " + num(st.med), "Count down the frequency column."]]),
+      concept: "A frequency table is a compressed data set: the value " + vals[0] + " with frequency " + fr[0] + " means " + fr[0] + " data values of " + vals[0] + ".",
+      rebuild: [{ q: "How many data values are there?", num: n, ok: n + " students." }, askMean ? { q: "What is the sum of all the values?", num: st.sum, ok: "Now divide by " + n + "." } : { q: "Counting down, which value is in the middle position?", num: st.med, ok: "Median $= " + num(st.med) + "$." }],
+      autopsy: { trap: "Treating the frequencies as the data.", clue: "A \"Frequency\" column.", remember: "Frequency = how many times that value occurs." }
+    };
+  }
+  function dataBox(R) {
+    var mn = R.int(5, 20), q1 = mn + R.int(3, 8), md = q1 + R.int(2, 6), q3 = md + R.int(2, 7), mx = q3 + R.int(3, 10);
+    var ask = R.pick(["range", "median", "iqr"]);
+    var right = ask === "range" ? mx - mn : ask === "median" ? md : q3 - q1;
+    var lo = Math.floor((mn - 3) / 5) * 5, hi = Math.ceil((mx + 3) / 5) * 5;
+    var labels = { range: "range", median: "median", iqr: "interquartile range (the difference between the third and first quartiles)" };
+    var cands = [c(right, { ok: true }),
+      c(ask === "median" ? (q1 + q3) / 2 === md ? md + 1 : (q1 + q3) / 2 : md, { err: "graph", tr: ask === "median" ? "took the middle of the box as the median" : "gave the median", why: ask === "median" ? "The median is the line inside the box, which needn't be in its center." : "The line inside the box is the median, not the " + labels[ask] + "." }),
+      c(ask === "range" ? q3 - q1 : mx - mn, { err: "concept", tr: ask === "range" ? "gave the width of the box" : "gave the whole range", why: ask === "range" ? "The range runs from the end of one whisker to the other: max − min." : "The box alone shows the middle half: $Q_3 - Q_1$." }),
+      c(ask === "median" ? (mn + mx) / 2 : mx, { err: "graph", tr: ask === "median" ? "took the middle of the whiskers" : "gave the maximum", why: "Read the five numbers: min " + mn + ", $Q_1$ " + q1 + ", median " + md + ", $Q_3$ " + q3 + ", max " + mx + "." })];
+    var ok = cands[0];
+    return {
+      stem: "The box plot summarizes the scores of a class on a quiz. What is the " + labels[ask] + " of the scores?",
+      fig: F.box({ five: [mn, q1, md, q3, mx], x: [lo, hi], xl: "Quiz score", step: (hi - lo) > 40 ? 10 : 5 }),
+      choices: [ok].concat(H.distinct(ok, cands.slice(1), 3)),
+      hint: "A box plot shows five numbers: minimum, first quartile, median, third quartile, maximum.",
+      strategy: "Whisker ends = min and max. Box edges = $Q_1$ and $Q_3$. Line in the box = median. Range = max − min; IQR = $Q_3 - Q_1$.",
+      walk: W([["\\text{min } " + mn + ",\\ Q_1\\ " + q1 + ",\\ \\text{median } " + md + ",\\ Q_3\\ " + q3 + ",\\ \\text{max } " + mx, "Read the five numbers."], [ask === "range" ? mx + " - " + mn + " = " + right : ask === "median" ? "\\text{median} = " + md : q3 + " - " + q1 + " = " + right, "Answer."]]),
+      concept: "A box plot splits the data into quarters: each whisker and each half of the box holds about a quarter of the values.",
+      rebuild: [{ q: "Where is the median on a box plot?", opts: ["The line inside the box", "The middle of the box", "The end of the right whisker"], a: 0, ok: "The five numbers are min, $Q_1$, median, $Q_3$, max." }, { q: "So the " + labels[ask].split(" (")[0] + " is…", num: right, ok: String(right) + "." }],
+      autopsy: { clue: "A box plot.", remember: "Five numbers: min, $Q_1$, median, $Q_3$, max." }
+    };
+  }
+  function dataHist(R) {
+    var edges = [0, 10, 20, 30, 40, 50], cnts = edges.slice(0, 5).map(function () { return R.int(2, 12); });
+    var n = cnts.reduce(function (a, b) { return a + b; }, 0), pos = (n + 1) / 2, cum = 0, mi = 0;
+    for (var i = 0; i < 5; i++) { if (cum + cnts[i] >= Math.ceil(pos) && cum < Math.floor(pos) + 1) { mi = i; break; } cum += cnts[i]; }
+    // make sure the median is not split across two bars
+    cum = 0; var lowIx = -1, highIx = -1;
+    for (i = 0; i < 5; i++) { if (lowIx < 0 && cum + cnts[i] >= Math.floor(pos)) lowIx = i; if (highIx < 0 && cum + cnts[i] >= Math.ceil(pos)) highIx = i; cum += cnts[i]; }
+    if (lowIx !== highIx) { cnts[highIx]++; n++; return dataHist(R); }
+    mi = lowIx;
+    var modeIx = cnts.indexOf(Math.max.apply(null, cnts));
+    function lab(k) { return edges[k] + " to less than " + edges[k + 1]; }
+    var ok = w(lab(mi), { ok: true });
+    return {
+      stem: "The histogram shows the number of minutes " + n + " students spent on homework one evening. Which interval contains the median time?",
+      fig: F.bars({ vals: cnts, hist: true, edges: edges, xl: "Minutes", yl: "Students", ys: 2 }),
+      choices: [ok].concat(H.distinct(ok, [
+        w(lab(modeIx), { err: "concept", tr: "chose the tallest bar", why: "The tallest bar holds the most values (the mode's interval). The median is the middle value in order." }),
+        w(lab(2), { err: "graph", tr: "chose the middle of the axis", why: "The middle interval of the axis isn't the middle of the data. Count the students." }),
+        w(lab(mi === 0 ? 1 : mi - 1), { err: "calc", tr: "miscounted the running total", why: "Add the bars from the left until you pass value number " + Math.ceil(pos) + "." }),
+        w(lab(mi === 4 ? 3 : mi + 1), { err: "calc", tr: "miscounted the running total", why: "Add the bars from the left until you pass value number " + Math.ceil(pos) + "." })].concat([0, 1, 2, 3, 4].map(function (k) {
+          return w(lab(k), { err: "calc", tr: "miscounted the running total", why: "Add the bars from the left until you pass value number " + Math.ceil(pos) + "." }); })), 3)),
+      order: "keep",
+      hint: "How many students are there? Which position is the middle one?",
+      strategy: "Add up the bars for $n$; the median is value number $\\frac{n + 1}{2}$. Keep a running total from the left until you reach it.",
+      walk: W([["n = " + n, "Add every bar."], ["\\frac{" + n + " + 1}{2} = " + num(pos), "The middle position."], ["\\text{running total reaches it in } " + edges[mi] + "\\text{–}" + edges[mi + 1], "Count from the left."]]),
+      concept: "A histogram groups values into intervals; the median is still the middle value — found by counting, not by the tallest bar.",
+      rebuild: [{ q: "How many students are there in all?", num: n, ok: "The median is value number " + num(pos) + "." }, { q: "Counting from the left, which interval holds that value?", opts: [lab(mi), lab(modeIx === mi ? (mi + 1) % 5 : modeIx)], a: 0, ok: "Right." }],
+      autopsy: { trap: "Picking the tallest bar.", clue: "\"Which interval contains the median\".", remember: "Median = middle position; count the bars." }
+    };
+  }
   var ONEVAR = {
     id: "d-onevar", t: "One-variable data", short: "Mean, median, spread", kind: "Center and spread of data",
     blurb: "Mean, median, mode and range from dot plots and lists, missing values, outliers, and comparing spread without calculating.",
-    forms: ["graph", "word", "twist"],
+    forms: ["graph", "word", "twist", "table"],
     school: { course: "g8", unit: 7, t: "8th Grade Math, Unit 7: Data and modeling" },
     autopsy: { testing: "Measures of center and spread", clue: "Mean, median, range or standard deviation of a data set.", remember: "Median: middle of the ordered data. Mean: total ÷ count. SD: spread.", spotQ: "Is each of these about center or spread?" },
     spot: function (R) {
@@ -351,10 +485,17 @@
           { m: "9,\\ 10,\\ 10,\\ 10,\\ 11", say: "Tightly packed around 10: small standard deviation." },
           { m: "4,\\ 7,\\ 10,\\ 13,\\ 16", say: "Same mean, much more spread: larger standard deviation." }] }, gate: true },
       { type: "num", prompt: "The mean of 5 test scores is 82. Four of them are 78, 85, 90 and 74. What is the fifth score?", answer: 83,
-        near: [{ v: 82, fb: "The missing score doesn't have to equal the mean. Find the total first." }], hints: ["Total $= 82 \\times 5 = 410$."], why: "$410 - (78 + 85 + 90 + 74) = 410 - 327 = 83$." }
+        near: [{ v: 82, fb: "The missing score doesn't have to equal the mean. Find the total first." }], hints: ["Total $= 82 \\times 5 = 410$."], why: "$410 - (78 + 85 + 90 + 74) = 410 - 327 = 83$." },
+      { type: "learn", kicker: "Other ways data is shown",
+        prompt: "The same data can come as a frequency table, a histogram or a box plot:",
+        scene: { type: "walk", rows: [
+          { m: "\\text{frequency table}", say: "Value 3 with frequency 4 means **four** data values of 3. Count the frequencies to get $n$." },
+          { m: "\\text{histogram}", say: "Bars count values in intervals. The median is the middle position — count from the left, not the tallest bar." },
+          { m: "\\text{box plot}", say: "Five numbers: min, $Q_1$, median (the line in the box), $Q_3$, max. Range = max − min; IQR = $Q_3 - Q_1$." }] }, gate: true }
     ],
     gen: function (R, o) {
-      if (o.form === "graph") return dataDot(R, o.diff);
+      if (o.form === "graph") return o.diff === 1 ? dataDot(R, 1) : o.diff === 2 ? dataHist(R) : dataBox(R);
+      if (o.form === "table") return dataFreq(R, o.diff);
       if (o.form === "twist") return o.diff >= 2 ? dataSpread(R) : dataOutlier(R);
       return o.diff === 1 ? dataMissing(R) : o.diff === 2 ? dataOutlier(R) : dataSpread(R);
     }
@@ -421,6 +562,29 @@
       autopsy: { clue: "\"Actual minus predicted\".", remember: "Residual = actual − predicted." }
     };
   }
+  function twoModel(R) {
+    var kind = R.pick(["lin+", "lin-", "exp+", "exp-", "quad"]), pts = [];
+    for (var i = 1; i <= 10; i++) {
+      var y = kind === "lin+" ? 4 + 3 * i : kind === "lin-" ? 36 - 3 * i : kind === "exp+" ? 2 * Math.pow(1.38, i) : kind === "exp-" ? 40 * Math.pow(0.75, i) : 3 + 1.4 * (i - 5.5) * (i - 5.5);
+      pts.push([i, Math.max(0.5, Math.round((y + (R.next() - 0.5) * 2.2) * 2) / 2)]);
+    }
+    var names = { "lin+": "Linear, increasing", "lin-": "Linear, decreasing", "exp+": "Exponential, increasing", "exp-": "Exponential, decreasing", quad: "Quadratic" };
+    var why = { "lin+": "rises by about the same amount each step", "lin-": "falls by about the same amount each step", "exp+": "rises slowly, then faster and faster", "exp-": "falls quickly at first, then levels off", quad: "falls, turns, and rises again — a U shape" };
+    var others = Object.keys(names).filter(function (k) { return k !== kind; });
+    var pick3 = R.shuffle(others).slice(0, 3);
+    var yMax = Math.ceil(Math.max.apply(null, pts.map(function (p) { return p[1]; })) / 10) * 10 + 5;
+    return {
+      stem: "Which type of function best models the relationship between $x$ and $y$ shown in the scatterplot?",
+      fig: F.scatter({ x: [0, 11], y: [0, yMax], xs: 1, pts: pts, xl: "x", yl: "y" }),
+      choices: [w(names[kind], { ok: true })].concat(pick3.map(function (k) { return w(names[k], { err: "graph", tr: "misjudged the shape of the data", why: "A " + names[k].toLowerCase() + " pattern " + why[k] + ". These points " + why[kind] + "." }); })),
+      hint: "Does $y$ change by about the same amount each step, by a growing amount, or does it turn around?",
+      strategy: "Same change each step → linear. Change that keeps growing (or shrinking toward a level) → exponential. Down then up (or up then down) → quadratic.",
+      walk: W([["\\text{shape}", "The points " + why[kind] + "."], ["\\text{" + names[kind] + "}", "That's the model."]]),
+      concept: "Linear models add a constant amount, exponential models multiply by a constant factor, quadratic models turn around at a vertex.",
+      rebuild: [{ q: "Does the pattern turn around (go down then up, or up then down)?", opts: ["Yes", "No"], a: kind === "quad" ? 0 : 1, ok: kind === "quad" ? "A turn means quadratic." : "No turn — so linear or exponential." }, { q: "Which describes the points?", opts: [names[kind], names[pick3[0]]], a: 0, ok: "Right." }],
+      autopsy: { clue: "The overall shape of the cloud of points.", remember: "Constant change: linear. Growing change: exponential. A turn: quadratic." }
+    };
+  }
   var TWOVAR = {
     id: "d-twovar", t: "Two-variable data & models", short: "Scatterplots", kind: "Scatterplot & line of best fit",
     blurb: "Predict with a line of best fit, say what its slope means (predicted, not exact), and find how far a point is from the model.",
@@ -446,12 +610,17 @@
         prompt: "A **residual** is actual − predicted.",
         scene: { type: "walk", rows: [
           { m: "(6, 19)", say: "A real data point." }, { m: "\\hat{y} = 2.5(6) + 5 = 20", say: "What the line predicts at $x = 6$." },
-          { m: "19 - 20 = -1", say: "Residual $-1$: the point is 1 below the line." }] }, gate: true }
+          { m: "19 - 20 = -1", say: "Residual $-1$: the point is 1 below the line." }] }, gate: true },
+      { type: "learn", kicker: "Not every cloud is a line",
+        prompt: "Look at the shape before fitting anything:",
+        scene: { type: "walk", rows: [
+          { m: "\\text{linear}", say: "About the same change each step." }, { m: "\\text{exponential}", say: "Slow, then faster and faster (or a fast drop that levels off)." },
+          { m: "\\text{quadratic}", say: "Turns around — a U or an upside-down U." }] }, gate: true }
     ],
     gen: function (R, o) {
       if (o.form === "graph") return twoPredict(R);
       if (o.form === "model") return twoSlope(R);
-      return o.diff >= 3 ? twoResidual(R) : twoSlope(R);
+      return o.diff >= 3 ? twoResidual(R) : twoModel(R);
     }
   };
 
@@ -685,6 +854,15 @@
       { id: "predicted", t: "The line predicts", rule: "Use the equation of the line of best fit, not a data point. Its slope is a *predicted* change per unit.",
         when: "a scatterplot with a line of best fit.", skills: ["d-twovar"],
         ex: "$y = 2.5x + 5$: predict at $x = 6$.", walk: W([["2.5(6) + 5 = 20", "The line's value."]]) },
+      { id: "drt", t: "Distance = rate × time", rule: "For motion (and any \"per\" rate): find the rate first, then multiply by the new time. Derived units like kilowatt-hours multiply the same way.",
+        when: "a rate and a time, or a unit built from two others.", skills: ["d-ratio"],
+        ex: "120 miles in 2 hours; how far in 5?", walk: W([["r = 60", "Miles per hour."], ["60 \\times 5 = 300", "Miles."]]) },
+      { id: "frequency", t: "Count the data, not the rows", rule: "In a frequency table or histogram, $n$ is the sum of the frequencies. The median is value number $\\frac{n+1}{2}$ — count down to it.",
+        when: "data comes as a frequency table, histogram, or box plot.", skills: ["d-onevar"],
+        ex: "Values 1–5 with frequencies 2, 3, 6, 4, 1.", walk: W([["n = 16", "Add the frequencies."], ["\\text{median: 8th and 9th values} = 3", "Count down."]]) },
+      { id: "modelshape", t: "Read the shape first", rule: "Before fitting a model, look: constant change → linear; ever-growing change → exponential; a turn → quadratic.",
+        when: "choosing a model for a scatterplot or a table.", skills: ["d-twovar", "m-exp"],
+        ex: "Points that double each step.", walk: W([["\\times 2 \\text{ each step}", "Exponential."]]) },
       { id: "givengroup", t: "\"Given\" is the denominator", rule: "In conditional probability, the group you're told about is the denominator.",
         when: "\"If a student who … is selected\", \"given that\".", skills: ["d-prob"],
         ex: "15 of 50 juniors chose drama. P(drama | junior)?", walk: W([["\\frac{15}{50}", "Divide by the juniors."]]) },

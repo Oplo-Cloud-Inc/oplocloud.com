@@ -38,7 +38,7 @@ window.OPLO_LAB = (function () {
     "lab/widgets.js": "ed7a4947",
     "lab/bizkit.js": "78131d29",
     "lab/histkit.js": "3bf034b8",
-    "lab/satkit.js": "e5462326",
+    "lab/satkit.js": "0815b9c7",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
@@ -46,10 +46,10 @@ window.OPLO_LAB = (function () {
     "biz/u01.js": "5c45e6c8",
     "biz/u02.js": "df0245cf",
     "hist/u01.js": "647c1892",
-    "sat/u01.js": "957ce5e5",
-    "sat/u02.js": "c2e3f9ad",
-    "sat/u03.js": "e6cc9a6a",
-    "sat/u04.js": "54d9a3ba"
+    "sat/u01.js": "71ec9896",
+    "sat/u02.js": "f73eb842",
+    "sat/u03.js": "f1c87358",
+    "sat/u04.js": "75ed1181"
   };
 
   /* ------------------------------------------------------------ Helpers */

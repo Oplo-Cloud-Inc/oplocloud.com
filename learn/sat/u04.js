@@ -10,6 +10,9 @@
   var L = window.OPLO_LAB, S = L && L.SAT;
   if (!S || !S.domain) return;
   var H = S.h, F = S.fig, c = H.c, x = H.x, w = H.w, tex = H.tex, W = H.walk, num = L.num;
+  var lin = H.lin;
+  function sgn(v) { return v < 0 ? "- " + Math.abs(v) : "+ " + v; }
+  function plural(n, w1) { return n + " " + w1 + (n === 1 ? "" : "s"); }
   function pi(k) { return k === 1 ? "\\pi" : tex(k) + "\\pi"; }            // kπ as TeX
   function cpi(k, o) { return Object.assign({ t: "$" + pi(k) + "$", v: k }, o || {}); }   // a choice worth kπ
   function deg(v) { return num(v) + "°"; }
@@ -84,6 +87,26 @@
       autopsy: { clue: "A shape with a piece missing.", remember: "Whole − missing." }
     };
   }
+  function areaSurface(R) {
+    var l = R.int(3, 10), wv = R.int(2, 8), h = R.int(2, 9);
+    while (wv === l) wv = R.int(2, 8);
+    while (h === l || h === wv) h = R.int(2, 9);
+    var SA = 2 * (l * wv + l * h + wv * h), V = l * wv * h;
+    return {
+      stem: "A closed rectangular box is " + l + " inches long, " + wv + " inches wide and " + h + " inches tall. What is the total surface area of the box, in square inches?",
+      fig: F.solid({ kind: "box", labels: { l: String(l), w: String(wv), h: String(h) } }),
+      choices: [c(SA, { ok: true }),
+        c(V, { err: "formula", tr: "found the volume instead", why: "Volume fills the box ($ℓwh$); surface area covers its six faces." }),
+        c(SA / 2, { err: "formula", tr: "counted each pair of faces once", why: "A box has six faces in three matching pairs: double each area." }),
+        c(4 * (l + wv + h) === SA ? SA + 4 : 4 * (l + wv + h), { err: "formula", tr: "added the edges instead of face areas", why: "Surface area adds the areas of the faces, not lengths." })],
+      hint: "How many faces does a box have, and which of them match?",
+      strategy: "Surface area $= 2(ℓw + ℓh + wh)$: three different faces, each appearing twice. (This one is NOT on the reference sheet.)",
+      walk: W([[l + " \\times " + wv + " = " + (l * wv) + ",\\ " + l + " \\times " + h + " = " + (l * h) + ",\\ " + wv + " \\times " + h + " = " + (wv * h), "The three different faces."], ["2(" + (l * wv) + " + " + (l * h) + " + " + (wv * h) + ") = " + SA, "Each appears twice."]]),
+      concept: "Surface area is the total area of every face — imagine unfolding the box flat and measuring the paper.",
+      rebuild: [{ q: "What is the area of the top (" + l + " by " + wv + ")?", num: l * wv, ok: "The bottom matches it." }, { q: "Add the three different faces: " + (l * wv) + " + " + (l * h) + " + " + (wv * h) + " =", num: l * wv + l * h + wv * h, ok: "Now double it." }, { q: "Total surface area:", num: SA, ok: SA + " square inches." }],
+      autopsy: { trap: "Giving the volume.", clue: "\"Surface area\" — the outside.", remember: "$2(ℓw + ℓh + wh)$." }
+    };
+  }
   var AREA = {
     id: "g-area", t: "Area & volume", short: "Area & volume", kind: "Area or volume",
     blurb: "Areas of composite figures, volumes of cylinders, prisms, cones and spheres, and what scaling does to them.",
@@ -106,13 +129,18 @@
         prompt: "Double every length of a cube, and look what happens:",
         scene: { type: "walk", rows: [
           { m: "\\text{edge } 1 \\to 2", say: "Lengths ×2." }, { m: "\\text{face } 1 \\to 4", say: "Areas ×$2^2 = 4$." }, { m: "\\text{volume } 1 \\to 8", say: "Volumes ×$2^3 = 8$." }] }, gate: true },
+      { type: "learn", kicker: "Surface area",
+        prompt: "Surface area covers the outside — and its formula is **not** on the reference sheet, so build it:",
+        scene: { type: "walk", rows: [
+          { m: "\\text{box } 5 \\times 3 \\times 2", say: "Six faces, in three matching pairs." }, { m: "15,\\ 10,\\ 6", say: "The three different faces." },
+          { m: "2(15 + 10 + 6) = 62", say: "Each pair counted twice." }, { m: "\\text{cylinder: } 2\\pi r^2 + 2\\pi r h", say: "Two circles plus the label, unrolled into a rectangle." }] }, gate: true },
       { type: "choice", prompt: "The radius of a sphere is tripled. Its volume is multiplied by…",
         options: [{ t: "$27$" }, { t: "$3$", fb: "Volume is three-dimensional: $3^3$." }, { t: "$9$", fb: "That's for area: $3^2$." }, { t: "$\\frac{4}{3} \\cdot 3$", fb: "The $\\frac{4}{3}\\pi$ doesn't change; only $r^3$ does." }],
         answer: 0, hints: ["$V = \\frac{4}{3}\\pi r^3$ — what happens to $r^3$?"], why: "$(3r)^3 = 27r^3$." }
     ],
     gen: function (R, o) {
-      if (o.form === "word") return o.diff >= 2 ? areaComposite(R) : areaRect(R);
-      if (o.form === "twist") return areaScale(R);
+      if (o.form === "word") return o.diff === 1 ? areaRect(R) : o.diff === 2 ? areaComposite(R) : areaSurface(R);
+      if (o.form === "twist") return o.diff >= 3 ? areaSurface(R) : areaScale(R);
       return o.diff === 1 ? areaRect(R) : o.diff === 2 ? areaCyl(R) : areaComposite(R);
     }
   };
@@ -208,6 +236,87 @@
       autopsy: { clue: "Every angle is described using $B$.", remember: "Triangle: $A + B + C = 180°$." }
     };
   }
+  /* Two crossing lines with two of their angles marked: vertical (opposite)
+     or a linear pair (side by side). Drawn with the marked angle kept
+     between 60° and 120° so the labels have room. */
+  function crossFig(t1, t2, supp, ang) {
+    var th = Math.max(60, Math.min(120, ang)), r = th * Math.PI / 180, q = [2.6 * Math.cos(r), 2.6 * Math.sin(r)];
+    function at(dg, k) { var t = dg * Math.PI / 180; return [k * Math.cos(t), k * Math.sin(t)]; }
+    var m2 = supp ? (th + 180) / 2 : 180 + th / 2;
+    // Far enough out that a label clears both lines: the narrower the
+    // angle, the further (about 64·cos(half-angle) px, at ~31 px a unit).
+    function far(half) { return (64 * Math.cos(half * Math.PI / 180) + 16) / 31; }
+    var k1 = far(th / 2), k2 = supp ? far((180 - th) / 2) : k1;
+    return F.shape({ pts: { P1: [-3, 0], P2: [3, 0], Q1: q, Q2: [-q[0], -q[1]], O: [0, 0], L1: at(th / 2, k1), L2: at(m2, k2) },
+      lines: [["P1", "P2", 14], ["Q1", "Q2", 14]],
+      angles: [["P2", "O", "Q1", null, 20], supp ? ["Q1", "O", "P1", null, 26] : ["P1", "O", "Q2", null, 20]],
+      labels: { L1: { t: t1, dx: 0, dy: 0 }, L2: { t: t2, dx: 0, dy: 0 } },
+      w: 360, h: 230, noScale: true, alt: "Two intersecting lines with two angles marked" });
+  }
+  function angVertical(R) {
+    var xv = R.int(8, 30), a = R.int(2, 5), b = R.int(1, 3), p = R.int(-10, 25);
+    while (a === b) b = R.int(1, 4);
+    var q = a * xv + p - b * xv, ang = a * xv + p;
+    if (ang <= 10 || ang >= 170) return angTriangle(R);
+    var supp = R.chance(0.4);
+    if (supp) q = 180 - ang - b * xv;
+    return {
+      stem: "In the figure, two lines intersect. " + (supp ? "Two angles next to each other on a straight line" : "Two vertical angles (opposite each other)") + " measure $(" + lin(a, p) + ")°$ and $(" + lin(b, q) + ")°$. What is the value of $x$?",
+      fig: crossFig(S.plain("$(" + lin(a, p) + ")°$"), S.plain("$(" + lin(b, q) + ")°$"), supp, ang),
+      answer: xv, shown: String(xv),
+      near: [{ v: ang, tr: "gave the angle instead of x" }],
+      hint: supp ? "Angles that make a straight line add to what?" : "What is true about vertical angles?",
+      strategy: supp ? "Adjacent angles on a line are supplementary: set their sum equal to 180 and solve." : "Vertical angles are equal: set the two expressions equal and solve.",
+      walk: supp ? W([[lin(a, p) + " + " + lin(b, q) + " = 180", "A straight line is 180°."], [(a + b) + "x " + sgn(p + q) + " = 180", "Combine."], ["x = " + xv, "Solve."]])
+        : W([[lin(a, p) + " = " + lin(b, q), "Vertical angles are equal."], [(a - b) + "x = " + (q - p), "Collect."], ["x = " + xv, "Solve."]]),
+      concept: "Two crossing lines make two pairs of equal (vertical) angles, and any two neighbouring angles add to 180°.",
+      rebuild: [{ q: supp ? "The two angles add to…" : "The two angles are…", opts: supp ? ["180°", "90°", "equal"] : ["equal", "supplementary", "complementary"], a: 0, ok: "So write the equation." }, { q: "Solve for $x$:", num: xv, ok: "$x = " + xv + "$ (the angle is " + ang + "°)." }],
+      autopsy: { trap: "Answering with the angle instead of $x$.", clue: supp ? "Angles side by side on a line." : "Angles opposite each other.", remember: "Vertical angles equal; linear pairs add to 180°." }
+    };
+  }
+  function angCongruence(R) {
+    var k = R.pick([2, 3, 1.5, 0.5]), B = R.int(35, 80), ab = R.int(3, 9) * 2;
+    var name1 = "ABC", name2 = R.pick(["DEF", "PQR", "XYZ"]);
+    var askAngle = R.chance(0.5);
+    // Keep the four angle choices apart (B = 36 or 60 would collide).
+    while (new Set([B, B * k, 180 - B, 90 - B]).size < 4) B = R.int(35, 80);
+    return {
+      stem: "Triangles $" + name1 + "$ and $" + name2 + "$ are similar, $\\triangle " + name1 + " \\sim \\triangle " + name2 + "$, with the vertices corresponding in the order written. Each side of $\\triangle " + name2 + "$ is " + num(k) + " times as long as the corresponding side of $\\triangle " + name1 + "$. " +
+        (askAngle ? "If the measure of angle $B$ is $" + B + "°$, what is the measure, in degrees, of angle $" + name2[1] + "$?" : "If $AB = " + ab + "$, what is the length of $\\overline{" + name2.slice(0, 2) + "}$?"),
+      choices: askAngle ? [c(B, { ok: true }),
+          c(B * k === B ? B + 10 : B * k, { err: "concept", tr: "scaled the angle by the scale factor", why: "Similar figures have the same shape: angles stay the same, only lengths scale." }),
+          c(180 - B, { err: "concept", tr: "took the supplement", why: "Corresponding angles of similar triangles are equal, not supplementary." }),
+          c(90 - B > 0 ? 90 - B : B / 2, { err: "concept", tr: "took the complement", why: "Nothing here is a right angle; corresponding angles are equal." })]
+        : [c(ab * k, { ok: true }),
+          c(ab / k === ab * k ? ab + 3 : ab / k, { err: "calc", tr: "divided by the scale factor", why: "$\\triangle " + name2 + "$'s sides are " + num(k) + " times as long: multiply." }),
+          c(ab, { err: "concept", tr: "treated similar as congruent", why: "Congruent triangles match exactly; similar ones are scaled by " + num(k) + "." }),
+          c(ab + k === ab * k ? ab + 2 * k : ab + k, { err: "concept", tr: "added the scale factor", why: "Scaling multiplies lengths." })],
+      hint: askAngle ? "Does scaling a triangle change its angles?" : "Which side of $\\triangle " + name2 + "$ matches $AB$? The order of the letters tells you.",
+      strategy: "The order of letters in $\\triangle " + name1 + " \\sim \\triangle " + name2 + "$ pairs the parts: $A \\leftrightarrow " + name2[0] + "$, $B \\leftrightarrow " + name2[1] + "$, $C \\leftrightarrow " + name2[2] + "$. Angles match exactly; lengths scale.",
+      walk: askAngle ? W([["B \\leftrightarrow " + name2[1], "Second letter to second letter."], ["\\angle " + name2[1] + " = " + B + "°", "Similar: angles are unchanged."]])
+        : W([["AB \\leftrightarrow " + name2.slice(0, 2), "First two letters to first two letters."], [name2.slice(0, 2) + " = " + num(k) + " \\times " + ab + " = " + num(ab * k), "Lengths scale."]]),
+      concept: "Similarity keeps angles and multiplies every length by the same factor; congruence keeps both. The letter order says which parts correspond.",
+      rebuild: [{ q: askAngle ? "Which angle of $\\triangle " + name2 + "$ corresponds to $B$?" : "Which side of $\\triangle " + name2 + "$ corresponds to $AB$?", opts: askAngle ? ["$" + name2[1] + "$", "$" + name2[0] + "$", "$" + name2[2] + "$"] : ["$" + name2.slice(0, 2) + "$", "$" + name2.slice(1) + "$"], a: 0, ok: "By the letter order." }, { q: askAngle ? "Its measure is…" : "Its length is…", num: askAngle ? B : ab * k, ok: askAngle ? "Angles don't scale." : "Lengths do." }],
+      autopsy: { trap: askAngle ? "Scaling an angle." : "Matching the wrong side.", clue: "$\\sim$ and the letter order.", remember: "Similar: same angles, proportional sides." }
+    };
+  }
+  function angTriIneq(R) {
+    var a = R.int(3, 9), b = a + R.int(2, 8), lo = b - a, hi = a + b;
+    var ok = R.int(lo + 1, hi - 1);
+    return {
+      stem: "Two sides of a triangle have lengths " + a + " and " + b + ". Which of the following could be the length of the third side?",
+      choices: [c(ok, { ok: true }),
+        c(lo, { err: "concept", tr: "allowed the difference of the sides", why: "With a third side of " + lo + ", the two shorter sides only just reach: $" + a + " + " + lo + " = " + b + "$ — the triangle would be flat." }),
+        c(hi, { err: "concept", tr: "allowed the sum of the sides", why: "The third side must be LESS than " + a + " + " + b + " = " + hi + ", or the other two can't meet." }),
+        c(hi + R.int(1, 4), { err: "concept", tr: "ignored the triangle inequality", why: "No side can be as long as the other two combined." })],
+      hint: "Could the third side be longer than the other two put together?",
+      strategy: "Triangle inequality: the third side is between the difference and the sum of the other two — $" + lo + " < c < " + hi + "$.",
+      walk: W([[b + " - " + a + " < c < " + b + " + " + a, "Between the difference and the sum."], [lo + " < c < " + hi, "Only a choice strictly inside works."]]),
+      concept: "Any two sides of a triangle together must be longer than the third, or they can't close up.",
+      rebuild: [{ q: "The third side must be less than…", num: hi, ok: "The sum." }, { q: "…and greater than…", num: lo, ok: "The difference. So it's strictly between " + lo + " and " + hi + "." }],
+      autopsy: { clue: "Two sides known, the third unknown.", remember: "Difference < third side < sum." }
+    };
+  }
   var ANG = {
     id: "g-angles", t: "Lines, angles & triangles", short: "Angles & triangles", kind: "Angles, triangles or similarity",
     blurb: "Angles from parallel lines, triangle angle sums and exterior angles, isosceles triangles, and similar triangles.",
@@ -236,12 +345,18 @@
         prompt: "Same shape, different size: every side is scaled by the same factor.",
         scene: { type: "walk", rows: [
           { m: "DE \\parallel BC", say: "A parallel segment cuts off a smaller copy." },
-          { m: "\\frac{AD}{AB} = \\frac{AE}{AC} = \\frac{DE}{BC}", say: "Match **whole** sides: $AB$, not just the piece $DB$." }] }, gate: true }
+          { m: "\\frac{AD}{AB} = \\frac{AE}{AC} = \\frac{DE}{BC}", say: "Match **whole** sides: $AB$, not just the piece $DB$." }] }, gate: true },
+      { type: "learn", kicker: "Three quick facts",
+        prompt: "They show up as easy points:",
+        scene: { type: "walk", rows: [
+          { m: "\\text{vertical angles are equal}", say: "Two crossing lines: opposite angles match; neighbours add to 180°." },
+          { m: "\\triangle ABC \\sim \\triangle DEF", say: "Letter order pairs the parts: $B \\leftrightarrow E$, $AB \\leftrightarrow DE$. Angles stay the same; lengths scale." },
+          { m: "b - a < c < a + b", say: "The triangle inequality: sides 4 and 9 allow a third side between 5 and 13." }] }, gate: true }
     ],
     gen: function (R, o) {
-      if (o.form === "word") return angAlgebra(R);
-      if (o.form === "twist") return angSimilar(R);
-      return o.diff === 1 ? angParallel(R) : o.diff === 2 ? angTriangle(R) : angSimilar(R);
+      if (o.form === "word") return o.diff === 2 ? angTriIneq(R) : angAlgebra(R);
+      if (o.form === "twist") return o.diff === 1 ? angCongruence(R) : o.diff === 2 ? angVertical(R) : angSimilar(R);
+      return o.diff === 1 ? angParallel(R) : o.diff === 2 ? (R.chance(0.5) ? angTriangle(R) : angVertical(R)) : angSimilar(R);
     }
   };
 
@@ -351,6 +466,31 @@
       autopsy: { clue: "Wall and ground meet at a right angle.", remember: "Draw it; find the hypotenuse." }
     };
   }
+  function trigUnit(R) {
+    var A = R.pick([[30, "\\frac{\\pi}{6}"], [45, "\\frac{\\pi}{4}"], [60, "\\frac{\\pi}{3}"], [120, "\\frac{2\\pi}{3}"], [135, "\\frac{3\\pi}{4}"], [150, "\\frac{5\\pi}{6}"], [210, "\\frac{7\\pi}{6}"], [240, "\\frac{4\\pi}{3}"], [300, "\\frac{5\\pi}{3}"], [330, "\\frac{11\\pi}{6}"]]);
+    var d = A[0], fn = R.pick(["sin", "cos"]), rad = R.chance(0.5);
+    var ref = d % 180 > 90 ? 180 - d % 180 : d % 180;
+    var sv = { 30: "\\frac{1}{2}", 45: "\\frac{\\sqrt{2}}{2}", 60: "\\frac{\\sqrt{3}}{2}" }, cv = { 30: "\\frac{\\sqrt{3}}{2}", 45: "\\frac{\\sqrt{2}}{2}", 60: "\\frac{1}{2}" };
+    var val = fn === "sin" ? Math.sin(d * Math.PI / 180) : Math.cos(d * Math.PI / 180), neg = val < 0;
+    var mag = fn === "sin" ? sv[ref] : cv[ref], other = fn === "sin" ? cv[ref] : sv[ref];
+    var right = (neg ? "-" : "") + mag;
+    var ok = x(right, { ok: true });
+    return {
+      stem: "What is the value of $\\" + fn + "\\left(" + (rad ? A[1] : d + "°") + "\\right)$?",
+      choices: [ok].concat(H.distinct(ok, [
+        x((neg ? "" : "-") + mag, { err: "concept", tr: "got the sign from the wrong quadrant", why: "On the unit circle, " + fn + " is the " + (fn === "sin" ? "$y$" : "$x$") + "-coordinate. At " + d + "° the point is in a quadrant where that coordinate is " + (neg ? "negative." : "positive.") }),
+        x((neg ? "-" : "") + other, { err: "formula", tr: "swapped sine and cosine", why: "Sine is the $y$-coordinate, cosine the $x$-coordinate of the point on the unit circle." }),
+        x((neg ? "" : "-") + other, { err: "formula", tr: "swapped sine and cosine and the sign", why: "Find the reference angle (" + ref + "°), use the special-triangle value, then set the sign by the quadrant." }),
+        x((neg ? "-" : "") + (ref === 45 ? "\\frac{1}{2}" : "\\frac{\\sqrt{2}}{2}"), { err: "formula", tr: "used the value for a different special angle", why: "The reference angle is " + ref + "°: use the " + (ref === 45 ? "45-45-90" : "30-60-90") + " triangle." }),
+        x((neg ? "" : "-") + (ref === 45 ? "\\frac{\\sqrt{3}}{2}" : "\\frac{\\sqrt{2}}{2}"), { err: "formula", tr: "used the value for a different special angle", why: "The reference angle is " + ref + "°, and the sign comes from the quadrant." })], 3)),
+      hint: rad ? "Convert to degrees first, then find the reference angle." : "What is the reference angle, and which quadrant is " + d + "° in?",
+      strategy: "Unit circle: the point at angle $\\theta$ is $(\\cos\\theta, \\sin\\theta)$. Find the reference angle (30°, 45° or 60°), use the special right triangle, then pick the sign from the quadrant.",
+      walk: W([[rad ? A[1] + " = " + d + "°" : d + "°", rad ? "Radians to degrees." : "The angle."], ["\\text{reference angle } " + ref + "°", "Its distance from the $x$-axis."], ["\\" + fn + "\\, " + d + "° = " + right, (neg ? "Negative" : "Positive") + " in that quadrant."]]),
+      concept: "On a circle of radius 1, the point at angle $\\theta$ from the positive $x$-axis is $(\\cos\\theta, \\sin\\theta)$ — the special right triangles give the lengths, the quadrant gives the signs.",
+      rebuild: [{ q: "What is the reference angle for " + d + "°?", num: ref, ok: ref + "°." }, { q: "In that quadrant, is " + fn + " positive or negative?", opts: ["Positive", "Negative"], a: neg ? 1 : 0, ok: "So $\\" + fn + "\\, " + d + "° = " + right + "$." }],
+      autopsy: { hard: "Radians, a reference angle and a sign — three steps.", clue: "A trig function of a special angle.", remember: "(cos, sin) is (x, y); the quadrant sets the sign." }
+    };
+  }
   var TRIG = {
     id: "g-trig", t: "Right triangles & trigonometry", short: "Right-triangle trig", kind: "Right triangle or trig ratio",
     blurb: "The Pythagorean theorem and its triples, sine, cosine and tangent, special right triangles, and $\\sin\\, x = \\cos(90 - x)$.",
@@ -376,11 +516,17 @@
           { m: "\\tan = \\frac{\\text{opposite}}{\\text{adjacent}}", say: "**TOA**" }, { m: "\\sin\\, x° = \\cos(90 - x)°", say: "The other acute angle sees the same sides swapped." }] }, gate: true },
       { type: "choice", prompt: "In right triangle $ABC$ with the right angle at $C$, $BC = 5$, $AC = 12$, $AB = 13$. What is $\\tan\\, A$?",
         options: [{ t: "$\\frac{5}{12}$" }, { t: "$\\frac{12}{5}$", fb: "From $A$, the opposite side is $BC = 5$ and the adjacent is $AC = 12$." }, { t: "$\\frac{5}{13}$", fb: "That's $\\sin\\, A$." }, { t: "$\\frac{12}{13}$", fb: "That's $\\cos\\, A$." }],
-        answer: 0, hints: ["Tangent is opposite over adjacent, from $A$."], why: "$\\tan\\, A = \\frac{BC}{AC} = \\frac{5}{12}$." }
+        answer: 0, hints: ["Tangent is opposite over adjacent, from $A$."], why: "$\\tan\\, A = \\frac{BC}{AC} = \\frac{5}{12}$." },
+      { type: "learn", kicker: "The unit circle",
+        prompt: "On a circle of radius 1, the point at angle $\\theta$ is $(\\cos\\theta, \\sin\\theta)$.",
+        scene: { type: "walk", rows: [
+          { m: "60°: \\left(\\tfrac{1}{2}, \\tfrac{\\sqrt{3}}{2}\\right)", say: "From the 30-60-90 triangle with hypotenuse 1." },
+          { m: "120°: \\left(-\\tfrac{1}{2}, \\tfrac{\\sqrt{3}}{2}\\right)", say: "Same reference angle (60°), but left of the $y$-axis: cosine is negative." },
+          { m: "\\tfrac{\\pi}{3} = 60°", say: "Radians first become degrees: $\\pi = 180°$." }] }, gate: true }
     ],
     gen: function (R, o) {
       if (o.form === "word") return trigWord(R);
-      if (o.form === "twist") return o.diff >= 2 ? trigCofunction(R) : trigSpecial(R);
+      if (o.form === "twist") return o.diff === 1 ? trigSpecial(R) : o.diff === 2 ? trigCofunction(R) : trigUnit(R);
       return o.diff === 1 ? trigPyth(R) : o.diff === 2 ? trigRatio(R) : trigSpecial(R);
     }
   };
@@ -454,6 +600,70 @@
       autopsy: { clue: "Radians to degrees.", remember: "$\\pi = 180°$." }
     };
   }
+  function circTangent(R) {
+    var t = R.pick([[3, 4, 5], [5, 12, 13], [8, 15, 17], [6, 8, 10], [7, 24, 25]]), r = t[0], tl = t[1], dist = t[2];
+    var askTan = R.chance(0.5);
+    return {
+      stem: "In the figure, $\\overline{PA}$ is tangent to the circle with center $O$ at point $A$. The radius is " + r + (askTan ? " and $OP = " + dist + "$. What is the length of $\\overline{PA}$?" : " and $PA = " + tl + "$. What is the length of $\\overline{OP}$?"),
+      fig: F.circle({ c: "O", pts: { A: 90 }, radii: ["A"], label: { r: String(r) }, tangent: { at: "A", P: "P", len: 110, seg: true, cw: true, label: askTan ? null : String(tl), dlabel: askTan ? String(dist) : null }, w: 300, h: 250, noScale: true }),
+      choices: askTan ? [c(tl, { ok: true }),
+          c(dist - r, { err: "concept", tr: "subtracted the lengths", why: "$\\triangle OAP$ is a right triangle (tangent ⟂ radius): use $a^2 + b^2 = c^2$." }),
+          H.x("\\sqrt{" + (dist * dist + r * r) + "}", { v: Math.sqrt(dist * dist + r * r), err: "formula", tr: "added the squares when finding a leg", why: "$OP$ is the hypotenuse (it's opposite the right angle at $A$): $PA^2 = OP^2 - OA^2$." }),
+          c(dist + r, { err: "concept", tr: "added the lengths", why: "Lengths in a right triangle combine through their squares." })]
+        : [c(dist, { ok: true }),
+          c(r + tl, { err: "concept", tr: "added the lengths", why: "$OP$ is the hypotenuse of the right triangle $OAP$: $OP^2 = OA^2 + PA^2$." }),
+          H.x("\\sqrt{" + (tl * tl - r * r) + "}", { v: Math.sqrt(tl * tl - r * r), err: "formula", tr: "subtracted the squares for the hypotenuse", why: "The hypotenuse is found by adding the squares of the legs." }),
+          c(tl - r, { err: "concept", tr: "subtracted the lengths", why: "Use the Pythagorean theorem: the angle at $A$ is 90°." })],
+      hint: "What angle does a tangent make with the radius at the point where it touches?",
+      strategy: "A tangent is perpendicular to the radius at the point of tangency — so there's a right triangle hiding in the figure. Then Pythagoras (look for a triple).",
+      walk: W([["\\angle OAP = 90°", "Tangent ⟂ radius."], [askTan ? "PA^2 = " + dist + "^2 - " + r + "^2 = " + (tl * tl) : "OP^2 = " + r + "^2 + " + tl + "^2 = " + (dist * dist), "Pythagorean theorem."], [askTan ? "PA = " + tl : "OP = " + dist, "Square root (a " + t.join("-") + " triple)."]]),
+      concept: "The radius to a point of tangency is perpendicular to the tangent line — the one fact that turns tangent questions into right-triangle questions.",
+      rebuild: [{ q: "What is the measure of $\\angle OAP$?", num: 90, ok: "Tangent meets the radius at a right angle." }, { q: askTan ? "So $PA = \\sqrt{" + dist + "^2 - " + r + "^2} =$" : "So $OP = \\sqrt{" + r + "^2 + " + tl + "^2} =$", num: askTan ? tl : dist, ok: "Done." }],
+      autopsy: { hard: "The right angle isn't marked.", clue: "The word \"tangent\".", remember: "Tangent ⟂ radius → right triangle." }
+    };
+  }
+  function circInscribed(R) {
+    var cen = R.pick([40, 60, 70, 80, 100, 110, 120, 140]), askIns = R.chance(0.6);
+    var ins = cen / 2;
+    return {
+      stem: "Points $A$, $B$ and $C$ lie on a circle with center $O$. Central angle $AOB$ and inscribed angle $ACB$ intercept the same arc $AB$. " + (askIns ? "If the measure of angle $AOB$ is $" + cen + "°$, what is the measure of angle $ACB$?" : "If the measure of angle $ACB$ is $" + ins + "°$, what is the measure of angle $AOB$?"),
+      fig: F.circle({ c: "O", pts: { A: 200, B: 200 + cen, C: 200 + cen + (360 - cen) / 2 }, radii: ["A", "B"], chords: [["C", "A"], ["C", "B"]], w: 280, h: 260, noScale: true }),
+      choices: askIns ? [c(ins, { ok: true }),
+          c(cen, { err: "concept", tr: "treated the inscribed angle as equal to the central angle", why: "An inscribed angle is half the central angle on the same arc." }),
+          c(2 * cen === 360 ? cen + 20 : 2 * cen, { err: "concept", tr: "doubled instead of halving", why: "The central angle is the bigger one: the inscribed angle is half of it." }),
+          c(180 - cen > 0 ? 180 - cen : ins + 15, { err: "concept", tr: "took the supplement", why: "Inscribed and central angles on the same arc aren't supplementary." })]
+        : [c(cen, { ok: true }),
+          c(ins, { err: "concept", tr: "treated the angles as equal", why: "The central angle is twice the inscribed angle on the same arc." }),
+          c(ins / 2, { err: "concept", tr: "halved instead of doubling", why: "Going from inscribed to central, double." }),
+          c(180 - ins, { err: "concept", tr: "took the supplement", why: "Double the inscribed angle." })],
+      hint: "How does an inscribed angle compare with the central angle on the same arc?",
+      strategy: "Inscribed angle = half the central angle (= half the arc) that it intercepts.",
+      walk: W([[askIns ? "\\angle ACB = \\tfrac{1}{2}(" + cen + "°)" : "\\angle AOB = 2(" + ins + "°)", "Same arc."], [askIns ? "= " + ins + "°" : "= " + cen + "°", "Done."]]),
+      concept: "An angle with its vertex on the circle sees an arc at half the angle the center sees it.",
+      rebuild: [{ q: "The inscribed angle is what fraction of the central angle on the same arc?", opts: ["One half", "The same", "Twice"], a: 0, ok: "Half." }, { q: askIns ? "So $\\angle ACB =$" : "So $\\angle AOB =$", num: askIns ? ins : cen, ok: "Done." }],
+      autopsy: { clue: "A vertex on the circle and a vertex at the center, same arc.", remember: "Inscribed = ½ central." }
+    };
+  }
+  function circShift(R) {
+    var h = R.nz(-5, 5), k = R.nz(-5, 5), r = R.int(2, 8), dx = R.nz(-4, 4), dy = R.nz(-4, 4);
+    function sq(v, n) { return "(" + n + " " + (v < 0 ? "+ " + (-v) : v === 0 ? "" : "- " + v) + ")^2"; }
+    function eqn(hh, kk) { return (hh === 0 ? "x^2" : sq(hh, "x")) + " + " + (kk === 0 ? "y^2" : sq(kk, "y")) + " = " + (r * r); }
+    var ok = x(eqn(h + dx, k + dy), { ok: true });
+    return {
+      stem: "The circle $" + eqn(h, k) + "$ is moved " + plural(Math.abs(dx), "unit") + " " + (dx > 0 ? "right" : "left") + " and " + plural(Math.abs(dy), "unit") + " " + (dy > 0 ? "up" : "down") + ". Which is an equation of the new circle?",
+      choices: [ok].concat(H.distinct(ok, [
+        x(eqn(h - dx, k - dy), { err: "concept", tr: "moved the center the wrong way", why: "The center moves from $(" + h + ", " + k + ")$ to $(" + (h + dx) + ", " + (k + dy) + ")$; then write $(x - h)^2 + (y - k)^2$ with the new center." }),
+        x(eqn(h + dy, k + dx), { err: "misread", tr: "swapped the horizontal and vertical moves", why: "Left/right changes $h$ (with $x$); up/down changes $k$ (with $y$)." }),
+        x(eqn(h + dx, k + dy).replace("= " + (r * r), "= " + (r * r + dx * dx + dy * dy)), { err: "concept", tr: "changed the radius", why: "Moving a circle doesn't change its size: the right side stays $" + (r * r) + "$." }),
+        x(eqn(h - dx, k + dy), { err: "calc", tr: "moved one direction the wrong way", why: "New center: $(" + (h + dx) + ", " + (k + dy) + ")$." })], 3)),
+      hint: "Where is the center now? Does the radius change?",
+      strategy: "Move the center from $(" + h + ", " + k + ")$ to $(" + (h + dx) + ", " + (k + dy) + ")$, keep $r^2$, and write $(x - h)^2 + (y - k)^2 = r^2$ — signs flip inside the brackets.",
+      walk: W([["(" + h + ", " + k + ") \\to (" + (h + dx) + ", " + (k + dy) + ")", "Move the center."], [eqn(h + dx, k + dy), "Same radius; new center in the brackets (signs flipped)."]]),
+      concept: "Translating a circle moves its center and nothing else.",
+      rebuild: [{ q: "What is the new center's $x$-coordinate?", num: h + dx, ok: "And its $y$-coordinate is " + (k + dy) + "." }, { q: "Does the radius change?", opts: ["No", "Yes"], a: 0, ok: "So the right side stays " + (r * r) + "." }],
+      autopsy: { clue: "A circle moved left/right/up/down.", remember: "Move the center; keep $r$." }
+    };
+  }
   var CIRC = {
     id: "g-circle", t: "Circles", short: "Circles", kind: "Circle: arcs, sectors or equations",
     blurb: "Arc length and sector area as a fraction of the circle, radians, and circle equations — including completing the square.",
@@ -478,12 +688,17 @@
           { m: "(x - h)^2 + (y - k)^2 = r^2", say: "Standard form." }, { m: "(x + 3)^2 + (y - 1)^2 = 25", say: "Center $(-3, 1)$ — signs flip — radius $\\sqrt{25} = 5$." },
           { m: "x^2 + 6x + y^2 - 2y = 15", say: "Not in standard form? Complete the square: $+9$ and $+1$ on both sides." }] }, gate: true },
       { type: "num", prompt: "A circle has radius 10 and a central angle of 72°. What is the arc length, as a multiple of $\\pi$?", answer: 4, pre: "", post: "$\\pi$",
-        near: [{ v: 20, fb: "That's the whole circumference. Take $\\frac{72}{360}$ of it." }, { v: 8, fb: "Divide by 360, not 180." }], hints: ["$\\frac{72}{360} = \\frac{1}{5}$."], why: "$\\frac{1}{5} \\times 20\\pi = 4\\pi$." }
+        near: [{ v: 20, fb: "That's the whole circumference. Take $\\frac{72}{360}$ of it." }, { v: 8, fb: "Divide by 360, not 180." }], hints: ["$\\frac{72}{360} = \\frac{1}{5}$."], why: "$\\frac{1}{5} \\times 20\\pi = 4\\pi$." },
+      { type: "learn", kicker: "Two circle theorems",
+        prompt: "Both turn up in figures:",
+        scene: { type: "walk", rows: [
+          { m: "\\text{tangent} \\perp \\text{radius}", say: "Where a tangent line touches the circle, it makes a right angle with the radius — a hidden right triangle." },
+          { m: "\\angle \\text{inscribed} = \\tfrac{1}{2}\\,\\angle \\text{central}", say: "An angle with its vertex on the circle is half the central angle on the same arc: 100° central → 50° inscribed." }] }, gate: true }
     ],
     gen: function (R, o) {
       if (o.form === "equation") return circEq(R, o.diff);
-      if (o.form === "twist") return o.diff >= 2 ? circEq(R, 3) : circRad(R);
-      return circArc(R, o.diff >= 2 && R.chance(0.5));
+      if (o.form === "twist") return o.diff === 1 ? circRad(R) : o.diff === 2 ? circShift(R) : circEq(R, 3);
+      return o.diff === 1 ? circArc(R, false) : o.diff === 2 ? (R.chance(0.5) ? circArc(R, R.chance(0.5)) : circInscribed(R)) : circTangent(R);
     }
   };
 
@@ -514,6 +729,18 @@
       { id: "fractioncircle", t: "A fraction of the circle", rule: "Arcs and sectors are $\\frac{\\theta}{360}$ of the circumference and area. In radians: arc $= r\\theta$.",
         when: "a central angle and a radius.", skills: ["g-circle"],
         ex: "Radius 9, angle 40°: arc?", walk: W([["\\frac{40}{360} \\cdot 18\\pi = 2\\pi", "One ninth of the circumference."]]) },
+      { id: "tangentright", t: "Tangent means right angle", rule: "A tangent line is perpendicular to the radius at the point of tangency. Draw the radius and you have a right triangle for Pythagoras.",
+        when: "the word \"tangent\" appears in a circle question.", skills: ["g-circle"],
+        ex: "Radius 5, tangent segment 12. Distance from the center to the outside point?", walk: W([["5^2 + 12^2 = 13^2", "A 5-12-13 triangle."], ["13", "The hypotenuse."]]) },
+      { id: "inscribed", t: "Inscribed is half", rule: "An inscribed angle is half the central angle (and half the arc) it intercepts.",
+        when: "an angle has its vertex on the circle.", skills: ["g-circle"],
+        ex: "Central angle 130°.", walk: W([["65°", "The inscribed angle on the same arc."]]) },
+      { id: "unitcircle", t: "(cos, sin) on the unit circle", rule: "The point at angle $\\theta$ on a circle of radius 1 is $(\\cos\\theta, \\sin\\theta)$. Reference angle → special triangle value; quadrant → sign.",
+        when: "a trig value of a special angle, especially past 90° or in radians.", skills: ["g-trig", "g-circle"],
+        ex: "$\\cos 150°$", walk: W([["\\text{ref } 30°", "Reference angle."], ["-\\tfrac{\\sqrt{3}}{2}", "Left of the $y$-axis: negative."]]) },
+      { id: "surface", t: "Unfold it", rule: "Surface area isn't on the reference sheet: add the areas of every face. A box is $2(ℓw + ℓh + wh)$; a cylinder is $2\\pi r^2 + 2\\pi rh$.",
+        when: "\"surface area\", paint, wrapping, or covering a solid.", skills: ["g-area"],
+        ex: "A 4-by-3-by-2 box.", walk: W([["2(12 + 8 + 6) = 52", "Three faces, twice each."]]) },
       { id: "completesquare", t: "Complete the square (twice)", rule: "For $x^2 + y^2 + Dx + Ey = F$, add $(\\frac{D}{2})^2$ and $(\\frac{E}{2})^2$ to both sides to get the center and radius.",
         when: "a circle's equation isn't in standard form.", skills: ["g-circle"],
         ex: "$x^2 + y^2 - 4x + 6y = 12$", walk: W([["(x - 2)^2 + (y + 3)^2 = 25", "Add 4 and 9."], ["r = 5", "Center $(2, -3)$."]]) }

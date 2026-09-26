@@ -49,7 +49,17 @@
   "use strict";
   if (!window.OPLO_LAB || !window.OPLO_CHALLENGE) return;
   var LAB = window.OPLO_LAB, CH = window.OPLO_CHALLENGE;
-  var el = LAB.el, esc = LAB.esc, button = LAB.button, fmt = LAB.fmt, m = LAB.m, num = LAB.num;
+  var el = LAB.el, esc = LAB.esc, button = LAB.button, m = LAB.m, num = LAB.num;
+  /* The lab's text-with-math, with one change: punctuation right after a
+     piece of math stays on its line ("… of $x$?" never leaves the "?"
+     alone at the start of the next one). */
+  function fmt(text) {
+    if (typeof text !== "string" || text.indexOf("$") < 0) return LAB.fmt(text);
+    text = text.replace(/\\\$/g, "\u0002")
+      .replace(/(\$[^$]+\$)([.,?!;:)]+)/g, '<span class="st-nw">$1$2</span>')
+      .replace(/\u0002/g, "\\$");
+    return LAB.fmt(text);
+  }
   var SAT = LAB.SAT = LAB.SAT || {};
   var NS = "http://www.w3.org/2000/svg";
 
@@ -401,6 +411,7 @@
     ".st-timer.off b, .st-timer.off .st-timer-aim, .st-timer.off .st-timer-bar { visibility: hidden; }",
     ".st-timer.off b { width: 0; min-width: 0; }",
     ".st-stem { font-size: 18.5px; line-height: 1.6; }",
+    ".st-nw { white-space: nowrap; }",
     ".st-stem p { margin: 0 0 10px; }",
     ".st-stem .m.md { font-size: 1.28em; margin: 14px 0; }",
     ".st-qfig { margin: 14px 0 4px; }",
@@ -1136,6 +1147,21 @@
       // On the radius, on the side away from the sector and its angle mark.
       P.text(cx + (q2[0] - cx) * 0.62 + 13 * Math.sin(t2), cy + (q2[1] - cy) * 0.62 + 13 * Math.cos(t2) + 4, o.label.r, { cls: "st-f-t sm" });
     }
+    // A tangent at a point of the circle, out to an outside point, with the
+    // right angle it makes with the radius.
+    if (o.tangent) {
+      var ta = o.pts[o.tangent.at] * Math.PI / 180, A0 = at(o.pts[o.tangent.at]);
+      var dir = o.tangent.cw ? [Math.sin(ta), Math.cos(ta)] : [-Math.sin(ta), -Math.cos(ta)], Lt = o.tangent.len || R * 1.4;
+      var Pt = [A0[0] + dir[0] * Lt, A0[1] + dir[1] * Lt];
+      P.line(A0[0] - dir[0] * 18, A0[1] - dir[1] * 18, Pt[0], Pt[1], "st-f-ink");
+      P.circle(Pt[0], Pt[1], 3.2, "st-f-pt c-ink");
+      P.text(Pt[0] + dir[0] * 12, Pt[1] + dir[1] * 12 + 5, o.tangent.P || "P", { cls: "st-f-t" });
+      var rin = [(cx - A0[0]) / R, (cy - A0[1]) / R], m = 10;
+      P.path("M" + (A0[0] + rin[0] * m) + " " + (A0[1] + rin[1] * m) + "L" + (A0[0] + (rin[0] + dir[0]) * m) + " " + (A0[1] + (rin[1] + dir[1]) * m) + "L" + (A0[0] + dir[0] * m) + " " + (A0[1] + dir[1] * m), "st-f-thin");
+      if (o.tangent.seg) { P.line(cx, cy, Pt[0], Pt[1], "st-f-thin dash"); }
+      if (o.tangent.label) P.text((A0[0] + Pt[0]) / 2 - dir[1] * 12, (A0[1] + Pt[1]) / 2 + dir[0] * 12 + 4, o.tangent.label, { cls: "st-f-t sm" });
+      if (o.tangent.dlabel) P.text((cx + Pt[0]) / 2 + dir[1] * 12, (cy + Pt[1]) / 2 - dir[0] * 12 + 4, o.tangent.dlabel, { cls: "st-f-t sm" });
+    }
     if (o.angle) {
       var d1 = o.pts[o.angle[0]], d2 = o.pts[o.angle[1]], rr = 20, s1 = [cx + rr * Math.cos(d1 * Math.PI / 180), cy - rr * Math.sin(d1 * Math.PI / 180)],
           e1 = [cx + rr * Math.cos(d2 * Math.PI / 180), cy - rr * Math.sin(d2 * Math.PI / 180)], sw = ((d2 - d1) % 360 + 360) % 360, mid = (d1 + sw / 2) * Math.PI / 180;
@@ -1143,6 +1169,25 @@
       P.text(cx + 36 * Math.cos(mid), cy - 36 * Math.sin(mid) + 4, o.angle[2], { cls: "st-f-t sm c-o" });
     }
     return wrapFig(P.svg(o.alt || "A circle"), { max: W, note: o.noScale ? "Note: Figure not drawn to scale." : null });
+  };
+
+  /* A box plot on a number line. o: { five: [min, q1, med, q3, max], x: [lo, hi], xl, step } */
+  FIG.box = function (o) {
+    var W = o.w || 460, H = 130, L = 26, Rr = 26, lo = o.x[0], hi = o.x[1], f = o.five, st = o.step || niceStep(hi - lo, 10);
+    function X(v) { return L + (v - lo) / (hi - lo) * (W - L - Rr); }
+    var P = Pic(W, H), y = 48, base = 96;
+    P.line(X(lo) - 6, base, X(hi) + 6, base, "st-f-axis");
+    // A small tick at every unit (every two on a long axis), so the five
+    // numbers can be read off exactly; a numbered tick every step.
+    var mi = o.minor || (hi - lo > 40 ? 2 : 1);
+    for (var u = lo; u <= hi + 1e-9; u += mi) P.line(X(u), base, X(u), base + 3, "st-f-axis");
+    for (var v = lo; v <= hi + 1e-9; v += st) { P.line(X(v), base, X(v), base + 7, "st-f-axis"); P.text(X(v), base + 20, fnum(v), { cls: "st-f-n" }); }
+    P.line(X(f[0]), y, X(f[1]), y, "st-f-ink"); P.line(X(f[3]), y, X(f[4]), y, "st-f-ink");
+    P.line(X(f[0]), y - 10, X(f[0]), y + 10, "st-f-ink"); P.line(X(f[4]), y - 10, X(f[4]), y + 10, "st-f-ink");
+    P.add('<rect x="' + X(f[1]).toFixed(1) + '" y="' + (y - 20) + '" width="' + (X(f[3]) - X(f[1])).toFixed(1) + '" height="40" class="st-f-shape"/>');
+    P.line(X(f[2]), y - 20, X(f[2]), y + 20, "st-f-ink c-b");
+    if (o.xl) P.text(W / 2, H - 2, o.xl, { cls: "st-f-name up", raw: true });
+    return wrapFig(P.svg(o.alt || "A box plot"), { cap: o.cap, max: W });
   };
 
   /* A solid, drawn in a simple oblique view: a box, a cylinder, a cone, a
@@ -1325,7 +1370,7 @@
   H.x = function (tex, o) { return Object.assign({ t: "$" + tex + "$" }, o || {}); };
   H.w = function (text, o) { return Object.assign({ t: text }, o || {}); };
   H.commas = function (v) { var s = String(Math.round(v * 100) / 100), p = s.split("."); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return p.join("."); };
-  H.money = function (v) { return "\\$" + H.commas(v); };
+  H.money = function (v) { var s = H.commas(v); return "\\$" + (/\.\d$/.test(s) ? s + "0" : s); };
   /* A big number inside math: the lab's typesetter spaces a comma out as a
      list separator, so the thousands comma is set as text. */
   H.bigm = function (v) { return H.commas(v).replace(/,/g, "\\text{,}"); };
