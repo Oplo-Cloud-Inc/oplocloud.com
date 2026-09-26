@@ -642,10 +642,20 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
   display: flex; flex-direction: column; gap: 12px; padding: 14px 8px 10px;
   border-radius: 20px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair);
 }
-/* The page keeps the sidebar's room whether it is shown or not, so hiding it
-   uncovers the page rather than moving it: nothing on the page shifts when
-   the sidebar comes and goes. */
-.lx-wrap:has(#v-lab.on .lb-shell) { max-width: none; padding-left: calc(12px + 300px + 40px); }
+/* A lesson sits in the middle of the window. With the sidebar out, the page
+   keeps the sidebar's room on the left and as much again on the right, so the
+   work is centered on the window whenever there is space for it; on a
+   narrower window it moves right only as far as it must to clear the
+   sidebar. With the sidebar put away there is nothing to clear, so the work
+   is centered on the window, always. (352px = the sidebar's 12 + 300 + 40;
+   760px = the lesson's width, .ch in challenge.css.) */
+.lx-wrap:has(#v-lab.on .lb-shell) {
+  max-width: none; padding-left: calc(12px + 300px + 40px);
+  padding-right: max(var(--gut), min(calc(12px + 300px + 40px), calc(100vw - 352px - 760px)));
+}
+.lx-wrap:has(#v-lab.on .lb-shell.side-off) {
+  padding-left: max(var(--gut), env(safe-area-inset-left)); padding-right: max(var(--gut), env(safe-area-inset-right));
+}
 .lb-shell.side-off .lb-side { display: none; }
 
 .lb-side-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 2px 6px 0 12px; }
@@ -660,9 +670,9 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lb-side-btn svg, .lb-side-show svg { width: 19px; height: 19px; }
 .lb-side-show { display: none; position: fixed; z-index: 30; top: calc(var(--bar) + 13px); left: 12px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair); }
 .lb-shell.side-off .lb-side-show { display: grid; }
-/* The button that brings the sidebar back sits in the top corner; a
-   lesson's step bar makes room for it. */
-.lb-shell.side-off .ch-stepnav { padding-left: 46px; }
+/* The button that brings the sidebar back sits in the window's top corner,
+   well clear of a centered lesson, so the step bar needs no room for it
+   (on a narrow window it does — see the media rule below). */
 
 /* Search: a capsule with its icon, the words, and a clear button once there
    is something to clear. */
