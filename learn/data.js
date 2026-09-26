@@ -663,6 +663,42 @@ window.OPLO = (function () {
               "The units follow its chapters and its photographs are credited where they appear; the readings, lessons, examples and problems are OEdu's own."
   };
 
+  /* SAT Math is test prep built as a system rather than a pile of questions
+     (learn/lab/satkit.js, learn/sat/): an adaptive Brain Scan, a map of every
+     skill, missions made from it, a coach that answers a miss with questions
+     instead of the answer, and timed modules like the real ones. Its units
+     are the four domains of the digital SAT's Math section, and its course
+     page is its own (hub: true). */
+  var SATM = {
+    id: "sat", t: "SAT Math", hue: "#0d9488", subject: "Test Prep", level: "High School", tag: "Adaptive", lab: true, hub: true,
+    d: "The digital SAT's Math section, learned as a loop: diagnose, understand, practise, explain, transfer, re-test, master.",
+    lede: "Start with a Brain Scan that maps every skill on the test. Then a daily mission made from your map, a coach that " +
+          "answers a miss with questions instead of the answer, every idea in every disguise the SAT dresses it in, and timed " +
+          "modules that show where your minutes go.",
+    glyph: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
+    objectives: [
+      "Solve and interpret linear equations, inequalities, functions and systems, in every form the SAT asks them.",
+      "Work fluently with equivalent expressions, quadratics, exponentials and other nonlinear functions.",
+      "Reason with ratios, rates, percentages, data, probability, and what a study can and cannot conclude.",
+      "Use area, volume, angles, right-triangle trigonometry and circles.",
+      "Recognise a question's type, choose a strategy, and pace a 35-minute module.",
+      "Know how you lose points — concepts, misreading, slips, strategy or time — and fix it."
+    ],
+    units: [
+      { t: "Algebra", lab: true,
+        desc: "Linear equations in one and two variables, linear functions, systems of two linear equations, and linear inequalities." },
+      { t: "Advanced Math", lab: true,
+        desc: "Equivalent expressions, quadratics and their graphs, exponential functions, nonlinear equations and systems, and function notation." },
+      { t: "Problem-Solving & Data Analysis", lab: true,
+        desc: "Ratios, rates and units, percentages, one- and two-variable data, probability, and inference from samples and studies." },
+      { t: "Geometry & Trigonometry", lab: true,
+        desc: "Area and volume, lines, angles and triangles, right triangles and trigonometry, and circles." }
+    ],
+    grading: [["Brain Scan & missions", 30], ["Practice by skill", 40], ["Timed modules", 30]],
+    textbook: "Organised the way the digital SAT's Math section is: four domains, two 35-minute modules of 22 questions, " +
+              "a calculator and reference sheet throughout. Every question is OEdu's own."
+  };
+
   var BIO = {
     id: "bio", t: "Biology", hue: GREEN, subject: "Science", level: "High School",
     d: "Cells, inheritance and ecosystems — systems that keep themselves going.",
@@ -718,7 +754,10 @@ window.OPLO = (function () {
         stub("civ",  "Civics",        "Social Studies", "#e8a317", "How power is arranged, checked, and used where you live.", GLOBE)] },
     { n: "Humanities", hue: "#d4533b",
       d: "The human story — how people lived, believed and made sense of their world, read closely and questioned like a historian.",
-      courses: [HIST] }
+      courses: [HIST] },
+    { n: "Test Prep", hue: "#0d9488",
+      d: "The tests that open doors — the skills they measure, and how to show them under the clock.",
+      courses: [SATM] }
   ];
 
   /* ------------------------------------------------------- Prerequisites
@@ -736,7 +775,8 @@ window.OPLO = (function () {
     biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
            13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] },
     hist: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [3], 7: [6], 8: [2], 9: [2], 10: [7], 11: [10], 12: [5],
-            13: [7], 14: [12], 15: [9], 16: [14], 17: [16] }
+            13: [7], 14: [12], 15: [9], 16: [14], 17: [16] },
+    sat: { 1: [], 2: [1], 3: [], 4: [] }
   };
 
   /* ------------------------------------------------------------- Accounts
@@ -772,5 +812,5 @@ window.OPLO = (function () {
   function contacts() { return []; }
 
   return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE, ITERATIONS: ITERATIONS,
-           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, HIST: HIST, BIO: BIO, CONTACTS: contacts };
+           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, HIST: HIST, SAT: SATM, BIO: BIO, CONTACTS: contacts };
 })();

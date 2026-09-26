@@ -38,13 +38,18 @@ window.OPLO_LAB = (function () {
     "lab/widgets.js": "ed7a4947",
     "lab/bizkit.js": "78131d29",
     "lab/histkit.js": "3bf034b8",
+    "lab/satkit.js": "e5462326",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "637e74c0",
     "biz/u01.js": "5c45e6c8",
     "biz/u02.js": "df0245cf",
-    "hist/u01.js": "647c1892"
+    "hist/u01.js": "647c1892",
+    "sat/u01.js": "957ce5e5",
+    "sat/u02.js": "c2e3f9ad",
+    "sat/u03.js": "e6cc9a6a",
+    "sat/u04.js": "54d9a3ba"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -966,8 +971,10 @@ window.OPLO_LAB = (function () {
      stand you run, a market, the circular flow, the business cycle…) in
      lab/bizkit.js, which no math course needs to download; Global History I
      keeps its reading pages and its scenes (a timeline, a map that shows its
-     bias, a source to question) in lab/histkit.js. */
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js" };
+     bias, a source to question) in lab/histkit.js; SAT Math keeps its whole
+     test-prep system — the diagnostic, the coach, timed modules, the course
+     page itself — in lab/satkit.js. */
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js" };
   function kitFor(courseId) {
     return script("lab/widgets.js").then(function () {
       return COURSE_KIT[courseId] ? script(COURSE_KIT[courseId]) : null;
@@ -983,6 +990,21 @@ window.OPLO_LAB = (function () {
       });
   }
   function has(courseId, n) { return !!FILES[fileFor(courseId, n)]; }
+
+  /* A course can bring a page of its own in place of the plain course page
+     — SAT Math's hub, with its diagnostic, map, missions and timed modules.
+     Its kit registers the hub; the app asks for it by address below the
+     course (SAT-Math/Scan, SAT-Math/Module, …). */
+  var HUBS = {};
+  function addHub(courseId, fn) { HUBS[courseId] = fn; }
+  function hub(host, ctx, what) {
+    useAccount(ctx.me);
+    host.innerHTML = '<div class="lb-loading"><span></span><span></span><span></span></div>';
+    return kitFor(ctx.course).then(function () {
+      if (!HUBS[ctx.course]) throw new Error("This course has no page of its own.");
+      return HUBS[ctx.course](host, ctx, what || "");
+    }).catch(function (e) { failed(host, e); });
+  }
 
   /* ------------------------------------------------------ Unit measures */
   function unitDims(u) {
@@ -1178,7 +1200,7 @@ window.OPLO_LAB = (function () {
   function skillSeq(u) {
     return u.skills.map(function (sk) { return { kind: "skill", id: sk.id, title: stripMath(sk.title), label: "Practice", lv: level(sk.id) }; });
   }
-  function isHere(it, here) { return it.kind === here.kind && (it.k === here.k || (it.id != null && it.id === here.id) || it.kind === "test"); }
+  function isHere(it, here) { return it.kind === here.kind && ((it.k != null && it.k === here.k) || (it.id != null && it.id === here.id) || it.kind === "test"); }
   function goItem(ctx, it) {
     if (it.kind === "lesson") ctx.go.lesson(it.k);
     else if (it.kind === "quiz") ctx.go.quiz(it.k);
@@ -1643,7 +1665,8 @@ window.OPLO_LAB = (function () {
     // pages
     renderUnit: renderUnit, runLesson: runLesson, runPractice: runPractice, runTest: runTest, runQuiz: runQuiz,
     dims: function (courseId, n) { var u = UNITS[courseId + ":" + n]; useAccount(ME); return u ? unitDims(u) : null; },
-    level: level, levels: LEVELS, useAccount: useAccount,
+    level: level, levels: LEVELS, useAccount: useAccount, setLevel: function (id, lv) { if (REC) setLevel(id, lv); },
+    fmtStep: fmtStep, hub: hub, addHub: addHub,
     _lessonPath: lessonPath, _genStep: genStep,
     // widgets
     W: W, el: el, esc: esc, button: button, svg: svg

@@ -7,7 +7,7 @@ a lab course — the manipulatives and each unit's lessons — with a stamp that
 changes whenever a file does, so a browser never runs yesterday's copy. This
 rewrites that map from the files on disk: learn/lab/widgets.js, a course's
 own kit (learn/lab/bizkit.js for Business, learn/lab/histkit.js for Global
-History I) and every learn/<course>/uNN.js
+History I, learn/lab/satkit.js for SAT Math) and every learn/<course>/uNN.js
 that exists, stamped with the first eight characters of
 its SHA-1. A unit whose file does not exist yet is left out, and its page
 says it is still being written.
@@ -26,7 +26,7 @@ import sys
 
 LEARN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "learn")
 CORE = os.path.join(LEARN, "lab", "core.js")
-COURSES = ["alg", "g8", "geo", "biz", "hist"]
+COURSES = ["alg", "g8", "geo", "biz", "hist", "sat"]
 
 
 def stamp(path):
@@ -35,7 +35,7 @@ def stamp(path):
 
 
 def build():
-    files = [("lab/" + f, os.path.join(LEARN, "lab", f)) for f in ("widgets.js", "bizkit.js", "histkit.js")]
+    files = [("lab/" + f, os.path.join(LEARN, "lab", f)) for f in ("widgets.js", "bizkit.js", "histkit.js", "satkit.js")]
     for c in COURSES:
         for p in sorted(glob.glob(os.path.join(LEARN, c, "u[0-9][0-9].js"))):
             files.append((c + "/" + os.path.basename(p), p))
