@@ -1135,7 +1135,7 @@ window.OPLO_LAB = (function () {
      the player's title and progress bar are kept for screen readers only.
      A lesson has the player's step bar instead: back, forward, and a
      segment for each step. */
-  var SIDE = { q: "", folded: {}, scroll: null };
+  var SIDE = { q: "", folded: {}, scroll: null, stepsFolded: false };
   var NARROW = "(max-width: 1099px)";
   function sideHidden() { try { return localStorage.getItem("oplo.lab.side") === "hidden"; } catch (e) { return false; } }
   function setSideHidden(v) {
@@ -1204,7 +1204,8 @@ window.OPLO_LAB = (function () {
     var list = el("div", "lb-side-list");
     var none = el("p", "lb-side-none");
     // The lesson being played lists its own steps under its row, so a
-    // student can go back to a problem, and forward again.
+    // student can go back to a problem, and forward again. Clicking the
+    // lesson itself folds them away.
     var stepsEl = null;
     function section(key, name, items) {
       var sec = el("section", "lb-sec" + (SIDE.folded[key] ? " folded" : ""));
@@ -1220,29 +1221,39 @@ window.OPLO_LAB = (function () {
       items.forEach(function (it) {
         var li = el("li");
         var cur = isHere(it, here);
+        var open = cur && it.kind === "lesson";
         var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : ICON.doc;
         var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
         var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
           '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
-          '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.label + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end);
+          '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.label + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end +
+          (open ? '<span class="lb-row-fold" aria-hidden="true">' + svg(ICON.down) + "</span>" : ""));
         if (cur) b.setAttribute("aria-current", "page");
         b.title = (it.kind === "lesson" ? it.label + ": " : "") + stripMath(it.title);
         b.addEventListener("click", function () {
+          if (open) { foldSteps(li, b, !SIDE.stepsFolded); return; }
           SIDE.scroll = list.scrollTop;
           shell.classList.remove("peek");
           if (!cur) goItem(ctx, it);
         });
         li.dataset.text = (it.label + " " + stripMath(it.title)).toLowerCase();
         li.appendChild(b);
-        if (cur && it.kind === "lesson") {
+        if (open) {
+          li.classList.add("lb-open");
           stepsEl = el("ol", "lb-steps");
           stepsEl.setAttribute("aria-label", "Steps in this lesson");
           li.appendChild(stepsEl);
+          foldSteps(li, b, SIDE.stepsFolded);
         }
         ul.appendChild(li);
       });
       sec.appendChild(ul);
       list.appendChild(sec);
+    }
+    function foldSteps(li, b, folded) {
+      SIDE.stepsFolded = folded;
+      li.classList.toggle("folded", folded);
+      b.setAttribute("aria-expanded", String(!folded));
     }
     // The header already names the course and the unit, so the list is just
     // what is in it: the lessons (with the quizzes and the test in their
@@ -1291,7 +1302,7 @@ window.OPLO_LAB = (function () {
     var main = el("div", "lb-work");
     // The player reports each step as it is shown or answered (see
     // runLesson); the lesson's step list redraws to match.
-    main.paintSteps = function (info) {
+    main.paintSteps = function (info, ix) {
       if (!stepsEl) return;
       stepsEl.innerHTML = "";
       info.forEach(function (st) {
@@ -1302,9 +1313,28 @@ window.OPLO_LAB = (function () {
         if (st.current) b.setAttribute("aria-current", "step");
         b.title = st.open ? st.label : st.label + " — not reached yet";
         b.setAttribute("aria-label", st.label + (st.state ? ", done" : "") + (st.open ? "" : ", not reached yet"));
-        b.addEventListener("click", function () { shell.classList.remove("peek"); CH.go(st.i); });
+        b.addEventListener("click", function () {
+          shell.classList.remove("peek");
+          // In a retry of a few problems, the whole lesson opens on that step.
+          if (!CH.go(st.i)) runLesson(host, ctx, here.k, st.i);
+        });
         li.appendChild(b);
         stepsEl.appendChild(li);
+      });
+      // On a step, the step has the highlight; on the summary, the lesson.
+      var open = stepsEl.parentNode;
+      open.classList.toggle("on-step", ix < info.length);
+      /* The lesson and the step you are on stay in sight when the step
+         changes — scrolling the list, never the page, and not while you are
+         only answering (the list may have been scrolled to look at something). */
+      if (stepsEl.dataset.ix === String(ix)) return;
+      stepsEl.dataset.ix = ix;
+      afterSlide(host, function () {
+        var at = stepsEl.children[ix] || open;
+        if (!at.offsetParent) return;
+        var box = list.getBoundingClientRect(), a = open.getBoundingClientRect(), c = at.getBoundingClientRect();
+        if (a.top >= box.top && c.bottom <= box.bottom) return;
+        list.scrollTop += c.bottom - a.top <= list.clientHeight - 16 ? a.top - box.top - 8 : c.top - box.top - list.clientHeight / 3;
       });
     };
     shell.appendChild(side);
@@ -1315,12 +1345,20 @@ window.OPLO_LAB = (function () {
 
     // Keep the list where it was; otherwise bring the current row into view.
     if (SIDE.scroll != null) { list.scrollTop = SIDE.scroll; SIDE.scroll = null; }
-    else {
+    else afterSlide(host, function () {
       var at = list.querySelector('[aria-current="page"]');
       // Scrolled only if it would be out of sight — and only the list, never the page.
       if (at && at.offsetTop + at.offsetHeight > list.clientHeight) list.scrollTop = at.offsetTop - list.clientHeight / 3;
-    }
+    });
     return main;
+  }
+  /* A view slides in on a transform, and until it has, the sidebar — fixed
+     to the window — is laid out against the view instead, a few pixels
+     tall. Anything that measures the sidebar waits for the slide. */
+  function afterSlide(host, fn) {
+    var view = host.closest(".lx-view"), a = view && view.getAnimations ? view.getAnimations() : [];
+    if (!a.length) { fn(); return; }
+    Promise.all(a.map(function (x) { return x.finished; })).then(fn, fn);
   }
 
 
@@ -1339,7 +1377,7 @@ window.OPLO_LAB = (function () {
       })
     };
   }
-  function runLesson(host, ctx, k) {
+  function runLesson(host, ctx, k, at) {
     useAccount(ctx.me);
     host.innerHTML = '<div class="lb-loading"><span></span><span></span><span></span></div>';
     return load(ctx.course, ctx.n).then(function (u) {
@@ -1353,10 +1391,16 @@ window.OPLO_LAB = (function () {
       after.push({ label: "Unit " + u.n + ": " + u.title, go: function () { ctx.go.unit(); } });
       var here = { kind: "lesson", k: k }, work = frame(host, ctx, u, here);
       CH.play(work, {
-        path: path, me: ctx.me, after: after, stepNav: true, onStep: work.paintSteps,
+        path: path, me: ctx.me, after: after, stepNav: true, at: at, onStep: work.paintSteps,
         onFinish: function () {
           REC.lessons[lessonKey(u.lessons[k - 1])] = { done: true, at: Date.now() };
           changed();
+          // The sidebar was drawn before the lesson was finished.
+          var row = host.querySelector('.lb-row[aria-current="page"]');
+          if (row && !row.querySelector(".lb-row-done")) {
+            row.classList.add("done");
+            row.querySelector(".lb-row-t").insertAdjacentHTML("afterend", '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>");
+          }
           if (ctx.onProgress) ctx.onProgress(unitDims(u));
         }
       });

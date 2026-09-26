@@ -715,14 +715,14 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
   border-radius: 9px; text-align: left; font-size: 13px; line-height: 1.25; color: var(--ink-2);
   transition: background .12s var(--ease), color .12s var(--ease);
 }
-.lb-step:hover:not(:disabled) { background: var(--sunk); color: var(--ink); }
+.lb-step:hover:not(:disabled):not(.cur) { background: var(--sunk); color: var(--ink); }
 .lb-step:disabled { opacity: .45; cursor: default; }
 .lb-step-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
 .lb-step.seen .lb-step-dot { background: #b9d6f6; box-shadow: none; }
 .lb-step.first .lb-step-dot { background: var(--green); box-shadow: none; }
 .lb-step.helped .lb-step-dot { background: #e0a43c; box-shadow: none; }
-.lb-step.cur { color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--blue) 10%, transparent); }
-.lb-step.cur .lb-step-dot { background: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 25%, transparent); }
+.lb-step.cur { color: #fff; font-weight: 600; background: var(--fill, var(--blue)); }
+.lb-step.cur .lb-step-dot { background: #fff; box-shadow: none; }
 .lb-step-t { flex: 1; min-width: 0; }
 html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,229,0.45); }
 .lb-row-done { flex: none; display: grid; color: var(--green); }
@@ -735,6 +735,20 @@ html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,
 .lb-row[aria-current="page"] :is(.lb-row-ico, .lb-row-t i, .lb-row-done) { color: #fff; }
 .lb-side-none { margin: 4px 12px; font-size: 14px; color: var(--ink-3); }
 .lb-side-none:empty { display: none; }
+
+/* The lesson you are in folds its steps away when it is clicked. While it
+   is open on a step, the step has the pill and the lesson drops to bold;
+   folded, or on the summary, the lesson has the pill again. */
+.lb-row-fold { flex: none; display: grid; margin-right: -4px; color: var(--ink-3); }
+.lb-row-fold svg { width: 15px; height: 15px; transition: transform .2s var(--ease); }
+.lb-open.folded .lb-row-fold svg { transform: rotate(-90deg); }
+.lb-row[aria-current="page"] .lb-row-fold { color: #fff; }
+.lb-open.folded .lb-steps, .lb-sec.searching .lb-steps { display: none; }
+.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"] { background: transparent; color: var(--ink); font-weight: 600; }
+.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"]:hover { background: var(--sunk); }
+.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"] .lb-row-ico { color: var(--blue); }
+.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"] :is(.lb-row-t i, .lb-row-fold) { color: var(--ink-3); }
+.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"] .lb-row-done { color: var(--green); }
 
 /* On a narrow window the sidebar floats over the page when it is asked for,
    and a click outside it or Escape puts it away. */
