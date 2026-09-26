@@ -81,6 +81,17 @@ tools/ship.sh --dev       # also the developer site at dev.oplocloud.com
 tools/ship.sh --dry-run   # merge and verify locally; publish nothing
 ```
 
+**Every push to `main` is also checked on GitHub** —
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs ship.sh's
+checks. With the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository
+secrets set, it also publishes: the student app to edu.oplocloud.com, after the
+D1 migrations and the API when the push changed `api/`. Without them it skips
+publishing quietly (a note on the run, not a failure), and `tools/ship.sh` from
+your machine is what puts `main` live. Either way, a pull request merged on
+GitHub doesn't publish anything by itself otherwise: the Cloudflare build that
+comments on pull requests is a different Worker. The developer site stays a
+deliberate `ship.sh --dev`.
+
 ## Deploy — GitHub Pages on oplocloud.com
 
 This repo is set up to publish to **GitHub Pages** at the apex domain
