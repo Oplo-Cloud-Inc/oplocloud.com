@@ -6,7 +6,8 @@ learn/lab/core.js keeps a map of the files it loads only when a student opens
 a lab course — the manipulatives and each unit's lessons — with a stamp that
 changes whenever a file does, so a browser never runs yesterday's copy. This
 rewrites that map from the files on disk: learn/lab/widgets.js, a course's
-own kit (learn/lab/bizkit.js for Business) and every learn/<course>/uNN.js
+own kit (learn/lab/bizkit.js for Business, learn/lab/histkit.js for Global
+History I) and every learn/<course>/uNN.js
 that exists, stamped with the first eight characters of
 its SHA-1. A unit whose file does not exist yet is left out, and its page
 says it is still being written.
@@ -25,7 +26,7 @@ import sys
 
 LEARN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "learn")
 CORE = os.path.join(LEARN, "lab", "core.js")
-COURSES = ["alg", "g8", "geo", "biz"]
+COURSES = ["alg", "g8", "geo", "biz", "hist"]
 
 
 def stamp(path):
@@ -34,7 +35,7 @@ def stamp(path):
 
 
 def build():
-    files = [("lab/" + f, os.path.join(LEARN, "lab", f)) for f in ("widgets.js", "bizkit.js")]
+    files = [("lab/" + f, os.path.join(LEARN, "lab", f)) for f in ("widgets.js", "bizkit.js", "histkit.js")]
     for c in COURSES:
         for p in sorted(glob.glob(os.path.join(LEARN, c, "u[0-9][0-9].js"))):
             files.append((c + "/" + os.path.basename(p), p))

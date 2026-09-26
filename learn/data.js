@@ -599,6 +599,70 @@ window.OPLO = (function () {
               "The units follow its chapters; the lessons, examples and problems are OEdu's own."
   };
 
+  /* Global History I is a lab course that takes turns between two kinds of
+     lesson: readings (short pages with pictures, primary sources and words to
+     tap open, and a question after each page) and interactive lessons, where
+     each idea is met by doing something first (learn/lab/, the history kit in
+     learn/lab/histkit.js, learn/hist/). Its units follow the chapters of
+     OpenStax's World History, Volume 1: to 1500; a unit without a file yet
+     stays on the syllabus. */
+  var HIST = {
+    id: "hist", t: "Global History I", hue: "#d4533b", subject: "Humanities",
+    level: "High School", tag: "Reading & Interactive", lab: true,
+    d: "The human story from the first people to 1500 — read closely, and questioned the way a historian would.",
+    lede: "World history the way a historian works: a few short pages to read, then something to do — drag dates onto " +
+          "a line, slide Greenland to the equator, question a conqueror's letter, build a pyramid of causes. Readings and " +
+          "hands-on lessons take turns, from the first humans to the year 1500.",
+    glyph: '<path d="M3 20h18M4 17h16M12 3 3 8h18z"/><path d="M6 10v7M10 10v7M14 10v7M18 10v7"/>',
+    objectives: [
+      "Explain what history is for, and read dates, centuries and maps the way historians do.",
+      "Tell primary from secondary sources, and question any source for its author, audience, intent and context.",
+      "Explain events by their causes, and compare how different kinds of historians interpret them.",
+      "Trace how the first humans, cities and civilizations arose in Africa, Asia, Europe and the Americas.",
+      "Compare the great empires and faiths of the ancient and medieval world, and the trade that linked them.",
+      "Explain how climate, disease and conquest reshaped the world in the centuries before 1500."
+    ],
+    units: [
+      { t: "Understanding the past", lab: true,
+        desc: "What history is for, dates and maps, primary sources and how to question them, and how historians explain causes and argue over what they mean." },
+      { t: "Early humans", lab: true,
+        desc: "Human origins and the migrations out of Africa, life in the Paleolithic, and the Neolithic Revolution that brought farming and settled villages." },
+      { t: "Early civilizations and urban societies", lab: true,
+        desc: "What makes a civilization, and the first cities and states of Mesopotamia, Egypt and the Indus Valley." },
+      { t: "The Near East", lab: true,
+        desc: "From Old Babylon to the Medes, Egypt's New Kingdom, the Persian Empire, and the Hebrews." },
+      { t: "Asia in ancient times", lab: true,
+        desc: "Ancient China, the peoples of the steppes, Korea, Japan and Southeast Asia, and India from the Vedic age to the Maurya Empire." },
+      { t: "Mediterranean peoples", lab: true,
+        desc: "Early Mediterranean peoples, ancient Greece, the Hellenistic world, the Roman Republic, and the age of Augustus." },
+      { t: "Experiencing the Roman Empire", lab: true,
+        desc: "Daily life in a Roman family, slavery, an economy of trade, taxes and conquest, religion, and the regions of the empire." },
+      { t: "The Americas in ancient times", lab: true,
+        desc: "How people reached and settled the Americas, its early cultures and civilizations, and the age of empires." },
+      { t: "Africa in ancient times", lab: true,
+        desc: "Africa's geography and climate, the spread of farming and the Bantu migrations, the kingdom of Kush, and North Africa's links across the Mediterranean and the Sahara." },
+      { t: "Empires of faith", lab: true,
+        desc: "The eastward shift of the Roman world, Byzantium and Persia, the kingdoms of Aksum and Himyar, and life at the margins of empire." },
+      { t: "The rise of Islam and the caliphates", lab: true,
+        desc: "The rise and message of Islam, the Arab-Islamic conquests and the first Islamic states, and religious rule under Islam." },
+      { t: "India, the Indian Ocean and East Asia", lab: true,
+        desc: "The Indian Ocean world, exchange between East and West in the early Middle Ages, and the border states of Sogdiana, Korea and Japan." },
+      { t: "The post-Roman West and the Crusades", lab: true,
+        desc: "Western Europe after Rome, the Seljuk migration, the papacy's call to crusade, and the crusading movement." },
+      { t: "The Mongol Empire", lab: true,
+        desc: "Song China and the steppe peoples, Chinggis Khan and the early Mongol Empire, its break-up, and Christianity and Islam beyond Central Asia." },
+      { t: "States and societies in sub-Saharan Africa", lab: true,
+        desc: "Culture and society in medieval Africa, its kingdoms and states, and the peoples of the Sahel." },
+      { t: "Climate change and plague in the 1300s", lab: true,
+        desc: "Asia, North Africa and Europe in the early 1300s, famine and a changing climate, the Black Death, and its long-term effects." },
+      { t: "The Ottomans, the Mamluks and the Ming", lab: true,
+        desc: "The Ottomans and the Mongols, from the Mamluks to Ming China, and gunpowder and nomads in an age of transition." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "World History, Volume 1: to 1500 — OpenStax, Rice University (openstax.org), CC BY-NC-SA 4.0. " +
+              "The units follow its chapters and its photographs are credited where they appear; the readings, lessons, examples and problems are OEdu's own."
+  };
+
   var BIO = {
     id: "bio", t: "Biology", hue: GREEN, subject: "Science", level: "High School",
     d: "Cells, inheritance and ecosystems — systems that keep themselves going.",
@@ -651,8 +715,10 @@ window.OPLO = (function () {
     { n: "Social Studies", hue: "#e8a317",
       d: "How societies organise themselves — economies, institutions, and the past that shaped them.",
       courses: [BIZ,
-        stub("hist", "World History", "Social Studies", "#e8a317", "Causes and consequences, argued from sources rather than recited.", GLOBE),
-        stub("civ",  "Civics",        "Social Studies", "#e8a317", "How power is arranged, checked, and used where you live.", GLOBE)] }
+        stub("civ",  "Civics",        "Social Studies", "#e8a317", "How power is arranged, checked, and used where you live.", GLOBE)] },
+    { n: "Humanities", hue: "#d4533b",
+      d: "The human story — how people lived, believed and made sense of their world, read closely and questioned like a historian.",
+      courses: [HIST] }
   ];
 
   /* ------------------------------------------------------- Prerequisites
@@ -668,7 +734,9 @@ window.OPLO = (function () {
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
     geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [1], 7: [3], 8: [4] },
     biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
-           13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] }
+           13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] },
+    hist: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [3], 7: [6], 8: [2], 9: [2], 10: [7], 11: [10], 12: [5],
+            13: [7], 14: [12], 15: [9], 16: [14], 17: [16] }
   };
 
   /* ------------------------------------------------------------- Accounts
@@ -704,5 +772,5 @@ window.OPLO = (function () {
   function contacts() { return []; }
 
   return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE, ITERATIONS: ITERATIONS,
-           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, BIO: BIO, CONTACTS: contacts };
+           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, HIST: HIST, BIO: BIO, CONTACTS: contacts };
 })();

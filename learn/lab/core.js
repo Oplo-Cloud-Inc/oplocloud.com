@@ -37,12 +37,14 @@ window.OPLO_LAB = (function () {
   var FILES = {
     "lab/widgets.js": "ed7a4947",
     "lab/bizkit.js": "78131d29",
+    "lab/histkit.js": "3bf034b8",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "637e74c0",
     "biz/u01.js": "5c45e6c8",
-    "biz/u02.js": "df0245cf"
+    "biz/u02.js": "df0245cf",
+    "hist/u01.js": "647c1892"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -962,8 +964,10 @@ window.OPLO_LAB = (function () {
   /* A course may bring a kit of its own, loaded after the manipulatives and
      before any of its units: Introduction to Business keeps its scenes (a
      stand you run, a market, the circular flow, the business cycle…) in
-     lab/bizkit.js, which no math course needs to download. */
-  var COURSE_KIT = { biz: "lab/bizkit.js" };
+     lab/bizkit.js, which no math course needs to download; Global History I
+     keeps its reading pages and its scenes (a timeline, a map that shows its
+     bias, a source to question) in lab/histkit.js. */
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js" };
   function kitFor(courseId) {
     return script("lab/widgets.js").then(function () {
       return COURSE_KIT[courseId] ? script(COURSE_KIT[courseId]) : null;
@@ -1012,6 +1016,7 @@ window.OPLO_LAB = (function () {
     x: '<path d="m7.5 7.5 9 9M16.5 7.5l-9 9"/>',
     down: '<path d="m6 9.5 6 6 6-6"/>',
     doc: '<path d="M7 3.5h6.5l5 5V19a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M13.5 3.5v5h5"/>',
+    book: '<path d="M4 5.5h5.5A2.5 2.5 0 0 1 12 8v11a2 2 0 0 0-2-2H4z"/><path d="M20 5.5h-5.5A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6z"/>',
     test: '<rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 3.5h6"/><path d="m8.5 12.5 2.2 2.2 4.8-5"/>',
     done: '<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.2 9.6"/>'
   };
@@ -1073,13 +1078,16 @@ window.OPLO_LAB = (function () {
     var lb = el("section", "lb-block");
     lb.appendChild(el("h2", "lb-h2", "Lessons"));
     var path = el("ol", "lb-path");
+    // A unit that mixes readings with interactive lessons says which is which.
+    var mixed = u.lessons.some(function (l) { return l.kind === "read"; });
     u.lessons.forEach(function (l, i) {
       var done = lessonDone(l), cur = l === nextLesson;
-      var li = el("li", "lb-node" + (done ? " done" : "") + (cur ? " cur" : ""));
+      var li = el("li", "lb-node" + (done ? " done" : "") + (cur ? " cur" : "") + (l.kind === "read" ? " read" : ""));
       var b = button("lb-lesson",
         '<span class="lb-dot">' + (done ? svg(ICON.check) : '<span>' + (i + 1) + "</span>") + "</span>" +
         '<span class="lb-ltxt"><b>' + esc(l.title) + "</b><span>" + esc(l.blurb || "") + "</span>" +
-        '<em>' + (l.steps.length) + " steps · about " + (l.mins || Math.max(4, Math.round(l.steps.length * 0.9))) + " min" +
+        '<em>' + (mixed ? (l.kind === "read" ? '<i class="lb-kind read">' + svg(ICON.book) + "Reading</i> · " : '<i class="lb-kind">Interactive</i> · ') : "") +
+        (l.steps.length) + " steps · about " + (l.mins || Math.max(4, Math.round(l.steps.length * 0.9))) + " min" +
         (done ? " · done" : "") + "</em></span>" +
         (cur ? '<span class="lb-go">' + (hasStarted(l) ? "Continue" : "Start") + svg(ICON.arrow) + "</span>" : ""));
       b.addEventListener("click", function () { ctx.go.lesson(l.k); });
@@ -1159,7 +1167,7 @@ window.OPLO_LAB = (function () {
   function unitSeq(u) {
     var seq = [];
     u.lessons.forEach(function (l) {
-      seq.push({ kind: "lesson", k: l.k, title: l.title, label: u.n + "." + l.k, done: lessonDone(l) });
+      seq.push({ kind: "lesson", k: l.k, title: l.title, label: u.n + "." + l.k, done: lessonDone(l), read: l.kind === "read" });
       u.quizzes.filter(function (q) { return q.after === l.k; }).forEach(function (q) {
         seq.push({ kind: "quiz", k: q.k, title: q.title, label: q.title, done: !!REC.tests[q.unit + ":q" + q.k] });
       });
@@ -1235,7 +1243,7 @@ window.OPLO_LAB = (function () {
         var li = el("li");
         var cur = isHere(it, here);
         var open = cur && it.kind === "lesson";
-        var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : ICON.doc;
+        var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : it.read ? ICON.book : ICON.doc;
         var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
         var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
           '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
