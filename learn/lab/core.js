@@ -36,12 +36,13 @@ window.OPLO_LAB = (function () {
      date by tools/lab_stamps.py. */
   var FILES = {
     "lab/widgets.js": "ed7a4947",
-    "lab/bizkit.js": "186a8759",
+    "lab/bizkit.js": "78131d29",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "637e74c0",
-    "biz/u01.js": "5c45e6c8"
+    "biz/u01.js": "5c45e6c8",
+    "biz/u02.js": "df0245cf"
   };
 
   /* ------------------------------------------------------------ Helpers */

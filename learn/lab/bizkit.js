@@ -32,6 +32,12 @@
      events      and watch the equilibrium move
      retain      keeping customers: how many are left after five years if a
      business    loses a share of them every year
+     dilemma     a hard choice: pick an option and see how it lands on each
+     person      or group it touches — then try the others
+     pyramid     a pyramid built from the bottom up — each level only
+     appears     once the one beneath it is in place (the CSR pyramid)
+     hub         one thing in the middle and the groups around it: tap each
+     to          see what it expects (a company and its stakeholders)
    Also here for the units: L.B (the helpers), L.icon and L.card (line
    pictures for cards), L.tiles (a row of pictures), L.photo (the course's
    photographs, each with its credit) and L.usd (dollars for lesson text).
@@ -334,7 +340,13 @@
     check: '<path d="M4 12.5 9.5 18 20 6"/>',
     x: '<path d="M6 6l12 12M18 6 6 18"/>',
     question: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17" r=".6"/>',
-    arrow: '<path d="M4 12h16M14 6l6 6-6 6"/>'
+    arrow: '<path d="M4 12h16M14 6l6 6-6 6"/>',
+    shield: '<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+    eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+    news: '<rect x="3" y="4.5" width="15" height="15" rx="1.5"/><path d="M18 8h2.5v9.5a2 2 0 0 1-4 0V8M6.5 8.5h8M6.5 12h8M6.5 15.5h5"/>',
+    book: '<path d="M4 4.5h6.5A2.5 2.5 0 0 1 13 7v12a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-6.5A2.5 2.5 0 0 0 11 7v12a2 2 0 0 1 2-2h7z"/>',
+    gift: '<rect x="3.5" y="8.5" width="17" height="4" rx="1"/><path d="M5 12.5V20h14v-7.5M12 8.5V20"/><path d="M12 8.5C10 8.5 7.5 7.8 7.5 6a2 2 0 0 1 4-.5L12 8.5l.5-3a2 2 0 0 1 4 .5c0 1.8-2.5 2.5-4.5 2.5z"/>',
+    star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8-4.2-4.1 5.9-.9z"/>'
   };
   function icon(name, cls) {
     var p = ICONS[name] || ICONS.question;
@@ -383,7 +395,17 @@
              credit: "Paul Sullivan / Flickr, CC BY-ND 2.0" },
     solar: { src: "solar-roofs.jpg", w: 1200, h: 493,
              alt: "Rooftops covered with solar panels, seen from above, beside a winding road.",
-             credit: "Marco Verch / Flickr, CC BY 2.0" }
+             credit: "Marco Verch / Flickr, CC BY 2.0" },
+    // Unit 2
+    monopoly: { dir: "media/biz/u02/", src: "monopoly.jpg", w: 1200, h: 767,
+                alt: "A Monopoly board game box from Hasbro on a store shelf.",
+                credit: "Ben Tsai / Flickr, public domain" },
+    social: { dir: "media/biz/u02/", src: "social-phone.jpg", w: 1200, h: 960,
+              alt: "A hand holding a smartphone whose screen is full of social media app icons.",
+              credit: "Mike MacKenzie / Flickr, CC BY 2.0" },
+    ev: { dir: "media/biz/u02/", src: "electric-truck.jpg", w: 650, h: 289,
+          alt: "A green all-electric pickup truck parked beside a charging station.",
+          credit: "Ajay Suresh / Flickr, CC BY 2.0" }
   };
   var PHOTO_DIR = "media/biz/u01/";
   /* photo("rubicon", "Team Rubicon trains volunteers for disaster relief.") → a <figure> for `art`. */
@@ -391,7 +413,7 @@
     var p = PHOTOS[key];
     if (!p) return "";
     o = o || {};
-    return '<figure class="bz-photo' + (o.tall ? " tall" : "") + '"><img src="' + PHOTO_DIR + p.src + '" alt="' + esc(o.alt || p.alt) +
+    return '<figure class="bz-photo' + (o.tall ? " tall" : "") + '"><img src="' + (p.dir || PHOTO_DIR) + p.src + '" alt="' + esc(o.alt || p.alt) +
       '" width="' + p.w + '" height="' + p.h + '" loading="lazy" decoding="async">' +
       "<figcaption>" + (caption ? "<span>" + caption + "</span>" : "") + "<small>Photo: " + esc(p.credit) + "</small></figcaption></figure>";
   }
@@ -1789,6 +1811,251 @@
     api.ready = function () { return mode.explore ? (spec.gate ? moved && met() : true) : moved; };
     api.check = function () { var ok = met(); return { ok: ok, say: ok ? null : "Set the yearly loss to " + (spec.goal && spec.goal.lose) + "%." }; };
     api.reveal = function () { if (spec.goal && spec.goal.lose != null) { lose = spec.goal.lose; sl.set(lose); } moved = true; paint(); };
+    return api;
+  });
+
+  /* ============================================================= Dilemma
+     //: dilemma    a hard choice: pick an option and see how it lands on each
+     //:            person or group it touches — then try the others
+     Ethics is about consequences and duties to real people, so the choice is
+     made first and the outcome shown after: a row per stakeholder with an
+     arrow (better off, worse off, no change) and a line saying why, plus a
+     closing sentence. With gate, Continue waits until every option has been
+     tried. As a problem, the student picks one and Check compares it with
+     `answer`.
+       spec: { options: [{ key, t: "Pay the bribe", say: "…",
+                           effects: [{ who: "Employees", i: "worker", d: 1 | 0 | -1, t: "…" }] }],
+               gate, answer, fb: { key: "…" } }
+     `t` and `say` are lesson text (formatted by the lab); `who` is plain. */
+  B.css([
+    ".bz-dl-opts { display: grid; gap: 8px; }",
+    ".bz-dl-opt { display: flex; align-items: center; gap: 12px; text-align: left; border: 0; font: inherit; font-size: 15.5px; color: var(--ink);",
+    "  padding: 12px 14px; border-radius: 14px; background: var(--lw-surface); cursor: pointer; box-shadow: inset 0 0 0 1.5px var(--lw-grid); }",
+    ".bz-dl-opt:hover { box-shadow: inset 0 0 0 1.5px var(--ink-2); }",
+    ".bz-dl-opt.on { box-shadow: inset 0 0 0 2px var(--lw-blue); }",
+    ".bz-dl-opt .tag { margin-left: auto; font-size: 12px; color: var(--ink-2); white-space: nowrap; }",
+    ".bz-dl-opt .tag.seen { color: var(--lw-green); }",
+    ".bz-dl-opt .let { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--lw-grid); }",
+    ".bz-dl-out { border-radius: 16px; background: var(--lw-surface); padding: 12px 14px; display: grid; gap: 8px; }",
+    ".bz-dl-out.in { animation: bz-rise .3s cubic-bezier(.2,.7,.2,1) both; }",
+    ".bz-dl-row { display: grid; grid-template-columns: 26px 110px 22px 1fr; gap: 10px; align-items: center; font-size: 14.5px; line-height: 1.4; }",
+    ".bz-dl-row .bz-ic { width: 22px; height: 22px; color: var(--ink-2); }",
+    ".bz-dl-row b { font-size: 13.5px; color: var(--ink-2); font-weight: 600; }",
+    ".bz-dl-row .d { font-size: 17px; font-weight: 800; text-align: center; }",
+    ".bz-dl-row .d.up { color: var(--lw-green); } .bz-dl-row .d.dn { color: var(--lw-red); } .bz-dl-row .d.eq { color: var(--ink-2); }",
+    ".bz-dl-say { border-top: 1px solid var(--lw-grid); padding-top: 8px; font-size: 15px; color: var(--ink); }",
+    "@media (max-width: 560px) { .bz-dl-row { grid-template-columns: 22px 1fr 20px; } .bz-dl-row > span:last-child { grid-column: 1 / -1; } }"
+  ].join("\n"));
+  CH.addKind("dilemma", function (spec, seed, mode) {
+    var api = {}, opts = spec.options || [], tried = {}, pick = null;
+    var box = el("div", "lw bz bz-dilemma");
+    var list = el("div", "bz-dl-opts");
+    box.appendChild(list);
+    var out = el("div", "bz-dl-out");
+    out.hidden = true;
+    box.appendChild(out);
+    var read = readout();
+    box.appendChild(read);
+    var btns = opts.map(function (o, k) {
+      var b = button("bz-dl-opt", '<span class="let">' + String.fromCharCode(65 + k) + "</span><span>" + (o.t || "") + '</span><span class="tag"></span>');
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () { choose(k); });
+      list.appendChild(b);
+      return b;
+    });
+    function choose(k) {
+      pick = k; tried[k] = true;
+      var o = opts[k];
+      btns.forEach(function (b, i) {
+        b.classList.toggle("on", i === k); b.setAttribute("aria-pressed", String(i === k));
+        var tg = b.querySelector(".tag");
+        tg.textContent = tried[i] ? (mode.explore ? "tried ✓" : "") : "";
+        tg.classList.toggle("seen", !!tried[i]);
+      });
+      out.hidden = false;
+      out.classList.remove("in"); void out.offsetWidth; if (!B.reduced()) out.classList.add("in");
+      out.innerHTML = (o.effects || []).map(function (e) {
+        var d = e.d > 0 ? '<span class="d up" aria-label="better off">▲</span>' : e.d < 0 ? '<span class="d dn" aria-label="worse off">▼</span>' : '<span class="d eq" aria-label="no change">–</span>';
+        return '<div class="bz-dl-row">' + icon(e.i || "person") + "<b>" + esc(e.who || "") + "</b>" + d + "<span>" + (e.t || "") + "</span></div>";
+      }).join("") + (o.say ? '<div class="bz-dl-say">' + o.say + "</div>" : "");
+      paint();
+    }
+    function paint() {
+      var n = Object.keys(tried).length;
+      read.innerHTML = pick == null ? (mode.explore ? "Pick a choice to see what happens." : "Pick the choice you think is best.") :
+        mode.explore && spec.gate && n < opts.length ? "Now try another choice — " + n + " of " + opts.length + " tried." : "";
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return mode.explore ? (spec.gate ? Object.keys(tried).length >= opts.length : true) : pick != null; };
+    api.check = function () {
+      var key = pick != null ? opts[pick].key : null, ok = key === spec.answer;
+      return { ok: ok, say: ok ? null : (spec.fb && spec.fb[key] && fmt(spec.fb[key])) || "Look again at who is harmed by that choice, and whether it's honest and fair." };
+    };
+    api.reveal = function () {
+      opts.forEach(function (o, i) { tried[i] = true; });
+      var k = opts.map(function (o) { return o.key; }).indexOf(spec.answer);
+      choose(k < 0 ? 0 : k);
+    };
+    return api;
+  });
+
+  /* ============================================================= Pyramid
+     //: pyramid    a pyramid built from the bottom up — each level only
+     //:            appears once the one beneath it is in place (the CSR pyramid)
+     spec: { levels: [{ key, name, i, c, t }] (bottom first; default: the four
+             responsibilities of corporate social responsibility), gate,
+             answer: key, fb: { key: "…" } }
+     Explore: the next level up is a dashed outline; tapping it lays it
+     down and says what it means. With gate, Continue waits until the whole
+     pyramid is built. As a problem the pyramid is complete, and the student
+     taps the level the question is about. */
+  B.css([
+    ".bz-py .lw-svg { max-height: 330px; }",
+    ".bz-py-lv { cursor: pointer; }",
+    ".bz-py-lv path { stroke: var(--lw-surface); stroke-width: 3; transition: opacity .3s, transform .3s; }",
+    ".bz-py-lv.todo path { fill: transparent; stroke: var(--ink-2); stroke-dasharray: 6 6; stroke-width: 1.5; }",
+    ".bz-py-lv.todo text { fill: var(--ink-2); }",
+    ".bz-py-lv.hidden { opacity: 0; pointer-events: none; }",
+    ".bz-py-lv.on path { stroke: var(--ink); stroke-width: 3; }",
+    ".bz-py-lv text { font-size: 15px; font-weight: 700; fill: #fff; pointer-events: none; }",
+    ".bz-py-lv:focus { outline: none; } .bz-py-lv:focus-visible path { stroke: var(--blue); stroke-width: 4; }",
+    ".bz-py-card { border-radius: 16px; background: var(--lw-surface); padding: 12px 16px; font-size: 15.5px; line-height: 1.45; color: var(--ink); min-height: 48px; }",
+    ".bz-py-card b.nm { display: block; font-size: 13px; letter-spacing: .03em; text-transform: uppercase; margin-bottom: 2px; }"
+  ].join("\n"));
+  var PYRAMID_CSR = [
+    { key: "eco", name: "Economic", c: "blue", t: "**Be profitable.** A business that can't make a profit won't survive — so this is the foundation for everything above it." },
+    { key: "leg", name: "Legal", c: "purple", t: "**Obey the law.** Society's rules for business, written down." },
+    { key: "eth", name: "Ethical", c: "orange", t: "**Do what is right, just and fair** — even where no law requires it." },
+    { key: "phi", name: "Philanthropic", c: "green", t: "**Be a good corporate citizen:** give money, products and time to make the community better." }
+  ];
+  CH.addKind("pyramid", function (spec, seed, mode) {
+    var api = {}, lv = spec.levels || PYRAMID_CSR.map(function (L) { return Object.assign({}, L, { t: fmt(L.t) }); }), n = lv.length, built = mode.explore ? 0 : n, pick = null, seen = {};
+    var box = el("div", "lw bz bz-py");
+    var W = 520, H = 60 * n + 30;
+    var svg = svgRoot(W, H, "");
+    svg.setAttribute("aria-label", "A pyramid with " + n + " levels");
+    box.appendChild(svg);
+    var card = el("div", "bz-py-card");
+    box.appendChild(card);
+    var groups = lv.map(function (L, k) {
+      // Level k from the bottom: a trapezoid (the top one a triangle).
+      var yb = H - 10 - k * 60, yt = yb - 56;
+      // A stepped pyramid with a flat top, so every level has room for its name.
+      function half(y) { return (y - 10) / (H - 20) * (W / 2 - 70) + 44; }
+      var hb = half(yb), ht = half(yt);
+      var g = S("g", { class: "bz-py-lv", tabindex: 0, role: "button", "aria-label": L.name }, svg);
+      var p = S("path", { d: "M" + (W / 2 - hb) + " " + yb + "L" + (W / 2 + hb) + " " + yb + "L" + (W / 2 + ht) + " " + yt + "L" + (W / 2 - ht) + " " + yt + "Z",
+                          class: "f-" + (L.c || "blue") }, g);
+      var tx = S("text", { x: W / 2, y: yb - 23, "text-anchor": "middle" }, g);
+      tx.textContent = L.name;
+      g.addEventListener("click", function () { tap(k); });
+      g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tap(k); } });
+      return { g: g, tx: tx };
+    });
+    function tap(k) {
+      if (k >= built) { if (k === built) { built++; seen[k] = true; pick = k; } else return; }
+      else { pick = k; seen[k] = true; }
+      paint();
+    }
+    function paint() {
+      groups.forEach(function (o, k) {
+        o.g.classList.toggle("todo", k === built && mode.explore);
+        o.g.classList.toggle("hidden", k > built || (k === built && !mode.explore));
+        o.g.classList.toggle("on", k === pick);
+        o.tx.textContent = k === built && mode.explore ? "Tap to add the next level" : lv[k].name;
+      });
+      card.innerHTML = pick != null ? '<b class="nm k-' + (lv[pick].c || "blue") + '">' + esc(lv[pick].name) + "</b>" + (lv[pick].t || "") :
+        mode.explore ? "Start at the bottom: tap the dashed level to lay the foundation." : "Tap the level the question is about.";
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return mode.explore ? (spec.gate ? built >= n : true) : pick != null; };
+    api.check = function () {
+      var key = pick != null ? lv[pick].key : null, ok = key === spec.answer;
+      return { ok: ok, say: ok ? null : (spec.fb && spec.fb[key] && fmt(spec.fb[key])) || "Not that level — read what each one asks of a business." };
+    };
+    api.reveal = function () {
+      built = n;
+      var k = lv.map(function (L) { return L.key; }).indexOf(spec.answer);
+      pick = k < 0 ? n - 1 : k;
+      paint();
+    };
+    return api;
+  });
+
+  /* ================================================================= Hub
+     //: hub        one thing in the middle and the groups around it: tap each
+     //:            to see what it expects (a company and its stakeholders)
+     spec: { center: { i: "store", name: "The company" },
+             nodes: [{ key, i, name, c, t }], gate, answer: key, fb: { key: "…" } }
+     Explore: tapping a node lights its spoke and shows its text; with gate,
+     Continue waits until every node has been opened. As a problem, tap the
+     node the question describes. `t` is lesson text; `name` is plain. */
+  B.css([
+    ".bz-hub .lw-svg { max-height: 360px; }",
+    ".bz-hb-spoke { stroke: var(--lw-grid); stroke-width: 3; transition: stroke .2s; }",
+    ".bz-hb-spoke.on { stroke: currentColor; stroke-width: 4; }",
+    ".bz-hb-c { fill: var(--lw-tile); stroke: var(--lw-grid); stroke-width: 2; }",
+    ".bz-hb-n circle { fill: var(--lw-tile); stroke: currentColor; stroke-width: 2.5; transition: stroke-width .2s; }",
+    ".bz-hb-n { cursor: pointer; }",
+    ".bz-hb-n.seen circle { fill: color-mix(in srgb, currentColor 16%, var(--lw-tile)); }",
+    ".bz-hb-n.on circle { stroke-width: 5; }",
+    ".bz-hb-n:focus { outline: none; } .bz-hb-n:focus-visible circle { stroke: var(--blue); stroke-width: 5; }",
+    ".bz-hb-lab { font-size: 14px; font-weight: 700; fill: var(--ink); pointer-events: none; }",
+    ".bz-hb-card { border-radius: 16px; background: var(--lw-surface); padding: 12px 16px; font-size: 15.5px; line-height: 1.45; color: var(--ink); min-height: 48px; }",
+    ".bz-hb-card b.nm { display: block; font-size: 13px; letter-spacing: .03em; text-transform: uppercase; margin-bottom: 2px; }"
+  ].join("\n"));
+  CH.addKind("hub", function (spec, seed, mode) {
+    var api = {}, nodes = spec.nodes || [], seen = {}, pick = null;
+    var box = el("div", "lw bz bz-hub");
+    var W = 560, H = 372, cx = W / 2, cy = 172, R = 118;
+    var svg = svgRoot(W, H, "");
+    svg.setAttribute("aria-label", (spec.center && spec.center.name || "The center") + " and " + nodes.length + " groups around it");
+    box.appendChild(svg);
+    var card = el("div", "bz-hb-card");
+    box.appendChild(card);
+    var spokes = S("g", {}, svg);
+    var ctr = spec.center || { i: "store", name: "The company" };
+    S("circle", { cx: cx, cy: cy, r: 58, class: "bz-hb-c" }, svg);
+    iconAt(svg, ctr.i || "store", cx, cy - 10, 34, "k-yellow");
+    S("text", { x: cx, y: cy + 26, "text-anchor": "middle", class: "bz-hb-lab" }, svg).textContent = ctr.name;
+    var els = nodes.map(function (nd, k) {
+      var a = -Math.PI / 2 + k * 2 * Math.PI / nodes.length;
+      var x = cx + Math.cos(a) * R * 1.55, y = cy + Math.sin(a) * R;
+      var sp = S("line", { x1: cx, y1: cy, x2: x, y2: y, class: "bz-hb-spoke k-" + (nd.c || "blue") }, spokes);
+      var g = S("g", { class: "bz-hb-n k-" + (nd.c || "blue"), tabindex: 0, role: "button", "aria-label": nd.name }, svg);
+      S("circle", { cx: x, cy: y, r: 34 }, g);
+      iconAt(g, nd.i || "person", x, y - 1, 30, "");
+      var ly = y + 52;
+      S("text", { x: x, y: ly, "text-anchor": "middle", class: "bz-hb-lab" }, g).textContent = nd.name;
+      g.addEventListener("click", function () { tap(k); });
+      g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tap(k); } });
+      return { g: g, sp: sp };
+    });
+    function tap(k) { pick = k; seen[k] = true; paint(); }
+    function paint() {
+      els.forEach(function (o, k) { o.g.classList.toggle("on", k === pick); o.g.classList.toggle("seen", !!seen[k]); o.sp.classList.toggle("on", k === pick); });
+      var n = Object.keys(seen).length;
+      card.innerHTML = pick != null ? '<b class="nm k-' + (nodes[pick].c || "blue") + '">' + esc(nodes[pick].name) + "</b>" + (nodes[pick].t || "") +
+          (mode.explore && spec.gate && n < nodes.length ? ' <span class="k-muted">(' + n + " of " + nodes.length + ")</span>" : "")
+        : (mode.explore ? "Tap each circle." : "Tap the one the question describes.");
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return mode.explore ? (spec.gate ? Object.keys(seen).length >= nodes.length : true) : pick != null; };
+    api.check = function () {
+      var key = pick != null ? nodes[pick].key : null, ok = key === spec.answer;
+      return { ok: ok, say: ok ? null : (spec.fb && spec.fb[key] && fmt(spec.fb[key])) || "Not that group — who is the question about?" };
+    };
+    api.reveal = function () {
+      nodes.forEach(function (x, i) { seen[i] = true; });
+      var k = nodes.map(function (x) { return x.key; }).indexOf(spec.answer);
+      tap(k < 0 ? 0 : k);
+    };
     return api;
   });
 
