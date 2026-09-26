@@ -612,6 +612,9 @@
       if (sameName(seg[3], "Quiz") && /^\d+$/.test(seg[4] || "")) { openLab(c, n, "Quiz/" + seg[4]); return true; }
       return false;
     }
+    // A lab course's unit that isn't written yet has no pages below it — not
+    // even a reader left over from before the course became a lab one.
+    if (c.lab) return false;
     if (sameName(seg[3], "Practice")) {
       S.course = c; S.unitIx = n; S.unit = unitsOf(c).filter(function (u) { return u.n === n; })[0];
       startPractice(false);

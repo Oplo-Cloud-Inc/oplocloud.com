@@ -36,10 +36,12 @@ window.OPLO_LAB = (function () {
      date by tools/lab_stamps.py. */
   var FILES = {
     "lab/widgets.js": "ed7a4947",
+    "lab/bizkit.js": "186a8759",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
-    "geo/u01.js": "637e74c0"
+    "geo/u01.js": "637e74c0",
+    "biz/u01.js": "5c45e6c8"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -956,10 +958,20 @@ window.OPLO_LAB = (function () {
     });
     return loading[path];
   }
+  /* A course may bring a kit of its own, loaded after the manipulatives and
+     before any of its units: Introduction to Business keeps its scenes (a
+     stand you run, a market, the circular flow, the business cycle…) in
+     lab/bizkit.js, which no math course needs to download. */
+  var COURSE_KIT = { biz: "lab/bizkit.js" };
+  function kitFor(courseId) {
+    return script("lab/widgets.js").then(function () {
+      return COURSE_KIT[courseId] ? script(COURSE_KIT[courseId]) : null;
+    });
+  }
   function load(courseId, n) {
     var key = courseId + ":" + n;
-    if (UNITS[key]) return script("lab/widgets.js").then(function () { return UNITS[key]; });
-    return script("lab/widgets.js").then(function () { return script(fileFor(courseId, n)); })
+    if (UNITS[key]) return kitFor(courseId).then(function () { return UNITS[key]; });
+    return kitFor(courseId).then(function () { return script(fileFor(courseId, n)); })
       .then(function () {
         if (!UNITS[key]) throw new Error("That unit isn't written yet.");
         return UNITS[key];

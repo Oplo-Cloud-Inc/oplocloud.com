@@ -366,14 +366,6 @@ window.OPLO = (function () {
     "The “Web 2.0”", "Waves and Sound", "Intro to Photography", "Video Basics",
     "Intro to Animation", "Audio/Video Production"];
 
-  var BIZ_A = ["Introduction to Business", "Economics and Business",
-    "Business Ethics and Social Responsibility", "International Business", "Business Writing",
-    "Types of Business Ownership", "Small Business and Entrepreneurship", "Management",
-    "Organizational Structure", "Operations Management", "Motivation Theories and Applications"];
-  var BIZ_B = ["Human Resource Management", "Organized Labor Relations", "Marketing and the Customer",
-    "Product and Pricing Strategies", "Product Distribution", "Marketing Communications",
-    "Financial Statements", "Financial Management", "Managing Information Technology",
-    "Functions of Money and Banking"];
 
   var SEEING = {
     id: "seeing", t: "Seeing numbers", hue: BLUE, subject: "Math", level: "Beginner",
@@ -544,24 +536,67 @@ window.OPLO = (function () {
     textbook: "EHS Media Arts — © Excel Education Systems, Inc., 2021."
   };
 
+  /* Introduction to Business is a lab course like Algebra I: its units are
+     interactive lessons, practice that makes its own problems, and tests
+     (learn/lab/, the business kit in learn/lab/bizkit.js, learn/biz/). The
+     units follow the chapters of OpenStax's Introduction to Business 2e; a
+     unit without a file yet stays on the syllabus. */
   var BIZ = {
     id: "biz", t: "Introduction to Business", hue: "#e8a317", subject: "Social Studies",
-    level: "Introductory", tag: "Two semesters",
-    d: "Planning and launching something real — economics, structure, money and the plan that holds it together.",
-    lede: "What it actually takes to plan and launch a product or service. Economics, costs and profit, business types, money and taxes, financing, and how a business sits inside the society around it — built toward writing a plan you could hand to somebody.",
+    level: "Introductory", tag: "Interactive", lab: true,
+    d: "What a business is, the economy around it, and what it takes to run one — learned by doing.",
+    lede: "Business, taught the way you would learn to run one. You run a stand and watch profit appear, " +
+          "move a market until its price settles, follow money around the economy and steer it with the " +
+          "Fed's levers — every idea met by doing something, practiced until it is easy, and tested until it sticks.",
     glyph: '<path d="M3 20h18M6 20V9l6-4 6 4v11"/><path d="M10 20v-5h4v5"/>',
     objectives: [
-      "Understand basic economic principles.",
-      "Develop workplace communication skills.",
-      "Describe how businesses are structured and operated.",
-      "Design a business plan.",
-      "Weigh financial risks and rewards."
+      "Explain how businesses and not-for-profits create a standard of living, and what they need to do it.",
+      "Use supply and demand, growth, jobs and prices to explain what is happening in an economy.",
+      "Make and defend ethical decisions, and weigh a business's duties to everyone it affects.",
+      "Compare the forms of business ownership, and plan what it takes to start one.",
+      "Describe how businesses are managed, organized, staffed and motivated.",
+      "Explain how products are made, priced, distributed and promoted.",
+      "Read financial statements, and explain how money, banks and markets finance a business."
     ],
-    parts: [{ name: "Semester A", units: BIZ_A }, { name: "Semester B", units: BIZ_B }],
-    sets: { 1: "biz-1", 2: "biz-2", 3: "biz-3", 4: "biz-4", 5: "biz-5" },
-    grading: [["Quizzes", 50], ["Written assignments", 20], ["Midterm and final exams", 30]],
-    textbook: "Introduction to Business — Boundless, CC BY-SA 4.0, as taught in the EHS " +
-               "Introduction to Business course, © Excel Education Systems, Inc."
+    units: [
+      { t: "Economic systems and business", lab: true,
+        desc: "What a business is and what it needs, the world around it, how economies are organized and measured, how governments steer them, and how supply and demand set a price." },
+      { t: "Ethics and social responsibility", lab: true,
+        desc: "Making ethical decisions, how organizations encourage good conduct, and what a business owes its stakeholders and society." },
+      { t: "Competing in the global marketplace", lab: true,
+        desc: "Why nations trade, the barriers in the way and what lowers them, the ways a business goes global, and what multinationals do." },
+      { t: "Forms of business ownership", lab: true,
+        desc: "Sole proprietorships, partnerships, corporations, franchises and cooperatives, and why companies merge and buy each other." },
+      { t: "Entrepreneurship and small business", lab: true,
+        desc: "What entrepreneurs are like, how a small business is started and run, and the help the Small Business Administration offers." },
+      { t: "Management and leadership", lab: true,
+        desc: "Planning, organizing, leading and controlling: what managers do, the roles they play and the skills they need." },
+      { t: "Designing organizational structures", lab: true,
+        desc: "Departments, teams and lines of authority, how centralized decisions should be, and the informal organization underneath." },
+      { t: "Human resources and labor relations", lab: true,
+        desc: "Hiring, training, paying and evaluating people, the laws that protect them, and how unions and managers bargain." },
+      { t: "Motivating employees", lab: true,
+        desc: "What makes people want to work well — the classic theories of motivation, and how companies put them to use." },
+      { t: "Operations management", lab: true,
+        desc: "Producing goods and services: where to make them, how to lay out the work, scheduling, quality and technology." },
+      { t: "Products and pricing", lab: true,
+        desc: "What a product is, how new ones are developed, the product life cycle, and how businesses set prices." },
+      { t: "Distribution and promotion", lab: true,
+        desc: "Getting products to customers through distribution channels and stores, and telling them about it with the promotional mix." },
+      { t: "Technology and information", lab: true,
+        desc: "Information systems and networks, and how businesses manage data, security and privacy." },
+      { t: "Accounting and financial information", lab: true,
+        desc: "The financial statements a business keeps, what they reveal, and the ratios that compare one business with another." },
+      { t: "Money and financial institutions", lab: true,
+        desc: "What money is and does, how banks and other institutions work, and the role of the Federal Reserve." },
+      { t: "Financial management and securities markets", lab: true,
+        desc: "Managing a firm's cash, raising money through debt and equity, and how stock and bond markets work." },
+      { t: "Your career in business", lab: true,
+        desc: "Choosing a path, finding and landing a job, and doing well once you have it." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "Introduction to Business 2e — OpenStax, Rice University (openstax.org), CC BY-NC-SA 4.0. " +
+              "The units follow its chapters; the lessons, examples and problems are OEdu's own."
   };
 
   var BIO = {
@@ -632,7 +667,8 @@ window.OPLO = (function () {
            13: [11], 14: [13, 10], 15: [11] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
     geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [1], 7: [3], 8: [4] },
-    biz: {}
+    biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
+           13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] }
   };
 
   /* ------------------------------------------------------------- Accounts
