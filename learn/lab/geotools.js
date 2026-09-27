@@ -70,8 +70,38 @@
     ".gt-sketch .gt-cap{text-align:center;font-size:14px;line-height:1.45;color:var(--ink-2)}" +
     ".gt-solid3 svg{cursor:grab}.gt-solid3 svg.on{cursor:grabbing}" +
     ".gt-hint{text-align:center;font-size:13px;color:var(--ink-3)}" +
-    ".gt-pname{font-family:var(--lw-mathf);font-size:22px;fill:currentColor;paint-order:stroke;stroke:var(--lw-surface);stroke-width:4px;stroke-linejoin:round}" +
-    ".gt-scr{font-family:var(--lw-mathf);font-size:1.22em;line-height:1;font-style:normal}"
+    ".gt-pname{font-size:22px;fill:currentColor;paint-order:stroke;stroke:var(--lw-surface);stroke-width:4px;stroke-linejoin:round}" +
+    ".gt-scr{font-size:1.22em;line-height:1;font-style:normal}"
+  );
+
+  /* ---------------------------------------------------------------- Type
+     Geometry sets its maths and its diagram labels in SF (San Francisco),
+     the face the words round them are already set in, so a sentence and
+     its maths read as one voice: italic letters for points and variables,
+     upright numbers and signs. SF is the system font of every Mac, iPhone
+     and iPad and is never downloaded — its licence doesn't allow it on a
+     website. Other systems get their own interface font (Segoe UI,
+     Roboto), and a maths face catches any symbol a system font lacks.
+     Everything here is scoped to the course's pages (data-course="geo",
+     set by lab/core.js), so no other course changes. The script capitals
+     that name planes stay in a maths face: SF has none. */
+  var SF = '"SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", "STIX Two Math", "Cambria Math", sans-serif';
+  var G = '[data-course="geo"]';
+  css(
+    G + "," + G + " .lw," + G + " .lb-unit," + G + " .ch-card{--lw-mathf:" + SF + "}" +
+    G + " .m{font-size:1em;font-kerning:normal}" +
+    G + " .m .mv{padding:0 .015em}" +
+    G + " .m .mt{font-size:1em}" +
+    G + " .m .mo{margin:0 .2em}" +
+    G + " .m .mf{font-size:.88em}" +
+    G + " .m .mov{border-top-width:.075em;padding-top:.06em}" +
+    G + " .lf-name," + G + " .gt-vname," + G + " .lw-mv-name{font-size:15px;font-weight:500}" +
+    G + " .lf-eqt{font-size:15px}" +
+    G + " .lf-it{font-size:1em;font-weight:500}" +
+    G + " .lw-pl," + G + " .lw-tl{font-size:14px}" +
+    G + " .lw-tl," + G + " .lw-axl text," + G + " .lf-num," + G + " .gt-rnum," + G + " .gt-pout," + G + " .gt-pin," + G + " .lw-read," + G + " .lb-in{font-variant-numeric:tabular-nums}" +
+    G + " .lb-in{font-size:22px}" +
+    ".gt-pname,.gt-scr{font-family:\"STIX Two Math\",\"STIX Two Text\",\"Cambria Math\",\"Apple Symbols\",serif}"
   );
 
   /* ------------------------------------------------------------- Helpers */

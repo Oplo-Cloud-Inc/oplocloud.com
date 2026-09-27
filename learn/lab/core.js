@@ -39,7 +39,7 @@ window.OPLO_LAB = (function () {
     "lab/bizkit.js": "78131d29",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
-    "lab/geotools.js": "4d2e0e91",
+    "lab/geotools.js": "3a389b5e",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
@@ -1059,6 +1059,8 @@ window.OPLO_LAB = (function () {
     useAccount(ctx.me);
     host.innerHTML = "";
     var wrap = el("div", "lb-unit");
+    // The course's id on its pages, so a course can set its own type (Geometry sets its maths in SF).
+    if (ctx.course) wrap.setAttribute("data-course", ctx.course);
     host.appendChild(wrap);
     var head = el("header", "lb-uhead");
     head.innerHTML = '<p class="lx-eyebrow">' + esc(ctx.courseTitle) + " · Unit " + ctx.n + "</p>" +
@@ -1214,6 +1216,7 @@ window.OPLO_LAB = (function () {
   function frame(host, ctx, u, here) {
     host.innerHTML = "";
     var shell = el("div", "lb-shell" + (sideHidden() ? " side-off" : ""));
+    if (ctx.course) shell.setAttribute("data-course", ctx.course);
     function toggle() {
       if (window.matchMedia && window.matchMedia(NARROW).matches) { shell.classList.toggle("peek"); return; }
       var off = !shell.classList.contains("side-off");
@@ -1523,7 +1526,13 @@ window.OPLO_LAB = (function () {
         steps.forEach(function (s) { before[s.skillId] = level(s.skillId); });
         // The unit test sits in the unit's frame; the course challenge spans
         // every unit, so it has none.
-        var here = { kind: "test" }, work = scope === "course" ? host : frame(host, ctx, us[0], here);
+        var here = { kind: "test" }, work;
+        if (scope === "course") {
+          host.innerHTML = "";
+          work = el("div", "lb-challenge");
+          if (ctx.course) work.setAttribute("data-course", ctx.course);
+          host.appendChild(work);
+        } else work = frame(host, ctx, us[0], here);
         CH.play(work, {
           path: { eyebrow: scope === "course" ? ctx.courseTitle : "Unit " + us[0].n + " · " + us[0].title, title: title, steps: steps },
           me: ctx.me, record: false, fresh: true,
