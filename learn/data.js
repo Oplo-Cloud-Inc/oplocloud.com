@@ -478,40 +478,52 @@ window.OPLO = (function () {
 
   /* Geometry is a lab course like Algebra I: its units are interactive
      lessons, practice that generates its own problems, and tests
-     (learn/lab/, learn/geo/). */
+     (learn/lab/, learn/geo/, and its own kit in learn/lab/geotools.js).
+     The units follow the course textbook, Glencoe Geometry, a chapter to a
+     unit; the text and problems are our own. */
   var GEO = {
     id: "geo", t: "Geometry", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
     lab: true,
     d: "Proof as an argument you could win, not a form to fill in.",
-    lede: "Geometry done with your hands: shapes you slide, turn, flip and scale until the rule is obvious, " +
-          "and then written down. Every idea is met by moving something, practised until it is easy, and tested " +
-          "until it sticks.",
+    lede: "Geometry done with your hands: a ruler, a protractor and a compass on the screen, and shapes you slide, turn and fold " +
+          "until the rule is obvious — then written down. It follows its textbook a chapter at a time; every idea is met by " +
+          "moving something, practised until it is easy, and tested until it sticks.",
     glyph: '<path d="M12 4 21 19H3z"/>',
     objectives: [
-      "Use the words and notation of geometry precisely: point, line, segment, ray, angle, plane.",
-      "Perform translations, rotations, reflections and dilations on the coordinate plane.",
-      "Say which transformation takes one figure to another, and what it keeps the same.",
-      "Prove figures congruent or similar, and use that to find missing lengths and angles.",
-      "Use right-triangle trigonometry and the Pythagorean theorem.",
-      "Work with circles, arcs and solids, and find their areas and volumes."
+      "Use the words and tools of geometry precisely: points, lines and planes, measuring segments and angles, distance and midpoints.",
+      "Reason from definitions and postulates, and write proofs about segments, angles and parallel lines.",
+      "Prove triangles congruent or similar, and use that to find missing lengths and angles.",
+      "Use the Pythagorean theorem, special right triangles and trigonometry.",
+      "Perform translations, rotations, reflections and dilations, and say what each keeps the same.",
+      "Work with circles, and find the areas, surface areas and volumes of figures and solids."
     ],
     units: [
-      { t: "Performing transformations", lab: true,
-        desc: "The words of geometry, then the four moves: sliding, turning, flipping and scaling a figure on the coordinate plane." },
-      { t: "Transformation properties and proofs", lab: true,
-        desc: "What each move keeps the same, rigid motions against dilations, and symmetry as a figure mapped onto itself." },
-      { t: "Congruence", lab: true,
-        desc: "Figures that one rigid motion takes to the other: triangle congruence by SSS, SAS, ASA and AAS, and what that proves." },
-      { t: "Similarity", lab: true,
-        desc: "Same shape, different size: similar triangles, the angle-angle criterion, and solving with proportions." },
-      { t: "Right triangles & trigonometry", lab: true,
-        desc: "The Pythagorean theorem and its converse, special right triangles, and sine, cosine and tangent as ratios." },
-      { t: "Analytic geometry", lab: true,
-        desc: "Distance and midpoint, dividing a segment in a ratio, and proving things about figures with coordinates." },
+      { t: "Tools of Geometry", lab: true,
+        desc: "Points, lines and planes; measuring segments and angles with a ruler, the coordinate plane and a protractor; angle pairs; polygons and solids." },
+      { t: "Reasoning and Proof", lab: true,
+        desc: "Conjectures and counterexamples, logic and if–then statements, deductive reasoning, and the first proofs about segments and angles." },
+      { t: "Parallel and Perpendicular Lines", lab: true,
+        desc: "Lines cut by a transversal and the angles they make, slopes and equations of lines, proving lines parallel, and distance." },
+      { t: "Congruent Triangles", lab: true,
+        desc: "Classifying triangles and their angles, proving triangles congruent by SSS, SAS, ASA and AAS, isosceles triangles, and coordinate proof." },
+      { t: "Relationships in Triangles", lab: true,
+        desc: "Bisectors, medians and altitudes; inequalities in a triangle; indirect proof; and the triangle inequality." },
+      { t: "Quadrilaterals", lab: true,
+        desc: "Angles of polygons, and parallelograms, rectangles, rhombi, squares and trapezoids: their properties, and how to prove a figure is one." },
+      { t: "Proportions and Similarity", lab: true,
+        desc: "Ratios and proportions, similar polygons and triangles, and the proportional parts that parallel lines make." },
+      { t: "Right Triangles and Trigonometry", lab: true,
+        desc: "The geometric mean, the Pythagorean theorem and its converse, special right triangles, sine, cosine and tangent, and the laws of sines and cosines." },
+      { t: "Transformations", lab: true,
+        desc: "The four moves on the coordinate plane — sliding, turning, flipping and scaling a figure — and what each one keeps the same." },
       { t: "Circles", lab: true,
-        desc: "Arcs, sectors, inscribed angles, tangents, and the equation of a circle." },
-      { t: "Solid geometry", lab: true,
-        desc: "Volume and surface area, cross sections, and what happens to both when a solid is scaled." }
+        desc: "Arcs and chords, inscribed angles, tangents and secants, special segments, and the equation of a circle." },
+      { t: "Areas of Polygons and Circles", lab: true,
+        desc: "Areas of parallelograms, triangles, trapezoids, regular polygons, circles and composite figures, and geometric probability." },
+      { t: "Extending Surface Area", lab: true,
+        desc: "Drawing solids, and the surface areas of prisms, cylinders, pyramids, cones and spheres." },
+      { t: "Extending Volume", lab: true,
+        desc: "Volumes of prisms, cylinders, pyramids, cones and spheres, similar solids, and coordinates in space." }
     ],
     grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
   };
@@ -771,7 +783,7 @@ window.OPLO = (function () {
     alg: { 1: [], 2: [1], 3: [1], 4: [2], 5: [4], 6: [5], 7: [6], 8: [4], 9: [8], 10: [8], 11: [1], 12: [9, 11],
            13: [11], 14: [13, 10], 15: [11] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
-    geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [1], 7: [3], 8: [4] },
+    geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [4], 6: [3, 4], 7: [4], 8: [7], 9: [1], 10: [4], 11: [6, 8], 12: [11], 13: [12] },
     biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
            13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] },
     hist: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [3], 7: [6], 8: [2], 9: [2], 10: [7], 11: [10], 12: [5],

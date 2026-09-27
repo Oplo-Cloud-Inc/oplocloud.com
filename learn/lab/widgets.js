@@ -2429,7 +2429,7 @@
     function say() {
       var vol = edge * edge * edge;
       var hit = spec.target != null && vol === spec.target;
-      read.innerHTML = m("\\text{edge } " + edge + " \;\\to\; \\text{volume } " + edge + "^3 = " + vol) +
+      read.innerHTML = m("\\text{edge } " + edge + " \\;\\to\\; \\text{volume } " + edge + "^3 = " + vol) +
         (spec.target != null ? (hit ? '<span class="lw-tag good">volume ' + spec.target + "</span>"
                                     : '<span class="lw-tag">target volume ' + spec.target + "</span>") : "");
       stage.setAttribute("aria-label", "A cube " + edge + " by " + edge + " by " + edge + ", made of " + (edge * edge * edge) + " unit cubes.");
