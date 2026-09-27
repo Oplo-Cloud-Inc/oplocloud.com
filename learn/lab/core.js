@@ -35,14 +35,16 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "ed7a4947",
+    "lab/widgets.js": "fe2fab7f",
     "lab/bizkit.js": "78131d29",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
+    "lab/geotools.js": "4d2e0e91",
     "alg/u01.js": "36485330",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
-    "geo/u01.js": "637e74c0",
+    "geo/u01.js": "332193f8",
+    "geo/u09.js": "503d988a",
     "biz/u01.js": "5c45e6c8",
     "biz/u02.js": "df0245cf",
     "hist/u01.js": "647c1892",
@@ -973,8 +975,9 @@ window.OPLO_LAB = (function () {
      keeps its reading pages and its scenes (a timeline, a map that shows its
      bias, a source to question) in lab/histkit.js; SAT Math keeps its whole
      test-prep system — the diagnostic, the coach, timed modules, the course
-     page itself — in lab/satkit.js. */
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js" };
+     page itself — in lab/satkit.js; Geometry keeps its desk — a ruler, a
+     protractor, compass work, solids to turn — in lab/geotools.js. */
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js" };
   function kitFor(courseId) {
     return script("lab/widgets.js").then(function () {
       return COURSE_KIT[courseId] ? script(COURSE_KIT[courseId]) : null;
