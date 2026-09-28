@@ -54,7 +54,7 @@
 .pl-cmp td.best { font-weight: 600; }
 
 /* Audit. */
-.au-verify { display: flex; align-items: center; gap: 16px; padding: 16px 20px; margin-bottom: 16px; }
+.au-verify { flex-direction: row; align-items: center; gap: 16px; padding: 16px 20px; margin-bottom: 16px; }
 .au-verify .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--good-wash); color: var(--good); flex: none; }
 .au-verify .ic.bad { background: var(--bad-wash); color: var(--bad); }
 .au-verify .ic svg { width: 22px; height: 22px; }

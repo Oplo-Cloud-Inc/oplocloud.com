@@ -974,6 +974,11 @@
       title: "Manual journal posted outside business hours", detail: odd.id + " (" + E.fmt(odd.total, "USD") + ") was prepared at 11:48 pm and approved at 11:52 pm on Sunday, Sep 13.",
       rule: "R-15 · Manual journals prepared or approved between 10 pm and 6 am, or at weekends.", raisedAt: "2026-09-14T06:00:00Z" };
 
+    // The controls engine records what it raised, like anyone else.
+    Object.values(E.anomalies).forEach(function (a) {
+      E.record("anomaly.raise", a.id, "Raised " + a.id + ": " + a.title + " (" + a.rule.split(" · ")[0] + ")", {}, sys, a.raisedAt);
+    });
+
     // A customer's wire that reached the bank before anyone applied it.
     var jr = Object.values(E.arInvoices).filter(function (i) { return i.customer === "northfield" && i.balance > 0; })[0] ||
              Object.values(E.arInvoices).filter(function (i) { return i.entity === "US" && i.balance > m(US, 50000) && i.due < AS_OF; })[0];

@@ -62,7 +62,7 @@
         { key: "n", label: "Asset", cls: "two", sort: function (a) { return a.name; }, render: function (a) {
           return h("span", null, a.name, h("span", { class: "sub" }, a.id + " · " + E.accounts[a.cls].name + (ctx.scope === "GROUP" ? " · " + E.entity[a.entity].short : "") + " · " + E.dimName("dept", a.dept))); } },
         { key: "s", label: "In service", cls: "nowrap", sort: function (a) { return a.inService; }, render: function (a) { return ui.date(a.inService, "year"); } },
-        { key: "l", label: "Life", num: true, sort: function (a) { return a.life; }, render: function (a) { return a.life / 12 + " yrs"; } },
+        { key: "l", label: "Life", num: true, cls: "nowrap", sort: function (a) { return a.life; }, render: function (a) { return a.life / 12 + " yrs"; } },
         { key: "c", label: "Cost", num: true, sort: function (a) { return E.usdOf(a.entity, a.cost, cp); }, render: function (a) { return E.fmt(a.cost, E.entity[a.entity].currency, { dp: 0 }); } },
         { key: "nbv", label: "Book value", num: true, sort: function (a) { return E.usdOf(a.entity, E.assetBook(a, cp).nbv, cp); }, render: function (a) {
           var b = E.assetBook(a, cp);

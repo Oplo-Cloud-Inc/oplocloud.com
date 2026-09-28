@@ -32,12 +32,22 @@
   function openLink(ref, text) {
     return h("a", { href: "#" + ref.kind + "/" + encodeURIComponent(ref.id), on: { click: function (ev) { ev.preventDefault(); A().open(ref); } } }, text);
   }
-  function history(ids) {
+  /* A document's history from the audit trail. Documents that automation
+     made before anyone touched them have no events of their own, so their
+     history is read from the document itself — shown, but without a hash,
+     because it isn't part of the chain. */
+  function history(ids, derived) {
     var E = En(), set = {};
     ids.forEach(function (i) { if (i) set[i] = 1; });
     var evs = E.audit.filter(function (ev) { return set[ev.obj]; });
+    if (!evs.length && derived && derived.length) {
+      return h("div", null, ui.timeline(derived.map(function (d) { return { seq: 0, actor: d.actor || "system", at: d.at, summary: d.summary }; })),
+        h("p", { class: "note" }, "From the document's own record — posted by automation, so there's no separate audit event."));
+    }
+    if (!evs.length) return h("p", { class: "muted", style: { fontSize: "13px" } }, "Nothing recorded yet.");
     return ui.timeline(evs, { chain: true });
   }
+  function at(date, iso) { return iso || (date + "T13:00:00Z"); }
   function periodChip(entity, p) {
     var st = En().periodStatus(entity, p);
     return h("span", { class: "row", style: { gap: "6px" } }, ui.period(p), st === "locked" || st === "closed" ? h("span", { class: "lock" }, ui.icon(st === "locked" ? "lock" : "lock", "sm"), st) : ui.status(st === "soft" ? "soft" : "open", st === "soft" ? "Soft close" : "Open"));
@@ -77,7 +87,9 @@
         return h("div", { class: "row" }, ui.icon("clip", "sm"), h("span", null, f.name), h("span", { class: "muted" }, f.size || ""));
       }))));
       if (j.rejectReason) body.appendChild(h("div", { class: "flag done" }, ui.icon("x"), h("div", null, h("div", { class: "t" }, "Rejected by " + ui.person(j.rejectedBy).name), h("div", { class: "x" }, j.rejectReason))));
-      body.appendChild(sec("History", history([j.id, j.source && j.source.id])));
+      var jd = [{ actor: j.createdBy || "system", at: at(j.date, j.createdAt), summary: (j.status === "posted" ? "Posted " : "Prepared ") + j.id + " · " + ((j.source && j.source.label) || "journal") + " · " + E.fmt(j.total, c) }];
+      if (j.approvedBy && j.approvedBy !== j.createdBy) jd.push({ actor: j.approvedBy, at: at(j.date, j.approvedAt), summary: "Approved " + j.id });
+      body.appendChild(sec("History", history([j.id, j.source && j.source.id], jd)));
 
       /* Actions */
       var usd = E.usdOf(j.entity, j.total, j.period, "avg");
@@ -290,7 +302,9 @@
         { key: "j", label: "Journal", render: function (p) { return p.journal ? openLink({ kind: "journal", id: p.journal }, p.journal) : "—"; } },
         { key: "amount", label: "Amount", num: true, render: function (p) { return E.fmt(p.amount, c); } }], rows: inv.payments })));
       if (inv.collections.length) body.appendChild(sec("Collections", ui.timeline(inv.collections.map(function (x, i) { return { seq: 0, actor: x.by, at: x.at, summary: x.action, reason: x.note }; }))));
-      body.appendChild(sec("History", history([inv.id])));
+      var ad = [{ actor: "system", at: at(inv.date), summary: "Issued " + inv.number + " to " + cu.name + " · " + E.fmt(inv.amount, c) + (inv.journal ? " · " + inv.journal : " · opening balance") }];
+      inv.payments.forEach(function (p) { ad.push({ actor: "tomas", at: at(p.date), summary: "Payment of " + E.fmt(p.amount, c) + " received" + (p.journal ? " · " + p.journal : "") }); });
+      body.appendChild(sec("History", history([inv.id], ad)));
       if (inv.balance > 0) {
         foot.appendChild(ui.gated("ar.apply", {}, "Record payment", function () { recordPayment(inv); }, { kind: "primary" }));
         if (late > 0) foot.appendChild(ui.gated("ar.collect", {}, "Collections step", function (ev) {
