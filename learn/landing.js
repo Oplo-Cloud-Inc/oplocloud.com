@@ -5,8 +5,11 @@
 
      media slots   draws the picture or film each slot names, or its label
                    when it names none yet
-     sign in       opens the panel from any "Sign in", and on arrival when
-                   another page sent somebody here to sign in (?next=)
+     sign in       any "Sign in" opens auth.oplocloud.com in a tab of its own
+                   (app.js, through connect.js); the panel is for arrivals —
+                   when another page sent somebody here to sign in (?next=)
+                   there has been no click to open a tab with, so the panel
+                   offers one
      the site bar  the phone menu, as oplocloud.com's own bar does it — but
                    holding the page, which scrolls inside #gate, not the body
      the footer    link columns that fold into rows on a phone, as
@@ -15,8 +18,8 @@
      the rail      previous and next, and whether there is anywhere to go
      the film      plays in a lightbox, once a film has been given
 
-   It never signs anybody in and never talks to the network: the form in the
-   panel belongs to app.js, which submits it exactly as it always has.
+   It never signs anybody in and never talks to the network: the panel's
+   button, and the sign-in behind every "Sign in", belong to app.js.
    ========================================================================== */
 (function () {
   "use strict";
@@ -136,7 +139,18 @@
     });
   });
 
-  /* ---------------------------------------------------------------- Sign in */
+  /* ---------------------------------------------------------------- Sign in
+     A click on any "Sign in" goes straight to the Oplo Account tab (app.js's
+     OEDU_SIGNIN). The panel is only the fallback: before app.js has loaded,
+     and on arrival, when there has been no click for a tab to be opened by. */
+  function signIn(from) {
+    if (typeof window.OEDU_SIGNIN === "function") {
+      setNav(false);
+      window.OEDU_SIGNIN();
+      return;
+    }
+    openSignin(from);
+  }
   var returnTo = null;
   function openSignin(from) {
     if (!modal || !modal.hidden) return;
@@ -145,8 +159,8 @@
     modal.hidden = false;
     hold();
     setTimeout(function () {
-      var email = document.getElementById("gEmail");
-      if (email) email.focus();
+      var go = document.getElementById("gateGo");
+      if (go) go.focus();
     }, 60);
   }
   function closeSignin() {
@@ -186,7 +200,7 @@
   root.addEventListener("click", function (e) {
     var t = e.target;
     var signin = t.closest("[data-signin]");
-    if (signin) { e.preventDefault(); openSignin(signin); return; }
+    if (signin) { e.preventDefault(); signIn(signin); return; }
     if (t.closest("[data-film]")) { e.preventDefault(); openFilm(); return; }
     if (t.closest("#ldSignin [data-close]")) { closeSignin(); return; }
     if (t.closest("#ldFilm [data-close]")) { closeFilm(); return; }
@@ -199,7 +213,10 @@
   });
 
   // Sent here to sign in — from the family view, or a link that asked for it.
-  if (/[?&]next=/.test(location.search) || location.hash === "#signin") openSignin();
+  // Not while a sign-in is finishing across a refresh: that visitor is on the
+  // way in, and app.js takes them home as soon as the server says who they are.
+  if ((/[?&]next=/.test(location.search) || location.hash === "#signin") &&
+      !(window.OploSignIn && window.OploSignIn.pending)) openSignin();
 
   /* ------------------------------------------------------------------ Hero */
   var frame = root.querySelector(".ld-hero-frame");
