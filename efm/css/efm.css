@@ -407,6 +407,7 @@ button.bva:hover .nm { color: var(--accent); }
   transition: transform .32s var(--ease-out), opacity .2s var(--ease);
 }
 .drawer.on { transform: none; opacity: 1; }
+.drawer:focus, .drawer:focus-visible, main.page:focus, main.page:focus-visible { outline: none; }
 .drawer.wide { width: min(860px, 94vw); }
 .dr-h { display: flex; align-items: center; gap: 8px; padding: 12px 14px 12px 18px; border-bottom: 1px solid var(--line); min-height: 52px; }
 .dr-crumbs { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--ink-3); min-width: 0; flex-wrap: nowrap; overflow: hidden; }
