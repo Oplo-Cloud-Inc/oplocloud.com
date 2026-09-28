@@ -26,10 +26,14 @@
   --gut: clamp(24px, 5vw, 64px);
   --space: clamp(150px, 17vw, 260px);
   --ease: cubic-bezier(.2, .7, .1, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);      /* long, soft landings — every entrance */
+  --ease-io: cubic-bezier(.65, 0, .35, 1);      /* lines that draw themselves */
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { background: var(--bg); color-scheme: dark; scroll-behavior: smooth; scroll-padding-top: 84px; -webkit-text-size-adjust: 100%; }
+/* No CSS smooth scrolling: roxan.js glides to in-page links on its own curve,
+   and a CSS one would smooth each of its frames a second time. */
+html { background: var(--bg); color-scheme: dark; scroll-padding-top: 84px; -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--fb); font-size: 17px; font-weight: 300; line-height: 1.6; color: var(--text);
   background: var(--bg); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; overflow-x: clip;
@@ -83,34 +87,60 @@ sup a:hover { color: var(--text); }
 /* ------------------------------------------------------------ Type */
 .label { font-family: var(--fm); font-size: 11.5px; font-weight: 400; letter-spacing: .22em; text-transform: uppercase; color: var(--dim); }
 .display { font-family: var(--fd); font-weight: 300; font-size: clamp(44px, 6.6vw, 100px); line-height: 1.02; letter-spacing: -.055em; }
-.display span { display: block; color: var(--dim); }
 .h2 { font-family: var(--fd); font-weight: 300; font-size: clamp(34px, 4.3vw, 64px); line-height: 1.06; letter-spacing: -.05em; text-wrap: balance; }
 .dim { color: var(--dim); }
+
+/* A headline's lines rise out of masks, one after the other. The padding
+   gives descenders and the widest glyphs room inside the mask. */
+.ln { display: block; overflow: hidden; padding: 0 .06em .16em; margin: 0 -.06em -.16em; }
+.ln > span { display: block; }
+.js .ln > span { transform: translate3d(0, 112%, 0); transition: transform 1.3s var(--ease-out); }
+.js .in .ln > span, .js .in.h2 .ln > span { transform: none; }
+.js .ln + .ln > span { transition-delay: .1s; }
 .lead { font-size: clamp(17px, 1.4vw, 20px); line-height: 1.65; color: var(--muted); max-width: 50ch; }
 .fine { font-size: 13px; color: var(--dim); }
 
-.btn { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 30px; border-radius: 999px; background: #fff; color: #000; font-size: 15px; font-weight: 500; white-space: nowrap; transition: opacity .3s, border-color .3s; }
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 30px; border-radius: 999px; background: #fff; color: #000; font-size: 15px; font-weight: 500; white-space: nowrap; transition: opacity .5s var(--ease-out), border-color .5s var(--ease-out), transform .5s var(--ease-out); }
+.btn:active { transform: scale(.97); transition-duration: .12s; }
 .btn:hover { opacity: .82; }
 .btn.ghost { background: none; color: var(--text); border: 1px solid var(--line-2); }
 .btn.ghost:hover { opacity: 1; border-color: #fff; }
 .go { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 400; color: var(--text); }
-.go span { transition: transform .5s var(--ease); }
+.go span { transition: transform .6s var(--ease-out); }
 .go:hover span { transform: translateX(5px); }
 
 /* ------------------------------------------------------------ Hero */
 .hero { padding: clamp(120px, 14vw, 210px) 0 0; text-align: center; }
+/* The headline is centred, so it may run wider than the column — two lines, not four. */
+.hero > .wrap:first-child { max-width: calc(1240px + 2 * var(--gut)); }
 .hero .label { margin-bottom: 40px; }
 .hero-note { margin-top: 36px; font-size: 14px; color: var(--dim); }
 .core { position: relative; width: min(600px, 84vw); aspect-ratio: 1; margin: clamp(80px, 9vw, 128px) auto 0; }
 .core canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.ask { display: flex; align-items: baseline; gap: 22px; width: min(620px, 100%); margin: clamp(64px, 7vw, 96px) auto 0; padding: 0 2px 16px; border-bottom: 1px solid var(--line-2); text-align: left; }
+.ask { position: relative; display: flex; align-items: baseline; gap: 22px; width: min(620px, 100%); margin: clamp(64px, 7vw, 96px) auto 0; padding: 0 2px 16px; text-align: left; }
+.ask::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line-2); transform-origin: 50% 50%; }
 .ask-k { flex: none; font-family: var(--fm); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--dim); }
 .ask-t { flex: 1; min-width: 0; font-size: clamp(16px, 1.45vw, 19px); color: var(--text); white-space: nowrap; overflow: hidden; }
 #typed { transition: opacity .4s; }
-.caret { display: inline-block; width: 1px; height: 1.15em; margin-left: 2px; vertical-align: -3px; background: #fff; animation: blink 1.1s steps(1) infinite; }
-@keyframes blink { 50% { opacity: 0; } }
+.caret { display: inline-block; width: 1px; height: 1.15em; margin-left: 2px; vertical-align: -3px; background: #fff; animation: blink 1.2s ease-in-out infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 .hero-intro { max-width: 600px; margin: clamp(64px, 7vw, 96px) auto 0; font-size: clamp(17px, 1.4vw, 20px); line-height: 1.7; color: var(--muted); }
 .cta { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: center; margin-top: 48px; }
+
+/* The hero arrives in order once the fonts are in (roxan.js adds .arrived): the
+   label, the two lines of the headline, the note, the sphere, then the line
+   it asks on, drawn out from its centre before it starts to type. */
+.js .hero .label, .js .hero-note, .js .ask-k, .js .ask-t { opacity: 0; transition: opacity 1.4s var(--ease-out); }
+.js .hero .display .ln > span { transition-duration: 1.5s; }
+.js .core { opacity: 0; transform: scale(.96); transition: opacity 2s var(--ease-out), transform 2.6s var(--ease-out); transition-delay: .45s; }
+.js .ask::after { transform: scaleX(0); transition: transform 1.6s var(--ease-out) 1s; }
+.js .hero.arrived .label { opacity: 1; }
+.js .hero.arrived .display .ln > span { transform: none; transition-delay: .12s; }
+.js .hero.arrived .display .ln + .ln > span { transition-delay: .24s; }
+.js .hero.arrived .hero-note { opacity: 1; transition-delay: .6s; }
+.js .hero.arrived .core { opacity: 1; transform: none; }
+.js .hero.arrived .ask::after { transform: scaleX(1); }
+.js .hero.arrived .ask-k, .js .hero.arrived .ask-t { opacity: 1; transition-delay: 1.35s; }
 
 /* ------------------------------------------------------------ Sections */
 .sec { padding-top: var(--space); }
@@ -127,7 +157,11 @@ sup a:hover { color: var(--text); }
 }
 .reel::-webkit-scrollbar, .gal::-webkit-scrollbar { display: none; }
 .reel { position: relative; gap: 24px; margin-top: clamp(64px, 7vw, 104px); }
-.slide { position: relative; flex: 0 0 100%; height: clamp(440px, 46vw, 660px); border-radius: 32px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); scroll-snap-align: start; }
+.slide { position: relative; flex: 0 0 100%; height: clamp(440px, 46vw, 660px); border-radius: 32px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); scroll-snap-align: start; transition: opacity 1.1s var(--ease-out); }
+.js .slide:not(.is-current) { opacity: .38; }
+.js .slide .slide-cap, .js .slide .slide-more { opacity: 0; transform: translate3d(0, 14px, 0); transition: opacity .8s var(--ease-out), transform 1.2s var(--ease-out); }
+.js .slide.is-current .slide-cap { opacity: 1; transform: none; transition-delay: .2s; }
+.js .slide.is-current .slide-more { opacity: 1; transform: none; transition-delay: .4s; }
 .slide canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .slide-cap { position: absolute; top: clamp(44px, 5vw, 72px); left: 50%; translate: -50% 0; width: min(560px, 84%); text-align: center; }
 .slide-cap h3 { margin-top: 20px; font-size: clamp(20px, 1.9vw, 26px); font-weight: 300; line-height: 1.4; text-wrap: balance; }
@@ -212,6 +246,11 @@ sup a:hover { color: var(--text); }
 .tabs button[aria-selected="true"], .tabs button:hover { color: var(--text); }
 .tab-ind { position: absolute; left: 0; bottom: -1px; height: 1px; width: var(--iw, 0); background: #fff; transform: translateX(var(--ix, 0)); transition: transform .6s var(--ease), width .6s var(--ease); }
 .tabpanel { margin-top: 80px; }
+.tabpanel:not([hidden]) { animation: rise .9s var(--ease-out) both; }
+@keyframes rise { from { opacity: 0; transform: translate3d(0, 14px, 0); } }
+.plan [data-u5], .plan [data-u20] { display: inline-block; }
+.plan [data-u5]:not([hidden]), .plan [data-u20]:not([hidden]) { animation: swap .6s var(--ease-out) both; }
+@keyframes swap { from { opacity: 0; transform: translate3d(0, 8px, 0); } }
 .plan-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
 .plan { display: flex; flex-direction: column; padding: 0 32px; border-left: 1px solid var(--line); }
 .plan:first-child { padding-left: 0; border-left: 0; }
@@ -270,10 +309,18 @@ sup a:hover { color: var(--text); }
 .discover { padding-bottom: var(--space); }
 
 /* ------------------------------------------------------------ Reveal — a slow fade, nothing more */
-.js .reveal { opacity: 0; transform: translateY(14px); transition: opacity 1.4s var(--ease), transform 1.4s var(--ease); transition-delay: calc(var(--i, 0) * 90ms); }
+.js .reveal { opacity: 0; transform: translate3d(0, 22px, 0); transition: opacity 1.3s var(--ease-out), transform 1.5s var(--ease-out); transition-delay: calc(var(--i, 0) * 90ms); }
 .js .reveal.in { opacity: 1; transform: none; }
-.js .gal .gcard { opacity: 0; transition: opacity 1.4s var(--ease); transition-delay: calc(var(--i, 0) * 120ms); }
-.js .gal.in .gcard { opacity: 1; }
+/* Cards glide in from the right, one after another, as their gallery arrives;
+   roxan.js then has each drawing trace itself. */
+.js .gal .gcard { opacity: 0; transform: translate3d(36px, 0, 0); transition: opacity 1.2s var(--ease-out), transform 1.6s var(--ease-out); transition-delay: calc(var(--i, 0) * 110ms); }
+.js .gal.in .gcard { opacity: 1; transform: none; }
+.js .gal .m-list li, .js .gal .m-ask > * { opacity: 0; transform: translate3d(0, 10px, 0); transition: opacity 1s var(--ease-out), transform 1.2s var(--ease-out); }
+.js .gal.in .m-list li, .js .gal.in .m-ask > * { opacity: 1; transform: none; }
+.js .gal.in .m-ask > :nth-child(1) { transition-delay: .35s; } .js .gal.in .m-ask > :nth-child(2) { transition-delay: .75s; }
+.js .gal.in .m-list li:nth-child(1) { transition-delay: .55s; } .js .gal.in .m-list li:nth-child(2) { transition-delay: .62s; }
+.js .gal.in .m-list li:nth-child(3) { transition-delay: .69s; } .js .gal.in .m-list li:nth-child(4) { transition-delay: .76s; }
+.js .gal.in .m-list li:nth-child(5) { transition-delay: .83s; } .js .gal.in .m-list li:nth-child(6) { transition-delay: .9s; }
 
 /* ------------------------------------------------------------ Smaller windows */
 @media (max-width: 1100px) {
@@ -301,11 +348,13 @@ sup a:hover { color: var(--text); }
 }
 
 @media print {
-  .js .reveal, .js .gal .gcard { opacity: 1 !important; transform: none !important; }
+  .js .reveal, .js .gal .gcard, .js .ln > span, .js .hero .label, .js .hero-note { opacity: 1 !important; transform: none !important; }
   .nav, .chapter, .core, .reel-ctl, .gal-nav { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
   html { scroll-behavior: auto; }
-  .js .reveal, .js .gal .gcard { opacity: 1; transform: none; }
+  .js .reveal, .js .gal .gcard, .js .gal .m-list li, .js .gal .m-ask > * { opacity: 1; transform: none; }
+  .js .ln > span, .js .core, .js .ask::after { transform: none; }
+  .js .hero .label, .js .hero-note, .js .core, .js .ask-k, .js .ask-t, .js .slide .slide-cap, .js .slide .slide-more { opacity: 1; transform: none; }
 }

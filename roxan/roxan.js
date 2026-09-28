@@ -85,6 +85,55 @@
     }
   };
 
+  /* ------------------------------------------------------------ Glide
+     In-page links travel to where they point on one long, soft curve instead
+     of the browser's jump or its brisk smooth-scroll. A wheel, a touch or a
+     key hands the page straight back to the reader. */
+  var glideRaf = 0;
+  function stopGlide() { if (glideRaf) { window.cancelAnimationFrame(glideRaf); glideRaf = 0; } }
+  ["wheel", "touchstart", "keydown", "mousedown"].forEach(function (ev) {
+    window.addEventListener(ev, stopGlide, { passive: true });
+  });
+  function glideTo(y) {
+    stopGlide();
+    var max = d.documentElement.scrollHeight - window.innerHeight;
+    y = Math.max(0, Math.min(max, y));
+    var from = window.scrollY, dist = y - from;
+    if (reduce || Math.abs(dist) < 2) { window.scrollTo(0, y); return; }
+    var dur = Math.min(1500, 650 + Math.sqrt(Math.abs(dist)) * 11), t0 = 0;
+    function ease(x) { return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+    function step(t) {
+      if (!t0) t0 = t;
+      var p = Math.min(1, (t - t0) / dur);
+      window.scrollTo(0, from + dist * ease(p));
+      glideRaf = p < 1 ? window.requestAnimationFrame(step) : 0;
+    }
+    glideRaf = window.requestAnimationFrame(step);
+  }
+  function glideToEl(el) {
+    var pad = parseFloat(window.getComputedStyle(d.documentElement).scrollPaddingTop) || 84;
+    var margin = parseFloat(window.getComputedStyle(el).scrollMarginTop) || 0;
+    glideTo(el.getBoundingClientRect().top + window.scrollY - Math.max(pad, margin));
+    // A card inside a gallery is also brought into view sideways.
+    var card = el.closest(".gcard"), gal = card && card.closest(".gal");
+    if (gal) {
+      var padL = parseFloat(window.getComputedStyle(gal).paddingLeft) || 0;
+      gal.scrollTo({ left: card.offsetLeft - padL, behavior: smooth });
+    }
+  }
+  d.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var id = a.getAttribute("href");
+    if (id.length < 2 || id === "#students") return;
+    var el = d.getElementById(decodeURIComponent(id.slice(1)));
+    if (!el) return;
+    e.preventDefault();
+    if (window.location.hash !== id) window.history.pushState(null, "", id);
+    glideToEl(el);
+  });
+
   /* ------------------------------------------------------------ The menu
      The bar and the chapter bar are oplocloud.com's (tools/build.py writes
      them in); oplo-menu.js and oplo-search.js drive the bar's menus and
@@ -133,6 +182,60 @@
     markSection();
   }
 
+  /* ------------------------------------------------------------ Drawings
+     The first time a line drawing comes into view, its strokes trace
+     themselves in and its filled shapes and words fade up after them. It
+     happens once; afterwards the drawing is simply there. */
+  var SHAPES = "path, line, polyline, polygon, rect, circle, ellipse";
+  function prepDraw(svg) {
+    var parts = [];
+    $$(SHAPES, svg).forEach(function (el) {
+      var still = el.classList.contains("f") || el.classList.contains("dash") || el.classList.contains("spin");
+      var len = 0;
+      if (!still && el.getTotalLength) { try { len = el.getTotalLength(); } catch (err) { len = 0; } }
+      if (!len) { el.style.opacity = "0"; parts.push({ el: el, fade: true }); return; }
+      len = Math.ceil(len) + 2;
+      el.style.strokeDasharray = len + " " + len;
+      el.style.strokeDashoffset = String(len);
+      parts.push({ el: el, len: len });
+    });
+    $$("text", svg).forEach(function (el) { el.style.opacity = "0"; parts.push({ el: el, fade: true }); });
+    svg._draw = parts;
+  }
+  function playDraw(svg, delay) {
+    var parts = svg._draw;
+    if (!parts) return;
+    svg._draw = null;
+    var n = 0, last = 0;
+    parts.forEach(function (p) {
+      if (p.fade) {
+        p.el.style.transition = "opacity 1s cubic-bezier(.16,1,.3,1) " + (delay + 650) + "ms";
+        p.el.style.opacity = "1";
+      } else {
+        var dl = delay + Math.min(n++ * 16, 480);
+        last = Math.max(last, dl);
+        p.el.style.transition = "stroke-dashoffset 1.6s cubic-bezier(.65,0,.35,1) " + dl + "ms";
+        p.el.style.strokeDashoffset = "0";
+      }
+    });
+    window.setTimeout(function () {
+      parts.forEach(function (p) {
+        p.el.style.transition = "";
+        if (!p.fade) { p.el.style.strokeDasharray = ""; p.el.style.strokeDashoffset = ""; }
+      });
+    }, Math.max(last + 1700, delay + 1800));
+  }
+  var drawable = !reduce && "IntersectionObserver" in window;
+  if (drawable) $$(".gal .ill, svg.draw").forEach(prepDraw);
+  function playIn(el) {
+    if (!drawable) return;
+    if (el.classList.contains("gal")) {
+      $$(".gcard", el).forEach(function (c, i) { var s = $(".ill", c); if (s) playDraw(s, 250 + i * 110); });
+    } else {
+      $$("svg.draw", el).forEach(function (s) { playDraw(s, 200); });
+    }
+  }
+
   /* ------------------------------------------------------------ Reveal */
   $$(".gal").forEach(function (g) { $$(".gcard", g).forEach(function (c, i) { c.style.setProperty("--i", i); }); });
   $$(".also-grid .mi").forEach(function (m, i) { m.style.setProperty("--i", i % 3); });
@@ -141,7 +244,7 @@
     revealables.forEach(function (el) { el.classList.add("in"); });
   } else {
     var rio = new IntersectionObserver(function (en) {
-      en.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); rio.unobserve(e.target); } });
+      en.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); playIn(e.target); rio.unobserve(e.target); } });
     }, { threshold: 0.1, rootMargin: "0px 0px -6% 0px" });
     revealables.forEach(function (el) { rio.observe(el); });
   }
@@ -152,7 +255,7 @@
      the ring. The near side is bright and the far side faint. */
   function coreScene(ctx, w, h, t) {
     var cx = w / 2, cy = h / 2, R = w * 0.34;
-    var a = t * 0.08, tilt = 0.4;
+    var a = coreSpin, tilt = 0.4;
     var ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(tilt), st = Math.sin(tilt);
     var B = new Buckets(8);
     function proj(x, y, z) {
@@ -202,6 +305,7 @@
     ctx.beginPath(); ctx.arc(dot[0], dot[1], 2.4, 0, TAU); ctx.fill();
   }
 
+  var coreSpin = 0.6;
   var coreCanvas = $("#core");
   var core = coreCanvas ? new Surface(coreCanvas, coreScene) : null;
 
@@ -217,8 +321,7 @@
   if (typed && !reduce) {
     typer = { i: 0, c: PROMPTS[0].length, phase: "hold", next: 0 };
     typer.step = function (now) {
-      if (!typer.next) typer.next = now + 3200;
-      if (now < typer.next) return;
+      if (!typer.next || now < typer.next) return;
       switch (typer.phase) {
         case "hold":
           typed.style.opacity = "0";
@@ -235,11 +338,33 @@
     };
   }
 
+  /* The hero arrives in order (roxan.css), once the fonts are in so the
+     headline never rises in one face and lands in another. The typing starts
+     after the line under the sphere has drawn itself. */
   var hero = $("#top");
+  if (hero) {
+    var goHero = function () {
+      window.requestAnimationFrame(function () {
+        hero.classList.add("arrived");
+        if (typer) typer.next = window.performance.now() + 5200;
+      });
+    };
+    if (reduce) hero.classList.add("arrived");
+    else if (d.fonts && d.fonts.ready) {
+      var went = false, once = function () { if (!went) { went = true; goHero(); } };
+      d.fonts.ready.then(once);
+      window.setTimeout(once, 900);
+    } else goHero();
+  }
+  /* The sphere turns once in about eighty seconds, and a little faster while
+     the page is scrolling — then settles back, never snapping. */
   if (hero && !reduce) {
-    var lastHero = 0;
+    var lastHero = 0, lastY = window.scrollY, boost = 0;
     loop(hero, function (t) {
       var dt = lastHero ? Math.min(64, t - lastHero) : 16; lastHero = t;
+      var y = window.scrollY, v = Math.abs(y - lastY) / dt; lastY = y;
+      boost += (Math.min(v * 0.5, 1.4) - boost) * 0.05;
+      coreSpin += (0.08 + boost * 0.55) * dt / 1000;
       if (core) core.advance(dt / 1000);
       if (typer) typer.step(t);
     });
@@ -251,7 +376,7 @@
   // Roxan Motion — strands of light braided through one another.
   function sceneRibbon(ctx, w, h, t) {
     var cx = w / 2, cy = h * 0.62, span = Math.min(w * 0.64, 820), amp = Math.min(h * 0.14, 84);
-    var N = 18, S = 96, CH = 12;
+    var N = 18, S = 96, CH = 24;
     for (var i = 0; i < N; i++) {
       var f = i / (N - 1), pts = [];
       for (var s = 0; s <= S; s++) {
@@ -393,6 +518,7 @@
     });
     var setCur = function (i) {
       cur = i;
+      slides.forEach(function (s, k) { s.classList.toggle("is-current", k === i); });
       dots.forEach(function (b, k) {
         if (k === i) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current");
         $("i", b).style.setProperty("--p", "0");
@@ -499,7 +625,7 @@
     /* #students is a place on the page, not an element: it opens the Students tab. */
     var toStudents = function (animate) {
       select($("#tab-stu"));
-      $("#plans").scrollIntoView({ behavior: animate ? smooth : "auto" });
+      if (animate) glideToEl($("#plans")); else $("#plans").scrollIntoView();
     };
     $$('a[href="#students"]').forEach(function (a) {
       a.addEventListener("click", function (e) {
