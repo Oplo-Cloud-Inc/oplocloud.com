@@ -13,8 +13,8 @@
    It is gamified on game.js's terms, never its own. Nothing here awards
    anything. The XP a mission shows is what the questions behind it would pay;
    the one bonus it advertises is the one game.js actually has, for being right
-   after a gap; and a unit is never locked shut. "Needs Unit 2" is advice, and
-   a student who opens the unit anyway is allowed to.
+   after a gap; and no unit is ever locked, or drawn as locked. "It rests on
+   Unit 2" is advice, and every unit opens whenever the student wants it.
 
    The excitement is honest too. What changed since the last visit is found by
    comparing against a snapshot, so a "+12" floating off a unit is a number the
@@ -159,7 +159,7 @@ window.OPLO_KMAP = (function () {
       u.status = !u.live ? "unwritten"
         : u.m >= MASTERED ? (u.count.fading ? "fading" : "mastered")
         : u.m > 0 ? "active"
-        : u.weak ? "locked" : "ready";
+        : "ready";   // thin ground is advice on the unit's sheet, never a lock
     });
 
     // The same walk as app.js's nextStep: the first unit not yet mastered, or
@@ -392,7 +392,6 @@ window.OPLO_KMAP = (function () {
       fading: plural(u.count.fading, "concept fading", "concepts fading"),
       active: u.m + "%" + (u.count.fading ? " · " + u.count.fading + " fading" : ""),
       ready: "Ready to open",
-      locked: "Needs Unit " + (u.weak ? u.weak.n : ""),
       unwritten: "Not written yet"
     }[u.status];
   }
@@ -412,7 +411,6 @@ window.OPLO_KMAP = (function () {
       '<span class="km-orb">' + ring(u.m, 34, 80) + '<span class="km-core">' + core + "</span>" +
         (u.count.fading ? '<span class="km-pip fade">' + u.count.fading + "</span>"
          : u.count.flagged ? '<span class="km-pip flag">!</span>' : "") +
-        (u.status === "locked" ? '<span class="km-lock">' + icon("lock") + "</span>" : "") +
       "</span>" +
       '<span class="km-txt"><span class="km-name">' + esc(u.t) + "</span>" +
       '<span class="km-state">' + esc(line) + "</span></span>" +
@@ -428,17 +426,17 @@ window.OPLO_KMAP = (function () {
   function sheetFor(u, model, o) {
     var s = el("div", "km-sheet-in");
     var tag = { mastered: "Mastered", fading: "Fading", active: "In progress", ready: "Ready",
-                locked: "Needs ground", unwritten: "Not written" }[u.status];
+                unwritten: "Not written" }[u.status];
     var say = {
       mastered: "Mastered. A review after a gap keeps it that way, and pays the most.",
       fading: "Mastered, but " + plural(u.count.fading, "concept is", "concepts are") +
               " slipping. A review right after a gap pays ×1.5.",
       active: u.m + "% so far — " + (MASTERED - u.m) + " more points and it is mastered." +
               (u.weak ? " It leans on Unit " + u.weak.n + ", which is only at " + u.weak.m + "%." : ""),
-      ready: u.pre.length ? "Its ground holds up: everything it rests on is at " + HOLDS + "% or better."
-                          : "Nothing stands in front of it. A good place to begin.",
-      locked: u.weak ? "It rests on Unit " + u.weak.n + ", " + u.weak.t + ", which is at " + u.weak.m +
-              "%. Getting that to " + HOLDS + "% first is faster than pushing on and coming back." : "",
+      ready: u.weak ? "Open whenever you like. It rests on Unit " + u.weak.n + ", " + u.weak.t + ", which is at " + u.weak.m +
+                      "% — brushing that up first can make this one easier."
+             : u.pre.length ? "Its ground holds up: everything it rests on is at " + HOLDS + "% or better."
+             : "Nothing stands in front of it. A good place to begin.",
       unwritten: "The syllabus names it, but there is no material behind it yet."
     }[u.status];
 
@@ -466,16 +464,14 @@ window.OPLO_KMAP = (function () {
       b.addEventListener("click", fn);
       acts.appendChild(b);
     }
-    if (u.status === "locked" && u.weak) {
-      btn("Go to Unit " + u.weak.n + " first", "", function () { o.onUnit(u.weak.n); });
-      btn("Open anyway", "quiet", function () { o.onUnit(u.n); });
-    } else if (u.status === "fading" && u.set) {
+    if (u.status === "fading" && u.set) {
       btn("Review what is fading", "", function () { o.onLearn(u.set, u.n); });
       btn("Open unit", "quiet", function () { o.onUnit(u.n); });
     } else if (u.live) {
       btn(u.status === "ready" ? "Start this unit" : u.status === "mastered" ? "Open unit" : "Continue",
           "", function () { o.onUnit(u.n); });
       if (u.set && u.status !== "ready") btn("Learn the terms", "quiet", function () { o.onLearn(u.set, u.n); });
+      if (u.status === "ready" && u.weak) btn("Brush up Unit " + u.weak.n + " first", "quiet", function () { o.onUnit(u.weak.n); });
     } else {
       btn("See what it covers", "quiet", function () { o.onUnit(u.n); });
     }
@@ -564,8 +560,9 @@ window.OPLO_KMAP = (function () {
     if (st.mastered === st.units && !st.fading) return "Every unit here is mastered. Reviews after a gap keep it that way.";
     if (st.fading >= 3) return plural(st.fading, "concept you had is", "concepts you had are") +
       " slipping. Bringing them back is worth more than anything new.";
-    if (!st.started) return plural(st.units, "unit", "units") + " to light up. Each one you master opens the next.";
-    if (nx && nx.status === "ready") return "Unit " + nx.n + " is open. Its ground holds up.";
+    if (!st.started) return plural(st.units, "unit", "units") + " to light up — start with any of them.";
+    if (nx && nx.status === "ready") return "Unit " + nx.n + " is a good next step" + (nx.weak ? "." : ": its ground holds up.");
+
     if (nx && nx.status === "active") return "Unit " + nx.n + " is at " + nx.m + "% — " +
       (MASTERED - nx.m) + " points from mastered.";
     return st.mastered + " of " + st.units + " units mastered.";
@@ -629,8 +626,7 @@ window.OPLO_KMAP = (function () {
     return sec;
   }
 
-  var LEGEND = [["mastered", "Mastered"], ["active", "In progress"], ["ready", "Ready"],
-                ["locked", "Needs ground"], ["fading", "Fading"]];
+  var LEGEND = [["mastered", "Mastered"], ["active", "In progress"], ["ready", "Ready"], ["fading", "Fading"]];
 
   /* ============================================================== Render
      o = { course, hue, rank, streak, changes, focus,

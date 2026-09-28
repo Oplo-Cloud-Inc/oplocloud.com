@@ -809,10 +809,10 @@ window.OPLO_CHALLENGE = (function () {
     // A review or a retry is always a fresh run from the top.
     P.fresh = !!(path.review || opts.only || opts.fresh || opts.record === false || firstOpen < 0);
     P.ix = P.fresh ? 0 : firstOpen;
-    // How far the step navigation may go: back to any step, and forward as
-    // far as the student has already been — all of it, on a path finished
-    // before. A step not yet reached stays shut, so nothing is skipped.
-    P.max = firstOpen < 0 && !path.review && !opts.only && opts.record !== false ? path.steps.length - 1 : P.ix;
+    // How far the step navigation may go: anywhere. Nothing is locked — a
+    // student can jump ahead, go back, or catch up wherever they want; the
+    // path still opens on the first step not yet done.
+    P.max = path.steps.length - 1;
     // A retry of a few of a lesson's problems is a plain path of its own; the
     // sidebar reopens the whole lesson from it. `at` opens the lesson on a
     // step already reached.
@@ -877,7 +877,7 @@ window.OPLO_CHALLENGE = (function () {
     nv.lab.innerHTML = here ? "<b>" + esc(here.label) + (here.problem ? " of " + probs : "") + "</b><span>Step " + (P.ix + 1) + " of " + count + "</span>"
       : "<b>" + esc(P.path.endTitle || "Done") + "</b><span>" + count + " steps</span>";
     nv.prev.disabled = P.ix <= 0;
-    nv.next.disabled = P.ix + 1 > P.max || P.ix >= count - 1;
+    nv.next.disabled = P.ix >= count - 1;
   }
   // Go to a step already reached. False when the path being played can't be
   // walked (a retry round), so the caller can open the whole lesson instead.
@@ -940,17 +940,16 @@ window.OPLO_CHALLENGE = (function () {
       if (sc) card.appendChild(el("div", "ch-work")).appendChild(sc.el);
       if (s.after) card.appendChild(el("div", "ch-after", s.after));
       var go = button("ch-btn primary", (P.ix === P.path.steps.length - 1 ? "Finish" : "Continue") + icon(I.right));
+      // A gated scene no longer holds Continue: nothing is locked. It still
+      // shows its "then" the moment its move is made.
       if (sc && s.gate) {
-        go.disabled = !sc.ready();
         sc.onChange = function () {
-          var was = go.disabled;
-          go.disabled = !sc.ready();
-          if (was && !go.disabled && s.then) {
-            var t = card.querySelector(".ch-then");
-            if (!t) card.insertBefore(el("div", "ch-then" + (reduced() ? "" : " in"), s.then), foot);
+          if (sc.ready() && s.then && !card.querySelector(".ch-then")) {
+            card.insertBefore(el("div", "ch-then" + (reduced() ? "" : " in"), s.then), foot);
           }
         };
       } else if (sc) sc.onChange = function () {};
+
       go.addEventListener("click", function () {
         note(s.id, { seen: true });
         P.session[s.id] = { seen: true };
