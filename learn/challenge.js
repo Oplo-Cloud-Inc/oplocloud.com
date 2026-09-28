@@ -1244,6 +1244,9 @@ window.OPLO_CHALLENGE = (function () {
     addKind: function (name, factory) { KINDS[name] = factory; },
     readNum: readNum,
     kinds: KINDS,
+    /* A step's record ({ seen, solved, … } or null), for the account given —
+       Business's concept deck reads which of its steps have been seen. */
+    result: function (id, me) { if (me !== undefined) useAccount(me); return REC ? result(id) : null; },
     stop: function () { dispose(); },
     _merge: merge
   };

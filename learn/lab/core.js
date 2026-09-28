@@ -36,7 +36,7 @@ window.OPLO_LAB = (function () {
      date by tools/lab_stamps.py. */
   var FILES = {
     "lab/widgets.js": "fe2fab7f",
-    "lab/bizkit.js": "78131d29",
+    "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
     "lab/geotools.js": "3a389b5e",
@@ -45,7 +45,7 @@ window.OPLO_LAB = (function () {
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "332193f8",
     "geo/u09.js": "503d988a",
-    "biz/u01.js": "5c45e6c8",
+    "biz/u01.js": "42aebe47",
     "biz/u02.js": "df0245cf",
     "hist/u01.js": "647c1892",
     "sat/u01.js": "71ec9896",
@@ -1071,7 +1071,7 @@ window.OPLO_LAB = (function () {
     load(ctx.course, ctx.n).then(function (u) {
       body.remove();
       paintUnit(wrap, u, ctx);
-      LIVE.refresh = function () { if (wrap.isConnected) { wrap.querySelectorAll(".lb-block,.lb-ubar").forEach(function (x) { x.remove(); }); paintUnit(wrap, u, ctx); } };
+      LIVE.refresh = function () { if (wrap.isConnected) { wrap.querySelectorAll(".lb-block,.lb-ubar,.lb-next").forEach(function (x) { x.remove(); }); paintUnit(wrap, u, ctx); } };
     }, function (e) {
       body.className = "lb-none";
       body.innerHTML = "<b>This unit is still being written.</b><p>" + esc(e.message) + "</p>";
@@ -1160,6 +1160,8 @@ window.OPLO_LAB = (function () {
     t.addEventListener("click", function () { ctx.go.test(); });
     tb.appendChild(t);
     wrap.appendChild(tb);
+    // A unit may add to its own page: Business Unit 1 shows its concept deck.
+    if (typeof u.page === "function") { try { u.page(wrap, ctx); } catch (e) { /* the page stands without it */ } }
   }
   function hasStarted(l) {
     return false;
