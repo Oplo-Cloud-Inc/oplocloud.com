@@ -137,9 +137,12 @@ export default {
       return Response.redirect(to.toString(), PAGES.has(bare) ? 308 : 302);
     }
 
-    /* Every page address is the one page; app.js reads the path. */
+    /* Every page address is the one page; app.js reads the path.
+       no-transform keeps Cloudflare from injecting its analytics beacon into
+       the page: a third-party script has no place on a password page, and the
+       CSP would only block it with an error in the console. */
     const page = new URL("/", url);
     const res = await env.ASSETS.fetch(new Request(page, request));
-    return withHeaders(res, { ...pageHeaders(env), "cache-control": "no-store" });
+    return withHeaders(res, { ...pageHeaders(env), "cache-control": "no-store, no-transform" });
   }
 };
