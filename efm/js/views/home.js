@@ -245,6 +245,40 @@
     return ui.card({ title: "Sensitive changes", meta: "From the audit trail", span: (o && o.span) || 5, body: ui.timeline(evs, { chain: true }) });
   }
 
+  /* A first session, guided: five real things to do in the sandbox. Each
+     step ticks itself off from the books' state, not from a click. */
+  function startHere(ctx) {
+    var E = ctx.E, app = ctx.app;
+    var hidden = false, traced = false;
+    try { hidden = localStorage.getItem("efm.tour.hidden") === "1"; traced = localStorage.getItem("efm.traced") === "1"; } catch (e) { /* ignore */ }
+    if (hidden) return null;
+    var dell = Object.values(E.apInvoices).filter(function (i) { return i.vendor === "dell" && i.po; })[0];
+    var steps = [
+      { t: "Stop a payment fraud", x: "Someone asked, by email, to change where Hudson Commons' rent goes.", done: !E.vendors.hudson.bankPending,
+        go: function () { app.open({ kind: "vendor", id: "hudson" }); } },
+      { t: "Fix a three-way mismatch", x: "Dell invoiced 100 laptops. 98 arrived.", done: !!dell && dell.flags.every(function (f) { return f.resolved; }),
+        go: function () { if (dell) app.open({ kind: "ap", id: dell.id }); } },
+      { t: "Reconcile the bank", x: "Match JPMorgan's feed to the ledger until nothing is unexplained.", done: E.reconciliation("us-op").bankOpen.length === 0,
+        go: function () { app.navigate("/cash/us-op"); } },
+      { t: "Trace a number", x: "Click any figure in the statements down to the invoice behind it.", done: traced,
+        go: function () { app.navigate("/reports"); } },
+      { t: "Close September", x: "Run the checklist, then close and lock the month.", done: E.entities.every(function (e) { return E.periodStatus(e.id, E.currentPeriod()) === "locked"; }),
+        go: function () { app.navigate("/close"); } }
+    ];
+    var n = steps.filter(function (s) { return s.done; }).length;
+    var row = h("div", { class: "tour-steps" });
+    steps.forEach(function (st, i) {
+      row.appendChild(h("button", { type: "button", class: "tour-step" + (st.done ? " done" : ""), on: { click: st.go } },
+        h("span", { class: "check" + (st.done ? " done" : "") }, st.done ? ui.icon("check") : h("span", { class: "tour-n" }, String(i + 1))),
+        h("span", { class: "grow" }, h("b", null, st.t), h("small", null, st.x))));
+    });
+    return h("section", { class: "card tour", "aria-label": "Start here" },
+      h("div", { class: "card-h" }, h("h2", null, n === steps.length ? "You ran a month-end." : "Start here"),
+        h("span", { class: "meta" }, n === steps.length ? "Everything above is real accounting — reset the sandbox from the menu to do it again." : n + " of " + steps.length + " done · every step is real double-entry accounting, recorded in the audit trail"),
+        h("div", { class: "tools" }, ui.btn(null, { size: "sm", kind: "ghost", icon: "x", label: "Hide", onClick: function () { try { localStorage.setItem("efm.tour.hidden", "1"); } catch (e) { /* ignore */ } app.refresh(); } }))),
+      h("div", { class: "card-b" }, row));
+  }
+
   /* ---------------------------------------------------------- Homes */
   function header(ctx) {
     var E = ctx.E, app = ctx.app, L = E.lastClosedPeriod(), cp = E.currentPeriod();
@@ -293,6 +327,8 @@
     render: function (ctx) {
       var page = h("div");
       page.appendChild(header(ctx));
+      var tour = startHere(ctx);
+      if (tour) page.appendChild(tour);
       page.appendChild(overviewKpis(ctx));
       var g = h("div", { class: "grid" });
       g.appendChild(cashChart(ctx, { span: 8 }));

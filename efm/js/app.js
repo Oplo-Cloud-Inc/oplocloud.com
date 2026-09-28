@@ -45,7 +45,7 @@
     ui.confirm({ title: "Reset the sandbox?", text: "Everything you have done — approvals, journals, reconciliations, the close — is undone and the books go back to how they were seeded. Nothing outside this browser is affected.", confirmLabel: "Reset", danger: true })
       .then(function (yes) {
         if (!yes) return;
-        try { localStorage.removeItem(key()); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem(key()); localStorage.removeItem("efm.traced"); localStorage.removeItem("efm.tour.hidden"); } catch (e) { /* ignore */ }
         location.href = "/home";
       });
   };
@@ -197,7 +197,11 @@
     }
     return { open: open, back: back, closeAll: closeAll, fromHash: fromHash, redraw: function () { if (box) draw(); }, isOpen: function () { return !!box; } };
   })();
-  app.open = function (ref, o) { drawer.open(ref, o); };
+  app.open = function (ref, o) {
+    // Remembered for Home's "Start here": somebody traced a figure to its lines.
+    if (ref && ref.kind === "lines") try { localStorage.setItem("efm.traced", "1"); } catch (e) { /* ignore */ }
+    drawer.open(ref, o);
+  };
 
   /* ============================================================= Shell */
   var shell = null, mainEl = null, crumbEl = null, railEl = null, bellEl = null, meEl = null;
