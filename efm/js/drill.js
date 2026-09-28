@@ -207,7 +207,12 @@
         var budgetFlag = (inv.flags || []).filter(function (f) { return f.code === "budget" && !f.resolved; })[0];
         foot.appendChild(ui.gated("ap.approve", { createdBy: inv.createdBy, usd: usd }, budgetFlag ? "Approve over budget" : "Approve", function () {
           var go = function () { app.run("ap.approve", { id: inv.id, budgetOverride: !!budgetFlag }, { ok: function () { return inv.number + " approved and posted as " + inv.journal + "."; } }); };
-          if (budgetFlag) ui.confirm({ title: "Approve over budget?", text: budgetFlag.detail + " Your approval is recorded as the budget exception.", confirmLabel: "Approve" }).then(function (y) { if (y) { var x = Object.values(E.exceptions).filter(function (x) { return x.ap === inv.id; })[0]; go(); if (x && x.status === "open") app.run("budget.decide", { id: x.id, approve: true, note: "Approved with " + inv.number }); } });
+          if (budgetFlag) ui.confirm({ title: "Approve over budget?", text: budgetFlag.detail + " Your approval is recorded as the budget exception.", confirmLabel: "Approve" }).then(function (y) {
+            if (!y) return;
+            var x = Object.values(E.exceptions).filter(function (x) { return x.ap === inv.id && x.status === "open"; })[0];
+            if (x) app.run("budget.decide", { id: x.id, approve: true, note: "Approved with " + inv.number });
+            go();
+          });
           else go();
         }, { kind: "primary", icon: "check", explain: "inline" }));
         foot.appendChild(ui.gated("ap.hold", {}, "Hold", function () {

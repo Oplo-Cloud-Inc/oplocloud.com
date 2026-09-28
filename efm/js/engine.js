@@ -1657,7 +1657,14 @@
     "budget.decide": function (p, actor, at) {
       need(this, "budget.approve", actor);
       var x = this.exceptions[p.id];
+      if (!x || x.status !== "open") throw new Refusal("state", "That exception has already been decided.");
       x.status = p.approve ? "approved" : "declined"; x.decidedBy = actor.id; x.decidedAt = at; x.note = p.note || "";
+      // The invoice that raised it follows the decision.
+      var inv = x.ap ? this.apInvoices[x.ap] : null;
+      if (inv) {
+        (inv.flags || []).forEach(function (f) { if (f.code === "budget" && !f.resolved) f.resolved = { by: actor.id, at: at, how: p.approve ? "Budget exception approved" : "Budget exception declined" }; });
+        if (!p.approve && (inv.status === "review" || inv.status === "captured")) { inv.status = "hold"; inv.holdReason = "Budget exception declined" + (p.note ? " — " + p.note : ""); }
+      }
       this.record("budget.exception", x.id, (p.approve ? "Approved" : "Declined") + " budget exception: " + x.title, { reason: p.note || "" }, actor, at);
       return x;
     },

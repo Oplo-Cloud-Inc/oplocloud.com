@@ -107,7 +107,7 @@
       list.appendChild(h("button", { type: "button", class: "bva", on: { click: function () { app.navigate("/budgets?dept=" + r.dept.id); } } },
         h("span", { class: "nm ell" }, r.dept.name), ui.meter(r.used, { max: 1.25, mark: 1, tone: tone }),
         h("span", { class: "am" }, E.fmt(r.actual, c, { compact: true })),
-        h("span", { class: "pc", style: { color: r.used > 1.1 ? "var(--bad)" : r.used > 1 ? "var(--warn)" : "var(--ink)" } }, ui.pct(r.used))));
+        h("span", { class: "pc", style: { color: r.used > 1.1 ? "var(--bad)" : r.used > 1 ? "var(--warn)" : "var(--ink)" } }, ui.pct(r.used, r.used > 1 ? 1 : 0))));
     });
     return ui.card({ title: "Spending against budget", meta: "Year to date through " + ui.period(L) + " · expenses", span: o.span || 6, body: list,
       foot: [h("span", null, "The mark is 100% of budget. Over 110% needs the CFO."), h("span", { class: "sp" }), ui.btn("Budgets", { size: "sm", kind: "ghost", onClick: function () { app.navigate("/budgets"); } })] });
