@@ -19,7 +19,9 @@ const SECURITY = {
   "x-frame-options": "DENY",
   "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
   "strict-transport-security": "max-age=31536000; includeSubDomains",
-  "cache-control": "no-cache"
+  // no-transform: Cloudflare mustn't inject its beacon into the page (the CSP
+  // would block it and log an error).
+  "cache-control": "no-cache, no-transform"
 };
 
 export default {

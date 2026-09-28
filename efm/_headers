@@ -1,11 +1,21 @@
+# Security headers on everything; caching by kind of file. HTML is never
+# transformed, so Cloudflare doesn't inject its analytics beacon — the page's
+# Content-Security-Policy would block it and log an error (same as auth/).
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Cache-Control: public, max-age=300
-/index.html
-  Cache-Control: no-cache
 /
-  Cache-Control: no-cache
+  Cache-Control: no-cache, no-transform
+/index.html
+  Cache-Control: no-cache, no-transform
+/404.html
+  Cache-Control: no-cache, no-transform
+/js/*
+  Cache-Control: public, max-age=300
+/css/*
+  Cache-Control: public, max-age=300
+/favicon.svg
+  Cache-Control: public, max-age=86400
