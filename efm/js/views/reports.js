@@ -25,7 +25,9 @@
       var ps = E.periodsBetween(E.fy + "-01", E.currentPeriod()).reverse();
 
       var page = h("div");
-      page.appendChild(ui.pageHead("Reports", "The statements, straight from the ledger. Click any figure to see the lines behind it.", []));
+      var built = null;
+      page.appendChild(ui.pageHead("Reports", "The statements, straight from the ledger. Click any figure to see the lines behind it.",
+        [ui.btn("Export CSV", { icon: "download", onClick: function () { exportCsv(); } }), ui.btn("Print", { onClick: function () { window.print(); } })]));
 
       var tools = h("div", { class: "rp-tools" },
         ui.seg([{ id: "is", label: "Income statement" }, { id: "bs", label: "Balance sheet" }, { id: "cf", label: "Cash flow" }], r, function (v) { app.setQuery({ r: v, compare: null }); }, { label: "Statement" }),
@@ -33,16 +35,14 @@
         r !== "bs" ? ui.seg(RANGES, range, function (v) { app.setQuery({ range: v === "month" ? null : v }); }, { label: "Range" }) : null,
         r === "is" && view === "single" ? ui.seg([{ id: "budget", label: "vs budget" }, { id: "prior", label: "vs prior period" }, { id: "none", label: "No comparison" }], compare, function (v) { app.setQuery({ compare: v }); }, { label: "Compare" }) : null,
         scope === "GROUP" && r !== "cf" ? ui.seg([{ id: "single", label: "Consolidated" }, { id: "entities", label: "By entity" }], view, function (v) { app.setQuery({ view: v === "single" ? null : v }); }, { label: "Layout" }) : null,
-        h("span", { class: "sp", style: { flex: "1" } }),
-        ui.btn("Export CSV", { size: "sm", icon: "download", onClick: function () { exportCsv(); } }),
-        ui.btn("Print", { size: "sm", onClick: function () { window.print(); } }));
+        null);
       page.appendChild(tools);
 
       if (p === E.currentPeriod()) page.appendChild(h("div", { class: "banner" }, ui.icon("info", "sm"),
         h("span", null, ui.period(p, true) + " is open — these figures are preliminary until the close. Revenue recognition, accruals and depreciation for the month run during the close.")));
 
       var from = range === "ytd" || r === "bs" ? E.fy + "-01" : range === "qtd" ? E.quarterStart(p) : p;
-      var built = r === "bs" ? balanceSheet(ctx, p, view) : r === "cf" ? cashFlow(ctx, from, p, range) : incomeStatement(ctx, from, p, range, compare, view);
+      built = r === "bs" ? balanceSheet(ctx, p, view) : r === "cf" ? cashFlow(ctx, from, p, range) : incomeStatement(ctx, from, p, range, compare, view);
       page.appendChild(built.node);
 
       function exportCsv() {
@@ -80,8 +80,9 @@
         var td = h("td", { class: col.sep ? "sepcol" : "" });
         if (row.kind === "head") { tr.appendChild(td); return; }
         var v = col.values[row.id];
+        if (row.kind === "ratio" && col.noRatio) { tr.appendChild(td); return; }
         if (row.kind === "ratio" || col.kind === "pct") {
-          td.textContent = v == null || !isFinite(v) ? "—" : (v * 100).toFixed(1) + "%";
+          td.textContent = v == null || !isFinite(v) ? "—" : (Math.abs(v) < 0.0005 ? 0 : v * 100).toFixed(1) + "%";
           if (col.kind === "pct" && v != null && isFinite(v) && row.kind !== "ratio") td.className += v < 0 ? " neg" : "";
         } else if (v == null) td.textContent = "";
         else {
@@ -172,7 +173,7 @@
   function isByEntity(ctx, from, to) {
     var E = ctx.E, c = E.consolidate(from, to);
     var cols = E.entities.map(function (e) { return { label: e.short, sub: "from " + e.currency, values: values(E.layout("is", c.by[e.id].pl, { group: true })), drill: { from: from, to: to, entity: e.id } }; });
-    cols.push({ label: "Eliminations", values: values(E.layout("is", c.elimPL, { group: true })), sep: true });
+    cols.push({ label: "Eliminations", values: values(E.layout("is", c.elimPL, { group: true })), sep: true, noRatio: true });
     cols.push({ label: "Group", values: values(E.layout("is", c.group, { group: true })), sep: true });
     var rows = E.layout("is", c.group, { group: true });
     var s = sheet(ctx, rows, cols, { icRows: { "4900": 1, "6900": 1 }, currency: "USD" });
@@ -185,15 +186,15 @@
     var E = ctx.E, scope = ctx.scope, group = scope === "GROUP";
     if (view === "entities") return bsByEntity(ctx, p);
     var prior = E.addMonths(p, -1) >= E.fy + "-01" ? E.addMonths(p, -1) : null;
-    var cur = E.layout("bs", E.measure(scope, E.fy + "-01", p), { group: group });
+    var cur = E.layout("bs", E.measure(scope, E.fy + "-01", p), { group: group, hideIC: group });
     var cols = [{ label: ui.date(E.lastDay(p), "year"), values: values(cur), drill: { from: E.fy + "-01", to: p } }];
     if (prior) {
-      var pr = values(E.layout("bs", E.measure(scope, E.fy + "-01", prior), { group: group })), cv = values(cur), d = {};
+      var pr = values(E.layout("bs", E.measure(scope, E.fy + "-01", prior), { group: group, hideIC: group })), cv = values(cur), d = {};
       cur.forEach(function (r) { if (r.kind !== "head") d[r.id] = cv[r.id] - (pr[r.id] || 0); });
       cols.push({ label: ui.date(E.lastDay(prior), "year"), values: pr, sep: true, drill: { from: E.fy + "-01", to: prior } });
-      cols.push({ label: "Change", values: d, kind: "delta", invertFor: function () { return false; } });
+      cols.push({ label: "Change", values: d });
     }
-    var open = E.layout("bs", group ? E.openingGroup() : openingMap(E, scope), { group: group });
+    var open = E.layout("bs", group ? E.openingGroup() : openingMap(E, scope), { group: group, hideIC: group });
     cols.push({ label: "Opening", sub: "Jan 1", values: values(open), sep: true });
     var s = sheet(ctx, cur, cols);
     var v = values(cur);
