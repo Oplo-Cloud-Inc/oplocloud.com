@@ -48,6 +48,8 @@
   var TODAY_P = "2026-09";
 
   function pad(n) { return (n < 10 ? "0" : "") + n; }
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function md(d) { return MON[+d.slice(5, 7) - 1] + " " + (+d.slice(8, 10)); }
   function ym(i) { return FY + "-" + pad(i); }                // 1 → 2026-01
   function mi(p) { return +p.slice(5, 7); }                    // 2026-03 → 3
 
@@ -603,7 +605,7 @@
               var gross = mm(e, mon / fridays * jitter("ss:" + e.id + d, 0.03));
               var fee = Math.round(gross * 0.029);
               var pls = Math.round(gross * 0.56);
-              E.post({ entity: e.id, date: d, memo: "Oplo Pay settlement — week ending " + d,
+              E.post({ entity: e.id, date: d, memo: "Oplo Pay settlement — week ending " + md(d),
                 source: { type: "settlement", id: "SET-" + e.id + "-" + d, label: "Card settlement" },
                 lines: [{ account: "1010", dr: gross - fee }, { account: "5100", dr: fee, dims: { dept: "GA", vendor: null } },
                         { account: "4000", cr: pls, dims: { product: "PLS" } }, { account: "4000", cr: gross - pls, dims: { product: "WKS" } }],
@@ -631,7 +633,7 @@
           var cash = e.id === "US" ? "1020" : "1010";
           lines.push({ account: cash, cr: total });
           if (e.id === "US") at(fund, 1, function () {
-            E.post({ entity: "US", date: fund, memo: "Fund payroll account for " + pd, source: { type: "transfer", id: "FUND-" + pd, label: "Transfer" },
+            E.post({ entity: "US", date: fund, memo: "Fund payroll account for the " + md(pd) + " payroll", source: { type: "transfer", id: "FUND-" + pd, label: "Transfer" },
               lines: [{ account: "1020", dr: total }, { account: "1010", cr: total }], createdBy: "tomas", createdAt: stamp(fund, "fund" + pd) }, { system: true });
           }, "fund" + pd);
           at(pd, 3, function () {

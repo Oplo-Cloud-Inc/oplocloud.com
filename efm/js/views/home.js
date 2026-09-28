@@ -28,8 +28,8 @@
     o = o || {};
     var E = ctx.E, app = ctx.app;
     var items = E.attention().filter(o.filter || function () { return true; });
-    var list = h("div", { class: "att" });
-    items.slice(0, o.limit || 7).forEach(function (a) {
+    var list = h("div", { class: "att" + (o.clamp === false ? "" : " clamp") });
+    items.slice(0, o.limit || 5).forEach(function (a) {
       var b = h("button", { type: "button", class: "att-i", on: { click: function () { app.navigate(a.action.go); } } },
         ui.sev(a.sev),
         h("div", { class: "grow" }, h("div", { class: "area" }, a.area), h("div", { class: "t" }, a.title), h("div", { class: "x" }, a.detail)),
@@ -37,8 +37,10 @@
       list.appendChild(b);
     });
     if (!items.length) list.appendChild(ui.empty("All clear", "Nothing needs attention right now.", "check"));
+    var more = items.length - Math.min(items.length, o.limit || 5);
     return ui.card({ title: o.title || "Needs attention", meta: items.length ? String(items.length) : null, flush: true, body: list, span: o.span || 4,
-      tools: ui.btn("Inbox", { size: "sm", kind: "ghost", onClick: function () { app.navigate("/inbox"); } }) });
+      tools: ui.btn("Inbox", { size: "sm", kind: "ghost", onClick: function () { app.navigate("/inbox"); } }),
+      foot: more > 0 ? [h("span", null, more + " more in your Inbox"), h("span", { class: "sp" }), ui.btn("View all", { size: "sm", kind: "ghost", onClick: function () { app.navigate("/inbox"); } })] : null });
   }
 
   function cashChart(ctx, o) {
@@ -62,10 +64,17 @@
         if (!w) return [];
         return [{ value: "+" + E.fmt(w.inflow, "USD", { compact: true }), label: "in" }, { value: "−" + E.fmt(w.outflow, "USD", { compact: true }), label: "out" }];
       }, label: "Cash, thirteen weeks of actuals and thirteen of forecast" });
+    var next4 = fc.slice(0, 4);
+    var inn = next4.reduce(function (s, w) { return s + w.inflow; }, 0), out = next4.reduce(function (s, w) { return s + w.outflow; }, 0);
+    var stats = h("div", { class: "stat-row", style: { marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--line)" } },
+      h("div", null, h("div", { class: "l" }, "Coming in, next 4 weeks"), h("div", { class: "v" }, E.fmt(inn, "USD", { compact: true }))),
+      h("div", null, h("div", { class: "l" }, "Going out, next 4 weeks"), h("div", { class: "v" }, E.fmt(out, "USD", { compact: true }))),
+      h("div", null, h("div", { class: "l" }, "In 13 weeks"), h("div", { class: "v" }, E.fmt(fc[fc.length - 1].close, "USD", { compact: true }))),
+      h("div", null, h("div", { class: "l" }, "Lowest point"), h("div", { class: "v" }, E.fmt(low.close, "USD", { compact: true }))));
     return ui.card({ title: "Cash", meta: "13 weeks back · 13 ahead · all entities in USD", span: o.span || 8,
       tools: ui.charts.legend([{ label: "Actual", color: "var(--s1)", kind: "line" }, { label: "Forecast", color: "var(--s1)", kind: "dash" }]),
-      body: chart,
-      foot: [h("span", null, "Lowest point ahead: ", h("b", { class: "num" }, E.fmt(low.close, "USD", { compact: true })), " · week of " + ui.date(low.start)), h("span", { class: "sp" }),
+      body: h("div", null, chart, stats),
+      foot: [h("span", null, "Forecast from open receivables and payables, payroll, rent, debt service and settlement run-rates · lowest week of " + ui.date(low.start)), h("span", { class: "sp" }),
         ui.btn("Cash & banking", { size: "sm", kind: "ghost", onClick: function () { app.navigate("/cash"); } })] });
   }
 
@@ -118,7 +127,10 @@
         h("div", { class: "row", style: { justifyContent: "space-between", fontSize: "12.5px", marginTop: "3px" } }, h("span", { class: "muted" }, "Operating income"), ui.amt(d.oi, c, { compact: true })),
         h("div", { class: "row", style: { justifyContent: "space-between", fontSize: "12.5px", marginTop: "3px" } }, h("span", { class: "muted" }, "Cash today"), h("b", { class: "num" }, E.fmt(ec, c, { compact: true })))));
     });
+    var ic = E.intercompany(E.currentPeriod()).filter(function (x) { return Math.abs(x.difference) >= 10000; });
     return ui.card({ title: "Legal entities", meta: ui.period(L, true) + ", in local currency", span: (o && o.span) || 8, body: grid,
+      foot: [h("span", null, "Consolidated in USD — " + ui.period(L) + " closing rates GBP " + E.rate("GBP", L, "close").toFixed(4) + " · JPY " + E.rate("JPY", L, "close").toFixed(6) +
+        (ic.length ? " · " + ic.length + " intercompany pair" + (ic.length > 1 ? "s" : "") + " out of balance for " + ui.period(E.currentPeriod()) : " · intercompany in balance"))],
       tools: ui.btn("Consolidation", { size: "sm", kind: "ghost", onClick: function () { app.navigate("/consolidation"); } }) });
   }
 
@@ -263,15 +275,15 @@
       { label: "Cash today", icon: "bank", value: E.fmt(cashNow, scope === "GROUP" ? "USD" : c, { compact: true }),
         delta: scope === "GROUP" ? ui.delta((cashNow - four) / four) : null, sub: scope === "GROUP" ? "vs 4 weeks ago" : pos.rows.filter(function (r) { return r.bank.entity === scope; }).length + " accounts",
         spark: scope === "GROUP" ? ui.charts.spark(hist.map(function (x) { return x.cash; }).concat([cashNow])) : null, onClick: function () { app.navigate("/cash"); } },
-      { label: "Revenue · " + ui.period(L), icon: "report", value: E.fmt(a.revT, c, { compact: true }), delta: ui.delta(b.revT ? (a.revT - b.revT) / b.revT : null), sub: "vs " + ui.period(P),
+      { label: "Revenue · " + ui.period(L).slice(0, 3), icon: "report", value: E.fmt(a.revT, c, { compact: true }), delta: ui.delta(b.revT ? (a.revT - b.revT) / b.revT : null), sub: "vs " + ui.period(P),
         spark: ui.charts.spark(E.periodsBetween(E.fy + "-01", L).map(function (p) { return pl(E, scope, p, p).revT; })), onClick: function () { app.navigate("/reports?r=is"); } },
-      { label: "Operating income · " + ui.period(L), icon: "trend", value: E.fmt(a.oi, c, { compact: true }), delta: ui.delta(a.om - b.om, { text: ((a.om - b.om) >= 0 ? "+" : "−") + Math.abs((a.om - b.om) * 100).toFixed(1) + " pts" }), sub: ui.pct(a.om, 1) + " margin",
+      { label: "Operating income", icon: "trend", value: E.fmt(a.oi, c, { compact: true }), delta: ui.delta(a.om - b.om, { text: ((a.om - b.om) >= 0 ? "+" : "−") + Math.abs((a.om - b.om) * 100).toFixed(1) + " pts" }), sub: ui.pct(a.om, 1) + " margin",
         onClick: function () { app.navigate("/reports?r=is"); } },
-      { label: "Revenue vs plan · YTD", icon: "target", value: ui.pct(plan ? ytd.revT / plan : null, 1), delta: ui.delta(plan ? (ytd.revT - plan) / plan : null), sub: E.fmt(ytd.revT - plan, c, { compact: true, plus: true, minus: true }) + " through " + ui.period(L),
+      { label: "Revenue vs plan", icon: "target", value: ui.pct(plan ? ytd.revT / plan : null, 1), delta: ui.delta(plan ? (ytd.revT - plan) / plan : null), sub: E.fmt(ytd.revT - plan, c, { compact: true, plus: true, minus: true }) + " year to date",
         onClick: function () { app.navigate("/budgets"); } },
-      { label: "Receivables", icon: "receivables", value: E.fmt(ag.total, scope === "GROUP" ? "USD" : c, { compact: true }), sub: "DSO " + E.dso(scope) + " days · " + E.fmt(late, scope === "GROUP" ? "USD" : c, { compact: true }) + " over 60",
+      { label: "Receivables", icon: "receivables", value: E.fmt(ag.total, scope === "GROUP" ? "USD" : c, { compact: true }), sub: E.dso(scope) + " days DSO · " + E.fmt(late, scope === "GROUP" ? "USD" : c, { compact: true }) + " late",
         onClick: function () { app.navigate("/receivables"); } },
-      { label: "Payables due in 30 days", icon: "payables", value: E.fmt(apDue, scope === "GROUP" ? "USD" : c, { compact: true }), sub: apN + " invoices · run " + ui.date(E.nextPaymentRun()),
+      { label: "Due in 30 days", icon: "payables", value: E.fmt(apDue, scope === "GROUP" ? "USD" : c, { compact: true }), sub: apN + " invoices · run " + ui.date(E.nextPaymentRun()),
         onClick: function () { app.navigate("/payables"); } }
     ]);
   }
@@ -292,7 +304,7 @@
       page.appendChild(g);
       g = h("div", { class: "grid", style: { marginTop: "16px" } });
       g.appendChild(ctx.scope === "GROUP" ? entitiesCard(ctx, { span: 8 }) : tieOutCard(ctx, { span: 8 }));
-      g.appendChild(closeCard(ctx, { span: 4 }));
+      g.appendChild(closeCard(ctx, { span: 4, limit: 3 }));
       page.appendChild(g);
       return page;
     }

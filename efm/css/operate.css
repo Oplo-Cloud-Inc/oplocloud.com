@@ -1,1 +1,12 @@
-/* OC EFM — styles for the operate screens. */
+/* OC EFM — Payables and Receivables. */
+
+/* A late invoice in the collections worklist: what, how late, last contact, amount, next step. */
+.rc-row { display: grid; grid-template-columns: minmax(0, 1fr) 110px 190px 130px 190px; align-items: center; gap: 14px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.rc-row:first-child { border-top: 0; padding-top: 0; }
+.rc-row > .btn, .rc-row > span:last-child { justify-self: end; }
+.rc-inv { text-align: left; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-inv:hover { color: var(--accent); }
+.rc-inv .sub { display: block; font-size: 12px; color: var(--ink-3); }
+.rc-late { font-variant-numeric: tabular-nums; font-weight: 500; }
+.rc-last { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-amt { text-align: right; }

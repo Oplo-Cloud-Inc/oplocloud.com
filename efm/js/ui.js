@@ -21,7 +21,11 @@
       if (k === "class") el.className = v;
       else if (k === "text") el.textContent = v;
       else if (k === "on") for (var ev in v) el.addEventListener(ev, v[ev]);
-      else if (k === "style" && typeof v === "object") for (var s in v) el.style.setProperty(s, v[s]);
+      else if (k === "style" && typeof v === "object") for (var s in v) {
+        // camelCase keys go through the style object; custom properties and
+        // kebab-case through setProperty (which ignores camelCase silently).
+        if (s.indexOf("-") >= 0) el.style.setProperty(s, v[s]); else el.style[s] = v[s];
+      }
       else if (k === "data") for (var d in v) el.dataset[d] = v[d];
       else if (k === "html") el.innerHTML = v;        // only ever for trusted, static markup (icons)
       else el.setAttribute(k, v === true ? "" : v);
@@ -158,7 +162,7 @@
   }
   function who(id) {
     var p = person(id);
-    return h("span", { class: "row", style: { gap: "7px" } }, avatar(id, true), h("span", null, p.name));
+    return h("span", { class: "row", style: { gap: "7px", whiteSpace: "nowrap" } }, avatar(id, true), h("span", null, p.name));
   }
 
   /* ------------------------------------------------------ Small parts */
@@ -250,7 +254,7 @@
     var el = h("div", { class: "kpis" });
     tiles.forEach(function (t) {
       var tile = h(t.onClick ? "button" : "div", { class: "kpi", type: t.onClick ? "button" : null, on: t.onClick ? { click: t.onClick } : null },
-        h("div", { class: "l" }, t.icon ? icon(t.icon, "sm") : null, t.label),
+        h("div", { class: "l", title: t.label }, t.icon ? icon(t.icon, "sm") : null, h("span", null, t.label)),
         h("div", { class: "v" }, t.value),
         h("div", { class: "d" }, t.delta || null, t.sub ? h("span", null, t.sub) : null),
         t.spark ? h("div", { class: "spark" }, t.spark) : null);
@@ -303,7 +307,8 @@
           var arrow = sortKey === c.key ? (dir < 0 ? " ↓" : " ↑") : "";
           th.appendChild(h("button", { type: "button", on: { click: function () { if (sortKey === c.key) dir = -dir; else { sortKey = c.key; dir = c.num ? -1 : 1; } draw(); } } }, c.label + arrow));
           if (sortKey === c.key) th.setAttribute("aria-sort", dir < 0 ? "descending" : "ascending");
-        } else th.appendChild(document.createTextNode(c.label || ""));
+        } else if (c.label instanceof Node) th.appendChild(c.label);
+        else th.appendChild(document.createTextNode(c.label || ""));
         hr.appendChild(th);
       });
       t.appendChild(h("thead", null, hr));
@@ -799,12 +804,46 @@
     }));
   }
 
+  /* ---------------------------------------------------------- Page parts */
+  function pageHead(title, sub, actions) {
+    return h("div", { class: "ph" }, h("div", null, h("h1", null, title), sub ? h("p", null, sub) : null),
+      actions && actions.length ? h("div", { class: "actions" }, actions) : null);
+  }
+  /* A search field that filters in place: the caller redraws only the list,
+     so the field keeps its focus and caret while someone types. */
+  function searchBox(placeholder, value, onChange, o) {
+    o = o || {};
+    var inp = h("input", { type: "search", class: "input", placeholder: placeholder, value: value || "", "aria-label": placeholder, autocomplete: "off", spellcheck: "false" });
+    var t = null;
+    inp.addEventListener("input", function () { clearTimeout(t); t = setTimeout(function () { onChange(inp.value.trim()); }, 90); });
+    inp.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && inp.value) { ev.stopPropagation(); inp.value = ""; onChange(""); } });
+    return h("label", { class: "searchf", style: o.width ? { width: o.width } : null }, icon("search", "sm"), inp);
+  }
+  function csv(name, rows) {
+    var text = rows.map(function (r) {
+      return r.map(function (c) { c = c == null ? "" : String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(",");
+    }).join("\n");
+    var a = h("a", { href: URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" })), download: name });
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  /* Major units → minor, accepting "1,234.56" and "(1,234.56)". NaN if not a number. */
+  function parseMoney(text, dp) {
+    var t = String(text || "").trim(), neg = /^\(.*\)$/.test(t) || /^[-−]/.test(t);
+    t = t.replace(/[^0-9.]/g, "");
+    if (!t || (t.match(/\./g) || []).length > 1) return NaN;
+    var v = Math.round(parseFloat(t) * Math.pow(10, dp));
+    return neg ? -v : v;
+  }
+  function majorOf(minor, dp) { return (minor / Math.pow(10, dp)).toFixed(dp); }
+
   EFM.ui = {
     h: h, clear: clear, svg: svg, icon: icon, logo: logo, money: money, amt: amt, pct: pct, date: date, time: time, period: period,
     person: person, avatar: avatar, who: who, status: status, tag: tag, sev: sev, btn: btn, gated: gated, seg: seg, select: select,
     chipFilter: chipFilter, card: card, kpis: kpis, delta: delta, meter: meter, empty: empty, table: table, jeTable: jeTable,
     timeline: timeline, toast: toast, attempt: attempt, modal: modal, confirm: confirm, ask: ask, menu: menu,
     charts: { line: lineChart, columns: columns, spark: spark, ring: ring, legend: legend, niceTicks: niceTicks },
+    pageHead: pageHead, searchBox: searchBox, csv: csv, parseMoney: parseMoney, majorOf: majorOf,
     ICONS: ICONS
   };
 })(window);

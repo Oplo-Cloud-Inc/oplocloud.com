@@ -203,6 +203,7 @@
     return p.slice(0, 5) + pad(m - ((m - 1) % 3));
   }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function shortDate(d) { return MONTHS[+d.slice(5, 7) - 1] + " " + (+d.slice(8, 10)); }
 
   /* SHA-256, synchronous, for the audit chain. Small and dependency-free so
      the chain can be verified anywhere, including in a Worker. */
@@ -977,12 +978,21 @@
       matchedCount: bankLines.length - bankOpen.length, lines: bankLines
     };
   };
+  /* Working days between two dates: a Friday posting that clears on Monday
+     is one day late, not three. */
+  function bizDays(a, b) {
+    if (a > b) { var t = a; a = b; b = t; }
+    var n = 0, d = a;
+    while (d < b) { d = addDays(d, 1); var w = weekday(d); if (w !== 0 && w !== 6) n++; }
+    return n;
+  }
+  P.bizDays = bizDays;
   P.suggestMatch = function (bl, bookOpen) {
     var best = null;
     for (var i = 0; i < bookOpen.length; i++) {
       var l = bookOpen[i];
       if (l.amt !== bl.amount) continue;
-      var gap = Math.abs(daysBetween(l.date, bl.date));
+      var gap = bizDays(l.date, bl.date);
       if (gap > 6) continue;
       if (!best || gap < best.gap) best = { kind: "book", key: l.key, gap: gap, confidence: gap <= 2 ? "high" : "medium" };
     }
@@ -1980,7 +1990,7 @@
       var held = Object.values(self.apInvoices).filter(function (i) { return i.vendor === v.id && ["review", "approved", "scheduled", "hold"].includes(i.status); });
       var amt = held.reduce(function (s, i) { return s + self.usdOf(i.entity, i.amount, cp, "close"); }, 0);
       add({ id: "bank:" + v.id, sev: "critical", area: "Payables", roles: ["treasury", "cfo", "ap", "controller", "auditor"],
-            title: "Bank details changed — " + v.name, detail: "Requested " + v.bankPending.requestedAt.slice(0, 10) + " by " + v.bankPending.via + ". " + self.fmt(amt, "USD") + " of payments held until verified.",
+            title: "Bank details changed — " + v.name, detail: "Requested " + shortDate(v.bankPending.requestedAt) + " by " + v.bankPending.via + ". " + self.fmt(amt, "USD", { dp: 0 }) + " of payments held until verified.",
             action: { label: "Verify", perm: "vendor.verify", go: "/payables?vendor=" + v.id }, amount: amt, ref: { type: "vendor", id: v.id } });
     });
     Object.values(this.apInvoices).forEach(function (inv) {

@@ -75,6 +75,10 @@
     return r;
   };
 
+  /* After a screen runs several commands itself (a bulk approval), this
+     saves the sandbox and redraws once. */
+  app.commit = function () { save(); render(); };
+
   /* ------------------------------------------------------------ Router */
   var state = { path: "/home", id: null, view: null };
   app.navigate = function (path, o) {
@@ -274,7 +278,7 @@
     rail(r.view);
     topbar(def);
     ui.clear(mainEl);
-    mainEl.className = "page" + (def && def.wide ? " wide" : "");
+    mainEl.className = "page" + (def && def.wide ? " wide" : "") + (fresh ? " arrive" : "");
     if (!def) {
       mainEl.appendChild(ui.empty("There's no page here", "Try the menu on the left, or search with ⌘K.", "search"));
     } else {
