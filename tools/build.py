@@ -2768,6 +2768,49 @@ def dev_search_index():
     print(f"  wrote dev/assets/search-index.json ({len(pages)} entries)")
 
 
+# ------------------------------------------------------------------ Roxan
+# roxan.oplocloud.com — Oplo's AI, on a hostname of its own like OEdu and the
+# developer site (wrangler.roxan.toml). Its menu is the system's: this site's
+# bar, search and all, with Roxan's own chapter bar under it and this site's
+# footer below — the same arrangement as OEdu's welcome page, and the one
+# every section page here has. The rest of the page is Roxan's own.
+#
+# The chrome's CSS is scoped to .rx, and .rx is on <html>, not on a wrapper:
+# the bar's glass is body::before, which a scope inside <body> never reaches.
+# The page is dark the whole way down, so roxan/roxan.css holds the bars at
+# the dark material instead of leaving it to oplo-menu.js.
+ROXAN = "https://roxan.oplocloud.com/"
+ROXAN_PAGE = "roxan/index.html"
+ROXAN_CSS = "roxan/oplo-chrome.css"
+# #students is not an element: roxan.js opens the plans' Students tab for it.
+ROXAN_SECTIONS = [("For Students", "#students"), ("Features", "#assistant"),
+                  ("Explore", "#discover"), ("Plans", "#plans"), ("What’s New", "#new")]
+# The page's superscripts point at these by id, so each note carries its own.
+ROXAN_NOTES = [
+    '<span id="fn1"></span>Roxan 3 is available in English at launch, with more languages rolling out '
+    "through 2027. Some features are not available in all countries, regions, or languages.",
+    '<span id="fn2"></span>Comparisons are with the previous generation of Roxan models, on Oplo’s '
+    "internal evaluations. Roxan can make mistakes — check important information.",
+    '<span id="fn3"></span>Usage limits are compute-based. They factor in the model, the features you use, '
+    "and the length of your conversation, and refresh on a rolling five-hour window up to a weekly limit.",
+    '<span id="fn4"></span>Roxan Spark and auto-browse in OSurf are coming soon — first to Ultra, then to '
+    "Pro — in select countries. Every agent action is logged and needs your approval before anything is "
+    "sent or purchased.",
+    '<span id="fn5"></span>Roxan Studio credits are shared across image, video, and music generation and '
+    "reset monthly. Unused credits do not roll over.",
+    '<span id="fn6"></span>Plans, prices, and features shown are illustrative and subject to change. Taxes '
+    "may apply. Student offers require verification through OEdu or a school email address.",
+]
+
+
+def roxan_chrome():
+    sub = chapter(0, "Roxan", ROXAN_SECTIONS, "#top", ("Try Roxan", SITE + "oplo-accounts/demo/"))
+    regions(ROXAN_PAGE, (("nav", absolute(nav(0))), ("chapter", sub), ("foot", site_footer(ROXAN_NOTES))))
+    chrome_css(ROXAN_CSS, ".rx")
+    chrome_js("roxan")
+    print(f"  wrote {ROXAN_PAGE} bar, chapter bar and footer, {ROXAN_CSS}, roxan/oplo-menu.js and roxan/oplo-search.js")
+
+
 # ----------------------------------------------------------------- Search
 # What the bar's search looks through: every page this script builds, read
 # back from the pages themselves — title, description, and the section names
@@ -2799,6 +2842,8 @@ def search_index():
                   "k": "students teachers families school sign in learn", "u": OEDU})
     pages.append({"t": "Oplo Developer", "d": "Build on Oplo — the platforms, the tools and the documentation, as they are being made.",
                   "k": "developer sdk api documentation downloads platforms technologies ostudio", "u": DEV})
+    pages.append({"t": "Roxan", "d": "Oplo’s personal, proactive AI — built into every Oplo app, and private at every step.",
+                  "k": "ai assistant intelligence models plans students agents spark live", "u": ROXAN})
     io.open(os.path.join(ROOT, SEARCH_INDEX), "w", encoding="utf-8").write(
         json.dumps({"pages": pages}, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"  wrote {SEARCH_INDEX} ({len(pages)} pages)")
@@ -2814,3 +2859,4 @@ if __name__ == "__main__":
     search_index()
     oedu_chrome()
     dev_chrome()
+    roxan_chrome()

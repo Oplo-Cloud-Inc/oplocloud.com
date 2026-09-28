@@ -1,6 +1,7 @@
 /* ==========================================================================
    Roxan — roxan.oplocloud.com
-   Behaviour for the page: the nav and its menus, the hero (stars, parallax,
+   Behaviour for the page under the system's menu: the phone drawer and the
+   chapter bar's marker, the hero (stars, parallax,
    a prompt that types itself), the reel of what's new (five canvas scenes,
    autoplay with a progress dot), the galleries' arrows, the plan tabs and the
    Ultra toggle. Nothing here fetches anything; every animation stops when it
@@ -60,63 +61,53 @@
     $(".x", rib).addEventListener("click", function () { rib.hidden = true; store.set("roxan.ribbon", "closed"); });
   }
 
-  /* ------------------------------------------------------------ Nav */
-  var nav = $("#nav"), prog = $("#navProg"), toggle = $("#navToggle");
-  var onScroll = throttled(function () {
-    nav.classList.toggle("scrolled", window.scrollY > 4);
-    var max = root.scrollHeight - window.innerHeight;
-    prog.style.setProperty("--sp", max > 0 ? Math.min(1, window.scrollY / max).toFixed(4) : "0");
-  });
-  window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll);
-  onScroll();
+  /* ------------------------------------------------------------ The menu
+     The bar and the chapter bar are oplocloud.com's (tools/build.py writes
+     them in); oplo-menu.js and oplo-search.js drive the bar's menus and
+     search. Two things the site does elsewhere are done here: the phone
+     drawer, which on the site is a script after its footer, and marking
+     which of Roxan's sections you are in. */
+  var nav = $("#nav"), links = $("#navLinks"), toggle = $("#navToggle");
+  if (nav && links && toggle) {
+    var held = 0;
+    var setDrawer = function (open) {
+      if (open === links.classList.contains("open")) return;
+      if (open && window.OploSearch) window.OploSearch.close();
+      if (open) {
+        held = window.scrollY;
+        d.body.style.top = (-held) + "px";
+        d.body.classList.add("locked");
+      } else {
+        d.body.classList.remove("locked");
+        d.body.style.top = "";
+        window.scrollTo(0, held);
+      }
+      links.classList.toggle("open", open);
+      nav.classList.toggle("open", open);
+      toggle.classList.toggle("on", open);
+      toggle.setAttribute("aria-expanded", String(open));
+    };
+    toggle.addEventListener("click", function () { setDrawer(!links.classList.contains("open")); });
+    links.addEventListener("click", function (e) { if (e.target.closest("a")) setDrawer(false); });
+    window.addEventListener("resize", function () { if (links.classList.contains("open")) setDrawer(false); });
+    d.addEventListener("keydown", function (e) { if (e.key === "Escape") setDrawer(false); });
+  }
 
-  var drops = $$(".has-drop", nav);
-  var hoverable = window.matchMedia("(hover: hover) and (min-width: 901px)");
-  function setDrop(li, open) {
-    li.classList.toggle("open", open);
-    $("button", li).setAttribute("aria-expanded", open ? "true" : "false");
-    if (!open) li.hovered = false;
-    root.classList.toggle("drop-open", drops.some(function (x) { return x.classList.contains("open"); }) && hoverable.matches);
-  }
-  function closeDrops(except) { drops.forEach(function (li) { if (li !== except) setDrop(li, false); }); }
-  function setMenu(open) {
-    nav.classList.toggle("open", open);
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    toggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
-  }
-  drops.forEach(function (li) {
-    var btn = $("button", li), timer = 0;
-    btn.addEventListener("click", function () {
-      // A menu the pointer already opened stays open on click; otherwise it toggles.
-      var open = li.hovered ? true : !li.classList.contains("open");
-      li.hovered = false;
-      closeDrops(li);
-      setDrop(li, open);
+  var chapterLinks = $$(".chapter-links a");
+  var marks = [["#new", "#new"], ["#assistant", "#assistant"], ["#privacy", null], ["#plans", "#plans"],
+               ["#devices", null], ["#discover", "#discover"], [".notes", null]];
+  var markSection = throttled(function () {
+    var line = 120, on = null;
+    marks.forEach(function (m) {
+      var el = $(m[0]);
+      if (el && el.getBoundingClientRect().top <= line) on = m[1];
     });
-    li.addEventListener("mouseenter", function () {
-      if (!hoverable.matches) return;
-      window.clearTimeout(timer);
-      if (!li.classList.contains("open")) { closeDrops(li); setDrop(li, true); li.hovered = true; }
-    });
-    li.addEventListener("mouseleave", function () {
-      if (!hoverable.matches) return;
-      timer = window.setTimeout(function () { setDrop(li, false); }, 180);
-    });
-    li.addEventListener("focusout", function (e) {
-      if (hoverable.matches && !li.contains(e.relatedTarget)) setDrop(li, false);
-    });
+    chapterLinks.forEach(function (a) { a.classList.toggle("on", !!on && a.getAttribute("href") === on); });
   });
-  d.addEventListener("click", function (e) { if (!nav.contains(e.target)) { closeDrops(); setMenu(false); } });
-  d.addEventListener("keydown", function (e) {
-    if (e.key !== "Escape") return;
-    var open = drops.filter(function (li) { return li.classList.contains("open"); })[0];
-    closeDrops();
-    if (open) $("button", open).focus();
-    else if (nav.classList.contains("open")) { setMenu(false); toggle.focus(); }
-  });
-  toggle.addEventListener("click", function () { setMenu(!nav.classList.contains("open")); });
-  $$(".nav-links a", nav).forEach(function (a) { a.addEventListener("click", function () { closeDrops(); setMenu(false); }); });
+  if (chapterLinks.length) {
+    window.addEventListener("scroll", markSection, { passive: true });
+    markSection();
+  }
 
   /* ------------------------------------------------------------ Reveal */
   $$(".gal").forEach(function (g) { $$(".gcard", g).forEach(function (c, i) { c.style.setProperty("--i", i); }); });

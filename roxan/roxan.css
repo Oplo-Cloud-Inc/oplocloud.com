@@ -39,11 +39,10 @@
   --col: 980px;
   --gut: clamp(20px, 4vw, 48px);
   --ease: cubic-bezier(.16, 1, .3, 1);
-  --nav-h: 60px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { background: var(--void); color-scheme: dark; scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 24px); -webkit-text-size-adjust: 100%; }
+html { background: var(--void); color-scheme: dark; scroll-behavior: smooth; scroll-padding-top: 76px; -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--fb); font-size: 16px; line-height: 1.55; color: var(--text);
   background: var(--void); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
@@ -129,69 +128,42 @@ sup a:hover { color: var(--cyan); opacity: 1; }
 .ribbon .x { position: absolute; right: 14px; top: 50%; translate: 0 -50%; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
 .ribbon .x:hover { color: var(--text); background: var(--glass-2); }
 
-/* ------------------------------------------------------------ Nav */
-.nav {
-  position: sticky; top: 0; z-index: 70; height: var(--nav-h);
-  background: rgba(4, 5, 11, .5); border-bottom: 1px solid transparent;
-  backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%);
-  transition: background-color .3s, border-color .3s;
+/* ------------------------------------------------------------ The system's menu
+   The bar, the chapter bar and the footer are oplocloud.com's, written in by
+   tools/build.py with their CSS in oplo-chrome.css, scoped to .rx on <html>.
+   Roxan is dark the whole way down, so they are held at the site's dark
+   material here — the tokens oplo-design.css turns over under .bars-dark —
+   rather than left to oplo-menu.js, which would read the white paper of a
+   receipt in a gallery card as a light page. */
+.rx { --nav: 44px; }
+/* The site's body type, which its bar and footer are drawn in. Inside these
+   four, --text is the site's font stack (oplo-chrome.css), not Roxan's ink. */
+.rx .nav, .rx .chapter, .rx .foot, .rx .notes { font-family: var(--text); letter-spacing: -.022em; }
+.rx .nav, .rx .chapter { font-size: 17px; line-height: 1.47059; color: var(--ink); }
+.rx body { padding-top: var(--nav); }
+.rx body.locked { position: fixed; width: 100%; overflow: hidden; }
+.rx body::before { background-color: rgba(10, 12, 22, .72); border-bottom-color: rgba(255, 255, 255, .1); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); transition: background-color .45s; }
+.rx body:has(.nav.menu-open)::before, .rx body:has(.nav.searching)::before, .rx body:has(.nav.open)::before { background-color: #0e1020; }
+.rx .nav { --paper: #0e1020; --ink: #f5f5f7; --ink-2: #a1a1a6; --ink-3: #a1a1a6; --rule: rgba(255, 255, 255, .16); --blue: #2997ff; }
+.rx .chapter { --ink: #f5f5f7; --ink-2: #a1a1a6; background: rgba(10, 12, 22, .72); border-bottom-color: rgba(255, 255, 255, .1); }
+.rx .chapter-name { display: inline-flex; align-items: center; gap: 10px; }
+.rx .chapter-name::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: var(--holo-conic); box-shadow: 0 0 14px rgba(134, 169, 255, .6); animation: spin 9s linear infinite; }
+.rx .chapter-links a.on { color: var(--ink); }
+.rx .chapter-cta { color: #060812; font-weight: 600; background: var(--holo-loop); background-size: 250% 100%; transition: background-position .6s var(--ease); }
+.rx .chapter-cta:hover { background: var(--holo-loop); background-size: 250% 100%; background-position: 60% 0; }
+.rx .foot { background: #04050b; color: #a1a1a6; --paper: #04050b; --canvas: #04050b; --ink: #f5f5f7; --ink-2: #a1a1a6; --ink-3: #86868b; --rule: rgba(255, 255, 255, .14); --blue: #6ff3ff; }
+.rx .notes { background: #04050b; border-top: 1px solid rgba(170, 195, 255, .12); --ink-2: #6d7593; }
+.rx .notes li span[id] { scroll-margin-top: 90px; }
+/* The summary that folds the notes on a phone lives in oplo-design.css's phone
+   block, which is not cut into oplo-chrome.css; these are its four rules. */
+.rx .notes-d > summary { list-style: none; }
+.rx .notes-d > summary::-webkit-details-marker { display: none; }
+@media (min-width: 735px) { .rx .notes-d > summary { display: none; } }
+@media (max-width: 734px) {
+  .rx .notes { padding: 2px 0 4px; }
+  .rx .notes-d > summary { display: flex; align-items: center; justify-content: space-between; max-width: 1024px; margin-inline: auto; padding: 14px 22px; font-size: 12px; font-weight: 600; color: #eef1ff; cursor: pointer; }
+  .rx .notes-d > ol { padding-bottom: 14px; }
 }
-.nav.scrolled { background: rgba(4, 5, 11, .78); border-bottom-color: var(--line); }
-.nav-in { height: 100%; max-width: 1240px; margin-inline: auto; padding-inline: var(--gut); display: flex; align-items: center; gap: 22px; }
-.nav .grow { flex: 1; }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--fd); font-weight: 500; font-size: 19px; letter-spacing: -.03em; }
-.orb {
-  position: relative; width: 22px; height: 22px; border-radius: 50%; flex: none;
-  background: var(--holo-conic); animation: spin 9s linear infinite;
-  box-shadow: 0 0 18px rgba(134, 169, 255, .6);
-}
-.orb::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .85), transparent 45%); }
-.orb.sm { width: 14px; height: 14px; }
-.nav-links { display: flex; align-items: center; gap: 2px; margin-left: 10px; }
-.nav-links > li { position: relative; }
-.nav-links > li > a, .nav-links > li > button {
-  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 10px;
-  font-size: 14px; color: var(--muted); transition: color .2s, background-color .2s;
-}
-.nav-links > li > a:hover, .nav-links > li > button:hover, .has-drop.open > button { color: var(--text); background: rgba(255, 255, 255, .05); }
-.caret { width: 10px; height: 6px; transition: transform .3s var(--ease); }
-.has-drop.open .caret { transform: rotate(180deg); }
-.drop {
-  position: absolute; top: calc(100% + 12px); left: -10px; min-width: 300px; padding: 16px;
-  border-radius: 20px; background: rgba(8, 10, 21, .985); border: 1px solid var(--line-2);
-  backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
-  box-shadow: 0 30px 80px -10px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .06);
-  opacity: 0; visibility: hidden; transform: translateY(-6px) scale(.99); transform-origin: top left;
-  transition: opacity .25s var(--ease), transform .35s var(--ease), visibility 0s .35s;
-}
-.drop::before { content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 14px; } /* keeps hover alive across the gap */
-.has-drop.open .drop { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
-.drop-wide { width: 620px; }
-.drop-h { font-family: var(--fm); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); padding: 2px 10px 10px; }
-.drop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
-.drop-grid a, .drop-list a { display: flex; gap: 12px; align-items: center; padding: 9px 10px; border-radius: 12px; transition: background-color .2s; }
-.drop-grid a:hover, .drop-list a:hover, .drop a:focus-visible { background: rgba(255, 255, 255, .06); }
-.drop .ic {
-  width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px;
-  background: color-mix(in srgb, var(--c) 12%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
-  color: var(--c); box-shadow: 0 0 16px color-mix(in srgb, var(--c) 18%, transparent);
-}
-.drop .ic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.drop .t { display: block; font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.3; }
-.drop .d { display: block; font-size: 12.5px; color: var(--dim); line-height: 1.35; margin-top: 1px; }
-.drop-list { display: grid; gap: 2px; }
-.drop-list a { display: block; }
-/* The page dims behind an open menu, so the menu reads as the only thing in front. */
-.curtain { position: fixed; inset: 0; z-index: 65; pointer-events: none; background: rgba(2, 3, 9, .5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; visibility: hidden; transition: opacity .35s var(--ease), visibility 0s .35s; }
-.drop-open .curtain { opacity: 1; visibility: visible; transition-delay: 0s; }
-.nav-toggle { display: none; width: 40px; height: 40px; border-radius: 12px; position: relative; }
-.nav-toggle span { position: absolute; left: 11px; right: 11px; height: 1.5px; background: var(--text); border-radius: 2px; transition: transform .3s var(--ease), top .3s var(--ease); }
-.nav-toggle span:first-child { top: 16px; }
-.nav-toggle span:last-child { top: 23px; }
-.nav.open .nav-toggle span:first-child { top: 19.5px; transform: rotate(45deg); }
-.nav.open .nav-toggle span:last-child { top: 19.5px; transform: rotate(-45deg); }
-.nav-prog { position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; pointer-events: none; }
-.nav-prog i { display: block; height: 100%; background: var(--holo); transform-origin: 0 50%; transform: scaleX(var(--sp, 0)); box-shadow: 0 0 10px rgba(134, 169, 255, .8); }
 
 /* ------------------------------------------------------------ Hero */
 .hero { position: relative; isolation: isolate; overflow: hidden; padding: clamp(56px, 7vw, 92px) 0 clamp(64px, 8vw, 110px); text-align: center; }
@@ -286,7 +258,7 @@ sup a:hover { color: var(--cyan); opacity: 1; }
 .cap-chip b { color: var(--cyan); }
 
 /* Pane 2 — Research and Brief */
-.notes { padding: 7px; display: flex; flex-direction: column; gap: 7px; background: #0b0f1e; text-align: left; }
+.pnotes { padding: 7px; display: flex; flex-direction: column; gap: 7px; background: #0b0f1e; text-align: left; }
 .note-card { border-radius: 13px; padding: 9px 9px 10px; background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .03)); border: 1px solid rgba(255, 255, 255, .08); }
 .note-card small { display: block; font-family: var(--fm); font-size: 6.6px; letter-spacing: .08em; text-transform: uppercase; color: var(--peach); }
 .note-card h6 { font-size: 10px; line-height: 1.25; font-weight: 600; margin-top: 4px; }
@@ -820,23 +792,6 @@ sup a:hover { color: var(--cyan); opacity: 1; }
 .dcard h3 { margin: 8px 8px 16px; font-size: 18px; font-weight: 600; line-height: 1.3; letter-spacing: -.01em; }
 .dcard .link { margin: auto 8px 0; font-size: 14px; }
 
-/* ------------------------------------------------------------ Footnotes, footer */
-.notes { padding: 40px 0 30px; border-top: 1px solid var(--line); }
-.notes ol { list-style: decimal; padding-left: 18px; display: grid; gap: 8px; font-size: 12px; line-height: 1.6; color: var(--dim); }
-.notes li { padding-left: 4px; }
-.notes li:target { color: var(--text); }
-.foot { padding: 10px 0 40px; font-size: 12.5px; color: var(--dim); }
-.crumb { display: flex; align-items: center; gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
-.crumb a { display: inline-flex; align-items: center; gap: 7px; color: var(--text); }
-.foot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 26px 0 30px; }
-.fh { font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
-.foot-grid li { padding: 4px 0; }
-.foot-grid a:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
-.foot-base { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; padding-top: 16px; border-top: 1px solid var(--line); }
-.foot-base .legal { display: flex; gap: 16px; }
-.foot-base .legal a:hover { color: var(--text); }
-.foot-base .region { margin-left: auto; }
-
 /* ------------------------------------------------------------ Reveal */
 .js .reveal { opacity: 0; transform: translateY(26px); filter: blur(6px); transition: opacity 1s var(--ease), transform 1s var(--ease), filter 1s var(--ease); transition-delay: calc(var(--i, 0) * 70ms); }
 .js .reveal.in { opacity: 1; transform: none; filter: none; }
@@ -846,21 +801,8 @@ sup a:hover { color: var(--cyan); opacity: 1; }
 /* ------------------------------------------------------------ Responsive */
 @media (max-width: 1060px) {
   .plan-grid { grid-template-columns: repeat(2, 1fr); }
-  .drop-wide { width: 540px; }
 }
 @media (max-width: 900px) {
-  .nav-toggle { display: block; }
-  .nav-try { display: none; }
-  .nav-links {
-    position: absolute; top: var(--nav-h); left: 0; right: 0; margin: 0; padding: 12px var(--gut) 24px; flex-direction: column; align-items: stretch; gap: 0;
-    max-height: calc(100dvh - var(--nav-h)); overflow-y: auto; background: rgba(6, 8, 18, .97); border-bottom: 1px solid var(--line); backdrop-filter: blur(24px);
-    opacity: 0; visibility: hidden; transform: translateY(-8px); transition: opacity .3s var(--ease), transform .3s var(--ease), visibility 0s .3s;
-  }
-  .nav.open .nav-links { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
-  .nav-links > li > a, .nav-links > li > button { width: 100%; height: 48px; font-size: 16px; justify-content: space-between; border-bottom: 1px solid var(--line); border-radius: 0; }
-  .drop, .drop-wide { position: static; width: auto; min-width: 0; padding: 6px 0 10px; opacity: 1; visibility: visible; transform: none; display: none; background: none; border: 0; box-shadow: none; backdrop-filter: none; }
-  .has-drop.open .drop { display: block; }
-  .drop-grid { grid-template-columns: 1fr; }
   .fan { transform: scale(.78); height: 380px; margin: 24px auto 20px; }
   .more-grid { grid-template-columns: repeat(2, 1fr); }
   .compat-cols { grid-template-columns: 1fr 1fr; }
@@ -868,7 +810,6 @@ sup a:hover { color: var(--cyan); opacity: 1; }
   .disc-grid { grid-template-columns: 1fr; }
   .offer { grid-template-columns: 1fr; }
   .offer-art { min-height: 200px; }
-  .foot-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 620px) {
   .gal { --cw: 272px; --ch: 330px; --cww: 330px; }
@@ -876,13 +817,12 @@ sup a:hover { color: var(--cyan); opacity: 1; }
   .plan-grid, .more-grid, .compat-cols, .models { grid-template-columns: 1fr; }
   .seg { display: flex; overflow-x: auto; max-width: 100%; }
   .seg button { flex: none; padding: 0 14px; }
-  .foot-base .region { margin-left: 0; }
   .ribbon { padding-inline: 16px 48px; }
 }
 
 @media print {
   .js .reveal, .js .gal .gcard { opacity: 1 !important; transform: none !important; filter: none !important; }
-  .ribbon, .nav, .hero-bg, .reel-ctl, .gal-nav { display: none !important; }
+  .ribbon, .nav, .chapter, .hero-bg, .reel-ctl, .gal-nav { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

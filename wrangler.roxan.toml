@@ -13,9 +13,11 @@
 #     npx wrangler deploy -c wrangler.roxan.toml                  → workers.dev
 #     npx wrangler deploy -c wrangler.roxan.toml --env production → roxan.oplocloud.com
 #
-# The pages are self-contained — their own nav, footer, CSS and JS, with every
-# link out to the rest of Oplo written absolute — so nothing needs building
-# before a deploy.
+# The menu is the system's: oplocloud.com's bar, Roxan's chapter bar and the
+# site's footer are written into roxan/index.html by tools/build.py
+# (roxan_chrome), with every link absolute, along with oplo-chrome.css,
+# oplo-menu.js and oplo-search.js beside it. Run the builder before deploying,
+# or the chrome here is whatever it was the last time somebody did.
 # ===========================================================================
 name = "oplo-roxan"
 main = "worker/roxan.js"
