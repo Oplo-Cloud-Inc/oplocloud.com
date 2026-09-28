@@ -19,7 +19,7 @@ ENVIRONMENT = "development"
 # Browsers that may call this API with credentials. An allowlist rather than
 # "*", because "*" and cookies are mutually exclusive for good reasons.
 # :8788 is the sign-in page (auth/, `wrangler dev --port 8788`).
-ALLOWED_ORIGINS = "http://localhost:8123,http://127.0.0.1:8123,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8788,http://127.0.0.1:8788"
+ALLOWED_ORIGINS = "http://localhost:8123,http://127.0.0.1:8123,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8788,http://127.0.0.1:8788,http://localhost:8140,http://127.0.0.1:8140"
 
 [[d1_databases]]
 binding = "DB"
@@ -37,7 +37,8 @@ ENVIRONMENT = "production"
 # auth.oplocloud.com is where every service sends people to sign in; its page
 # posts to /auth/login here directly, so the session cookie is set on this
 # host — the one every service already sends it to.
-ALLOWED_ORIGINS = "https://edu.oplocloud.com,https://oplocloud.com,https://www.oplocloud.com,https://auth.oplocloud.com"
+# efm.oplocloud.com is OC EFM, which asks /me who is signed in.
+ALLOWED_ORIGINS = "https://edu.oplocloud.com,https://oplocloud.com,https://www.oplocloud.com,https://auth.oplocloud.com,https://efm.oplocloud.com"
 
 [[env.production.d1_databases]]
 binding = "DB"
