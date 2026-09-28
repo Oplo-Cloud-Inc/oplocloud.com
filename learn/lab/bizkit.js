@@ -7,11 +7,19 @@
    as something to explore that can hold Continue until the move that shows
    the idea has been made.
 
+     grab        concept cards to grab into your deck — a term, its picture,
+     what        it means and an example, as a card you collect
+     opener      a lesson's title card: its number, its name, the mission,
+     and         the concepts it hands out, orbiting its emblem
+     myth        a myth buster: a claim most people believe, a vote, the
+     clues       one at a time, then the claim cracks — BUSTED
      flip        cards you turn over one at a time: a picture and a name on
      the         front, what it means on the back
      chain       a cause and its effects, one link at a time
      amount      a number typed the way business writes it: 1,250 · $1,250 ·
      -$40        · 4.5% — commas are thousands, never decimals
+     deck        a lesson's last step: the concept cards it handed out,
+     face        down to recall, and the unit's deck filling up
      profit      run a stand for a day: set the price and how many you sell,
      and         watch money in, money out and what is left
      stops       a line from one extreme to the other with a few stops on it;
@@ -117,7 +125,12 @@
     input.setAttribute("aria-label", String(label).replace(/<[^>]+>|\$|\\[a-z]+|[{}]/g, ""));
     var val = el("span", "lw-sl-val");
     row.appendChild(name); row.appendChild(input); row.appendChild(val);
-    function show() { val.innerHTML = o.show ? fmt(o.show(+input.value)) : m(num(+input.value)); }
+    function show() {
+      val.innerHTML = o.show ? fmt(o.show(+input.value)) : m(num(+input.value));
+      // How far along the track the handle is, for a track that fills behind it.
+      var span = (+input.max) - (+input.min);
+      input.style.setProperty("--p", (span ? ((+input.value) - (+input.min)) / span * 100 : 0).toFixed(1) + "%");
+    }
     input.addEventListener("input", function () { show(); onInput(+input.value); });
     show();
     return { el: row, input: input, set: function (v) { input.value = v; show(); } };
@@ -482,6 +495,885 @@
     ".bz-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }"
   ].join("\n"));
 
+  /* ================================================================ Studio
+     The course's own look, on every card of a Business lesson, quiz and
+     practice sitting — everything under [data-course="biz"], so no other lab
+     course changes. A card takes an accent from what kind of step it is (a
+     guess is gold, a new concept violet, something to try cyan, a warning
+     pink …): the kicker says it with an icon and a pill, the card's edge
+     and glow carry it, and the words that matter in a prompt are marked in
+     it like a highlighter. Answers are big lettered tiles; a right one
+     lights up, a wrong one shakes.
+
+     B.kick("Guess first") → the kicker as a pill with its icon; the unit
+     runs every lesson kicker through it. Unknown kickers get the blue one. */
+  var KICK = {
+    "guess first": ["gold", "target"], "look": ["blue", "eye"], "watch": ["blue", "eye"],
+    "try it": ["cyan", "hand"], "your turn": ["cyan", "pencil"], "one step harder": ["orange", "bolt"],
+    "new word": ["violet", "spark"], "new words": ["violet", "spark"], "new concept": ["violet", "spark"],
+    "concept": ["violet", "spark"], "concepts": ["violet", "spark"], "grab it": ["violet", "spark"],
+    "careful": ["pink", "alert"], "myth buster": ["pink", "hammer"], "real world": ["lime", "globe"],
+    "remember?": ["orange", "rewind"], "put it together": ["gold", "puzzle"], "in your own words": ["violet", "quote"],
+    "why it works": ["blue", "bulb"], "lesson": ["violet", "spark"], "your deck": ["gold", "cards"]
+  };
+  var KICK_IC = {
+    target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+    eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+    hand: '<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V13"/><path d="M17 9.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3.8 15a1.6 1.6 0 0 1 2.4-2.1L8 14.5"/>',
+    pencil: '<path d="M4 20h4L19.5 8.5a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+    bolt: '<path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z"/>',
+    spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="M12 8.5 13.2 11 15.5 12l-2.3 1-1.2 2.5-1.2-2.5L8.5 12l2.3-1z"/><path d="m5.6 5.6 1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+    alert: '<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/>',
+    hammer: '<path d="M14 6.5 4 16.5a2.1 2.1 0 0 0 3 3l10-10"/><path d="m12.5 5 4-2.5 5 5-2.5 4z"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18"/>',
+    rewind: '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 3.5V9H9"/><path d="M12 8v4.5l3 1.8"/>',
+    puzzle: '<path d="M9 4h4v2a1.8 1.8 0 1 0 3.6 0V4H20v5h-2a1.8 1.8 0 1 0 0 3.6h2V20h-5v-2a1.8 1.8 0 1 0-3.6 0v2H4v-5h2a1.8 1.8 0 1 0 0-3.6H4V4z"/>',
+    quote: '<path d="M5 17c0-4 1-7 5-9M14 17c0-4 1-7 5-9"/><path d="M5 17a2.5 2.5 0 1 0 0-.1M14 17a2.5 2.5 0 1 0 0-.1"/>',
+    bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    cards: '<rect x="3" y="6" width="11" height="15" rx="2"/><path d="M8 4.5 9 3h10a2 2 0 0 1 2 2v12.5a2 2 0 0 1-1.5 1.9"/>'
+  };
+  function kick(text) {
+    var t = String(text == null ? "" : text);
+    if (/class="bzk/.test(t)) return t;
+    var k = KICK[t.replace(/<[^>]+>/g, "").trim().toLowerCase()] || ["blue", "spark"];
+    return '<span class="bzk bzk-' + k[0] + '"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"' +
+      ' stroke-linecap="round" stroke-linejoin="round">' + KICK_IC[k[1]] + "</svg><span>" + t + "</span></span>";
+  }
+  B.kick = kick;
+
+  /* A burst of sparks from a point, for a moment worth marking: a right
+     answer, a concept grabbed, a myth busted. Drawn over the page, gone in
+     under a second, nothing at all with reduced motion. */
+  function burst(x, y, o) {
+    o = o || {};
+    if (reduced() || document.hidden) return;
+    var layer = el("div", "bzx-burst");
+    layer.style.left = x + "px"; layer.style.top = y + "px";
+    document.body.appendChild(layer);
+    var n = o.n || 18, tones = o.tones || ["gold", "violet", "cyan", "pink", "lime"];
+    for (var i = 0; i < n; i++) {
+      var d = el("i", "t-" + tones[i % tones.length] + (i % 3 === 0 ? " sq" : ""));
+      var a = (i / n) * Math.PI * 2 + (i % 2 ? 0.2 : -0.1), r = (o.r || 70) * (0.6 + ((i * 37) % 10) / 20);
+      layer.appendChild(d);
+      if (d.animate) d.animate([
+        { transform: "translate(-50%,-50%) scale(1)", opacity: 1 },
+        { transform: "translate(calc(-50% + " + (Math.cos(a) * r).toFixed(1) + "px), calc(-50% + " + (Math.sin(a) * r).toFixed(1) + "px)) scale(.2) rotate(" + (i * 40) + "deg)", opacity: 0 }
+      ], { duration: 620 + (i % 4) * 90, easing: "cubic-bezier(.15,.7,.3,1)", fill: "forwards" });
+    }
+    setTimeout(function () { if (layer.parentNode) layer.parentNode.removeChild(layer); }, 1100);
+  }
+  B.burst = burst;
+  // A right answer in a Business card bursts from its Check button.
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest && e.target.closest('[data-course="biz"] .ch-foot .ch-btn.primary');
+    if (!b) return;
+    var card = b.closest(".ch-card");
+    setTimeout(function () {
+      var ok = card && card.querySelector(".ch-sheet.on.ok");
+      if (!ok || ok.__bzx) return;
+      ok.__bzx = true;
+      var r = b.getBoundingClientRect();
+      burst(r.left + r.width / 2, r.top + r.height / 2, { n: 16, r: 60 });
+    }, 30);
+  }, true);
+
+  var BIZ = '[data-course="biz"]';
+  // Led by `html` and weighted by a second attribute, so these win over the
+  // student side's Obsidian rules (html[data-look="obsidian"] :is(…)) without
+  // !important.
+  function under(sel) { return sel.split(",").map(function (s) { return "html " + BIZ + "[data-course] " + s.trim(); }).join(", "); }
+  B.css([
+    // The course's colours. Deeper on the light console, bright on Obsidian.
+    BIZ + " { --bx-gold: #b7791f; --bx-violet: #6d4dff; --bx-cyan: #0e8fb0; --bx-pink: #db2767; --bx-lime: #15984a; --bx-orange: #dd5a12; --bx-blue: #2f63f0;",
+    "  --bx-go1: #3b5bff; --bx-go2: #7a3dff; }",
+    "html[data-look=\"obsidian\"] " + BIZ + " { --bx-gold: #ffc94d; --bx-violet: #a08bff; --bx-cyan: #3ddcf5; --bx-pink: #ff6b9a; --bx-lime: #4ae68a; --bx-orange: #ff9a4d; --bx-blue: #6f9bff; }",
+    under(".ch-card") + " { --acc: var(--bx-blue); }",
+    under(".ch-card:has(.bzk-gold)") + " { --acc: var(--bx-gold); }",
+    under(".ch-card:has(.bzk-violet)") + " { --acc: var(--bx-violet); }",
+    under(".ch-card:has(.bzk-cyan)") + " { --acc: var(--bx-cyan); }",
+    under(".ch-card:has(.bzk-pink)") + " { --acc: var(--bx-pink); }",
+    under(".ch-card:has(.bzk-lime)") + " { --acc: var(--bx-lime); }",
+    under(".ch-card:has(.bzk-orange)") + " { --acc: var(--bx-orange); }",
+
+    // The card: an accent edge along the top, a glow in its corner.
+    under(".ch-card") + " { border-radius: 28px; isolation: isolate;",
+    "  background: radial-gradient(90% 55% at 0% 0%, color-mix(in srgb, var(--acc) 9%, transparent), transparent 70%), var(--paper);",
+    "  box-shadow: 0 0 0 1px color-mix(in srgb, var(--acc) 18%, var(--hair)), 0 1px 2px rgba(0,0,0,.05), 0 28px 70px -34px color-mix(in srgb, var(--acc) 40%, transparent); }",
+    "html[data-look=\"obsidian\"] " + BIZ + " .ch-card { background: radial-gradient(90% 55% at 0% 0%, color-mix(in srgb, var(--acc) 15%, transparent), transparent 70%), radial-gradient(70% 50% at 100% 100%, color-mix(in srgb, var(--acc) 6%, transparent), transparent 70%), var(--paper);",
+    "  box-shadow: 0 0 0 1px color-mix(in srgb, var(--acc) 26%, var(--hair)), 0 30px 80px -30px color-mix(in srgb, var(--acc) 45%, transparent); }",
+    under(".ch-card::before") + " { content: \"\"; position: absolute; left: 28px; right: 28px; top: 0; height: 2px; border-radius: 2px; z-index: -1;",
+    "  background: linear-gradient(90deg, transparent, var(--acc) 30%, color-mix(in srgb, var(--acc) 50%, var(--bx-pink)) 70%, transparent); opacity: .9; }",
+    under(".ch-card.in") + " { animation: bzx-in .55s cubic-bezier(.2,.8,.2,1); }",
+    "@keyframes bzx-in { from { opacity: 0; transform: translateY(16px) scale(.985); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }",
+
+    // The kicker: a pill in the card's colour, with its picture.
+    ".bzk { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 750;",
+    "  letter-spacing: .08em; text-transform: uppercase; color: var(--acc, var(--bx-blue)); background: color-mix(in srgb, var(--acc, var(--bx-blue)) 14%, transparent);",
+    "  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc, var(--bx-blue)) 26%, transparent); }",
+    ".bzk svg { width: 15px; height: 15px; flex: none; }",
+    under(".ch-kind") + " { margin-bottom: 16px; }",
+    under(".ch-kind > .bzk + span") + " { margin-left: 6px; }",
+
+    // The prompt: bigger, tighter, and the words that matter marked.
+    under(".ch-prompt") + " { font-size: 23px; line-height: 1.34; font-weight: 600; letter-spacing: -.02em; }",
+    under(".ch-prompt b") + " { font-weight: 750; background: linear-gradient(180deg, transparent 58%, color-mix(in srgb, var(--acc) 34%, transparent) 58%, color-mix(in srgb, var(--acc) 34%, transparent) 92%, transparent 92%); padding: 0 .1em; margin: 0 -.05em; border-radius: 2px; }",
+    under(".ch-then b, .ch-after b") + " { color: var(--acc); font-weight: 700; }",
+    under(".ch-then") + " { margin-top: 18px; padding: 14px 18px; border-radius: 16px; background: color-mix(in srgb, var(--acc) 10%, transparent); box-shadow: inset 3px 0 0 var(--acc); font-size: 16.5px; line-height: 1.5; }",
+    under(".ch-after") + " { margin-top: 16px; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }",
+
+    // Answers: big lettered tiles.
+    under(".ch-options") + " { gap: 10px; counter-reset: bzopt; }",
+    under(".ch-opt") + " { counter-increment: bzopt; padding: 15px 18px 15px 14px; border-radius: 16px; font-size: 16.5px; font-weight: 500;",
+    "  box-shadow: inset 0 0 0 1.5px var(--hair), 0 1px 0 var(--hair); transition: box-shadow .18s, background .18s, transform .18s cubic-bezier(.2,.8,.2,1); }",
+    under(".ch-opt:hover:not(:disabled)") + " { transform: translateY(-2px); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--acc) 55%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--acc) 70%, transparent); }",
+    under(".ch-opt .ch-mark") + " { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; box-shadow: inset 0 0 0 1.5px var(--rule); background: transparent; }",
+    under(".ch-opt .ch-mark::after") + " { content: counter(bzopt, upper-alpha); font-size: 13px; font-weight: 750; color: var(--ink-2); }",
+    under(".ch-opt.on") + " { background: color-mix(in srgb, var(--acc) 10%, var(--paper)); box-shadow: inset 0 0 0 2px var(--acc), 0 10px 26px -14px color-mix(in srgb, var(--acc) 80%, transparent); }",
+    under(".ch-opt.on .ch-mark") + " { background: var(--acc); box-shadow: none; }",
+    under(".ch-opt.on .ch-mark::after") + " { color: #fff; }",
+    "html[data-look=\"obsidian\"] " + BIZ + " .ch-opt.on .ch-mark::after { color: #111; }",
+    under(".ch-opt.yes") + " { animation: bzx-pop .45s cubic-bezier(.2,.9,.3,1.4); box-shadow: inset 0 0 0 2px var(--green), 0 0 0 5px color-mix(in srgb, var(--green) 16%, transparent), 0 14px 32px -16px var(--green); }",
+    under(".ch-opt.yes .ch-mark") + " { background: var(--green); box-shadow: none; }",
+    under(".ch-opt.yes .ch-mark::after") + " { content: \"✓\"; color: #fff; font-size: 15px; }",
+    under(".ch-opt.no") + " { animation: bzx-shake .42s ease; }",
+    under(".ch-opt.no .ch-mark::after") + " { content: \"✕\"; font-size: 13px; }",
+    "@keyframes bzx-pop { 0% { transform: scale(1); } 45% { transform: scale(1.025); } 100% { transform: scale(1); } }",
+    "@keyframes bzx-shake { 0%,100% { transform: none; } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }",
+
+    // Buttons: the forward one is a lit gradient pill.
+    under(".ch-btn.primary") + " { background: linear-gradient(120deg, var(--bx-go1), var(--bx-go2)); color: #fff; font-weight: 650; min-width: 140px;",
+    "  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--bx-go2) 85%, transparent), inset 0 1px 0 rgba(255,255,255,.22); }",
+    under(".ch-btn.primary:hover:not(:disabled)") + " { background: linear-gradient(120deg, #4a68ff, #8a52ff); transform: translateY(-1px); }",
+    under(".ch-btn.primary:disabled") + " { opacity: .32; box-shadow: none; }",
+    under(".ch-foot") + " { border-top-color: color-mix(in srgb, var(--acc) 16%, var(--hair)); }",
+
+    // The steps along the top: lit segments, the current one glowing.
+    under(".ch-sn-dot.cur::before") + " { background: linear-gradient(90deg, var(--bx-go1), var(--bx-cyan)); box-shadow: 0 0 12px color-mix(in srgb, var(--bx-cyan) 70%, transparent); }",
+    under(".ch-sn-dot.seen::before") + " { background: color-mix(in srgb, var(--bx-violet) 55%, transparent); }",
+    under(".ch-sn-dot.first::before") + " { background: linear-gradient(90deg, var(--green), color-mix(in srgb, var(--green) 60%, var(--bx-cyan))); }",
+    under(".ch-sn-dot.helped::before") + " { background: linear-gradient(90deg, var(--bx-gold), var(--bx-orange)); }",
+    under(".ch-prog i.cur") + " { background: linear-gradient(90deg, var(--bx-go1), var(--bx-cyan)); }",
+
+    // Replies: a right one glows green, a wrong one warm.
+    under(".ch-sheet.on") + " { border-radius: 16px; padding: 16px 20px; }",
+    under(".ch-sheet.ok") + " { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent), 0 12px 30px -18px var(--green); }",
+    under(".ch-sheet.ok > b:first-child") + " { font-size: 17px; }",
+    under(".ch-hintline") + " { border-radius: 14px; box-shadow: inset 3px 0 0 var(--bx-gold); }",
+
+    // Sort, slots and order: cards that lift, bins in the card's colour.
+    under(".ch-cardlet") + " { border-radius: 13px; min-height: 44px; }",
+    under(".ch-cardlet:hover:not(:disabled)") + " { transform: translateY(-2px); }",
+    under(".ch-cardlet.sel") + " { box-shadow: 0 0 0 2px var(--acc), 0 10px 22px -12px var(--acc); background: color-mix(in srgb, var(--acc) 10%, var(--paper)); }",
+
+    // Picture tiles: lit discs that rise in one after another.
+    under(".bz-trow") + " { gap: 12px; }",
+    under(".bz-tile") + " { position: relative; min-width: 112px; padding: 18px 14px 13px; border-radius: 20px; gap: 9px;",
+    "  background: linear-gradient(180deg, color-mix(in srgb, currentColor 12%, var(--lw-surface)), var(--lw-surface) 75%);",
+    "  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent), 0 16px 30px -22px currentColor; transition: transform .25s cubic-bezier(.2,.8,.2,1); }",
+    under(".bz-tile:hover") + " { transform: translateY(-4px) rotate(-1deg); }",
+    under(".bz-tile .bz-ic") + " { width: 46px; height: 46px; padding: 9px; box-sizing: border-box; border-radius: 50%; background: color-mix(in srgb, currentColor 16%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 6%, transparent); }",
+    under(".bz-tile span") + " { font-weight: 600; font-size: 14px; }",
+    under(".ch-card.in .bz-tile") + " { animation: bzx-rise .5s cubic-bezier(.2,.8,.2,1) both; }",
+    under(".ch-card.in .bz-tile:nth-child(2)") + " { animation-delay: .07s; }",
+    under(".ch-card.in .bz-tile:nth-child(3)") + " { animation-delay: .14s; }",
+    under(".ch-card.in .bz-tile:nth-child(4)") + " { animation-delay: .21s; }",
+    under(".ch-card.in .bz-tile:nth-child(5)") + " { animation-delay: .28s; }",
+    "@keyframes bzx-rise { from { opacity: 0; transform: translateY(14px) scale(.94); } to { opacity: 1; transform: none; } }",
+
+    // Photographs: a slow push in as the card arrives.
+    under(".bz-photo") + " { position: relative; overflow: hidden; border-radius: 22px; }",
+    under(".bz-photo img") + " { border-radius: 22px; max-height: 300px; }",
+    under(".ch-card.in .bz-photo img") + " { animation: bzx-push 1.6s cubic-bezier(.2,.7,.2,1) both; }",
+    "@keyframes bzx-push { from { transform: scale(1.08); filter: saturate(.6) brightness(.8); } to { transform: none; filter: none; } }",
+
+    // Scenes sit on a surface with a faint edge in the card's colour.
+    under(".bz-stage") + " { border-radius: 20px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 14%, transparent); }",
+    under(".bz-kpi") + " { border-radius: 16px; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 10%, var(--hair)); }",
+    under(".bz-kpi b") + " { font-size: 26px; letter-spacing: -.02em; }",
+
+    // The end of a lesson: its mark glows.
+    under(".ch-end .ch-endmark svg") + " { filter: drop-shadow(0 0 18px color-mix(in srgb, var(--green) 60%, transparent)); }",
+
+    // The spark layer.
+    ".bzx-burst { position: fixed; z-index: 9999; width: 0; height: 0; pointer-events: none; }",
+    ".bzx-burst i { position: absolute; left: 0; top: 0; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%,-50%); }",
+    ".bzx-burst i.sq { border-radius: 2px; width: 7px; height: 7px; }",
+    ".bzx-burst .t-gold { background: #ffc94d; } .bzx-burst .t-violet { background: #a08bff; } .bzx-burst .t-cyan { background: #3ddcf5; }",
+    ".bzx-burst .t-pink { background: #ff6b9a; } .bzx-burst .t-lime { background: #4ae68a; }",
+    "@media (prefers-reduced-motion: reduce) { " + under(".ch-card.in, .ch-card.in .bz-tile, .ch-card.in .bz-photo img, .ch-opt.yes, .ch-opt.no") + " { animation: none; } }"
+  ].join("\n"));
+
+  /* More pictures for the concept cards, drawn like the rest (24 × 24, a
+     line in the colour of the text). */
+  Object.assign(B.ICONS, {
+    grab: KICK_IC.hand, spark: KICK_IC.spark, cards: KICK_IC.cards, rewind: KICK_IC.rewind, puzzle: KICK_IC.puzzle,
+    pencil: KICK_IC.pencil, alert: KICK_IC.alert, hammer2: KICK_IC.hammer, quote: KICK_IC.quote,
+    piggy: '<path d="M4 12.5a7 6 0 0 1 12.2-4l2.8-1.3-.6 3.3a5.6 5.6 0 0 1 .9 2c0 2-1 3.6-2.6 4.7V20h-3v-1.6h-3.8V20h-3v-3a6 6 0 0 1-2.9-4.5z"/><circle cx="15.2" cy="11.2" r=".8" fill="currentColor"/><path d="M8.5 8.4h3.2"/>',
+    receipt: '<path d="M6 3h12v18l-2.5-1.5L13 21l-2-1.5L9 21l-3-1.5z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    thermo: '<path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M12 9v8"/>',
+    gauge: '<path d="M4.5 17a8 8 0 1 1 15 0"/><path d="M12 13l4-4"/><circle cx="12" cy="13" r="1.3"/><path d="M7 17h10"/>',
+    loop: '<path d="M20 8a8 8 0 0 0-14.5-2"/><path d="M5 2.5V6h3.5"/><path d="M4 16a8 8 0 0 0 14.5 2"/><path d="M19 21.5V18h-3.5"/>',
+    wave: '<path d="M2.5 14c2-5 4-7 6-2s4 7 6 2 4-7 7-3"/><path d="M2.5 20h19"/>',
+    crown: '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/><path d="M5 19h14"/>',
+    handshake: '<path d="M2.5 12 7 7.5l5 1.8 5-1.8 4.5 4.5"/><path d="M7 12.5l3.8 3.8a1.4 1.4 0 0 0 2 0"/><path d="M9.6 15.1l1.9 1.9a1.4 1.4 0 0 0 2 0l3.9-3.9"/><path d="M12 9.3 9.2 12a1.4 1.4 0 0 0 2 2l2.3-2.2"/>',
+    link: '<path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/>',
+    city: '<path d="M3 21h18"/><path d="M5 21V10h5v11M10 21V4h6v17M16 21v-8h4v8"/><path d="M12.5 8h1M12.5 11h1M12.5 14h1M7 13h1M7 16h1"/>',
+    zoom: '<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5.5 5.5"/><path d="M8 10.5h5M10.5 8v5"/>',
+    lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/>',
+    sprout: '<path d="M12 21v-9"/><path d="M12 12c0-4 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5zM12 14.5c0-3.2-2.5-5.5-6.5-5.5 0 3.2 2.5 5.5 6.5 5.5z"/><path d="M7 21h10"/>',
+    ballot: '<path d="M4 12h16v8H4z"/><path d="M8 12V4h8v8"/><path d="m10 8 1.5 1.5L14 6.5"/>',
+    dial: '<path d="M12 2.5v3"/><circle cx="12" cy="14" r="7"/><path d="M12 14l3.5-3.5"/><path d="M8 18.5h8"/>',
+    printer: '<path d="M7 8V3h10v5"/><rect x="3" y="8" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/><path d="M10 17.5h4"/>',
+    brain: '<path d="M9.5 4A3 3 0 0 0 6.5 7a3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 3 3A2.5 2.5 0 0 0 12 18V6.5A2.5 2.5 0 0 0 9.5 4z"/><path d="M14.5 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-3 3A2.5 2.5 0 0 1 12 18"/><path d="M8.5 10.5h1.5M14 13.5h1.5"/>',
+    rocket: '<path d="M12 2.5c3.2 2.2 5 6.3 4 11.5l-2 2h-4l-2-2c-1-5.2.8-9.3 4-11.5z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M8 14l-3 2.5.8 3.5 3.2-2M16 14l3 2.5-.8 3.5-3.2-2"/><path d="M11 19.5 12 22l1-2.5"/>',
+    cross: '<path d="M3 5l18 14M3 19 21 5"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/>',
+    shift: '<path d="M3 19 11 5"/><path d="M11 19 19 5" stroke-dasharray="2.2 2.4"/><path d="M8 13h8.5M14 10.5l2.5 2.5-2.5 2.5"/>',
+    stack: '<rect x="3" y="13" width="8" height="7" rx="1"/><rect x="13" y="13" width="8" height="7" rx="1"/><rect x="8" y="4.5" width="8" height="7" rx="1"/>',
+    shelf: '<path d="M3 4.5h18M3 12h18M3 19.5h18"/><path d="M5 4.5v15M19 4.5v15"/><rect x="7" y="7.5" width="3" height="4.5" rx=".5"/>',
+    crowd: '<circle cx="6" cy="8" r="2.2"/><circle cx="12" cy="6.5" r="2.4"/><circle cx="18" cy="8" r="2.2"/><path d="M2.5 17a3.5 3.5 0 0 1 7 0M8 16a4 4 0 0 1 8 0M14.5 17a3.5 3.5 0 0 1 7 0"/><path d="M2.5 20.5h19"/>',
+    seats: '<path d="M4 20V9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v11M13 20V9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v11"/><path d="M3 14h9M12 14h9"/>',
+    diamond: '<path d="M6 3.5h12l3.5 5L12 21 2.5 8.5z"/><path d="M2.5 8.5h19M9 3.5 7.5 8.5 12 21M15 3.5l1.5 5L12 21"/>',
+    patent: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><circle cx="12" cy="13" r="3"/><path d="m10.5 15.5-1 3.5 2.5-1.2 2.5 1.2-1-3.5"/>',
+    mail: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6.5L20.5 7"/>',
+    wind: '<path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 15h15a3 3 0 1 1-3 3"/><path d="M3 12h7"/>',
+    clockback: '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 3.5V9H9"/><path d="M12 8v4.5l3 1.8"/>',
+    seesaw: '<path d="M3 17 21 11"/><path d="M12 14l-2.5 6h5z"/><circle cx="5.5" cy="12.5" r="2"/><circle cx="18.5" cy="7" r="2"/>',
+    fist: '<path d="M7 11V7.5a1.5 1.5 0 0 1 3 0V11M10 10V6.5a1.5 1.5 0 0 1 3 0V10M13 10V7a1.5 1.5 0 0 1 3 0v4"/><path d="M16 9.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14.5V12a1.5 1.5 0 0 1 3 0"/>'
+  });
+
+  /* ================================================================= Grab
+     //: grab       concept cards to grab into your deck — a term, its picture,
+     //:            what it means and an example, as a card you collect
+     The moment a lesson names an idea, the idea becomes a card: a
+     collectible with a number, a family colour, a picture, one sentence of
+     meaning and one example. The student grabs it — drags it down into the
+     deck, or presses Grab — and it flies in. Every concept of a unit is a
+     card in its deck; the lesson's last step and the unit page show the
+     deck filling up.
+
+     The unit registers its concepts once:
+       B.deck.add("biz:1", [{ id: "revenue", name: "Revenue", i: "cash",
+         fam: "basics", lesson: 1, t: "What it means.", say: "An example." }, …])
+     `t` and `say` are lesson text (write \$ for a dollar); `name` is plain.
+     A step grabs one to five of them:
+       { type: "learn", scene: { type: "grab", ids: ["revenue", "costs"] }, gate: true }
+     A concept counts as grabbed once the step that grabs it has been seen
+     (its record, which follows the student between devices), or once it was
+     grabbed in this visit. B.deck.where(id, stepId) says which step that is;
+     the unit does it for every grab step. */
+  var FAMS = {
+    basics: { name: "Business basics", short: "Basics", tone: "gold" },
+    world: { name: "The environment", short: "Environment", tone: "cyan" },
+    systems: { name: "Economic systems", short: "Systems", tone: "violet" },
+    macro: { name: "The whole economy", short: "Economy", tone: "blue" },
+    markets: { name: "Markets", short: "Markets", tone: "pink" },
+    compete: { name: "Competition & change", short: "Competition", tone: "lime" }
+  };
+  var DECK = { by: {}, list: [], step: {}, now: {} };
+  function deckAll(unit) { return DECK.list.filter(function (c) { return !unit || c.unit === unit; }); }
+  function deckHas(id) {
+    if (DECK.now[id]) return true;
+    var sid = DECK.step[id];
+    if (!sid || typeof CH.result !== "function") return false;
+    var r = CH.result(sid);
+    return !!(r && (r.seen || r.solved));
+  }
+  function no2(n) { return (n < 10 ? "0" : "") + n; }
+  function famOf(c) { return FAMS[c.fam] || FAMS.basics; }
+  /* One card, as HTML. o.back: the meaning side only (the deck's flip);
+     o.mini: a small one for a pile or a strip. */
+  function cardHTML(c, o) {
+    o = o || {};
+    var f = famOf(c);
+    if (o.mini) return '<span class="bzg-mini tone-' + f.tone + '" title="' + esc(c.name) + '">' + icon(c.i || "spark") + "</span>";
+    return '<div class="bzg-card tone-' + f.tone + (o.cls ? " " + o.cls : "") + '" data-id="' + esc(c.id) + '">' +
+      '<span class="bzg-foil" aria-hidden="true"></span>' +
+      '<span class="bzg-top"><b>No. ' + no2(c.no) + '</b><em><span class="lg">' + esc(f.name) + '</span><span class="sh">' + esc(f.short || f.name) + "</span></em></span>" +
+      '<span class="bzg-art" aria-hidden="true"><span class="bzg-ring"></span>' + icon(c.i || "spark") + "</span>" +
+      '<span class="bzg-name">' + esc(c.name) + "</span>" +
+      '<span class="bzg-t">' + fmt(c.t || "") + "</span>" +
+      (c.say ? '<span class="bzg-eg"><i>For example</i>' + fmt(c.say) + "</span>" : "") +
+      '<span class="bzg-bot"><span>Unit ' + esc(String(c.unit || "").split(":")[1] || "") + " · Lesson " + esc(c.lesson) + '</span><span class="bzg-logo">OEdu</span></span>' +
+      "</div>";
+  }
+  B.deck = {
+    add: function (unit, list) {
+      var n = deckAll(unit).length;
+      list.forEach(function (c) {
+        if (DECK.by[c.id]) return;
+        c.unit = unit; c.no = ++n;
+        DECK.by[c.id] = c; DECK.list.push(c);
+      });
+    },
+    get: function (id) { return DECK.by[id] || null; },
+    all: deckAll,
+    lesson: function (unit, k) { return deckAll(unit).filter(function (c) { return c.lesson === k; }); },
+    where: function (id, stepId) { DECK.step[id] = stepId; },
+    has: deckHas,
+    mark: function (id) { DECK.now[id] = true; },
+    count: function (unit) { return deckAll(unit).filter(function (c) { return deckHas(c.id); }).length; },
+    card: cardHTML,
+    fams: FAMS
+  };
+
+  var TONES = ["gold", "cyan", "violet", "blue", "pink", "lime"];
+  B.css([
+    // Tones: each family's colour, bright — the cards are dark in both looks.
+    ".tone-gold { --tc: #ffc94d; } .tone-cyan { --tc: #3ddcf5; } .tone-violet { --tc: #a08bff; }",
+    ".tone-blue { --tc: #6f9bff; } .tone-pink { --tc: #ff6b9a; } .tone-lime { --tc: #4ae68a; }",
+    // The card.
+    ".bzg-card { position: relative; box-sizing: border-box; width: 280px; min-height: 384px; padding: 16px 18px 14px; border-radius: 22px;",
+    "  display: flex; flex-direction: column; gap: 10px; color: #fff; text-align: left; overflow: hidden; isolation: isolate;",
+    "  border: 1.5px solid transparent; font-family: var(--font);",
+    "  background: linear-gradient(165deg, color-mix(in srgb, var(--tc) 26%, #101116), #0f1015 48%, color-mix(in srgb, var(--tc) 12%, #0b0c10)) padding-box,",
+    "    linear-gradient(140deg, var(--tc), color-mix(in srgb, var(--tc) 20%, transparent) 38%, transparent 55%, color-mix(in srgb, var(--tc) 70%, transparent)) border-box;",
+    "  box-shadow: 0 24px 60px -28px color-mix(in srgb, var(--tc) 70%, transparent), 0 2px 6px rgba(0,0,0,.3);",
+    "  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .3s; }",
+    ".bzg-foil { position: absolute; inset: 0; z-index: -1; pointer-events: none; mix-blend-mode: screen; opacity: .9;",
+    "  background: linear-gradient(115deg, transparent 28%, rgba(255,255,255,.10) 42%, color-mix(in srgb, var(--tc) 30%, transparent) 50%, rgba(61,220,245,.12) 56%, transparent 72%);",
+    "  background-size: 260% 260%; background-position: var(--mx, 100%) var(--my, 0%); animation: bzg-sheen 6s ease-in-out infinite alternate; }",
+    "@keyframes bzg-sheen { from { background-position: 110% 0%; } to { background-position: -10% 100%; } }",
+    ".bzg-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }",
+    ".bzg-top b { font-weight: 800; color: rgba(255,255,255,.9); font-variant-numeric: tabular-nums; }",
+    ".bzg-top em { font-style: normal; font-weight: 700; color: var(--tc); text-align: right; }",
+    ".bzg-top .sh { display: none; }",
+    ".bzg-row.n3 .bzg-top .lg, .bzg-row.n4 .bzg-top .lg, .bzg-row.n5 .bzg-top .lg { display: none; }",
+    ".bzg-row.n3 .bzg-top .sh, .bzg-row.n4 .bzg-top .sh, .bzg-row.n5 .bzg-top .sh { display: inline; }",
+    ".bzg-art { position: relative; align-self: center; display: grid; place-items: center; width: 96px; height: 96px; margin: 6px 0 2px; border-radius: 50%; color: var(--tc);",
+    "  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--tc) 38%, transparent), color-mix(in srgb, var(--tc) 8%, transparent) 62%, transparent 72%); }",
+    ".bzg-art .bz-ic { width: 46px; height: 46px; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tc) 70%, transparent)); }",
+    ".bzg-ring { position: absolute; inset: -4px; border-radius: 50%; border: 1.5px dashed color-mix(in srgb, var(--tc) 55%, transparent); animation: bzg-spin 18s linear infinite; }",
+    "@keyframes bzg-spin { to { transform: rotate(360deg); } }",
+    ".bzg-name { font-size: 25px; font-weight: 800; letter-spacing: -.025em; line-height: 1.08; text-align: center; }",
+    ".bzg-t { font-size: 14.5px; line-height: 1.45; color: rgba(255,255,255,.84); text-align: center; }",
+    ".bzg-t b, .bzg-eg b { color: #fff; font-weight: 700; }",
+    ".bzg-eg { margin-top: auto; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.07);",
+    "  font-size: 13px; line-height: 1.4; color: rgba(255,255,255,.8); }",
+    ".bzg-eg i { display: block; font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--tc); margin-bottom: 2px; }",
+    ".bzg-bot { display: flex; justify-content: space-between; font-size: 10.5px; letter-spacing: .06em; color: rgba(255,255,255,.5); text-transform: uppercase; }",
+    ".bzg-logo { font-weight: 800; color: rgba(255,255,255,.7); }",
+    ".bzg-mini { display: inline-grid; place-items: center; width: 34px; height: 46px; border-radius: 8px; color: var(--tc); box-sizing: border-box;",
+    "  background: linear-gradient(160deg, color-mix(in srgb, var(--tc) 30%, #111), #0f1015); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 50%, transparent), 0 6px 14px -8px var(--tc); }",
+    ".bzg-mini .bz-ic { width: 18px; height: 18px; }",
+
+    // The scene: the cards, and the deck they go into.
+    ".bzg { display: grid; gap: 18px; justify-items: center; }",
+    ".bzg-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }",
+    ".bzg-slot { position: relative; display: grid; justify-items: center; gap: 10px; }",
+    ".bzg-row.n2 .bzg-card { width: 256px; min-height: 360px; }",
+    ".bzg-row.n3 .bzg-card { width: 206px; min-height: 330px; padding: 13px 13px 11px; gap: 8px; }",
+    ".bzg-row.n3 .bzg-name { font-size: 20px; }",
+    ".bzg-row.n3 .bzg-t { font-size: 13px; }",
+    ".bzg-row.n3 .bzg-eg { font-size: 12px; padding: 7px 9px; }",
+    ".bzg-row.n3 .bzg-art { width: 74px; height: 74px; }",
+    ".bzg-row.n3 .bzg-art .bz-ic { width: 36px; height: 36px; }",
+    // Four or five at once: wide, short cards, two to a row.
+    ".bzg-row.n4, .bzg-row.n5 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 14px; width: 100%; }",
+    ".bzg-row.n5 .bzg-slot:last-child { grid-column: 1 / -1; justify-self: center; width: calc(50% - 7px); }",
+    ".bzg-row.n4 .bzg-slot, .bzg-row.n5 .bzg-slot { justify-items: stretch; gap: 8px; grid-template-rows: 1fr auto; }",
+    ".bzg-row.n4 .bzg-card, .bzg-row.n5 .bzg-card { width: 100%; min-height: 0; display: grid; grid-template-columns: 62px minmax(0, 1fr);",
+    "  grid-template-areas: \"art top\" \"art name\" \"art t\" \"art eg\"; column-gap: 13px; row-gap: 3px; padding: 12px 14px 13px; align-items: start; }",
+    ".bzg-row.n4 .bzg-top, .bzg-row.n5 .bzg-top { grid-area: top; }",
+    ".bzg-row.n4 .bzg-art, .bzg-row.n5 .bzg-art { grid-area: art; width: 62px; height: 62px; margin: 2px 0 0; align-self: start; }",
+    ".bzg-row.n4 .bzg-art .bz-ic, .bzg-row.n5 .bzg-art .bz-ic { width: 30px; height: 30px; }",
+    ".bzg-row.n4 .bzg-name, .bzg-row.n5 .bzg-name { grid-area: name; text-align: left; font-size: 18.5px; margin-top: 1px; }",
+    ".bzg-row.n4 .bzg-t, .bzg-row.n5 .bzg-t { grid-area: t; text-align: left; font-size: 13px; }",
+    ".bzg-row.n4 .bzg-eg, .bzg-row.n5 .bzg-eg { grid-area: eg; margin-top: 5px; font-size: 12px; padding: 6px 9px; }",
+    ".bzg-row.n4 .bzg-bot, .bzg-row.n5 .bzg-bot { display: none; }",
+    ".bzg-row.n4 .bzg-btn, .bzg-row.n5 .bzg-btn { justify-self: center; height: 34px; }",
+    ".bzg-slot .bzg-card { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }",
+    ".bzg-slot .bzg-card.drag { cursor: grabbing; transition: none; z-index: 5; box-shadow: 0 40px 80px -30px var(--tc), 0 0 0 2px var(--tc); }",
+    ".bzg-slot .bzg-card.back { transition: transform .45s cubic-bezier(.2,1.2,.3,1); }",
+    ".bzg-in .bzg-card { opacity: .78; filter: saturate(.75); }",
+    ".bzg-in .bzg-card::after { content: \"In your deck\"; position: absolute; right: 12px; top: 42%; z-index: 3; padding: 4px 10px; border-radius: 8px; border: 2.5px solid var(--tc);",
+    "  color: var(--tc); font-size: 13px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; transform: rotate(-10deg); background: rgba(10,11,15,.72); }",
+    ".bzg-row.n3 .bzg-in .bzg-card::after, .bzg-row.n4 .bzg-in .bzg-card::after, .bzg-row.n5 .bzg-in .bzg-card::after { font-size: 10.5px; right: 8px; }",
+    ".bzg-btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 18px; border-radius: 99px; border: 0; cursor: pointer; font: inherit; font-size: 14px; font-weight: 700;",
+    "  color: #111; background: var(--tc); box-shadow: 0 8px 20px -10px var(--tc); transition: transform .15s, opacity .15s; }",
+    ".bzg-btn:hover:not(:disabled) { transform: translateY(-1px); }",
+    ".bzg-btn:disabled { cursor: default; color: var(--ink-2); background: transparent; box-shadow: inset 0 0 0 1.5px var(--hair); }",
+    ".bzg-btn .bz-ic { width: 16px; height: 16px; }",
+    ".bzg-row.done-all .bzg-btn:disabled { color: var(--lw-green); }",
+    // The deck: a tray with a pile of what's in it.
+    ".bzg-tray { position: relative; display: flex; align-items: center; gap: 16px; width: min(100%, 560px); box-sizing: border-box; padding: 14px 18px; border-radius: 20px;",
+    "  background: color-mix(in srgb, var(--acc, var(--lw-blue)) 7%, var(--lw-surface)); border: 1.5px dashed color-mix(in srgb, var(--acc, var(--lw-blue)) 45%, transparent);",
+    "  transition: transform .2s, background .2s, border-color .2s, box-shadow .2s; }",
+    ".bzg-tray.hot { transform: scale(1.03); border-style: solid; border-color: var(--acc, var(--lw-blue)); box-shadow: 0 0 0 6px color-mix(in srgb, var(--acc, var(--lw-blue)) 16%, transparent), 0 18px 40px -20px var(--acc, var(--lw-blue)); }",
+    ".bzg-pile { position: relative; flex: none; width: 74px; height: 56px; }",
+    ".bzg-pile .bzg-mini { position: absolute; top: 5px; transition: transform .3s; }",
+    ".bzg-pile .bzg-mini:nth-child(1) { left: 0; transform: rotate(-12deg); } .bzg-pile .bzg-mini:nth-child(2) { left: 13px; transform: rotate(-4deg); }",
+    ".bzg-pile .bzg-mini:nth-child(3) { left: 26px; transform: rotate(4deg); } .bzg-pile .bzg-mini:nth-child(4) { left: 39px; transform: rotate(12deg); }",
+    ".bzg-pile.pop { animation: bzg-pop .5s cubic-bezier(.2,.9,.3,1.5); }",
+    "@keyframes bzg-pop { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }",
+    ".bzg-pile:empty::before { content: \"\"; position: absolute; left: 18px; top: 4px; width: 34px; height: 46px; border-radius: 8px; border: 1.5px dashed var(--rule); }",
+    ".bzg-tt { display: grid; gap: 2px; min-width: 0; }",
+    ".bzg-tt b { font-size: 16px; font-weight: 750; color: var(--ink); }",
+    ".bzg-tt span { font-size: 13.5px; color: var(--ink-2); }",
+    ".bzg-num { margin-left: auto; font-size: 30px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--ink); }",
+    ".bzg-num small { font-size: 15px; font-weight: 600; color: var(--ink-2); }",
+    ".bzg-num.tick { animation: bzg-pop .5s cubic-bezier(.2,.9,.3,1.5); color: var(--acc, var(--lw-blue)); }",
+    ".bzg-fly { position: fixed; z-index: 9998; pointer-events: none; margin: 0; }",
+    "@media (max-width: 560px) { .bzg-card { width: 250px; } .bzg-row.n3 .bzg-card { width: 160px; } .bzg-row.n4, .bzg-row.n5 { grid-template-columns: 1fr; } .bzg-row.n5 .bzg-slot:last-child { width: 100%; } }",
+    "@media (prefers-reduced-motion: reduce) { .bzg-foil, .bzg-ring { animation: none; } .bzg-card { transition: none; } }"
+  ].join("\n"));
+
+  /* Tilt a card toward the pointer, and move its foil. */
+  function tilt(cardEl) {
+    if (reduced()) return;
+    cardEl.addEventListener("pointermove", function (e) {
+      if (cardEl.classList.contains("drag")) return;
+      var r = cardEl.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      cardEl.style.setProperty("--ry", ((x - 0.5) * 14).toFixed(2) + "deg");
+      cardEl.style.setProperty("--rx", ((0.5 - y) * 12).toFixed(2) + "deg");
+      cardEl.style.setProperty("--mx", (x * 100).toFixed(1) + "%");
+      cardEl.style.setProperty("--my", (y * 100).toFixed(1) + "%");
+    });
+    cardEl.addEventListener("pointerleave", function () {
+      ["--rx", "--ry", "--mx", "--my"].forEach(function (p) { cardEl.style.removeProperty(p); });
+    });
+  }
+  B.deck.tilt = tilt;
+
+  CH.addKind("grab", function (spec, seed, mode) {
+    var api = {}, unit = spec.unit || "biz:1";
+    var cs = (spec.ids || []).map(function (id) { return B.deck.get(id); }).filter(Boolean);
+    var box = el("div", "lw bz bzg");
+    var row = el("div", "bzg-row n" + Math.max(1, cs.length));
+    box.appendChild(row);
+    var tray = el("div", "bzg-tray");
+    tray.innerHTML = '<span class="bzg-pile"></span><span class="bzg-tt"><b>Your concept deck</b><span></span></span><span class="bzg-num"></span>';
+    box.appendChild(tray);
+    var pile = tray.querySelector(".bzg-pile"), tt = tray.querySelector(".bzg-tt span"), numEl = tray.querySelector(".bzg-num");
+    var read = readout("bzg-read");
+    box.appendChild(read);
+    var got = {}, slots = [];
+    function total() { return deckAll(unit).length; }
+    function paintTray(tick) {
+      var have = deckAll(unit).filter(function (c) { return deckHas(c.id); });
+      pile.innerHTML = have.slice(-4).map(function (c) { return cardHTML(c, { mini: true }); }).join("");
+      numEl.innerHTML = have.length + "<small> / " + total() + "</small>";
+      tt.textContent = cs.every(function (c) { return got[c.id]; }) ? "Every card here is in your deck." :
+        cs.length > 1 ? "Drag each card down here — or press Grab it." : "Drag the card down here — or press Grab it.";
+      if (tick && !reduced()) {
+        [pile, numEl].forEach(function (x) { x.classList.remove("pop", "tick"); void x.offsetWidth; x.classList.add(x === pile ? "pop" : "tick"); });
+      }
+    }
+    function done() { return cs.every(function (c) { return got[c.id]; }); }
+    function paint() {
+      var n = cs.filter(function (c) { return got[c.id]; }).length;
+      read.innerHTML = done() ? (cs.length > 1 ? "All " + cs.length + " cards are in your deck." : "It's in your deck.") :
+        cs.length > 1 ? (n ? n + " of " + cs.length + " grabbed." : "Grab all " + cs.length + " cards.") : "Grab the card to keep it.";
+      row.classList.toggle("done-all", done());
+      if (api.onChange) api.onChange();
+    }
+    function setGot(slot, anim) {
+      var c = slot.c;
+      got[c.id] = true;
+      DECK.now[c.id] = true;
+      slot.el.classList.add("bzg-in");
+      slot.btn.disabled = true;
+      slot.btn.innerHTML = icon("check") + "<span>In your deck</span>";
+      paintTray(anim);
+      paint();
+    }
+    function grab(slot, from) {
+      if (got[slot.c.id]) return;
+      var cardEl = slot.card;
+      if (reduced() || document.hidden || !cardEl.animate) { setGot(slot, false); return; }
+      var a = (from || cardEl).getBoundingClientRect(), b = pile.getBoundingClientRect();
+      var fly = cardEl.cloneNode(true);
+      fly.classList.remove("drag", "back");
+      fly.classList.add("bzg-fly");
+      fly.style.cssText = "left:" + a.left + "px;top:" + a.top + "px;width:" + a.width + "px;height:" + a.height + "px;transform:none;";
+      document.body.appendChild(fly);
+      cardEl.style.visibility = "hidden";
+      cardEl.style.transform = "";
+      var dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+      var an = fly.animate([
+        { transform: "translate(0,0) scale(1) rotate(0deg)", opacity: 1 },
+        { transform: "translate(" + (dx * 0.45) + "px," + (dy * 0.35 - 40) + "px) scale(.62) rotate(-6deg)", opacity: 1, offset: 0.45 },
+        { transform: "translate(" + dx + "px," + dy + "px) scale(.12) rotate(10deg)", opacity: 0.6 }
+      ], { duration: 640, easing: "cubic-bezier(.5,0,.3,1)" });
+      var fin = function () {
+        if (fly.parentNode) fly.parentNode.removeChild(fly);
+        cardEl.style.visibility = "";
+        setGot(slot, true);
+        var r = pile.getBoundingClientRect();
+        B.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 20, r: 70, tones: [famOf(slot.c).tone, "gold", "cyan"] });
+      };
+      an.onfinish = fin;
+      slot.stop = function () { an.cancel(); if (fly.parentNode) fly.parentNode.removeChild(fly); };
+    }
+    cs.forEach(function (c) {
+      var s = el("div", "bzg-slot");
+      s.innerHTML = cardHTML(c);
+      var cardEl = s.firstChild;
+      cardEl.setAttribute("role", "img");
+      cardEl.setAttribute("aria-label", c.name + ": " + String(cardEl.querySelector(".bzg-t").textContent));
+      var b = button("bzg-btn tone-" + famOf(c).tone, icon("grab") + "<span>Grab it</span>");
+      b.setAttribute("aria-label", "Grab " + c.name + " into your deck");
+      s.appendChild(b);
+      row.appendChild(s);
+      var slot = { c: c, el: s, card: cardEl, btn: b };
+      slots.push(slot);
+      b.addEventListener("click", function () { grab(slot); });
+      tilt(cardEl);
+      // Drag it into the deck.
+      var st = null;
+      cardEl.addEventListener("pointerdown", function (e) {
+        if (got[c.id] || e.button > 0) return;
+        st = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId };
+        try { cardEl.setPointerCapture(e.pointerId); } catch (x) { /* synthetic */ }
+      });
+      cardEl.addEventListener("pointermove", function (e) {
+        if (!st) return;
+        var dx = e.clientX - st.x, dy = e.clientY - st.y;
+        if (!st.moved && Math.abs(dx) + Math.abs(dy) < 6) return;
+        st.moved = true;
+        cardEl.classList.add("drag");
+        cardEl.classList.remove("back");
+        cardEl.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + clamp(dx * 0.04, -8, 8) + "deg) scale(1.03)";
+        var t = tray.getBoundingClientRect();
+        tray.classList.toggle("hot", e.clientX > t.left - 20 && e.clientX < t.right + 20 && e.clientY > t.top - 30 && e.clientY < t.bottom + 20);
+      });
+      function end(e) {
+        if (!st) return;
+        var was = st;
+        st = null;
+        cardEl.classList.remove("drag");
+        var hot = tray.classList.contains("hot");
+        tray.classList.remove("hot");
+        if (!was.moved) { cardEl.style.transform = ""; return; }
+        if (hot && e.type === "pointerup") { grab(slot, cardEl); return; }
+        cardEl.classList.add("back");
+        cardEl.style.transform = "";
+      }
+      cardEl.addEventListener("pointerup", end);
+      cardEl.addEventListener("pointercancel", end);
+      // Already in the deck from an earlier visit: it stays readable.
+      if (deckHas(c.id)) {
+        got[c.id] = true;
+        s.classList.add("bzg-in");
+        b.disabled = true;
+        b.innerHTML = icon("check") + "<span>In your deck</span>";
+      }
+    });
+    paintTray(false);
+    paint();
+    api.el = box;
+    api.ready = function () { return mode.explore && spec.gate ? done() : true; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () { slots.forEach(function (s) { if (!got[s.c.id]) setGot(s, false); }); };
+    api.destroy = function () { slots.forEach(function (s) { if (s.stop) s.stop(); }); };
+    return api;
+  });
+
+  /* =============================================================== Opener
+     //: opener     a lesson's title card: its number, its name, the mission,
+     //:            and the concepts it hands out, orbiting its emblem
+     The first thing a lesson shows, like the title of an episode: a huge
+     number, the lesson's name rising in word by word, one line saying what
+     the student is about to find out, and a medallion — the lesson's
+     emblem at the centre, the concepts it teaches circling it. Below, the
+     concepts as slots: empty until grabbed, lit once they're in the deck.
+       spec: { n: 3, of: 14, name: "The building blocks", say: "The mission.",
+               i: "factory", unit: "biz:1", mins: 10, tone: "gold" }
+     `say` is lesson text; `name` is plain. The concepts are the unit's
+     deck cards for lesson n (B.deck.lesson). */
+  B.css([
+    ".bzo { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 10px 24px; align-items: center; min-height: 360px; }",
+    ".bzo-l { position: relative; z-index: 1; display: grid; gap: 12px; align-content: center; }",
+    ".bzo-num { font-size: 124px; line-height: .8; font-weight: 850; letter-spacing: -.07em; margin: 0 0 6px -6px; color: transparent;",
+    "  background: linear-gradient(175deg, var(--acc, var(--tc)) 10%, color-mix(in srgb, var(--acc, var(--tc)) 30%, transparent) 70%, transparent 95%); -webkit-background-clip: text; background-clip: text;",
+    "  -webkit-text-stroke: 1px color-mix(in srgb, var(--tc) 55%, transparent); font-variant-numeric: tabular-nums; }",
+    ".bzo-eye { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; color: var(--acc, var(--tc)); }",
+    ".bzo-eye span + span::before { content: \"·\"; margin-right: 8px; color: var(--ink-3); }",
+    ".bzo-eye span:not(:first-child) { color: var(--ink-2); }",
+    ".bzo-name { margin: 0; font-size: 42px; line-height: 1.02; font-weight: 800; letter-spacing: -.035em; color: var(--ink); }",
+    ".bzo-name .w { display: inline-block; white-space: pre; }",
+    ".bzo.go .bzo-name .w { animation: bzo-rise .7s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 70ms + 120ms); }",
+    "@keyframes bzo-rise { from { opacity: 0; transform: translateY(28px) rotate(3deg); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }",
+    ".bzo-say { margin: 0; font-size: 18px; line-height: 1.5; color: var(--ink-2); max-width: 30em; }",
+    ".bzo-say b { color: var(--ink); }",
+    ".bzo-grabs { display: grid; gap: 8px; margin-top: 6px; }",
+    ".bzo-grabs > small { font-size: 11.5px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }",
+    ".bzo-chips { display: flex; flex-wrap: wrap; gap: 7px; }",
+    ".bzo-chip { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px 0 8px; border-radius: 99px; font-size: 13.5px; font-weight: 650; color: var(--ink-2);",
+    "  box-shadow: inset 0 0 0 1.5px var(--rule); background: transparent; }",
+    ".bzo-chip .bz-ic { width: 17px; height: 17px; color: var(--acc, var(--tc)); opacity: .85; }",
+    ".bzo-chip.got { color: #111; background: var(--tc); box-shadow: 0 6px 16px -8px var(--tc); }",
+    ".bzo-chip.got .bz-ic { color: #111; opacity: 1; }",
+    ".bzo.go .bzo-chip { animation: bzx-rise .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 60ms + 500ms); }",
+    // The medallion.
+    ".bzo-med { position: relative; justify-self: center; width: 300px; height: 300px; }",
+    ".bzo-glow { position: absolute; inset: 20px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--tc) 32%, transparent), transparent 68%); filter: blur(6px); animation: bzo-breathe 4.5s ease-in-out infinite; }",
+    "@keyframes bzo-breathe { 0%,100% { transform: scale(.94); opacity: .8; } 50% { transform: scale(1.04); opacity: 1; } }",
+    ".bzo-ring { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--tc) 40%, transparent); transform: translate(-50%, -50%); }",
+    ".bzo-ring.r1 { width: 190px; height: 190px; animation: bzo-spin 38s linear infinite; }",
+    ".bzo-ring.r2 { width: 272px; height: 272px; border-style: solid; border-color: color-mix(in srgb, var(--tc) 16%, transparent); animation: bzo-spin 56s linear infinite reverse; }",
+    "@keyframes bzo-spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }",
+    ".bzo-sat { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform: rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a))); }",
+    ".bzo-sat b { position: absolute; left: -21px; top: -21px; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: var(--acc, var(--tc));",
+    "  background: color-mix(in srgb, var(--tc) 14%, var(--paper)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--tc) 45%, transparent), 0 8px 18px -10px var(--tc); }",
+    ".bzo-ring.r1 .bzo-sat b { animation: bzo-unspin 38s linear infinite; } .bzo-ring.r2 .bzo-sat b { animation: bzo-unspin 56s linear infinite reverse; }",
+    "@keyframes bzo-unspin { to { transform: rotate(-360deg); } }",
+    ".bzo-sat b.got { color: #111; background: var(--tc); }",
+    ".bzo-sat .bz-ic { width: 21px; height: 21px; }",
+    ".bzo-core { position: absolute; left: 50%; top: 50%; width: 118px; height: 118px; margin: -59px 0 0 -59px; border-radius: 50%; display: grid; place-items: center; color: #fff;",
+    "  background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--tc) 55%, #fff), var(--tc) 42%, color-mix(in srgb, var(--tc) 45%, #000) 100%);",
+    "  box-shadow: 0 0 0 8px color-mix(in srgb, var(--tc) 14%, transparent), 0 0 60px color-mix(in srgb, var(--tc) 55%, transparent), inset 0 -8px 20px rgba(0,0,0,.25); animation: bzo-pulse 3.2s ease-in-out infinite; }",
+    "@keyframes bzo-pulse { 0%,100% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--tc) 14%, transparent), 0 0 50px color-mix(in srgb, var(--tc) 45%, transparent), inset 0 -8px 20px rgba(0,0,0,.25); }",
+    "  50% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--tc) 8%, transparent), 0 0 80px color-mix(in srgb, var(--tc) 60%, transparent), inset 0 -8px 20px rgba(0,0,0,.25); } }",
+    ".bzo-core .bz-ic { width: 56px; height: 56px; stroke-width: 1.6; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }",
+    ".bzo-dot { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--tc); opacity: .5; animation: bzo-twinkle 2.6s ease-in-out infinite; animation-delay: var(--d); }",
+    "@keyframes bzo-twinkle { 0%,100% { opacity: .15; transform: scale(.6); } 50% { opacity: .9; transform: scale(1.4); } }",
+    ".bzo.go .bzo-med { animation: bzo-land .9s cubic-bezier(.2,.8,.2,1) both .1s; }",
+    "@keyframes bzo-land { from { opacity: 0; transform: scale(.7) rotate(-25deg); } to { opacity: 1; transform: none; } }",
+    // The card around an opener: the kicker and the empty prompt step aside.
+    under(".ch-card:has(> .ch-work > .bzo) > .ch-kind, .ch-card:has(> .ch-work > .bzo) > .ch-prompt") + " { display: none; }",
+    under(".ch-card:has(> .ch-work > .bzo) > .ch-work") + " { margin-top: 0; }",
+    under(".ch-card:has(> .ch-work > .bzo)") + " { padding-top: 38px; }",
+    TONES.map(function (t) { return under(".ch-card:has(> .ch-work > .bzo.tone-" + t + ")") + " { --acc: var(--bx-" + t + "); }"; }).join("\n"),
+    "@media (max-width: 640px) { .bzo { grid-template-columns: 1fr; } .bzo-med { width: 240px; height: 240px; transform: scale(.8); margin: -30px auto; } .bzo-num { font-size: 92px; } .bzo-name { font-size: 32px; } }",
+    "@media (prefers-reduced-motion: reduce) { .bzo *, .bzo.go * { animation: none !important; } }"
+  ].join("\n"));
+
+  CH.addKind("opener", function (spec, seed, mode) {
+    var api = {}, unit = spec.unit || "biz:1", n = spec.n || 1;
+    var cs = B.deck.lesson(unit, n);
+    var tone = spec.tone || (cs[0] ? FAMS[cs[0].fam] && FAMS[cs[0].fam].tone : "") || "blue";
+    var box = el("div", "lw bz bzo tone-" + tone);
+    var words = String(spec.name || "").split(/(\s+)/).filter(function (w) { return w.length; });
+    var k = 0;
+    var l = el("div", "bzo-l");
+    l.innerHTML =
+      '<div class="bzo-num" aria-hidden="true">' + no2(n) + "</div>" +
+      '<div class="bzo-eye"><span>Lesson ' + n + (spec.of ? " of " + spec.of : "") + "</span>" + (spec.mins ? "<span>About " + spec.mins + " min</span>" : "") +
+        (cs.length ? "<span>" + cs.length + " concept" + (cs.length === 1 ? "" : "s") + "</span>" : "") + "</div>" +
+      '<h2 class="bzo-name">' + words.map(function (w) { return /^\s+$/.test(w) ? w : '<span class="w" style="--i:' + (k++) + '">' + esc(w) + "</span>"; }).join("") + "</h2>" +
+      (spec.say ? '<p class="bzo-say">' + spec.say + "</p>" : "") +
+      (cs.length ? '<div class="bzo-grabs"><small>Concepts to grab</small><div class="bzo-chips">' + cs.map(function (c, i) {
+        return '<span class="bzo-chip' + (deckHas(c.id) ? " got" : "") + '" style="--i:' + i + '">' + icon(c.i || "spark") + esc(c.name) + "</span>";
+      }).join("") + "</div></div>" : "");
+    box.appendChild(l);
+    // The medallion: the emblem, and the concepts circling it on two rings.
+    var med = el("div", "bzo-med");
+    med.setAttribute("aria-hidden", "true");
+    var r1 = [], r2 = [];
+    cs.forEach(function (c, i) { (cs.length > 4 && i % 2 ? r2 : r1).push(c); });
+    function ring(cls, list, r, off) {
+      var h = '<span class="bzo-ring ' + cls + '">';
+      list.forEach(function (c, i) {
+        var a = off + i * 360 / Math.max(1, list.length);
+        h += '<span class="bzo-sat" style="--a:' + a.toFixed(1) + "deg;--r:" + r + 'px"><b class="' + (deckHas(c.id) ? "got" : "") + '">' + icon(c.i || "spark") + "</b></span>";
+      });
+      return h + "</span>";
+    }
+    var dots = "";
+    for (var d = 0; d < 14; d++) {
+      var ang = d * 2.4, rr = 60 + (d * 37) % 90;
+      dots += '<i class="bzo-dot" style="left:' + (150 + Math.cos(ang) * rr).toFixed(0) + "px;top:" + (150 + Math.sin(ang) * rr).toFixed(0) + "px;--d:" + (d * 0.19).toFixed(2) + 's"></i>';
+    }
+    med.innerHTML = '<span class="bzo-glow"></span>' + dots + ring("r1", r1, 95, -90) + ring("r2", r2, 136, -60) +
+      '<span class="bzo-core">' + icon(spec.i || "spark") + "</span>";
+    box.appendChild(med);
+    box.setAttribute("aria-label", "Lesson " + n + ": " + (spec.name || ""));
+    // Play the entrance once the card is on the page.
+    requestAnimationFrame(function () { box.classList.add("go"); });
+    api.el = box;
+    api.ready = function () { return true; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () {};
+    return api;
+  });
+
+  /* ================================================================= Myth
+     //: myth       a myth buster: a claim most people believe, a vote, the
+     //:            clues one at a time, then the claim cracks — BUSTED
+     The usual mistake, met head on and broken by the student. A claim sits
+     on a card in big type; the student says whether it sounds true. Then the
+     clues come one tap at a time, and the last tap busts it: the card
+     cracks, a stamp comes down, and the truth takes its place. Whatever the
+     vote, the evidence decides.
+       spec: { t: "Revenue is the same as profit.",
+               rows: [{ i: "cash", say: "A clue." }, …],      // two to four
+               caption: "The truth, in a sentence or two.", gate: true }
+     `t`, `say` and `caption` are lesson text (write \$ for a dollar). */
+  B.css([
+    ".bzm { display: grid; gap: 16px; }",
+    ".bzm-claim { position: relative; overflow: hidden; padding: 30px 30px 26px; border-radius: 22px; text-align: center; isolation: isolate;",
+    "  background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--acc, var(--bx-pink)) 20%, transparent), transparent 70%), var(--lw-surface);",
+    "  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--acc, var(--bx-pink)) 35%, transparent); transition: filter .4s; }",
+    ".bzm-claim::before { content: \"\\201C\"; position: absolute; left: 16px; top: -24px; font-size: 150px; line-height: 1; font-family: Georgia, serif; color: var(--acc, var(--bx-pink)); opacity: .18; z-index: -1; }",
+    ".bzm-tag { display: inline-block; padding: 4px 11px; border-radius: 99px; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;",
+    "  color: var(--acc, var(--bx-pink)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--acc, var(--bx-pink)) 50%, transparent); }",
+    ".bzm-q { margin: 14px auto 0; max-width: 20em; font-size: 30px; line-height: 1.18; font-weight: 800; letter-spacing: -.03em; color: var(--ink); transition: color .4s, opacity .4s; }",
+    ".bzm-q b { color: var(--acc, var(--bx-pink)); }",
+    ".bzm-crack { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }",
+    ".bzm-crack path { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }",
+    ".bzm.busted .bzm-crack path { opacity: .85; animation: bzm-draw .5s cubic-bezier(.3,.7,.2,1) both; animation-delay: var(--d); }",
+    "@keyframes bzm-draw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }",
+    ".bzm.busted .bzm-q { color: var(--ink-3); text-decoration: line-through; text-decoration-thickness: 3px; text-decoration-color: var(--acc, var(--bx-pink)); }",
+    ".bzm.busted .bzm-claim { animation: bzm-hit .45s ease; }",
+    "@keyframes bzm-hit { 0%,100% { transform: none; } 15% { transform: translate(-7px, 2px) rotate(-.6deg); } 35% { transform: translate(6px, -2px) rotate(.5deg); } 55% { transform: translate(-4px, 1px); } 75% { transform: translate(2px, 0); } }",
+    ".bzm-stamp { position: absolute; right: 26px; top: 50%; padding: 6px 16px 5px; border-radius: 10px; font-size: 30px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase;",
+    "  color: var(--acc, var(--bx-pink)); border: 4px solid currentColor; background: color-mix(in srgb, var(--paper) 70%, transparent); transform: translateY(-50%) rotate(-12deg) scale(2.4); opacity: 0; pointer-events: none; }",
+    ".bzm.busted .bzm-stamp { animation: bzm-stamp .42s cubic-bezier(.3,1.6,.5,1) both .38s; }",
+    "@keyframes bzm-stamp { from { opacity: 0; transform: translateY(-50%) rotate(-20deg) scale(2.6); } to { opacity: 1; transform: translateY(-50%) rotate(-12deg) scale(1); } }",
+    ".bzm-vote { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }",
+    ".bzm-vb { display: inline-flex; align-items: center; gap: 9px; height: 50px; padding: 0 22px; border: 0; border-radius: 16px; cursor: pointer; font: inherit; font-size: 16px; font-weight: 700;",
+    "  color: var(--ink); background: var(--lw-surface); box-shadow: inset 0 0 0 1.5px var(--rule); transition: transform .15s, box-shadow .15s, background .15s; }",
+    ".bzm-vb:hover:not(:disabled) { transform: translateY(-2px); box-shadow: inset 0 0 0 1.5px var(--acc, var(--bx-pink)); }",
+    ".bzm-vb .bz-ic { width: 20px; height: 20px; }",
+    ".bzm-vb.on { background: color-mix(in srgb, var(--acc, var(--bx-pink)) 14%, var(--lw-surface)); box-shadow: inset 0 0 0 2px var(--acc, var(--bx-pink)); }",
+    ".bzm-vb:disabled:not(.on) { opacity: .4; cursor: default; }",
+    ".bzm-react { text-align: center; font-size: 16px; font-weight: 600; color: var(--ink-2); min-height: 0; }",
+    ".bzm-react:empty { display: none; }",
+    ".bzm-ex { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }",
+    ".bzm-ex li { display: grid; grid-template-columns: 46px 1fr; gap: 14px; align-items: center; padding: 12px 16px 12px 12px; border-radius: 16px; background: var(--lw-surface);",
+    "  box-shadow: inset 0 0 0 1px var(--hair); animation: bzx-rise .45s cubic-bezier(.2,.8,.2,1) both; }",
+    ".bzm-ex .ic { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; color: var(--acc, var(--bx-pink)); background: color-mix(in srgb, var(--acc, var(--bx-pink)) 13%, transparent); }",
+    ".bzm-ex .ic .bz-ic { width: 24px; height: 24px; }",
+    ".bzm-ex small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px; }",
+    ".bzm-ex span { font-size: 16px; line-height: 1.45; color: var(--ink); }",
+    ".bzm-acts { display: flex; justify-content: center; }",
+    ".bzm-acts:empty { display: none; }",
+    ".bzm-go { display: inline-flex; align-items: center; gap: 9px; height: 46px; padding: 0 22px; border: 0; border-radius: 99px; cursor: pointer; font: inherit; font-size: 15.5px; font-weight: 700;",
+    "  color: var(--ink); background: var(--lw-surface); box-shadow: inset 0 0 0 1.5px var(--rule); transition: transform .15s; }",
+    ".bzm-go:hover { transform: translateY(-1px); }",
+    ".bzm-go.bust { color: #fff; background: linear-gradient(120deg, #ff3d7f, #ff7a45); box-shadow: 0 12px 28px -12px #ff3d7f; }",
+    ".bzm-go .bz-ic { width: 19px; height: 19px; }",
+    ".bzm-truth { display: none; grid-template-columns: 46px 1fr; gap: 14px; align-items: center; padding: 16px 18px 16px 14px; border-radius: 18px;",
+    "  background: color-mix(in srgb, var(--lw-green) 12%, var(--lw-surface)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--lw-green) 45%, transparent), 0 16px 36px -22px var(--lw-green); }",
+    ".bzm.busted .bzm-truth { display: grid; animation: bzx-rise .5s cubic-bezier(.2,.8,.2,1) both .7s; }",
+    ".bzm-truth .ic { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; color: #fff; background: var(--lw-green); }",
+    ".bzm-truth .ic .bz-ic { width: 24px; height: 24px; stroke-width: 2.4; }",
+    ".bzm-truth small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--lw-green); margin-bottom: 3px; }",
+    ".bzm-truth span { font-size: 17px; line-height: 1.45; font-weight: 600; color: var(--ink); }",
+    "@media (max-width: 560px) { .bzm-q { font-size: 23px; } .bzm-stamp { font-size: 22px; right: 12px; } }",
+    "@media (prefers-reduced-motion: reduce) { .bzm *, .bzm.busted * { animation: none !important; } .bzm.busted .bzm-crack path { stroke-dashoffset: 0; } .bzm.busted .bzm-stamp { opacity: 1; transform: translateY(-50%) rotate(-12deg); } }"
+  ].join("\n"));
+
+  /* Cracks from a point of impact: a few jagged lines, the same every time. */
+  function mythCracks(seedStr) {
+    var h = 0;
+    for (var i = 0; i < seedStr.length; i++) h = (h * 31 + seedStr.charCodeAt(i)) >>> 0;
+    function rnd() { h = (h * 1103515245 + 12345) >>> 0; return (h % 1000) / 1000; }
+    var cx = 360 + rnd() * 80, cy = 70 + rnd() * 40, out = [];
+    for (var k = 0; k < 7; k++) {
+      var a = k / 7 * Math.PI * 2 + rnd() * 0.5, x = cx, y = cy, d = "M" + x.toFixed(0) + " " + y.toFixed(0), len = 0;
+      var segs = 4 + Math.floor(rnd() * 3);
+      for (var s = 0; s < segs; s++) {
+        var step = 26 + rnd() * 34, aa = a + (rnd() - 0.5) * 0.9;
+        var nx = x + Math.cos(aa) * step, ny = y + Math.sin(aa) * step * 0.7;
+        len += Math.hypot(nx - x, ny - y);
+        x = nx; y = ny;
+        d += " L" + x.toFixed(0) + " " + y.toFixed(0);
+      }
+      out.push({ d: d, len: Math.ceil(len), delay: (k * 0.04).toFixed(2) });
+    }
+    return out;
+  }
+
+  CH.addKind("myth", function (spec, seed, mode) {
+    var api = {}, rows = spec.rows || [], shown = 0, phase = "vote", vote = null;
+    var box = el("div", "lw bz bzm");
+    var claim = el("div", "bzm-claim");
+    claim.innerHTML = '<span class="bzm-tag">Myth or fact?</span><p class="bzm-q">' + (spec.t || "") + "</p>";
+    var svgNS = "http://www.w3.org/2000/svg";
+    var crack = document.createElementNS(svgNS, "svg");
+    crack.setAttribute("class", "bzm-crack");
+    crack.setAttribute("viewBox", "0 0 720 180");
+    crack.setAttribute("preserveAspectRatio", "none");
+    crack.setAttribute("aria-hidden", "true");
+    mythCracks(String(seed || "m") + (spec.t || "")).forEach(function (c) {
+      var p = document.createElementNS(svgNS, "path");
+      p.setAttribute("d", c.d);
+      p.setAttribute("stroke-dasharray", c.len);
+      p.setAttribute("style", "--len:" + c.len + ";--d:" + c.delay + "s;stroke-dashoffset:" + c.len);
+      crack.appendChild(p);
+    });
+    claim.appendChild(crack);
+    claim.appendChild(el("span", "bzm-stamp", "Busted"));
+    box.appendChild(claim);
+    var voteRow = el("div", "bzm-vote");
+    var yes = button("bzm-vb", icon("check") + "<span>Sounds true</span>");
+    var no = button("bzm-vb", icon("x") + "<span>It's a myth</span>");
+    voteRow.appendChild(yes); voteRow.appendChild(no);
+    box.appendChild(voteRow);
+    var react = el("div", "bzm-react");
+    box.appendChild(react);
+    var list = el("ol", "bzm-ex");
+    box.appendChild(list);
+    var acts = el("div", "bzm-acts");
+    box.appendChild(acts);
+    var truth = el("div", "bzm-truth", '<span class="ic">' + icon("check") + '</span><div><small>The truth</small><span>' + (spec.caption || "") + "</span></div>");
+    box.appendChild(truth);
+    var read = readout("bzm-read");
+    box.appendChild(read);
+    var LET = "ABCDEFG";
+
+    function addRow(i) {
+      var r = rows[i];
+      var li = el("li", "", '<span class="ic">' + icon(r.i || "eye") + '</span><div><small>Clue ' + LET[i] + "</small><span>" + (r.say || "") + "</span></div>");
+      list.appendChild(li);
+    }
+    function paintActs() {
+      acts.innerHTML = "";
+      if (phase === "clues") {
+        var more = shown < rows.length;
+        var b = button("bzm-go" + (more ? "" : " bust"), more ? "<span>Next clue</span>" + icon("arrow") : icon("hammer2") + "<span>Bust the myth</span>");
+        b.addEventListener("click", function () {
+          if (shown < rows.length) { addRow(shown++); paintActs(); paint(); }
+          else bust(true);
+        });
+        acts.appendChild(b);
+        setTimeout(function () { if (b.isConnected && document.activeElement && box.contains(document.activeElement)) b.focus(); }, 0);
+      }
+    }
+    function pick(v) {
+      if (phase !== "vote") return;
+      vote = v;
+      (v ? yes : no).classList.add("on");
+      yes.disabled = no.disabled = true;
+      react.textContent = v ? "Most people think so. Let's put it to the test." : "Good instinct. Now let's prove it.";
+      phase = "clues";
+      if (rows.length) addRow(shown++);
+      paintActs();
+      paint();
+    }
+    function bust(anim) {
+      phase = "done";
+      while (shown < rows.length) addRow(shown++);
+      acts.innerHTML = "";
+      if (!vote && vote !== false) { yes.disabled = no.disabled = true; }
+      box.classList.add("busted");
+      react.textContent = vote === true ? "It sounded true — and it isn't. That's what makes it a myth." :
+        vote === false ? "You called it: a myth." : "";
+      if (anim && !reduced()) {
+        setTimeout(function () {
+          var r = claim.getBoundingClientRect();
+          B.burst(r.right - 110, r.top + r.height / 2, { n: 22, r: 90, tones: ["pink", "orange", "gold"] });
+        }, 520);
+      }
+      paint();
+    }
+    yes.addEventListener("click", function () { pick(true); });
+    no.addEventListener("click", function () { pick(false); });
+    function paint() {
+      read.textContent = phase === "vote" ? "Does this sound true? Vote, then look at the clues." :
+        phase === "clues" ? (shown < rows.length ? "Clue " + shown + " of " + rows.length + "." : "That's every clue. Now bust the myth.") :
+        "Myth busted.";
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return mode.explore && spec.gate ? phase === "done" : true; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () { if (phase !== "done") bust(false); };
+    return api;
+  });
+
   /* ================================================================= Flip
      //: flip       cards you turn over one at a time: a picture and a name on
      //:            the front, what it means on the back
@@ -687,6 +1579,265 @@
     api.focus = function () { inp.focus(); };
     return api;
   });
+
+  /* ================================================================= Deck
+     //: deck       a lesson's last step: the concept cards it handed out,
+     //:            face down to recall, and the unit's deck filling up
+     The end of a lesson is a recall, not a summary: the cards the lesson
+     gave out lie on the table showing only their names; the student says
+     what each means, then turns it over to check. Under them, the unit's
+     whole deck as a binder — every card a slot, lit once grabbed — so the
+     student sees how far they've come and how far there is to go.
+       spec: { lesson: 1, unit: "biz:1" }
+     B.deck.panel(wrap, unit) puts the same binder on the unit page, and
+     B.deck.show(id) opens any grabbed card full size. */
+  B.css([
+    ".bzd { display: grid; gap: 18px; }",
+    ".bzd-table { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 6px 0 4px; }",
+    ".bzd-flip { position: relative; width: 150px; height: 196px; padding: 0; border: 0; background: none; cursor: pointer; perspective: 1000px; font: inherit;",
+    "  transform: rotate(var(--rot, 0deg)); transition: transform .3s cubic-bezier(.2,.8,.2,1); }",
+    ".bzd-flip:hover { transform: rotate(0deg) translateY(-6px); }",
+    ".bzd-in { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .55s cubic-bezier(.2,.75,.2,1); }",
+    ".bzd-flip.on .bzd-in { transform: rotateY(180deg); }",
+    ".bzd-f, .bzd-b { position: absolute; inset: 0; box-sizing: border-box; border-radius: 18px; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden;",
+    "  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 14px; color: #fff; text-align: center; border: 1.5px solid transparent;",
+    "  background: linear-gradient(165deg, color-mix(in srgb, var(--tc) 26%, #101116), #0f1015 55%, color-mix(in srgb, var(--tc) 12%, #0b0c10)) padding-box,",
+    "    linear-gradient(140deg, var(--tc), transparent 45%, color-mix(in srgb, var(--tc) 70%, transparent)) border-box;",
+    "  box-shadow: 0 18px 40px -22px color-mix(in srgb, var(--tc) 70%, transparent); }",
+    ".bzd-f .no { position: absolute; top: 11px; left: 13px; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; color: rgba(255,255,255,.6); }",
+    ".bzd-f .q { position: absolute; top: 9px; right: 12px; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--tc); }",
+    ".bzd-f .art { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; color: var(--tc); background: radial-gradient(circle, color-mix(in srgb, var(--tc) 30%, transparent), transparent 70%); }",
+    ".bzd-f .art .bz-ic { width: 30px; height: 30px; }",
+    ".bzd-f b { font-size: 16.5px; font-weight: 800; letter-spacing: -.02em; line-height: 1.12; }",
+    ".bzd-f small { font-size: 11px; line-height: 1.3; color: rgba(255,255,255,.55); }",
+    ".bzd-b { transform: rotateY(180deg); justify-content: flex-start; text-align: left; align-items: stretch; gap: 6px; padding: 13px 12px; }",
+    ".bzd-b b { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--tc); }",
+    ".bzd-b span { font-size: 12.5px; line-height: 1.42; color: rgba(255,255,255,.9); }",
+    ".bzd-b span b { font-size: inherit; letter-spacing: 0; text-transform: none; color: #fff; }",
+    ".bzd-flip:focus-visible { outline: none; } .bzd-flip:focus-visible .bzd-f, .bzd-flip:focus-visible .bzd-b { box-shadow: 0 0 0 3px var(--blue); }",
+    ".bzd-card-in .bzd-flip { animation: bzd-deal .6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 90ms); }",
+    "@keyframes bzd-deal { from { opacity: 0; transform: translateY(-40px) rotate(calc(var(--rot, 0deg) - 14deg)) scale(.8); } to { opacity: 1; transform: rotate(var(--rot, 0deg)); } }",
+    // The binder: every card of the unit, as a slot.
+    ".bzd-bind { display: grid; gap: 12px; padding: 16px 18px 18px; border-radius: 20px; background: var(--lw-surface, var(--canvas)); box-shadow: inset 0 0 0 1px var(--hair); }",
+    ".bzd-bh { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }",
+    ".bzd-bh b { font-size: 15px; font-weight: 750; color: var(--ink); }",
+    ".bzd-bh span { font-size: 13.5px; color: var(--ink-2); }",
+    ".bzd-bh em { margin-left: auto; font-style: normal; font-size: 24px; font-weight: 800; letter-spacing: -.03em; color: var(--ink); font-variant-numeric: tabular-nums; }",
+    ".bzd-bh em small { font-size: 13px; font-weight: 600; color: var(--ink-2); }",
+    ".bzd-bar { position: relative; height: 8px; border-radius: 99px; background: var(--hair); overflow: hidden; }",
+    ".bzd-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: linear-gradient(90deg, #ffc94d, #ff6b9a, #a08bff, #3ddcf5); transition: width .8s cubic-bezier(.2,.8,.2,1); }",
+    ".bzd-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 6px; }",
+    ".bzd-slot { position: relative; height: 40px; border: 0; padding: 0; border-radius: 9px; display: grid; place-items: center; font: inherit; cursor: default;",
+    "  color: var(--ink-3); background: transparent; box-shadow: inset 0 0 0 1.5px var(--hair); }",
+    ".bzd-slot .bz-ic { width: 16px; height: 16px; opacity: .35; }",
+    ".bzd-slot.got { cursor: pointer; color: var(--tc); background: linear-gradient(160deg, color-mix(in srgb, var(--tc) 28%, #111), #0f1015); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 55%, transparent), 0 6px 14px -8px var(--tc); }",
+    ".bzd-slot.got .bz-ic { opacity: 1; }",
+    ".bzd-slot.got:hover { transform: translateY(-2px); }",
+    ".bzd-slot.new { animation: bzg-pop .6s cubic-bezier(.2,.9,.3,1.5) both .5s; }",
+    ".bzd-slot .n { position: absolute; bottom: 1px; right: 3px; font-size: 8px; font-weight: 800; color: currentColor; opacity: .6; }",
+    ".bzd-slot:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }",
+    ".bzd-tip { font-size: 13px; color: var(--ink-2); min-height: 18px; }",
+    // A card opened full size.
+    ".bzd-over { position: fixed; inset: 0; z-index: 9990; display: grid; place-items: center; background: rgba(5,6,10,.62); backdrop-filter: blur(10px) saturate(1.2); -webkit-backdrop-filter: blur(10px);",
+    "  animation: bzd-fade .25s ease both; }",
+    "@keyframes bzd-fade { from { opacity: 0; } to { opacity: 1; } }",
+    ".bzd-over .bzg-card { width: 320px; min-height: 440px; animation: bzd-zoom .45s cubic-bezier(.2,.9,.3,1.25) both; }",
+    ".bzd-over .bzg-name { font-size: 29px; }",
+    "@keyframes bzd-zoom { from { opacity: 0; transform: scale(.6) rotate(-8deg); } to { opacity: 1; transform: none; } }",
+    ".bzd-x { position: absolute; top: 20px; right: 22px; width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff; background: rgba(255,255,255,.12); }",
+    ".bzd-x .bz-ic { width: 20px; height: 20px; }",
+    // On the unit page.
+    ".bzd-panel { margin-top: 26px; }",
+    ".bzd-panel .bzd-bind { padding: 20px 22px 22px; border-radius: 22px; background: radial-gradient(80% 120% at 0% 0%, rgba(160,139,255,.12), transparent 60%), var(--paper);",
+    "  box-shadow: 0 0 0 1px var(--hair), 0 20px 50px -30px rgba(122,61,255,.5); }",
+    ".bzd-panel .bzd-slots { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); }",
+    ".bzd-panel .bzd-slot { height: 58px; }",
+    ".bzd-panel h2 { display: flex; align-items: center; gap: 10px; }",
+    ".bzd-panel h2 .bz-ic { width: 22px; height: 22px; color: #a08bff; }",
+    "@media (prefers-reduced-motion: reduce) { .bzd *, .bzd-over, .bzd-over * { animation: none !important; } .bzd-in { transition: none; } }"
+  ].join("\n"));
+
+  function deckShow(id) {
+    var c = B.deck.get(id);
+    if (!c) return;
+    var back = document.activeElement;
+    var over = el("div", "bzd-over");
+    over.setAttribute("role", "dialog");
+    over.setAttribute("aria-modal", "true");
+    over.setAttribute("aria-label", c.name);
+    over.innerHTML = cardHTML(c);
+    var x = button("bzd-x", icon("x"));
+    x.setAttribute("aria-label", "Close");
+    over.appendChild(x);
+    document.body.appendChild(over);
+    tilt(over.querySelector(".bzg-card"));
+    function close() {
+      document.removeEventListener("keydown", key, true);
+      if (over.parentNode) over.parentNode.removeChild(over);
+      if (back && back.focus) back.focus();
+    }
+    function key(e) { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } }
+    document.addEventListener("keydown", key, true);
+    over.addEventListener("click", function (e) { if (e.target === over || e.target.closest(".bzd-x")) close(); });
+    x.focus();
+  }
+  B.deck.show = deckShow;
+
+  /* The binder: every card of a unit, lit once grabbed. fresh: ids to pop. */
+  function binder(unit, o) {
+    o = o || {};
+    var all = deckAll(unit), have = all.filter(function (c) { return deckHas(c.id); });
+    var bind = el("div", "bzd-bind");
+    var pctDone = all.length ? Math.round(have.length / all.length * 100) : 0;
+    bind.innerHTML = '<div class="bzd-bh"><b>' + esc(o.title || "Your concept deck") + "</b><span>" +
+      (have.length === all.length && all.length ? "Complete — every concept of the unit." : "Grab them all by finishing the unit's lessons.") +
+      "</span><em>" + have.length + "<small> / " + all.length + "</small></em></div>" +
+      '<div class="bzd-bar"><i style="width:' + (o.from != null ? o.from : pctDone) + '%"></i></div>';
+    var slots = el("div", "bzd-slots");
+    var tip = el("div", "bzd-tip");
+    all.forEach(function (c) {
+      var got = deckHas(c.id), f = famOf(c);
+      var s = button("bzd-slot tone-" + f.tone + (got ? " got" : "") + (got && o.fresh && o.fresh.indexOf(c.id) > -1 ? " new" : ""),
+        icon(got ? c.i || "spark" : "lock") + '<span class="n">' + c.no + "</span>");
+      s.setAttribute("aria-label", got ? c.name + " — open the card" : "Card " + c.no + ", from lesson " + c.lesson + " — not grabbed yet");
+      if (!got) s.setAttribute("aria-disabled", "true");
+      s.addEventListener("mouseenter", function () { tip.textContent = got ? "No. " + c.no + " · " + c.name : "No. " + c.no + " · locked — it's in lesson " + c.lesson + "."; });
+      s.addEventListener("focus", function () { tip.textContent = got ? "No. " + c.no + " · " + c.name : "No. " + c.no + " · locked — it's in lesson " + c.lesson + "."; });
+      s.addEventListener("click", function () { if (got) deckShow(c.id); });
+      slots.appendChild(s);
+    });
+    bind.appendChild(slots);
+    bind.appendChild(tip);
+    tip.textContent = have.length ? "Tap a lit card to open it." : "Your first cards come in lesson 1.";
+    if (o.from != null) requestAnimationFrame(function () { requestAnimationFrame(function () { var b = bind.querySelector(".bzd-bar i"); if (b) b.style.width = pctDone + "%"; }); });
+    return bind;
+  }
+  B.deck.binder = binder;
+
+  /* The unit page's panel. The page is drawn again when progress arrives
+     from the account, so any old panel goes first. */
+  B.deck.panel = function (wrap, unit, me) {
+    var old = wrap.querySelector(".bzd-panel");
+    if (old) old.parentNode.removeChild(old);
+    if (!deckAll(unit).length) return;
+    if (me && typeof CH.result === "function") CH.result("", me);
+    var sec = el("section", "lb-block bzd-panel lw bz");
+    sec.appendChild(el("h2", "lb-h2", icon("cards") + "<span>Concept deck</span>"));
+    sec.appendChild(binder(unit));
+    var after = wrap.querySelector(".lb-next");
+    if (after && after.nextSibling) wrap.insertBefore(sec, after.nextSibling); else wrap.appendChild(sec);
+  };
+
+  CH.addKind("deck", function (spec, seed, mode) {
+    var api = {}, unit = spec.unit || "biz:1";
+    var cs = B.deck.lesson(unit, spec.lesson || 1);
+    var box = el("div", "lw bz bzd bzd-card-in");
+    var table = el("div", "bzd-table");
+    var turned = {};
+    var ROT = [-4, 3, -2, 4, -3, 2];
+    cs.forEach(function (c, i) {
+      var f = famOf(c);
+      var b = button("bzd-flip tone-" + f.tone,
+        '<span class="bzd-in">' +
+          '<span class="bzd-f"><span class="no">No. ' + no2(c.no) + '</span><span class="q">Recall</span><span class="art">' + icon(c.i || "spark") + "</span><b>" + esc(c.name) + "</b><small>What does it mean? Then turn it.</small></span>" +
+          '<span class="bzd-b"><b>' + esc(c.name) + "</b><span>" + fmt(c.t || "") + "</span></span>" +
+        "</span>");
+      b.style.setProperty("--rot", ROT[i % ROT.length] + "deg");
+      b.style.setProperty("--i", i);
+      b.setAttribute("aria-pressed", "false");
+      b.setAttribute("aria-label", c.name + " — say what it means, then turn it over");
+      b.addEventListener("click", function () {
+        var on = !b.classList.contains("on");
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", String(on));
+        if (on) turned[c.id] = true;
+        paint();
+      });
+      table.appendChild(b);
+    });
+    box.appendChild(table);
+    var read = readout("bzd-read");
+    box.appendChild(read);
+    // The unit's binder: this lesson's cards count as grabbed now.
+    cs.forEach(function (c) { DECK.now[c.id] = true; });
+    var all = deckAll(unit), before = all.filter(function (c) { return deckHas(c.id) && c.lesson !== spec.lesson; }).length;
+    box.appendChild(binder(unit, { title: "Unit " + String(unit).split(":")[1] + " deck", fresh: cs.map(function (c) { return c.id; }),
+                                   from: all.length ? Math.round(before / all.length * 100) : 0 }));
+    function paint() {
+      var n = Object.keys(turned).length;
+      read.innerHTML = !cs.length ? "" : n === cs.length ? "All " + cs.length + " turned. Any you missed? Those are the ones to practice." :
+        n ? n + " of " + cs.length + " turned over." : "Say what each card means out loud — then turn it over to check.";
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return true; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () {};
+    return api;
+  });
+
+  /* =============================================================== Polish
+     The course's scenes in its own look: lit slider tracks that fill behind
+     the handle, bars and curves that glow in their colour, gauges with a
+     lit band, people drawn as avatars, and the pieces rising in one after
+     another. Only paint and motion — no scene's layout or behaviour changes
+     here, and everything stays under [data-course="biz"] (see Studio). */
+  B.css([
+    // Sliders: the part of the track behind the handle is lit.
+    under(".lw-slider input[type=\"range\"]::-webkit-slider-runnable-track") + " { background: linear-gradient(90deg, var(--bx-go1), var(--acc) var(--p, 0%), color-mix(in srgb, var(--ink) 13%, transparent) var(--p, 0%)); box-shadow: 0 0 14px -4px var(--acc); }",
+    under(".lw-slider input[type=\"range\"]::-moz-range-track") + " { background: linear-gradient(90deg, var(--bx-go1), var(--acc) var(--p, 0%), color-mix(in srgb, var(--ink) 13%, transparent) var(--p, 0%)); }",
+    under(".lw-slider input[type=\"range\"]::-webkit-slider-thumb") + " { box-shadow: 0 0 0 5px color-mix(in srgb, var(--acc) 28%, transparent), 0 0 20px color-mix(in srgb, var(--acc) 70%, transparent); }",
+    under(".lw-slider .lw-sl-val") + " { font-weight: 750; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }",
+    // Segmented controls: the chosen one is a lit pill.
+    under(".bz-segb.on") + " { background: linear-gradient(120deg, var(--bx-go1), var(--bx-go2)); color: #fff; box-shadow: 0 6px 16px -8px var(--bx-go2); }",
+    // Profit: glowing bars and big numbers.
+    under(".bz-pf-bars") + " { background: linear-gradient(180deg, color-mix(in srgb, var(--acc) 7%, var(--lw-surface)), var(--lw-surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 16%, transparent); }",
+    under(".bz-pf-track") + " { height: 30px; border-radius: 10px; }",
+    under(".bz-pf-seg.rev") + " { background: linear-gradient(90deg, #3b5bff, #6f9bff); box-shadow: 0 0 18px -2px rgba(111,155,255,.75); }",
+    under(".bz-pf-seg.var") + " { background: linear-gradient(90deg, #ff4d6d, #ff7a8a); }",
+    under(".bz-pf-seg.fix") + " { background: linear-gradient(90deg, #b8324d, #d9475f); opacity: 1; }",
+    under(".bz-pf-seg.pro") + " { background: linear-gradient(90deg, #1fb866, #4ae68a); box-shadow: 0 0 18px -2px rgba(74,230,138,.8); }",
+    under(".bz-pf-row > b") + " { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }",
+    // Market: curves and handles that glow, a pulsing equilibrium.
+    under(".bz-mk-d") + " { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--lw-blue) 70%, transparent)); stroke-width: 4; }",
+    under(".bz-mk-s") + " { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--lw-orange) 70%, transparent)); stroke-width: 4; }",
+    under(".bz-mk-gap") + " { opacity: .8; filter: drop-shadow(0 0 5px currentColor); }",
+    under(".bz-mk-knob") + " { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--acc) 80%, transparent)); }",
+    under(".bz-mk-e:not(.old)") + " { animation: bzp-glow 1.8s ease-in-out infinite; }",
+    "@keyframes bzp-glow { 0%,100% { filter: drop-shadow(0 0 3px var(--lw-green)); } 50% { filter: drop-shadow(0 0 12px var(--lw-green)); } }",
+    under(".bz-mk-tab") + " { border-radius: 14px; overflow: hidden; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 18%, var(--hair)); }",
+    // The business cycle: a lit line, a red-tinted recession.
+    under(".bz-cy-line") + " { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--lw-blue) 65%, transparent)); stroke-width: 3.5; }",
+    under(".bz-cy-rec") + " { opacity: .2; }",
+    under(".bz-cy-pt.cur") + " { filter: drop-shadow(0 0 8px var(--lw-blue)); }",
+    // Levers: panels on a lit surface, gauges with a glowing band.
+    under(".bz-lv-panel") + " { background: linear-gradient(170deg, color-mix(in srgb, var(--acc) 8%, var(--lw-surface)), var(--lw-surface) 60%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 16%, transparent); }",
+    under(".bz-lv-track") + " { height: 16px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 9%, transparent); }",
+    under(".bz-lv-band") + " { opacity: .45; background: linear-gradient(90deg, transparent, var(--lw-green) 20%, var(--lw-green) 80%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--lw-green) 50%, transparent); }",
+    under(".bz-lv-dot") + " { top: -4px; width: 24px; height: 24px; margin-left: -12px; }",
+    under(".bz-lv-g.ok .bz-lv-dot") + " { box-shadow: 0 0 0 3px var(--lw-surface), 0 0 16px var(--lw-green); }",
+    under(".bz-lv-g.off .bz-lv-dot") + " { box-shadow: 0 0 0 3px var(--lw-surface), 0 0 16px var(--lw-red); }",
+    under(".bz-lv-g b") + " { font-size: 19px; font-weight: 800; }",
+    // Labor: people as avatars, boxes lit in their colour.
+    under(".bz-lb-p") + " { transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s; }",
+    under(".bz-lb-p:hover") + " { transform: translateY(-2px); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--acc) 50%, transparent); }",
+    under(".bz-lb-p .bz-ic") + " { width: 30px; height: 30px; padding: 5px; box-sizing: border-box; border-radius: 50%; color: var(--acc); background: color-mix(in srgb, var(--acc) 16%, transparent); }",
+    under(".bz-lb-p.sel") + " { box-shadow: inset 0 0 0 2px var(--acc), 0 12px 26px -14px var(--acc); transform: translateY(-2px); }",
+    under(".bz-lb-bin") + " { box-shadow: inset 0 3px 0 currentColor, inset 0 0 0 1px var(--hair); }",
+    under(".bz-lb-bin.emp") + " { color: var(--lw-green); } " + under(".bz-lb-bin.unemp") + " { color: var(--lw-orange); } " + under(".bz-lb-bin.out") + " { color: var(--ink-3); }",
+    under(".bz-lb-bin:hover") + " { box-shadow: inset 0 3px 0 currentColor, inset 0 0 0 1.5px currentColor, 0 14px 30px -18px currentColor; }",
+    under(".bz-lb-rate b.big") + " { font-size: 30px; font-weight: 850; letter-spacing: -.03em; text-shadow: 0 0 18px color-mix(in srgb, var(--lw-orange) 50%, transparent); }",
+    // Keeping customers: glowing columns.
+    under(".bz-rt-bar") + " { background: linear-gradient(180deg, #4ae68a, #1a9d57); box-shadow: 0 0 18px -4px rgba(74,230,138,.7); }",
+    // A chain of causes: each link lit on its left edge, rising in turn.
+    under(".bz-link") + " { box-shadow: inset 3px 0 0 currentColor, inset 0 0 0 1px var(--hair); }",
+    under(".bz-link .bz-lk-ic") + " { box-shadow: 0 0 18px -6px currentColor; }",
+    // The old flip cards: a lift and a coloured edge.
+    under(".bz-flip:hover .bz-flip-f") + " { box-shadow: inset 0 0 0 1.5px currentColor, 0 14px 30px -18px currentColor; }",
+    under(".bz-flip-f") + " { background: linear-gradient(170deg, color-mix(in srgb, currentColor 10%, var(--lw-surface)), var(--lw-surface) 70%); }",
+    "@media (prefers-reduced-motion: reduce) { " + under(".bz-mk-e:not(.old)") + " { animation: none; } }"
+  ].join("\n"));
 
   /* =============================================================== Profit
      //: profit     run a stand for a day: set the price and how many you sell,
