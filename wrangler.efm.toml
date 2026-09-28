@@ -1,0 +1,47 @@
+# ===========================================================================
+# OC EFM — OploCloud Enterprise Financial Management, on its own hostname.
+#
+# `efm.oplocloud.com` serves `efm/`: static assets, with worker/efm.js
+# answering page addresses (/home, /payables/…) with the app's index.html.
+# It sits at the repository root, like wrangler.dev.toml and
+# wrangler.roxan.toml, because the assets directory is published verbatim —
+# a wrangler.toml inside efm/ would be served to the world.
+#
+# People sign in through auth.oplocloud.com (connect.js) and the app asks
+# api.oplocloud.com who they are, so https://efm.oplocloud.com must be in the
+# API's ALLOWED_ORIGINS, and "efm.oplocloud.com" in auth/public/app.js NAMES.
+#
+#     npx wrangler deploy -c wrangler.efm.toml                  → workers.dev
+#     npx wrangler deploy -c wrangler.efm.toml --env production → efm.oplocloud.com
+# ===========================================================================
+name = "oplo-efm"
+main = "worker/efm.js"
+compatibility_date = "2026-05-01"
+workers_dev = true
+
+[assets]
+directory = "./efm"
+binding = "ASSETS"
+not_found_handling = "none"
+
+[env.production]
+name = "oplo-efm"
+main = "worker/efm.js"
+
+[env.production.assets]
+directory = "./efm"
+binding = "ASSETS"
+not_found_handling = "none"
+
+[[env.production.routes]]
+pattern = "efm.oplocloud.com"
+custom_domain = true
+
+# The path on the apex, which GitHub Pages would otherwise serve as a second copy.
+[[env.production.routes]]
+pattern = "oplocloud.com/efm"
+zone_name = "oplocloud.com"
+
+[[env.production.routes]]
+pattern = "oplocloud.com/efm/*"
+zone_name = "oplocloud.com"
