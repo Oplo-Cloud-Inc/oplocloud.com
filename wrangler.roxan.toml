@@ -1,0 +1,54 @@
+# ===========================================================================
+# Roxan — Oplo's AI, on its own hostname.
+#
+# `roxan.oplocloud.com` serves `roxan/` and nothing else: the Roxan site at
+# the root and the Ministry of Finance cockpit at /mof/. Cloudflare serves the
+# directory as static assets; worker/roxan.js only sees requests no file
+# answered, and redirects the old oplocloud.com/roxan/ address here.
+#
+# This file sits at the repository root, beside wrangler.dev.toml, for the
+# same reason: the assets directory is published verbatim, so a wrangler.toml
+# inside `roxan/` would be served at roxan.oplocloud.com/wrangler.toml.
+#
+#     npx wrangler deploy -c wrangler.roxan.toml                  → workers.dev
+#     npx wrangler deploy -c wrangler.roxan.toml --env production → roxan.oplocloud.com
+#
+# The pages are self-contained — their own nav, footer, CSS and JS, with every
+# link out to the rest of Oplo written absolute — so nothing needs building
+# before a deploy.
+# ===========================================================================
+name = "oplo-roxan"
+main = "worker/roxan.js"
+compatibility_date = "2026-05-01"
+workers_dev = true
+
+[assets]
+directory = "./roxan"
+binding = "ASSETS"
+# roxan/404.html answers any path that is not a file, with a real 404 status.
+not_found_handling = "404-page"
+
+# --------------------------------------------------------------- Production
+[env.production]
+name = "oplo-roxan"
+main = "worker/roxan.js"
+
+[env.production.assets]
+directory = "./roxan"
+binding = "ASSETS"
+not_found_handling = "404-page"
+
+[[env.production.routes]]
+pattern = "roxan.oplocloud.com"
+custom_domain = true
+
+# The old address on the apex, which GitHub Pages would otherwise keep serving
+# as a second, stale copy. Two patterns rather than `/roxan*`, which would
+# also catch any future page whose name merely starts with "roxan".
+[[env.production.routes]]
+pattern = "oplocloud.com/roxan"
+zone_name = "oplocloud.com"
+
+[[env.production.routes]]
+pattern = "oplocloud.com/roxan/*"
+zone_name = "oplocloud.com"
