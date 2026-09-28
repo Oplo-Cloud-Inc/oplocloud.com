@@ -1,161 +1,116 @@
-# Oplo Identity — auth.oplocloud.com
+# Oplo Account — auth.oplocloud.com
 
-The authentication portal for the Oplo ecosystem. A Cloudflare Worker
-that serves the sign-in experience, handles OAuth/OIDC redirects, and
-proxies API calls to api.oplocloud.com.
+The one place anybody signs in to anything Oplo makes.
 
 ```
 auth/
-├─ wrangler.toml       — Worker config, auth.oplocloud.com routing
-├─ index.js            — The Worker: page serving, API proxy, OIDC discovery
-├─ auth.css            — Auth-specific styles (extends oplo-design.css)
-├─ app.js              — Client-side auth logic (sign-in, passkey, recovery)
-└─ README.md           — You are here
+├─ wrangler.toml       — Worker config; auth.oplocloud.com as a custom domain
+├─ index.js            — The Worker: page routing, security headers, OIDC discovery
+└─ public/
+   ├─ index.html       — The sign-in page (one document, views drawn by app.js)
+   ├─ app.js           — Email → password, or "Continue as …"; then hands back
+   ├─ auth.css         — The page's styles (oplocloud.com's tokens, copied)
+   ├─ connect.js       — What every service loads to open this page in a tab
+   └─ favicon.svg
 ```
 
 ---
 
-## What this is
+## The rule
 
-**auth.oplocloud.com** is the front door of Oplo Identity. It does
-three things:
+**Every Oplo service signs people in here, in a tab of its own.** No
+service has a password field. A service loads one script and calls one
+function from a click:
 
-1. **Serves the sign-in page** at `/` — email first, then method
-   (passkey preferred, password fallback). Also serves `/register`
-   and `/recovery` views.
-
-2. **Forwards API calls** to api.oplocloud.com, attaching the
-   session cookie so the platform API can resolve who the user is.
-   The API sets the session cookie on the `oplocloud.com` domain,
-   so it is shared across every Oplo product.
-
-3. **Serves the OIDC discovery document** at
-   `/.well-known/openid-configuration`, so Oplo products can discover
-   the identity endpoints.
-
----
-
-## Why a separate subdomain
-
-The session cookie lives on `oplocloud.com` (set by api.oplocloud.com
-with `Domain=oplocloud.com`). This means it is sent on every request
-to every Oplo subdomain — `edu.oplocloud.com`, `auth.oplocloud.com`,
-`api.oplocloud.com` — without any special configuration.
-
-The split is about **separation of concerns**, not isolation:
-
-| Subdomain | Purpose |
-|---|---|
-| `auth.oplocloud.com` | Identity — sign-in, registration, recovery, OIDC discovery |
-| `api.oplocloud.com` | Data — session management, all platform APIs |
-| `edu.oplocloud.com` | OEdu — the education product |
-| `oplocloud.com` | Marketing site and static assets |
-
-Sign in at `auth.oplocloud.com`, and the session is valid everywhere.
-
----
-
-## The sign-in flow
-
-```
-User opens auth.oplocloud.com
-       │
-       ▼
-Email? ──► Continue ──► api.oplocloud.com/auth/login
-       │                        │
-       │              ┌─────────┴─────────┐
-       │              │ Has password?     │
-       │              │  Yes → verify     │
-       │              │  No → prompt for  │
-       │              │    password or    │
-       │              │    passkey        │
-       │              └─────────┬─────────┘
-       │                        │
-       │                   Set-Cookie
-       │                   (oplocloud.com)
-       │                        │
-       ▼                        ▼
-   Redirect to product (cookie sent automatically)
+```html
+<script src="https://auth.oplocloud.com/connect.js"></script>
 ```
 
-The password field is intentionally **not** the first thing users
-see. Email is. After email, the system determines the appropriate
-authentication method — passkey if available, password as fallback.
+```js
+button.addEventListener("click", function () {
+  OploSignIn.open({
+    // optional: asked if the tab closes without saying it is done
+    verify: function () { return myApi.me().then(() => true, () => false); }
+  });
+});
+
+// after the refresh, once the service knows who is signed in:
+OploSignIn.done();
+```
 
 ---
 
-## How the pages switch
+## The flow
 
-The Worker serves a single HTML document. The page switches its view
-based on the URL path:
+```
+ service tab                                  auth.oplocloud.com tab
+ ───────────                                  ──────────────────────
+ click "Sign in"
+ OploSignIn.open() ── window.open(/?return=<this address>) ──►  GET api/v1/me
+ "Finish signing in on the                                      ├─ signed out: email → password
+  Oplo Account tab" (pill)                                      │     POST api/v1/auth/login
+                                                                │     (API sets its HttpOnly cookie)
+                                                                └─ signed in: "Continue as …?"
+                                                                ✓ You're signed in
+             ◄── postMessage {type:"oplo:auth", action:"signed-in", next}
+                 to the return address's origin only
+ progress bar starts                                            opener.focus(); window.close()
+ (tab comes forward)
+ bar → 55%, sessionStorage flag, refresh
+ after refresh: bar resumes at 62%,
+ service asks GET api/v1/me → signed in → OploSignIn.done() → bar completes
+```
+
+- **The session is api.oplocloud.com's.** The page posts to the API
+  directly (the API's `ALLOWED_ORIGINS` includes this host), so the
+  HttpOnly cookie lands on api.oplocloud.com — the host every service
+  already calls with `credentials: "include"`. No token, name or session
+  is in the message; it says only "signed in, go to <address>". The
+  service learns who signed in by asking the server after the refresh.
+- **Who may be sent back to.** `?return=` is honoured only for an
+  `https://*.oplocloud.com` address (not this host), or a localhost one
+  when this page is itself on localhost. The name shown ("Continue to
+  OEdu") comes from a list in app.js, never from the URL.
+- **Fallbacks.** No tab allowed (popup blocker): the service's own tab
+  goes to this page and is sent back afterwards. No opener (a plain
+  link): the tab goes to the return address itself. Tab closed without a
+  message: connect.js calls the service's `verify()`. A browser that
+  won't let the tab close itself: the page says "You can close this tab"
+  with a link back.
+
+---
+
+## Views
 
 | Path | View |
 |---|---|
-| `/` | Sign in (email first) |
-| `/sign-in` | Sign in (same as `/`) |
-| `/register` | Create an account |
-| `/recovery` | Password recovery |
-| `/callback` | OAuth/OIDC callback handler |
+| `/` | Sign in, or "Continue as …" with a session; with no `?return=`, the account page (who, OEdu, Sign out) |
+| `/sign-in` | Same as `/` |
+| `/recovery` | Passwords are reset by the organization's administrator |
+| `/register` | Accounts are created by the organization |
 
-The client-side `app.js` renders the correct view into `#authMain`
-and handles all interactions.
+Any other path without a file extension is the page too; anything that
+looks like a file is looked up as one (404 if missing).
 
 ---
 
 ## Running locally
 
-```bash
-cd auth
-npm install wrangler
-npx wrangler dev --local --port 8788
-# open http://localhost:8788
-```
-
-API calls are proxied to `api.oplocloud.com` (or wherever
-`API_BASE` points). For local testing with the API running on
-`localhost:8787`, set `API_BASE=http://localhost:8787`:
+With the API on :8787 (connect.js and app.js look there, and for this
+page on :8788, whenever they are served from localhost):
 
 ```bash
-npx wrangler dev --local --port 8788 --api
+npx wrangler dev -c api/wrangler.toml --port 8787
+cd auth && npx wrangler dev --port 8788
 ```
-
----
 
 ## Deploying
 
 ```bash
 cd auth
-npx wrangler deploy                  → auth.<subdomain>.workers.dev
-npx wrangler deploy --env production → auth.oplocloud.com
+npx wrangler deploy --env production    # → auth.oplocloud.com
 ```
 
-The production environment attaches the `auth.oplocloud.com`
-custom domain (managed in the Cloudflare zone for oplocloud.com).
-The DNS record is created automatically on deploy.
-
----
-
-## Relationship to oplo-accounts
-
-The `oplo-accounts/` directory contains a local prototype of the
-identity server using ZITADEL + Postgres in Docker. That prototype
-runs at `http://localhost:8080` and demonstrates the full OIDC
-flow in isolation.
-
-**auth.oplocloud.com** is the production-facing portal. It does not
-run ZITADEL — it proxies to api.oplocloud.com, which holds the real
-session logic. When the platform API moves to a full identity provider
-(ZITADEL, or its replacement), auth.oplocloud.com continues to serve
-the same pages; only the API proxy target changes.
-
----
-
-## Files that reference this
-
-| File | What it does |
-|---|---|
-| `sign-in/index.html` | Marketing site sign-in page — form now redirects to auth.oplocloud.com |
-| `wrangler.toml` (root) | Documents auth.oplocloud.com as a platform subdomain |
-| `sitemap.xml` | Includes auth.oplocloud.com |
-| `README.md` (root) | Lists auth/ as a project component |
-| `api/wrangler.toml` | API at api.oplocloud.com (auth proxy target) |
+The custom domain creates the DNS record and certificate on deploy. The
+first deploy (2026-09-18) used zone routes with no DNS record, so the
+host never resolved.

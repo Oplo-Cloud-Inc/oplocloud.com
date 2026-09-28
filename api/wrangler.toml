@@ -18,7 +18,8 @@ compatibility_date = "2026-05-01"
 ENVIRONMENT = "development"
 # Browsers that may call this API with credentials. An allowlist rather than
 # "*", because "*" and cookies are mutually exclusive for good reasons.
-ALLOWED_ORIGINS = "http://localhost:8123,http://127.0.0.1:8123,http://localhost:4173,http://127.0.0.1:4173"
+# :8788 is the sign-in page (auth/, `wrangler dev --port 8788`).
+ALLOWED_ORIGINS = "http://localhost:8123,http://127.0.0.1:8123,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8788,http://127.0.0.1:8788"
 
 [[d1_databases]]
 binding = "DB"
@@ -33,7 +34,10 @@ ENVIRONMENT = "production"
 # OEdu is served from edu.oplocloud.com and calls this API from there, so the
 # origin has to be on the list or every request from the product is refused.
 # The apex stays because the marketing pages link into the app.
-ALLOWED_ORIGINS = "https://edu.oplocloud.com,https://oplocloud.com,https://www.oplocloud.com"
+# auth.oplocloud.com is where every service sends people to sign in; its page
+# posts to /auth/login here directly, so the session cookie is set on this
+# host — the one every service already sends it to.
+ALLOWED_ORIGINS = "https://edu.oplocloud.com,https://oplocloud.com,https://www.oplocloud.com,https://auth.oplocloud.com"
 
 [[env.production.d1_databases]]
 binding = "DB"

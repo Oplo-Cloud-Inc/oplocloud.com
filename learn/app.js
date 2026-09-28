@@ -13309,19 +13309,19 @@
      offline at their own pace, and an app that decides for itself who is
      signed in cannot enforce anything against a user with a console open.
 
-     So it is gone. Sign-in posts to the Oplo platform API, the server checks
-     the password, and the server sets an HttpOnly session cookie this file
-     cannot read. From then on the only question this app ever asks about
-     identity is `who am I?` — and the answer comes from the server.
+     So it is gone. Sign-in happens at auth.oplocloud.com, in a tab of its own
+     (auth/public/connect.js): the password is typed there, the server checks
+     it, and the server sets an HttpOnly session cookie this file cannot read.
+     The tab closes, this page refreshes, and the only question this app ever
+     asks about identity is `who am I?` — and the answer comes from the server.
 
      One Oplo Account, not an OEdu account. The same session will carry
      a person into OMaps or OShopping, which is why none of this lives under
      an OEdu-specific name. */
   var Auth = (function () {
-    function verify(email, password) { return API.login(email, password); }
     function current() { return API.me(); }
     function close() { return API.logout().catch(function () { /* already gone */ }); }
-    return { verify: verify, current: current, close: close };
+    return { current: current, close: close };
   })();
 
   /* `who` is whatever /api/v1/me resolved the session cookie to. Nothing in
@@ -13573,62 +13573,44 @@
     gate.classList.remove("ld-locked", "ld-wait");
     gate.hidden = false;
     gate.scrollTop = 0;
-    $("#gEmail").value = ""; $("#gPass").value = "";
     $("#gErr").textContent = "";
     noFoot(); progress(null);
   }
 
   (function gate() {
-    var form = $("#gateForm"), err = $("#gErr"), btn = form.querySelector("button");
+    var err = $("#gErr"), go = $("#gateGo");
+    var Account = window.OploSignIn;
 
-    function fail(message, field) {
-      err.textContent = message;
-      if (field === "email") $("#gEmail").classList.add("bad");
-      if (field === "password") $("#gPass").classList.add("bad");
-      if (!field) { $("#gEmail").classList.add("bad"); $("#gPass").classList.add("bad"); }
-      $("#gPass").value = "";
-      $("#gPass").focus();
-    }
-
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var email = $("#gEmail").value.trim(), pw = $("#gPass").value;
+    /* Every "Sign in" on the welcome page, and the panel's button, come here.
+       The password is never typed on this page: connect.js opens
+       auth.oplocloud.com in a tab of its own, and when that tab says it is
+       done this page refreshes and the question below is asked again. If the
+       tab closes without saying — the message lost, or the person gave up —
+       the server is asked which. */
+    function signIn() {
       err.textContent = "";
-      $("#gEmail").classList.remove("bad");
-      $("#gPass").classList.remove("bad");
-      if (!email || !pw) { err.textContent = "Both fields, please."; return; }
-
-      btn.disabled = true;
-      btn.textContent = "Signing in…";
-
-      /* No rate limiting here, and that is deliberate: it is enforced by the
-         server, per address and per address-of-origin. A limiter in the page
-         stops an honest user from mistyping twice and stops an attacker from
-         nothing at all. */
-      Auth.verify(email, pw).then(function (account) {
-        btn.disabled = false;
-        btn.textContent = "Sign in";
-        boot(account);
-      }).catch(function (e2) {
-        btn.disabled = false;
-        btn.textContent = "Sign in";
-        if (e2 && e2.code === "offline") {
-          err.innerHTML = "Cannot reach the Oplo account service. " +
-            "Sign-in needs the platform API, and it is not answering at " +
-            "<code>" + esc(API.base()) + "</code>.";
-          return;
+      if (!Account) {
+        err.innerHTML = "Cannot reach the Oplo Account service at " +
+          "<code>auth.oplocloud.com</code>. Check your connection and reload.";
+        return;
+      }
+      Account.open({
+        verify: function () {
+          return API.me().then(function () { return true; }, function () { return false; });
         }
-        if (e2 && e2.code === "rate_limited") { fail(e2.message); return; }
-        fail(e2 && e2.message ? e2.message
-                              : "That email and password do not match an account.", e2 && e2.field);
       });
-    });
+    }
+    window.OEDU_SIGNIN = signIn;
+    if (go) go.addEventListener("click", signIn);
 
-    /* A session already open in this browser signs straight in. The cookie is
-       HttpOnly, so the only way to find out is to ask the server. */
+    /* A session already open in this browser signs straight in — which is also
+       how a sign-in in the Oplo Account tab arrives, after the refresh. The
+       cookie is HttpOnly, so the only way to find out is to ask the server. */
     API.me().then(function (account) {
       boot(account);
+      if (Account) Account.done();
     }).catch(function (e) {
+      if (Account) Account.done();
       // Nobody is signed in, so the welcome page can be shown; until now it
       // stayed blank so a signed-in visitor never saw it on the way home.
       $("#gate").classList.remove("ld-wait");
@@ -13637,9 +13619,9 @@
         err.innerHTML = "Cannot reach the Oplo account service at <code>" +
           esc(API.base()) + "</code>.";
       }
-      // The email field is only focused when the sign-in panel is open;
-      // focusing into a closed panel would scroll the welcome page to nowhere.
-      if (!panel || !panel.hidden) setTimeout(function () { $("#gEmail").focus(); }, 120);
+      // The button is only focused when the sign-in panel is open; focusing
+      // into a closed panel would scroll the welcome page to nowhere.
+      if (panel && !panel.hidden && go) setTimeout(function () { go.focus(); }, 120);
     });
   })();
 

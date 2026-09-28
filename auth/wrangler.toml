@@ -1,37 +1,59 @@
 # ===========================================================================
-# Oplo Identity — auth.oplocloud.com
+# Oplo Account — auth.oplocloud.com
 #
-# The authentication portal. Serves the sign-in, registration, and
-# recovery pages, initiates OAuth/OIDC flows, and forwards API calls
-# to api.oplocloud.com for actual session management.
+# Where every Oplo service sends somebody to sign in. A service opens this
+# host in a tab of its own (public/connect.js); the person signs in here, or
+# confirms the account already signed in; this tab tells the service and
+# closes; the service refreshes and finds the session.
 #
-# Why a separate Worker rather than a static page:
-#   - The sign-in page is static, but the OAuth/OIDC discovery and
-#     redirect handling need logic (this Worker).
-#   - A dedicated subdomain keeps the session cookie scope clean:
-#     auth.oplocloud.com handles identity, api.oplocloud.com handles
-#     data, and the session is shared at the oplocloud.com domain level.
+# The session itself is api.oplocloud.com's: the sign-in page posts to the
+# API directly, the API sets its HttpOnly cookie on its own host, and every
+# service already sends that cookie with its API calls. This Worker never
+# sees a password or a session — it serves four static files and the OIDC
+# discovery document, and adds the headers that keep the page from being
+# framed.
 #
-# Deploy:
-#   npx wrangler deploy                  → lands on auth.<subdomain>.workers.dev
+# The Worker runs first (run_worker_first) so those headers are on every
+# response, including the static ones.
+#
+# Deploy, from this folder:
+#   npx wrangler deploy                  → oplo-auth.<subdomain>.workers.dev
 #   npx wrangler deploy --env production → auth.oplocloud.com
+#
+# Local, beside the API on :8787 (connect.js and app.js both look for this
+# port when they are served from localhost):
+#   npx wrangler dev --port 8788
 # ===========================================================================
 name = "oplo-auth"
 main = "index.js"
 compatibility_date = "2026-05-01"
 workers_dev = true
 
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+ENVIRONMENT = "development"
+
+# --------------------------------------------------------------- Production
+#
+# A custom domain, not a zone route: a route needs a DNS record somebody made
+# by hand, and the first deploy of this Worker (2026-09-18) had routes and no
+# record, so auth.oplocloud.com never resolved. A custom domain makes the
+# record and the certificate on deploy.
 [env.production]
 name = "oplo-auth"
 
+[env.production.assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
 [env.production.vars]
-API_BASE = "https://api.oplocloud.com"
-COOKIE_DOMAIN = "oplocloud.com"
+ENVIRONMENT = "production"
 
 [[env.production.routes]]
-pattern = "auth.oplocloud.com/*"
-zone_name = "oplocloud.com"
-
-[[env.production.routes]]
-pattern = "auth.oplocloud.com/.well-known/*"
-zone_name = "oplocloud.com"
+pattern = "auth.oplocloud.com"
+custom_domain = true

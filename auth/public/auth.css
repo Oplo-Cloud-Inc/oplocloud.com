@@ -1,0 +1,285 @@
+/* ==========================================================================
+   Oplo Account — the sign-in page at auth.oplocloud.com.
+
+   A page somebody is sent to for one thing, so it carries nothing else: the
+   mark, the form, and a line of legal links. The tokens are oplocloud.com's
+   (assets/css/oplo-design.css), copied rather than linked — this page has a
+   strict CSP of its own and no business loading the whole site's CSS to draw
+   one form.
+   ========================================================================== */
+
+:root {
+  --paper: #ffffff;
+  --field: #ffffff;
+  --ink: #1d1d1f;
+  --ink-2: #6e6e73;
+  --ink-3: #86868b;
+  --rule: #d2d2d7;
+  --wash: #f5f5f7;
+  --blue: #0071e3;
+  --blue-d: #0077ed;
+  --link: #0066cc;
+  --bad: #d70015;
+  --good: #1d8a3a;
+  --ring: rgba(0, 113, 227, .28);
+  --font: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --text: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --ease: cubic-bezier(0.28, 0.11, 0.32, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #000000;
+    --field: #1c1c1e;
+    --ink: #f5f5f7;
+    --ink-2: #a1a1a6;
+    --ink-3: #86868b;
+    --rule: #424245;
+    --wash: #1c1c1e;
+    --blue: #0071e3;
+    --blue-d: #0077ed;
+    --link: #2997ff;
+    --bad: #ff453a;
+    --good: #30d158;
+    --ring: rgba(41, 151, 255, .35);
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; background: var(--paper); }
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -.022em;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font: inherit; letter-spacing: inherit; }
+[hidden] { display: none !important; }
+
+/* ------------------------------------------------------------------ Frame */
+.au-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 max(22px, env(safe-area-inset-left));
+}
+.au-brand { display: inline-flex; color: var(--ink); }
+.au-mark { width: 20px; height: 19px; }
+.au-top-name { font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: -.01em; }
+
+.au {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 9vh 22px 48px;
+}
+
+.au-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 20px;
+  padding: 18px 22px max(22px, env(safe-area-inset-bottom));
+  font-size: 12px;
+  color: var(--ink-3);
+  letter-spacing: -.01em;
+}
+.au-foot a { color: var(--ink-2); }
+
+/* ------------------------------------------------------------------- View */
+.au-view {
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  animation: au-in .38s var(--ease) both;
+}
+@keyframes au-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.au-for {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2);
+  letter-spacing: -.01em;
+}
+.au-for b { color: var(--ink); font-weight: 600; }
+
+.au-view h1 {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 32px;
+  line-height: 1.125;
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+.au-sub { margin: 10px 0 0; color: var(--ink-2); font-size: 17px; }
+
+.au-form { margin-top: 30px; display: grid; gap: 12px; text-align: left; }
+
+/* A field whose label sits inside it until there is something to move it
+   for — the way oplocloud.com/sign-in draws it. */
+.au-field { position: relative; }
+.au-field input {
+  width: 100%;
+  height: 56px;
+  padding: 22px 16px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--field);
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
+  outline: none;
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.au-field input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px var(--ring); }
+.au-field input.bad { border-color: var(--bad); }
+.au-field label {
+  position: absolute;
+  left: 17px;
+  top: 17px;
+  color: var(--ink-3);
+  font-size: 17px;
+  pointer-events: none;
+  transform-origin: left top;
+  transition: transform .18s var(--ease);
+}
+.au-field input:focus + label,
+.au-field input:not(:placeholder-shown) + label { transform: translateY(-10px) scale(.72); }
+/* The address the password belongs to rides along for password managers. */
+.au-field.au-quiet { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+.au-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+  margin-top: 4px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .2s var(--ease), transform .12s var(--ease), opacity .2s;
+}
+.au-btn:hover { background: var(--blue-d); }
+.au-btn:active { transform: scale(.985); }
+.au-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--ring); }
+.au-btn:disabled { opacity: .45; cursor: default; transform: none; }
+.au-btn.au-plain { background: transparent; color: var(--link); height: 44px; margin-top: 2px; }
+.au-btn.au-plain:hover { background: transparent; text-decoration: underline; }
+
+.au-err { min-height: 1.4em; margin: 2px 0 0; font-size: 14px; color: var(--bad); text-align: center; }
+.au-err code { font-size: 13px; }
+
+.au-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+  font-size: 14px;
+}
+
+.au-fine { margin: 26px 0 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
+
+/* ------------------------------------------------------ The account chip */
+.au-who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 28px 0 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--wash);
+  text-align: left;
+}
+.au-who.au-small { margin: 22px 0 0; padding: 10px 12px; gap: 12px; }
+.au-face {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #6e6e73;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.au-small .au-face { width: 32px; height: 32px; font-size: 13px; }
+.au-id { min-width: 0; flex: 1; }
+.au-name { display: block; font-weight: 600; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.au-mail { display: block; color: var(--ink-2); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.au-change {
+  flex: none;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font-size: 14px;
+  cursor: pointer;
+}
+.au-change:hover { text-decoration: underline; }
+
+/* --------------------------------------------------------------- Signed in */
+.au-tick { width: 64px; height: 64px; margin: 0 auto 22px; color: var(--good); }
+.au-tick circle { stroke-dasharray: 164; stroke-dashoffset: 164; animation: au-draw .5s var(--ease) forwards; }
+.au-tick path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: au-draw .32s .32s var(--ease) forwards; }
+@keyframes au-draw { to { stroke-dashoffset: 0; } }
+
+.au-apps { display: grid; gap: 10px; margin-top: 8px; }
+.au-app {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.au-app:hover { text-decoration: none; border-color: var(--ink-3); }
+.au-app span { color: var(--ink-3); }
+
+/* A wait long enough to notice gets something to look at. */
+.au-wait { display: flex; justify-content: center; padding-top: 12vh; opacity: 0; animation: au-in .3s .35s forwards; }
+.au-spin {
+  width: 22px; height: 22px;
+  border: 2px solid var(--rule);
+  border-top-color: var(--ink-2);
+  border-radius: 50%;
+  animation: au-turn .8s linear infinite;
+}
+@keyframes au-turn { to { transform: rotate(360deg); } }
+
+@media (max-width: 480px) {
+  .au { padding-top: 5vh; }
+  .au-view h1 { font-size: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .au-view, .au-wait { animation: none; opacity: 1; }
+  .au-tick circle, .au-tick path { animation: none; stroke-dashoffset: 0; }
+  .au-spin { animation-duration: 2s; }
+}
