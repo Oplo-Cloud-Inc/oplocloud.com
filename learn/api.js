@@ -141,6 +141,12 @@ window.OPLO_API = (function () {
     },
     logout: function () { return post("/auth/logout"); },
     me: function () { return get("/me").then(function (r) { return r.account; }); },
+    /* Where this account is signed in, and signing out of everywhere but
+       here. The server returns raw user-agents; naming them is the page's job. */
+    sessions: function () { return get("/auth/sessions").then(function (r) { return r.sessions; }); },
+    revokeSessions: function (sessionId) {
+      return post("/auth/sessions/revoke", sessionId ? { sessionId: sessionId } : {});
+    },
     changePassword: function (currentPassword, newPassword) {
       return post("/auth/password",
         { currentPassword: currentPassword, newPassword: newPassword }, { timeout: 20000 });
