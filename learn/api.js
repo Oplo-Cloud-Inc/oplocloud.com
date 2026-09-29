@@ -203,7 +203,14 @@ window.OPLO_API = (function () {
           .then(function (r) { return r.assignment; });
       },
       removeAssignment: function (assignmentId) { return del("/assignments/" + assignmentId); },
-      gradebook: function (id) { return get("/courses/" + id + "/gradebook"); }
+      gradebook: function (id) { return get("/courses/" + id + "/gradebook"); },
+
+      /* Hand in work that was set on OEdu, with what OEdu measured. Not a
+         mark: the teacher marks it. Only a student in the course can. */
+      submit: function (assignmentId, result) {
+        return post("/assignments/" + assignmentId + "/submission", { result: result || null })
+          .then(function (r) { return r.submission; });
+      }
     },
 
     /* ----------------------------------------------------------- Grades

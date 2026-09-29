@@ -163,7 +163,7 @@
   }
   /* Every write to the record funnels through here, so there is exactly one
      place that knows saving exists and exactly one to check when it stops. */
-  function keep() { if (R) R.save(); }
+  function keep() { if (R) R.save(); checkSetWork(); }
   function setMastered(id) {
     var st = setState(id), n = 0;
     for (var k in st.level) if (st.level[k] >= 3) n++;
@@ -574,7 +574,8 @@
       }
       return true;
     }
-    if (sameName(a, "Classes")) { openClasses(); return true; }
+    if (sameName(a, "School") || sameName(a, "Classes")) { openClasses(); return true; }
+    if (sameName(a, "Self-learning")) { openOwn(); return true; }
     if (sameName(a, "Progress")) { openProgress(); return true; }
     if (sameName(a, "Grades")) { openGrades(false, seg.slice(1)); return true; }
     if (sameName(a, "Account")) { openAccount(); return true; }
@@ -653,6 +654,8 @@
       var tab = $(id);
       if (tab) tab.hidden = !(has && S.me && S.me.role === "student");
     });
+    var own = $("#navOwn");
+    if (own) own.hidden = !(S.me && S.me.role === "student");
   }
 
   function show(view) {
@@ -695,137 +698,6 @@
     root("explore", "Explore", explore, "Explore");
     drawExplore();
     show("explore");
-  }
-
-  /* ========================================================== Classes
-     What a teacher put this student in, and what they set. Enrolment is the
-     database's answer (S.me.assigned), so this screen exists only for a
-     student a teacher has actually added to a course — for everybody else
-     the tab is not in the bar at all.
-
-     One card to a course: who teaches it, how far through it they are, and
-     the work set in it, with what is due next said plainly. */
-  function openClasses(silent) {
-    if (!silent) root("classes", "Classes", function () { openClasses(true); }, "Classes");
-    var v = $("#v-classes");
-    v.innerHTML = "";
-    var mine = enrolled();
-
-    v.appendChild(el("p", "lx-eyebrow", "Classes"));
-    v.appendChild(el("h1", "lx-h1", mine.length === 1 ? "Your class" : "Your classes"));
-    v.appendChild(el("p", "lx-lede",
-      mine.length ? "The courses your teachers put you in, and the work they have set."
-                  : "Nothing yet."));
-
-    if (!mine.length) {
-      var none = el("div", "lx-pending");
-      none.innerHTML = "<b>No classes yet</b><p>When a teacher adds you to a course, it appears here " +
-        "with the work they set. Everything in Explore is yours to work through in the meantime.</p>";
-      v.appendChild(none);
-      noFoot(); progress(null);
-      show("classes");
-      return;
-    }
-
-    var list = el("div", "lx-classes");
-    v.appendChild(list);
-    mine.forEach(function (c) { list.appendChild(classCard(c)); });
-
-    noFoot(); progress(null);
-    show("classes");
-  }
-
-  /* One class. The parts that need the server — who teaches it, what is set
-     — arrive after it is drawn, so the card is never a spinner. */
-  function classCard(c) {
-    var card = el("section", "lx-class");
-    var head = el("div", "lx-class-head");
-    var ic = el("span", "ic");
-    ic.style.background = c.hue + "1a";
-    ic.style.color = c.hue;
-    ic.innerHTML = svg(c.glyph || '<path d="M4 5.5h7v14H4z"/><path d="M13 5.5h7v14h-7z"/>', true);
-    head.appendChild(ic);
-    var txt = el("div", "lx-class-txt");
-    txt.appendChild(el("h2", null, esc(c.t)));
-    var who = el("p", "lx-class-who", "&nbsp;");
-    txt.appendChild(who);
-    head.appendChild(txt);
-    var go = el("button", "lx-btn");
-    go.type = "button";
-    go.textContent = "Open course";
-    go.addEventListener("click", function () { openCourse(c); });
-    head.appendChild(go);
-    card.appendChild(head);
-
-    var pct = coursePct(c);
-    var bar = el("div", "lx-class-bar");
-    bar.innerHTML = '<span class="lx-class-pct">' + pct + '% through</span><i><b style="width:' + pct + '%"></b></i>';
-    card.appendChild(bar);
-
-    var work = el("div", "lx-class-work");
-    work.appendChild(el("p", "lx-class-none", "Looking for work set in this course…"));
-    card.appendChild(work);
-
-    if (c.dbId) {
-      API.courses.members(c.dbId).then(function (rows) {
-        var teachers = (rows || []).filter(function (r) { return r.role === "teacher" || r.role === "assistant"; })
-          .map(function (r) { return r.name || r.email; });
-        who.textContent = teachers.length ? "Taught by " + teachers.join(", ") : "Your course";
-      }, function () { who.textContent = "Your course"; });
-
-      API.courses.assignments(c.dbId).then(function (rows) {
-        drawWork(work, c, rows || []);
-      }, function () {
-        work.innerHTML = "";
-        work.appendChild(el("p", "lx-class-none", "The work set in this course could not be loaded just now."));
-      });
-    } else {
-      who.textContent = "Your course";
-      work.innerHTML = "";
-      work.appendChild(el("p", "lx-class-none", "No work has been set in this course yet."));
-    }
-    return card;
-  }
-
-  /* The work set in one course, soonest first: what it is, when it is due,
-     and — once a teacher has marked it — what it came to. */
-  function drawWork(host, c, rows) {
-    host.innerHTML = "";
-    if (!rows.length) {
-      host.appendChild(el("p", "lx-class-none", "No work has been set in this course yet."));
-      return;
-    }
-    rows = rows.slice().sort(function (a, b) {
-      return (a.dueAt || 8e15) - (b.dueAt || 8e15);
-    });
-    host.appendChild(el("h3", "lx-class-h", rows.length === 1 ? "One piece of work" : rows.length + " pieces of work"));
-    var ul = el("ul", "lx-work");
-    rows.forEach(function (a) {
-      var li = el("li", "lx-work-row");
-      var main = el("div", "lx-work-txt");
-      main.appendChild(el("b", null, esc(a.title || "Untitled")));
-      var sub = [];
-      if (a.kind) sub.push(esc(a.kind));
-      if (a.points != null) sub.push(a.points + " points");
-      main.appendChild(el("span", null, sub.join(" · ")));
-      li.appendChild(main);
-      li.appendChild(el("span", "lx-work-due", dueLabel(a.dueAt)));
-      ul.appendChild(li);
-    });
-    host.appendChild(ul);
-  }
-
-  /* When something is due, said the way a person would say it. */
-  function dueLabel(due) {
-    if (!due) return '<span class="lx-tag">No due date</span>';
-    var day = 86400000, now = Date.now();
-    var left = Math.ceil((due - now) / day);
-    var when = new Date(due).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    if (left < 0) return '<span class="lx-tag late">Overdue · ' + when + "</span>";
-    if (left === 0) return '<span class="lx-tag soon">Due today</span>';
-    if (left === 1) return '<span class="lx-tag soon">Due tomorrow</span>';
-    if (left <= 7) return '<span class="lx-tag">Due ' + when + " · in " + left + " days</span>";
-    return '<span class="lx-tag">Due ' + when + "</span>";
   }
 
   function openProgress() {
@@ -975,8 +847,8 @@
   /* --------------------------------------------------------- Next step
      Walks the prerequisite graph rather than the list order: a unit whose
      ground has not been laid is not the next thing to do. */
-  function nextStep() {
-    var courses = enrolled(), best = null;
+  function nextStep(list) {
+    var courses = list || enrolled(), best = null;
     courses.forEach(function (c) {
       var pre = (D.PRE || {})[c.id] || {};
       unitsOf(c).forEach(function (u) {
@@ -1107,6 +979,161 @@
     return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
   }
 
+  /* ======================================================= School, and your own
+     Two different things, and never drawn as one.
+
+     School is what a school put a student in: its courses, the work their
+     teachers set — usually a lesson or an activity right here on OEdu — and
+     the marks that come back. That is what is graded.
+
+     Self-learning is whatever a student takes up on their own from Explore.
+     It is never graded, it is not on their school record, and nobody at
+     school can see it: the server gives their learning record to them alone.
+     A course a school put them in is School even when they practise it
+     beyond what was set; a course nobody put them in is theirs. */
+  function inSchool(c) { return !!c && enrolled().some(function (x) { return x.id === c.id; }); }
+  function learnerHere() { return !!(R && S.me && !document.body.classList.contains("is-staff")); }
+  function ownCourses() {
+    if (!R) return [];
+    return R.own().map(function (id) { return allCourses().filter(function (c) { return c.id === id; })[0]; })
+      .filter(function (c) { return c && !inSchool(c); });
+  }
+  // Starting something in a course nobody put you in puts it on your list.
+  function adoptIfOwn(c) {
+    if (!learnerHere() || !c || c.stub || inSchool(c)) return;
+    if (R.adopt(c.id)) toast("“" + c.t + "” is in Self-learning — not graded, and only you see it.");
+  }
+
+  /* The work set for this student, kept for half a minute so the home page
+     and the School page draw from one answer. */
+  var WORK = null;
+  function loadWork(force) {
+    if (!force && WORK && Date.now() - WORK.at < 30000) return WORK.p;
+    var p = API.reporting.coursework().then(function (data) { handInDone(data.work); return data; });
+    WORK = { at: Date.now(), p: p };
+    p.catch(function () { WORK = null; });
+    return p;
+  }
+
+  /* Where an assigned activity stands on this device's record. */
+  function activityState(act) {
+    if (!act) return null;
+    if (act.kind === "set") {
+      var st = SET(act.set);
+      if (!st || !st.cards || !st.cards.length) return null;
+      var m = setMastered(act.set), n = st.cards.length;
+      return { done: m / n >= 0.8, pct: Math.round(m / n * 100), started: m > 0 || !!setState(act.set).runs,
+               detail: m + " of " + n + " terms mastered" };
+    }
+    var c = activityCourse(act), L = window.OPLO_LAB;
+    if (!c) return null;
+    if (act.kind === "lesson") {
+      var ls = L && L.lessonState ? L.lessonState(c.id, act.unit, act.lesson, S.me) : null;
+      return { done: !!(ls && ls.done), pct: ls && ls.done ? 100 : null, started: !!ls, detail: ls && ls.done ? "Lesson finished on OEdu" : "Lesson started" };
+    }
+    if (act.kind === "test") {
+      var best = L && L.testBest ? L.testBest(c.id, act.unit, S.me) : null;
+      return { done: best != null, pct: best != null ? Math.round(best * 100) : null, started: best != null,
+               detail: best != null ? "Best score on the unit test" : "Not taken yet" };
+    }
+    var u = unitsOf(c).filter(function (x) { return x.n === act.unit; })[0];
+    if (!u) return null;
+    var mm = mastery(c, act.unit), dd = dims(c, act.unit);
+    var done = mm >= 85 || (u.lab && dd.u >= 100);
+    return { done: done, pct: mm, started: mm > 0, detail: (u.lab ? dd.u + "% of the lessons done · " : "") + mm + "% mastery" };
+  }
+
+  /* Hand in whatever is finished and has not been handed in. Quietly: the
+     student sees "Handed in" beside it, and a toast the once. */
+  var HANDING = {};
+  function handInDone(work) {
+    if (!learnerHere() || !work) return;
+    work.forEach(function (w) {
+      if (!onOedu(w.activity) || w.submittedAt || HANDING[w.assignmentId]) return;
+      if (w.status === "excused" || (w.status === "marked" && w.score != null)) return;
+      var st = activityState(w.activity);
+      if (!st || !st.done) return;
+      HANDING[w.assignmentId] = 1;
+      API.courses.submit(w.assignmentId, { kind: w.activity.kind, done: true, pct: st.pct == null ? undefined : st.pct, detail: st.detail })
+        .then(function (sub) {
+          w.submittedAt = sub.submittedAt;
+          w.result = sub.result;
+          toast("Handed in: " + w.title);
+          if (S.view === "my") drawMy();
+          else if (S.view === "classes") openClasses(true);
+        }, function () { delete HANDING[w.assignmentId]; });
+    });
+  }
+  // After practice changes anything, see whether it finished set work.
+  var HAND_T = null;
+  function checkSetWork() {
+    clearTimeout(HAND_T);
+    HAND_T = setTimeout(function () { if (WORK) WORK.p.then(function (d) { handInDone(d.work); }); }, 1500);
+  }
+
+  function openActivity(act) {
+    var c = activityCourse(act);
+    if (act.kind === "set") { if (SET(act.set)) openSet(act.set); else toast("That study set isn’t available."); return; }
+    if (!c) { toast("That lesson isn’t on OEdu any more. Ask your teacher."); return; }
+    if (act.kind === "lesson") openLab(c, act.unit, "l" + act.lesson);
+    else if (act.kind === "test") openLab(c, act.unit, "Test");
+    else openUnit(c, act.unit);
+  }
+
+  /* One piece of set work: what it is, where it stands, and — when it is on
+     OEdu — the button that opens it. */
+  function workRow(w, compact) {
+    var now = Date.now(), late = w.dueAt && w.dueAt < now;
+    var marked = w.status === "marked" && w.score != null;
+    var st = onOedu(w.activity) ? activityState(w.activity) : null;
+    var state = marked ? "marked" : w.status === "excused" ? "excused" : w.submittedAt ? "handed"
+      : w.status === "missing" ? "missing" : late ? "late" : st && st.started ? "going" : "todo";
+    var row = el("div", "sw-row " + state);
+    var said = {
+      marked: cxNum(w.score) + " / " + cxNum(w.outOf), excused: "Excused", handed: "Handed in",
+      missing: "Not handed in", late: "Past due", going: "In progress", todo: w.dueAt ? "" : "No due date"
+    }[state];
+    var when = w.status === "missing" ? "counted as 0 of " + cxNum(w.outOf)
+      : state === "handed" ? "waiting for your teacher to mark it"
+      : state === "excused" ? "not part of your grade"
+      : w.dueAt ? (late ? "was due " + dayName(w.dueAt) : "due " + dayName(w.dueAt)) : "";
+    var where = w.activity && onOedu(w.activity) ? "On OEdu · " + activityShort(w.activity) : "";
+    row.innerHTML =
+      "<span class='ic'>" + svg(onOedu(w.activity) ? I.play : I.read, true) + "</span>" +
+      "<span class='t'><b>" + esc(w.title) + "</b><span>" + esc([compact ? w.courseTitle : "", where, when].filter(Boolean).join(" · ")) +
+        (w.extraCredit ? " · extra credit" : "") + "</span></span>" +
+      "<span class='m'>" + esc(said) + "</span>";
+    if (onOedu(w.activity) && !marked && w.status !== "excused") {
+      var go = el("button", "lx-btn sw-go" + (state === "handed" ? " quiet" : ""),
+        state === "handed" ? "Open" : st && st.started ? "Continue" : "Start");
+      go.type = "button";
+      go.addEventListener("click", function () { openActivity(w.activity); });
+      row.appendChild(go);
+    }
+    if (w.feedback) row.appendChild(el("p", "fb", esc(w.feedback)));
+    return row;
+  }
+
+  function schoolWorkList(host, work, max) {
+    // What can still be done on time comes first, soonest first; then what
+    // is past due, most recent first. Marked work only when nothing is open.
+    var now = Date.now();
+    var open = work.filter(function (w) { return !(w.status === "marked" && w.score != null) && w.status !== "excused"; });
+    var due = open.filter(function (w) { return !w.dueAt || w.dueAt >= now || w.submittedAt; })
+      .sort(function (a, b) { return (a.dueAt || 8e15) - (b.dueAt || 8e15); });
+    var late = open.filter(function (w) { return w.dueAt && w.dueAt < now && !w.submittedAt; })
+      .sort(function (a, b) { return b.dueAt - a.dueAt; });
+    open = due.concat(late);
+    var back = work.filter(function (w) { return w.status === "marked" && w.score != null; })
+      .sort(function (a, b) { return (b.gradedAt || 0) - (a.gradedAt || 0); });
+    var list = el("div", "sw-list");
+    open.slice(0, max || 99).forEach(function (w) { list.appendChild(workRow(w, true)); });
+    if (!open.length) back.slice(0, 3).forEach(function (w) { list.appendChild(workRow(w, true)); });
+    host.appendChild(list);
+    return open.length;
+  }
+
+  /* ------------------------------------------------------------------ Home */
   function drawMy() {
     var v = $("#v-my");
     v.innerHTML = "";
@@ -1114,120 +1141,91 @@
     v.appendChild(el("h1", "lx-h1", "Here is where you are."));
     v.appendChild(standing());
 
-    /* ---- What your teachers have set ------------------------------- */
-    var workSlot = el("div");
-    v.appendChild(workSlot);
-    drawSetWork(workSlot);
+    var lanes = el("div", "lx-lanes");
+    v.appendChild(lanes);
 
-    /* ---- Your next step ------------------------------------------- */
-    var step = nextStep();
-    var next = el("div", "lx-next");
-    if (!step) {
-        /* This is about Oplo's own material, not about work a teacher set —
-           and "everything assigned" put it in flat contradiction with the
-           list of unhanded-in work three lines above it on the same screen. */
-        next.innerHTML = '<p class="k">Nothing to practise</p>' +
-          "<h2>Every unit is at mastery.</h2>" +
-          '<p class="why">That is the material. Work your teachers have set is above, ' +
-          "and is counted separately. Review keeps mastery where it is; the study sets " +
-          "do not expire.</p>";
-    } else {
-      var target = step.weak
-        ? unitsOf(step.course).filter(function (x) { return x.n === step.weak.n; })[0]
-        : step.unit;
-      next.innerHTML = '<p class="k">Your next step</p>' +
-        "<h2>" + esc(step.course.t) + " · " + esc(target.t) + "</h2>" +
-        '<p class="why">' + (step.pct
-          ? "You are at " + step.pct + "% on this one. "
-          : "You have not started this one. ") +
-        esc(target.desc || "Work through it, then drill the terms until they stick.") + "</p>";
-      if (step.weak) {
-        next.appendChild(el("div", "warn",
-          "<b>First, factoring in the ground under it.</b> Unit " + step.weak.n + " is at " +
-          step.weak.m + "%, and " + esc(step.unit.t) + " leans on it. Strengthening that first is " +
-          "faster than pushing on and coming back."));
+    /* ---- School ------------------------------------------------------ */
+    var school = el("section", "lx-lane school");
+    lanes.appendChild(school);
+    var mine = enrolled();
+    school.innerHTML = "<header class='lx-lanehead'><p class='k'>School</p><h2>" + esc(schoolOf()) + "</h2>" +
+      "<p>What your school put you in, and the work your teachers set. This is what’s graded.</p></header>";
+    var workSlot = el("div", "lx-lanebody");
+    school.appendChild(workSlot);
+    if (mine.length) {
+      workSlot.appendChild(el("p", "lx-lanesub", "Set by your teachers"));
+      var wait = el("p", "lx-lanenote", "Looking for work…");
+      workSlot.appendChild(wait);
+      loadWork().then(function (data) {
+        wait.remove();
+        if (!data.work.length) { workSlot.appendChild(el("p", "lx-lanenote", "Nothing has been set yet.")); return; }
+        var t = data.totals, bits = [];
+        if (t.overdue) bits.push("<b>" + t.overdue + " past due</b>");
+        if (t.missing) bits.push("<b>" + t.missing + " marked as not handed in</b>");
+        if (bits.length) workSlot.insertBefore(el("p", "lx-lanenote", bits.join(" · ")), workSlot.children[1]);
+        var n = schoolWorkList(workSlot, data.work, 5);
+        if (n > 5 || data.work.length > 5) {
+          var all = el("button", "lx-lanelink", "All work ›");
+          all.type = "button";
+          all.addEventListener("click", function () { openClasses(); });
+          workSlot.appendChild(all);
+        }
+      }, function () {
+        wait.textContent = "Couldn’t reach the server, so what your teachers have set isn’t shown here.";
+      });
+
+      school.appendChild(el("p", "lx-lanesub", "Your courses"));
+      var cl = el("div", "lx-crow-list");
+      mine.forEach(function (c) { cl.appendChild(courseRow(c, "school")); });
+      school.appendChild(cl);
+
+      var given = Object.keys(dbSets);
+      if (given.length) {
+        school.appendChild(el("p", "lx-lanesub", "Study sets from your teachers"));
+        var sg = el("div", "lx-crow-list");
+        given.forEach(function (id) {
+          var set = dbSets[id], b = el("button", "lx-crow");
+          b.type = "button";
+          b.innerHTML = '<span class="ic">' + svg(I.cards, true) + "</span><span class='t'><b>" + esc(set.t) + "</b><span>" + set.cards.length + " terms</span></span>";
+          b.addEventListener("click", function () { openSet(id); });
+          sg.appendChild(b);
+        });
+        school.appendChild(sg);
       }
-      var go = el("button", "lx-btn lg", step.pct ? "Continue" : "Start");
-      go.type = "button";
-      go.addEventListener("click", function () { openUnit(step.course, target.n); });
-      next.appendChild(go);
-      var onMap = el("button", "lx-btn ghost", "See it on the map");
-      onMap.type = "button";
-      onMap.addEventListener("click", function () { openMap(step.course, false, target.n); });
-      next.appendChild(onMap);
-    }
-    v.appendChild(next);
-
-    /* ---- Today's session ------------------------------------------ */
-    var plan = session(step);
-    if (plan.length) {
-      v.appendChild(el("h2", "lx-h2", "Today"));
-      v.appendChild(el("p", "lx-lede",
-        "About " + plan.reduce(function (a, x) { return a + x.mins; }, 0) +
-        " minutes, in the order that gets the most out of them."));
-      var pl = el("div", "lx-plan");
-      plan.forEach(function (st) {
-        var b = el("button", "lx-step" + (st.done ? " done" : ""));
-        b.type = "button";
-        b.innerHTML = '<span class="ic">' + svg(st.icon, true) + "</span>" +
-          '<span class="txt"><b>' + esc(st.t) + "</b><span>" + esc(st.d) + "</span></span>" +
-          '<span class="mins">' + st.mins + " min</span>";
-        b.addEventListener("click", st.go);
-        pl.appendChild(b);
-      });
-      v.appendChild(pl);
+      var sstep = nextStep(mine);
+      if (sstep) school.appendChild(stepCard(sstep, "Practice next", "Practice isn’t graded — only work your teachers set is."));
+    } else {
+      school.appendChild(el("div", "lx-lanenone", "<b>No school courses yet</b><p>When your school puts you in a course, it appears here with the work your teachers set.</p>"));
     }
 
-    /* ---- Progress by subject -------------------------------------- */
-    var subs = [];
-    SC.subjects().forEach(function (sub) {
-      var pct = subjectPct(sub.n);
-      if (pct != null) subs.push([sub.n, pct]);
-    });
-    if (subs.length) {
-      v.appendChild(el("h2", "lx-h2", "Your progress"));
-      var bars = el("div", "lx-bars");
-      subs.forEach(function (r) {
-        var row = el("div", "lx-barrow");
-        row.innerHTML = "<b>" + esc(r[0]) + '</b><span class="track"><i style="width:' +
-          r[1] + '%"></i></span><span class="pc">' + r[1] + "%</span>";
-        bars.appendChild(row);
-      });
-      v.appendChild(bars);
+    /* ---- Self-learning ---------------------------------------------- */
+    var own = el("section", "lx-lane own");
+    lanes.appendChild(own);
+    own.innerHTML = "<header class='lx-lanehead'><p class='k'>Self-learning</p><h2>On your own</h2>" +
+      "<p>Courses you chose. Never graded, not on your school record, and only you can see them.</p></header>";
+    var mineOwn = ownCourses();
+    var ostep = nextStep(mineOwn);
+    if (ostep) own.appendChild(stepCard(ostep, "Pick up where you left off", null));
+    if (mineOwn.length) {
+      own.appendChild(el("p", "lx-lanesub", "You’re learning"));
+      var ol = el("div", "lx-crow-list");
+      mineOwn.slice(0, 5).forEach(function (c) { ol.appendChild(courseRow(c, "own")); });
+      own.appendChild(ol);
+      if (mineOwn.length > 5) {
+        var more = el("button", "lx-lanelink", "All " + mineOwn.length + " ›");
+        more.type = "button";
+        more.addEventListener("click", function () { openOwn(); });
+        own.appendChild(more);
+      }
+    } else {
+      own.appendChild(el("div", "lx-lanenone", "<b>Nothing yet</b><p>Start any course in Explore and it shows up here — for you, not for a grade.</p>"));
     }
+    var ex = el("button", "lx-btn quiet", "Find something to learn");
+    ex.type = "button";
+    ex.addEventListener("click", explore);
+    own.appendChild(ex);
 
-    /* ---- Courses --------------------------------------------------- */
-    v.appendChild(el("h2", "lx-h2", "Assigned to you"));
-    var g = el("div", "lx-grid");
-    enrolled().forEach(function (x) { g.appendChild(courseCard(x)); });
-    v.appendChild(g);
-
-    /* ---- Study sets from your teachers ------------------------------ */
-    var given = Object.keys(dbSets).map(function (k) { return [k, dbSets[k]]; });
-    if (given.length) {
-      v.appendChild(el("h2", "lx-h2", "Set by your teachers"));
-      v.appendChild(el("p", "lx-lede",
-        given.length === 1
-          ? "One study set, written for a course you are in."
-          : given.length + " study sets, written for courses you are in."));
-      var sg = el("div", "lx-grid");
-      given.forEach(function (pair) {
-        var id = pair[0], set = pair[1];
-        var card = el("button", "lx-setcard");
-        card.type = "button";
-        var deep = (set.rich || []).filter(function (t) {
-          return t.levels && t.levels.indexOf("apply") > -1;
-        }).length;
-        card.innerHTML = '<span class="ic">' + svg(I.cards, true) + "</span>" +
-          "<b>" + esc(set.t) + "</b><span>" + set.cards.length + " terms" +
-          (deep ? " · " + deep + " with a worked case" : "") + "</span>";
-        card.addEventListener("click", function () { openSet(id); });
-        sg.appendChild(card);
-      });
-      v.appendChild(sg);
-    }
-
-    /* ---- Mistakes -------------------------------------------------- */
+    /* ---- Account-wide: what trips you up --------------------------- */
     v.appendChild(el("h2", "lx-h2", "What you keep getting wrong"));
     if (!S.mistakes.length) {
       v.appendChild(el("div", "lx-empty",
@@ -1248,25 +1246,197 @@
       mb.addEventListener("click", function () { openMistakes(); });
       v.appendChild(mb);
     }
+  }
 
-    /* ---- Tutor ------------------------------------------------------ */
-    var t = el("div", "lx-tutor");
-    t.innerHTML = '<div class="lx-tutor-head">' + svg(I.learn, true) +
-      "<b>Tutor</b></div>" +
-      "<p>The plan above is worked out from what you have actually answered — which units lean on " +
-      "which, and what you have missed more than once. A tutor that can talk you through a wrong " +
-      "answer, rather than just count it, is the next thing being built.</p>" +
-      '<div class="lx-modes-row"><span>Tutor</span><span>Socratic</span><span>Hints</span>' +
-      "<span>Practice</span><span>Exam</span><span>Review</span><span>Challenge</span></div>" +
-      '<p style="margin-top:14px;font-size:13px;color:var(--ink-3)">In development. Nothing here ' +
-      "answers you yet, and the page will not pretend otherwise.</p>";
-    v.appendChild(t);
+  function schoolOf() {
+    var o = (S.me && S.me.orgs || [])[0];
+    return o && o.name ? o.name : "Your school";
+  }
 
-    v.appendChild(el("p", "lx-note",
-      "<b>In progress.</b> Five study sets are written and one unit is playable end to end. The rest " +
-      "carry a real syllabus with the lessons still to be made. Your progress is kept in this " +
-      "browser and is not sent anywhere \u2014 which also means it does not follow you to another " +
-      'computer.'));
+  /* A course, as one row: what it is, how far through, and where it lives. */
+  function courseRow(c, lane) {
+    var b = el("button", "lx-crow");
+    b.type = "button";
+    var pct = coursePct(c);
+    b.innerHTML = '<span class="ic" style="background:' + c.hue + '1a;color:' + c.hue + '">' + svg(c.glyph, true) + "</span>" +
+      "<span class='t'><b>" + esc(c.t) + "</b><span>" + esc(c.subject) + (lane === "own" ? " · not graded" : "") + "</span></span>" +
+      "<span class='p'><i style='width:" + pct + "%'></i></span><span class='pc'>" + pct + "%</span>";
+    b.addEventListener("click", function () { if (c.stub) toast("“" + c.t + "” has no syllabus behind it yet."); else openCourse(c); });
+    return b;
+  }
+
+  function stepCard(step, title, note) {
+    var target = step.weak ? unitsOf(step.course).filter(function (x) { return x.n === step.weak.n; })[0] : step.unit;
+    var card = el("div", "lx-stepcard");
+    card.innerHTML = "<p class='k'>" + esc(title) + "</p><b>" + esc(step.course.t) + " · " + esc(target.t) + "</b>" +
+      "<span>" + (step.pct ? "You’re at " + step.pct + "% on this one." : "You haven’t started this one.") + (note ? " " + esc(note) : "") + "</span>";
+    var go = el("button", "lx-btn", step.pct ? "Continue" : "Start");
+    go.type = "button";
+    go.addEventListener("click", function () { openUnit(step.course, target.n); });
+    card.appendChild(go);
+    return card;
+  }
+
+  /* ---------------------------------------------------------------- School
+     Every course the school put this student in, and all the work set in
+     it — soonest first, with what came back. */
+  function openClasses(silent) {
+    if (!silent) root("classes", "School", function () { openClasses(true); }, "School");
+    var v = $("#v-classes");
+    v.innerHTML = "";
+    var mine = enrolled();
+    v.appendChild(el("p", "lx-eyebrow", "School"));
+    v.appendChild(el("h1", "lx-h1", esc(schoolOf())));
+    v.appendChild(el("p", "lx-lede", mine.length
+      ? "The courses your school put you in, and the work your teachers set. This is what’s graded — your marks are in Grades."
+      : "Nothing yet."));
+    if (!mine.length) {
+      var none = el("div", "lx-pending");
+      none.innerHTML = "<b>No school courses yet</b><p>When your school puts you in a course, it appears here " +
+        "with the work your teachers set. Anything in Explore is yours to learn on your own in the meantime — it isn’t graded.</p>";
+      v.appendChild(none);
+      noFoot(); progress(null);
+      show("classes");
+      return;
+    }
+    var list = el("div", "lx-classes");
+    v.appendChild(list);
+    var cards = {};
+    mine.forEach(function (c) { var card = classCard(c); cards[c.dbId || c.id] = card; list.appendChild(card); });
+    loadWork().then(function (data) {
+      mine.forEach(function (c) {
+        var card = cards[c.dbId || c.id], host = card && card.querySelector(".lx-class-work");
+        if (!host) return;
+        host.innerHTML = "";
+        var rows = data.work.filter(function (w) { return w.courseId === c.dbId; });
+        if (!rows.length) { host.appendChild(el("p", "lx-class-none", "No work has been set in this course yet.")); return; }
+        host.appendChild(el("h3", "lx-class-h", rows.length === 1 ? "One piece of work" : rows.length + " pieces of work"));
+        var ul = el("div", "sw-list");
+        rows.forEach(function (w) { ul.appendChild(workRow(w, false)); });
+        host.appendChild(ul);
+      });
+    }, function () {
+      [].forEach.call(v.querySelectorAll(".lx-class-work"), function (h) {
+        h.innerHTML = "<p class='lx-class-none'>The work set in this course couldn’t be loaded just now.</p>";
+      });
+    });
+    noFoot(); progress(null);
+    show("classes");
+  }
+
+  /* One course. Who teaches it arrives after it is drawn, so the card is
+     never a spinner. */
+  function classCard(c) {
+    var card = el("section", "lx-class");
+    var head = el("div", "lx-class-head");
+    var ic = el("span", "ic");
+    ic.style.background = c.hue + "1a";
+    ic.style.color = c.hue;
+    ic.innerHTML = svg(c.glyph || '<path d="M4 5.5h7v14H4z"/><path d="M13 5.5h7v14h-7z"/>', true);
+    head.appendChild(ic);
+    var txt = el("div", "lx-class-txt");
+    txt.appendChild(el("h2", null, esc(c.t)));
+    var who = el("p", "lx-class-who", "&nbsp;");
+    txt.appendChild(who);
+    head.appendChild(txt);
+    var gr = el("button", "lx-btn quiet");
+    gr.type = "button";
+    gr.textContent = "Grades";
+    gr.addEventListener("click", function () { openGrades(); });
+    head.appendChild(gr);
+    var go = el("button", "lx-btn");
+    go.type = "button";
+    go.textContent = "Open course";
+    go.addEventListener("click", function () { openCourse(c); });
+    head.appendChild(go);
+    card.appendChild(head);
+    var work = el("div", "lx-class-work");
+    work.appendChild(el("p", "lx-class-none", "Looking for work set in this course…"));
+    card.appendChild(work);
+    if (c.dbId) {
+      API.courses.members(c.dbId).then(function (rows) {
+        var teachers = (rows || []).filter(function (r) { return r.role === "teacher" || r.role === "assistant"; })
+          .map(function (r) { return r.name || r.email; });
+        who.textContent = teachers.length ? "Taught by " + teachers.join(", ") : "Your course";
+      }, function () { who.textContent = "Your course"; });
+    } else who.textContent = "Your course";
+    return card;
+  }
+
+  /* --------------------------------------------------------- Self-learning */
+  function openOwn(silent) {
+    if (!silent) root("own", "Self-learning", function () { openOwn(true); }, "Self-learning");
+    var v = $("#v-own");
+    v.innerHTML = "";
+    v.appendChild(el("p", "lx-eyebrow", "Self-learning"));
+    v.appendChild(el("h1", "lx-h1", "On your own"));
+    v.appendChild(el("p", "lx-lede", "Courses you chose to learn. Never graded, not on your school record, and your teachers can’t see them — " +
+      "your progress here is kept in your account for you alone."));
+    var list = ownCourses();
+    if (!list.length) {
+      var none = el("div", "lx-pending");
+      none.innerHTML = "<b>Nothing yet</b><p>Pick any course in Explore and start a unit — it appears here.</p>";
+      v.appendChild(none);
+      var ex = el("button", "lx-btn lg", "Explore courses");
+      ex.type = "button";
+      ex.addEventListener("click", explore);
+      v.appendChild(ex);
+    } else {
+      var step = nextStep(list);
+      if (step) v.appendChild(stepCard(step, "Pick up where you left off", null));
+      var g = el("div", "lx-owngrid");
+      list.forEach(function (c) {
+        var card = el("section", "lx-owncard");
+        var pct = coursePct(c), us = unitsOf(c).filter(function (u) { return u.play || u.set || u.lab || u.read; });
+        var mastered = us.filter(function (u) { return mastery(c, u.n) >= 85; }).length;
+        card.innerHTML = '<span class="ic" style="background:' + c.hue + '1a;color:' + c.hue + '">' + svg(c.glyph, true) + "</span>" +
+          "<h3>" + esc(c.t) + "</h3><p>" + esc(c.subject) + " · " + mastered + " of " + us.length + " units mastered</p>" +
+          "<div class='bar'><i style='width:" + pct + "%'></i></div><p class='pc'>" + pct + "% mastery · not graded</p>";
+        var acts = el("div", "acts");
+        var go = el("button", "lx-btn", pct ? "Continue" : "Start");
+        go.type = "button";
+        go.addEventListener("click", function () { openCourse(c); });
+        var off = el("button", "lx-btn quiet", "Take off my list");
+        off.type = "button";
+        off.addEventListener("click", function () {
+          R.drop(c.id);
+          toast("Taken off your list. Your progress is kept.");
+          openOwn(true);
+        });
+        acts.appendChild(go);
+        acts.appendChild(off);
+        card.appendChild(acts);
+        g.appendChild(card);
+      });
+      v.appendChild(g);
+    }
+    noFoot(); progress(null);
+    show("own");
+  }
+
+  /* On a course's page: which of the two it is. */
+  function courseKind(c) {
+    if (!S.me || document.body.classList.contains("is-staff")) return null;
+    var box = el("div", "lx-kind " + (inSchool(c) ? "school" : "own"));
+    if (inSchool(c)) {
+      box.innerHTML = "<b>School course</b><span>Your school put you in this course. Work your teachers set here is graded; practising beyond it isn’t.</span>";
+      var w = el("button", "lx-lanelink", "Work set ›");
+      w.type = "button";
+      w.addEventListener("click", function () { openClasses(); });
+      box.appendChild(w);
+    } else {
+      var on = R && R.own().indexOf(c.id) > -1;
+      box.innerHTML = "<b>Self-learning</b><span>Not graded, not on your school record, and only you can see your progress.</span>";
+      var b = el("button", "lx-btn quiet", on ? "On your list ✓" : "Add to Self-learning");
+      b.type = "button";
+      b.addEventListener("click", function () {
+        if (!R) return;
+        if (R.own().indexOf(c.id) > -1) { R.drop(c.id); b.textContent = "Add to Self-learning"; toast("Taken off your list."); }
+        else { R.adopt(c.id); b.textContent = "On your list ✓"; toast("Added to Self-learning."); }
+      });
+      box.appendChild(b);
+    }
+    return box;
   }
 
   /* ------------------------------------------------------- Your standing
@@ -1275,90 +1445,6 @@
      screen is where a student decides what to do, and "you are eleven points
      short of the day" is a decision-shaped fact. Inside a session it would
      just be noise beside a question. */
-  /* ----------------------------------------------------- What has been set
-
-     The hole this fills had a real consequence rather than being a missing
-     feature. A teacher could set an essay, mark it not handed in, and count it
-     as a zero — and nothing anywhere told the student the essay existed. A
-     gradebook that can take marks off somebody for work they were never shown
-     is not a gradebook, and no amount of polish elsewhere makes up for it.
-
-     So it sits first, above everything the app has an opinion about. What is
-     late, then what is due, then what has come back. The study plan below it
-     is Oplo's suggestion; this is what somebody is actually being marked on. */
-  function drawSetWork(host) {
-    host.innerHTML = "";
-    API.reporting.coursework().then(function (data) {
-      if (!data.work.length) return;          // nothing set: say nothing
-
-      var t = data.totals;
-      var waiting = data.work.filter(function (w) {
-        return !w.status || (w.status === "marked" && w.score == null);
-      });
-      var missing = data.work.filter(function (w) { return w.status === "missing"; });
-      var back = data.work.filter(function (w) {
-        return w.status === "marked" && w.score != null;
-      });
-
-      host.appendChild(el("h2", "lx-h2", "Set by your teachers"));
-
-      /* One sentence before the list. Somebody who reads "3 things" and goes
-         and does them is better served than somebody who reads five numbers. */
-      var bits = [];
-      if (t.overdue) bits.push("<b>" + t.overdue + " past due</b>");
-      if (waiting.length - t.overdue > 0) {
-        bits.push((waiting.length - t.overdue) + " still to hand in");
-      }
-      if (t.missing) bits.push("<b>" + t.missing + " marked as not handed in</b>");
-      if (back.length) bits.push(back.length + " marked");
-      host.appendChild(el("p", "lx-lede", bits.length
-        ? bits.join(" &middot; ")
-        : "Everything set has been handed back."));
-
-      var list = el("div", "sw-list");
-      // What can still be done something about, first.
-      waiting.concat(missing).slice(0, 8).forEach(function (w) {
-        list.appendChild(workRow(w));
-      });
-      if (!waiting.length && !missing.length) {
-        back.slice(0, 4).forEach(function (w) { list.appendChild(workRow(w)); });
-      }
-      host.appendChild(list);
-    }, function () {
-      /* The rest of this screen is the student's own record and works without
-         a server. This one piece does not, and says so — "nothing was set" and
-         "could not ask" are different, and only one of them is good news. */
-      host.appendChild(el("p", "lx-lede",
-        "Could not reach the server, so what your teachers have set is not shown here. " +
-        "Everything below is from this device."));
-    });
-  }
-
-  function workRow(w) {
-    var late = w.dueAt && w.dueAt < Date.now();
-    var row = el("div", "sw-row" +
-      (w.status === "missing" ? " miss" : (late && !w.status) ? " late" : ""));
-
-    var said = w.status === "missing" ? "Not handed in"
-      : w.status === "excused" ? "Excused"
-      : (w.status === "marked" && w.score != null) ? w.score + " / " + w.outOf
-      : "Not marked yet";
-
-    var when = w.status === "missing" ? "counted as 0 of " + w.outOf
-      : w.status === "excused" ? "not part of your grade"
-      : w.dueAt ? (late ? "was due " + dayName(w.dueAt) : "due " + dayName(w.dueAt))
-      : "no date set";
-
-    row.innerHTML =
-      "<span class='t'><b>" + esc(w.title) + "</b><span>" + esc(w.courseTitle) +
-        " &middot; " + esc(when) + (w.extraCredit ? " &middot; extra credit" : "") +
-        "</span></span>" +
-      "<span class='m'>" + esc(said) + "</span>" +
-      (w.feedback ? "<p class='fb'>" + esc(w.feedback) + "</p>" : "");
-    return row;
-  }
-
-
   function standing() {
     var wrap = el("div", "lx-standing");
     if (!R) return wrap;
@@ -1425,31 +1511,6 @@
 
   /* A session is assembled, not listed: review what is broken, learn the new
      thing, practise it, then prove it without help. */
-  function session(step) {
-    var out = [];
-    if (S.mistakes.length) {
-      out.push({ t: "Review what you missed", d: S.mistakes.length + " to go back over",
-                 mins: 5, icon: I.learn, go: function () { openMistakes(); } });
-    }
-    if (!step) return out;
-    var c = step.course, u = step.weak
-      ? unitsOf(c).filter(function (x) { return x.n === step.weak.n; })[0] : step.unit;
-    var d = dims(c, u.n);
-    if (u.play) {
-      out.push({ t: "Work through " + u.t, d: "Practice problems, with the answer explained",
-                 mins: 10, icon: I.play, done: d.p >= 85,
-                 go: function () { openUnit(c, u.n); } });
-    }
-    if (u.set) {
-      out.push({ t: "Learn the terms", d: SET(u.set).cards.length + " terms, drilled three ways",
-                 mins: 10, icon: I.cards, done: d.r >= 85,
-                 go: function () { openSet(u.set); } });
-      out.push({ t: "Prove it", d: "A graded test, no hints", mins: 5, icon: I.test,
-                 done: d.a >= 85, go: function () { openSet(u.set); } });
-    }
-    return out;
-  }
-
   /* ------------------------------------------------------- Mistake book */
   function openMistakes(silent) {
     if (!silent) enter("mistakes", "Mistake book", function () { openMistakes(true); }, false, "Mistakes");
@@ -1605,6 +1666,8 @@
       units.filter(function (u) { return u.set; }).length + " study sets</span>";
     hero.appendChild(meta);
     v.appendChild(hero);
+    var kind = courseKind(c);
+    if (kind) v.appendChild(kind);
 
     var two = el("div", "lx-two");
     var main = el("div");
@@ -1695,6 +1758,7 @@
     if (!silent) enter("unit:" + c.id + ":" + n, trim(u.t), function () { openUnit(c, n, true); },
                        false, coursePath(c) + "/u" + n);
     S.course = c; S.unitIx = n; S.unit = u;
+    adoptIfOwn(c);
     if (u.lab && window.OPLO_LAB) {
       window.OPLO_LAB.renderUnit($("#v-unit"), labCtx(c, n));
       noFoot(); progress(null);
@@ -1794,6 +1858,7 @@
         var nn = un || n;
         if (!d || !nn) return;
         raise(c, nn, "u", d.u); raise(c, nn, "p", d.p); raise(c, nn, "a", d.a);
+        checkSetWork();
       }
     };
   }
@@ -1837,6 +1902,7 @@
     if (!silent) enter("lab:" + c.id + ":" + n + ":" + what, label, function () { openLab(c, n, what, true); },
                        false, coursePath(c) + (n ? "/u" + n : "") + "/" + what);
     S.course = c;
+    adoptIfOwn(c);
     var v = $("#v-lab");
     var ctx = labCtx(c, n);
     if (what === "Challenge") LAB.runTest(v, ctx, "course");
@@ -8600,15 +8666,6 @@
     { k: "missing", name: "Missing work", group: "Students", icon: "tray", hidden: true },
     { k: "courses", name: "Courses", group: "Curriculum", icon: "books", hidden: true },
     { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true });
-  var TEACHER_SECTIONS = [
-    { k: "today",       name: "Today",       group: null,        icon: "summary",   tone: "var(--cx-accent)" },
-    { k: "courses",     name: "Courses",     group: "Teaching",  icon: "books",     tone: "var(--cx-indigo)" },
-    { k: "roster",      name: "Gradebook",   group: "Teaching",  icon: "table",     tone: "var(--cx-green)" },
-    { k: "students",    name: "Students",    group: "Teaching",  icon: "people",    tone: "var(--cx-cyan)" },
-    { k: "assessments", name: "Assessments", group: "Teaching",  icon: "checklist", tone: "var(--cx-orange)" },
-    { k: "activity",    name: "Activity",    group: "Records",   icon: "wave",      tone: "var(--cx-pink)" },
-    { k: "reports",     name: "Reports",     group: "Records",   icon: "doc",       tone: "var(--cx-purple)" }
-  ];
 
   function allowedTabs() {
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
@@ -8790,6 +8847,441 @@
       (CX_ICONS[name] || CX_ICONS.summary) + "</svg>";
   }
 
+  /* ======================================================= The teacher's rail
+     A map of how a teacher's day goes, not a list of everything OEdu does:
+     Today, then Teach, Learning, Students, Insights, Communicate. Each group
+     is a heading and a few places; what lives below a place (the gradebook's
+     five views, an assignment's filters) is inside the place, not in the rail,
+     so the rail stays two levels deep and never becomes the whole product.
+
+     Full when there is room, icons only when there is not — and never
+     wordless: a collapsed row says its name the moment the pointer or the
+     keyboard reaches it. The rail can be widened a little and no more; the
+     gradebook is what deserves the width. Kept on this device. */
+  var TEACHER_TREE = [
+    { head: "Home", items: [{ k: "today", name: "Today", icon: "sun" }] },
+    { head: "Teach", items: [
+      { k: "courses", name: "Courses", icon: "books", more: true },
+      { k: "roster", name: "Gradebook", icon: "table" },
+      { k: "tograde", name: "To Grade", icon: "inbox" },
+      { k: "assignments", name: "Assignments", icon: "stack" },
+      { k: "assessments", name: "Assessments", icon: "checklist" }] },
+    { head: "Learning", items: [
+      { k: "lessons", name: "Lessons", icon: "play" },
+      { k: "standards", name: "Standards", icon: "target" },
+      { k: "curriculum", name: "Curriculum", icon: "path" },
+      { k: "resources", name: "Resources", icon: "folder" }] },
+    { head: "Students", items: [
+      { k: "students", name: "Students", icon: "people" },
+      { k: "groups", name: "Groups", icon: "groups" },
+      { k: "attendance", name: "Attendance", icon: "clock" }] },
+    { head: "Insights", items: [
+      { k: "analytics", name: "Analytics", icon: "chart" },
+      { k: "interventions", name: "Interventions", icon: "lifebuoy" }] },
+    { head: "Communicate", items: [
+      { k: "messages", name: "Messages", icon: "mail" },
+      { k: "announcements", name: "Announcements", icon: "megaphone" }] }
+  ];
+  var TEACHER_FOOT = [{ k: "system", name: "Settings", icon: "gear" }, { k: "help", name: "Help", icon: "help" }];
+  var TEACHER_SECTIONS = [];
+  TEACHER_TREE.forEach(function (g) {
+    g.items.forEach(function (t) { TEACHER_SECTIONS.push({ k: t.k, name: t.name, group: g.head, icon: t.icon }); });
+  });
+  TEACHER_FOOT.forEach(function (t) { TEACHER_SECTIONS.push({ k: t.k, name: t.name, group: null, icon: t.icon }); });
+  // Reached from inside other places rather than from the rail.
+  TEACHER_SECTIONS.push(
+    { k: "activity", name: "Grade history", group: "Teach", icon: "wave", hidden: true },
+    { k: "reports", name: "Reports", group: "Insights", icon: "doc", hidden: true },
+    { k: "work", name: "Work", group: "Teach", icon: "stack", hidden: true },
+    { k: "sets", name: "Study sets", group: "Learning", icon: "folder", hidden: true });
+
+  Object.assign(CX_ICONS, {
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.8v2.2M12 19v2.2M2.8 12H5M19 12h2.2M5.5 5.5l1.6 1.6M16.9 16.9l1.6 1.6M5.5 18.5l1.6-1.6M16.9 7.1l1.6-1.6"/>',
+    inbox: '<path d="M3.5 13.5 6 5.5h12l2.5 8V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19z"/><path d="M3.5 13.5h5l1 2.5h5l1-2.5h5"/><path d="m9.3 9.6 1.9 1.9 3.6-3.8"/>',
+    stack: '<path d="m12 3.5 8.5 4.3L12 12 3.5 7.8z"/><path d="m3.5 12 8.5 4.3 8.5-4.3"/><path d="m3.5 16.2 8.5 4.3 8.5-4.3"/>',
+    play: '<circle cx="12" cy="12" r="8.5"/><path d="M10 8.6v6.8l5.6-3.4z"/>',
+    target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2"/>',
+    path: '<circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M8.2 6H15a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.8"/>',
+    folder: '<path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4.2l2 2.2H19A1.5 1.5 0 0 1 20.5 9.2V18A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18z"/>',
+    groups: '<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><circle cx="12" cy="16" r="3"/>',
+    lifebuoy: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.6"/><path d="m6 6 3.4 3.4M14.6 14.6 18 18M18 6l-3.4 3.4M9.4 14.6 6 18"/>',
+    mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2.2"/><path d="m4 7 8 6 8-6"/>',
+    megaphone: '<path d="M4 10v4a1 1 0 0 0 1 1h2l6 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16.5 9a4 4 0 0 1 0 6"/><path d="M8 15.5 9 20"/>',
+    help: '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.4a2.4 2.4 0 1 1 3.3 2.2c-.7.3-1 .8-1 1.5v.4"/><circle cx="12" cy="16.6" r=".5"/>',
+    sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/>',
+    down: '<path d="m7 10 5 5 5-5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    back: '<path d="m14.5 6-6 6 6 6"/>'
+  });
+
+  /* ----------------------------------------------------- Size and state */
+  var TR_KEY = "oplo.teach.rail", TR_MIN = 240, TR_MAX = 300, TR_DEF = 252, TR_NARROW = 1180;
+  function trPrefs() {
+    try { return JSON.parse(localStorage.getItem(TR_KEY) || "{}") || {}; } catch (e) { return {}; }
+  }
+  function trSave(p) {
+    try { localStorage.setItem(TR_KEY, JSON.stringify(p)); } catch (e) { /* private mode */ }
+  }
+  function trWidth() { return Math.max(TR_MIN, Math.min(TR_MAX, Number(trPrefs().w) || TR_DEF)); }
+  // Collapsed when the teacher chose it, or when the window is too narrow to
+  // give the gradebook its room — then the full rail only peeks over the page.
+  function trMini() { return !!trPrefs().mini || window.innerWidth < TR_NARROW; }
+  function trApply() {
+    var b = document.body, teach = b.classList.contains("t-console");
+    if (!teach) { b.style.removeProperty("--rail-w"); b.classList.remove("rail-mini", "rail-peek"); return; }
+    var mini = trMini();
+    b.classList.toggle("rail-mini", mini);
+    if (!mini) b.classList.remove("rail-peek");
+    b.style.setProperty("--rail-w", (mini ? 64 : trWidth()) + "px");
+    b.style.setProperty("--rail-full", trWidth() + "px");
+    var t = $("#rail").querySelector(".tr-toggle");
+    if (t) {
+      var open = !mini || b.classList.contains("rail-peek");
+      t.setAttribute("aria-label", open ? "Collapse the sidebar" : "Expand the sidebar");
+      t.setAttribute("aria-expanded", String(open));
+      t.classList.toggle("shut", !open);
+    }
+  }
+  function trToggle() {
+    var p = trPrefs(), b = document.body;
+    if (window.innerWidth < TR_NARROW && !p.mini) {
+      // Too narrow to keep it open beside the page: show it over the page.
+      b.classList.toggle("rail-peek");
+      trApply();
+      return;
+    }
+    p.mini = !p.mini;
+    trSave(p);
+    b.classList.add("rail-anim");
+    trApply();
+    setTimeout(function () { b.classList.remove("rail-anim"); }, 260);
+    trTip(null);
+  }
+  window.addEventListener("resize", function () { if (document.body.classList.contains("t-console")) trApply(); });
+
+  /* ------------------------------------------------------------ The tip
+     The one label a collapsed row shows: small, instant, beside the row. */
+  function trTip(node, text) {
+    var tip = $("#trTip");
+    if (!tip) {
+      tip = el("div", "tr-tip");
+      tip.id = "trTip";
+      tip.setAttribute("role", "tooltip");
+      document.body.appendChild(tip);
+    }
+    if (!node || !document.body.classList.contains("rail-mini") || document.body.classList.contains("rail-peek")) {
+      tip.classList.remove("on");
+      return;
+    }
+    var r = node.getBoundingClientRect();
+    tip.textContent = text;
+    tip.style.top = Math.round(r.top + r.height / 2) + "px";
+    tip.style.left = Math.round(r.right + 10) + "px";
+    tip.classList.add("on");
+  }
+
+  /* --------------------------------------------------------- Popovers
+     A small panel beside what opened it — the course switcher, the profile
+     menu. Escape or a click anywhere else puts it away. */
+  var TR_POP = null;
+  function trPop(anchor, node, o) {
+    o = o || {};
+    trPopClose();
+    var pop = el("div", "tr-pop" + (o.cls ? " " + o.cls : ""));
+    pop.setAttribute("role", "dialog");
+    pop.appendChild(node);
+    document.body.appendChild(pop);
+    var r = anchor.getBoundingClientRect(), h = pop.offsetHeight, w = pop.offsetWidth;
+    var left = o.below ? r.left : r.right + 8;
+    var top = o.below ? r.bottom + 6 : Math.min(r.top - 6, window.innerHeight - h - 12);
+    if (o.up) top = Math.max(12, r.bottom - h);
+    pop.style.left = Math.max(12, Math.min(left, window.innerWidth - w - 12)) + "px";
+    pop.style.top = Math.max(12, top) + "px";
+    anchor.setAttribute("aria-expanded", "true");
+    function away(e) {
+      if (e.type === "keydown" && e.key !== "Escape") return;
+      if (e.type === "mousedown" && (pop.contains(e.target) || anchor.contains(e.target))) return;
+      trPopClose();
+    }
+    document.addEventListener("mousedown", away, true);
+    document.addEventListener("keydown", away, true);
+    TR_POP = { pop: pop, anchor: anchor, away: away };
+    var first = pop.querySelector("button, [tabindex]");
+    if (first && o.focus !== false) first.focus();
+    return TR_POP;
+  }
+  function trPopClose() {
+    if (!TR_POP) return;
+    document.removeEventListener("mousedown", TR_POP.away, true);
+    document.removeEventListener("keydown", TR_POP.away, true);
+    TR_POP.anchor.setAttribute("aria-expanded", "false");
+    if (TR_POP.pop.parentNode) TR_POP.pop.parentNode.removeChild(TR_POP.pop);
+    TR_POP = null;
+  }
+  function trMenuRow(icon, label, go, right) {
+    var b = el("button", "tr-mrow");
+    b.type = "button";
+    b.innerHTML = (icon ? '<span class="ic">' + cxIcon(icon) + "</span>" : '<span class="ic"></span>') +
+      '<span class="nm">' + esc(label) + "</span>" + (right ? '<span class="r">' + right + "</span>" : "");
+    b.addEventListener("click", function () { trPopClose(); go(); });
+    return b;
+  }
+
+  /* --------------------------------------------------- The current course
+     Most of a teacher's places are about one course at a time. Which one is
+     kept here, shown on the profile card and at the head of the gradebook,
+     and changed from either — never by growing the rail a row per course. */
+  var TEACH_COURSES = null;
+  function teachCourses(force) {
+    if (!force && TEACH_COURSES && Date.now() - TEACH_COURSES.at < 60000) return TEACH_COURSES.p;
+    var p = API.courses.mine().then(function (cs) {
+      return cs.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
+    });
+    TEACH_COURSES = { at: Date.now(), p: p };
+    p.catch(function () { TEACH_COURSES = null; });
+    return p;
+  }
+  function currentCourse(list) {
+    if (!list || !list.length) return null;
+    var hit = list.filter(function (c) { return c.id === S.courseId; })[0];
+    if (!hit) { hit = list[0]; S.courseId = hit.id; }
+    return hit;
+  }
+  function pickCourse(id) {
+    S.courseId = id;
+    try { localStorage.setItem("oplo.teach.course", id); } catch (e) { /* private mode */ }
+    trMe();
+    if (document.body.classList.contains("is-console")) openAdmin(true, S.tab);
+  }
+  try { if (!S.courseId) S.courseId = localStorage.getItem("oplo.teach.course") || null; } catch (e) { /* private mode */ }
+
+  function courseSwitcher(anchor) {
+    var box = el("div", "tr-switch");
+    box.appendChild(el("p", "tr-phead", "Your courses"));
+    var list = el("div", "tr-plist");
+    list.appendChild(el("p", "tr-pnote", "Loading…"));
+    box.appendChild(list);
+    trPop(anchor, box, { below: !!anchor.closest(".tr-coursepill"), focus: false });
+    Promise.all([teachCourses(), loadSchool().catch(function () { return null; })]).then(function (r) {
+      var cs = r[0], d = r[1], n = {};
+      if (d) d.courses.forEach(function (c) { n[c.id] = c.students; });
+      list.innerHTML = "";
+      if (!cs.length) list.appendChild(el("p", "tr-pnote", "You aren’t teaching a course yet."));
+      var cur = currentCourse(cs);
+      cs.forEach(function (c) {
+        var b = el("button", "tr-course" + (cur && c.id === cur.id ? " on" : ""));
+        b.type = "button";
+        b.setAttribute("aria-current", String(!!(cur && c.id === cur.id)));
+        b.innerHTML = '<i aria-hidden="true"></i><span><b>' + esc(c.title) + "</b><span>" +
+          (n[c.id] != null ? cxPlural(n[c.id], "student") : esc(c.subject || c.code || "")) + "</span></span>";
+        b.addEventListener("click", function () { trPopClose(); pickCourse(c.id); });
+        list.appendChild(b);
+      });
+      var all = trMenuRow("books", "All courses", function () { openAdmin(false, "courses"); }, "›");
+      all.classList.add("tr-pfoot");
+      box.appendChild(all);
+      var first = list.querySelector(".tr-course");
+      if (first) first.focus();
+    }, function () { list.innerHTML = ""; list.appendChild(el("p", "tr-pnote", "Couldn’t load your courses.")); });
+  }
+
+  /* The card at the foot: who is teaching, and in which course right now. */
+  function trMe() {
+    var me = $("#rail").querySelector(".tr-me");
+    if (!me) return;
+    teachCourses().then(function (cs) {
+      var c = currentCourse(cs);
+      var sub = me.querySelector(".t span");
+      if (sub) sub.textContent = c ? c.title : "Teacher";
+    }, function () { /* the name still stands */ });
+  }
+
+  function otherHomes() {
+    var H = window.OPLO_HOME;
+    if (!H || !S.me) return [];
+    var at = H.parse(location.pathname);
+    var names = { admin: "School console", student: "Student view", parent: "Family view" };
+    return H.allowed(S.me.roles || []).filter(function (m) { return m !== "teacher" && names[m]; })
+      .map(function (m) { return { mode: m, name: names[m], href: H.pathFor(at.root, m) }; });
+  }
+
+  function profileMenu(anchor) {
+    var box = el("div", "tr-profile");
+    var head = el("div", "tr-phero");
+    head.appendChild(avatarFor(S.me));
+    head.appendChild(el("span", "t", "<b>" + esc(S.me.name) + "</b><span>Teacher</span><span>" + esc(schoolName()) + "</span>"));
+    box.appendChild(head);
+    box.appendChild(el("hr", "tr-sep"));
+    box.appendChild(trMenuRow("person", "Profile", function () { openAccount(); }));
+    box.appendChild(trMenuRow("gear", "Preferences", function () { openAdmin(false, "system"); }));
+    // Appearance is three choices, so it is answered right here.
+    var look = el("div", "tr-mrow tr-look");
+    look.innerHTML = '<span class="ic">' + cxIcon("moon") + '</span><span class="nm">Appearance</span>';
+    var seg = el("div", "cn-seg");
+    [["light", "Light"], ["dark", "Dark"], ["auto", "Auto"]].forEach(function (o) {
+      var b = el("button", "cn-segb" + (currentAppearance() === o[0] ? " on" : ""), o[1]);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        applyAppearance(o[0]);
+        [].forEach.call(seg.children, function (x) { x.classList.toggle("on", x === b); });
+      });
+      seg.appendChild(b);
+    });
+    look.appendChild(seg);
+    box.appendChild(look);
+    box.appendChild(trMenuRow("alert", "Notifications", function () { S.helpAt = "notify"; openAdmin(false, "help"); }));
+    box.appendChild(trMenuRow("key", "Keyboard shortcuts", function () { S.helpAt = "keys"; openAdmin(false, "help"); }));
+    box.appendChild(el("hr", "tr-sep"));
+    var homes = otherHomes();
+    if (homes.length) {
+      var sw = el("div", "tr-switchrole");
+      sw.appendChild(el("p", "tr-phead", "Switch role"));
+      homes.forEach(function (h) {
+        sw.appendChild(trMenuRow(h.mode === "admin" ? "building" : h.mode === "parent" ? "heart" : "cap", h.name,
+          function () { location.href = h.href; }, "›"));
+      });
+      box.appendChild(sw);
+      box.appendChild(el("hr", "tr-sep"));
+    }
+    box.appendChild(trMenuRow(null, "Sign out", function () { if (confirm("Sign out of OEdu?")) signOut(); }));
+    trPop(anchor, box, { up: true });
+  }
+
+  /* ------------------------------------------------------------ Drawing */
+  function drawTeachRail(rail) {
+    rail.innerHTML = "";
+    rail.classList.add("t-rail");
+
+    var top = el("div", "tr-top");
+    top.innerHTML = '<span class="tr-logo" aria-hidden="true"><svg viewBox="12 12 76 76"><path fill="currentColor" fill-rule="evenodd" ' +
+      'd="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg></span><b>OEdu</b>';
+    var tog = el("button", "tr-toggle");
+    tog.type = "button";
+    tog.innerHTML = cxIcon("sidebar");
+    tog.title = "Show or hide the sidebar (" + (/Mac|iP(hone|ad)/.test(navigator.platform) ? "⌘" : "Ctrl ") + "\\)";
+    tog.addEventListener("click", trToggle);
+    top.appendChild(tog);
+    rail.appendChild(top);
+
+    var find = el("button", "cn-find tr-find");
+    find.type = "button";
+    find.dataset.tip = "Search";
+    find.innerHTML = cxIcon("search") + "<span>Search</span><kbd>" + (/Mac|iP(hone|ad)/.test(navigator.platform) ? "⌘K" : "Ctrl K") + "</kbd>";
+    find.addEventListener("click", function () { document.body.classList.remove("rail-peek"); trApply(); openFinder(); });
+    rail.appendChild(find);
+
+    var nav = el("nav", "cn-nav tr-nav");
+    nav.setAttribute("aria-label", "Teacher console");
+    function place(t) {
+      var b = el("button", "cn-item");
+      b.type = "button";
+      b.dataset.k = t.k;
+      b.dataset.tip = t.name;
+      b.innerHTML = '<span class="ic">' + cxIcon(t.icon) + '</span><span class="nm">' + esc(t.name) + '</span><span class="ct"></span>';
+      b.addEventListener("click", function () {
+        document.body.classList.remove("rail-peek");
+        trApply();
+        openAdmin(false, t.k);
+      });
+      if (!t.more) return b;
+      var row = el("div", "tr-row");
+      row.appendChild(b);
+      var more = el("button", "tr-more");
+      more.type = "button";
+      more.setAttribute("aria-label", "Switch course");
+      more.setAttribute("aria-haspopup", "dialog");
+      more.innerHTML = cxIcon("chev");
+      more.addEventListener("click", function () { courseSwitcher(more); });
+      row.appendChild(more);
+      return row;
+    }
+    TEACHER_TREE.forEach(function (g) {
+      var sec = el("div", "tr-sec");
+      sec.appendChild(el("p", "tr-head", esc(g.head)));
+      g.items.forEach(function (t) { sec.appendChild(place(t)); });
+      nav.appendChild(sec);
+    });
+    rail.appendChild(nav);
+
+    var foot = el("div", "tr-foot");
+    TEACHER_FOOT.forEach(function (t) { foot.appendChild(place(t)); });
+    var me = el("button", "tr-me");
+    me.type = "button";
+    me.dataset.tip = S.me.name;
+    me.setAttribute("aria-haspopup", "dialog");
+    me.appendChild(avatarFor(S.me));
+    me.appendChild(el("span", "t", "<b>" + esc(S.me.name) + "</b><span>Teacher</span>"));
+    me.addEventListener("click", function () { profileMenu(me); });
+    foot.appendChild(me);
+    rail.appendChild(foot);
+
+    // Widen it a little, and no more.
+    var grip = el("div", "tr-grip");
+    grip.setAttribute("role", "separator");
+    grip.setAttribute("aria-orientation", "vertical");
+    grip.setAttribute("aria-label", "Sidebar width");
+    grip.tabIndex = 0;
+    grip.addEventListener("pointerdown", function (e) {
+      if (trMini()) return;
+      e.preventDefault();
+      grip.setPointerCapture(e.pointerId);
+      document.body.classList.add("rail-drag");
+      function move(ev) {
+        var p = trPrefs();
+        p.w = Math.max(TR_MIN, Math.min(TR_MAX, Math.round(ev.clientX)));
+        trSave(p);
+        trApply();
+      }
+      function up() {
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        document.body.classList.remove("rail-drag");
+      }
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+    });
+    grip.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      var p = trPrefs();
+      p.w = Math.max(TR_MIN, Math.min(TR_MAX, trWidth() + (e.key === "ArrowRight" ? 8 : -8)));
+      trSave(p);
+      trApply();
+    });
+    grip.addEventListener("dblclick", function () { var p = trPrefs(); delete p.w; trSave(p); trApply(); });
+    rail.appendChild(grip);
+
+    // The collapsed rail's labels.
+    rail.addEventListener("mouseover", function (e) {
+      var t = e.target.closest && e.target.closest("[data-tip]");
+      if (t && rail.contains(t)) trTip(t, t.dataset.tip); else trTip(null);
+    });
+    rail.addEventListener("mouseleave", function () { trTip(null); });
+    rail.addEventListener("focusin", function (e) {
+      var t = e.target.closest && e.target.closest("[data-tip]");
+      trTip(t || null, t ? t.dataset.tip : "");
+    });
+    rail.addEventListener("focusout", function () { trTip(null); });
+    rail.addEventListener("click", function () { trTip(null); });
+
+    // A peeking rail goes away when the page is touched.
+    document.addEventListener("mousedown", function (e) {
+      if (!document.body.classList.contains("rail-peek") || rail.contains(e.target)) return;
+      document.body.classList.remove("rail-peek");
+      trApply();
+    }, true);
+
+    trApply();
+    trMe();
+    teachCounts();
+  }
+
+  /* What waits for the teacher, beside To Grade. Read from the same books the
+     pages draw from, so the rail and the page never disagree. */
+  function teachCounts() {
+    loadSchool().then(function (d) { railCount("tograde", gradeQueue(d).now.length); }, function () { /* no number */ });
+  }
+
   /* Light, dark, or whatever the Mac is set to. Kept on this device, like
      the density: it is how one person likes to look at the console, not a
      setting of the school. */
@@ -8811,6 +9303,7 @@
     var rail = $("#rail");
     if (rail.dataset.built === "1") { markRail(); return; }
     rail.innerHTML = "";
+    if (consoleMode() !== "admin") { drawTeachRail(rail); rail.dataset.built = "1"; markRail(); return; }
 
     // The school, at the head: whose console this is.
     var school = el("div", "cn-school");
@@ -8939,9 +9432,12 @@
     if (!silent) enter("admin:" + S.tab, "Console", function () { openAdmin(true, S.tab); });
 
     document.body.classList.add("is-console");
+    document.body.classList.toggle("t-console", consoleMode() !== "admin");
     applyDensity(currentDensity());
     applyAppearance(currentAppearance());
     drawRail();
+    trApply();
+    trPopClose();
     closeRail();
 
     var v = $("#v-admin");
@@ -8949,6 +9445,7 @@
     var body = el("div", "admin-body");
     v.appendChild(body);
     var admin = consoleMode() === "admin";
+    if (!admin) { (TEACH_TABS[S.tab] || consoleHome)(body); noFoot(); progress(null); show("admin"); return; }
     ({ today: consoleHome, assessments: admin ? tabSchoolAssessments : tabAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, curriculum: tabCourses, activity: tabActivity,
        people: tabPeople, permissions: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
@@ -9879,8 +10376,9 @@
        other view they can reach is drawn inside the console's shell, so the
        rail stays and the student's chrome never appears — without this guard
        opening Account would strand them on a page with no navigation at all. */
-    if (document.body.classList.contains("is-staff")) { closeRail(); return; }
-    document.body.classList.remove("is-console");
+    if (document.body.classList.contains("is-staff")) { closeRail(); trPopClose(); return; }
+    document.body.classList.remove("is-console", "t-console");
+    trApply();
     document.body.classList.remove("focus-mode");
     closeRail();
   }
@@ -9986,7 +10484,7 @@
     var graded = students.filter(function (s) { return s.standing != null; });
     var passing = graded.filter(function (s) { return s.standing >= CX_PASS; }).length;
     var pMarked = cells ? dealt / cells : 0, pHanded = dealt ? handed / dealt : 0, pPass = graded.length ? passing / graded.length : 0;
-    if (!admin) railCount("roster", toMark);
+    if (!admin) teachCounts();
     var tcount = d.teachers.length;
     var sub = head.querySelector(".cn-sub");
     if (sub) sub.innerHTML = (admin ? esc(schoolName()) + " · " : "Your courses · ") + students.length + (students.length === 1 ? " student" : " students") +
@@ -10022,7 +10520,7 @@
        below ? '<span class="bad">' + below + " below a pass</span>" : '<span class="ok">Everyone is passing</span>'],
       admin ? ["Teachers", "badge", "var(--cx-indigo)", tcount, "", "Teaching " + courses.length + (courses.length === 1 ? " course" : " courses")]
             : ["To mark", "pencil", "var(--cx-indigo)", toMark, "", toMark ? "Due work waiting for you" : "You’re all caught up"],
-      [admin ? "School average" : "Class average", "chart", "var(--cx-green)", avg == null ? "—" : avg, avg == null ? "" : "%", "Mean of every student’s standing", distList],
+      [admin ? "School average" : "Course average", "chart", "var(--cx-green)", avg == null ? "—" : avg, avg == null ? "" : "%", "Mean of every student’s standing", distList],
       ["Missing work", "tray", "var(--cx-orange)", d.totals.missing, "",
        missingStudents + (missingStudents === 1 ? " student has" : " students have") + " something missing"]
     ];
@@ -10121,7 +10619,7 @@
       var needs = [];
       courses.forEach(function (c) { needs = needs.concat(c.needs); });
       needs.sort(function (a, b) { return (a.dueAt || 0) - (b.dueAt || 0); });
-      var tm = card("cx-s5", "To mark", "pencil", "var(--cx-indigo)", { label: "Gradebook", go: function () { openAdmin(false, "roster"); } });
+      var tm = card("cx-s5", "To grade", "inbox", "var(--cx-indigo)", { label: "To Grade", go: function () { openAdmin(false, "tograde"); } });
       if (!needs.length) tm.appendChild(el("p", "cx-note", "Nothing due is waiting to be marked."));
       var ml = el("div", "cx-list");
       needs.slice(0, 6).forEach(function (n) {
@@ -10740,41 +11238,72 @@
     var wrap = $("#finder");
     wrap.hidden = false;
     wrap.innerHTML = "";
+    var admin = consoleMode() === "admin";
 
     var box = el("div", "cn-finder");
     var input = el("input", "cn-finderin");
     input.type = "text";
-    input.placeholder = "Go to…";
-    input.setAttribute("aria-label", "Go to");
+    input.placeholder = admin ? "Go to…" : "Search OEdu";
+    input.setAttribute("aria-label", admin ? "Go to" : "Search OEdu");
     box.appendChild(input);
+    if (!admin) box.appendChild(el("p", "cn-finderhint", "Students, assignments, lessons, standards, courses, places"));
     var list = el("div", "cn-finderlist");
     box.appendChild(list);
     wrap.appendChild(box);
 
     var places = allowedTabs().filter(function (t) { return !t.hidden; }).map(function (t) {
-      return { name: t.name, hint: t.group || "Console", go: function () { openAdmin(false, t.k); } };
+      return { name: t.name, hint: t.group || "Console", kind: "place", go: function () { openAdmin(false, t.k); } };
     });
-    places.push({ name: "Account", hint: "Sessions, password, sign out", go: openAccount });
+    places.push({ name: "Account", hint: "Sessions, password, sign out", kind: "place", go: openAccount });
 
-    /* People, once they have been asked for. The roster is one request and it
-       is the thing most often searched for, so it is fetched on the first ⌘K
-       of a session and kept — but the box works before it arrives rather than
-       waiting on it. */
-    var admin = consoleMode() === "admin";
-    if (FOUND_PEOPLE && FOUND_PEOPLE.mode === consoleMode()) addPeople();
-    else {
-      (admin ? loadSchool() : API.reporting.students()).then(function (data) {
-        FOUND_PEOPLE = { mode: admin ? "admin" : "teacher", list: data.students };
-        addPeople();
+    /* A teacher's search reaches past the places: every student, every piece
+       of work and every lesson in the courses they teach, read from the same
+       books the pages use. Before it arrives the places still work. */
+    var actions = admin ? [] : [
+      { name: "New assignment", hint: "Quick action", kind: "action", icon: "plus", go: function () { openAssignSheet({}); } },
+      { name: "Assign a lesson", hint: "Quick action", kind: "action", icon: "plus", go: function () { openAssignSheet({ where: "oedu" }); } },
+      { name: "New assessment", hint: "Quick action", kind: "action", icon: "plus", go: function () { openAssignSheet({ where: "oedu" }); } },
+      { name: "Start grading", hint: "Quick action", kind: "action", icon: "inbox", go: function () { openAdmin(false, "tograde"); } }
+    ];
+    function remember(p) {
+      if (admin || !p.ref) return;
+      var r = recentFound().filter(function (x) { return x.ref !== p.ref; });
+      r.unshift({ ref: p.ref, name: p.name, hint: p.hint });
+      try { localStorage.setItem("oplo.teach.recent", JSON.stringify(r.slice(0, 5))); } catch (e) { /* private mode */ }
+    }
+
+    if (admin) {
+      if (FOUND_PEOPLE && FOUND_PEOPLE.mode === "admin") addPeople(FOUND_PEOPLE.list);
+      else loadSchool().then(function (data) {
+        FOUND_PEOPLE = { mode: "admin", list: data.students };
+        addPeople(data.students);
+        draw();
+      }, function () { /* the places still work */ });
+    } else {
+      loadSchool().then(function (d) {
+        addPeople(d.students);
+        d.courses.forEach(function (c) {
+          places.push({ name: c.title, hint: "Course · " + cxPlural(c.students, "student"), kind: "course", ref: "c:" + c.id,
+            go: function () { S.courseId = c.id; S.gbView = "overview"; openAdmin(false, "roster"); } });
+          (c.book.assignments || []).forEach(function (a) {
+            places.push({ name: a.title, hint: "Assignment · " + c.title + (a.dueAt ? " · due " + dayName(a.dueAt) : ""), kind: "work", ref: "a:" + a.id,
+              go: function () { openGrading(c, a); } });
+          });
+          var cur = curriculumOf(c.raw);
+          if (cur) unitsOf(cur).forEach(function (u) {
+            places.push({ name: "Unit " + u.n + " · " + u.t, hint: "Lesson · Standard · " + c.title, kind: "lesson", ref: "u:" + cur.id + ":" + u.n,
+              go: function () { openUnit(cur, u.n); } });
+          });
+        });
         draw();
       }, function () { /* the places still work */ });
     }
-    function addPeople() {
-      FOUND_PEOPLE.list.forEach(function (st) {
+    function addPeople(people) {
+      people.forEach(function (st) {
         places.push({
-          name: st.name,
+          name: st.name, kind: "student", ref: "s:" + st.id,
           hint: st.standing == null ? "Student" : "Student · " + st.standing + "%",
-          go: function () { if (admin) openStudent360(st); else openReport(st); }
+          go: function () { if (admin) openStudent360(st); else openStudentSheet(st); }
         });
       });
     }
@@ -10782,21 +11311,40 @@
     var picked = 0;
     function draw() {
       var term = input.value.trim().toLowerCase();
-      var hits = places.filter(function (p) {
-        return !term || p.name.toLowerCase().indexOf(term) > -1 ||
-               p.hint.toLowerCase().indexOf(term) > -1;
-      });
+      var rows = [];
+      if (!term && !admin) {
+        var rec = recentFound().map(function (r) {
+          var live = places.filter(function (p) { return p.ref === r.ref; })[0];
+          return live ? { name: live.name, hint: live.hint, go: live.go, ref: live.ref } : null;
+        }).filter(Boolean);
+        if (rec.length) { rows.push({ head: "Recent" }); rows = rows.concat(rec); }
+        rows.push({ head: "Quick actions" });
+        rows = rows.concat(actions);
+        rows.push({ head: "Places" });
+        rows = rows.concat(places.filter(function (p) { return p.kind === "place"; }));
+      } else {
+        rows = places.concat(actions).filter(function (p) {
+          return !term || p.name.toLowerCase().indexOf(term) > -1 || p.hint.toLowerCase().indexOf(term) > -1;
+        }).slice(0, 60);
+      }
+      var hits = rows.filter(function (p) { return !p.head; });
       if (picked >= hits.length) picked = Math.max(0, hits.length - 1);
       list.innerHTML = "";
-      hits.forEach(function (p, i) {
-        var b = el("button", "cn-finderrow" + (i === picked ? " on" : ""));
+      var i = 0;
+      rows.forEach(function (p) {
+        if (p.head) { list.appendChild(el("p", "cn-finderhead", esc(p.head))); return; }
+        var me = i++;
+        var b = el("button", "cn-finderrow" + (me === picked ? " on" : ""));
         b.type = "button";
-        b.innerHTML = "<b>" + esc(p.name) + "</b><span>" + esc(p.hint) + "</span>";
-        b.addEventListener("click", function () { closeFinder(); p.go(); });
+        b.innerHTML = (p.icon ? '<span class="ic">' + cxIcon(p.icon) + "</span>" : "") + "<b>" + esc(p.name) + "</b><span>" + esc(p.hint) + "</span>";
+        b.addEventListener("click", function () { closeFinder(); remember(p); p.go(); });
         list.appendChild(b);
       });
+      if (!hits.length) list.appendChild(el("p", "cn-findernone", "Nothing called that."));
       list.dataset.n = hits.length;
       box.hits = hits;
+      var on = list.querySelector(".cn-finderrow.on");
+      if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest" });
     }
 
     input.addEventListener("input", function () { picked = 0; draw(); });
@@ -10807,13 +11355,17 @@
       else if (e.key === "Enter") {
         e.preventDefault();
         var p = box.hits[picked];
-        if (p) { closeFinder(); p.go(); }
+        if (p) { closeFinder(); remember(p); p.go(); }
       } else if (e.key === "Escape") { closeFinder(); }
     });
     wrap.addEventListener("click", function (e) { if (e.target === wrap) closeFinder(); });
 
     draw();
     input.focus();
+  }
+  function recentFound() {
+    try { var r = JSON.parse(localStorage.getItem("oplo.teach.recent") || "[]"); return Array.isArray(r) ? r : []; }
+    catch (e) { return []; }
   }
 
   var FOUND_PEOPLE = null;
@@ -11056,7 +11608,9 @@
                    : "no work set yet") + "</span>"));
 
     var acts = cnActions();
-    acts.appendChild(cnAction("Set work", function () { openAssignments(courseOf()); }));
+    acts.appendChild(cnAction("Set work", function () {
+      if (consoleMode() === "admin") openAssignments(courseOf()); else openAssignSheet({ courseId: BOOK.course.id, done: function () { loadBook(BOOK.host, BOOK.course.id); } });
+    }));
     acts.appendChild(cnAction("Enrol", function () { openEnrol(courseOf()); }));
     /* Marking is the one thing in this product somebody does for an hour
        without stopping, so it gets a mode with nothing else on the screen.
@@ -11155,7 +11709,7 @@
     });
 
     var fr = el("div", "gb-r foot");
-    fr.appendChild(el("div", "gb-c name", "<span class='gb-hn'>Class</span>"));
+    fr.appendChild(el("div", "gb-c name", "<span class='gb-hn'>Course</span>"));
     work.forEach(function (a, ci) { fr.appendChild(el("div", "gb-c avg", "")); });
     fr.appendChild(el("div", "gb-c grade", ""));
     fr.appendChild(el("div", "gb-c fill"));
@@ -11201,7 +11755,25 @@
     }
     if (g && g.feedback) cls += " noted";
     if (g && g.late) cls += " tardy";
+    // Handed in on OEdu and not marked yet: a dot, and what OEdu measured.
+    var sub = handedIn(cell.work.id, cell.student.id);
+    if (sub && !(g && (g.score != null || g.status === "excused"))) {
+      cls += " handed";
+      cell.input.placeholder = sub.result && sub.result.pct != null ? sub.result.pct + "%" : "✓";
+      cell.wrap.title = "Handed in on OEdu " + whenName(sub.submittedAt) + (sub.result && sub.result.detail ? " · " + sub.result.detail : "");
+    } else {
+      cell.input.placeholder = "";
+      cell.wrap.removeAttribute("title");
+    }
     cell.wrap.className = cls;
+  }
+
+  function handedIn(assignmentId, accountId) {
+    var list = (BOOK && BOOK.submissions) || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].assignmentId === assignmentId && list[i].accountId === accountId) return list[i];
+    }
+    return null;
   }
 
   function paintGrade(ri) {
@@ -13306,6 +13878,1252 @@
       v.appendChild(acts);
     }
   }
+
+
+  /* ========================================================= Work on OEdu
+     When a school puts a student in a course here, the work is usually a
+     lesson or an activity on OEdu: Unit 2, Lesson 3; the unit test; a study
+     set. An assignment can say which (`activity`), the student is sent
+     straight to it, and when it is done it is handed in — with what OEdu
+     measured — and waits in To Grade for the teacher's mark. */
+  var ACT_KIND = { lesson: "Lesson", test: "Unit test", unit: "Whole unit", set: "Study set", offline: "Done elsewhere" };
+
+  // The shipped curriculum a database course carries, matched by its code.
+  function curriculumOf(row) {
+    if (!row) return null;
+    var hit = allCourses().filter(function (c) { return c.id === row.code; })[0];
+    return hit || fromDbCourse(row);
+  }
+  function activityCourse(act) {
+    return act && act.course ? allCourses().filter(function (c) { return c.id === act.course; })[0] || null : null;
+  }
+  function activityName(act) {
+    if (!act) return "";
+    if (act.kind === "set") { var st = SET(act.set); return (st && st.t) || act.title || "Study set"; }
+    var bits = ["Unit " + act.unit];
+    if (act.kind === "lesson") bits.push("Lesson " + act.lesson);
+    if (act.kind === "test") bits.push("Unit test");
+    return bits.join(" · ") + (act.title ? ": " + act.title : "");
+  }
+  function onOedu(act) { return !!(act && act.kind && act.kind !== "offline"); }
+  // The same, without the title — for a row whose title already says it.
+  function activityShort(act) {
+    if (!act) return "";
+    if (act.kind === "set") return "Study set";
+    return "Unit " + act.unit + (act.kind === "lesson" ? ", lesson " + act.lesson : act.kind === "test" ? " test" : "");
+  }
+
+  /* What a teacher can point a piece of work at, for one unit of one course.
+     Lab units list their lessons once the unit's file has loaded. */
+  function unitChoices(c, u) {
+    var out = [];
+    function done() {
+      if (u.lab || u.play || u.read || u.set) out.push({ act: { kind: "unit", course: c.id, unit: u.n, title: u.t }, label: "The whole unit — " + u.t });
+      if (u.set) out.push({ act: { kind: "set", set: u.set, title: (SET(u.set) || {}).t }, label: "Study set — " + ((SET(u.set) || {}).t || u.set) });
+      out.push({ act: { kind: "offline", course: c.id, unit: u.n, title: u.t }, label: "Something done elsewhere, about this unit" });
+      return out;
+    }
+    if (!u.lab || !window.OPLO_LAB) return Promise.resolve(done());
+    return window.OPLO_LAB.load(c.id, u.n).then(function (def) {
+      (def.lessons || []).forEach(function (l) {
+        out.push({ act: { kind: "lesson", course: c.id, unit: u.n, lesson: l.k, title: l.title }, label: "Lesson " + l.k + " — " + l.title + (l.mins ? " · " + l.mins + " min" : "") });
+      });
+      out.push({ act: { kind: "test", course: c.id, unit: u.n, title: u.t }, label: "Unit test — " + u.t });
+      return done();
+    }, function () { return done(); });
+  }
+
+  /* --------------------------------------------------------- To Grade
+     Everything that can be marked now: work handed in on OEdu and waiting
+     for a mark, and work whose due date has passed with nothing recorded.
+     Then, for what is coming, how many have still to hand it in. */
+  function endOfToday() { var d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); }
+  function gradeQueue(d) {
+    var now = Date.now(), items = [], later = [];
+    d.courses.forEach(function (c) {
+      var gb = c.book || {}, roster = gb.students || [];
+      var marks = {}, subs = {};
+      (gb.grades || []).forEach(function (g) { marks[g.assignmentId + ":" + g.accountId] = g; });
+      (gb.submissions || []).forEach(function (s) { subs[s.assignmentId + ":" + s.accountId] = s; });
+      (gb.assignments || []).forEach(function (a) {
+        var handed = 0, waiting = 0, notIn = 0, done = 0;
+        roster.forEach(function (s) {
+          var g = marks[a.id + ":" + s.id], sub = subs[a.id + ":" + s.id];
+          var scored = g && (g.score != null || g.status === "excused");
+          var recorded = scored || (g && g.status === "missing");
+          if (sub && !scored) handed++;
+          else if (!recorded && a.dueAt && a.dueAt <= now) waiting++;
+          else if (!recorded && !sub) notIn++;
+          else done++;
+        });
+        var row = { course: c, a: a, handed: handed, waiting: waiting, notIn: notIn, done: done, total: roster.length, n: handed + waiting };
+        if (row.n) items.push(row);
+        else if (a.dueAt && a.dueAt > now && notIn) later.push(row);
+      });
+    });
+    items.sort(function (x, y) { return (y.handed ? 1 : 0) - (x.handed ? 1 : 0) || (x.a.dueAt || 0) - (y.a.dueAt || 0); });
+    later.sort(function (x, y) { return x.a.dueAt - y.a.dueAt; });
+    return { now: items, later: later };
+  }
+
+  function tabToGrade(v) {
+    var top = el("div", "cx-top");
+    consoleHead(top, "Teach", "To Grade", "Work handed in on OEdu and waiting for your mark, and work past its due date with nothing recorded.");
+    v.appendChild(top);
+    var node = loading(v, "your courses");
+    loadSchool(true).then(function (d) {
+      node.remove();
+      var q = gradeQueue(d);
+      railCount("tograde", q.now.length);
+      var sub = top.querySelector(".cn-sub");
+      if (sub) sub.innerHTML = q.now.length ? cxPlural(q.now.length, "item") + " to grade across " + cxPlural(d.courses.length, "course") : "You’re all caught up.";
+      if (q.now.length) {
+        var tools = el("div", "cx-tools");
+        tools.appendChild(cnAction("Start grading", function () { openGrading(q.now[0].course, q.now[0].a); }, true));
+        top.appendChild(tools);
+      }
+      function list(title, rows, isLater) {
+        if (!rows.length) return;
+        v.appendChild(el("p", "tq-head", esc(title)));
+        var box = el("div", "tq-list");
+        rows.forEach(function (r) {
+          var b = el("button", "tq-row");
+          b.type = "button";
+          var what = isLater
+            ? r.notIn + " of " + r.total + " still to hand in"
+            : [r.handed ? r.handed + " handed in on OEdu" : "", r.waiting ? r.waiting + " past due, nothing recorded" : ""].filter(Boolean).join(" · ");
+          b.innerHTML = '<span class="ic">' + cxIcon(onOedu(r.a.activity) ? "play" : "pencil") + '</span>' +
+            '<span class="t"><b>' + esc(r.a.title) + "</b><span>" + esc(r.course.title + " · " + (r.a.dueAt ? (r.a.dueAt > Date.now() ? "due " : "was due ") + dayName(r.a.dueAt) : "no due date")) +
+            " · " + esc(what) + '</span></span><span class="n">' + (isLater ? r.notIn : r.n) + '</span><span class="go">' + cxIcon("chev") + "</span>";
+          b.addEventListener("click", function () {
+            if (isLater) { S.courseId = r.course.id; openAdmin(false, "roster"); }
+            else openGrading(r.course, r.a);
+          });
+          box.appendChild(b);
+        });
+        v.appendChild(box);
+      }
+      if (!q.now.length) v.appendChild(cnEmpty("Nothing to grade.", "When students hand in work set on OEdu, or work passes its due date, it waits here."));
+      var eod = endOfToday();
+      list("Today", q.now.filter(function (r) { return r.handed || !r.a.dueAt || r.a.dueAt <= eod; }));
+      list("Later", q.later, true);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "tograde"); }); });
+  }
+
+  /* --------------------------------------------------------- Grading
+     One piece of work, one student at a time: what they handed in on OEdu,
+     the mark, a comment, and on to the next. The OEdu result is shown, and
+     can be taken as the mark with one press — it is never taken silently. */
+  function openGrading(course, a, startId) {
+    enter("grading:" + a.id, trim(a.title, 18), function () { openGrading(course, a); });
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    var body = el("div", "admin-body");
+    v.appendChild(body);
+    consoleHead(body, (course.title || "") + (onOedu(a.activity) ? " · On OEdu" : ""), a.title,
+      "Out of " + cxNum(a.outOf) + (a.dueAt ? " · due " + esc(dayName(a.dueAt)) : "") + (a.category ? " · " + esc(a.category) : ""));
+    var node = loading(body, "the work");
+    show("admin");
+    API.grades.book(course.id).then(function (book) {
+      node.remove();
+      var work = (book.assignments || []).filter(function (x) { return x.id === a.id; })[0] || a;
+      var marks = {}, subs = {};
+      (book.grades || []).forEach(function (g) { if (g.assignmentId === a.id) marks[g.accountId] = g; });
+      (book.submissions || []).forEach(function (s) { if (s.assignmentId === a.id) subs[s.accountId] = s; });
+      var roster = (book.students || []).slice();
+      function state(s) {
+        var g = marks[s.id], sub = subs[s.id];
+        if (g && g.status === "excused") return "excused";
+        if (g && g.score != null) return "marked";
+        if (sub) return "handed";
+        if (g && g.status === "missing") return "missing";
+        return work.dueAt && work.dueAt <= Date.now() ? "late" : "open";
+      }
+      var ORDER = { handed: 0, late: 1, missing: 2, open: 3, marked: 4, excused: 5 };
+      roster.sort(function (x, y) { return ORDER[state(x)] - ORDER[state(y)] || String(x.name).localeCompare(String(y.name)); });
+      var at = Math.max(0, roster.findIndex(function (s) { return startId ? s.id === startId : true; }));
+
+      var split = el("div", "gq");
+      var left = el("div", "gq-list");
+      var right = el("div", "gq-card");
+      split.appendChild(left);
+      split.appendChild(right);
+      body.appendChild(split);
+      var SAY = { handed: "Handed in", late: "Past due", missing: "Not handed in", open: "Not yet", marked: "Marked", excused: "Excused" };
+
+      function drawList() {
+        left.innerHTML = "";
+        var counts = {};
+        roster.forEach(function (s) { var k = state(s); counts[k] = (counts[k] || 0) + 1; });
+        left.appendChild(el("p", "gq-sum", (counts.handed || 0) + " handed in · " + (counts.marked || 0) + " marked · " + roster.length + " students"));
+        roster.forEach(function (s, i) {
+          var st = state(s), g = marks[s.id];
+          var b = el("button", "gq-li" + (i === at ? " on" : ""));
+          b.type = "button";
+          b.innerHTML = avatarHtml(s) + '<span class="t"><b>' + esc(s.name) + "</b><span class='st " + st + "'>" + esc(SAY[st]) + "</span></span>" +
+            '<span class="m">' + (g && g.score != null ? cxNum(g.score) : g && g.status === "missing" ? "M" : g && g.status === "excused" ? "Ex" : "") + "</span>";
+          b.addEventListener("click", function () { at = i; draw(); });
+          left.appendChild(b);
+        });
+      }
+      function draw() {
+        drawList();
+        right.innerHTML = "";
+        var s = roster[at];
+        if (!s) { right.appendChild(cnEmpty("Nobody is enrolled.", "Enrol students and their work appears here.")); return; }
+        var g = marks[s.id], sub = subs[s.id], st = state(s);
+        var head = el("div", "gq-who");
+        head.innerHTML = avatarHtml(s) + "<span><b>" + esc(s.name) + "</b><span>" + esc(SAY[st]) +
+          (sub ? " · " + esc(whenName(sub.submittedAt)) : "") + "</span></span>";
+        right.appendChild(head);
+
+        var ev = el("div", "gq-ev");
+        if (onOedu(work.activity)) {
+          var res = sub && sub.result;
+          ev.innerHTML = "<p class='k'>On OEdu · " + esc(activityName(work.activity)) + "</p>" + (res
+            ? "<b>" + (res.pct != null ? res.pct + "%" : res.score != null ? cxNum(res.score) + (res.outOf ? " / " + cxNum(res.outOf) : "") : "Done") + "</b>" +
+              "<span>" + esc(res.detail || "Finished on OEdu.") + "</span>"
+            : "<b>Not handed in yet</b><span>" + esc(s.firstName || s.name) + " hasn’t finished it on OEdu.</span>");
+        } else {
+          ev.innerHTML = "<p class='k'>Done elsewhere</p><span>This work isn’t on OEdu, so there is nothing handed in here. Mark it from what you collected.</span>";
+        }
+        right.appendChild(ev);
+
+        var form = el("div", "gq-form");
+        var score = field("Mark out of " + cxNum(work.outOf), g && g.score != null ? String(g.score) : "", "Score");
+        score.input.inputMode = "decimal";
+        var fb = areaField("Comment for " + (s.firstName || s.name), g && g.feedback ? g.feedback : "", "Optional — they see this with the mark", 3);
+        form.appendChild(score);
+        form.appendChild(fb);
+        right.appendChild(form);
+
+        var acts = cnActions();
+        var res2 = sub && sub.result;
+        var suggest = res2 ? (res2.pct != null ? Math.round(res2.pct / 100 * work.outOf * 10) / 10
+          : res2.score != null && res2.outOf ? Math.round(res2.score / res2.outOf * work.outOf * 10) / 10 : null) : null;
+        if (suggest != null) {
+          acts.appendChild(cnAction("Use OEdu’s " + cxNum(suggest), function () { score.input.value = String(suggest); score.input.focus(); }));
+        }
+        function save(patch, next) {
+          patch.feedback = fb.input.value.trim() || null;
+          return API.grades.put(work.id, s.id, patch).then(function (r) {
+            marks[s.id] = r.grade;
+            if (BOOK && BOOK.course && BOOK.course.id === course.id) BOOK = null;
+            SCHOOL = null;
+            teachCounts();
+            if (next) { at = Math.min(roster.length - 1, at + 1); }
+            draw();
+          }, function (e) { toast(e && e.message ? e.message : "The server refused that."); });
+        }
+        var go = cnAction("Save and next", function () {
+          var t = score.input.value.trim();
+          if (!t) { toast("Type a mark, or choose Not handed in or Excused."); return; }
+          var n = Number(t);
+          if (!isFinite(n) || n < 0) { toast("A mark is a number."); return; }
+          save({ status: "marked", score: n }, true);
+        }, true);
+        acts.appendChild(go);
+        acts.appendChild(cnAction("Not handed in", function () { save({ status: "missing", score: null }, true); }));
+        acts.appendChild(cnAction("Excused", function () { save({ status: "excused", score: null }, true); }));
+        right.appendChild(acts);
+        var nav = el("div", "gq-nav");
+        var prev = cnAction("‹ Previous", function () { at = Math.max(0, at - 1); draw(); });
+        var nxt = cnAction("Next ›", function () { at = Math.min(roster.length - 1, at + 1); draw(); });
+        nav.appendChild(prev);
+        nav.appendChild(el("span", null, (at + 1) + " of " + roster.length));
+        nav.appendChild(nxt);
+        right.appendChild(nav);
+        score.input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go.click(); } });
+        score.input.focus();
+        score.input.select();
+      }
+      draw();
+    }, function (e) { failed(node, e, function () { openGrading(course, a); }); });
+  }
+
+  /* ---------------------------------------------------- Setting work
+     One sheet for new work and for changing it: which course, whether it is
+     done on OEdu (and which lesson or activity) or elsewhere, what it counts
+     as, what it is out of and when it is due. Assign sets it; Save as draft
+     keeps it from students until it is. */
+  function openAssignSheet(o) {
+    o = o || {};
+    var a = o.assignment || null;
+    var box = el("div", "as-sheet");
+    box.appendChild(el("h2", "as-h", a ? "Change work" : "New assignment"));
+    var form = el("div", "admin-form as-form");
+    box.appendChild(form);
+    var slot = el("div");
+    form.appendChild(slot);
+    slot.appendChild(el("p", "cx-note", "Loading your courses…"));
+    var sheet = cxSheet(box);
+
+    teachCourses().then(function (cs) {
+      slot.innerHTML = "";
+      if (!cs.length) { slot.appendChild(el("p", "cx-note", "You aren’t teaching a course yet.")); return; }
+      var courseId = (a && a.courseId) || o.courseId || (currentCourse(cs) || cs[0]).id;
+      var act = a ? a.activity : (o.act || null);
+      var where = act && act.kind === "offline" ? "else" : act ? "oedu" : (o.where || "oedu");
+
+      var cF = el("label", "admin-field");
+      cF.innerHTML = "<span>Course</span>";
+      var cSel = el("select");
+      cs.forEach(function (c) { var op = el("option"); op.value = c.id; op.textContent = c.title; if (c.id === courseId) op.selected = true; cSel.appendChild(op); });
+      cSel.disabled = !!a;              // work belongs to its course
+      cF.appendChild(cSel);
+      slot.appendChild(cF);
+
+      var whereF = el("div", "admin-field");
+      whereF.innerHTML = "<span>Students do it</span>";
+      var seg = el("div", "cn-seg");
+      [["oedu", "On OEdu"], ["else", "Somewhere else"]].forEach(function (x) {
+        var b = el("button", "cn-segb" + (where === x[0] ? " on" : ""), x[1]);
+        b.type = "button";
+        b.addEventListener("click", function () {
+          where = x[0];
+          [].forEach.call(seg.children, function (y) { y.classList.toggle("on", y === b); });
+          fillWhat();
+        });
+        seg.appendChild(b);
+      });
+      whereF.appendChild(seg);
+      slot.appendChild(whereF);
+
+      var uF = el("label", "admin-field");
+      uF.innerHTML = "<span>Unit</span>";
+      var uSel = el("select");
+      uF.appendChild(uSel);
+      slot.appendChild(uF);
+      var wF = el("label", "admin-field");
+      wF.innerHTML = "<span>Lesson or activity</span>";
+      var wSel = el("select");
+      wF.appendChild(wSel);
+      slot.appendChild(wF);
+
+      var title = field("Title", a ? a.title : "", "Unit 2 quiz");
+      slot.appendChild(title);
+      var catF = el("label", "admin-field");
+      catF.innerHTML = "<span>Counts as</span>";
+      var cat = el("select");
+      catF.appendChild(cat);
+      slot.appendChild(catF);
+      var outOf = field("Out of", a ? String(a.outOf) : "10");
+      slot.appendChild(outOf);
+      var due = field("Due", "", "optional");
+      due.input.type = "date";
+      if (a && a.dueAt) {
+        var dd = new Date(Number(a.dueAt));
+        due.input.value = dd.getFullYear() + "-" + ("0" + (dd.getMonth() + 1)).slice(-2) + "-" + ("0" + dd.getDate()).slice(-2);
+      }
+      slot.appendChild(due);
+      var xcF = el("label", "admin-field");
+      xcF.innerHTML = "<span>Extra credit</span>";
+      var xc = el("select");
+      [["", "No — counts towards the grade"], ["1", "Yes — can only raise a grade"]].forEach(function (x) {
+        var n = el("option"); n.value = x[0]; n.textContent = x[1]; if (a && !!x[0] === !!a.extraCredit) n.selected = true; xc.appendChild(n);
+      });
+      xcF.appendChild(xc);
+      slot.appendChild(xcF);
+      var note = el("p", "cn-fine as-note");
+      slot.appendChild(note);
+
+      var choices = [], titled = !!(a && a.title);
+      title.input.addEventListener("input", function () { titled = !!title.input.value.trim(); });
+      function row() { return cs.filter(function (c) { return c.id === cSel.value; })[0]; }
+      function fillCats() {
+        var weights = (row().body && row().body.grading) || [["Work", 100]];
+        cat.innerHTML = "";
+        weights.forEach(function (w) {
+          var op = el("option"); op.value = w[0]; op.textContent = w[0] + " (" + w[1] + "% of the grade)";
+          if (a && a.category === w[0]) op.selected = true;
+          cat.appendChild(op);
+        });
+      }
+      function fillUnits() {
+        var cur = curriculumOf(row());
+        var units = cur ? unitsOf(cur) : [];
+        uSel.innerHTML = "";
+        if (where === "else") { var none = el("option"); none.value = ""; none.textContent = "Not about one unit"; uSel.appendChild(none); }
+        units.forEach(function (u) {
+          var op = el("option"); op.value = String(u.n); op.textContent = "Unit " + u.n + " — " + u.t;
+          if (act && act.unit === u.n) op.selected = true;
+          uSel.appendChild(op);
+        });
+        uF.hidden = !units.length;
+        return cur;
+      }
+      function fillWhat() {
+        var cur = fillUnits();
+        wF.hidden = where !== "oedu";
+        wSel.innerHTML = "";
+        note.textContent = where === "oedu"
+          ? "Students open it from their School page. When they finish it on OEdu it is handed in, and waits in To Grade for your mark."
+          : "Students see it on their School page. You mark it from what you collect.";
+        if (where !== "oedu") { choices = []; return; }
+        var u = cur && unitsOf(cur).filter(function (x) { return String(x.n) === uSel.value; })[0];
+        if (!u) { var op0 = el("option"); op0.textContent = "This course has no OEdu lessons"; wSel.appendChild(op0); choices = []; return; }
+        var wait = el("option"); wait.textContent = "Loading…"; wSel.appendChild(wait);
+        unitChoices(cur, u).then(function (list) {
+          choices = list.filter(function (x) { return x.act.kind !== "offline"; });
+          wSel.innerHTML = "";
+          choices.forEach(function (x, i) {
+            var op = el("option"); op.value = String(i); op.textContent = x.label;
+            if (act && act.kind === x.act.kind && act.lesson === x.act.lesson && act.unit === x.act.unit && act.set === x.act.set) op.selected = true;
+            wSel.appendChild(op);
+          });
+          suggest();
+        });
+      }
+      function picked() {
+        if (where === "oedu") { var x = choices[Number(wSel.value)]; return x ? x.act : null; }
+        var cur = curriculumOf(row()), n = Number(uSel.value);
+        if (!n || !cur) return null;
+        var u = unitsOf(cur).filter(function (y) { return y.n === n; })[0];
+        return { kind: "offline", course: cur.id, unit: n, title: u ? u.t : undefined };
+      }
+      function suggest() {
+        var p = picked();
+        if (!p || titled) return;
+        title.input.value = p.kind === "set" ? (p.title || "Study set") : p.kind === "lesson" ? "Lesson " + p.lesson + ": " + (p.title || "") :
+          p.kind === "test" ? "Unit " + p.unit + " test" : p.kind === "unit" ? "Unit " + p.unit + ": " + (p.title || "") : title.input.value;
+        if (!a) outOf.input.value = p.kind === "test" ? "100" : "10";
+        var want = p.kind === "test" ? /test|assess|exam/i : p.kind === "lesson" || p.kind === "set" ? /home|class|practice|work/i : null;
+        if (want && !a) [].some.call(cat.options, function (op) { if (want.test(op.value)) { op.selected = true; return true; } return false; });
+      }
+      cSel.addEventListener("change", function () { act = null; fillCats(); fillWhat(); });
+      uSel.addEventListener("change", function () { act = null; fillWhat(); });
+      wSel.addEventListener("change", function () { if (!a) titled = false; suggest(); });
+      fillCats();
+      fillWhat();
+
+      var acts = el("div", "admin-acts");
+      function send(status) {
+        var t = title.input.value.trim();
+        if (!t) { toast("Give it a title."); return; }
+        var n = Number(outOf.input.value);
+        if (!isFinite(n) || n <= 0) { toast("What is it out of?"); return; }
+        var dueAt = null;
+        if (due.input.value) { var d2 = new Date(due.input.value + "T23:59:59"); if (isFinite(d2.getTime())) dueAt = d2.getTime(); }
+        var data = { title: t, category: cat.value, outOf: n, dueAt: dueAt, extraCredit: !!xc.value, activity: picked() };
+        if (status) data.status = status;
+        var p = a ? API.courses.updateAssignment(a.id, data) : API.courses.addAssignment(cSel.value, data);
+        attempt(p, function () {
+          toast(status === "draft" ? "Saved as a draft." : a ? "Saved." : "Assigned.");
+          SCHOOL = null; BOOK = null;
+          sheet.close();
+          teachCounts();
+          if (o.done) o.done(); else openAdmin(true, S.tab);
+        });
+      }
+      var go = el("button", "lx-btn lg", a && a.status !== "draft" ? "Save" : "Assign");
+      go.type = "button";
+      go.addEventListener("click", function () { send(a && a.status !== "draft" ? null : "open"); });
+      acts.appendChild(go);
+      if (!a || a.status === "draft") {
+        var draft = el("button", "lx-btn quiet", "Save as draft");
+        draft.type = "button";
+        draft.addEventListener("click", function () { send("draft"); });
+        acts.appendChild(draft);
+      }
+      if (a) {
+        var rm = el("button", "lx-btn quiet danger", "Delete");
+        rm.type = "button";
+        rm.addEventListener("click", function () {
+          if (!confirm("Delete “" + a.title + "” and every mark on it?")) return;
+          attempt(API.courses.removeAssignment(a.id), function () { SCHOOL = null; BOOK = null; sheet.close(); teachCounts(); openAdmin(true, S.tab); });
+        });
+        acts.appendChild(rm);
+      }
+      box.appendChild(acts);
+    }, function (e) { slot.innerHTML = ""; slot.appendChild(el("p", "cx-note", esc((e && e.message) || "Couldn’t load your courses."))); });
+  }
+
+  /* ======================================================= Teacher places */
+
+  /* The course a page is about, as a pop-up button at its head. */
+  function coursePill(host, courses, after) {
+    var cur = currentCourse(courses);
+    var b = el("button", "tr-coursepill");
+    b.type = "button";
+    b.setAttribute("aria-haspopup", "dialog");
+    b.innerHTML = "<b>" + esc(cur ? cur.title : "No course") + "</b>" + cxIcon("down");
+    b.addEventListener("click", function () { courseSwitcher(b); });
+    host.appendChild(b);
+    if (after) after(cur);
+    return cur;
+  }
+
+  /* A place's own views, as a segmented control under its title. */
+  function subNav(host, list, cur, pick) {
+    var seg = el("div", "cn-seg tr-subnav");
+    seg.setAttribute("role", "tablist");
+    list.forEach(function (x) {
+      var b = el("button", "cn-segb" + (x[0] === cur ? " on" : ""), esc(x[1]));
+      b.type = "button";
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(x[0] === cur));
+      b.addEventListener("click", function () { pick(x[0]); });
+      seg.appendChild(b);
+    });
+    host.appendChild(seg);
+    return seg;
+  }
+
+  /* The school's books for the course a teacher is on. */
+  function courseBook(d, id) { return d.courses.filter(function (c) { return c.id === id; })[0] || null; }
+
+  /* ----------------------------------------------------------- Gradebook
+     Overview · Grades · Standards · Missing · Grade History, for the course
+     at its head. Grades is the sheet itself. */
+  var GB_VIEWS = [["overview", "Overview"], ["grades", "Grades"], ["standards", "Standards"], ["missing", "Missing"], ["history", "Grade History"]];
+  function tabTeachGradebook(v) {
+    var head = el("div", "tr-pagehead");
+    v.appendChild(head);
+    var node = loading(v, "your courses");
+    teachCourses().then(function (cs) {
+      node.remove();
+      if (!cs.length) {
+        v.appendChild(cnEmpty("You aren’t teaching any courses yet.",
+          "An administrator enrols you as a teacher on a course, and it appears here with its students."));
+        return;
+      }
+      var cur = coursePill(head, cs);
+      consoleHead(head, null, "Gradebook");
+      S.gbView = S.gbView || "grades";
+      subNav(head, GB_VIEWS, S.gbView, function (k) { S.gbView = k; openAdmin(true, "roster"); });
+      var host = el("div", "gb-host");
+      v.appendChild(host);
+      if (S.gbView === "grades") {
+        host.appendChild(el("p", "cn-sub gb-hint", "Students down, work across. Type a score, <b>m</b> for not handed in, <b>e</b> for excused."));
+        var sheet = el("div");
+        host.appendChild(sheet);
+        loadBook(sheet, cur.id);
+        return;
+      }
+      var n2 = loading(host, "the course");
+      loadSchool().then(function (d) {
+        n2.remove();
+        var c = courseBook(d, cur.id);
+        if (!c) { host.appendChild(cnEmpty("This course has no gradebook yet.", "")); return; }
+        ({ overview: gbOverview, standards: gbStandards, missing: gbMissing, history: gbHistory })[S.gbView](host, c, d);
+      }, function (e) { failed(n2, e, function () { openAdmin(true, "roster"); }); });
+    }, function (e) { failed(node, e, function () { openAdmin(true, "roster"); }); });
+  }
+
+  function gbOverview(host, c, d) {
+    var q = gradeQueue({ courses: [c] });
+    var studs = d.students.filter(function (s) { return s.courses.some(function (x) { return x.courseId === c.id; }); });
+    var below = studs.filter(function (s) { var x = s.courses.filter(function (y) { return y.courseId === c.id; })[0]; return x.grade && x.grade.percent < CX_PASS; });
+    cxMetrics(host, [
+      { label: "Course average", value: c.average, unit: "%", line: c.average },
+      { label: "Students", value: c.students, note: below.length ? below.length + " below " + CX_PASS + "%" : "Everyone is passing" },
+      { label: "To grade", value: q.now.length, note: q.now.length ? "pieces of work" : "All caught up", go: function () { openAdmin(false, "tograde"); } },
+      { label: "Missing", value: c.missing, bad: true, note: "marked not handed in", go: function () { S.gbView = "missing"; openAdmin(true, "roster"); } }
+    ]);
+    var grid = el("div", "cx-grid");
+    host.appendChild(grid);
+    var dist = cxSection(grid, "cx-s6", "Grade distribution", cxPlural(c.graded, "student") + " with a grade");
+    dist.appendChild(barChart(["A", "B", "C", "D", "F"].map(function (k) { return { label: k, n: c.dist[k], color: k === "F" ? "var(--cx-red)" : "var(--cx-bar)" }; }), { values: true }));
+    var work = (c.book.assignments || []);
+    var avgBy = assignmentAverages(c);
+    var wk = cxSection(grid, "cx-s6", "How each piece went", "Average mark, in the order it was set");
+    wk.appendChild(barChart(work.filter(function (a) { return avgBy[a.id] != null; }).slice(-10).map(function (a) {
+      return { label: trim(a.title, 9), title: a.title, n: avgBy[a.id], color: avgBy[a.id] < CX_PASS ? "var(--cx-red)" : "var(--cx-bar)" };
+    }), { values: true }));
+    var na = cxSection(grid, "cx-s12", "Needs a look", "Below " + CX_PASS + "%, or missing two or more pieces");
+    var t = cnTable([{ label: "Student", w: "minmax(180px, 1.4fr)" }, { label: "Grade", w: "90px", align: "right" }, { label: "Missing", w: "90px", align: "right" }, { label: "", w: "110px", align: "right" }]);
+    var risk = studs.map(function (s) { return { s: s, x: s.courses.filter(function (y) { return y.courseId === c.id; })[0] }; })
+      .filter(function (r) { return (r.x.grade && r.x.grade.percent < CX_PASS) || r.x.missing >= 2; })
+      .sort(function (p, q2) { return (p.x.grade ? p.x.grade.percent : 999) - (q2.x.grade ? q2.x.grade.percent : 999); });
+    risk.forEach(function (r) {
+      t.row([cxWho(r.s), cxPct(r.x.grade ? r.x.grade.percent : null, r.x.grade && r.x.grade.percent < CX_PASS), String(r.x.missing || 0), "<span class='cn-none'>Open ›</span>"],
+        function () { openStudentSheet(r.s); }, r.s.id);
+    });
+    if (!risk.length) na.appendChild(el("p", "cx-note", "Nobody in this course is below a pass or missing more than one piece."));
+    else na.appendChild(t);
+  }
+
+  function assignmentAverages(c) {
+    var sum = {}, n = {};
+    (c.book.grades || []).forEach(function (g) {
+      if (g.score == null || !g.outOf) return;
+      sum[g.assignmentId] = (sum[g.assignmentId] || 0) + g.score / g.outOf; n[g.assignmentId] = (n[g.assignmentId] || 0) + 1;
+    });
+    var out = {};
+    Object.keys(sum).forEach(function (k) { out[k] = Math.round(sum[k] / n[k] * 100); });
+    return out;
+  }
+
+  /* Standards, as OEdu has them: the course's units. Work set on OEdu — and
+     work done elsewhere that the teacher said was about a unit — carries its
+     unit, so the marks on it add up to how the course is doing on that unit.
+     Only marks count: what students practise on their own is theirs. */
+  function unitStanding(c) {
+    var byA = {};
+    (c.book.assignments || []).forEach(function (a) { if (a.activity && a.activity.unit) byA[a.id] = a; });
+    var U = {};
+    (c.book.grades || []).forEach(function (g) {
+      var a = byA[g.assignmentId];
+      if (!a || g.score == null || !g.outOf) return;
+      var u = U[a.activity.unit] || (U[a.activity.unit] = { s: 0, n: 0, work: {}, low: {} });
+      u.s += g.score / g.outOf; u.n++; u.work[a.id] = 1;
+      if (g.score / g.outOf < CX_PASS / 100) u.low[g.accountId] = 1;
+    });
+    var tagged = {};
+    Object.keys(byA).forEach(function (id) { var a = byA[id]; (tagged[a.activity.unit] = tagged[a.activity.unit] || []).push(a); });
+    return { units: U, tagged: tagged, untagged: (c.book.assignments || []).length - Object.keys(byA).length };
+  }
+
+  function gbStandards(host, c) {
+    var cur = curriculumOf(c.raw), units = cur ? unitsOf(cur) : [];
+    var st = unitStanding(c);
+    host.appendChild(el("p", "cn-sub", "Each unit of " + esc(c.title) + ", from the marks on work tied to it. Work set on OEdu is tied to its unit; for other work, pick the unit when you set it."));
+    var t = cnTable([{ label: "Unit", w: "minmax(220px, 2fr)" }, { label: "Average", w: "100px", align: "right" }, { label: "Marks", w: "80px", align: "right" },
+                     { label: "Below " + CX_PASS + "%", w: "110px", align: "right" }, { label: "", w: "140px", align: "right" }]);
+    units.forEach(function (u) {
+      var x = st.units[u.n], avg = x ? Math.round(x.s / x.n * 100) : null;
+      var bar = avg == null ? "" : '<span class="tr-meter"><i style="width:' + avg + '%"></i></span>';
+      t.row(["<b>Unit " + u.n + "</b> <span class='cn-none'>" + esc(u.t) + "</span>" + bar, cxPct(avg, avg != null && avg < CX_PASS), x ? String(x.n) : cxNone(),
+             x ? String(Object.keys(x.low).length) : cxNone(), "<span class='cn-none'>" + (st.tagged[u.n] ? cxPlural(st.tagged[u.n].length, "piece") + " of work" : "No work yet") + "</span>"],
+        function () { openAssignSheet({ courseId: c.id, act: { kind: "unit", course: cur.id, unit: u.n, title: u.t } }); }, "u" + u.n);
+    });
+    host.appendChild(t);
+    if (!units.length) host.appendChild(el("p", "cx-note", "This course has no units on OEdu, so there is nothing to tie work to."));
+    if (st.untagged) host.appendChild(el("p", "cx-note", cxPlural(st.untagged, "piece") + " of work in this course " + (st.untagged === 1 ? "isn’t" : "aren’t") + " tied to a unit, so " + (st.untagged === 1 ? "it isn’t" : "they aren’t") + " counted here."));
+  }
+
+  function gbMissing(host, c) {
+    var gb = c.book, marks = {}, subs = {};
+    (gb.grades || []).forEach(function (g) { marks[g.assignmentId + ":" + g.accountId] = g; });
+    (gb.submissions || []).forEach(function (s) { subs[s.assignmentId + ":" + s.accountId] = s; });
+    var rows = [], now = Date.now();
+    (gb.assignments || []).forEach(function (a) {
+      (gb.students || []).forEach(function (s) {
+        var g = marks[a.id + ":" + s.id], sub = subs[a.id + ":" + s.id];
+        if (g && g.status === "missing" && !sub) rows.push({ a: a, s: s, why: "Marked not handed in" });
+        else if (!g && !sub && a.dueAt && a.dueAt < now) rows.push({ a: a, s: s, why: "Past due, nothing recorded" });
+      });
+    });
+    host.appendChild(el("p", "cn-sub", rows.length ? cxPlural(rows.length, "piece") + " of work not handed in" : "Nothing is missing in " + esc(c.title) + "."));
+    if (!rows.length) return;
+    var t = cnTable([{ label: "Student", w: "minmax(170px, 1.2fr)" }, { label: "Work", w: "minmax(180px, 1.6fr)" }, { label: "Due", w: "120px" }, { label: "", w: "minmax(150px, 1fr)", align: "right" }]);
+    rows.sort(function (p, q) { return String(p.s.name).localeCompare(String(q.s.name)) || (p.a.dueAt || 0) - (q.a.dueAt || 0); });
+    rows.forEach(function (r) {
+      t.row([cxWho(r.s), "<b>" + esc(r.a.title) + "</b>", r.a.dueAt ? esc(dayName(r.a.dueAt)) : cxNone(), "<span class='cn-none'>" + esc(r.why) + "</span>"],
+        function () { openGrading(c, r.a, r.s.id); }, r.a.id + r.s.id);
+    });
+    host.appendChild(t);
+  }
+
+  function gbHistory(host, c, d) {
+    var evs = d.events.filter(function (e) { return e.courseId === c.id; });
+    host.appendChild(el("p", "cn-sub", "Every change to a mark in " + esc(c.title) + ", newest first. Changes are kept for good." +
+      (evs.length >= HISTORY_LIMIT ? " Showing the latest " + HISTORY_LIMIT + "." : "")));
+    if (!evs.length) { host.appendChild(cnEmpty("No marks yet.", "Marks appear here as they are entered.")); return; }
+    var feed = el("div", "cx-feed");
+    evs.forEach(function (e) {
+      var r = el("div", "cx-ev");
+      var to = e.toStatus === "missing" ? "missing" : e.toStatus === "excused" ? "excused" : e.toScore == null ? "cleared" : cxNum(e.toScore) + " / " + cxNum(e.outOf);
+      var from = e.fromStatus === "missing" ? "missing" : e.fromStatus === "excused" ? "excused" : e.fromScore == null ? null : cxNum(e.fromScore);
+      r.innerHTML = avatarHtml(e.student || {}) + '<span class="t"><b>' + esc((e.student && e.student.name) || "A student") + "</b><span> · " + esc(e.title || "") + " → </span>" +
+        '<span class="cx-chg">' + esc(to) + "</span>" + (from ? "<span> (was " + esc(from) + ")</span>" : "") +
+        "<span> · by " + esc(e.actorName || "someone") + "</span></span><time>" + esc(whenName(e.at)) + "</time>";
+      feed.appendChild(r);
+    });
+    host.appendChild(feed);
+  }
+
+  /* --------------------------------------------------------- Assignments */
+  var AS_VIEWS = [["upcoming", "Upcoming"], ["active", "Active"], ["past", "Past"], ["drafts", "Drafts"]];
+  function tabTeachAssignments(v) {
+    var top = el("div", "cx-top");
+    consoleHead(top, "Teach", "Assignments", "Everything you have set, across your courses. Work on OEdu opens straight into the lesson for your students.");
+    var tools = el("div", "cx-tools");
+    tools.appendChild(cnAction("New assignment", function () { openAssignSheet({}); }, true));
+    top.appendChild(tools);
+    v.appendChild(top);
+    S.asView = S.asView || "active";
+    var node = loading(v, "your work");
+    teachCourses().then(function (cs) {
+      return Promise.all(cs.map(function (c) {
+        return Promise.all([API.courses.assignments(c.id), API.grades.book(c.id).catch(function () { return null; })])
+          .then(function (r) { return { c: c, list: r[0], book: r[1] }; });
+      }));
+    }).then(function (rows) {
+      node.remove();
+      var now = Date.now(), soon = now + 14 * 864e5, all = [];
+      rows.forEach(function (r) {
+        var handed = {}, marked = {}, n = r.book ? (r.book.students || []).length : 0;
+        if (r.book) {
+          (r.book.submissions || []).forEach(function (s) { handed[s.assignmentId] = (handed[s.assignmentId] || 0) + 1; });
+          (r.book.grades || []).forEach(function (g) { if (g.score != null || g.status !== "marked") marked[g.assignmentId] = (marked[g.assignmentId] || 0) + 1; });
+        }
+        r.list.forEach(function (a) { all.push({ a: a, c: r.c, handed: handed[a.id] || 0, marked: marked[a.id] || 0, n: n }); });
+      });
+      function inView(x, k) {
+        var a = x.a;
+        if (k === "drafts") return a.status === "draft";
+        if (a.status === "draft") return false;
+        if (k === "past") return a.dueAt && a.dueAt < now;
+        if (k === "upcoming") return a.dueAt && a.dueAt >= now && a.dueAt <= soon;
+        return !a.dueAt || a.dueAt >= now;
+      }
+      var bar = el("div", "cn-bar");
+      var chips = cnFilters(AS_VIEWS.map(function (x) { return { k: x[0], name: x[1], n: all.filter(function (y) { return inView(y, x[0]); }).length }; }),
+        S.asView, function (k) { S.asView = k; chips.mark(k); draw(); });
+      bar.appendChild(chips);
+      v.appendChild(bar);
+      var slot = el("div");
+      v.appendChild(slot);
+      function draw() {
+        slot.innerHTML = "";
+        var list = all.filter(function (x) { return inView(x, S.asView); })
+          .sort(function (p, q) { return S.asView === "past" ? (q.a.dueAt || 0) - (p.a.dueAt || 0) : (p.a.dueAt || Infinity) - (q.a.dueAt || Infinity); });
+        if (!list.length) {
+          slot.appendChild(cnEmpty(S.asView === "drafts" ? "No drafts." : "Nothing here.",
+            S.asView === "drafts" ? "Save work as a draft and it waits here, unseen by students, until you assign it." : "Set work with New assignment."));
+          return;
+        }
+        var t = cnTable([{ label: "Work", w: "minmax(220px, 2fr)" }, { label: "Course", w: "minmax(120px, 1fr)" }, { label: "Due", w: "120px" },
+                         { label: "Handed in", w: "100px", align: "right" }, { label: "Marked", w: "90px", align: "right" }]);
+        list.forEach(function (x) {
+          var a = x.a;
+          t.row(["<b>" + esc(a.title) + "</b><span class='cn-none as-kind'>" + esc(a.activity ? (onOedu(a.activity) ? "On OEdu · " + activityShort(a.activity) : "Elsewhere · Unit " + a.activity.unit) : a.category || "") + "</span>",
+                 esc(x.c.title), a.dueAt ? esc(dayName(a.dueAt)) : cxNone("No date"),
+                 onOedu(a.activity) ? x.handed + " / " + x.n : cxNone(), x.marked + " / " + x.n],
+            function () { openAssignSheet({ assignment: a }); }, a.id);
+        });
+        slot.appendChild(t);
+      }
+      draw();
+    }, function (e) { failed(node, e, function () { openAdmin(true, "assignments"); }); });
+  }
+
+  /* ---------------------------------------------------------- Assessments
+     The formal ones: tests and quizzes in the teacher's own courses, with
+     how each went. School-wide assessments are the school console's. */
+  var AM_VIEWS = [["tests", "Tests"], ["quizzes", "Quizzes"], ["bank", "Question Bank"], ["results", "Results"]];
+  function tabTeachAssessments(v) {
+    var top = el("div", "cx-top");
+    consoleHead(top, "Teach", "Assessments", "Tests and quizzes in your courses, and how they went.");
+    var tools = el("div", "cx-tools");
+    tools.appendChild(cnAction("New assessment", function () { openAssignSheet({ where: "oedu" }); }, true));
+    top.appendChild(tools);
+    v.appendChild(top);
+    S.amView = S.amView || "tests";
+    subNav(v, AM_VIEWS, S.amView, function (k) { S.amView = k; openAdmin(true, "assessments"); });
+    if (S.amView === "bank") {
+      v.appendChild(el("div", "cx-soon", "<h3>Not set up yet</h3><p>A bank of your own questions, reused across quizzes and tests, needs somewhere to keep them. " +
+        "Today, OEdu unit tests and quizzes come with their questions — assign one from Lessons.</p>"));
+      return;
+    }
+    var node = loading(v, "your tests");
+    loadSchool().then(function (d) {
+      node.remove();
+      var rows = [];
+      d.courses.forEach(function (c) {
+        var avg = assignmentAverages(c), n = {};
+        (c.book.grades || []).forEach(function (g) { if (g.score != null) n[g.assignmentId] = (n[g.assignmentId] || 0) + 1; });
+        (c.book.assignments || []).forEach(function (a) {
+          var kind = a.activity && a.activity.kind === "test" ? "tests" : /test|exam|assess|final|midterm/i.test(a.category || a.title) ? "tests" : /quiz|check/i.test(a.category || a.title) ? "quizzes" : null;
+          if (kind) rows.push({ c: c, a: a, kind: kind, avg: avg[a.id], n: n[a.id] || 0 });
+        });
+      });
+      var list = S.amView === "results" ? rows.filter(function (r) { return r.avg != null; }) : rows.filter(function (r) { return r.kind === S.amView; });
+      if (!list.length) { v.appendChild(cnEmpty("None yet.", "Set a test or a quiz — an OEdu unit test, or your own — and it appears here.")); return; }
+      if (S.amView === "results") {
+        var grid = el("div", "cx-grid");
+        v.appendChild(grid);
+        var ch = cxSection(grid, "cx-s12", "Average mark", "Tests and quizzes that have been marked");
+        ch.appendChild(barChart(list.slice(-12).map(function (r) { return { label: trim(r.a.title, 9), title: r.a.title + " · " + r.c.title, n: r.avg, color: r.avg < CX_PASS ? "var(--cx-red)" : "var(--cx-bar)" }; }), { values: true, wide: true }));
+      }
+      var t = cnTable([{ label: S.amView === "quizzes" ? "Quiz" : "Test", w: "minmax(220px, 2fr)" }, { label: "Course", w: "minmax(120px, 1fr)" },
+                       { label: "Date", w: "120px" }, { label: "Marked", w: "90px", align: "right" }, { label: "Average", w: "90px", align: "right" }]);
+      list.sort(function (p, q) { return (q.a.dueAt || 0) - (p.a.dueAt || 0); }).forEach(function (r) {
+        t.row(["<b>" + esc(r.a.title) + "</b>" + (onOedu(r.a.activity) ? "<span class='cn-none as-kind'>On OEdu · " + esc(activityName(r.a.activity)) + "</span>" : ""),
+               esc(r.c.title), r.a.dueAt ? esc(dayName(r.a.dueAt)) : cxNone(), String(r.n), cxPct(r.avg, r.avg != null && r.avg < CX_PASS)],
+          function () { openGrading(r.c, r.a); }, r.a.id);
+      });
+      v.appendChild(t);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "assessments"); }); });
+  }
+
+  /* -------------------------------------------------------------- Lessons
+     What students are doing on OEdu because you set it — today, coming up,
+     not yet assigned — and the OEdu library to set more from. */
+  var LS_VIEWS = [["today", "Today"], ["upcoming", "Upcoming"], ["drafts", "Drafts"], ["shared", "Shared"], ["library", "OEdu Library"]];
+  function tabTeachLessons(v) {
+    var top = el("div", "cx-top");
+    consoleHead(top, "Learning", "Lessons", "Lessons and activities your students do on OEdu, and the library to set them from.");
+    var tools = el("div", "cx-tools");
+    tools.appendChild(cnAction("Assign a lesson", function () { openAssignSheet({ where: "oedu" }); }, true));
+    top.appendChild(tools);
+    v.appendChild(top);
+    S.lsView = S.lsView || "today";
+    subNav(v, LS_VIEWS, S.lsView, function (k) { S.lsView = k; openAdmin(true, "lessons"); });
+    if (S.lsView === "library") { lessonLibrary(v); return; }
+    if (S.lsView === "shared") {
+      v.appendChild(el("div", "cx-soon", "<h3>Not set up yet</h3><p>Sharing lessons between teachers needs lessons of your own to share. " +
+        "Every OEdu lesson is in the library for every teacher already.</p>"));
+      return;
+    }
+    var node = loading(v, "your lessons");
+    teachCourses().then(function (cs) {
+      return Promise.all(cs.map(function (c) {
+        return Promise.all([API.courses.assignments(c.id), API.grades.book(c.id).catch(function () { return null; })]).then(function (r) { return { c: c, list: r[0], book: r[1] }; });
+      }));
+    }).then(function (rows) {
+      node.remove();
+      var eod = endOfToday(), sod = eod - 864e5 + 1, out = [];
+      rows.forEach(function (r) {
+        var handed = {}, n = r.book ? (r.book.students || []).length : 0;
+        if (r.book) (r.book.submissions || []).forEach(function (s) { handed[s.assignmentId] = (handed[s.assignmentId] || 0) + 1; });
+        r.list.forEach(function (a) {
+          if (!onOedu(a.activity)) return;
+          var k = a.status === "draft" ? "drafts" : a.dueAt && a.dueAt >= sod && a.dueAt <= eod ? "today" : a.dueAt && a.dueAt > eod ? "upcoming" : !a.dueAt ? "today" : null;
+          if (k === S.lsView) out.push({ a: a, c: r.c, handed: handed[a.id] || 0, n: n });
+        });
+      });
+      if (!out.length) {
+        v.appendChild(cnEmpty(S.lsView === "drafts" ? "No drafts." : S.lsView === "today" ? "Nothing on OEdu is due today." : "Nothing coming up on OEdu.",
+          "Assign a lesson from the OEdu Library, or with Assign a lesson.", "Open the library", function () { S.lsView = "library"; openAdmin(true, "lessons"); }));
+        return;
+      }
+      var list = el("div", "tq-list");
+      out.sort(function (p, q) { return (p.a.dueAt || 0) - (q.a.dueAt || 0); }).forEach(function (x) {
+        var b = el("button", "tq-row");
+        b.type = "button";
+        b.innerHTML = '<span class="ic">' + cxIcon("play") + '</span><span class="t"><b>' + esc(x.a.title) + "</b><span>" + esc(x.c.title + " · " + activityName(x.a.activity) +
+          (x.a.dueAt ? " · due " + dayName(x.a.dueAt) : "")) + '</span></span><span class="n">' + x.handed + "<small>/" + x.n + '</small></span><span class="go">' + cxIcon("chev") + "</span>";
+        b.addEventListener("click", function () { if (x.a.status === "draft") openAssignSheet({ assignment: x.a }); else openGrading(x.c, x.a); });
+        list.appendChild(b);
+      });
+      v.appendChild(list);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "lessons"); }); });
+  }
+
+  /* The library: each course's units, and inside a unit what can be set. */
+  function lessonLibrary(v) {
+    var node = loading(v, "the library");
+    teachCourses().then(function (cs) {
+      node.remove();
+      var mine = cs.map(function (c) { return { row: c, cur: curriculumOf(c) }; }).filter(function (x) { return x.cur; });
+      var shown = {};
+      mine.forEach(function (x) { shown[x.cur.id] = 1; });
+      function courseBlock(cur, row) {
+        var sec = el("section", "lib-course");
+        sec.appendChild(el("h3", null, esc(cur.t) + (row ? "" : " <span class='cn-none'>· not a course you teach</span>")));
+        var units = unitsOf(cur).filter(function (u) { return u.lab || u.play || u.read || u.set; });
+        if (!units.length) { sec.appendChild(el("p", "cx-note", "No lessons are written for this course yet.")); return sec; }
+        units.forEach(function (u) {
+          var d = el("details", "lib-unit");
+          d.innerHTML = "<summary><b>Unit " + u.n + "</b><span>" + esc(u.t) + "</span>" + cxIcon("chev") + "</summary>";
+          var body = el("div", "lib-items");
+          d.appendChild(body);
+          d.addEventListener("toggle", function () {
+            if (!d.open || body.dataset.done) return;
+            body.dataset.done = "1";
+            body.appendChild(el("p", "cx-note", "Loading…"));
+            unitChoices(cur, u).then(function (list) {
+              body.innerHTML = "";
+              list.filter(function (x) { return x.act.kind !== "offline"; }).forEach(function (x) {
+                var r = el("div", "lib-item");
+                r.innerHTML = '<span class="ic">' + cxIcon(x.act.kind === "test" ? "checklist" : x.act.kind === "set" ? "folder" : x.act.kind === "unit" ? "path" : "play") + "</span><span class='t'>" + esc(x.label) + "</span>";
+                var pv = el("button", "cn-btn small", "Preview");
+                pv.type = "button";
+                pv.addEventListener("click", function () { previewActivity(x.act); });
+                var go = el("button", "cn-btn small strong", "Assign");
+                go.type = "button";
+                go.addEventListener("click", function () {
+                  openAssignSheet({ courseId: row ? row.id : null, act: x.act, done: function () { S.lsView = "upcoming"; openAdmin(true, "lessons"); } });
+                });
+                r.appendChild(pv);
+                r.appendChild(go);
+                body.appendChild(r);
+              });
+            });
+          });
+          sec.appendChild(d);
+        });
+        return sec;
+      }
+      if (!mine.length) v.appendChild(el("p", "cx-note", "None of your courses has OEdu lessons yet. Everything OEdu has written is below."));
+      mine.forEach(function (x) { v.appendChild(courseBlock(x.cur, x.row)); });
+      var more = allCourses().filter(function (c) { return !shown[c.id] && !c.stub && unitsOf(c).some(function (u) { return u.lab || u.play || u.read || u.set; }); });
+      if (more.length) {
+        var d = el("details", "lib-more");
+        d.innerHTML = "<summary>More from OEdu <span class='cn-none'>" + cxPlural(more.length, "course") + "</span></summary>";
+        more.forEach(function (c) { d.appendChild(courseBlock(c, null)); });
+        v.appendChild(d);
+      }
+    }, function (e) { failed(node, e, function () { openAdmin(true, "lessons"); }); });
+  }
+
+  /* Seeing a lesson the way a student will, from inside the console. */
+  function previewActivity(act) {
+    var c = activityCourse(act);
+    if (act.kind === "set") { openSet(act.set); return; }
+    if (!c) { toast("That course isn’t on OEdu."); return; }
+    if (act.kind === "lesson") openLab(c, act.unit, "l" + act.lesson);
+    else if (act.kind === "test") openLab(c, act.unit, "Test");
+    else openUnit(c, act.unit);
+  }
+
+  /* ------------------------------------------------------------ Standards */
+  function tabTeachStandards(v) {
+    var head = el("div", "tr-pagehead");
+    v.appendChild(head);
+    var node = loading(v, "your courses");
+    Promise.all([teachCourses(), loadSchool()]).then(function (r) {
+      node.remove();
+      if (!r[0].length) { v.appendChild(cnEmpty("You aren’t teaching any courses yet.", "")); return; }
+      var cur = coursePill(head, r[0]);
+      consoleHead(head, null, "Standards");
+      var c = courseBook(r[1], cur.id);
+      if (c) gbStandards(v, c);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "standards"); }); });
+  }
+
+  /* ----------------------------------------------------------- Curriculum
+     The course's units in order, and how far the teaching has got: a unit
+     whose work is all past due is taught, one with work still to come is
+     under way, one with none is still ahead. */
+  function tabTeachCurriculum(v) {
+    var head = el("div", "tr-pagehead");
+    v.appendChild(head);
+    var node = loading(v, "your courses");
+    Promise.all([teachCourses(), loadSchool()]).then(function (r) {
+      node.remove();
+      if (!r[0].length) { v.appendChild(cnEmpty("You aren’t teaching any courses yet.", "")); return; }
+      var row = coursePill(head, r[0]);
+      consoleHead(head, null, "Curriculum");
+      var c = courseBook(r[1], row.id), cur = curriculumOf(row);
+      var units = cur ? unitsOf(cur) : [];
+      if (!units.length) { v.appendChild(cnEmpty("No units yet.", "This course has no curriculum on OEdu.")); return; }
+      var st = c ? unitStanding(c) : { tagged: {} }, now = Date.now(), part = null;
+      var list = el("div", "cu-list");
+      units.forEach(function (u) {
+        if (u.part && u.part !== part) { part = u.part; list.appendChild(el("p", "tq-head", esc(part))); }
+        var work = st.tagged[u.n] || [];
+        var state = !work.length ? "ahead" : work.every(function (a) { return a.dueAt && a.dueAt < now; }) ? "taught" : "going";
+        var b = el("div", "cu-row " + state);
+        var ready = u.lab || u.play || u.read || u.set;
+        b.innerHTML = '<span class="cu-dot" aria-hidden="true"></span><span class="t"><b>Unit ' + u.n + " · " + esc(u.t) + "</b><span>" +
+          esc(state === "taught" ? "Taught · " + cxPlural(work.length, "piece") + " of work" : state === "going" ? "Under way · " + cxPlural(work.length, "piece") + " of work"
+            : ready ? "Not started" : "Not started · lessons not written yet") + "</span></span>";
+        var acts = el("span", "r");
+        if (ready) {
+          var pv = el("button", "cn-btn small", "Preview");
+          pv.type = "button";
+          pv.addEventListener("click", function () { openUnit(cur, u.n); });
+          acts.appendChild(pv);
+        }
+        var go = el("button", "cn-btn small", "Set work");
+        go.type = "button";
+        go.addEventListener("click", function () { openAssignSheet({ courseId: row.id, act: ready ? { kind: "unit", course: cur.id, unit: u.n, title: u.t } : { kind: "offline", course: cur.id, unit: u.n, title: u.t } }); });
+        acts.appendChild(go);
+        b.appendChild(acts);
+        list.appendChild(b);
+      });
+      v.appendChild(list);
+      v.appendChild(el("p", "cx-note", "Taught means every piece of work tied to the unit is past its due date. Tie work to a unit when you set it."));
+    }, function (e) { failed(node, e, function () { openAdmin(true, "curriculum"); }); });
+  }
+
+  /* ------------------------------------------------------------ Resources */
+  function tabTeachResources(v) {
+    consoleHead(v, "Learning", "Resources", "Study sets and readings for your courses — yours, and OEdu’s.");
+    var node = loading(v, "your courses");
+    teachCourses().then(function (cs) {
+      node.remove();
+      var grid = el("div", "cx-grid");
+      v.appendChild(grid);
+      var mineSec = cxSection(grid, "cx-s12", "My resources", "Study sets you have written for your courses", { label: "Write a study set", go: function () { openAdmin(false, "sets"); } });
+      var own = Object.keys(dbSets).map(function (k) { return { id: k, s: dbSets[k] }; });
+      if (!own.length) mineSec.appendChild(el("p", "cx-note", "You haven’t written a study set yet."));
+      own.forEach(function (x) { mineSec.appendChild(resRow(x.id, x.s, "Yours")); });
+      var lib = cxSection(grid, "cx-s12", "OEdu Library", "Written by OEdu for the courses you teach");
+      var any = false;
+      cs.forEach(function (row) {
+        var cur = curriculumOf(row);
+        if (!cur) return;
+        unitsOf(cur).forEach(function (u) {
+          if (u.set && SC.set(u.set)) { any = true; lib.appendChild(resRow(u.set, SC.set(u.set), cur.t + " · Unit " + u.n)); }
+          var rd = readerFor(cur.id, u.n);
+          if (rd) { any = true; lib.appendChild(readRow(cur, u, rd)); }
+        });
+      });
+      if (!any) lib.appendChild(el("p", "cx-note", "No study sets or readings for your courses yet — see Lessons › OEdu Library for lessons."));
+      var sh = cxSection(grid, "cx-s12", "Department · School · District · Shared with me", "");
+      sh.appendChild(el("p", "cx-note", "Sharing resources between teachers isn’t set up yet. When it is, what your department and school share will be here."));
+    }, function (e) { failed(node, e, function () { openAdmin(true, "resources"); }); });
+  }
+  function resRow(id, s, where) {
+    var r = el("div", "lib-item");
+    r.innerHTML = '<span class="ic">' + cxIcon("folder") + "</span><span class='t'><b>" + esc(s.t || id) + "</b> <span class='cn-none'>" + esc(where) + " · " +
+      cxPlural((s.cards || []).length, "term") + "</span></span>";
+    var pv = el("button", "cn-btn small", "Open");
+    pv.type = "button";
+    pv.addEventListener("click", function () { openSet(id); });
+    var go = el("button", "cn-btn small strong", "Assign");
+    go.type = "button";
+    go.addEventListener("click", function () { openAssignSheet({ act: { kind: "set", set: id, title: s.t } }); });
+    r.appendChild(pv);
+    r.appendChild(go);
+    return r;
+  }
+  function readRow(cur, u, rd) {
+    var r = el("div", "lib-item");
+    r.innerHTML = '<span class="ic">' + cxIcon("doc") + "</span><span class='t'><b>" + esc(u.t) + "</b> <span class='cn-none'>" + esc(cur.t) + " · Unit " + u.n + " · " +
+      cxPlural(rd.sections.length, "section") + " to read</span></span>";
+    var pv = el("button", "cn-btn small", "Open");
+    pv.type = "button";
+    pv.addEventListener("click", function () { openUnit(cur, u.n); });
+    var go = el("button", "cn-btn small strong", "Assign");
+    go.type = "button";
+    go.addEventListener("click", function () { openAssignSheet({ act: { kind: "unit", course: cur.id, unit: u.n, title: u.t } }); });
+    r.appendChild(pv);
+    r.appendChild(go);
+    return r;
+  }
+
+  /* --------------------------------------------------------------- Groups
+     Groups a teacher would make anyway, found in the marks: who is below a
+     pass, who is missing work, who is ready for more, who is struggling on
+     a particular unit. Work is still set for the whole course. */
+  function tabTeachGroups(v) {
+    consoleHead(v, "Students", "Groups", "Instructional groups, found in your gradebooks. Open one to see who is in it and why.");
+    var node = loading(v, "your gradebooks");
+    loadSchool().then(function (d) {
+      node.remove();
+      var groups = [];
+      d.courses.forEach(function (c) {
+        var studs = d.students.map(function (s) { return { s: s, x: s.courses.filter(function (y) { return y.courseId === c.id; })[0] }; })
+          .filter(function (r) { return r.x; });
+        function add(name, why, list) { if (list.length) groups.push({ c: c, name: name, why: why, list: list }); }
+        add("Below a pass", "Under " + CX_PASS + "% in " + c.title, studs.filter(function (r) { return r.x.grade && r.x.grade.percent < CX_PASS; }));
+        add("Missing work", "Two or more pieces not handed in", studs.filter(function (r) { return r.x.missing >= 2; }));
+        add("Ready for more", "90% or above", studs.filter(function (r) { return r.x.grade && r.x.grade.percent >= 90; }));
+        var st = unitStanding(c), cur = curriculumOf(c.raw);
+        Object.keys(st.units).forEach(function (n) {
+          var low = Object.keys(st.units[n].low);
+          if (low.length < 2) return;
+          var u = cur ? unitsOf(cur).filter(function (x) { return String(x.n) === n; })[0] : null;
+          add("Unit " + n + (u ? ": " + u.t : ""), "Scored under " + CX_PASS + "% on this unit’s work",
+            studs.filter(function (r) { return low.indexOf(r.s.id) > -1; }));
+        });
+      });
+      if (!groups.length) { v.appendChild(cnEmpty("No groups yet.", "Groups appear once there are marks to find them in.")); return; }
+      var grid = el("div", "tg-grid");
+      groups.forEach(function (g) {
+        var b = el("button", "tg-card");
+        b.type = "button";
+        b.innerHTML = "<p class='k'>" + esc(g.c.title) + "</p><h3>" + esc(g.name) + "</h3><p>" + esc(g.why) + "</p>" +
+          "<div class='av'>" + g.list.slice(0, 6).map(function (r) { return avatarHtml(r.s); }).join("") +
+          (g.list.length > 6 ? "<span>+" + (g.list.length - 6) + "</span>" : "") + "</div><b class='n'>" + cxPlural(g.list.length, "student") + "</b>";
+        b.addEventListener("click", function () { groupSheet(g); });
+        grid.appendChild(b);
+      });
+      v.appendChild(grid);
+      v.appendChild(el("p", "cx-note", "These groups are worked out from marks each time you open this page. Naming and keeping groups of your own, and setting work for one group, aren’t set up yet — work is set for the whole course."));
+    }, function (e) { failed(node, e, function () { openAdmin(true, "groups"); }); });
+  }
+  function groupSheet(g) {
+    var box = el("div", "as-sheet");
+    box.appendChild(el("p", "cn-eyebrow", esc(g.c.title)));
+    box.appendChild(el("h2", "as-h", esc(g.name)));
+    box.appendChild(el("p", "cn-sub", esc(g.why)));
+    var t = cnTable([{ label: "Student", w: "minmax(160px, 1.4fr)" }, { label: "Grade", w: "80px", align: "right" }, { label: "Missing", w: "80px", align: "right" }]);
+    g.list.forEach(function (r) {
+      t.row([cxWho(r.s), cxPct(r.x.grade ? r.x.grade.percent : null, r.x.grade && r.x.grade.percent < CX_PASS), String(r.x.missing || 0)],
+        function () { openStudentSheet(r.s); }, r.s.id);
+    });
+    box.appendChild(t);
+    var acts = cnActions();
+    acts.appendChild(cnAction("Print the list", function () {
+      cxPrint(g.name, "<h1>" + esc(g.name) + "</h1><p class='sub'>" + esc(g.c.title + " · " + g.why) + "</p><table><tr><th>Student</th><th class='r'>Grade</th><th class='r'>Missing</th></tr>" +
+        g.list.map(function (r) { return "<tr><td>" + esc(r.s.name) + "</td><td class='r'>" + (r.x.grade ? r.x.grade.percent + "%" : "—") + "</td><td class='r'>" + (r.x.missing || 0) + "</td></tr>"; }).join("") + "</table>");
+    }));
+    box.appendChild(acts);
+    cxSheet(box);
+  }
+
+  /* ------------------------------------------------------------ Analytics */
+  var AN_VIEWS = [["courses", "Course performance"], ["work", "Assignments"], ["kinds", "Kinds of work"], ["trends", "Grade trends"]];
+  function tabTeachAnalytics(v) {
+    consoleHead(v, "Insights", "Analytics", "Your courses’ marks in context. Only marks count here — never what students practise on their own.");
+    S.anView = S.anView || "courses";
+    subNav(v, AN_VIEWS, S.anView, function (k) { S.anView = k; openAdmin(true, "analytics"); });
+    var node = loading(v, "your gradebooks");
+    loadSchool().then(function (d) {
+      node.remove();
+      var grid = el("div", "cx-grid");
+      v.appendChild(grid);
+      if (S.anView === "courses") {
+        var c1 = cxSection(grid, "cx-s12", "Average by course", "");
+        c1.appendChild(barChart(d.courses.map(function (c) { return { label: trim(c.title, 10), title: c.title, n: c.average || 0, color: c.average != null && c.average < CX_PASS ? "var(--cx-red)" : "var(--cx-bar)" }; }), { values: true, wide: true }));
+        var t = cnTable([{ label: "Course", w: "minmax(180px, 1.6fr)" }, { label: "Students", w: "90px", align: "right" }, { label: "Average", w: "90px", align: "right" },
+                         { label: "Below " + CX_PASS + "%", w: "100px", align: "right" }, { label: "Missing", w: "90px", align: "right" }]);
+        d.courses.forEach(function (c) {
+          t.row(["<b>" + esc(c.title) + "</b>", String(c.students), cxPct(c.average, c.average != null && c.average < CX_PASS), String(c.below), String(c.missing)],
+            function () { S.courseId = c.id; S.gbView = "overview"; openAdmin(false, "roster"); }, c.id);
+        });
+        cxSection(grid, "cx-s12", "Courses", "").appendChild(t);
+      } else if (S.anView === "work") {
+        d.courses.forEach(function (c) {
+          var avg = assignmentAverages(c);
+          var sec = cxSection(grid, "cx-s12", c.title, "Average mark on each piece, in the order it was set");
+          sec.appendChild(barChart((c.book.assignments || []).filter(function (a) { return avg[a.id] != null; }).map(function (a) {
+            return { label: trim(a.title, 8), title: a.title, n: avg[a.id], color: avg[a.id] < CX_PASS ? "var(--cx-red)" : "var(--cx-bar)" };
+          }), { values: true, wide: true }));
+        });
+      } else if (S.anView === "kinds") {
+        var cat = {};
+        d.courses.forEach(function (c) {
+          var a = {};
+          (c.book.assignments || []).forEach(function (x) { a[x.id] = x; });
+          (c.book.grades || []).forEach(function (g) {
+            if (g.score == null || !g.outOf) return;
+            var k = (a[g.assignmentId] && a[g.assignmentId].category) || "Other", x = cat[k] || (cat[k] = { s: 0, n: 0 });
+            x.s += g.score / g.outOf; x.n++;
+          });
+        });
+        var kc = cxSection(grid, "cx-s12", "How students do by kind of work", "Across your courses");
+        kc.appendChild(barChart(Object.keys(cat).sort().map(function (k) {
+          var p = Math.round(cat[k].s / cat[k].n * 100);
+          return { label: k, n: p, title: k + " (" + cat[k].n + " marks)", color: p < CX_PASS ? "var(--cx-red)" : "var(--cx-bar)" };
+        }), { values: true, wide: true }));
+      } else {
+        var wk = {};
+        d.courses.forEach(function (c) {
+          var due = {};
+          (c.book.assignments || []).forEach(function (a) { due[a.id] = a.dueAt; });
+          (c.book.grades || []).forEach(function (g) {
+            if (g.score == null || !g.outOf || !due[g.assignmentId]) return;
+            var w = weekOf(due[g.assignmentId]), x = wk[w] || (wk[w] = { s: 0, n: 0 });
+            x.s += g.score / g.outOf; x.n++;
+          });
+        });
+        var keys = Object.keys(wk).map(Number).sort(function (p, q) { return p - q; }).slice(-16);
+        var tr = cxSection(grid, "cx-s12", "Average mark by week", "By the week the work was due");
+        tr.appendChild(barChart(keys.map(function (k) {
+          var p = Math.round(wk[k].s / wk[k].n * 100), dt = new Date(k);
+          return { label: (dt.getMonth() + 1) + "/" + dt.getDate(), n: p, title: "Week of " + dt.toLocaleDateString(), color: p < CX_PASS ? "var(--cx-red)" : "var(--cx-bar)" };
+        }), { values: true, wide: true, average: true }));
+        var gr = growthRows(d).sort(function (p, q) { return p.change - q.change; });
+        var gs = cxSection(grid, "cx-s12", "Who is changing", "Each student’s later marks against their earlier ones, in each course");
+        var t2 = cnTable([{ label: "Student", w: "minmax(160px, 1.4fr)" }, { label: "Course", w: "minmax(120px, 1fr)" }, { label: "Now", w: "80px", align: "right" }, { label: "Change", w: "90px", align: "right" }]);
+        gr.slice(0, 12).forEach(function (x) { t2.row([cxWho(x.s), esc(x.course.title), cxPct(x.now, x.now < CX_PASS), changeHtml(x.change)], function () { openStudentSheet(x.s); }, x.s.id + x.course.id); });
+        if (gr.length) gs.appendChild(t2); else gs.appendChild(el("p", "cx-note", "A student needs four marks in a course before a change can be seen."));
+      }
+    }, function (e) { failed(node, e, function () { openAdmin(true, "analytics"); }); });
+  }
+
+  /* -------------------------------------------------------- Interventions
+     Students needing support, the reason in words, and what to do next. */
+  function tabTeachInterventions(v) {
+    consoleHead(v, "Insights", "Interventions", "Students who need support, why, and a next step for each.");
+    var node = loading(v, "your gradebooks");
+    loadSchool().then(function (d) {
+      node.remove();
+      var slip = {};
+      growthRows(d).forEach(function (x) { if (x.change <= -8) (slip[x.s.id] = slip[x.s.id] || []).push(x); });
+      var list = d.students.map(function (s) {
+        var why = [], acts = [];
+        s.courses.forEach(function (c) {
+          if (c.grade && c.grade.percent < CX_PASS) why.push("Below a pass in " + c.title + " (" + c.grade.percent + "%)");
+          if (c.missing >= 2) why.push(c.missing + " pieces missing in " + c.title);
+        });
+        (slip[s.id] || []).forEach(function (x) { why.push("Down " + Math.abs(x.change) + " points in " + x.course.title); });
+        if (s.missing) acts.push("Chase the missing work — a zero counts until it is handed in");
+        if (s.standing != null && s.standing < CX_PASS) acts.push("Set practice on the units they are weakest in");
+        if (slip[s.id]) acts.push("Talk to them: something changed");
+        return { s: s, why: why, acts: acts, weight: (s.standing == null ? 100 : s.standing) - s.missing * 3 - (slip[s.id] ? 5 : 0) };
+      }).filter(function (r) { return r.why.length; }).sort(function (p, q) { return p.weight - q.weight; });
+      cxMetrics(v, [
+        { label: "Need support", value: list.length, note: "of " + cxPlural(d.students.length, "student") },
+        { label: "Below a pass", value: d.students.filter(function (s) { return s.standing != null && s.standing < CX_PASS; }).length, bad: true },
+        { label: "Missing work", value: d.students.filter(function (s) { return s.missing >= 2; }).length, note: "two or more pieces" },
+        { label: "Slipping", value: Object.keys(slip).length, note: "down 8 points or more" }
+      ]);
+      if (!list.length) { v.appendChild(cnEmpty("Nobody needs support right now.", "Nobody is below a pass, missing two pieces, or slipping.")); return; }
+      var box = el("div", "iv-list");
+      list.forEach(function (r) {
+        var card = el("div", "iv-card");
+        card.innerHTML = avatarHtml(r.s) + "<div class='t'><b>" + esc(r.s.name) + "</b><ul class='why'>" + r.why.map(function (w) { return "<li>" + esc(w) + "</li>"; }).join("") +
+          "</ul><p class='do'>" + esc(r.acts.join(" · ")) + "</p></div>";
+        var a = el("div", "r");
+        a.appendChild(cnAction("Open", function () { openStudentSheet(r.s); }));
+        a.appendChild(cnAction("Report", function () { openReport(r.s); }));
+        card.appendChild(a);
+        box.appendChild(card);
+      });
+      v.appendChild(box);
+      v.appendChild(el("p", "cx-note", "Recording an intervention — what was tried, when, and how it went — isn’t set up yet, so there is no history here."));
+    }, function (e) { failed(node, e, function () { openAdmin(true, "interventions"); }); });
+  }
+
+  /* ---------------------------------------------- Not set up yet, honestly */
+  function tabTeachAttendance(v) {
+    soonPage(v, "Students", "Attendance", "Taking attendance for each course, fast, every day.",
+      ["A register for each course, with the whole roster present by default", "Absent, late and excused, one tap each",
+       "Each student’s attendance beside their grade", "What families see, the same day"],
+      "Attendance records are being set up for the school; taking it from here arrives with them.",
+      [["Students", function () { openAdmin(false, "students"); }]]);
+  }
+  function tabTeachMessages(v) {
+    soonPage(v, "Communicate", "Messages", "One place for every conversation — students, families, colleagues.",
+      ["A conversation per student, with their family on it when you choose", "Messages to colleagues who teach the same students",
+       "A note on work you have marked, answered in one place"],
+      "Messaging needs somewhere to keep conversations, and that isn’t built yet. Comments on marks already reach students with the mark.",
+      [["To Grade", function () { openAdmin(false, "tograde"); }]]);
+  }
+  function tabTeachAnnouncements(v) {
+    soonPage(v, "Communicate", "Announcements", "One message to everyone in a course.",
+      ["Post to a course — students see it on their School page", "Schedule for later", "Families copied when you choose"],
+      "Announcements aren’t built yet. Work you set shows up on every student’s School page as soon as you assign it.",
+      [["New assignment", function () { openAssignSheet({}); }]]);
+  }
+
+  /* ------------------------------------------------------------------ Help */
+  function tabTeachHelp(v) {
+    consoleHead(v, "Help", "Help", "How the teacher console works, and its shortcuts.");
+    var mac = /Mac|iP(hone|ad)/.test(navigator.platform), cmd = mac ? "⌘" : "Ctrl ";
+    var grid = el("div", "cx-grid");
+    v.appendChild(grid);
+    var keys = cxSection(grid, "cx-s6", "Keyboard shortcuts", "");
+    keys.id = "help-keys";
+    var kt = cnTable([{ label: "", w: "minmax(120px, 1fr)" }, { label: "", w: "auto", align: "right" }]);
+    [["Search OEdu", cmd + "K"], ["Show or hide the sidebar", cmd + "\\"], ["Next cell in the gradebook", "Tab · ↵"], ["Not handed in", "m"], ["Excused", "e"],
+     ["Late", "a score then l — 18l"], ["Save and go to the next student", "↵ in Grading"], ["Leave focus mode", "Esc"]].forEach(function (k) {
+      kt.row([esc(k[0]), "<kbd class='tr-kbd'>" + esc(k[1]) + "</kbd>"]);
+    });
+    keys.appendChild(kt);
+    var how = cxSection(grid, "cx-s6", "How things work", "");
+    how.innerHTML += "<ul class='hp-list'>" + [
+      "<b>Work on OEdu.</b> Set a lesson, a unit test, a whole unit or a study set as an assignment. Students open it from their School page; when they finish, it is handed in and waits in To Grade.",
+      "<b>A hand-in is not a mark.</b> What OEdu measured is shown beside the student. You decide the mark — one press takes OEdu’s.",
+      "<b>Self-learning is theirs.</b> Courses students take up on their own are never graded, and you can’t see them. Only work you set, and mark, counts.",
+      "<b>Drafts</b> stay out of students’ sight until you assign them.",
+      "<b>Standards</b> are your course’s units: work tied to a unit adds up to how the course is doing on it."
+    ].map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul>";
+    var nt = cxSection(grid, "cx-s12", "Notifications", "");
+    nt.id = "help-notify";
+    nt.appendChild(el("p", "cx-note", "OEdu doesn’t send notifications yet. What needs you is counted beside To Grade in the sidebar."));
+    if (S.helpAt) {
+      var at = S.helpAt === "keys" ? keys : nt;
+      S.helpAt = null;
+      setTimeout(function () { at.scrollIntoView({ block: "start" }); at.classList.add("hp-flash"); }, 60);
+    }
+  }
+
+  var TEACH_TABS = {
+    today: consoleHome, courses: tabCourses, roster: tabTeachGradebook, tograde: tabToGrade, assignments: tabTeachAssignments,
+    assessments: tabTeachAssessments, lessons: tabTeachLessons, standards: tabTeachStandards, curriculum: tabTeachCurriculum,
+    resources: tabTeachResources, students: tabStudents, groups: tabTeachGroups, attendance: tabTeachAttendance,
+    analytics: tabTeachAnalytics, interventions: tabTeachInterventions, messages: tabTeachMessages, announcements: tabTeachAnnouncements,
+    system: tabSystem, help: tabTeachHelp, activity: tabActivity, reports: tabReports, work: tabWork, sets: tabSets
+  };
 
   /* ------------------------------------------------------------- Overview */
   function drawOverview(v, grid, d, head) {
@@ -17126,6 +18944,7 @@
       noFoot(); progress(null);
       if (b.dataset.view === "my") home();
       else if (b.dataset.view === "classes") openClasses();
+      else if (b.dataset.view === "own") openOwn();
       else if (b.dataset.view === "progress") openProgress();
       else if (b.dataset.view === "admin") openAdmin();
       else if (b.dataset.view === "grades") openGrades();
@@ -17181,6 +19000,11 @@
       if (!document.body.classList.contains("is-console")) return;
       e.preventDefault();
       if ($("#finder").hidden) openFinder(); else closeFinder();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === "\\" && document.body.classList.contains("t-console")) {
+      e.preventDefault();
+      trToggle();
       return;
     }
     if (e.key === "Escape" && !$("#finder").hidden) { closeFinder(); return; }
