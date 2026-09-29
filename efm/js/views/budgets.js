@@ -30,12 +30,18 @@
       var dept = q.get("dept");
       var d = dept && E.dims.dept.filter(function (x) { return x.id === dept; })[0];
       page.appendChild(ui.pageHead(d ? d.name : "Budgets", d ? "Spending against the fiscal " + E.fy + " plan · " + app.scopeLabel() : "The fiscal " + E.fy + " plan, set in December, against what was spent · " + app.scopeLabel(),
-        d ? [ui.btn("All departments", { icon: "back", onClick: function () { app.setQuery({ dept: null }); } })] : []));
+        (d ? [ui.btn("All departments", { icon: "back", onClick: function () { app.setQuery({ dept: null }); } })] : []).concat([ui.gated("budget.set", {}, "Edit budget", function () { editor(ctx); }, { kind: d ? null : "primary", icon: "settings" })])));
       page.appendChild(h("div", { class: "filters" },
         ui.seg([{ id: "closed", label: "Through " + ui.period(L).slice(0, 3) + " (closed)" }, { id: "ytd", label: "Through " + ui.period(cp).slice(0, 3) + " (preliminary)" }, { id: "fy", label: "Full year" }], range,
           function (v) { app.setQuery({ range: v === "closed" ? null : v }); }, { label: "Range" }),
         h("span", { class: "muted", style: { fontSize: "12.5px" } }, rangeText)));
 
+      if (!Object.keys(E.budgets).length) {
+        page.appendChild(ui.card({ body: h("div", { class: "empty", style: { padding: "44px 16px" } }, ui.icon("target"), h("b", null, "No budget yet"),
+          h("div", { style: { maxWidth: "520px" } }, "Set what each department may spend, month by month. Spending is then held against it everywhere — on invoices, in reports and on Insights."),
+          h("div", { class: "row", style: { justifyContent: "center", marginTop: "16px" } }, ui.gated("budget.set", {}, "Set the budget", function () { editor(ctx); }, { kind: "primary", icon: "plus" }))) }));
+        return page;
+      }
       var rows = E.budgetVsActual(app.scope, from, to);
       if (range === "fy") rows.forEach(function (r) { r.budget = r.fullYear; r.variance = r.actual - r.budget; r.used = r.budget ? r.actual / r.budget : 0; });
       if (d) page.appendChild(detail(ctx, d, rows.filter(function (r) { return r.dept.id === d.id; })[0], from, to, range));
@@ -43,6 +49,51 @@
       return page;
     }
   });
+
+  /* ------------------------------------------------------------- The editor
+     The plan for the year, a line at a time: a department and an account with a
+     figure for each month. Revenue is planned under its own heading. */
+  function editor(ctx) {
+    var E = ctx.E, app = ctx.app, ent = app.scope === "GROUP" ? E.entities[0].id : app.scope, dp = E.dp(E.entity[ent].currency), MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var rows = [], removed = [];
+    Object.keys(E.budgets).forEach(function (k) { var p = k.split("|"); if (p[0] === ent) rows.push({ dept: p[1], account: p[2], m: E.budgets[k].map(function (v) { return v ? ui.majorOf(v, dp) : ""; }) }); });
+    rows.sort(function (a, b) { return a.dept < b.dept ? -1 : a.dept > b.dept ? 1 : a.account < b.account ? -1 : 1; });
+    var body = h("div"), foot = h("span", { class: "ef-msg", style: { display: "none" } });
+    var expense = E.accountList.filter(function (a) { return a.type === "expense" && !a.ic && a.group !== "tax"; }), revenue = E.accountList.filter(function (a) { return a.type === "revenue" && !a.ic && a.group === "rev"; });
+    function annual(r) { return r.m.reduce(function (s, v) { var x = ui.parseMoney(v, dp); return s + (isNaN(x) ? 0 : x); }, 0); }
+    function draw() {
+      ui.clear(body);
+      var t = h("table", { class: "tbl jc-lines bg-ed" });
+      t.appendChild(h("thead", null, h("tr", null, h("th", null, "Department"), h("th", null, "Account"), MON.map(function (m) { return h("th", { class: "num" }, m); }), h("th", { class: "num" }, "Year"), h("th", null, ""))));
+      var tb = h("tbody");
+      rows.forEach(function (r, i) {
+        var isRev = r.dept === "REV", tot = h("td", { class: "num bg-tot" }, E.fmt(annual(r), E.entity[ent].currency, { dp: 0 }));
+        var dsel = isRev ? h("span", { class: "muted" }, "Revenue plan") : ui.select(E.dimList("dept", r.dept).map(function (d) { return { id: d.id, label: d.name }; }), r.dept, function (v) { r.dept = v; }, { label: "Department" });
+        var asel = ui.select((isRev ? revenue : expense).map(function (a) { return { id: a.id, label: a.id + " · " + a.name }; }), r.account, function (v) { r.account = v; }, { label: "Account" });
+        var cells = r.m.map(function (v, j) { var inp = h("input", { class: "input num", inputmode: "decimal", value: v, "aria-label": MON[j] }); inp.addEventListener("input", function () { r.m[j] = inp.value; tot.textContent = E.fmt(annual(r), E.entity[ent].currency, { dp: 0 }); }); return h("td", null, inp); });
+        var spread = ui.btn(null, { size: "sm", kind: "ghost", icon: "swap", label: "Spread the first month across the year", onClick: function () { var f = r.m[0]; r.m = r.m.map(function () { return f; }); draw(); } });
+        tb.appendChild(h("tr", null, h("td", null, dsel), h("td", { class: "bg-acct" }, asel), cells, tot, h("td", { style: { whiteSpace: "nowrap" } }, spread, ui.btn(null, { size: "sm", kind: "ghost", icon: "x", label: "Remove line", onClick: function () { removed.push({ dept: r.dept, account: r.account }); rows.splice(i, 1); draw(); } }))));
+      });
+      t.appendChild(tb);
+      body.appendChild(h("div", { class: "bg-scroll" }, t));
+      body.appendChild(h("div", { class: "row", style: { marginTop: "12px", gap: "8px" } },
+        ui.btn("Add an expense line", { size: "sm", icon: "plus", onClick: function () { rows.push({ dept: E.dimList("dept")[0].id, account: expense[0].id, m: Array(12).fill("") }); draw(); } }),
+        ui.btn("Add a revenue line", { size: "sm", icon: "plus", onClick: function () { if (revenue.length) { rows.push({ dept: "REV", account: revenue[0].id, m: Array(12).fill("") }); draw(); } } }),
+        h("span", { class: "sp" }), h("span", { class: "muted", style: { fontSize: "12px" } }, "Type the first month and press ⟲ to spread it across the year.")));
+    }
+    draw();
+    var m = ui.modal({ title: "Budget · fiscal " + E.fy, text: "The plan the year is held to. Changes apply from the first month; spending is compared against it everywhere.", cls: "xxl", body: body, foot: foot, actions: [{ label: "Cancel" }, { label: "Save budget", kind: "primary", fn: function () {
+      var entries = [], seen = {};
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i], key = r.dept + "|" + r.account; if (seen[key]) { foot.style.display = "inline-flex"; foot.textContent = "Line " + (i + 1) + " repeats a department and account."; return true; } seen[key] = 1;
+        var amounts = r.m.map(function (v) { var x = v === "" ? 0 : ui.parseMoney(v, dp); return isNaN(x) || x < 0 ? NaN : x; });
+        if (amounts.some(isNaN)) { foot.style.display = "inline-flex"; foot.textContent = "Line " + (i + 1) + ": a month isn't an amount."; return true; }
+        entries.push({ dept: r.dept, account: r.account, amounts: amounts });
+      }
+      removed.forEach(function (x) { if (!seen[x.dept + "|" + x.account]) entries.push({ dept: x.dept, account: x.account, amounts: Array(12).fill(0) }); });
+      if (!entries.length) return false;
+      return app.run("budget.set", { entity: ent, entries: entries }, { ok: "Budget saved." }) ? false : true; } }] });
+  }
 
   /* ------------------------------------------------------------ Overview */
   function overview(ctx, rows, from, to, range) {
@@ -73,6 +124,13 @@
         range === "fy" ? null : { key: "f", label: "Full year", num: true, render: function (r) { return E.fmt(r.fullYear, cur, { compact: true }); } }
       ].filter(Boolean), foot: ["Total", E.fmt(bud, cur, { dp: 0 }), E.fmt(act, cur, { dp: 0 }), E.fmt(range === "fy" ? bud - act : act - bud, cur, { dp: 0, plus: range !== "fy", minus: true }), "", ui.pct(bud ? act / bud : 0)].concat(range === "fy" ? [] : [E.fmt(rows.reduce(function (s, r) { return s + r.fullYear; }, 0), cur, { compact: true })]) }) }));
 
+    if (rows.some(function (r) { return r.actual; }) && EFM.viz) {
+      var months = E.periodsBetween(from, to), by = {};
+      rows.forEach(function (r) { months.forEach(function (p) { by[r.dept.id + "|" + p] = E.actualFor(app_(ctx).scope, r.dept.id, null, p, p); }); });
+      wrap.appendChild(h("div", { style: { marginTop: "16px" } }, ui.card({ title: "Spending by department and month", meta: "darker is more · click a cell for its entries", body: EFM.viz.heatmatrix({
+        rows: rows.map(function (r) { return { id: r.dept.id, label: r.dept.name }; }), cols: months.map(function (p) { return { id: p, label: ui.period(p).slice(0, 3) }; }), value: function (r, c) { return by[r + "|" + c]; },
+        fmt: function (v) { return E.fmt(v, cur, { compact: true }); }, onClick: function (r, c) { ctx.app.open({ kind: "lines", id: "x", q: { entity: ctx.app.scope, accounts: E.accountList.filter(function (a) { return a.type === "expense" && !a.ic; }).map(function (a) { return a.id; }), from: c.id, to: c.id, dept: r.id, title: r.label + " · " + ui.period(c.id, true) } }); } }) })));
+    }
     var g = h("div", { class: "grid", style: { marginTop: "16px" } });
     g.appendChild(revenueCard(ctx));
     g.appendChild(controlCard(ctx, null));
@@ -80,6 +138,7 @@
     return wrap;
   }
 
+  function app_(ctx) { return ctx.app; }
   function revenueCard(ctx) {
     var E = ctx.E, app = ctx.app, cur = app.scopeCurrency(), cp = E.currentPeriod();
     var months = E.fyPeriods();

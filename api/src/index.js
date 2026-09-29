@@ -50,6 +50,10 @@ const ROUTES = [
   ["GET",    "/api/v1/auth/sessions",        auth.sessions],
   ["POST",   "/api/v1/auth/sessions/revoke", auth.revokeSessions],
 
+  ["GET",    "/api/v1/efm/books",                    efm.books],
+  ["POST",   "/api/v1/efm/books",                    efm.openYear],
+  ["GET",    "/api/v1/efm/access",                   efm.access],
+  ["PUT",    "/api/v1/efm/access",                   efm.setAccess],
   ["GET",    "/api/v1/efm/books/:bookId",            efm.book],
   ["GET",    "/api/v1/efm/books/:bookId/commands",   efm.commandsAfter],
   ["POST",   "/api/v1/efm/books/:bookId/commands",   efm.execute],

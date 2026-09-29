@@ -84,3 +84,40 @@
 .ef-empty { display: flex; gap: 12px; align-items: center; padding: 16px; border-radius: 12px; background: var(--sunken); color: var(--ink-3); }
 .ef-empty b { display: block; color: var(--ink); font-size: 13.5px; }
 @media (max-width: 720px) { .ent-grid, .ef-grid { grid-template-columns: 1fr; } }
+
+/* ---- Notes on a record ---- */
+.notes .note-i { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.notes .note-i:last-of-type { border-bottom: 0; }
+.notes .who { font-size: 12.5px; }
+.notes .txt { font-size: 13px; line-height: 1.5; white-space: pre-wrap; margin-top: 2px; }
+.notes textarea { width: 100%; resize: vertical; min-height: 56px; }
+
+/* ---- The budget editor ---- */
+.modal.xxl { width: min(1400px, 98vw); max-height: 88vh; }
+.bg-scroll { overflow-x: auto; }
+.bg-ed { min-width: 1240px; }
+.bg-ed .input { width: 100%; min-width: 64px; height: 30px; font-size: 12.5px; }
+.bg-ed .bg-acct select { min-width: 190px; }
+.bg-ed td { padding: 4px 3px; }
+.bg-ed .bg-tot { font-weight: 600; min-width: 82px; }
+
+/* ---- Getting started ---- */
+.gs-step { display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 12px; border-radius: 10px; background: var(--sunken); border: 1px solid transparent; transition: border-color .15s var(--ease), background .15s var(--ease); }
+.gs-step:hover { border-color: var(--line-2); background: var(--surface); }
+.gs-step b { display: block; font-size: 13px; font-weight: 600; }
+.gs-step small { display: block; font-size: 12px; color: var(--ink-3); margin-top: 2px; line-height: 1.35; }
+.gs-step.done b { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--line-2); }
+.gs-n { font-size: 11px; font-weight: 600; color: var(--ink-3); }
+
+/* ---- Help ---- */
+.help p { font-size: 13px; line-height: 1.55; margin: 0 0 10px; color: var(--ink-2); }
+.help-kv { display: block; margin: 0; }
+.help-kv > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; padding: 9px 0; border-top: 1px solid var(--line); }
+.help-kv > div:first-child { border-top: 0; }
+.help-kv dt { font-weight: 600; font-size: 12.5px; }
+.help-kv dd { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+.jc-head.live { grid-template-columns: 158px minmax(0, 2fr) 158px; }
+.jc-head.live > span:empty { display: none; }
+
+/* A figure with its size drawn behind it. */
+.dbar { display: inline-block; min-width: 110px; text-align: right; padding: 2px 8px; border-radius: 5px; background: linear-gradient(to left, var(--s1-wash) var(--w, 0%), transparent var(--w, 0%)); font-variant-numeric: tabular-nums; }

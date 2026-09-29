@@ -51,6 +51,7 @@
       ui.btn("Verify the chain", { kind: "primary", icon: "check", onClick: function () { var r = E.verifyAudit(); r.when = Date.now(); local.verified = r; app.refresh(); } }));
     // On real books the record that can be checked is the saved list of commands itself.
     wrap.appendChild(app.live ? commandLog(ctx) : card);
+    wrap.appendChild(chainCard(ctx));
 
     var body = h("div");
     wrap.appendChild(ui.card({ flush: true, body: body }));
@@ -200,6 +201,23 @@
       body: h("div", { class: "tbl-wrap" }, t),
       foot: [h("span", null, "Everyone signed in to OC EFM works in the same system with full access. The document rules above still apply to you — and where they stop you, you can simulate the colleague who would act.")] }));
     return wrap;
+  }
+
+  /* The chain as blocks, each drawn from its own hash. */
+  function chainCard(ctx) {
+    var E = ctx.E, app = ctx.app, blocks, note;
+    if (app.live) {
+      var log = E.commandLog || [], r = EFM.verifyCommands(E.bookId || "oplo", log), from = Math.max(0, log.length - 60);
+      blocks = log.slice(from).map(function (c) { return { seq: c.seq, hash: c.hash, who: c.actor.name, label: c.type, at: c.at, bad: !r.ok && c.seq >= r.at }; });
+      note = "The last " + blocks.length + " of " + log.length + " saved commands";
+    } else {
+      var ch = E.chain(), a = E.audit, f = Math.max(0, ch.length - 60);
+      blocks = ch.slice(f).map(function (c, i) { var ev = a[f + i]; return { seq: ev.seq, hash: c.hash, who: ev.actorName || ev.actor, label: ev.action, at: ev.at }; });
+      note = "The last " + blocks.length + " of " + ch.length + " events";
+    }
+    return ui.card({ title: "The chain, drawn", meta: note + " · each block's picture comes from its own hash, its colour from who did it", span: 12,
+      body: EFM.viz.chain({ blocks: blocks, empty: "The chain begins with the first change." }),
+      foot: [h("span", null, "Change or remove any block and its picture changes — and so does every one after it.")] });
   }
 
   /* The list of commands the books are built from, checked against the hashes

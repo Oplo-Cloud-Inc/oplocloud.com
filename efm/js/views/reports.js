@@ -44,6 +44,7 @@
       var from = range === "ytd" || r === "bs" ? E.fy + "-01" : range === "qtd" ? E.quarterStart(p) : p;
       built = r === "bs" ? balanceSheet(ctx, p, view) : r === "cf" ? cashFlow(ctx, from, p, range) : incomeStatement(ctx, from, p, range, compare, view);
       page.appendChild(built.node);
+      if (r === "is" && view === "single") { var br = bridge(ctx, from, p); if (br) page.appendChild(br); }
 
       function exportCsv() {
         var name = "oc-efm-" + { is: "income-statement", bs: "balance-sheet", cf: "cash-flow" }[r] + "-" + (scope === "GROUP" ? "group" : scope.toLowerCase()) + "-" + p + ".csv";
@@ -52,6 +53,27 @@
       return page;
     }
   });
+
+  /* How the result was built: revenue, then each cost that took some of it, then what was left. */
+  function bridge(ctx, from, to) {
+    var E = ctx.E, scope = ctx.scope, V = EFM.viz, group = scope === "GROUP";
+    var rows = E.layout("is", E.measure(scope, from, to), { group: group, hideIC: group }), val = values(rows), steps = [], acct = [];
+    rows.forEach(function (r) { if (/^\d{4}$/.test(r.id) && r.value) acct.push({ id: r.id, label: E.accounts[r.id].name, v: (/^[47]/.test(r.id) ? 1 : -1) * r.value, rev: /^4/.test(r.id) }); });
+    var revenue = acct.filter(function (a) { return a.rev; }).reduce(function (s, a) { return s + a.v; }, 0);
+    var costs = acct.filter(function (a) { return !a.rev; }).sort(function (a, b) { return Math.abs(b.v) - Math.abs(a.v); });
+    if (!costs.length && !revenue) return null;
+    var cur = ctx.app.scopeCurrency(), fmt = function (v) { return E.fmt(v, cur, { compact: Math.abs(v) >= 1e5 * Math.pow(10, E.dp(cur)) }); };
+    if (revenue) steps.push({ label: "Revenue", value: revenue, kind: "total" });
+    else steps.push({ label: "Start", value: 0, kind: "total" });
+    var top = costs.slice(0, 7), rest = costs.slice(7);
+    top.forEach(function (a) { steps.push({ label: a.label, value: a.v, id: a.id }); });
+    if (rest.length) steps.push({ label: "Everything else", value: rest.reduce(function (s, a) { return s + a.v; }, 0) });
+    var net = steps.reduce(function (s, x) { return s + x.value; }, 0);
+    steps.push({ label: net >= 0 ? "Net income" : "Net loss", value: net, kind: "total", color: net >= 0 ? "var(--v3)" : "var(--v2)" });
+    if (Math.abs(net - val.ni) > 2) return null;
+    return ui.card({ title: "How the result was built", meta: rangeLabel(E, from, to) + " · each step is a cost taking away from what came before", body: V.waterfall({ steps: steps, fmt: fmt, height: 300,
+      onClick: function (st) { if (st.id) ctx.app.open({ kind: "account", id: st.id, q: { entity: scope } }); } }) });
+  }
 
   function span(E, from, to) {
     var n = E.periodsBetween(from, to).length;

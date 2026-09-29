@@ -43,7 +43,9 @@
 
       var page = h("div");
       page.appendChild(ui.pageHead("Journals", "Everything that has happened, in the ledger. Record a transaction and it's booked for you; posted entries are permanent — a correction is a reversal that points back to what it corrects.",
-        [ui.gated("txn.post", {}, "New entry", function () { EFM.entry.open(); }, { kind: "primary", icon: "plus" })]));
+        [ui.btn("Export CSV", { icon: "download", onClick: function () { EFM.records.exportJournals(); } }),
+         ui.gated("journal.create", {}, "Import", function () { EFM.records.importJournals(); }, { icon: "download" }),
+         ui.gated("txn.post", {}, "New entry", function () { EFM.entry.open(); }, { kind: "primary", icon: "plus" })]));
 
       var pending = js.filter(function (j) { return j.status === "pending"; });
       if (pending.length) page.appendChild(h("div", { style: { marginBottom: "16px" } }, pendingCard(ctx, pending)));
@@ -61,6 +63,7 @@
       var sources = {};
       js.forEach(function (j) { sources[j.source.type] = 1; });
 
+      var maxAmt = 0; js.forEach(function (j) { if (j.status !== "discarded") { var u = E.usdOf(j.entity, j.total || 0, j.period || E.currentPeriod()); if (u > maxAmt) maxAmt = u; } });
       function draw() {
         ui.clear(body);
         var ql = local.q.toLowerCase();
@@ -92,7 +95,7 @@
               if (j.reversedBy) return ui.status("posted", "Reversed");
               return ui.status(j.status, j.status === "pending" ? (app.live ? "Waiting for a second person" : "Waiting · " + (j.needs === "cfo" ? "CFO" : "Controller")) : null); } },
             { key: "by", label: "Prepared by", render: function (j) { return j.createdBy ? ui.who(j.createdBy) : h("span", { class: "faint" }, "—"); } },
-            { key: "t", label: "Amount", num: true, sort: function (j) { return E.usdOf(j.entity, j.total, j.period); }, render: function (j) { return E.fmt(j.total, E.entity[j.entity].currency); } }
+            { key: "t", label: "Amount", num: true, sort: function (j) { return E.usdOf(j.entity, j.total, j.period); }, render: function (j) { var w = maxAmt ? Math.max(2, Math.round(E.usdOf(j.entity, j.total, j.period) / maxAmt * 100)) : 0; return h("span", { class: "dbar", style: { "--w": w + "%" } }, E.fmt(j.total, E.entity[j.entity].currency)); } }
           ].filter(Boolean) }));
       }
       draw();
@@ -156,9 +159,9 @@
         st.files = Array.prototype.map.call(file.files, function (f) { return { name: f.name, size: Math.max(1, Math.round(f.size / 1024)) + " KB" }; });
         fileLbl.lastChild.textContent = st.files.length ? st.files.length + " attached" : "Attach";
       });
-      return h("div", { class: "jc-head" },
-        field("Entity", ent), field("Date", date), field("Memo", memo),
-        field("Reverses on", rev), field("Evidence", h("div", null, file, fileLbl)));
+      return h("div", { class: "jc-head" + (app.live ? " live" : "") },
+        E.entities.length > 1 ? field("Entity", ent) : h("span"), field("Date", date), field("Memo", memo),
+        field("Reverses on", rev), app.live ? h("span") : field("Evidence", h("div", null, file, fileLbl)));
     }
 
     /* The account picker: grouped like the chart, control accounts shown but not choosable. */
@@ -182,7 +185,7 @@
     function dimSelect(kind, l, label) {
       var s = h("select", { class: "input", "aria-label": label });
       s.appendChild(h("option", { value: "" }, "—"));
-      E.dims[kind].forEach(function (d) { var o = h("option", { value: d.id }, d.name); if (l[kind] === d.id) o.selected = true; s.appendChild(o); });
+      E.dimList(kind, l[kind]).forEach(function (d) { var o = h("option", { value: d.id }, d.name); if (l[kind] === d.id) o.selected = true; s.appendChild(o); });
       s.addEventListener("change", function () { l[kind] = s.value; check(); });
       return s;
     }

@@ -21,8 +21,23 @@
   });
 
   /* ============================================================ Overview */
+  function lastFeed(E, bankId) {
+    var d = ""; Object.values(E.bankLines).forEach(function (l) { if ((!bankId || l.bank === bankId) && l.date > d) d = l.date; });
+    return d ? ui.date(d, "year") : "no statement loaded yet";
+  }
+  function noBanks(ctx) {
+    var app = ctx.app, page = h("div");
+    page.appendChild(ui.pageHead("Cash & banking", "Connect the books to the bank, and prove they agree.", []));
+    page.appendChild(ui.card({ body: h("div", { class: "empty", style: { padding: "44px 16px" } }, ui.icon("bank"), h("b", null, "No bank accounts yet"),
+      h("div", { style: { maxWidth: "520px" } }, "Add an account, load its statement from your bank as a CSV file, and OC EFM matches each line to what's in the books — so you can see, line by line, what's missing on either side."),
+      h("div", { class: "row", style: { justifyContent: "center", marginTop: "16px" } }, ui.gated("bank.add", {}, "Add a bank account", function () { EFM.records.bankAccountForm(); }, { kind: "primary", icon: "plus" })),
+      h("div", { style: { marginTop: "22px", display: "flex", gap: "24px", justifyContent: "center", fontSize: "12.5px", color: "var(--ink-3)", flexWrap: "wrap" } },
+        h("span", null, "1 · Add the account"), h("span", null, "2 · Load a statement"), h("span", null, "3 · Match and reconcile"))) }));
+    return page;
+  }
   function overview(ctx) {
     var E = ctx.E, app = ctx.app, cp = E.currentPeriod(), group = app.scope === "GROUP", cur = app.scopeCurrency();
+    if (!Object.keys(E.bankAccounts).length) return noBanks(ctx);
     var pos = E.cashPosition();
     var rows = pos.rows.filter(function (r) { return app.inScope(r.bank.entity); });
     var bank = rows.reduce(function (s, r) { return s + (group ? r.usd : r.balance); }, 0);
@@ -34,7 +49,8 @@
     rows.forEach(function (r) { banks[r.bank.bankName] = 1; });
 
     var page = h("div");
-    page.appendChild(ui.pageHead("Cash & banking", rows.length + " accounts at " + Object.keys(banks).join(", ") + " · " + E.fmt(bank, cur, { compact: true }) + " at the bank today", []));
+    page.appendChild(ui.pageHead("Cash & banking", rows.length + " account" + (rows.length === 1 ? "" : "s") + " at " + Object.keys(banks).join(", ") + " · " + E.fmt(bank, cur, { compact: true }) + " at the bank today",
+      [ui.gated("bank.match", {}, "Load a statement", function () { EFM.records.importStatement(); }, { icon: "download" }), ui.gated("bank.add", {}, "Add account", function () { EFM.records.bankAccountForm(); }, { kind: "primary", icon: "plus" })]));
     var tiles = [
       { label: "At the bank", icon: "bank", value: E.fmt(bank, cur, { compact: true }), sub: group ? "all accounts, USD at today's rates" : rows.length + " accounts" },
       { label: "In the books", icon: "book", value: E.fmt(book, cur, { compact: true }), sub: "difference " + E.fmt(bank - book, cur, { compact: true, plus: true, minus: true }) + " is timing" },
@@ -52,7 +68,7 @@
     else g.appendChild(entityHistory(ctx, rows));
     page.appendChild(g);
 
-    page.appendChild(h("div", { style: { marginTop: "16px" } }, ui.card({ title: "Accounts", meta: "Bank feeds refresh daily; the last feed is " + ui.date("2026-09-26"), flush: true,
+    page.appendChild(h("div", { style: { marginTop: "16px" } }, ui.card({ title: "Accounts", meta: "Statements are loaded from CSV files · the latest line is " + lastFeed(E), flush: true,
       body: ui.table({ rows: rows, sortable: false, onRow: function (r) { app.navigate("/cash/" + r.bank.id); }, columns: [
         { key: "b", label: "Account", cls: "two", render: function (r) { return h("span", null, r.bank.bankName + " · " + r.bank.name, h("span", { class: "sub" }, E.entity[r.bank.entity].name + " · " + r.bank.mask + " · GL " + r.bank.account)); } },
         { key: "bal", label: "At the bank", num: true, render: function (r) { return E.fmt(r.balance, r.currency); } },
@@ -120,6 +136,7 @@
     page.appendChild(ui.pageHead(b.bankName + " · " + b.name,
       E.entity[b.entity].name + " · " + b.mask + " · " + c + " · GL " + b.account + " " + E.accounts[b.account].name + " · feed " + b.feed.toLowerCase(),
       [ui.btn("All accounts", { icon: "back", onClick: function () { app.navigate("/cash"); } }),
+       ui.gated("bank.match", {}, "Load a statement", function () { EFM.records.importStatement(b.id); }, { icon: "download" }),
        auto.length ? ui.gated("bank.match", {}, "Auto-match " + auto.length, function () {
          app.run("bank.autoMatch", { bank: b.id }, { ok: function (n) { return "Matched " + n + " line" + (n === 1 ? "" : "s") + " on exact amount and date."; } });
        }, { kind: "primary", icon: "sparkle" }) : null].filter(Boolean)));
@@ -127,7 +144,7 @@
     /* The statement: why the bank and the books differ, line by line. */
     var ok = rec.difference === 0, done = ok && rec.bankOpen.length === 0;
     var st = h("div", { class: "card rx-st" },
-      stmt("Balance per bank", E.fmt(rec.bankBalance, c), "Feed through " + ui.date("2026-09-26")),
+      stmt("Balance per bank", E.fmt(rec.bankBalance, c), "Latest line " + lastFeed(E, b.id)),
       h("span", { class: "rx-op" }, "+"),
       stmt("In the books, not at the bank", E.fmt(rec.outstanding, c), rec.bookOpen.length + " item" + (rec.bookOpen.length === 1 ? "" : "s") + " in transit"),
       h("span", { class: "rx-op" }, "−"),
@@ -232,7 +249,7 @@
     var acct = h("select", { class: "input", "aria-label": "Account" });
     accts.forEach(function (a) { var o = h("option", { value: a.id }, a.id + " " + a.name); if (a.id === (s.account || "6650")) o.selected = true; acct.appendChild(o); });
     var dept = h("select", { class: "input", "aria-label": "Department" });
-    E.dims.dept.forEach(function (d) { var o = h("option", { value: d.id }, d.name); if (d.id === "GA") o.selected = true; dept.appendChild(o); });
+    E.dimList("dept").forEach(function (d) { var o = h("option", { value: d.id }, d.name); if (d.id === "GA") o.selected = true; dept.appendChild(o); });
     var memo = h("input", { class: "input", value: s.memo || l.desc });
     var preview = h("div");
     function drawPreview() {

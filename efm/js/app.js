@@ -28,17 +28,25 @@
      money out, money in, cash, what we own, the plan, the close and the
      controls around all of it. */
   var NAV = [
-    { label: null, items: [["home", "Home", "home"], ["inbox", "Inbox", "inbox"]] },
+    { label: null, items: [["home", "Home", "home"], ["inbox", "Inbox", "inbox"], ["insights", "Insights", "spark"]] },
     { label: "Record", items: [["ledger", "General ledger", "book"], ["journals", "Journals", "journal"], ["reports", "Reports", "report"]] },
     { label: "Operate", items: [["payables", "Payables", "payables"], ["receivables", "Receivables", "receivables"], ["cash", "Cash & banking", "bank"], ["assets", "Fixed assets", "box"]] },
     { label: "Plan", items: [["budgets", "Budgets", "target"], ["planning", "Forecast & scenarios", "trend"]] },
-    { label: "Close & control", items: [["close", "Close", "close"], ["consolidation", "Consolidation", "layers"], ["audit", "Audit & controls", "shield"]] }
+    { label: "Close & control", items: [["close", "Close", "close"], ["consolidation", "Consolidation", "layers"], ["audit", "Audit & controls", "shield"], ["settings", "Settings", "settings"], ["help", "Help", "info"]] }
   ];
 
   var app = EFM.app = {
     E: null, me: null, account: null, scope: "GROUP", role: "member", live: false,
     // The signed-in person, as the engine and the server know them.
-    actor: function () { return { id: app.account ? app.account.id : "me", name: app.me ? app.me.name : "You", role: "member" }; },
+    actor: function () { return { id: app.account ? app.account.id : "me", name: app.me ? app.me.name : "You", role: app.role() }; },
+    /* What the signed-in person is to the engine: an administrator, a member, or
+       — with read-only access — an auditor, who can look at everything and change nothing. */
+    role: function () {
+      if (!app.live || !app.account || app.account.dev) return "admin";
+      var rs = app.account.roles || [], has = function (p, r) { return rs.some(function (x) { return x.product === p && x.role === r; }); };
+      if (has("platform", "admin") || has("efm", "admin")) return "admin";
+      return has("efm", "user") ? "member" : "auditor";
+    },
     isMe: function (id) { return id === "me" || (!!app.account && id === app.account.id); },
     views: VIEWS
   };
@@ -212,9 +220,13 @@
     meEl = h("button", { type: "button", class: "me", "aria-label": "Your account", on: { click: function () { accountMenu(meEl); } } });
     syncEl = h("span", { class: "savestate", role: "status", "aria-live": "polite" });
     paintSync();
+    var fyEl = null;
+    if (app.live && app.books.length > 1) {
+      fyEl = h("button", { type: "button", class: "iconbtn fy", "aria-label": "Fiscal year", title: "Switch fiscal year", on: { click: function () { fyMenu(fyEl); } } }, h("span", null, "FY " + app.E.fy), ui.icon("chevd", "sm"));
+    }
     var top = h("header", { class: "top" }, crumbEl, search,
       h("div", { class: "top-tools" },
-        syncEl, bellEl, meEl));
+        fyEl, syncEl, bellEl, meEl));
     shell = h("div", { class: "app" }, railEl, h("div", { class: "main" }, top, mainEl));
     document.body.appendChild(h("a", { href: "#main", class: "sr" }, "Skip to content"));
     document.body.appendChild(shell);
@@ -308,6 +320,13 @@
       items.push({ label: e.name, sub: e.city + " · " + e.currency + " · " + E.periodLabel(E.lastClosedPeriod(e.id)) + " closed", icon: "globe", checked: app.scope === e.id, fn: function () { app.setScope(e.id); } });
     });
     ui.menu(anchor, items, { width: 300, alignLeft: true });
+  }
+  function fyMenu(anchor) {
+    var items = [{ heading: true, label: "Fiscal year" }];
+    app.books.slice().sort(function (a, b) { return String(b.fy).localeCompare(String(a.fy)); }).forEach(function (b) {
+      items.push({ label: "Fiscal " + b.fy, sub: b.id === BOOK ? "You're here" + (app.E.yearClosed ? " · closed" : "") : "", icon: b.id === BOOK ? "check" : "book", fn: function () { if (b.id !== BOOK) app.switchBook(b.id); } });
+    });
+    ui.menu(anchor, items, { width: 240 });
   }
   function accountMenu(anchor) {
     ui.menu(anchor, [
@@ -414,6 +433,7 @@
   document.addEventListener("keydown", function (ev) {
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") { ev.preventDefault(); if (shell) palette(); }
     if (ev.key === "/" && shell && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.querySelector(".modal-scrim")) { ev.preventDefault(); palette(); }
+    if (ev.key === "?" && shell && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.querySelector(".modal-scrim")) { ev.preventDefault(); app.navigate("/help"); }
   });
 
   /* Questions the ledger can answer. Each is a query, not a guess. */
@@ -517,11 +537,27 @@
   /* ====================================================== The books
      Loading them, saving to them, and keeping in step with everybody else. */
   var BOOK = "oplo";
+  app.books = [];                                    // the fiscal years there are: [{ id, name, fy }]
+  app.bookId = function () { return BOOK; };
+  /* Which fiscal year's books to open: the one they last chose, else this year's, else the latest. */
+  function chooseBook(list) {
+    if (!list.length) return BOOK;
+    var want = null; try { want = localStorage.getItem("efm.book"); } catch (e) { /* ignore */ }
+    if (want && list.some(function (b) { return b.id === want; })) return want;
+    var yr = nyToday().slice(0, 4), cur = list.filter(function (b) { return String(b.fy) === yr; })[0];
+    return (cur || list.slice().sort(function (a, b) { return String(b.fy).localeCompare(String(a.fy)); })[0]).id;
+  }
+  app.switchBook = function (id) { try { localStorage.setItem("efm.book", id); } catch (e) { /* ignore */ } location.href = "/home"; };
   var sync = app.sync = { seq: 0, queue: [], sending: false, state: "saved", off: false, timer: null, note: "" };
 
   function fail(code, msg) { var e = new Error(msg); e.code = code; return e; }
   function nyToday() { return EFM.Engine.prototype.nyDate(new Date().toISOString()); }
 
+  /* Anything else on the API, as this signed-in person. */
+  app.api = function (method, path, body) {
+    return fetch(API + path, { method: method, credentials: "include", headers: { accept: "application/json", "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, body: j }; }); });
+  };
   function call(method, path, body) {
     return fetch(API + "/api/v1/efm/books/" + BOOK + path, { method: method, credentials: "include",
       headers: { accept: "application/json", "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) })
@@ -567,6 +603,7 @@
                  : st === "saving" ? "Saving to the server…" : "The last change wasn't saved. The books were reloaded from the server.";
     syncEl.appendChild(st === "saving" ? h("i", { class: "spin" }) : ui.icon(st === "saved" ? "check" : "alert", "sm"));
     syncEl.appendChild(h("span", null, st === "saved" ? "Saved" : st === "saving" ? "Saving…" : "Not saved"));
+    if (app.role() === "auditor") { syncEl.title = "You have read-only access to OC EFM."; syncEl.appendChild(h("span", { class: "tag", style: { marginLeft: "6px" } }, "Read-only")); }
   }
 
   /* ---- Saving: each command the engine runs, in order, one at a time */
@@ -591,6 +628,12 @@
   /* The server didn't take it. Whatever was waiting to be saved is dropped, the
      books are reloaded as the server has them, and the person is told why. */
   function recover(r) {
+    if (r.status === 401) {
+      // Signed out from somewhere else, or the session simply ran out. What wasn't saved is dropped; nothing is half-saved.
+      sync.queue = []; sync.sending = false; sync.off = true; setState("error");
+      ui.modal({ title: "You've been signed out", text: "Your session ended, so the last change wasn't saved. Sign in again and carry on — everything that was saved is still there.", actions: [{ label: "Sign in again", kind: "primary", fn: function () { location.reload(); return true; } }] });
+      return;
+    }
     var dropped = sync.queue.length, err = (r.body && r.body.error) || {};
     sync.queue = []; sync.sending = false;
     var msg = r.offline ? "You're offline, so that change wasn't saved." : err.message || "That change wasn't saved.";
@@ -741,7 +784,9 @@
   EFM.boot = function () {
     me().then(function (account) {
       if (!account.dev && !hasAccess(account)) return noAccess(account);
-      var loading = account.dev ? devBooks() : fetchBooks().then(function (payload) { app.account = account; app.me = { name: account.name }; var E = buildEngine(payload); sync.seq = payload.count; return E; });
+      var loading = account.dev ? devBooks() : app.api("GET", "/api/v1/efm/books").then(function (r) {
+        if (r.status === 200 && r.body.books) { app.books = r.body.books; BOOK = chooseBook(app.books); }
+      }, function () { /* the books themselves will say what's wrong */ }).then(fetchBooks).then(function (payload) { app.account = account; app.me = { name: account.name }; var E = buildEngine(payload); sync.seq = payload.count; return E; });
       return loading.then(function (E) { start(account, E); }, function (e) {
         if (e.code === "forbidden") noAccess(account);
         else if (e.code === "signed-out") { if (window.OploSignIn) window.OploSignIn.done(); gate(); }

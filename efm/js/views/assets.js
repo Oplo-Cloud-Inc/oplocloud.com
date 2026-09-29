@@ -31,6 +31,7 @@
       page.appendChild(ui.pageHead("Fixed assets", list.length + " assets on the register · straight-line, from the month after they go into service",
         [due.length ? ui.gated("asset.depreciate", {}, "Run " + ui.period(cp).slice(0, 3) + " depreciation", function () { runDialog(ctx, due); }, { kind: "primary", icon: "play" })
                     : list.length ? h("span", { class: "muted", style: { fontSize: "13px" } }, ui.period(cp, true) + " depreciation has run") : null,
+         ui.btn("Export", { icon: "download", onClick: function () { EFM.records.exportAssets(); } }),
          ui.gated("asset.acquire", {}, "Buy an asset", function () { EFM.entry.open("asset"); }, { icon: "plus" })]));
       page.appendChild(ui.kpis([
         { label: "Cost", icon: "box", value: E.fmt(cost, cur, { compact: true }), sub: "what was paid" },

@@ -17,7 +17,7 @@
   "use strict";
   var EFM = root.EFM, ui = EFM.ui, h = ui.h;
 
-  var CASH = ["1010", "1020", "1030"], REVENUE = ["4000", "4100", "4200"];
+  var CASH = ["1010", "1020", "1030"];
   function App() { return EFM.app; }
   function En() { return EFM.app.E; }
 
@@ -38,6 +38,9 @@
   function acctName(id) { var a = En().accounts[id]; return a ? id + " · " + a.name : id; }
   function expenseIds() {
     return En().accountList.filter(function (a) { return a.type === "expense" && !a.ic && a.group !== "tax"; }).map(function (a) { return a.id; });
+  }
+  function revenueIds() {
+    return En().accountList.filter(function (a) { return a.type === "revenue" && !a.ic && a.group === "rev"; }).map(function (a) { return a.id; });
   }
   function opts(ids) { return ids.map(function (id) { return { id: id, label: acctName(id) }; }); }
 
@@ -207,7 +210,7 @@
 
   kind({ id: "sale", group: "in", icon: "card", title: "Cash sale", blurb: "Revenue that was paid the same day, with no invoice.", tag: "Posts at once",
     fields: function (S) {
-      return [S.money("amount", "Sale (before tax)"), S.money("tax", "Sales tax (optional)"), S.acct("acct", "Revenue", REVENUE, { def: "4000" }), S.product(),
+      return [S.money("amount", "Sale (before tax)"), S.money("tax", "Sales tax (optional)"), S.acct("acct", "Revenue", revenueIds(), { def: "4000" }), S.product(),
         S.acct("to", "Paid into", CASH, { def: "1010" }), S.memo("e.g. Workshop tickets")];
     },
     plan: function (S) {
@@ -234,7 +237,7 @@
     plan: function (S) { var a = S.amt("amount"); return a ? txnPlan(S, "interest", [{ account: S.v.to, dr: a }, { account: "7000", cr: a }]) : { quiet: true }; } });
 
   kind({ id: "refund-out", group: "in", icon: "back", title: "Refund given", blurb: "You gave a customer money back.", tag: "Posts at once",
-    fields: function (S) { return [S.money("amount", "Amount"), S.acct("acct", "The revenue it refunds", REVENUE, { def: "4000" }), S.acct("from", "Paid from", CASH, { def: "1010" }), S.memo("e.g. Refund to a customer")]; },
+    fields: function (S) { return [S.money("amount", "Amount"), S.acct("acct", "The revenue it refunds", revenueIds(), { def: "4000" }), S.acct("from", "Paid from", CASH, { def: "1010" }), S.memo("e.g. Refund to a customer")]; },
     plan: function (S) { var a = S.amt("amount"); return a ? txnPlan(S, "refund-out", [{ account: S.v.acct, dr: a }, { account: S.v.from, cr: a }]) : { quiet: true }; } });
 
   /* ---- Assets */
@@ -289,7 +292,7 @@
     plan: function (S) { var a = S.amt("amount"); return a ? txnPlan(S, "amort", [{ account: S.v.acct, dr: a, dims: { dept: S.v.dept } }, { account: "1200", cr: a }]) : { quiet: true }; } });
 
   kind({ id: "recognize", group: "adj", icon: "trend", title: "Earn deferred revenue", blurb: "Something a customer paid for in advance has been delivered.", tag: "Posts at once",
-    fields: function (S) { return [S.money("amount", "Amount earned"), S.acct("acct", "Revenue", REVENUE, { def: "4000" }), S.memo("e.g. September share of the annual plan")]; },
+    fields: function (S) { return [S.money("amount", "Amount earned"), S.acct("acct", "Revenue", revenueIds(), { def: "4000" }), S.memo("e.g. September share of the annual plan")]; },
     plan: function (S) { var a = S.amt("amount"); return a ? txnPlan(S, "recognize", [{ account: "2200", dr: a }, { account: S.v.acct, cr: a }]) : { quiet: true }; } });
 
   kind({ id: "transfer", group: "adj", icon: "swap", title: "Move money between accounts", blurb: "From one of your own accounts to another. Nothing is spent.", tag: "Posts at once",
@@ -375,10 +378,10 @@
     };
     S.dept = function () {
       if (!S.v.dept) S.v.dept = "GA";
-      return S.pick("dept", "Department", E.dims.dept.map(function (d) { return { id: d.id, label: d.name }; }), {});
+      return S.pick("dept", "Department", E.dimList("dept").map(function (d) { return { id: d.id, label: d.name }; }), {});
     };
     S.product = function () {
-      var list = [{ id: "", label: "None" }].concat(E.dims.product.map(function (d) { return { id: d.id, label: d.name }; }));
+      var list = [{ id: "", label: "None" }].concat(E.dimList("product").map(function (d) { return { id: d.id, label: d.name }; }));
       return field("Product (optional)", ui.select(list, S.v.product || "", function (v) { S.v.product = v; check(); }, { label: "Product" }));
     };
 
@@ -397,7 +400,7 @@
           if (!S.v[key + "_new_account"]) S.v[key + "_new_account"] = o.card ? "6100" : "6600";
           if (!S.v[key + "_new_dept"]) S.v[key + "_new_dept"] = "GA";
           extra.push(field("Usually coded to", ui.select(opts(expenseIds()), S.v[key + "_new_account"], function (v) { S.v[key + "_new_account"] = v; check(); }, { label: "Account" })),
-            field("Department", ui.select(E.dims.dept.map(function (d) { return { id: d.id, label: d.name }; }), S.v[key + "_new_dept"], function (v) { S.v[key + "_new_dept"] = v; check(); }, { label: "Department" })));
+            field("Department", ui.select(E.dimList("dept").map(function (d) { return { id: d.id, label: d.name }; }), S.v[key + "_new_dept"], function (v) { S.v[key + "_new_dept"] = v; check(); }, { label: "Department" })));
           if (!o.card) {
             if (!S.v[key + "_new_terms"]) S.v[key + "_new_terms"] = "30";
             extra.push(field("Payment terms", ui.select([15, 30, 45, 60].map(function (d) { return { id: String(d), label: "Net " + d }; }), S.v[key + "_new_terms"], function (v) { S.v[key + "_new_terms"] = v; check(); }, { label: "Terms" })));
@@ -437,15 +440,15 @@
     /* Line items for a bill or an invoice. */
     S.items = function (o) {
       var wrap = h("div", { class: "ef-items wide" });
-      var ids = o.side === "expense" ? expenseIds().concat(["1200", "1510", "1520", "1530"]) : REVENUE;
+      var ids = o.side === "expense" ? expenseIds().concat(["1200", "1510", "1520", "1530"]) : revenueIds();
       var t = h("table", { class: "tbl jc-lines" });
       t.appendChild(h("thead", null, h("tr", null, h("th", null, o.label), h("th", null, "Account"), h("th", null, o.side === "expense" ? "Department" : "Product"), h("th", { class: "num" }, "Amount"), h("th", null, ""))));
       var tb = h("tbody");
       S.rows.forEach(function (it, n) {
         var acct = ui.select([{ id: "", label: "Choose…" }].concat(opts(ids)), it.account, function (v) { it.account = v; draw(); }, { label: "Account" });
         var dim = o.side === "expense"
-          ? (En().accounts[it.account] && En().accounts[it.account].bs ? h("span", { class: "faint" }, "—") : ui.select([{ id: "", label: "Choose…" }].concat(E.dims.dept.map(function (d) { return { id: d.id, label: d.name }; })), it.dept, function (v) { it.dept = v; check(); }, { label: "Department" }))
-          : ui.select([{ id: "", label: "None" }].concat(E.dims.product.map(function (d) { return { id: d.id, label: d.name }; })), it.product, function (v) { it.product = v; check(); }, { label: "Product" });
+          ? (En().accounts[it.account] && En().accounts[it.account].bs ? h("span", { class: "faint" }, "—") : ui.select([{ id: "", label: "Choose…" }].concat(E.dimList("dept").map(function (d) { return { id: d.id, label: d.name }; })), it.dept, function (v) { it.dept = v; check(); }, { label: "Department" }))
+          : ui.select([{ id: "", label: "None" }].concat(E.dimList("product").map(function (d) { return { id: d.id, label: d.name }; })), it.product, function (v) { it.product = v; check(); }, { label: "Product" });
         var desc = h("input", { class: "input", value: it.desc, placeholder: "Description", "aria-label": "Description" });
         desc.addEventListener("input", function () { it.desc = desc.value; });
         var amt = h("input", { class: "input num", inputmode: "decimal", value: it.amt, placeholder: S.dp() ? "0." + "0".repeat(S.dp()) : "0", "aria-label": "Amount" });

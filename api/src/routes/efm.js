@@ -11,10 +11,10 @@
      POST /efm/books/:bookId/commands       add one
    ========================================================================== */
 
-import { json, readJson, ApiError } from "../lib/http.js";
+import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
-import { must } from "../core/guard.js";
-import { commandOf, bookOf, headOf, accept, readRequest, ENGINE_VERSION } from "../services/efm.js";
+import { must, isPlatformAdmin } from "../core/guard.js";
+import { commandOf, bookOf, headOf, accept, readRequest, accessList, nextYear, ENGINE_VERSION } from "../services/efm.js";
 
 // Private and never stored: the same address answers differently to different
 // people, and to the same person after their access changes.
@@ -28,6 +28,63 @@ async function load(ctx, bookId) {
   const row = await ctx.repo.efmBook(bookId);
   if (!row) throw ApiError.notFound("There are no such books.");
   return bookOf(row);
+}
+
+/* GET /api/v1/efm/books — the sets of books there are (one per fiscal year). */
+export async function books(ctx) {
+  requireActor(ctx);
+  await must(ctx, "efm.read");
+  const rows = await ctx.repo.efmBooks();
+  return json({ books: rows.map((r) => { const b = bookOf(r); return { id: b.id, name: b.name, fy: b.fy, entities: b.entities.map((e) => ({ id: e.id, name: e.name })) }; }) }, PRIVATE);
+}
+
+/* POST /api/v1/efm/books  { from: "oplo" } — opens the fiscal year after a closed one. */
+export async function openYear(ctx) {
+  const actor = requireActor(ctx);
+  await must(ctx, "efm.admin");
+  const body = await readJson(ctx.request);
+  const from = String(body.from || "");
+  const old = await load(ctx, from);
+  const rows = await ctx.repo.efmCommands(from, 0);
+  const made = nextYear(old, rows, actor);
+  const won = await ctx.repo.efmCreateBook(made.book, made.config, made.first);
+  if (!won) {
+    const e = ApiError.conflict(`Fiscal ${made.book.fy} has already been started.`);
+    e.code = "exists";
+    throw e;
+  }
+  return json({ book: { id: made.book.id, name: made.book.name, fy: made.book.fy } }, { status: 201, ...PRIVATE });
+}
+
+/* GET /api/v1/efm/access — who has OC EFM, and how. */
+export async function access(ctx) {
+  requireActor(ctx);
+  await must(ctx, "efm.admin");
+  return json({ access: accessList(await ctx.repo.efmAccess()) }, PRIVATE);
+}
+
+/* PUT /api/v1/efm/access  { email, role: "admin" | "user" | "viewer" | null }
+   Gives somebody who already has an Oplo Account OC EFM, changes how much of it
+   they have, or takes it away. Never creates an account, and never leaves OC EFM
+   without an administrator. */
+export async function setAccess(ctx) {
+  const actor = requireActor(ctx);
+  await must(ctx, "efm.admin");
+  const body = await readJson(ctx.request);
+  const email = String(body.email || "").trim().toLowerCase();
+  if (!email || email.length > 254 || !email.includes("@")) throw ApiError.badRequest("Enter their email address.", "email");
+  const role = body.role === null ? null : check.oneOf(body.role, "role", ["admin", "user", "viewer"]);
+  const target = await ctx.repo.findAccountByEmail(email);
+  if (!target) throw ApiError.notFound("Nobody has an Oplo Account with that address yet. They need to create one first.");
+  const list = accessList(await ctx.repo.efmAccess());
+  const others = list.filter((a) => a.role === "admin" && a.id !== target.id);
+  const wasAdmin = list.some((a) => a.id === target.id && a.role === "admin");
+  if (wasAdmin && role !== "admin" && !others.length && !isPlatformAdmin(actor)) {
+    throw ApiError.badRequest("OC EFM has to keep at least one administrator. Make somebody else one first.", "role");
+  }
+  for (const r of ["admin", "user", "viewer"]) await ctx.repo.revokeRole(target.id, "efm", r, null);
+  if (role) await ctx.repo.grantRole(target.id, "efm", role, null);
+  return json({ access: accessList(await ctx.repo.efmAccess()) }, PRIVATE);
 }
 
 /* GET /api/v1/efm/books/:bookId */

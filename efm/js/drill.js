@@ -267,12 +267,12 @@
       text: "Call the vendor on the number already in the vendor master — never a number from the email that asked for the change.",
       body: h("div", { class: "stack", style: { gap: "12px" } },
         kv([["On file", v.bank.bank + " " + v.bank.mask], ["Requested", p.bank + " " + p.mask], ["Requested by", p.via], ["Received", ui.time(p.requestedAt)],
-            ["Call", "(212) 555-0147 · accounts receivable (vendor master, verified 2024)"]]),
+            ["Call", app.live ? "A number already on file for the vendor — never one from the request" : "(212) 555-0147 · accounts receivable (vendor master, verified 2024)"]]),
         p.note ? h("div", { class: "flag critical" }, ui.icon("alert"), h("div", null, h("div", { class: "t" }, "Warning sign"), h("div", { class: "x" }, p.note))) : null),
       actions: [
         { label: "Cancel" },
         { label: "Vendor did not confirm — reject change", kind: "danger", fn: function () { app.run("vendor.verifyBank", { id: v.id, approve: false, reason: "Vendor says they requested no change" }, { ok: "Change rejected. Payments go to the account on file; the attempt is logged for Internal Audit." }); } },
-        { label: "Confirmed by phone", kind: "primary", fn: function () { app.run("vendor.verifyBank", { id: v.id, approve: true, contact: "call-back to (212) 555-0147" }, { ok: "New bank details verified. Held payments are released." }); } }
+        { label: "Confirmed by phone", kind: "primary", fn: function () { app.run("vendor.verifyBank", { id: v.id, approve: true, contact: app.live ? "call-back to a number on file" : "call-back to (212) 555-0147" }, { ok: "New bank details verified. Held payments are released." }); } }
       ], wide: true });
   }
   D._verifyBank = verifyBank;
@@ -337,12 +337,12 @@
     render: function (ref, body) {
       var E = En(), app = A(), q = ref.q || {};
       var scope = q.entity || app.scope, group = scope === "GROUP";
-      var lines = E.linesWhere({ entity: scope, accounts: q.accounts, from: q.from, to: q.to, dept: q.dept, product: q.product, project: q.project, vendor: q.vendor, customer: q.customer });
+      var lines = E.linesWhere({ entity: scope, accounts: q.accounts, from: q.from, to: q.to, dateFrom: q.dateFrom, dateTo: q.dateTo, dept: q.dept, product: q.product, project: q.project, vendor: q.vendor, customer: q.customer });
       var c = group ? "USD" : cur(scope);
       function val(l) { return group ? E.usdOf(l.entity, l.amt, l.period, E.accounts[l.account].bs ? "close" : "avg") : l.amt; }
       var total = lines.reduce(function (s, l) { return s + val(l); }, 0);
       var acctNames = (q.accounts || []).slice(0, 4).map(function (a) { return a + " " + E.accounts[a].name; }).join(", ") + ((q.accounts || []).length > 4 ? " +" + (q.accounts.length - 4) : "");
-      body.appendChild(head("hash", q.title || "Ledger lines", (acctNames || "All accounts") + " · " + (q.from === q.to ? ui.period(q.from, true) : ui.period(q.from) + " – " + ui.period(q.to)) + " · " + (group ? "OploCloud Group" : E.entity[scope].name),
+      body.appendChild(head("hash", q.title || "Ledger lines", (acctNames || "All accounts") + " · " + (q.dateFrom ? (q.dateFrom === q.dateTo ? ui.date(q.dateFrom, "year") : ui.date(q.dateFrom, "year") + " – " + ui.date(q.dateTo, "year")) : q.from === q.to ? ui.period(q.from, true) : ui.period(q.from) + " – " + ui.period(q.to)) + " · " + (group ? "OploCloud Group" : E.entity[scope].name),
         E.fmt(total, c), h("span", { class: "muted", style: { fontSize: "12px" } }, lines.length + " lines · debit positive")));
       if (group) body.appendChild(h("p", { class: "note", style: { marginBottom: "10px" } }, "Amounts in each entity's own currency, with the USD translation used in consolidation (income and expense at the month's average rate, balances at the closing rate)."));
       body.appendChild(ui.table({ dense: true, onRow: function (l) { app.open({ kind: "journal", id: l.j }); }, sortKey: "date", sortDir: -1, limit: 300,
@@ -660,4 +660,23 @@
       }
     }
   };
+
+  /* A record-keeping layer over the documents people work with: a place to leave
+     a word for whoever looks next, and — for vendors and customers — to keep them. */
+  ["journal", "ap", "ar", "asset", "vendor", "customer"].forEach(function (k) {
+    var d = D[k], orig = d.render;
+    d.render = function (ref, body, foot) {
+      orig.call(this, ref, body, foot);
+      var E = En(), pool = { journal: E.journals, ap: E.apInvoices, ar: E.arInvoices, asset: E.assets, vendor: E.vendors, customer: E.customers }[k], rec = pool[ref.id];
+      if (!rec || !EFM.records) return;
+      if (foot && (k === "vendor" || k === "customer")) {
+        var name = k === "vendor" ? "vendor" : "customer", form = k === "vendor" ? EFM.records.vendorForm : EFM.records.customerForm;
+        foot.appendChild(ui.gated(name + ".update", {}, "Edit", function () { form(rec.id); }, { icon: "settings" }));
+        if (k === "vendor" && !rec.card) foot.appendChild(ui.gated("vendor.update", {}, "Bank details", function () { EFM.records.bankDetails(rec.id); }, { icon: "bank" }));
+        foot.appendChild(h("span", { class: "sp" }));
+        foot.appendChild(ui.gated(name + ".update", {}, rec.off ? "Restore" : "Retire", function () { EFM.records.retire(name, rec.id); }, {}));
+      }
+      body.appendChild(sec("Notes", EFM.records.notes(k, ref.id)));
+    };
+  });
 })(window);

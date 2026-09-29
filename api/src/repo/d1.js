@@ -177,6 +177,35 @@ export class D1Repository {
     ).bind(bookId).first();
   }
 
+  /* Every set of books, oldest first. */
+  async efmBooks() {
+    const { results } = await this.db.prepare(`SELECT id, name, config, created_at FROM efm_books ORDER BY created_at, id`).all();
+    return results || [];
+  }
+
+  /* Starts a new set of books with its first command, or leaves nothing behind. */
+  async efmCreateBook(book, config, first) {
+    try {
+      await this.db.prepare(`INSERT INTO efm_books (id, name, config, created_at) VALUES (?, ?, ?, ?)`).bind(book.id, book.name, config, now()).run();
+    } catch (e) {
+      if (/UNIQUE|PRIMARY KEY|constraint/i.test(String(e && e.message))) return false;
+      throw e;
+    }
+    const won = await this.efmAppendCommand(book.id, first);
+    if (!won) { await this.db.prepare(`DELETE FROM efm_books WHERE id = ?`).bind(book.id).run(); return false; }
+    return true;
+  }
+
+  /* Everyone who has been given OC EFM, and how. */
+  async efmAccess() {
+    const { results } = await this.db.prepare(
+      `SELECT a.id AS id, a.email AS email, a.status AS status, p.name AS name, r.role AS role
+         FROM account_roles r JOIN accounts a ON a.id = r.account_id LEFT JOIN profiles p ON p.account_id = a.id
+        WHERE r.product = 'efm' ORDER BY p.name, a.email`
+    ).all();
+    return results || [];
+  }
+
   /* The commands after `after`, in order. */
   async efmCommands(bookId, after = 0) {
     const { results } = await this.db.prepare(

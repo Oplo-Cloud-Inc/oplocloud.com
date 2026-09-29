@@ -338,7 +338,7 @@
       onClick: function (i) { app.navigate("/reports?r=is&p=" + ps[i]); }, label: "Spending by month" });
     return ui.card({ title: "Spending by month", meta: "Fiscal " + E.fy + " · " + app.scopeLabel(), span: (o && o.span) || 8,
       tools: ui.charts.legend([{ label: "Spent", color: "var(--s1)" }, { label: "Open month", color: "var(--s1)", kind: "hatch" }]),
-      body: chart, foot: [h("span", null, "Every expense account, including the company card. Click a month for its income statement.")] });
+      body: chart, foot: [h("span", null, "Every expense account, including the company card. Click a month for its income statement."), h("span", { class: "sp" }), ui.btn("More in Insights", { size: "sm", kind: "ghost", icon: "arrow", onClick: function () { app.navigate("/insights"); } })] });
   }
 
   function whereItWent(ctx, t, o) {
@@ -373,11 +373,40 @@
         { key: "v", label: "Spent", num: true, render: function (r) { return E.fmt(r.v, c); } }], rows: rows.slice(0, 8) }) });
   }
 
+  /* A short list for a company that has only just started: what to set up, each
+     ticked by what the books already hold, not by a click. */
+  function getStarted(ctx) {
+    var E = ctx.E, app = ctx.app, hidden = false;
+    try { hidden = localStorage.getItem("efm.setup.hidden") === "1"; } catch (e) { /* ignore */ }
+    if (hidden) return null;
+    var ent = E.entities[0], admin = E.can("company.update", app.actor()).ok, invoiceVendors = Object.values(E.vendors).some(function (v) { return !v.card; });
+    var steps = [
+      { t: "Set up the company", x: "Legal name, address and tax ID — they go on what you send.", done: !!(ent.legal && ent.address), go: "/settings", show: admin },
+      { t: "Add a bank account", x: "Load a statement and reconcile it against the books.", done: Object.keys(E.bankAccounts).length > 0, go: "/cash" },
+      { t: "Add your vendors and customers", x: "So bills and invoices are a few clicks.", done: invoiceVendors || Object.keys(E.customers).length > 0, go: "/payables?tab=vendors" },
+      { t: "Bring over what you already have", x: "Import journals from another system as a CSV.", done: E.journalOrder.length > 1, action: function () { EFM.records.importJournals(); } },
+      { t: "Set the budget", x: "What each department may spend, month by month.", done: Object.keys(E.budgets).length > 0, go: "/budgets", show: admin },
+      { t: "Give your team access", x: "Members record and approve; read-only people just look.", done: false, go: "/settings?tab=access", show: admin && app.live, optional: true }
+    ].filter(function (s) { return s.show !== false; });
+    var n = steps.filter(function (s) { return s.done; }).length;
+    if (steps.every(function (s) { return s.done || s.optional; })) return null;
+    var list = h("div", { class: "tour-steps", style: { gridTemplateColumns: "repeat(" + Math.min(steps.length, 3) + ", minmax(0, 1fr))", display: "grid", gap: "10px" } });
+    steps.forEach(function (s, i) {
+      list.appendChild(h("button", { type: "button", class: "gs-step" + (s.done ? " done" : ""), on: { click: function () { if (s.action) s.action(); else app.navigate(s.go); } } },
+        h("span", { class: "check" + (s.done ? " done" : "") }, s.done ? ui.icon("check") : h("span", { class: "gs-n" }, String(i + 1))), h("span", { class: "grow" }, h("b", null, s.t), h("small", null, s.x))));
+    });
+    return h("section", { class: "card", style: { marginBottom: "16px" }, "aria-label": "Get set up" },
+      h("div", { class: "card-h" }, h("h2", null, "Get set up"), h("span", { class: "meta" }, n + " of " + steps.length + " done"),
+        h("div", { class: "tools" }, ui.btn(null, { size: "sm", kind: "ghost", icon: "x", label: "Hide", onClick: function () { try { localStorage.setItem("efm.setup.hidden", "1"); } catch (e) { /* ignore */ } app.refresh(); } }))),
+      h("div", { class: "card-b" }, list));
+  }
+
   function liveHome(ctx) {
     var E = ctx.E, app = ctx.app, scope = ctx.scope, cp = E.currentPeriod();
     var page = h("div");
     page.appendChild(header(ctx));
     if (!E.journalOrder.length) {
+      var gs0 = getStarted(ctx); if (gs0) page.appendChild(gs0);
       page.appendChild(ui.card({ span: 12, body: h("div", { class: "empty", style: { padding: "40px 16px" } }, ui.icon("report"), h("b", null, "Nothing has been posted yet"),
         h("div", null, "These are OploCloud's books for fiscal " + E.fy + ". Each entry is saved to the server as it is made, and every figure here can be traced back to the entry behind it."),
         h("div", { class: "row", style: { justifyContent: "center", marginTop: "14px" } },
@@ -385,6 +414,7 @@
           ui.btn("Payables", { onClick: function () { app.navigate("/payables"); } }))) }));
       return page;
     }
+    var gs = getStarted(ctx); if (gs) page.appendChild(gs);
     var t = totals(E, scope, E.fy + "-01", cp);
     page.appendChild(liveKpis(ctx, t));
     function row(cards, gap) {

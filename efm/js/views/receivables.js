@@ -55,7 +55,7 @@
       var page = h("div");
       page.appendChild(ui.pageHead("Receivables",
         Object.keys(custs).length + " customers owe " + E.fmt(total, cur, { compact: true }) + (pastT ? " · " + E.fmt(pastT, cur, { compact: true }) + " of it past due" : ""),
-        [ui.btn("Record a payment", { icon: "bank", onClick: function () { EFM.entry.open("payment-in"); } }), ui.gated("ar.issue", {}, "New invoice", function () { EFM.entry.open("invoice"); }, { kind: "primary", icon: "plus" })]));
+        [ui.btn("Export", { icon: "download", onClick: function () { EFM.records.exportAR(); } }), ui.btn("Record a payment", { icon: "bank", onClick: function () { EFM.entry.open("payment-in"); } }), ui.gated("ar.issue", {}, "New invoice", function () { EFM.entry.open("invoice"); }, { kind: "primary", icon: "plus" })]));
       page.appendChild(ui.kpis([
         { label: "Receivables", icon: "receivables", value: E.fmt(total, cur, { compact: true }), sub: open.length + " open invoices" },
         { label: "Past due", icon: "calendar", value: E.fmt(pastT, cur, { compact: true }), sub: past.length + " invoices · " + ui.pct(total ? pastT / total : 0) + " of the book", onClick: function () { app.setQuery({ tab: "collections" }); } },
@@ -165,7 +165,7 @@
   /* ------------------------------------------------------------ Customers */
   function customers(ctx, open) {
     var E = ctx.E, app = ctx.app, cur = app.scopeCurrency(), cp = E.currentPeriod();
-    var rows = Object.values(E.customers).filter(function (c) { return app.inScope(c.entity); }).map(function (c) {
+    var rows = Object.values(E.customers).filter(function (c) { return app.inScope(c.entity) && !c.off; }).map(function (c) {
       var mine = open.filter(function (i) { return i.customer === c.id; });
       var bal = mine.reduce(function (s, i) { return s + i.balance; }, 0);
       var paid = Object.values(E.arInvoices).filter(function (i) { return i.customer === c.id && i.payments.length; });
@@ -179,7 +179,8 @@
       var list = rows.filter(function (r) { return !ql || (r.c.name + " " + r.c.segment).toLowerCase().indexOf(ql) >= 0; });
       var over = list.filter(function (r) { return r.used > 1; }).length;
       body.appendChild(h("div", { class: "bar" }, ui.searchBox("Search customers", local.cq, function (x) { local.cq = x; draw(); body.querySelector("input[type=search]").focus(); }),
-        h("span", { class: "sp" }), over ? ui.tag(over + " over credit limit", "bad") : null, h("span", { class: "muted", style: { fontSize: "12.5px" } }, list.length + " customers")));
+        h("span", { class: "sp" }), over ? ui.tag(over + " over credit limit", "bad") : null, ui.btn("Export", { size: "sm", kind: "ghost", icon: "download", onClick: function () { EFM.records.exportCustomers(); } }),
+        ui.gated("customer.update", {}, "New customer", function () { EFM.records.customerForm(); }, { size: "sm", kind: "primary", icon: "plus" }), h("span", { class: "muted", style: { fontSize: "12.5px" } }, list.length + " customers")));
       body.appendChild(ui.table({ rows: list, sortKey: "bal", sortDir: -1, onRow: function (r) { app.open({ kind: "customer", id: r.c.id }); }, columns: [
         { key: "n", label: "Customer", cls: "two", sort: function (r) { return r.c.name; }, render: function (r) {
           return h("span", null, r.c.name, h("span", { class: "sub" }, r.c.segment + " · " + E.dimName("product", r.c.product) + (app.scope === "GROUP" ? " · " + E.entity[r.c.entity].short : ""))); } },

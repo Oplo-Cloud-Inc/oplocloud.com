@@ -63,6 +63,7 @@
   EFM.createBooks = function (cfg) {
     var E = new Engine({ asOf: cfg.today, fy: cfg.fy, live: true });
     cfg.entities.forEach(function (e) { E.addEntity(Object.assign({ taxRate: 0, vat: 0, legal: "", city: "" }, e)); });
+    E.asOf = E.clampDate(cfg.today);
     E.bookId = cfg.id;
     E.bookName = cfg.name;
     E.dims.project = [];        // projects are set up by the people who run them
@@ -78,7 +79,7 @@
       try { E.exec(r.type, r.payload, { id: r.actor.id, name: r.actor.name, role: r.actor.role }, { at: r.at, replay: true }); }
       catch (e) { failed.push({ seq: r.seq, type: r.type, error: e && e.message || String(e) }); }
     });
-    if (today) E.asOf = today;
+    if (today) E.asOf = E.clampDate(today);
     return failed;
   };
 

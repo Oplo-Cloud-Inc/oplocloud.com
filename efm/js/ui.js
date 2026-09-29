@@ -851,6 +851,7 @@
     chipFilter: chipFilter, card: card, kpis: kpis, delta: delta, meter: meter, empty: empty, table: table, jeTable: jeTable,
     timeline: timeline, toast: toast, attempt: attempt, modal: modal, confirm: confirm, ask: ask, menu: menu,
     charts: { line: lineChart, columns: columns, spark: spark, ring: ring, legend: legend, niceTicks: niceTicks },
+    svg: svg, responsive: responsive, tipBox: tipBox, hatch: hatch, clear: clear,
     pageHead: pageHead, searchBox: searchBox, csv: csv, parseMoney: parseMoney, majorOf: majorOf,
     ICONS: ICONS
   };

@@ -19,7 +19,8 @@
       var page = h("div");
       page.appendChild(ui.pageHead("General ledger",
         "One chart of accounts for every entity · " + E.accountList.length + " accounts · " + E.lines.length.toLocaleString() + " lines posted in fiscal " + E.fy,
-        [ui.gated("txn.post", {}, "New entry", function () { EFM.entry.open(); }, { icon: "plus" })]));
+        [ui.btn("Export CSV", { icon: "download", onClick: function () { var t = ctx.query.get("tab") || "coa"; if (t === "coa") EFM.records.exportChart(); else EFM.records.exportLedger(); } }),
+         ui.gated("txn.post", {}, "New entry", function () { EFM.entry.open(); }, { icon: "plus" })]));
       page.appendChild(h("div", { class: "row", style: { marginBottom: "14px" } },
         ui.seg([{ id: "coa", label: "Chart of accounts" }, { id: "tb", label: "Trial balance" }, { id: "lines", label: "Ledger lines" }], tab,
           function (t) { app.setQuery({ tab: t === "coa" ? null : t }); }, { label: "Ledger views" })));
@@ -161,7 +162,7 @@
         ui.select(pOpts, local.from, function (v) { local.from = v; if (local.to < v) local.to = v; draw(); }, { label: "From", width: "120px" }),
         h("span", { class: "muted" }, "to"),
         ui.select(pOpts, local.to, function (v) { local.to = v; if (local.from > v) local.from = v; draw(); }, { label: "To", width: "120px" }),
-        ui.select([{ id: "", label: "Every department" }].concat(E.dims.dept.map(function (d) { return { id: d.id, label: d.name }; })), local.dept, function (v) { local.dept = v; draw(); }, { label: "Department", width: "190px" }),
+        ui.select([{ id: "", label: "Every department" }].concat(E.dimList("dept").map(function (d) { return { id: d.id, label: d.name }; })), local.dept, function (v) { local.dept = v; draw(); }, { label: "Department", width: "190px" }),
         h("span", { class: "sp" }),
         h("span", { class: "muted", style: { fontSize: "12.5px" } }, list.length.toLocaleString() + " lines" +
           // A net only means something for one account; across accounts every journal nets to zero.

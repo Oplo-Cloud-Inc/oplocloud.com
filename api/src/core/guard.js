@@ -25,6 +25,8 @@
      learn.guardian  the students they are family to — to read, never to write
      learn.admin     everything inside their organization
      efm.user        OC EFM, the financial system — assigned, never open
+     efm.viewer      OC EFM, to read only: the books, the reports, the trail
+     efm.admin       OC EFM, and who else has it, and how the company is set up
      platform.admin  everything, everywhere
 
    The teacher rule is the load-bearing one and it is deliberately narrow: a
@@ -55,7 +57,7 @@ export const ACTIONS = [
   "record.read", "record.write",
   "assessment.read", "assessment.write",
   "role.grant",
-  "efm.read", "efm.write"
+  "efm.read", "efm.write", "efm.admin"
 ];
 
 function hasRole(actor, product, role, orgId) {
@@ -288,8 +290,11 @@ export async function can(ctx, action, resource = {}) {
        go together: what a person may *do* inside is decided by the engine's own
        rules (a preparer cannot approve their own entry), not by who they are. */
     case "efm.read":
+      return hasRole(actor, "efm", "user") || hasRole(actor, "efm", "admin") || hasRole(actor, "efm", "viewer");
     case "efm.write":
       return hasRole(actor, "efm", "user") || hasRole(actor, "efm", "admin");
+    case "efm.admin":
+      return hasRole(actor, "efm", "admin");
 
     default:
       return false;
@@ -328,7 +333,8 @@ const REASONS = {
   "assessment.read": "That assessment has not been set for you, or has not opened yet.",
   "assessment.write": "Only administrators can publish assessments.",
   "efm.read": "OC EFM is assigned to people by an administrator. Ask one to give you access.",
-  "efm.write": "OC EFM is assigned to people by an administrator. Ask one to give you access."
+  "efm.write": "Your access to OC EFM is read-only. Ask an administrator to make you a member.",
+  "efm.admin": "Only an OC EFM administrator can do that."
 };
 
 export async function must(ctx, action, resource = {}) {

@@ -162,6 +162,15 @@
     "anomaly.resolve":  { roles: ["controller", "cfo", "auditor"], rule: "Flags are resolved by a controller, the CFO or Internal Audit." },
     "vendor.create":    { roles: ["ap", "controller", "cfo"], rule: "Vendors are added by Accounts Payable or a controller." },
     "customer.create":  { roles: ["controller", "treasury", "cfo"], rule: "Customers are added by finance." },
+    "customer.update":  { roles: ["controller", "treasury", "cfo"], rule: "Customers are kept by finance." },
+    "vendor.update":    { roles: ["ap", "controller", "cfo"], rule: "Vendors are kept by Accounts Payable or a controller." },
+    "company.update":   { roles: [], admin: true, rule: "Only an administrator changes how the company is set up." },
+    "dim.manage":       { roles: [], admin: true, rule: "Only an administrator changes departments, products and projects." },
+    "account.manage":   { roles: [], admin: true, rule: "Only an administrator changes the chart of accounts." },
+    "budget.set":       { roles: [], admin: true, rule: "Only an administrator sets the budget." },
+    "year.manage":      { roles: [], admin: true, rule: "Only an administrator closes a fiscal year and opens the next." },
+    "bank.add":         { roles: ["treasury", "controller", "cfo"], rule: "Bank accounts are added by Treasury or a controller." },
+    "note.add":         { roles: ["cfo", "controller", "treasury", "ap", "auditor"], rule: "" },
     "txn.post":         { roles: ["ap", "controller", "treasury", "cfo"], rule: "Transactions are recorded by finance." },
     "ap.capture":       { roles: ["ap", "controller"], rule: "Vendor bills are captured by Accounts Payable." },
     "ar.issue":         { roles: ["controller", "treasury", "cfo"], rule: "Customer invoices are issued by finance." },
@@ -219,7 +228,7 @@
   /* Bumped whenever a change alters what a command does to the books, so a
      browser running older code than the server can be told to reload rather
      than quietly compute something different. */
-  var ENGINE_VERSION = "2";
+  var ENGINE_VERSION = "4";
   function shortDate(d) { return MONTHS[+d.slice(5, 7) - 1] + " " + (+d.slice(8, 10)); }
 
   /* SHA-256, synchronous, for the audit chain. Small and dependency-free so
@@ -317,7 +326,7 @@
       this.accounts[acct.id] = acct;
       this.accountList.push(acct);
     }, this);
-    this.headers = HEADERS.map(function (h) { return { id: h[0], name: h[1], accounts: h[2] }; });
+    this.headers = HEADERS.map(function (h) { return { id: h[0], name: h[1], accounts: h[2].slice() }; });
     this.dims = {};
     Object.keys(DIMS).forEach(function (k) {
       this.dims[k] = DIMS[k].map(function (d) { return { id: d[0], name: d[1] }; });
@@ -340,6 +349,9 @@
     this.apInvoices = {}; this.arInvoices = {}; this.pos = {};
     this.bankAccounts = {}; this.bankLines = {}; this.recon = {};   // lineKey → bankLineId
     this.assets = {}; this.budgets = {}; this.contracts = {};
+    this.custom = [];         // accounts added after the chart was set, and where they sit on the statements
+    this.yearClosed = null; this.opened = null;
+    this.notes = {};          // "journal:JE-US-000001" → [{ by, name, at, text }]
     this.cards = [];
     this.cardCharges = {};    // id → a charge on the company card (see seed.js)
     this.cardOrder = [];
@@ -370,6 +382,9 @@
   P.on = function (fn) { this.listeners.push(fn); };
   P.emit = function (ev) { this.listeners.forEach(function (fn) { try { fn(ev); } catch (e) { console.error(e); } }); };
 
+  /* "Today" for a set of books is never outside its fiscal year: an old year's
+     books stay as they were left, and next year's begin on its first day. */
+  P.clampDate = function (d) { var lo = this.fy + "-01-01", hi = this.fy + "-12-31"; return d < lo ? lo : d > hi ? hi : d; };
   P.currentPeriod = function () { return periodOf(this.asOf); };
   P.lastClosedPeriod = function (entity) {
     var p = this.currentPeriod();
@@ -780,9 +795,25 @@
   /* Lays a statement out from an account → amount map. Values come back in
      the sign a reader expects: revenue and profit positive, expenses positive
      inside their section. */
+  /* The statement layout, with any account added since the chart was set slotted
+     into its section and into every total that section feeds. */
+  P.layoutSpec = function (kind) {
+    if (kind !== "is") return BS_LAYOUT;
+    if (!this.custom.length) return IS_LAYOUT;
+    if (this._spec && this._specN === this.custom.length) return this._spec;
+    var spec = IS_LAYOUT.map(function (r) { return r.sum ? Object.assign({}, r, { sum: r.sum.slice() }) : r; });
+    this.custom.forEach(function (c) {
+      var before = { revenue: "revT", cogs: "corT", opex: "opxT" }[c.section], feeds = { revenue: ["revT", "gp", "oi"], cogs: ["corT", "gp", "oi"], opex: ["opxT", "oi"] }[c.section];
+      var at = spec.findIndex(function (r) { return r.id === before; });
+      spec.splice(at, 0, { id: c.id, acct: [c.id] });
+      spec.forEach(function (r) { if (feeds.indexOf(r.id) >= 0) r.sum.push(c.id); });
+    });
+    this._spec = spec; this._specN = this.custom.length;
+    return spec;
+  };
   P.layout = function (kind, m, opts) {
     opts = opts || {};
-    var self = this, spec = kind === "is" ? IS_LAYOUT : BS_LAYOUT, out = [], byId = {};
+    var self = this, spec = this.layoutSpec(kind), out = [], byId = {};
     var plAccts = this.accountList.filter(function (a) { return !a.bs; }).map(function (a) { return a.id; });
     spec.forEach(function (r) {
       if (r.groupOnly && !opts.group) return;
@@ -1261,7 +1292,9 @@
     var perm = PERMS[action];
     if (!perm) return { ok: false, reason: "Unknown action " + action };
     if (actor.role === "system") return { ok: true };
-    if (actor.role !== "member" && perm.roles.indexOf(actor.role) < 0) {
+    if (this.live && actor.role === "auditor" && perm.roles.indexOf("auditor") < 0 && !perm.admin) return { ok: false, reason: "You have read-only access to OC EFM.", rule: "Ask an administrator to make you a member." };
+    if (perm.admin && actor.role !== "admin") return { ok: false, reason: "Only an administrator can do that.", rule: perm.rule };
+    if (actor.role !== "member" && actor.role !== "admin" && perm.roles.indexOf(actor.role) < 0) {
       var who = perm.roles.map(function (r) { return ROLES[r].name; }).join(" or ");
       return { ok: false, reason: "Needs " + who + ".", rule: perm.rule };
     }
@@ -1291,7 +1324,7 @@
     if (!fn) throw new Refusal("unknown", "Unknown command " + type);
     var at = meta.at || new Date().toISOString();
     if (this.live) {
-      this.asOf = nyDate(at);
+      this.asOf = this.clampDate(nyDate(at));
       if (actor.id && !this.people[actor.id]) this.people[actor.id] = { id: actor.id, name: actor.name || actor.id, role: actor.role, title: "" };
     }
     this._now = at;
@@ -1381,6 +1414,31 @@
      waits for a second person (SOD-04). */
   var CASH = ["1010", "1020", "1030"];
   var REVENUE = ["4000", "4100", "4200"];
+  /* Where an account added later may sit, and what it may be numbered. */
+  var ACCOUNT_SECTIONS = {
+    revenue: { type: "revenue", group: "rev",  noun: "revenue",           lo: 4001, hi: 4899, header: "4000" },
+    cogs:    { type: "expense", group: "cogs", noun: "cost of revenue",   lo: 5001, hi: 5999, header: "5000" },
+    opex:    { type: "expense", group: "opex", noun: "operating expense", lo: 6001, hi: 6999, header: "6000" }
+  };
+  function checkAccount(engine, rawId, rawName, section) {
+    var sec = ACCOUNT_SECTIONS[section];
+    if (!sec) throw new Refusal("section", "Choose where it sits: revenue, cost of revenue or operating expense.");
+    var id = String(rawId || ""), n = +id, name = trimmed(rawName, 60);
+    if (!/^\d{4}$/.test(id) || n < sec.lo || n > sec.hi) throw new Refusal("code", "A " + sec.noun + " account's number is between " + sec.lo + " and " + sec.hi + ".");
+    if (engine.accounts[id]) throw new Refusal("state", "Account " + id + " already exists.");
+    if (!name) throw new Refusal("name", "Give the account a name.");
+    return { sec: sec, id: id, name: name };
+  }
+  function makeAccount(engine, rawId, rawName, section) {
+    var c = checkAccount(engine, rawId, rawName, section), sec = c.sec, id = c.id, name = c.name;
+    var a = { id: id, name: name, type: sec.type, group: sec.group, normal: sec.type === "expense" ? "D" : "C", bank: false, ic: false, contra: false, control: null, bs: false, custom: true };
+    engine.accounts[id] = a;
+    engine.accountList.push(a); engine.accountList.sort(function (x, y) { return x.id < y.id ? -1 : 1; });
+    var hd = engine.headers.filter(function (x) { return x.id === sec.header; })[0];
+    if (hd) { hd.accounts.push(id); hd.accounts.sort(); }
+    engine.custom.push({ id: id, section: section });
+    return a;
+  }
   var TXN = {
     expense:       { group: "out", title: "Expense",                  dr: { expense: true }, cr: { ids: CASH.concat(["2500", "2100"]) }, cr1: true },
     payroll:       { group: "out", title: "Payroll",                  dr: { ids: ["6000", "6050", "6800"] }, cr: { ids: CASH.concat(["2400", "2100"]) } },
@@ -1389,22 +1447,23 @@
     distribution:  { group: "out", title: "Owner distribution",       dr: { ids: ["3100"] }, cr: { ids: CASH }, dr1: true, cr1: true },
     prepaid:       { group: "out", title: "Prepaid expense",          dr: { ids: ["1200"] }, cr: { ids: CASH.concat(["2500"]) }, dr1: true, cr1: true },
     "refund-in":   { group: "out", title: "Refund received",          dr: { ids: CASH }, cr: { expense: true }, dr1: true },
-    sale:          { group: "in",  title: "Cash sale",                dr: { ids: CASH }, cr: { ids: REVENUE.concat(["2300"]) }, dr1: true },
+    sale:          { group: "in",  title: "Cash sale",                dr: { ids: CASH }, cr: { ids: ["2300"], revenue: true }, dr1: true },
     deferred:      { group: "in",  title: "Advance payment",          dr: { ids: CASH }, cr: { ids: ["2200"] }, dr1: true, cr1: true },
     investment:    { group: "in",  title: "Owner investment",         dr: { ids: CASH }, cr: { ids: ["3000"] }, dr1: true, cr1: true },
     "loan-in":     { group: "in",  title: "Loan received",            dr: { ids: CASH }, cr: { ids: ["2700"] }, dr1: true, cr1: true },
     interest:      { group: "in",  title: "Interest received",        dr: { ids: CASH }, cr: { ids: ["7000"] }, dr1: true, cr1: true },
-    "refund-out":  { group: "in",  title: "Refund given",             dr: { ids: REVENUE }, cr: { ids: CASH }, cr1: true },
+    "refund-out":  { group: "in",  title: "Refund given",             dr: { revenue: true }, cr: { ids: CASH }, cr1: true },
     accrual:       { group: "adj", title: "Accrual",                  dr: { expense: true }, cr: { ids: ["2100"] }, cr1: true, canReverse: true },
     amort:         { group: "adj", title: "Prepaid amortization",     dr: { expense: true }, cr: { ids: ["1200"] }, cr1: true },
-    recognize:     { group: "adj", title: "Deferred revenue earned",  dr: { ids: ["2200"] }, cr: { ids: REVENUE }, dr1: true },
+    recognize:     { group: "adj", title: "Deferred revenue earned",  dr: { ids: ["2200"] }, cr: { revenue: true }, dr1: true },
     transfer:      { group: "adj", title: "Transfer",                 dr: { ids: CASH }, cr: { ids: CASH }, dr1: true, cr1: true, differ: true }
   };
   function sideOk(engine, spec, id) {
     var a = engine.accounts[id];
     if (!a) return false;
-    if (spec.ids) return spec.ids.indexOf(id) >= 0;
+    if (spec.ids && spec.ids.indexOf(id) >= 0) return true;
     if (spec.expense) return a.type === "expense" && !a.ic && a.group !== "tax";
+    if (spec.revenue) return a.type === "revenue" && !a.ic && a.group === "rev";
     return false;
   }
   /* Does this journal have the shape its kind allows? Null if so. */
@@ -1430,8 +1489,9 @@
     ["dept", "product", "project", "vendor", "customer"].forEach(function (k) { if (d && typeof d[k] === "string" && d[k]) out[k] = d[k]; });
     return out;
   }
-  function cleanLines(lines) {
-    if (!Array.isArray(lines) || lines.length > 40) throw new Refusal("lines", "An entry has between two and forty lines.");
+  function cleanLines(lines, max) {
+    max = max || 40;
+    if (!Array.isArray(lines) || lines.length > max) throw new Refusal("lines", "An entry has between two and " + max + " lines.");
     return lines.map(function (l) {
       return { account: String(l.account || ""), dr: l.dr || 0, cr: l.cr || 0, dims: cleanDims(l.dims), memo: l.memo ? String(l.memo).slice(0, 120) : undefined };
     });
@@ -1609,6 +1669,7 @@
       var v = this.vendors[p.id];
       need(this, "vendor.verify", actor);
       if (!v.bankPending) throw new Refusal("state", "Nothing is waiting to be verified for " + v.name + ".");
+      if (v.bankPending.by && v.bankPending.by === actor.id) throw new Refusal("forbidden", "You entered these bank details, so someone else must verify them by call-back.", PERMS["vendor.verify"].rule);
       if (p.approve === false) {
         this.record("vendor.bankReject", v.id, "Rejected the bank-detail change for " + v.name + " — " + (p.reason || "not confirmed by call-back"),
           { before: { bank: v.bankPending.mask }, after: { bank: v.bank.mask }, reason: p.reason || "" }, actor, at);
@@ -1752,6 +1813,8 @@
     "period.set": function (p, actor, at) {
       var cur = this.periodStatus(p.entity, p.period);
       var order = ["open", "soft", "closed", "locked"];
+      if (this.yearClosed) throw new Refusal("state", "Fiscal " + this.fy + " is closed; its months can't be reopened.");
+      if (this.live && (p.status === "locked" || cur === "locked") && actor.role !== "admin" && actor.role !== "system") throw new Refusal("forbidden", "Only an administrator locks or unlocks a month.", PERMS["period.lock"].rule);
       if (p.status === "locked" || (cur === "locked")) need(this, "period.lock", actor);
       else need(this, "period.close", actor);
       if (this.live && (p.status === "closed" || p.status === "locked") && p.period >= this.currentPeriod())
@@ -1873,8 +1936,9 @@
       if (!c) throw new Refusal("customer", "Choose a customer.");
       if (!isDate(p.date)) throw new Refusal("date", "Give the invoice a date.");
       if (!Array.isArray(p.lines) || !p.lines.length || p.lines.length > 30) throw new Refusal("lines", "An invoice has between one and thirty lines.");
-      var sub = 0, items = p.lines.map(function (l, i) {
-        if (REVENUE.indexOf(l.account) < 0) throw new Refusal("account", "Line " + (i + 1) + ": choose a revenue account.");
+      var self = this, sub = 0, items = p.lines.map(function (l, i) {
+        var ra = self.accounts[l.account];
+        if (!ra || ra.type !== "revenue" || ra.ic || ra.group !== "rev") throw new Refusal("account", "Line " + (i + 1) + ": choose a revenue account.");
         if (!isMoney(l.amt)) throw new Refusal("amount", "Line " + (i + 1) + ": give the line an amount.");
         sub += l.amt;
         return { account: l.account, amt: l.amt, desc: trimmed(l.desc, 120), product: typeof l.product === "string" && l.product ? l.product : null };
@@ -1957,12 +2021,304 @@
       this.record("asset.acquire", id, "Bought " + name + " \u00b7 " + this.fmt(p.cost, this.entity[p.entity].currency) + " \u00b7 posted " + j.id, {}, actor, at);
       return this.assets[id];
     },
+    /* ---- Setting the company up */
+    "company.update": function (p, actor, at) {
+      need(this, "company.update", actor);
+      var e = this.entity[p.entity];
+      if (!e) throw new Refusal("entity", "Choose a legal entity.");
+      ["name", "legal", "address", "city", "country", "taxId"].forEach(function (k) {
+        if (p[k] == null) return;
+        var v = trimmed(p[k], k === "address" ? 200 : 100);
+        if (k === "name" && !v) throw new Refusal("name", "The company needs a name.");
+        e[k] = v;
+      });
+      this.record("company.update", e.id, "Updated the details of " + e.name, {}, actor, at);
+      return e;
+    },
+    "dim.add": function (p, actor, at) {
+      need(this, "dim.manage", actor);
+      if (["dept", "product", "project"].indexOf(p.kind) < 0) throw new Refusal("kind", "That isn't something entries are tagged with.");
+      var id = String(p.id || "").toUpperCase(), name = trimmed(p.name, 60);
+      if (!/^[A-Z0-9]{2,8}$/.test(id)) throw new Refusal("code", "A code is two to eight letters or digits.");
+      if (!name) throw new Refusal("name", "Give it a name.");
+      if (this.dims[p.kind].some(function (d) { return d.id === id; })) throw new Refusal("state", id + " is already in use.");
+      this.dims[p.kind].push({ id: id, name: name });
+      this.record("dim.add", p.kind + ":" + id, "Added " + { dept: "department", product: "product", project: "project" }[p.kind] + " " + name + " (" + id + ")", {}, actor, at);
+      return this.dims[p.kind][this.dims[p.kind].length - 1];
+    },
+    "dim.rename": function (p, actor, at) {
+      need(this, "dim.manage", actor);
+      var d = (this.dims[p.kind] || []).filter(function (x) { return x.id === p.id; })[0];
+      if (!d) throw new Refusal("state", "There is no such " + p.kind + ".");
+      var name = trimmed(p.name, 60);
+      if (!name) throw new Refusal("name", "Give it a name.");
+      var old = d.name; d.name = name;
+      this.record("dim.rename", p.kind + ":" + d.id, "Renamed " + old + " to " + name, {}, actor, at);
+      return d;
+    },
+    "dim.archive": function (p, actor, at) {
+      need(this, "dim.manage", actor);
+      var d = (this.dims[p.kind] || []).filter(function (x) { return x.id === p.id; })[0];
+      if (!d) throw new Refusal("state", "There is no such " + p.kind + ".");
+      d.off = !!p.off;
+      this.record("dim.archive", p.kind + ":" + d.id, (d.off ? "Retired " : "Restored ") + d.name + " — past entries keep it", {}, actor, at);
+      return d;
+    },
+    "account.add": function (p, actor, at) {
+      need(this, "account.manage", actor);
+      var a = makeAccount(this, p.id, p.name, p.section);
+      this.record("account.add", a.id, "Added account " + a.id + " " + a.name + " (" + ACCOUNT_SECTIONS[p.section].noun + ")", {}, actor, at);
+      return a;
+    },
+    "account.rename": function (p, actor, at) {
+      need(this, "account.manage", actor);
+      var a = this.accounts[p.id], name = trimmed(p.name, 60);
+      if (!a) throw new Refusal("state", "There is no such account.");
+      if (!name) throw new Refusal("name", "Give the account a name.");
+      var old = a.name; a.name = name;
+      this.record("account.rename", a.id, "Renamed account " + a.id + " from " + old + " to " + name, {}, actor, at);
+      return a;
+    },
+    "vendor.update": function (p, actor, at) {
+      need(this, "vendor.update", actor);
+      var v = this.vendors[p.id];
+      if (!v) throw new Refusal("state", "There is no such vendor.");
+      if (p.name != null) { var nm = trimmed(p.name, 80); if (!nm) throw new Refusal("name", "A vendor needs a name."); v.name = nm; }
+      if (p.terms != null) { if (!(p.terms >= 0 && p.terms <= 180) || p.terms % 1) throw new Refusal("terms", "Payment terms are a whole number of days, up to 180."); v.terms = p.terms; }
+      if (p.account != null) { var a = this.accounts[p.account]; if (!a || a.type !== "expense" && p.account !== "1200" || a.ic) throw new Refusal("account", "Choose an expense account."); v.account = p.account; }
+      if (p.dept != null) { if (!this.dims.dept.some(function (d) { return d.id === p.dept; })) throw new Refusal("dept", "Choose a department."); v.dept = p.dept; }
+      ["email", "tin", "category"].forEach(function (k) { if (p[k] != null) v[k] = trimmed(p[k], 100) || (k === "category" ? v.category : null); });
+      if (p.w9 != null) v.w9 = !!p.w9;
+      this.record("vendor.update", v.id, "Updated vendor " + v.name, {}, actor, at);
+      return v;
+    },
+    "vendor.archive": function (p, actor, at) {
+      need(this, "vendor.update", actor);
+      var v = this.vendors[p.id];
+      if (!v) throw new Refusal("state", "There is no such vendor.");
+      if (p.off && Object.values(this.apInvoices).some(function (i) { return i.vendor === v.id && ["review", "captured", "approved", "scheduled", "hold"].indexOf(i.status) >= 0; })) throw new Refusal("state", v.name + " still has bills open — deal with them first.");
+      v.off = !!p.off;
+      this.record("vendor.archive", v.id, (v.off ? "Retired vendor " : "Restored vendor ") + v.name, {}, actor, at);
+      return v;
+    },
+    /* New bank details are held until somebody else confirms them by call-back
+       to a number already on file (SOD-03); payments to the vendor wait. */
+    "vendor.setBank": function (p, actor, at) {
+      need(this, "vendor.update", actor);
+      var v = this.vendors[p.id];
+      if (!v || v.card) throw new Refusal("state", "There is no such vendor to pay.");
+      var bank = trimmed(p.bank, 60), mask = trimmed(p.mask, 24);
+      if (!bank || !mask) throw new Refusal("bank", "Enter the bank's name and the end of the account number.");
+      v.bankPending = { bank: bank, mask: mask, via: "entered in OC EFM by " + actor.name, note: trimmed(p.note, 200), by: actor.id, requestedAt: at };
+      this.record("vendor.bankChange", v.id, "Entered new bank details for " + v.name + " — payments are held until they are verified", { after: { bank: mask } }, actor, at);
+      return v;
+    },
+    "customer.update": function (p, actor, at) {
+      need(this, "customer.update", actor);
+      var c = this.customers[p.id];
+      if (!c) throw new Refusal("state", "There is no such customer.");
+      if (p.name != null) { var nm = trimmed(p.name, 80); if (!nm) throw new Refusal("name", "A customer needs a name."); c.name = nm; }
+      if (p.terms != null) { if (!(p.terms >= 0 && p.terms <= 180) || p.terms % 1) throw new Refusal("terms", "Payment terms are a whole number of days, up to 180."); c.terms = p.terms; }
+      if (p.creditLimit != null) { if (!(p.creditLimit >= 0) || p.creditLimit % 1 || p.creditLimit > 1e13) throw new Refusal("amount", "A credit limit is an amount, or nothing."); c.creditLimit = p.creditLimit; }
+      ["email", "contact", "segment"].forEach(function (k) { if (p[k] != null) c[k] = trimmed(p[k], 100) || (k === "segment" ? c.segment : k === "email" ? null : ""); });
+      this.record("customer.update", c.id, "Updated customer " + c.name, {}, actor, at);
+      return c;
+    },
+    "customer.archive": function (p, actor, at) {
+      need(this, "customer.update", actor);
+      var c = this.customers[p.id];
+      if (!c) throw new Refusal("state", "There is no such customer.");
+      if (p.off && this.arOpen(c.entity).some(function (i) { return i.customer === c.id; })) throw new Refusal("state", c.name + " still owes money — apply what they pay first.");
+      c.off = !!p.off;
+      this.record("customer.archive", c.id, (c.off ? "Retired customer " : "Restored customer ") + c.name, {}, actor, at);
+      return c;
+    },
+    /* The budget, a whole batch at once: each line is a department and an
+       account with twelve months. Revenue is planned under REV. */
+    "budget.set": function (p, actor, at) {
+      need(this, "budget.set", actor);
+      if (!this.entity[p.entity]) throw new Refusal("entity", "Choose a legal entity.");
+      if (!Array.isArray(p.entries) || !p.entries.length || p.entries.length > 500) throw new Refusal("lines", "Send between one and five hundred budget lines.");
+      var self = this, todo = p.entries.map(function (x, i) {
+        var a = self.accounts[x.account];
+        if (!a || a.bs || a.ic || (a.type !== "expense" && a.type !== "revenue")) throw new Refusal("account", "Line " + (i + 1) + ": a budget is for an income or expense account.");
+        var dept = a.type === "revenue" ? "REV" : x.dept;
+        if (a.type === "expense" && !self.dims.dept.some(function (d) { return d.id === dept; })) throw new Refusal("dept", "Line " + (i + 1) + ": choose a department.");
+        if (!Array.isArray(x.amounts) || x.amounts.length !== 12 || x.amounts.some(function (v) { return !Number.isSafeInteger(v) || v < 0 || v > 1e13; })) throw new Refusal("amount", "Line " + (i + 1) + ": a budget has twelve monthly amounts.");
+        return { key: p.entity + "|" + dept + "|" + a.id, amounts: x.amounts.slice() };
+      });
+      todo.forEach(function (t) { if (t.amounts.some(Boolean)) self.budgets[t.key] = t.amounts; else delete self.budgets[t.key]; });
+      this.record("budget.set", p.entity, "Set the fiscal " + this.fy + " budget for " + this.entity[p.entity].short + " · " + todo.length + " line" + (todo.length === 1 ? "" : "s"), {}, actor, at);
+      return todo.length;
+    },
+    /* ---- Banks */
+    "bank.add": function (p, actor, at) {
+      need(this, "bank.add", actor);
+      if (!this.entity[p.entity]) throw new Refusal("entity", "Choose a legal entity.");
+      if (CASH.indexOf(p.account) < 0) throw new Refusal("account", "Choose which cash account in the ledger it is.");
+      var self = this, name = trimmed(p.name, 60), bankName = trimmed(p.bankName, 60), mask = trimmed(p.mask, 24);
+      if (!name || !bankName) throw new Refusal("name", "Enter the bank's name and a name for the account.");
+      if (Object.values(this.bankAccounts).some(function (b) { return b.entity === p.entity && b.account === p.account; })) throw new Refusal("state", "That ledger account already has a bank account attached.", "One bank account to one cash account keeps the bank and the books comparable.");
+      if (!(p.opening == null || (Number.isSafeInteger(p.opening) && Math.abs(p.opening) <= 1e13))) throw new Refusal("amount", "The opening balance is an amount.");
+      var id = "bk" + ((this.seq.BK = (this.seq.BK || 0) + 1));
+      this.bankAccounts[id] = { id: id, entity: p.entity, account: p.account, bankName: bankName, name: name, mask: mask ? "•••• " + mask.replace(/\D/g, "").slice(-4) : "", opening: p.opening || 0, feed: "Statement uploads", recThrough: null };
+      this.record("bank.add", id, "Added bank account " + bankName + " " + name + " → " + p.account + " " + this.accounts[p.account].name, {}, actor, at);
+      return this.bankAccounts[id];
+    },
+    /* A statement, line by line. Lines already here are skipped, so the same
+       file can be loaded twice without harm. */
+    "bank.import": function (p, actor, at) {
+      need(this, "bank.match", actor);
+      var b = this.bankAccounts[p.bank];
+      if (!b) throw new Refusal("state", "Choose the bank account this statement is for.");
+      if (!Array.isArray(p.lines) || !p.lines.length || p.lines.length > 2000) throw new Refusal("lines", "A statement has between one and two thousand lines.");
+      var have = {}, self = this;
+      Object.values(this.bankLines).forEach(function (l) { if (l.bank === b.id) { var k = l.date + "|" + l.amount + "|" + l.desc.toLowerCase(); have[k] = (have[k] || 0) + 1; } });
+      var add = [], skipped = 0;
+      p.lines.forEach(function (l, i) {
+        if (!isDate(l.date)) throw new Refusal("date", "Line " + (i + 1) + ": that isn't a date.");
+        if (!Number.isSafeInteger(l.amount) || !l.amount || Math.abs(l.amount) > 1e13) throw new Refusal("amount", "Line " + (i + 1) + ": that isn't an amount.");
+        var desc = trimmed(l.desc, 120) || "(no description)", k = l.date + "|" + l.amount + "|" + desc.toLowerCase();
+        if (have[k]) { have[k]--; skipped++; return; }
+        add.push({ date: l.date, amount: l.amount, desc: desc });
+      });
+      add.forEach(function (l) {
+        var id = "BL-" + ((self.seq.BL = (self.seq.BL || 0) + 1));
+        self.bankLines[id] = { id: id, bank: b.id, date: l.date, amount: l.amount, desc: l.desc, kind: l.amount < 0 && /fee|charge/i.test(l.desc) ? "fee" : "", ref: "", status: "unmatched", matches: [], imported: at };
+      });
+      this.record("bank.import", b.id, "Loaded a statement for " + b.bankName + " " + b.name + " · " + add.length + " new line" + (add.length === 1 ? "" : "s") + (skipped ? " (" + skipped + " already there)" : ""), {}, actor, at);
+      return { added: add.length, skipped: skipped };
+    },
+    /* ---- Bringing entries in from somewhere else */
+    "journal.import": function (p, actor, at) {
+      need(this, "journal.create", actor);
+      if (!Array.isArray(p.entries) || !p.entries.length || p.entries.length > 300) throw new Refusal("lines", "Import between one and three hundred journals at a time.");
+      var self = this, nl = 0, staged = p.entries.map(function (x, i) {
+        var j = { entity: x.entity, date: x.date, memo: trimmed(x.memo, 200), lines: cleanLines(x.lines, 200), source: { type: "manual", label: "Imported journal" }, status: "draft",
+                  createdBy: actor.id, createdAt: at, reverseOn: null, attachments: [] };
+        nl += j.lines.length;
+        if (nl > 4000) throw new Refusal("lines", "That's more than four thousand lines in one import.");
+        if (!j.memo) throw new Refusal("memo", "Journal " + (i + 1) + ": add a memo.");
+        var bad = self.validateJournal(j) || controlCheck(self, j);
+        if (bad) throw new Refusal(bad.code || "invalid", "Journal " + (i + 1) + ": " + bad.message, bad.rule);
+        return j;
+      });
+      var ids = staged.map(function (j) { self.stage(j); submitJournal(self, j, at); return j.id; });
+      this.record("journal.import", ids[0] + (ids.length > 1 ? "…" + ids[ids.length - 1] : ""), "Imported " + ids.length + " journal" + (ids.length === 1 ? "" : "s") + " for approval (" + nl + " lines)", {}, actor, at);
+      return ids;
+    },
+    /* ---- A word on a record */
+    "note.add": function (p, actor, at) {
+      need(this, "note.add", actor);
+      var pools = { journal: this.journals, ap: this.apInvoices, ar: this.arInvoices, asset: this.assets, vendor: this.vendors, customer: this.customers };
+      if (!pools[p.kind] || !pools[p.kind][p.id]) throw new Refusal("state", "There is nothing by that name to add a note to.");
+      var text = trimmed(p.text, 1000);
+      if (!text) throw new Refusal("text", "Write something.");
+      var k = p.kind + ":" + p.id;
+      (this.notes[k] = this.notes[k] || []).push({ by: actor.id, name: actor.name || actor.id, at: at, text: text });
+      this.record("note.add", k, "Noted on " + p.id + ": " + text.slice(0, 80) + (text.length > 80 ? "…" : ""), {}, actor, at);
+      return this.notes[k];
+    },
+    /* ---- The end of a fiscal year, and the start of the next */
+    "year.close": function (p, actor, at) {
+      need(this, "year.manage", actor);
+      if (this.yearClosed) throw new Refusal("state", "Fiscal " + this.fy + " is already closed.");
+      var pending = Object.values(this.journals).filter(function (j) { return j.status === "pending"; }).length;
+      if (pending) throw new Refusal("state", pending + " journal" + (pending === 1 ? " is" : "s are") + " still waiting for approval. Approve or reject them first.");
+      var open = Object.values(this.apInvoices).filter(function (i) { return i.status === "review" || i.status === "captured"; }).length;
+      if (open) throw new Refusal("state", open + " vendor bill" + (open === 1 ? " is" : "s are") + " still waiting for approval. Approve, hold or reject them first.");
+      var unmatched = Object.values(this.bankLines).filter(function (l) { return l.status === "unmatched"; }).length;
+      if (unmatched) throw new Refusal("state", unmatched + " bank line" + (unmatched === 1 ? " isn't" : "s aren't") + " reconciled yet. Reconcile every bank account first.");
+      var self = this;
+      this.entities.forEach(function (e) { self.fyPeriods().forEach(function (pp) { self.setPeriod(e.id, pp, "locked", actor.id, at); }); });
+      this.yearClosed = { by: actor.id, at: at };
+      this.record("year.close", this.fy, "Closed fiscal " + this.fy + " — every month is locked", {}, actor, at);
+      return this.yearClosed;
+    },
+    "year.open": function (p, actor, at) {
+      need(this, "year.manage", actor);
+      if (this.journalOrder.length || this.opened) throw new Refusal("state", "These books already have entries; a year can only be opened on empty ones.");
+      if (!p || p.fy !== this.fy) throw new Refusal("state", "That opens a different fiscal year than these books.");
+      var self = this, start = this.fy + "-01-01", seenAcct = {};
+      // Everything is checked before anything changes.
+      (p.custom || []).forEach(function (c) { if (seenAcct[c.id]) throw new Refusal("state", "Account " + c.id + " is listed twice."); seenAcct[c.id] = 1; checkAccount(self, c.id, c.name, c.section); });
+      var arBy = {}, apBy = {};
+      Object.keys(p.arOpen || {}).forEach(function (id) { var i = p.arOpen[id]; arBy[i.entity] = (arBy[i.entity] || 0) + i.balance; });
+      Object.keys(p.apOpen || {}).forEach(function (id) { var i = p.apOpen[id]; if (i.status === "approved" || i.status === "scheduled") apBy[i.entity] = (apBy[i.entity] || 0) + i.amount; });
+      var journals = Object.keys(p.opening || {}).map(function (eid) {
+        var lines = p.opening[eid], dr = 0, cr = 0, a1100 = 0, a2000 = 0;
+        if (!self.entity[eid]) throw new Refusal("entity", "There is no entity " + eid + " in these books.");
+        lines.forEach(function (l) { dr += l.dr || 0; cr += l.cr || 0; if (l.account === "1100") a1100 += (l.dr || 0) - (l.cr || 0); if (l.account === "2000") a2000 += (l.cr || 0) - (l.dr || 0); });
+        if (dr !== cr) throw new Refusal("balance", "The balances brought forward for " + eid + " don't balance (" + dr + " against " + cr + ").");
+        if ((arBy[eid] || 0) !== a1100) throw new Refusal("balance", "Receivables carried forward don't tie to the ledger for " + eid + ".");
+        if ((apBy[eid] || 0) !== a2000) throw new Refusal("balance", "Payables carried forward don't tie to the ledger for " + eid + ".");
+        var j = { entity: eid, date: start, memo: "Opening balances — from fiscal " + p.from, source: { type: "open", label: "Opening balances" }, lines: clone(lines), createdBy: actor.id, createdAt: at, approvedBy: actor.id, approvedAt: at };
+        var bad = self.validateJournal(j, { system: true });
+        if (bad) throw bad;
+        return j;
+      });
+      (p.entities || []).forEach(function (e) { var t = self.entity[e.id]; if (t) ["name", "legal", "address", "city", "country", "taxId"].forEach(function (k) { if (e[k] != null) t[k] = e[k]; }); });
+      (p.custom || []).forEach(function (c) { makeAccount(self, c.id, c.name, c.section); });
+      ["dept", "product", "project"].forEach(function (k) { if (p.dims && p.dims[k]) self.dims[k] = clone(p.dims[k]); });
+      journals.forEach(function (j) { self.post(j, { system: true }); });
+      Object.keys(p.vendors || {}).forEach(function (id) { self.vendors[id] = clone(p.vendors[id]); });
+      Object.keys(p.customers || {}).forEach(function (id) { self.customers[id] = clone(p.customers[id]); });
+      Object.keys(p.banks || {}).forEach(function (id) { self.bankAccounts[id] = clone(p.banks[id]); });
+      Object.keys(p.assets || {}).forEach(function (id) { self.assets[id] = clone(p.assets[id]); });
+      Object.keys(p.arOpen || {}).forEach(function (id) { self.arInvoices[id] = clone(p.arOpen[id]); });
+      Object.keys(p.apOpen || {}).forEach(function (id) { self.apInvoices[id] = clone(p.apOpen[id]); });
+      var num = function (id, re) { var m = re.exec(id); return m ? +m[1] : 0; };
+      Object.keys(this.apInvoices).forEach(function (id) { self.seq.APO = Math.max(self.seq.APO || 0, num(id, /(\d+)$/)); });
+      Object.keys(this.arInvoices).forEach(function (id) { var m = /^INV-([A-Z0-9]+)-(\d+)$/.exec(id); if (m) self.seq["INV-" + m[1]] = Math.max(self.seq["INV-" + m[1]] || 0, +m[2] - 10000); });
+      Object.keys(this.assets).forEach(function (id) { self.seq.AST = Math.max(self.seq.AST || 0, num(id, /(\d+)$/)); });
+      Object.keys(this.bankAccounts).forEach(function (id) { self.seq.BK = Math.max(self.seq.BK || 0, num(id, /(\d+)$/)); });
+      this.opened = { from: p.from, by: actor.id, at: at };
+      this.record("year.open", this.fy, "Opened fiscal " + this.fy + " with the balances brought forward from fiscal " + p.from, {}, actor, at);
+      return this.opened;
+    },
     "ic.book": function (p, actor, at) {
       need(this, "journal.create", actor);
       return this.bookIntercompany(p.entity, p.period || this.currentPeriod(), actor, at);
     }
   };
   P.commands = COMMANDS;
+
+  /* What the next fiscal year starts with, from a closed one: each entity's balance
+     sheet (profit for the year rolled into retained earnings), the master data,
+     what is still owed either way, the asset register, and the bank accounts. */
+  P.rolloverState = function () {
+    if (!this.yearClosed) throw new Refusal("state", "Close fiscal " + this.fy + " first.");
+    var self = this, last = this.fy + "-12", first = this.fy + "-01", out = {
+      from: this.fy, fy: String(+this.fy + 1), entities: clone(this.entities), custom: this.custom.map(function (c) { return { id: c.id, name: self.accounts[c.id].name, section: c.section }; }),
+      dims: clone(this.dims), vendors: {}, customers: {}, banks: {}, assets: {}, arOpen: {}, apOpen: {}, opening: {}
+    };
+    this.entities.forEach(function (e) {
+      var lines = {}, pl = 0;
+      self.accountList.forEach(function (a) {
+        var v = a.bs ? self.balance(e.id, a.id, last) : self.net(e.id, a.id, first, last);
+        if (!v) return;
+        if (a.bs) lines[a.id] = (lines[a.id] || 0) + v; else pl += v;
+      });
+      if (pl) lines["3100"] = (lines["3100"] || 0) + pl;            // profit (a credit, so negative here) joins retained earnings
+      out.opening[e.id] = Object.keys(lines).filter(function (a) { return lines[a]; }).sort().map(function (a) { var v = lines[a]; return { account: a, dr: v > 0 ? v : 0, cr: v < 0 ? -v : 0 }; });
+    });
+    Object.keys(this.vendors).forEach(function (id) { var v = clone(self.vendors[id]); out.vendors[id] = v; });
+    Object.keys(this.customers).forEach(function (id) { out.customers[id] = clone(self.customers[id]); });
+    Object.keys(this.bankAccounts).forEach(function (id) { var b = clone(self.bankAccounts[id]); b.opening = self.bookBalance(id, last + "-31"); b.recThrough = null; out.banks[id] = b; });
+    Object.keys(this.assets).forEach(function (id) {
+      var a = clone(self.assets[id]), bk = self.assetBook(a, last);
+      a.priorDep = bk.accumulated; a.depThrough = last; out.assets[id] = a;
+    });
+    Object.keys(this.arInvoices).forEach(function (id) {
+      var i = self.arInvoices[id];
+      if (i.balance > 0 && i.status !== "void") { var c = clone(i); c.payments = []; c.collections = []; out.arOpen[id] = c; }
+    });
+    Object.keys(this.apInvoices).forEach(function (id) {
+      var i = self.apInvoices[id];
+      if (["approved", "scheduled", "hold"].indexOf(i.status) >= 0) { var c = clone(i); if (c.journal) { c.journal = "opening"; c.glDate = null; } out.apOpen[id] = c; }
+    });
+    return out;
+  };
 
   /* ------------------------------------------------ Command internals */
 
@@ -2249,6 +2605,11 @@
   };
   P.closeRuns = CLOSE_RUNS;
 
+  /* The departments (products, projects) somebody can choose now: retired ones
+     stay on past entries but drop out of the pickers, unless one is in use. */
+  P.dimList = function (kind, keep) {
+    return (this.dims[kind] || []).filter(function (d) { return !d.off || d.id === keep; });
+  };
   P.dimName = function (kind, id) {
     var d = (this.dims[kind] || []).filter(function (x) { return x.id === id; })[0];
     return d ? d.name : id;
@@ -2391,6 +2752,7 @@
   Engine.Refusal = Refusal;
   Engine.COA = COA;
   Engine.TXN = TXN;
+  Engine.ACCOUNT_SECTIONS = ACCOUNT_SECTIONS;
 
   root.EFM = root.EFM || {};
   root.EFM.data = root.EFM.data || {};     // datasets loaded after sign-in (see app.js), never shipped with the app
