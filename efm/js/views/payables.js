@@ -137,7 +137,9 @@
       allBox.addEventListener("change", function () { list.filter(eligible).forEach(function (i) { local.sel[i.id] = allBox.checked; }); draw(); });
 
       body.appendChild(ui.table({ rows: list, onRow: function (i) { app.open({ kind: "ap", id: i.id }); }, sortKey: "st", sortDir: 1, limit: 250,
-        empty: ui.empty(status === "review" ? "Nothing waiting for approval" : "No invoices here", status ? "Try another stage in the strip above." : null, "check"),
+        empty: !Object.keys(E.apInvoices).length ? h("div", { class: "empty" }, ui.icon("payables"), h("b", null, "No vendor bills yet"), h("div", null, "Enter a bill from a supplier. A second person approves it, then it's scheduled and paid — and every step is recorded."),
+            h("div", { style: { marginTop: "12px" } }, ui.gated("ap.capture", {}, "Enter a bill", function () { EFM.entry.open("bill"); }, { kind: "primary", icon: "plus" })))
+          : ui.empty(status === "review" ? "Nothing waiting for approval" : "No invoices here", status ? "Try another stage in the strip above." : null, "check"),
         columns: [
           { key: "sel", label: allBox, cls: "chk", render: function (i) {
             if (!eligible(i)) return "";

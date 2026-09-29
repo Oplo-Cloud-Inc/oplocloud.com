@@ -111,7 +111,9 @@
         bucket ? null : ui.seg([{ id: "open", label: "Open" }, { id: "all", label: "All this year" }], local.all ? "all" : "open", function (x) { local.all = x === "all"; draw(); }),
         h("span", { class: "muted", style: { fontSize: "12.5px" } }, rows.length + " invoices")));
       body.appendChild(ui.table({ rows: rows, sortKey: local.all ? "date" : "late", sortDir: -1, limit: 250, onRow: function (i) { app.open({ kind: "ar", id: i.id }); },
-        empty: ui.empty("Nothing here", bucket ? "No open invoices are " + bucket.label.toLowerCase() + " late." : "Every invoice is paid.", "check"),
+        empty: !Object.keys(E.arInvoices).length ? h("div", { class: "empty" }, ui.icon("receivables"), h("b", null, "No invoices yet"), h("div", null, "Send a customer their first invoice. It's owed to you until they pay, and you can record the payment against it."),
+            h("div", { style: { marginTop: "12px" } }, ui.gated("ar.issue", {}, "New invoice", function () { EFM.entry.open("invoice"); }, { kind: "primary", icon: "plus" })))
+          : ui.empty("Nothing here", bucket ? "No open invoices are " + bucket.label.toLowerCase() + " late." : "Every invoice is paid.", "check"),
         columns: [
           { key: "c", label: "Customer", cls: "two", sort: function (i) { return E.customers[i.customer].name; }, render: function (i) {
             return h("span", null, E.customers[i.customer].name, h("span", { class: "sub" }, i.number + " · " + ({ annual: "annual", monthly: "monthly", usage: "usage" }[i.kind] || "invoice"))); } },

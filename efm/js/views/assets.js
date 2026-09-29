@@ -60,7 +60,8 @@
       body.appendChild(h("div", { class: "bar" }, ui.searchBox("Search assets", local.q, function (x) { local.q = x; draw(); body.querySelector("input[type=search]").focus(); }, { width: "220px" }),
         ui.select(classes, local.cls, function (x) { local.cls = x; draw(); }, { label: "Class", width: "200px" }), h("span", { class: "sp" }),
         h("span", { class: "muted", style: { fontSize: "12.5px" } }, rows.length + " assets")));
-      body.appendChild(ui.table({ rows: rows, sortKey: "nbv", sortDir: -1, onRow: function (a) { app.open({ kind: "asset", id: a.id }); }, columns: [
+      body.appendChild(ui.table({ rows: rows, sortKey: "nbv", sortDir: -1, empty: h("div", { class: "empty" }, ui.icon("box"), h("b", null, "No assets yet"), h("div", null, "Equipment and furniture that lasts for years goes here — bought once, then depreciated month by month."),
+        h("div", { style: { marginTop: "12px" } }, ui.gated("asset.acquire", {}, "Buy an asset", function () { EFM.entry.open("asset"); }, { kind: "primary", icon: "plus" }))), onRow: function (a) { app.open({ kind: "asset", id: a.id }); }, columns: [
         { key: "n", label: "Asset", cls: "two", sort: function (a) { return a.name; }, render: function (a) {
           return h("span", null, a.name, h("span", { class: "sub" }, a.id + " · " + E.accounts[a.cls].name + (ctx.scope === "GROUP" ? " · " + E.entity[a.entity].short : "") + " · " + E.dimName("dept", a.dept))); } },
         { key: "s", label: "In service", cls: "nowrap", sort: function (a) { return a.inService; }, render: function (a) { return ui.date(a.inService, "year"); } },
