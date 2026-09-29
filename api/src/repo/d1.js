@@ -215,16 +215,21 @@ export class D1Repository {
     return results || [];
   }
 
+  /* The command already recorded under a key, if any. */
+  async efmCommandByKey(bookId, key) {
+    return this.db.prepare(`SELECT seq, at, hash, actor_id FROM efm_commands WHERE book_id = ? AND idem_key = ?`).bind(bookId, key).first();
+  }
+
   /* Appends one command. False when its place has been taken — somebody else
      got there first — which is the caller's cue to say the books have moved. */
   async efmAppendCommand(bookId, row) {
     try {
       await this.db.prepare(
         `INSERT INTO efm_commands
-           (book_id, seq, type, payload, actor_id, actor_name, actor_role, at, prev_hash, hash)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           (book_id, seq, type, payload, actor_id, actor_name, actor_role, at, prev_hash, hash, idem_key)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(bookId, row.seq, row.type, row.payload, row.actorId, row.actorName, row.actorRole,
-             row.at, row.prev, row.hash).run();
+             row.at, row.prev, row.hash, row.key || null).run();
       return true;
     } catch (e) {
       if (/UNIQUE|PRIMARY KEY|constraint/i.test(String(e && e.message))) return false;

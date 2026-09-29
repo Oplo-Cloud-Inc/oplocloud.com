@@ -617,13 +617,17 @@
     if (sync.sending || !sync.queue.length) return;
     sync.sending = true;
     var c = sync.queue[0];
-    call("POST", "/commands", { type: c.type, payload: c.payload, expectSeq: sync.seq, at: c.at }).then(function (r) {
-      if (r.status !== 201) return recover(r);
+    call("POST", "/commands", { type: c.type, payload: c.payload, expectSeq: sync.seq, at: c.at, key: c.key || (c.key = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2))) }).then(function (r) {
+      if (r.status !== 201 && r.status !== 200) return recover(r);
       var got = r.body.command, E = app.E, log = E.commandLog, prev = log.length ? log[log.length - 1].hash : EFM.genesis(BOOK);
       log.push({ seq: got.seq, type: c.type, payload: c.payload, actor: app.actor(), at: got.at, prev: prev, hash: got.hash });
       sync.seq = got.seq; sync.queue.shift(); sync.sending = false;
       if (sync.queue.length) pump(); else { setState("saved"); if (app.pendingRender) { app.pendingRender = false; render(); } }
-    }, function () { recover({ status: 0, offline: true }); });
+    }, function () {
+      // A dropped connection may have landed or not; resending under the same key is safe either way.
+      if (!c.retried) { c.retried = true; sync.sending = false; setTimeout(pump, 1200); return; }
+      recover({ status: 0, offline: true });
+    });
   }
   /* The server didn't take it. Whatever was waiting to be saved is dropped, the
      books are reloaded as the server has them, and the person is told why. */

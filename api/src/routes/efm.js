@@ -115,6 +115,13 @@ export async function execute(ctx, { bookId }) {
   await must(ctx, "efm.write");
   const request = readRequest(await readJson(ctx.request));
   const b = await load(ctx, bookId);
+  if (request.key) {
+    const seen = await ctx.repo.efmCommandByKey(bookId, request.key);
+    if (seen) {
+      if (seen.actor_id !== actor.id) throw ApiError.conflict("That request key belongs to somebody else's change.");
+      return json({ command: { seq: seen.seq, at: seen.at, hash: seen.hash }, repeated: true }, { status: 200, ...PRIVATE });
+    }
+  }
   const rows = await ctx.repo.efmCommands(bookId, 0);
 
   const { seq, hash, row } = accept(b, rows, request, actor);

@@ -123,20 +123,20 @@ function refusal(e) {
 
 /* Decides whether `request` may be added to the books, and if so returns the
    row to append. Throws an ApiError saying why not; changes nothing either way. */
-export function accept(book, rows, request, account, now = Date.now()) {
-  const commands = rows.map(commandOf);
+/* The books, already built, kept in this isolate between requests. A write
+   normally finds them one command behind and only has to add the new one, so it
+   costs the same at ten commands as at ten thousand. The cache is only ever
+   trusted when its position and last hash are exactly what the database holds;
+   anything else — another isolate wrote, a write lost a race — rebuilds from the
+   list, and every fiftieth write does so anyway, checking the whole chain. */
+const WARM = new Map();
 
-  if (request.expectSeq !== commands.length) {
+export function accept(book, rows, request, account, now = Date.now()) {
+  if (request.expectSeq !== rows.length) {
     const e = ApiError.conflict("The books have changed since you loaded them. They have been reloaded — check, then try again.");
     e.code = "stale";
-    e.extra = { head: commands.length };
+    e.extra = { head: rows.length };
     throw e;
-  }
-
-  const chain = EFM.verifyCommands(book.id, commands);
-  if (!chain.ok) {
-    console.error(`efm: chain broken in ${book.id} at command ${chain.at}: ${chain.why}`);
-    throw new ApiError(500, "integrity", `The stored history fails its integrity check at command ${chain.at}, so nothing was added. This needs an administrator.`);
   }
 
   const at = new Date(request.at);
@@ -148,10 +148,26 @@ export function accept(book, rows, request, account, now = Date.now()) {
   }
   const atIso = at.toISOString();
 
-  const { E, failed } = build(book, commands);
-  if (failed.length) {
-    console.error(`efm: ${book.id} no longer replays: ${JSON.stringify(failed[0])}`);
-    throw new ApiError(500, "replay", `The stored history no longer replays (command ${failed[0].seq}), so nothing was added. This needs an administrator.`);
+  const dbHead = rows.length ? rows[rows.length - 1].hash : EFM.genesis(book.id);
+  const warm = WARM.get(book.id);
+  let E, prev = dbHead;
+  if (warm && warm.seq === rows.length && warm.head === dbHead && warm.uses % 50 !== 49) {
+    E = warm.E; warm.uses++;
+  } else {
+    const commands = rows.map(commandOf);
+    const chain = EFM.verifyCommands(book.id, commands);
+    if (!chain.ok) {
+      WARM.delete(book.id);
+      console.error(`efm: chain broken in ${book.id} at command ${chain.at}: ${chain.why}`);
+      throw new ApiError(500, "integrity", `The stored history fails its integrity check at command ${chain.at}, so nothing was added. This needs an administrator.`);
+    }
+    const built = build(book, commands);
+    if (built.failed.length) {
+      WARM.delete(book.id);
+      console.error(`efm: ${book.id} no longer replays: ${JSON.stringify(built.failed[0])}`);
+      throw new ApiError(500, "replay", `The stored history no longer replays (command ${built.failed[0].seq}), so nothing was added. This needs an administrator.`);
+    }
+    E = built.E;
   }
 
   // The engine gets its own copy; what is stored is what was asked for.
@@ -161,18 +177,20 @@ export function accept(book, rows, request, account, now = Date.now()) {
   try {
     E.exec(request.type, JSON.parse(JSON.stringify(payload)), actor, { at: atIso });
   } catch (e) {
+    WARM.delete(book.id);            // a refused command may have half-run: never reuse these books
     if (e instanceof EFM.Refusal) throw refusal(e);
     console.error(`efm: ${request.type} threw ${e && e.stack || e}`);
     throw ApiError.badRequest("That command could not be understood.", "payload");
   }
 
-  const seq = commands.length + 1;
-  const prev = headOf(book, commands);
+  const seq = rows.length + 1;
   const row = { seq, type: request.type, payload, actor, at: atIso };
   const hash = EFM.commandHash(prev, row);
+  // Warm for the next write, if this one is stored; if it isn't, the position won't match and it rebuilds.
+  WARM.set(book.id, { E, seq, head: hash, uses: warm && warm.E === E ? warm.uses : 0 });
   return {
     seq, hash,
-    row: { seq, type: request.type, payload: JSON.stringify(payload), actorId: actor.id, actorName: actor.name, actorRole: actor.role, at: atIso, prev, hash }
+    row: { key: request.key || null, seq, type: request.type, payload: JSON.stringify(payload), actorId: actor.id, actorName: actor.name, actorRole: actor.role, at: atIso, prev, hash }
   };
 }
 
@@ -188,5 +206,6 @@ export function readRequest(body) {
   if (JSON.stringify(b.payload).length > (LARGE_PAYLOAD[b.type] || MAX_PAYLOAD_CHARS)) throw ApiError.badRequest("That command is too large.", "payload");
   if (!Number.isInteger(b.expectSeq) || b.expectSeq < 0) throw ApiError.badRequest("Say how many commands you have seen.", "expectSeq");
   if (typeof b.at !== "string") throw ApiError.badRequest("Say when it was done.", "at");
-  return { type: b.type, payload: b.payload, expectSeq: b.expectSeq, at: b.at };
+  if (b.key != null && (typeof b.key !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(b.key))) throw ApiError.badRequest("A request key is 8 to 64 letters, digits, - or _.", "key");
+  return { type: b.type, payload: b.payload, expectSeq: b.expectSeq, at: b.at, key: b.key || null };
 }
