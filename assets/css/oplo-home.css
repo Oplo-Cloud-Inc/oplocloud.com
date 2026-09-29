@@ -1,0 +1,92 @@
+/* ==========================================================================
+   Oplo — the front page.
+
+   Loaded by index.html and nothing else, on top of oplo-design.css. Quiet on
+   purpose: a picture, a sentence, and a plain list. Nothing here moves, glows
+   or reacts to the pointer; the only motion on the page is the site's own
+   fade-in as a section scrolls into view (oplo-motion.js).
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ Hero
+   Two thirds of the window, from the top edge — the bar sits over it, so the
+   glass has the picture to frost. The floor keeps the lettering whole in a
+   window too short for two thirds to be enough. The band is painted in the
+   picture's own black, so nothing flashes white while it arrives. */
+.band.art.hero {
+  position: relative;
+  height: max(66.667vh, 440px);
+  height: max(66.667svh, 440px);
+  min-height: 0;
+  justify-content: flex-end;
+  background: #02050b;
+  isolation: isolate;
+}
+/* Cropped from the bottom, never the top: the word is in the upper part of the
+   picture and the planet's edge under it. */
+.hero > .hero-img {
+  position: absolute; z-index: 0; inset: 0;
+  display: block; width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 0;
+  pointer-events: none;
+}
+.band.art.hero::after { z-index: 1; }
+
+/* The two buttons, centred at the foot of the picture. */
+.band.art.hero > .hero-foot {
+  z-index: 2;
+  padding: 0 max(var(--gutter), env(safe-area-inset-left)) clamp(32px, 8vh, 64px);
+  text-align: center;
+}
+.hero-ctas { display: flex; justify-content: center; gap: 17px; }
+
+/* ------------------------------------------------------------------- Pills
+   apple.com's opener buttons: a filled blue pill and an outlined one, 44px
+   tall at 17px. The only buttons on the front page. */
+.pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 0 21px; border: 1px solid transparent; border-radius: 980px;
+  font: 400 17px/21px var(--text); letter-spacing: -.005em; white-space: nowrap;
+  background: #0071e3; color: #fff;
+  transition: background .25s var(--ease), color .25s var(--ease);
+}
+.pill:hover { background: #0077ed; }
+.pill.alt { background: transparent; color: var(--blue-dark); border-color: var(--blue-dark); }
+.pill.alt:hover { background: rgba(41, 151, 255, .12); }
+.pill:focus-visible { outline: 2px solid var(--blue-dark); outline-offset: 2px; }
+
+/* ------------------------------------------------------------------- Intro
+   What Oplo is, before anything is sold. Apple's front page does not need one
+   because everyone has heard of Apple; a visitor here has not. */
+.intro { max-width: 980px; margin: 0 auto; padding: clamp(56px, 9vh, 96px) var(--gutter) clamp(44px, 7vh, 72px); text-align: center; }
+.intro .t-display { max-width: 22em; margin-inline: auto; font-size: clamp(30px, 3.4vw, 48px); line-height: 1.1; }
+.intro .t-lead { max-width: 34em; margin: 18px auto 0; }
+.intro .cta-row { margin-top: 22px; gap: 10px 32px; }
+
+/* -------------------------------------------------------------------- Doors
+   One entry for each door in the bar, on white, in two columns, each set off
+   from the one above by a hairline. Words and a link; no boxes, no pictures. */
+.doors {
+  max-width: 1024px; margin: 0 auto;
+  padding: 0 var(--gutter) clamp(64px, 10vh, 112px);
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(32px, 6vw, 88px);
+}
+.door { border-top: 1px solid var(--rule); padding: 36px 0 44px; text-align: left; }
+.door .eyebrow { margin-bottom: 8px; font-size: 15px; }
+.door .t-title { font-size: 32px; line-height: 36px; }
+.door .t-lead { margin-top: 10px; max-width: 30ch; font-size: 19px; line-height: 1.4; }
+.door .cta-row { justify-content: flex-start; margin-top: 16px; }
+
+/* -------------------------------------------------------------- Small screens
+   Desktop is the first-class layout; this only keeps a phone from breaking.
+   The picture is wider than a phone is, so it is shown whole — the word would
+   be cut in half by a crop — with the buttons under it on the same black. */
+@media (max-width: 734px) {
+  .band.art.hero { height: auto; min-height: 0; padding-top: var(--nav); justify-content: flex-start; }
+  .hero > .hero-img { position: relative; height: auto; aspect-ratio: 16 / 9; }
+  .band.art.hero > .hero-foot { padding-top: 20px; padding-bottom: 36px; }
+  .hero-ctas { gap: 12px; }
+  .doors { grid-template-columns: 1fr; }
+  .door { padding: 28px 0 32px; }
+  .door .t-title { font-size: 28px; line-height: 32px; }
+}

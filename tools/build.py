@@ -431,55 +431,83 @@ def doc_page(slug, depth, title, desc, heading, dateline, body):
 PAGES = []
 
 # ------------------------------------------------------------------- Home
-# One drawn image opens the page, then a tile for every door. The image is the
-# statement; nothing repeats it in type underneath.
-def card(cls, eyebrow, head, lead, ctas):
-    c = "".join(f'<a class="cta" href="{h}">{t}</a>' for t, h in ctas)
-    return f'''  <section class="card {cls}">
+# Quiet on purpose. One picture at two thirds of the window, a sentence that
+# says what Oplo is, and a plain list with an entry for each door in the bar.
+# It has no script of its own: nothing on it moves unless the visitor scrolls.
+# Its few rules are in assets/css/oplo-home.css; the picture is cut from the
+# design file by tools/hero.py.
+
+def door(eyebrow, head, lead, ctas):
+    """One entry in the list: what it is, one line about it, where it goes."""
+    links = "".join(f'<a class="cta" href="{h}">{t}</a>' for t, h in ctas)
+    return f'''  <section class="door">
     <p class="eyebrow reveal">{eyebrow}</p>
-    <h2 class="t-display balance reveal">{head}</h2>
+    <h3 class="t-title balance reveal">{head}</h3>
     <p class="t-lead muted reveal d1">{lead}</p>
-    <p class="cta-row reveal d2">{c}</p>
+    <p class="cta-row reveal d2">{links}</p>
+  </section>
+'''
+
+
+def home_intro():
+    """What Oplo is, said plainly, before anything is sold — the thing a front
+    page owes someone who has never heard of it. The sentence is the site's own
+    (its description and its company page); the one after it is in the same
+    voice: early, and saying so."""
+    return '''  <section class="intro">
+    <h2 class="t-display balance reveal">Hardware, software and intelligence, designed around one person at a time.</h2>
+    <p class="t-lead muted balance reveal d1">Oplo is early, and would rather say so than dress it up. Here is what we are building, and how to follow along.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="company/">About Oplo</a><a class="cta" href="contact/">Get in touch</a></p>
   </section>
 '''
 
 
 def home():
     depth = 0
-    out = head(depth, "Oplo", "Oplo builds hardware, software and intelligence designed around one person at a time.", "")
+    css = stamp("assets/css/oplo-home.css")
+    p1, p2 = stamp("assets/img/hero-earth-1440.webp"), stamp("assets/img/hero-earth-2880.webp")
+    src1, src2 = f"assets/img/hero-earth-1440.webp?v={p1}", f"assets/img/hero-earth-2880.webp?v={p2}"
+    # The opening picture is preloaded so the dark band is not seen empty first.
+    extra = f'''<link rel="stylesheet" href="assets/css/oplo-home.css?v={css}">
+<link rel="preload" as="image" href="{src1}" imagesrcset="{src1} 1440w, {src2} 2880w" imagesizes="100vw" fetchpriority="high">
+<style>body {{ padding-top: 0; }}</style>'''
+    out = head(depth, "Oplo", "Oplo builds hardware, software and intelligence designed around one person at a time.", "", extra)
     out += nav(depth)
     out += "<main>\n"
-    # The artwork carries the wordmark, so the heading is there for screen
-    # readers and search engines and the image is marked decorative: announcing
-    # both would read the same words twice. The picture is stamped like the CSS,
-    # because it is cached for four hours too — a new stylesheet over an old
-    # cached picture is a layout drawn for a different image.
-    out += band("opening art", '''  <h1 class="sr">Oplo Cloud — Technology for Human</h1>
-  <img class="hero-art reveal" src="assets/img/hero-nature.svg?v=''' + stamp("assets/img/hero-nature.svg") + '''" alt="" width="1440" height="810" fetchpriority="high" decoding="async">
-  <div class="well">
-    <p class="cta-row reveal d1">
-      <a class="cta" href="products/">What we make</a>
-      <a class="cta" href="solutions/">Who it is for</a>
+    # The picture spells "Hello" and says so; the heading is for screen readers
+    # and search engines, which have no other way to learn the name of the page.
+    out += f'''<section class="band art hero" id="top">
+  <h1 class="sr">Oplo Cloud — Technology for Human</h1>
+  <img class="hero-img" src="{src1}" srcset="{src1} 1440w, {src2} 2880w" sizes="100vw" alt="Hello" width="2880" height="1620" fetchpriority="high" decoding="async">
+  <div class="hero-foot">
+    <p class="hero-ctas">
+      <a class="pill lg" href="products/">What we make</a>
+      <a class="pill lg alt" href="solutions/">Who it is for</a>
     </p>
-  </div>''')
-    out += '<div class="cards">\n'
-    out += card("", "Software", 'Built for a person,<br class="br-wide">not an org chart.',
-                "Tools that assume one user with taste, not a procurement department.",
-                [("Learn more", "software/")])
-    out += card("dark", "Privacy", "Yours stays yours.",
-                "Personal computing only means something if the personal part stays private.",
-                [("Learn more", "privacy/")])
-    out += card("", "Education", "A classroom, not a fleet.",
-                "OEdu is where a school signs in: coursework, grades, and one record that "
-                "students, teachers and families all read the same way.",
-                [("Open OEdu", OEDU)])
-    out += card("dark", "Oplo+", 'One membership,<br class="br-wide">the whole system.',
+  </div>
+</section>
+'''
+    out += home_intro()
+    out += '<h2 class="sr">Explore Oplo</h2>\n<div class="doors">\n'
+    out += door("Hardware", "The machine, made whole.",
+                "Silicon designed for the software that runs on it.", [("Learn more", "hardware/")])
+    out += door("Software", 'Built for a person, <br class="br-wide">not an org chart.',
+                "Tools that assume one user with taste, not a procurement department.", [("Learn more", "software/")])
+    out += door("Intelligence", 'Close to you, <br class="br-wide">not to a data centre.',
+                "Models that run on the device in your hand.", [("Learn more", "intelligence/")])
+    out += door("Oplo+", 'One membership, <br class="br-wide">the whole system.',
                 "The account, the storage and the services that follow you across every Oplo device.",
                 [("Learn more", "plus/")])
-    out += card("", "Developers", "Build on Oplo.",
+    out += door("Education", "A classroom, not a fleet.",
+                "OEdu is where a school signs in: coursework, grades, and one record that "
+                "students, teachers and families all read the same way.", [("Open OEdu", OEDU)])
+    out += door("Privacy", "Yours stays yours.",
+                "Personal computing only means something if the personal part stays private.",
+                [("Learn more", "privacy/")])
+    out += door("Developers", "Build on Oplo.",
                 "One set of tools across the hardware, the software and the models.",
-                [("Read the docs", "developers/")])
-    out += card("", "Company", "Where we're going.",
+                [("Read the docs", "developers/"), ("Developer site", DEV)])
+    out += door("Company", "Where we're going.",
                 "What we're building, who is building it, and how to join.",
                 [("About Oplo", "company/"), ("Careers", "careers/")])
     out += "</div>\n</main>\n"

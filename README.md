@@ -120,20 +120,35 @@ everywhere else the words and the space are the design.
 
 - **Ground** — `#fff`, `#f5f5f7`, and `#000`. Nothing else.
 - **Ink** — `#1d1d1f`, `#6e6e73` secondary, `#86868b` tertiary.
-- **Accent** — one blue, `#0066cc` on light and `#2997ff` on dark, and it is
-  only ever used on a link. Buttons are reserved for commerce.
+- **Accent** — one blue, `#0066cc` on light and `#2997ff` on dark, used on links.
+  Buttons are reserved for commerce, with one exception: the two pills in the
+  front page's opening picture, which copy apple.com's opener — a filled
+  `#0071e3` one and an outlined one (`.pill`, in `assets/css/oplo-home.css`).
 - **Type** — SF Pro where it exists, Inter everywhere else. `.t-mega` down
   through `.t-hero`, `.t-display`, `.t-title`, `.t-sub`, `.t-lead`, `.t-fine`.
 - **Hierarchy** — a `.band` is a tall full-bleed statement; a `.card` is half
   as tall and comes in pairs. That size difference *is* the hierarchy, and
   flattening it into one repeating tile is what made the first attempt fail.
-- **Colour is spent once** — the dusk photograph on the front page, and a single
+- **Colour is spent once** — the Earth photograph on the front page, and a single
   soft `.bloom` behind any dark band. The rest of the site is black, white, and grey.
-- **Hero artwork** — `assets/img/hero-nature.svg`: dunes at dusk with the
-  wordmark drawn in, the photograph inside re-encoded at 3240px (a 1440px
-  screen at 2x). On a laptop or desktop it covers the whole opening band, which
-  is painted in the picture's colours so nothing flashes white while it loads;
-  on a phone `.hero-art` scales it past the viewport and lets `.band`'s
-  overflow crop the edges, because the lettering is unreadable at 375px wide.
-  Its URL carries a `?v=` stamp from `tools/build.py`, like the CSS.
+- **The front page** — quiet on purpose, and it has no script of its own. `home()`
+  in `tools/build.py` builds it and `assets/css/oplo-home.css` (loaded by
+  `index.html` and nothing else) styles it: an opening picture two thirds of the
+  window tall with two pills at its foot, a sentence saying what Oplo is, and a
+  plain white list with an entry for each door in the bar — words, a hairline
+  and a link, no boxes and no pictures. Nothing on it moves except the site's own
+  fade-in as a section scrolls into view. An earlier version had a cursor-lit
+  wordmark, parallax, tilting tiles and animated pictures; it was taken out on
+  purpose, so do not add motion back without being asked.
+- **Hero artwork** — the opening picture is `OploWebsite.svg`, a design export
+  (Earth at night, with "Hello" over it) whose six megabytes are embedded
+  images. `python3 tools/hero.py path/to/OploWebsite.svg` flattens it, exactly as
+  the SVG composes it, into `assets/img/hero-earth-1440.webp` and
+  `hero-earth-2880.webp`; the SVG itself is not kept in the repository. On a
+  phone the picture is shown whole rather than cropped, because the word would
+  be cut in half. `hero-nature.svg` (dunes at dusk) is the previous artwork and
+  is no longer used. Every URL carries a `?v=` stamp from `tools/build.py`, like
+  the CSS. To rebuild only this page without touching the copies of the bar in
+  `learn/` and `dev/`:
+  `python3 -c "import sys; sys.path.insert(0,'tools'); import build; p,c=build.PAGES[0]; open(p,'w').write(c)"`.
 

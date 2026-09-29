@@ -24,7 +24,9 @@
   })(document.documentElement);
 </script>
 <style>body { padding-top: 44px; }</style>
-
+<link rel="stylesheet" href="assets/css/oplo-home.css?v=c76c5bf8">
+<link rel="preload" as="image" href="assets/img/hero-earth-1440.webp?v=727395a4" imagesrcset="assets/img/hero-earth-1440.webp?v=727395a4 1440w, assets/img/hero-earth-2880.webp?v=8bb3740e 2880w" imagesizes="100vw" fetchpriority="high">
+<style>body { padding-top: 0; }</style>
 </head>
 <body>
 <nav class="nav" id="nav" aria-label="Oplo">
@@ -94,50 +96,68 @@
   <div class="nav-scrim" id="navScrim" hidden></div>
 </nav>
 <main>
-<section class="band opening art">
+<section class="band art hero" id="top">
   <h1 class="sr">Oplo Cloud — Technology for Human</h1>
-  <img class="hero-art reveal" src="assets/img/hero-nature.svg?v=ea1cbe01" alt="" width="1440" height="810" fetchpriority="high" decoding="async">
-  <div class="well">
-    <p class="cta-row reveal d1">
-      <a class="cta" href="products/">What we make</a>
-      <a class="cta" href="solutions/">Who it is for</a>
+  <img class="hero-img" src="assets/img/hero-earth-1440.webp?v=727395a4" srcset="assets/img/hero-earth-1440.webp?v=727395a4 1440w, assets/img/hero-earth-2880.webp?v=8bb3740e 2880w" sizes="100vw" alt="Hello" width="2880" height="1620" fetchpriority="high" decoding="async">
+  <div class="hero-foot">
+    <p class="hero-ctas">
+      <a class="pill lg" href="products/">What we make</a>
+      <a class="pill lg alt" href="solutions/">Who it is for</a>
     </p>
   </div>
 </section>
-<div class="cards">
-  <section class="card ">
+  <section class="intro">
+    <h2 class="t-display balance reveal">Hardware, software and intelligence, designed around one person at a time.</h2>
+    <p class="t-lead muted balance reveal d1">Oplo is early, and would rather say so than dress it up. Here is what we are building, and how to follow along.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="company/">About Oplo</a><a class="cta" href="contact/">Get in touch</a></p>
+  </section>
+<h2 class="sr">Explore Oplo</h2>
+<div class="doors">
+  <section class="door">
+    <p class="eyebrow reveal">Hardware</p>
+    <h3 class="t-title balance reveal">The machine, made whole.</h3>
+    <p class="t-lead muted reveal d1">Silicon designed for the software that runs on it.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="hardware/">Learn more</a></p>
+  </section>
+  <section class="door">
     <p class="eyebrow reveal">Software</p>
-    <h2 class="t-display balance reveal">Built for a person,<br class="br-wide">not an org chart.</h2>
+    <h3 class="t-title balance reveal">Built for a person, <br class="br-wide">not an org chart.</h3>
     <p class="t-lead muted reveal d1">Tools that assume one user with taste, not a procurement department.</p>
     <p class="cta-row reveal d2"><a class="cta" href="software/">Learn more</a></p>
   </section>
-  <section class="card dark">
-    <p class="eyebrow reveal">Privacy</p>
-    <h2 class="t-display balance reveal">Yours stays yours.</h2>
-    <p class="t-lead muted reveal d1">Personal computing only means something if the personal part stays private.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="privacy/">Learn more</a></p>
+  <section class="door">
+    <p class="eyebrow reveal">Intelligence</p>
+    <h3 class="t-title balance reveal">Close to you, <br class="br-wide">not to a data centre.</h3>
+    <p class="t-lead muted reveal d1">Models that run on the device in your hand.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="intelligence/">Learn more</a></p>
   </section>
-  <section class="card ">
-    <p class="eyebrow reveal">Education</p>
-    <h2 class="t-display balance reveal">A classroom, not a fleet.</h2>
-    <p class="t-lead muted reveal d1">OEdu is where a school signs in: coursework, grades, and one record that students, teachers and families all read the same way.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="https://edu.oplocloud.com/">Open OEdu</a></p>
-  </section>
-  <section class="card dark">
+  <section class="door">
     <p class="eyebrow reveal">Oplo+</p>
-    <h2 class="t-display balance reveal">One membership,<br class="br-wide">the whole system.</h2>
+    <h3 class="t-title balance reveal">One membership, <br class="br-wide">the whole system.</h3>
     <p class="t-lead muted reveal d1">The account, the storage and the services that follow you across every Oplo device.</p>
     <p class="cta-row reveal d2"><a class="cta" href="plus/">Learn more</a></p>
   </section>
-  <section class="card ">
-    <p class="eyebrow reveal">Developers</p>
-    <h2 class="t-display balance reveal">Build on Oplo.</h2>
-    <p class="t-lead muted reveal d1">One set of tools across the hardware, the software and the models.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="developers/">Read the docs</a></p>
+  <section class="door">
+    <p class="eyebrow reveal">Education</p>
+    <h3 class="t-title balance reveal">A classroom, not a fleet.</h3>
+    <p class="t-lead muted reveal d1">OEdu is where a school signs in: coursework, grades, and one record that students, teachers and families all read the same way.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="https://edu.oplocloud.com/">Open OEdu</a></p>
   </section>
-  <section class="card ">
+  <section class="door">
+    <p class="eyebrow reveal">Privacy</p>
+    <h3 class="t-title balance reveal">Yours stays yours.</h3>
+    <p class="t-lead muted reveal d1">Personal computing only means something if the personal part stays private.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="privacy/">Learn more</a></p>
+  </section>
+  <section class="door">
+    <p class="eyebrow reveal">Developers</p>
+    <h3 class="t-title balance reveal">Build on Oplo.</h3>
+    <p class="t-lead muted reveal d1">One set of tools across the hardware, the software and the models.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="developers/">Read the docs</a><a class="cta" href="https://dev.oplocloud.com/">Developer site</a></p>
+  </section>
+  <section class="door">
     <p class="eyebrow reveal">Company</p>
-    <h2 class="t-display balance reveal">Where we're going.</h2>
+    <h3 class="t-title balance reveal">Where we're going.</h3>
     <p class="t-lead muted reveal d1">What we're building, who is building it, and how to join.</p>
     <p class="cta-row reveal d2"><a class="cta" href="company/">About Oplo</a><a class="cta" href="careers/">Careers</a></p>
   </section>
