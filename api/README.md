@@ -171,6 +171,12 @@ engine (`efm/js/engine.js`, the same file the browser runs) adds that list up to
 
 - `GET  /api/v1/efm/books/:id` — the book, its commands, head hash and count.
 - `GET  /api/v1/efm/books/:id/commands?after=N` — what others have done since.
+- `GET  /api/v1/efm/books` — the sets of books (one per fiscal year).
+- `POST /api/v1/efm/books {from}` — opens the fiscal year after a closed one, as its own
+  books whose first command (`year.open`) carries everything forward; the server works the
+  balances out from the closed year's own history (efm.admin).
+- `GET/PUT /api/v1/efm/access` — who has OC EFM: `admin` (settings, budget, access, year
+  close), `user` (a member) or `viewer` (read-only). Never creates an account (efm.admin).
 - `POST /api/v1/efm/books/:id/commands` — one change. The server checks, in order:
   the caller's position (`expectSeq`, else 409 `stale`), the stored chain's
   integrity (500 `integrity`), the caller's clock (±10 min, 409 `clock`), that the
