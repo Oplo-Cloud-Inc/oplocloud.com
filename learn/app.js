@@ -8542,27 +8542,178 @@
 
   var ASSESSMENT_TABS = ["Overview", "Experience", "Content", "Students", "Sessions", "Results", "Security", "Activity", "Versions"];
 
-  var SECTIONS = [
-    { k: "today",       name: "Summary",       group: null,         roles: ["admin", "teacher"], icon: "summary",   tone: "var(--cx-accent)" },
-    { k: "assessments", name: "Assessments",   group: "Academics",  roles: ["admin", "teacher"], icon: "checklist", tone: "var(--cx-orange)" },
-    { k: "courses",     name: "Courses",       group: "Academics",  roles: ["admin", "teacher"], icon: "books",     tone: "var(--cx-indigo)" },
-    { k: "roster",      name: "Gradebook",     group: "Academics",  roles: ["admin", "teacher"], icon: "table",     tone: "var(--cx-green)" },
-    { k: "students",    name: "Students",      group: "People",     roles: ["admin", "teacher"], icon: "people",    tone: "var(--cx-cyan)" },
-    { k: "activity",    name: "Activity",      group: "Operations", roles: ["admin", "teacher"], icon: "wave",      tone: "var(--cx-pink)" },
-    { k: "reports",     name: "Reports",       group: "Reporting",  roles: ["admin", "teacher"], icon: "doc",       tone: "var(--cx-purple)" },
-    { k: "people",      name: "People",        group: "School",     roles: ["admin"],            icon: "person",    tone: "var(--cx-teal)" },
-    { k: "system",      name: "System",        group: "School",     roles: ["admin"],            icon: "gear",      tone: "var(--cx-gray)" }
+  /* Two consoles, never one. The address decides which: /admin is the
+     school's, run by its administrators; /teacher is a teacher's own courses.
+     An administrator who also teaches opens /teacher for those — and the two
+     are not drawn as one screen with everything on it, because running a
+     school and marking a class are different jobs done at different times,
+     and a console that offers both is a console that is clear about neither. */
+  function consoleMode() {
+    var H = window.OPLO_HOME, m = H && H.parse ? H.parse(location.pathname).mode : null;
+    return S.me && S.me.role === "admin" && m !== "teacher" ? "admin" : "teacher";
+  }
+
+  var ADMIN_SECTIONS = [
+    { k: "today",       name: "Summary",     group: null,        icon: "summary",   tone: "var(--cx-accent)" },
+    { k: "students",    name: "Students",    group: "School",    icon: "people",    tone: "var(--cx-cyan)" },
+    { k: "staff",       name: "Staff",       group: "School",    icon: "badge",     tone: "var(--cx-orange)" },
+    { k: "people",      name: "People",      group: "School",    icon: "person",    tone: "var(--cx-teal)" },
+    { k: "courses",     name: "Courses",     group: "Academics", icon: "books",     tone: "var(--cx-indigo)" },
+    { k: "assessments", name: "Assessments", group: "Academics", icon: "checklist", tone: "var(--cx-pink)" },
+    { k: "activity",    name: "Audit log",   group: "Oversight", icon: "wave",      tone: "var(--cx-purple)" },
+    { k: "system",      name: "System",      group: "Settings",  icon: "gear",      tone: "var(--cx-gray)" },
+    // Reachable from a course's page, for oversight; not a place in the rail.
+    { k: "roster",      name: "Gradebook",   group: "Academics", icon: "table",     tone: "var(--cx-green)", hidden: true }
+  ];
+  var TEACHER_SECTIONS = [
+    { k: "today",       name: "Today",       group: null,        icon: "summary",   tone: "var(--cx-accent)" },
+    { k: "courses",     name: "Courses",     group: "Teaching",  icon: "books",     tone: "var(--cx-indigo)" },
+    { k: "roster",      name: "Gradebook",   group: "Teaching",  icon: "table",     tone: "var(--cx-green)" },
+    { k: "students",    name: "Students",    group: "Teaching",  icon: "people",    tone: "var(--cx-cyan)" },
+    { k: "assessments", name: "Assessments", group: "Teaching",  icon: "checklist", tone: "var(--cx-orange)" },
+    { k: "activity",    name: "Activity",    group: "Records",   icon: "wave",      tone: "var(--cx-pink)" },
+    { k: "reports",     name: "Reports",     group: "Records",   icon: "doc",       tone: "var(--cx-purple)" }
   ];
 
   function allowedTabs() {
-    if (!S.me) return [];
-    return SECTIONS.filter(function (t) { return t.roles.indexOf(S.me.role) > -1; });
+    if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
+    return consoleMode() === "admin" ? ADMIN_SECTIONS : TEACHER_SECTIONS;
   }
 
   function sectionNamed(k) {
     var found = allowedTabs().filter(function (t) { return t.k === k; })[0];
     return found || allowedTabs()[0];
   }
+
+  /* An administrator who makes a course is not thereby its teacher. The
+     server enrols whoever writes a course as its teacher — so a teacher can
+     edit what they just made — and in the school's console that enrolment is
+     taken back: the course is staffed by assigning a teacher to it. */
+  function unteachIfAdmin(made) {
+    if (consoleMode() !== "admin" || !made || !made.id) return made;
+    return API.courses.enrol(made.id, S.me.id, "teacher", true)
+      .then(function () { SCHOOL = null; return made; }, function () { return made; });
+  }
+
+  /* ------------------------------------------------------------ The school
+     Everything the two consoles' screens are drawn from, in one read: the
+     courses (the whole school's for an administrator — who may teach none of
+     them — or the courses a teacher teaches), each with its gradebook, its
+     roster and its latest mark changes. The reporting endpoints answer only
+     for courses the caller teaches, so the school's view is assembled from
+     the reads an administrator is allowed: every course, its gradebook, its
+     members, its history. Kept for a minute, so moving between screens does
+     not read it all again. */
+  var SCHOOL = null;
+  var HISTORY_LIMIT = 200;
+  function loadSchool(force) {
+    var mode = consoleMode();
+    if (!force && SCHOOL && SCHOOL.mode === mode && Date.now() - SCHOOL.at < 60000) return SCHOOL.promise;
+    var list = mode === "admin" ? API.courses.all(S.me.orgId)
+      : API.courses.mine().then(function (cs) {
+          return cs.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
+        });
+    var p = list.then(function (courses) {
+      return Promise.all(courses.map(function (c) {
+        return Promise.all([
+          API.courses.gradebook(c.id).catch(function () { return null; }),
+          API.courses.members(c.id).catch(function () { return []; }),
+          API.grades.history({ courseId: c.id, limit: HISTORY_LIMIT }).catch(function () { return []; })
+        ]).then(function (r) { return { course: c, book: r[0], members: r[1] || [], events: r[2] || [] }; });
+      }));
+    }).then(buildSchool);
+    SCHOOL = { at: Date.now(), mode: mode, promise: p };
+    p.catch(function () { SCHOOL = null; });
+    return p;
+  }
+
+  function letterKey(letter) {
+    var L = String(letter || "").charAt(0).toUpperCase();
+    return L === "E" ? "F" : "ABCDF".indexOf(L) > -1 ? L : null;
+  }
+
+  function buildSchool(rows) {
+    var now = Date.now(), students = {}, teachers = {}, events = [], courses = [];
+    var capped = false;
+    rows.forEach(function (row) {
+      var c = row.course, gb = row.book || {}, roster = gb.students || [];
+      var due = {}, dueList = [];
+      (gb.assignments || []).forEach(function (a) { if (a.dueAt && a.dueAt <= now) { due[a.id] = a; dueList.push(a); } });
+      var graded = {};
+      (gb.grades || []).forEach(function (g) { (graded[g.accountId] = graded[g.accountId] || {})[g.assignmentId] = g; });
+      var sums = gb.summaries || {};
+      var cs = { raw: c, id: c.id, title: c.title, subject: c.subject, code: c.code, status: c.status, myRole: c.myRole, level: c.level,
+                 students: roster.length, work: (gb.assignments || []).length, sum: 0, graded: 0, below: 0,
+                 dist: { A: 0, B: 0, C: 0, D: 0, F: 0 }, cells: 0, dealt: 0, handed: 0, toMark: 0, overdue: 0, missing: 0,
+                 teachers: row.members.filter(function (m) { return m.role === "teacher" || m.role === "assistant"; }), needs: [] };
+      (gb.columns || []).forEach(function (col) {
+        var a = due[col.assignmentId];
+        if (!a) return;
+        var n = (col.marked || 0) + (col.missing || 0) + (col.excused || 0) + (col.unmarked || 0);
+        cs.cells += n;
+        cs.dealt += n - (col.unmarked || 0);
+        cs.handed += (col.marked || 0) + (col.excused || 0);
+        cs.toMark += col.unmarked || 0;
+        cs.missing += col.missing || 0;
+        if (col.unmarked) cs.needs.push({ title: a.title, count: col.unmarked, dueAt: a.dueAt, courseId: c.id, course: c.title });
+      });
+      roster.forEach(function (s) {
+        var sm = sums[s.id], mine = graded[s.id] || {};
+        var missing = 0, waiting = 0;
+        dueList.forEach(function (a) {
+          var g = mine[a.id];
+          if (!g || (g.score == null && g.status !== "missing" && g.status !== "excused")) waiting++;
+          else if (g.status === "missing") missing++;
+        });
+        var grade = sm && sm.percent != null ? { percent: sm.percent, letter: sm.letter } : null;
+        if (grade) {
+          cs.sum += grade.percent; cs.graded++;
+          if (grade.percent < CX_PASS) cs.below++;
+          var k = letterKey(grade.letter);
+          if (k) cs.dist[k]++;
+        }
+        var st = students[s.id] || (students[s.id] = { id: s.id, name: s.name, firstName: s.firstName, email: s.email,
+          initials: s.initials, hue: s.hue, courses: [] });
+        st.courses.push({ courseId: c.id, title: c.title, subject: c.subject, grade: grade, missing: missing, unmarked: waiting });
+      });
+      cs.average = cs.graded ? Math.round(cs.sum / cs.graded) : null;
+      cs.atRisk = cs.below;
+      cs.teachers.forEach(function (t) {
+        var tt = teachers[t.id] || (teachers[t.id] = { id: t.id, name: t.name, firstName: t.firstName, email: t.email,
+          initials: t.initials, hue: t.hue, courses: [], students: 0, cells: 0, dealt: 0, toMark: 0, last: 0, marks: 0 });
+        tt.courses.push(cs);
+        tt.students += cs.students;
+        tt.cells += cs.cells; tt.dealt += cs.dealt; tt.toMark += cs.toMark;
+      });
+      var byId = {};
+      roster.forEach(function (s) { byId[s.id] = s; });
+      if (row.events.length >= HISTORY_LIMIT) capped = true;
+      row.events.forEach(function (e) {
+        var s = byId[e.accountId] || {};
+        events.push(Object.assign({}, e, { courseId: c.id, courseTitle: c.title,
+          student: { id: e.accountId, name: s.name || "A student", initials: s.initials, hue: s.hue } }));
+        var t = teachers[e.actorId];
+        if (t) { t.marks++; if (e.at > t.last) t.last = e.at; }
+      });
+      courses.push(cs);
+    });
+    events.sort(function (a, b) { return b.at - a.at; });
+    var list = Object.keys(students).map(function (id) {
+      var s = students[id], g = s.courses.filter(function (c) { return c.grade; });
+      s.standing = g.length ? Math.round(g.reduce(function (a, c) { return a + c.grade.percent; }, 0) / g.length) : null;
+      s.missing = s.courses.reduce(function (a, c) { return a + c.missing; }, 0);
+      s.unmarked = s.courses.reduce(function (a, c) { return a + c.unmarked; }, 0);
+      return s;
+    }).sort(function (a, b) { return String(a.name || "").localeCompare(String(b.name || "")); });
+    var staff = Object.keys(teachers).map(function (id) { return teachers[id]; })
+      .sort(function (a, b) { return String(a.name || "").localeCompare(String(b.name || "")); });
+    return {
+      courses: courses, students: list, teachers: staff, events: events, capped: capped,
+      totals: { students: list.length, belowPass: list.filter(function (s) { return s.standing != null && s.standing < CX_PASS; }).length,
+                missing: list.reduce(function (a, s) { return a + s.missing; }, 0) }
+    };
+  }
+
 
   /* Each place in the rail has an icon on a tile of its own colour, the way
      System Settings marks its panes: the colour is how you find a place
@@ -8590,7 +8741,8 @@
     key: '<circle cx="8" cy="14" r="4"/><path d="m11 11 8.5-8.5M16 6l2.5 2.5M14 8l2 2"/>',
     shield: '<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
     server: '<rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/><path d="M8 7.5h.01M8 16.5h.01"/>',
-    sparkle: '<path d="M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2z"/>'
+    sparkle: '<path d="M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2z"/>',
+    badge: '<rect x="5" y="3.5" width="14" height="17" rx="2.5"/><circle cx="12" cy="10.5" r="2.6"/><path d="M8.3 16.8a3.9 3.9 0 0 1 7.4 0M10 6.5h4"/>'
   };
   function cxIcon(name) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -8622,7 +8774,7 @@
     // The school, at the head: whose console this is.
     var school = el("div", "cn-school");
     school.innerHTML = '<span class="logo">' + cxIcon("cap") + "</span><span><b>" + esc(schoolName()) +
-      "</b><span>" + (S.me.role === "admin" ? "School console" : "Teacher console") + "</span></span>";
+      "</b><span>" + (consoleMode() === "admin" ? "School console" : "Teacher console") + "</span></span>";
     rail.appendChild(school);
 
     var find = el("button", "cn-find");
@@ -8636,6 +8788,7 @@
     nav.setAttribute("aria-label", "Console");
     var lastGroup;                    // undefined matches no group, so the first one prints
     allowedTabs().forEach(function (t) {
+      if (t.hidden) return;
       if (t.group !== lastGroup) {
         lastGroup = t.group;
         if (t.group) nav.appendChild(el("p", "cn-group", esc(t.group)));
@@ -8716,7 +8869,7 @@
     v.appendChild(body);
     ({ today: consoleHome, assessments: tabAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, activity: tabActivity,
-       people: tabPeople, system: tabSystem }[S.tab] || consoleHome)(body);
+       people: tabPeople, system: tabSystem, staff: tabStaff }[S.tab] || consoleHome)(body);
 
     noFoot(); progress(null);
     show("admin");
@@ -9668,13 +9821,14 @@
      trail is cut short by the request's limit the chart says so. */
   var CX_PASS = 70;          // the server's pass line: "below a pass" is under 70%
   function consoleHome(v) {
+    var admin = consoleMode() === "admin";
     var when = new Date();
     var top = el("div", "cx-top");
     var head = consoleHead(top, when.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }),
       greeting() + ", " + esc(S.me.first || String(S.me.name).split(" ")[0]) + ".",
-      esc(schoolName()));
+      esc(admin ? schoolName() : "Your courses"));
     var tools = el("div", "cx-tools");
-    if (S.me.role === "admin") tools.appendChild(cnAction("Add a person", function () { openPersonEditor(null); }));
+    if (admin) tools.appendChild(cnAction("Add a person", function () { openPersonEditor(null); }));
     tools.appendChild(cnAction("New course", function () { openCourseEditor(null); }, true));
     top.appendChild(tools);
     v.appendChild(top);
@@ -9688,23 +9842,11 @@
       grid.appendChild(c);
     });
 
-    var LIMIT = 500;
-    Promise.all([API.reporting.teaching(), API.reporting.students(), API.reporting.activity(LIMIT)])
-      .then(function (out) {
-        var teach = out[0], studs = out[1], events = out[2] || [];
-        if (!teach.courses.length) { grid.remove(); emptySchool(v); railCount("roster", 0); return null; }
-        return Promise.all(teach.courses.map(function (c) {
-          return Promise.all([
-            API.courses.gradebook(c.id).catch(function () { return null; }),
-            API.courses.members(c.id).catch(function () { return []; })
-          ]);
-        })).then(function (books) { return { teach: teach, studs: studs, events: events, books: books }; });
-      })
-      .then(function (d) {
-        if (!d) return;
-        grid.innerHTML = "";
-        drawSummary(grid, d, head, LIMIT);
-      }, function (e) { grid.remove(); failed(loading(v, "the summary"), e, function () { openAdmin(true, "today"); }); });
+    loadSchool(true).then(function (d) {
+      if (!d.courses.length) { grid.remove(); emptySchool(v, admin); railCount("roster", 0); return; }
+      grid.innerHTML = "";
+      drawSummary(grid, d, head, admin);
+    }, function (e) { grid.remove(); failed(loading(v, "the summary"), e, function () { openAdmin(true, "today"); }); });
   }
 
   function schoolName() {
@@ -9712,12 +9854,13 @@
     return o && o.name ? o.name : "Your school";
   }
 
-  function emptySchool(v) {
+  function emptySchool(v, admin) {
     var start = el("div", "cn-start");
-    start.appendChild(el("h2", null, "Let’s get your first course in."));
-    start.appendChild(el("p", null,
-      "A course is what carries enrolment, work and grades. Start from one Oplo has already written — " +
-      "the units and the grading scheme come with it — or make your own from nothing."));
+    start.appendChild(el("h2", null, admin ? "Let’s get your school’s first course in." : "You aren’t teaching a course yet."));
+    start.appendChild(el("p", null, admin
+      ? "A course is what carries enrolment, work and grades. Start from one Oplo has already written — " +
+        "the units and the grading scheme come with it — or make your own, then assign its teacher."
+      : "An administrator assigns you to a course, or you can make one of your own. Your courses appear here."));
     var sacts = cnActions();
     sacts.appendChild(cnAction("Explore courses", openCatalogue, true));
     sacts.appendChild(cnAction("Create one from nothing", function () { openCourseEditor(null); }));
@@ -9725,9 +9868,8 @@
     v.appendChild(start);
   }
 
-  function drawSummary(grid, d, head, LIMIT) {
-    var now = Date.now(), courses = d.teach.courses, students = d.studs.students || [];
-    var i = 0;
+  function drawSummary(grid, d, head, admin) {
+    var courses = d.courses, students = d.students, i = 0;
     function card(cls, title, icon, tone, more) {
       var c = el("section", "cx-card " + cls);
       c.style.setProperty("--i", i++);
@@ -9745,68 +9887,55 @@
       grid.appendChild(c);
       return c;
     }
-
-    // ---- What the gradebooks say about work that is due.
-    var cells = 0, dealt = 0, handed = 0, toMark = 0, late = 0, teachers = {};
-    d.books.forEach(function (pair, k) {
-      var gb = pair && pair[0], mem = (pair && pair[1]) || [];
-      mem.forEach(function (m) { if (m.role === "teacher") teachers[m.id] = m; });
-      courses[k].teachers = mem.filter(function (m) { return m.role === "teacher"; });
-      if (!gb) return;
-      var due = {};
-      (gb.assignments || []).forEach(function (a) { if (a.dueAt && a.dueAt <= now) due[a.id] = true; });
-      (gb.columns || []).forEach(function (col) {
-        if (!due[col.assignmentId]) return;
-        var n = (col.marked || 0) + (col.missing || 0) + (col.excused || 0) + (col.unmarked || 0);
-        cells += n;
-        dealt += n - (col.unmarked || 0);
-        handed += (col.marked || 0) + (col.excused || 0);
-        toMark += col.unmarked || 0;
-      });
-      (gb.grades || []).forEach(function (g) { if (g.late) late++; });
+    var cells = 0, dealt = 0, handed = 0, toMark = 0, dist = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+    courses.forEach(function (c) {
+      cells += c.cells; dealt += c.dealt; handed += c.handed; toMark += c.toMark;
+      Object.keys(dist).forEach(function (k) { dist[k] += c.dist[k]; });
     });
     var graded = students.filter(function (s) { return s.standing != null; });
     var passing = graded.filter(function (s) { return s.standing >= CX_PASS; }).length;
     var pMarked = cells ? dealt / cells : 0, pHanded = dealt ? handed / dealt : 0, pPass = graded.length ? passing / graded.length : 0;
-    railCount("roster", toMark);
-    var tcount = Object.keys(teachers).length;
+    if (!admin) railCount("roster", toMark);
+    var tcount = d.teachers.length;
     var sub = head.querySelector(".cn-sub");
-    if (sub) sub.innerHTML = esc(schoolName()) + " · " + students.length + (students.length === 1 ? " student" : " students") +
-      " · " + tcount + (tcount === 1 ? " teacher" : " teachers") + " · " + courses.length + (courses.length === 1 ? " course" : " courses");
+    if (sub) sub.innerHTML = (admin ? esc(schoolName()) + " · " : "Your courses · ") + students.length + (students.length === 1 ? " student" : " students") +
+      (admin ? " · " + tcount + (tcount === 1 ? " teacher" : " teachers") : "") + " · " + courses.length + (courses.length === 1 ? " course" : " courses");
 
     // ---- Rings.
-    var rings = card("cx-s5 cx-rings", "School health", null, null);
-    rings.querySelector(".cx-ch").innerHTML = "<h3>School health</h3><small>Due work, and who is passing</small>";
-    rings.classList.add("cx-rings");
+    var rings = card("cx-s5 cx-rings", null);
+    var rh = el("header", "cx-ch");
+    rh.style.cssText = "grid-column: 1 / -1; margin-bottom: 0";
+    rh.innerHTML = "<h3>" + (admin ? "School health" : "Your courses") + "</h3><small>Due work, and who is passing</small>";
+    rings.appendChild(rh);
     rings.appendChild(ringsSvg([pMarked, pHanded, pPass]));
     var leg = el("div", "cx-legend");
     leg.innerHTML =
       '<div><span class="cx-r1">Marked</span><b class="cx-r1">' + Math.round(pMarked * 100) + '<small>%</small></b><em>' +
         (toMark ? toMark + " due and waiting to be marked" : "Everything due is marked") + "</em></div>" +
-      '<div><span class="cx-r2">Handed in</span><b class="cx-r2">' + Math.round(pHanded * 100) + '<small>%</small></b><em>of due work marked so far</em></div>' +
+      '<div><span class="cx-r2">Handed in</span><b class="cx-r2">' + Math.round(pHanded * 100) + '<small>%</small></b><em>of due work recorded so far</em></div>' +
       '<div><span class="cx-r3">Passing</span><b class="cx-r3">' + Math.round(pPass * 100) + '<small>%</small></b><em>' +
         passing + " of " + graded.length + " students at " + CX_PASS + "% or better</em></div>";
     rings.appendChild(leg);
-    // The header sits across both columns of the rings card.
-    var rh = rings.querySelector(".cx-ch");
-    rh.style.gridColumn = "1 / -1";
-    rh.style.marginBottom = "0";
 
     // ---- Four numbers.
-    var kp = el("div", "cx-kpis cx-s7");
+    var kp = el("div", "cx-kpis");
     kp.style.cssText = "grid-column: span 7";
     grid.appendChild(kp);
     var below = graded.length - passing;
     var avg = graded.length ? Math.round(graded.reduce(function (a, s) { return a + s.standing; }, 0) / graded.length) : null;
-    var dist = letterCounts(students);
+    var distList = [["A", "var(--cx-green)"], ["B", "var(--cx-teal)"], ["C", "var(--cx-yellow)"], ["D", "var(--cx-orange)"], ["F", "var(--cx-red)"]]
+      .map(function (x) { return { k: x[0], n: dist[x[0]], color: x[1] }; });
     var missingStudents = students.filter(function (s) { return s.missing > 0; }).length;
-    [["Students", "people", "var(--cx-accent)", students.length, "",
+    var kpis = [
+      [admin ? "Students" : "Students you teach", "people", "var(--cx-accent)", students.length, "",
        below ? '<span class="bad">' + below + " below a pass</span>" : '<span class="ok">Everyone is passing</span>'],
-     ["Teachers", "person", "var(--cx-indigo)", tcount, "", "Teaching " + courses.length + (courses.length === 1 ? " course" : " courses")],
-     ["School average", "chart", "var(--cx-green)", avg == null ? "—" : avg, avg == null ? "" : "%", "Mean of every student's standing", dist],
-     ["Missing work", "tray", "var(--cx-orange)", d.studs.totals ? d.studs.totals.missing : 0, "",
+      admin ? ["Teachers", "badge", "var(--cx-indigo)", tcount, "", "Teaching " + courses.length + (courses.length === 1 ? " course" : " courses")]
+            : ["To mark", "pencil", "var(--cx-indigo)", toMark, "", toMark ? "Due work waiting for you" : "You’re all caught up"],
+      [admin ? "School average" : "Class average", "chart", "var(--cx-green)", avg == null ? "—" : avg, avg == null ? "" : "%", "Mean of every student’s standing", distList],
+      ["Missing work", "tray", "var(--cx-orange)", d.totals.missing, "",
        missingStudents + (missingStudents === 1 ? " student has" : " students have") + " something missing"]
-    ].forEach(function (x) {
+    ];
+    kpis.forEach(function (x) {
       var c = el("section", "cx-card cx-kpi");
       c.style.setProperty("--i", i++);
       c.style.setProperty("--c", x[2]);
@@ -9818,25 +9947,25 @@
 
     // ---- Grade distribution.
     var gd = card("cx-s6", "Grade distribution", "chart", "var(--cx-green)");
-    var total = dist.reduce(function (a, b) { return a + b.n; }, 0);
-    gd.appendChild(el("div", "cx-big", "<b>" + total + "</b><span>course grades across " + courses.length + " courses</span>"));
-    gd.appendChild(barChart(dist.map(function (b) { return { label: b.k, n: b.n, color: b.color }; }), { values: true }));
+    var total = distList.reduce(function (a, b) { return a + b.n; }, 0);
+    gd.appendChild(el("div", "cx-big", "<b>" + total + "</b><span>course grades across " + courses.length + (courses.length === 1 ? " course" : " courses") + "</span>"));
+    gd.appendChild(barChart(distList.map(function (b) { return { label: b.k, n: b.n, color: b.color }; }), { values: true }));
 
-    // ---- Grades entered, by day.
+    // ---- Grades entered, by day, from the audit trail.
     var days = 14, dayMs = 864e5, start = new Date(); start.setHours(0, 0, 0, 0);
     var t0 = start.getTime() - (days - 1) * dayMs, perDay = [];
     for (var k = 0; k < days; k++) perDay.push({ n: 0, t: t0 + k * dayMs });
     d.events.forEach(function (e) { var at = Number(e.at); if (at >= t0) { var ix = Math.floor((at - t0) / dayMs); if (perDay[ix]) perDay[ix].n++; } });
     var sum = perDay.reduce(function (a, b) { return a + b.n; }, 0);
-    var capped = d.events.length >= LIMIT && Number(d.events[d.events.length - 1].at) >= t0;
-    var ge = card("cx-s6", "Grades entered", "pencil", "var(--cx-pink)", { label: "Activity", go: function () { openAdmin(false, "activity"); } });
-    ge.appendChild(el("div", "cx-big", "<b>" + (capped ? LIMIT + "+" : sum) + "</b><span>in the last two weeks · " + Math.round(sum / days) + " a day on average</span>"));
+    var ge = card("cx-s6", "Grades entered", "pencil", "var(--cx-pink)",
+      { label: admin ? "Audit log" : "Activity", go: function () { openAdmin(false, "activity"); } });
+    ge.appendChild(el("div", "cx-big", "<b>" + sum + "</b><span>in the last two weeks · " + Math.round(sum / days) + " a day on average</span>"));
     ge.appendChild(barChart(perDay.map(function (p, j) {
       var dt = new Date(p.t);
       return { label: j % 2 === 0 ? dt.toLocaleDateString(undefined, { weekday: "narrow" }) + dt.getDate() : "", n: p.n, color: "var(--cx-pink)",
                title: dt.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }) };
     }), { average: true }));
-    if (capped) ge.appendChild(el("p", "cx-note", "Counted from the latest " + LIMIT + " changes; earlier days may be higher than shown."));
+    if (d.capped) ge.appendChild(el("p", "cx-note", "Counted from each course’s latest " + HISTORY_LIMIT + " changes; a busy course may have had more."));
 
     // ---- Who needs someone to look.
     var risk = students.filter(function (s) { return (s.standing != null && s.standing < CX_PASS) || s.missing >= 2; })
@@ -9866,20 +9995,59 @@
       .forEach(function (c) {
         var b = el("button", "cx-li");
         b.type = "button";
-        var who = (c.teachers || []).map(function (t) { return t.name; }).join(", ");
+        var who = c.teachers.map(function (t) { return t.name; }).join(", ");
         b.innerHTML = miniRing(c.average) + '<span class="t"><b>' + esc(c.title) + "</b><span>" +
-          esc((who || c.subject || c.code) + " · " + c.students + (c.students === 1 ? " student" : " students")) + "</span></span>" +
+          esc((admin ? (who || "No teacher assigned") : (c.subject || c.code)) + " · " + c.students + (c.students === 1 ? " student" : " students")) + "</span></span>" +
           '<span class="r"><b>' + (c.average == null ? "—" : c.average + "%") + "</b>" +
-          (c.atRisk ? '<span class="cx-pill red">' + c.atRisk + " below a pass</span>" : '<span class="cx-pill green">on track</span>') + "</span>";
-        b.addEventListener("click", function () { S.courseId = c.id; openAdmin(false, "roster"); });
+          (c.below ? '<span class="cx-pill red">' + c.below + " below a pass</span>" : '<span class="cx-pill green">on track</span>') + "</span>";
+        b.addEventListener("click", function () {
+          if (admin) openCoursePage(c.raw); else { S.courseId = c.id; openAdmin(false, "roster"); }
+        });
         cl.appendChild(b);
       });
     cc.appendChild(cl);
 
+    // ---- The school's staff, and where each stands with marking — or, for
+    //      a teacher, the work waiting for them.
+    if (admin) {
+      var sf = card("cx-s5", "Marking by teacher", "badge", "var(--cx-orange)", { label: "Staff", go: function () { openAdmin(false, "staff"); } });
+      if (!d.teachers.length) sf.appendChild(el("p", "cx-note", "No course has a teacher assigned yet."));
+      var tl = el("div", "cx-list");
+      d.teachers.slice().sort(function (a, b) { return (a.cells ? a.dealt / a.cells : 1) - (b.cells ? b.dealt / b.cells : 1); }).slice(0, 6)
+        .forEach(function (t) {
+          var p = t.cells ? Math.round(t.dealt / t.cells * 100) : null;
+          var b = el("button", "cx-li");
+          b.type = "button";
+          b.innerHTML = avatarHtml(t) + '<span class="t"><b>' + esc(t.name) + "</b><span>" +
+            esc(t.courses.map(function (c) { return c.title; }).join(", ")) + "</span></span>" +
+            '<span class="r"><b>' + (p == null ? "—" : p + "%") + "</b>" +
+            (t.toMark ? '<span class="cx-pill orange">' + t.toMark + " to mark</span>" : '<span class="cx-pill green">up to date</span>') + "</span>";
+          b.addEventListener("click", function () { S.staffPick = t.id; openAdmin(false, "staff"); });
+          tl.appendChild(b);
+        });
+      sf.appendChild(tl);
+    } else {
+      var needs = [];
+      courses.forEach(function (c) { needs = needs.concat(c.needs); });
+      needs.sort(function (a, b) { return (a.dueAt || 0) - (b.dueAt || 0); });
+      var tm = card("cx-s5", "To mark", "pencil", "var(--cx-indigo)", { label: "Gradebook", go: function () { openAdmin(false, "roster"); } });
+      if (!needs.length) tm.appendChild(el("p", "cx-note", "Nothing due is waiting to be marked."));
+      var ml = el("div", "cx-list");
+      needs.slice(0, 6).forEach(function (n) {
+        var b = el("button", "cx-li");
+        b.type = "button";
+        b.innerHTML = '<span class="cx-av" style="--h:var(--cx-indigo)">' + cxIcon("pencil") + '</span><span class="t"><b>' + esc(n.title) + "</b><span>" +
+          esc(n.course + " · was due " + dayName(n.dueAt)) + '</span></span><span class="r"><span class="cx-pill orange">' + n.count + " to mark</span></span>";
+        b.addEventListener("click", function () { S.courseId = n.courseId; openAdmin(false, "roster"); });
+        ml.appendChild(b);
+      });
+      tm.appendChild(ml);
+    }
+
     // ---- The latest changes to marks.
-    var fa = card("cx-s12", "Latest marks", "clock", "var(--cx-teal)", { label: "Activity", go: function () { openAdmin(false, "activity"); } });
+    var fa = card("cx-s7", "Latest marks", "clock", "var(--cx-teal)", { label: admin ? "Audit log" : "Activity", go: function () { openAdmin(false, "activity"); } });
     var feed = el("div", "cx-feed");
-    d.events.slice(0, 8).forEach(function (e) {
+    d.events.slice(0, 7).forEach(function (e) {
       var r = el("div", "cx-ev");
       var to = e.toStatus === "missing" ? "missing" : e.toStatus === "excused" ? "excused" : e.toScore == null ? "cleared" : cxNum(e.toScore) + " / " + cxNum(e.outOf);
       r.innerHTML = avatarHtml(e.student || {}) + '<span class="t"><b>' + esc(e.actorName || "Someone") + "</b><span> marked </span><b>" +
@@ -9891,21 +10059,97 @@
     fa.appendChild(feed);
   }
 
-  function cxNum(n) { return n == null ? "—" : String(Math.round(n * 10) / 10); }
-
-  function letterCounts(students) {
-    var B = [{ k: "A", n: 0, color: "var(--cx-green)" }, { k: "B", n: 0, color: "var(--cx-teal)" }, { k: "C", n: 0, color: "var(--cx-yellow)" },
-             { k: "D", n: 0, color: "var(--cx-orange)" }, { k: "F", n: 0, color: "var(--cx-red)" }];
-    students.forEach(function (s) {
-      (s.courses || []).forEach(function (c) {
-        if (!c.grade || !c.grade.letter) return;
-        var L = String(c.grade.letter).charAt(0).toUpperCase();
-        var b = B.filter(function (x) { return x.k === (L === "E" ? "F" : L); })[0];
-        if (b) b.n++;
+  /* ------------------------------------------------------------------ Staff
+     The school's teachers, as an administrator needs to see them: what each
+     teaches, how many students that is, and whether their marking is keeping
+     up — work that is due and not yet marked, and when they last marked
+     anything. Read from the same gradebooks the teachers mark in, so it is
+     never a report somebody has to remember to file. */
+  function tabStaff(v) {
+    var top = el("div", "cx-top");
+    consoleHead(top, "School", "Staff",
+      "Everyone teaching a course here, what they teach, and whether marking is keeping up with the work that is due.");
+    var tools = el("div", "cx-tools");
+    tools.appendChild(cnAction("Add a person", function () { openPersonEditor(null); }, true));
+    top.appendChild(tools);
+    v.appendChild(top);
+    var node = loading(v, "your staff");
+    loadSchool().then(function (d) {
+      node.remove();
+      var unstaffed = d.courses.filter(function (c) { return !c.teachers.length; });
+      if (unstaffed.length) {
+        v.appendChild(el("div", "cn-verdict", "<b>" + unstaffed.length + (unstaffed.length === 1 ? " course has" : " courses have") +
+          " no teacher:</b> " + esc(unstaffed.map(function (c) { return c.title; }).join(", ")) + ". Open a course to assign one."));
+      }
+      if (!d.teachers.length) {
+        v.appendChild(cnEmpty("Nobody is teaching a course yet.",
+          "Assign a teacher from a course's page, and they appear here with their marking.", "Courses",
+          function () { openAdmin(false, "courses"); }));
+        return;
+      }
+      var split = cnSplit(v);
+      var t = cnTable([
+        { label: "Teacher", w: "minmax(170px, 1.2fr)" },
+        { label: "Courses", w: "74px", align: "right" },
+        { label: "Students", w: "80px", align: "right" },
+        { label: "Marked", w: "76px", align: "right" },
+        { label: "To mark", w: "76px", align: "right" },
+        { label: "Last marked", w: "118px", align: "right" }
+      ]);
+      function pick(tt) {
+        S.staffPick = tt.id;
+        t.select(tt.id);
+        split.right.innerHTML = "";
+        split.right.appendChild(staffInspector(tt));
+      }
+      d.teachers.forEach(function (tt) {
+        var who = el("span", "cn-who");
+        who.appendChild(avatarFor(tt));
+        who.appendChild(el("span", "nm", esc(tt.name)));
+        var p = tt.cells ? Math.round(tt.dealt / tt.cells * 100) : null;
+        t.row([who, String(tt.courses.length), String(tt.students),
+          p == null ? "<span class='cn-none'>—</span>" : "<b class='cn-mk" + (p < 80 ? " warn" : "") + "'>" + p + "%</b>",
+          tt.toMark ? "<b class='cn-mk warn'>" + tt.toMark + "</b>" : "<span class='cn-none'>—</span>",
+          tt.last ? esc(whenName(tt.last)) : "<span class='cn-none'>never</span>"
+        ], function () { pick(tt); }, tt.id);
       });
-    });
-    return B;
+      split.left.appendChild(t);
+      pick(d.teachers.filter(function (x) { return x.id === S.staffPick; })[0] || d.teachers[0]);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "staff"); }); });
   }
+
+  function staffInspector(tt) {
+    var box = el("div", "cn-insp cx-insp");
+    box.appendChild(el("header", "cx-ihead", avatarHtml(tt) + '<div class="t"><b>' + esc(tt.name) + "</b><span>" + esc(tt.email || "") + "</span></div>"));
+    var p = tt.cells ? tt.dealt / tt.cells : null;
+    var hero = el("div", "cx-ihero");
+    hero.innerHTML = '<div class="ring">' + miniRing(p == null ? null : Math.round(p * 100)).replace('class="cx-mring"', 'class="cx-mring big"') +
+      "<b>" + (p == null ? "—" : Math.round(p * 100) + "<small>%</small>") + "</b></div>" +
+      '<div class="stats"><div><b>' + tt.students + "</b><span>Students</span></div>" +
+      '<div><b style="color:' + (tt.toMark ? "var(--cx-orange)" : "var(--cx-label)") + '">' + tt.toMark + "</b><span>To mark</span></div>" +
+      "<div><b>" + tt.marks + "</b><span>Recent marks</span></div></div>";
+    box.appendChild(hero);
+    box.appendChild(el("p", "cx-note", p == null ? "Nothing of theirs is due yet." :
+      "Of the work that is due in their courses, " + Math.round(p * 100) + "% is marked." +
+      (tt.last ? " They last marked something " + whenName(tt.last) + "." : "")));
+    var list = el("div", "cx-ilist");
+    tt.courses.forEach(function (c) {
+      var cp = c.cells ? Math.round(c.dealt / c.cells * 100) : null;
+      var col = cp == null ? "var(--cx-gray)" : cp >= 90 ? "var(--cx-green)" : cp >= 70 ? "var(--cx-teal)" : "var(--cx-orange)";
+      var r = el("button", "cx-irow");
+      r.type = "button";
+      r.innerHTML = '<span class="t"><b>' + esc(c.title) + "</b><span>" + c.students + " students · average " +
+        (c.average == null ? "—" : c.average + "%") + (c.toMark ? ' · <em>' + c.toMark + " to mark</em>" : "") + "</span></span>" +
+        '<span class="bar"><i style="width:' + (cp == null ? 0 : Math.max(2, cp)) + "%;background:" + col + '"></i></span>' +
+        '<span class="g"><b>' + (cp == null ? "—" : cp + "%") + "</b><span>marked</span></span>";
+      r.addEventListener("click", function () { openCoursePage(c.raw); });
+      list.appendChild(r);
+    });
+    box.appendChild(list);
+    return box;
+  }
+
+  function cxNum(n) { return n == null ? "—" : String(Math.round(n * 10) / 10); }
 
   function miniDist(dist) {
     var total = dist.reduce(function (a, b) { return a + b.n; }, 0) || 1;
@@ -10052,8 +10296,8 @@
       "gradebook, and what it is out of is what a mark on it is measured against.");
 
     var node = loading(v, "your courses");
-    API.courses.mine().then(function (courses) {
-      var teaching = S.me.role === "admin" ? courses
+    (consoleMode() === "admin" ? API.courses.all(S.me.orgId) : API.courses.mine()).then(function (courses) {
+      var teaching = consoleMode() === "admin" ? courses
         : courses.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
       node.remove();
       if (!teaching.length) {
@@ -10597,8 +10841,8 @@
 
     var node = loading(v, "your courses");
 
-    API.courses.mine().then(function (courses) {
-      var teaching = S.me.role === "admin"
+    (consoleMode() === "admin" ? API.courses.all(S.me.orgId) : API.courses.mine()).then(function (courses) {
+      var teaching = consoleMode() === "admin"
         ? courses
         : courses.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
 
@@ -11529,6 +11773,67 @@
     render();
   }
 
+  /* Who teaches a course — which, in the school's console, is decided here
+     rather than by whoever happened to create it. Each teacher can be taken
+     off; anybody in the school who is not a student of this course can be
+     put on. The server checks the administrator's right on every change. */
+  function teacherPicker(course, people, members) {
+    var wrap = el("div");
+    wrap.appendChild(el("p", "cx-sethead", "Teachers"));
+    var box = el("div", "cx-set");
+    wrap.appendChild(box);
+    var teaching = members.filter(function (m) { return m.role === "teacher" || m.role === "assistant"; });
+    var students = {};
+    members.forEach(function (m) { if (m.role === "student") students[m.id] = true; });
+    function done(msg) { SCHOOL = null; toast(msg); openEnrol(course); }
+    if (!teaching.length) {
+      box.appendChild(el("div", "cx-setrow", '<span class="ic" style="--c:var(--cx-orange)">' + cxIcon("alert") +
+        '</span><span class="t"><b>No teacher yet</b><span>Nobody can mark this course until somebody is assigned to teach it.</span></span><span class="v"></span>'));
+    }
+    teaching.forEach(function (m) {
+      var r = el("div", "cx-setrow");
+      r.innerHTML = avatarHtml(m) + '<span class="t"><b>' + esc(m.name) + "</b><span>" + esc(m.email || "") + "</span></span>";
+      var off = el("button", "cn-btn small", "Remove");
+      off.type = "button";
+      off.addEventListener("click", function () {
+        if (!confirm("Take " + m.name + " off " + course.title + "?")) return;
+        off.disabled = true;
+        attempt(API.courses.enrol(course.id, m.id, m.role, true), function () { done(m.name + " no longer teaches " + course.title + "."); })
+          .then(function () { off.disabled = false; });
+      });
+      var vv = el("span", "v");
+      vv.appendChild(off);
+      r.appendChild(vv);
+      box.appendChild(r);
+    });
+    var add = el("div", "cx-setrow");
+    add.innerHTML = '<span class="ic" style="--c:var(--cx-accent)">' + cxIcon("badge") + '</span><span class="t"><b>Assign a teacher</b><span>Anybody in the school who isn’t a student here.</span></span>';
+    var pick = el("select", "cx-select");
+    pick.setAttribute("aria-label", "Choose a teacher");
+    var on = {};
+    teaching.forEach(function (m) { on[m.id] = true; });
+    pick.innerHTML = '<option value="">Choose a person…</option>' + people
+      .filter(function (p) { return !on[p.id] && !students[p.id]; })
+      .map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + (p.title ? " — " + esc(p.title) : "") + "</option>"; }).join("");
+    var go = el("button", "cn-btn small strong", "Assign");
+    go.type = "button";
+    go.addEventListener("click", function () {
+      var id = pick.value;
+      if (!id) { pick.focus(); return; }
+      var who = people.filter(function (p) { return p.id === id; })[0];
+      go.disabled = true;
+      attempt(API.courses.enrol(course.id, id, "teacher", false), function () { done((who ? who.name : "They") + " now teaches " + course.title + "."); })
+        .then(function () { go.disabled = false; });
+    });
+    var vv = el("span", "v");
+    vv.appendChild(pick);
+    vv.appendChild(go);
+    add.appendChild(vv);
+    box.appendChild(add);
+    wrap.appendChild(el("p", "cx-sethead", "Students"));
+    return wrap;
+  }
+
   /* ------------------------------------------------------------ Enrolment */
   function openEnrol(course, studentName, studentEmail) {
     enter("enrol:" + course.id, trim(course.title), function () { openEnrol(course, studentName, studentEmail); });
@@ -11558,6 +11863,7 @@
 
         var inCourse = {};
         members.forEach(function (m) { inCourse[m.id] = m.role; });
+        if (consoleMode() === "admin") v.appendChild(teacherPicker(course, people, members));
 
         v.appendChild(el("p", "cn-sub",
           "Enrolling a student is what gives you permission to grade them. The server " +
@@ -11638,7 +11944,7 @@
   /* ---------------------------------------------------------- Enrol by course name */
   function openEnrolByCourseName(name, studentName, studentEmail) {
     var node = loading($("#v-admin"), "finding course");
-    API.courses.mine().then(function (courses) {
+    (consoleMode() === "admin" ? API.courses.all(S.me.orgId) : API.courses.mine()).then(function (courses) {
       node.remove();
       var course = courses.filter(function (c) { return c.title === name; })[0];
       if (!course) { toast("Could not find course: " + name); return; }
@@ -12079,12 +12385,15 @@
      making visible in one screen. Selecting somebody fills the inspector; it
      does not take the list away. */
   function tabStudents(v) {
-    consoleHead(v, "Teaching", "Students",
+    if (consoleMode() === "admin") consoleHead(v, "School", "Students",
+      "Every student in the school, once. A student in three courses is one row " +
+      "with three grades on it, not three rows.");
+    else consoleHead(v, "Teaching", "Students",
       "Everyone you teach, once. A student in three of your courses is one " +
       "row with three grades on it, not three rows.");
 
     var node = loading(v, "your students");
-    API.reporting.students().then(function (data) {
+    (consoleMode() === "admin" ? loadSchool() : API.reporting.students()).then(function (data) {
       node.remove();
       railCount("students", data.totals.belowPass);
 
@@ -12114,7 +12423,7 @@
         { k: "low", name: "Below a pass", n: data.totals.belowPass },
         { k: "missing", name: "Missing work",
           n: data.students.filter(function (s) { return s.missing > 0; }).length },
-        { k: "unmarked", name: "Waiting on me",
+        { k: "unmarked", name: consoleMode() === "admin" ? "Waiting to be marked" : "Waiting on me",
           n: data.students.filter(function (s) { return s.unmarked > 0; }).length }
       ];
       S.studentFilter = S.studentFilter || "all";
@@ -12257,12 +12566,17 @@
      which is worth writing down here, because "activity feed" is the name
      under which that usually arrives. */
   function tabActivity(v) {
-    consoleHead(v, "School", "Activity",
+    var admin = consoleMode() === "admin";
+    if (admin) consoleHead(v, "Oversight", "Audit log",
+      "Every change to a mark across the school — before, after, who and when. Not a " +
+      "log of what anybody looked at: only the things that change what a grade says.");
+    else consoleHead(v, "Records", "Activity",
       "Every change to a mark in your courses. Not a log of what anybody looked " +
       "at — only the things that change what a student's grade says.");
 
     var node = loading(v, "what happened");
-    API.reporting.activity(80).then(function (events) {
+    (admin ? loadSchool(true).then(function (d) { return d.events.slice(0, 150); })
+           : API.reporting.activity(80)).then(function (events) {
       node.remove();
       if (!events.length) {
         v.appendChild(cnEmpty("Nothing has been marked yet.",
@@ -12330,8 +12644,12 @@
     v.appendChild(top);
 
     var node = loading(v, "courses");
-    Promise.all([API.courses.mine(), API.reporting.teaching().catch(function () { return { courses: [] }; }),
-                 API.reporting.students().catch(function () { return { students: [] }; })]).then(function (out) {
+    (consoleMode() === "admin"
+      ? loadSchool().then(function (d) { return [d.courses.map(function (c) { return c.raw; }), { courses: d.courses }, { students: d.students }]; })
+      : Promise.all([API.courses.mine().then(function (cs) {
+            return cs.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant"; });
+          }), API.reporting.teaching().catch(function () { return { courses: [] }; }),
+          API.reporting.students().catch(function () { return { students: [] }; })])).then(function (out) {
       var courses = out[0], stats = {}, dist = {};
       out[1].courses.forEach(function (c) { stats[c.id] = c; });
       (out[2].students || []).forEach(function (s) {
@@ -12795,8 +13113,8 @@
           units: us.map(function (u) { return u.t || u.n; }),
           from: c.id
         }
-      }).then(function (made) {
-        toast("“" + made.title + "” created. You are its teacher.");
+      }).then(unteachIfAdmin).then(function (made) {
+        toast("“" + made.title + "” created." + (consoleMode() === "admin" ? " Assign its teacher from its page." : " You are its teacher."));
         S.courseId = made.id;
         openAdmin(false, "roster");
       }, function (e) {
@@ -12948,7 +13266,7 @@
       save.disabled = true;
       var go = making
         ? API.courses.create(Object.assign({ code: code.input.value.trim().toLowerCase(),
-                                             orgId: S.me.orgId }, payload))
+                                             orgId: S.me.orgId }, payload)).then(unteachIfAdmin)
         : API.courses.update(c.id, payload);
       attempt(go, function () {
         toast(making ? "Course created." : "Saved.");
