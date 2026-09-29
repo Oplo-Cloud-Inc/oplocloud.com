@@ -315,6 +315,8 @@ window.OPLO_API = (function () {
        answer — the server refuses to store one. */
     assessments: {
       mine: function () { return get("/assessments").then(function (r) { return r.assessments; }); },
+      // Every assessment in the school, for an administrator.
+      all: function () { return get("/assessments?all=true").then(function (r) { return r.assessments; }); },
       get: function (id) {
         return get("/assessments/" + encodeURIComponent(id)).then(function (r) { return r.assessment; });
       }
