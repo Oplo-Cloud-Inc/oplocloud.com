@@ -30,6 +30,7 @@ import * as auth from "./routes/auth.js";
 import * as accounts from "./routes/accounts.js";
 import * as courses from "./routes/courses.js";
 import * as grades from "./routes/grades.js";
+import * as submissions from "./routes/submissions.js";
 import * as progress from "./routes/progress.js";
 import * as marks from "./routes/marks.js";
 import * as studysets from "./routes/studysets.js";
@@ -74,6 +75,7 @@ const ROUTES = [
   ["POST",   "/api/v1/courses/:courseId/assignments",    courses.createAssignment],
   ["PATCH",  "/api/v1/assignments/:assignmentId",        courses.updateAssignment],
   ["DELETE", "/api/v1/assignments/:assignmentId",        courses.deleteAssignment],
+  ["POST",   "/api/v1/assignments/:assignmentId/submission", submissions.submit],
 
   ["GET",    "/api/v1/grades",          grades.list],
   ["PUT",    "/api/v1/grades",          grades.put],

@@ -506,10 +506,13 @@ export class D1Repository {
 
   /* ---------------------------------------------------- Assignments, grades */
 
-  async listAssignments(courseId) {
+  /* Drafts are work a teacher has not set yet, so every read leaves them out
+     unless it asks for them — only the teacher's own list of work does. */
+  async listAssignments(courseId, { drafts = false } = {}) {
     const { results } = await this.db.prepare(
-      `SELECT * FROM learn_assignments WHERE course_id = ? ORDER BY created_at`
-    ).bind(courseId).all();
+      `SELECT * FROM learn_assignments
+        WHERE course_id = ? AND (? = 1 OR status <> 'draft') ORDER BY created_at`
+    ).bind(courseId, drafts ? 1 : 0).all();
     return results || [];
   }
 
@@ -524,10 +527,12 @@ export class D1Repository {
     await this.db.prepare(
       `INSERT INTO learn_assignments
          (id, course_id, title, category, out_of, due_at, extra_credit, status,
-          created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`
+          activity_json, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(assignmentId, data.courseId, data.title, data.category || null,
            data.outOf ?? 100, data.dueAt || null, data.extraCredit ? 1 : 0,
+           data.status || "open",
+           data.activity ? JSON.stringify(data.activity) : null,
            data.createdBy || null, t, t).run();
     return this.findAssignment(assignmentId);
   }
@@ -538,6 +543,10 @@ export class D1Repository {
                   dueAt: "due_at", status: "status", extraCredit: "extra_credit" };
     for (const [k, col] of Object.entries(map)) {
       if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (patch.activity !== undefined) {
+      fields.push("activity_json = ?");
+      values.push(patch.activity ? JSON.stringify(patch.activity) : null);
     }
     if (!fields.length) return this.findAssignment(assignmentId);
     values.push(now(), assignmentId);
@@ -550,6 +559,38 @@ export class D1Repository {
   async deleteAssignment(assignmentId) {
     await this.db.prepare(`DELETE FROM learn_assignments WHERE id = ?`)
       .bind(assignmentId).run();
+  }
+
+  /* Hand-ins. One per student per assignment; handing in again replaces what
+     was handed in, and keeps the first time it arrived as well as the last. */
+  async putSubmission(assignmentId, accountId, content) {
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_submissions (id, assignment_id, account_id, content, submitted_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (assignment_id, account_id) DO UPDATE SET
+         content = excluded.content, submitted_at = excluded.submitted_at`
+    ).bind(id("sub"), assignmentId, accountId, content, t).run();
+    return this.db.prepare(
+      `SELECT * FROM learn_submissions WHERE assignment_id = ? AND account_id = ?`
+    ).bind(assignmentId, accountId).first();
+  }
+
+  async listSubmissions({ courseId = null, accountId = null }) {
+    const { results } = await this.db.prepare(
+      `SELECT s.* FROM learn_submissions s
+         JOIN learn_assignments a ON a.id = s.assignment_id
+        WHERE (? IS NULL OR a.course_id = ?) AND (? IS NULL OR s.account_id = ?)`
+    ).bind(courseId, courseId, accountId, accountId).all();
+    return results || [];
+  }
+
+  async isEnrolled(courseId, accountId, role) {
+    const row = await this.db.prepare(
+      `SELECT 1 AS ok FROM learn_course_memberships
+        WHERE course_id = ? AND account_id = ? AND role = ?`
+    ).bind(courseId, accountId, role).first();
+    return !!row;
   }
 
   /* Grades joined to their assignment, because a score without what it was

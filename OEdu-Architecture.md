@@ -47,13 +47,20 @@ Assignment
 ├── Category      — Work, Quiz, Project, Exam, Reading
 ├── OutOf         — maximum score
 ├── DueAt         — when it is due
-├── Status        — open, marked, missing, excused
+├── Status        — open, or draft (not set yet: no student sees it, nothing is due)
+├── Activity      — where on OEdu it is done: a lesson, a unit test, a whole unit,
+│                   a study set — or `offline` (done elsewhere, about one unit)
 ├── ExtraCredit   — whether it can raise a grade above 100%
+├── Submission    — per student: handed in on OEdu, with what OEdu measured
 ├── Grade         — per student: score, feedback, gradedBy, gradedAt
 └── History       — every change, who, from what, to what, why
 ```
 
 Work with no mark yet is not invisible — it is the only work a student can still do something about.
+
+When a school puts a student in a course, the work is usually a lesson or an activity on OEdu. The student opens it from School; when it is finished the app hands it in (`learn_submissions`, 0015) and it waits in the teacher's To Grade. A hand-in is not a mark — the teacher marks it, and one press takes OEdu's result as the mark.
+
+**School and Self-learning are never mixed.** School is what a school put a student in, and it is what is graded. Self-learning is any course a student takes up on their own (kept as `own` in their record): never graded, not on their school record, and seen by nobody else — `GET /progress` answers only the student it belongs to.
 
 ## 3. Screen Map
 
@@ -62,7 +69,10 @@ Work with no mark yet is not invisible — it is the only work a student can sti
 ```
 Sign-in (Root)
 └── Home (role-based redirect)
-    └── Student home (/student/)
+    └── Student home (/student/) — two lanes: School, and Self-learning
+        ├── School (courses the school assigned, work set, hand-ins)
+        ├── Grades (marks — school courses only)
+        ├── Self-learning (courses chosen on their own; not graded)
         ├── Explore (open catalog)
         │   ├── All courses → Course (units, study sets, mastery)
         │   └── Published study sets
@@ -88,6 +98,7 @@ Every student place has an address, and the address is the place — typed, book
 /student/English/Media-Arts/u9/l2/Challenge a lesson's challenge
 /student/English/Media-Arts/u9/Challenge    the unit review, mixed from every lesson
 /student/Sets/<id>, /Sets/<id>/Flashcards   a study set and a way of studying it
+/student/School, /Self-learning             school courses and work; courses taken up alone
 /student/Exams, /Exams/<id>, /Progress, /Grades, /Account, /Notebook, /Mistakes
 ```
 
@@ -95,12 +106,14 @@ The Worker answers any `/student/…` address without a file extension with the 
 
 ### 3.2 Navigation
 
-The top bar shows four sections, and only four:
+The top bar: Home · School · Grades · Exams · Self-learning · Explore · Progress. School, Grades and Exams appear once a school has put the student in a course.
 
-1. **Home** — Command centre: standing, next step, set work, today's plan
-2. **Explore** — Open learning catalog: courses and study sets
-3. **Exams** — Assessments set for this student, run by `learn/exam.js` to [the Assessment Experience System](docs/OEDU_ASSESSMENT_EXPERIENCE_SYSTEM.md)
-4. **Progress** — Mastery, streak, badges, week overview
+1. **Home** — two lanes side by side: School (set work, courses) and Self-learning (their own courses, next step)
+2. **School** — each school course, its teachers and all the work set in it, with Start on work that is on OEdu
+3. **Self-learning** — courses chosen on their own; never graded
+4. **Explore** — Open learning catalog: courses and study sets
+5. **Exams** — Assessments set for this student, run by `learn/exam.js` to [the Assessment Experience System](docs/OEDU_ASSESSMENT_EXPERIENCE_SYSTEM.md)
+6. **Progress** — Mastery, streak, badges, week overview
 
 Assignments and Library were removed on 2026-09-18: set work already shows on Home, and Explore is the catalogue.
 
@@ -108,18 +121,19 @@ Assignments and Library were removed on 2026-09-18: set work already shows on Ho
 
 ```
 Sign-in
-└── Teacher home (/teacher/)
-    ├── Teaching (Courses I teach)
-    │   └── Course
-    │       ├── Roster (students)
-    │       ├── Assignments (set and grade)
-    │       ├── Gradebook (whole course)
-    │       └── Reporting (comments, readiness)
-    ├── Create (course)
-    │   ├── AI-assisted (describe → syllabus)
-    │   └── Manual (fill the form)
-    └── Authored (my Courses and StudySets)
+└── Teacher console (/teacher/) — the rail, full or icons only (⌘\)
+    ├── Home: Today
+    ├── Teach: Courses › (switcher) · Gradebook (Overview, Grades, Standards,
+    │          Missing, Grade History) · To Grade · Assignments · Assessments
+    ├── Learning: Lessons (Today, Upcoming, Drafts, Shared, OEdu Library) ·
+    │             Standards (by unit) · Curriculum · Resources
+    ├── Students: Students · Groups · Attendance
+    ├── Insights: Analytics · Interventions
+    ├── Communicate: Messages · Announcements (not built yet — said so)
+    └── Settings · Help · profile (Preferences, Appearance, Switch role, Sign out)
 ```
+
+Search (⌘K) reaches students, assignments, units, courses, places and quick actions.
 
 ### 3.4 Checks beside the reading
 
@@ -193,7 +207,8 @@ New components should use the tokens, not literal colours; then both looks follo
 | `/api/v1/courses` | Home, Explore | List courses (mine or org) |
 | `/api/v1/courses/:id` | Course | Course detail |
 | `/api/v1/courses/:id/members` | Teacher | Course roster |
-| `/api/v1/courses/:id/assignments` | Teacher | Set work |
+| `/api/v1/courses/:id/assignments` | Teacher | Set work (`activity`, `status: draft`) |
+| `/api/v1/assignments/:id/submission` | Student | Hand in work set on OEdu, with what OEdu measured |
 | `/api/v1/courses/:id/enrol` | Teacher | Enrol/unenrol |
 | `/api/v1/grades` | Student, Teacher | Individual marks |
 | `/api/v1/grades/batch` | Teacher | Fill a column |
@@ -201,7 +216,7 @@ New components should use the tokens, not literal colours; then both looks follo
 | `/api/v1/courses/:id/gradebook` | Teacher | Whole course register |
 | `/api/v1/courses/:id/whatif` | Teacher | Hypothetical grade |
 | `/api/v1/grades/history` | All | Mark audit trail |
-| `/api/v1/progress` | Sync, Exams | Student record sync; an exam sitting is the scope `exam:<id>` |
+| `/api/v1/progress` | Sync, Exams | Student record sync; an exam sitting is the scope `exam:<id>`. Read by the student alone |
 | `/api/v1/assessments` | Exams | What has been set for the caller — cards with the rules, no questions |
 | `/api/v1/assessments/:id` | Exams | The questions, only to an assigned student once open (`PUT` publishes; administrators) |
 | `/api/v1/gamification/standing` | Home | XP, rank, streak |

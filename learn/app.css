@@ -5156,32 +5156,105 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
   background: var(--paper); box-shadow: 0 0 0 .5px var(--hair);
 }
 .sw-row {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px; align-items: baseline;
-  padding: 14px 18px; border-bottom: 1px solid var(--hair);
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  gap: 14px; align-items: center;
+  padding: 13px 18px; border-bottom: 1px solid var(--hair);
 }
+.sw-row .ic {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--canvas); color: var(--ink-2);
+}
+.sw-row .ic svg { width: 15px; height: 15px; }
+.sw-row .t { min-width: 0; }
+.sw-row .sw-go { height: 32px; padding: 0 15px; font-size: 13.5px; border-radius: 999px; }
 .sw-row:last-child { border-bottom: 0; }
 .sw-row .t b {
   display: block; font-size: 15.5px; font-weight: 550; letter-spacing: -.016em;
 }
 .sw-row .t span { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ink-3); }
 .sw-row .m {
+  /* lab.css styles a bare .m as maths; this .m is a status. */
+  font-family: var(--font); font-style: normal;
   font-size: 14px; font-weight: 550; white-space: nowrap;
   font-variant-numeric: tabular-nums; color: var(--ink-2);
 }
 /* Past due and not handed in are the two that cost a student marks, so they
    are the two the eye is allowed to find. Everything else stays quiet. */
 .sw-row.late .m { color: var(--amber); }
-.sw-row.miss .m { color: var(--red); }
-.sw-row.miss .t b { color: var(--ink); }
+.sw-row.missing .m { color: var(--red); }
+.sw-row.handed .m { color: var(--blue); }
+.sw-row.marked .m { color: var(--ink); }
+.sw-row.handed .ic, .sw-row.marked .ic { color: var(--blue); }
 .sw-row .fb {
-  grid-column: 1 / -1; margin-top: 8px; padding: 9px 12px; border-radius: 9px;
+  grid-column: 2 / -1; margin-top: 2px; padding: 9px 12px; border-radius: 9px;
   background: var(--canvas); font-size: 13.5px; line-height: 1.5; color: var(--ink-2);
 }
 @media (max-width: 560px) {
-  .sw-row { grid-template-columns: 1fr; gap: 4px; }
-  .sw-row .m { text-align: left; }
+  .sw-row { grid-template-columns: 30px 1fr; gap: 4px 12px; }
+  .sw-row .m, .sw-row .sw-go { grid-column: 2; text-align: left; justify-self: start; }
 }
+
+/* ==========================================================================
+   School and Self-learning — two lanes on Home, never one list.
+
+   School is what is graded: the work teachers set, the courses the school
+   put a student in. Self-learning is theirs: never graded, seen by nobody
+   else. They sit side by side so a student always knows which is which, and
+   the self-learning lane is drawn a step quieter — a sunk surface, no accent.
+   ========================================================================== */
+.lx-lanes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; margin-top: 34px; align-items: start; }
+.lx-lane { min-width: 0; padding: 24px 24px 22px; border-radius: 22px; background: var(--paper); box-shadow: 0 0 0 .5px var(--hair); }
+.lx-lane.own { background: var(--canvas); box-shadow: none; }
+.lx-lanehead .k { font-size: 11.5px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+.lx-lane.own .lx-lanehead .k { color: var(--ink-3); }
+.lx-lanehead h2 { margin-top: 4px; font-size: 24px; font-weight: 650; letter-spacing: -.022em; }
+.lx-lanehead p { margin-top: 6px; font-size: 14px; line-height: 1.45; color: var(--ink-2); max-width: 46ch; }
+.lx-lanesub { margin: 24px 0 8px; font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+.lx-lanenote { margin: 6px 0; font-size: 13.5px; color: var(--ink-2); }
+.lx-lanenone { margin-top: 18px; padding: 16px 18px; border-radius: 14px; background: var(--canvas); }
+.lx-lane.own .lx-lanenone { background: var(--paper); }
+.lx-lanenone b { font-size: 15px; font-weight: 600; }
+.lx-lanenone p { margin-top: 4px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+.lx-lane .sw-list { margin-top: 4px; border-radius: 0; background: transparent; box-shadow: none; border-top: 1px solid var(--hair); }
+.lx-lane .sw-row { padding: 12px 2px; }
+.lx-lane > .lx-btn { margin-top: 18px; }
+.lx-lanelink { display: inline-block; margin-top: 10px; padding: 4px 0; font-size: 13.5px; font-weight: 550; color: var(--blue); background: none; }
+.lx-lanelink:hover { text-decoration: underline; }
+.lx-crow-list { display: grid; gap: 2px; }
+.lx-crow { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 8px; border-radius: 12px; text-align: left; transition: background .14s var(--ease); }
+.lx-crow:hover { background: var(--canvas); }
+.lx-lane.own .lx-crow:hover { background: var(--paper); }
+.lx-crow .ic { width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--canvas); color: var(--ink-2); }
+.lx-crow .ic svg { width: 18px; height: 18px; }
+.lx-crow .t { flex: 1; min-width: 0; }
+.lx-crow .t b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lx-crow .t span { display: block; margin-top: 1px; font-size: 12.5px; color: var(--ink-3); }
+.lx-crow .p { width: 64px; height: 4px; flex: none; border-radius: 2px; overflow: hidden; background: var(--sunk); }
+.lx-crow .p i { display: block; height: 100%; border-radius: 2px; background: var(--ink-2); }
+.lx-crow .pc { width: 38px; flex: none; text-align: right; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.lx-stepcard { display: grid; gap: 4px; margin-top: 20px; padding: 16px 18px; border-radius: 16px; background: var(--canvas); }
+.lx-lane.own .lx-stepcard { background: var(--paper); }
+.lx-stepcard .k { font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+.lx-stepcard b { font-size: 16px; font-weight: 600; letter-spacing: -.014em; }
+.lx-stepcard span { font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+.lx-stepcard .lx-btn { justify-self: start; margin-top: 10px; }
+/* On a course's page: which of the two this course is. */
+.lx-kind { display: flex; align-items: center; gap: 14px; margin: 18px 0 26px; padding: 14px 18px; border-radius: 16px; background: var(--canvas); }
+.lx-kind b { flex: none; font-size: 14.5px; font-weight: 650; }
+.lx-kind.school b { color: var(--blue); }
+.lx-kind span { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+/* The Self-learning page. */
+.lx-owngrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; margin-top: 26px; }
+.lx-owncard { padding: 20px; border-radius: 20px; background: var(--paper); box-shadow: 0 0 0 .5px var(--hair); }
+.lx-owncard .ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; }
+.lx-owncard .ic svg { width: 20px; height: 20px; }
+.lx-owncard h3 { margin-top: 14px; font-size: 17px; font-weight: 600; letter-spacing: -.014em; }
+.lx-owncard p { margin-top: 4px; font-size: 13.5px; color: var(--ink-2); }
+.lx-owncard .bar { height: 5px; margin-top: 14px; border-radius: 3px; overflow: hidden; background: var(--sunk); }
+.lx-owncard .bar i { display: block; height: 100%; border-radius: 3px; background: var(--ink-2); }
+.lx-owncard .pc { font-size: 12.5px; color: var(--ink-3); }
+.lx-owncard .acts { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+@media (max-width: 980px) { .lx-lanes { grid-template-columns: 1fr; } }
 
 /* The sentence a teacher wrote about the term, on the student's own screen.
    Set as something somebody said, not as a data field. */

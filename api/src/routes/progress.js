@@ -15,6 +15,15 @@ export async function list(ctx) {
   const accountId = ctx.url.searchParams.get("accountId") || actor.id;
   await must(ctx, "progress.read", { accountId });
 
+  /* The record is the student's own: every unit they have practised, every
+     set, every lesson — in their school's courses and in whatever they chose
+     to learn on their own. Learning on your own is not graded and is nobody
+     else's business, and the record cannot tell the two apart, so nobody but
+     the student reads it. What a school needs to see arrives another way:
+     work set on OEdu is handed in (submissions), and experience is priced by
+     the server (gamification). */
+  if (accountId !== actor.id) return json({ progress: {} });
+
   // One scope by name is what a device asks for after its write was refused:
   // it needs that scope's current copy to merge with, not the whole record.
   const scope = ctx.url.searchParams.get("scope") || null;

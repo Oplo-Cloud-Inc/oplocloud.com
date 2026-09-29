@@ -120,10 +120,47 @@ export async function enrol(ctx, { courseId }) {
 
 /* ------------------------------------------------------------ Assignments */
 
+export function activityOf(a) {
+  if (!a || !a.activity_json) return null;
+  try { return JSON.parse(a.activity_json); } catch { return null; }
+}
+
 function assignmentShape(a) {
   return { id: a.id, courseId: a.course_id, title: a.title, category: a.category,
            outOf: a.out_of, dueAt: a.due_at, extraCredit: !!a.extra_credit,
-           status: a.status };
+           status: a.status, activity: activityOf(a) };
+}
+
+/* What on OEdu a piece of work points at: a lesson, a unit's test, a whole
+   unit, a study set — or, for work done elsewhere, just the unit it is about.
+   Only the fields each kind needs are kept, so the row says exactly one
+   thing. `null` clears it. */
+const ACTIVITY_KINDS = ["lesson", "test", "unit", "set", "offline"];
+function readActivity(v) {
+  if (v === null) return null;
+  if (typeof v !== "object" || Array.isArray(v)) {
+    throw ApiError.badRequest("activity must be an object or null.", "activity");
+  }
+  const kind = check.oneOf(v.kind, "activity.kind", ACTIVITY_KINDS);
+  const out = { kind };
+  if (kind === "set") {
+    out.set = check.string(v.set, "activity.set", { max: 80 });
+  } else {
+    out.course = check.string(v.course, "activity.course", { max: 80 });
+    out.unit = check.number(v.unit, "activity.unit", { min: 1, max: 400 });
+    if (!Number.isInteger(out.unit)) throw ApiError.badRequest("activity.unit must be a whole number.", "activity.unit");
+    if (kind === "lesson") {
+      out.lesson = check.number(v.lesson, "activity.lesson", { min: 1, max: 400 });
+      if (!Number.isInteger(out.lesson)) throw ApiError.badRequest("activity.lesson must be a whole number.", "activity.lesson");
+    }
+  }
+  if (v.title != null) out.title = check.string(v.title, "activity.title", { max: 200 });
+  return out;
+}
+
+/* Open, or a draft the students do not see yet. */
+function readStatus(v) {
+  return check.oneOf(v, "status", ["open", "draft"]);
 }
 
 export async function listAssignments(ctx, { courseId }) {
@@ -131,7 +168,9 @@ export async function listAssignments(ctx, { courseId }) {
   const row = await ctx.repo.findCourse(courseId);
   if (!row) throw ApiError.notFound("No such course.");
   await must(ctx, "course.read", row);
-  const rows = await ctx.repo.listAssignments(courseId);
+  // Drafts only to the people who can set work on this course.
+  const drafts = await can(ctx, "assignment.write", { courseId });
+  const rows = await ctx.repo.listAssignments(courseId, { drafts });
   return json({ assignments: rows.map(assignmentShape) });
 }
 
@@ -147,6 +186,8 @@ export async function createAssignment(ctx, { courseId }) {
     dueAt: body.dueAt || null,
     // Work that can raise a grade and never lower one.
     extraCredit: !!body.extraCredit,
+    status: body.status === undefined ? "open" : readStatus(body.status),
+    activity: body.activity === undefined ? null : readActivity(body.activity),
     createdBy: actor.id
   });
   return json({ assignment: assignmentShape(a) }, { status: 201 });
@@ -167,6 +208,8 @@ export async function updateAssignment(ctx, { assignmentId }) {
   }
   if (body.dueAt !== undefined) patch.dueAt = body.dueAt;
   if (body.extraCredit !== undefined) patch.extraCredit = body.extraCredit ? 1 : 0;
+  if (body.status !== undefined) patch.status = readStatus(body.status);
+  if (body.activity !== undefined) patch.activity = readActivity(body.activity);
   return json({ assignment: assignmentShape(await ctx.repo.updateAssignment(assignmentId, patch)) });
 }
 

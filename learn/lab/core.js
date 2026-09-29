@@ -1679,6 +1679,24 @@ window.OPLO_LAB = (function () {
     // pages
     renderUnit: renderUnit, runLesson: runLesson, runPractice: runPractice, runTest: runTest, runQuiz: runQuiz,
     dims: function (courseId, n) { var u = UNITS[courseId + ":" + n]; useAccount(ME); return u ? unitDims(u) : null; },
+    // Read without loading the unit: was lesson k finished (any version of
+    // it), and the unit test's best score (0–1). Work a teacher set on OEdu
+    // is handed in from these.
+    lessonState: function (courseId, n, k, me) {
+      useAccount(me || ME);
+      var pre = courseId + ":" + n + ":" + k, hit = null;
+      Object.keys(REC.lessons).forEach(function (key) {
+        if (key !== pre && key.indexOf(pre + "~") !== 0) return;
+        var x = REC.lessons[key];
+        if (!hit || (x.done && !hit.done) || (!!x.done === !!hit.done && (x.at || 0) > (hit.at || 0))) hit = x;
+      });
+      return hit;
+    },
+    testBest: function (courseId, n, me) {
+      useAccount(me || ME);
+      var t = REC.tests[courseId + ":" + n];
+      return t ? t.best || 0 : null;
+    },
     level: level, levels: LEVELS, useAccount: useAccount, setLevel: function (id, lv) { if (REC) setLevel(id, lv); },
     fmtStep: fmtStep, hub: hub, addHub: addHub,
     _lessonPath: lessonPath, _genStep: genStep,

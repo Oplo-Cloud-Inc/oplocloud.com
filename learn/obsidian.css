@@ -1054,6 +1054,12 @@ html[data-look="obsidian"] .gs-lv u {
 html[data-look="obsidian"] .gr-flag {
   --ink-3: var(--ink-3-fill);
 }
+html[data-look="obsidian"] .lx-crow .p {
+  --ink-3: var(--ink-3-fill);
+}
+html[data-look="obsidian"] .lx-owncard .bar {
+  --ink-3: var(--ink-3-fill);
+}
 html[data-look="obsidian"] .atb-badge {
   background: var(--fill);
 }

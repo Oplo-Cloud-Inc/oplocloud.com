@@ -14,6 +14,8 @@ import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must } from "../core/guard.js";
 import { computeGrade, courseWeights, coursePolicy, classSignal } from "../services/grades.js";
+import { activityOf } from "./courses.js";
+import { submissionShape } from "./submissions.js";
 
 const STATUSES = ["marked", "missing", "excused"];
 
@@ -89,11 +91,14 @@ export async function gradebook(ctx, { courseId }) {
   // guard.js that lets them; there is no accountId here to name.
   await must(ctx, "grade.read", { courseId, orgId: course.org_id });
 
-  const [members, assignments, grades] = await Promise.all([
+  const [members, allWork, grades, handed] = await Promise.all([
     ctx.repo.listCourseMembers(courseId),
-    ctx.repo.listAssignments(courseId),
-    ctx.repo.listGrades({ courseId, accountId: null })
+    ctx.repo.listAssignments(courseId, { drafts: true }),
+    ctx.repo.listGrades({ courseId, accountId: null }),
+    ctx.repo.listSubmissions({ courseId })
   ]);
+  // A draft is not set yet: no column, nothing to mark, nothing due.
+  const assignments = allWork.filter((a) => a.status !== "draft");
 
   const students = members
     .filter((m) => m.role === "student")
@@ -129,9 +134,12 @@ export async function gradebook(ctx, { courseId }) {
     students,
     assignments: assignments.map((a) => ({
       id: a.id, title: a.title, category: a.category, outOf: a.out_of,
-      dueAt: a.due_at, status: a.status
+      dueAt: a.due_at, status: a.status, extraCredit: !!a.extra_credit, activity: activityOf(a)
     })),
+    drafts: allWork.filter((a) => a.status === "draft").length,
     grades: grades.map(shape),
+    // Handed in on OEdu: what OEdu measured, waiting for the teacher's mark.
+    submissions: handed.map(submissionShape),
     summaries,
     columns: signal.columns,
     needs: signal.needs

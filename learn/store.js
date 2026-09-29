@@ -77,6 +77,10 @@ window.OPLO_STORE = (function () {
         goal: 60             // xp a day, changeable
       },
       resume: {},            // setId -> a Learn session walked out of
+      // Courses this person chose to learn on their own, outside anything a
+      // school put them in. Kept apart so the app never shows them as school
+      // work: they are not graded, and nobody but the student sees them.
+      own: {},               // courseId -> { at } added, or { at, gone } taken off the list
       epoch: 0,              // when this record was last reset; a newer reset wins a merge outright
       first: null,           // when this record was created
       last: null             // when it was last written
@@ -120,6 +124,7 @@ window.OPLO_STORE = (function () {
     if (d.doneToday && typeof d.doneToday === "object") out.doneToday = d.doneToday;
     if (typeof d.citeStyle === "string") out.citeStyle = d.citeStyle;
     if (d.resume && typeof d.resume === "object") out.resume = d.resume;
+    if (d.own && typeof d.own === "object" && !Array.isArray(d.own)) out.own = d.own;
     if (d.first) out.first = d.first;
     if (typeof d.epoch === "number") out.epoch = d.epoch;
     if (d.last) out.last = d.last;
@@ -281,6 +286,29 @@ window.OPLO_STORE = (function () {
   };
 
   /* --------------------------------------------------------- Mistake book */
+  /* ------------------------------------------------------ On my own
+     A course joins the list when the student starts it themselves, and
+     leaves it when they take it off. Taking it off keeps their progress:
+     it only stops showing the course as one they are learning. */
+  Record.prototype.own = function () {
+    var o = this.d.own;
+    return Object.keys(o).filter(function (id) { return o[id] && !o[id].gone; })
+      .sort(function (p, q) { return mnum(o[q].at) - mnum(o[p].at); });
+  };
+  Record.prototype.adopt = function (courseId, now) {
+    var cur = this.d.own[courseId];
+    if (cur && !cur.gone) return false;
+    this.d.own[courseId] = { at: now || Date.now() };
+    this.save();
+    return true;
+  };
+  Record.prototype.drop = function (courseId, now) {
+    if (!this.d.own[courseId] || this.d.own[courseId].gone) return false;
+    this.d.own[courseId] = { at: now || Date.now(), gone: true };
+    this.save();
+    return true;
+  };
+
   Record.prototype.slip = function (kind, key, title, note, extra) {
     var hit = null;
     this.d.mistakes.forEach(function (m) { if (m.key === key) hit = m; });
@@ -351,6 +379,7 @@ window.OPLO_STORE = (function () {
                   best time is the lowest, run counts the highest
        mistakes   one row per mistake, the larger count            by key
        resume     newest per set; cleared stays cleared            by stamp
+       own        newest per course; taken off stays off           by stamp
        rt         each card only moves forward; a closed boundary
                   beats an open one started before it closed       by progress
        position   where you are reading, and how you cite          newest device
@@ -468,6 +497,12 @@ window.OPLO_STORE = (function () {
       var x = a.resume[id], y = b.resume[id];
       var w = !x ? y : !y ? x : (mnum(x.at) >= mnum(y.at) ? x : y);
       if (w && !(w.gone && now - mnum(w.at) > TOMB_LIFE)) out.resume[id] = mclone(w);
+    });
+
+    mkeys(a.own, b.own).forEach(function (id) {
+      var x = mobj(a.own[id]), y = mobj(b.own[id]);
+      var w = !a.own[id] ? y : !b.own[id] ? x : (mnum(x.at) >= mnum(y.at) ? x : y);
+      if (w && !(w.gone && now - mnum(w.at) > TOMB_LIFE)) out.own[id] = mclone(w);
     });
 
     mkeys(a.rt, b.rt).forEach(function (k) {
