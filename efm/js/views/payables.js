@@ -56,10 +56,11 @@
       page.appendChild(strip);
 
       page.appendChild(h("div", { class: "row", style: { marginBottom: "14px" } },
-        ui.seg([{ id: "invoices", label: "Invoices" }, { id: "run", label: "Payment run" }, { id: "aging", label: "Aging" }, { id: "vendors", label: "Vendors" }], tab,
+        ui.seg([{ id: "invoices", label: "Invoices" }, { id: "run", label: "Payment run" }, { id: "cards", label: "Card charges" }, { id: "aging", label: "Aging" }, { id: "vendors", label: "Vendors" }], tab,
           function (t) { app.setQuery({ tab: t === "invoices" ? null : t }); }, { label: "Payables views" })));
 
       if (tab === "run") page.appendChild(paymentRun(ctx, all));
+      else if (tab === "cards") page.appendChild(cards(ctx));
       else if (tab === "aging") page.appendChild(aging(ctx));
       else if (tab === "vendors") page.appendChild(vendors(ctx, all));
       else page.appendChild(invoices(ctx, all, status));
@@ -258,6 +259,46 @@
     return wrap;
   }
 
+  /* ---------------------------------------------------------- Card charges */
+  function cards(ctx) {
+    var E = ctx.E, app = ctx.app, cp = E.currentPeriod();
+    var wrap = h("div");
+    if (!app.inScope("US")) return ui.card({ body: ui.empty("No card charges for " + E.entity[app.scope].short, "The company card belongs to OploCloud, Inc. Switch to the US entity or the group.", "card") });
+    var all = E.cardChargeList();
+    var fy = all.filter(function (x) { return x.journal; });
+    var net = E.cardSpend(null, E.fy + "-01", E.fy + "-12");
+    var month = E.cardSpend(null, cp, cp);
+    var refunds = all.filter(function (x) { return x.status === "refunded"; });
+    var owed = -E.balance("US", "2500", cp);
+    var vendors = {};
+    all.forEach(function (x) { vendors[x.vendor] = 1; });
+    wrap.appendChild(ui.kpis([
+      { label: "Charged this year", icon: "card", value: E.fmt(net, "USD"), sub: "net of refunds · " + fy.length + " charges in fiscal " + E.fy },
+      { label: ui.period(cp, true), icon: "calendar", value: E.fmt(month, "USD"), sub: fy.filter(function (x) { return x.date.slice(0, 7) === cp; }).length + " charges so far · not yet on a statement" },
+      { label: "Refunded", icon: "undo", value: E.fmt(refunds.reduce(function (s, x) { return s + x.amount; }, 0), "USD"), sub: refunds.length + " charge" + (refunds.length === 1 ? "" : "s") + " booked and reversed" },
+      { label: "Owed on the card", icon: "bank", value: E.fmt(owed, "USD"), sub: "settles on " + ui.date(E.addDays(E.addMonths(cp, 1) + "-20", 0)) + " with the September statement", onClick: function () { app.open({ kind: "account", id: "2500", q: { entity: "US" } }); } },
+      { label: "Vendors on the card", icon: "payables", value: String(Object.keys(vendors).length), sub: Object.keys(vendors).map(function (id) { return E.vendors[id].name.split(" — ")[0]; }).join(", ") }
+    ]));
+    var body = h("div");
+    var q = local.cq || "";
+    function draw() {
+      ui.clear(body);
+      var ql = (local.cq || "").toLowerCase();
+      var rows = all.filter(function (x) { return !ql || (E.vendors[x.vendor].name + " " + x.id + " " + x.date + " " + x.status).toLowerCase().indexOf(ql) >= 0; });
+      body.appendChild(h("div", { class: "bar" }, ui.searchBox("Search charges", local.cq, function (t) { local.cq = t; draw(); body.querySelector("input[type=search]").focus(); }),
+        h("span", { class: "sp" }),
+        ui.btn("Export CSV", { size: "sm", kind: "ghost", icon: "download", onClick: function () {
+          ui.csv("oc-efm-card-charges.csv", [["Charge", "Date", "Vendor", "Status", "Journal", "Total"]].concat(rows.map(function (x) { return [x.id, x.date, E.vendors[x.vendor].name, x.status, x.journal || "", (x.amount / 100).toFixed(2)]; })));
+        } }),
+        h("span", { class: "muted", style: { fontSize: "12.5px" } }, rows.length + " charge" + (rows.length === 1 ? "" : "s"))));
+      body.appendChild(EFM.drill._cardTable(rows, { vendor: true }));
+    }
+    draw();
+    wrap.appendChild(ui.card({ title: "Company card", meta: "Charged at the time of purchase and settled together, on the 20th of the following month", flush: true, body: body,
+      foot: [h("span", null, "Actual charges from " + all[0].source + ". Each posts as an expense on its date against the card payable.")] }));
+    return wrap;
+  }
+
   /* ---------------------------------------------------------------- Aging */
   function aging(ctx) {
     var E = ctx.E, app = ctx.app, cur = app.scopeCurrency();
@@ -292,7 +333,7 @@
     var E = ctx.E, app = ctx.app, cur = app.scopeCurrency(), cp = E.currentPeriod();
     var list = Object.values(E.vendors).filter(function (v) { return app.inScope(v.entity); }).map(function (v) {
       var inv = all.filter(function (i) { return i.vendor === v.id; });
-      return { v: v, spend: inv.filter(function (i) { return i.journal && (i.glDate || i.date) >= E.fy; }).reduce(function (s, i) { return s + app.inScopeCur(i.entity, i.amount, cp); }, 0),
+      return { v: v, spend: v.card ? E.cardSpend(v.id, E.fy + "-01", cp) : inv.filter(function (i) { return i.journal && (i.glDate || i.date) >= E.fy; }).reduce(function (s, i) { return s + app.inScopeCur(i.entity, i.amount, cp); }, 0),
                open: inv.filter(function (i) { return i.status === "approved" || i.status === "scheduled"; }).reduce(function (s, i) { return s + app.inScopeCur(i.entity, i.amount, cp); }, 0),
                waiting: inv.filter(function (i) { return i.status === "review"; }).length };
     });
@@ -305,8 +346,9 @@
         h("span", { class: "sp" }), h("span", { class: "muted", style: { fontSize: "12.5px" } }, rows.length + " vendors")));
       body.appendChild(ui.table({ rows: rows, sortKey: "spend", sortDir: -1, onRow: function (r) { app.open({ kind: "vendor", id: r.v.id }); }, columns: [
         { key: "n", label: "Vendor", cls: "two", sort: function (r) { return r.v.name; }, render: function (r) { return h("span", null, r.v.name, h("span", { class: "sub" }, r.v.category + (app.scope === "GROUP" ? " · " + E.entity[r.v.entity].short : ""))); } },
-        { key: "t", label: "Terms", render: function (r) { return r.v.terms ? "Net " + r.v.terms : "On receipt"; } },
+        { key: "t", label: "Terms", render: function (r) { return r.v.card ? "At purchase" : r.v.terms ? "Net " + r.v.terms : "On receipt"; } },
         { key: "b", label: "Pays to", render: function (r) {
+          if (r.v.card) return h("span", { class: "row" }, ui.icon("card", "sm"), "Company card");
           return h("span", { class: "row" }, h("span", null, r.v.bank.bank + " " + r.v.bank.mask), r.v.bankPending ? ui.tag("Change pending", "bad") : null); } },
         { key: "c", label: "Coding", render: function (r) { return r.v.account + " · " + (E.accounts[r.v.account].bs ? E.accounts[r.v.account].name : E.dimName("dept", r.v.dept)); } },
         { key: "w", label: "Waiting", num: true, sort: function (r) { return r.waiting; }, render: function (r) { return r.waiting ? String(r.waiting) : h("span", { class: "faint" }, "—"); } },

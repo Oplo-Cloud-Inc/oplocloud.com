@@ -58,6 +58,7 @@
     if (src.type === "ar" || src.type === "ar-pay") return { kind: "ar", id: src.id };
     if (src.type === "reversal") return { kind: "journal", id: src.id };
     if (src.type === "bank") return { kind: "bankline", id: src.id };
+    if (src.type === "card" || src.type === "card-refund") return { kind: "card", id: src.id };
     return null;
   }
   function cur(entity) { return En().entity[entity].currency; }
@@ -400,6 +401,7 @@
     render: function (ref, body, foot) {
       var E = En(), app = A(), v = E.vendors[ref.id];
       if (!v) { body.appendChild(ui.empty("No such vendor", ref.id, "alert")); return; }
+      if (v.card) { cardVendor(v, body); return; }
       var c = cur(v.entity), invs = Object.values(E.apInvoices).filter(function (i) { return i.vendor === v.id; });
       var ytd = invs.filter(function (i) { return i.journal && i.date >= E.fy; }).reduce(function (s, i) { return s + i.amount; }, 0);
       body.appendChild(head("payables", v.name, v.category + " · " + E.entity[v.entity].name + " · vendor since " + v.created.slice(0, 4), E.fmt(ytd, c), h("span", { class: "muted", style: { fontSize: "12px" } }, "Approved this year")));
@@ -427,6 +429,81 @@
         { key: "status", label: "Status", render: function (i) { return ui.status(i.status); } },
         { key: "amount", label: "Amount", num: true, sort: function (i) { return i.amount; }, render: function (i) { return E.fmt(i.amount, c); } }], rows: invs })));
       body.appendChild(sec("History", history([v.id])));
+    }
+  };
+
+  /* A vendor paid by company card: no invoices to approve or payments to
+     release — each purchase is a charge, on the card the moment it happens. */
+  function cardVendor(v, body) {
+    var E = En(), app = A(), c = cur(v.entity);
+    var list = E.cardChargeList({ vendor: v.id });
+    var net = E.cardSpend(v.id, E.fy + "-01", E.fy + "-12");
+    var refunds = list.filter(function (x) { return x.status === "refunded"; });
+    body.appendChild(head("card", v.name, v.category + " · " + E.entity[v.entity].name + " · on the company card since " + ui.date(v.created, "year"),
+      E.fmt(net, c), h("span", { class: "muted", style: { fontSize: "12px" } }, "Charged this year, net of refunds")));
+    var first = list[0], last = list[list.length - 1];
+    body.appendChild(kv([
+      ["Paid with", "Company card, at purchase"], ["Default coding", v.account + " " + E.accounts[v.account].name + " · " + E.dimName("dept", v.dept)],
+      ["Charges", list.length + " on record · " + list.filter(function (x) { return x.journal; }).length + " in fiscal " + E.fy],
+      ["First charge", ui.date(first.date, "year")], ["Latest charge", ui.date(last.date, "year")],
+      ["Refunded", refunds.length ? refunds.length + " · " + E.fmt(refunds.reduce(function (s, x) { return s + x.amount; }, 0), c) : "None"]
+    ]));
+    var by = {};
+    E.linesWhere({ entity: v.entity, accounts: [v.account], vendor: v.id }).forEach(function (l) {
+      if (l.source && (l.source.type === "card" || l.source.type === "card-refund")) by[l.period] = (by[l.period] || 0) + l.amt;
+    });
+    var ps = E.periodsBetween(E.fy + "-01", E.currentPeriod());
+    body.appendChild(ui.charts.columns({ height: 130, labels: ps, xFormat: function (p) { return ui.period(p).slice(0, 3); },
+      series: [{ name: "Card charges", color: "var(--s1)", values: ps.map(function (p) { return by[p] || 0; }) }], prelimFrom: ps.length - 1,
+      yFormat: function (x) { return E.fmt(x, c, { compact: true }); }, tipFormat: function (x) { return E.fmt(x, c); }, tipTitle: function (p) { return ui.period(p, true); }, label: "Card charges by month" }));
+    body.appendChild(sec("Charges", cardTable(list, { dense: true })));
+    body.appendChild(h("p", { class: "note", style: { marginTop: "10px" } }, "Actual charges, from " + (list[0].source || "the billing history") + ". Card statements settle on the 20th of the following month, together with everything else on the card."));
+  }
+  /* The table of card charges, shared by the vendor page and Payables. */
+  function cardTable(list, o) {
+    o = o || {};
+    var E = En(), app = A();
+    return ui.table({ dense: o.dense, rows: list, sortKey: "date", sortDir: -1, limit: 300, onRow: function (x) { app.open({ kind: "card", id: x.id }); },
+      empty: ui.empty("No card charges", null, "card"), columns: [
+        { key: "date", label: "Date", cls: "nowrap", sort: function (x) { return x.date + x.id; }, render: function (x) { return ui.date(x.date, "year"); } },
+        o.vendor ? { key: "v", label: "Vendor", render: function (x) { return E.vendors[x.vendor].name; } } : null,
+        { key: "id", label: "Charge", render: function (x) { return h("span", { class: "mono", style: { fontSize: "12px" } }, x.id); } },
+        { key: "st", label: "Status", sort: function (x) { return x.status; }, render: function (x) {
+          return x.status === "refunded" ? ui.status("hold", "Refunded") : !x.amount ? ui.status("done", "Paid · no charge") : x.fy < +E.fy ? ui.status("done", "Paid · FY" + x.fy) : ui.status("paid"); } },
+        { key: "j", label: "Ledger", render: function (x) { return x.journal ? h("span", { class: "mono", style: { fontSize: "12px", color: "var(--ink-3)" } }, x.journal) : h("span", { class: "faint" }, "—"); } },
+        { key: "amount", label: "Total", num: true, sort: function (x) { return x.amount; }, render: function (x) { return E.fmt(x.amount, "USD"); } }
+      ].filter(Boolean) });
+  }
+  D._cardTable = cardTable;
+
+  /* A single charge on the company card. */
+  D.card = {
+    title: function (r) { return r.id; },
+    render: function (ref, body, foot) {
+      var E = En(), app = A(), x = E.cardCharges[ref.id];
+      if (!x) { body.appendChild(ui.empty("No such charge", ref.id, "alert")); return; }
+      var v = E.vendors[x.vendor], j = x.journal ? E.journals[x.journal] : null;
+      var stat = x.status === "refunded" ? ui.status("hold", "Refunded") : ui.status("paid");
+      body.appendChild(head("card", v.name, "Card charge " + x.id + " · " + ui.date(x.date, "long") + ", " + x.date.slice(0, 4), E.fmt(x.amount, "USD"), stat));
+      if (!j) body.appendChild(h("div", { class: "flag done" }, ui.icon("info"), h("div", null, h("div", { class: "t" }, !x.amount ? "Nothing to post" : "Before these books open"),
+        h("div", { class: "x" }, !x.amount ? "This invoice was for $0, so it made no accounting entry." : "This charge was paid in fiscal " + x.fy + ", before the books that OC EFM holds begin on " + ui.date(E.fy + "-01-01", "full") + ". It's on the record, not in the ledger."))));
+      body.appendChild(kv([
+        ["Vendor", openLink({ kind: "vendor", id: v.id }, v.name)], ["Paid with", "Company card, at purchase"], ["Total", E.fmt(x.amount, "USD") + " · includes sales tax"],
+        ["Account", v.account + " " + E.accounts[v.account].name], ["Department", E.dimName("dept", v.dept)],
+        j ? ["Period", periodChip("US", j.period)] : ["Period", "Fiscal " + x.fy],
+        j ? ["Journal", openLink({ kind: "journal", id: j.id }, j.id)] : null,
+        x.refundJournal ? ["Refund journal", openLink({ kind: "journal", id: x.refundJournal }, x.refundJournal)] : null,
+        x.due ? ["Due", ui.date(x.due, "year")] : null, ["Source", x.source]
+      ]));
+      if (x.status === "refunded") body.appendChild(h("div", { class: "flag done" }, ui.icon("undo"), h("div", null, h("div", { class: "t" }, "Refunded"),
+        h("div", { class: "x" }, "The charge was booked and then reversed, so the net cost is $0.00. The billing history doesn't show when the refund happened, so it's booked on the charge date."))));
+      if (j) {
+        body.appendChild(sec("Accounting", ui.jeTable(j.lines, "USD", { onAccount: function (a) { app.open({ kind: "account", id: a, q: { entity: "US" } }); } })));
+        if (x.refundJournal) body.appendChild(sec("Refund", ui.jeTable(E.journals[x.refundJournal].lines, "USD")));
+      }
+      var hist = [{ actor: "system", at: x.date + "T16:00:00Z", summary: "Charged " + E.fmt(x.amount, "USD") + " to the company card" + (j ? " · posted " + j.id : "") }];
+      if (x.refundJournal) hist.push({ actor: "system", at: x.date + "T16:00:00Z", summary: "Refunded · posted " + x.refundJournal });
+      body.appendChild(sec("History", history([x.id], hist)));
     }
   };
 

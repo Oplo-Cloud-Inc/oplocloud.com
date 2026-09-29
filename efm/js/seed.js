@@ -162,6 +162,8 @@
     ["dell",      "US", "Dell Technologies",   "1510", "ENG", 0, 0, 30, { category: "Equipment" }],
     ["apple",     "US", "Apple",               "1510", "PRD", 0, 0, 30, { category: "Equipment" }],
     ["crescent",  "US", "Crescent Advisory Group", "6400", "GA", 0, 0, 15, { category: "Consulting", created: "2026-08-10" }],
+    // Actual data (js/data/claude-code-invoices.js): paid on the company card, never through the payment run.
+    ["anthropic", "US", "Anthropic \u2014 Claude Code", "6100", "ENG", 0, 0, 0, { card: true, category: "Software", created: "2025-12-15" }],
     ["aws-uk",    "UK", "Amazon Web Services EMEA", "5000", "ENG", 0, 0, 30, { accrue: true, pctOf: 0.075, category: "Cloud" }],
     ["brightspace","UK","Brightspace Offices Ltd", "6300", "GA", 42000, 0, 0, { flat: true, rent: true, category: "Facilities" }],
     ["hartwell",  "UK", "Hartwell & Sons Solicitors", "6400", "GA", 9200, 0, 30, { vary: 0.3, category: "Legal" }],
@@ -398,6 +400,13 @@
         tin: e.id === "US" ? "••-•••" + (1000 + Math.floor(h01("tin:" + v[0]) * 8999)) : null,
         w9: e.id === "US"
       };
+    });
+    // A vendor paid by card has no bank details to keep, verify or change.
+    Object.values(E.vendors).forEach(function (v) {
+      if (!v.opts.card) return;
+      v.card = true;
+      v.bank = { mask: "", bank: "Company card", verified: true };
+      v.tin = null; v.w9 = false;
     });
     E.vendors.hudson.bankPending = { mask: "•••• 0417", bank: "Coastal Federal Credit Union", requestedAt: "2026-09-24T19:42:11Z",
       via: "email from billing@hudson-commons.co", note: "Sender's domain differs from the vendor's hudsoncommons.com on file." };
@@ -794,6 +803,36 @@
       E.post({ entity: "JP", date: "2026-02-27", memo: "Corporate tax FY2025 — National Tax Agency", source: { type: "tax-pay", id: "CT-JP-2025", label: "Tax payment" },
         lines: [{ account: "2600", dr: bal }, { account: "1010", cr: bal }], createdBy: "aiko", createdAt: stamp("2026-02-27", "ctjp") }, { system: true });
     }, "ct");
+
+    /* ---- Claude Code, on the company card. Each charge is an expense on its
+       date against the card payable, which the monthly card payment then
+       settles with everything else on the card. A refunded charge is booked
+       and reversed. A charge from before fiscal 2026, or for $0, is on the
+       record but has nothing to post. */
+    var CC = EFM.data.claudeCode;
+    CC.invoices.slice().reverse().forEach(function (row, k) {
+      var id = "CHG-" + String(k + 1).padStart(4, "0"), date = row[0], amount = row[2];
+      var rec = { id: id, vendor: CC.vendor.id, date: date, due: row[1], amount: amount, status: row[3], fy: +date.slice(0, 4), journal: null, refundJournal: null, source: CC.source };
+      E.cardCharges[id] = rec; E.cardOrder.push(id);
+      if (!amount || date < FY + "-01-01") return;
+      at(date, 4, function () {
+        var dims = { dept: "ENG", vendor: CC.vendor.id };
+        // Their own journal numbers (JE-US-C0034), so a fresh export of the
+        // billing history never renumbers the journals people have already
+        // referred to — a sandbox's saved actions name journals by number.
+        var jn = "JE-US-C" + id.slice(4);
+        rec.journal = E.post({ id: jn, entity: "US", date: date, memo: CC.vendor.name + " \u2014 charge " + id,
+          source: { type: "card", id: id, label: "Card charge" },
+          lines: [{ account: "6100", dr: amount, dims: dims }, { account: "2500", cr: amount, dims: { vendor: CC.vendor.id } }],
+          createdBy: "system", createdAt: date + "T16:00:00Z" }, { system: true }).id;
+        if (row[3] === "refunded") {
+          rec.refundJournal = E.post({ id: jn + "R", entity: "US", date: date, memo: CC.vendor.name + " \u2014 refund of " + id + " (the billing page shows no refund date, so it is booked on the charge date)",
+            source: { type: "card-refund", id: id, label: "Card refund" },
+            lines: [{ account: "2500", dr: amount, dims: { vendor: CC.vendor.id } }, { account: "6100", cr: amount, dims: dims }],
+            createdBy: "system", createdAt: date + "T16:00:00Z" }, { system: true }).id;
+        }
+      }, "cc" + id);
+    });
 
     /* ---- One-off purchases */
     // Insurance, paid for the year in January, amortized monthly.

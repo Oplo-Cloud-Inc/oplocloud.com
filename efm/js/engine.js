@@ -320,6 +320,8 @@
     this.bankAccounts = {}; this.bankLines = {}; this.recon = {};   // lineKey → bankLineId
     this.assets = {}; this.budgets = {}; this.contracts = {};
     this.cards = [];
+    this.cardCharges = {};    // id → a charge on the company card (see seed.js)
+    this.cardOrder = [];
     this.closeTasks = {}; this.closeHistory = [];
     this.anomalies = {};
     this.exceptions = {};     // budget exceptions etc.
@@ -1683,6 +1685,23 @@
   P.commands = COMMANDS;
 
   /* ------------------------------------------------ Command internals */
+
+  /* Card charges, oldest first. Each is {id, vendor, date, due, amount,
+     status: "paid" | "refunded", fy, journal, refundJournal}; one that
+     belongs to an earlier fiscal year, or is for nothing, has no journal. */
+  P.cardChargeList = function (o) {
+    o = o || {};
+    var self = this;
+    return this.cardOrder.map(function (id) { return self.cardCharges[id]; }).filter(function (c) {
+      return (!o.vendor || c.vendor === o.vendor) && (!o.from || c.date >= o.from) && (!o.to || c.date <= o.to);
+    });
+  };
+  /* What the card was really charged, net of refunds, from the ledger. */
+  P.cardSpend = function (vendor, from, to) {
+    return this.linesWhere({ entity: "US", accounts: ["6100"], vendor: vendor, from: from, to: to })
+      .filter(function (l) { return l.source && (l.source.type === "card" || l.source.type === "card-refund"); })
+      .reduce(function (sum, l) { return sum + l.amt; }, 0);
+  };
 
   P.lineByKey = function (key) {
     if (!this._lineIdx || this._lineIdxN !== this.lines.length) {

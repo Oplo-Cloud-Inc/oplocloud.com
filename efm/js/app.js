@@ -253,7 +253,7 @@
       railEl.appendChild(grp);
     });
     railEl.appendChild(h("div", { class: "rail-foot" },
-      h("div", null, "Sample books for OploCloud Group, FY2026, as of " + ui.date(E.asOf, "full") + ". Figures are illustrative."),
+      h("div", null, "Sample books for OploCloud Group, FY2026, as of " + ui.date(E.asOf, "full") + ". Figures are illustrative, except the Claude Code card charges, which are actual."),
       h("div", { style: { marginTop: "6px" } }, E.log.length ? E.log.length + " change" + (E.log.length === 1 ? "" : "s") + " in this sandbox · " : "",
         h("a", { href: "#", on: { click: function (ev) { ev.preventDefault(); app.reset(); } } }, "Reset"))));
   }
@@ -373,6 +373,7 @@
       Object.values(E.apInvoices).forEach(function (i) { if (hit(i.number) || hit(i.id)) out.push({ g: "Vendor invoices", label: i.number + " · " + E.vendors[i.vendor].name, sub: E.fmt(i.amount, i.currency), icon: "doc", fn: function () { app.open({ kind: "ap", id: i.id }); } }); });
       Object.values(E.arInvoices).forEach(function (i) { if (hit(i.number)) out.push({ g: "Customer invoices", label: i.number + " · " + E.customers[i.customer].name, sub: E.fmt(i.amount, E.entity[i.entity].currency), icon: "doc", fn: function () { app.open({ kind: "ar", id: i.id }); } }); });
       if (/^je/i.test(q) || /\d{3,}/.test(q)) E.journalOrder.forEach(function (id) { if (hit(id)) out.push({ g: "Journals", label: id + " · " + E.journals[id].memo, sub: E.journals[id].status, icon: "journal", fn: function () { app.open({ kind: "journal", id: id }); } }); });
+      if (/^chg/i.test(q)) E.cardChargeList().forEach(function (x) { if (hit(x.id)) out.push({ g: "Card charges", label: x.id + " · " + E.vendors[x.vendor].name, sub: ui.date(x.date, "year") + " · " + E.fmt(x.amount, "USD"), icon: "card", fn: function () { app.open({ kind: "card", id: x.id }); } }); });
       Object.values(E.assets).forEach(function (a) { if (hit(a.name) || hit(a.id)) out.push({ g: "Assets", label: a.id + " · " + a.name, icon: "box", fn: function () { app.open({ kind: "asset", id: a.id }); } }); });
       return out.slice(0, 40);
     }
@@ -523,7 +524,7 @@
         h("p", { class: "lede" }, "One double-entry ledger under everything. Payables, receivables, cash, assets, budgets, the close and consolidation on top of it — and every figure traceable to the transaction that made it."),
         h("div", { class: "go" }, go, h("span", { class: "muted", style: { fontSize: "13px" } }, "Opens auth.oplocloud.com in a new tab.")),
         errEl,
-        h("p", { class: "fine" }, "After you sign in you'll be working in a sandbox: nine months of sample books for OploCloud Group — three entities, three currencies — with a September close waiting. Figures are illustrative, and what you do stays in this browser.")),
+        h("p", { class: "fine" }, "After you sign in you'll be working in a sandbox: nine months of sample books for OploCloud Group — three entities, three currencies — with a September close waiting. Figures are illustrative — apart from OploCloud's actual Claude Code card charges — and what you do stays in this browser.")),
       h("aside", { class: "gate-r", "aria-label": "How OC EFM is built" },
         layers.map(function (l, i) { return h("div", { class: "layer" }, h("span", { class: "n" }, String(i + 1)), h("div", null, h("b", null, l[0]), h("p", null, l[1]))); }),
         h("div", { class: "flow" }, h("b", null, "transaction"), " → approval → ", h("b", null, "journal"), " → ledger → reconciliation → ", h("b", null, "statement"), " → audit trail"))));
@@ -538,12 +539,13 @@
     app.me = { id: "me", name: name, firstName: account.firstName || name.split(" ")[0], email: account.email, initials: account.initials || name.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(),
       color: "hsl(" + hue + " 55% 45%)" };
     var E = app.E = EFM.create();
+    var skipped = 0;
     var saved = load();
     if (saved) {
       if (saved.scope && (saved.scope === "GROUP" || E.entity[saved.scope])) app.scope = saved.scope;
       if (saved.log && saved.log.length) {
         var r = E.replay(saved.log);
-        if (r.failed.length) console.warn("Sandbox replay skipped", r.failed.length, "commands", r.failed);
+        if (r.failed.length) { skipped = r.failed.length; console.warn("Sandbox replay skipped", r.failed.length, "commands", r.failed); }
       }
     }
     E.me = app.actor();
@@ -552,6 +554,8 @@
     if (location.pathname === "/" || location.pathname === "") history.replaceState({}, "", "/home" + location.search + location.hash);
     render(true);
     if (location.hash) drawer.fromHash();
+    // The books can be updated under a saved sandbox; say so if that cost it anything.
+    if (skipped) ui.toast(skipped + " of your earlier changes no longer apply", { sub: "The sample books were updated since you made them. Reset the sandbox from the account menu to start clean.", err: true });
     if (window.OploSignIn) window.OploSignIn.done();
     var boot = document.getElementById("boot");
     if (boot) { boot.style.opacity = "0"; setTimeout(function () { boot.remove(); }, 320); }

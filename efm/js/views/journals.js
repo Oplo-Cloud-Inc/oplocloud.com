@@ -16,7 +16,7 @@
     ap: "Vendor invoice", "ap-pay": "Vendor payment", ar: "Customer invoice", "ar-pay": "Customer payment", payroll: "Payroll",
     settlement: "Card settlement", ic: "Intercompany", "ic-settle": "Intercompany settlement", fx: "FX revaluation", tax: "Tax provision",
     "tax-pay": "Tax payment", treasury: "Treasury", transfer: "Transfer", cards: "Card statement", "cards-pay": "Card payment",
-    amort: "Prepaid amortization", bank: "Bank entry", open: "Opening balances"
+    amort: "Prepaid amortization", bank: "Bank entry", open: "Opening balances", card: "Card charge", "card-refund": "Card refund"
   };
   var STATUS = [
     { id: "", label: "All" }, { id: "pending", label: "Waiting for approval" }, { id: "draft", label: "Drafts" },
