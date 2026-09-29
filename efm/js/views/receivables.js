@@ -54,7 +54,8 @@
 
       var page = h("div");
       page.appendChild(ui.pageHead("Receivables",
-        Object.keys(custs).length + " customers owe " + E.fmt(total, cur, { compact: true }) + (pastT ? " · " + E.fmt(pastT, cur, { compact: true }) + " of it past due" : ""), []));
+        Object.keys(custs).length + " customers owe " + E.fmt(total, cur, { compact: true }) + (pastT ? " · " + E.fmt(pastT, cur, { compact: true }) + " of it past due" : ""),
+        [ui.btn("Record a payment", { icon: "bank", onClick: function () { EFM.entry.open("payment-in"); } }), ui.gated("ar.issue", {}, "New invoice", function () { EFM.entry.open("invoice"); }, { kind: "primary", icon: "plus" })]));
       page.appendChild(ui.kpis([
         { label: "Receivables", icon: "receivables", value: E.fmt(total, cur, { compact: true }), sub: open.length + " open invoices" },
         { label: "Past due", icon: "calendar", value: E.fmt(pastT, cur, { compact: true }), sub: past.length + " invoices · " + ui.pct(total ? pastT / total : 0) + " of the book", onClick: function () { app.setQuery({ tab: "collections" }); } },
@@ -113,7 +114,7 @@
         empty: ui.empty("Nothing here", bucket ? "No open invoices are " + bucket.label.toLowerCase() + " late." : "Every invoice is paid.", "check"),
         columns: [
           { key: "c", label: "Customer", cls: "two", sort: function (i) { return E.customers[i.customer].name; }, render: function (i) {
-            return h("span", null, E.customers[i.customer].name, h("span", { class: "sub" }, i.number + " · " + { annual: "annual", monthly: "monthly", usage: "usage" }[i.kind])); } },
+            return h("span", null, E.customers[i.customer].name, h("span", { class: "sub" }, i.number + " · " + ({ annual: "annual", monthly: "monthly", usage: "usage" }[i.kind] || "invoice"))); } },
           app.scope === "GROUP" ? { key: "e", label: "Entity", sort: function (i) { return i.entity; }, render: function (i) { return E.entity[i.entity].short; } } : null,
           { key: "date", label: "Issued", sort: function (i) { return i.date; }, render: function (i) { return ui.date(i.date); } },
           { key: "late", label: "Status", sort: function (i) { return i.balance ? late(E, i) : -9999; }, render: function (i) { return statusOf(E, i); } },

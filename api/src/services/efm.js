@@ -27,15 +27,19 @@ import { ApiError } from "../lib/http.js";
 const EFM = globalThis.EFM;
 export const ENGINE_VERSION = EFM.ENGINE_VERSION;
 
-/* What a browser may ask for. Importing charges and adding vendors are
-   administrators' acts done out of band (scripts/efm-import-card-charges.mjs),
-   so they are not on this list. */
+/* What a browser may ask for. The actor is always the signed-in account and
+   the engine re-checks every command, so a command being on this list means
+   only that a person can make it, never that it will be accepted. Bulk loads
+   of actual data are still an administrator's act done out of band
+   (scripts/efm-import-card-charges.mjs), under the "system" actor. */
 export const CLIENT_COMMANDS = [
   "journal.create", "journal.submit", "journal.discard", "journal.approve", "journal.reject", "journal.reverse",
   "ap.approve", "ap.hold", "ap.release", "ap.reject", "ap.clearFlag", "ap.schedule", "ap.payRun", "vendor.verifyBank",
   "ar.apply", "ar.remind",
   "bank.match", "bank.autoMatch", "bank.create", "bank.unmatch",
-  "asset.depreciate", "close.run", "close.reopen", "period.set", "budget.decide", "anomaly.resolve", "ic.book"
+  "asset.depreciate", "close.run", "close.reopen", "period.set", "budget.decide", "anomaly.resolve", "ic.book",
+  // Recording what the business does: the engine holds each of these to a fixed shape.
+  "txn.post", "vendor.create", "customer.create", "card.record", "ap.capture", "ar.issue", "asset.acquire"
 ];
 
 const CLOCK_TOLERANCE_MS = 10 * 60 * 1000;

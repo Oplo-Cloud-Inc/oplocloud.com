@@ -350,7 +350,11 @@
       });
     }
     function actions() {
-      var out = [{ g: "Do", label: "New journal", icon: "plus", fn: function () { app.navigate("/journals?new=1"); } }];
+      var out = [{ g: "Do", label: "Record a transaction", icon: "plus", fn: function () { app.navigate("/journals?new=1"); } }];
+      [["expense", "Record an expense", "card"], ["bill", "Enter a vendor bill", "payables"], ["invoice", "Send a customer invoice", "receivables"], ["payroll", "Record payroll", "users"],
+       ["transfer", "Move money between accounts", "swap"], ["general", "New general journal", "journal"]].forEach(function (a) {
+        out.push({ g: "Do", label: a[1], icon: a[2], fn: function () { app.navigate("/journals?new=" + a[0]); } });
+      });
       Object.values(E.bankAccounts).forEach(function (b) { out.push({ g: "Do", label: "Reconcile " + b.bankName + " " + b.name, icon: "bank", fn: function () { app.navigate("/cash/" + b.id); } }); });
       if (Object.values(E.apInvoices).some(function (i) { return i.status === "review"; })) out.push({ g: "Do", label: "Review invoices awaiting approval", icon: "payables", fn: function () { app.navigate("/payables?status=review"); } });
       out.push({ g: "Do", label: "Income statement", icon: "report", fn: function () { app.navigate("/reports?r=is"); } });

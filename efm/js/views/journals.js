@@ -16,7 +16,10 @@
     ap: "Vendor invoice", "ap-pay": "Vendor payment", ar: "Customer invoice", "ar-pay": "Customer payment", payroll: "Payroll",
     settlement: "Card settlement", ic: "Intercompany", "ic-settle": "Intercompany settlement", fx: "FX revaluation", tax: "Tax provision",
     "tax-pay": "Tax payment", treasury: "Treasury", transfer: "Transfer", cards: "Card statement", "cards-pay": "Card payment",
-    amort: "Prepaid amortization", bank: "Bank entry", open: "Opening balances", card: "Card charge", "card-refund": "Card refund"
+    amort: "Prepaid amortization", bank: "Bank entry", open: "Opening balances", card: "Card charge", "card-refund": "Card refund",
+    expense: "Expense", "loan-pay": "Loan payment", distribution: "Owner distribution", prepaid: "Prepaid expense", "refund-in": "Refund received",
+    sale: "Cash sale", deferred: "Advance payment", recognize: "Deferred revenue earned", investment: "Owner investment", "loan-in": "Loan received",
+    interest: "Interest received", "refund-out": "Refund given", asset: "Asset purchase"
   };
   var STATUS = [
     { id: "", label: "All" }, { id: "pending", label: "Waiting for approval" }, { id: "draft", label: "Drafts" },
@@ -33,14 +36,14 @@
     openId: function (id) { EFM.app.open({ kind: "journal", id: id }); },
     render: function (ctx) {
       var E = ctx.E, app = ctx.app, q = ctx.query;
-      if (q.get("new")) setTimeout(function () { app.setQuery({ new: null }); composer(ctx); }, 0);
+      if (q.get("new")) { var want = q.get("new"); setTimeout(function () { app.setQuery({ new: null }); EFM.entry.open(want === "1" ? null : want); }, 0); }
       var st = q.get("status") || "";
       if (q.get("source") && !local.sourceFromUrl) { local.source = q.get("source"); local.sourceFromUrl = true; }
       var js = E.journalOrder.map(function (id) { return E.journals[id]; }).filter(function (j) { return app.inScope(j.entity); });
 
       var page = h("div");
-      page.appendChild(ui.pageHead("Journals", "Every entry in the ledger. Posted journals are permanent — a correction is a reversal that points back to what it corrects.",
-        [ui.gated("journal.create", {}, "New journal", function () { composer(ctx); }, { kind: "primary", icon: "plus" })]));
+      page.appendChild(ui.pageHead("Journals", "Everything that has happened, in the ledger. Record a transaction and it's booked for you; posted entries are permanent — a correction is a reversal that points back to what it corrects.",
+        [ui.gated("txn.post", {}, "New entry", function () { EFM.entry.open(); }, { kind: "primary", icon: "plus" })]));
 
       var pending = js.filter(function (j) { return j.status === "pending"; });
       if (pending.length) page.appendChild(h("div", { style: { marginBottom: "16px" } }, pendingCard(ctx, pending)));
@@ -77,7 +80,9 @@
           h("span", { class: "sp" }),
           h("span", { class: "muted", style: { fontSize: "12.5px" } }, rows.length.toLocaleString() + " journal" + (rows.length === 1 ? "" : "s"))));
         body.appendChild(ui.table({ rows: rows, sortKey: "id", sortDir: -1, limit: 200, onRow: function (j) { app.open({ kind: "journal", id: j.id }); },
-          empty: ui.empty("No journals match", "Clear a filter to see more.", "journal"),
+          empty: js.length ? ui.empty("No journals match", "Clear a filter to see more.", "journal")
+            : h("div", { class: "empty" }, ui.icon("journal"), h("b", null, "Nothing has been recorded yet"), h("div", null, "Record an expense, an invoice, payroll — whatever happened — and the ledger builds itself."),
+                h("div", { style: { marginTop: "12px" } }, ui.btn("New entry", { kind: "primary", icon: "plus", onClick: function () { EFM.entry.open(); } }))),
           columns: [
             { key: "id", label: "Journal", cls: "nowrap", sort: function (j) { return j.date + j.id; }, render: function (j) { return h("span", { class: "mono" }, j.id); } },
             { key: "date", label: "Date", cls: "nowrap", sort: function (j) { return j.date; }, render: function (j) { return ui.date(j.date); } },
@@ -85,7 +90,7 @@
             { key: "memo", label: "Memo", cls: "two jn-memo", render: function (j) { return h("span", null, h("span", { class: "jn-m" }, j.memo), h("span", { class: "sub" }, SOURCES[j.source.type] || j.source.label)); } },
             { key: "st", label: "Status", sort: function (j) { return j.status; }, render: function (j) {
               if (j.reversedBy) return ui.status("posted", "Reversed");
-              return ui.status(j.status, j.status === "pending" ? "Waiting · " + (j.needs === "cfo" ? "CFO" : "Controller") : null); } },
+              return ui.status(j.status, j.status === "pending" ? (app.live ? "Waiting for a second person" : "Waiting · " + (j.needs === "cfo" ? "CFO" : "Controller")) : null); } },
             { key: "by", label: "Prepared by", render: function (j) { return j.createdBy ? ui.who(j.createdBy) : h("span", { class: "faint" }, "—"); } },
             { key: "t", label: "Amount", num: true, sort: function (j) { return E.usdOf(j.entity, j.total, j.period); }, render: function (j) { return E.fmt(j.total, E.entity[j.entity].currency); } }
           ].filter(Boolean) }));
@@ -116,10 +121,11 @@
   }
 
   /* ============================================================ Composer */
-  function composer(ctx) {
+  function composer(ctx, preset) {
     var E = ctx.E, app = ctx.app;
+    preset = preset || {};
     var st = {
-      entity: ctx.scope === "GROUP" ? "US" : ctx.scope, date: E.asOf, memo: "", reverseOn: "", files: [],
+      entity: ctx.scope === "GROUP" ? E.entities[0].id : ctx.scope, date: preset.date || E.asOf, memo: preset.memo || "", reverseOn: "", files: [],
       lines: [blank(), blank()]
     };
     function blank() { return { account: "", dept: "", product: "", project: "", memo: "", dr: "", cr: "" }; }
@@ -128,7 +134,7 @@
 
     var box = h("div", { class: "jc" });
     var footEl = h("div", { class: "jc-foot" });
-    var m = ui.modal({ title: "New journal", text: "A manual journal posts once somebody other than you approves it. Control accounts — receivables, payables, fixed assets — take postings only from their own ledgers.",
+    var m = ui.modal({ title: preset.memo ? preset.memo : "General journal", text: "For anything the guided entries don't cover. It posts once somebody other than you approves it. Control accounts — receivables, payables, fixed assets — take postings only from their own ledgers.",
       body: box, cls: "xl", actions: [
         { label: "Cancel" },
         { label: "Save draft", fn: function () { return save(false); } },
@@ -273,5 +279,5 @@
     draw();
     setTimeout(function () { var f = box.querySelector("input:not([type=date]):not([type=file])"); if (f) f.focus(); }, 60);
   }
-  EFM.composeJournal = function () { composer({ E: EFM.app.E, app: EFM.app, scope: EFM.app.scope }); };
+  EFM.composeJournal = function (preset) { composer({ E: EFM.app.E, app: EFM.app, scope: EFM.app.scope }, preset); };
 })(window);

@@ -19,7 +19,7 @@
       var page = h("div");
       page.appendChild(ui.pageHead("General ledger",
         "One chart of accounts for every entity · " + E.accountList.length + " accounts · " + E.lines.length.toLocaleString() + " lines posted in fiscal " + E.fy,
-        [ui.gated("journal.create", {}, "New journal", function () { EFM.composeJournal(); }, { icon: "plus" })]));
+        [ui.gated("txn.post", {}, "New entry", function () { EFM.entry.open(); }, { icon: "plus" })]));
       page.appendChild(h("div", { class: "row", style: { marginBottom: "14px" } },
         ui.seg([{ id: "coa", label: "Chart of accounts" }, { id: "tb", label: "Trial balance" }, { id: "lines", label: "Ledger lines" }], tab,
           function (t) { app.setQuery({ tab: t === "coa" ? null : t }); }, { label: "Ledger views" })));

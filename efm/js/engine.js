@@ -161,6 +161,11 @@
     "budget.approve":   { roles: ["cfo"], rule: "Spending over budget is approved by the CFO." },
     "anomaly.resolve":  { roles: ["controller", "cfo", "auditor"], rule: "Flags are resolved by a controller, the CFO or Internal Audit." },
     "vendor.create":    { roles: ["ap", "controller", "cfo"], rule: "Vendors are added by Accounts Payable or a controller." },
+    "customer.create":  { roles: ["controller", "treasury", "cfo"], rule: "Customers are added by finance." },
+    "txn.post":         { roles: ["ap", "controller", "treasury", "cfo"], rule: "Transactions are recorded by finance." },
+    "ap.capture":       { roles: ["ap", "controller"], rule: "Vendor bills are captured by Accounts Payable." },
+    "ar.issue":         { roles: ["controller", "treasury", "cfo"], rule: "Customer invoices are issued by finance." },
+    "asset.acquire":    { roles: ["controller", "cfo"], rule: "Fixed assets are added by a controller." },
     "card.record":      { roles: ["ap", "controller", "cfo"], rule: "Card charges are recorded by Accounts Payable or a controller." },
     "audit.verify":     { roles: ["cfo", "controller", "treasury", "ap", "auditor"], rule: "" }
   };
@@ -214,7 +219,7 @@
   /* Bumped whenever a change alters what a command does to the books, so a
      browser running older code than the server can be told to reload rather
      than quietly compute something different. */
-  var ENGINE_VERSION = "1";
+  var ENGINE_VERSION = "2";
   function shortDate(d) { return MONTHS[+d.slice(5, 7) - 1] + " " + (+d.slice(8, 10)); }
 
   /* SHA-256, synchronous, for the audit chain. Small and dependency-free so
@@ -429,13 +434,14 @@
   P.validateJournal = function (j, opts) {
     opts = opts || {};
     if (!this.entity[j.entity]) return new Refusal("entity", "Choose a legal entity.");
-    if (!j.date || !/^\d{4}-\d{2}-\d{2}$/.test(j.date)) return new Refusal("date", "Give the journal a date.");
+    if (!isDate(j.date)) return new Refusal("date", "Give the journal a date.");
     if (!j.lines || j.lines.length < 2) return new Refusal("lines", "A journal needs at least two lines.");
     var dr = 0, cr = 0;
     for (var i = 0; i < j.lines.length; i++) {
       var l = j.lines[i];
       var a = this.accounts[l.account];
       if (!a) return new Refusal("account", "Line " + (i + 1) + ": account " + (l.account || "(none)") + " does not exist.");
+      if ((l.dr != null && !Number.isSafeInteger(l.dr)) || (l.cr != null && !Number.isSafeInteger(l.cr))) return new Refusal("amount", "Line " + (i + 1) + ": amounts must be whole numbers of the smallest unit.");
       if ((l.dr || 0) < 0 || (l.cr || 0) < 0) return new Refusal("amount", "Line " + (i + 1) + ": amounts are never negative — use the other column.");
       if ((l.dr || 0) && (l.cr || 0)) return new Refusal("amount", "Line " + (i + 1) + " has both a debit and a credit.");
       if (!(l.dr || 0) && !(l.cr || 0)) return new Refusal("amount", "Line " + (i + 1) + " has no amount.");
@@ -1363,6 +1369,89 @@
     return engine.usdOf(j.entity, tot, periodOf(j.date), "avg");
   }
 
+  /* ---------------------------------------- Recorded transactions
+
+     Most of what a business does is not a journal somebody argues for but an
+     ordinary event: an expense, a payroll, a loan payment, money moved between
+     accounts. Each kind is a shape the double entry can take — which accounts
+     may be debited, which credited, how many lines — and nothing else. The
+     screen builds the lines from plain questions; the engine, in the browser
+     and again on the server, refuses any entry that isn't its kind's shape.
+     That is what lets these post at once, where a free-form manual journal
+     waits for a second person (SOD-04). */
+  var CASH = ["1010", "1020", "1030"];
+  var REVENUE = ["4000", "4100", "4200"];
+  var TXN = {
+    expense:       { group: "out", title: "Expense",                  dr: { expense: true }, cr: { ids: CASH.concat(["2500", "2100"]) }, cr1: true },
+    payroll:       { group: "out", title: "Payroll",                  dr: { ids: ["6000", "6050", "6800"] }, cr: { ids: CASH.concat(["2400", "2100"]) } },
+    "tax-pay":     { group: "out", title: "Tax payment",              dr: { ids: ["2300", "2400", "2600"] }, cr: { ids: CASH }, cr1: true },
+    "loan-pay":    { group: "out", title: "Loan payment",             dr: { ids: ["2700", "7100"] }, cr: { ids: CASH }, cr1: true },
+    distribution:  { group: "out", title: "Owner distribution",       dr: { ids: ["3100"] }, cr: { ids: CASH }, dr1: true, cr1: true },
+    prepaid:       { group: "out", title: "Prepaid expense",          dr: { ids: ["1200"] }, cr: { ids: CASH.concat(["2500"]) }, dr1: true, cr1: true },
+    "refund-in":   { group: "out", title: "Refund received",          dr: { ids: CASH }, cr: { expense: true }, dr1: true },
+    sale:          { group: "in",  title: "Cash sale",                dr: { ids: CASH }, cr: { ids: REVENUE.concat(["2300"]) }, dr1: true },
+    deferred:      { group: "in",  title: "Advance payment",          dr: { ids: CASH }, cr: { ids: ["2200"] }, dr1: true, cr1: true },
+    investment:    { group: "in",  title: "Owner investment",         dr: { ids: CASH }, cr: { ids: ["3000"] }, dr1: true, cr1: true },
+    "loan-in":     { group: "in",  title: "Loan received",            dr: { ids: CASH }, cr: { ids: ["2700"] }, dr1: true, cr1: true },
+    interest:      { group: "in",  title: "Interest received",        dr: { ids: CASH }, cr: { ids: ["7000"] }, dr1: true, cr1: true },
+    "refund-out":  { group: "in",  title: "Refund given",             dr: { ids: REVENUE }, cr: { ids: CASH }, cr1: true },
+    accrual:       { group: "adj", title: "Accrual",                  dr: { expense: true }, cr: { ids: ["2100"] }, cr1: true, canReverse: true },
+    amort:         { group: "adj", title: "Prepaid amortization",     dr: { expense: true }, cr: { ids: ["1200"] }, cr1: true },
+    recognize:     { group: "adj", title: "Deferred revenue earned",  dr: { ids: ["2200"] }, cr: { ids: REVENUE }, dr1: true },
+    transfer:      { group: "adj", title: "Transfer",                 dr: { ids: CASH }, cr: { ids: CASH }, dr1: true, cr1: true, differ: true }
+  };
+  function sideOk(engine, spec, id) {
+    var a = engine.accounts[id];
+    if (!a) return false;
+    if (spec.ids) return spec.ids.indexOf(id) >= 0;
+    if (spec.expense) return a.type === "expense" && !a.ic && a.group !== "tax";
+    return false;
+  }
+  /* Does this journal have the shape its kind allows? Null if so. */
+  function checkKind(engine, k, j) {
+    var drs = [], crs = [];
+    for (var i = 0; i < j.lines.length; i++) {
+      var l = j.lines[i];
+      if (l.dr) {
+        if (!sideOk(engine, k.dr, l.account)) return new Refusal("shape", "Line " + (i + 1) + ": " + (engine.accounts[l.account] ? engine.accounts[l.account].name : l.account) + " can't be debited in a " + k.title.toLowerCase() + ".", "A " + k.title.toLowerCase() + " has a fixed shape; anything else is a manual journal, which a second person approves.");
+        drs.push(l);
+      } else {
+        if (!sideOk(engine, k.cr, l.account)) return new Refusal("shape", "Line " + (i + 1) + ": " + (engine.accounts[l.account] ? engine.accounts[l.account].name : l.account) + " can't be credited in a " + k.title.toLowerCase() + ".", "A " + k.title.toLowerCase() + " has a fixed shape; anything else is a manual journal, which a second person approves.");
+        crs.push(l);
+      }
+    }
+    if (!drs.length || !crs.length) return new Refusal("shape", "A " + k.title.toLowerCase() + " needs a debit and a credit.");
+    if ((k.dr1 && drs.length !== 1) || (k.cr1 && crs.length !== 1)) return new Refusal("shape", "A " + k.title.toLowerCase() + " has one line on each side that is fixed.");
+    if (k.differ && drs[0].account === crs[0].account) return new Refusal("shape", "Choose two different accounts.");
+    return null;
+  }
+  function cleanDims(d) {
+    var out = {};
+    ["dept", "product", "project", "vendor", "customer"].forEach(function (k) { if (d && typeof d[k] === "string" && d[k]) out[k] = d[k]; });
+    return out;
+  }
+  function cleanLines(lines) {
+    if (!Array.isArray(lines) || lines.length > 40) throw new Refusal("lines", "An entry has between two and forty lines.");
+    return lines.map(function (l) {
+      return { account: String(l.account || ""), dr: l.dr || 0, cr: l.cr || 0, dims: cleanDims(l.dims), memo: l.memo ? String(l.memo).slice(0, 120) : undefined };
+    });
+  }
+  /* The mirror image of an entry, dated `date`, must itself be postable. */
+  function reversalCheck(engine, j, date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "") || date <= j.date) return new Refusal("date", "The reversal has to be dated after the entry.");
+    var st = engine.periodStatus(j.entity, periodOf(date));
+    if (st === "none") return new Refusal("date", "The reversal has to fall in fiscal " + engine.fy + ".");
+    var d = (st === "open" || st === "soft") ? date : engine.firstOpenDate(j.entity);
+    return engine.validateJournal({ entity: j.entity, date: d, lines: j.lines.map(function (l) { return { account: l.account, dr: l.cr || 0, cr: l.dr || 0, dims: l.dims }; }) });
+  }
+  function isDate(x) {
+    if (typeof x !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(x)) return false;
+    var t = new Date(x + "T00:00:00Z");
+    return !isNaN(t) && t.toISOString().slice(0, 10) === x;       // 2026-02-30 is not a day
+  }
+  function isMoney(x) { return typeof x === "number" && x > 0 && x % 1 === 0 && x <= 1e13; }
+  function trimmed(x, max) { return typeof x === "string" ? x.trim().slice(0, max) : ""; }
+
   var COMMANDS = {
     /* ---- Journals */
     "journal.create": function (p, actor, at) {
@@ -1372,7 +1461,7 @@
         source: { type: "manual", label: "Manual journal" }, status: "draft",
         createdBy: actor.id, createdAt: at, reverseOn: p.reverseOn || null, attachments: p.attachments || []
       };
-      var bad = this.validateJournal(j) || controlCheck(this, j);
+      var bad = this.validateJournal(j) || controlCheck(this, j) || (j.reverseOn ? reversalCheck(this, j, j.reverseOn) : null);
       if (bad) throw bad;
       this.stage(j);
       // A manual journal never posts on its preparer's say-so: it waits for
@@ -1722,6 +1811,11 @@
       need(this, "card.record", actor);
       var v = this.vendors[p.vendor];
       if (!v || !v.card) throw new Refusal("state", "That vendor isn't paid by company card.");
+      if (!p.id) {
+        var top = 0;
+        this.cardOrder.forEach(function (x) { top = Math.max(top, +x.slice(4)); });
+        p = Object.assign({}, p, { id: "CHG-" + pad(top + 1, 4) });
+      }
       if (!/^CHG-\d{4,}$/.test(p.id || "")) throw new Refusal("state", "Card charges are referred to as CHG-0001.");
       if (this.cardCharges[p.id]) throw new Refusal("state", p.id + " is already recorded.");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date || "") || !(p.amount >= 0) || p.amount % 1) throw new Refusal("amount", "A card charge needs a date and a whole number of cents.");
@@ -1741,6 +1835,127 @@
       if (made[1]) rec.refundJournal = this.post(made[1], { system: sys }).id;
       this.record("card.record", p.id, "Recorded card charge " + p.id + " from " + v.name + " \u00b7 " + this.fmt(p.amount, "USD") + (status === "refunded" ? " \u00b7 refunded" : "") + (rec.journal ? " \u00b7 posted " + rec.journal : ""), {}, actor, at);
       return rec;
+    },
+    /* ---- Recorded transactions, customers, bills, invoices, assets */
+    "txn.post": function (p, actor, at) {
+      need(this, "txn.post", actor);
+      var k = TXN[p.kind];
+      if (!k) throw new Refusal("kind", "That isn't a kind of entry the books know.");
+      var memo = trimmed(p.memo, 200);
+      if (!memo) throw new Refusal("memo", "Say what this was — the memo is what anyone reading the books sees first.");
+      var j = { entity: p.entity, date: p.date, memo: memo, lines: cleanLines(p.lines), source: { type: p.kind, label: k.title },
+                status: "draft", createdBy: actor.id, createdAt: at, approvedBy: actor.id, approvedAt: at, attachments: Array.isArray(p.attachments) ? p.attachments.slice(0, 10) : [] };
+      var bad = this.validateJournal(j) || checkKind(this, k, j);
+      if (!bad && p.reverseOn) bad = !k.canReverse ? new Refusal("date", "Only an accrual reverses itself.") : reversalCheck(this, j, p.reverseOn);
+      if (bad) throw bad;
+      this.post(j);
+      this.record("txn.post", j.id, "Recorded " + k.title.toLowerCase() + " \u00b7 " + memo + " \u00b7 " + this.fmt(j.total, this.entity[j.entity].currency) + " \u00b7 posted " + j.id,
+        { after: { status: "posted", total: j.total } }, actor, at);
+      if (p.reverseOn) { var r = this.reverseJournal(j, p.reverseOn, "Auto-reversal of " + j.id, actor, at); r.autoReversal = true; }
+      return j;
+    },
+    "customer.create": function (p, actor, at) {
+      need(this, "customer.create", actor);
+      if (!/^[a-z][a-z0-9-]{1,30}$/.test(p.id || "")) throw new Refusal("customer", "A customer's reference is lower-case letters, digits and hyphens.");
+      if (this.customers[p.id]) throw new Refusal("state", p.id + " already exists.");
+      var name = trimmed(p.name, 80);
+      if (!name || !this.entity[p.entity]) throw new Refusal("customer", "A customer needs a name and an entity.");
+      var terms = p.terms == null ? 30 : p.terms;
+      if (!(terms >= 0 && terms <= 180) || terms % 1) throw new Refusal("customer", "Payment terms are a whole number of days, up to 180.");
+      this.customers[p.id] = { id: p.id, entity: p.entity, name: name, product: "", mrr: 0, billing: "invoice", anniversary: null, lateness: 0, usage: null,
+        creditLimit: 0, terms: terms, segment: "Customer", since: +at.slice(0, 4), contact: trimmed(p.contact, 80), email: trimmed(p.email, 120) || null };
+      this.record("customer.create", p.id, "Added customer " + name, {}, actor, at);
+      return this.customers[p.id];
+    },
+    "ar.issue": function (p, actor, at) {
+      need(this, "ar.issue", actor);
+      var c = this.customers[p.customer];
+      if (!c) throw new Refusal("customer", "Choose a customer.");
+      if (!isDate(p.date)) throw new Refusal("date", "Give the invoice a date.");
+      if (!Array.isArray(p.lines) || !p.lines.length || p.lines.length > 30) throw new Refusal("lines", "An invoice has between one and thirty lines.");
+      var sub = 0, items = p.lines.map(function (l, i) {
+        if (REVENUE.indexOf(l.account) < 0) throw new Refusal("account", "Line " + (i + 1) + ": choose a revenue account.");
+        if (!isMoney(l.amt)) throw new Refusal("amount", "Line " + (i + 1) + ": give the line an amount.");
+        sub += l.amt;
+        return { account: l.account, amt: l.amt, desc: trimmed(l.desc, 120), product: typeof l.product === "string" && l.product ? l.product : null };
+      });
+      var tax = p.tax == null ? 0 : p.tax;
+      if (!(tax >= 0) || tax % 1) throw new Refusal("amount", "Tax is a whole number of the smallest unit.");
+      var terms = p.terms == null ? c.terms : p.terms;
+      if (!(terms >= 0 && terms <= 180) || terms % 1) throw new Refusal("date", "Payment terms are a whole number of days, up to 180.");
+      var total = sub + tax, key = "INV-" + c.entity, n = (this.seq[key] || 0) + 1, id = "INV-" + c.entity + "-" + (10000 + n);
+      var jl = [{ account: "1100", dr: total, dims: { customer: c.id } }];
+      items.forEach(function (l) { jl.push({ account: l.account, cr: l.amt, dims: l.product ? { customer: c.id, product: l.product } : { customer: c.id }, memo: l.desc || undefined }); });
+      if (tax) jl.push({ account: "2300", cr: tax, memo: "Sales tax" });
+      var j = { entity: c.entity, date: p.date, memo: "Invoice " + id + " \u2014 " + c.name, source: { type: "ar", id: id, label: "Customer invoice" }, lines: jl,
+                createdBy: actor.id, createdAt: at, approvedBy: actor.id, approvedAt: at };
+      var bad = this.validateJournal(j);
+      if (bad) throw bad;
+      this.seq[key] = n;
+      this.post(j);
+      var inv = { id: id, number: id, entity: c.entity, customer: c.id, date: p.date, due: addDays(p.date, terms), subtotal: sub, tax: tax, amount: total, balance: total,
+                  status: "open", lines: items, payments: [], collections: [], kind: "invoice", journal: j.id, ref: trimmed(p.ref, 60), createdBy: actor.id };
+      this.arInvoices[id] = inv;
+      this.record("ar.issue", id, "Issued " + id + " to " + c.name + " \u00b7 " + this.fmt(total, this.entity[c.entity].currency) + " \u00b7 posted " + j.id, {}, actor, at);
+      return inv;
+    },
+    "ap.capture": function (p, actor, at) {
+      need(this, "ap.capture", actor);
+      var v = this.vendors[p.vendor];
+      if (!v || v.card) throw new Refusal("vendor", "Choose a vendor that is paid by invoice.");
+      var number = trimmed(p.number, 40);
+      if (!number) throw new Refusal("number", "Enter the vendor's invoice number.");
+      if (!isDate(p.date) || !isDate(p.due)) throw new Refusal("date", "Give the bill's date and when it is due.");
+      if (p.due < p.date) throw new Refusal("date", "A bill can't fall due before its own date.");
+      if (!Array.isArray(p.lines) || !p.lines.length || p.lines.length > 30) throw new Refusal("lines", "A bill has between one and thirty lines.");
+      var self = this;
+      Object.values(this.apInvoices).forEach(function (x) {
+        if (x.vendor === v.id && x.number.toLowerCase() === number.toLowerCase() && x.status !== "rejected") throw new Refusal("duplicate", v.name + " invoice " + number + " is already in Payables (" + x.id + ").");
+      });
+      var amount = 0, lines = p.lines.map(function (l, i) {
+        var a = self.accounts[l.account];
+        var ok = a && ((a.type === "expense" && !a.ic && a.group !== "tax") || l.account === "1200" || a.group === "ppe" && !a.contra);
+        if (!ok) throw new Refusal("account", "Line " + (i + 1) + ": a bill can be coded to an expense, prepaid expense or fixed-asset account.");
+        if (!isMoney(l.amt)) throw new Refusal("amount", "Line " + (i + 1) + ": give the line an amount.");
+        if (a.type === "expense" && !(typeof l.dept === "string" && self.dims.dept.some(function (d) { return d.id === l.dept; }))) throw new Refusal("dims", "Line " + (i + 1) + ": expenses need a department.", "Every expense is charged to a department so budgets can be controlled.");
+        amount += l.amt;
+        return { account: l.account, amt: l.amt, dept: a.bs ? undefined : l.dept, desc: trimmed(l.desc, 120) };
+      });
+      var inv = { id: "AP-" + pad(+(this.seq.APO || 0) + 1, 4), entity: v.entity, vendor: v.id, number: number, date: p.date, due: p.due, amount: amount,
+                  currency: this.entity[v.entity].currency, status: "review", lines: lines, flags: [], createdBy: actor.id, capturedAt: at, capture: { method: "manual", confidence: 1 } };
+      // Approval moves a bill in a closed month to the first open day, so check it where it will land.
+      var st = this.periodStatus(v.entity, periodOf(p.date)), gl = (st === "open" || st === "soft" || st === "none") ? p.date : this.firstOpenDate(v.entity);
+      var bad = this.validateJournal(this.apJournal(inv, gl));
+      if (bad) throw bad;
+      this.seq.APO = (this.seq.APO || 0) + 1;
+      this.apInvoices[inv.id] = inv;
+      this.record("ap.capture", inv.id, "Captured " + number + " from " + v.name + " \u00b7 " + this.fmt(amount, inv.currency) + " (entered by hand)", {}, actor, at);
+      return inv;
+    },
+    "asset.acquire": function (p, actor, at) {
+      need(this, "asset.acquire", actor);
+      if (!this.entity[p.entity]) throw new Refusal("entity", "Choose a legal entity.");
+      var cls = this.accounts[p.cls];
+      if (!cls || cls.group !== "ppe" || cls.contra) throw new Refusal("account", "Choose what kind of asset it is.");
+      var name = trimmed(p.name, 80);
+      if (!name) throw new Refusal("name", "Name the asset.");
+      if (!isMoney(p.cost)) throw new Refusal("amount", "Give the asset's cost.");
+      if (!isDate(p.date)) throw new Refusal("date", "Give the date it was bought and put to use.");
+      var life = p.life == null ? (p.cls === "1530" ? 84 : p.cls === "1520" ? 60 : 36) : p.life;
+      if (!(life >= 1 && life <= 600) || life % 1) throw new Refusal("life", "Useful life is a whole number of months.");
+      if (CASH.concat(["2500"]).indexOf(p.paidFrom) < 0) throw new Refusal("account", "Say what it was paid from.");
+      var dept = this.dims.dept.some(function (d) { return d.id === p.dept; }) ? p.dept : "GA";
+      var id = "AST-" + pad(+(this.seq.AST || 0) + 1, 5);
+      var j = { entity: p.entity, date: p.date, memo: "Bought " + name, source: { type: "asset", id: id, label: "Asset purchase" },
+                lines: [{ account: p.cls, dr: p.cost, dims: { dept: dept } }, { account: p.paidFrom, cr: p.cost }], createdBy: actor.id, createdAt: at, approvedBy: actor.id, approvedAt: at };
+      var bad = this.validateJournal(j);
+      if (bad) throw bad;
+      this.seq.AST = (this.seq.AST || 0) + 1;
+      this.post(j);
+      this.assets[id] = { id: id, entity: p.entity, name: name, cls: p.cls, dept: dept, cost: p.cost, qty: 1, inService: p.date, life: life, salvage: 0,
+        location: trimmed(p.location, 60) || this.entity[p.entity].city || "", status: "active", priorDep: 0, depThrough: null, source: j.id };
+      this.record("asset.acquire", id, "Bought " + name + " \u00b7 " + this.fmt(p.cost, this.entity[p.entity].currency) + " \u00b7 posted " + j.id, {}, actor, at);
+      return this.assets[id];
     },
     "ic.book": function (p, actor, at) {
       need(this, "journal.create", actor);
@@ -2175,6 +2390,7 @@
   P.Refusal = Refusal;
   Engine.Refusal = Refusal;
   Engine.COA = COA;
+  Engine.TXN = TXN;
 
   root.EFM = root.EFM || {};
   root.EFM.data = root.EFM.data || {};     // datasets loaded after sign-in (see app.js), never shipped with the app

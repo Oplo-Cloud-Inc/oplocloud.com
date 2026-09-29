@@ -42,7 +42,8 @@
       page.appendChild(ui.pageHead("Payables",
         waiting.length ? waiting.length + " invoice" + (waiting.length === 1 ? "" : "s") + " waiting for approval · next payment run " + ui.date(E.nextPaymentRun(), "long")
                        : "Every vendor invoice, from capture to payment.",
-        [ui.btn("Payment run", { icon: "calendar", onClick: function () { app.setQuery({ tab: "run", status: null }); } })]));
+        [ui.btn("Payment run", { icon: "calendar", onClick: function () { app.setQuery({ tab: "run", status: null }); } }),
+         ui.gated("ap.capture", {}, "New bill", function () { EFM.entry.open("bill"); }, { kind: "primary", icon: "plus" })]));
 
       /* ---- The pipeline */
       var status = q.get("status") || (q.get("flag") ? "exceptions" : null);
@@ -266,7 +267,8 @@
     var wrap = h("div");
     if (!app.inScope("US")) return ui.card({ body: ui.empty("No card charges for " + E.entity[app.scope].short, "The company card belongs to OploCloud, Inc. Switch to the US entity or the group.", "card") });
     var all = E.cardChargeList();
-    if (!all.length) return ui.card({ body: ui.empty("No card charges yet", "Actual card charges appear here once they've been loaded into OC EFM.", "card") });
+    if (!all.length) return ui.card({ body: h("div", { class: "empty" }, ui.icon("card"), h("b", null, "No card charges yet"), h("div", null, "Record a charge on the company card and it appears here, posted as an expense on its date."),
+      h("div", { style: { marginTop: "12px" } }, ui.gated("card.record", {}, "New charge", function () { EFM.entry.open("card"); }, { kind: "primary", icon: "plus" }))) });
     var fy = all.filter(function (x) { return x.journal; });
     var net = E.cardSpend(null, E.fy + "-01", E.fy + "-12");
     var month = E.cardSpend(null, cp, cp);
@@ -278,7 +280,7 @@
       { label: "Charged this year", icon: "card", value: E.fmt(net, "USD"), sub: "net of refunds · " + fy.length + " charges in fiscal " + E.fy },
       { label: ui.period(cp, true), icon: "calendar", value: E.fmt(month, "USD"), sub: fy.filter(function (x) { return x.date.slice(0, 7) === cp; }).length + " charges so far · not yet on a statement" },
       { label: "Refunded", icon: "undo", value: E.fmt(refunds.reduce(function (s, x) { return s + x.amount; }, 0), "USD"), sub: refunds.length + " charge" + (refunds.length === 1 ? "" : "s") + " booked and reversed" },
-      { label: "Owed on the card", icon: "bank", value: E.fmt(owed, "USD"), sub: "settles on " + ui.date(E.addDays(E.addMonths(cp, 1) + "-20", 0)) + " with the September statement", onClick: function () { app.open({ kind: "account", id: "2500", q: { entity: "US" } }); } },
+      { label: "Owed on the card", icon: "bank", value: E.fmt(owed, "USD"), sub: "settles on " + ui.date(E.addDays(E.addMonths(cp, 1) + "-20", 0)) + " with the " + E.periodLabel(cp, true).split(" ")[0] + " statement", onClick: function () { app.open({ kind: "account", id: "2500", q: { entity: "US" } }); } },
       { label: "Vendors on the card", icon: "payables", value: String(Object.keys(vendors).length), sub: Object.keys(vendors).map(function (id) { return E.vendors[id].name.split(" — ")[0]; }).join(", ") }
     ]));
     var body = h("div");
@@ -289,6 +291,7 @@
       var rows = all.filter(function (x) { return !ql || (E.vendors[x.vendor].name + " " + x.id + " " + x.date + " " + x.status).toLowerCase().indexOf(ql) >= 0; });
       body.appendChild(h("div", { class: "bar" }, ui.searchBox("Search charges", local.cq, function (t) { local.cq = t; draw(); body.querySelector("input[type=search]").focus(); }),
         h("span", { class: "sp" }),
+        ui.gated("card.record", {}, "New charge", function () { EFM.entry.open("card"); }, { size: "sm", icon: "plus" }),
         ui.btn("Export CSV", { size: "sm", kind: "ghost", icon: "download", onClick: function () {
           ui.csv("oc-efm-card-charges.csv", [["Charge", "Date", "Vendor", "Status", "Journal", "Total"]].concat(rows.map(function (x) { return [x.id, x.date, E.vendors[x.vendor].name, x.status, x.journal || "", (x.amount / 100).toFixed(2)]; })));
         } }),
@@ -296,8 +299,9 @@
       body.appendChild(EFM.drill._cardTable(rows, { vendor: true }));
     }
     draw();
+    var sources = all.map(function (x) { return x.source; }).filter(function (x, i, a) { return x && a.indexOf(x) === i; });
     wrap.appendChild(ui.card({ title: "Company card", meta: "Charged at the time of purchase and settled together, on the 20th of the following month", flush: true, body: body,
-      foot: [h("span", null, "Actual charges from " + all[0].source + ". Each posts as an expense on its date against the card payable.")] }));
+      foot: [h("span", null, (sources.length ? "Loaded from " + sources.join("; ") + ". " : "") + "Each posts as an expense on its date against the card payable.")] }));
     return wrap;
   }
 
