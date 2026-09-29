@@ -24,6 +24,7 @@
      learn.author    content they wrote
      learn.guardian  the students they are family to — to read, never to write
      learn.admin     everything inside their organization
+     efm.user        OC EFM, the financial system — assigned, never open
      platform.admin  everything, everywhere
 
    The teacher rule is the load-bearing one and it is deliberately narrow: a
@@ -53,7 +54,8 @@ export const ACTIONS = [
   "guardian.read", "guardian.write",
   "record.read", "record.write",
   "assessment.read", "assessment.write",
-  "role.grant"
+  "role.grant",
+  "efm.read"
 ];
 
 function hasRole(actor, product, role, orgId) {
@@ -278,6 +280,14 @@ export async function can(ctx, action, resource = {}) {
     case "assessment.write":
       return learnAdmin;
 
+    /* ------------------------------------------------------------ OC EFM
+       The financial system is assigned, not open: a person has it because an
+       administrator gave them the `efm` product (platform administrators have
+       everything, above). Nothing in it varies by person, so there is one
+       action — to read the actual data it shows. */
+    case "efm.read":
+      return hasRole(actor, "efm", "user") || hasRole(actor, "efm", "admin");
+
     default:
       return false;
   }
@@ -313,7 +323,8 @@ const REASONS = {
   "record.write": "The school record is kept by administrators. Families and teachers can read it but not change it.",
   "role.grant": "Only administrators can change roles.",
   "assessment.read": "That assessment has not been set for you, or has not opened yet.",
-  "assessment.write": "Only administrators can publish assessments."
+  "assessment.write": "Only administrators can publish assessments.",
+  "efm.read": "OC EFM is assigned to people by an administrator. Ask one to give you access."
 };
 
 export async function must(ctx, action, resource = {}) {

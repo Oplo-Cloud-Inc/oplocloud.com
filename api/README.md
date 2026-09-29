@@ -156,6 +156,30 @@ platform can honestly afford today, and a login that exceeds the CPU budget
 fails closed for everybody — a worse security outcome than a slightly cheaper
 KDF.
 
+## OC EFM — a product that is assigned
+
+OC EFM (efm.oplocloud.com, OploCloud's financial system) is the one product
+here that is **assigned, not open**. Signing in proves who somebody is; whether
+they may use EFM is the `efm` product role on their account (`efm.user`), or
+being a platform administrator. Its sample books are generated in the browser;
+what is *actual* is loaded into `efm_datasets` (migration 0011) and read only
+through `GET /api/v1/efm/datasets/:name`, which asks `efm.read` on every request
+(`core/guard.js`), so the data never sits in a public file or in the repository.
+There is no route that writes a dataset; an administrator loads one out of band.
+
+```bash
+# Make somebody an account with EFM and no password (status `invited`):
+./scripts/provision-account.sh someone@oplocloud.com "Full Name" efm user --remote
+
+# They — or an administrator — set the password. Asked for twice, never echoed:
+./scripts/set-password.sh someone@oplocloud.com --remote
+```
+
+An administrator can also assign or revoke it later with
+`POST /api/v1/accounts/:id/roles {"product":"efm","role":"user"}` (add
+`"revoke": true` to take it away; it takes effect on the very next request).
+Both scripts are local unless `--remote` is given.
+
 ## Known gaps
 
 In `LAUNCH.md`, with what each one needs and what it blocks. The short version:

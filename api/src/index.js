@@ -37,6 +37,7 @@ import * as graduation from "./routes/graduation.js";
 import * as reporting from "./routes/reporting.js";
 import * as family from "./routes/family.js";
 import * as assessments from "./routes/assessments.js";
+import * as efm from "./routes/efm.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -48,6 +49,8 @@ const ROUTES = [
   ["GET",    "/api/v1/me",             auth.me],
   ["GET",    "/api/v1/auth/sessions",        auth.sessions],
   ["POST",   "/api/v1/auth/sessions/revoke", auth.revokeSessions],
+
+  ["GET",    "/api/v1/efm/datasets/:name",   efm.dataset],
 
   ["GET",    "/api/v1/accounts",             accounts.list],
   ["POST",   "/api/v1/accounts",             accounts.create],

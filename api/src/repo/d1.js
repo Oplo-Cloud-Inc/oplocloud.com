@@ -169,6 +169,14 @@ export class D1Repository {
     ).bind(olderThan, olderThan).run();
   }
 
+  /* -------------------------------------------------------------- OC EFM */
+
+  async efmDataset(name) {
+    return this.db.prepare(
+      `SELECT name, body, source, updated_at FROM efm_datasets WHERE name = ?`
+    ).bind(name).first();
+  }
+
   /* ---------------------------------------------------------------- Roles */
 
   async rolesFor(accountId) {

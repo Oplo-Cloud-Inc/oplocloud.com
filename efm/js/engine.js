@@ -2112,6 +2112,7 @@
   Engine.COA = COA;
 
   root.EFM = root.EFM || {};
+  root.EFM.data = root.EFM.data || {};     // datasets loaded after sign-in (see app.js), never shipped with the app
   root.EFM.Engine = Engine;
   root.EFM.Refusal = Refusal;
   if (typeof module !== "undefined" && module.exports) module.exports = { Engine: Engine, Refusal: Refusal };

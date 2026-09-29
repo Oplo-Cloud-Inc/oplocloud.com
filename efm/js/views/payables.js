@@ -265,6 +265,7 @@
     var wrap = h("div");
     if (!app.inScope("US")) return ui.card({ body: ui.empty("No card charges for " + E.entity[app.scope].short, "The company card belongs to OploCloud, Inc. Switch to the US entity or the group.", "card") });
     var all = E.cardChargeList();
+    if (!all.length) return ui.card({ body: ui.empty("No card charges yet", "Actual card charges appear here once they've been loaded into OC EFM.", "card") });
     var fy = all.filter(function (x) { return x.journal; });
     var net = E.cardSpend(null, E.fy + "-01", E.fy + "-12");
     var month = E.cardSpend(null, cp, cp);

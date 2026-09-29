@@ -482,7 +482,7 @@
     if (q.get("dev") === "1") try { localStorage.setItem("efm.dev", "1"); } catch (e) { /* ignore */ }
     var on = false;
     try { on = localStorage.getItem("efm.dev") === "1"; } catch (e) { /* ignore */ }
-    return on ? { id: "dev", email: "dev@localhost", name: "Dev Tester", firstName: "Dev", initials: "DT", hue: 210 } : null;
+    return on ? { id: "dev", dev: true, email: "dev@localhost", name: "Dev Tester", firstName: "Dev", initials: "DT", hue: 210 } : null;
   }
   function me() {
     var dev = devAccount();
@@ -504,6 +504,58 @@
     var S = window.OploSignIn;
     if (!S) { errEl.textContent = "Can't reach auth.oplocloud.com. Check your connection and reload."; return; }
     S.open({ verify: function () { return me().then(function () { return true; }, function () { return false; }); } });
+  }
+
+  /* Who may use OC EFM: an account it has been assigned to (the `efm` product),
+     or a platform administrator. This is the courtesy half — the API enforces
+     it again on the data (efm.read), which is the half that is a control. */
+  function hasAccess(account) {
+    return (account.roles || []).some(function (r) { return r.product === "efm" || (r.product === "platform" && r.role === "admin"); });
+  }
+
+  /* The actual data, from the API. Absent is fine (the books are then the
+     sample alone); refused is not, and neither is not being able to ask. */
+  function loadData(account) {
+    var name = "claude-code-invoices";
+    EFM.data.claudeCode = null;
+    if (account.dev) {          // local development only: a test supplies the dataset
+      var d = window.__EFM_DATASETS && window.__EFM_DATASETS[name];
+      EFM.data.claudeCode = d || null;
+      return Promise.resolve();
+    }
+    function fail(code, msg) { var e = new Error(msg); e.code = code; return e; }
+    return fetch(API + "/api/v1/efm/datasets/" + name, { credentials: "include", headers: { accept: "application/json" } })
+      .then(function (r) {
+        if (r.status === 401) throw fail("signed-out", "signed out");
+        if (r.status === 403) throw fail("forbidden", "no access");
+        if (r.status === 404) return null;
+        if (!r.ok) throw fail("error", "HTTP " + r.status);
+        return r.json();
+      }, function () { throw fail("offline", "offline"); })
+      .then(function (b) {
+        var d = b && b.dataset && b.dataset.data;
+        if (d && !(d.vendor && d.vendor.id && Array.isArray(d.invoices))) throw fail("error", "unreadable dataset");
+        EFM.data.claudeCode = d || null;
+      });
+  }
+
+  function plain(title, lede, extra, actions) {
+    document.title = "OC EFM";
+    document.body.innerHTML = "";
+    document.body.appendChild(h("div", { class: "gate", style: { gridTemplateColumns: "1fr" } },
+      h("main", { class: "gate-l", style: { maxWidth: "640px", margin: "0 auto" } },
+        h("span", { class: "brand" }, h("span", { class: "brand-mark" }, ui.logo()), h("span", null, h("b", null, "OC EFM"), h("small", null, "OploCloud Enterprise Financial Management"))),
+        h("h1", null, title), h("p", { class: "lede" }, lede), extra || null, h("div", { class: "go" }, actions))));
+  }
+  function noAccess(account) {
+    if (window.OploSignIn) window.OploSignIn.done();
+    plain("OC EFM isn't assigned to you.", "You're signed in as " + (account.email || account.name) + ". OC EFM is given to people by an administrator, so ask one to assign it to you — or sign out and use an account that has it.", null,
+      [ui.btn("Sign out", { kind: "primary", size: "lg", onClick: signOut })]);
+  }
+  function dataError(e) {
+    if (window.OploSignIn) window.OploSignIn.done();
+    plain("OC EFM can't load its data.", e && e.code === "offline" ? "Check your connection, then try again." : "Something went wrong on our side. Try again in a moment.", null,
+      [ui.btn("Try again", { kind: "primary", size: "lg", onClick: function () { location.reload(); } })]);
   }
 
   function gate(err) {
@@ -562,7 +614,14 @@
   }
 
   EFM.boot = function () {
-    me().then(start, function (e) {
+    me().then(function (account) {
+      if (!account.dev && !hasAccess(account)) return noAccess(account);
+      return loadData(account).then(function () { start(account); }, function (e) {
+        if (e.code === "forbidden") noAccess(account);
+        else if (e.code === "signed-out") { if (window.OploSignIn) window.OploSignIn.done(); gate(); }
+        else dataError(e);
+      });
+    }, function (e) {
       if (window.OploSignIn) window.OploSignIn.done();
       if (e.code === "offline") gate("Can't reach the Oplo Account service right now. Check your connection, then sign in.");
       else gate();

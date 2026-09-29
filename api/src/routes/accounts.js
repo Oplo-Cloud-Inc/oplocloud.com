@@ -11,7 +11,7 @@ import { must, can } from "../core/guard.js";
 import { hashPassword } from "../lib/crypto.js";
 import { publicAccount } from "./auth.js";
 
-const PRODUCTS = ["learn", "maps", "shopping", "roxan", "platform"];
+const PRODUCTS = ["learn", "maps", "shopping", "roxan", "efm", "platform"];
 const ROLES = ["student", "teacher", "author", "guardian", "admin", "user", "seller"];
 
 function shape(row) {

@@ -162,8 +162,7 @@
     ["dell",      "US", "Dell Technologies",   "1510", "ENG", 0, 0, 30, { category: "Equipment" }],
     ["apple",     "US", "Apple",               "1510", "PRD", 0, 0, 30, { category: "Equipment" }],
     ["crescent",  "US", "Crescent Advisory Group", "6400", "GA", 0, 0, 15, { category: "Consulting", created: "2026-08-10" }],
-    // Actual data (js/data/claude-code-invoices.js): paid on the company card, never through the payment run.
-    ["anthropic", "US", "Anthropic \u2014 Claude Code", "6100", "ENG", 0, 0, 0, { card: true, category: "Software", created: "2025-12-15" }],
+
     ["aws-uk",    "UK", "Amazon Web Services EMEA", "5000", "ENG", 0, 0, 30, { accrue: true, pctOf: 0.075, category: "Cloud" }],
     ["brightspace","UK","Brightspace Offices Ltd", "6300", "GA", 42000, 0, 0, { flat: true, rent: true, category: "Facilities" }],
     ["hartwell",  "UK", "Hartwell & Sons Solicitors", "6400", "GA", 9200, 0, 30, { vary: 0.3, category: "Legal" }],
@@ -318,8 +317,15 @@
 
   /* ============================================================== Seed */
 
+  /* The actual vendor invoices are not part of the app: they are loaded from
+     the API after sign-in, for accounts assigned OC EFM (app.js), and arrive
+     here as EFM.data.claudeCode. Without them the books are the sample alone. */
   EFM.seed = function (E) {
     var sys = E.people.system;
+    var CC = EFM.data && EFM.data.claudeCode && Array.isArray(EFM.data.claudeCode.invoices) ? EFM.data.claudeCode : null;
+    // Paid on the company card, never through the payment run.
+    var ROWS = VENDORS.slice();
+    if (CC) ROWS.push([CC.vendor.id, "US", CC.vendor.name, "6100", "ENG", 0, 0, 0, { card: true, category: "Software", created: CC.invoices[CC.invoices.length - 1][0] }]);
     E.asOf = AS_OF;
     ENTITIES.forEach(function (e) { E.addEntity(Object.assign({}, e)); });
     Object.keys(RATES).forEach(function (cur) {
@@ -390,7 +396,7 @@
     });
 
     /* ---- Vendors */
-    VENDORS.forEach(function (v) {
+    ROWS.forEach(function (v) {
       var e = E.entity[v[1]];
       var o = v[8] || {};
       E.vendors[v[0]] = {
@@ -464,7 +470,7 @@
     });
     // Payables open at year end, and the December cloud accrual.
     var openingAP = [];
-    VENDORS.forEach(function (row) {
+    ROWS.forEach(function (row) {
       var v = E.vendors[row[0]], e = E.entity[v.entity];
       if (v.opts.accrue) {
         var est = mm(e, E._revPlan[v.entity][0] * v.opts.pctOf * 0.97);
@@ -809,8 +815,7 @@
        settles with everything else on the card. A refunded charge is booked
        and reversed. A charge from before fiscal 2026, or for $0, is on the
        record but has nothing to post. */
-    var CC = EFM.data.claudeCode;
-    CC.invoices.slice().reverse().forEach(function (row, k) {
+    (CC ? CC.invoices : []).slice().reverse().forEach(function (row, k) {
       var id = "CHG-" + String(k + 1).padStart(4, "0"), date = row[0], amount = row[2];
       var rec = { id: id, vendor: CC.vendor.id, date: date, due: row[1], amount: amount, status: row[3], fy: +date.slice(0, 4), journal: null, refundJournal: null, source: CC.source };
       E.cardCharges[id] = rec; E.cardOrder.push(id);
