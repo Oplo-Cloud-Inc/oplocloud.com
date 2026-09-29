@@ -55,7 +55,7 @@ export const ACTIONS = [
   "record.read", "record.write",
   "assessment.read", "assessment.write",
   "role.grant",
-  "efm.read"
+  "efm.read", "efm.write"
 ];
 
 function hasRole(actor, product, role, orgId) {
@@ -284,8 +284,11 @@ export async function can(ctx, action, resource = {}) {
        The financial system is assigned, not open: a person has it because an
        administrator gave them the `efm` product (platform administrators have
        everything, above). Nothing in it varies by person, so there is one
-       action — to read the actual data it shows. */
+       action for reading the books and one for writing to them, which today
+       go together: what a person may *do* inside is decided by the engine's own
+       rules (a preparer cannot approve their own entry), not by who they are. */
     case "efm.read":
+    case "efm.write":
       return hasRole(actor, "efm", "user") || hasRole(actor, "efm", "admin");
 
     default:
@@ -324,7 +327,8 @@ const REASONS = {
   "role.grant": "Only administrators can change roles.",
   "assessment.read": "That assessment has not been set for you, or has not opened yet.",
   "assessment.write": "Only administrators can publish assessments.",
-  "efm.read": "OC EFM is assigned to people by an administrator. Ask one to give you access."
+  "efm.read": "OC EFM is assigned to people by an administrator. Ask one to give you access.",
+  "efm.write": "OC EFM is assigned to people by an administrator. Ask one to give you access."
 };
 
 export async function must(ctx, action, resource = {}) {

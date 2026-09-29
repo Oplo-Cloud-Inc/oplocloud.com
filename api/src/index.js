@@ -50,7 +50,9 @@ const ROUTES = [
   ["GET",    "/api/v1/auth/sessions",        auth.sessions],
   ["POST",   "/api/v1/auth/sessions/revoke", auth.revokeSessions],
 
-  ["GET",    "/api/v1/efm/datasets/:name",   efm.dataset],
+  ["GET",    "/api/v1/efm/books/:bookId",            efm.book],
+  ["GET",    "/api/v1/efm/books/:bookId/commands",   efm.commandsAfter],
+  ["POST",   "/api/v1/efm/books/:bookId/commands",   efm.execute],
 
   ["GET",    "/api/v1/accounts",             accounts.list],
   ["POST",   "/api/v1/accounts",             accounts.create],

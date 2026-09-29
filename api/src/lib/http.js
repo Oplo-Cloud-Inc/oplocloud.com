@@ -53,6 +53,7 @@ export function errorResponse(err, env) {
     }
   };
   if (known && err.field) body.error.field = err.field;
+  if (known && err.extra) Object.assign(body.error, err.extra);
   // The response says nothing about an unexpected error, so the log is the
   // only record of it. The error alone — never the request, which may carry a
   // password.

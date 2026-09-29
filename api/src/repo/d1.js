@@ -171,10 +171,36 @@ export class D1Repository {
 
   /* -------------------------------------------------------------- OC EFM */
 
-  async efmDataset(name) {
+  async efmBook(bookId) {
     return this.db.prepare(
-      `SELECT name, body, source, updated_at FROM efm_datasets WHERE name = ?`
-    ).bind(name).first();
+      `SELECT id, name, config, created_at FROM efm_books WHERE id = ?`
+    ).bind(bookId).first();
+  }
+
+  /* The commands after `after`, in order. */
+  async efmCommands(bookId, after = 0) {
+    const { results } = await this.db.prepare(
+      `SELECT seq, type, payload, actor_id, actor_name, actor_role, at, prev_hash, hash
+         FROM efm_commands WHERE book_id = ? AND seq > ? ORDER BY seq`
+    ).bind(bookId, after).all();
+    return results || [];
+  }
+
+  /* Appends one command. False when its place has been taken — somebody else
+     got there first — which is the caller's cue to say the books have moved. */
+  async efmAppendCommand(bookId, row) {
+    try {
+      await this.db.prepare(
+        `INSERT INTO efm_commands
+           (book_id, seq, type, payload, actor_id, actor_name, actor_role, at, prev_hash, hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(bookId, row.seq, row.type, row.payload, row.actorId, row.actorName, row.actorRole,
+             row.at, row.prev, row.hash).run();
+      return true;
+    } catch (e) {
+      if (/UNIQUE|PRIMARY KEY|constraint/i.test(String(e && e.message))) return false;
+      throw e;
+    }
   }
 
   /* ---------------------------------------------------------------- Roles */

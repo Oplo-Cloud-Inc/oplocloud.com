@@ -160,6 +160,8 @@
     "period.lock":      { roles: ["cfo"], rule: "Only the CFO locks a period." },
     "budget.approve":   { roles: ["cfo"], rule: "Spending over budget is approved by the CFO." },
     "anomaly.resolve":  { roles: ["controller", "cfo", "auditor"], rule: "Flags are resolved by a controller, the CFO or Internal Audit." },
+    "vendor.create":    { roles: ["ap", "controller", "cfo"], rule: "Vendors are added by Accounts Payable or a controller." },
+    "card.record":      { roles: ["ap", "controller", "cfo"], rule: "Card charges are recorded by Accounts Payable or a controller." },
     "audit.verify":     { roles: ["cfo", "controller", "treasury", "ap", "auditor"], rule: "" }
   };
 
@@ -203,6 +205,16 @@
     return p.slice(0, 5) + pad(m - ((m - 1) % 3));
   }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  /* The calendar day in New York at an instant: the books' "today". */
+  var nyFmt = null;
+  function nyDate(iso) {
+    if (!nyFmt) nyFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+    return nyFmt.format(new Date(iso));
+  }
+  /* Bumped whenever a change alters what a command does to the books, so a
+     browser running older code than the server can be told to reload rather
+     than quietly compute something different. */
+  var ENGINE_VERSION = "1";
   function shortDate(d) { return MONTHS[+d.slice(5, 7) - 1] + " " + (+d.slice(8, 10)); }
 
   /* SHA-256, synchronous, for the audit chain. Small and dependency-free so
@@ -279,7 +291,11 @@
   function Engine(opts) {
     opts = opts || {};
     this.asOf = opts.asOf || "2026-09-28";
-    this.fy = this.asOf.slice(0, 4);
+    this.fy = opts.fy || this.asOf.slice(0, 4);
+    // Live books: "today" is whatever day the latest command was made on, so
+    // replaying a log gives the same books whenever it is replayed, and the
+    // people are whoever really acted — nobody is made up.
+    this.live = !!opts.live;
     this.reporting = "USD";
     this.entities = [];
     this.entity = {};
@@ -301,7 +317,7 @@
     Object.keys(DIMS).forEach(function (k) {
       this.dims[k] = DIMS[k].map(function (d) { return { id: d[0], name: d[1] }; });
     }, this);
-    this.people = PEOPLE;
+    this.people = this.live ? { system: PEOPLE.system } : PEOPLE;
     this.roles = ROLES;
     this.limits = LIMITS;
     this.perms = PERMS;
@@ -326,7 +342,7 @@
     this.anomalies = {};
     this.exceptions = {};     // budget exceptions etc.
     this.audit = [];
-    this.log = [];            // commands run in this sandbox, for replay
+    this.log = [];            // commands run on these books, in order
     this.listeners = [];
     // Everyone signed in works in the same system with the same access
     // ("member"). Roles below belong to the colleagues whose work is in the
@@ -340,7 +356,7 @@
   P.pad = pad; P.periodOf = periodOf; P.periodLabel = periodLabel; P.addMonths = addMonths;
   P.periodsBetween = periodsBetween; P.lastDay = lastDay; P.addDays = addDays;
   P.daysBetween = daysBetween; P.weekday = weekday; P.quarterStart = quarterStart;
-  P.sha256 = sha256; P.CUR = CUR; P.MONTHS = MONTHS;
+  P.sha256 = sha256; P.CUR = CUR; P.MONTHS = MONTHS; P.nyDate = nyDate;
 
   P.nextId = function (kind, width) {
     this.seq[kind] = (this.seq[kind] || 0) + 1;
@@ -1268,12 +1284,17 @@
     var fn = COMMANDS[type];
     if (!fn) throw new Refusal("unknown", "Unknown command " + type);
     var at = meta.at || new Date().toISOString();
+    if (this.live) {
+      this.asOf = nyDate(at);
+      if (actor.id && !this.people[actor.id]) this.people[actor.id] = { id: actor.id, name: actor.name || actor.id, role: actor.role, title: "" };
+    }
     this._now = at;
     this._actor = actor;
     var result = fn.call(this, payload || {}, actor, at);
-    if (!meta.replay) this.log.push({ type: type, payload: payload, actor: { id: actor.id, name: actor.name, role: actor.role }, at: at });
+    var entry = { type: type, payload: payload, actor: { id: actor.id, name: actor.name, role: actor.role }, at: at };
+    if (!meta.replay || this.live) this.log.push(entry);
     this._cons = null;
-    this.emit({ type: type, payload: payload, result: result });
+    this.emit({ type: type, payload: payload, result: result, actor: entry.actor, at: at, replay: !!meta.replay });
     return result;
   };
 
@@ -1676,6 +1697,48 @@
       a.status = p.outcome || "dismissed"; a.resolvedBy = actor.id; a.resolvedAt = at; a.note = p.note || "";
       this.record("anomaly." + a.status, a.id, (a.status === "escalated" ? "Escalated to Internal Audit: " : "Dismissed: ") + a.title, { reason: p.note || "" }, actor, at);
       return a;
+    },
+    /* ---- Vendors and the company card */
+    "vendor.create": function (p, actor, at) {
+      need(this, "vendor.create", actor);
+      if (!/^[a-z][a-z0-9-]{1,30}$/.test(p.id || "")) throw new Refusal("vendor", "A vendor's reference is lower-case letters, digits and hyphens.");
+      if (this.vendors[p.id]) throw new Refusal("state", p.id + " already exists.");
+      if (!p.name || !this.entity[p.entity]) throw new Refusal("vendor", "A vendor needs a name and an entity.");
+      if (!this.accounts[p.account]) throw new Refusal("account", "Account " + p.account + " does not exist.");
+      this.vendors[p.id] = { id: p.id, entity: p.entity, name: p.name, account: p.account, dept: p.dept || "GA", base: 0, growth: 0, terms: p.terms || 0, opts: { card: !!p.card },
+        accrue: false, category: p.category || "Services", email: null, created: p.created || at.slice(0, 10), card: !!p.card, tin: null, w9: false,
+        bank: p.card ? { mask: "", bank: "Company card", verified: true } : { mask: "", bank: "", verified: false } };
+      this.record("vendor.create", p.id, "Added vendor " + p.name + (p.card ? " (paid by company card)" : ""), {}, actor, at);
+      return this.vendors[p.id];
+    },
+    /* A charge on the company card: an expense on its date against the card
+       payable. A refunded charge is booked and reversed. A charge from before
+       the fiscal year, or for nothing, is on the record with nothing to post.
+       Both journals are checked before anything is written, so a refusal
+       leaves the books as they were. */
+    "card.record": function (p, actor, at) {
+      need(this, "card.record", actor);
+      var v = this.vendors[p.vendor];
+      if (!v || !v.card) throw new Refusal("state", "That vendor isn't paid by company card.");
+      if (!/^CHG-\d{4,}$/.test(p.id || "")) throw new Refusal("state", "Card charges are referred to as CHG-0001.");
+      if (this.cardCharges[p.id]) throw new Refusal("state", p.id + " is already recorded.");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date || "") || !(p.amount >= 0) || p.amount % 1) throw new Refusal("amount", "A card charge needs a date and a whole number of cents.");
+      var status = p.status === "refunded" ? "refunded" : "paid";
+      var rec = { id: p.id, vendor: p.vendor, date: p.date, due: p.due || null, amount: p.amount, status: status, fy: +p.date.slice(0, 4), journal: null, refundJournal: null, source: p.source || "" };
+      var jn = "JE-" + v.entity + "-C" + p.id.slice(4), dims = { dept: v.dept, vendor: v.id }, sys = actor.role === "system", made = [];
+      if (p.amount && p.date >= this.fy + "-01-01") {
+        var charge = { id: jn, entity: v.entity, date: p.date, memo: v.name + " \u2014 charge " + p.id, source: { type: "card", id: p.id, label: "Card charge" },
+          lines: [{ account: v.account, dr: p.amount, dims: dims }, { account: "2500", cr: p.amount, dims: { vendor: v.id } }], createdBy: actor.id, createdAt: at };
+        made.push(charge);
+        if (status === "refunded") made.push({ id: jn + "R", entity: v.entity, date: p.date, memo: v.name + " \u2014 refund of " + p.id + " (the billing history shows no refund date, so it is booked on the charge date)",
+          source: { type: "card-refund", id: p.id, label: "Card refund" }, lines: [{ account: "2500", dr: p.amount, dims: { vendor: v.id } }, { account: v.account, cr: p.amount, dims: dims }], createdBy: actor.id, createdAt: at });
+        for (var i = 0; i < made.length; i++) { var bad = this.validateJournal(made[i], { system: sys }); if (bad) throw bad; }
+      }
+      this.cardCharges[p.id] = rec; this.cardOrder.push(p.id);
+      if (made[0]) rec.journal = this.post(made[0], { system: sys }).id;
+      if (made[1]) rec.refundJournal = this.post(made[1], { system: sys }).id;
+      this.record("card.record", p.id, "Recorded card charge " + p.id + " from " + v.name + " \u00b7 " + this.fmt(p.amount, "USD") + (status === "refunded" ? " \u00b7 refunded" : "") + (rec.journal ? " \u00b7 posted " + rec.journal : ""), {}, actor, at);
+      return rec;
     },
     "ic.book": function (p, actor, at) {
       need(this, "journal.create", actor);
@@ -2115,5 +2178,6 @@
   root.EFM.data = root.EFM.data || {};     // datasets loaded after sign-in (see app.js), never shipped with the app
   root.EFM.Engine = Engine;
   root.EFM.Refusal = Refusal;
+  root.EFM.ENGINE_VERSION = ENGINE_VERSION;
   if (typeof module !== "undefined" && module.exports) module.exports = { Engine: Engine, Refusal: Refusal };
 })(typeof window !== "undefined" ? window : globalThis);
