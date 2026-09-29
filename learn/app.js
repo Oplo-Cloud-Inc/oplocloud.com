@@ -8554,16 +8554,22 @@
   }
 
   var ADMIN_SECTIONS = [
-    { k: "today",       name: "Summary",     group: null,        icon: "summary",   tone: "var(--cx-accent)" },
-    { k: "students",    name: "Students",    group: "School",    icon: "people",    tone: "var(--cx-cyan)" },
-    { k: "staff",       name: "Staff",       group: "School",    icon: "badge",     tone: "var(--cx-orange)" },
-    { k: "people",      name: "People",      group: "School",    icon: "person",    tone: "var(--cx-teal)" },
-    { k: "courses",     name: "Courses",     group: "Academics", icon: "books",     tone: "var(--cx-indigo)" },
-    { k: "assessments", name: "Assessments", group: "Academics", icon: "checklist", tone: "var(--cx-pink)" },
-    { k: "activity",    name: "Audit log",   group: "Oversight", icon: "wave",      tone: "var(--cx-purple)" },
-    { k: "system",      name: "System",      group: "Settings",  icon: "gear",      tone: "var(--cx-gray)" },
-    // Reachable from a course's page, for oversight; not a place in the rail.
-    { k: "roster",      name: "Gradebook",   group: "Academics", icon: "table",     tone: "var(--cx-green)", hidden: true }
+    { k: "today",       name: "Overview",     group: null,              icon: "summary",   tone: "var(--cx-accent)" },
+    { k: "students",    name: "Students",     group: "Students",        icon: "people",    tone: "var(--cx-cyan)" },
+    { k: "missing",     name: "Missing work", group: "Students",        icon: "tray",      tone: "var(--cx-orange)" },
+    { k: "gradebook",   name: "Gradebook",    group: "Academics",       icon: "table",     tone: "var(--cx-green)" },
+    { k: "reportcards", name: "Report cards", group: "Academics",       icon: "doc",       tone: "var(--cx-purple)" },
+    { k: "courses",     name: "Courses",      group: "Academics",       icon: "books",     tone: "var(--cx-indigo)" },
+    { k: "assessments", name: "Assessments",  group: "Academics",       icon: "checklist", tone: "var(--cx-pink)" },
+    { k: "analytics",   name: "Analytics",    group: "Analytics",       icon: "chart",     tone: "var(--cx-teal)" },
+    { k: "staff",       name: "Staff",        group: "People",          icon: "badge",     tone: "var(--cx-orange)" },
+    { k: "people",      name: "Directory",    group: "People",          icon: "person",    tone: "var(--cx-teal)" },
+    { k: "data",        name: "Data Center",  group: "Data & security", icon: "server",    tone: "var(--cx-accent)" },
+    { k: "activity",    name: "Audit log",    group: "Data & security", icon: "wave",      tone: "var(--cx-purple)" },
+    { k: "security",    name: "Security",     group: "Data & security", icon: "shield",    tone: "var(--cx-green)" },
+    { k: "system",      name: "Settings",     group: "Settings",        icon: "gear",      tone: "var(--cx-gray)" },
+    // One course's full gradebook, reachable from its page for oversight; not a place in the rail.
+    { k: "roster",      name: "Gradebook",    group: "Academics",       icon: "table",     tone: "var(--cx-green)", hidden: true }
   ];
   var TEACHER_SECTIONS = [
     { k: "today",       name: "Today",       group: null,        icon: "summary",   tone: "var(--cx-accent)" },
@@ -8642,7 +8648,7 @@
       var graded = {};
       (gb.grades || []).forEach(function (g) { (graded[g.accountId] = graded[g.accountId] || {})[g.assignmentId] = g; });
       var sums = gb.summaries || {};
-      var cs = { raw: c, id: c.id, title: c.title, subject: c.subject, code: c.code, status: c.status, myRole: c.myRole, level: c.level,
+      var cs = { raw: c, book: gb, id: c.id, title: c.title, subject: c.subject, code: c.code, status: c.status, myRole: c.myRole, level: c.level,
                  students: roster.length, work: (gb.assignments || []).length, sum: 0, graded: 0, below: 0,
                  dist: { A: 0, B: 0, C: 0, D: 0, F: 0 }, cells: 0, dealt: 0, handed: 0, toMark: 0, overdue: 0, missing: 0,
                  teachers: row.members.filter(function (m) { return m.role === "teacher" || m.role === "assistant"; }), needs: [] };
@@ -8869,7 +8875,8 @@
     v.appendChild(body);
     ({ today: consoleHome, assessments: tabAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, activity: tabActivity,
-       people: tabPeople, system: tabSystem, staff: tabStaff }[S.tab] || consoleHome)(body);
+       people: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
+       reportcards: tabReportCards, analytics: tabAnalytics, data: tabData, security: tabSecurity }[S.tab] || consoleHome)(body);
 
     noFoot(); progress(null);
     show("admin");
@@ -9983,7 +9990,7 @@
         '<span class="r"><b style="color:' + (s.standing != null && s.standing < CX_PASS ? "var(--cx-red)" : "var(--cx-label)") + '">' +
         (s.standing == null ? "—" : s.standing + "%") + "</b>" +
         (s.missing ? '<span class="cx-pill orange">' + s.missing + " missing</span>" : "") + "</span>";
-      b.addEventListener("click", function () { openStudentSheet(s); });
+      b.addEventListener("click", function () { if (admin) openStudent360(s); else openStudentSheet(s); });
       nl.appendChild(b);
     });
     na.appendChild(nl);
@@ -10067,7 +10074,7 @@
      never a report somebody has to remember to file. */
   function tabStaff(v) {
     var top = el("div", "cx-top");
-    consoleHead(top, "School", "Staff",
+    consoleHead(top, "People", "Staff",
       "Everyone teaching a course here, what they teach, and whether marking is keeping up with the work that is due.");
     var tools = el("div", "cx-tools");
     tools.appendChild(cnAction("Add a person", function () { openPersonEditor(null); }, true));
@@ -12218,6 +12225,741 @@
     title.input.select();
   }
 
+  /* ============================================================ Student 360
+     One student, whole: where they stand and why, the evidence behind every
+     grade, what is missing, what changed and who changed it, how far they are
+     from a diploma, and who their family is. Every part is a read the school
+     is already allowed — the report, the grades and their history, the
+     graduation record, the family record — so this page adds no new source of
+     truth; it puts the ones there are side by side. */
+  function openStudent360(s, tab) {
+    enter("student360:" + s.id, trim(s.name || "Student", 18), function () { openStudent360(s, S.s360tab); });
+    S.s360tab = tab || S.s360tab || "overview";
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    var body = el("div", "admin-body cx-360");
+    v.appendChild(body);
+
+    var head = el("header", "cx-360h");
+    head.innerHTML = avatarHtml(s) + '<div class="t"><p class="cn-eyebrow">Student</p><h1 class="cn-h1">' + esc(s.name || "") +
+      '</h1><p class="cn-sub" data-sub>' + esc(s.email || "") + "</p></div>";
+    var tools = el("div", "cx-tools");
+    tools.appendChild(cnAction("Report card", function () { openReport(s); }));
+    tools.appendChild(cnAction("Diploma record", function () { openRecord(s); }));
+    tools.appendChild(cnAction("Family view", function () {
+      var H = window.OPLO_HOME;
+      window.open(H.pathFor(H.parse(location.pathname).root, "parent") + "?student=" + encodeURIComponent(s.id), "_blank", "noopener");
+    }));
+    head.appendChild(tools);
+    body.appendChild(head);
+
+    var TABS = [["overview", "Overview"], ["grades", "Grades"], ["missing", "Missing work"], ["timeline", "Timeline"],
+                ["graduation", "Graduation"], ["family", "Family"]];
+    var seg = el("div", "cn-seg cx-360tabs");
+    TABS.forEach(function (t) {
+      var b = el("button", "cn-segb" + (S.s360tab === t[0] ? " on" : ""), t[1]);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        S.s360tab = t[0];
+        [].forEach.call(seg.children, function (x) { x.classList.toggle("on", x === b); });
+        draw();
+      });
+      seg.appendChild(b);
+    });
+    body.appendChild(seg);
+    var pane = el("div", "cx-360p");
+    body.appendChild(pane);
+    var node = loading(pane, "everything about " + (s.firstName || s.name || "them"));
+    var D = null;
+    Promise.all([
+      API.accounts.get(s.id).catch(function () { return null; }),
+      API.reporting.report(s.id),
+      API.grades.history({ accountId: s.id, limit: 200 }).catch(function () { return []; }),
+      API.graduation.get(s.id).catch(function () { return null; }),
+      API.family.guardians(s.id).catch(function () { return []; }),
+      API.family.getContact(s.id).catch(function () { return null; }),
+      API.family.records(s.id).catch(function () { return {}; }),
+      API.progress.all(s.id).catch(function () { return {}; }),
+      loadSchool().catch(function () { return null; })
+    ]).then(function (r) {
+      node.remove();
+      D = { account: r[0], report: r[1], events: r[2] || [], grad: r[3], guardians: r[4] || [], contact: r[5], records: r[6] || {},
+            progress: r[7] || {}, school: r[8] };
+      var sub = head.querySelector("[data-sub]");
+      if (sub && D.account) sub.textContent = [D.account.title, D.account.email].filter(Boolean).join(" · ");
+      // Due dates and teachers, from the school's gradebooks.
+      D.due = {}; D.teachers = {};
+      ((D.school && D.school.courses) || []).forEach(function (c) {
+        D.teachers[c.id] = c.teachers.map(function (t) { return t.name; }).join(", ");
+        ((c.book && c.book.assignments) || []).forEach(function (a) { D.due[a.id] = a.dueAt; });
+      });
+      draw();
+    }, function (e) { failed(node, e, function () { openStudent360(s); }); });
+
+    function draw() {
+      if (!D) return;
+      pane.innerHTML = "";
+      ({ overview: s360Overview, grades: s360Grades, missing: s360Missing, timeline: s360Timeline,
+         graduation: s360Graduation, family: s360Family }[S.s360tab] || s360Overview)(pane, D, s);
+    }
+  }
+
+  function trendText(t) {
+    if (!t || t.change == null) return "";
+    if (!t.change) return "steady over the last " + t.over + " marks";
+    return (t.change > 0 ? "▲ " : "▼ ") + Math.abs(t.change) + " pts over the last " + t.over + " marks";
+  }
+  function gradeTone(p) {
+    return p == null ? "var(--cx-gray)" : p >= 80 ? "var(--cx-green)" : p >= CX_PASS ? "var(--cx-teal)" : p >= 60 ? "var(--cx-orange)" : "var(--cx-red)";
+  }
+  function s360Card(grid, cls, title, icon, tone) {
+    var c = el("section", "cx-card " + cls);
+    if (title) c.appendChild(el("header", "cx-ch", '<span class="ic" style="--c:' + tone + '">' + cxIcon(icon) + "</span><h3>" + esc(title) + "</h3>"));
+    grid.appendChild(c);
+    return c;
+  }
+  function missingOf(report) {
+    var out = [];
+    (report.courses || []).forEach(function (c) {
+      (c.marks || []).forEach(function (m) { if (m.status === "missing") out.push({ course: c, mark: m }); });
+    });
+    return out;
+  }
+
+  function s360Overview(pane, D, s) {
+    var R = D.report, grid = el("div", "cx-grid");
+    pane.appendChild(grid);
+    var courses = R.courses || [], graded = courses.filter(function (c) { return c.grade; });
+    var below = graded.filter(function (c) { return c.grade.percent < CX_PASS; });
+    var missing = missingOf(R);
+
+    var st = s360Card(grid, "cx-s5", "Where they stand", "summary", "var(--cx-accent)");
+    var hero = el("div", "cx-ihero");
+    var p = R.standing;
+    hero.innerHTML = '<div class="ring">' + miniRing(p).replace('class="cx-mring"', 'class="cx-mring big"') + "<b>" + (p == null ? "—" : p + "<small>%</small>") + "</b></div>" +
+      '<div class="stats"><div><b>' + courses.length + "</b><span>Courses</span></div>" +
+      '<div><b style="color:' + (below.length ? "var(--cx-red)" : "var(--cx-label)") + '">' + below.length + "</b><span>Below a pass</span></div>" +
+      '<div><b style="color:' + (missing.length ? "var(--cx-orange)" : "var(--cx-label)") + '">' + missing.length + "</b><span>Missing</span></div></div>";
+    st.appendChild(hero);
+    st.appendChild(el("p", "cx-note", p == null ? "Nothing has been marked yet." :
+      "The mean of their course grades, " + (p >= CX_PASS ? "at or above" : "below") + " the " + CX_PASS + "% pass line. Report card: " +
+      (R.state === "ready" ? "ready to send." : R.state === "blocked" ? "not ready yet — see below." : esc(R.state || "") + ".")));
+
+    // Why: each course, weakest first, with its trend and its weakest evidence.
+    var why = s360Card(grid, "cx-s7", "Why — course by course", "alert", "var(--cx-red)");
+    var list = el("div", "cx-ilist");
+    courses.slice().sort(function (a, b) { return (a.grade ? a.grade.percent : 999) - (b.grade ? b.grade.percent : 999); }).forEach(function (c) {
+      var g = c.grade, pc = g ? g.percent : null, weak = c.evidence && c.evidence.weakest;
+      var miss = (c.marks || []).filter(function (m) { return m.status === "missing"; }).length;
+      var bits = [];
+      if (c.trend && c.trend.change) bits.push(trendText(c.trend));
+      if (weak) bits.push("weakest in " + weak.category + " (" + weak.percent + "%)");
+      if (miss) bits.push("<em>" + miss + " missing</em>");
+      var r = el("button", "cx-irow");
+      r.type = "button";
+      r.innerHTML = '<span class="t"><b>' + esc(c.title) + "</b><span>" + (bits.length ? bits.join(" · ") : esc(D.teachers[c.courseId] || c.subject || "")) + "</span></span>" +
+        '<span class="bar"><i style="width:' + (pc == null ? 0 : Math.max(2, Math.min(100, pc))) + "%;background:" + gradeTone(pc) + '"></i></span>' +
+        '<span class="g"><b>' + (g ? esc(g.letter || "") : "—") + "</b><span>" + (pc == null ? "" : pc + "%") + "</span></span>";
+      r.addEventListener("click", function () { S.s360tab = "grades"; openStudent360(s, "grades"); });
+      list.appendChild(r);
+    });
+    why.appendChild(list);
+
+    // What changed.
+    var ch = s360Card(grid, "cx-s7", "What changed", "clock", "var(--cx-teal)");
+    var feed = el("div", "cx-feed");
+    var titles = {};
+    courses.forEach(function (c) { (c.marks || []).forEach(function (m) { titles[m.assignmentId] = c.title; }); });
+    D.events.slice(0, 6).forEach(function (e) {
+      var r = el("div", "cx-ev");
+      r.innerHTML = '<span class="cx-av" style="--h:var(--cx-teal)">' + cxIcon("pencil") + '</span><span class="t"><b>' + esc(e.title) + "</b><span> · " +
+        esc(titles[e.assignmentId] || "") + " → </span><span class=\"cx-chg\">" + esc(changeText(e)) + "</span><span> by " + esc(e.actorName || "someone") +
+        "</span></span><time>" + esc(whenName(e.at)) + "</time>";
+      feed.appendChild(r);
+    });
+    if (!D.events.length) feed.appendChild(el("p", "cx-note", "No marks have changed yet."));
+    ch.appendChild(feed);
+
+    // What stands between them and a report card.
+    var rd = s360Card(grid, "cx-s5", "Report card", "doc", "var(--cx-purple)");
+    var reasons = [];
+    courses.forEach(function (c) { ((c.readiness && c.readiness.reasons) || []).forEach(function (x) { reasons.push(x.text); }); });
+    rd.appendChild(el("p", "cx-note", reasons.length ? "Not ready to send. What is still to do:" : "Ready: every course is marked and has its comment."));
+    if (reasons.length) {
+      var ul = el("ul", "cx-bul");
+      ul.innerHTML = reasons.slice(0, 8).map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
+      rd.appendChild(ul);
+    }
+
+    // Learning on OEdu, from the student's own synced progress.
+    var lp = s360Card(grid, "cx-s6", "Learning on OEdu", "sparkle", "var(--cx-indigo)");
+    var lab = D.progress.lab || {}, lessons = lab.lessons ? Object.keys(lab.lessons).filter(function (k) { return lab.lessons[k] && lab.lessons[k].done; }).length : 0;
+    var skills = lab.skills ? Object.keys(lab.skills) : [];
+    var mastered = skills.filter(function (k) { return (lab.skills[k] || {}).lv >= 4; }).length;
+    lp.appendChild(el("p", "cx-note", lessons || skills.length
+      ? "Interactive lessons finished: <b>" + lessons + "</b> · skills practised: <b>" + skills.length + "</b>, mastered: <b>" + mastered + "</b>."
+      : "No interactive lessons recorded on OEdu yet."));
+
+    // Family.
+    var fam = s360Card(grid, "cx-s6", "Family", "people", "var(--cx-cyan)");
+    fam.appendChild(el("p", "cx-note", D.guardians.length
+      ? D.guardians.map(function (g) { return "<b>" + esc(g.name || g.email || "Guardian") + "</b>" + (g.relationship ? " · " + esc(g.relationship) : ""); }).join("<br>")
+      : "No guardian is linked yet. Add one from Family view."));
+  }
+
+  function changeText(e) {
+    var to = e.toStatus === "missing" ? "missing" : e.toStatus === "excused" ? "excused" : e.toScore == null ? "cleared" : cxNum(e.toScore) + " / " + cxNum(e.outOf);
+    var from = e.fromStatus == null && e.fromScore == null ? "" : (e.fromStatus === "missing" ? "missing" : e.fromStatus === "excused" ? "excused" : e.fromScore == null ? "—" : cxNum(e.fromScore)) + " → ";
+    return from + to;
+  }
+
+  function s360Grades(pane, D, s) {
+    var courses = D.report.courses || [];
+    if (!courses.length) { pane.appendChild(cnEmpty("Not enrolled in any course.", "Enrol them in a course and their grades appear here.")); return; }
+    courses.forEach(function (c) {
+      var g = c.grade, pc = g ? g.percent : null;
+      var sec = el("section", "cx-card cx-s12 cx-gcard");
+      sec.innerHTML = '<header class="cx-ch"><span class="ic" style="--c:' + gradeTone(pc) + '">' + cxIcon("books") + "</span><h3>" + esc(c.title) + "</h3><small>" +
+        esc(D.teachers[c.courseId] || c.subject || "") + '</small></header><div class="cx-gtop"><b style="color:' + gradeTone(pc) + '">' + (g ? esc(g.letter) + " · " + pc + "%" : "—") +
+        "</b><span>" + esc(trendText(c.trend)) + "</span></div>";
+      var cats = el("div", "cx-cats");
+      ((c.evidence && c.evidence.byCategory) || []).forEach(function (x) {
+        cats.innerHTML += '<div><span>' + esc(x.category) + " · " + x.items + '</span><span class="bar"><i style="width:' + Math.max(2, Math.min(100, x.percent)) +
+          "%;background:" + gradeTone(x.percent) + '"></i></span><b>' + x.percent + "%</b></div>";
+      });
+      sec.appendChild(cats);
+      var t = cnTable([{ label: "Work", w: "minmax(150px, 1.3fr)" }, { label: "Category", w: "110px" }, { label: "Due", w: "100px" },
+                       { label: "Mark", w: "90px", align: "right" }, { label: "", w: "90px", align: "right" }]);
+      (c.marks || []).forEach(function (m) {
+        var mark = m.status === "missing" ? "<span class='cx-pill orange'>missing</span>" : m.status === "excused" ? "<span class='cx-pill'>excused</span>"
+          : m.score == null ? "<span class='cn-none'>not marked</span>" : "<b>" + cxNum(m.score) + "</b> / " + cxNum(m.outOf);
+        var pct = m.score != null && m.outOf ? Math.round(m.score / m.outOf * 100) : null;
+        t.row([esc(m.title), esc(m.category || "—"), D.due[m.assignmentId] ? esc(dayName(D.due[m.assignmentId])) : "<span class='cn-none'>—</span>",
+               mark, pct == null ? "" : "<b style='color:" + gradeTone(pct) + "'>" + pct + "%</b>"], null, m.assignmentId);
+      });
+      sec.appendChild(t);
+      if (c.comment && c.comment.body) sec.appendChild(el("p", "cx-note", "<b>Teacher’s comment:</b> " + esc(c.comment.body)));
+      pane.appendChild(sec);
+    });
+  }
+
+  function s360Missing(pane, D) {
+    var miss = missingOf(D.report);
+    if (!miss.length) { pane.appendChild(cnEmpty("Nothing is missing.", "Every piece of due work has been handed in or excused.")); return; }
+    var t = cnTable([{ label: "Work", w: "minmax(150px, 1.3fr)" }, { label: "Course", w: "minmax(130px, 1fr)" }, { label: "Category", w: "110px" },
+                     { label: "Was due", w: "110px", align: "right" }]);
+    miss.sort(function (a, b) { return (D.due[a.mark.assignmentId] || 0) - (D.due[b.mark.assignmentId] || 0); }).forEach(function (x) {
+      t.row([esc(x.mark.title), esc(x.course.title), esc(x.mark.category || "—"),
+             D.due[x.mark.assignmentId] ? esc(dayName(D.due[x.mark.assignmentId])) : "—"], null, x.mark.assignmentId);
+    });
+    pane.appendChild(el("p", "cx-note", miss.length + (miss.length === 1 ? " piece" : " pieces") + " of work marked missing. Missing work counts as nothing in the grade until it is handed in, so each one here is pulling a grade down."));
+    pane.appendChild(t);
+  }
+
+  function s360Timeline(pane, D) {
+    if (!D.events.length) { pane.appendChild(cnEmpty("No marks have changed yet.", "Every change to one of their marks appears here — before, after, who and when.")); return; }
+    var titles = {};
+    (D.report.courses || []).forEach(function (c) { (c.marks || []).forEach(function (m) { titles[m.assignmentId] = c.title; }); });
+    var byDay = {}, order = [];
+    D.events.forEach(function (e) {
+      var k = new Date(Number(e.at)).toDateString();
+      if (!byDay[k]) { byDay[k] = []; order.push(k); }
+      byDay[k].push(e);
+    });
+    order.forEach(function (k) {
+      pane.appendChild(el("p", "cx-sethead", esc(new Date(k).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }))));
+      var box = el("div", "cx-set");
+      byDay[k].forEach(function (e) {
+        box.appendChild(el("div", "cx-setrow", '<span class="ic" style="--c:var(--cx-teal)">' + cxIcon("pencil") + '</span><span class="t"><b>' + esc(e.title) +
+          " · " + esc(titles[e.assignmentId] || "") + "</b><span>" + esc(e.actorName || "Someone") + (e.note ? " — “" + esc(e.note) + "”" : "") + '</span></span><span class="v"><span class="cx-chg">' +
+          esc(changeText(e)) + "</span>&nbsp;&nbsp;" + esc(new Date(Number(e.at)).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })) + "</span>"));
+      });
+      pane.appendChild(box);
+    });
+  }
+
+  function s360Graduation(pane, D, s) {
+    var G = D.grad;
+    if (!G) { pane.appendChild(cnEmpty("The diploma record could not be read.", "")); return; }
+    var T = G.totals || {}, total = (G.track && G.track.total) || 0;
+    var grid = el("div", "cx-grid");
+    pane.appendChild(grid);
+    var hc = s360Card(grid, "cx-s5", G.track ? G.track.name : "Diploma", "cap", "var(--cx-accent)");
+    var pct = total ? Math.round((T.earnedTowardDiploma || T.earned || 0) / total * 100) : 0;
+    var hero = el("div", "cx-ihero");
+    hero.innerHTML = '<div class="ring">' + miniRing(pct).replace('class="cx-mring"', 'class="cx-mring big"') + "<b>" + pct + "<small>%</small></b></div>" +
+      '<div class="stats"><div><b>' + cxNum(T.earnedTowardDiploma || T.earned || 0) + "</b><span>Credits earned</span></div><div><b>" + cxNum(total) +
+      "</b><span>Required</span></div><div><b>" + (G.gpa && G.gpa.value != null ? G.gpa.value : G.gpa && G.gpa.estimate != null ? "~" + G.gpa.estimate : "—") + "</b><span>GPA</span></div></div>";
+    hc.appendChild(hero);
+    hc.appendChild(el("p", "cx-note", G.program ? "Program set. " + esc((G.residency && G.residency.says) || "") :
+      "No diploma program is set for this student yet, so nothing counts toward one. Set it from the diploma record."));
+    var act = cnActions();
+    act.appendChild(cnAction("Open the diploma record", function () { openRecord(s); }, true));
+    hc.appendChild(act);
+
+    var ar = s360Card(grid, "cx-s7", "Requirements", "checklist", "var(--cx-green)");
+    var list = el("div", "cx-ilist");
+    (G.areas || []).forEach(function (a) {
+      var p = a.required ? Math.round(Math.min(1, (a.applied || a.earned || 0) / a.required) * 100) : 0;
+      list.appendChild(el("div", "cx-irow", '<span class="t"><b>' + (a.complete ? "✓ " : "") + esc(a.name) + "</b><span>" + cxNum(a.applied || a.earned || 0) + " of " + cxNum(a.required) +
+        " credits" + (a.remaining ? " · " + cxNum(a.remaining) + " to go" : "") + '</span></span><span class="bar"><i style="width:' + Math.max(2, p) + "%;background:" +
+        (a.complete ? "var(--cx-green)" : p >= 50 ? "var(--cx-teal)" : "var(--cx-orange)") + '"></i></span><span class="g"><b>' + p + "%</b></span>"));
+    });
+    ar.appendChild(list);
+
+    if ((G.gaps || []).length) {
+      var gp = s360Card(grid, "cx-s12", "Still to earn — and how", "alert", "var(--cx-orange)");
+      var t = cnTable([{ label: "Requirement", w: "minmax(130px, 1fr)" }, { label: "Left", w: "70px", align: "right" },
+                       { label: "Enrolled now", w: "minmax(140px, 1fr)" }, { label: "Courses that count", w: "minmax(200px, 2fr)" }]);
+      G.gaps.forEach(function (g) {
+        t.row([esc(g.name), cxNum(g.left), (g.enrolled || []).length ? esc(g.enrolled.map(function (x) { return x.title || x; }).join(", ")) : "<span class='cn-none'>none</span>",
+               esc((g.options || []).slice(0, 5).join(", "))], null, g.key);
+      });
+      gp.appendChild(t);
+    }
+  }
+
+  function s360Family(pane, D, s) {
+    var g1 = el("p", "cx-sethead", "Guardians");
+    pane.appendChild(g1);
+    var box = el("div", "cx-set");
+    if (!D.guardians.length) box.appendChild(el("div", "cx-setrow", '<span></span><span class="t"><span>No guardian is linked yet.</span></span>'));
+    D.guardians.forEach(function (g) {
+      box.appendChild(el("div", "cx-setrow", avatarHtml({ initials: String(g.name || "?").split(" ").map(function (w) { return w[0]; }).join("").slice(0, 2), hue: "#8e8e93" }) +
+        '<span class="t"><b>' + esc(g.name || g.email || "Guardian") + "</b><span>" + esc([g.relationship, g.email, g.phone].filter(Boolean).join(" · ")) + "</span></span>"));
+    });
+    pane.appendChild(box);
+    pane.appendChild(el("p", "cx-sethead", "Contact"));
+    var c = D.contact || {};
+    var cb = el("div", "cx-set");
+    [["Cell phone", c.cellPhone], ["Other phone", c.altPhone], ["Mailing address", c.mailingAddress], ["Date of birth", c.dateOfBirth]].forEach(function (x) {
+      cb.appendChild(el("div", "cx-setrow", '<span></span><span class="t"><b>' + esc(x[0]) + '</b></span><span class="v">' + (x[1] ? esc(x[1]) : "<span class='cn-none'>not recorded</span>") + "</span>"));
+    });
+    pane.appendChild(cb);
+    var keys = Object.keys(D.records || {});
+    pane.appendChild(el("p", "cx-sethead", "School records"));
+    var rb = el("div", "cx-set");
+    rb.appendChild(el("div", "cx-setrow", '<span></span><span class="t"><b>' + (keys.length ? esc(keys.join(", ")) : "No sections recorded") +
+      "</b><span>Health, emergency and other records the school keeps are edited in Family view.</span></span>"));
+    pane.appendChild(rb);
+    var acts = cnActions();
+    acts.appendChild(cnAction("Open Family view", function () {
+      var H = window.OPLO_HOME;
+      window.open(H.pathFor(H.parse(location.pathname).root, "parent") + "?student=" + encodeURIComponent(s.id), "_blank", "noopener");
+    }, true));
+    pane.appendChild(acts);
+  }
+
+  /* ============================================================== Gradebook
+     The school's grades, as an administrator walks them: the school, then a
+     department, then a course, then a student. Read, never typed — marks are
+     entered by the teachers of a course, in their own gradebook. */
+  function tabSchoolGradebook(v) {
+    var P = S.gbPath || (S.gbPath = {});
+    var top = el("div", "cx-top");
+    var head = consoleHead(top, "Academics", "Gradebook", "Every grade in the school, from the whole school down to one student. Marks are entered by each course’s teachers.");
+    v.appendChild(top);
+    var node = loading(v, "the school’s grades");
+    loadSchool().then(function (d) {
+      node.remove();
+      var crumbs = el("div", "cx-crumbs");
+      function crumb(label, go, on) {
+        var b = el("button", "cx-crumb" + (on ? " on" : ""), esc(label));
+        b.type = "button";
+        b.addEventListener("click", go);
+        crumbs.appendChild(b);
+      }
+      var depts = {};
+      d.courses.forEach(function (c) { var k = c.subject || "Other"; (depts[k] = depts[k] || []).push(c); });
+      var course = P.course && d.courses.filter(function (c) { return c.id === P.course; })[0];
+      if (P.course && !course) P.course = null;
+      crumb("School", function () { S.gbPath = {}; openAdmin(true, "gradebook"); }, !P.dept);
+      if (P.dept) crumb(P.dept, function () { S.gbPath = { dept: P.dept }; openAdmin(true, "gradebook"); }, !course);
+      if (course) crumb(course.title, function () {}, true);
+      v.appendChild(crumbs);
+
+      function agg(list) {
+        var g = 0, sum = 0, below = 0, students = 0, cells = 0, dealt = 0, missing = 0;
+        list.forEach(function (c) { sum += c.sum; g += c.graded; below += c.below; students += c.students; cells += c.cells; dealt += c.dealt; missing += c.missing; });
+        return { avg: g ? Math.round(sum / g) : null, below: below, students: students, marked: cells ? Math.round(dealt / cells * 100) : null, missing: missing, graded: g };
+      }
+      function mk(p, bad) { return p == null ? "<span class='cn-none'>—</span>" : "<b class='cn-mk" + (bad ? " bad" : "") + "'>" + p + "%</b>"; }
+
+      if (course) {
+        var acts = cnActions();
+        acts.appendChild(cnAction("Open the full gradebook", function () { S.courseId = course.id; openAdmin(false, "roster"); }, true));
+        acts.appendChild(cnAction("Course page", function () { openCoursePage(course.raw); }));
+        v.appendChild(acts);
+        var sums = (course.book && course.book.summaries) || {};
+        var t = cnTable([{ label: "Student", w: "minmax(170px, 1.3fr)" }, { label: "Grade", w: "90px", align: "right" }, { label: "Letter", w: "70px", align: "right" },
+                         { label: "Missing", w: "80px", align: "right" }]);
+        ((course.book && course.book.students) || []).slice().sort(function (a, b) {
+          return ((sums[a.id] || {}).percent || 0) - ((sums[b.id] || {}).percent || 0);
+        }).forEach(function (st) {
+          var sm = sums[st.id] || {};
+          var who = el("span", "cn-who");
+          who.appendChild(avatarFor(st));
+          who.appendChild(el("span", "nm", esc(st.name)));
+          t.row([who, mk(sm.percent, sm.percent != null && sm.percent < CX_PASS), esc(sm.letter || "—"),
+                 sm.missingCount ? "<b class='cn-mk bad'>" + sm.missingCount + "</b>" : "<span class='cn-none'>—</span>"], function () { openStudent360(st); }, st.id);
+        });
+        v.appendChild(t);
+        return;
+      }
+      var rows = P.dept ? (depts[P.dept] || []).map(function (c) { return { key: c.id, name: c.title, sub: c.teachers.map(function (t) { return t.name; }).join(", ") || "No teacher", a: agg([c]), go: function () { S.gbPath = { dept: P.dept, course: c.id }; openAdmin(true, "gradebook"); } }; })
+        : Object.keys(depts).sort().map(function (k) { return { key: k, name: k, sub: depts[k].length + (depts[k].length === 1 ? " course" : " courses"), a: agg(depts[k]), go: function () { S.gbPath = { dept: k }; openAdmin(true, "gradebook"); } }; });
+      var all = agg(P.dept ? depts[P.dept] || [] : d.courses);
+      var tiles = el("div", "cn-tiles");
+      [["Average", all.avg == null ? "—" : all.avg + "%"], ["Course grades", all.graded], ["Below a pass", all.below], ["Due work marked", all.marked == null ? "—" : all.marked + "%"], ["Missing", all.missing]]
+        .forEach(function (x) { tiles.appendChild(el("div", "cn-tile", "<b>" + x[1] + "</b><span>" + x[0] + "</span>")); });
+      v.appendChild(tiles);
+      var t2 = cnTable([{ label: P.dept ? "Course" : "Department", w: "minmax(170px, 1.4fr)" }, { label: "Students", w: "84px", align: "right" },
+                        { label: "Average", w: "84px", align: "right" }, { label: "Below a pass", w: "100px", align: "right" },
+                        { label: "Marked", w: "80px", align: "right" }, { label: "Missing", w: "80px", align: "right" }]);
+      rows.forEach(function (r) {
+        t2.row(["<b>" + esc(r.name) + "</b><span class='cn-sub2'>" + esc(r.sub) + "</span>", String(r.a.students), mk(r.a.avg, r.a.avg != null && r.a.avg < CX_PASS),
+                r.a.below ? "<b class='cn-mk bad'>" + r.a.below + "</b>" : "<span class='cn-none'>—</span>", mk(r.a.marked), r.a.missing ? "<b class='cn-mk warn'>" + r.a.missing + "</b>" : "<span class='cn-none'>—</span>"],
+               r.go, r.key);
+      });
+      v.appendChild(t2);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "gradebook"); }); });
+  }
+
+  /* =========================================================== Missing work
+     Every piece of due work marked missing, across the school — by student,
+     by course, or piece by piece — because nine missing assignments is not a
+     number to look at but a list to act on. */
+  function missingRows(d) {
+    var out = [];
+    d.courses.forEach(function (c) {
+      var gb = c.book || {}, byId = {}, st = {};
+      (gb.assignments || []).forEach(function (a) { byId[a.id] = a; });
+      (gb.students || []).forEach(function (s) { st[s.id] = s; });
+      (gb.grades || []).forEach(function (g) {
+        if (g.status !== "missing") return;
+        var a = byId[g.assignmentId] || {};
+        out.push({ student: st[g.accountId] || { id: g.accountId, name: "A student" }, course: c, work: a.title || g.title, category: a.category || g.category, due: a.dueAt,
+                   teacher: c.teachers.map(function (t) { return t.name; }).join(", ") });
+      });
+    });
+    return out.sort(function (a, b) { return (a.due || 0) - (b.due || 0); });
+  }
+  function tabMissing(v) {
+    var top = el("div", "cx-top");
+    consoleHead(top, "Students", "Missing work", "Every piece of due work marked missing, across the school.");
+    var tools = el("div", "cx-tools");
+    top.appendChild(tools);
+    v.appendChild(top);
+    var node = loading(v, "missing work");
+    loadSchool().then(function (d) {
+      node.remove();
+      var rows = missingRows(d);
+      tools.appendChild(cnAction("Export CSV", function () {
+        csvDownload("missing-work.csv", [["Student", "Email", "Course", "Teacher", "Work", "Category", "Was due"]].concat(rows.map(function (r) {
+          return [r.student.name, r.student.email, r.course.title, r.teacher, r.work, r.category, r.due ? new Date(r.due).toISOString().slice(0, 10) : ""];
+        })));
+      }));
+      if (!rows.length) { v.appendChild(cnEmpty("Nothing is missing.", "Every piece of due work across the school has been handed in or excused.")); return; }
+      S.missView = S.missView || "student";
+      var bar = el("div", "cn-bar");
+      var chips = cnFilters([{ k: "student", name: "By student" }, { k: "course", name: "By course" }, { k: "all", name: "Every piece", n: rows.length }],
+        S.missView, function (k) { S.missView = k; draw(); });
+      bar.appendChild(chips);
+      v.appendChild(bar);
+      var slot = el("div");
+      v.appendChild(slot);
+      function draw() {
+        chips.mark(S.missView);
+        slot.innerHTML = "";
+        var t;
+        if (S.missView === "student") {
+          var by = {};
+          rows.forEach(function (r) { var k = r.student.id; (by[k] = by[k] || { s: r.student, list: [] }).list.push(r); });
+          t = cnTable([{ label: "Student", w: "minmax(170px, 1.2fr)" }, { label: "Missing", w: "80px", align: "right" }, { label: "Courses", w: "minmax(200px, 2fr)" }]);
+          Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.list.length - a.list.length; }).forEach(function (x) {
+            var who = el("span", "cn-who");
+            who.appendChild(avatarFor(x.s));
+            who.appendChild(el("span", "nm", esc(x.s.name)));
+            var cs = {};
+            x.list.forEach(function (r) { cs[r.course.title] = (cs[r.course.title] || 0) + 1; });
+            t.row([who, "<b class='cn-mk bad'>" + x.list.length + "</b>", esc(Object.keys(cs).map(function (k) { return k + " (" + cs[k] + ")"; }).join(", "))],
+                  function () { openStudent360(x.s, "missing"); }, x.s.id);
+          });
+        } else if (S.missView === "course") {
+          var bc = {};
+          rows.forEach(function (r) { var k = r.course.id; (bc[k] = bc[k] || { c: r.course, list: [] }).list.push(r); });
+          t = cnTable([{ label: "Course", w: "minmax(170px, 1.2fr)" }, { label: "Missing", w: "80px", align: "right" }, { label: "Students", w: "84px", align: "right" },
+                       { label: "Most missed", w: "minmax(180px, 1.6fr)" }]);
+          Object.keys(bc).map(function (k) { return bc[k]; }).sort(function (a, b) { return b.list.length - a.list.length; }).forEach(function (x) {
+            var works = {}, people = {};
+            x.list.forEach(function (r) { works[r.work] = (works[r.work] || 0) + 1; people[r.student.id] = 1; });
+            var worst = Object.keys(works).sort(function (a, b) { return works[b] - works[a]; })[0];
+            t.row(["<b>" + esc(x.c.title) + "</b><span class='cn-sub2'>" + esc(x.c.teachers.map(function (q) { return q.name; }).join(", ")) + "</span>",
+                   "<b class='cn-mk bad'>" + x.list.length + "</b>", String(Object.keys(people).length), esc(worst + " (" + works[worst] + ")")],
+                  function () { S.gbPath = { dept: x.c.subject || "Other", course: x.c.id }; openAdmin(false, "gradebook"); }, x.c.id);
+          });
+        } else {
+          t = cnTable([{ label: "Student", w: "minmax(150px, 1fr)" }, { label: "Work", w: "minmax(130px, 1fr)" }, { label: "Course", w: "minmax(130px, 1fr)" },
+                       { label: "Was due", w: "100px", align: "right" }]);
+          rows.forEach(function (r, k) {
+            t.row([esc(r.student.name), esc(r.work), esc(r.course.title), r.due ? esc(dayName(r.due)) : "—"], function () { openStudent360(r.student, "missing"); }, String(k));
+          });
+        }
+        slot.appendChild(t);
+      }
+      draw();
+    }, function (e) { failed(node, e, function () { openAdmin(true, "missing"); }); });
+  }
+
+  /* ========================================================== Report cards
+     Whether every student's report can go out, and if not, exactly what is
+     holding it — read from each student's report as the school would send
+     it, so the answer is never a checklist somebody kept by hand. */
+  function tabReportCards(v) {
+    var top = el("div", "cx-top");
+    consoleHead(top, "Academics", "Report cards", "Every student’s report, and what — if anything — stands between it and being sent.");
+    v.appendChild(top);
+    var node = loading(v, "the school’s students");
+    loadSchool().then(function (d) {
+      node.remove();
+      var students = d.students.slice(), done = 0, reports = {};
+      var prog = el("p", "cx-note");
+      v.appendChild(prog);
+      var tiles = el("div", "cn-tiles");
+      v.appendChild(tiles);
+      var slot = el("div");
+      v.appendChild(slot);
+      function paint() {
+        var list = students.filter(function (s) { return reports[s.id]; });
+        var ready = list.filter(function (s) { return reports[s.id].state === "ready"; }).length;
+        var reasons = {};
+        list.forEach(function (s) {
+          (reports[s.id].courses || []).forEach(function (c) {
+            ((c.readiness && c.readiness.reasons) || []).forEach(function (x) {
+              var k = x.kind === "no-comment" ? "Comments to write" : x.kind === "unmarked" ? "Work to mark" : x.text;
+              reasons[k] = (reasons[k] || 0) + 1;
+            });
+          });
+        });
+        tiles.innerHTML = "";
+        [["Ready", ready, ready ? "done" : ""], ["Not ready", list.length - ready, list.length - ready ? "owe" : ""]].concat(Object.keys(reasons).map(function (k) { return [k, reasons[k], ""]; }))
+          .forEach(function (x) { tiles.appendChild(el("div", "cn-tile" + (x[2] ? " " + x[2] : ""), "<b>" + x[1] + "</b><span>" + esc(x[0]) + "</span>")); });
+        slot.innerHTML = "";
+        var t = cnTable([{ label: "Student", w: "minmax(170px, 1.1fr)" }, { label: "State", w: "100px" }, { label: "What is holding it", w: "minmax(220px, 2.2fr)" }]);
+        list.forEach(function (s) {
+          var r = reports[s.id], rs = [];
+          (r.courses || []).forEach(function (c) { ((c.readiness && c.readiness.reasons) || []).forEach(function (x) { rs.push(x.text); }); });
+          var who = el("span", "cn-who");
+          who.appendChild(avatarFor(s));
+          who.appendChild(el("span", "nm", esc(s.name)));
+          t.row([who, r.state === "ready" ? "<span class='cx-pill green'>Ready</span>" : "<span class='cx-pill orange'>Not ready</span>",
+                 rs.length ? esc(rs.slice(0, 3).join(" · ") + (rs.length > 3 ? " · +" + (rs.length - 3) + " more" : "")) : "<span class='cn-none'>—</span>"],
+                function () { openReport(s); }, s.id);
+        });
+        slot.appendChild(t);
+      }
+      // Read the reports a few at a time, so a big school does not flood the server.
+      var queue = students.slice(), running = 0;
+      function next() {
+        prog.textContent = done < students.length ? "Reading " + done + " of " + students.length + " reports…" : students.length + " reports read, as the school would send them now.";
+        while (running < 6 && queue.length) {
+          var s = queue.shift();
+          running++;
+          API.reporting.report(s.id).then(function (r) { reports[this.id] = r; }.bind(s), function () {}).then(function () {
+            running--; done++;
+            if (done % 6 === 0 || done === students.length) paint();
+            next();
+          });
+        }
+      }
+      next();
+    }, function (e) { failed(node, e, function () { openAdmin(true, "reportcards"); }); });
+  }
+
+  /* ============================================================== Analytics
+     The school's grades in context. Departments side by side, how students do
+     by kind of work, and every course with the numbers that explain its
+     average — how many students, how spread out, how much is missing, how
+     much is marked. It is evidence to read, not a ranking: courses start
+     from different places with different students. */
+  function tabAnalytics(v) {
+    consoleHead(v, "Analytics", "Academic analytics",
+      "The school’s grades in context. Compare with care: courses start from different places, with different students.");
+    var node = loading(v, "the school’s grades");
+    loadSchool().then(function (d) {
+      node.remove();
+      var grid = el("div", "cx-grid");
+      v.appendChild(grid);
+      // Departments.
+      var depts = {};
+      d.courses.forEach(function (c) {
+        var k = c.subject || "Other", x = depts[k] || (depts[k] = { sum: 0, n: 0, dist: { A: 0, B: 0, C: 0, D: 0, F: 0 } });
+        x.sum += c.sum; x.n += c.graded;
+        Object.keys(x.dist).forEach(function (L) { x.dist[L] += c.dist[L]; });
+      });
+      var dc = s360Card(grid, "cx-s6", "Average by department", "chart", "var(--cx-teal)");
+      dc.appendChild(barChart(Object.keys(depts).sort().map(function (k) {
+        var a = depts[k].n ? Math.round(depts[k].sum / depts[k].n) : 0;
+        return { label: k.length > 11 ? k.slice(0, 10) + "…" : k, title: k, n: a, color: gradeTone(a) };
+      }), { values: true }));
+      // By kind of work.
+      var cat = {};
+      d.courses.forEach(function (c) {
+        var gb = c.book || {}, a = {};
+        (gb.assignments || []).forEach(function (x) { a[x.id] = x; });
+        (gb.grades || []).forEach(function (g) {
+          if (g.score == null || !g.outOf) return;
+          var k = (a[g.assignmentId] && a[g.assignmentId].category) || g.category || "Other", x = cat[k] || (cat[k] = { s: 0, n: 0 });
+          x.s += g.score / g.outOf; x.n++;
+        });
+      });
+      var kc = s360Card(grid, "cx-s6", "How students do by kind of work", "checklist", "var(--cx-orange)");
+      kc.appendChild(barChart(Object.keys(cat).sort().map(function (k) {
+        var a = Math.round(cat[k].s / cat[k].n * 100);
+        return { label: k, n: a, color: gradeTone(a), title: k + " (" + cat[k].n + " marks)" };
+      }), { values: true }));
+      kc.appendChild(el("p", "cx-note", "The mean score on every marked piece of work of each kind, across all courses."));
+      // Courses in context.
+      var cc = s360Card(grid, "cx-s12", "Courses in context", "books", "var(--cx-indigo)");
+      var t = cnTable([{ label: "Course", w: "minmax(170px, 1.4fr)" }, { label: "Students", w: "76px", align: "right" }, { label: "Average", w: "76px", align: "right" },
+                       { label: "Spread", w: "72px", align: "right" }, { label: "Passing", w: "76px", align: "right" }, { label: "Missing", w: "76px", align: "right" },
+                       { label: "Marked", w: "72px", align: "right" }, { label: "Grades", w: "minmax(110px, 1fr)" }]);
+      d.courses.slice().sort(function (a, b) { return String(a.subject + a.title).localeCompare(String(b.subject + b.title)); }).forEach(function (c) {
+        var ps = [], sums = (c.book && c.book.summaries) || {};
+        Object.keys(sums).forEach(function (k) { if (sums[k] && sums[k].percent != null) ps.push(sums[k].percent); });
+        var mean = ps.length ? ps.reduce(function (a, b) { return a + b; }, 0) / ps.length : null;
+        var sd = ps.length > 1 ? Math.round(Math.sqrt(ps.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / (ps.length - 1))) : null;
+        var pass = ps.length ? Math.round(ps.filter(function (p) { return p >= CX_PASS; }).length / ps.length * 100) : null;
+        var missRate = c.dealt ? Math.round(c.missing / c.dealt * 100) : null;
+        var bands = [["A", "var(--cx-green)"], ["B", "var(--cx-teal)"], ["C", "var(--cx-yellow)"], ["D", "var(--cx-orange)"], ["F", "var(--cx-red)"]]
+          .map(function (x) { return c.dist[x[0]] ? '<i style="flex:' + c.dist[x[0]] + ";background:" + x[1] + '"></i>' : ""; }).join("");
+        t.row(["<b>" + esc(c.title) + "</b><span class='cn-sub2'>" + esc((c.subject || "") + " · " + (c.teachers.map(function (q) { return q.name; }).join(", ") || "no teacher")) + "</span>",
+               String(c.students), c.average == null ? "—" : "<b style='color:" + gradeTone(c.average) + "'>" + c.average + "%</b>", sd == null ? "—" : "±" + sd,
+               pass == null ? "—" : pass + "%", missRate == null ? "—" : missRate + "%", c.cells ? Math.round(c.dealt / c.cells * 100) + "%" : "—",
+               '<span class="cx-dist" style="display:flex">' + bands + "</span>"],
+              function () { S.gbPath = { dept: c.subject || "Other", course: c.id }; openAdmin(false, "gradebook"); }, c.id);
+      });
+      cc.appendChild(t);
+      cc.appendChild(el("p", "cx-note", "Spread is the standard deviation of students’ course grades. Missing is the share of recorded due work marked missing. " +
+        "Growth over time needs a starting assessment for each course, which the record does not hold yet."));
+    }, function (e) { failed(node, e, function () { openAdmin(true, "analytics"); }); });
+  }
+
+  /* ============================================================ Data Center
+     The school's data, out — as files it can open anywhere. Every export is
+     built in this browser from what the server returned just now, so it is
+     exactly what the console shows. */
+  function csvCell(v) {
+    v = v == null ? "" : String(v);
+    if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;          // never let a spreadsheet run a cell as a formula
+    return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function csvDownload(name, rows) {
+    var text = "﻿" + rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast("Downloaded " + name + " — " + (rows.length - 1) + (rows.length === 2 ? " row." : " rows."));
+  }
+  function tabData(v) {
+    consoleHead(v, "Data & security", "Data Center", "The school’s records, out as files — and, as they are built, the ways in.");
+    var node = loading(v, "the school’s records");
+    loadSchool().then(function (d) {
+      node.remove();
+      var stamp = new Date().toISOString().slice(0, 10);
+      function iso(ms) { return ms ? new Date(Number(ms)).toISOString().slice(0, 10) : ""; }
+      var EX = [
+        ["Students", "people", "var(--cx-cyan)", "Every enrolled student, their courses, standing and missing work.", function () {
+          return [["Name", "Email", "Courses", "Standing %", "Missing", "Waiting to be marked"]].concat(d.students.map(function (s) {
+            return [s.name, s.email, s.courses.map(function (c) { return c.title; }).join("; "), s.standing, s.missing, s.unmarked]; })); }],
+        ["Course grades", "table", "var(--cx-green)", "One row per student per course: percent and letter.", function () {
+          var rows = [["Student", "Email", "Course", "Subject", "Percent", "Letter", "Missing"]];
+          d.students.forEach(function (s) { s.courses.forEach(function (c) { rows.push([s.name, s.email, c.title, c.subject, c.grade ? c.grade.percent : "", c.grade ? c.grade.letter : "", c.missing]); }); });
+          return rows; }],
+        ["Every mark", "pencil", "var(--cx-pink)", "Every mark on every piece of work, with its status and whether it was late.", function () {
+          var rows = [["Student", "Email", "Course", "Work", "Category", "Due", "Score", "Out of", "Status", "Late"]];
+          d.courses.forEach(function (c) {
+            var gb = c.book || {}, a = {}, st = {};
+            (gb.assignments || []).forEach(function (x) { a[x.id] = x; });
+            (gb.students || []).forEach(function (x) { st[x.id] = x; });
+            (gb.grades || []).forEach(function (g) {
+              var w = a[g.assignmentId] || {}, s = st[g.accountId] || {};
+              rows.push([s.name, s.email, c.title, w.title || g.title, w.category || g.category, iso(w.dueAt), g.score, g.outOf, g.status, g.late ? "yes" : ""]);
+            });
+          });
+          return rows; }],
+        ["Missing work", "tray", "var(--cx-orange)", "Every piece of due work marked missing.", function () {
+          return [["Student", "Email", "Course", "Teacher", "Work", "Category", "Was due"]].concat(missingRows(d).map(function (r) {
+            return [r.student.name, r.student.email, r.course.title, r.teacher, r.work, r.category, iso(r.due)]; })); }],
+        ["Courses and rosters", "books", "var(--cx-indigo)", "Every course with its teachers, size, average and status.", function () {
+          return [["Code", "Course", "Subject", "Status", "Teachers", "Students", "Average %", "Below a pass"]].concat(d.courses.map(function (c) {
+            return [c.code, c.title, c.subject, c.status, c.teachers.map(function (t) { return t.name; }).join("; "), c.students, c.average, c.below]; })); }],
+        ["Staff", "badge", "var(--cx-orange)", "Every teacher, what they teach and how their marking stands.", function () {
+          return [["Teacher", "Email", "Courses", "Students", "Due work marked %", "To mark", "Last marked"]].concat(d.teachers.map(function (t) {
+            return [t.name, t.email, t.courses.map(function (c) { return c.title; }).join("; "), t.students, t.cells ? Math.round(t.dealt / t.cells * 100) : "", t.toMark, iso(t.last)]; })); }],
+        ["Audit log", "wave", "var(--cx-purple)", "Every change to a mark: before, after, who and when.", function () {
+          return [["When", "Student", "Course", "Work", "From score", "From status", "To score", "To status", "Out of", "By", "Note"]].concat(d.events.map(function (e) {
+            return [new Date(Number(e.at)).toISOString(), e.student && e.student.name, e.courseTitle, e.title, e.fromScore, e.fromStatus, e.toScore, e.toStatus, e.outOf, e.actorName, e.note]; })); }]
+      ];
+      v.appendChild(el("p", "cx-sethead", "Exports"));
+      var box = el("div", "cx-set");
+      EX.forEach(function (x) {
+        var r = el("div", "cx-setrow", '<span class="ic" style="--c:' + x[2] + '">' + cxIcon(x[1]) + '</span><span class="t"><b>' + esc(x[0]) + "</b><span>" + esc(x[3]) + "</span></span>");
+        var b = el("button", "cn-btn small", "Download CSV");
+        b.type = "button";
+        b.addEventListener("click", function () { csvDownload(x[0].toLowerCase().replace(/\s+/g, "-") + "-" + stamp + ".csv", x[4]()); });
+        var vv = el("span", "v");
+        vv.appendChild(b);
+        r.appendChild(vv);
+        box.appendChild(r);
+      });
+      v.appendChild(box);
+      if (d.capped) v.appendChild(el("p", "cx-note", "The audit log export holds each course’s latest " + HISTORY_LIMIT + " changes."));
+      v.appendChild(el("p", "cx-sethead", "Ways in — not built yet"));
+      var inb = el("div", "cx-set");
+      [["Import people, rosters and sections", "Needs sign-in invitations first, so nobody’s password is ever typed into a spreadsheet."],
+       ["Clever and SIS sync", "Not connected."], ["Scheduled SFTP exports", "Not connected."], ["State reporting (e.g. New York SIRS)", "Not connected."]]
+        .forEach(function (x) {
+          inb.appendChild(el("div", "cx-setrow", '<span class="ic" style="--c:var(--cx-gray)">' + cxIcon("server") + '</span><span class="t"><b>' + esc(x[0]) + "</b><span>" + esc(x[1]) + '</span></span><span class="v"><span class="cx-pill">Planned</span></span>'));
+        });
+      v.appendChild(inb);
+    }, function (e) { failed(node, e, function () { openAdmin(true, "data"); }); });
+  }
+
+  /* =============================================================== Security
+     What protects the school's records, stated only where it is true: each
+     line below is something the platform does today. What it does not do yet
+     is listed as not done, not left out. */
+  function tabSecurity(v) {
+    consoleHead(v, "Data & security", "Security", "What protects the school’s records today — and what is not built yet.");
+    function group(title, rows, ok) {
+      v.appendChild(el("p", "cx-sethead", esc(title)));
+      var box = el("div", "cx-set");
+      rows.forEach(function (x) {
+        box.appendChild(el("div", "cx-setrow", '<span class="ic" style="--c:' + (ok ? "var(--cx-green)" : "var(--cx-gray)") + '">' + cxIcon(ok ? "shield" : "alert") +
+          '</span><span class="t"><b>' + esc(x[0]) + "</b><span>" + esc(x[1]) + '</span></span><span class="v">' + (ok ? '<span class="cx-pill green">On</span>' : '<span class="cx-pill">Not yet</span>') + "</span>"));
+      });
+      v.appendChild(box);
+    }
+    group("In place", [
+      ["Passwords are hashed", "PBKDF2-SHA-256 with 100,000 iterations and a salt of their own. Nobody, including Oplo, can read one."],
+      ["Sessions a script cannot steal", "The sign-in lives in an HttpOnly, SameSite cookie set by the server — no page script can read it. A session lasts 30 days."],
+      ["Sign-in attempts are limited", "Repeated attempts on one account, or from one network, are refused for a while."],
+      ["Permissions are decided by the server", "Every request is checked against the account’s roles and its relationship to the course or student. Hidden buttons are a courtesy, not the control."],
+      ["Every mark change is kept", "Before, after, who and when — the Audit log — and a mark change can be undone."],
+      ["Sign out everywhere", "Every place an account is signed in is listed below, and can be signed out at once."]
+    ], true);
+    group("Not built yet", [
+      ["Two-step sign-in", "A second factor at sign-in, for staff first."],
+      ["Alerts for unusual sign-ins", "An email when an account signs in from somewhere new."],
+      ["Automatic sign-out", "A school-wide setting for how long a staff session may sit idle."]
+    ], false);
+    accountDevices(v);
+  }
+
   /* ============================================================== Primitives
 
      Three shapes, and every console screen is built from them.
@@ -12385,7 +13127,7 @@
      making visible in one screen. Selecting somebody fills the inspector; it
      does not take the list away. */
   function tabStudents(v) {
-    if (consoleMode() === "admin") consoleHead(v, "School", "Students",
+    if (consoleMode() === "admin") consoleHead(v, "Students", "Students",
       "Every student in the school, once. A student in three courses is one row " +
       "with three grades on it, not three rows.");
     else consoleHead(v, "Teaching", "Students",
@@ -12553,7 +13295,8 @@
     }
 
     var acts = cnActions();
-    acts.appendChild(cnAction("Open their report", function () { openReport(s); }, true));
+    if (consoleMode() === "admin") acts.appendChild(cnAction("Student 360", function () { openStudent360(s); }, true));
+    acts.appendChild(cnAction("Open their report", function () { openReport(s); }, consoleMode() !== "admin"));
     box.appendChild(acts);
     return box;
   }
@@ -12567,7 +13310,7 @@
      under which that usually arrives. */
   function tabActivity(v) {
     var admin = consoleMode() === "admin";
-    if (admin) consoleHead(v, "Oversight", "Audit log",
+    if (admin) consoleHead(v, "Data & security", "Audit log",
       "Every change to a mark across the school — before, after, who and when. Not a " +
       "log of what anybody looked at: only the things that change what a grade says.");
     else consoleHead(v, "Records", "Activity",
@@ -13570,7 +14313,7 @@
      than a label somebody typed. */
   function tabPeople(v) {
     var top = el("div", "cx-top");
-    consoleHead(top, "School", "People",
+    consoleHead(top, "People", "Directory",
       "An Oplo Account, not an OEdu account — the same sign-in carries a person into every Oplo " +
       "product they are authorised for, and roles are held per product.");
     var tools = el("div", "cx-tools");
@@ -14039,7 +14782,7 @@
      How this console looks on this Mac, where the install stands, and what is
      actually enforced — as System Settings lays out a pane. */
   function tabSystem(v) {
-    consoleHead(v, "School", "System", "Where this install stands, and what is actually enforced.");
+    consoleHead(v, "Settings", "Settings", "How this console looks on this Mac, and where the install stands.");
 
     function group(title) {
       if (title) v.appendChild(el("p", "cx-sethead", esc(title)));

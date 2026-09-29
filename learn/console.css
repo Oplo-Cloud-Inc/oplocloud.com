@@ -440,3 +440,30 @@ body.is-console .cx-insp { padding: 18px; }
 .cx-select:focus { outline: none; box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--cx-accent) 40%, transparent); }
 .cx-setrow .v .cn-btn + .cn-btn, .cx-setrow .v .cx-select + .cn-btn { margin-left: 2px; }
 .cx-setrow > .cx-av { width: 30px; height: 30px; font-size: 11px; }
+
+/* ------------------------------------------------------------- Student 360 */
+.cx-360h { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; flex-wrap: wrap; }
+.cx-360h > .cx-av { width: 64px; height: 64px; font-size: 22px; box-shadow: 0 6px 20px -8px var(--h, #8e8e93); }
+.cx-360h .t { flex: 1; min-width: 220px; }
+.cx-360h .cn-eyebrow { margin-bottom: 2px; }
+.cx-360h .cn-sub { margin-top: 2px; }
+.cx-360tabs { margin-bottom: 18px; }
+.cx-360p > .cx-card + .cx-card { margin-top: 16px; }
+.cx-bul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; color: var(--cx-label); }
+.cx-gtop { display: flex; align-items: baseline; gap: 12px; margin: -6px 0 12px; }
+.cx-gtop b { font-family: var(--cx-display); font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.cx-gtop span { font-size: 13px; color: var(--cx-label-2); }
+.cx-cats { display: grid; gap: 7px; margin-bottom: 14px; max-width: 520px; }
+.cx-cats > div { display: grid; grid-template-columns: 130px 1fr 44px; gap: 10px; align-items: center; font-size: 12.5px; color: var(--cx-label-2); }
+.cx-cats .bar { height: 7px; border-radius: 4px; background: var(--cx-fill); overflow: hidden; }
+.cx-cats .bar i { display: block; height: 100%; border-radius: 4px; }
+.cx-cats b { text-align: right; color: var(--cx-label); font-variant-numeric: tabular-nums; }
+.cx-gcard .cn-tbl { box-shadow: none; background: transparent; border-radius: 0; }
+
+/* Breadcrumbs for the school gradebook. */
+.cx-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: -8px 0 16px; }
+.cx-crumb { border: 0; background: none; font: inherit; font-size: 14px; color: var(--cx-accent); cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.cx-crumb:hover { background: var(--cx-fill-2); }
+.cx-crumb + .cx-crumb::before { content: "›"; color: var(--cx-label-3); margin-right: 8px; }
+.cx-crumb.on { color: var(--cx-label); font-weight: 600; cursor: default; }
+.cx-crumb.on:hover { background: none; }
