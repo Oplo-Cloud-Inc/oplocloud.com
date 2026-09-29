@@ -184,7 +184,7 @@
     var usd = releasable.reduce(function (s, i) { return s + E.usdOf(i.entity, i.amount, cp, "close"); }, 0);
     var byCur = {};
     releasable.forEach(function (i) { byCur[i.currency] = (byCur[i.currency] || 0) + i.amount; });
-    var mine = releasable.filter(function (i) { return i.approvedBy === "me"; });
+    var mine = releasable.filter(function (i) { return !E.can("ap.pay", app.actor(), { approvedBy: i.approvedBy }).ok; });
 
     var wrap = h("div");
     var head = h("div", { class: "card", style: { padding: "18px 20px", marginBottom: "16px" } },
@@ -201,7 +201,7 @@
         ui.gated("ap.pay", {}, releasable.length ? "Release payment run" : "Nothing to release", function () { release(); }, { kind: "primary", icon: "check" }),
         mine.length ? h("span", { class: "gate-why", style: { marginTop: "0" } }, ui.icon("lock", "sm"),
           h("span", null, "You approved " + mine.length + " of these, so someone else must release them (SOD-02). ")) : null,
-        mine.length ? ui.btn("Simulate Tomás releasing it", { kind: "ghost", icon: "users", onClick: function () { release(E.people.tomas); } }) : null));
+        mine.length && !app.live ? ui.btn("Simulate Tomás releasing it", { kind: "ghost", icon: "users", onClick: function () { release(E.people.tomas); } }) : null));
     if (!releasable.length) head.querySelector(".btn.primary").disabled = true;
     wrap.appendChild(head);
 
@@ -253,6 +253,7 @@
           { key: "act", label: "", render: function (i) {
             var ok = E.can("ap.pay", app.actor(), { approvedBy: i.approvedBy }).ok;
             return ok ? ui.btn("Schedule", { size: "sm", onClick: function () { app.run("ap.schedule", { id: i.id }, { ok: i.number + " scheduled for " + ui.date(run) + "." }); } })
+                      : app.live ? ui.gated("ap.pay", { approvedBy: i.approvedBy }, "Schedule", function () {}, { size: "sm" })
                       : ui.btn("Simulate Tomás scheduling", { size: "sm", kind: "ghost", onClick: function () { app.run("ap.schedule", { id: i.id }, { actor: E.people.tomas, ok: i.number + " scheduled by Tomás Reyes (simulated)." }); } });
           } }] }) })));
     }

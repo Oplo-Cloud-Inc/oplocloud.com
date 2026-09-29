@@ -149,11 +149,19 @@
   /* People: colleagues, and the signed-in person. */
   var HUES = { dana: "#5e5ce6", marcus: "#0a84ff", priya: "#bf5af2", tomas: "#30b0c7", hannah: "#ff9f0a", leo: "#34c759",
                oliver: "#ff6482", aiko: "#ac8e68", grace: "#64d2ff", system: "#8e8e93" };
+  /* A colour for somebody who isn't the signed-in person: the same one every time. */
+  function hueOf(id) {
+    var n = 0;
+    for (var i = 0; i < String(id).length; i++) n = (n * 31 + String(id).charCodeAt(i)) % 360;
+    return "hsl(" + n + " 50% 46%)";
+  }
   function person(id) {
-    var app = EFM.app, p = id === "me" ? app.me : app.E.people[id];
+    var app = EFM.app;
+    if (id !== "me" && app.isMe && app.isMe(id)) id = "me";
+    var p = id === "me" ? app.me : app.E.people[id];
     if (!p) return { id: id, name: id || "—", initials: "?", color: "#8e8e93" };
     var init = p.initials || p.name.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase();
-    var color = id === "me" ? (app.me.color || "#1d1d1f") : HUES[id] || "#8e8e93";
+    var color = id === "me" ? (app.me.color || "#1d1d1f") : HUES[id] || (id === "system" ? "#8e8e93" : hueOf(id));
     return { id: id, name: id === "me" ? app.me.name + " (you)" : p.name, short: id === "me" ? "You" : p.name.split(" ")[0], title: p.title || (EFM.app.E.roles[p.role] || {}).name, initials: id === "system" ? "OC" : init, color: color };
   }
   function avatar(id, sm) {

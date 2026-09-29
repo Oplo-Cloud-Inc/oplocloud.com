@@ -107,6 +107,7 @@
           h("div", { class: "t" }, j.memo), h("div", { class: "x" }, j.id + " · " + E.entity[j.entity].short + " · " + ui.period(j.period) + " · prepared by " + ui.person(j.createdBy).name + " · " + j.lines.length + " lines" + (j.attachments && j.attachments.length ? " · " + j.attachments.length + " attachment" : ""))),
         h("div", { class: "a" }, h("span", { class: "amt" }, E.fmt(j.total, E.entity[j.entity].currency)),
           can.ok ? ui.btn("Approve", { size: "sm", kind: "primary", onClick: function () { app.run("journal.approve", { id: j.id }, { ok: j.id + " approved and posted to " + ui.period(j.period) + "." }); } })
+                 : app.live ? ui.gated("journal.approve", { createdBy: j.createdBy, usd: usd }, "Approve", function () {}, { size: "sm" })
                  : ui.btn("Simulate " + reviewer.name.split(" ")[0], { size: "sm", kind: "ghost", icon: "users", onClick: function () {
                    app.run("journal.approve", { id: j.id, simulated: true }, { actor: reviewer, ok: reviewer.name + " approved " + j.id + " (simulated)." }); } }),
           ui.btn("Review", { size: "sm", onClick: function () { app.open({ kind: "journal", id: j.id }); } }))));

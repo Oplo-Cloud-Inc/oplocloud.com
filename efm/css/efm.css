@@ -148,6 +148,7 @@ svg { display: block; }
   border-radius: var(--r-s); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
 }
 .ws:hover { border-color: var(--line-2); }
+.ws.solo, .ws.solo:hover { border-color: var(--line); cursor: default; }
 .ws-dot { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font: 600 10px/1 var(--font); background: var(--sunken); color: var(--ink-2); flex: none; }
 .ws b { font-size: 13px; font-weight: 600; display: block; }
 .ws small { font-size: 11.5px; color: var(--ink-3); display: block; }
@@ -184,9 +185,15 @@ svg { display: block; }
 .search .kbd { flex: none; }
 .kbd { font: 500 11px/1 var(--font); color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 5px; padding: 3px 5px; background: var(--surface); }
 .top-tools { display: flex; align-items: center; gap: 6px; }
-.sandbox { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 500;
-  background: var(--warn-wash); color: var(--warn); white-space: nowrap; }
-.sandbox i { width: 6px; height: 6px; border-radius: 50%; background: var(--warn-dot); }
+/* Whether what you've done has reached the server. Quiet when all is well. */
+.savestate { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap;
+  color: var(--ink-3); transition: background .2s var(--ease), color .2s var(--ease); }
+.savestate svg { width: 13px; height: 13px; flex: none; }
+.savestate.saved svg { color: var(--good); }
+.savestate.saving { color: var(--ink-2); }
+.savestate.error, .savestate.offline { background: var(--bad-wash); color: var(--bad); }
+.savestate .spin { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--line-2); border-top-color: var(--ink-2); animation: savespin .7s linear infinite; flex: none; }
+@keyframes savespin { to { transform: rotate(360deg); } }
 .iconbtn { width: 32px; height: 32px; border-radius: var(--r-s); display: grid; place-items: center; color: var(--ink-2); position: relative; }
 .iconbtn:hover { background: var(--hover); color: var(--ink); }
 .iconbtn .dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad-dot); box-shadow: 0 0 0 2px var(--bg); }
@@ -579,15 +586,6 @@ main.page.arrive > * { animation: arrive .38s var(--ease-out) both; }
 .stat-row .v { font: 600 20px/1.3 var(--display); letter-spacing: -.02em; white-space: nowrap; }
 
 /* Home's first-session guide. */
-.tour { margin-bottom: 16px; }
-.tour-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
-.tour-step { display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 12px; border-radius: 10px; background: var(--sunken); border: 1px solid transparent; transition: border-color .15s var(--ease), background .15s var(--ease); }
-.tour-step:hover { border-color: var(--line-2); background: var(--surface); }
-.tour-step b { display: block; font-size: 13px; font-weight: 600; }
-.tour-step small { display: block; font-size: 12px; color: var(--ink-3); margin-top: 2px; line-height: 1.35; }
-.tour-step.done b { color: var(--ink-3); }
-.tour-n { font-size: 11px; font-weight: 600; color: var(--ink-3); }
-.tour-step .check { margin-top: 1px; }
 
 /* ------------------------------------------------------------- Workspace */
 .entity-card { display: flex; flex-direction: column; align-items: stretch; text-align: left; padding: 14px 16px; }
@@ -611,7 +609,6 @@ main.page.arrive > * { animation: arrive .38s var(--ease-out) both; }
 .check svg { width: 12px; height: 12px; }
 
 @media (max-width: 1180px) {
-  .tour-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .c3, .c4, .c5 { grid-column: span 6; }
   .c7, .c8, .c9 { grid-column: span 12; }
   .kpis { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -627,7 +624,7 @@ main.page.arrive > * { animation: arrive .38s var(--ease-out) both; }
   .page { padding: 20px 16px 48px; }
   .top { padding: 0 16px; }
   .search { width: auto; flex: 1; }
-  .sandbox, .me div { display: none; }
+  .savestate span, .me div { display: none; }
   .gate { grid-template-columns: 1fr; }
   .gate-r { display: none; }
   .gate-l { padding: 40px 20px; }

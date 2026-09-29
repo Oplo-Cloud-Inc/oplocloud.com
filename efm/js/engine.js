@@ -1665,6 +1665,8 @@
       var order = ["open", "soft", "closed", "locked"];
       if (p.status === "locked" || (cur === "locked")) need(this, "period.lock", actor);
       else need(this, "period.close", actor);
+      if (this.live && (p.status === "closed" || p.status === "locked") && p.period >= this.currentPeriod())
+        throw new Refusal("period", periodLabel(p.period, true) + " hasn't ended yet.", "A month is closed once it is over, so nothing dated in it can be left out.");
       if ((p.status === "closed" || p.status === "locked") && p.period === this.currentPeriod()) {
         var open = Object.values(this.closeTasks).filter(function (t) { return t.period === p.period && t.status !== "done" && (t.entity === p.entity || t.entity === "ALL"); });
         if (open.length) throw new Refusal("tasks", open.length + " close task" + (open.length === 1 ? " is" : "s are") + " still open for " + periodLabel(p.period, true) + ".", "A period closes when its checklist is complete.");

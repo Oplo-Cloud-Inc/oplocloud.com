@@ -15,6 +15,7 @@
     title: "Consolidation", icon: "layers", wide: true,
     render: function (ctx) {
       var E = ctx.E, app = ctx.app, q = ctx.query, cp = E.currentPeriod();
+      if (E.entities.length === 1) return single(ctx);
       var p = q.get("p") || E.lastClosedPeriod();
       var st = q.get("s") || "bs";
       var ps = E.periodsBetween(E.fy + "-01", cp).reverse();
@@ -32,6 +33,17 @@
       return page;
     }
   });
+
+  /* One legal entity has nothing to consolidate: its statements are the group's. */
+  function single(ctx) {
+    var E = ctx.E, app = ctx.app, e = E.entities[0];
+    var page = h("div");
+    page.appendChild(ui.pageHead("Consolidation", "How separate legal entities become one set of group accounts."));
+    page.appendChild(ui.card({ body: h("div", { class: "empty", style: { padding: "40px 16px" } }, ui.icon("layers"), h("b", null, "One entity, nothing to consolidate"),
+      h("div", null, e.legal || e.name, " is the only legal entity in these books, and it reports in " + e.currency + ". Its statements are the company's statements. When a second entity is added, this is where their books are translated, matched and combined."),
+      h("div", { class: "row", style: { justifyContent: "center", marginTop: "14px" } }, ui.btn("Open reports", { kind: "primary", icon: "report", onClick: function () { app.navigate("/reports"); } }))) }));
+    return page;
+  }
 
   /* ------------------------------------------------------------ Entities */
   function entities(ctx, p) {

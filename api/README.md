@@ -161,11 +161,32 @@ KDF.
 OC EFM (efm.oplocloud.com, OploCloud's financial system) is the one product
 here that is **assigned, not open**. Signing in proves who somebody is; whether
 they may use EFM is the `efm` product role on their account (`efm.user`), or
-being a platform administrator. Its sample books are generated in the browser;
-what is *actual* is loaded into `efm_datasets` (migration 0011) and read only
-through `GET /api/v1/efm/datasets/:name`, which asks `efm.read` on every request
-(`core/guard.js`), so the data never sits in a public file or in the repository.
-There is no route that writes a dataset; an administrator loads one out of band.
+being a platform administrator (`efm.read` / `efm.write` in `core/guard.js`).
+
+Its books are **real and live on the server**, stored as an append-only list of
+commands rather than as balances (`efm_books`, `efm_commands`, migration 0012):
+each command — who, what, when — is chained to the one before it by a SHA-256 hash,
+and triggers refuse any UPDATE or DELETE. The books at any moment are what the
+engine (`efm/js/engine.js`, the same file the browser runs) adds that list up to.
+
+- `GET  /api/v1/efm/books/:id` — the book, its commands, head hash and count.
+- `GET  /api/v1/efm/books/:id/commands?after=N` — what others have done since.
+- `POST /api/v1/efm/books/:id/commands` — one change. The server checks, in order:
+  the caller's position (`expectSeq`, else 409 `stale`), the stored chain's
+  integrity (500 `integrity`), the caller's clock (±10 min, 409 `clock`), that the
+  whole list replays (500 `replay`), then runs the command through the engine as
+  the *session's* account (a refusal — separation of duties, a closed period —
+  is 422 `refused` with the rule). Only the commands people can make from the app
+  are accepted (`CLIENT_COMMANDS`); the actor is always taken from the session.
+
+Every write replays the whole list, at roughly a quarter of a millisecond per
+stored command, so it is cheap for a company's books for years. If a book ever
+reaches tens of thousands of commands, add periodic snapshots to it.
+
+Loading actual data out of band (an administrator, from a machine with wrangler
+access) is `scripts/efm-import-card-charges.mjs <export.json> [--remote]`: it
+runs each new command through the engine first, then writes the chained rows and
+reads them back to verify them.
 
 ```bash
 # Make somebody an account with EFM and no password (status `invited`):

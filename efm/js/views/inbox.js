@@ -61,6 +61,7 @@
         amount = E.fmt(j.total, E.entity[j.entity].currency);
         open = function () { app.open({ kind: "journal", id: j.id }); };
         action = can.ok ? ui.btn("Approve", { size: "sm", kind: "primary", onClick: function () { app.run("journal.approve", { id: j.id }, { ok: j.id + " approved and posted." }); } })
+          : app.live ? ui.gated("journal.approve", { createdBy: j.createdBy, usd: r.usd }, "Approve", function () {}, { size: "sm" })
           : ui.btn("Simulate " + reviewer.name.split(" ")[0], { size: "sm", kind: "ghost", icon: "users", onClick: function () { app.run("journal.approve", { id: j.id, simulated: true }, { actor: reviewer, ok: reviewer.name + " approved " + j.id + " (simulated)." }); } });
       } else {
         var i = r.i, v = E.vendors[i.vendor];
@@ -90,12 +91,12 @@
   }
 
   function recent(ctx) {
-    var E = ctx.E;
-    var mine = E.audit.filter(function (ev) { return ev.actor === "me"; }).slice(-12).reverse();
-    var others = E.audit.filter(function (ev) { return ev.actor !== "me" && ev.actor !== "system"; }).slice(-6).reverse();
+    var E = ctx.E, app = ctx.app;
+    var mine = E.audit.filter(function (ev) { return app.isMe(ev.actor); }).slice(-12).reverse();
+    var others = E.audit.filter(function (ev) { return !app.isMe(ev.actor) && ev.actor !== "system"; }).slice(-6).reverse();
     var g = h("div", { class: "grid" });
     g.appendChild(ui.card({ title: "What you've done", meta: mine.length ? "latest first" : null, span: 6,
-      body: mine.length ? ui.timeline(mine) : ui.empty("Nothing yet", "Approvals, reconciliations and close steps you take in this sandbox show up here — and in the audit trail.", "clip") }));
+      body: mine.length ? ui.timeline(mine) : ui.empty("Nothing yet", "Approvals, reconciliations and close steps you take show up here — and in the audit trail.", "clip") }));
     g.appendChild(ui.card({ title: "What the team did", meta: "latest first", span: 6, body: ui.timeline(others) }));
     return g;
   }

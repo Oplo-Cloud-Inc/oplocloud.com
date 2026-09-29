@@ -104,7 +104,8 @@
             if (why) app.run("journal.reject", { id: j.id, reason: why }, { ok: j.id + " rejected." });
           });
         }));
-        if (!can.ok && j.createdBy === "me") {
+        // Only in the test books, where colleagues are invented, can somebody stand in for a second approver.
+        if (!can.ok && !app.live && app.isMe(j.createdBy)) {
           var reviewer = usd > E.limits.journal.controller * 100 ? E.people.dana : E.people.marcus;
           foot.appendChild(h("span", { class: "sp" }));
           foot.appendChild(ui.btn("Simulate " + reviewer.name.split(" ")[0] + "'s approval", { kind: "ghost", icon: "users", onClick: function () {
@@ -241,7 +242,7 @@
       } else if (inv.status === "approved" || inv.status === "scheduled") {
         // Whoever approved an invoice doesn't release its payment (SOD-02).
         // In the sandbox a colleague in Treasury can be asked to.
-        var mine = !E.can("ap.pay", app.actor(), { approvedBy: inv.approvedBy }).ok;
+        var mine = !app.live && !E.can("ap.pay", app.actor(), { approvedBy: inv.approvedBy }).ok;
         var tomas = E.people.tomas;
         var schedule = function (actor) { app.run("ap.schedule", { id: inv.id }, { actor: actor, ok: inv.number + " scheduled for " + ui.date(E.nextPaymentRun()) + (actor ? " by " + actor.name + " (simulated)" : "") + "." }); };
         var pay = function (actor) {

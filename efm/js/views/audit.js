@@ -49,7 +49,8 @@
         h("div", { class: "au-hash", style: { marginTop: "6px" } }, "Head " + head)),
       ui.btn("Show a tampered copy", { onClick: function () { tamperDemo(ctx); } }),
       ui.btn("Verify the chain", { kind: "primary", icon: "check", onClick: function () { var r = E.verifyAudit(); r.when = Date.now(); local.verified = r; app.refresh(); } }));
-    wrap.appendChild(card);
+    // On real books the record that can be checked is the saved list of commands itself.
+    wrap.appendChild(app.live ? commandLog(ctx) : card);
 
     var body = h("div");
     wrap.appendChild(ui.card({ flush: true, body: body }));
@@ -136,6 +137,10 @@
     var E = ctx.E, app = ctx.app;
     var list = Object.values(E.anomalies).sort(function (a, b) { return (a.status === "open" ? 0 : 1) - (b.status === "open" ? 0 : 1) || (a.raisedAt < b.raisedAt ? 1 : -1); });
     var wrap = h("div");
+    if (app.live && !list.length) {
+      wrap.appendChild(ui.card({ body: ui.empty("No flags", "The separation-of-duties rules stop a breach outright, so they never show up here. Nothing else raises a flag yet — automated checks on unusual postings and vendor changes are still to come.", "shield") }));
+      return wrap;
+    }
     wrap.appendChild(h("p", { class: "note", style: { marginBottom: "12px" } }, "Rules run over every posting, payment and change to the vendor master. A flag is a reason to look, not an accusation — each is resolved with a note, dismissed or escalated to Internal Audit."));
     wrap.appendChild(ui.card({ flush: true, body: ui.table({ rows: list, sortable: false, onRow: function (a) { app.open({ kind: "anomaly", id: a.id }); }, columns: [
       { key: "s", label: "", render: function (a) { return ui.sev(a.status === "open" ? a.sev : "info"); } },
@@ -157,6 +162,11 @@
       ["SOD-03", "New vendor bank details are verified by call-back before anything is paid.", "The number called is the one already on file — never one from the email that asked for the change."],
       ["SOD-04", "Whoever prepares a document doesn't approve it.", "Every manual journal needs a second person; above $250,000, the CFO."]
     ];
+    if (E.live) {
+      RULES[0][2] = "Someone else looks at every invoice before it is approved.";
+      RULES[1][2] = "A payment run that includes an invoice you approved is refused.";
+      RULES[3][2] = "Every manual journal needs a second person to approve it.";
+    }
     var wrap = h("div", { class: "grid" });
     var rules = h("div");
     RULES.forEach(function (r) {
@@ -164,6 +174,12 @@
         ui.status("good", "Enforced")));
     });
     wrap.appendChild(ui.card({ title: "Rules", meta: "checked by the engine on every command — a screen can't skip them", span: 7, body: rules }));
+    if (E.live) {
+      wrap.appendChild(ui.card({ title: "Access", span: 5, body: h("div", { class: "stack", style: { gap: "10px" } },
+        h("p", { style: { fontSize: "13.5px", lineHeight: "1.5" } }, "Everyone who has OC EFM works in the same system with the same access. The rules above are about the document, not the person: whoever prepared it, approved it or released it can't be the one to do the next step."),
+        h("p", { class: "muted", style: { fontSize: "12.5px", lineHeight: "1.5" } }, "The server checks every rule again when a change arrives, so a modified browser can't get past them.")) }));
+      return wrap;
+    }
     var lim = h("div", { class: "stack", style: { gap: "10px" } },
       limRow("Manual journals", "Controller up to " + E.fmt(E.limits.journal.controller * 100, "USD", { dp: 0 }), "CFO above"),
       limRow("Vendor invoices", "Controller up to " + E.fmt(E.limits.ap.controller * 100, "USD", { dp: 0 }), "CFO above"),
@@ -182,8 +198,23 @@
     t.appendChild(tb);
     wrap.appendChild(ui.card({ title: "Permissions by role", meta: "the colleagues whose work is in these books", span: 12, flush: true,
       body: h("div", { class: "tbl-wrap" }, t),
-      foot: [h("span", null, "Everyone signed in to OC EFM works in the same system with full access. The document rules above still apply to you — and where they stop you, the sandbox lets you simulate the colleague who would act.")] }));
+      foot: [h("span", null, "Everyone signed in to OC EFM works in the same system with full access. The document rules above still apply to you — and where they stop you, you can simulate the colleague who would act.")] }));
     return wrap;
+  }
+
+  /* The list of commands the books are built from, checked against the hashes
+     the server stored with it. This is the record the audit trail is drawn from. */
+  function commandLog(ctx) {
+    var E = ctx.E, app = ctx.app, log = E.commandLog || [];
+    var r = EFM.verifyCommands(E.bookId || "oplo", log);
+    var head = log.length ? log[log.length - 1].hash : "";
+    return h("div", { class: "card au-verify" },
+      h("span", { class: "ic" + (r.ok ? "" : " bad") }, ui.icon(r.ok ? "shield" : "alert")),
+      h("div", { class: "grow" },
+        h("div", { style: { fontWeight: "600", fontSize: "15px" } }, r.ok ? "The saved history checks out — " + log.length.toLocaleString() + " command" + (log.length === 1 ? "" : "s") : "The saved history breaks at command #" + r.at),
+        h("div", { class: "muted", style: { fontSize: "12.5px", marginTop: "2px" } }, r.ok ? "Every change to these books is kept, in order, and can't be edited or removed — the server refuses to. Each one is chained to the one before it, and your browser just recomputed every link." : "It " + r.why + "."),
+        head ? h("div", { class: "au-hash", style: { marginTop: "6px" } }, "Head " + head) : null),
+      ui.btn("Check again", { icon: "check", onClick: function () { app.refresh(); } }));
   }
   function limRow(what, a, b) {
     return h("div", { class: "row", style: { justifyContent: "space-between", fontSize: "13px", paddingBottom: "10px", borderBottom: "1px solid var(--line)" } },

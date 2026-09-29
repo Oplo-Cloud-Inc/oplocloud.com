@@ -1,20 +1,15 @@
 /* ==========================================================================
-   OC EFM — the sandbox's books.
+   OC EFM — generated SAMPLE books. A test fixture. It is not part of OC EFM.
 
-   Nine months of fiscal 2026 for OploCloud Group — OploCloud, Inc. (New
-   York, USD), OploCloud UK Ltd (London, GBP) and OploCloud Japan K.K.
-   (Tokyo, JPY) — generated, not typed: contracts bill and defer, payroll
-   runs on its calendar, vendors invoice and get paid on Thursday runs,
-   cloud usage is accrued and reversed, assets depreciate, the parent
-   recharges its subsidiaries, balances are revalued, taxes are provided.
-   Every one of those becomes a journal through the engine's post(), so the
-   books obey the same rules as anything a person does in the sandbox.
+   Nine months of invented books for a made-up group — three entities, three
+   currencies, colleagues who don't exist, a bank feed nobody has, a close
+   waiting to be run — generated deterministically so the engine and every
+   screen can be exercised against a busy ledger. OC EFM itself shows only
+   OploCloud's real books (efm/js/books.js); nothing in this file is served
+   to anyone, and nothing in it is true.
 
-   The figures are illustrative. Customers, most vendors and every person
-   are fictional; the numbers are not OploCloud's.
-
-   Deterministic: the same code always makes the same books, which is what
-   lets a sandbox keep only the commands somebody ran and replay them.
+   The tests load it as /js/sample-seed.js on a local server. See
+   tools/efm-sample/README.md.
    ========================================================================== */
 (function (root) {
   "use strict";

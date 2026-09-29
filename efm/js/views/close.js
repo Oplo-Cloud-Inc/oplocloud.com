@@ -14,10 +14,40 @@
   function wdNum(wd) { return parseInt(String(wd).replace("WD", "").replace("−", "-"), 10); }
   function blocked(E, t) { return (t.deps || []).filter(function (d) { return E.closeTasks[d] && E.closeTasks[d].status !== "done"; }); }
 
+  /* On real books there is no invented checklist: the close is the period
+     itself. The month that has ended and is still open is the one to close,
+     then to lock; the current month can't be closed before it is over. */
+  function closable(E) {
+    var cp = E.currentPeriod(), ps = E.fyPeriods();
+    for (var i = 0; i < ps.length && ps[i] < cp; i++) {
+      var p = ps[i];
+      if (E.entities.some(function (e) { return E.periodStatus(e.id, p) !== "locked"; })) return p;
+    }
+    return null;
+  }
+
+  function liveClose(ctx) {
+    var E = ctx.E, app = ctx.app, cp = E.currentPeriod(), p = closable(E);
+    var page = h("div");
+    page.appendChild(ui.pageHead("Close", "Closing a month stops new postings to it, so its figures stop moving. A month can be closed once it has ended."));
+    page.appendChild(periodsCard(ctx));
+    var g = h("div", { class: "grid", style: { marginTop: "16px" } });
+    if (p) {
+      var c6 = function (card) { var w = h("div", { class: "c6" }); w.appendChild(card); return w; };
+      g.appendChild(c6(checksCard(ctx, p)));
+      g.appendChild(c6(closePeriodCard(ctx, [], p)));
+    } else {
+      g.appendChild(ui.card({ span: 12, body: ui.empty("Nothing to close yet", ui.period(cp, true) + " is still under way — it ends " + ui.date(E.lastDay(cp), "long") + ". Once a month has ended, it appears here to be closed.", "clip") }));
+    }
+    page.appendChild(g);
+    return page;
+  }
+
   EFM.view("close", {
     title: "Close", icon: "close",
     openId: function (id) { EFM.app.open({ kind: "task", id: id }); },
     render: function (ctx) {
+      if (ctx.app.live) return liveClose(ctx);
       var E = ctx.E, app = ctx.app, cp = E.currentPeriod();
       var tasks = Object.values(E.closeTasks).filter(function (t) { return t.period === cp; });
       var done = tasks.filter(function (t) { return t.status === "done"; });
@@ -102,7 +132,7 @@
       tb.appendChild(tr);
     });
     t.appendChild(tb);
-    return ui.card({ title: "Fiscal " + E.fy, meta: "Locked periods can't change; closed periods take no new postings; the number is the working days that close took", body: h("div", { class: "tbl-wrap" }, t),
+    return ui.card({ title: "Fiscal " + E.fy, meta: E.closeHistory.length ? "Locked periods can't change; closed periods take no new postings; the number is the working days that close took" : "Locked periods can't change; closed periods take no new postings", body: h("div", { class: "tbl-wrap" }, t),
       tools: ui.charts.legend([{ label: "Locked", color: "var(--ink-3)" }, { label: "Closed", color: "var(--good-dot)" }, { label: "Open", color: "var(--accent)" }]) });
   }
 
@@ -168,23 +198,23 @@
   }
 
   /* -------------------------------------------------------- Before close */
-  function checksCard(ctx) {
-    var E = ctx.E, app = ctx.app, cp = E.currentPeriod();
+  function checksCard(ctx, period) {
+    var E = ctx.E, app = ctx.app, cp = period || E.currentPeriod(), month = E.periodLabel(cp, true).split(" ")[0], last = E.fy + "-12";
     var items = [];
     var tieOff = 0;
     E.entities.forEach(function (e) {
-      if (E.arOpen(e.id).reduce(function (s, i) { return s + i.balance; }, 0) !== E.balance(e.id, "1100", "2026-12")) tieOff++;
-      if (E.apOpen(e.id).reduce(function (s, i) { return s + i.amount; }, 0) !== -E.balance(e.id, "2000", "2026-12")) tieOff++;
+      if (E.arOpen(e.id).reduce(function (s, i) { return s + i.balance; }, 0) !== E.balance(e.id, "1100", last)) tieOff++;
+      if (E.apOpen(e.id).reduce(function (s, i) { return s + i.amount; }, 0) !== -E.balance(e.id, "2000", last)) tieOff++;
     });
     items.push({ ok: !tieOff, t: tieOff ? tieOff + " subledger" + (tieOff > 1 ? "s" : "") + " off" : "Subledgers tie to the ledger", x: "Receivables and payables, every entity, to the cent", go: "/ledger?tab=tb" });
     var unm = Object.values(E.bankLines).filter(function (l) { return l.status === "unmatched"; }).length;
-    items.push({ ok: !unm, t: unm ? unm + " bank line" + (unm > 1 ? "s" : "") + " to reconcile" : "Every bank account reconciled", x: "Feeds through Sep 26", go: "/cash" });
-    var ic = E.intercompany(cp).filter(function (x) { return Math.abs(x.difference) >= 100; });
-    items.push({ ok: !ic.length, t: ic.length ? ic.length + " intercompany pair" + (ic.length > 1 ? "s" : "") + " out of balance" : "Intercompany in balance", x: ic.length ? ic.map(function (x) { return x.pair; }).join(", ") : "US ↔ UK, US ↔ Japan", go: "/consolidation" });
+    if (Object.keys(E.bankAccounts).length) items.push({ ok: !unm, t: unm ? unm + " bank line" + (unm > 1 ? "s" : "") + " to reconcile" : "Every bank account reconciled", x: "Every bank line matched to the ledger", go: "/cash" });
+    var ic = E.entities.length > 1 ? E.intercompany(cp).filter(function (x) { return Math.abs(x.difference) >= 100; }) : [];
+    if (E.entities.length > 1) items.push({ ok: !ic.length, t: ic.length ? ic.length + " intercompany pair" + (ic.length > 1 ? "s" : "") + " out of balance" : "Intercompany in balance", x: ic.length ? ic.map(function (x) { return x.pair; }).join(", ") : "Between the group's entities", go: "/consolidation" });
     var pend = Object.values(E.journals).filter(function (j) { return j.status === "pending" && j.period === cp; }).length;
     items.push({ ok: !pend, t: pend ? pend + " journal" + (pend > 1 ? "s" : "") + " waiting for approval" : "No journals waiting", x: "A period can't close with journals pending", go: "/journals?status=pending" });
     var rev = Object.values(E.apInvoices).filter(function (i) { return i.status === "review" && i.date <= E.lastDay(cp); }).length;
-    items.push({ ok: !rev, t: rev ? rev + " September invoice" + (rev > 1 ? "s" : "") + " not yet approved" : "AP cut-off clean", x: "Approve, hold or reject before the period closes", go: "/payables?status=review" });
+    items.push({ ok: !rev, t: rev ? rev + " " + month + " invoice" + (rev > 1 ? "s" : "") + " not yet approved" : "AP cut-off clean", x: "Approve, hold or reject before the period closes", go: "/payables?status=review" });
     var an = Object.values(E.anomalies).filter(function (a) { return a.status === "open"; }).length;
     items.push({ ok: !an, t: an ? an + " control flag" + (an > 1 ? "s" : "") + " open" : "No open control flags", x: "Resolve or escalate before sign-off", go: "/audit?tab=flags" });
     var list = h("div", { class: "att" });
@@ -197,8 +227,8 @@
     return ui.card({ title: "Before you close", meta: okN + " of " + items.length + " clear", flush: true, body: list });
   }
 
-  function closePeriodCard(ctx, tasks) {
-    var E = ctx.E, app = ctx.app, cp = E.currentPeriod();
+  function closePeriodCard(ctx, tasks, period) {
+    var E = ctx.E, app = ctx.app, cp = period || E.currentPeriod(), month = E.periodLabel(cp, true).split(" ")[0], next = E.periodLabel(E.addMonths(cp, 1), true).split(" ")[0];
     var open = tasks.filter(function (t) { return t.status !== "done"; }).length;
     var rows = h("div", { class: "stack", style: { gap: "10px" } });
     E.entities.forEach(function (e) {
@@ -208,7 +238,7 @@
       var btn;
       if (st === "open" || st === "soft") {
         btn = ui.gated("period.close", {}, "Close", function () {
-          ui.confirm({ title: "Close " + ui.period(cp, true) + " for " + e.name + "?", text: "No more postings to September for this entity. A correction after this goes into October — or the period is reopened, which is recorded.", confirmLabel: "Close period" })
+          ui.confirm({ title: "Close " + ui.period(cp, true) + " for " + e.name + "?", text: "No more postings to " + month + " for this entity. A correction after this goes into " + next + " — or the period is reopened, which is recorded.", confirmLabel: "Close period" })
             .then(function (y) { if (y) app.run("period.set", { entity: e.id, period: cp, status: "closed" }, { ok: ui.period(cp, true) + " closed for " + e.name + "." }); });
         }, { size: "sm", kind: why ? null : "primary" });
         if (why) btn.disabled = true;
@@ -222,11 +252,12 @@
         btn));
     });
     return ui.card({ title: "Close " + ui.period(cp, true), meta: "entity by entity", body: rows,
-      foot: [h("span", null, "Closing needs every step done and no journals pending. Only the CFO locks.")] });
+      foot: [h("span", null, E.live ? "Closing needs no journals waiting for approval. Locking makes the month final." : "Closing needs every step done and no journals pending. Only the CFO locks.")] });
   }
 
   function historyCard(ctx) {
     var E = ctx.E, hist = E.closeHistory;
+    if (!hist.length) return h("span");
     return ui.card({ title: "Days to close", meta: "working days after month end", body: ui.charts.columns({ height: 150,
       labels: hist.map(function (x) { return x.period; }), series: [{ name: "Working days", color: "var(--s1)", values: hist.map(function (x) { return x.days; }) }],
       xFormat: function (p) { return ui.period(p).slice(0, 1); }, yFormat: function (v) { return String(v); }, tipFormat: function (v) { return v + " days"; },

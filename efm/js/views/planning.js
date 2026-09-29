@@ -90,6 +90,13 @@
     render: function (ctx) {
       var E = ctx.E, app = ctx.app;
       var b = baseline(E), cash0 = E.cashPosition().total;
+      if (!(b.rev > 0)) {
+        // A forecast grows from revenue the books already show; with none, any figure would be invented.
+        var empty = h("div");
+        empty.appendChild(ui.pageHead("Forecast & scenarios", "A driver-based plan for the next fifteen months. Nothing here posts to the ledger."));
+        empty.appendChild(ui.card({ body: ui.empty("Nothing to forecast from yet", "The forecast starts from the revenue the books show for the last three months, and there is none recorded. Once there is, the scenarios and their drivers appear here.", "trend") }));
+        return empty;
+      }
       if (!state) state = load(b.cloudPct);
       var page = h("div");
       page.appendChild(ui.pageHead("Forecast & scenarios",

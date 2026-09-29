@@ -2,10 +2,17 @@
    OC EFM — the application shell.
 
    Signs the person in through auth.oplocloud.com (never a password field
-   here), builds the sandbox — the seeded books plus whatever this person
-   has done to them — and routes between the screens. Screens register with
-   EFM.view(); each one is a function of the engine's state and re-renders
-   when a command changes it.
+   here), loads OploCloud's books from the server — the list of commands that
+   is the record — and replays them into the engine, then routes between the
+   screens. Screens register with EFM.view(); each one is a function of the
+   engine's state and re-renders when a command changes it.
+
+   Every command the engine runs is sent to the server, in order, and the
+   server runs it again under the same rules before adding it to the books. If
+   the server disagrees for any reason — somebody else changed the books, the
+   rules refuse, the network drops — the books are reloaded from the server and
+   the person is told, so what is on screen is never something that was not
+   saved.
    ========================================================================== */
 (function (root) {
   "use strict";
@@ -13,7 +20,6 @@
 
   var LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var API = LOCAL ? "http://" + location.hostname + ":8787" : "https://api.oplocloud.com";
-  var STORE = "efm.sandbox.v1";
 
   var VIEWS = {}, ORDER = [];
   EFM.view = function (id, def) { def.id = id; VIEWS[id] = def; if (ORDER.indexOf(id) < 0) ORDER.push(id); };
@@ -30,24 +36,11 @@
   ];
 
   var app = EFM.app = {
-    E: null, me: null, account: null, scope: "GROUP", role: "member",
-    actor: function () { return { id: "me", name: app.me.name, role: app.role }; },
+    E: null, me: null, account: null, scope: "GROUP", role: "member", live: false,
+    // The signed-in person, as the engine and the server know them.
+    actor: function () { return { id: app.account ? app.account.id : "me", name: app.me ? app.me.name : "You", role: "member" }; },
+    isMe: function (id) { return id === "me" || (!!app.account && id === app.account.id); },
     views: VIEWS
-  };
-
-  /* ------------------------------------------------------------- Store */
-  function key() { return STORE + ":" + (app.account ? app.account.id : "anon"); }
-  function load() { try { return JSON.parse(localStorage.getItem(key()) || "null"); } catch (e) { return null; } }
-  function save() {
-    try { localStorage.setItem(key(), JSON.stringify({ log: app.E.log, scope: app.scope, v: 1 })); } catch (e) { /* private mode: the session still works */ }
-  }
-  app.reset = function () {
-    ui.confirm({ title: "Reset the sandbox?", text: "Everything you have done — approvals, journals, reconciliations, the close — is undone and the books go back to how they were seeded. Nothing outside this browser is affected.", confirmLabel: "Reset", danger: true })
-      .then(function (yes) {
-        if (!yes) return;
-        try { localStorage.removeItem(key()); localStorage.removeItem("efm.traced"); localStorage.removeItem("efm.tour.hidden"); } catch (e) { /* ignore */ }
-        location.href = "/home";
-      });
   };
 
   /* -------------------------------------------------------- Scope & role */
@@ -65,19 +58,21 @@
     if (app.scope !== "GROUP") return minor;
     return app.E.usdOf(entity, minor, period || app.E.currentPeriod(), kind || "close");
   };
-  app.setScope = function (s) { app.scope = s; save(); render(); };
+  app.setScope = function (s) { app.scope = s; render(); };
 
   /* --------------------------------------------------------- Commands */
   app.run = function (type, payload, o) {
     o = o || {};
-    var r = ui.attempt(function () { return app.E.exec(type, payload, o.actor || app.actor()); }, o.ok);
-    if (r != null) { save(); render(); if (o.then) o.then(r); }
+    // On real books nobody acts as anybody else: the actor is the signed-in person.
+    var actor = app.live ? app.actor() : (o.actor || app.actor());
+    var r = ui.attempt(function () { return app.E.exec(type, payload, actor); }, o.ok);
+    if (r != null) { render(); if (o.then) o.then(r); }
     return r;
   };
 
   /* After a screen runs several commands itself (a bulk approval), this
-     saves the sandbox and redraws once. */
-  app.commit = function () { save(); render(); };
+     redraws once. (Each command was already queued for saving as it ran.) */
+  app.commit = function () { render(); };
 
   /* ------------------------------------------------------------ Router */
   var state = { path: "/home", id: null, view: null };
@@ -204,7 +199,7 @@
   };
 
   /* ============================================================= Shell */
-  var shell = null, mainEl = null, crumbEl = null, railEl = null, bellEl = null, meEl = null;
+  var shell = null, mainEl = null, crumbEl = null, railEl = null, bellEl = null, meEl = null, syncEl = null;
 
   function buildShell() {
     document.body.innerHTML = "";
@@ -215,10 +210,11 @@
       ui.icon("search"), h("span", null, "Search or ask a question"), h("span", { class: "kbd" }, "⌘K"));
     bellEl = h("button", { type: "button", class: "iconbtn", "aria-label": "Notifications", on: { click: function () { notifications(bellEl); } } }, ui.icon("bell", "lg"));
     meEl = h("button", { type: "button", class: "me", "aria-label": "Your account", on: { click: function () { accountMenu(meEl); } } });
+    syncEl = h("span", { class: "savestate", role: "status", "aria-live": "polite" });
+    paintSync();
     var top = h("header", { class: "top" }, crumbEl, search,
       h("div", { class: "top-tools" },
-        h("span", { class: "sandbox", title: "Sample books for OploCloud Group, as of " + ui.date(app.E.asOf, "full") + ". What you do here stays in this browser." }, h("i"), "Sandbox · " + ui.date(app.E.asOf, "year")),
-        bellEl, meEl));
+        syncEl, bellEl, meEl));
     shell = h("div", { class: "app" }, railEl, h("div", { class: "main" }, top, mainEl));
     document.body.appendChild(h("a", { href: "#main", class: "sr" }, "Skip to content"));
     document.body.appendChild(shell);
@@ -229,11 +225,13 @@
     var E = app.E;
     railEl.appendChild(h("a", { href: "/home", "data-go": "", class: "brand" },
       h("span", { class: "brand-mark" }, ui.logo()), h("span", null, h("b", null, "OC EFM"), h("small", null, "Enterprise Financial Management"))));
-    var ws = h("button", { type: "button", class: "ws", "aria-label": "Change entity" },
-      h("span", { class: "ws-dot" }, app.scope === "GROUP" ? "GR" : app.scope),
-      h("span", { class: "grow" }, h("b", { class: "ell" }, app.scopeLabel()), h("small", null, app.scope === "GROUP" ? "Consolidated · USD" : E.entity[app.scope].city + " · " + E.entity[app.scope].currency)),
-      ui.icon("updown", "sm"));
-    ws.addEventListener("click", function () { scopeMenu(ws); });
+    var many = E.entities.length > 1;
+    var sub = app.scope === "GROUP" ? "Consolidated · USD" : [E.entity[app.scope].city, E.entity[app.scope].currency].filter(Boolean).join(" · ");
+    var ws = h(many ? "button" : "div", { type: many ? "button" : null, class: "ws" + (many ? "" : " solo"), "aria-label": many ? "Change entity" : null },
+      h("span", { class: "ws-dot" }, app.scope === "GROUP" ? "GR" : E.entity[app.scope].short.slice(0, 2).toUpperCase()),
+      h("span", { class: "grow" }, h("b", { class: "ell" }, app.scopeLabel()), h("small", null, sub)),
+      many ? ui.icon("updown", "sm") : null);
+    if (many) ws.addEventListener("click", function () { scopeMenu(ws); });
     railEl.appendChild(ws);
     var counts = {
       inbox: E.attention().filter(function (a) { return a.sev !== "info"; }).length,
@@ -252,10 +250,9 @@
       });
       railEl.appendChild(grp);
     });
-    railEl.appendChild(h("div", { class: "rail-foot" },
-      h("div", null, "Sample books for OploCloud Group, FY2026, as of " + ui.date(E.asOf, "full") + ". Figures are illustrative, except the Claude Code card charges, which are actual."),
-      h("div", { style: { marginTop: "6px" } }, E.log.length ? E.log.length + " change" + (E.log.length === 1 ? "" : "s") + " in this sandbox · " : "",
-        h("a", { href: "#", on: { click: function (ev) { ev.preventDefault(); app.reset(); } } }, "Reset"))));
+    railEl.appendChild(h("div", { class: "rail-foot" }, app.live
+      ? h("div", null, "Books of " + (E.bookName || "OploCloud") + ", fiscal " + E.fy + ". Every change is saved to the server as you make it — " + E.commandLog.length + " so far.")
+      : h("div", null, "Sample books for testing. Nothing here is real.")));
   }
 
   function topbar(def) {
@@ -270,7 +267,7 @@
     bellEl.setAttribute("aria-label", "Notifications" + (n ? ", " + n + " need attention" : ""));
     ui.clear(meEl);
     meEl.appendChild(h("span", { class: "avatar", style: { background: app.me.color } }, app.me.initials));
-    meEl.appendChild(h("div", null, h("b", null, app.me.firstName || app.me.name), h("small", null, "OploCloud Group")));
+    meEl.appendChild(h("div", null, h("b", null, app.me.firstName || app.me.name), h("small", null, app.E.bookName || "OploCloud Group")));
     meEl.appendChild(ui.icon("chevd", "sm"));
   }
 
@@ -317,7 +314,6 @@
       { heading: true, label: app.me.name },
       { label: app.me.email || app.me.name, sub: "Signed in with your Oplo Account", icon: "user", fn: function () { window.open("https://auth.oplocloud.com/", "_blank", "noopener"); } },
       "-",
-      { label: "Reset sandbox", sub: "Undo everything you've done here", icon: "refresh", fn: app.reset },
       { label: "Sign out", icon: "back", fn: signOut }
     ], { width: 300 });
   }
@@ -354,15 +350,13 @@
       });
     }
     function actions() {
-      return [
-        { g: "Do", label: "New journal", icon: "plus", fn: function () { app.navigate("/journals?new=1"); } },
-        { g: "Do", label: "Reconcile JPMorgan operating account", icon: "bank", fn: function () { app.navigate("/cash/us-op"); } },
-        { g: "Do", label: "Review invoices awaiting approval", icon: "payables", fn: function () { app.navigate("/payables?status=review"); } },
-        { g: "Do", label: "Open the September close", icon: "close", fn: function () { app.navigate("/close"); } },
-        { g: "Do", label: "Income statement", icon: "report", fn: function () { app.navigate("/reports?r=is"); } },
-        { g: "Do", label: "Balance sheet", icon: "report", fn: function () { app.navigate("/reports?r=bs"); } },
-        { g: "Do", label: "Verify the audit trail", icon: "shield", fn: function () { app.navigate("/audit"); } }
-      ];
+      var out = [{ g: "Do", label: "New journal", icon: "plus", fn: function () { app.navigate("/journals?new=1"); } }];
+      Object.values(E.bankAccounts).forEach(function (b) { out.push({ g: "Do", label: "Reconcile " + b.bankName + " " + b.name, icon: "bank", fn: function () { app.navigate("/cash/" + b.id); } }); });
+      if (Object.values(E.apInvoices).some(function (i) { return i.status === "review"; })) out.push({ g: "Do", label: "Review invoices awaiting approval", icon: "payables", fn: function () { app.navigate("/payables?status=review"); } });
+      out.push({ g: "Do", label: "Income statement", icon: "report", fn: function () { app.navigate("/reports?r=is"); } });
+      out.push({ g: "Do", label: "Balance sheet", icon: "report", fn: function () { app.navigate("/reports?r=bs"); } });
+      out.push({ g: "Do", label: "Verify the audit trail", icon: "shield", fn: function () { app.navigate("/audit"); } });
+      return out;
     }
     function search(q) {
       var out = [], ql = q.toLowerCase();
@@ -497,8 +491,11 @@
   }
   function signOut() {
     try { localStorage.removeItem("efm.dev"); } catch (e) { /* ignore */ }
-    fetch(API + "/api/v1/auth/logout", { method: "POST", credentials: "include", headers: { "content-type": "application/json" }, body: "{}" })
-      .catch(function () {}).then(function () { location.href = "/home"; });
+    // Anything still on its way to the server goes first.
+    whenSaved(function () {
+      fetch(API + "/api/v1/auth/logout", { method: "POST", credentials: "include", headers: { "content-type": "application/json" }, body: "{}" })
+        .catch(function () {}).then(function () { location.href = "/home"; });
+    });
   }
   function signIn(errEl) {
     var S = window.OploSignIn;
@@ -513,30 +510,128 @@
     return (account.roles || []).some(function (r) { return r.product === "efm" || (r.product === "platform" && r.role === "admin"); });
   }
 
-  /* The actual data, from the API. Absent is fine (the books are then the
-     sample alone); refused is not, and neither is not being able to ask. */
-  function loadData(account) {
-    var name = "claude-code-invoices";
-    EFM.data.claudeCode = null;
-    if (account.dev) {          // local development only: a test supplies the dataset
-      var d = window.__EFM_DATASETS && window.__EFM_DATASETS[name];
-      EFM.data.claudeCode = d || null;
-      return Promise.resolve();
-    }
-    function fail(code, msg) { var e = new Error(msg); e.code = code; return e; }
-    return fetch(API + "/api/v1/efm/datasets/" + name, { credentials: "include", headers: { accept: "application/json" } })
-      .then(function (r) {
-        if (r.status === 401) throw fail("signed-out", "signed out");
-        if (r.status === 403) throw fail("forbidden", "no access");
-        if (r.status === 404) return null;
-        if (!r.ok) throw fail("error", "HTTP " + r.status);
-        return r.json();
-      }, function () { throw fail("offline", "offline"); })
-      .then(function (b) {
-        var d = b && b.dataset && b.dataset.data;
-        if (d && !(d.vendor && d.vendor.id && Array.isArray(d.invoices))) throw fail("error", "unreadable dataset");
-        EFM.data.claudeCode = d || null;
-      });
+  /* ====================================================== The books
+     Loading them, saving to them, and keeping in step with everybody else. */
+  var BOOK = "oplo";
+  var sync = app.sync = { seq: 0, queue: [], sending: false, state: "saved", off: false, timer: null, note: "" };
+
+  function fail(code, msg) { var e = new Error(msg); e.code = code; return e; }
+  function nyToday() { return EFM.Engine.prototype.nyDate(new Date().toISOString()); }
+
+  function call(method, path, body) {
+    return fetch(API + "/api/v1/efm/books/" + BOOK + path, { method: method, credentials: "include",
+      headers: { accept: "application/json", "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) })
+      .then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { status: r.status, body: j }; }); },
+            function () { throw fail("offline", "offline"); });
+  }
+
+  /* The book and all its commands, or why not. */
+  function fetchBooks() {
+    return call("GET", "").then(function (r) {
+      if (r.status === 401) throw fail("signed-out", "signed out");
+      if (r.status === 403) throw fail("forbidden", "no access");
+      if (r.status !== 200 || !r.body || !r.body.book) throw fail("error", "HTTP " + r.status);
+      if (r.body.engineVersion !== EFM.ENGINE_VERSION) throw fail("version", "OC EFM was updated");
+      return r.body;
+    });
+  }
+
+  /* The engine, from what the server sent. Refuses to show books whose
+     history doesn't hold together. */
+  function buildEngine(payload) {
+    var today = nyToday(), b = payload.book;
+    var chain = EFM.verifyCommands(b.id, payload.commands);
+    if (!chain.ok) throw fail("integrity", "The stored history fails its integrity check at command " + chain.at + " (" + chain.why + ").");
+    var E = EFM.createBooks({ id: b.id, name: b.name, fy: b.fy, entities: b.entities, today: today });
+    var failed = EFM.replayCommands(E, payload.commands, today);
+    if (failed.length) throw fail("replay", "Command " + failed[0].seq + " no longer applies: " + failed[0].error);
+    E.commandLog = payload.commands.slice();       // as stored: hashes and all, for the Audit screen
+    E.me = app.actor();
+    E.on(onCommand);
+    return E;
+  }
+
+  /* ---- What the person sees of it */
+  function setState(state, note) { sync.state = state; sync.note = note || ""; paintSync(); }
+  function paintSync() {
+    if (!syncEl) return;
+    ui.clear(syncEl);
+    if (!app.live) { syncEl.className = "savestate"; syncEl.appendChild(h("span", null, "Test books")); return; }
+    var st = sync.state;
+    syncEl.className = "savestate " + st;
+    syncEl.title = st === "saved" ? "Every change is saved to OploCloud's books on the server as you make it."
+                 : st === "saving" ? "Saving to the server…" : "The last change wasn't saved. The books were reloaded from the server.";
+    syncEl.appendChild(st === "saving" ? h("i", { class: "spin" }) : ui.icon(st === "saved" ? "check" : "alert", "sm"));
+    syncEl.appendChild(h("span", null, st === "saved" ? "Saved" : st === "saving" ? "Saving…" : "Not saved"));
+  }
+
+  /* ---- Saving: each command the engine runs, in order, one at a time */
+  function onCommand(ev) {
+    if (ev.replay || sync.off) return;
+    sync.queue.push({ type: ev.type, payload: JSON.parse(JSON.stringify(ev.payload || {})), at: ev.at });
+    setState("saving");
+    pump();
+  }
+  function pump() {
+    if (sync.sending || !sync.queue.length) return;
+    sync.sending = true;
+    var c = sync.queue[0];
+    call("POST", "/commands", { type: c.type, payload: c.payload, expectSeq: sync.seq, at: c.at }).then(function (r) {
+      if (r.status !== 201) return recover(r);
+      var got = r.body.command, E = app.E, log = E.commandLog, prev = log.length ? log[log.length - 1].hash : EFM.genesis(BOOK);
+      log.push({ seq: got.seq, type: c.type, payload: c.payload, actor: app.actor(), at: got.at, prev: prev, hash: got.hash });
+      sync.seq = got.seq; sync.queue.shift(); sync.sending = false;
+      if (sync.queue.length) pump(); else { setState("saved"); if (app.pendingRender) { app.pendingRender = false; render(); } }
+    }, function () { recover({ status: 0, offline: true }); });
+  }
+  /* The server didn't take it. Whatever was waiting to be saved is dropped, the
+     books are reloaded as the server has them, and the person is told why. */
+  function recover(r) {
+    var dropped = sync.queue.length, err = (r.body && r.body.error) || {};
+    sync.queue = []; sync.sending = false;
+    var msg = r.offline ? "You're offline, so that change wasn't saved." : err.message || "That change wasn't saved.";
+    setState("error");
+    reload().then(function () {
+      ui.toast(msg, { err: true, sub: (dropped > 1 ? dropped + " changes were undone. " : "") + (err.rule || "The books are back as they are on the server.") });
+    }, function () {
+      ui.toast(msg, { err: true, sub: "And the books couldn't be reloaded. Reload the page.", action: { label: "Reload", fn: function () { location.reload(); } } });
+    });
+  }
+  function reload() {
+    return fetchBooks().then(function (payload) {
+      app.E = buildEngine(payload);
+      sync.seq = payload.count;
+      setState("saved");
+      render();
+    });
+  }
+
+  /* ---- Keeping in step with everybody else */
+  function apply(cmds) {
+    var E = app.E;
+    try {
+      cmds.forEach(function (c) { E.exec(c.type, c.payload, c.actor, { at: c.at, replay: true }); E.commandLog.push(c); sync.seq = c.seq; });
+    } catch (e) { console.error(e); return reload(); }
+    E.asOf = nyToday();
+    render();
+    var who = {}; cmds.forEach(function (c) { who[c.actor.name] = 1; });
+    ui.toast("Updated — " + Object.keys(who).join(" and ") + " made " + cmds.length + " change" + (cmds.length === 1 ? "" : "s") + ".");
+  }
+  function poll() {
+    if (sync.off || sync.sending || sync.queue.length || document.hidden || !app.E) return;
+    call("GET", "/commands?after=" + sync.seq).then(function (r) {
+      if (r.status !== 200 || !r.body.commands.length) return;
+      if (sync.sending || sync.queue.length) return;                 // the person acted meanwhile; theirs go first
+      if (r.body.engineVersion !== EFM.ENGINE_VERSION) return versionStale();
+      apply(r.body.commands);
+    }, function () { /* offline: the next action says so */ });
+  }
+  function versionStale() {
+    ui.toast("OC EFM was updated", { sub: "Reload to keep working.", err: true, action: { label: "Reload", fn: function () { location.reload(); } } });
+  }
+  function whenSaved(fn) {
+    var tries = 0;
+    (function wait() { if ((!sync.queue.length && !sync.sending) || ++tries > 40) return fn(); setTimeout(wait, 150); })();
   }
 
   function plain(title, lede, extra, actions) {
@@ -554,8 +649,13 @@
   }
   function dataError(e) {
     if (window.OploSignIn) window.OploSignIn.done();
-    plain("OC EFM can't load its data.", e && e.code === "offline" ? "Check your connection, then try again." : "Something went wrong on our side. Try again in a moment.", null,
-      [ui.btn("Try again", { kind: "primary", size: "lg", onClick: function () { location.reload(); } })]);
+    var code = e && e.code;
+    var title = code === "integrity" || code === "replay" ? "The books don't check out." : code === "version" ? "OC EFM was updated." : "OC EFM can't load the books.";
+    var lede = code === "offline" ? "Check your connection, then try again."
+      : code === "integrity" || code === "replay" ? "The stored history failed its own checks, so nothing is shown and nothing can be added until an administrator has looked. " + (e.message || "")
+      : code === "version" ? "Reload to get the new version."
+      : "Something went wrong on our side. Try again in a moment.";
+    plain(title, lede, null, [ui.btn(code === "version" ? "Reload" : "Try again", { kind: "primary", size: "lg", onClick: function () { location.reload(); } })]);
   }
 
   function gate(err) {
@@ -576,7 +676,7 @@
         h("p", { class: "lede" }, "One double-entry ledger under everything. Payables, receivables, cash, assets, budgets, the close and consolidation on top of it — and every figure traceable to the transaction that made it."),
         h("div", { class: "go" }, go, h("span", { class: "muted", style: { fontSize: "13px" } }, "Opens auth.oplocloud.com in a new tab.")),
         errEl,
-        h("p", { class: "fine" }, "After you sign in you'll be working in a sandbox: nine months of sample books for OploCloud Group — three entities, three currencies — with a September close waiting. Figures are illustrative — apart from OploCloud's actual Claude Code card charges — and what you do stays in this browser.")),
+        h("p", { class: "fine" }, "These are OploCloud's real books. Every change is saved to the server as you make it, kept in order and never edited or removed, so anyone who has OC EFM sees the same figures.")),
       h("aside", { class: "gate-r", "aria-label": "How OC EFM is built" },
         layers.map(function (l, i) { return h("div", { class: "layer" }, h("span", { class: "n" }, String(i + 1)), h("div", null, h("b", null, l[0]), h("p", null, l[1]))); }),
         h("div", { class: "flow" }, h("b", null, "transaction"), " → approval → ", h("b", null, "journal"), " → ledger → reconciliation → ", h("b", null, "statement"), " → audit trail"))));
@@ -584,39 +684,61 @@
   }
 
   /* ============================================================= Boot */
-  function start(account) {
+  /* Starts the application on `E`, the books. */
+  function start(account, E) {
     app.account = account;
     var name = account.name || account.email || "You";
+    // An avatar colour is stored either as a hue or as a hex value; take either.
     var hue = account.hue != null ? account.hue : 215;
-    app.me = { id: "me", name: name, firstName: account.firstName || name.split(" ")[0], email: account.email, initials: account.initials || name.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(),
-      color: "hsl(" + hue + " 55% 45%)" };
-    var E = app.E = EFM.create();
-    var skipped = 0;
-    var saved = load();
-    if (saved) {
-      if (saved.scope && (saved.scope === "GROUP" || E.entity[saved.scope])) app.scope = saved.scope;
-      if (saved.log && saved.log.length) {
-        var r = E.replay(saved.log);
-        if (r.failed.length) { skipped = r.failed.length; console.warn("Sandbox replay skipped", r.failed.length, "commands", r.failed); }
-      }
-    }
+    var color = typeof hue === "string" && /^#|^hsl|^rgb/.test(hue) ? hue : "hsl(" + hue + " 55% 45%)";
+    app.me = { id: "me", name: name, firstName: account.firstName || name.split(" ")[0], email: account.email,
+      initials: account.initials || name.split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(), color: color };
+    app.E = E;
+    app.live = !!E.live;
     E.me = app.actor();
-    E.on(function () { E.me = app.actor(); });
+    // One legal entity has nothing to consolidate: the books are simply its books.
+    app.scope = E.entities.length > 1 ? "GROUP" : E.entities[0].id;
     buildShell();
     if (location.pathname === "/" || location.pathname === "") history.replaceState({}, "", "/home" + location.search + location.hash);
     render(true);
     if (location.hash) drawer.fromHash();
-    // The books can be updated under a saved sandbox; say so if that cost it anything.
-    if (skipped) ui.toast(skipped + " of your earlier changes no longer apply", { sub: "The sample books were updated since you made them. Reset the sandbox from the account menu to start clean.", err: true });
     if (window.OploSignIn) window.OploSignIn.done();
     var boot = document.getElementById("boot");
     if (boot) { boot.style.opacity = "0"; setTimeout(function () { boot.remove(); }, 320); }
+    if (app.live && !sync.off) {
+      // Others' changes arrive by asking; it costs one small request.
+      sync.timer = setInterval(poll, 20000);
+      document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(); });
+      window.addEventListener("online", poll);
+      window.addEventListener("beforeunload", function (ev) { if (sync.queue.length || sync.sending) { ev.preventDefault(); ev.returnValue = ""; } });
+    }
+  }
+
+  /* Local development and the test tools only: books without the server. */
+  function devBooks() {
+    sync.off = true;
+    if (window.__EFM_BOOKS) {            // a book as the server would send it
+      var payload = window.__EFM_BOOKS;
+      return Promise.resolve(buildEngine(payload));
+    }
+    if (window.__EFM_SAMPLE) {           // the generated sample books, a fixture that is not shipped
+      return new Promise(function (resolve, reject) {
+        var sc = document.createElement("script");
+        sc.src = "/js/sample-seed.js";
+        sc.onload = function () { resolve(EFM.create()); };
+        sc.onerror = function () { reject(fail("error", "no sample fixture")); };
+        document.head.appendChild(sc);
+      });
+    }
+    return Promise.resolve(EFM.createBooks({ id: BOOK, name: "OploCloud", fy: String(new Date().getFullYear()), today: nyToday(),
+      entities: [{ id: "US", name: "OploCloud, Inc.", short: "US", country: "United States", currency: "USD" }] }));
   }
 
   EFM.boot = function () {
     me().then(function (account) {
       if (!account.dev && !hasAccess(account)) return noAccess(account);
-      return loadData(account).then(function () { start(account); }, function (e) {
+      var loading = account.dev ? devBooks() : fetchBooks().then(function (payload) { app.account = account; app.me = { name: account.name }; var E = buildEngine(payload); sync.seq = payload.count; return E; });
+      return loading.then(function (E) { start(account, E); }, function (e) {
         if (e.code === "forbidden") noAccess(account);
         else if (e.code === "signed-out") { if (window.OploSignIn) window.OploSignIn.done(); gate(); }
         else dataError(e);

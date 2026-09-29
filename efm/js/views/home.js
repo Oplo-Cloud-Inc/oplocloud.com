@@ -178,9 +178,9 @@
   function recentJournals(ctx, o) {
     var E = ctx.E, app = ctx.app;
     var js = E.journalOrder.slice(-400).map(function (id) { return E.journals[id]; })
-      .filter(function (j) { return app.inScope(j.entity) && (j.source.type === "manual" || j.source.type === "reversal" || j.createdBy === "me" || j.status !== "posted"); })
+      .filter(function (j) { return app.inScope(j.entity) && (app.live || j.source.type === "manual" || j.source.type === "reversal" || app.isMe(j.createdBy) || j.status !== "posted"); })
       .reverse().slice(0, 8);
-    return ui.card({ title: "Manual and recent journals", span: (o && o.span) || 6, flush: true,
+    return ui.card({ title: app.live ? "Recent journals" : "Manual and recent journals", span: (o && o.span) || 6, flush: true,
       tools: ui.btn("Journals", { size: "sm", kind: "ghost", onClick: function () { app.navigate("/journals"); } }),
       body: ui.table({ dense: true, sortable: false, onRow: function (j) { app.open({ kind: "journal", id: j.id }); }, columns: [
         { key: "id", label: "Journal", render: function (j) { return h("span", { class: "mono" }, j.id); } },
@@ -245,47 +245,14 @@
     return ui.card({ title: "Sensitive changes", meta: "From the audit trail", span: (o && o.span) || 5, body: ui.timeline(evs, { chain: true }) });
   }
 
-  /* A first session, guided: five real things to do in the sandbox. Each
-     step ticks itself off from the books' state, not from a click. */
-  function startHere(ctx) {
-    var E = ctx.E, app = ctx.app;
-    var hidden = false, traced = false;
-    try { hidden = localStorage.getItem("efm.tour.hidden") === "1"; traced = localStorage.getItem("efm.traced") === "1"; } catch (e) { /* ignore */ }
-    if (hidden) return null;
-    var dell = Object.values(E.apInvoices).filter(function (i) { return i.vendor === "dell" && i.po; })[0];
-    var steps = [
-      { t: "Stop a payment fraud", x: "Someone asked, by email, to change where Hudson Commons' rent goes.", done: !E.vendors.hudson.bankPending,
-        go: function () { app.open({ kind: "vendor", id: "hudson" }); } },
-      { t: "Fix a three-way mismatch", x: "Dell invoiced 100 laptops. 98 arrived.", done: !!dell && dell.flags.every(function (f) { return f.resolved; }),
-        go: function () { if (dell) app.open({ kind: "ap", id: dell.id }); } },
-      { t: "Reconcile the bank", x: "Match JPMorgan's feed to the ledger until nothing is unexplained.", done: E.reconciliation("us-op").bankOpen.length === 0,
-        go: function () { app.navigate("/cash/us-op"); } },
-      { t: "Trace a number", x: "Click any figure in the statements down to the invoice behind it.", done: traced,
-        go: function () { app.navigate("/reports"); } },
-      { t: "Close September", x: "Run the checklist, then close and lock the month.", done: E.entities.every(function (e) { return E.periodStatus(e.id, E.currentPeriod()) === "locked"; }),
-        go: function () { app.navigate("/close"); } }
-    ];
-    var n = steps.filter(function (s) { return s.done; }).length;
-    var row = h("div", { class: "tour-steps" });
-    steps.forEach(function (st, i) {
-      row.appendChild(h("button", { type: "button", class: "tour-step" + (st.done ? " done" : ""), on: { click: st.go } },
-        h("span", { class: "check" + (st.done ? " done" : "") }, st.done ? ui.icon("check") : h("span", { class: "tour-n" }, String(i + 1))),
-        h("span", { class: "grow" }, h("b", null, st.t), h("small", null, st.x))));
-    });
-    return h("section", { class: "card tour", "aria-label": "Start here" },
-      h("div", { class: "card-h" }, h("h2", null, n === steps.length ? "You ran a month-end." : "Start here"),
-        h("span", { class: "meta" }, n === steps.length ? "Everything above is real accounting — reset the sandbox from the menu to do it again." : n + " of " + steps.length + " done · every step is real double-entry accounting, recorded in the audit trail"),
-        h("div", { class: "tools" }, ui.btn(null, { size: "sm", kind: "ghost", icon: "x", label: "Hide", onClick: function () { try { localStorage.setItem("efm.tour.hidden", "1"); } catch (e) { /* ignore */ } app.refresh(); } }))),
-      h("div", { class: "card-b" }, row));
-  }
-
   /* ---------------------------------------------------------- Homes */
   function header(ctx) {
-    var E = ctx.E, app = ctx.app, L = E.lastClosedPeriod(), cp = E.currentPeriod();
-    var hist = E.closeHistory[E.closeHistory.length - 1];
+    var E = ctx.E, app = ctx.app, cp = E.currentPeriod();
+    var last = E.closeHistory && E.closeHistory[E.closeHistory.length - 1];
+    var sub = ui.date(E.asOf, "long") + " · " + app.scopeLabel();
+    sub += last ? " · " + ui.period(E.lastClosedPeriod()) + " closed " + ui.date(last.closedAt) + " · " + ui.period(cp) + " open" : " · " + ui.period(cp) + " open";
     return h("div", { class: "ph greet" },
-      h("div", null, h("h1", null, greeting() + ", " + (app.me.firstName || "there")),
-        h("p", null, ui.date(E.asOf, "long") + " · " + app.scopeLabel() + " · " + ui.period(L) + " closed " + ui.date(hist.closedAt) + " · " + ui.period(cp) + " open")),
+      h("div", null, h("h1", null, greeting() + ", " + (app.me.firstName || "there")), h("p", null, sub)),
       h("div", { class: "actions" },
         ui.btn("Ask a question", { icon: "sparkle", onClick: function () { app.palette(); } }),
         ui.btn("Reports", { icon: "report", onClick: function () { app.navigate("/reports"); } })));
@@ -322,13 +289,128 @@
     ]);
   }
 
+  /* ------------------------------------------------- Home on real books
+     Real books start nearly empty and fill up as people work, so nothing here
+     assumes a bank, a customer, a budget or a finished close exists: each tile
+     and card appears once there is something to show, and the page is never
+     a wall of zeros. */
+  function totals(E, scope, from, to) {
+    var m = E.measure(scope, from, to), exp = 0, rev = 0;
+    E.accountList.forEach(function (a) {
+      if (a.ic || !m[a.id]) return;
+      if (a.type === "expense") exp += m[a.id];
+      else if (a.type === "revenue") rev -= m[a.id];
+    });
+    return { spend: exp, revenue: rev, m: m };
+  }
+
+  function liveKpis(ctx, t) {
+    var E = ctx.E, app = ctx.app, scope = ctx.scope, c = app.scopeCurrency(), cp = E.currentPeriod(), first = E.fy + "-01";
+    var ps = E.periodsBetween(first, cp);
+    var months = ps.map(function (p) { return totals(E, scope, p, p); });
+    var now = months[months.length - 1], prev = months.length > 1 ? months[months.length - 2] : null;
+    var tiles = [];
+    tiles.push({ label: "Spent · " + ui.period(cp).slice(0, 3), icon: "payables", value: E.fmt(now.spend, c, { compact: true }),
+      delta: prev && prev.spend ? ui.delta((now.spend - prev.spend) / prev.spend, { invert: true }) : null, sub: prev && prev.spend ? "vs " + ui.period(ps[ps.length - 2]) : "so far this month",
+      spark: months.length > 1 ? ui.charts.spark(months.map(function (x) { return x.spend; })) : null, onClick: function () { app.navigate("/reports?r=is"); } });
+    tiles.push({ label: "Spent this year", icon: "report", value: E.fmt(t.spend, c, { compact: true }), sub: "fiscal " + E.fy + " to date", onClick: function () { app.navigate("/reports?r=is"); } });
+    if (t.revenue) tiles.push({ label: "Revenue this year", icon: "trend", value: E.fmt(t.revenue, c, { compact: true }), sub: "fiscal " + E.fy + " to date", onClick: function () { app.navigate("/reports?r=is"); } });
+    var charges = E.cardChargeList({ from: first }).filter(function (x) { return app.inScope("US") && x.journal; });
+    if (charges.length) tiles.push({ label: "Company card", icon: "bank", value: E.fmt(E.cardSpend(null, first, cp), c, { compact: true }), sub: charges.length + " charge" + (charges.length === 1 ? "" : "s") + " this year", onClick: function () { app.navigate("/payables"); } });
+    var pos = E.cashPosition();
+    if (pos.rows.length) tiles.push({ label: "Cash today", icon: "bank", value: E.fmt(pos.total, "USD", { compact: true }), sub: pos.rows.length + " account" + (pos.rows.length === 1 ? "" : "s"), onClick: function () { app.navigate("/cash"); } });
+    var ar = E.aging("ar", scope);
+    if (ar.total) tiles.push({ label: "Receivables", icon: "receivables", value: E.fmt(ar.total, c, { compact: true }), sub: E.dso(scope) + " days DSO", onClick: function () { app.navigate("/receivables"); } });
+    var ap = 0, apN = 0;
+    Object.values(E.apInvoices).forEach(function (i) { if (app.inScope(i.entity) && ["review", "approved", "scheduled", "hold"].indexOf(i.status) >= 0) { ap += app.inScopeCur(i.entity, i.amount); apN++; } });
+    if (apN) tiles.push({ label: "Waiting to be paid", icon: "payables", value: E.fmt(ap, c, { compact: true }), sub: apN + " invoice" + (apN === 1 ? "" : "s"), onClick: function () { app.navigate("/payables"); } });
+    return ui.kpis(tiles);
+  }
+
+  function spendByMonth(ctx, o) {
+    var E = ctx.E, app = ctx.app, scope = ctx.scope, c = app.scopeCurrency(), cp = E.currentPeriod();
+    var ps = E.periodsBetween(E.fy + "-01", cp);
+    var vals = ps.map(function (p) { return totals(E, scope, p, p).spend; });
+    var chart = ui.charts.columns({ height: 230, labels: ps, prelimFrom: ps.length - 1,
+      series: [{ name: "Spent", color: "var(--s1)", values: vals }],
+      xFormat: function (p) { return ui.period(p).slice(0, 3); }, yFormat: function (v) { return E.fmt(v, c, { compact: true }); },
+      tipFormat: function (v) { return E.fmt(v, c, { compact: true }); }, tipTitle: function (p) { return ui.period(p, true); },
+      onClick: function (i) { app.navigate("/reports?r=is&p=" + ps[i]); }, label: "Spending by month" });
+    return ui.card({ title: "Spending by month", meta: "Fiscal " + E.fy + " · " + app.scopeLabel(), span: (o && o.span) || 8,
+      tools: ui.charts.legend([{ label: "Spent", color: "var(--s1)" }, { label: "Open month", color: "var(--s1)", kind: "hatch" }]),
+      body: chart, foot: [h("span", null, "Every expense account, including the company card. Click a month for its income statement.")] });
+  }
+
+  function whereItWent(ctx, t, o) {
+    var E = ctx.E, app = ctx.app, c = app.scopeCurrency();
+    var rows = E.accountList.filter(function (a) { return a.type === "expense" && !a.ic && t.m[a.id] > 0; })
+      .map(function (a) { return { a: a, v: t.m[a.id] }; }).sort(function (x, y) { return y.v - x.v; });
+    var top = rows.length ? rows[0].v : 1, list = h("div");
+    rows.slice(0, 8).forEach(function (r) {
+      list.appendChild(h("button", { type: "button", class: "bva", on: { click: function () { app.open({ kind: "account", id: r.a.id, q: { entity: app.scope } }); } } },
+        h("span", { class: "nm ell" }, r.a.name), ui.meter(r.v / top, { max: 1 }),
+        h("span", { class: "am" }, E.fmt(r.v, c, { compact: true })),
+        h("span", { class: "pc" }, ui.pct(t.spend ? r.v / t.spend : 0, 0))));
+    });
+    return ui.card({ title: "Where it went", meta: "Fiscal " + E.fy + " to date · by account", span: (o && o.span) || 6, body: list,
+      foot: [h("span", null, rows.length > 8 ? "Top 8 of " + rows.length + " accounts" : rows.length + " account" + (rows.length === 1 ? "" : "s")), h("span", { class: "sp" }),
+        ui.btn("Chart of accounts", { size: "sm", kind: "ghost", onClick: function () { app.navigate("/ledger"); } })] });
+  }
+
+  function byVendor(ctx, o) {
+    var E = ctx.E, app = ctx.app, c = app.scopeCurrency(), cp = E.currentPeriod(), by = {};
+    E.linesWhere({ entity: app.scope, from: E.fy + "-01", to: cp }).forEach(function (l) {
+      var a = E.accounts[l.account];
+      if (!l.dims.vendor || a.type !== "expense") return;
+      by[l.dims.vendor] = (by[l.dims.vendor] || 0) + app.inScopeCur(l.entity, l.amt, l.period);
+    });
+    var rows = Object.keys(by).map(function (id) { return { id: id, name: E.vendors[id] ? E.vendors[id].name : id, v: by[id] }; })
+      .filter(function (r) { return r.v > 0; }).sort(function (x, y) { return y.v - x.v; });
+    if (!rows.length) return null;
+    return ui.card({ title: "Vendors", meta: "Fiscal " + E.fy + " to date", span: (o && o.span) || 6, flush: true,
+      body: ui.table({ dense: true, sortable: false, onRow: function (r) { app.open({ kind: "vendor", id: r.id }); }, columns: [
+        { key: "n", label: "Vendor", render: function (r) { return r.name; } },
+        { key: "v", label: "Spent", num: true, render: function (r) { return E.fmt(r.v, c); } }], rows: rows.slice(0, 8) }) });
+  }
+
+  function liveHome(ctx) {
+    var E = ctx.E, app = ctx.app, scope = ctx.scope, cp = E.currentPeriod();
+    var page = h("div");
+    page.appendChild(header(ctx));
+    if (!E.journalOrder.length) {
+      page.appendChild(ui.card({ span: 12, body: h("div", { class: "empty", style: { padding: "40px 16px" } }, ui.icon("report"), h("b", null, "Nothing has been posted yet"),
+        h("div", null, "These are OploCloud's books for fiscal " + E.fy + ". Each entry is saved to the server as it is made, and every figure here can be traced back to the entry behind it."),
+        h("div", { class: "row", style: { justifyContent: "center", marginTop: "14px" } },
+          ui.btn("Post a journal", { kind: "primary", icon: "plus", onClick: function () { app.navigate("/journals"); } }),
+          ui.btn("Payables", { onClick: function () { app.navigate("/payables"); } }))) }));
+      return page;
+    }
+    var t = totals(E, scope, E.fy + "-01", cp);
+    page.appendChild(liveKpis(ctx, t));
+    function row(cards, gap) {
+      cards = cards.filter(Boolean);
+      var g = h("div", { class: "grid", style: gap ? { marginTop: "16px" } : null });
+      cards.forEach(function (c) { g.appendChild(c); });
+      page.appendChild(g);
+    }
+    row([spendByMonth(ctx, { span: 8 }), attentionCard(ctx, { span: 4 })]);
+    var vendors = byVendor(ctx, { span: 6 });
+    row([whereItWent(ctx, t, { span: 6 }), vendors || recentJournals(ctx, { span: 6 })], true);
+    if (vendors) row([recentJournals(ctx, { span: 12 })], true);
+    // What only appears once the books hold it.
+    if (E.cashPosition().rows.length) row([cashChart(ctx, { span: 12 })], true);
+    if (t.revenue) row([revenueChart(ctx, { span: 6 }), Object.keys(E.budgets).length ? budgetCard(ctx, { span: 6 }) : null], true);
+    else if (Object.keys(E.budgets).length) row([budgetCard(ctx, { span: 12 })], true);
+    if (Object.values(E.closeTasks).some(function (x) { return x.period === cp; })) row([closeCard(ctx, { span: 12, limit: 4 })], true);
+    return page;
+  }
+
   EFM.view("home", {
     title: "Home", icon: "home",
     render: function (ctx) {
+      if (ctx.app.live) return liveHome(ctx);
       var page = h("div");
       page.appendChild(header(ctx));
-      var tour = startHere(ctx);
-      if (tour) page.appendChild(tour);
       page.appendChild(overviewKpis(ctx));
       var g = h("div", { class: "grid" });
       g.appendChild(cashChart(ctx, { span: 8 }));
