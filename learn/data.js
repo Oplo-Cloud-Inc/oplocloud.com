@@ -386,7 +386,7 @@ window.OPLO = (function () {
      that generates its own problems, and tests (learn/lab/, learn/alg/). */
   var ALG = {
     id: "alg", t: "Algebra I", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
-    lab: true,
+    lab: true, pathway: true,
     d: "Variables, equations, and the habit of doing the same thing to both sides.",
     lede: "Algebra as something you do before you write it down: a balance you keep level, lines you drag into place, " +
           "tiles you arrange into rectangles. Every idea is met by moving something, practised until it is easy, and " +
