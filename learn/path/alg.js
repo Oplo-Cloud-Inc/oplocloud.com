@@ -11,7 +11,7 @@
   "use strict";
   var LAB = window.OPLO_LAB, P = LAB && LAB.PATH;
   if (!P || !P.parts || !P.parts.alg) return;
-  P.define("alp", {
+  P.define("alg", {
     title: "Algebra Pathway",
     blurb: "From integers to the quadratic formula: seventy topics, and a check that finds the ones you're ready for.",
     cats: [

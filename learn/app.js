@@ -1635,7 +1635,7 @@
     if (!silent) enter("course:" + c.id, trim(c.t), function () { openCourse(c, true); }, false, coursePath(c));
     S.course = c;
     // A course with a page of its own draws it here instead: SAT Math's hub.
-    if (c.hub && window.OPLO_LAB && window.OPLO_LAB.hub) {
+    if (c.hub && !c.hubPanel && window.OPLO_LAB && window.OPLO_LAB.hub) {
       window.OPLO_LAB.hub($("#v-course"), hubCtx(c), "");
       markSubjectNav(c.subject);
       noFoot(); progress(null);
@@ -1668,6 +1668,12 @@
     v.appendChild(hero);
     var kind = courseKind(c);
     if (kind) v.appendChild(kind);
+    // A course with a panel (Algebra I) carries its Pathway ring above the units.
+    if (c.hub && c.hubPanel && window.OPLO_LAB && window.OPLO_LAB.hub) {
+      var pw = el("div", "pw-panel");
+      v.appendChild(pw);
+      window.OPLO_LAB.hub(pw, hubCtx(c), "");
+    }
 
     var two = el("div", "lx-two");
     var main = el("div");

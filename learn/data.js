@@ -386,7 +386,7 @@ window.OPLO = (function () {
      that generates its own problems, and tests (learn/lab/, learn/alg/). */
   var ALG = {
     id: "alg", t: "Algebra I", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
-    lab: true,
+    lab: true, hub: true, hubPanel: true,   /* its course page carries the Pathway ring (lab/pathui.js) above the units */
     d: "Variables, equations, and the habit of doing the same thing to both sides.",
     lede: "Algebra as something you do before you write it down: a balance you keep level, lines you drag into place, " +
           "tiles you arrange into rectangles. Every idea is met by moving something, practised until it is easy, and " +
@@ -713,37 +713,6 @@ window.OPLO = (function () {
               "a calculator and reference sheet throughout. Every question is OEdu's own."
   };
 
-  /* Algebra Pathway: seventy small topics, an adaptive check that finds the
-     ones a student already knows, and a ring that fills as they learn the
-     rest. Its course page is its own (hub: true); lab/pathkit.js is the
-     engine and path/alg*.js are the topics. */
-  var ALP = {
-    id: "alp", t: "Algebra Pathway", hue: "#3ddc84", subject: "Math", level: "Adaptive", tag: "Adaptive", lab: true, hub: true,
-    d: "Seventy topics from integers to the quadratic formula. A short check finds what you already know; then you learn only what you're ready for.",
-    lede: "Take a check that adapts to every answer, watch your ring fill, and learn the topics you're ready for — with a Knowledge Check to keep it honest.",
-    glyph: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v8.5h8.5"/>',
-    objectives: [
-      "Work fluently with integers, fractions, decimals, percents and powers.",
-      "Simplify, expand and evaluate algebraic expressions.",
-      "Solve linear equations and inequalities in one variable, in every form.",
-      "Graph and write the equation of a line; solve systems of two equations.",
-      "Add, multiply and factor polynomials; solve quadratics several ways.",
-      "Simplify and combine radicals."
-    ],
-    units: [
-      { t: "Numbers", lab: true, desc: "Integers, fractions, decimals, percents and powers." },
-      { t: "Expressions", lab: true, desc: "Evaluating, combining like terms, expanding." },
-      { t: "Equations & inequalities", lab: true, desc: "One variable, in every form, and absolute value." },
-      { t: "Lines & functions", lab: true, desc: "Slope, intercepts, equations of lines, function notation." },
-      { t: "Systems", lab: true, desc: "Two equations, two unknowns: substitution and elimination." },
-      { t: "Exponents & polynomials", lab: true, desc: "Powers, scientific notation, adding and multiplying polynomials." },
-      { t: "Factoring & quadratics", lab: true, desc: "Factoring, solving by every method, and the vertex." },
-      { t: "Radicals", lab: true, desc: "Square roots, simplified, combined and rationalised." }
-    ],
-    grading: [["Placement and Knowledge Checks", 40], ["Topics learned", 60]],
-    textbook: "Seventy topics arranged by what rests on what. Every question is made fresh from a seed, with its worked solution."
-  };
-
   var BIO = {
     id: "bio", t: "Biology", hue: GREEN, subject: "Science", level: "High School",
     d: "Cells, inheritance and ecosystems — systems that keep themselves going.",
@@ -784,7 +753,6 @@ window.OPLO = (function () {
     { n: "Math", hue: BLUE,
       d: "Arithmetic, algebra and geometry, done by seeing why rather than remembering how.",
       courses: [SEEING,
-        ALP,
         ALG,
         G8,
         GEO] },
@@ -814,7 +782,6 @@ window.OPLO = (function () {
   var PRE = {
     media: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [2], 7: [6], 8: [6, 7], 9: [5, 7] },
     seeing: { 1: [], 2: [1], 3: [2] },
-    alp: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3, 4], 6: [2], 7: [3, 6], 8: [1] },
     alg: { 1: [], 2: [1], 3: [1], 4: [2], 5: [4], 6: [5], 7: [6], 8: [4], 9: [8], 10: [8], 11: [1], 12: [9, 11],
            13: [11], 14: [13, 10], 15: [11] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
@@ -859,5 +826,5 @@ window.OPLO = (function () {
   function contacts() { return []; }
 
   return { SUBJECTS: SUBJECTS, SETS: SETS, PROBLEMS: SEEING_P, PRE: PRE, ITERATIONS: ITERATIONS,
-           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, HIST: HIST, SAT: SATM, ALP: ALP, BIO: BIO, CONTACTS: contacts };
+           SEEING: SEEING, MEDIA: MEDIA, BIZ: BIZ, HIST: HIST, SAT: SATM, BIO: BIO, CONTACTS: contacts };
 })();

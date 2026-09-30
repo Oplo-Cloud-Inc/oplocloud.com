@@ -42,12 +42,12 @@ window.OPLO_LAB = (function () {
     "lab/geotools.js": "3a389b5e",
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
-    "lab/pathui.js": "ea995931",
+    "lab/pathui.js": "7e92c81b",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",
     "path/alg-d.js": "84267203",
-    "path/alg.js": "0066abeb",
+    "path/alg.js": "26a3fab9",
     "alg/u01.js": "d05e491b",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
@@ -59,15 +59,7 @@ window.OPLO_LAB = (function () {
     "sat/u01.js": "71ec9896",
     "sat/u02.js": "f73eb842",
     "sat/u03.js": "f1c87358",
-    "sat/u04.js": "75ed1181",
-    "alp/u01.js": "3e3773c9",
-    "alp/u02.js": "f8fd111f",
-    "alp/u03.js": "55d55ad0",
-    "alp/u04.js": "d5486ecf",
-    "alp/u05.js": "33243e59",
-    "alp/u06.js": "c1bd4849",
-    "alp/u07.js": "07892011",
-    "alp/u08.js": "73756137"
+    "sat/u04.js": "75ed1181"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -996,7 +988,7 @@ window.OPLO_LAB = (function () {
      Pathway keeps its adaptive engine, its pages and its seventy topics in
      lab/pathkit.js, pathhelp.js, pathui.js and path/alg*.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alp: PATH_KIT };
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alg: PATH_KIT };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */
   function kitFor(courseId) {

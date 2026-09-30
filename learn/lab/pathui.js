@@ -513,6 +513,7 @@
      ring is a unit: what's known (mastered or learned) fills the first two,
      what a check has confirmed fills the third. They only ever rise. */
   function syncApp(cid) {
+    return;   // Algebra I keeps its own unit dials; the ring is drawn from the Pathway record
     if (!CTX || !CTX.onProgress) return;
     P.catCounts(cid).forEach(function (c, i) {
       var known = Math.round((c.m + c.l) / c.n * 100);
@@ -1189,7 +1190,7 @@
   }
 
   /* ================================================================= Hub */
-  LAB.addHub("alp", function (host, ctx, what) {
+  LAB.addHub("alg", function (host, ctx, what) {
     P.useAccount(ctx.me);
     var parts = (what || "").split("/"), a = parts[0], b = parts.slice(1).join("/");
     try {
