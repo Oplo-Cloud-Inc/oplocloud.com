@@ -59,7 +59,15 @@ window.OPLO_LAB = (function () {
     "sat/u01.js": "71ec9896",
     "sat/u02.js": "f73eb842",
     "sat/u03.js": "f1c87358",
-    "sat/u04.js": "75ed1181"
+    "sat/u04.js": "75ed1181",
+    "alp/u01.js": "3e3773c9",
+    "alp/u02.js": "f8fd111f",
+    "alp/u03.js": "55d55ad0",
+    "alp/u04.js": "d5486ecf",
+    "alp/u05.js": "33243e59",
+    "alp/u06.js": "c1bd4849",
+    "alp/u07.js": "07892011",
+    "alp/u08.js": "73756137"
   };
 
   /* ------------------------------------------------------------ Helpers */
@@ -987,29 +995,17 @@ window.OPLO_LAB = (function () {
      protractor, compass work, solids to turn — in lab/geotools.js; Algebra
      Pathway keeps its adaptive engine, its pages and its seventy topics in
      lab/pathkit.js, pathhelp.js, pathui.js and path/alg*.js. */
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js" };
+  var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alp: PATH_KIT };
+  /* A kit is one file, or a list loaded in order (Pathway's engine, its
+     pages, then the topics that register with them). */
   function kitFor(courseId) {
     return script("lab/widgets.js").then(function () {
-      return COURSE_KIT[courseId] ? script(COURSE_KIT[courseId]) : null;
+      var k = COURSE_KIT[courseId];
+      if (!k) return null;
+      if (typeof k === "string") return script(k);
+      return k.reduce(function (p, f) { return p.then(function () { return script(f); }); }, Promise.resolve());
     });
-  }
-  /* Pathway — the adaptive layer on a course (Algebra I has it): a placement
-     check, a ring that fills as topics are learned, and a knowledge check to
-     keep it honest. Its engine, its pages and its topics are loaded, in this
-     order, only when a student opens the ring or the course page asks for its
-     panel; the units themselves never wait for it. */
-  var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg-e.js", "path/alg-f.js", "path/alg.js"];
-  var PATHWAYS = { alg: true };
-  var pathLoaded = null;
-  function pathKit(courseId) {
-    if (!PATHWAYS[courseId]) return Promise.resolve(null);
-    if (!pathLoaded) {
-      pathLoaded = script("lab/widgets.js").then(function () {
-        return PATH_KIT.reduce(function (p, f) { return p.then(function () { return script(f); }); }, Promise.resolve());
-      });
-      pathLoaded.catch(function () { pathLoaded = null; });
-    }
-    return pathLoaded;
   }
   function load(courseId, n) {
     var key = courseId + ":" + n;
@@ -1031,7 +1027,7 @@ window.OPLO_LAB = (function () {
   function hub(host, ctx, what) {
     useAccount(ctx.me);
     host.innerHTML = '<div class="lb-loading"><span></span><span></span><span></span></div>';
-    return Promise.all([kitFor(ctx.course), pathKit(ctx.course)]).then(function () {
+    return kitFor(ctx.course).then(function () {
       if (!HUBS[ctx.course]) throw new Error("This course has no page of its own.");
       return HUBS[ctx.course](host, ctx, what || "");
     }).catch(function (e) { failed(host, e); });
@@ -1726,7 +1722,7 @@ window.OPLO_LAB = (function () {
       return t ? t.best || 0 : null;
     },
     level: level, levels: LEVELS, useAccount: useAccount, setLevel: function (id, lv) { if (REC) setLevel(id, lv); },
-    fmtStep: fmtStep, hub: hub, addHub: addHub, pathKit: pathKit,
+    fmtStep: fmtStep, hub: hub, addHub: addHub,
     _lessonPath: lessonPath, _genStep: genStep,
     // widgets
     W: W, el: el, esc: esc, button: button, svg: svg
