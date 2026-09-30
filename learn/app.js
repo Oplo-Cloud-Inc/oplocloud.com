@@ -1866,7 +1866,8 @@
      SAT-Math/Fix/<skill>, …) — drawn by the course's kit (lab/core.js, hub). */
   var HUB_LABEL = { Scan: "Brain Scan", Results: "Scan results", Mission: "Today's mission", Time: "Session", Fix: "Fix a skill",
                     Skill: "Skill", Drill: "Practice", Module: "Practice module", Errors: "Error Lab", Library: "Strategy Library",
-                    Try: "Strategy", Spot: "Pattern Spotter", Target: "Target score" };
+                    Try: "Strategy", Spot: "Pattern Spotter", Target: "Target score",
+                    Learn: "Learn a topic", Check: "Knowledge Check", Review: "Review", Graph: "Knowledge graph" };
   function hubCtx(c) {
     var ctx = labCtx(c, null);
     ctx.go.hub = function () { openCourse(c); };
