@@ -35,12 +35,12 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "fe2fab7f",
+    "lab/widgets.js": "b8e0f130",
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
     "lab/geotools.js": "3a389b5e",
-    "alg/u01.js": "36485330",
+    "alg/u01.js": "d05e491b",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "332193f8",

@@ -401,8 +401,8 @@ window.OPLO = (function () {
       "Multiply and factor polynomials, and solve and graph quadratics every way there is."
     ],
     units: [
-      { t: "Algebra foundations", lab: true,
-        desc: "Letters that stand for numbers. Evaluating expressions, combining like terms, telling when two expressions are the same, and why nothing can be divided by zero." },
+      { t: "Linear equations", lab: true,
+        desc: "Expressions, equations and constraints that model a situation; what a solution is and how a graph shows it; equivalent equations and the moves that keep them equivalent; solving for a variable; and writing the equation of a line from a slope, a point, two points, a table or a graph." },
       { t: "Solving equations & inequalities", lab: true,
         desc: "The balance: do the same to both sides. Equations with variables on both sides, brackets and fractions; how many solutions an equation can have; and inequalities, including why the sign flips." },
       { t: "Working with units", lab: true,
@@ -432,7 +432,9 @@ window.OPLO = (function () {
       { t: "Irrational numbers", lab: true,
         desc: "Numbers that are not fractions: recognising them, sums and products with rationals, and a proof that √2 is irrational." }
     ],
-    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "Unit 1 follows OpenStax Algebra 1 (Texas edition), Unit 1 — Linear Equations: the readiness check, lessons 1.1 to 1.15 and Project 1, in the book's order. " +
+              "Adapted from OpenStax (Rice University), CC BY-NC-SA 4.0; the questions, figures and feedback are OEdu's own."
   };
 
 
