@@ -12,7 +12,7 @@ import { hashPassword } from "../lib/crypto.js";
 import { publicAccount } from "./auth.js";
 
 const PRODUCTS = ["learn", "maps", "shopping", "roxan", "efm", "platform"];
-const ROLES = ["student", "teacher", "author", "guardian", "admin", "user", "seller", "viewer"];
+const ROLES = ["student", "teacher", "author", "guardian", "admin", "counselor", "dean", "principal", "registrar", "user", "seller", "viewer"];
 
 function shape(row) {
   return {

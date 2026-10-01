@@ -558,6 +558,11 @@
      and when Back or Forward lands on one this page did not make. Returns
      false for an address that names nothing, so the caller can go home. */
   function route(rest) {
+    /* Before anything is drawn, from who is signed in and never from the
+       address. A deep link, a course, a unit, a lesson, a lab, a sitting and
+       the way back all arrive here, so all of them get the student canvas
+       decided the same way. */
+    lookNow();
     var seg = (rest == null ? appRest() : rest).split("/").filter(Boolean).map(function (x) {
       try { return decodeURIComponent(x); } catch (e) { return x; }
     });
@@ -18422,14 +18427,48 @@
       "Your progress saves to your account, so it is the same on every device you sign in on.";
   }
 
-  /* The student side is dark (learn/obsidian.css). The page marks a
-     /student/ address itself before anything is drawn; signing in at the
-     root and signing out change the address without a new page, so they
-     mark it here. */
-  function setLook(mode) {
-    if (mode === "student") document.documentElement.setAttribute("data-look", "obsidian");
-    else document.documentElement.removeAttribute("data-look");
+  /* The student side is dark (learn/obsidian.css), and this is the one place
+     the attribute that carries it is written. The page also marks a /student/
+     address itself before anything is drawn, so a student never sees a light
+     frame first — but that is a guess from the address bar, made before there
+     was any way to know. What the person IS is what the server said, and that
+     is what this answers to, which is why it is the writer and the head's
+     script is only the first guess. Signing in at the root and signing out
+     change the address without a new page, so they come through here too.
+
+     The two arguments are the only two: `student`, or anything else. So the
+     whole student experience is one branch, and there is no per-course,
+     per-unit, per-lesson or per-overlay case that can be forgotten. */
+  /* The browser's own bar, in the student's ramp. Read out of the palette so
+     the number is written down once, in obsidian.css. */
+  function studentChrome() {
+    var v = getComputedStyle(document.documentElement).getPropertyValue("--chrome");
+    v = String(v || "").trim();
+    return v || "#2b2b2d";
   }
+
+  function setLook(mode) {
+    var html = document.documentElement;
+    var want = mode === "student" ? "obsidian" : null;
+    if (html.getAttribute("data-look") === want) return;
+    if (want) html.setAttribute("data-look", want);
+    else html.removeAttribute("data-look");
+    /* The bar follows the page's canvas rather than the Mac's appearance
+       setting, because a student is dark on both; and #ffffff goes back for
+       staff, the family view and the signed-out welcome page, which is the
+       one value on this page that is not the student's business. */
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", want ? studentChrome() : "#ffffff");
+  }
+
+  /* Re-asserted from the signed-in role rather than from the address, at every
+     route. The attribute is on <html> and nothing else touches it, so it
+     already survives a route change, a lesson transition, opening and closing
+     an overlay, a dynamically mounted view and a Back — but "nothing else
+     touches it" is a claim about every future line of this file, and this is
+     the claim being made true instead. One attribute write per route, and
+     only when it has actually changed. */
+  function lookNow() { setLook(S.me && S.me.role); }
 
   function boot(who) {
     /* Everybody signs in on this one page; where they belong is read from their

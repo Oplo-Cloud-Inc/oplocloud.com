@@ -36,6 +36,7 @@ import * as marks from "./routes/marks.js";
 import * as studysets from "./routes/studysets.js";
 import * as graduation from "./routes/graduation.js";
 import * as reporting from "./routes/reporting.js";
+import * as periods from "./routes/periods.js";
 import * as family from "./routes/family.js";
 import * as assessments from "./routes/assessments.js";
 import * as efm from "./routes/efm.js";
@@ -115,6 +116,18 @@ const ROUTES = [
   ["PUT",    "/api/v1/accounts/:accountId/ehs-record",   graduation.putEhsRecord],
   ["PATCH",  "/api/v1/transcripts/:recordId",            graduation.updateRecord],
   ["PATCH",  "/api/v1/transcript-courses/:courseId",     graduation.updateCourse],
+
+  ["GET",    "/api/v1/periods",                          periods.listPeriods],
+  ["POST",   "/api/v1/periods",                          periods.createPeriod],
+  ["PATCH",  "/api/v1/periods/:periodId",                periods.moveState],
+  ["POST",   "/api/v1/periods/:periodId/post",           periods.postCourse],
+  ["GET",    "/api/v1/periods/:periodId/posted",         periods.listPosted],
+  ["GET",    "/api/v1/grade-changes",                    periods.listChanges],
+  ["POST",   "/api/v1/grade-changes",                    periods.requestChange],
+  ["POST",   "/api/v1/grade-changes/:changeId/decision", periods.decideChange],
+  ["GET",    "/api/v1/attendance",                       periods.listAttendance],
+  ["PUT",    "/api/v1/attendance",                       periods.putAttendance],
+  ["GET",    "/api/v1/attendance/summary",               periods.attendanceSummary],
 
   ["GET",    "/api/v1/marks",           marks.list],
   ["POST",   "/api/v1/marks",           marks.put],

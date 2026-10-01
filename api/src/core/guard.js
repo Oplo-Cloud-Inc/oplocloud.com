@@ -57,6 +57,8 @@ export const ACTIONS = [
   "record.read", "record.write",
   "assessment.read", "assessment.write",
   "role.grant",
+  "period.read", "period.write", "grade.post", "grade.approve",
+  "attendance.read", "attendance.write",
   "efm.read", "efm.write", "efm.admin"
 ];
 
@@ -70,6 +72,16 @@ function hasRole(actor, product, role, orgId) {
 export const isPlatformAdmin = (actor) => hasRole(actor, "platform", "admin");
 export const isLearnAdmin = (actor, orgId) =>
   isPlatformAdmin(actor) || hasRole(actor, "learn", "admin", orgId);
+
+/* School staff who work across the whole school rather than through a course
+   they teach: counselors, deans, principals, registrars. They all see the
+   same school — one console, one set of screens — so reading is theirs
+   together; what each may CHANGE is decided per action below. */
+export const STAFF_ROLES = ["counselor", "dean", "principal", "registrar"];
+export const isStaff = (actor, orgId) =>
+  isLearnAdmin(actor, orgId) || STAFF_ROLES.some((r) => hasRole(actor, "learn", r, orgId));
+const hasAny = (actor, roles, orgId) =>
+  isLearnAdmin(actor, orgId) || roles.some((r) => hasRole(actor, "learn", r, orgId));
 
 /* Whether the actor teaches a given course. This is a database question, not
    a claim in a token, which is the whole point — a role in a session that has
@@ -115,12 +127,13 @@ export async function can(ctx, action, resource = {}) {
 
   const orgId = resource.orgId ?? resource.org_id ?? null;
   const learnAdmin = isLearnAdmin(actor, orgId);
+  const staff = isStaff(actor, orgId);
 
   switch (action) {
     /* -------------------------------------------------------- Accounts */
     case "account.read":
       if (resource.accountId === actor.id) return true;
-      if (learnAdmin) return true;
+      if (staff) return true;
       if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
@@ -215,7 +228,7 @@ export async function can(ctx, action, resource = {}) {
        names no student — is never theirs, and nor is a single write. */
     case "grade.read":
       if (resource.accountId === actor.id) return true;
-      if (learnAdmin) return true;
+      if (staff) return true;
       if (resource.accountId && await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesCourse(ctx, actor, resource.courseId);
 
@@ -243,7 +256,7 @@ export async function can(ctx, action, resource = {}) {
 
     case "progress.read":
       if (resource.accountId === actor.id) return true;
-      if (learnAdmin) return true;
+      if (staff) return true;
       if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
@@ -259,13 +272,46 @@ export async function can(ctx, action, resource = {}) {
     case "guardian.read":
     case "record.read":
       if (resource.accountId === actor.id) return true;
-      if (learnAdmin) return true;
+      if (staff) return true;
       if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
     case "guardian.write":
     case "record.write":
       return learnAdmin;
+
+    /* -------------------------------------------- Periods and the record
+       Everyone who works at the school may read the calendar of marking
+       periods. Opening, closing and locking one is the principal's,
+       registrar's or an administrator's: it decides what the school's record
+       says. A teacher posts grades for the courses they teach; approving a
+       change to a posted grade is not theirs, because a grade a teacher can
+       both request and approve is a grade nobody reviewed. */
+    case "period.read":
+      return staff || hasRole(actor, "learn", "teacher", orgId) ||
+             hasRole(actor, "learn", "student", orgId) || hasRole(actor, "learn", "guardian", orgId);
+
+    case "period.write":
+    case "grade.approve":
+      return hasAny(actor, ["principal", "registrar"], orgId);
+
+    case "grade.post":
+      return hasAny(actor, ["principal", "registrar"], orgId) ||
+             (await teachesCourse(ctx, actor, resource.courseId));
+
+    /* Attendance is taken by whoever is in the room, and corrected by the
+       people whose job is the school day. A student never writes it; a
+       family reads their own child's. */
+    case "attendance.read":
+      if (resource.accountId === actor.id) return true;
+      if (staff) return true;
+      if (resource.accountId && await guardsStudent(ctx, actor, resource.accountId)) return true;
+      if (resource.courseId) return teachesCourse(ctx, actor, resource.courseId);
+      return teachesStudent(ctx, actor, resource.accountId);
+
+    case "attendance.write":
+      if (hasAny(actor, ["dean", "principal", "registrar"], orgId)) return true;
+      return resource.courseId ? teachesCourse(ctx, actor, resource.courseId) : false;
 
     /* ------------------------------------------------------ Assessments
        The questions of an exam reach the students it was set for, once it
@@ -330,6 +376,12 @@ const REASONS = {
   "record.read": "You can only see the school record of yourself, your own children, or students you teach.",
   "record.write": "The school record is kept by administrators. Families and teachers can read it but not change it.",
   "role.grant": "Only administrators can change roles.",
+  "period.read": "Marking periods are visible to people at the school.",
+  "period.write": "Only a principal, registrar or administrator can open, close or lock a marking period.",
+  "grade.post": "You can post grades only for courses you teach.",
+  "grade.approve": "Only a principal, registrar or administrator can approve a change to a posted grade.",
+  "attendance.read": "You can only see attendance for yourself, your own children, or students you teach.",
+  "attendance.write": "Attendance is taken by the teacher of the course, or corrected by a dean, principal or registrar.",
   "assessment.read": "That assessment has not been set for you, or has not opened yet.",
   "assessment.write": "Only administrators can publish assessments.",
   "efm.read": "OC EFM is assigned to people by an administrator. Ask one to give you access.",

@@ -1346,4 +1346,192 @@ export class D1Repository {
     ).bind(id("ach"), accountId, key, now()).run();
     return res.meta && res.meta.changes > 0;
   }
+
+  /* ------------------------------------------------ Marking periods and record
+     The school's official record: periods, the grades posted in them, the
+     requests to change those, and attendance. Nothing here decides who may do
+     what; that is guard.js. */
+
+  async listPeriods(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_periods WHERE (? IS NULL OR org_id IS ? OR org_id = ?)
+        ORDER BY starts_on`
+    ).bind(orgId || null, orgId || null, orgId || null).all();
+    return results || [];
+  }
+
+  async findPeriod(periodId) {
+    return this.db.prepare(`SELECT * FROM learn_periods WHERE id = ?`).bind(periodId).first();
+  }
+
+  async createPeriod({ orgId, name, kind, startsOn, endsOn, passMark }) {
+    const periodId = id("per");
+    await this.db.prepare(
+      `INSERT INTO learn_periods (id, org_id, name, kind, starts_on, ends_on, pass_mark, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(periodId, orgId || null, name, kind, startsOn, endsOn, passMark, now()).run();
+    return this.findPeriod(periodId);
+  }
+
+  async setPeriodState(periodId, state, actorId) {
+    const t = now();
+    if (state === "posted") {
+      await this.db.prepare(
+        `UPDATE learn_periods SET state = ?, posted_at = ?, posted_by = ? WHERE id = ?`
+      ).bind(state, t, actorId, periodId).run();
+    } else if (state === "locked") {
+      await this.db.prepare(
+        `UPDATE learn_periods SET state = ?, locked_at = ?, locked_by = ? WHERE id = ?`
+      ).bind(state, t, actorId, periodId).run();
+    } else {
+      await this.db.prepare(
+        `UPDATE learn_periods SET state = ?, posted_at = NULL, posted_by = NULL WHERE id = ?`
+      ).bind(state, periodId).run();
+    }
+    return this.findPeriod(periodId);
+  }
+
+  async listPosted({ periodId, courseId, accountId }) {
+    const { results } = await this.db.prepare(
+      `SELECT pg.*, c.title AS course_title, p.name AS period_name, p.pass_mark,
+              pr.name AS student_name
+         FROM learn_posted_grades pg
+         JOIN learn_courses c ON c.id = pg.course_id
+         JOIN learn_periods p ON p.id = pg.period_id
+         LEFT JOIN profiles pr ON pr.account_id = pg.account_id
+        WHERE (? IS NULL OR pg.period_id = ?)
+          AND (? IS NULL OR pg.course_id = ?)
+          AND (? IS NULL OR pg.account_id = ?)
+        ORDER BY p.starts_on, c.title, pr.name`
+    ).bind(periodId || null, periodId || null, courseId || null, courseId || null,
+           accountId || null, accountId || null).all();
+    return results || [];
+  }
+
+  async findPosted(postedId) {
+    return this.db.prepare(
+      `SELECT pg.*, p.state AS period_state, p.pass_mark FROM learn_posted_grades pg
+         JOIN learn_periods p ON p.id = pg.period_id WHERE pg.id = ?`
+    ).bind(postedId).first();
+  }
+
+  /* Posting again while a period is still in grading replaces the earlier
+     snapshot; once posted, the route refuses before it gets here. */
+  async upsertPosted({ periodId, courseId, accountId, percent, letter, passing, parts, actorId }) {
+    await this.db.prepare(
+      `INSERT INTO learn_posted_grades
+         (id, period_id, course_id, account_id, percent, letter, passing, parts_json, posted_by, posted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (period_id, course_id, account_id) DO UPDATE SET
+         percent = excluded.percent, letter = excluded.letter, passing = excluded.passing,
+         parts_json = excluded.parts_json, posted_by = excluded.posted_by, posted_at = excluded.posted_at`
+    ).bind(id("pgr"), periodId, courseId, accountId, percent ?? null, letter ?? null,
+           passing ?? null, parts ? JSON.stringify(parts) : null, actorId || null, now()).run();
+  }
+
+  async createGradeChange({ postedId, fromPercent, toPercent, reason, actorId }) {
+    const changeId = id("gch");
+    await this.db.prepare(
+      `INSERT INTO learn_grade_changes
+         (id, posted_id, from_percent, to_percent, reason, requested_by, requested_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(changeId, postedId, fromPercent ?? null, toPercent, reason, actorId, now()).run();
+    return this.findGradeChange(changeId);
+  }
+
+  async findGradeChange(changeId) {
+    return this.db.prepare(
+      `SELECT gc.*, pg.course_id, pg.account_id, pg.period_id, p.state AS period_state,
+              p.pass_mark, c.title AS course_title, sp.name AS student_name,
+              rp.name AS requested_by_name, dp.name AS decided_by_name
+         FROM learn_grade_changes gc
+         JOIN learn_posted_grades pg ON pg.id = gc.posted_id
+         JOIN learn_periods p ON p.id = pg.period_id
+         JOIN learn_courses c ON c.id = pg.course_id
+         LEFT JOIN profiles sp ON sp.account_id = pg.account_id
+         LEFT JOIN profiles rp ON rp.account_id = gc.requested_by
+         LEFT JOIN profiles dp ON dp.account_id = gc.decided_by
+        WHERE gc.id = ?`
+    ).bind(changeId).first();
+  }
+
+  async listGradeChanges({ status, requestedBy }) {
+    const { results } = await this.db.prepare(
+      `SELECT gc.id FROM learn_grade_changes gc
+        WHERE (? IS NULL OR gc.status = ?) AND (? IS NULL OR gc.requested_by = ?)
+        ORDER BY gc.requested_at DESC LIMIT 200`
+    ).bind(status || null, status || null, requestedBy || null, requestedBy || null).all();
+    const out = [];
+    for (const r of results || []) out.push(await this.findGradeChange(r.id));
+    return out;
+  }
+
+  /* Approving rewrites the posted grade; the request row keeps what it was
+     and who decided, which is the record of why the number moved. */
+  async decideGradeChange({ changeId, approve, note, actorId, letter, passing }) {
+    const change = await this.findGradeChange(changeId);
+    const t = now();
+    const stmts = [this.db.prepare(
+      `UPDATE learn_grade_changes SET status = ?, decided_by = ?, decided_at = ?, decision_note = ?
+        WHERE id = ? AND status = 'pending'`
+    ).bind(approve ? "approved" : "denied", actorId, t, note || null, changeId)];
+    if (approve) {
+      stmts.push(this.db.prepare(
+        `UPDATE learn_posted_grades SET percent = ?, letter = ?, passing = ? WHERE id = ?`
+      ).bind(change.to_percent, letter, passing, change.posted_id));
+    }
+    await this.db.batch(stmts);
+    return this.findGradeChange(changeId);
+  }
+
+  async upsertAttendance({ accountId, courseId, day, status, note, actorId }) {
+    const existing = courseId
+      ? await this.db.prepare(`SELECT id FROM learn_attendance WHERE account_id = ? AND day = ? AND course_id = ?`)
+          .bind(accountId, day, courseId).first()
+      : await this.db.prepare(`SELECT id FROM learn_attendance WHERE account_id = ? AND day = ? AND course_id IS NULL`)
+          .bind(accountId, day).first();
+    if (existing) {
+      await this.db.prepare(
+        `UPDATE learn_attendance SET status = ?, note = ?, marked_by = ?, marked_at = ? WHERE id = ?`
+      ).bind(status, note ?? null, actorId || null, now(), existing.id).run();
+      return existing.id;
+    }
+    const attId = id("att");
+    await this.db.prepare(
+      `INSERT INTO learn_attendance (id, account_id, course_id, day, status, note, marked_by, marked_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(attId, accountId, courseId || null, day, status, note ?? null, actorId || null, now()).run();
+    return attId;
+  }
+
+  async listAttendance({ courseId, accountId, day, from, to }) {
+    const { results } = await this.db.prepare(
+      `SELECT at.*, pr.name AS student_name FROM learn_attendance at
+         LEFT JOIN profiles pr ON pr.account_id = at.account_id
+        WHERE (? IS NULL OR at.course_id = ?) AND (? IS NULL OR at.account_id = ?)
+          AND (? IS NULL OR at.day = ?) AND (? IS NULL OR at.day >= ?) AND (? IS NULL OR at.day <= ?)
+        ORDER BY at.day DESC, pr.name LIMIT 2000`
+    ).bind(courseId || null, courseId || null, accountId || null, accountId || null,
+           day || null, day || null, from || null, from || null, to || null, to || null).all();
+    return results || [];
+  }
+
+  /* The school-wide count by status for a span of days, and the students
+     with the most absences, for a dean or principal's first look. */
+  async attendanceSummary({ from, to }) {
+    const { results: byStatus } = await this.db.prepare(
+      `SELECT status, COUNT(*) AS n FROM learn_attendance
+        WHERE day >= ? AND day <= ? GROUP BY status`
+    ).bind(from, to).all();
+    const { results: top } = await this.db.prepare(
+      `SELECT at.account_id, pr.name AS student_name,
+              SUM(CASE WHEN at.status IN ('absent','cut') THEN 1 ELSE 0 END) AS absences,
+              SUM(CASE WHEN at.status = 'late' THEN 1 ELSE 0 END) AS lates,
+              COUNT(*) AS days
+         FROM learn_attendance at LEFT JOIN profiles pr ON pr.account_id = at.account_id
+        WHERE at.day >= ? AND at.day <= ?
+        GROUP BY at.account_id ORDER BY absences DESC, lates DESC LIMIT 25`
+    ).bind(from, to).all();
+    return { byStatus: byStatus || [], top: top || [] };
+  }
 }

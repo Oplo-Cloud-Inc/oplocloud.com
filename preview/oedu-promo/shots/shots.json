@@ -1,0 +1,164 @@
+{
+ "home": {
+  "file": "home.png",
+  "w": 1440,
+  "h": 900,
+  "cards": {
+   "standing": {
+    "file": "home-standing.png",
+    "x": 252,
+    "y": 172,
+    "w": 521,
+    "h": 314,
+    "r": 16
+   },
+   "week": {
+    "file": "home-week.png",
+    "x": 787,
+    "y": 172,
+    "w": 401,
+    "h": 314,
+    "r": 16
+   },
+   "school": {
+    "file": "home-school.png",
+    "x": 252,
+    "y": 520,
+    "w": 457,
+    "h": 735,
+    "r": 22
+   }
+  }
+ },
+ "school": {
+  "file": "school.png",
+  "w": 1440,
+  "h": 900,
+  "cards": {
+   "course": {
+    "file": "school-course.png",
+    "x": 252,
+    "y": 261,
+    "w": 936,
+    "h": 466,
+    "r": 22
+   }
+  }
+ },
+ "grades": {
+  "file": "grades.png",
+  "w": 1440,
+  "h": 900,
+  "cards": {
+   "average": {
+    "file": "grades-average.png",
+    "x": 58,
+    "y": 213,
+    "w": 434,
+    "h": 147,
+    "r": 20
+   },
+   "todo": {
+    "file": "grades-todo.png",
+    "x": 1011,
+    "y": 382,
+    "w": 371,
+    "h": 129,
+    "r": 20
+   }
+  }
+ },
+ "explore": {
+  "file": "explore.png",
+  "w": 1440,
+  "h": 900,
+  "cards": {
+   "c1": {
+    "file": "explore-c1.png",
+    "x": 252,
+    "y": 618,
+    "w": 303,
+    "h": 219,
+    "r": 16
+   },
+   "c2": {
+    "file": "explore-c2.png",
+    "x": 569,
+    "y": 618,
+    "w": 303,
+    "h": 219,
+    "r": 16
+   },
+   "c3": {
+    "file": "explore-c3.png",
+    "x": 885,
+    "y": 618,
+    "w": 303,
+    "h": 219,
+    "r": 16
+   }
+  }
+ },
+ "unit": {
+  "file": "unit.png",
+  "w": 1440,
+  "h": 900,
+  "cards": {
+   "mastery": {
+    "file": "unit-mastery.png",
+    "x": 252,
+    "y": 257,
+    "w": 860,
+    "h": 140,
+    "r": 20
+   },
+   "next": {
+    "file": "unit-next.png",
+    "x": 252,
+    "y": 427,
+    "w": 860,
+    "h": 133,
+    "r": 20
+   }
+  }
+ },
+ "lesson": {
+  "file": "lesson.png",
+  "w": 1440,
+  "h": 900,
+  "cards": {
+   "step": {
+    "file": "lesson-step.png",
+    "x": 352,
+    "y": 165,
+    "w": 760,
+    "h": 608,
+    "r": 22
+   },
+   "side": {
+    "file": "lesson-side.png",
+    "x": 12,
+    "y": 65,
+    "w": 300,
+    "h": 1423,
+    "r": 20
+   },
+   "diagA": {
+    "file": "lesson-diagA.png",
+    "x": 452,
+    "y": 427,
+    "w": 270,
+    "h": 202,
+    "r": 14
+   },
+   "diagB": {
+    "file": "lesson-diagB.png",
+    "x": 742,
+    "y": 427,
+    "w": 270,
+    "h": 202,
+    "r": 14
+   }
+  }
+ }
+}

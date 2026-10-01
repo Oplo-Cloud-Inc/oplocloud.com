@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>OEdu — Learning you can touch (film v2 preview)</title>
+<style>
+:root{--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;--font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}
+body{background:#000;font-family:var(--font);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px}
+#wrap{width:min(96vw,calc((100vh - 96px) * 16 / 9));aspect-ratio:16/9;position:relative;overflow:hidden;border-radius:10px;background:#04050a}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;background:#04050a;color:#fff;--beat:0;--a:0deg}
+/* ---- backdrop: aurora, floor grid, dust ---- */
+#bg{position:absolute;inset:0}
+.blob{position:absolute;border-radius:50%;filter:blur(96px);will-change:transform,opacity}
+#floor{position:absolute;left:-45%;right:-45%;bottom:-14%;height:66%;transform:perspective(560px) rotateX(70deg);background-image:linear-gradient(rgba(150,165,255,.30) 1px,transparent 1px),linear-gradient(90deg,rgba(150,165,255,.30) 1px,transparent 1px);background-size:90px 90px;-webkit-mask-image:linear-gradient(transparent 0%,#000 55%);mask-image:linear-gradient(transparent 0%,#000 55%);opacity:.5}
+canvas{position:absolute;inset:0;width:1280px;height:720px;pointer-events:none}
+/* ---- the 3D world ---- */
+#scene{position:absolute;inset:0;perspective:1400px;perspective-origin:50% 50%}
+#world{position:absolute;left:640px;top:360px;width:0;height:0;transform-style:preserve-3d;will-change:transform}
+.pane{position:absolute;left:-500px;top:-312.5px;width:1000px;height:625px;transform-style:preserve-3d;will-change:transform}
+.face,.card{position:absolute;overflow:hidden;background:#000;will-change:transform,opacity,filter}
+.face{inset:0;border-radius:18px;box-shadow:0 0 0 1px rgba(255,255,255,.07)}
+.face img,.card img{display:block;width:100%;height:100%}
+/* prismatic rim: a conic gradient shown only in the edge, its angle turning slowly, brightening on the beat */
+.face::after,.card::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.6px;background:conic-gradient(from var(--a),#8b7bff,#4da2ff,#5ee7ff,#ff8ad8,#8b7bff);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);opacity:calc(.32 + .55 * var(--beat));pointer-events:none}
+.card{box-shadow:0 40px 120px rgba(80,90,255,.35)}
+.halo,.ghost{position:absolute;pointer-events:none;will-change:transform,opacity}
+.halo{left:-900px;top:-600px;width:1800px;height:1200px;background:radial-gradient(closest-side,hsla(var(--h),90%,60%,.42),transparent 72%)}
+.ghost{left:-1400px;top:-260px;width:2800px;text-align:center;font-weight:800;font-size:520px;line-height:1;letter-spacing:-.05em;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.55);white-space:nowrap}
+/* ---- HUD ---- */
+#hud{position:absolute;inset:0;pointer-events:none}
+.lab{position:absolute;font:600 11px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#cfd6ff;white-space:nowrap;opacity:0;will-change:transform,opacity}
+.lab b{display:block;color:#7f8bff;font-weight:600;margin-bottom:2px}
+.lab i{position:absolute;top:50%;height:1px;background:linear-gradient(90deg,rgba(150,165,255,.9),rgba(94,231,255,.4));transform-origin:0 50%}
+#top{position:absolute;left:34px;top:26px;right:34px;display:flex;justify-content:space-between;font:600 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:rgba(200,208,255,.7);opacity:0}
+#tl{position:absolute;left:34px;right:34px;bottom:24px;height:2px;background:rgba(255,255,255,.12);opacity:0}
+#tl u{position:absolute;left:0;top:0;height:100%;width:0;background:linear-gradient(90deg,#8b7bff,#5ee7ff)}
+/* ---- type ---- */
+#type{position:absolute;inset:0;pointer-events:none}
+.t{position:absolute;left:0;right:0;text-align:center;font-weight:700;letter-spacing:-.04em;line-height:1.02;will-change:transform,opacity,filter}
+.tl{display:block;overflow:hidden;padding:.06em .3em;margin:-.06em -.3em}
+.wd{display:inline-block;white-space:nowrap;margin:0 .13em}
+.c{display:inline-block;will-change:transform,opacity,filter}
+/* ---- the Touch ---- */
+#orb{position:absolute;left:0;top:0;width:0;height:0;opacity:0;z-index:40}
+#orb i{position:absolute;border-radius:50%}
+#orb .core{left:-9px;top:-9px;width:18px;height:18px;background:#fff;box-shadow:0 0 22px 6px rgba(160,180,255,.95),0 0 80px 22px rgba(94,231,255,.55)}
+#orb .ring{left:-30px;top:-30px;width:60px;height:60px;border:1.5px solid rgba(255,255,255,.75);opacity:.85}
+.rip{position:absolute;width:0;height:0;z-index:39;opacity:0}
+.rip i{position:absolute;border-radius:50%;border:2px solid #9fb2ff;left:-100px;top:-100px;width:200px;height:200px}
+#flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,#fff 0,rgba(160,150,255,.85) 28%,transparent 62%);opacity:0;z-index:45;pointer-events:none}
+/* ---- ending ---- */
+#end{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0}
+#end svg{width:190px;overflow:visible}
+#end svg path{fill:url(#irid);fill-opacity:0;stroke:#dfe6ff;stroke-width:1.3;stroke-dasharray:1;stroke-dashoffset:1}
+#end .name{font-size:120px;font-weight:800;letter-spacing:-.05em;margin-top:26px;opacity:0;background:linear-gradient(100deg,#fff 0 36%,#9aa8ff 46%,#5ee7ff 52%,#ff8ad8 58%,#fff 68% 100%);background-size:320% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+#end .by{font:600 13px/1 var(--mono);letter-spacing:.32em;text-transform:uppercase;color:#a7b0e8;margin-top:12px;opacity:0}
+#end .cta{margin-top:34px;opacity:0;display:inline-flex;align-items:center;gap:10px;padding:0 30px;height:54px;border-radius:99px;font-size:19px;font-weight:600;letter-spacing:-.01em;color:#04050a;background:linear-gradient(100deg,#fff,#dfe6ff);box-shadow:0 0 0 1px rgba(255,255,255,.5),0 0 60px 8px rgba(120,140,255,.55)}
+#end .url{font:600 12px/1 var(--mono);letter-spacing:.2em;color:#7f8bff;margin-top:16px;opacity:0}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.6) 100%);pointer-events:none;z-index:60}
+#ctl{width:min(96vw,1000px);display:flex;gap:12px;align-items:center;color:#aaa;font-size:13px}
+#ctl button,#ctl select{background:#1c1c20;color:#fff;border:0;border-radius:99px;padding:7px 16px;font:inherit;cursor:pointer}#ctl input{flex:1}
+</style></head><body>
+<div id="wrap"><div id="stage">
+  <div id="bg"><div class="blob" id="b1"></div><div class="blob" id="b2"></div><div class="blob" id="b3"></div><div id="floor"></div></div>
+  <canvas id="dustB" width="1280" height="720"></canvas>
+  <div id="scene"><div id="world"></div></div>
+  <canvas id="dustF" width="1280" height="720"></canvas>
+  <div id="hud"></div><div id="type"></div>
+  <div id="top"><span id="chap"></span><span id="tc"></span></div><div id="tl"><u></u></div>
+  <div id="orb"><i class="ring"></i><i class="core"></i></div><div id="rips"></div>
+  <div id="flash"></div>
+  <div id="end"></div>
+  <div id="vig"></div>
+</div></div>
+<div id="ctl"><button id="pp">Pause</button><button id="rs">Restart</button><input id="sc" type="range" min="0" max="1000" value="0"><span id="tm"></span>
+<button id="snd">Sound: off</button><select id="sp"><option>0.5</option><option selected>1</option><option>2</option></select></div>
+<script>
+/* =========================================================================
+   THE STORYBOARD — edit this, and only this.
+
+   Time is bars.beats at 120 BPM (the "elite, kinetic" tempo): B(3) is the
+   start of bar 3, B(3,2) is beat 2 of bar 3 (0.5 s a beat). Every dolly lands
+   on a downbeat, so a real track can be dropped in underneath.
+
+   One continuous camera flies through five real OEdu screens hung in space.
+   Everything is keyframes: {t, ...values, e} — at time t the values are reached,
+   easing in with `e` ('io' default, 'out', 'in', 'spring' = overshoots, 'lin').
+   Values you leave out carry over from the keyframe before.
+   ========================================================================= */
+const BPM = 120, BEAT = 60 / BPM, BAR = 4 * BEAT;
+const B = (bar, beat = 0) => (bar - 1) * BAR + beat * BEAT;
+const END = B(19);                                             // 18 bars = 36 s
+
+/* Where the five real screens hang (x, y, z in space; ry = turn in degrees; hue = its glow). */
+const PANES = [
+  { id: 'home',    x:   0, y:   0, z:     0, ry:  0, hue: 262 },
+  { id: 'school',  x:  70, y: -30, z: -1100, ry: -7, hue: 215 },
+  { id: 'grades',  x: -80, y:  25, z: -2200, ry:  8, hue: 185 },
+  { id: 'explore', x:  60, y: -20, z: -3300, ry: -6, hue: 300 },
+  { id: 'lesson',  x:   0, y:  10, z: -4400, ry:  0, hue: 255 }
+];
+const HOLD = 440;                                              // camera sits this far in front of a screen it is reading
+
+/* The camera. Forward is smaller z. The dolly to each screen is one eased sweep on a bar line;
+   in between it drifts, slowly, so the frame is never still. */
+const CAMERA = [
+  { t: 0,        x: 0,   y: 0,   z: 1100, rx: 0,  ry: 0,   rz: 0 },
+  { t: B(2,2),   z: 760, e: 'out' },
+  { t: B(3),     x: -30, y: -30, z: HOLD + 60,  rx: 4, ry: -15, e: 'io' },
+  { t: B(4,2),   x: 30,  y: -40, z: HOLD - 90,  rx: 2, ry: 11, e: 'io' },
+  { t: B(5),     e: 'io' },
+  { t: B(5,3),   x: 92,  y: -62, z: -1100 + HOLD,      rx: 1, ry: -9, e: 'io' },
+  { t: B(7),     x: 70,  y: -70, z: -1100 + HOLD - 110, ry: -3, e: 'io' },
+  { t: B(7,3),   x: -98, y: -10, z: -2200 + HOLD,      rx: 0, ry: 8,  e: 'io' },
+  { t: B(9),     x: -70, y: -15, z: -2200 + HOLD - 110, ry: 3, e: 'io' },
+  { t: B(9,3),   x: 82,  y: -55, z: -3300 + HOLD,      rx: 1, ry: -7, e: 'io' },
+  { t: B(11),    x: 55,  y: -60, z: -3300 + HOLD - 110, ry: -3, e: 'io' },
+  { t: B(11,3),  x: 0,   y: -28, z: -4400 + HOLD,      rx: 0, ry: 0, e: 'io' },
+  { t: B(14),    x: 0,   y: -34, z: -4400 + HOLD - 140, rx: 1, ry: -4, e: 'io' },     // the long hold: learn by doing
+  { t: B(15,1),  x: -30, y: -50, z: 900,  rx: -7, ry: 28, rz: 11, e: 'io' },          // the pull-back: the whole tunnel
+  { t: B(17),    x: 0,   y: 0,   z: 1100, rx: 0,  ry: 0,  rz: 0, e: 'io' }
+];
+
+/* Each screen: it arrives (the first) or is simply there; at the end they all fall into a point. */
+const PANE_KEYS = {
+  home: [{ t: 0, o: 0, s: .5, dz: -2600, bl: 26 }, { t: B(2,2), o: 0 }, { t: B(2,2) + .15, o: 1, e: 'lin' }, { t: B(3,1), s: 1, dz: 0, bl: 0, e: 'spring' }]
+};
+const FALL = i => [{ t: B(15,2) + i * .12 }, { t: B(16,2) + i * .12, s: .04, rz: 140 + i * 24, o: 0, dz: -700, e: 'in' }];
+
+/* Real cards lifted off their screen into space (dz = how far toward you). Crops of the real UI. */
+const CARDS = [
+  { id: 'standing', pane: 'home',    scr: 'home',    name: 'standing', keys: [{ t: B(3,2), dz: 0 }, { t: B(4), dz: 130, e: 'spring' }, { t: B(5,2), dz: 130 }, { t: B(6), dz: 10, e: 'io' }] },
+  { id: 'week',     pane: 'home',    scr: 'home',    name: 'week',     keys: [{ t: B(3,2) + .2, dz: 0 }, { t: B(4) + .2, dz: 190, e: 'spring' }, { t: B(5,2), dz: 190 }, { t: B(6), dz: 10, e: 'io' }] },
+  { id: 'course',   pane: 'school',  scr: 'school',  name: 'course',   keys: [{ t: B(6), dz: 0 }, { t: B(6,2), dz: 150, e: 'spring' }, { t: B(7,3), dz: 150 }, { t: B(8), dz: 10, e: 'io' }] },
+  { id: 'average',  pane: 'grades',  scr: 'grades',  name: 'average',  keys: [{ t: B(8), dz: 0 }, { t: B(8,2), dz: 230, s: 1.15, e: 'spring' }, { t: B(9,3), dz: 230, s: 1.15 }, { t: B(10), dz: 10, s: 1, e: 'io' }] },
+  { id: 'todo',     pane: 'grades',  scr: 'grades',  name: 'todo',     keys: [{ t: B(8) + .25, dz: 0 }, { t: B(8,2) + .25, dz: 120, e: 'spring' }, { t: B(9,3), dz: 120 }, { t: B(10), dz: 10, e: 'io' }] },
+  { id: 'c1',       pane: 'explore', scr: 'explore', name: 'c1',       keys: [{ t: B(10), dz: 0, dx: 0, ry: 0 }, { t: B(10,2), dz: 160, dx: -70, dy: -40, ry: 20, e: 'spring' }, { t: B(11,3), dz: 160, dx: -70, dy: -40, ry: 20 }, { t: B(12), dz: 10, dx: 0, dy: 0, ry: 0, e: 'io' }] },
+  { id: 'c2',       pane: 'explore', scr: 'explore', name: 'c2',       keys: [{ t: B(10) + .12, dz: 0, dy: 0 }, { t: B(10,2) + .12, dz: 240, dy: -60, e: 'spring' }, { t: B(11,3), dz: 240, dy: -60 }, { t: B(12), dz: 10, dy: 0, e: 'io' }] },
+  { id: 'c3',       pane: 'explore', scr: 'explore', name: 'c3',       keys: [{ t: B(10) + .24, dz: 0, dx: 0, ry: 0 }, { t: B(10,2) + .24, dz: 160, dx: 70, dy: -40, ry: -20, e: 'spring' }, { t: B(11,3), dz: 160, dx: 70, dy: -40, ry: -20 }, { t: B(12), dz: 10, dx: 0, dy: 0, ry: 0, e: 'io' }] },
+  { id: 'step',     pane: 'lesson',  scr: 'lesson',  name: 'step',     keys: [{ t: B(12), dz: 0 }, { t: B(12,2), dz: 90, e: 'spring' }, { t: B(14), dz: 90 }] },
+  { id: 'diagA',    pane: 'lesson',  scr: 'lesson',  name: 'diagA',    keys: [{ t: B(12,1), dz: 0 }, { t: B(12,3), dz: 150, e: 'spring' },
+      { t: B(13,1), dz: 150, dx: 0, dy: 0, ry: 0, s: 1 }, { t: B(13,2), dz: 320, dx: -60, dy: -30, ry: 360, s: 1.7, e: 'spring' }, { t: B(14,1), dz: 320, dx: -60, dy: -30, ry: 360, s: 1.7 }, { t: B(14,3), dz: 90, dx: 0, dy: 0, ry: 360, s: 1, e: 'io' }] },
+  { id: 'diagB',    pane: 'lesson',  scr: 'lesson',  name: 'diagB',    keys: [{ t: B(12,1) + .1, dz: 0 }, { t: B(12,3) + .1, dz: 150, e: 'spring' },
+      { t: B(14,2), dz: 150, dx: 0, dy: 0, ry: 0, s: 1 }, { t: B(14,3), dz: 320, dx: 70, dy: -30, ry: -360, s: 1.7, e: 'spring' }, { t: B(15), dz: 320, dx: 70, dy: -30, ry: -360, s: 1.7 }, { t: B(15,1), dz: 90, dx: 0, dy: 0, ry: -360, s: 1, e: 'io' }] }
+];
+
+/* The great outlined words behind each screen, for depth. */
+const GHOSTS = [['LEARN', 'home'], ['WORK', 'school'], ['GRADES', 'grades'], ['EXPLORE', 'explore'], ['DO', 'lesson']];
+
+/* Labels that follow a card: a line, a number, a few words — words the real screen already says. */
+const LABELS = [
+  { card: 'standing', side: 'l', n: '01', text: 'Your standing',        t0: B(4,2), t1: B(6) },
+  { card: 'week',     side: 'r', n: '02', text: 'This week',            t0: B(4,3), t1: B(6) },
+  { card: 'course',   side: 'r', n: '03', text: '5 pieces of work',     t0: B(6,3), t1: B(8) },
+  { card: 'average',  side: 'l', n: '04', text: 'Average this year',    t0: B(8,3), t1: B(10) },
+  { card: 'todo',     side: 'r', n: '05', text: 'All caught up',        t0: B(9),   t1: B(10) },
+  { card: 'c2',       side: 'r', n: '06', text: 'Every subject',        t0: B(10,3), t1: B(12) },
+  { card: 'step',     side: 'l', n: '07', text: 'A puzzle to solve',    t0: B(12,3), t1: B(14) }
+];
+
+/* Words. *stars* make the bold, iridescent ones. size in px; y is the top of the block. */
+const TYPE = [
+  { start: B(1,1),  end: B(2,3),  size: 150, y: 210, lines: ['Learning', 'you can *touch.*'] },
+  { start: B(3,1),  end: B(5,1),  size: 54,  y: 44,  lines: ['Everything *starts here.*'] },
+  { start: B(5,2),  end: B(7,1),  size: 54,  y: 44,  lines: ['Your teachers’ work. *One place.*'] },
+  { start: B(7,2),  end: B(9,1),  size: 54,  y: 44,  lines: ['Grades you *understand.*'] },
+  { start: B(9,2),  end: B(11,1), size: 54,  y: 44,  lines: ['Every course. *Ready.*'] },
+  { start: B(11,2), end: B(14,3), size: 54,  y: 44,  lines: ['Learn by *doing.*'] },
+  { start: B(15,2), end: B(16,2), size: 104, y: 250, lines: ['One platform.', '*Every student.*'] }
+];
+const CHAPTERS = [[B(3), '01 — Home'], [B(5,2), '02 — School'], [B(7,2), '03 — Grades'], [B(9,2), '04 — Explore'], [B(11,2), '05 — Learn']];
+
+/* The Touch — the glowing point that presses things. pos is where it is; `at` follows a card. */
+const ORB = [
+  { t: B(1),    x: -60, y: 470, s: 1, o: 0 },
+  { t: B(1,2),  x: 250, y: 560, o: 1, e: 'out' },
+  { t: B(2,1),  x: 640, y: 470, e: 'io' },
+  { t: B(2,2),  x: 905, y: 372, e: 'io' },                    // presses the word "touch."
+  { t: B(3),    x: 905, y: 372, o: 0, e: 'out' },
+  { t: B(12,2), at: 'diagA', o: 0, s: 1 },
+  { t: B(12,3), at: 'diagA', o: 1, e: 'out' },
+  { t: B(13,2), at: 'diagA', e: 'io' },                     // presses the first diagram
+  { t: B(14),   at: 'diagB', e: 'io' },
+  { t: B(14,3), at: 'diagB', e: 'io' },                     // and the second
+  { t: B(15),   at: 'diagB', o: 0, e: 'out' }
+];
+const TAPS = [B(2,2), B(13,2), B(14,3)];
+
+const OUTRO = { name: 'OEdu', by: 'by Oplo', cta: 'Open OEdu', url: 'edu.oplocloud.com', flash: B(16) - .3, at: B(16,1) };
+
+/* ================================ the engine ============================ */
+const $ = id => document.getElementById(id), stage = $('stage'), world = $('world');
+const cl = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, f) => a + (b - a) * f;
+const EASE = { lin: t => t, io: t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2, out: t => 1 - Math.pow(1 - t, 4), in: t => t*t*t,
+  spring: p => { const t = p * 1.3; return p >= 1 ? 1 : 1 - Math.exp(-6.2*t) * Math.cos(8.5*t) } };
+const seg = (t, a, b, e = 'out') => EASE[e](cl((t - a) / (b - a)));
+const fill = (keys, d) => { let p = { ...d }; return keys.map(k => { p = { ...p, ...k }; return { ...p, e: k.e || 'io' } }) };
+function at(keys, t) {
+  if (t <= keys[0].t) return keys[0];
+  const last = keys[keys.length - 1]; if (t >= last.t) return last;
+  let i = 0; while (keys[i + 1].t <= t) i++;
+  const a = keys[i], b = keys[i + 1], f = EASE[b.e](cl((t - a.t) / (b.t - a.t))), o = {};
+  for (const p in b) if (typeof b[p] === 'number' && p !== 't') o[p] = lerp(a[p], b[p], f);
+  return o;
+}
+const camKeys = fill(CAMERA, { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 });
+const K = 1000 / 1440;
+
+/* --- build the world from the manifest of real screens --- */
+let M, paneObjs = [], cardObjs = [], ghostObjs = [], haloObjs = [];
+function build() {
+  PANES.forEach((p, i) => {
+    const el = document.createElement('div'); el.className = 'pane';
+    const face = document.createElement('div'); face.className = 'face'; const im = new Image(); im.src = '../shots/' + M[p.id].file; im.alt = ''; face.appendChild(im); el.appendChild(face);
+    const halo = document.createElement('div'); halo.className = 'halo'; halo.style.setProperty('--h', p.hue); world.appendChild(halo);
+    const ghost = document.createElement('div'); ghost.className = 'ghost'; ghost.textContent = GHOSTS[i][0]; world.appendChild(ghost);
+    world.appendChild(el);
+    const keys = fill((PANE_KEYS[p.id] || []).concat(FALL(i)), { o: 1, s: 1, dz: 0, rz: 0, bl: 0 });
+    paneObjs.push({ p, el, face, halo, ghost, keys });
+  });
+  CARDS.forEach(c => {
+    const m = M[c.scr].cards[c.name], pane = paneObjs.find(o => o.p.id === c.pane);
+    const el = document.createElement('div'); el.className = 'card';
+    el.style.cssText = `left:${m.x * K}px;top:${m.y * K}px;width:${m.w * K}px;height:${m.h * K}px;border-radius:${m.r * K}px`;
+    const im = new Image(); im.src = '../shots/' + m.file; im.alt = ''; el.appendChild(im); pane.el.appendChild(el);
+    cardObjs.push({ c, el, pane, keys: fill(c.keys, { dz: 0, dx: 0, dy: 0, s: 1, ry: 0, rz: 0 }) });
+  });
+  LABELS.forEach(l => { const d = document.createElement('div'); d.className = 'lab'; d.innerHTML = `<b>${l.n}</b>${l.text}<i></i>`; $('hud').appendChild(d); l.el = d; l.line = d.querySelector('i'); });
+  TAPS.forEach(t => { const r = document.createElement('div'); r.className = 'rip'; r.innerHTML = '<i></i>'; $('rips').appendChild(r); });
+}
+
+/* --- depth of field and fog: how far a thing is from the focal plane decides how soft and how present it is --- */
+function depth(zAbs, camZ) {
+  const rel = zAbs - camZ;
+  const blur = rel > 0 ? Math.min(20, rel / 70) : Math.min(13, -rel / 250);
+  const near = 1 - cl((rel - 300) / 240), far = 1 - cl((-rel - 1500) / 1500);
+  return { b: blur, o: Math.min(near, far) };
+}
+
+/* --- words --- */
+const types = [];
+TYPE.forEach(o => {
+  const el = document.createElement('div'); el.className = 't'; el.style.top = o.y + 'px'; el.style.fontSize = o.size + 'px';
+  let ci = 0, html = '';
+  o.lines.forEach(line => {
+    const words = line.split(' '); let on = false, wh = '';
+    words.forEach(w => {
+      let em = on; if (w.startsWith('*')) { on = true; em = true; w = w.slice(1) } if (w.endsWith('*')) { on = false; w = w.slice(0, -1) }
+      const letters = [...w].map(ch => `<span class="c${em ? ' em' : ''}" data-i="${ci++}">${ch}</span>`).join('');
+      wh += `<span class="wd">${letters}</span>`;
+    });
+    html += `<span class="tl">${wh}</span>`;
+  });
+  el.innerHTML = html; $('type').appendChild(el);
+  types.push({ el, cs: [...el.querySelectorAll('.c')], a: o.start, b: o.end });
+});
+function drawType(now) {
+  for (const t of types) {
+    const lt = now - t.a, life = t.b - t.a;
+    if (lt < -.1 || lt > life + .1) { t.el.style.opacity = 0; continue }
+    t.el.style.opacity = 1;
+    const ex = seg(now, t.b - .55, t.b, 'io');
+    t.el.style.transform = `translateY(${-ex * 30}px) scale(${1 + ex * .05})`; t.el.style.filter = `blur(${ex * 12}px)`; t.el.style.opacity = 1 - ex;
+    const n = t.cs.length;
+    t.cs.forEach((c, i) => {
+      const p = seg(lt, i * .028, i * .028 + .8, 'spring');
+      c.style.opacity = cl(p * 1.4); c.style.transform = `translateY(${(1 - p) * 110}%) rotate(${(1 - p) * 6}deg)`; c.style.filter = `blur(${(1 - cl(p)) * 10}px)`;
+      if (c.classList.contains('em')) c.style.color = `hsl(${(262 + i * 16 + now * 55) % 360},92%,74%)`;
+      else c.style.color = '#fff';
+    });
+  }
+}
+
+/* --- dust: a tunnel of particles that streak when the camera flies --- */
+const dB = $('dustB').getContext('2d'), dF = $('dustF').getContext('2d');
+const rnd = (() => { let s = 20260930; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296 } })();
+const dust = Array.from({ length: 420 }, () => ({ x: (rnd() - .5) * 3400, y: (rnd() - .5) * 2000, z: -5200 + rnd() * 6600, r: .6 + rnd() * 1.6, h: rnd() < .5 ? 0 : rnd() < .5 ? 190 : 285 }));
+const bokeh = Array.from({ length: 26 }, () => ({ x: (rnd() - .5) * 2600, y: (rnd() - .5) * 1600, z: -5000 + rnd() * 6200, r: 10 + rnd() * 30 }));
+let prevCam = null;
+function proj(p, cam) { const rel = p.z - cam.z; const k = 1400 / (1400 - rel); return { x: 640 + (p.x - cam.x) * k, y: 360 + (p.y - cam.y) * k, k, rel } }
+function drawDust(now, cam, beat) {
+  dB.clearRect(0, 0, 1280, 720); dF.clearRect(0, 0, 1280, 720);
+  const speed = prevCam ? Math.abs(cam.z - prevCam.z) : 0;
+  for (const p of dust) {
+    while (p.z - cam.z > 1300) p.z -= 6600; while (p.z - cam.z < -5300) p.z += 6600;
+    const a = proj(p, cam); if (a.k < 0 || a.x < -50 || a.x > 1330 || a.y < -50 || a.y > 770) continue;
+    const fog = cl(1 - (-a.rel - 800) / 4200) * cl(1 - (a.rel - 400) / 800);
+    const col = p.h ? `hsla(${p.h},90%,75%,${.7 * fog})` : `rgba(255,255,255,${.75 * fog})`;
+    if (prevCam && speed > 6) {
+      const b = proj(p, prevCam); dB.strokeStyle = col; dB.lineWidth = Math.max(.6, p.r * a.k * .8); dB.beginPath(); dB.moveTo(b.x, b.y); dB.lineTo(a.x, a.y); dB.stroke();
+    } else { dB.fillStyle = col; dB.beginPath(); dB.arc(a.x, a.y, Math.max(.4, p.r * a.k * .7), 0, 6.2832); dB.fill() }
+  }
+  for (const p of bokeh) {
+    while (p.z - cam.z > 1300) p.z -= 6200; while (p.z - cam.z < -5100) p.z += 6200;
+    const a = proj(p, cam); if (a.k < .05 || a.rel > 260) continue;
+    const fog = cl(1 - (-a.rel - 500) / 3500) * cl(1 - (a.rel - 60) / 200);
+    const g = dF.createRadialGradient(a.x, a.y, 0, a.x, a.y, p.r * a.k);
+    g.addColorStop(0, `rgba(150,170,255,${.16 * fog * (.8 + beat * .4)})`); g.addColorStop(1, 'rgba(150,170,255,0)');
+    dF.fillStyle = g; dF.beginPath(); dF.arc(a.x, a.y, p.r * a.k, 0, 6.2832); dF.fill();
+  }
+  prevCam = { ...cam };
+}
+
+/* --- the frame --- */
+const f = () => $('wrap').clientWidth / 1280;
+function frame(now) {
+  const beat = Math.pow(1 - ((now / BEAT) % 1), 3);
+  stage.style.setProperty('--beat', beat.toFixed(3)); stage.style.setProperty('--a', (now * 40 % 360).toFixed(1) + 'deg');
+  const c = at(camKeys, now);
+  const cam = { x: c.x, y: c.y, z: c.z, rx: c.rx + Math.sin(now * .9) * .25, ry: c.ry + Math.sin(now * .7 + 1) * .35, rz: c.rz + Math.sin(now * .6 + 2) * .15 };
+  world.style.transform = `rotateX(${cam.rx}deg) rotateY(${cam.ry}deg) rotateZ(${cam.rz}deg) translate3d(${-cam.x}px,${-cam.y}px,${-cam.z}px)`;
+  // aurora
+  const A = [[$('b1'), 620, 620, 262, 220, 120, .0], [$('b2'), 720, 560, 200, 900, 380, 1.7], [$('b3'), 560, 560, 320, 520, 560, 3.1]];
+  A.forEach(([el, w, h, hue, bx, by, ph]) => { el.style.cssText = `width:${w}px;height:${h}px;left:${bx + Math.sin(now * .25 + ph) * 160 - w / 2 + 300}px;top:${by + Math.cos(now * .21 + ph) * 100 - h / 2}px;background:hsl(${hue + Math.sin(now * .2 + ph) * 25},95%,55%);opacity:${.30 + beat * .06}` });
+  $('floor').style.backgroundPosition = `0 ${(-cam.z * .35) % 90}px`;
+  // panes
+  for (const o of paneObjs) {
+    const k = at(o.keys, now), zA = o.p.z + k.dz;
+    o.el.style.transform = `translate3d(${o.p.x}px,${o.p.y}px,${zA}px) rotateY(${o.p.ry}deg) rotateZ(${k.rz}deg) scale(${k.s})`;
+    const d = depth(zA, cam.z), op = k.o * d.o, bl = d.b + k.bl;
+    o.face.style.opacity = op; o.face.style.filter = bl > .3 ? `blur(${bl.toFixed(1)}px)` : 'none';
+    o.halo.style.transform = `translate3d(${o.p.x}px,${o.p.y}px,${o.p.z - 80}px)`; o.halo.style.opacity = op * (.55 + beat * .2);
+    const dg = depth(o.p.z - 300, cam.z); o.ghost.style.transform = `translate3d(${o.p.x}px,${o.p.y + 20}px,${o.p.z - 300}px)`; o.ghost.style.opacity = k.o * dg.o * .28;
+    o.op = op; o.bl = bl;
+  }
+  for (const o of cardObjs) {
+    const k = at(o.keys, now), pk = at(o.pane.keys, now);
+    o.el.style.transform = `translate3d(${k.dx}px,${k.dy}px,${k.dz}px) rotateY(${k.ry}deg) rotateZ(${k.rz}deg) scale(${k.s})`;
+    const d = depth(o.pane.p.z + pk.dz + k.dz, cam.z);
+    o.el.style.opacity = pk.o * d.o; o.el.style.filter = d.b > .3 ? `blur(${d.b.toFixed(1)}px)` : 'none';
+    o.el.style.boxShadow = `0 ${20 + k.dz * .25}px ${60 + k.dz * .6}px rgba(70,80,255,${cl(.08 + k.dz / 700, 0, .55)})`;
+  }
+  drawDust(now, cam, beat);
+  // ---- everything below reads layout, so it comes after every write ----
+  const F = f(), sr = stage.getBoundingClientRect(), rect = id => { const o = cardObjs.find(x => x.c.id === id); if (!o) return null; const r = o.el.getBoundingClientRect(); return { l: (r.left - sr.left) / F, t: (r.top - sr.top) / F, w: r.width / F, h: r.height / F } };
+  for (const l of LABELS) {
+    const life = l.t1 - l.t0, lt = now - l.t0;
+    if (lt < 0 || lt > life) { l.el.style.opacity = 0; continue }
+    const r = rect(l.card); if (!r) continue;
+    const a = seg(lt, 0, .5), b = 1 - seg(lt, life - .4, life, 'io'), len = 92 * a;
+    const ax = l.side === 'l' ? r.l : r.l + r.w, ay = r.t + Math.min(38, r.h / 2);
+    const x = l.side === 'l' ? ax - len - 12 : ax + len + 12;
+    l.el.style.opacity = a * b; l.el.style.transform = `translate(${l.side === 'l' ? x - l.el.offsetWidth : x}px,${ay - 14}px)`;
+    l.line.style.width = len + 'px'; l.line.style[l.side === 'l' ? 'left' : 'right'] = '100%'; l.line.style[l.side === 'l' ? 'right' : 'left'] = 'auto';
+    l.line.style.marginLeft = l.side === 'l' ? '12px' : '-12px'; l.line.style.transform = l.side === 'l' ? 'scaleX(-1)' : 'none';
+  }
+  // the Touch
+  const pos = orbAt(now, rect), orb = $('orb');
+  orb.style.opacity = pos.o; orb.style.transform = `translate(${pos.x}px,${pos.y}px) scale(${pos.s * (1 + beat * .18)})`;
+  TAPS.forEach((tt, i) => { const r = $('rips').children[i], lt = now - tt; if (lt < 0 || lt > 1.3) { r.style.opacity = 0; return }
+    const p = orbAt(tt, rect); r.style.opacity = 1 - lt / 1.3; r.style.transform = `translate(${p.x}px,${p.y}px) scale(${.15 + EASE.out(lt / 1.3) * 2.2})`; });
+  // HUD
+  const ch = CHAPTERS.filter(c => now >= c[0]).pop(); $('chap').textContent = ch ? 'OEdu / ' + ch[1] : 'OEdu / Learning you can touch';
+  $('tc').textContent = 'T+' + now.toFixed(2).padStart(5, '0'); $('top').style.opacity = seg(now, 1, 2) * (1 - seg(now, B(15,2), B(16))); $('tl').style.opacity = $('top').style.opacity; $('tl').firstElementChild.style.width = now / END * 100 + '%';
+}
+function orbAt(t, rect) {
+  const ks = ORB.map(k => { let x = k.x, y = k.y; if (k.at) { const r = rect(k.at); if (r) { x = r.l + r.w / 2; y = r.t + r.h / 2 } else { x = 640; y = 380 } } return { ...k, x, y } });
+  const kk = fill(ks, { x: 0, y: 0, s: 1, o: 0 }), v = at(kk, t); return { x: v.x, y: v.y, s: v.s, o: v.o };
+}
+
+/* --- the ending --- */
+const MARK = { vb: '84.13 107.80 206.73 194.91', tr: '73.919875, 252.710833', d: 'M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812' };
+$('end').innerHTML = `<svg viewBox="${MARK.vb}"><defs><linearGradient id="irid" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b7bff"/><stop offset=".45" stop-color="#4da2ff"/><stop offset=".75" stop-color="#5ee7ff"/><stop offset="1" stop-color="#ff8ad8"/></linearGradient></defs><g transform="translate(${MARK.tr})"><path pathLength="1" d="${MARK.d}"/></g></svg><div class="name">${OUTRO.name}</div><div class="by">${OUTRO.by}</div><div class="cta">${OUTRO.cta} <span>→</span></div><div class="url">${OUTRO.url}</div>`;
+const ePath = $('end').querySelector('path'), eName = $('end').querySelector('.name'), eBy = $('end').querySelector('.by'), eCta = $('end').querySelector('.cta'), eUrl = $('end').querySelector('.url'), eSvg = $('end').querySelector('svg');
+function drawEnd(now) {
+  const lt = now - OUTRO.at, fl = now - OUTRO.flash;
+  $('flash').style.opacity = fl < 0 || fl > 1.4 ? 0 : Math.sin(cl(fl / 1.4) * Math.PI) * .95;
+  $('end').style.opacity = seg(lt, -.2, .3);
+  ePath.style.strokeDashoffset = 1 - seg(lt, 0, 1.6, 'io'); ePath.style.fillOpacity = seg(lt, 1.1, 2.0);
+  eSvg.style.transform = `scale(${.9 + .14 * seg(lt, 0, 6)}) translateY(${-seg(lt, 1.5, 2.6, 'io') * 6}px)`;
+  const n = seg(lt, 1.7, 2.7, 'spring'); eName.style.opacity = cl(n); eName.style.transform = `translateY(${(1 - n) * 40}px)`; eName.style.filter = `blur(${(1 - cl(n)) * 14}px)`; eName.style.letterSpacing = (-.05 + (1 - cl(n)) * .16) + 'em';
+  eName.style.backgroundPosition = `${100 - seg(lt, 2.6, 4.4, 'io') * 100}% 0`;
+  eBy.style.opacity = seg(lt, 2.7, 3.4); const c = seg(lt, 3.2, 4.0, 'spring'); eCta.style.opacity = cl(c); eCta.style.transform = `translateY(${(1 - c) * 24}px) scale(${.9 + .1 * c})`; eUrl.style.opacity = seg(lt, 3.8, 4.4);
+}
+
+/* --- placeholder sound: pad + a soft pulse on the beat, on the grid. Off by default. --- */
+let AC = null, master = null, soundOn = false;
+function audioStop() { if (master) { const m = master; try { m.gain.setTargetAtTime(0, AC.currentTime, .06); setTimeout(() => m.disconnect(), 400) } catch (e) {} master = null } }
+function audioStart(from) {
+  audioStop(); if (!soundOn) return;
+  AC = AC || new (window.AudioContext || window.webkitAudioContext)(); AC.resume();
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination); master.gain.setTargetAtTime(.5, AC.currentTime, .3);
+  const t0 = AC.currentTime - from, ch = [[110, 164.8, 196, 246.9, 329.6], [87.3, 130.8, 174.6, 220, 329.6], [130.8, 196, 261.6, 329.6, 392], [98, 146.8, 196, 246.9, 293.7]];
+  const note = (fr, a, d, g, atk = .03) => { const o = AC.createOscillator(), v = AC.createGain(); o.type = 'sine'; o.frequency.value = fr; v.gain.setValueAtTime(0, a); v.gain.linearRampToValueAtTime(g, a + atk); v.gain.exponentialRampToValueAtTime(.0001, a + d); o.connect(v); v.connect(master); o.start(a); o.stop(a + d + .05) };
+  for (let b = 0; b * BAR < END; b++) {
+    const a = t0 + b * BAR; if (a + BAR < AC.currentTime) continue;
+    const c = ch[Math.floor(b / 2) % 4]; if (b % 2 === 0) c.forEach((fr, i) => note(fr, a, BAR * 2.4, .045 - i * .005, 1));
+    for (let q = 0; q < 4; q++) note(q % 2 ? c[3] * 2 : c[4] * 2, a + q * BEAT, .5, q === 0 ? .04 : .02, .005);
+  }
+}
+
+/* --- clock and controls --- */
+let now = 0, playing = true, speed = 1, last = performance.now(), ready = false;
+const sc = $('sc'), tm = $('tm'), pp = $('pp');
+const fit = () => stage.style.transform = `scale(${$('wrap').clientWidth / 1280})`;
+addEventListener('resize', fit); fit();
+function render() { if (!ready) return; frame(now); drawType(now); drawEnd(now) }
+function loop(t) { const dt = (t - last) / 1000; last = t;
+  if (playing && ready) { now += dt * speed; if (now >= END) { now = 0; prevCam = null; audioStart(0) } }
+  sc.value = now / END * 1000; tm.textContent = now.toFixed(1) + 's / ' + END.toFixed(0) + 's · bar ' + (Math.floor(now / BAR) + 1);
+  render(); requestAnimationFrame(loop) }
+const resume = () => { if (playing && speed === 1) audioStart(now); else audioStop() };
+pp.onclick = () => { playing = !playing; pp.textContent = playing ? 'Pause' : 'Play'; resume() };
+$('rs').onclick = () => { now = 0; prevCam = null; playing = true; pp.textContent = 'Pause'; resume() };
+sc.oninput = () => { now = sc.value / 1000 * END; prevCam = null; playing = false; pp.textContent = 'Play'; audioStop() };
+$('sp').onchange = e => { speed = +e.target.value; resume() };
+$('snd').onclick = () => { soundOn = !soundOn; $('snd').textContent = 'Sound: ' + (soundOn ? 'on' : 'off'); resume() };
+window.seek = s => { now = s; prevCam = null; playing = false; pp.textContent = 'Play'; render() };
+window.film = { END, BAR, B };
+fetch('../shots/shots.json').then(r => r.json()).then(m => { M = m; build(); const imgs = [...document.querySelectorAll('.face img,.card img')];
+  return Promise.all(imgs.map(i => i.decode ? i.decode().catch(() => {}) : 0)) }).then(() => { ready = true; last = performance.now() });
+requestAnimationFrame(loop);
+</script></body></html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>OEdu — product film (preview)</title>
+<style>
+:root{--ink:#1d1d1f;--mute:#86868b;--blue:#0071e3;--font:-apple-system,"SF Pro Display","Inter",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}
+body{background:#0b0b0c;font-family:var(--font);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px}
+#wrap{width:min(96vw,calc((100vh - 96px) * 16 / 9));aspect-ratio:16/9;position:relative;overflow:hidden;border-radius:10px;background:#000}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;background:linear-gradient(180deg,#f5f5f7,#e8e8ed)}
+#cam{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;will-change:transform}
+#win{position:absolute;overflow:hidden;background:#000;border-radius:24px;box-shadow:0 44px 120px rgba(0,0,0,.30),0 0 0 1px rgba(0,0,0,.10);will-change:transform,opacity,filter}
+#win img{position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;will-change:opacity}
+.card{position:absolute;opacity:0;will-change:transform,opacity;transform-origin:50% 50%}
+#dark{position:absolute;inset:0;background:#000;z-index:10;pointer-events:none;clip-path:circle(150% at 50% 50%)}
+#caps{position:absolute;inset:0;z-index:20;pointer-events:none}
+.cap{position:absolute;left:0;right:0;text-align:center;will-change:transform,opacity,filter}
+.ln{letter-spacing:-.035em;line-height:1.04;font-weight:700;padding:0 70px}
+.w{display:inline-block;margin:0 .14em;will-change:transform,opacity,filter}
+.sub{font-size:24px;line-height:1.3;font-weight:500;letter-spacing:-.01em;margin-top:16px}
+#out{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none}
+#out svg{width:170px;overflow:visible}#out svg path{fill:#fff;fill-opacity:0;stroke:#fff;stroke-width:1.4;stroke-dasharray:1;stroke-dashoffset:1}
+#out .name{font-size:92px;font-weight:700;letter-spacing:-.04em;margin-top:30px;opacity:0;color:#fff;background:linear-gradient(100deg,#fff 0 40%,#6f6f77 50%,#fff 60% 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+#out .by{font-size:24px;color:#a1a1a6;margin-top:8px;opacity:0;font-weight:500;letter-spacing:.01em}
+#ctl{width:min(96vw,1000px);display:flex;gap:12px;align-items:center;color:#aaa;font-size:13px}
+#ctl button,#ctl select{background:#2a2a2c;color:#fff;border:0;border-radius:99px;padding:7px 16px;font:inherit;cursor:pointer}#ctl input{flex:1}
+#note{color:#777;font-size:12px;width:min(96vw,1000px)}
+</style></head><body>
+<div id="wrap"><div id="stage">
+  <div id="cam"><div id="win"></div><div id="cards"></div></div>
+  <div id="dark"></div><div id="caps"></div><div id="out"></div>
+</div></div>
+<div id="ctl"><button id="pp">Pause</button><button id="rs">Restart</button><input id="sc" type="range" min="0" max="1000" value="0"><span id="tm"></span>
+<button id="snd">Sound: off</button><select id="sp"><option>0.5</option><option selected>1</option><option>2</option></select></div>
+<div id="note">Real OEdu student screens (demo data). Every scene change lands on a bar at 100 BPM.</div>
+<script>
+/* =========================================================================
+   THE STORYBOARD — edit this and nothing else.
+
+   Time is in bars and beats at BPM (so a real music track can be dropped in
+   and every cut lands on its downbeat): B(3) is the start of bar 3, B(3,2)
+   is beat 2 of bar 3. Each shot carries ONE idea.
+
+   The animation is keyframes. Every track below is a list of
+   {t, ...values, e} — at time t the values are reached, easing in with `e`:
+   'io' (ease in-out, default), 'out', 'in', 'spring' (overshoots), 'lin'.
+   Values you leave out carry over from the previous keyframe.
+   ========================================================================= */
+const BPM = 100;
+const BAR = 4 * 60 / BPM;                        // 2.4 s
+const B = (bar, beat = 0) => (bar - 1) * BAR + beat * 60 / BPM;
+const END = B(16);                                // 15 bars = 36 s
+
+/* Three colours, one type, one motion vocabulary — the rules the film keeps. */
+const BRAND = { ink: '#1d1d1f', quiet: '#86868b', black: '#000', white: '#fff', blue: '#0071e3' };
+
+/* Words. *stars* make a word the bold one; the rest of that line goes quiet. */
+const CAPTIONS = [
+  { start: B(1,.5), end: B(3,-1), dark: 1, top: 208, size: 88, br: 2, line: 'Learning that *knows where you are.*' },   // br: break the line after this many words
+  { start: B(3,1),  end: B(5,1),  top: 58, size: 52, line: 'Start right *where you are.*',                     sub: 'Your standing, your week and your work, at a glance.' },
+  { start: B(5,1),  end: B(7,1),  top: 58, size: 52, line: 'Everything your teachers set. *In one place.*',   sub: 'Work, marks and courses, right where you left them.' },
+  { start: B(7,1),  end: B(9,1),  top: 58, size: 52, line: 'Grades you can *actually read.*',                 sub: 'Your average, every class, and what is due.' },
+  { start: B(9,1),  end: B(11,1), top: 58, size: 52, line: 'Every course, *ready to explore.*',               sub: 'Curriculum written by Oplo, in every subject.' },
+  { start: B(11,1), end: B(13,1), top: 58, size: 52, line: 'Learn by *doing.*',                               sub: 'Lessons you move, try and solve — not just read.' }
+];
+const OUTRO = { name: 'OEdu', by: 'by Oplo', at: B(13,3) };
+
+/* The real screens (captured by capture.js) and which shot shows which. */
+const SCREENS = ['home', 'school', 'grades', 'explore', 'lesson'];
+const SHOW = {                                    // when each screen is on (cross-dissolves, never cuts)
+  home:    [B(2,3), B(3,1), B(5,1), B(5,3)],
+  school:  [B(5,1), B(5,3), B(7,1), B(7,3)],
+  grades:  [B(7,1), B(7,3), B(9,1), B(9,3)],
+  explore: [B(9,1), B(9,3), B(11,1), B(11,3)],
+  lesson:  [B(11,1), B(11,3), B(13,1), B(13,3)]
+};
+const fade = a => [{ t: a[0], o: 0 }, { t: a[1], o: 1 }, { t: a[2], o: 1 }, { t: a[3], o: 0 }];
+
+/* The window that carries the screens: it rises once, then stays. */
+const WIN = { x: 120, y: 250, w: 1040, keys: [
+  { t: B(2,3), y: 600, s: .92, o: 0, dim: 0, blur: 0 },
+  { t: B(3,0), o: 1, e: 'out' },
+  { t: B(3,2), y: 0, s: 1, e: 'spring' },
+  // Home to School: the screen softens as one dissolves into the other
+  { t: B(5,0), dim: 0, blur: 0 }, { t: B(5,2), dim: .12, blur: 8, e: 'io' },
+  // held while a card is brought forward: the screen behind it steps back
+  { t: B(6,0), dim: 0, blur: 0 },        { t: B(6,2), dim: .62, blur: 10, e: 'io' },
+  { t: B(7,1), dim: .62, blur: 10 },     { t: B(7,3), dim: 0, blur: 0 },
+  { t: B(8,0), dim: 0 },                 { t: B(8,1), dim: .62, blur: 10, e: 'out' },
+  { t: B(9,1), dim: .62, blur: 10 },     { t: B(9,3), dim: 0, blur: 0 },
+  { t: B(10,0), dim: 0 },                { t: B(10,1), dim: .62, blur: 10, e: 'out' },
+  { t: B(11,1), dim: .62, blur: 10 },    { t: B(11,3), dim: 0, blur: 0 },
+  { t: B(12,0), dim: 0 },                { t: B(12,1), dim: .6, blur: 12, e: 'out' },
+  { t: B(13,1), dim: .6, blur: 12 },
+  { t: B(13,2), y: 0, s: 1, o: 1, e: 'io' }, { t: B(13,3), y: 90, s: .94, o: 0, blur: 24, e: 'in' }
+]};
+
+/* Camera: a slow push-in through each shot, then eased back — never still. */
+const CAMERA = [
+  { t: B(2,3), s: 1.00, x: 640, y: 380 },
+  { t: B(5),   s: 1.06, x: 640, y: 410, e: 'io' },
+  { t: B(7),   s: 1.00, x: 640, y: 380 },
+  { t: B(9),   s: 1.05, x: 640, y: 400 },
+  { t: B(11),  s: 1.00, x: 640, y: 380 },
+  { t: B(13),  s: 1.02, x: 640, y: 400 },
+  { t: B(14),  s: 1.10, x: 640, y: 380 }
+];
+
+/* Black to light and back, as a circle rather than a cut. r is % of the frame. */
+const IRIS = [
+  { t: 0, r: 150 }, { t: B(2,3), r: 150 }, { t: B(3,2), r: 0, e: 'io' },
+  { t: B(13,1), r: 0 }, { t: B(13,3), r: 150, e: 'io' }
+];
+
+/* Cards lifted out of the real screens: each is a crop of the actual UI, sitting
+   exactly where it sits on the screen until it is brought forward.
+   card(id, from screen, name, keys) — `to(cx, cy, s)` = go to that centre.   */
+function buildCards(M) {
+  const k = WIN.w / 1440;
+  const home = (scr, name) => { const c = M[scr].cards[name]; return { cx: WIN.x + (c.x + c.w / 2) * k, cy: WIN.y + (c.y + c.h / 2) * k }; };
+  const to = (scr, name, cx, cy, s) => { const h = home(scr, name); return { dx: cx - h.cx, dy: cy - h.cy, s }; };
+  const shown = (scr) => fade(SHOW[scr]).map(({ t, o }) => ({ t, o, dx: 0, dy: 0, s: 1, lift: 0 }));
+  const cards = [];
+  const add = (scr, name, keys) => cards.push({ scr, name, keys: keys });
+  // Shot 2 — Home: the two cards lift a little, one after the other, and settle
+  const lift = (scr, name, t0, dy, delay) => [
+    { t: t0 - .2, dx: 0, dy: 0, s: 1, lift: 0, o: 0 }, { t: t0, o: 1, e: 'lin' },
+    { t: t0 + delay, dx: 0, dy: 0, s: 1, lift: 0, o: 1 },
+    { t: t0 + delay + 1.1, dx: 0, dy, s: 1.045, lift: 1, e: 'out' },
+    { t: SHOW[scr][2] - 1.0, dy, s: 1.045, lift: 1 },
+    { t: SHOW[scr][2], dx: 0, dy: 0, s: 1, lift: 0, o: 1, e: 'io' }, { t: SHOW[scr][3], o: 0 }
+  ];
+  add('home', 'standing', lift('home', 'standing', B(3,2), -5, 0));
+  add('home', 'week',     lift('home', 'week',     B(3,2), -8, .18));
+  // Shot 3 — School: the course card comes forward and takes the centre
+  const feature = (scr, name, cx, cy, s, t0, t1, ease) => [
+    ...shown(scr).slice(0, 2), { t: t0, dx: 0, dy: 0, s: 1, lift: 0, o: 1 },
+    { t: t0 + .9, ...to(scr, name, cx, cy, s), lift: 1, e: ease || 'spring' },
+    { t: t1, ...to(scr, name, cx, cy, s), lift: 1 },
+    { t: t1 + .8, dx: 0, dy: 0, s: 1, lift: 0, e: 'io' }, { t: SHOW[scr][3], o: 0 }
+  ];
+  add('school', 'course',  feature('school', 'course',  640, 452, 1.32, B(6,1), B(7,1)));
+  add('grades', 'average', feature('grades', 'average', 640, 452, 2.55, B(8,1), B(9,1), 'spring'));
+  // Shot 5 — Explore: three courses, side by side, one after another
+  [['c1', 264, 0], ['c2', 640, .16], ['c3', 1016, .32]].forEach(([n, cx, d]) =>
+    add('explore', n, feature('explore', n, cx, 462, 1.56, B(10,1) + d, B(11,1))));
+  // Shot 6 — Lesson: the step, large
+  add('lesson', 'step', feature('lesson', 'step', 640, 468, 1.14, B(12,1), B(13,1)));
+  return cards;
+}
+
+/* ========================= the engine (no need to edit) ================== */
+const $ = id => document.getElementById(id), stage = $('stage');
+const cl = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const EASE = {
+  lin: t => t, io: t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2,
+  out: t => 1 - Math.pow(1 - t, 4), in: t => t*t*t,
+  spring: p => { const t = p * 1.3; return p >= 1 ? 1 : 1 - Math.exp(-6.2*t) * Math.cos(8.5*t); }
+};
+const lerp = (a, b, f) => a + (b - a) * f;
+function fill(keys, defaults) {           // values left out carry over
+  let prev = { ...defaults };
+  return keys.map(k => { prev = { ...prev, ...k }; return { ...prev, e: k.e || 'io' }; });
+}
+function at(keys, t) {
+  if (t <= keys[0].t) return keys[0];
+  const last = keys[keys.length - 1]; if (t >= last.t) return last;
+  let i = 0; while (keys[i + 1].t <= t) i++;
+  const a = keys[i], b = keys[i + 1], f = EASE[b.e](cl((t - a.t) / (b.t - a.t))), out = {};
+  for (const p in b) if (typeof b[p] === 'number' && p !== 't') out[p] = lerp(a[p], b[p], f);
+  return out;
+}
+const seg = (t, a, b, e = 'out') => EASE[e](cl((t - a) / (b - a)));
+
+/* --- words --- */
+const caps = [];
+CAPTIONS.forEach(o => {
+  const el = document.createElement('div'); el.className = 'cap'; el.style.top = o.top + 'px';
+  const mix = o.line.includes('*'); let on = false;
+  const col = o.dark ? BRAND.white : BRAND.ink, quiet = o.dark ? '#8e8e93' : BRAND.quiet;
+  const words = o.line.split(' ').map(w => { let em = on; if (w.startsWith('*')) { on = true; em = true; w = w.slice(1) } if (w.endsWith('*')) { on = false; w = w.slice(0, -1) }
+    return `<span class="w" style="color:${mix && !em ? quiet : col};${mix && !em ? 'font-weight:600' : ''}">${w}</span>` }).reduce((h, w, i) => h + (i === o.br ? '<br>' : i ? ' ' : '') + w, '');
+  el.innerHTML = `<div class="ln" style="font-size:${o.size}px">${words}</div>` + (o.sub ? `<div class="sub" style="color:${quiet}">${o.sub}</div>` : '');
+  $('caps').appendChild(el);
+  caps.push({ el, ws: [...el.querySelectorAll('.w')], sub: el.querySelector('.sub'), a: o.start, b: o.end });
+});
+function drawCaps(now) {
+  for (const c of caps) {
+    const lt = now - c.a, life = c.b - c.a;
+    if (lt < -.1 || lt > life + .1) { c.el.style.opacity = 0; continue }
+    const ex = seg(now, c.b - .5, c.b, 'io');
+    c.el.style.opacity = 1 - ex; c.el.style.transform = `translateY(${-ex * 26}px)`; c.el.style.filter = `blur(${ex * 8}px)`;
+    c.ws.forEach((w, i) => { const p = seg(lt, i * .075, i * .075 + .9);
+      w.style.opacity = p; w.style.transform = `translateY(${(1 - p) * 46}px) scale(${.96 + .04 * p})`; w.style.filter = `blur(${(1 - p) * 10}px)` });
+    if (c.sub) { const p = seg(lt, c.ws.length * .075 + .2, c.ws.length * .075 + 1.1); c.sub.style.opacity = p; c.sub.style.transform = `translateY(${(1 - p) * 18}px)` }
+  }
+}
+
+/* --- logo --- */
+const MARK = { vb: '84.13 107.80 206.73 194.91', tr: '73.919875, 252.710833', d: 'M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812' };
+$('out').innerHTML = `<svg viewBox="${MARK.vb}"><g transform="translate(${MARK.tr})"><path pathLength="1" d="${MARK.d}"/></g></svg><div class="name">${OUTRO.name}</div><div class="by">${OUTRO.by}</div>`;
+const op = $('out').querySelector('path'), on_ = $('out').querySelector('.name'), ob = $('out').querySelector('.by'), osv = $('out').querySelector('svg');
+function drawOut(now) {
+  const lt = now - OUTRO.at, o = $('out');
+  if (lt < -.5) { o.style.opacity = 0; return }
+  o.style.opacity = seg(lt, -.3, .4);
+  op.style.strokeDashoffset = 1 - seg(lt, .1, 1.8, 'io'); op.style.fillOpacity = seg(lt, 1.5, 2.4);
+  osv.style.transform = `translateY(${-seg(lt, 1.8, 2.8, 'io') * 8}px) scale(${.92 + .12 * seg(lt, 0, 6)})`;
+  const n = seg(lt, 2.0, 3.0); on_.style.opacity = n; on_.style.transform = `translateY(${(1 - n) * 30}px)`; on_.style.filter = `blur(${(1 - n) * 10}px)`;
+  on_.style.backgroundPosition = `${100 - seg(lt, 3, 4.6, 'io') * 100}% 0`;
+  ob.style.opacity = seg(lt, 3.0, 3.8);
+}
+
+/* --- screens, cards, camera --- */
+let winKeys, camKeys, irisKeys, scrKeys = {}, cardObjs = [];
+function setup(M) {
+  const k = WIN.w / 1440, h = 900 * k;
+  const win = $('win'); win.style.cssText += `;left:${WIN.x}px;top:${WIN.y}px;width:${WIN.w}px;height:${h}px`;
+  SCREENS.forEach(s => { const im = new Image(); im.src = 'shots/' + M[s].file; im.alt = ''; im.id = 'scr-' + s; win.appendChild(im); scrKeys[s] = fill(fade(SHOW[s]), { o: 0 }) });
+  winKeys = fill(WIN.keys, { y: 0, s: 1, o: 1, dim: 0, blur: 0 });
+  camKeys = fill(CAMERA, { s: 1, x: 640, y: 380 });
+  irisKeys = fill(IRIS, { r: 150 });
+  buildCards(M).forEach(c => {
+    const m = M[c.scr].cards[c.name], im = new Image(); im.src = 'shots/' + m.file; im.alt = ''; im.className = 'card';
+    im.style.cssText = `left:${WIN.x + m.x * k}px;top:${WIN.y + m.y * k}px;width:${m.w * k}px;height:${m.h * k}px;border-radius:${m.r * k}px`;
+    $('cards').appendChild(im);
+    cardObjs.push({ im, keys: fill(c.keys, { dx: 0, dy: 0, s: 1, o: 0, lift: 0 }) });
+  });
+}
+function drawScene(now) {
+  const w = at(winKeys, now), win = $('win');
+  win.style.opacity = w.o; win.style.transform = `translateY(${w.y}px) scale(${w.s})`;
+  win.style.filter = (w.dim || w.blur) ? `brightness(${1 - w.dim}) blur(${w.blur}px)` : 'none';
+  win.style.transformOrigin = '50% 0%';
+  for (const s of SCREENS) $('scr-' + s).style.opacity = at(scrKeys[s], now).o;
+  for (const c of cardObjs) {
+    const v = at(c.keys, now);
+    c.im.style.opacity = v.o * w.o;
+    c.im.style.transform = `translate(${v.dx}px,${v.dy}px) scale(${v.s})`;
+    c.im.style.boxShadow = v.lift > .01 ? `0 ${30 * v.lift}px ${90 * v.lift}px rgba(0,0,0,${.34 * v.lift}), 0 0 0 1px rgba(255,255,255,${.10 * v.lift})` : 'none';
+    c.im.style.zIndex = v.lift > .01 ? 5 : 1;
+  }
+  const cm = at(camKeys, now);
+  $('cam').style.transform = `translate(640px,360px) scale(${cm.s}) translate(${-cm.x}px,${-cm.y}px)`;
+  $('dark').style.clipPath = `circle(${at(irisKeys, now).r}% at 50% 50%)`;
+}
+
+/* --- placeholder sound: a soft pad and a tick on the bar, at BPM. Off by default.
+   Music and sound design are the last thing to add; this only proves the grid. --- */
+let AC = null, master = null, soundOn = false;
+function audioStop() { if (master) { const m = master; try { m.gain.setTargetAtTime(0, AC.currentTime, .06); setTimeout(() => m.disconnect(), 400) } catch (e) {} master = null } }
+function audioStart(from) {
+  audioStop(); if (!soundOn) return;
+  AC = AC || new (window.AudioContext || window.webkitAudioContext)(); AC.resume();
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination); master.gain.setTargetAtTime(.5, AC.currentTime, .3);
+  const t0 = AC.currentTime - from, chords = [[110, 164.8, 196, 246.9, 329.6], [87.3, 130.8, 174.6, 220, 329.6], [130.8, 196, 261.6, 329.6, 392], [98, 146.8, 196, 246.9, 293.7]];
+  const note = (f, at_, dur, g, type = 'sine', atk = .04) => { const o = AC.createOscillator(), a = AC.createGain(); o.type = type; o.frequency.value = f;
+    a.gain.setValueAtTime(0, at_); a.gain.linearRampToValueAtTime(g, at_ + atk); a.gain.exponentialRampToValueAtTime(.0001, at_ + dur); o.connect(a); a.connect(master); o.start(at_); o.stop(at_ + dur + .05) };
+  for (let b = 0; b * BAR < END; b++) {
+    const at_ = t0 + b * BAR; if (at_ + BAR < AC.currentTime) continue;
+    const ch = chords[Math.floor(b / 2) % 4]; if (b % 2 === 0) ch.forEach((f, i) => note(f, at_, BAR * 2.4, .05 - i * .006, 'sine', 1.1));
+    note(ch[4] * 2, at_, 1.4, .035, 'sine', .01); note(ch[3] * 2, at_ + BAR / 2, 1.2, .022, 'sine', .01);
+  }
+  note(440, t0 + OUTRO.at + 1.5, 4, .05, 'sine', 1.5);
+}
+
+/* --- clock and controls --- */
+let now = 0, playing = true, speed = 1, last = performance.now(), ready = false;
+const sc = $('sc'), tm = $('tm'), pp = $('pp');
+const fit = () => stage.style.transform = `scale(${$('wrap').clientWidth / 1280})`;
+addEventListener('resize', fit); fit();
+function render() { if (!ready) return; drawScene(now); drawCaps(now); drawOut(now) }
+function loop(t) {
+  const dt = (t - last) / 1000; last = t;
+  if (playing && ready) { now += dt * speed; if (now >= END) { now = 0; audioStart(0) } }
+  sc.value = now / END * 1000; tm.textContent = now.toFixed(1) + 's / ' + END.toFixed(1) + 's · bar ' + (Math.floor(now / BAR) + 1);
+  render(); requestAnimationFrame(loop);
+}
+const resume = () => { if (playing && speed === 1) audioStart(now); else audioStop() };
+pp.onclick = () => { playing = !playing; pp.textContent = playing ? 'Pause' : 'Play'; resume() };
+$('rs').onclick = () => { now = 0; playing = true; pp.textContent = 'Pause'; resume() };
+sc.oninput = () => { now = sc.value / 1000 * END; playing = false; pp.textContent = 'Play'; audioStop() };
+$('sp').onchange = e => { speed = +e.target.value; resume() };
+$('snd').onclick = () => { soundOn = !soundOn; $('snd').textContent = 'Sound: ' + (soundOn ? 'on' : 'off'); resume() };
+window.seek = s => { now = s; playing = false; pp.textContent = 'Play'; render() };
+window.film = { END, BAR, B };
+
+fetch('shots/shots.json').then(r => r.json()).then(M => {
+  setup(M);
+  return Promise.all([...document.querySelectorAll('#win img, .card')].map(i => i.decode ? i.decode().catch(() => {}) : 0));
+}).then(() => { ready = true; last = performance.now() });
+requestAnimationFrame(loop);
+</script></body></html>
