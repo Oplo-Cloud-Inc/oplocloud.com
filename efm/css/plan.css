@@ -1,0 +1,67 @@
+/* OC EFM — Inbox, Budgets, Forecast & scenarios, Close, Audit & controls. */
+
+/* Close: where it stands. */
+.cl-sum { flex-direction: row; align-items: center; gap: 28px; padding: 18px 22px; margin-bottom: 16px; }
+.cl-sum .stat-row { gap: 36px; flex: 1; }
+.cl-s { font-size: 12px; color: var(--ink-4); margin-top: 1px; max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* The year, entity by month. */
+.cl-periods { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; font-size: 12px; }
+.cl-periods th { font-weight: 500; color: var(--ink-3); text-align: center; padding: 2px 0; }
+.cl-periods th[scope=row] { text-align: left; width: 56px; color: var(--ink-2); font-weight: 600; }
+.cl-periods th.cur { color: var(--accent); font-weight: 600; }
+.cl-p { height: 38px; border-radius: 8px; text-align: center; vertical-align: middle; background: var(--sunken); color: var(--ink-3); }
+.cl-p .cl-dot { display: inline-flex; vertical-align: -2px; margin-right: 3px; }
+.cl-p .cl-dot svg { width: 12px; height: 12px; }
+.cl-p.locked { background: var(--sunken); color: var(--ink-3); }
+.cl-p.closed { background: var(--good-wash); color: var(--good); font-weight: 600; }
+.cl-p.open { background: var(--accent-wash); color: var(--accent); font-weight: 600; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.cl-p.soft { background: var(--warn-wash); color: var(--warn); font-weight: 600; }
+.cl-p.future { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+
+/* The checklist. */
+.cl-day { display: flex; align-items: center; gap: 10px; padding: 16px 0 6px; font-size: 12.5px; }
+.cl-day:first-child { padding-top: 6px; }
+.cl-wd { font-weight: 700; font-size: 12px; color: var(--ink); min-width: 42px; font-variant-numeric: tabular-nums; }
+.cl-day .sp { flex: 1; }
+.cl-task { display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin: 0 -12px; border-radius: 10px; cursor: pointer; }
+.cl-task:hover { background: var(--hover); }
+.cl-task:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: -2px; }
+.cl-t { font-size: 13.5px; font-weight: 550; }
+.cl-task.done .cl-t { color: var(--ink-3); font-weight: 450; }
+.cl-x { font-size: 12px; color: var(--ink-3); margin-top: 1px; }
+.cl-meta { font-size: 12px; white-space: nowrap; }
+
+/* Budgets. */
+.bg-kpi-over { color: var(--bad); }
+.bg-drivers li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.bg-drivers li:first-child { border-top: 0; }
+.bg-drivers .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bg-drivers .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+.bg-policy { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.bg-policy div { padding: 10px 12px; border-radius: 10px; background: var(--sunken); font-size: 12.5px; }
+.bg-policy b { display: block; font-size: 13px; margin-bottom: 2px; }
+
+/* Planning. */
+.pl-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.pl-drivers { position: sticky; top: calc(var(--top-h) + 16px); }
+.pl-drv { padding: 10px 0; border-top: 1px solid var(--line); }
+.pl-drv:first-child { border-top: 0; padding-top: 0; }
+.pl-drv .row { justify-content: space-between; font-size: 12.5px; }
+.pl-drv .row b { font-variant-numeric: tabular-nums; }
+.pl-drv input[type=range] { width: 100%; accent-color: var(--accent); margin: 6px 0 0; }
+.pl-drv small { display: block; font-size: 11.5px; color: var(--ink-4); margin-top: 2px; }
+.pl-cmp td.best { font-weight: 600; }
+
+/* Audit. */
+.au-verify { flex-direction: row; align-items: center; gap: 16px; padding: 16px 20px; margin-bottom: 16px; }
+.au-verify .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--good-wash); color: var(--good); flex: none; }
+.au-verify .ic.bad { background: var(--bad-wash); color: var(--bad); }
+.au-verify .ic svg { width: 22px; height: 22px; }
+.au-hash { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); word-break: break-all; }
+.au-matrix td, .au-matrix th { text-align: center; }
+.au-matrix td:first-child, .au-matrix th:first-child { text-align: left; }
+.au-matrix .yes { color: var(--good); }
+.au-rule { display: grid; grid-template-columns: 80px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.au-rule:first-child { border-top: 0; padding-top: 0; }
+.au-rule .id { font-family: var(--mono); font-size: 12px; color: var(--ink-3); padding-top: 1px; }

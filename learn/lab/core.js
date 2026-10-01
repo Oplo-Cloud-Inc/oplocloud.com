@@ -35,12 +35,20 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "fe2fab7f",
+    "lab/widgets.js": "b8e0f130",
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
     "lab/geotools.js": "3a389b5e",
-    "alg/u01.js": "36485330",
+    "lab/pathkit.js": "4161c15f",
+    "lab/pathhelp.js": "e6aa4a45",
+    "lab/pathui.js": "7e92c81b",
+    "path/alg-a.js": "9f7a464c",
+    "path/alg-b.js": "f4eaa1b9",
+    "path/alg-c.js": "e720f05a",
+    "path/alg-d.js": "84267203",
+    "path/alg.js": "26a3fab9",
+    "alg/u01.js": "d05e491b",
     "alg/u02.js": "e1ae3453",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "332193f8",
@@ -976,11 +984,19 @@ window.OPLO_LAB = (function () {
      bias, a source to question) in lab/histkit.js; SAT Math keeps its whole
      test-prep system — the diagnostic, the coach, timed modules, the course
      page itself — in lab/satkit.js; Geometry keeps its desk — a ruler, a
-     protractor, compass work, solids to turn — in lab/geotools.js. */
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js" };
+     protractor, compass work, solids to turn — in lab/geotools.js; Algebra
+     Pathway keeps its adaptive engine, its pages and its seventy topics in
+     lab/pathkit.js, pathhelp.js, pathui.js and path/alg*.js. */
+  var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alg: PATH_KIT };
+  /* A kit is one file, or a list loaded in order (Pathway's engine, its
+     pages, then the topics that register with them). */
   function kitFor(courseId) {
     return script("lab/widgets.js").then(function () {
-      return COURSE_KIT[courseId] ? script(COURSE_KIT[courseId]) : null;
+      var k = COURSE_KIT[courseId];
+      if (!k) return null;
+      if (typeof k === "string") return script(k);
+      return k.reduce(function (p, f) { return p.then(function () { return script(f); }); }, Promise.resolve());
     });
   }
   function load(courseId, n) {

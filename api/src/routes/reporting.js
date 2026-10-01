@@ -20,6 +20,8 @@ import { requireActor } from "../core/auth.js";
 import { must, teachesStudent, guardsStudent, isLearnAdmin } from "../core/guard.js";
 import { computeGrade, courseWeights, coursePolicy, classSignal } from "../services/grades.js";
 import { readinessFor, reportFor } from "../services/reporting.js";
+import { activityOf } from "./courses.js";
+import { submissionShape } from "./submissions.js";
 
 /* The courses this person teaches. An administrator is not automatically a
    teacher of everything — an admin who teaches two classes sees two classes
@@ -240,16 +242,25 @@ export async function coursework(ctx) {
 
   const grades = await ctx.repo.listGrades({ courseId: null, accountId });
   const byAssignment = new Map(grades.map((g) => [g.assignment_id, g]));
+  const handed = new Map((await ctx.repo.listSubmissions({ accountId }))
+    .map((s) => [s.assignment_id, submissionShape(s)]));
 
   const work = [];
   for (const course of enrolled) {
-    const assignments = await ctx.repo.listAssignments(course.id);
+    const assignments = (await ctx.repo.listAssignments(course.id))
+      .filter((a) => a.status !== "draft");      // not set yet
     for (const a of assignments) {
       const g = byAssignment.get(a.id);
+      const h = handed.get(a.id);
       work.push({
         courseId: course.id, courseTitle: course.title, courseCode: course.code,
         assignmentId: a.id, title: a.title, category: a.category,
         outOf: a.out_of, dueAt: a.due_at, extraCredit: !!a.extra_credit,
+        // Where on OEdu it is done, if it is done on OEdu, and whether it
+        // has been handed in there.
+        activity: activityOf(a),
+        submittedAt: h ? h.submittedAt : null,
+        result: h ? h.result : null,
         // `null` means no row at all: nobody has marked it and nobody has said
         // it is missing. It is the state a student can act on.
         status: g ? (g.status || "marked") : null,

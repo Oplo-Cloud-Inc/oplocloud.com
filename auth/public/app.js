@@ -38,6 +38,7 @@
     "edu.oplocloud.com": "OEdu",
     "dev.oplocloud.com": "Oplo Developer",
     "roxan.oplocloud.com": "Roxan",
+    "efm.oplocloud.com": "OC EFM",
     "oplocloud.com": "Oplo",
     "www.oplocloud.com": "Oplo"
   };

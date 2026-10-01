@@ -30,6 +30,7 @@ import * as auth from "./routes/auth.js";
 import * as accounts from "./routes/accounts.js";
 import * as courses from "./routes/courses.js";
 import * as grades from "./routes/grades.js";
+import * as submissions from "./routes/submissions.js";
 import * as progress from "./routes/progress.js";
 import * as marks from "./routes/marks.js";
 import * as studysets from "./routes/studysets.js";
@@ -37,6 +38,7 @@ import * as graduation from "./routes/graduation.js";
 import * as reporting from "./routes/reporting.js";
 import * as family from "./routes/family.js";
 import * as assessments from "./routes/assessments.js";
+import * as efm from "./routes/efm.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -48,6 +50,14 @@ const ROUTES = [
   ["GET",    "/api/v1/me",             auth.me],
   ["GET",    "/api/v1/auth/sessions",        auth.sessions],
   ["POST",   "/api/v1/auth/sessions/revoke", auth.revokeSessions],
+
+  ["GET",    "/api/v1/efm/books",                    efm.books],
+  ["POST",   "/api/v1/efm/books",                    efm.openYear],
+  ["GET",    "/api/v1/efm/access",                   efm.access],
+  ["PUT",    "/api/v1/efm/access",                   efm.setAccess],
+  ["GET",    "/api/v1/efm/books/:bookId",            efm.book],
+  ["GET",    "/api/v1/efm/books/:bookId/commands",   efm.commandsAfter],
+  ["POST",   "/api/v1/efm/books/:bookId/commands",   efm.execute],
 
   ["GET",    "/api/v1/accounts",             accounts.list],
   ["POST",   "/api/v1/accounts",             accounts.create],
@@ -65,6 +75,7 @@ const ROUTES = [
   ["POST",   "/api/v1/courses/:courseId/assignments",    courses.createAssignment],
   ["PATCH",  "/api/v1/assignments/:assignmentId",        courses.updateAssignment],
   ["DELETE", "/api/v1/assignments/:assignmentId",        courses.deleteAssignment],
+  ["POST",   "/api/v1/assignments/:assignmentId/submission", submissions.submit],
 
   ["GET",    "/api/v1/grades",          grades.list],
   ["PUT",    "/api/v1/grades",          grades.put],

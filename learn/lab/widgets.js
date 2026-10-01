@@ -1510,7 +1510,8 @@
   /* =============================================================== Tester
      Two expressions, one value of x, both worked out side by side — the
      way to test whether they are equivalent. spec: { a, b, x: { v, min, max },
-     goal: "differ" | "agree3" } */
+     goal: "differ" | "agree3" | "equal" } — "equal" waits until some x makes the
+     two sides the same, which is how a solution is found by trying. */
   CH.addKind("tester", function (spec, seed, mode) {
     var api = {}, x = spec.x.v, fa = LAB.compile(spec.a), fb = LAB.compile(spec.b), log = [], differed = false;
     var box = el("div", "lw lw-tester");
@@ -1541,7 +1542,11 @@
     record();
     paint();
     api.el = box;
-    api.ready = function () { return spec.goal === "differ" ? differed : spec.goal === "agree3" ? log.length >= 3 : true; };
+    // "equal": slide until the two sides balance — the way to find a solution by trying.
+    api.ready = function () {
+      return spec.goal === "differ" ? differed : spec.goal === "agree3" ? log.length >= 3 :
+        spec.goal === "equal" ? log.some(function (r) { return Math.abs(r[1] - r[2]) < 1e-9; }) : true;
+    };
     api.check = function () { return { ok: api.ready() }; };
     api.reveal = function () {};
     return api;

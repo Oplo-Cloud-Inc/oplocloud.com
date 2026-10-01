@@ -15,6 +15,9 @@ PAGES = sorted(
     for r, _d, f in os.walk(ROOT)
     if "index.html" in f
     and ".git" not in r
+    # Side checkouts (.claude/worktrees, .kilo/worktrees) are copies of this
+    # repo, not part of it; CI never has them, so they only add noise here.
+    and not any(part.startswith(".") for part in os.path.relpath(r, ROOT).split(os.sep))
     # Installed dependencies ship their own HTML, and their broken links are
     # not ours to fix. They are not deployed either — node_modules is ignored.
     and "node_modules" not in r.split(os.sep)
@@ -32,6 +35,11 @@ def resolve(page, href):
         return None
     base = os.path.dirname(page)
     path, frag = urldefrag(href)
+    # efm.oplocloud.com is its own host, served from efm/, so its root-relative
+    # links (/css/efm.css) start at efm/ rather than at the repo root.
+    if path.startswith("/") and page.startswith("efm/"):
+        path = path[1:]
+        base = "efm"
     # Shared assets carry a ?v= content fingerprint; the file on disk is the
     # part before it. Checking the literal string would fail every page.
     path = path.split("?", 1)[0]

@@ -169,6 +169,74 @@ export class D1Repository {
     ).bind(olderThan, olderThan).run();
   }
 
+  /* -------------------------------------------------------------- OC EFM */
+
+  async efmBook(bookId) {
+    return this.db.prepare(
+      `SELECT id, name, config, created_at FROM efm_books WHERE id = ?`
+    ).bind(bookId).first();
+  }
+
+  /* Every set of books, oldest first. */
+  async efmBooks() {
+    const { results } = await this.db.prepare(`SELECT id, name, config, created_at FROM efm_books ORDER BY created_at, id`).all();
+    return results || [];
+  }
+
+  /* Starts a new set of books with its first command, or leaves nothing behind. */
+  async efmCreateBook(book, config, first) {
+    try {
+      await this.db.prepare(`INSERT INTO efm_books (id, name, config, created_at) VALUES (?, ?, ?, ?)`).bind(book.id, book.name, config, now()).run();
+    } catch (e) {
+      if (/UNIQUE|PRIMARY KEY|constraint/i.test(String(e && e.message))) return false;
+      throw e;
+    }
+    const won = await this.efmAppendCommand(book.id, first);
+    if (!won) { await this.db.prepare(`DELETE FROM efm_books WHERE id = ?`).bind(book.id).run(); return false; }
+    return true;
+  }
+
+  /* Everyone who has been given OC EFM, and how. */
+  async efmAccess() {
+    const { results } = await this.db.prepare(
+      `SELECT a.id AS id, a.email AS email, a.status AS status, p.name AS name, r.role AS role
+         FROM account_roles r JOIN accounts a ON a.id = r.account_id LEFT JOIN profiles p ON p.account_id = a.id
+        WHERE r.product = 'efm' ORDER BY p.name, a.email`
+    ).all();
+    return results || [];
+  }
+
+  /* The commands after `after`, in order. */
+  async efmCommands(bookId, after = 0) {
+    const { results } = await this.db.prepare(
+      `SELECT seq, type, payload, actor_id, actor_name, actor_role, at, prev_hash, hash
+         FROM efm_commands WHERE book_id = ? AND seq > ? ORDER BY seq`
+    ).bind(bookId, after).all();
+    return results || [];
+  }
+
+  /* The command already recorded under a key, if any. */
+  async efmCommandByKey(bookId, key) {
+    return this.db.prepare(`SELECT seq, at, hash, actor_id FROM efm_commands WHERE book_id = ? AND idem_key = ?`).bind(bookId, key).first();
+  }
+
+  /* Appends one command. False when its place has been taken — somebody else
+     got there first — which is the caller's cue to say the books have moved. */
+  async efmAppendCommand(bookId, row) {
+    try {
+      await this.db.prepare(
+        `INSERT INTO efm_commands
+           (book_id, seq, type, payload, actor_id, actor_name, actor_role, at, prev_hash, hash, idem_key)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(bookId, row.seq, row.type, row.payload, row.actorId, row.actorName, row.actorRole,
+             row.at, row.prev, row.hash, row.key || null).run();
+      return true;
+    } catch (e) {
+      if (/UNIQUE|PRIMARY KEY|constraint/i.test(String(e && e.message))) return false;
+      throw e;
+    }
+  }
+
   /* ---------------------------------------------------------------- Roles */
 
   async rolesFor(accountId) {
@@ -438,10 +506,13 @@ export class D1Repository {
 
   /* ---------------------------------------------------- Assignments, grades */
 
-  async listAssignments(courseId) {
+  /* Drafts are work a teacher has not set yet, so every read leaves them out
+     unless it asks for them — only the teacher's own list of work does. */
+  async listAssignments(courseId, { drafts = false } = {}) {
     const { results } = await this.db.prepare(
-      `SELECT * FROM learn_assignments WHERE course_id = ? ORDER BY created_at`
-    ).bind(courseId).all();
+      `SELECT * FROM learn_assignments
+        WHERE course_id = ? AND (? = 1 OR status <> 'draft') ORDER BY created_at`
+    ).bind(courseId, drafts ? 1 : 0).all();
     return results || [];
   }
 
@@ -456,10 +527,12 @@ export class D1Repository {
     await this.db.prepare(
       `INSERT INTO learn_assignments
          (id, course_id, title, category, out_of, due_at, extra_credit, status,
-          created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`
+          activity_json, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(assignmentId, data.courseId, data.title, data.category || null,
            data.outOf ?? 100, data.dueAt || null, data.extraCredit ? 1 : 0,
+           data.status || "open",
+           data.activity ? JSON.stringify(data.activity) : null,
            data.createdBy || null, t, t).run();
     return this.findAssignment(assignmentId);
   }
@@ -470,6 +543,10 @@ export class D1Repository {
                   dueAt: "due_at", status: "status", extraCredit: "extra_credit" };
     for (const [k, col] of Object.entries(map)) {
       if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (patch.activity !== undefined) {
+      fields.push("activity_json = ?");
+      values.push(patch.activity ? JSON.stringify(patch.activity) : null);
     }
     if (!fields.length) return this.findAssignment(assignmentId);
     values.push(now(), assignmentId);
@@ -482,6 +559,38 @@ export class D1Repository {
   async deleteAssignment(assignmentId) {
     await this.db.prepare(`DELETE FROM learn_assignments WHERE id = ?`)
       .bind(assignmentId).run();
+  }
+
+  /* Hand-ins. One per student per assignment; handing in again replaces what
+     was handed in, and keeps the first time it arrived as well as the last. */
+  async putSubmission(assignmentId, accountId, content) {
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_submissions (id, assignment_id, account_id, content, submitted_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (assignment_id, account_id) DO UPDATE SET
+         content = excluded.content, submitted_at = excluded.submitted_at`
+    ).bind(id("sub"), assignmentId, accountId, content, t).run();
+    return this.db.prepare(
+      `SELECT * FROM learn_submissions WHERE assignment_id = ? AND account_id = ?`
+    ).bind(assignmentId, accountId).first();
+  }
+
+  async listSubmissions({ courseId = null, accountId = null }) {
+    const { results } = await this.db.prepare(
+      `SELECT s.* FROM learn_submissions s
+         JOIN learn_assignments a ON a.id = s.assignment_id
+        WHERE (? IS NULL OR a.course_id = ?) AND (? IS NULL OR s.account_id = ?)`
+    ).bind(courseId, courseId, accountId, accountId).all();
+    return results || [];
+  }
+
+  async isEnrolled(courseId, accountId, role) {
+    const row = await this.db.prepare(
+      `SELECT 1 AS ok FROM learn_course_memberships
+        WHERE course_id = ? AND account_id = ? AND role = ?`
+    ).bind(courseId, accountId, role).first();
+    return !!row;
   }
 
   /* Grades joined to their assignment, because a score without what it was

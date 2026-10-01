@@ -1,0 +1,84 @@
+/* OC EFM — data visualisation. A ten-colour categorical palette that holds up
+   in both themes, and the marks, labels and states every chart shares. */
+:root {
+  --v1: #2a78d6; --v2: #eb6834; --v3: #1baf7a; --v4: #8c5cf5; --v5: #e0a11b;
+  --v6: #d6478a; --v7: #17a2b8; --v8: #7a8794; --v9: #b5651d; --v10: #5b6ee1;
+  --heat: var(--s1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --v1: #4a97f5; --v2: #f0834f; --v3: #30c896; --v4: #a582f7; --v5: #efb945;
+    --v6: #e86aa5; --v7: #3cbfd4; --v8: #98a4b0; --v9: #cf8440; --v10: #7f8ff0;
+  }
+}
+:root[data-theme="dark"] {
+  --v1: #4a97f5; --v2: #f0834f; --v3: #30c896; --v4: #a582f7; --v5: #efb945;
+  --v6: #e86aa5; --v7: #3cbfd4; --v8: #98a4b0; --v9: #cf8440; --v10: #7f8ff0;
+}
+
+.viz { position: relative; width: 100%; }
+.viz svg { display: block; overflow: visible; }
+.viz text { font: 11px var(--font); fill: var(--ink-3); font-variant-numeric: tabular-nums; }
+.viz text.t-in { fill: #fff; font-weight: 600; paint-order: stroke; stroke: rgba(0, 0, 0, .18); stroke-width: 2px; stroke-linejoin: round; }
+.viz text.t-strong { fill: var(--ink); font-weight: 600; }
+.viz text.halo { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.viz text.t-lg { font: 600 20px var(--display); fill: var(--ink); letter-spacing: -.02em; }
+.viz text.t-sm { font-size: 10px; }
+.viz .mk { cursor: pointer; transition: opacity .14s var(--ease), filter .14s var(--ease); }
+.viz .mk:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2px; }
+.viz.dim .mk:not(.on) { opacity: .16; }
+.viz .lk { fill-opacity: .34; transition: fill-opacity .14s var(--ease); }
+.viz .lk:hover, .viz .lk.on { fill-opacity: .62; }
+.viz.dim .lk:not(.on) { fill-opacity: .06; }
+.viz .rim { stroke: var(--surface); stroke-width: 1.5px; }
+.viz .hair { stroke: var(--line); stroke-width: 1; }
+.viz .grid { stroke: var(--grid); stroke-width: 1; }
+.viz .zero { stroke: var(--line-2); stroke-width: 1; }
+.viz .ghost { fill: var(--sunken); }
+.viz .cell { transition: opacity .12s; }
+.viz .cell:hover { stroke: var(--ink); stroke-width: 1.5px; }
+.viz .nd { cursor: grab; }
+.viz .nd:active { cursor: grabbing; }
+.viz .edge { stroke: var(--ink-4); stroke-opacity: .32; fill: none; }
+.viz .edge.on { stroke-opacity: .85; }
+.viz-empty { display: grid; place-items: center; min-height: 160px; color: var(--ink-3); font-size: 13px; text-align: center; padding: 16px; }
+.viz-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.viz-bar .grow { flex: 1; }
+.viz-crumb { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--ink-3); }
+.viz-crumb button { color: var(--accent); }
+.viz-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); margin-top: 10px; }
+.viz-legend button { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 6px; }
+.viz-legend button:hover { background: var(--hover); }
+.viz-legend button.off { opacity: .4; }
+.viz-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.micro { display: inline-block; vertical-align: middle; }
+.micro-bars { display: inline-flex; align-items: flex-end; gap: 1.5px; height: 22px; }
+.micro-bars i { width: 3px; border-radius: 1px; background: var(--ink-4); display: block; min-height: 1px; }
+.micro-bars i.hi { background: var(--accent); }
+
+/* The insights page: a bento of charts, from one number to the whole book. */
+.bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+.bento > .card { min-width: 0; }
+.bento .c3 { grid-column: span 3; } .bento .c4 { grid-column: span 4; } .bento .c5 { grid-column: span 5; } .bento .c6 { grid-column: span 6; }
+.bento .c7 { grid-column: span 7; } .bento .c8 { grid-column: span 8; } .bento .c9 { grid-column: span 9; } .bento .c12 { grid-column: 1 / -1; }
+.ins-hero { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+.ins-hero > * { padding: 16px 18px; border-right: 1px solid var(--line); min-width: 0; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; text-align: left; }
+.ins-hero > button:hover { background: var(--hover); }
+.ins-hero > *:last-child { border-right: 0; }
+.ins-hero .l { font-size: 12px; color: var(--ink-3); }
+.ins-hero .v { font: 600 26px/1.15 var(--display); letter-spacing: -.025em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.ins-hero .d { font-size: 12px; color: var(--ink-3); margin-top: 3px; display: flex; gap: 6px; align-items: center; }
+.ins-hero .sp { margin-top: 8px; height: 30px; }
+.sm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.sm-cell { text-align: left; padding: 10px 12px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); transition: border-color .15s var(--ease), background .15s var(--ease); min-width: 0; }
+.sm-cell:hover { border-color: var(--line-2); background: var(--hover); }
+.sm-cell .n { font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sm-cell .v { font: 600 15px/1.2 var(--display); letter-spacing: -.015em; font-variant-numeric: tabular-nums; }
+.sm-cell .d { font-size: 11px; }
+.explorer { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: start; }
+.explorer .panel { position: sticky; top: 76px; }
+.ex-ctl { display: flex; flex-direction: column; gap: 14px; }
+.ex-ctl .seg { width: 100%; }
+.ex-ctl .seg button { flex: 1; }
+@media (max-width: 1100px) { .bento .c3, .bento .c4, .bento .c5, .bento .c6, .bento .c7, .bento .c8, .bento .c9 { grid-column: 1 / -1; } .explorer { grid-template-columns: 1fr; } .ins-hero { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .viz .mk, .viz .lk { transition: none; } }

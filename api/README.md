@@ -156,6 +156,57 @@ platform can honestly afford today, and a login that exceeds the CPU budget
 fails closed for everybody — a worse security outcome than a slightly cheaper
 KDF.
 
+## OC EFM — a product that is assigned
+
+OC EFM (efm.oplocloud.com, OploCloud's financial system) is the one product
+here that is **assigned, not open**. Signing in proves who somebody is; whether
+they may use EFM is the `efm` product role on their account (`efm.user`), or
+being a platform administrator (`efm.read` / `efm.write` in `core/guard.js`).
+
+Its books are **real and live on the server**, stored as an append-only list of
+commands rather than as balances (`efm_books`, `efm_commands`, migration 0012):
+each command — who, what, when — is chained to the one before it by a SHA-256 hash,
+and triggers refuse any UPDATE or DELETE. The books at any moment are what the
+engine (`efm/js/engine.js`, the same file the browser runs) adds that list up to.
+
+- `GET  /api/v1/efm/books/:id` — the book, its commands, head hash and count.
+- `GET  /api/v1/efm/books/:id/commands?after=N` — what others have done since.
+- `GET  /api/v1/efm/books` — the sets of books (one per fiscal year).
+- `POST /api/v1/efm/books {from}` — opens the fiscal year after a closed one, as its own
+  books whose first command (`year.open`) carries everything forward; the server works the
+  balances out from the closed year's own history (efm.admin).
+- `GET/PUT /api/v1/efm/access` — who has OC EFM: `admin` (settings, budget, access, year
+  close), `user` (a member) or `viewer` (read-only). Never creates an account (efm.admin).
+- `POST /api/v1/efm/books/:id/commands` — one change. The server checks, in order:
+  the caller's position (`expectSeq`, else 409 `stale`), the stored chain's
+  integrity (500 `integrity`), the caller's clock (±10 min, 409 `clock`), that the
+  whole list replays (500 `replay`), then runs the command through the engine as
+  the *session's* account (a refusal — separation of duties, a closed period —
+  is 422 `refused` with the rule). Only the commands people can make from the app
+  are accepted (`CLIENT_COMMANDS`); the actor is always taken from the session.
+
+Every write replays the whole list, at roughly a quarter of a millisecond per
+stored command, so it is cheap for a company's books for years. If a book ever
+reaches tens of thousands of commands, add periodic snapshots to it.
+
+Loading actual data out of band (an administrator, from a machine with wrangler
+access) is `scripts/efm-import-card-charges.mjs <export.json> [--remote]`: it
+runs each new command through the engine first, then writes the chained rows and
+reads them back to verify them.
+
+```bash
+# Make somebody an account with EFM and no password (status `invited`):
+./scripts/provision-account.sh someone@oplocloud.com "Full Name" efm user --remote
+
+# They — or an administrator — set the password. Asked for twice, never echoed:
+./scripts/set-password.sh someone@oplocloud.com --remote
+```
+
+An administrator can also assign or revoke it later with
+`POST /api/v1/accounts/:id/roles {"product":"efm","role":"user"}` (add
+`"revoke": true` to take it away; it takes effect on the very next request).
+Both scripts are local unless `--remote` is given.
+
 ## Known gaps
 
 In `LAUNCH.md`, with what each one needs and what it blocks. The short version:
