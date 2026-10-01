@@ -84,8 +84,31 @@ html[data-look="obsidian"] {
   background: var(--obsidian);
 }
 
-/* --------------------------------------------------------------- Page */
+/* --------------------------------------------------------------- Page
+   The canvas is var(--obsidian) and only the canvas is that colour.
+   #353535 is the page behind every surface; #444447 and #525256 are
+   surfaces standing on it, and are set as tokens above and not repeated
+   here — restating them would be a second, drifting source for the same
+   value.
+
+   html, body and #app all paint it. Those three are named because each
+   can win on its own: html for the area above the viewport on a bounce,
+   body for the page itself, and #app for the shell the app renders into,
+   which is transparent today and must stay that way rather than relying
+   on nothing happening to be painted behind it.
+
+   `main` is deliberately not blanket-dark, and the exception is the point.
+   There are two <main> elements: #wrap, the app itself, and .ld-main, which
+   sits inside the signed-out welcome gate — a fixed full-viewport overlay
+   that landing.css paints #fff. On a /student/ address that gate is up
+   before sign-in, so painting every <main> here would put a #353535 band
+   inside a white overlay. The welcome page stays light by design. So the app
+   is named and the gate is left alone. */
+html[data-look="obsidian"] { background: var(--obsidian); }
 html[data-look="obsidian"] body { background: var(--obsidian); color: var(--ink); }
+html[data-look="obsidian"] #app { background: var(--obsidian); }
+html[data-look="obsidian"] #wrap { background: var(--obsidian); }
+html[data-look="obsidian"] .ld-main { background: transparent; }
 html[data-look="obsidian"] ::selection { background: rgba(0,113,227,.55); color: #fff; }
 html[data-look="obsidian"] :focus-visible { outline-color: var(--blue); }
 html[data-look="obsidian"] input::placeholder,
