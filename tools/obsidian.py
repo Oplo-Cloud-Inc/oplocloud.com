@@ -66,19 +66,34 @@ FILLS_ONLY = {"lab/lab.css"}
 # fill takes the deeper blue instead, so the label on it keeps 4.5:1.
 FILL = {"var(--blue)": "var(--fill)", "var(--blue-d)": "var(--fill-d)"}
 
-# The palette, darkest first. Black is the page, #161618 a card on it,
-# #212124 a fill inside a card (and anything that floats); the last two are
-# the same greys a step on, for a pressed fill and a control's track.
-BG = (0, 0, 0)           # the page
-S1 = (22, 22, 24)        # #161618 a card
-S2 = (33, 33, 36)        # #212124 a fill inside a card
-S3 = (42, 42, 46)        # a pressed or hovered fill
-S4 = (58, 58, 62)        # a control's track
-ELEV = (33, 33, 36)      # a panel that was ink-dark in the light look
+# The palette, page first, then a step up for each surface above it.
+#
+# The page is #353535 rather than black, which changes two things that have to
+# be got right together or the dark side falls apart:
+#
+#   The surfaces have to be re-stepped upward. They were tuned against a black
+#   page as a ramp rising from zero — #161618, #212124 and #2a2a2e are all
+#   *darker* than #353535, so on this page a card would read as a hole rather
+#   than as a card. Every step below is now measured to be lighter than the
+#   one beneath it.
+#
+#   The quiet greys have to be lifted. #818181 read 5.4:1 on black and only
+#   3.2:1 here — a real accessibility failure, and a quiet failure, because
+#   the colour that fails is the one nobody looks at closely. --ink-3 and
+#   --ink-3-fill are both lifted until they clear 4.5:1 against the page *and*
+#   against the fill they are painted on, which is the harder test.
+#
+# Each step is verified rather than eyeballed; see tools/check_obsidian_contrast.py.
+BG = (53, 53, 53)      # #353535 the page
+S1 = (68, 68, 71)      # #444447 a card
+S2 = (82, 82, 86)      # #525256 a fill inside a card
+S3 = (95, 95, 100)     # #5f5f64 a pressed or hovered fill
+S4 = (114, 114, 119)   # #727277 a control's track
+ELEV = (82, 82, 86)    # a panel that was ink-dark in the light look
 INK = (255, 255, 255)
-# The quietest text, #818181, reads at 4.6:1 on a card but 4.1:1 on the
-# #212124 fill; anything painted that fill carries a step lighter grey for
-# its quiet text, so it stays at 4.5:1 or better.
+# The quietest text. On a #212124 fill it read 4.1:1, so anything painted
+# that fill carried a step lighter grey; on this page the harder test is
+# against the fill, and --ink-3-fill clears 4.5:1 on both.
 QUIET_ON_FILL = "--ink-3: var(--ink-3-fill);"
 
 # Panels that are dark in the light look (background: var(--ink), white
@@ -156,8 +171,8 @@ def mix(a, b, t):
     return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
 
 
-def vivid(c, l=0.62, smin=0.72):
-    """The same hue, at a lightness that reads on a dark page."""
+def vivid(c, l=0.68, smin=0.72):
+    """The same hue, at a lightness that reads on the student page."""
     h, _, s = hls(c)
     return from_hls(h, l, max(s, smin))
 
@@ -207,7 +222,12 @@ def as_text(c):
             v = max(0.4, min(0.84, 1.08 - L))
         else:
             v = 0.4
-        v = max(v, 0.506)      # never quieter than #818181
+        # The floor is #b4b4b4, not #818181. That older value read 5.4:1 on a
+        # black page and only 3.2:1 on this one, so keeping it would have
+        # quietly taken the whole dark side below AA — on the one colour that
+        # is explicitly meant to recede. Lifting it costs nothing visually,
+        # since this is still the quietest step in the ramp.
+        v = max(v, 0.706)      # never quieter than #b4b4b4
         return fmt(*from_hls(0, v, 0), a=a)
     if L >= 0.85:
         return None            # light coloured text is already on something dark
