@@ -48,15 +48,15 @@ window.OPLO_LAB = (function () {
     "path/alg-c.js": "e720f05a",
     "path/alg-d.js": "84267203",
     "path/alg.js": "b48987b4",
-    "alg/u01.js": "a9707150",
-    "alg/u02.js": "17eb3f3f",
-    "alg/u03.js": "2c85d094",
-    "alg/u04.js": "0c52415b",
-    "alg/u05.js": "f35ea2e1",
-    "alg/u06.js": "7783e9db",
-    "alg/u07.js": "31e2e832",
-    "alg/u08.js": "c0346f51",
-    "alg/u09.js": "9e85f4bf",
+    "alg/u01.js": "afbdb1d4",
+    "alg/u02.js": "a91950ee",
+    "alg/u03.js": "57921414",
+    "alg/u04.js": "c90d33ff",
+    "alg/u05.js": "facd9a77",
+    "alg/u06.js": "0bfaa39b",
+    "alg/u07.js": "ce28fd5f",
+    "alg/u08.js": "571fcffa",
+    "alg/u09.js": "b3c33306",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "332193f8",
     "geo/u09.js": "503d988a",
@@ -1045,6 +1045,16 @@ window.OPLO_LAB = (function () {
      version (v: 2), so the old record — which steps were seen, whether it
      was finished — does not carry over onto different steps. */
   function lessonKey(l) { return l.unit + ":" + l.k + (l.v ? "~" + l.v : ""); }
+  /* A lesson's number in its unit, the way the textbook numbers it. A lesson
+     with a tag ("Ready?", "Project") wears the tag instead and isn't counted,
+     so Algebra I's Lesson 2.1 is the book's 2.1 even with a check before it. */
+  function lessonNo(u, l) {
+    if (l.tag) return null;
+    var n = 0;
+    for (var i = 0; i < u.lessons.length; i++) { if (!u.lessons[i].tag) n++; if (u.lessons[i] === l) break; }
+    return n;
+  }
+  function lessonName(u, l) { return l.tag || "Lesson " + lessonNo(u, l); }
   function lessonDone(l) { return !!(REC.lessons[lessonKey(l)] || {}).done; }
   function unitMastery(u) {
     if (!u.skills.length) return 0;
@@ -1118,7 +1128,7 @@ window.OPLO_LAB = (function () {
     var nextLesson = u.lessons.filter(function (l) { return !lessonDone(l); })[0];
     var weakest = u.skills.slice().sort(function (a, b) { return level(a.id) - level(b.id); })[0];
     var openQuiz = u.quizzes.filter(function (q) { return !REC.tests[q.unit + ":q" + q.k] && u.lessons.slice(0, q.after).every(lessonDone); })[0];
-    var next = nextLesson ? { k: "Lesson " + nextLesson.k, t: nextLesson.title, d: nextLesson.blurb, go: function () { ctx.go.lesson(nextLesson.k); } }
+    var next = nextLesson ? { k: lessonName(u, nextLesson), t: nextLesson.title, d: nextLesson.blurb, go: function () { ctx.go.lesson(nextLesson.k); } }
       : openQuiz ? { k: openQuiz.title, t: "Check what's stuck so far", d: openQuiz.skills.length + " skills, " + openQuiz.skills.length * (openQuiz.per || 2) + " questions.", go: function () { ctx.go.quiz(openQuiz.k); } }
       : weakest && level(weakest.id) < 3 ? { k: "Practice", t: stripMath(weakest.title), d: "Your weakest skill in this unit — " + LEVELS[level(weakest.id)].toLowerCase() + ".", go: function () { ctx.go.practice(weakest.id); } }
       : { k: "Unit test", t: "Show what you know", d: "One problem from every skill. Right answers take skills to Mastered.", go: function () { ctx.go.test(); } };
@@ -1136,7 +1146,7 @@ window.OPLO_LAB = (function () {
       var done = lessonDone(l), cur = l === nextLesson;
       var li = el("li", "lb-node" + (done ? " done" : "") + (cur ? " cur" : "") + (l.kind === "read" ? " read" : ""));
       var b = button("lb-lesson",
-        '<span class="lb-dot">' + (done ? svg(ICON.check) : '<span>' + (i + 1) + "</span>") + "</span>" +
+        '<span class="lb-dot">' + (done ? svg(ICON.check) : '<span>' + (l.tag ? esc(l.tag.charAt(0)) : lessonNo(u, l)) + "</span>") + "</span>" +
         '<span class="lb-ltxt"><b>' + esc(l.title) + "</b><span>" + esc(l.blurb || "") + "</span>" +
         '<em>' + (mixed ? (l.kind === "read" ? '<i class="lb-kind read">' + svg(ICON.book) + "Reading</i> · " : '<i class="lb-kind">Interactive</i> · ') : "") +
         (l.steps.length) + " steps · about " + (l.mins || Math.max(4, Math.round(l.steps.length * 0.9))) + " min" +
@@ -1221,7 +1231,7 @@ window.OPLO_LAB = (function () {
   function unitSeq(u) {
     var seq = [];
     u.lessons.forEach(function (l) {
-      seq.push({ kind: "lesson", k: l.k, title: l.title, label: u.n + "." + l.k, done: lessonDone(l), read: l.kind === "read" });
+      seq.push({ kind: "lesson", k: l.k, title: l.title, label: l.tag || u.n + "." + lessonNo(u, l), done: lessonDone(l), read: l.kind === "read" });
       u.quizzes.filter(function (q) { return q.after === l.k; }).forEach(function (q) {
         seq.push({ kind: "quiz", k: q.k, title: q.title, label: q.title, done: !!REC.tests[q.unit + ":q" + q.k] });
       });
@@ -1443,7 +1453,7 @@ window.OPLO_LAB = (function () {
     var l = u.lessons[k - 1];
     if (!l) return null;
     return {
-      eyebrow: "Lesson " + k + " · Unit " + u.n,
+      eyebrow: lessonName(u, l) + " · Unit " + u.n,
       title: l.title,
       endTitle: "Lesson complete.",
       steps: l.steps.map(function (s, i) {

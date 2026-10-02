@@ -56,6 +56,7 @@
   /* ============================================================ 0 · Ready? */
   LESSONS.push({
     title: "Are you ready? Three quick checks",
+    tag: "Ready?",
     blurb: "Book: Unit 1 Readiness · Solve an equation, sort equations by how many solutions they have, and find points on a graph.",
     mins: 9, v: 3,
     steps: [
@@ -1576,6 +1577,7 @@
   }
   LESSONS.push({
     title: "Project: Slopes and intercepts",
+    tag: "Project",
     blurb: "Book Project 1 · Read graphs, match them to equations, and write the story a line tells. You finish with something you made.",
     mins: 20, v: 3,
     steps: [

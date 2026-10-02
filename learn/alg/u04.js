@@ -1,7 +1,7 @@
 /* ==========================================================================
    Algebra I — Unit 4: Functions. See lab/core.js for the format.
 
-   Follows OpenStax Algebra 1, Unit 4, lesson for lesson — 4.1 to 4.18 and
+   Follows OpenStax Algebra 1, Unit 4, lesson for lesson — the readiness check, 4.1 to 4.18 and
    Project 4. Written to the recipe in docs/OEDU_BRILLIANT_CONCEPT.md and the
    five rules at the top of alg/u02.js: teach, learn by doing, super
    interactive, nothing clumsy, never too much.
@@ -14,7 +14,7 @@
    Adapted from OpenStax, Algebra 1 (Rice University), CC BY-NC-SA 4.0. The
    questions, figures, feedback and every step here are OEdu's own.
 
-   Nineteen lessons, sixteen skills, four quizzes, and the unit test.
+   Twenty lessons, sixteen skills, four quizzes, and the unit test.
    Standards: CCSS HSF.IF.A.1–3, HSF.IF.B.4–6, HSF.IF.C.7, HSF.BF.A.1–2, HSF.BF.B.3.
    ========================================================================== */
 (function () {
@@ -66,6 +66,36 @@
   function big(ans) { return { v: ans / 1000, tol: 1e-9, fb: "Type it without a comma: " + ans + "." }; }
 
   var LESSONS = [];
+  /* ============================================================ Ready? */
+  LESSONS.push({
+    title: "Are you ready? Three quick checks",
+    tag: "Ready?",
+    blurb: "Book: Unit 4 Readiness · Find a slope, read a story from a graph, and continue a pattern.",
+    mins: 6, v: 2,
+    steps: [
+      { type: "num", kicker: "Check 1 · Slope", prompt: "What is the slope of this line?",
+        scene: { type: "plane", x: [-1, 6], y: [-1, 10], fns: [{ f: "3*x - 1", color: "blue" }], marks: [{ x: 1, y: 2, color: "orange", label: "(1, 2)" }, { x: 3, y: 8, color: "orange", label: "(3, 8)" }] },
+        answer: 3, skill: "Slope", near: [{ v: 6, fb: "That's the rise. Divide by the run, 2." }, { v: 0.333, tol: 0.01, fb: "That's run over rise. Slope is rise over run." }],
+        hints: ["From $(1, 2)$ to $(3, 8)$: rise 6, run 2."], why: "$\\frac{8 - 2}{3 - 1} = 3$." },
+      { type: "num", prompt: "And the slope of the line through $(-2, 5)$ and $(2, -3)$?", answer: -2, skill: "Slope",
+        near: [{ v: 2, fb: "The line falls from 5 to $-3$: the slope is negative." }, { v: -0.5, fb: "Rise over run: $\\frac{-8}{4}$." }], hints: ["Rise: $-3 - 5$. Run: $2 - (-2)$."], why: "$\\frac{-8}{4} = -2$." },
+      { type: "choice", kicker: "Check 2 · Graphs", prompt: "The graph shows a bike ride: distance from home over time. What happens in the middle section?",
+        scene: { type: "plane", x: [0, 10], y: [0, 8], axisLabels: ["min", "km"], fns: [{ f: pw([[0, 0], [3, 5], [6, 5], [9, 0]]), color: "blue" }] },
+        options: [{ t: "The rider stops for 3 minutes, 5 km from home." }, { t: "The rider rides at 5 km per minute.", fb: "A flat line means the distance isn't changing." }, { t: "The rider climbs a hill.", fb: "The graph shows distance from home, not height." }],
+        answer: 0, skill: "Read a graph", hints: ["A flat line: is the distance changing?"], why: "From 3 to 6 minutes the distance stays at 5 km: a stop." },
+      { type: "choice", prompt: "And the last section, from 6 to 9 minutes?",
+        scene: { type: "plane", x: [0, 10], y: [0, 8], axisLabels: ["min", "km"], fns: [{ f: pw([[0, 0], [3, 5], [6, 5], [9, 0]]), color: "blue" }] },
+        options: [{ t: "The rider goes back home." }, { t: "The rider keeps going away from home.", fb: "The distance from home is falling, to 0." }, { t: "The rider slows down.", fb: "The line is as steep as the first section: same speed, opposite direction." }],
+        answer: 0, skill: "Read a graph", hints: ["What happens to the distance from home?"], why: "The distance falls back to 0: home again." },
+      { type: "num", kicker: "Check 3 · Patterns", prompt: "What comes next? $$4, \; 9, \; 14, \; 19, \; \\ldots$$", answer: 24, skill: "Patterns",
+        hints: ["What is added each time?"], why: "Add 5 each time: $19 + 5 = 24$." },
+      { type: "num", prompt: "And here? $$3, \; 6, \; 12, \; 24, \; \\ldots$$", answer: 48, skill: "Patterns",
+        near: [{ v: 36, fb: "The gaps are 3, 6, 12: they double too. Each term is *twice* the last." }, { v: 27, fb: "It isn't adding 3. Each term doubles." }], hints: ["Compare each number with the one before."], why: "Each term doubles: $24 \\times 2 = 48$." },
+      { type: "learn", kicker: "So, where to start?",
+        prompt: "All right first time? Go straight to **Lesson 4.1**. If **check 1** slipped, Unit 1's lesson 1.12 covers the slope formula. **Check 2** returns in 4.6 and 4.9, and **check 3** in 4.14, so this unit will rebuild them as it goes.",
+        after: "Nothing is locked. Open any lesson whenever you like." }
+    ]
+  });
   var WALK = pw([[0, 0], [2, 4], [3, 4], [6, 6], [9, 0]]);
   var DRONE = pw([[0, 0], [2, 6], [5, 6], [8, 0]]);
   var TEMP = pw([[0, 4], [2, 8], [4, 12], [6, 14], [8, 12], [10, 8], [12, 4]]);
@@ -75,7 +105,7 @@
   LESSONS.push({
     title: "Describing and graphing situations",
     blurb: "Book 4.1 · A function gives exactly one output for each input.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "sort", kicker: "Try it", prompt: "For each rule, does every input have **exactly one** output?",
         bins: ["Exactly one output", "Could be more than one"],
@@ -120,7 +150,7 @@
   LESSONS.push({
     title: "Function notation",
     blurb: "Book 4.2 · f(3) = 7 says: put in 3, get out 7.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "learn", kicker: "Try it", prompt: "This function has a name: $f$. Put some inputs through it.",
         scene: { type: "machine", rule: "3x - 2", name: "f", inputs: [1, 2, 5], gate: true },
@@ -160,7 +190,7 @@
   LESSONS.push({
     title: "Interpreting using function notation",
     blurb: "Book 4.3 · Compare outputs, and turn sentences into statements about f.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "$T(h)$ is the temperature in °C, $h$ hours after 6 a.m. Which is greater?",
         scene: graph([0, 13], [0, 16], [{ f: TEMP, color: "orange" }], { axisLabels: ["h", "T"] }),
@@ -201,7 +231,7 @@
   LESSONS.push({
     title: "Using function notation to describe rules, part 1",
     blurb: "Book 4.4 · A rule tells you what to do with the input. A table can give the rule away.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "table", kicker: "Try it", prompt: "The rule is $f(x) = 2x + 3$. Fill in the outputs.",
         head: ["$x$", "$f(x)$"], rows: [[0, null], [1, null], [5, null], [10, 23]], answers: [[0, 1, 3], [1, 1, 5], [2, 1, 13]], skill: "Evaluate a function",
@@ -236,7 +266,7 @@
   LESSONS.push({
     title: "Using function notation to describe rules, part 2",
     blurb: "Book 4.5 · Evaluating finds the output. Solving finds the input. And a test for which graphs are functions.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "For $f(x) = 2x + 3$, find the input that gives an output of 11: solve $f(x) = 11$.", pre: "$x =$", answer: 4, skill: "Solve f(x) = c",
         near: [{ v: 25, fb: "That's $f(11)$: you put 11 *in*. Here 11 is what comes *out*." }, { v: 7, fb: "Subtract 3 before halving: $2x = 8$." }],
@@ -282,7 +312,7 @@
   LESSONS.push({
     title: "Features of graphs",
     blurb: "Book 4.6 · Intercepts, highs and lows, and where a graph rises or falls.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "$E(t)$ is a hiker's height above the car park, in hundreds of metres, $t$ hours into a walk. Click the **highest point** of the walk.",
         x: [0, 11], y: [0, 9], axisLabels: ["t", "E"], click: "point", answer: { point: [6, 8] }, skill: "Features of a graph",
@@ -322,7 +352,7 @@
   LESSONS.push({
     title: "Finding slope",
     blurb: "Book 4.7 · Slope from a table, a graph or two points: change in output over change in input.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "This table is from a linear function. What is its slope?" + tbl(["$x$", "$y$"], [[1, 4], [3, 10], [5, 16]]),
         answer: 3, skill: "Slope",
@@ -356,7 +386,7 @@
   LESSONS.push({
     title: "Using graphs to find average rate of change",
     blurb: "Book 4.8 · On a curve the steepness keeps changing. Between two points, you can still average it.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "$d(t)$ is how far a cyclist has gone, in km, after $t$ hours. $d(1) = 12$ and $d(4) = 54$. What was her **average speed** between those times?",
         post: "km per hour", answer: 14, skill: "Average rate of change",
@@ -392,7 +422,7 @@
   LESSONS.push({
     title: "Interpreting and creating graphs",
     blurb: "Book 4.9 · A graph tells a story. Read one, then draw one.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "This graph shows Maya's **distance from home** over time. Which story fits?",
         scene: graph([0, 10], [0, 8], [{ f: pw([[0, 0], [2, 4], [3, 4], [6, 6], [9, 0]]), color: "blue" }], { axisLabels: ["min", "blocks"] }),
@@ -433,7 +463,7 @@
   LESSONS.push({
     title: "Comparing graphs",
     blurb: "Book 4.10 · Two functions on one set of axes: where they are equal, and which is greater.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "Two water tanks. $A(t)$ and $B(t)$ are their depths in cm after $t$ minutes. At what time is $A(t) = B(t)$?",
         scene: graph([0, 9], [0, 9], [{ f: TANKA, color: "blue", label: "A", labelAt: 1 }, { f: TANKB, color: "green", label: "B", labelAt: 7 }], { axisLabels: ["t", "cm"] }),
@@ -466,7 +496,7 @@
   LESSONS.push({
     title: "Graphing a function using transformations",
     blurb: "Book 4.11 · Shift a graph up, down or sideways. Stretch it or squash it.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "The dashed line is $f(x) = x$. Slide $k$ to make $g(x) = f(x) + k$ pass through the orange point.",
         x: [-6, 6], y: [-6, 6], params: { k: { v: 0, min: -5, max: 5, step: 1, label: "$k$" } },
@@ -515,7 +545,7 @@
   LESSONS.push({
     title: "Domain and range, part 1",
     blurb: "Book 4.12 · The inputs that make sense, and the outputs they produce.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "sort", kicker: "Try it", prompt: "$C(n) = 9n$ is the cost of $n$ cinema tickets. Which inputs make sense?",
         bins: ["Makes sense", "Doesn't make sense"],
@@ -544,7 +574,7 @@
   LESSONS.push({
     title: "Domain and range, part 2",
     blurb: "Book 4.13 · Read the domain along the horizontal axis and the range along the vertical one.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "numberline", kicker: "Try it", prompt: "Here is the whole graph of a function. Show its **domain**: every $x$ the graph uses.",
         scene: graph([-4, 8], [-1, 7], [{ f: BEND, color: "blue" }], { marks: [{ x: -2, y: 1, color: "blue" }, { x: 6, y: 3, color: "blue" }] }),
@@ -577,7 +607,7 @@
   LESSONS.push({
     title: "Sequences",
     blurb: "Book 4.14 · A list of numbers in order, and the rule that makes the next one.",
-    mins: 6, v: 1,
+    mins: 6, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "What comes next?$$3, \\; 7, \\; 11, \\; 15, \\; \\ldots$$", answer: 19, skill: "Sequences",
         hints: ["How do you get from each number to the next?"], why: "Each number is 4 more than the one before: $15 + 4 = 19$." },
@@ -608,7 +638,7 @@
   LESSONS.push({
     title: "Introducing geometric sequences",
     blurb: "Book 4.15 · Multiply by the same number every time: the common ratio.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "Fold a sheet of paper in half and it is 2 layers thick. Fold again: 4. Again: 8. How many layers after **6 folds**?", answer: 64, skill: "Geometric sequences",
         near: [{ v: 12, fb: "The layers don't go up by 2. They *double*: 2, 4, 8, 16, …" }, { v: 32, fb: "That's 5 folds." }],
@@ -640,7 +670,7 @@
   LESSONS.push({
     title: "Introducing arithmetic sequences",
     blurb: "Book 4.16 · Add the same number every time: the common difference. And a sequence is a function.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A theatre has 12 seats in row 1. Each row has **3 more** seats than the row in front. How many seats in row 5?", answer: 24, skill: "Arithmetic sequences",
         near: [{ v: 27, fb: "That's row 6. Row 1 has 12, so you add 3 only four times." }, { v: 60, fb: "The rows grow by adding 3, not by multiplying." }],
@@ -671,7 +701,7 @@
   LESSONS.push({
     title: "Representing sequences",
     blurb: "Book 4.17 · A recursive definition: where to start, and how to get the next term from the last.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A sequence is defined like this:$$f(1) = 4, \\qquad f(n) = f(n - 1) + 5$$The second line says: each term is the previous term plus 5. What is $f(2)$?", pre: "$f(2) =$", answer: 9, skill: "Recursive definitions",
         near: [{ v: 10, fb: "$f(2)$ isn't $2 \\times 5$. It is the term before it, $f(1) = 4$, plus 5." }, { v: 6, fb: "Take the previous term, 4, and add 5." }],
@@ -701,7 +731,7 @@
   LESSONS.push({
     title: "The nth term of a sequence",
     blurb: "Book 4.18 · A formula that jumps straight to any term, without listing the ones before.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "The sequence $5, 8, 11, 14, \\ldots$ adds 3 each time. What is the **50th** term? (Don't write out 50 terms.)", answer: 152, skill: "nth term",
         near: [{ v: 155, fb: "To reach the 50th term from the 1st you take 49 steps, not 50." }, { v: 150, fb: "$3 \\times 50$ forgets where the sequence starts. Begin at 5 and take 49 steps of 3." }],
@@ -740,8 +770,9 @@
   /* ============================================ Project 4 */
   LESSONS.push({
     title: "Project: Using functions to model battery power",
+    tag: "Project",
     blurb: "Book Project 4 · Model a phone's charge as a function of time, and use everything in the unit to read it.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "learn", kicker: "The brief",
         prompt: "A phone starts the day at **100%**. For the first 6 hours it loses 10% an hour. Then it is plugged in for 2 hours and gains 15% an hour. $B(t)$ is the charge, in percent, $t$ hours into the day." },
@@ -768,7 +799,7 @@
   function list(arr) { return "$" + arr.join(", \\; ") + ", \\; \\ldots$"; }
 
   var SKILLS = [
-    { id: "u4-isfn", title: "Is the table a function?", lesson: 1,
+    { id: "u4-isfn", title: "Is the table a function?", lesson: 2,
       gen: function (R) {
         var xs = R.distinct(4, 1, 9).sort(function (a, b) { return a - b; }), ys = xs.map(function () { return R.int(1, 12); }), kind = R.int(0, 2), why;
         if (kind === 0) { xs[2] = xs[1]; if (ys[2] === ys[1]) ys[2] += 2; why = "The input " + xs[1] + " has two different outputs, " + ys[1] + " and " + ys[2] + "."; }
@@ -779,14 +810,14 @@
           right: ok ? "Yes" : "No", wrong: [{ t: ok ? "No" : "Yes", fb: why }], keep: true,
           hints: ["Look for an input that appears twice with different outputs."], why: why });
       } },
-    { id: "u4-eval", title: "Evaluate a function", lesson: 2,
+    { id: "u4-eval", title: "Evaluate a function", lesson: 3,
       gen: function (R) {
         var f = R.pick(FN), a = R.nz(-5, 6), b = R.int(-9, 9), k = R.int(-4, 6), sq = R.chance(0.35), body = sq ? poly([[1, "x^2"], [b, ""]]) : poly([[a, "x"], [b, ""]]), ans = sq ? k * k + b : a * k + b;
         return { type: "num", prompt: "For $" + f + "(x) = " + body + "$, find $" + f + "(" + k + ")$.", pre: "$" + f + "(" + k + ") =$", answer: ans,
           near: near(ans, sq ? [{ v: 2 * k + b, fb: "$x^2$ means $x$ times $x$, not $x$ times 2." }, { v: -k * k + b, fb: "A negative number squared is positive." }] : [{ v: a + k + b, fb: "$" + a + "x$ means " + a + " *times* $x$." }, { v: a * k, fb: "Don't forget the $" + signed(b) + "$." }]),
           hints: ["Replace every $x$ with $" + k + "$."], why: "$" + f + "(" + k + ") = " + L.sub(body, { x: k }) + " = " + ans + "$." };
       } },
-    { id: "u4-notation", title: "Read function notation", lesson: 3,
+    { id: "u4-notation", title: "Read function notation", lesson: 4,
       gen: function (R) {
         var S = R.pick([{ f: "h", i: "t", iw: "seconds", o: "the height of a ball, in metres", ov: "m high" }, { f: "C", i: "n", iw: "tickets", o: "the cost in dollars", ov: "dollars" },
                         { f: "T", i: "h", iw: "hours", o: "the temperature in °C", ov: "°C" }, { f: "P", i: "d", iw: "days", o: "the number of plants sold", ov: "plants" }]);
@@ -797,7 +828,7 @@
                   { t: "$" + S.f + "$ multiplied by " + a + " is " + b + ".", fb: "$" + S.f + "(" + a + ")$ means “$" + S.f + "$ of " + a + "”: the output for input " + a + "." }],
           hints: ["Inside the brackets is the input."], why: "$" + S.f + "(\\text{input}) = \\text{output}$: input " + a + " " + S.iw + ", output " + b + "." });
       } },
-    { id: "u4-rule", title: "Write a rule from a table", lesson: 4,
+    { id: "u4-rule", title: "Write a rule from a table", lesson: 5,
       gen: function (R) {
         var f = R.pick(FN), m = R.nz(-4, 6), b = R.int(-6, 9), ans = clean(poly([[m, "x"], [b, ""]]));
         return { type: "expr", prompt: "Write a rule for $" + f + "(x)$." + tbl(["$x$", "$" + f + "(x)$"], [0, 1, 2, 3].map(function (x) { return [x, m * x + b]; })),
@@ -806,21 +837,21 @@
           hints: ["What is the output when $x = 0$?", "How much does the output change each time $x$ goes up by 1?"],
           why: "It starts at $" + b + "$ and changes by $" + m + "$ per step: $" + f + "(x) = " + poly([[m, "x"], [b, ""]]) + "$." };
       } },
-    { id: "u4-solve", title: "Solve f(x) = c", lesson: 5,
+    { id: "u4-solve", title: "Solve f(x) = c", lesson: 6,
       gen: function (R) {
         var f = R.pick(FN), a = R.nz(-5, 6), b = R.int(-9, 9), x0 = R.int(-5, 7), c = a * x0 + b, body = poly([[a, "x"], [b, ""]]);
         return { type: "num", prompt: "For $" + f + "(x) = " + body + "$, solve $" + f + "(x) = " + c + "$.", pre: "$x =$", answer: x0,
           near: near(x0, [{ v: a * c + b, fb: "That's $" + f + "(" + c + ")$. Here " + c + " is the *output*: find the input." }]),
           hints: ["Set $" + body + " = " + c + "$ and solve."], why: lines([body + " = " + c, poly([[a, "x"]]) + " = " + (c - b), "x = " + x0]) };
       } },
-    { id: "u4-features", title: "Find a feature of a graph", lesson: 6,
+    { id: "u4-features", title: "Find a feature of a graph", lesson: 7,
       gen: function (R) {
         var px = R.int(2, 5), py = R.int(5, 8), y0 = R.int(1, py - 2), end = px + R.int(2, 4), f = pw([[0, y0], [px, py], [end, 0]]), ask = R.int(0, 2);
         var Q = [["the **maximum**", [px, py], "The highest point of the graph."], ["the **horizontal intercept**", [end, 0], "Where the graph meets the horizontal axis."], ["the **vertical intercept**", [0, y0], "Where the graph meets the vertical axis."]][ask];
         return { type: "pair", prompt: "Give the coordinates of " + Q[0] + " of this graph.", scene: graph([0, 10], [0, 9], [{ f: f, color: "blue" }]), answer: Q[1],
           hints: [Q[2]], why: Q[2] + " It is at $(" + Q[1][0] + ", " + Q[1][1] + ")$." };
       } },
-    { id: "u4-slope", title: "Slope from two points", lesson: 7,
+    { id: "u4-slope", title: "Slope from two points", lesson: 8,
       gen: function (R) {
         var m = R.pick([-3, -2, -1, -0.5, 0.5, 1, 2, 3, 4]), x1 = R.int(-4, 3), run = R.pick([2, 4]), y1 = R.int(-5, 5), x2 = x1 + run, y2 = y1 + m * run;
         return { type: "num", prompt: "Find the slope of the line through $(" + x1 + ", " + y1 + ")$ and $(" + x2 + ", " + y2 + ")$.", answer: m,
@@ -828,7 +859,7 @@
           hints: ["Rise: $" + y2 + " - " + L.sub("a", { a: y1 }) + "$. Run: $" + x2 + " - " + L.sub("a", { a: x1 }) + "$."],
           why: "$m = \\frac{" + (y2 - y1) + "}{" + run + "} = " + nm(m) + "$." };
       } },
-    { id: "u4-aroc", title: "Average rate of change", lesson: 8,
+    { id: "u4-aroc", title: "Average rate of change", lesson: 9,
       gen: function (R) {
         var a = R.int(0, 3), b = a + R.int(2, 4);
         if (R.chance(0.5)) {
@@ -842,7 +873,7 @@
           near: near(rate, [{ v: vb - va, fb: "That's the total change. Divide by the " + (b - a) + " minutes." }, { v: -rate, fb: "Is the amount going up or down?" }]),
           hints: ["Change in litres ÷ change in minutes."], why: "$\\frac{" + vb + " - " + va + "}{" + b + " - " + a + "} = " + rate + "$ litres per minute." };
       } },
-    { id: "u4-shift", title: "Describe a transformation", lesson: 11,
+    { id: "u4-shift", title: "Describe a transformation", lesson: 12,
       gen: function (R) {
         var k = R.int(2, 6), T = R.pick([
           ["f(x) + " + k, "up " + k], ["f(x) - " + k, "down " + k], ["f(x - " + k + ")", "right " + k], ["f(x + " + k + ")", "left " + k]]);
@@ -852,7 +883,7 @@
           keep: true, hints: ["Is the number added to the input (inside) or the output (outside)?"],
           why: inside ? "Inside the brackets: a horizontal shift, opposite to the sign. $" + T[0] + "$ moves " + T[1] + "." : "Outside the brackets: a vertical shift. $" + T[0] + "$ moves " + T[1] + "." });
       } },
-    { id: "u4-domain", title: "Domain and range from a graph", lesson: 13,
+    { id: "u4-domain", title: "Domain and range from a graph", lesson: 14,
       gen: function (R) {
         var x1 = R.int(-4, -1), x2 = R.int(3, 6), lo = R.int(-2, 1), hi = R.int(4, 7), mid = R.int(x1 + 1, x2 - 1), up = R.chance(0.5);
         var f = pw([[x1, up ? lo : hi], [mid, up ? hi : lo], [x2, up ? lo + 1 : hi - 1]]), dom = R.chance(0.5);
@@ -865,14 +896,14 @@
           hints: [dom ? "How far left and right does the graph go?" : "How low and how high does the graph go?"],
           why: dom ? "The graph runs from $x = " + x1 + "$ to $x = " + x2 + "$." : "The lowest point is at $y = " + lo + "$ and the highest at $y = " + hi + "$." });
       } },
-    { id: "u4-seq-next", title: "Continue a sequence", lesson: 14,
+    { id: "u4-seq-next", title: "Continue a sequence", lesson: 15,
       gen: function (R) {
         var geo = R.chance(0.45), a = geo ? R.int(1, 5) : R.int(-10, 20), s = geo ? R.pick([2, 3, 4]) : R.nz(-7, 9), t = seq(a, s, 5, geo);
         return { type: "num", prompt: "What is the next term? " + list(t.slice(0, 4)), answer: t[4],
           near: near(t[4], geo ? [{ v: t[3] + (t[3] - t[2]), fb: "The gaps aren't equal. Each term is the last one multiplied by something." }] : []),
           hints: [geo ? "Divide a term by the one before it." : "Subtract a term from the one after it."], why: (geo ? "Multiply by " + s : "Add $" + s + "$") + " each time: the next term is $" + t[4] + "$." };
       } },
-    { id: "u4-ratio", title: "Common ratio and common difference", lesson: 15,
+    { id: "u4-ratio", title: "Common ratio and common difference", lesson: 16,
       gen: function (R) {
         var geo = R.chance(0.5), a, s, t;
         if (geo) { s = R.pick([2, 3, 5, 0.5]); a = s === 0.5 ? R.pick([48, 64, 80, 96]) : R.int(1, 6); t = seq(a, s, 4, true); }
@@ -882,7 +913,7 @@
           hints: [geo ? "Divide any term by the term before it." : "Subtract any term from the one after it."],
           why: geo ? "$" + t[1] + " \\div " + t[0] + " = " + nm(s) + "$." : "$" + t[1] + " - " + L.sub("a", { a: t[0] }) + " = " + s + "$." };
       } },
-    { id: "u4-classify", title: "Arithmetic, geometric or neither", lesson: 16,
+    { id: "u4-classify", title: "Arithmetic, geometric or neither", lesson: 17,
       gen: function (R) {
         var kind = R.int(0, 2), t, why, names = ["Arithmetic", "Geometric", "Neither"];
         if (kind === 0) { var d = R.nz(-8, 9); t = seq(R.int(-5, 20), d, 4, false); why = "The same amount, $" + d + "$, is added each time."; }
@@ -892,7 +923,7 @@
           wrong: names.filter(function (n, i) { return i !== kind; }).map(function (n) { return { t: n, fb: why }; }), keep: true,
           hints: ["Check the differences. Then check the ratios."], why: why });
       } },
-    { id: "u4-recursive", title: "Use a recursive definition", lesson: 17,
+    { id: "u4-recursive", title: "Use a recursive definition", lesson: 18,
       gen: function (R) {
         var geo = R.chance(0.4), a = geo ? R.int(1, 5) : R.int(-6, 15), s = geo ? R.pick([2, 3]) : R.nz(-6, 8), k = geo ? R.int(3, 5) : R.int(3, 6), t = seq(a, s, k, geo);
         var rule = geo ? "f(n) = " + s + " \\cdot f(n - 1)" : "f(n) = f(n - 1) " + signed(s);
@@ -900,7 +931,7 @@
           near: near(t[k - 1], [{ v: geo ? t[k - 1] * s : t[k - 1] + s, fb: "That's one step too far: $f(1)$ is already the first term." }]),
           hints: ["Build the terms one at a time, starting from $f(1) = " + a + "$."], why: "The terms are " + list(t).replace(", \\; \\ldots", "") + ", so $f(" + k + ") = " + t[k - 1] + "$." };
       } },
-    { id: "u4-nth", title: "Find a far-off term", lesson: 18,
+    { id: "u4-nth", title: "Find a far-off term", lesson: 19,
       gen: function (R) {
         if (R.chance(0.6)) {
           var a = R.int(-8, 20), d = R.nz(-6, 9), n = R.pick([20, 25, 30, 40, 50, 100]), ans = a + d * (n - 1);
@@ -913,7 +944,7 @@
           near: [{ v: ans2 * r, fb: "From term 1 to term " + n2 + " is " + (n2 - 1) + " multiplications." }],
           hints: ["$f(n) = f(1) \\cdot r^{\\,n - 1}$."], why: "$" + a2 + " \\cdot " + r + "^{" + (n2 - 1) + "} = " + ans2 + "$." };
       } },
-    { id: "u4-nth-formula", title: "Write the nth term", lesson: 18,
+    { id: "u4-nth-formula", title: "Write the nth term", lesson: 19,
       gen: function (R) {
         var a = R.int(-6, 15), d = R.nz(-6, 9), shown = a + " " + signed(d) + "(n - 1)";
         return { type: "expr", prompt: "Write a formula for the $n$th term of " + list(seq(a, d, 4, false)), answer: a + "+(" + d + ")*(n-1)", shown: shown,
@@ -926,13 +957,13 @@
     title: "Functions",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 5, blurb: "What a function is, its notation, rules, and solving for an input.",
+      { title: "Quiz 1", after: 6, blurb: "What a function is, its notation, rules, and solving for an input.",
         skills: ["u4-isfn", "u4-eval", "u4-notation", "u4-rule", "u4-solve"], per: 2 },
-      { title: "Quiz 2", after: 10, blurb: "Features of graphs, slope, and average rate of change.",
+      { title: "Quiz 2", after: 11, blurb: "Features of graphs, slope, and average rate of change.",
         skills: ["u4-features", "u4-slope", "u4-aroc"], per: 2 },
-      { title: "Quiz 3", after: 13, blurb: "Shifting graphs, and domain and range.",
+      { title: "Quiz 3", after: 14, blurb: "Shifting graphs, and domain and range.",
         skills: ["u4-shift", "u4-domain"], per: 3 },
-      { title: "Quiz 4", after: 18, blurb: "Sequences: arithmetic and geometric, recursive and explicit.",
+      { title: "Quiz 4", after: 19, blurb: "Sequences: arithmetic and geometric, recursive and explicit.",
         skills: ["u4-seq-next", "u4-ratio", "u4-classify", "u4-recursive", "u4-nth", "u4-nth-formula"], per: 2 }
     ],
     skills: SKILLS

@@ -2,7 +2,7 @@
    Algebra I — Unit 6: Working with polynomials. See lab/core.js for the
    format.
 
-   Follows OpenStax Algebra 1, Unit 6, lesson for lesson — the area-model
+   Follows OpenStax Algebra 1, Unit 6, lesson for lesson — the readiness check, the area-model
    inquiry (folded into 6.2), lessons 6.1 to 6.7, and Project 6. Written to
    the recipe in docs/OEDU_BRILLIANT_CONCEPT.md and the five rules at the top
    of alg/u02.js: teach, learn by doing, super interactive, nothing clumsy,
@@ -15,7 +15,7 @@
    Adapted from OpenStax, Algebra 1 (Rice University), CC BY-NC-SA 4.0. The
    questions, figures, feedback and every step here are OEdu's own.
 
-   Eight lessons, eleven skills, two quizzes, and the unit test.
+   Nine lessons, eleven skills, two quizzes, and the unit test.
    Standards: CCSS HSA.APR.A.1, HSA.APR.B.2, HSA.SSE.A.2, HSA.SSE.B.3a.
    ========================================================================== */
 (function () {
@@ -67,13 +67,38 @@
   function big(ans) { return { v: ans / 1000, tol: 1e-9, fb: "Type it without a comma: " + ans + "." }; }
 
   var LESSONS = [];
+  /* ============================================================ Ready? */
+  LESSONS.push({
+    title: "Are you ready? Three quick checks",
+    tag: "Ready?",
+    blurb: "Book: Unit 6 Readiness · Use the exponent rules, distribute, and find a greatest common factor.",
+    mins: 6, v: 2,
+    steps: [
+      { type: "num", kicker: "Check 1 · Exponents", prompt: "$x^3 \\cdot x^5 = x^{\\square}$. What goes in the box?", answer: 8, skill: "Exponent rules",
+        near: [{ v: 15, fb: "Multiplying powers *adds* the exponents." }], hints: ["Count the $x$'s: three, then five more."], why: "$3 + 5 = 8$." },
+      { type: "num", prompt: "$\\frac{x^9}{x^3} = x^{\\square}$.", answer: 6, skill: "Exponent rules",
+        near: [{ v: 3, fb: "Dividing powers *subtracts* the exponents: $9 - 3$." }, { v: 12, fb: "Dividing removes factors: subtract." }], hints: ["Three of the nine $x$'s cancel."], why: "$9 - 3 = 6$." },
+      { type: "expr", kicker: "Check 2 · Distributing", prompt: "Multiply out $3(2x - 5)$.", answer: "6x-15", shown: "6x - 15", form: "simplified", skill: "Distributive property",
+        keys: [["$x$", "x"], ["$+$", "+"], ["$-$", "-"]], near: [{ v: "6x-5", fb: "The 3 multiplies the 5 as well." }], hints: ["$3 \\cdot 2x$ and $3 \\cdot (-5)$."], why: "$6x - 15$." },
+      { type: "expr", prompt: "Simplify $-2(x + 4) + 3x$.", answer: "x-8", shown: "x - 8", form: "simplified", skill: "Distributive property",
+        keys: [["$x$", "x"], ["$+$", "+"], ["$-$", "-"]], near: [{ v: "x+8", fb: "$-2 \\cdot 4 = -8$." }, { v: "5x-8", fb: "$-2x + 3x = x$." }], hints: ["$-2(x + 4) = -2x - 8$. Then combine the $x$ terms."], why: "$-2x - 8 + 3x = x - 8$." },
+      { type: "num", kicker: "Check 3 · Common factors", prompt: "What is the greatest common factor of 18 and 24?", answer: 6, skill: "Greatest common factor",
+        near: [{ v: 3, fb: "3 divides both, but so does a bigger number." }, { v: 2, fb: "2 divides both, but there's a larger one." }, { v: 72, fb: "72 is a common *multiple*. A factor divides into both." }],
+        hints: ["List the factors of 18: 1, 2, 3, 6, 9, 18."], why: "6 divides both, and nothing larger does." },
+      { type: "num", prompt: "And of 16 and 40?", answer: 8, skill: "Greatest common factor",
+        near: [{ v: 4, fb: "4 works, but a larger number does too." }], hints: ["Factors of 16: 1, 2, 4, 8, 16. Which is the largest that divides 40?"], why: "$16 = 8 \\times 2$ and $40 = 8 \\times 5$." },
+      { type: "learn", kicker: "So, where to start?",
+        prompt: "All right first time? Go straight to **Lesson 6.1**. If **check 1** slipped, Unit 5's lesson 5.1 rebuilds the exponent rules. **Check 2** comes back in 6.1 and 6.2, and **check 3** in 6.4, where the area model makes it visual.",
+        after: "Nothing is locked. Open any lesson whenever you like." }
+    ]
+  });
   var KEYS_POLY = [["$x$", "x"], ["$x^2$", "x^2"], ["$x^3$", "x^3"], ["$+$", "+"], ["$-$", "-"], ["$($", "("], ["$)$", ")"]];
 
   /* ============================================ 6.1 · Add and subtract polynomials */
   LESSONS.push({
     title: "Add and subtract polynomials",
     blurb: "Book 6.1 · Only like terms combine: x² with x², x with x, numbers with numbers.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "tilemat", kicker: "Try it", prompt: "Each tile is a term. A blue tile and a red tile **of the same kind** cancel. Tap pairs until nothing more cancels.",
         terms: [[2, "x"], [3, "1"], [-1, "x"], [-2, "1"]], skill: "Like terms",
@@ -104,7 +129,7 @@
   LESSONS.push({
     title: "Multiplying polynomials",
     blurb: "Book 6.2 and the area-model inquiry · A product is the area of a rectangle. Every part of one side meets every part of the other.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "learn", kicker: "Try it", prompt: "A rectangle is $x + 3$ wide and $x + 2$ tall. Change the sides and watch what tiles fill it.",
         scene: { type: "tiles", mode: "multiply", p: 3, q: 2, adjust: true, min: 0, gate: true }, gate: true,
@@ -143,7 +168,7 @@
   LESSONS.push({
     title: "Dividing polynomials",
     blurb: "Book 6.3 · Division undoes multiplication. And a quick test tells you whether x − c divides exactly.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "expr", kicker: "Try it", prompt: "$3x$ times something makes $6x^3 + 9x^2$. What is the something?$$\\frac{6x^3 + 9x^2}{3x}$$", answer: "2x^2+3x", shown: "2x^2 + 3x", form: "simplified", skill: "Divide by a monomial",
         near: [{ v: "2x^2+9x^2", fb: "Divide *both* terms by $3x$, not just the first." }, { v: "2x^3+3x^2", fb: "Dividing by $x$ lowers each exponent by 1." }], keys: KEYS_POLY,
@@ -178,7 +203,7 @@
   LESSONS.push({
     title: "Greatest common factor and factor by grouping",
     blurb: "Book 6.4 · Factoring runs multiplication backwards. Start with what every term shares.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "What is the largest number that divides both 12 and 18?", answer: 6, skill: "Greatest common factor",
         near: [{ v: 3, fb: "3 divides both, but so does a bigger number." }, { v: 2, fb: "2 works, but there's a larger one." }, { v: 36, fb: "36 is a common *multiple*. A factor divides into the numbers." }],
@@ -214,7 +239,7 @@
   LESSONS.push({
     title: "Factor trinomials",
     blurb: "Book 6.5 · Find two numbers that multiply to the last term and add to the middle one.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "tiles", kicker: "Try it", prompt: "Arrange $x^2 + 7x + 12$ into a rectangle: choose $p$ and $q$ so the tiles match exactly.",
         mode: "factor", target: { b: 7, c: 12 }, p: 1, q: 1, min: 0, answer: [3, 4], skill: "Factor a trinomial",
@@ -245,7 +270,7 @@
   LESSONS.push({
     title: "Factor special products",
     blurb: "Book 6.6 · Recognise a perfect square and a difference of squares, and factor them on sight.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "tiles", kicker: "Try it", prompt: "Arrange $x^2 + 6x + 9$ into a rectangle. What do you notice about its shape?",
         mode: "factor", target: { b: 6, c: 9 }, p: 1, q: 1, min: 0, answer: [3, 3], skill: "Perfect square trinomials",
@@ -280,7 +305,7 @@
   LESSONS.push({
     title: "General strategy for factoring polynomials",
     blurb: "Book 6.7 · One checklist for any polynomial: common factor first, then count the terms.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "sort", kicker: "Try it", prompt: "Which method would you reach for **first**?",
         bins: ["Take out a GCF", "Difference of squares", "Trinomial: two numbers", "Grouping"],
@@ -306,8 +331,9 @@
   /* ============================================ Project 6 */
   LESSONS.push({
     title: "Project: Polynomials and rectangles",
+    tag: "Project",
     blurb: "Book Project 6 · Design a patio: from its sides to its area, and back again.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "learn", kicker: "The brief",
         prompt: "You're designing a rectangular patio. You don't yet know one measurement, so call it $x$ metres. The patio will be $x + 5$ long and $x + 3$ wide." },
@@ -329,7 +355,7 @@
   function bin(p) { return "(x " + signed(p) + ")"; }
 
   var SKILLS = [
-    { id: "u6-add", title: "Add and subtract polynomials", lesson: 1,
+    { id: "u6-add", title: "Add and subtract polynomials", lesson: 2,
       gen: function (R) {
         var a = R.int(1, 6), b = R.nz(-8, 8), c = R.nz(-9, 9), d = R.int(1, 5), e = R.nz(-8, 8), f = R.nz(-9, 9), sub = R.chance(0.5), s = sub ? -1 : 1;
         if (sub && a === d) a += 1;
@@ -339,14 +365,14 @@
           hints: [sub ? "Change the sign of every term in the second bracket, then combine like terms." : "Combine the $x^2$ terms, the $x$ terms and the numbers separately."],
           why: "$x^2$: $" + a + (sub ? " - " : " + ") + d + " = " + A + "$. &nbsp; $x$: $" + B + "$. &nbsp; Numbers: $" + C + "$. So $" + quad(A, B, C) + "$." };
       } },
-    { id: "u6-eval", title: "Evaluate a polynomial function", lesson: 1,
+    { id: "u6-eval", title: "Evaluate a polynomial function", lesson: 2,
       gen: function (R) {
         var a = R.pick([1, 1, 2, -1]), b = R.nz(-6, 6), c = R.int(-8, 8), k = R.nz(-4, 5), ans = a * k * k + b * k + c;
         return { type: "num", prompt: "For $P(x) = " + quad(a, b, c) + "$, find $P(" + k + ")$.", pre: "$P(" + k + ") =$", answer: ans,
           near: near(ans, [{ v: a * 2 * k + b * k + c, fb: "$x^2$ means $x \\cdot x$, not $2x$." }, { v: -a * k * k + b * k + c, fb: "Square first: $(" + k + ")^2 = " + k * k + "$." }]),
           hints: ["Replace each $x$ with $(" + k + ")$."], why: "$" + L.sub(quad(a, b, c), { x: k }) + " = " + ans + "$." };
       } },
-    { id: "u6-mono", title: "Multiply monomials", lesson: 2,
+    { id: "u6-mono", title: "Multiply monomials", lesson: 3,
       gen: function (R) {
         var c1 = R.nz(-6, 7), c2 = R.int(2, 6), a = R.int(1, 5), b = R.int(2, 5);
         function mono(c, e) { return (c === 1 ? "" : c === -1 ? "-" : c) + "x" + (e === 1 ? "" : "^" + e); }
@@ -354,21 +380,21 @@
           near: [{ v: c1 * c2 + "x^" + a * b, fb: "Multiplying powers *adds* the exponents." }, { v: (c1 + c2) + "x^" + (a + b), fb: "The coefficients are multiplied, not added." }],
           hints: ["Multiply the numbers. Add the exponents."], why: "$" + c1 + " \\cdot " + c2 + " = " + c1 * c2 + "$ and $x^{" + a + "} \\cdot x^{" + b + "} = x^{" + (a + b) + "}$." };
       } },
-    { id: "u6-foil", title: "Multiply two binomials", lesson: 2,
+    { id: "u6-foil", title: "Multiply two binomials", lesson: 3,
       gen: function (R) {
         var p = R.nz(-8, 8), q = R.nz(-8, 8);
         return { type: "expr", prompt: "Multiply. $$" + bin(p) + bin(q) + "$$", answer: clean(quad(1, p + q, p * q)), shown: quad(1, p + q, p * q), form: "simplified", keys: KEYS_POLY,
           near: [{ v: clean(quad(1, 0, p * q)), fb: "That's the first and last products only. Add the two middle ones: $" + q + "x$ and $" + p + "x$." }],
           hints: ["Four products: first, outer, inner, last."], why: "$x^2 " + signed(q) + "x " + signed(p) + "x " + signed(p * q) + " = " + quad(1, p + q, p * q) + "$." };
       } },
-    { id: "u6-special", title: "Special products", lesson: 2,
+    { id: "u6-special", title: "Special products", lesson: 3,
       gen: function (R) {
         var a = R.int(2, 9), kind = R.int(0, 2), tex = kind === 0 ? bin(a) + "^2" : kind === 1 ? bin(-a) + "^2" : bin(a) + bin(-a), ans = kind === 0 ? quad(1, 2 * a, a * a) : kind === 1 ? quad(1, -2 * a, a * a) : quad(1, 0, -a * a);
         return { type: "expr", prompt: "Expand. $$" + tex + "$$", answer: clean(ans), shown: ans, form: "simplified", keys: KEYS_POLY,
           near: kind < 2 ? [{ v: clean(quad(1, 0, a * a)), fb: "A squared binomial has a middle term: twice $" + a + "x$." }] : [{ v: clean(quad(1, 0, a * a)), fb: "The last product is $" + a + " \\times -" + a + "$, which is negative." }],
           hints: [kind < 2 ? "Write it as two brackets and multiply." : "The two middle products cancel."], why: "$" + tex + " = " + ans + "$." };
       } },
-    { id: "u6-factor-thm", title: "Test a factor", lesson: 3,
+    { id: "u6-factor-thm", title: "Test a factor", lesson: 4,
       gen: function (R) {
         var p = R.nz(-5, 5), q = R.nz(-5, 5), b = p + q, c = p * q, yes = R.chance(0.5), k = yes ? -p : -p + R.pick([-2, -1, 1, 2]);
         if (!yes && (k === -q || k === 0)) k = -p + 3;
@@ -378,7 +404,7 @@
         return mc(R, { prompt: "Is $" + bin(-k) + "$ a factor of $P(x) = " + quad(1, b, c) + "$?", right: isF ? "Yes" : "No", wrong: [{ t: isF ? "No" : "Yes", fb: say + (isF ? " Zero means it divides exactly." : " Not zero, so there's a remainder.") }], keep: true,
           hints: ["Work out $P(" + k + ")$: the value of $x$ that makes $" + bin(-k) + "$ equal zero."], why: say + (isF ? " So it is a factor." : " So it is not a factor.") });
       } },
-    { id: "u6-gcf", title: "Factor out the GCF", lesson: 4,
+    { id: "u6-gcf", title: "Factor out the GCF", lesson: 5,
       gen: function (R) {
         var g = R.int(2, 6), a = R.int(1, 5), b = R.nz(-7, 7);
         if (L.gcd(a, b) !== 1) a = Math.abs(b) + 1;
@@ -387,14 +413,14 @@
           near: [{ v: clean(poly([[a, "x^2"], [b, "x"]])), fb: "Divide by $" + g + "x$, not just by " + g + "." }],
           hints: ["Divide each term by $" + g + "x$."], why: "$" + g * a + "x^2 \\div " + g + "x = " + poly([[a, "x"]]) + "$ and $" + g * b + "x \\div " + g + "x = " + b + "$." };
       } },
-    { id: "u6-trinomial", title: "Factor x² + bx + c", lesson: 5,
+    { id: "u6-trinomial", title: "Factor x² + bx + c", lesson: 6,
       gen: function (R) {
         var p = R.nz(-8, 8), q = R.nz(-8, 8);
         if (p + q === 0) q += 1;
         return { type: "expr", prompt: "Factor. $$" + quad(1, p + q, p * q) + "$$", answer: "(x+(" + p + "))*(x+(" + q + "))", shown: bin(p) + bin(q), form: "factored", keys: KEYS_POLY,
           hints: ["Find two numbers that multiply to $" + p * q + "$ and add to $" + (p + q) + "$."], why: "$" + p + " \\times " + L.sub("a", { a: q }) + " = " + p * q + "$ and $" + p + " + " + L.sub("a", { a: q }) + " = " + (p + q) + "$: $" + bin(p) + bin(q) + "$." };
       } },
-    { id: "u6-ac", title: "Factor ax² + bx + c", lesson: 5,
+    { id: "u6-ac", title: "Factor ax² + bx + c", lesson: 6,
       gen: function (R) {
         var a = R.pick([2, 3, 5]), p = R.pick([1, 2, 3, 4, 5, 7].filter(function (v) { return v % a !== 0; })), q = R.int(1, 6);
         var b = a * q + p, c = p * q, shown = "(" + a + "x + " + p + ")(x + " + q + ")";
@@ -402,7 +428,7 @@
           hints: ["$a \\cdot c = " + a * c + "$. Find two numbers that multiply to " + a * c + " and add to " + b + ".", "Split the middle term: $" + a + "x^2 + " + a * q + "x + " + p + "x + " + c + "$, then group."],
           why: "$" + a + "x(x + " + q + ") + " + p + "(x + " + q + ") = " + shown + "$." };
       } },
-    { id: "u6-squares", title: "Factor special products", lesson: 6,
+    { id: "u6-squares", title: "Factor special products", lesson: 7,
       gen: function (R) {
         var a = R.int(2, 11), kind = R.int(0, 2);
         if (kind === 0) return { type: "expr", prompt: "Factor. $$x^2 - " + a * a + "$$", answer: "(x+" + a + ")*(x-" + a + ")", shown: bin(a) + bin(-a), form: "factored", keys: KEYS_POLY,
@@ -411,7 +437,7 @@
         return { type: "expr", prompt: "Factor. $$" + quad(1, 2 * a * s, a * a) + "$$", answer: "(x+(" + s * a + "))^2", shown: bin(s * a) + "^2", form: "factored", keys: KEYS_POLY.concat([["$(\;)^2$", "^2"]]),
           hints: ["$" + a * a + " = " + a + "^2$, and the middle term is twice $" + a + "x$."], why: "A perfect square trinomial: $" + bin(s * a) + "^2$." };
       } },
-    { id: "u6-method", title: "Choose a factoring method", lesson: 7,
+    { id: "u6-method", title: "Choose a factoring method", lesson: 8,
       gen: function (R) {
         var a = R.int(2, 9), b = R.int(2, 6), names = ["Take out a common factor", "Difference of squares", "Find two numbers (trinomial)", "Grouping"], kind = R.int(0, 3);
         var tex = [poly([[a * b, "x^2"], [a, "x"]]), "x^2 - " + a * a, quad(1, a + b, a * b), "x^3 + " + a + "x^2 + " + b + "x + " + a * b][kind];
@@ -424,9 +450,9 @@
     title: "Working with polynomials",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 3, blurb: "Adding, subtracting, multiplying and dividing polynomials.",
+      { title: "Quiz 1", after: 4, blurb: "Adding, subtracting, multiplying and dividing polynomials.",
         skills: ["u6-add", "u6-eval", "u6-mono", "u6-foil", "u6-special", "u6-factor-thm"], per: 2 },
-      { title: "Quiz 2", after: 7, blurb: "Factoring: common factors, trinomials, special products, and choosing a method.",
+      { title: "Quiz 2", after: 8, blurb: "Factoring: common factors, trinomials, special products, and choosing a method.",
         skills: ["u6-gcf", "u6-trinomial", "u6-ac", "u6-squares", "u6-method"], per: 2 }
     ],
     skills: SKILLS

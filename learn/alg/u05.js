@@ -2,7 +2,7 @@
    Algebra I — Unit 5: Introduction to exponential functions. See lab/core.js
    for the format.
 
-   Follows OpenStax Algebra 1, Unit 5, lesson for lesson — 5.1 to 5.15 and
+   Follows OpenStax Algebra 1, Unit 5, lesson for lesson — the readiness check, 5.1 to 5.15 and
    Project 5. Written to the recipe in docs/OEDU_BRILLIANT_CONCEPT.md and the
    five rules at the top of alg/u02.js: teach, learn by doing, super
    interactive, nothing clumsy, never too much.
@@ -15,7 +15,7 @@
    Adapted from OpenStax, Algebra 1 (Rice University), CC BY-NC-SA 4.0. The
    questions, figures, feedback and every step here are OEdu's own.
 
-   Sixteen lessons, fourteen skills, four quizzes, and the unit test.
+   Seventeen lessons, fourteen skills, four quizzes, and the unit test.
    Standards: CCSS HSN.RN.A.1–2, HSF.LE.A.1–3, HSF.LE.B.5, HSF.IF.C.7e, HSF.IF.C.8b, HSA.SSE.A.1.
    ========================================================================== */
 (function () {
@@ -67,6 +67,37 @@
   function big(ans) { return { v: ans / 1000, tol: 1e-9, fb: "Type it without a comma: " + ans + "." }; }
 
   var LESSONS = [];
+  /* ============================================================ Ready? */
+  LESSONS.push({
+    title: "Are you ready? Three quick checks",
+    tag: "Ready?",
+    blurb: "Book: Unit 5 Readiness · Write a line from its graph, read a linear function, and evaluate a power.",
+    mins: 6, v: 2,
+    steps: [
+      { type: "equation", kicker: "Check 1 · Lines from graphs", prompt: "Write the equation of this line.",
+        scene: { type: "plane", x: [-4, 5], y: [-3, 9], fns: [{ f: "2*x + 1", color: "blue" }], marks: [{ x: 0, y: 1, color: "orange", label: "(0, 1)" }, { x: 2, y: 5, color: "orange", label: "(2, 5)" }] },
+        answer: "y=2x+1", shown: "y = 2x + 1", skill: "Write a linear function",
+        near: [{ v: "y=x+2", fb: "The intercept is 1 (where it crosses the $y$-axis), and the slope is $\\frac{4}{2} = 2$." }, { v: "y=2x", fb: "Slope 2 is right. Where does it cross the $y$-axis?" }],
+        hints: ["Intercept: where it crosses the $y$-axis. Slope: rise over run between the two points."], why: "Intercept 1, slope $\\frac{5 - 1}{2 - 0} = 2$: $y = 2x + 1$." },
+      { type: "equation", prompt: "And this one?",
+        scene: { type: "plane", x: [-1, 9], y: [-1, 6], fns: [{ f: "-0.5*x + 4", color: "green" }], marks: [{ x: 0, y: 4, color: "orange", label: "(0, 4)" }, { x: 4, y: 2, color: "orange", label: "(4, 2)" }] },
+        answer: "y=-0.5x+4", shown: "y = -0.5x + 4", skill: "Write a linear function",
+        near: [{ v: "y=0.5x+4", fb: "The line falls: the slope is negative." }, { v: "y=-2x+4", fb: "Rise over run: $\\frac{-2}{4}$, not $\\frac{4}{-2}$." }],
+        hints: ["From $(0, 4)$ to $(4, 2)$: down 2, across 4."], why: "Slope $\\frac{-2}{4} = -\\frac{1}{2}$, intercept 4: $y = -0.5x + 4$." },
+      { type: "choice", kicker: "Check 2 · Linear functions", prompt: "A gym charges $C(m) = 15m + 40$ dollars for $m$ months. What does the 15 tell you?",
+        options: [{ t: "Each month costs \\$15." }, { t: "Joining costs \\$15.", fb: "Joining is paid once, at $m = 0$: that's the 40." }, { t: "Membership lasts 15 months.", fb: "15 multiplies the months: it's a rate, dollars per month." }],
+        answer: 0, skill: "Interpret a linear function", hints: ["What is added for each extra month?"], why: "The slope, 15, is the cost per month." },
+      { type: "num", prompt: "What does the same gym cost for a year? Find $C(12)$.", pre: "$\\$$", answer: 220, skill: "Interpret a linear function",
+        near: [{ v: 180, fb: "Add the \\$40 joining fee." }, { v: 660, fb: "Only the 15 multiplies the months." }], hints: ["$15(12) + 40$."], why: "$180 + 40 = 220$." },
+      { type: "num", kicker: "Check 3 · Powers", prompt: "Evaluate $3^4$.", answer: 81, skill: "Evaluate powers",
+        near: [{ v: 12, fb: "$3^4$ isn't $3 \\times 4$. It's $3 \\cdot 3 \\cdot 3 \\cdot 3$." }, { v: 64, fb: "That's $4^3$. Here 3 is multiplied by itself 4 times." }], hints: ["$3 \\cdot 3 \\cdot 3 \\cdot 3$."], why: "$9 \\cdot 9 = 81$." },
+      { type: "num", prompt: "Evaluate $2 \\cdot 5^3$.", answer: 250, skill: "Evaluate powers",
+        near: [{ v: 1000, fb: "The power applies to the 5 only: $5^3 = 125$, then double it." }, { v: 30, fb: "$5^3$ is $5 \\cdot 5 \\cdot 5$, not $5 \\times 3$." }], hints: ["Power first: $5^3 = 125$."], why: "$2 \\cdot 125 = 250$. Powers come before multiplying." },
+      { type: "learn", kicker: "So, where to start?",
+        prompt: "All right first time? Go straight to **Lesson 5.1**. If **check 1** or **check 2** slipped, Unit 1's lessons 1.10 to 1.13 and Unit 4's lesson 4.7 cover them. If **check 3** slipped, start with 5.1 slowly: it begins from what a power means.",
+        after: "Nothing is locked. Open any lesson whenever you like." }
+    ]
+  });
   // y = a·b^x with a and b on sliders.
   function expo(x, p) { return p.a * Math.pow(p.b, x); }
 
@@ -74,7 +105,7 @@
   LESSONS.push({
     title: "Properties of exponents",
     blurb: "Book 5.1 · An exponent counts factors. Every rule comes from counting them.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "$2^3$ means $2 \\cdot 2 \\cdot 2$. What is $2^3 \\cdot 2^2$?", answer: 32, skill: "Exponent rules",
         near: [{ v: 64, fb: "That's $2^6$. Count the 2s: three of them, then two more." }, { v: 12, fb: "$2^3$ is 8, not 6, and $2^2$ is 4. Then multiply." }],
@@ -112,7 +143,7 @@
   LESSONS.push({
     title: "Rational exponents",
     blurb: "Book 5.2 · A fraction as an exponent is a root.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "The product rule says $9^{\\frac{1}{2}} \\cdot 9^{\\frac{1}{2}} = 9^1 = 9$. So $9^{\\frac{1}{2}}$ is a number that, multiplied by itself, makes 9. What is it?",
         answer: 3, skill: "Rational exponents",
@@ -147,7 +178,7 @@
   LESSONS.push({
     title: "Patterns of growth",
     blurb: "Book 5.3 · Adding the same amount, or multiplying by the same amount. They start alike and end very differently.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "Two job offers for 20 days. **A:** \\$1,000 every day. **B:** \\$1 on day 1, then double the day before, every day. Which pays more **on day 20**?",
         options: [{ t: "Offer B" }, { t: "Offer A", fb: "A pays \\$1,000 on day 20. B has doubled 19 times by then: over \\$500,000." }, { t: "They pay the same.", fb: "B looks tiny at first: \\$1, \\$2, \\$4. Keep doubling." }],
@@ -187,7 +218,7 @@
   LESSONS.push({
     title: "Representing exponential growth",
     blurb: "Book 5.4 · y = a·bˣ: a is where it starts, b is the growth factor.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A dish holds **500 bacteria**, and the number **doubles every hour**. How many after 3 hours?", answer: 4000, skill: "Exponential growth",
         near: [big(4000), { v: 3000, fb: "That's 500 × 2 × 3. Doubling three times is $\\times 2 \\times 2 \\times 2$." }, { v: 1500, fb: "It doesn't gain 500 an hour. It *doubles* each hour." }],
@@ -220,7 +251,7 @@
   LESSONS.push({
     title: "Representing exponential decay",
     blurb: "Book 5.5 · When the factor is between 0 and 1, the quantity shrinks.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A car is worth **\\$16,000**. Each year it keeps **three-quarters** of its value. What is it worth after 2 years?", pre: "$\\$$", answer: 9000, skill: "Exponential decay",
         near: [big(9000), { v: 12000, fb: "That's after 1 year. Take three-quarters again." }, { v: 8000, fb: "It doesn't lose \\$4,000 every year. The second year it loses a quarter of \\$12,000." }],
@@ -257,7 +288,7 @@
   LESSONS.push({
     title: "Negative exponents and scientific notation",
     blurb: "Book 5.6 · A negative exponent runs the clock backwards. Powers of ten write very big and very small numbers.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A dish has $P(h) = 500 \\cdot 2^h$ bacteria, where $h$ is hours after noon. How many were there **one hour before** noon?", answer: 250, skill: "Negative exponents",
         near: [{ v: 1000, fb: "That's one hour *after* noon. Going back in time undoes a doubling." }, { v: -1000, fb: "A count can't be negative. $2^{-1}$ means divide by 2." }],
@@ -288,7 +319,7 @@
   LESSONS.push({
     title: "Analyzing graphs",
     blurb: "Book 5.7 · What a and b do to the graph of y = a·bˣ.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "One of these graphs is linear and one is exponential. Which is the exponential one?",
         scene: graph([-1, 5], [0, 20], [{ f: "2 + 2*x", color: "green", label: "green", labelAt: 4.4 }, { f: function (x) { return 2 * Math.pow(2, x); }, color: "blue", label: "blue", labelAt: 2.7 }]),
@@ -322,7 +353,7 @@
   LESSONS.push({
     title: "Exponential situations as functions",
     blurb: "Book 5.8 · The same exponential, as a sentence, a table, a graph and f(t).",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "$f(t) = 100 \\cdot 2^t$ gives the number of fruit flies in a jar after $t$ weeks. Find $f(3)$.", pre: "$f(3) =$", answer: 800, skill: "Exponential functions",
         near: [{ v: 600, fb: "$2^3$ is $2 \\cdot 2 \\cdot 2 = 8$, not 6." }, { v: 8000000, fb: "Work out $2^3$ first, then multiply by 100." }],
@@ -347,7 +378,7 @@
   LESSONS.push({
     title: "Interpreting exponential functions",
     blurb: "Book 5.9 · Evaluate, read from the graph, and choose a window that shows what matters.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "$m(t) = 80 \\cdot \\left(\\frac{1}{2}\\right)^t$ is the milligrams of caffeine in your body $t$ half-lives after a coffee. Find $m(3)$.", pre: "$m(3) =$", post: "mg", answer: 10, skill: "Evaluate an exponential",
         near: [{ v: 120, fb: "$\\left(\\frac{1}{2}\\right)^3$ is $\\frac{1}{8}$, not $\\frac{3}{2}$." }, { v: 40, fb: "That's one halving. $t = 3$ means three." }],
@@ -377,7 +408,7 @@
   LESSONS.push({
     title: "Looking at rates of change",
     blurb: "Book 5.10 · A line has one slope. An exponential's average rate of change keeps changing.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "For $f(x) = 2^x$, find the average rate of change from $x = 0$ to $x = 2$." + tbl(["$x$", "0", "1", "2", "3", "4"], [["f(x)", 1, 2, 4, 8, 16]]), answer: 1.5, skill: "Rate of change of an exponential",
         near: [{ v: 3, fb: "That's the change in output. Divide by the change in input, 2." }, { v: 2, fb: "$\\frac{f(2) - f(0)}{2 - 0} = \\frac{4 - 1}{2}$." }],
@@ -409,7 +440,7 @@
   LESSONS.push({
     title: "Modeling exponential behavior",
     blurb: "Book 5.11 · Real data isn't exact. Decide which kind of model fits, then fit it.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "A ball is dropped from 200 cm. Its bounce heights are measured:" + tbl(["bounce", "0", "1", "2", "3"], [["\\text{height (cm)}", 200, 98, 52, 24]]) + "Which model fits better?",
         options: [{ t: "Exponential: each bounce is about half the one before." }, { t: "Linear: it loses about the same height each bounce.", fb: "The drops are 102, 46, 28: nowhere near equal. Look at the ratios instead." }, { t: "Neither: the numbers aren't exact.", fb: "Measurements never are. A model only needs to be close." }],
@@ -443,7 +474,7 @@
   LESSONS.push({
     title: "Reasoning about exponential graphs, part 1",
     blurb: "Book 5.12 · Same start, different factors. Read b from the graph.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "All three curves are $y = 8 \\cdot b^x$ with a different $b$. Which has the **smallest** $b$?",
         scene: graph([-0.5, 6], [0, 9], [{ f: function (x) { return 8 * Math.pow(0.75, x); }, color: "green", label: "green", labelAt: 4.5 }, { f: function (x) { return 8 * Math.pow(0.5, x); }, color: "blue", label: "blue", labelAt: 1.6 }, { f: function (x) { return 8 * Math.pow(0.25, x); }, color: "orange", label: "orange", labelAt: 0.75 }]),
@@ -477,7 +508,7 @@
   LESSONS.push({
     title: "Reasoning about exponential graphs, part 2",
     blurb: "Book 5.13 · Write the function from two points, and compare two exponentials.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "An exponential graph passes through $(0, 3)$ and $(1, 12)$. What is its growth factor?", answer: 4, skill: "Write an exponential function",
         near: [{ v: 9, fb: "That's the difference. For a factor, divide: $12 \\div 3$." }], hints: ["$12 \\div 3$."], why: "One step right multiplies the height by $12 \\div 3 = 4$." },
@@ -507,7 +538,7 @@
   LESSONS.push({
     title: "Which one changes faster?",
     blurb: "Book 5.14 · A linear function can lead for a long time. An exponential one always catches it.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "$f(x) = 100x$ and $g(x) = 2^x$. Which is larger at $x = 5$?",
         options: [{ t: "$f$: 500 against 32" }, { t: "$g$: exponential is always bigger", fb: "Not at the start: $g(5) = 32$ and $f(5) = 500$." }, { t: "They are equal.", fb: "$100 \\times 5 = 500$ and $2^5 = 32$." }],
@@ -534,7 +565,7 @@
   LESSONS.push({
     title: "Changes over equal intervals",
     blurb: "Book 5.15 · Over equal steps, a linear function adds the same amount and an exponential one multiplies by the same amount.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "For $f(x) = 3x + 2$, how much does the output change when $x$ goes up by **2**, from any starting point?", answer: 6, skill: "Equal intervals",
         near: [{ v: 3, fb: "That's for a step of 1. A step of 2 does it twice." }, { v: 8, fb: "$f(2) = 8$ is an output. You want the *change*: try $f(2) - f(0)$." }],
@@ -567,8 +598,9 @@
   /* ============================================ Project 5 */
   LESSONS.push({
     title: "Project: Introduction to exponential functions",
+    tag: "Project",
     blurb: "Book Project 5 · One grain of rice, doubled on every square of a chessboard.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "learn", kicker: "The brief",
         prompt: "An old story: a king offers an inventor any reward. She asks for **1 grain of rice** on the first square of a chessboard, **2** on the second, **4** on the third, doubling on every square up to the 64th. The king laughs and agrees." },
@@ -589,7 +621,7 @@
   });
   /* ================================================================ Skills */
   var SKILLS = [
-    { id: "u5-rules", title: "Use the exponent rules", lesson: 1,
+    { id: "u5-rules", title: "Use the exponent rules", lesson: 2,
       gen: function (R) {
         var a = R.int(2, 9), b = R.int(2, 6), v = R.pick(["x", "y", "a", "n"]), kind = R.int(0, 2), tex, ans, why, slip;
         if (kind === 0) { tex = v + "^{" + a + "} \\cdot " + v + "^{" + b + "}"; ans = a + b; why = "Multiplying: add the exponents, $" + a + " + " + b + "$."; slip = { v: a * b, fb: "Multiplying powers *adds* the exponents." }; }
@@ -598,14 +630,14 @@
         return { type: "num", prompt: "Simplify. $$" + tex + " = " + v + "^{\\square}$$ What goes in the box?", answer: ans, near: near(ans, [slip]),
           hints: ["Count the factors of $" + v + "$."], why: why };
       } },
-    { id: "u5-zero-neg", title: "Zero and negative exponents", lesson: 1,
+    { id: "u5-zero-neg", title: "Zero and negative exponents", lesson: 2,
       gen: function (R) {
         var b = R.pick([2, 3, 4, 5, 10]), n = R.int(0, 3), ans = 1 / Math.pow(b, n);
         return { type: "num", prompt: "Evaluate $" + b + "^{" + (n === 0 ? "0" : "-" + n) + "}$." + (n ? " (A fraction like 1/8 is fine.)" : ""), answer: ans, tol: 1e-9, shown: n === 0 ? "1" : "1/" + Math.pow(b, n),
           near: near(ans, [{ v: 0, fb: "Any non-zero number to the power 0 is 1, not 0." }, { v: -Math.pow(b, n), fb: "A negative exponent doesn't make the value negative. It means “one over”." }, { v: -b * n, fb: "An exponent isn't a multiplier. $" + b + "^{-" + n + "} = \\frac{1}{" + b + "^{" + n + "}}$." }]),
           hints: [n === 0 ? "What does every power of 0 equal?" : "$b^{-n} = \\frac{1}{b^n}$."], why: n === 0 ? "$" + b + "^0 = 1$." : "$" + b + "^{-" + n + "} = \\frac{1}{" + Math.pow(b, n) + "}$." };
       } },
-    { id: "u5-rational", title: "Evaluate rational exponents", lesson: 2,
+    { id: "u5-rational", title: "Evaluate rational exponents", lesson: 3,
       gen: function (R) {
         var P = R.pick([[4, 2], [9, 2], [16, 2], [25, 2], [49, 2], [8, 3], [27, 3], [64, 3], [16, 4], [81, 4], [32, 5]]), root = Math.round(Math.pow(P[0], 1 / P[1])), m = R.chance(0.4) ? 2 : 1, ans = Math.pow(root, m);
         return { type: "num", prompt: "Evaluate $" + P[0] + "^{\\frac{" + m + "}{" + P[1] + "}}$.", answer: ans,
@@ -613,7 +645,7 @@
           hints: ["First find the number whose power " + P[1] + " is " + P[0] + "." + (m > 1 ? " Then square it." : "")],
           why: "$" + root + "^{" + P[1] + "} = " + P[0] + "$, so the root is " + root + (m > 1 ? ", and $" + root + "^2 = " + ans + "$." : ".") };
       } },
-    { id: "u5-lin-exp", title: "Linear or exponential?", lesson: 3,
+    { id: "u5-lin-exp", title: "Linear or exponential?", lesson: 4,
       gen: function (R) {
         var exp = R.chance(0.5), a = exp ? R.int(1, 6) : R.int(2, 30), s = exp ? R.pick([2, 3, 4, 0.5]) : R.nz(-8, 9), t = [a];
         if (exp && s === 0.5) t[0] = a = R.pick([48, 64, 80, 160]);
@@ -622,7 +654,7 @@
         return mc(R, { prompt: "Is this table linear or exponential?" + tbl(["$x$", "0", "1", "2", "3"], [["y"].concat(t)]), right: exp ? "Exponential" : "Linear",
           wrong: [{ t: exp ? "Linear" : "Exponential", fb: why }], keep: true, hints: ["Check the differences between neighbours. Then check the ratios."], why: why });
       } },
-    { id: "u5-eval", title: "Evaluate an exponential model", lesson: 4,
+    { id: "u5-eval", title: "Evaluate an exponential model", lesson: 5,
       gen: function (R) {
         var S = R.pick([{ s: "A colony of {a} bacteria doubles every hour. How many after {t} hours?", b: 2 }, { s: "A post has {a} views, and the views triple every day. How many after {t} days?", b: 3 },
                         { s: "A {a} mg dose halves every hour. How many mg are left after {t} hours?", b: 0.5 }]);
@@ -631,21 +663,21 @@
           near: near(ans, [big(ans), { v: a * S.b * t, fb: "Multiplying by " + nm(S.b) + " again and again is a power: $" + nm(S.b) + "^{" + t + "}$, not $" + nm(S.b) + " \\times " + t + "$." }]),
           hints: ["Multiply by " + nm(S.b) + ", " + t + " times."], why: "$" + a + " \\cdot " + (S.b === 0.5 ? "\\left(\\frac{1}{2}\\right)" : S.b) + "^{" + t + "} = " + nm(ans) + "$." };
       } },
-    { id: "u5-factor", title: "Find the growth factor", lesson: 4,
+    { id: "u5-factor", title: "Find the growth factor", lesson: 5,
       gen: function (R) {
         var b = R.pick([2, 3, 4, 5, 1.5, 0.5, 0.25]), a = b < 1 ? R.pick([64, 128, 256]) : b === 1.5 ? R.pick([8, 16, 24]) : R.int(1, 6), t = [a, a * b, a * b * b, a * b * b * b];
         return { type: "num", prompt: "This table is exponential. What is its growth factor?" + tbl(["$x$", "0", "1", "2", "3"], [["y"].concat(t)]), answer: b, tol: 1e-9,
           near: near(b, [{ v: t[1] - t[0], fb: "That's a difference. A factor is a ratio: $" + nm(t[1]) + " \\div " + a + "$." }, { v: a, fb: "That's the initial value. The factor is what each output is multiplied by." }]),
           hints: ["Divide any output by the one before it."], why: "$" + nm(t[1]) + " \\div " + a + " = " + nm(b) + "$." };
       } },
-    { id: "u5-decay", title: "Growth or decay?", lesson: 5,
+    { id: "u5-decay", title: "Growth or decay?", lesson: 6,
       gen: function (R) {
         var a = R.pick([0.5, 3, 12, 80, 500, 2000]), b = R.pick([0.2, 0.5, 0.75, 0.9, 0.98, 1.02, 1.1, 1.5, 2, 3]), g = b > 1;
         var why = "The base is $" + nm(b) + "$, which is " + (g ? "greater than 1: growth." : "between 0 and 1: decay.") + " The $" + nm(a) + "$ is only the starting value.";
         return mc(R, { prompt: "Does $y = " + nm(a) + " \\cdot (" + nm(b) + ")^x$ show growth or decay?", right: g ? "Growth" : "Decay", wrong: [{ t: g ? "Decay" : "Growth", fb: why }], keep: true,
           hints: ["Look at the number being raised to the power."], why: why });
       } },
-    { id: "u5-percent", title: "Percent change as a growth factor", lesson: 5,
+    { id: "u5-percent", title: "Percent change as a growth factor", lesson: 6,
       gen: function (R) {
         var p = R.pick([2, 3, 5, 8, 10, 12, 15, 20, 25, 30, 40]), up = R.chance(0.5), ans = up ? 1 + p / 100 : 1 - p / 100;
         var S = up ? R.pick(["A town's population grows " + p + "% a year.", "An investment gains " + p + "% a year."]) : R.pick(["A car loses " + p + "% of its value each year.", "A battery loses " + p + "% of its charge each hour."]);
@@ -653,14 +685,14 @@
           near: near(ans, [{ v: p / 100, fb: up ? "That's the increase alone. The factor keeps the original 100% too: add it to 1." : "That's the part that is lost. The factor is the part that *remains*." }, { v: up ? 1 - p / 100 : 1 + p / 100, fb: up ? "That would be a " + p + "% loss." : "That would be a " + p + "% gain." }, { v: p, fb: "Write it as a decimal multiplier, close to 1." }]),
           hints: [up ? "100% plus " + p + "%, as a decimal." : "100% minus " + p + "%, as a decimal."], why: (up ? "$1 + " : "$1 - ") + nm(p / 100) + " = " + nm(ans) + "$." };
       } },
-    { id: "u5-sci", title: "Read scientific notation", lesson: 6,
+    { id: "u5-sci", title: "Read scientific notation", lesson: 7,
       gen: function (R) {
         var c = R.pick([1.2, 2.5, 3, 4.8, 6.1, 7, 9.9]), e = R.pick([-4, -3, -2, -1, 2, 3, 4, 5]), ans = Number((c * Math.pow(10, e)).toPrecision(6));
         return { type: "num", prompt: "Write $" + c + " \\times 10^{" + e + "}$ as an ordinary number.", answer: ans, tol: Math.abs(ans) * 1e-9, shown: String(ans),
           near: near(ans, [{ v: Number((c * Math.pow(10, -e)).toPrecision(6)), tol: 1e-12, fb: e > 0 ? "A positive power of 10 makes the number bigger." : "A negative power of 10 makes the number smaller." }].concat(ans >= 1000 && ans < 1e6 ? [big(ans)] : [])),
           hints: ["Move the decimal point " + Math.abs(e) + " places to the " + (e > 0 ? "right." : "left.")], why: "$" + c + " \\times 10^{" + e + "} = " + ans + "$." };
       } },
-    { id: "u5-intercept", title: "Read a and b from an equation", lesson: 7,
+    { id: "u5-intercept", title: "Read a and b from an equation", lesson: 8,
       gen: function (R) {
         var a = R.pick([3, 5, 12, 40, 200]), b = R.pick([2, 3, 1.5, 0.5, 0.8]), ask = R.chance(0.5);
         return mc(R, { prompt: "For $y = " + a + " \\cdot (" + nm(b) + ")^x$, " + (ask ? "where does the graph cross the $y$-axis?" : "what happens to $y$ each time $x$ goes up by 1?"),
@@ -669,14 +701,14 @@
                      : [{ t: "It is multiplied by " + a, fb: a + " is the starting value." }, { t: "It goes up by " + nm(b), fb: "Exponential functions multiply. They don't add." }, { t: "It goes up by " + a, fb: "Adding the same amount each step would be linear." }],
           hints: [ask ? "Put $x = 0$." : "In $a \\cdot b^x$, which number is the factor?"], why: ask ? "$" + a + " \\cdot (" + nm(b) + ")^0 = " + a + "$." : "The base $" + nm(b) + "$ is the growth factor." });
       } },
-    { id: "u5-aroc", title: "Average rate of change of an exponential", lesson: 10,
+    { id: "u5-aroc", title: "Average rate of change of an exponential", lesson: 11,
       gen: function (R) {
         var b = R.pick([2, 3]), a = R.int(1, 4), x1 = R.int(0, 2), x2 = x1 + R.pick([1, 2]), f1 = a * Math.pow(b, x1), f2 = a * Math.pow(b, x2), ans = (f2 - f1) / (x2 - x1);
         return { type: "num", prompt: "For $f(x) = " + (a === 1 ? "" : a + " \\cdot ") + b + "^x$, find the average rate of change from $x = " + x1 + "$ to $x = " + x2 + "$.", answer: ans,
           near: near(ans, [{ v: f2 - f1, fb: "That's the change in output. Divide by the change in input, " + (x2 - x1) + "." }]),
           hints: ["$f(" + x1 + ") = " + f1 + "$ and $f(" + x2 + ") = " + f2 + "$."], why: "$\\frac{" + f2 + " - " + f1 + "}{" + x2 + " - " + x1 + "} = " + nm(ans) + "$." };
       } },
-    { id: "u5-write", title: "Write an exponential function", lesson: 13,
+    { id: "u5-write", title: "Write an exponential function", lesson: 14,
       gen: function (R) {
         var a = R.int(2, 9), b = R.pick([2, 3, 4, 5]);
         if (a === b) a += 1;
@@ -685,7 +717,7 @@
                   { t: "$f(x) = " + a + " + " + (a * b - a) + "x$", fb: "That's the line through the two points. The question says exponential." }],
           hints: ["$a$ is the value at $x = 0$. $b$ is the next value divided by it."], why: "$a = " + a + "$ and $b = " + a * b + " \\div " + a + " = " + b + "$." });
       } },
-    { id: "u5-compare", title: "Linear against exponential", lesson: 14,
+    { id: "u5-compare", title: "Linear against exponential", lesson: 15,
       gen: function (R) {
         var m = R.pick([5, 10, 20, 30, 50, 100, 200, 500]), b = R.pick([2, 3, 4]), x = 1;
         while (Math.pow(b, x) <= m * x) x++;
@@ -693,7 +725,7 @@
           near: [{ v: x - 1, fb: "$" + b + "^{" + (x - 1) + "} = " + Math.pow(b, x - 1) + "$, but $" + m + " \\times " + (x - 1) + " = " + m * (x - 1) + "$. Not yet." }],
           hints: ["Make a table of both for $x = 1, 2, 3, \\ldots$"], why: "$" + b + "^{" + x + "} = " + Math.pow(b, x) + "$ beats $" + m + " \\times " + x + " = " + m * x + "$, and it stays ahead from then on." };
       } },
-    { id: "u5-interval", title: "Change over an interval", lesson: 15,
+    { id: "u5-interval", title: "Change over an interval", lesson: 16,
       gen: function (R) {
         if (R.chance(0.5)) {
           var b = R.pick([2, 3, 4, 5]), a = R.int(1, 9), k = R.int(2, 3);
@@ -711,13 +743,13 @@
     title: "Introduction to exponential functions",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 2, blurb: "The exponent rules, zero and negative exponents, and roots as exponents.",
+      { title: "Quiz 1", after: 3, blurb: "The exponent rules, zero and negative exponents, and roots as exponents.",
         skills: ["u5-rules", "u5-zero-neg", "u5-rational"], per: 2 },
-      { title: "Quiz 2", after: 6, blurb: "Linear against exponential, growth factors, decay, and scientific notation.",
+      { title: "Quiz 2", after: 7, blurb: "Linear against exponential, growth factors, decay, and scientific notation.",
         skills: ["u5-lin-exp", "u5-eval", "u5-factor", "u5-decay", "u5-percent", "u5-sci"], per: 2 },
-      { title: "Quiz 3", after: 11, blurb: "Reading a and b, and how an exponential's rate of change behaves.",
+      { title: "Quiz 3", after: 12, blurb: "Reading a and b, and how an exponential's rate of change behaves.",
         skills: ["u5-intercept", "u5-aroc"], per: 3 },
-      { title: "Quiz 4", after: 15, blurb: "Writing exponential functions, and the race between linear and exponential.",
+      { title: "Quiz 4", after: 16, blurb: "Writing exponential functions, and the race between linear and exponential.",
         skills: ["u5-write", "u5-compare", "u5-interval"], per: 2 }
     ],
     skills: SKILLS

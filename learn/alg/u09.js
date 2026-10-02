@@ -2,7 +2,7 @@
    Algebra I — Unit 9: More quadratic equations. See lab/core.js for the
    format.
 
-   Follows OpenStax Algebra 1, Unit 9, lesson for lesson — 9.1 to 9.11 and
+   Follows OpenStax Algebra 1, Unit 9, lesson for lesson — the readiness check, 9.1 to 9.11 and
    Project 9. Written to the recipe in docs/OEDU_BRILLIANT_CONCEPT.md and the
    five rules at the top of alg/u02.js: teach, learn by doing, super
    interactive, nothing clumsy, never too much.
@@ -15,7 +15,7 @@
    Adapted from OpenStax, Algebra 1 (Rice University), CC BY-NC-SA 4.0. The
    questions, figures, feedback and every step here are OEdu's own.
 
-   Twelve lessons, ten skills, three quizzes, and the unit test.
+   Thirteen lessons, ten skills, three quizzes, and the unit test.
    Standards: CCSS HSA.REI.B.4a–b, HSA.SSE.B.3b, HSF.IF.C.8a, HSN.RN.B.3.
    ========================================================================== */
 (function () {
@@ -67,6 +67,36 @@
   function big(ans) { return { v: ans / 1000, tol: 1e-9, fb: "Type it without a comma: " + ans + "." }; }
 
   var LESSONS = [];
+  /* ============================================================ Ready? */
+  LESSONS.push({
+    title: "Are you ready? Three quick checks",
+    tag: "Ready?",
+    blurb: "Book: Unit 9 Readiness · Simplify a square root, factor a perfect square, and read a parabola's moves from vertex form.",
+    mins: 6, v: 2,
+    steps: [
+      { type: "choice", kicker: "Check 1 · Square roots", prompt: "Simplify $\\sqrt{50}$.",
+        options: [{ t: "$5\\sqrt{2}$" }, { t: "$25\\sqrt{2}$", fb: "$50 = 25 \\times 2$, and $\\sqrt{25}$ is 5, not 25." }, { t: "$2\\sqrt{5}$", fb: "$(2\\sqrt{5})^2 = 20$, not 50." }],
+        answer: 0, skill: "Simplify radicals", hints: ["Find a perfect square that divides 50."], why: "$\\sqrt{50} = \\sqrt{25 \\cdot 2} = 5\\sqrt{2}$." },
+      { type: "num", prompt: "$\\sqrt{18} = \\square\\sqrt{2}$. What goes in the box?", answer: 3, skill: "Simplify radicals",
+        near: [{ v: 9, fb: "$18 = 9 \\times 2$, and $\\sqrt{9} = 3$." }], hints: ["$18 = 9 \\times 2$."], why: "$\\sqrt{9 \\cdot 2} = 3\\sqrt{2}$." },
+      { type: "expr", kicker: "Check 2 · Perfect squares", prompt: "Factor $x^2 + 10x + 25$.", answer: "(x+5)^2", shown: "(x + 5)^2", form: "factored", skill: "Factor perfect squares",
+        keys: [["$x$", "x"], ["$+$", "+"], ["$-$", "-"], ["$($", "("], ["$)$", ")"], ["$(\;)^2$", "^2"]], hints: ["$25 = 5^2$, and $10x = 2 \\cdot 5 \\cdot x$."], why: "$(x + 5)^2$." },
+      { type: "expr", prompt: "Factor $x^2 - 8x + 16$.", answer: "(x-4)^2", shown: "(x - 4)^2", form: "factored", skill: "Factor perfect squares",
+        keys: [["$x$", "x"], ["$+$", "+"], ["$-$", "-"], ["$($", "("], ["$)$", ")"], ["$(\;)^2$", "^2"]], near: [{ v: "(x+4)^2", fb: "That gives $+8x$. The middle term is negative." }], hints: ["$16 = 4^2$. Mind the sign."], why: "$(x - 4)^2$." },
+      { type: "choice", kicker: "Check 3 · Vertex form", prompt: "How is $y = (x - 3)^2 + 2$ moved from $y = x^2$?",
+        options: [{ t: "Right 3 and up 2" }, { t: "Left 3 and up 2", fb: "$(x - 3)$ is zero at $x = +3$: the vertex moves right." }, { t: "Right 2 and up 3", fb: "The bracket gives the sideways move (3). The added number gives the vertical one (2)." }],
+        answer: 0, skill: "Vertex form", hints: ["The vertex is $(h, k)$."], why: "The vertex moves from $(0, 0)$ to $(3, 2)$." },
+      { type: "plane", prompt: "Move the blue parabola onto the dashed one, $y = (x + 1)^2 - 3$.",
+        x: [-6, 5], y: [-5, 8], params: { h: { v: 2, min: -4, max: 4, step: 1, label: "$h$" }, k: { v: 1, min: -4, max: 4, step: 1, label: "$k$" } },
+        fns: [{ f: function (x) { return (x + 1) * (x + 1) - 3; }, color: "ink", dashed: true }, { f: function (x, p) { return (x - p.h) * (x - p.h) + p.k; }, color: "blue" }],
+        readout: function (st) { var p = st.params; return "$y = (x " + (p.h < 0 ? "+ " + -p.h : "- " + p.h) + ")^2 " + (p.k < 0 ? "- " + -p.k : "+ " + p.k) + "$"; },
+        check: function (st) { var p = st.params; return p.h === -1 && p.k === -3 ? { ok: true } : { ok: false, say: "The dashed vertex is $(-1, -3)$." }; },
+        answer: { params: { h: -1, k: -3 } }, skill: "Vertex form", hints: ["$(x + 1)$ means $h = -1$."], why: "$h = -1$ and $k = -3$." },
+      { type: "learn", kicker: "So, where to start?",
+        prompt: "All right first time? Go straight to **Lesson 9.1**. **Check 1** comes up again in 9.5. For **check 2**, see Unit 6's lesson 6.6. For **check 3**, Unit 7's lessons 7.15 to 7.17.",
+        after: "Nothing is locked. Open any lesson whenever you like." }
+    ]
+  });
   var KEYS_Q = [["$x$", "x"], ["$x^2$", "x^2"], ["$+$", "+"], ["$-$", "-"], ["$($", "("], ["$)$", ")"], ["$(\\;)^2$", "^2"]];
   var FORMULA = "$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$";
 
@@ -74,7 +104,7 @@
   LESSONS.push({
     title: "What are perfect squares?",
     blurb: "Book 9.1 · An equation is easy when one side is something squared.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "numbers", kicker: "Try it", prompt: "Solve $(x + 3)^2 = 25$.", answer: [2, -8], skill: "Solve with a perfect square", placeholder: "e.g. 4, -6",
         near: [], hints: ["The bracket is 5 or $-5$.", "$x + 3 = 5$, or $x + 3 = -5$."], why: "$x = 2$ or $x = -8$. Easy, because the left side is a square." },
@@ -99,7 +129,7 @@
   LESSONS.push({
     title: "Completing the square, part 1",
     blurb: "Book 9.2 · If the expression isn't a perfect square, add what's missing.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "learn", kicker: "Try it", prompt: "Here is $x^2 + 6x$ in tiles, arranged as nearly a square. **Add unit tiles until the square is complete.** How many does it take?",
         scene: { type: "tiles", mode: "square", b: 6, gate: true }, gate: true,
@@ -127,7 +157,7 @@
   LESSONS.push({
     title: "Completing the square, part 2",
     blurb: "Book 9.3 · The whole method, including equations with a constant in the way and odd middle terms.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "numbers", kicker: "Try it", prompt: "Solve $x^2 + 8x + 7 = 0$ by completing the square.", answer: [-1, -7], skill: "Solve by completing the square", placeholder: "e.g. -2, -5",
         near: [], hints: ["Move the 7 first: $x^2 + 8x = -7$.", "Add 16 to both sides: $(x + 4)^2 = 9$."], why: "$(x + 4)^2 = 9$, so $x + 4 = \\pm 3$: $x = -1$ or $x = -7$." },
@@ -150,7 +180,7 @@
   LESSONS.push({
     title: "Completing the square, part 3",
     blurb: "Book 9.4 · When x² has a coefficient, divide it out first. Then choose the method that fits.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "expr", kicker: "Try it", prompt: "Multiply out $(2x + 3)^2$.", answer: "4x^2+12x+9", shown: "4x^2 + 12x + 9", form: "simplified", skill: "Perfect squares with a coefficient", keys: KEYS_Q,
         near: [{ v: "4x^2+9", fb: "A squared binomial has a middle term: twice $2x \\cdot 3$." }, { v: "2x^2+12x+9", fb: "$(2x)^2 = 4x^2$." }, { v: "4x^2+6x+9", fb: "The middle term appears twice: $6x + 6x$." }],
@@ -181,7 +211,7 @@
   LESSONS.push({
     title: "Quadratic equations with irrational solutions",
     blurb: "Book 9.5 · When the number under the root isn't a perfect square, leave the root in the answer.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "Solve $x^2 = 7$. No whole number squares to 7. Between which two whole numbers is the positive solution?",
         options: [{ t: "2 and 3" }, { t: "3 and 4", fb: "$3^2 = 9$ is already more than 7." }, { t: "6 and 8", fb: "That's 7 itself. You want the number whose *square* is 7." }],
@@ -208,7 +238,7 @@
   LESSONS.push({
     title: "The quadratic formula",
     blurb: "Book 9.6 · One formula that solves every quadratic equation.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "Try to factor $x^2 + 5x + 3$. Which two whole numbers multiply to 3 and add to 5?",
         options: [{ t: "There aren't any." }, { t: "1 and 3", fb: "They multiply to 3, but add to 4." }, { t: "2 and 3", fb: "They add to 5, but multiply to 6." }],
@@ -240,7 +270,7 @@
   LESSONS.push({
     title: "Applying the quadratic formula",
     blurb: "Book 9.7 · The usual slips, how to check, and what the number under the root tells you.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "For $2x^2 - 7x + 3 = 0$, Lin writes $x = \\frac{-7 \\pm \\sqrt{25}}{4}$. What's her mistake?",
         options: [{ t: "$b$ is $-7$, so $-b$ is $+7$." }, { t: "The root should be $\\sqrt{73}$.", fb: "$(-7)^2 - 4(2)(3) = 49 - 24 = 25$. That part is right." }, { t: "The denominator should be 2.", fb: "$2a = 2 \\cdot 2 = 4$. That part is right." }],
@@ -268,7 +298,7 @@
   LESSONS.push({
     title: "Deriving the quadratic formula",
     blurb: "Book 9.8 · Where the formula comes from: completing the square, done once with letters.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "numbers", kicker: "Try it", prompt: "Warm up by completing the square with numbers: solve $x^2 + 6x + 5 = 0$.", answer: [-1, -5], skill: "Solve by completing the square", placeholder: "e.g. -2, -3",
         near: [], hints: ["$x^2 + 6x = -5$. Add 9.", "$(x + 3)^2 = 4$."], why: "$x + 3 = \\pm 2$: $x = -1$ or $x = -5$. Now watch the same moves with letters." },
@@ -305,7 +335,7 @@
   LESSONS.push({
     title: "Writing quadratics in different forms",
     blurb: "Book 9.9 · Standard, factored and vertex form are one function in three outfits.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "expr", kicker: "Try it", prompt: "Write $(x - 3)^2 + 2$ in standard form.", answer: "x^2-6x+11", shown: "x^2 - 6x + 11", form: "simplified", skill: "Convert between forms", keys: KEYS_Q,
         near: [{ v: "x^2+11", fb: "$(x - 3)^2$ has a middle term: $-6x$." }, { v: "x^2-6x+9", fb: "Add the 2 as well: $9 + 2$." }, { v: "x^2-6x-7", fb: "$(-3)^2 = +9$." }],
@@ -330,7 +360,7 @@
   LESSONS.push({
     title: "Rewriting quadratic expressions in vertex form",
     blurb: "Book 9.10 · Complete the square inside an expression: add what's missing, and take it away again.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "learn", kicker: "See it", prompt: "To put $x^2 + 6x + 5$ into vertex form, complete the square without changing its value.",
         scene: { type: "walk", rows: [
@@ -359,7 +389,7 @@
   LESSONS.push({
     title: "Using quadratic expressions in vertex form to solve problems",
     blurb: "Book 9.11 · The biggest profit, the lowest cost, the highest point: read it off the vertex.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "learn", kicker: "Try it", prompt: "A stall's daily profit, in cents, depends on the price $x$ it charges: $P(x) = -(x - 30)^2 + 400$. Slide the price to find the **greatest profit**.",
         scene: { type: "plane", x: [0, 60], y: [0, 450], grid: 10, gridY: 50, labelEvery: 10, labelEveryY: 100, aspect: 0.8, axisLabels: ["price", "profit"], gate: true,
@@ -391,8 +421,9 @@
   /* ============================================ Project 9 */
   LESSONS.push({
     title: "Project: Using quadratic equations to model situations and solve problems",
+    tag: "Project",
     blurb: "Book Project 9 · Forty metres of fence, one wall, and the biggest garden you can make.",
-    mins: 10, v: 1,
+    mins: 10, v: 2,
     steps: [
       { type: "learn", kicker: "The brief",
         prompt: "A school has **40 m of fence** for a rectangular garden against a wall. The wall is one side, so the fence makes the other three: two sides of length $x$ and one of length $40 - 2x$." },
@@ -413,20 +444,20 @@
   function bin(p) { return "(x " + signed(p) + ")"; }
 
   var SKILLS = [
-    { id: "u9-complete", title: "Complete the square", lesson: 2,
+    { id: "u9-complete", title: "Complete the square", lesson: 3,
       gen: function (R) {
         var n = R.nz(-9, 9), b = 2 * n;
         return { type: "num", prompt: "What number makes this a perfect square? $$x^2 " + signed(b) + "x + \\square$$", answer: n * n,
           near: near(n * n, [{ v: Math.abs(n), fb: "That's half of " + Math.abs(b) + ". Now square it." }, { v: b * b, fb: "Halve the coefficient first, then square." }, { v: -n * n, fb: "A square is always positive." }]),
           hints: ["Half of $" + b + "$ is $" + n + "$. Square it."], why: "$(" + n + ")^2 = " + n * n + "$: $x^2 " + signed(b) + "x + " + n * n + " = " + bin(n) + "^2$." };
       } },
-    { id: "u9-square-eq", title: "Solve with a perfect square", lesson: 1,
+    { id: "u9-square-eq", title: "Solve with a perfect square", lesson: 2,
       gen: function (R) {
         var n = R.nz(-7, 7), r = R.int(1, 9);
         return { type: "numbers", prompt: "Solve. $$" + quad(1, 2 * n, n * n) + " = " + r * r + "$$", answer: [-n + r, -n - r], placeholder: "e.g. 4, -6",
           hints: ["The left side is $" + bin(n) + "^2$.", "$x " + signed(n) + " = \\pm " + r + "$."], why: "$" + bin(n) + "^2 = " + r * r + "$, so $x = " + (-n + r) + "$ or $x = " + (-n - r) + "$." };
       } },
-    { id: "u9-cts", title: "Solve by completing the square", lesson: 3,
+    { id: "u9-cts", title: "Solve by completing the square", lesson: 4,
       gen: function (R) {
         var n = R.nz(-6, 6), r = R.int(1, 7), b = 2 * n, c = n * n - r * r;
         if (c === 0) { r += 1; c = n * n - r * r; }
@@ -434,7 +465,7 @@
           hints: ["Move the constant: $" + poly([[1, "x^2"], [b, "x"]]) + " = " + -c + "$.", "Add $" + n * n + "$ to both sides: $" + bin(n) + "^2 = " + r * r + "$."],
           why: "$" + bin(n) + "^2 = " + r * r + "$, so $x " + signed(n) + " = \\pm " + r + "$: $x = " + (-n + r) + "$ or $x = " + (-n - r) + "$." };
       } },
-    { id: "u9-exact", title: "Exact irrational solutions", lesson: 5,
+    { id: "u9-exact", title: "Exact irrational solutions", lesson: 6,
       gen: function (R) {
         var n = R.nz(-6, 6), k = R.pick([2, 3, 5, 6, 7, 10, 11]), right = "$x = " + -n + " \\pm \\sqrt{" + k + "}$";
         return mc(R, { prompt: "Solve exactly. $$" + bin(n) + "^2 = " + k + "$$", right: right,
@@ -442,14 +473,14 @@
                   { t: "$x = " + -n + " + \\sqrt{" + k + "}$ only", fb: "A positive number has two square roots: use $\\pm$." }],
           hints: ["Take the square root of both sides, with $\\pm$."], why: "$x " + signed(n) + " = \\pm\\sqrt{" + k + "}$, so " + right + "." });
       } },
-    { id: "u9-disc", title: "Find the discriminant", lesson: 7,
+    { id: "u9-disc", title: "Find the discriminant", lesson: 8,
       gen: function (R) {
         var a = R.pick([1, 1, 2, 3]), b = R.nz(-8, 8), c = R.nz(-6, 6), d = b * b - 4 * a * c;
         return { type: "num", prompt: "Work out the discriminant, $b^2 - 4ac$, for $" + quad(a, b, c) + " = 0$.", answer: d,
           near: near(d, [{ v: -b * b - 4 * a * c, fb: "$(" + b + ")^2$ is positive." }, { v: b * b + 4 * a * c, fb: "Check the sign of $4ac$: $4(" + a + ")(" + c + ") = " + 4 * a * c + "$, and it is subtracted." }]),
           hints: ["$a = " + a + "$, $b = " + b + "$, $c = " + c + "$."], why: "$(" + b + ")^2 - 4(" + a + ")(" + c + ") = " + b * b + " " + signed(-4 * a * c) + " = " + d + "$." };
       } },
-    { id: "u9-count", title: "How many solutions, from the discriminant", lesson: 7,
+    { id: "u9-count", title: "How many solutions, from the discriminant", lesson: 8,
       gen: function (R) {
         var kind = R.int(0, 2), a = 1, b, c, names = ["Two", "One", "None"];
         if (kind === 0) { b = R.nz(-8, 8); c = R.int(-9, Math.floor(b * b / 4) - 1); if (c === 0) c = -1; }
@@ -460,27 +491,27 @@
         return mc(R, { prompt: "How many real solutions does $" + quad(a, b, c) + " = 0$ have?", right: names[kind], wrong: names.filter(function (x, i) { return i !== kind; }).map(function (x) { return { t: x, fb: why }; }), keep: true,
           hints: ["Work out $b^2 - 4ac$ and look at its sign."], why: why });
       } },
-    { id: "u9-formula", title: "Use the quadratic formula", lesson: 6,
+    { id: "u9-formula", title: "Use the quadratic formula", lesson: 7,
       gen: function (R) {
         var a = R.pick([1, 2, 2, 3]), p = R.pick([1, -1, 3, -3, 5].filter(function (v) { return a === 1 || v % a !== 0; })), q = R.nz(-5, 5), b = a * q + p, c = p * q, d = b * b - 4 * a * c, s = Math.round(Math.sqrt(d));
         return { type: "numbers", prompt: "Solve with the quadratic formula. $$" + quad(a, b, c) + " = 0$$", answer: [-p / a, -q].filter(function (v, i, arr) { return arr.indexOf(v) === i; }), shown: -p / a === -q ? String(-q) : L.fracText(-p, a) + ", " + -q, placeholder: "e.g. 1/2, -3",
           hints: ["$a = " + a + "$, $b = " + b + "$, $c = " + c + "$. The discriminant is $" + d + "$.", "$x = \\frac{" + -b + " \\pm " + s + "}{" + 2 * a + "}$."],
           why: "$x = \\frac{" + -b + " \\pm \\sqrt{" + d + "}}{" + 2 * a + "} = \\frac{" + -b + " \\pm " + s + "}{" + 2 * a + "}$: $x = " + frac(-b + s, 2 * a) + "$ or $x = " + frac(-b - s, 2 * a) + "$." };
       } },
-    { id: "u9-to-vertex", title: "Write in vertex form", lesson: 10,
+    { id: "u9-to-vertex", title: "Write in vertex form", lesson: 11,
       gen: function (R) {
         var n = R.nz(-7, 7), k = R.int(-9, 9), b = 2 * n, c = n * n + k;
         return { type: "num", prompt: "Complete the square. $$" + quad(1, b, c) + " = " + bin(n) + "^2 + \\square$$ What goes in the box?", answer: k,
           near: near(k, [{ v: c, fb: "$" + bin(n) + "^2$ already contains $+" + n * n + "$. Take it off: $" + c + " - " + n * n + "$." }, { v: c + n * n, fb: "Subtract the $" + n * n + "$ you added, don't add it again." }]),
           hints: ["$" + bin(n) + "^2 = " + quad(1, b, n * n) + "$."], why: "$" + c + " - " + n * n + " = " + k + "$." };
       } },
-    { id: "u9-vertex", title: "Find the vertex by completing the square", lesson: 10,
+    { id: "u9-vertex", title: "Find the vertex by completing the square", lesson: 11,
       gen: function (R) {
         var h = R.nz(-7, 7), k = R.int(-9, 9), b = -2 * h, c = h * h + k;
         return { type: "pair", prompt: "Find the vertex of $y = " + quad(1, b, c) + "$.", answer: [h, k], near: [{ v: [-h, k], fb: "$" + bin(-h) + "^2$ is zero at $x = " + h + "$." }, { v: [h, c], fb: "The square contains $+" + h * h + "$: the constant left over is $" + c + " - " + h * h + "$." }],
           hints: ["Half of $" + b + "$ is $" + -h + "$: write $" + bin(-h) + "^2$.", "Then $" + c + " - " + h * h + "$."], why: "$" + quad(1, b, c) + " = " + bin(-h) + "^2 " + signed(k) + "$: vertex $(" + h + ", " + k + ")$." };
       } },
-    { id: "u9-maxmin", title: "Maximum or minimum value", lesson: 11,
+    { id: "u9-maxmin", title: "Maximum or minimum value", lesson: 12,
       gen: function (R) {
         var a = R.pick([-16, -5, -2, -1, 1, 2, 3]), h = R.int(1, 9), k = R.int(5, 90), max = a < 0, ask = R.chance(0.5);
         var S = max ? R.pick(["A ball's height in feet after $x$ seconds", "A stall's profit in dollars at a price of $x$ dollars"]) : R.pick(["The cost in dollars of making $x$ items", "The temperature in a cave, in °C, $x$ hours after midnight"]);
@@ -493,11 +524,11 @@
     title: "More quadratic equations",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 5, blurb: "Perfect squares, completing the square, and exact irrational solutions.",
+      { title: "Quiz 1", after: 6, blurb: "Perfect squares, completing the square, and exact irrational solutions.",
         skills: ["u9-square-eq", "u9-complete", "u9-cts", "u9-exact"], per: 2 },
-      { title: "Quiz 2", after: 8, blurb: "The quadratic formula and the discriminant.",
+      { title: "Quiz 2", after: 9, blurb: "The quadratic formula and the discriminant.",
         skills: ["u9-formula", "u9-disc", "u9-count"], per: 2 },
-      { title: "Quiz 3", after: 11, blurb: "Vertex form by completing the square, and maximum and minimum values.",
+      { title: "Quiz 3", after: 12, blurb: "Vertex form by completing the square, and maximum and minimum values.",
         skills: ["u9-to-vertex", "u9-vertex", "u9-maxmin"], per: 2 }
     ],
     skills: SKILLS

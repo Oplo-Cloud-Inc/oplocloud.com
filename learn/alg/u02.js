@@ -2,7 +2,7 @@
    Algebra I — Unit 2: Linear inequalities and systems. See lab/core.js for
    the format.
 
-   Follows OpenStax Algebra 1, Unit 2, lesson for lesson — 2.1 to 2.15 and
+   Follows OpenStax Algebra 1, Unit 2, lesson for lesson — the readiness check, 2.1 to 2.15 and
    Project 2 — so a teacher can teach from the book or from this. Written to
    the recipe in docs/OEDU_BRILLIANT_CONCEPT.md, and to five rules:
 
@@ -20,10 +20,11 @@
    Adapted from OpenStax, Algebra 1 (Rice University), CC BY-NC-SA 4.0. The
    questions, figures, feedback and every step here are OEdu's own.
 
-   (v: 20 on each lesson: the unit replaced the earlier "Solving equations &
-   inequalities" on 2026-10-02, so that record does not carry over.)
+   (v: 21 on each lesson: the unit replaced the earlier "Solving equations &
+   inequalities" on 2026-10-02, and its lessons moved down one place the same
+   day when the readiness check was added, so neither record carries over.)
 
-   Sixteen lessons, thirteen skills, four quizzes, and the unit test.
+   Seventeen lessons, thirteen skills, four quizzes, and the unit test.
    Standards: CCSS HSA.REI.C.5–6, HSA.REI.D.11–12, HSA.CED.A.1–3, HSA.REI.B.3.
    ========================================================================== */
 (function () {
@@ -75,11 +76,45 @@
   function big(ans) { return { v: ans / 1000, tol: 1e-9, fb: "Type it without a comma: " + ans + "." }; }
 
   var LESSONS = [];
+  /* ============================================================ Ready? */
+  LESSONS.push({
+    title: "Are you ready? Three quick checks",
+    tag: "Ready?",
+    blurb: "Book: Unit 2 Readiness · Check a solution, read slope and intercept, and find where a line crosses the axes.",
+    mins: 6, v: 21,
+    steps: [
+      { type: "choice", kicker: "Check 1 · Solutions",
+        prompt: "Is $(3, 1)$ a solution of $2x + y = 7$?",
+        options: [{ t: "Yes" }, { t: "No", fb: "Put the numbers in: $2(3) + 1 = 7$ ✓. It works." }],
+        answer: 0, keep: true, skill: "Check a solution", hints: ["Put $x = 3$ and $y = 1$ into the left side."], why: "$2(3) + 1 = 7$, so the equation is true: $(3, 1)$ is a solution." },
+      { type: "plane", prompt: "The line is $y = 2x - 1$. **Click** any point that is a solution of the equation.",
+        x: [-5, 5], y: [-6, 6], click: "point", answer: { point: [1, 1] }, skill: "Check a solution", fns: [{ f: "2*x - 1", color: "blue" }],
+        check: function (st) { var c = st.clicked; return c && c[1] === 2 * c[0] - 1 ? { ok: true } : { ok: false, say: c ? "At $x = " + nm(c[0]) + "$ the equation gives $y = " + nm(2 * c[0] - 1) + "$, not " + nm(c[1]) + "." : null }; },
+        hints: ["Every point on the line is a solution."], why: "Points on the line, like $(1, 1)$ or $(2, 3)$, make $y = 2x - 1$ true." },
+      { type: "slots", kicker: "Check 2 · Slope and intercept", prompt: "For $y = -3x + 4$, match each feature to its value.",
+        slots: [{ id: "m", label: "Slope" }, { id: "b", label: "$y$-intercept" }],
+        cards: [{ t: "$-3$", slot: "m", fb: "The slope is the number multiplying $x$, sign included." }, { t: "$4$", slot: "b", fb: "The $y$-intercept is the constant: where the line crosses the $y$-axis." }, { t: "$3$" }, { t: "$-4$" }],
+        skill: "Slope-intercept form", hints: ["In $y = mx + b$, $m$ is the slope and $b$ the $y$-intercept."], why: "$m = -3$ and $b = 4$." },
+      { type: "plane", prompt: "Set the sliders so the line is $y = 2x - 3$.",
+        x: [-5, 5], y: [-6, 6], params: { m: { v: 1, min: -3, max: 3, step: 1, label: "slope $m$" }, b: { v: 0, min: -4, max: 4, step: 1, label: "intercept $b$" } },
+        fns: [{ f: "m*x + b", color: "blue" }], readout: function (st) { return "$y = " + poly([[st.params.m, "x"], [st.params.b, ""]]) + "$"; },
+        check: function (st) { var p = st.params; return p.m === 2 && p.b === -3 ? { ok: true } : { ok: false, say: "Read the slope and intercept straight from $y = 2x - 3$." }; },
+        answer: { params: { m: 2, b: -3 } }, skill: "Slope-intercept form", hints: ["$m = 2$, $b = -3$."], why: "Slope 2: up 2 for every 1 across. Intercept $-3$: it crosses the $y$-axis at $(0, -3)$." },
+      { type: "pair", kicker: "Check 3 · Intercepts", prompt: "Where does $2x + 3y = 12$ cross the $x$-axis?", answer: [6, 0], skill: "Intercepts",
+        near: [{ v: [0, 4], fb: "That's where it crosses the $y$-axis. On the $x$-axis, $y = 0$." }, { v: [0, 6], fb: "On the $x$-axis the point is $(x, 0)$: $x$ first." }],
+        hints: ["Put $y = 0$: $2x = 12$."], why: "$2x = 12$ gives $x = 6$: the point $(6, 0)$." },
+      { type: "pair", prompt: "And where does it cross the $y$-axis?", answer: [0, 4], skill: "Intercepts",
+        near: [{ v: [4, 0], fb: "On the $y$-axis, $x = 0$: the point is $(0, y)$." }], hints: ["Put $x = 0$: $3y = 12$."], why: "$3y = 12$ gives $y = 4$: the point $(0, 4)$." },
+      { type: "learn", kicker: "So, where to start?",
+        prompt: "All right first time? Go straight to **Lesson 2.1**. If **check 1** slipped, Unit 1's lessons 1.4 and 1.5 show what a solution is and why it sits on the graph. For **check 2**, see lessons 1.10 and 1.11. For **check 3**, lesson 1.10. **Algebra Pathway** (on the course page) will find any other gaps.",
+        after: "Nothing is locked. Open any lesson whenever you like." }
+    ]
+  });
   /* ============================================ 2.1 · Systems of equations */
   LESSONS.push({
     title: "Writing and graphing systems of equations",
     blurb: "Book 2.1 · Two constraints at once. The solution is the one pair that satisfies both.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "multi", kicker: "Try it",
         prompt: "A stall sells **apples** ($a$) and **bananas** ($b$). You take exactly **10 pieces** of fruit. Which baskets are possible?",
@@ -142,7 +177,7 @@
   LESSONS.push({
     title: "Writing systems of equations",
     blurb: "Book 2.2 · From a table or a graph to a system, and what the crossing point means.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "table", kicker: "Try it",
         prompt: "Two seedlings. **Fern** is 1 cm tall and grows 2 cm a week. **Ivy** is 4 cm tall and grows 1 cm a week. Fill in their heights.",
@@ -195,7 +230,7 @@
   LESSONS.push({
     title: "Solving systems by substitution",
     blurb: "Book 2.3 · If you know what y equals, put that in its place.",
-    mins: 9, v: 20,
+    mins: 9, v: 21,
     steps: [
       { type: "pair", kicker: "Try it",
         prompt: "No graph this time. One number is **double** the other, and together they make **12**:" + sys("y = 2x", "x + y = 12") + "Find $(x, y)$.",
@@ -246,7 +281,7 @@
   LESSONS.push({
     title: "Solving systems by elimination, part 1",
     blurb: "Book 2.4 · Add or subtract two equations, and one variable disappears.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "num", kicker: "Try it",
         prompt: "Two numbers **add** to 10 and **differ** by 4:" + sys("x + y = 10", "x - y = 4") + "What is $x$?",
@@ -305,7 +340,7 @@
   LESSONS.push({
     title: "Solving systems by elimination, part 2",
     blurb: "Book 2.5 · Why adding equations is allowed, and when to choose elimination.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "choice", kicker: "Try it",
         prompt: "Two true statements: $4 + 3 = 7$ and $10 - 2 = 8$. Add the left sides, and add the right sides. Is the result true?$$4 + 3 + 10 - 2 = 7 + 8$$",
@@ -355,7 +390,7 @@
   LESSONS.push({
     title: "Solving systems by elimination, part 3",
     blurb: "Book 2.6 · When nothing cancels, multiply an equation first.",
-    mins: 9, v: 20,
+    mins: 9, v: 21,
     steps: [
       { type: "choice", kicker: "Try it",
         prompt: "$(3, 2)$ is a solution of $x + 2y = 7$. Is it also a solution of $2x + 4y = 14$?",
@@ -412,7 +447,7 @@
   LESSONS.push({
     title: "Systems of linear equations and their solutions",
     blurb: "Book 2.7 · One crossing, none, or the same line twice.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "plane", kicker: "Try it",
         prompt: "The blue line is fixed: $y = 2x + 1$. Use the sliders to make the orange line **never meet it**.",
@@ -478,7 +513,7 @@
   LESSONS.push({
     title: "Representing situations with inequalities",
     blurb: "Book 2.8 · A constraint with room in it: at least, at most, more than, fewer than.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "sort", kicker: "Try it", prompt: "A sign gives a limit of 40. **Is 40 itself allowed?**",
         bins: ["40 is allowed", "40 is not allowed"],
@@ -535,7 +570,7 @@
   LESSONS.push({
     title: "Solutions to inequalities",
     blurb: "Book 2.9 · Find the boundary, then test which side works.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "multi", kicker: "Try it", prompt: "Which values of $x$ make $2x + 3 < 11$ true?",
         options: [{ t: "$x = 0$", ok: true }, { t: "$x = 3$", ok: true }, { t: "$x = 3.9$", ok: true },
@@ -581,7 +616,7 @@
   LESSONS.push({
     title: "Writing and solving inequalities in one variable",
     blurb: "Book 2.10 · Solve it like an equation, and flip the sign when you multiply or divide by a negative.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "ineq", kicker: "Try it",
         prompt: "Headphones cost **\\$250**. Jo has **\\$70** and saves **\\$15 a week**. Write an inequality for the weeks $w$ until Jo has enough.",
@@ -631,7 +666,7 @@
   LESSONS.push({
     title: "Graphing linear inequalities in two variables",
     blurb: "Book 2.11 · The solutions fill half the plane. The line is the edge.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "**Click any point** $(x, y)$ that makes $x + y \\le 6$ true.",
         x: [-2, 8], y: [-2, 8], click: "point", answer: { point: [1, 1] }, skill: "Solutions in two variables",
@@ -692,7 +727,7 @@
   LESSONS.push({
     title: "Using linear inequalities as constraints",
     blurb: "Book 2.12 · Read the region as a set of possible plans, and ask which ones make sense.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "choice", kicker: "Try it",
         prompt: "A bakery has **30 hours** of oven time. Bread takes 2 hours a batch ($x$) and cake 3 hours a batch ($y$): $2x + 3y \\le 30$. Can it bake 6 batches of each?",
@@ -736,7 +771,7 @@
   LESSONS.push({
     title: "Solving problems with inequalities in two variables",
     blurb: "Book 2.13 · Write the inequality, graph it with its intercepts, and read off what's possible.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "choice", kicker: "Try it",
         prompt: "A play must take **at least \\$2,400**. Adult tickets are \\$12 ($a$) and student tickets \\$8 ($s$). Which inequality fits?",
@@ -778,7 +813,7 @@
   LESSONS.push({
     title: "Solutions to systems of linear inequalities",
     blurb: "Book 2.14 · Where two shaded regions overlap, both constraints hold.",
-    mins: 8, v: 20,
+    mins: 8, v: 21,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "**Click a point** that makes both $y > x - 2$ and $y \\le -x + 4$ true.",
         x: [-4, 8], y: [-4, 8], click: "point", answer: { point: [0, 0] }, skill: "Systems of inequalities",
@@ -825,7 +860,7 @@
   LESSONS.push({
     title: "Solving problems with systems of linear inequalities",
     blurb: "Book 2.15 · Every constraint at once: the feasible region, and the best plan in it.",
-    mins: 9, v: 20,
+    mins: 9, v: 21,
     steps: [
       { type: "multi", kicker: "Try it",
         prompt: "Ava makes bracelets ($b$) and necklaces ($n$). She has **14 hours**: $b + 2n \\le 14$. She has **\\$30** of beads: $3b + 2n \\le 30$. Which plans $(b, n)$ fit both?",
@@ -863,8 +898,9 @@
   /* ============================================ Project 2 */
   LESSONS.push({
     title: "Project: Modelling with systems of inequalities",
+    tag: "Project",
     blurb: "Book Project 2 · Plan a bake sale: write the constraints, find the corner, and choose the best plan.",
-    mins: 10, v: 20,
+    mins: 10, v: 21,
     steps: [
       { type: "learn", kicker: "The brief",
         prompt: "Your class runs a bake sale. A dozen cookies ($c$) takes **1 hour** and costs **\\$3** to make. A tray of brownies ($b$) takes **2 hours** and costs **\\$2**. You have **10 hours** and **\\$18**." },
@@ -895,7 +931,7 @@
   var KEYS_INEQ = [["$<$", "<"], ["$\\le$", "<="], ["$>$", ">"], ["$\\ge$", ">="], ["$-$", "-"], ["$+$", "+"]];
 
   var SKILLS = [
-    { id: "u2-check", title: "Check a solution of a system", lesson: 1,
+    { id: "u2-check", title: "Check a solution of a system", lesson: 2,
       gen: function (R) {
         var x0 = R.int(-4, 5), y0 = R.int(-4, 5), a1 = R.int(1, 4), b1 = R.nz(-3, 3), a2 = R.int(1, 4), b2 = R.nz(-3, 3);
         if (a1 * b2 === a2 * b1) { a2 = a1 + 1; b2 = -b1; }
@@ -908,7 +944,7 @@
           right: names[kind], wrong: names.filter(function (t, i) { return i !== kind; }).map(function (t) { return { t: t, fb: say }; }),
           keep: true, hints: ["Put the $x$ and $y$ values into each equation, one at a time."], why: say + " A solution must make *both* true." });
       } },
-    { id: "u2-graph", title: "Solve a system from its graph", lesson: 2,
+    { id: "u2-graph", title: "Solve a system from its graph", lesson: 3,
       gen: function (R) {
         var x0 = R.int(-3, 3), y0 = R.int(-3, 3), ms = R.shuffle([-2, -1, 1, 2, 3]), m1 = ms[0], m2 = ms[1], b1 = y0 - m1 * x0, b2 = y0 - m2 * x0;
         return { type: "plane", prompt: "Click the solution of the system." + sys("y = " + poly([[m1, "x"], [b1, ""]]), "y = " + poly([[m2, "x"], [b2, ""]])),
@@ -917,7 +953,7 @@
           clickFb: function (c) { return "At $x = " + nm(c[0]) + "$ the lines are at $y = " + nm(m1 * c[0] + b1) + "$ and $y = " + nm(m2 * c[0] + b2) + "$. Find where they agree."; },
           hints: ["The solution is the point on both lines."], why: "The lines cross at $(" + x0 + ", " + y0 + ")$. Check: it makes both equations true." };
       } },
-    { id: "u2-subst", title: "Solve by substitution", lesson: 3,
+    { id: "u2-subst", title: "Solve by substitution", lesson: 4,
       gen: function (R) {
         var x0 = R.int(-4, 5), y0, m = R.nz(-3, 3), b = R.int(-5, 5), a = R.int(1, 4), c = R.nz(-3, 3);
         if (a + c * m === 0) a += 1;
@@ -928,7 +964,7 @@
           hints: ["Replace $y$ in the second equation with $(" + inner + ")$.", "$" + subbed + "$"],
           why: lines([subbed, poly([[a + c * m, "x"]]) + " = " + (d - c * b), "x = " + x0, "y = " + L.sub(inner, { x: x0 }) + " = " + y0]) };
       } },
-    { id: "u2-elim", title: "Solve by adding or subtracting", lesson: 4,
+    { id: "u2-elim", title: "Solve by adding or subtracting", lesson: 5,
       gen: function (R) {
         var x0 = R.int(-4, 5), y0 = R.int(-4, 5), a1 = R.int(1, 5), a2 = R.int(1, 5), b = R.int(1, 4), add = R.chance(0.5);
         if (!add && a1 === a2) a1 += 1;
@@ -937,7 +973,7 @@
           hints: [add ? "The $y$ terms are opposites. Add the equations." : "The $y$ terms match. Subtract the second equation from the first."],
           why: (add ? "Add: " : "Subtract: ") + lines([poly([[k, "x"]]) + " = " + r, "x = " + x0, L.sub(poly([[a1, "x"]]), { x: x0 }) + " " + signed(b) + "y = " + c1, "y = " + y0]) };
       } },
-    { id: "u2-elim-mult", title: "Solve by multiplying, then eliminating", lesson: 6,
+    { id: "u2-elim-mult", title: "Solve by multiplying, then eliminating", lesson: 7,
       gen: function (R) {
         var x0 = R.int(-3, 4), y0 = R.int(-3, 4), a1 = R.int(1, 4), a2 = R.int(1, 4), b1 = R.pick([1, -1, 2]), k = R.int(2, 4), b2 = -k * b1;
         var c1 = a1 * x0 + b1 * y0, c2 = a2 * x0 + b2 * y0;
@@ -945,7 +981,7 @@
           hints: ["Multiply the first equation by " + k + " so the $y$ terms are opposites.", "$" + std(k * a1, k * b1, k * c1) + "$. Now add."],
           why: "Multiply the first by " + k + ", then add:<br>" + lines([std(k * a1, k * b1, k * c1), poly([[k * a1 + a2, "x"]]) + " = " + (k * c1 + c2), "x = " + x0, "y = " + y0]) };
       } },
-    { id: "u2-story", title: "Solve a problem with a system", lesson: 6,
+    { id: "u2-story", title: "Solve a problem with a system", lesson: 7,
       gen: function (R) {
         var pr = R.pick([[7, 4], [9, 5], [12, 8], [10, 6], [6, 3]]), n = R.int(12, 40), a = R.int(3, n - 3), tot = pr[0] * a + pr[1] * (n - a);
         var T = R.pick([{ s: "A show sold " + n + " tickets. Adult tickets cost \\$" + pr[0] + " and child tickets \\$" + pr[1] + ". The total was \\$" + tot + ". How many **adult** tickets were sold?", o: "child tickets" },
@@ -954,7 +990,7 @@
           hints: ["Two equations: $x + y = " + n + "$ and $" + pr[0] + "x + " + pr[1] + "y = " + tot + "$.", "Multiply the first by " + pr[1] + " and subtract."],
           why: lines([pr[1] + "x + " + pr[1] + "y = " + pr[1] * n, (pr[0] - pr[1]) + "x = " + (tot - pr[1] * n), "x = " + a]) };
       } },
-    { id: "u2-count", title: "Number of solutions of a system", lesson: 7,
+    { id: "u2-count", title: "Number of solutions of a system", lesson: 8,
       gen: function (R) {
         var kind = R.int(0, 2), e1, e2, why, names = ["Exactly one", "None", "Infinitely many"];
         if (R.chance(0.5)) {
@@ -972,7 +1008,7 @@
           wrong: names.filter(function (t, i) { return i !== kind; }).map(function (t) { return { t: t, fb: why }; }),
           keep: true, hints: ["Compare the slopes. If they match, compare the intercepts."], why: why });
       } },
-    { id: "u2-ineq-write", title: "Write an inequality for a situation", lesson: 8,
+    { id: "u2-ineq-write", title: "Write an inequality for a situation", lesson: 9,
       gen: function (R) {
         var r = R.pick([4, 5, 8, 12, 15]), f = R.pick([10, 20, 25, 30, 40]), T = r * R.int(8, 20) + f, v = R.pick(["n", "w", "c"]);
         var S = R.pick([{ s: "A club buys $" + v + "$ shirts at \\$" + r + " each, plus a \\$" + f + " set-up fee. It can spend **at most** \\$" + T + ".", rel: "<=" },
@@ -984,7 +1020,7 @@
           keys: [["$" + v + "$", v]].concat(KEYS_INEQ), placeholder: "Use " + v,
           hints: ["The amount is $" + r + v + " + " + f + "$. Now choose the symbol."], why: "$" + r + v + " + " + f + " " + REL[S.rel] + " " + T + "$." };
       } },
-    { id: "u2-ineq-line", title: "Graph an inequality on a number line", lesson: 9,
+    { id: "u2-ineq-line", title: "Graph an inequality on a number line", lesson: 10,
       gen: function (R) {
         var c = R.int(-5, 5), rel = R.pick(["<", "<=", ">", ">="]), right = rel.charAt(0) === ">", closed = rel.length === 2;
         return { type: "numberline", prompt: "Graph $x " + REL[rel] + " " + c + "$.", min: c - 6, max: c + 6, mode: "ray", variable: "x",
@@ -992,7 +1028,7 @@
           hints: ["Is $" + c + "$ itself included? Filled if yes, open if no.", "Greater: shade right. Less: shade left."],
           why: (closed ? "A filled circle" : "An open circle") + " at $" + c + "$, shaded to the " + (right ? "right" : "left") + "." };
       } },
-    { id: "u2-ineq-solve", title: "Solve an inequality", lesson: 10,
+    { id: "u2-ineq-solve", title: "Solve an inequality", lesson: 11,
       gen: function (R) {
         var a = R.pick([-6, -5, -4, -3, -2, 2, 3, 4, 5, 6]), b = R.nz(-9, 9), x0 = R.int(-6, 6), rel = R.pick(["<", "<=", ">", ">="]), c = a * x0 + b;
         var out = a < 0 ? FLIP[rel] : rel;
@@ -1002,7 +1038,7 @@
           hints: [(b < 0 ? "Add " + -b : "Subtract " + b) + " on both sides.", "Divide by $" + a + "$." + (a < 0 ? " Dividing by a negative flips the sign." : "")],
           why: lines([poly([[a, "x"]]) + " " + REL[rel] + " " + (c - b), "x " + REL[out] + " " + x0]) + (a < 0 ? "<br>The sign flipped because you divided by a negative." : "") };
       } },
-    { id: "u2-ineq2-test", title: "Test a point in an inequality", lesson: 11,
+    { id: "u2-ineq2-test", title: "Test a point in an inequality", lesson: 12,
       gen: function (R) {
         var a = R.int(1, 4), b = R.nz(-3, 3), p = R.int(-4, 5), q = R.int(-4, 5), rel = R.pick(["<", "<=", ">", ">="]), v = a * p + b * q, c = v + R.pick([-2, -1, 0, 0, 1, 2]);
         var ok = holds(v, rel, c), say = "$" + L.sub(poly([[a, "x"], [b, "y"]]), { x: p, y: q }) + " = " + v + "$, and $" + v + " " + REL[rel] + " " + c + "$ is " + (ok ? "true" : "false") + ".";
@@ -1010,7 +1046,7 @@
           right: ok ? "Yes" : "No", wrong: [{ t: ok ? "No" : "Yes", fb: say }], keep: true,
           hints: ["Put $x = " + p + "$ and $y = " + q + "$ into the left side, then compare with " + c + "."], why: say });
       } },
-    { id: "u2-ineq2-read", title: "Read an inequality from its graph", lesson: 11,
+    { id: "u2-ineq2-read", title: "Read an inequality from its graph", lesson: 12,
       gen: function (R) {
         var m = R.pick([-2, -1, 1, 2]), b = R.int(-2, 2), rel = R.pick(["<", "<=", ">", ">="]), rhs = poly([[m, "x"], [b, ""]]);
         var above = rel.charAt(0) === ">", strict = rel.length === 1;
@@ -1022,7 +1058,7 @@
           hints: ["Dashed or solid? Shaded above or below?"],
           why: "The line is " + (strict ? "dashed (strict)" : "solid (or equal to)") + " and the shading is " + (above ? "above" : "below") + ": $y " + REL[rel] + " " + rhs + "$." });
       } },
-    { id: "u2-sysineq", title: "Solve a system of inequalities", lesson: 14,
+    { id: "u2-sysineq", title: "Solve a system of inequalities", lesson: 15,
       gen: function (R) {
         var m1 = R.pick([1, 2]), b1 = R.int(-2, 0), m2 = R.pick([-1, -2]), b2 = R.int(2, 4), pick = null;
         function ok(c) { return c[1] >= m1 * c[0] + b1 && c[1] < m2 * c[0] + b2; }
@@ -1038,13 +1074,13 @@
     title: "Linear inequalities and systems",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 3, blurb: "What a solution of a system is, reading it from a graph, and substitution.",
+      { title: "Quiz 1", after: 4, blurb: "What a solution of a system is, reading it from a graph, and substitution.",
         skills: ["u2-check", "u2-graph", "u2-subst"], per: 2 },
-      { title: "Quiz 2", after: 7, blurb: "Elimination, with and without multiplying, word problems, and how many solutions a system has.",
+      { title: "Quiz 2", after: 8, blurb: "Elimination, with and without multiplying, word problems, and how many solutions a system has.",
         skills: ["u2-elim", "u2-elim-mult", "u2-story", "u2-count"], per: 2 },
-      { title: "Quiz 3", after: 10, blurb: "Writing, graphing and solving inequalities in one variable.",
+      { title: "Quiz 3", after: 11, blurb: "Writing, graphing and solving inequalities in one variable.",
         skills: ["u2-ineq-write", "u2-ineq-line", "u2-ineq-solve"], per: 2 },
-      { title: "Quiz 4", after: 15, blurb: "Inequalities in two variables, their graphs, and systems of them.",
+      { title: "Quiz 4", after: 16, blurb: "Inequalities in two variables, their graphs, and systems of them.",
         skills: ["u2-ineq2-test", "u2-ineq2-read", "u2-sysineq"], per: 2 }
     ],
     skills: SKILLS

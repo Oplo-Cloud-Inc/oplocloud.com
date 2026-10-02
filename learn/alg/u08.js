@@ -1,7 +1,7 @@
 /* ==========================================================================
    Algebra I — Unit 8: Quadratic equations. See lab/core.js for the format.
 
-   Follows OpenStax Algebra 1, Unit 8, lesson for lesson — 8.1 to 8.12 and
+   Follows OpenStax Algebra 1, Unit 8, lesson for lesson — the readiness check, 8.1 to 8.12 and
    Project 8. Written to the recipe in docs/OEDU_BRILLIANT_CONCEPT.md and the
    five rules at the top of alg/u02.js: teach, learn by doing, super
    interactive, nothing clumsy, never too much.
@@ -15,7 +15,7 @@
    Adapted from OpenStax, Algebra 1 (Rice University), CC BY-NC-SA 4.0. The
    questions, figures, feedback and every step here are OEdu's own.
 
-   Thirteen lessons, eleven skills, three quizzes, and the unit test.
+   Fourteen lessons, eleven skills, three quizzes, and the unit test.
    Standards: CCSS HSA.REI.B.4, HSA.SSE.A.2, HSA.SSE.B.3a, HSA.CED.A.1, HSA.APR.B.3, HSF.IF.C.8a.
    ========================================================================== */
 (function () {
@@ -67,6 +67,35 @@
   function big(ans) { return { v: ans / 1000, tol: 1e-9, fb: "Type it without a comma: " + ans + "." }; }
 
   var LESSONS = [];
+  /* ============================================================ Ready? */
+  LESSONS.push({
+    title: "Are you ready? Three quick checks",
+    tag: "Ready?",
+    blurb: "Book: Unit 8 Readiness · Expand with the distributive property, find intercepts from factored form, and match graphs to equations.",
+    mins: 6, v: 2,
+    steps: [
+      { type: "expr", kicker: "Check 1 · Equivalent expressions", prompt: "Write $x(x + 7)$ without brackets.", answer: "x^2+7x", shown: "x^2 + 7x", form: "simplified", skill: "Distributive property",
+        keys: [["$x$", "x"], ["$x^2$", "x^2"], ["$+$", "+"], ["$-$", "-"]], near: [{ v: "x^2+7", fb: "The $x$ multiplies the 7 too." }], hints: ["$x \\cdot x$ and $x \\cdot 7$."], why: "$x^2 + 7x$." },
+      { type: "expr", prompt: "Write $(x + 2)(x - 6)$ in standard form.", answer: "x^2-4x-12", shown: "x^2 - 4x - 12", form: "simplified", skill: "Distributive property",
+        keys: [["$x$", "x"], ["$x^2$", "x^2"], ["$+$", "+"], ["$-$", "-"]], near: [{ v: "x^2-12", fb: "Add the middle products: $-6x$ and $2x$." }, { v: "x^2+4x-12", fb: "$-6x + 2x = -4x$." }], hints: ["Four products."], why: "$x^2 - 6x + 2x - 12$." },
+      { type: "numbers", kicker: "Check 2 · Intercepts", prompt: "Where does $y = (x - 3)(x + 1)$ cross the $x$-axis? Give both $x$-values.", answer: [3, -1], skill: "Intercepts from factored form", placeholder: "e.g. 2, -5",
+        hints: ["Which $x$ makes each bracket zero?"], why: "$x - 3 = 0$ at 3, and $x + 1 = 0$ at $-1$." },
+      { type: "plane", prompt: "This is $y = (x + 2)(x - 4)$. **Click** one of its $x$-intercepts.", x: [-5, 7], y: [-10, 8], click: "point", answer: { point: [-2, 0] }, skill: "Intercepts from factored form",
+        fns: [{ f: function (x) { return (x + 2) * (x - 4); }, color: "blue" }],
+        check: function (st) { var c = st.clicked; return c && c[1] === 0 && (c[0] === -2 || c[0] === 4) ? { ok: true } : { ok: false, say: "An $x$-intercept is where the curve meets the horizontal axis." }; },
+        hints: ["Where is each bracket zero?"], why: "$(-2, 0)$ and $(4, 0)$." },
+      { type: "choice", kicker: "Check 3 · Graphs and equations", prompt: "Which equation matches this graph?",
+        scene: { type: "plane", x: [-2, 7], y: [-5, 8], fns: [{ f: function (x) { return (x - 1) * (x - 5); }, color: "green" }] },
+        options: [{ t: "$y = (x - 1)(x - 5)$" }, { t: "$y = (x + 1)(x + 5)$", fb: "Those factors are zero at $-1$ and $-5$. The graph crosses at 1 and 5." }, { t: "$y = -(x - 1)(x - 5)$", fb: "The minus sign would flip it to open downward." }],
+        answer: 0, skill: "Match graphs and equations", hints: ["Read the $x$-intercepts. Which way does it open?"], why: "Zeros 1 and 5, opening upward." },
+      { type: "choice", prompt: "Which parabola opens **downward**?",
+        options: [{ t: "$y = -x^2 + 4$" }, { t: "$y = x^2 - 4$", fb: "The $x^2$ term is positive: it opens upward." }, { t: "$y = (x - 4)^2$", fb: "Squared, with a positive coefficient: upward." }],
+        answer: 0, skill: "Match graphs and equations", hints: ["Look at the sign of the $x^2$ term."], why: "A negative $x^2$ coefficient makes an arch." },
+      { type: "learn", kicker: "So, where to start?",
+        prompt: "All right first time? Go straight to **Lesson 8.1**. If any check slipped, Unit 7 has it: lessons 7.8 and 7.9 for **check 1**, 7.10 and 7.11 for **check 2**, and 7.12 for **check 3**.",
+        after: "Nothing is locked. Open any lesson whenever you like." }
+    ]
+  });
   var KEYS_Q = [["$x$", "x"], ["$x^2$", "x^2"], ["$+$", "+"], ["$-$", "-"], ["$($", "("], ["$)$", ")"]];
   function toss(t) { return t >= 0 && t <= 5 ? 80 * t - 16 * t * t : NaN; }
 
@@ -74,7 +103,7 @@
   LESSONS.push({
     title: "Finding unknown inputs",
     blurb: "Book 8.1 · You know the output you want. Which input gives it?",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "table", kicker: "Try it", prompt: "A photo is **6 in by 4 in**. A border of width $x$ goes all the way round, so the framed picture is $(6 + 2x)$ by $(4 + 2x)$. Fill in the total area.",
         head: ["border $x$", "width", "height", "total area"], rows: [[0.5, 7, 5, 35], [1, 8, 6, null], [2, 10, 8, null]], answers: [[1, 3, 48], [2, 3, 80]], skill: "Quadratic equations",
@@ -99,7 +128,7 @@
   LESSONS.push({
     title: "When and why do we write quadratic equations?",
     blurb: "Book 8.2 · To find when a quadratic quantity reaches a value, set it equal to that value.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A ball is kicked from the ground: $h(t) = 80t - 16t^2$ feet after $t$ seconds. It is on the ground at $t = 0$. When is it on the ground **again**?",
         scene: graph([0, 6], [0, 110], [{ f: toss, color: "blue" }], { gridY: 10, labelEveryY: 20, aspect: 0.85, axisLabels: ["t", "h"] }),
@@ -124,7 +153,7 @@
   LESSONS.push({
     title: "Solving quadratic equations by reasoning",
     blurb: "Book 8.3 · If something squared is 25, that something is 5 or −5.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "numbers", kicker: "Try it", prompt: "Find **every** number whose square is 25: solve $x^2 = 25$.", answer: [5, -5], skill: "Solve by square roots", placeholder: "e.g. 3, -3",
         hints: ["5 works. Is there another number that gives 25 when squared?"], why: "$5^2 = 25$ and $(-5)^2 = 25$. A positive number has two square roots." },
@@ -157,7 +186,7 @@
   LESSONS.push({
     title: "Solving quadratic equations with the zero product property",
     blurb: "Book 8.4 · If a product is zero, one of its factors is zero.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "Two numbers multiply to give 0. What can you say about them?",
         options: [{ t: "At least one of them is 0." }, { t: "Both of them are 0.", fb: "$0 \\times 7 = 0$: only one needs to be." }, { t: "Nothing: any two numbers could do it.", fb: "Try: can two non-zero numbers multiply to 0?" }],
@@ -182,7 +211,7 @@
   LESSONS.push({
     title: "How many solutions?",
     blurb: "Book 8.5 · The graph shows it: two crossings, one touch, or none.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "The graph is $y = x^2 + c$. The solutions of $x^2 + c = 0$ are its $x$-intercepts. Slide $c$ so the equation has **exactly one** solution.",
         x: [-5, 5], y: [-6, 8], params: { c: { v: -4, min: -5, max: 5, step: 1, label: "$c$" } }, fns: [{ f: function (x, p) { return x * x + p.c; }, color: "blue" }],
@@ -212,7 +241,7 @@
   LESSONS.push({
     title: "Rewriting quadratic expressions in factored form, part 1",
     blurb: "Book 8.6 · To use the zero product property you need factors. Here is how to find them.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "tiles", kicker: "Try it", prompt: "Arrange $x^2 + 9x + 20$ into a rectangle. Choose $p$ and $q$ so the tiles match.",
         mode: "factor", target: { b: 9, c: 20 }, p: 1, q: 1, min: 0, answer: [4, 5], skill: "Factor a quadratic",
@@ -237,7 +266,7 @@
   LESSONS.push({
     title: "Rewriting quadratic expressions in factored form, part 2",
     blurb: "Book 8.7 · A negative constant term means one factor adds and the other subtracts.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "numbers", kicker: "Try it", prompt: "Which two numbers multiply to $-12$ and add to $1$?", answer: [4, -3], skill: "Factor with a negative constant", placeholder: "e.g. 5, -2",
         hints: ["A negative product: one number is positive and one is negative.", "Pairs for 12: 1 and 12, 2 and 6, 3 and 4."], why: "$4 \\times (-3) = -12$ and $4 + (-3) = 1$." },
@@ -261,7 +290,7 @@
   LESSONS.push({
     title: "Rewriting quadratic expressions in factored form, part 3",
     blurb: "Book 8.8 · No middle term: the difference of two squares.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "Do this one in your head: $103 \\times 97$. (Think of it as $(100 + 3)(100 - 3)$.)", answer: 9991, skill: "Difference of squares",
         near: [big(9991), { v: 10009, fb: "The last product is $3 \\times -3 = -9$: subtract it." }, { v: 10000, fb: "That's $100 \\times 100$. Take off $3 \\times 3$." }],
@@ -286,7 +315,7 @@
   LESSONS.push({
     title: "Solving quadratic equations by using factored form",
     blurb: "Book 8.9 · Get zero on one side, factor, and let the zero product property finish.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "numbers", kicker: "Try it", prompt: "Solve $x^2 + 7x + 12 = 0$. (Factor the left side first.)", answer: [-3, -4], skill: "Solve by factoring", placeholder: "e.g. -1, -6",
         near: [], hints: ["$x^2 + 7x + 12 = (x + 3)(x + 4)$.", "Now each factor can be zero."], why: "$(x + 3)(x + 4) = 0$ gives $x = -3$ or $x = -4$." },
@@ -309,7 +338,7 @@
   LESSONS.push({
     title: "Rewriting quadratic expressions in factored form, part 4",
     blurb: "Book 8.10 · When the x² term has a coefficient, the area model still finds the factors.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "expr", kicker: "Try it", prompt: "Multiply out $(3x + 2)(x + 4)$.", answer: "3x^2+14x+8", shown: "3x^2 + 14x + 8", form: "simplified", skill: "Factor ax² + bx + c", keys: KEYS_Q,
         near: [{ v: "3x^2+8", fb: "Add the middle products: $12x$ and $2x$." }, { v: "3x^2+6x+8", fb: "The middle products are $3x \\cdot 4 = 12x$ and $2 \\cdot x = 2x$." }], hints: ["$3x \\cdot x$, $3x \\cdot 4$, $2 \\cdot x$, $2 \\cdot 4$."], why: "$3x^2 + 12x + 2x + 8$." },
@@ -331,7 +360,7 @@
   LESSONS.push({
     title: "Writing quadratic equations given real solutions",
     blurb: "Book 8.11 · Run the zero product property backwards: from the zeros to the function.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "A quadratic function has zeros at 2 and 5. Which could it be?",
         options: [{ t: "$f(x) = (x - 2)(x - 5)$" }, { t: "$f(x) = (x + 2)(x + 5)$", fb: "Those factors are zero at $-2$ and $-5$." }, { t: "$f(x) = x^2 + 2x + 5$", fb: "2 and 5 as coefficients don't make 2 and 5 the zeros. Check: $f(2) = 13$." }],
@@ -358,7 +387,7 @@
   LESSONS.push({
     title: "Using technology to find the quadratic regression",
     blurb: "Book 8.12 · When data rises and falls, fit a parabola to it and use it to predict.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "A ball is thrown, and its height is measured every second. Which kind of model suits this data?",
         scene: { type: "plane", x: [-1, 7], y: [-1, 11], axisLabels: ["s", "m"], marks: THROW.map(function (p) { return { x: p[0], y: p[1], color: "orange", r: 6 }; }) },
@@ -386,8 +415,9 @@
   /* ============================================ Project 8 */
   LESSONS.push({
     title: "Project: Modelling rocket flight",
+    tag: "Project",
     blurb: "Book Project 8 · One model rocket, three questions: how long, how high, and when.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "learn", kicker: "The brief",
         prompt: "A model rocket leaves the ground at 96 feet per second. Its height after $t$ seconds is$$h(t) = 96t - 16t^2$$Mission control needs three things: when it lands, how high it goes, and when it passes 80 ft." },
@@ -409,20 +439,20 @@
   function bin(p) { return "(x " + signed(p) + ")"; }
 
   var SKILLS = [
-    { id: "u8-sqrt", title: "Solve x² = k", lesson: 3,
+    { id: "u8-sqrt", title: "Solve x² = k", lesson: 4,
       gen: function (R) {
         var r = R.int(2, 12), k = R.pick([0, 0, 1])* R.int(1, 30), a = R.pick([1, 1, 2, 3]);
         var tex = a === 1 ? (k ? "x^2 " + (R.chance(0.5) ? "- " + k + " = " + (r * r - k) : "+ " + k + " = " + (r * r + k)) : "x^2 = " + r * r) : a + "x^2 = " + a * r * r;
         return { type: "numbers", prompt: "Solve. $$" + tex + "$$", answer: [r, -r], placeholder: "e.g. 3, -3",
           hints: ["Get $x^2$ alone.", "$x^2 = " + r * r + "$. Remember both square roots."], why: "$x^2 = " + r * r + "$, so $x = \\pm " + r + "$." };
       } },
-    { id: "u8-square-shift", title: "Solve (x − a)² = k", lesson: 3,
+    { id: "u8-square-shift", title: "Solve (x − a)² = k", lesson: 4,
       gen: function (R) {
         var a = R.nz(-7, 7), r = R.int(1, 8);
         return { type: "numbers", prompt: "Solve. $$" + bin(-a) + "^2 = " + r * r + "$$", answer: [a + r, a - r], placeholder: "e.g. 5, -1",
           hints: ["The bracket is $" + r + "$ or $-" + r + "$.", "$x " + signed(-a) + " = " + r + "$, or $x " + signed(-a) + " = -" + r + "$."], why: "$x = " + a + " + " + r + " = " + (a + r) + "$ or $x = " + a + " - " + r + " = " + (a - r) + "$." };
       } },
-    { id: "u8-count", title: "How many solutions?", lesson: 5,
+    { id: "u8-count", title: "How many solutions?", lesson: 6,
       gen: function (R) {
         var kind = R.int(0, 2), k = R.int(1, 20), a = R.nz(-6, 6), names = ["Two", "One", "None"], form = R.int(0, 1);
         var tex = kind === 0 ? (form ? "x^2 = " + k : bin(a) + "^2 = " + k) : kind === 1 ? (form ? "x^2 = 0" : bin(a) + "^2 = 0") : (form ? "x^2 = -" + k : "x^2 + " + k + " = 0");
@@ -430,14 +460,14 @@
         return mc(R, { prompt: "How many real solutions does $" + tex + "$ have?", right: names[kind], wrong: names.filter(function (n, i) { return i !== kind; }).map(function (n) { return { t: n, fb: why }; }), keep: true,
           hints: ["Get the squared part alone. Is the other side positive, zero or negative?"], why: why });
       } },
-    { id: "u8-zpp", title: "Use the zero product property", lesson: 4,
+    { id: "u8-zpp", title: "Use the zero product property", lesson: 5,
       gen: function (R) {
         var m = R.int(-8, 8), n = R.int(-8, 8);
         if (m === n) n = m + 3;
         return { type: "numbers", prompt: "Solve. $$" + (m === 0 ? "x" : bin(-m)) + (n === 0 ? " \\cdot x" : bin(-n)) + " = 0$$", answer: [m, n], placeholder: "e.g. 2, -5",
           hints: ["A product is zero when one of its factors is zero."], why: "The factors are zero at $x = " + m + "$ and $x = " + n + "$." };
       } },
-    { id: "u8-factor", title: "Factor a quadratic", lesson: 7,
+    { id: "u8-factor", title: "Factor a quadratic", lesson: 8,
       gen: function (R) {
         var p = R.nz(-9, 9), q = R.nz(-9, 9);
         if (p + q === 0) q += 1;
@@ -445,20 +475,20 @@
           hints: ["Two numbers that multiply to $" + p * q + "$ and add to $" + (p + q) + "$.", p * q > 0 ? "A positive product: the numbers have the same sign." : "A negative product: one number is positive and one negative."],
           why: "$" + p + " \\times " + L.sub("a", { a: q }) + " = " + p * q + "$ and $" + p + " + " + L.sub("a", { a: q }) + " = " + (p + q) + "$." };
       } },
-    { id: "u8-dos", title: "Factor a difference of squares", lesson: 8,
+    { id: "u8-dos", title: "Factor a difference of squares", lesson: 9,
       gen: function (R) {
         var a = R.int(2, 12), k = R.pick([1, 1, 1, 2, 3]);
         return { type: "expr", prompt: "Factor. $$" + (k === 1 ? "" : k * k) + "x^2 - " + a * a + "$$", answer: "(" + k + "x+" + a + ")*(" + k + "x-" + a + ")", shown: "(" + (k === 1 ? "" : k) + "x + " + a + ")(" + (k === 1 ? "" : k) + "x - " + a + ")", form: "factored", keys: KEYS_Q,
           hints: ["$" + a * a + " = " + a + "^2$" + (k > 1 ? " and $" + k * k + "x^2 = (" + k + "x)^2$." : ".")], why: "$a^2 - b^2 = (a + b)(a - b)$." };
       } },
-    { id: "u8-solve", title: "Solve by factoring", lesson: 9,
+    { id: "u8-solve", title: "Solve by factoring", lesson: 10,
       gen: function (R) {
         var m = R.int(-8, 8), n = R.int(-8, 8);
         if (m === n) n = m + 2;
         return { type: "numbers", prompt: "Solve. $$" + quad(1, -(m + n), m * n) + " = 0$$", answer: [m, n], placeholder: "e.g. 2, -5",
           hints: ["Factor the left side.", "$" + (m === 0 ? "x" : bin(-m)) + (n === 0 ? " \\cdot x" : bin(-n)) + " = 0$."], why: "$" + (m === 0 ? "x" : bin(-m)) + (n === 0 ? " \\cdot x" : bin(-n)) + " = 0$, so $x = " + m + "$ or $x = " + n + "$." };
       } },
-    { id: "u8-rearrange", title: "Rearrange, then solve", lesson: 9,
+    { id: "u8-rearrange", title: "Rearrange, then solve", lesson: 10,
       gen: function (R) {
         var m = R.nz(-8, 8), n = R.nz(-8, 8);
         if (m === n) n = -m;
@@ -466,13 +496,13 @@
         return { type: "numbers", prompt: "Solve. $$" + poly([[1, "x^2"], [b, "x"]]) + " = " + -c + "$$", answer: [m, n], placeholder: "e.g. 2, -5",
           hints: ["Move everything to one side: $" + quad(1, b, c) + " = 0$.", "Now factor."], why: "$" + quad(1, b, c) + " = " + bin(-m) + bin(-n) + " = 0$, so $x = " + m + "$ or $x = " + n + "$." };
       } },
-    { id: "u8-lead", title: "Solve ax² + bx + c = 0 by factoring", lesson: 10,
+    { id: "u8-lead", title: "Solve ax² + bx + c = 0 by factoring", lesson: 11,
       gen: function (R) {
         var a = R.pick([2, 3, 5]), p = R.pick([1, -1, 2, -2, 3, -3, 4].filter(function (v) { return v % a !== 0; })), q = R.nz(-6, 6);
         return { type: "numbers", prompt: "Solve. $$" + quad(a, a * q + p, p * q) + " = 0$$", answer: [-p / a, -q], shown: L.fracText(-p, a) + ", " + -q, placeholder: "e.g. 1/2, -3",
           hints: ["It factors as $(" + a + "x " + signed(p) + ")" + bin(q) + "$.", "$" + a + "x " + signed(p) + " = 0$ gives a fraction."], why: "$(" + a + "x " + signed(p) + ")" + bin(q) + " = 0$: $x = " + frac(-p, a) + "$ or $x = " + -q + "$." };
       } },
-    { id: "u8-write", title: "Write a quadratic from its zeros", lesson: 11,
+    { id: "u8-write", title: "Write a quadratic from its zeros", lesson: 12,
       gen: function (R) {
         var m = R.nz(-7, 7), n = R.nz(-7, 7);
         if (m === n || m === -n) n = m + 1 || 2;
@@ -482,7 +512,7 @@
                   { t: "$f(x) = " + quad(1, m, n) + "$", fb: "Putting the zeros in as coefficients doesn't make them zeros. Check by substituting." }],
           hints: ["Which bracket is zero when $x = " + m + "$?"], why: "A zero at $m$ comes from the factor $(x - m)$: " + right + "." });
       } },
-    { id: "u8-find-a", title: "Find a from a point", lesson: 11,
+    { id: "u8-find-a", title: "Find a from a point", lesson: 12,
       gen: function (R) {
         var m = R.int(-4, 2), n = m + R.int(2, 5), a = R.pick([-3, -2, 2, 3, 4]), x0 = R.pick([m - 1, n + 1, m + 1].filter(function (v) { return v !== m && v !== n; })), y0 = a * (x0 - m) * (x0 - n), k = (x0 - m) * (x0 - n);
         return { type: "num", prompt: "$f(x) = a" + bin(-m) + bin(-n) + "$ passes through $(" + x0 + ", " + y0 + ")$. What is $a$?", pre: "$a =$", answer: a,
@@ -494,11 +524,11 @@
     title: "Quadratic equations",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 5, blurb: "Square roots, the zero product property, and how many solutions there are.",
+      { title: "Quiz 1", after: 6, blurb: "Square roots, the zero product property, and how many solutions there are.",
         skills: ["u8-sqrt", "u8-square-shift", "u8-count", "u8-zpp"], per: 2 },
-      { title: "Quiz 2", after: 9, blurb: "Factoring, and solving by factoring.",
+      { title: "Quiz 2", after: 10, blurb: "Factoring, and solving by factoring.",
         skills: ["u8-factor", "u8-dos", "u8-solve", "u8-rearrange"], per: 2 },
-      { title: "Quiz 3", after: 12, blurb: "Leading coefficients, and going from the solutions back to the equation.",
+      { title: "Quiz 3", after: 13, blurb: "Leading coefficients, and going from the solutions back to the equation.",
         skills: ["u8-lead", "u8-write", "u8-find-a"], per: 2 }
     ],
     skills: SKILLS

@@ -2,7 +2,7 @@
    Algebra I — Unit 7: Introduction to quadratic functions. See lab/core.js
    for the format.
 
-   Follows OpenStax Algebra 1, Unit 7, lesson for lesson — 7.1 to 7.17 and
+   Follows OpenStax Algebra 1, Unit 7, lesson for lesson — the readiness check, 7.1 to 7.17 and
    Project 7. Written to the recipe in docs/OEDU_BRILLIANT_CONCEPT.md and the
    five rules at the top of alg/u02.js: teach, learn by doing, super
    interactive, nothing clumsy, never too much.
@@ -15,7 +15,7 @@
    Adapted from OpenStax, Algebra 1 (Rice University), CC BY-NC-SA 4.0. The
    questions, figures, feedback and every step here are OEdu's own.
 
-   Eighteen lessons, fourteen skills, four quizzes, and the unit test.
+   Nineteen lessons, fourteen skills, four quizzes, and the unit test.
    Standards: CCSS HSF.IF.B.4, HSF.IF.C.7a, HSF.IF.C.8a, HSF.BF.A.1, HSF.BF.B.3, HSF.LE.A.3, HSA.SSE.B.3.
    ========================================================================== */
 (function () {
@@ -67,6 +67,34 @@
   function big(ans) { return { v: ans / 1000, tol: 1e-9, fb: "Type it without a comma: " + ans + "." }; }
 
   var LESSONS = [];
+  /* ============================================================ Ready? */
+  LESSONS.push({
+    title: "Are you ready? Three quick checks",
+    tag: "Ready?",
+    blurb: "Book: Unit 7 Readiness · Multiply binomials, factor a trinomial, and tell linear from exponential.",
+    mins: 6, v: 2,
+    steps: [
+      { type: "expr", kicker: "Check 1 · Multiplying", prompt: "Multiply out $(x + 4)(x + 2)$.", answer: "x^2+6x+8", shown: "x^2 + 6x + 8", form: "simplified", skill: "Multiply binomials",
+        keys: [["$x$", "x"], ["$x^2$", "x^2"], ["$+$", "+"], ["$-$", "-"]], near: [{ v: "x^2+8", fb: "Add the two middle products: $2x$ and $4x$." }], hints: ["Four products: $x \\cdot x$, $x \\cdot 2$, $4 \\cdot x$, $4 \\cdot 2$."], why: "$x^2 + 2x + 4x + 8 = x^2 + 6x + 8$." },
+      { type: "expr", prompt: "Multiply out $(x - 3)(x + 5)$.", answer: "x^2+2x-15", shown: "x^2 + 2x - 15", form: "simplified", skill: "Multiply binomials",
+        keys: [["$x$", "x"], ["$x^2$", "x^2"], ["$+$", "+"], ["$-$", "-"]], near: [{ v: "x^2-15", fb: "Add the middle products: $5x$ and $-3x$." }, { v: "x^2+2x+15", fb: "$-3 \\times 5 = -15$." }], hints: ["$5x - 3x = 2x$."], why: "$x^2 + 5x - 3x - 15 = x^2 + 2x - 15$." },
+      { type: "tiles", kicker: "Check 2 · Factoring", prompt: "Arrange $x^2 + 5x + 6$ into a rectangle: choose $p$ and $q$.",
+        mode: "factor", target: { b: 5, c: 6 }, p: 1, q: 1, min: 0, answer: [2, 3], skill: "Factor trinomials",
+        hints: ["Two numbers that multiply to 6 and add to 5."], why: "$(x + 2)(x + 3)$." },
+      { type: "expr", prompt: "Factor $x^2 - x - 12$.", answer: "(x-4)(x+3)", shown: "(x - 4)(x + 3)", form: "factored", skill: "Factor trinomials",
+        keys: [["$x$", "x"], ["$x^2$", "x^2"], ["$+$", "+"], ["$-$", "-"], ["$($", "("], ["$)$", ")"]], near: [{ v: "(x+4)(x-3)", fb: "That gives $+x$ in the middle. The larger number must be negative." }],
+        hints: ["Multiply to $-12$, add to $-1$."], why: "$-4 \\times 3 = -12$ and $-4 + 3 = -1$." },
+      { type: "choice", kicker: "Check 3 · Linear or exponential", prompt: "Which kind of function is this?" + tbl(["$x$", "0", "1", "2", "3"], [["y", 5, 15, 45, 135]]),
+        options: [{ t: "Exponential: it triples each step." }, { t: "Linear: it goes up each step.", fb: "It goes up by 10, then 30, then 90: not by equal amounts. Look at the ratios." }],
+        answer: 0, keep: true, skill: "Linear or exponential", hints: ["Differences or ratios: which are constant?"], why: "$15 \\div 5 = 45 \\div 15 = 3$: equal ratios." },
+      { type: "choice", prompt: "$f(x) = 50x$ and $g(x) = 2^x$. Which is larger for large values of $x$?",
+        options: [{ t: "$g$: exponential growth always overtakes linear." }, { t: "$f$: 50 is bigger than 2.", fb: "$f$ leads for a while, but $g(10) = 1024$ already beats $f(10) = 500$." }],
+        answer: 0, keep: true, skill: "Linear or exponential", hints: ["Try $x = 10$."], why: "Multiplying by 2 again and again beats adding 50 again and again, eventually." },
+      { type: "learn", kicker: "So, where to start?",
+        prompt: "All right first time? Go straight to **Lesson 7.1**. If **check 1** slipped, see Unit 6's lesson 6.2. For **check 2**, lesson 6.5. For **check 3**, Unit 5's lessons 5.3 and 5.14.",
+        after: "Nothing is locked. Open any lesson whenever you like." }
+    ]
+  });
   var KEYS_Q = [["$x$", "x"], ["$x^2$", "x^2"], ["$+$", "+"], ["$-$", "-"], ["$($", "("], ["$)$", ")"]];
   function rock(t) { return t >= 0 && t <= 5 ? 400 - 16 * t * t : NaN; }
   function ball(t) { return t >= 0 && t <= 5.1 ? 5 + 80 * t - 16 * t * t : NaN; }
@@ -76,7 +104,7 @@
   LESSONS.push({
     title: "Patterns of change",
     blurb: "Book 7.1 · A quantity that rises, peaks and falls: neither linear nor exponential.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "table", kicker: "Try it", prompt: "You have **20 m of fence** for a rectangular pen, so length + width = 10. Fill in the areas.",
         head: ["length", "width", "area"], rows: [[1, 9, 9], [2, 8, null], [3, 7, null], [5, 5, null], [7, 3, null], [9, 1, 9]],
@@ -107,7 +135,7 @@
   LESSONS.push({
     title: "Introduction to quadratic relationships",
     blurb: "Book 7.2 · Patterns built from squares, and the expressions that count them.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A pattern of dots: step 1 is a $1 \\times 1$ square, step 2 is $2 \\times 2$, step 3 is $3 \\times 3$. How many dots in **step 10**?", answer: 100, skill: "Quadratic patterns",
         near: [{ v: 20, fb: "The square is 10 by 10: multiply, don't add." }, { v: 40, fb: "That's the perimeter of the square. Count all the dots inside." }],
@@ -134,7 +162,7 @@
   LESSONS.push({
     title: "Determining if a function is quadratic",
     blurb: "Book 7.3 · The test: constant second differences.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "table", kicker: "Try it", prompt: "For $y = x^2 + 3x$, fill in the first differences, then the second differences.",
         head: ["$y$", "0", "4", "10", "18", "28"], rows: [["\\text{1st difference}", "", 4, null, null, null], ["\\text{2nd difference}", "", "", 2, null, null]],
@@ -163,7 +191,7 @@
   LESSONS.push({
     title: "Comparing quadratic and exponential functions",
     blurb: "Book 7.4 · Squaring grows fast. Doubling grows faster, in the end.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "Which is larger at $x = 3$: $x^2$ or $2^x$?",
         options: [{ t: "$x^2$: 9 against 8" }, { t: "$2^x$: exponentials are always bigger", fb: "$3^2 = 9$ and $2^3 = 8$. Not yet." }, { t: "They are equal.", fb: "9 and 8: close, but not equal." }],
@@ -188,7 +216,7 @@
   LESSONS.push({
     title: "Building quadratic functions to describe situations, part 1",
     blurb: "Book 7.5 · A falling object: the distance fallen is 16t² feet.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A rock is dropped from a cliff. After 1 second it has fallen **16 ft**, after 2 seconds **64 ft**, after 3 seconds **144 ft**. How far after **4** seconds?", post: "ft", answer: 256, skill: "Falling objects",
         near: [{ v: 224, fb: "The gaps are 48, 80, … and they keep growing by 32. The next gap is 112." }, { v: 64, fb: "It doesn't fall 16 ft every second: it speeds up." }],
@@ -216,7 +244,7 @@
   LESSONS.push({
     title: "Building quadratic functions to describe situations, part 2",
     blurb: "Book 7.6 · Launch something upward: a starting height, a launch speed, and gravity pulling back.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A ball is launched straight up from **5 ft** at **80 ft per second**. If there were **no gravity**, how high would it be after 2 seconds?", post: "ft", answer: 165, skill: "Projectile height",
         near: [{ v: 160, fb: "That's the distance travelled. It started 5 ft up." }], hints: ["It rises 80 ft each second, from 5 ft."], why: "$5 + 80(2) = 165$ ft. Without gravity the height is linear." },
@@ -257,7 +285,7 @@
   LESSONS.push({
     title: "Domain, range, vertex, and zeros of quadratic functions",
     blurb: "Book 7.7 · The turning point is the vertex. Where the graph meets the axis are the zeros.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "A fountain's jet of water follows $h(x) = 6x - x^2$: its height, in feet, at a distance $x$ feet from the nozzle. **Click the highest point of the jet.**",
         x: [-1, 8], y: [-1, 10], axisLabels: ["x", "h"], click: "point", answer: { point: [3, 9] }, skill: "Vertex and zeros", fns: [{ f: arc, color: "blue" }],
@@ -283,7 +311,7 @@
   LESSONS.push({
     title: "Equivalent quadratic expressions",
     blurb: "Book 7.8 · A product of two sides and a sum of areas are the same quantity, written two ways.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "learn", kicker: "Try it", prompt: "A rectangle is $x + 5$ wide and $x + 2$ tall. Fill in the area of each part.",
         scene: { type: "tiles", mode: "area", rows: ["x", "2"], cols: ["x", "5"], cells: [["x^2", "5x"], ["2x", "10"]], readout: "$(x + 2)(x + 5) = x^2 + 5x + 2x + 10 = x^2 + 7x + 10$", gate: true }, gate: true,
@@ -310,7 +338,7 @@
   LESSONS.push({
     title: "Standard form and factored form",
     blurb: "Book 7.9 · Two names for two ways of writing the same quadratic.",
-    mins: 6, v: 1,
+    mins: 6, v: 2,
     steps: [
       { type: "expr", kicker: "Try it", prompt: "Multiply out $(x - 3)(x - 4)$.", answer: "x^2-7x+12", shown: "x^2 - 7x + 12", form: "simplified", skill: "Standard and factored form", keys: KEYS_Q,
         near: [{ v: "x^2-7x-12", fb: "$-3 \\times -4$ is $+12$." }, { v: "x^2+12", fb: "Include the middle products: $-4x$ and $-3x$." }, { v: "x^2-x+12", fb: "$-4x - 3x = -7x$." }],
@@ -336,7 +364,7 @@
   LESSONS.push({
     title: "Graphs of functions in standard and factored forms",
     blurb: "Book 7.10 · Factored form shows the x-intercepts. Standard form shows the y-intercept.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "For $f(x) = (x - 2)(x - 6)$, what is $f(2)$?", pre: "$f(2) =$", answer: 0, skill: "Intercepts from the form",
         near: [{ v: -4, fb: "$(2 - 2)$ is 0, and 0 times anything is 0." }], hints: ["$(2 - 2)(2 - 6)$."], why: "$(0)(-4) = 0$. When one factor is zero, the whole product is zero." },
@@ -363,7 +391,7 @@
   LESSONS.push({
     title: "Graphing from the factored form",
     blurb: "Book 7.11 · Two intercepts and the vertex between them are enough to sketch a parabola.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "$f(x) = (x - 1)(x - 5)$ has zeros at 1 and 5. A parabola is symmetric, so its vertex is **halfway** between them. What is the $x$-coordinate of the vertex?", answer: 3, skill: "Vertex from factored form",
         near: [{ v: 2, fb: "That's half the *distance* between them. The midpoint is the average: $\\frac{1 + 5}{2}$." }, { v: 6, fb: "Halve the sum." }], hints: ["Average the two zeros."], why: "$\\frac{1 + 5}{2} = 3$." },
@@ -392,7 +420,7 @@
   LESSONS.push({
     title: "Graphing the standard form, part 1",
     blurb: "Book 7.12 · In y = ax² + c, a opens, flips and stretches the parabola, and c lifts it.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "Set $a$ and $c$ so the parabola $y = ax^2 + c$ passes through **both** orange points.",
         x: [-5, 5], y: [-7, 8], params: { a: { v: -1, min: -3, max: 3, step: 0.5, label: "$a$" }, c: { v: 2, min: -6, max: 6, step: 1, label: "$c$" } },
@@ -430,7 +458,7 @@
   LESSONS.push({
     title: "Graphing the standard form, part 2",
     blurb: "Book 7.13 · The bx term slides the vertex sideways. Its x-coordinate is −b ÷ 2a.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "The curve is $y = x^2 + bx$. Slide $b$ until the vertex sits on the red line, $x = 2$.",
         x: [-6, 6], y: [-10, 8], vline: [2], params: { b: { v: 2, min: -6, max: 6, step: 1, label: "$b$" } },
@@ -459,7 +487,7 @@
   LESSONS.push({
     title: "Graphs that represent situations",
     blurb: "Book 7.14 · Read a quadratic graph as a story: where it starts, its peak, and where it lands.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A firework is launched from a rooftop. $h(t) = -16t^2 + 64t + 80$ is its height in feet after $t$ seconds. How high is the rooftop?",
         scene: graph([0, 6], [0, 160], [{ f: shot, color: "orange" }], { gridY: 20, labelEveryY: 40, aspect: 0.85, axisLabels: ["t", "h"] }),
@@ -487,7 +515,7 @@
   LESSONS.push({
     title: "Vertex form",
     blurb: "Book 7.15 · y = a(x − h)² + k puts the vertex in plain sight: (h, k).",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "plane", kicker: "Try it", prompt: "The curve is $y = (x - h)^2 + k$. Slide $h$ and $k$ to put its vertex on the orange point.",
         x: [-6, 6], y: [-6, 8], params: { h: { v: 0, min: -5, max: 5, step: 1, label: "$h$" }, k: { v: 0, min: -5, max: 5, step: 1, label: "$k$" } },
@@ -517,7 +545,7 @@
   LESSONS.push({
     title: "Graphing from the vertex form",
     blurb: "Book 7.16 · Plot the vertex, find one more point, and let symmetry finish the job.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "For $f(x) = (x - 2)^2 - 1$, the vertex is $(2, -1)$. What is $f(3)$, one step to the right?", pre: "$f(3) =$", answer: 0, skill: "Graph from vertex form",
         near: [{ v: -1, fb: "That's the vertex's height. At $x = 3$ the bracket is $1$." }], hints: ["$(3 - 2)^2 - 1$."], why: "$1 - 1 = 0$. By symmetry, $f(1)$, one step to the left, is 0 as well." },
@@ -546,7 +574,7 @@
   LESSONS.push({
     title: "Changing the vertex",
     blurb: "Book 7.17 · Move a parabola anywhere by changing h and k. Reshape it with a.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "The graph of $y = x^2$ is moved **right 4** and **up 1**. What is its new equation?",
         options: [{ t: "$y = (x - 4)^2 + 1$" }, { t: "$y = (x + 4)^2 + 1$", fb: "That moves it *left* 4. Its vertex is where $x + 4 = 0$." }, { t: "$y = x^2 + 4x + 1$", fb: "Adding $4x$ doesn't shift the graph 4 to the right. Replace $x$ with $(x - 4)$." }],
@@ -576,8 +604,9 @@
   /* ============================================ Project 7 */
   LESSONS.push({
     title: "Project: Design a fountain",
+    tag: "Project",
     blurb: "Book Project 7 · Shape a jet of water with a quadratic: where it lands and how high it goes.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "learn", kicker: "The brief",
         prompt: "A fountain's nozzle is at $x = 0$. A jet of water follows a parabola and must land **6 ft** away, in a basin. In factored form, that's $y = a \\cdot x(x - 6)$: zeros at 0 and 6. Your job is to choose $a$." },
@@ -605,7 +634,7 @@
   function seqOf(f) { return [1, 2, 3, 4].map(f); }
 
   var SKILLS = [
-    { id: "u7-classify", title: "Linear, quadratic or exponential", lesson: 3,
+    { id: "u7-classify", title: "Linear, quadratic or exponential", lesson: 4,
       gen: function (R) {
         var kind = R.int(0, 2), names = ["Linear", "Quadratic", "Exponential"], t, why;
         if (kind === 0) { var m = R.nz(-6, 7), b = R.int(-5, 9); t = seqOf(function (x) { return m * x + b; }); why = "The first differences are all $" + m + "$."; }
@@ -615,14 +644,14 @@
           wrong: names.filter(function (n, i) { return i !== kind; }).map(function (n) { return { t: n, fb: why }; }), keep: true,
           hints: ["Find the differences. If they aren't constant, find their differences, or try ratios."], why: why });
       } },
-    { id: "u7-next", title: "Continue a quadratic sequence", lesson: 3,
+    { id: "u7-next", title: "Continue a quadratic sequence", lesson: 4,
       gen: function (R) {
         var a = R.pick([1, 1, 2]), b = R.int(-2, 4), c = R.int(-3, 8), t = [1, 2, 3, 4, 5].map(function (x) { return a * x * x + b * x + c; }), d = [t[1] - t[0], t[2] - t[1], t[3] - t[2]];
         return { type: "num", prompt: "This sequence is quadratic. What comes next? $" + t.slice(0, 4).join(", \; ") + ", \; \\ldots$", answer: t[4],
           near: near(t[4], [{ v: t[3] + d[2], fb: "The differences are " + d.join(", ") + ". They keep growing by " + 2 * a + ", so the next one is bigger." }]),
           hints: ["Differences: " + d.join(", ") + ". What is the next difference?"], why: "The next difference is $" + (d[2] + 2 * a) + "$: $" + t[3] + " + " + (d[2] + 2 * a) + " = " + t[4] + "$." };
       } },
-    { id: "u7-fall", title: "Distance fallen", lesson: 5,
+    { id: "u7-fall", title: "Distance fallen", lesson: 6,
       gen: function (R) {
         if (R.chance(0.5)) { var t = R.pick([1, 2, 3, 4, 5, 1.5, 2.5]); return { type: "num", prompt: "An object dropped from rest falls $d(t) = 16t^2$ feet in $t$ seconds. How far does it fall in " + nm(t) + " seconds?", post: "ft", answer: 16 * t * t,
           near: near(16 * t * t, [{ v: 32 * t, fb: "$t^2$ means $t \\times t$, not $2t$." }, { v: 16 * t, fb: "Square the time first." }]), hints: ["Square " + nm(t) + ", then multiply by 16."], why: "$16 \\times " + nm(t * t) + " = " + nm(16 * t * t) + "$ ft." }; }
@@ -630,28 +659,28 @@
         return { type: "num", prompt: "A stone is dropped from " + H + " ft: its height is $h(t) = " + H + " - 16t^2$. After how many seconds does it reach the ground?", post: "s", answer: T,
           near: [{ v: T * T, fb: "That's $t^2$. Take the square root." }], hints: ["Solve $" + H + " - 16t^2 = 0$.", "$t^2 = " + T * T + "$."], why: "$16t^2 = " + H + "$, so $t^2 = " + T * T + "$ and $t = " + T + "$." };
       } },
-    { id: "u7-projectile", title: "Height of a launched object", lesson: 6,
+    { id: "u7-projectile", title: "Height of a launched object", lesson: 7,
       gen: function (R) {
         var h0 = R.pick([0, 4, 5, 6, 10]), v = R.pick([48, 64, 80, 96]), t = R.int(1, 3), ans = h0 + v * t - 16 * t * t;
         return { type: "num", prompt: "A ball's height is $h(t) = " + (h0 ? h0 + " + " : "") + v + "t - 16t^2$ feet. Find $h(" + t + ")$.", post: "ft", answer: ans,
           near: near(ans, [{ v: h0 + v * t + 16 * t * t, fb: "Gravity pulls it down: subtract $16t^2$." }, { v: h0 + v * t - 32 * t, fb: "$t^2$ is $t \\times t$." }]),
           hints: ["$" + (h0 ? h0 + " + " : "") + v + "(" + t + ") - 16(" + t + ")^2$."], why: "$" + (h0 ? h0 + " + " : "") + v * t + " - " + 16 * t * t + " = " + ans + "$ ft." };
       } },
-    { id: "u7-expand", title: "Factored form to standard form", lesson: 9,
+    { id: "u7-expand", title: "Factored form to standard form", lesson: 10,
       gen: function (R) {
         var p = R.nz(-7, 7), q = R.nz(-7, 7);
         return { type: "expr", prompt: "Write in standard form. $$" + bin(p) + bin(q) + "$$", answer: clean(quad(1, p + q, p * q)), shown: quad(1, p + q, p * q), form: "simplified", keys: KEYS_Q,
           near: [{ v: clean(quad(1, 0, p * q)), fb: "Add the two middle products: $" + q + "x$ and $" + p + "x$." }, { v: clean(quad(1, p + q, -p * q)), fb: "Check the sign of the last term: $" + p + " \\times " + L.sub("a", { a: q }) + "$." }],
           hints: ["Multiply every term of one bracket by every term of the other."], why: "$x^2 " + signed(q) + "x " + signed(p) + "x " + signed(p * q) + " = " + quad(1, p + q, p * q) + "$." };
       } },
-    { id: "u7-zeros", title: "Zeros from factored form", lesson: 10,
+    { id: "u7-zeros", title: "Zeros from factored form", lesson: 11,
       gen: function (R) {
         var m = R.int(-7, 7), n = R.int(-7, 7);
         if (m === n) n = m + 2;
         return { type: "numbers", prompt: "What are the zeros of $f(x) = " + (m === 0 ? "x" : bin(-m)) + (n === 0 ? " \\cdot x" : bin(-n)) + "$?", answer: [m, n], placeholder: "e.g. 2, -5",
           hints: ["Find the value of $x$ that makes each factor zero."], why: "The factors are zero at $x = " + m + "$ and $x = " + n + "$. The signs are opposite to those inside the brackets." };
       } },
-    { id: "u7-yint", title: "The y-intercept", lesson: 10,
+    { id: "u7-yint", title: "The y-intercept", lesson: 11,
       gen: function (R) {
         if (R.chance(0.5)) { var a = R.pick([1, 2, -1, 3]), b = R.nz(-9, 9), c = R.nz(-12, 12); return { type: "num", prompt: "What is the $y$-intercept of $y = " + quad(a, b, c) + "$?", answer: c,
           near: near(c, [{ v: b, fb: "That's the coefficient of $x$. Put $x = 0$ and only the constant is left." }]), hints: ["Put $x = 0$."], why: "At $x = 0$, $y = " + c + "$." }; }
@@ -659,13 +688,13 @@
         return { type: "num", prompt: "What is the $y$-intercept of $y = " + bin(p) + bin(q) + "$?", answer: p * q, near: near(p * q, [{ v: -p * q, fb: "Check the signs: $(" + p + ")(" + q + ")$." }, { v: p + q, fb: "At $x = 0$ the brackets are *multiplied*." }]),
           hints: ["Put $x = 0$ into both brackets."], why: "$(" + p + ")(" + q + ") = " + p * q + "$." };
       } },
-    { id: "u7-vertex-fact", title: "Vertex from factored form", lesson: 11,
+    { id: "u7-vertex-fact", title: "Vertex from factored form", lesson: 12,
       gen: function (R) {
         var m = R.int(-6, 4), n = m + R.pick([2, 4, 6]), h = (m + n) / 2, k = (h - m) * (h - n);
         return { type: "pair", prompt: "Find the vertex of $y = " + bin(-m) + bin(-n) + "$.", answer: [h, k], near: [{ v: [h, -k], fb: "Check the sign: $(" + (h - m) + ")(" + (h - n) + ")$." }],
           hints: ["The zeros are $" + m + "$ and $" + n + "$. The vertex is halfway between them.", "Then put that $x$ into the function."], why: "$x = \\frac{" + m + " + " + n + "}{2} = " + h + "$ and $y = (" + (h - m) + ")(" + (h - n) + ") = " + k + "$." };
       } },
-    { id: "u7-shape", title: "Which way, and how wide", lesson: 12,
+    { id: "u7-shape", title: "Which way, and how wide", lesson: 13,
       gen: function (R) {
         var a = R.pick([-4, -3, -2, -0.5, -0.25, 0.25, 0.5, 2, 3, 5]), c = R.int(-6, 6), up = a > 0, narrow = Math.abs(a) > 1;
         var names = ["Opens upward, narrower than $y = x^2$", "Opens upward, wider than $y = x^2$", "Opens downward, narrower than $y = x^2$", "Opens downward, wider than $y = x^2$"], right = names[(up ? 0 : 2) + (narrow ? 0 : 1)];
@@ -673,13 +702,13 @@
           wrong: names.filter(function (n) { return n !== right; }).map(function (n) { return { t: n, fb: "$a = " + nm(a) + "$: its sign is " + (up ? "positive (upward)" : "negative (downward)") + ", and its size is " + (narrow ? "more than 1 (narrower)." : "less than 1 (wider).") }; }),
           keep: true, hints: ["Sign of $a$: direction. Size of $a$: width."], why: "$a = " + nm(a) + "$: " + (up ? "positive, so it opens upward" : "negative, so it opens downward") + ", and $|a|$ is " + (narrow ? "greater than 1, so it is narrower." : "less than 1, so it is wider.") });
       } },
-    { id: "u7-vertex-std", title: "Vertex from standard form", lesson: 13,
+    { id: "u7-vertex-std", title: "Vertex from standard form", lesson: 14,
       gen: function (R) {
         var a = R.pick([1, 1, 2, -1]), h = R.int(-4, 5), k = R.int(-6, 6), b = -2 * a * h, c = a * h * h + k;
         return { type: "pair", prompt: "Find the vertex of $y = " + quad(a, b, c) + "$.", answer: [h, k], near: [{ v: [-h, a * h * h - b * h + c], fb: "It's $-b$ on top: $\\frac{" + -b + "}{" + 2 * a + "}$." }],
           hints: ["$x = \\frac{-b}{2a} = \\frac{" + -b + "}{" + 2 * a + "}$.", "Then put that $x$ into the function."], why: "$x = " + h + "$, and $y = " + L.sub(quad(a, b, c), { x: h }) + " = " + k + "$." };
       } },
-    { id: "u7-read", title: "Read a quadratic model", lesson: 14,
+    { id: "u7-read", title: "Read a quadratic model", lesson: 15,
       gen: function (R) {
         var T = R.int(2, 4), a = -16, hmax = 16 * T * T + R.pick([0, 20, 36]), h0 = hmax - 16 * T * T, ask = R.int(0, 1);
         var f = function (t) { return hmax - 16 * (t - T) * (t - T); };
@@ -687,13 +716,13 @@
           near: near(ask ? hmax : T, [{ v: ask ? T : hmax, fb: ask ? "That's *when* it peaks. The height is the other number in the vertex." : "That's the height. The question asks for the time." }, { v: h0, fb: "That's the starting height, $h(0)$." }]),
           hints: ["The vertex is $(h, k)$: read it from the vertex form."], why: "The vertex is $(" + T + ", " + hmax + ")$: at " + T + " seconds the ball is " + hmax + " ft up." };
       } },
-    { id: "u7-vertex-form", title: "Vertex from vertex form", lesson: 15,
+    { id: "u7-vertex-form", title: "Vertex from vertex form", lesson: 16,
       gen: function (R) {
         var a = R.pick([1, 1, 2, -1, -3]), h = R.nz(-8, 8), k = R.int(-9, 9);
         return { type: "pair", prompt: "What is the vertex of $y = " + vtex(a, h, k) + "$?", answer: [h, k], near: [{ v: [-h, k], fb: "The bracket is zero when $x = " + h + "$, so that's the $x$-coordinate." }, { v: [k, h], fb: "$x$ first: it comes from inside the bracket." }],
           hints: ["Which $x$ makes the bracket zero?"], why: "$(h, k) = (" + h + ", " + k + ")$." };
       } },
-    { id: "u7-maxmin", title: "Maximum or minimum", lesson: 16,
+    { id: "u7-maxmin", title: "Maximum or minimum", lesson: 17,
       gen: function (R) {
         var a = R.pick([-3, -2, -1, 1, 2, 4]), h = R.nz(-6, 6), k = R.int(-8, 9), max = a < 0;
         return mc(R, { prompt: "What is true of $y = " + vtex(a, h, k) + "$?", right: "It has a " + (max ? "maximum" : "minimum") + " of $" + k + "$",
@@ -701,7 +730,7 @@
                   { t: "It has a " + (max ? "maximum" : "minimum") + " of $" + h + "$", fb: "$" + h + "$ is *where* it happens. The value is the $y$-coordinate, $" + k + "$." }],
           hints: ["Sign of $a$: which way it opens. $k$: the height of the vertex."], why: "$a = " + a + "$ opens " + (max ? "downward" : "upward") + ", and the vertex is $(" + h + ", " + k + ")$." });
       } },
-    { id: "u7-translate", title: "Move a parabola", lesson: 17,
+    { id: "u7-translate", title: "Move a parabola", lesson: 18,
       gen: function (R) {
         var h = R.int(1, 7) * R.sign(), k = R.int(1, 7) * R.sign(), right = "$y = " + vtex(1, h, k) + "$";
         return mc(R, { prompt: "The graph of $y = x^2$ is moved " + (h > 0 ? "right " + h : "left " + -h) + " and " + (k > 0 ? "up " + k : "down " + -k) + ". What is its new equation?", right: right,
@@ -713,13 +742,13 @@
     title: "Introduction to quadratic functions",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 4, blurb: "Recognising quadratic patterns, and how they compare with linear and exponential ones.",
+      { title: "Quiz 1", after: 5, blurb: "Recognising quadratic patterns, and how they compare with linear and exponential ones.",
         skills: ["u7-classify", "u7-next"], per: 3 },
-      { title: "Quiz 2", after: 7, blurb: "Falling and launched objects.",
+      { title: "Quiz 2", after: 8, blurb: "Falling and launched objects.",
         skills: ["u7-fall", "u7-projectile"], per: 3 },
-      { title: "Quiz 3", after: 13, blurb: "Standard and factored form: zeros, intercepts, the vertex, and the shape.",
+      { title: "Quiz 3", after: 14, blurb: "Standard and factored form: zeros, intercepts, the vertex, and the shape.",
         skills: ["u7-expand", "u7-zeros", "u7-yint", "u7-vertex-fact", "u7-shape", "u7-vertex-std"], per: 2 },
-      { title: "Quiz 4", after: 17, blurb: "Reading models, vertex form, and moving a parabola.",
+      { title: "Quiz 4", after: 18, blurb: "Reading models, vertex form, and moving a parabola.",
         skills: ["u7-read", "u7-vertex-form", "u7-maxmin", "u7-translate"], per: 2 }
     ],
     skills: SKILLS

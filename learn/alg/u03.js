@@ -1,7 +1,7 @@
 /* ==========================================================================
    Algebra I — Unit 3: Two-variable statistics. See lab/core.js for the format.
 
-   Follows OpenStax Algebra 1, Unit 3, lesson for lesson — 3.1 to 3.6 and
+   Follows OpenStax Algebra 1, Unit 3, lesson for lesson — the readiness check, 3.1 to 3.6 and
    Project 3. Written to the recipe in docs/OEDU_BRILLIANT_CONCEPT.md and the
    five rules at the top of alg/u02.js: teach, learn by doing, super
    interactive, nothing clumsy, never too much.
@@ -13,7 +13,7 @@
    Adapted from OpenStax, Algebra 1 (Rice University), CC BY-NC-SA 4.0. The
    data, questions, figures and feedback here are OEdu's own.
 
-   Seven lessons, eight skills, two quizzes, and the unit test.
+   Eight lessons, eight skills, two quizzes, and the unit test.
    Standards: CCSS HSS.ID.B.6, HSS.ID.C.7–9.
    ========================================================================== */
 (function () {
@@ -65,6 +65,37 @@
   function big(ans) { return { v: ans / 1000, tol: 1e-9, fb: "Type it without a comma: " + ans + "." }; }
 
   var LESSONS = [];
+  /* ============================================================ Ready? */
+  LESSONS.push({
+    title: "Are you ready? Three quick checks",
+    tag: "Ready?",
+    blurb: "Book: Unit 3 Readiness · Spot a linear pattern, read a trend, and say what a slope and an intercept mean.",
+    mins: 6, v: 2,
+    steps: [
+      { type: "choice", kicker: "Check 1 · Patterns", prompt: "Do these points follow a straight-line pattern?",
+        scene: { type: "plane", x: [0, 8], y: [0, 10], marks: [[1, 9], [2, 4.5], [3, 2.3], [4, 1.3], [5, 0.8], [6, 0.5], [7, 0.4]].map(function (p) { return { x: p[0], y: p[1], color: "ink", r: 5 }; }) },
+        options: [{ t: "No: they curve, falling fast and then levelling off." }, { t: "Yes: they all go down.", fb: "Going down isn't enough. A linear pattern goes down by about the same amount each step; these drops shrink." }],
+        answer: 0, keep: true, skill: "Linear or nonlinear", hints: ["Would a ruler lie along them?"], why: "The drops get smaller and smaller, so the points bend. That's a nonlinear pattern." },
+      { type: "sort", kicker: "Check 2 · Trends", prompt: "Positive trend, negative trend, or no trend?",
+        bins: ["Positive", "Negative", "No trend"],
+        cards: [{ t: "Hours of practice, and goals scored", bin: 0, fb: "More practice tends to go with more goals." }, { t: "Age of a phone, and its battery life", bin: 1, fb: "Older phones tend to last less long." },
+                { t: "Birthday month, and height", bin: 2, fb: "There's no reason for these to be linked." }, { t: "Temperature, and coats sold", bin: 1, fb: "Warmer days, fewer coats." }],
+        skill: "Positive and negative trends", hints: ["As the first goes up, what does the second tend to do?"], why: "Both rise together: positive. One rises as the other falls: negative. No pattern: no trend." },
+      { type: "choice", prompt: "Which way does this scatter plot trend?",
+        scene: { type: "plane", x: [0, 10], y: [0, 10], marks: [[1, 8.5], [2, 8], [3, 7.2], [4, 6], [5, 5.5], [6, 4.1], [7, 3.8], [8, 2.6], [9, 2]].map(function (p) { return { x: p[0], y: p[1], color: "ink", r: 5 }; }) },
+        options: [{ t: "Negative" }, { t: "Positive", fb: "Read left to right: the dots get lower." }, { t: "No trend", fb: "The dots line up clearly along a falling path." }],
+        answer: 0, keep: true, skill: "Positive and negative trends", hints: ["Left to right: up or down?"], why: "As $x$ grows, $y$ falls: a negative trend." },
+      { type: "choice", kicker: "Check 3 · Slope and intercept", prompt: "A plumber charges $C = 45h + 60$ dollars for $h$ hours. What does the **45** mean?",
+        options: [{ t: "Each hour of work costs \\$45." }, { t: "The call-out fee is \\$45.", fb: "The fee is charged once, even at $h = 0$: that's the 60." }, { t: "A job takes 45 hours.", fb: "45 multiplies the hours: it is a rate, dollars per hour." }],
+        answer: 0, skill: "Interpret slope and intercept", hints: ["The slope is what's added for each extra hour."], why: "45 is the slope: \\$45 for each extra hour." },
+      { type: "choice", prompt: "And the **60**?",
+        options: [{ t: "The cost before any work is done: a \\$60 call-out fee." }, { t: "The cost per hour.", fb: "That's the 45." }, { t: "The most the plumber charges.", fb: "The bill grows with every hour. 60 is where it starts." }],
+        answer: 0, skill: "Interpret slope and intercept", hints: ["Put $h = 0$."], why: "At $h = 0$, $C = 60$: the intercept is the starting value." },
+      { type: "learn", kicker: "So, where to start?",
+        prompt: "All right first time? Go straight to **Lesson 3.1**. If **check 3** slipped, Unit 1's lessons 1.10 and 1.11 are about exactly that: what slope and intercept mean in a situation. Checks 1 and 2 come up again in 3.1 and 3.4, so you'll meet them with support.",
+        after: "Nothing is locked. Open any lesson whenever you like." }
+    ]
+  });
   // Pearson's r for a list of [x, y] pairs.
   function corr(pts) {
     var n = pts.length, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
@@ -89,7 +120,7 @@
   LESSONS.push({
     title: "Linear models",
     blurb: "Book 3.1 · A scatter plot shows a trend. A line can describe it, and its slope and intercept mean something.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "Each dot is one used car: its **age** in years and its **price** in thousands of dollars. What is the trend?",
         scene: { type: "plane", x: [0, 12], y: [0, 22], axisLabels: ["age", "price"], marks: dots(CARS) },
@@ -138,7 +169,7 @@
   LESSONS.push({
     title: "Fitting lines",
     blurb: "Book 3.2 · The best line is the one whose misses are smallest.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "Three lines, one set of data. Which line fits best?",
         scene: { type: "plane", x: [0, 10], y: [0, 20], marks: dots(FIT),
@@ -180,7 +211,7 @@
   LESSONS.push({
     title: "Residuals",
     blurb: "Book 3.3 · A residual is how far the real value is from the prediction. Their pattern tells you if a line is the right model.",
-    mins: 8, v: 1,
+    mins: 8, v: 2,
     steps: [
       { type: "num", kicker: "Try it", prompt: "A model predicts a 6-year-old car costs **\\$11,000**. A real one sold for **\\$11,400**. How far off was the prediction? (actual − predicted)",
         pre: "$\\$$", answer: 400, skill: "Residuals",
@@ -222,7 +253,7 @@
   LESSONS.push({
     title: "The correlation coefficient",
     blurb: "Book 3.4 · One number, r, for how closely data follows a line, and which way.",
-    mins: 9, v: 1,
+    mins: 9, v: 2,
     steps: [
       { type: "learn", kicker: "Try it", prompt: "The number $r$ measures something about these six dots. Drag them and work out what. Can you push $r$ **above 0.95**?",
         scene: { type: "plane", x: [0, 8], y: [0, 8], gate: true, points: sixPts([[1, 5], [2, 2], [3, 6], [5, 3], [6, 7], [7, 2]]),
@@ -266,7 +297,7 @@
   LESSONS.push({
     title: "Using the correlation coefficient",
     blurb: "Book 3.5 · Say what r means in a situation: direction, strength, and what it's about.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "For a basketball team, **hours of practice** and **free throws made** have $r = 0.89$. What does that say?",
         options: [{ t: "Players who practise more tend to make more free throws, and the link is strong." },
@@ -309,7 +340,7 @@
   LESSONS.push({
     title: "Causal relationships",
     blurb: "Book 3.6 · Two things can move together without one causing the other.",
-    mins: 7, v: 1,
+    mins: 7, v: 2,
     steps: [
       { type: "choice", kicker: "Try it", prompt: "In one beach town, **ice cream sales** and **sunburn cases** rise and fall together ($r = 0.8$). Does eating ice cream cause sunburn?",
         options: [{ t: "No. Sunny days cause both." },
@@ -354,8 +385,9 @@
   /* ============================================ Project 3 */
   LESSONS.push({
     title: "Project: Two-variable statistics",
+    tag: "Project",
     blurb: "Book Project 3 · Fit a model to real measurements, test it, and say what it means.",
-    mins: 10, v: 1,
+    mins: 10, v: 2,
     steps: [
       { type: "learn", kicker: "The brief",
         prompt: "Eight students measured their **arm span** and their **height**, in centimetres. Your job: fit a model, use it, and judge it." +
@@ -395,14 +427,14 @@
   function model(R) { var M = R.pick(MODELS), m = R.pick(M.m), b = R.pick(M.b); return { M: M, m: m, b: b, tex: "y = " + poly([[m, "x"], [b, ""]]) }; }
 
   var SKILLS = [
-    { id: "u3-predict", title: "Predict with a linear model", lesson: 1,
+    { id: "u3-predict", title: "Predict with a linear model", lesson: 2,
       gen: function (R) {
         var o = model(R), x = R.int(2, 9), ans = o.m * x + o.b;
         return { type: "num", prompt: "A model for " + o.M.what + " is $" + o.tex + "$, where $x$ counts each " + o.M.x + " and $y$ is in " + o.M.y + ". Predict $y$ when $x = " + x + "$.",
           answer: ans, near: near(ans, [{ v: o.m * x, fb: "Add the " + o.b + " as well: it's the starting value." }, { v: (o.m + o.b) * x, fb: "Only the " + nm(o.m) + " multiplies $x$." }]),
           hints: ["Put $x = " + x + "$ into the model."], why: "$" + L.sub(poly([[o.m, "x"], [o.b, ""]]), { x: x }) + " = " + ans + "$ " + o.M.y + "." };
       } },
-    { id: "u3-slope", title: "Interpret the slope of a model", lesson: 1,
+    { id: "u3-slope", title: "Interpret the slope of a model", lesson: 2,
       gen: function (R) {
         var o = model(R), k = Math.abs(o.m), right = "Each extra " + o.M.x + ", " + o.M.what + " " + (o.M.up ? "rises" : "falls") + " by about " + k + " " + o.M.y + ".";
         return mc(R, { prompt: "A model for " + o.M.what + " is $" + o.tex + "$ ($x$: each " + o.M.x + ", $y$: " + o.M.y + "). What does the slope tell you?", right: right,
@@ -411,7 +443,7 @@
                   { t: "After " + k + " of them, " + o.M.what + " is zero.", fb: "The slope is a rate of change, not a time." }],
           hints: ["Slope is the change in $y$ when $x$ goes up by 1."], why: "The slope is $" + o.m + "$ " + o.M.y + " per " + o.M.x + "." });
       } },
-    { id: "u3-intercept", title: "Interpret the intercept of a model", lesson: 1,
+    { id: "u3-intercept", title: "Interpret the intercept of a model", lesson: 2,
       gen: function (R) {
         var o = model(R);
         return mc(R, { prompt: "A model for " + o.M.what + " is $" + o.tex + "$ ($x$: each " + o.M.x + ", $y$: " + o.M.y + "). What does the number " + o.b + " tell you?",
@@ -421,7 +453,7 @@
                   { t: "It is the largest value $y$ can take.", fb: (o.M.up ? "$y$ keeps rising past it." : "It is the starting value. It happens to be the largest here only because $y$ falls.") }],
           hints: ["Put $x = 0$ into the model."], why: "$y = " + nm(o.m) + "(0) + " + o.b + " = " + o.b + "$." });
       } },
-    { id: "u3-model", title: "Write a linear model from two points", lesson: 2,
+    { id: "u3-model", title: "Write a linear model from two points", lesson: 3,
       gen: function (R) {
         var m = R.nz(-4, 5), b = R.int(-6, 9), x1 = R.int(1, 4), x2 = x1 + R.int(2, 5), y1 = m * x1 + b, y2 = m * x2 + b;
         return { type: "equation", prompt: "A fitted line passes through $(" + x1 + ", " + y1 + ")$ and $(" + x2 + ", " + y2 + ")$. Write its equation.",
@@ -430,7 +462,7 @@
           hints: ["Slope: $\\frac{" + y2 + " - " + L.sub("a", { a: y1 }) + "}{" + x2 + " - " + x1 + "}$.", "Then put one point into $y = " + nm(m) + "x + b$."],
           why: "Slope $= \\frac{" + (y2 - y1) + "}{" + (x2 - x1) + "} = " + m + "$. Then $" + y1 + " = " + L.sub(poly([[m, "x"]]), { x: x1 }) + " + b$ gives $b = " + b + "$." };
       } },
-    { id: "u3-residual", title: "Find a residual", lesson: 3,
+    { id: "u3-residual", title: "Find a residual", lesson: 4,
       gen: function (R) {
         var m = R.int(2, 5), b = R.int(1, 9), x = R.int(2, 8), pred = m * x + b, res = R.nz(-4, 4), act = pred + res;
         return { type: "num", prompt: "The model is $y = " + m + "x + " + b + "$. A data point is $(" + x + ", " + act + ")$. What is its residual?", answer: res,
@@ -438,7 +470,7 @@
           hints: ["Predicted: $" + m + "(" + x + ") + " + b + "$.", "Residual = actual − predicted."],
           why: "Predicted $= " + pred + "$. Residual $= " + act + " - " + pred + " = " + res + "$: the point is " + (res > 0 ? "above" : "below") + " the line." };
       } },
-    { id: "u3-r-strength", title: "Compare correlation coefficients", lesson: 4,
+    { id: "u3-r-strength", title: "Compare correlation coefficients", lesson: 5,
       gen: function (R) {
         var mags = R.shuffle([R.int(88, 98), R.int(60, 78), R.int(30, 50), R.int(5, 22)]), vals = mags.map(function (v) { return (R.chance(0.5) ? -1 : 1) * v / 100; });
         var best = vals.reduce(function (a, v) { return Math.abs(v) > Math.abs(a) ? v : a; }, 0);
@@ -447,7 +479,7 @@
           wrong: vals.filter(function (v) { return v !== best; }).map(function (v) { return { t: t(v), fb: "Strength is the distance from 0. $" + Math.abs(v).toFixed(2) + "$ is less than $" + Math.abs(best).toFixed(2) + "$." }; }),
           hints: ["Ignore the sign. Which is furthest from 0?"], why: t(best) + " is closest to " + (best < 0 ? "$-1$" : "1") + ". The sign only gives the direction." });
       } },
-    { id: "u3-r-describe", title: "Describe a correlation", lesson: 5,
+    { id: "u3-r-describe", title: "Describe a correlation", lesson: 6,
       gen: function (R) {
         var strong = R.chance(0.5), pos = R.chance(0.5), r = (pos ? 1 : -1) * (strong ? R.int(85, 98) : R.int(15, 38)) / 100;
         var names = ["Strong and positive", "Weak and positive", "Strong and negative", "Weak and negative"], right = names[(pos ? 0 : 2) + (strong ? 0 : 1)];
@@ -455,7 +487,7 @@
           wrong: names.filter(function (n) { return n !== right; }).map(function (n) { return { t: n, fb: "The sign is " + (pos ? "positive" : "negative") + ", and $" + Math.abs(r).toFixed(2) + "$ is " + (strong ? "close to 1." : "far from 1.") }; }),
           keep: true, hints: ["Sign: direction. Distance from 0: strength."], why: "The sign is " + (pos ? "positive" : "negative") + " and the size, " + Math.abs(r).toFixed(2) + ", is " + (strong ? "close to 1: strong." : "close to 0: weak.") });
       } },
-    { id: "u3-causal", title: "Correlation or causation", lesson: 6,
+    { id: "u3-causal", title: "Correlation or causation", lesson: 7,
       gen: function (R) {
         var S = R.pick([
           ["Minutes a pan is on the stove, and the temperature of the water in it", true, "Heating is what raises the temperature."],
@@ -478,9 +510,9 @@
     title: "Two-variable statistics",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 3, blurb: "Linear models: predicting, what slope and intercept mean, writing a model, and residuals.",
+      { title: "Quiz 1", after: 4, blurb: "Linear models: predicting, what slope and intercept mean, writing a model, and residuals.",
         skills: ["u3-predict", "u3-slope", "u3-intercept", "u3-model", "u3-residual"], per: 2 },
-      { title: "Quiz 2", after: 6, blurb: "The correlation coefficient, what it says in a situation, and why it isn't proof of cause.",
+      { title: "Quiz 2", after: 7, blurb: "The correlation coefficient, what it says in a situation, and why it isn't proof of cause.",
         skills: ["u3-r-strength", "u3-r-describe", "u3-causal"], per: 2 }
     ],
     skills: SKILLS
