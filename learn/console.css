@@ -70,9 +70,18 @@ body.is-console[data-appearance="dark"] {
     color-scheme: dark;
   }
 }
-html:has(> body.is-console) { background: #ffffff; }
-html:has(> body.is-console[data-appearance="dark"]) { background: #0b0b0c; }
-@media (prefers-color-scheme: dark) { html:has(> body.is-console[data-appearance="auto"]) { background: #0b0b0c; } }
+/* The page behind the console. --cx-page is declared here, once, rather than
+   written into each branch's background: it is the only place the console
+   decides what the document root is, which is also the only place that has
+   to be disagreed with. obsidian.css restates it under
+   html[data-look="obsidian"] — a person can be an administrator and a
+   student, the console shell is a body class rather than a second document,
+   and this selector is more specific than the student scope's, so without
+   that the console would paint a student's page white and win on both
+   specificity and load order. */
+html:has(> body.is-console) { --cx-page: #ffffff; background: var(--cx-page); }
+html:has(> body.is-console[data-appearance="dark"]) { --cx-page: #0b0b0c; }
+@media (prefers-color-scheme: dark) { html:has(> body.is-console[data-appearance="auto"]) { --cx-page: #0b0b0c; } }
 
 /* ------------------------------------------------------------- The window */
 body.is-console .lx-wrap { padding-left: calc(248px + 64px); padding-right: 64px; padding-top: 64px; }
