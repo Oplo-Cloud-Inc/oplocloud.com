@@ -414,7 +414,7 @@
         prompt: "A different kind of pattern. A company gives **\\$300** in prizes. If several people guess a jar's bean count correctly, they **share it equally**. How much does each person get if **5** people guess right?",
         pre: "$\\$$", answer: 60, skill: "Find the rule from a table",
         near: [{ v: 305, fb: "The prize is *shared*, not added to." }, { v: 1500, fb: "Sharing gives each person *less* than the whole prize." }],
-        hints: ["Split $300 into 5 equal shares."], why: "$300 \\div 5 = 60$." },
+        hints: ["Split \\$300 into 5 equal shares."], why: "$300 \\div 5 = 60$." },
       { type: "table", prompt: "Complete the table by sharing the prize each time.",
         head: ["people $w$", "each gets $a$"], rows: [[1, 300], [2, null], [3, 100], [10, null], [20, null]],
         answers: [[1, 1, 150], [3, 1, 30], [4, 1, 15]], skill: "Find the rule from a table",

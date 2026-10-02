@@ -35,7 +35,7 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "b8e0f130",
+    "lab/widgets.js": "7516d097",
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
@@ -48,8 +48,15 @@ window.OPLO_LAB = (function () {
     "path/alg-c.js": "e720f05a",
     "path/alg-d.js": "84267203",
     "path/alg.js": "b48987b4",
-    "alg/u01.js": "0e8204c3",
-    "alg/u02.js": "e1ae3453",
+    "alg/u01.js": "a9707150",
+    "alg/u02.js": "17eb3f3f",
+    "alg/u03.js": "2c85d094",
+    "alg/u04.js": "0c52415b",
+    "alg/u05.js": "f35ea2e1",
+    "alg/u06.js": "7783e9db",
+    "alg/u07.js": "31e2e832",
+    "alg/u08.js": "c0346f51",
+    "alg/u09.js": "9e85f4bf",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "332193f8",
     "geo/u09.js": "503d988a",
@@ -216,13 +223,15 @@ window.OPLO_LAB = (function () {
     if (text.indexOf("$") < 0 && text.indexOf("*") < 0) return text;
     // \$ is a dollar sign, not a delimiter — in the words or in the math.
     text = text.replace(/\\\$/g, "\u0001");
-    // Math first; *emphasis* and **bold** only in the words between.
-    var parts = text.split(/(\$\$[^$]+\$\$|\$[^$]+\$)/);
-    return parts.map(function (p) {
-      if (/^\$\$[^$]+\$\$$/.test(p)) return '<span class="m md">' + mathHTML(p.slice(2, -2)) + "</span>";
-      if (/^\$[^$]+\$$/.test(p)) return m(p.slice(1, -1));
-      return p.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^\w*])\*([^*\s][^*]*?)\*(?![\w*])/g, "$1<em>$2</em>");
-    }).join("").replace(/\u0001/g, "$");
+    // Math first, set aside, so that *emphasis* and **bold** are read in the
+    // words only but may still run across a piece of math: **slope $-3$**.
+    var maths = [];
+    text = text.replace(/\$\$[^$]+\$\$|\$[^$]+\$/g, function (p) {
+      maths.push(p.charAt(1) === "$" ? '<span class="m md">' + mathHTML(p.slice(2, -2)) + "</span>" : m(p.slice(1, -1)));
+      return "\u0002" + (maths.length - 1) + "\u0003";
+    });
+    return text.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^\w*])\*([^*\s][^*]*?)\*(?![\w*])/g, "$1<em>$2</em>")
+      .replace(/\u0002(\d+)\u0003/g, function (x, i) { return maths[+i]; }).replace(/\u0001/g, "$");
   }
   /* One thought to a line. Two or three sentences run together are hard to
      hold on to, so an explanation, a question and a worked reason are each

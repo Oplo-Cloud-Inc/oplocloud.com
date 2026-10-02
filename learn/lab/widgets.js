@@ -454,14 +454,16 @@
   });
 
   /* ================================================================ Plane
-     spec: { x: [-10, 10], y: [-10, 10], grid: 1,
+     spec: { x: [-10, 10], y: [-10, 10], grid: 1, gridY: (grid),
              params: { m: { v, min, max, step, label } },     sliders
              fns: [{ f: "m*x + b" | function (x, p), color, dashed, label,
                      shade: "above"|"below", strict, domain: [a, b] }],
              points: [{ id, x, y, drag: true|"x"|"y", snap, label, color, coords }],
              lines: [{ through: [id, id], slope: true, color }],
              marks: [{ x, y, label }]   fixed dots
-             hline / vline: [values], segs: [[x1,y1,x2,y2]],
+             hline / vline: [values], segs: [[x1,y1,x2,y2,color]],
+             (marks and segs may each be a function (state) → list, so they
+             can follow dragged points: residuals, a secant, a gap)
              readout: function (state) → text,  goal: function (state) → bool,
              check: function (state) → { ok, say },  answer: { params, points },
              click: "point"  → the answer is a clicked lattice point } */
@@ -501,9 +503,9 @@
 
     // Static layers: grid, axes.
     var gridG = S("g", { class: "lw-grid" }, svg);
-    var gstep = spec.grid || 1, lstep = spec.labelEvery || (xr[1] - xr[0] > 24 ? 5 : xr[1] - xr[0] > 12 ? 2 : 1);
+    var gstep = spec.grid || 1, gstepY = spec.gridY || gstep, lstep = spec.labelEvery || (xr[1] - xr[0] > 24 ? 5 : xr[1] - xr[0] > 12 ? 2 : 1);
     for (var gx = Math.ceil(xr[0] / gstep) * gstep; gx <= xr[1] + 1e-9; gx += gstep) S("line", { x1: X(gx), y1: Y(yr[0]), x2: X(gx), y2: Y(yr[1]), class: Math.abs(gx) < 1e-9 ? "" : "g" }, gridG);
-    for (var gy = Math.ceil(yr[0] / gstep) * gstep; gy <= yr[1] + 1e-9; gy += gstep) S("line", { x1: X(xr[0]), y1: Y(gy), x2: X(xr[1]), y2: Y(gy), class: Math.abs(gy) < 1e-9 ? "" : "g" }, gridG);
+    for (var gy = Math.ceil(yr[0] / gstepY) * gstepY; gy <= yr[1] + 1e-9; gy += gstepY) S("line", { x1: X(xr[0]), y1: Y(gy), x2: X(xr[1]), y2: Y(gy), class: Math.abs(gy) < 1e-9 ? "" : "g" }, gridG);
     var axG = S("g", { class: "lw-axes" }, svg);
     if (yr[0] <= 0 && yr[1] >= 0) S("line", { x1: X(xr[0]) - 8, y1: Y(0), x2: X(xr[1]) + 10, y2: Y(0) }, axG);
     if (xr[0] <= 0 && xr[1] >= 0) S("line", { x1: X(0), y1: Y(yr[0]) + 8, x2: X(0), y2: Y(yr[1]) - 10 }, axG);
@@ -564,7 +566,7 @@
       });
       (spec.hline || []).forEach(function (v) { S("line", { x1: X(xr[0]), y1: Y(v), x2: X(xr[1]), y2: Y(v), class: "lw-curve c-red" }, lineG); });
       (spec.vline || []).forEach(function (v) { S("line", { x1: X(v), y1: Y(yr[0]), x2: X(v), y2: Y(yr[1]), class: "lw-curve c-red" }, lineG); });
-      (spec.segs || []).forEach(function (s2) { S("line", { x1: X(s2[0]), y1: Y(s2[1]), x2: X(s2[2]), y2: Y(s2[3]), class: "lw-curve c-" + (s2[4] || "blue") }, lineG); });
+      (typeof spec.segs === "function" ? spec.segs(state()) : spec.segs || []).forEach(function (s2) { S("line", { x1: X(s2[0]), y1: Y(s2[1]), x2: X(s2[2]), y2: Y(s2[3]), class: "lw-curve c-" + (s2[4] || "blue") }, lineG); });
       (spec.lines || []).forEach(function (ln) {
         var a = pt(ln.through[0]), b = pt(ln.through[1]);
         if (!a || !b) return;
@@ -583,7 +585,7 @@
           rs.textContent = "rise " + num(rise).replace("-", "−");
         }
       });
-      (spec.marks || []).forEach(function (mk) {
+      (typeof spec.marks === "function" ? spec.marks(state()) : spec.marks || []).forEach(function (mk) {
         var yv = typeof mk.y === "function" ? mk.y(P) : mk.y, xv = typeof mk.x === "function" ? mk.x(P) : mk.x;
         if (!isFinite(xv) || !isFinite(yv)) return;
         var g = S("g", { class: "lw-mark c-" + (mk.color || "ink"), transform: "translate(" + X(xv) + "," + Y(yv) + ")" }, markG);

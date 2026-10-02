@@ -383,7 +383,8 @@ window.OPLO = (function () {
   };
 
   /* Algebra I is a lab course: its units are interactive lessons, practice
-     that generates its own problems, and tests (learn/lab/, learn/alg/). */
+     that generates its own problems, and tests (learn/lab/, learn/alg/). Its
+     nine units are the nine units of OpenStax Algebra 1, in the book's order. */
   var ALG = {
     id: "alg", t: "Algebra I", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
     lab: true, hub: true, hubPanel: true,   /* its course page carries the Pathway ring (lab/pathui.js) above the units */
@@ -393,47 +394,37 @@ window.OPLO = (function () {
           "tested until it sticks.",
     glyph: '<path d="M17 5H7l6 7-6 7h10"/>',
     objectives: [
-      "Write, evaluate and simplify expressions, and tell when two expressions are the same.",
-      "Solve linear equations and inequalities, and systems of them — and say how many solutions there are.",
-      "Move between a line's table, graph and equation, and read slope and intercepts in context.",
-      "Use function notation; find domain, range, rate of change and inverses.",
-      "Model growth with arithmetic and geometric sequences, and with linear and exponential functions.",
-      "Multiply and factor polynomials, and solve and graph quadratics every way there is."
+      "Write, solve and graph linear equations, and say what a solution means in a situation.",
+      "Solve systems of equations and inequalities, and read the region where every constraint holds.",
+      "Fit a line to data, judge the fit with residuals and r, and tell correlation from causation.",
+      "Use function notation; read a graph's features, rate of change, domain and range; and write sequences as functions.",
+      "Use the exponent rules, model growth and decay with exponential functions, and compare them with linear ones.",
+      "Add, multiply, divide and factor polynomials.",
+      "Graph quadratic functions in standard, factored and vertex form, and say what each form shows.",
+      "Solve quadratic equations by factoring, completing the square and the quadratic formula."
     ],
     units: [
       { t: "Linear equations", lab: true,
         desc: "Expressions, equations and constraints that model a situation; what a solution is and how a graph shows it; equivalent equations and the moves that keep them equivalent; solving for a variable; and writing the equation of a line from a slope, a point, two points, a table or a graph." },
-      { t: "Solving equations & inequalities", lab: true,
-        desc: "The balance: do the same to both sides. Equations with variables on both sides, brackets and fractions; how many solutions an equation can have; and inequalities, including why the sign flips." },
-      { t: "Working with units", lab: true,
-        desc: "Units as part of the arithmetic: converting rates by multiplying by one, choosing sensible quantities, and letting the units check the answer." },
-      { t: "Linear equations & graphs", lab: true,
-        desc: "An equation in two variables is a line of solutions. Slope as rise over run, intercepts, horizontal and vertical lines, and what each means in a real situation." },
-      { t: "Forms of linear equations", lab: true,
-        desc: "Slope-intercept, point-slope and standard form: what each shows at a glance, how to write a line from what you know, and how to move between them." },
-      { t: "Systems of equations", lab: true,
-        desc: "Two conditions at once. Solving by graphing, substitution and elimination, and systems with no solution or infinitely many." },
-      { t: "Inequalities (systems & graphs)", lab: true,
-        desc: "Inequalities in two variables as shaded half-planes, systems of them as overlaps, and constraints from real situations." },
+      { t: "Linear inequalities and systems", lab: true,
+        desc: "Two constraints at once: systems solved by graphing, substitution and elimination, and how many solutions they can have. Then constraints with room in them: inequalities in one and two variables, their graphs, and systems of them as the region where every constraint holds." },
+      { t: "Two-variable statistics", lab: true,
+        desc: "Scatter plots and linear models; fitting a line and measuring its misses with residuals; the correlation coefficient and what it says in a situation; and why correlation is not causation." },
       { t: "Functions", lab: true,
-        desc: "A rule that gives one output for each input. Notation, domain and range, recognising functions, maxima and minima, average rate of change and inverses." },
-      { t: "Sequences", lab: true,
-        desc: "Patterns that grow by adding (arithmetic) and by multiplying (geometric), written recursively and explicitly." },
-      { t: "Absolute value & piecewise functions", lab: true,
-        desc: "Absolute value as distance and its V-shaped graph, shifting and stretching it, and functions defined in pieces." },
-      { t: "Exponents & radicals", lab: true,
-        desc: "Why the exponent rules are true, zero and negative exponents, square and cube roots, and simplifying radicals." },
-      { t: "Exponential growth & decay", lab: true,
-        desc: "Adding versus multiplying. Exponential expressions and graphs, growth and decay, and telling linear from exponential in data." },
-      { t: "Quadratics: multiplying & factoring", lab: true,
-        desc: "Polynomials as areas. Multiplying binomials, special products, and factoring by common factors, by grouping, and as differences of squares and perfect squares." },
-      { t: "Quadratic functions & equations", lab: true,
-        desc: "Parabolas and their features. Solving by factoring, square roots, completing the square and the quadratic formula; vertex form; transformations." },
-      { t: "Irrational numbers", lab: true,
-        desc: "Numbers that are not fractions: recognising them, sums and products with rationals, and a proof that √2 is irrational." }
+        desc: "One output for each input. Function notation, rules and tables; features of graphs, slope and average rate of change; shifting and stretching a graph; domain and range; and arithmetic and geometric sequences, written recursively and by their nth term." },
+      { t: "Introduction to exponential functions", lab: true,
+        desc: "The exponent rules, including zero, negative and fractional exponents; adding against multiplying; growth and decay as a·bˣ; scientific notation; reading and writing exponential functions from graphs; and why exponential growth always overtakes linear." },
+      { t: "Working with polynomials", lab: true,
+        desc: "Polynomials as areas of rectangles. Adding, subtracting, multiplying and dividing them; the remainder and factor theorems; and factoring by common factors, grouping, trinomial methods and special products." },
+      { t: "Introduction to quadratic functions", lab: true,
+        desc: "A new pattern of change, met in areas and falling objects. Quadratic functions against linear and exponential ones; standard, factored and vertex form and what each shows; and graphing a parabola from its zeros, its vertex and its shape." },
+      { t: "Quadratic equations", lab: true,
+        desc: "Finding the input that gives an output. Solving by reasoning and square roots, by the zero product property and factoring; how many solutions there are; writing a quadratic from its solutions; and fitting a quadratic model to data." },
+      { t: "More quadratic equations", lab: true,
+        desc: "The method that always works. Perfect squares and completing the square, irrational solutions, the quadratic formula and where it comes from, the discriminant, and vertex form used to find a maximum or minimum." }
     ],
     grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
-    textbook: "Unit 1 follows OpenStax Algebra 1 (Texas edition), Unit 1 — Linear Equations: the readiness check, lessons 1.1 to 1.15 and Project 1, in the book's order. " +
+    textbook: "The course follows OpenStax Algebra 1 unit for unit and lesson for lesson: nine units, lessons 1.1 to 9.11, and each unit's project, in the book's order. " +
               "Adapted from OpenStax (Rice University), CC BY-NC-SA 4.0; the questions, figures and feedback are OEdu's own."
   };
 
@@ -782,8 +773,7 @@ window.OPLO = (function () {
   var PRE = {
     media: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [2], 7: [6], 8: [6, 7], 9: [5, 7] },
     seeing: { 1: [], 2: [1], 3: [2] },
-    alg: { 1: [], 2: [1], 3: [1], 4: [2], 5: [4], 6: [5], 7: [6], 8: [4], 9: [8], 10: [8], 11: [1], 12: [9, 11],
-           13: [11], 14: [13, 10], 15: [11] },
+    alg: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [5], 7: [4, 6], 8: [7], 9: [8] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
     geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [4], 6: [3, 4], 7: [4], 8: [7], 9: [1], 10: [4], 11: [6, 8], 12: [11], 13: [12] },
     biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
