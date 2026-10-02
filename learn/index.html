@@ -30,7 +30,7 @@
   if (m && m[2] === "student") {
     document.documentElement.setAttribute("data-look", "obsidian");
     var tc = document.querySelector('meta[name="theme-color"]');
-    if (tc) tc.setAttribute("content", "#2b2b2d");   /* --chrome; see obsidian.css */
+    if (tc) tc.setAttribute("content", "#212529");   /* --chrome; see obsidian.css */
   }
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest('a[href^="#"]');
@@ -50,7 +50,7 @@
      admin, family, the signed-out welcome page and the marketing site. A
      student is dark whatever their Mac is set to, so a media query is the
      wrong key — on a light-preference machine it would put a white bar over
-     a #353535 page. The script below and app.js setLook() write the
+     a #343a40 page. The script below and app.js setLook() write the
      student's own bar instead, and put #ffffff back for everyone else. -->
 <meta name="theme-color" content="#ffffff">
 <meta name="robots" content="noindex">
@@ -65,8 +65,8 @@
 <link rel="stylesheet" href="gradebook.css?v=b544c19b">
 <link rel="stylesheet" href="checks.css?v=a381359b">
 <link rel="stylesheet" href="challenge.css?v=2bf2e86d">
-<link rel="stylesheet" href="lab/lab.css?v=dbc30c35">
-<link rel="stylesheet" href="obsidian.css?v=90ec160e">
+<link rel="stylesheet" href="lab/lab.css?v=57703b71">
+<link rel="stylesheet" href="obsidian.css?v=b244242e">
 <link rel="stylesheet" href="console.css?v=a83d02a3">
 </head>
 <body>
@@ -660,6 +660,6 @@
 <script src="lab/core.js?v=0b737227"></script>
 <script src="exam.js?v=65b52660"></script>
 <script src="gradebook.js?v=370ad7fd"></script>
-<script src="app.js?v=21f82882"></script>
+<script src="app.js?v=626b40c2"></script>
 </body>
 </html>

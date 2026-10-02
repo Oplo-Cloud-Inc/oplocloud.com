@@ -66,34 +66,45 @@ FILLS_ONLY = {"lab/lab.css"}
 # fill takes the deeper blue instead, so the label on it keeps 4.5:1.
 FILL = {"var(--blue)": "var(--fill)", "var(--blue-d)": "var(--fill-d)"}
 
-# The palette, page first, then a step up for each surface above it.
+# The palette: Light Steel, nine cool greys at hue 210. The page is Gunmetal,
+# and each surface above it is a step up the same ramp, so a card stands on the
+# page the way a card does and never reads as a hole in it.
 #
-# The page is #353535 rather than black, which changes two things that have to
-# be got right together or the dark side falls apart:
+#   #212529  Shadow Grey  the browser's own bar, one step below the page
+#   #343a40  Gunmetal     the page
+#   #3e454c               a card        (half way from Gunmetal to Iron Grey)
+#   #495057  Iron Grey    a fill inside a card
+#   #525960               a pressed or hovered fill
+#   #6c757d  Slate Grey   a control's track
+#   #adb5bd  Pale Slate   the quietest text
+#   #ced4da  Pale Slate   secondary text
+#   #dee2e6  Alabaster    emphasis between the two
+#   #e9ecef  Platinum     long reading
+#   #f8f9fa  Bright Snow  primary text and headings
 #
-#   The surfaces have to be re-stepped upward. They were tuned against a black
-#   page as a ramp rising from zero — #161618, #212124 and #2a2a2e are all
-#   *darker* than #353535, so on this page a card would read as a hole rather
-#   than as a card. Every step below is now measured to be lighter than the
-#   one beneath it.
+# Two things have to be got right together or the dark side falls apart:
 #
-#   The quiet greys have to be lifted. #818181 read 5.4:1 on black and only
-#   3.2:1 here — a real accessibility failure, and a quiet failure, because
-#   the colour that fails is the one nobody looks at closely. --ink-3 and
-#   --ink-3-fill are both lifted until they clear 4.5:1 against the page *and*
-#   against the fill they are painted on, which is the harder test.
+#   The surfaces have to climb. Every step below is lighter than the one
+#   beneath it, and the card is deliberately *not* Iron Grey: #adb5bd on Iron
+#   Grey is 3.9:1, so the quiet text would fail on its own card. Iron Grey is
+#   the fill inside a card instead, where the quiet text steps up to #ced4da.
+#
+#   The quiet greys have to clear 4.5:1 against the page *and* against the
+#   surface they are painted on, which is the harder test.
 #
 # Each step is verified rather than eyeballed; see tools/check_obsidian_contrast.py.
-BG = (53, 53, 53)      # #353535 the page
-S1 = (68, 68, 71)      # #444447 a card
-S2 = (82, 82, 86)      # #525256 a fill inside a card
-S3 = (95, 95, 100)     # #5f5f64 a pressed or hovered fill
-S4 = (114, 114, 119)   # #727277 a control's track
-ELEV = (82, 82, 86)    # a panel that was ink-dark in the light look
-INK = (255, 255, 255)
-# The quietest text. On a #212124 fill it read 4.1:1, so anything painted
-# that fill carried a step lighter grey; on this page the harder test is
-# against the fill, and --ink-3-fill clears 4.5:1 on both.
+BG = (52, 58, 64)      # #343a40 the page
+S1 = (62, 69, 76)      # #3e454c a card
+S2 = (73, 80, 87)      # #495057 a fill inside a card
+S3 = (82, 89, 96)      # #525960 a pressed or hovered fill
+S4 = (108, 117, 125)   # #6c757d a control's track
+ELEV = S2              # a panel that was ink-dark in the light look
+INK = (248, 249, 250)  # #f8f9fa
+# Text greys, lightest first. A generated grey snaps to the nearest of these,
+# so the dark look speaks in exactly five text colours.
+STEEL = [(248, 249, 250), (233, 236, 239), (222, 226, 230), (206, 212, 218), (173, 181, 189)]
+# The quietest text. Anything painted on a fill carries a step lighter grey,
+# because the harder test is against the fill; --ink-3-fill clears 4.5:1 on both.
 QUIET_ON_FILL = "--ink-3: var(--ink-3-fill);"
 
 # Panels that are dark in the light look (background: var(--ink), white
@@ -156,6 +167,16 @@ def from_hls(h, l, s):
     return (r * 255, g * 255, b * 255)
 
 
+def cool(l):
+    """A grey of lightness l, tinted the way Light Steel is: hue 210, a hair of colour."""
+    return from_hls(210 / 360, l, 0.1)
+
+
+def steel(l):
+    """The text grey nearest in lightness to l."""
+    return min(STEEL, key=lambda c: abs(hls(c)[1] - l))
+
+
 def neutral(c):
     """Grey, near enough: Apple's greys lean a hair blue, a pale tint does not."""
     h, l, s = hls(c)
@@ -196,8 +217,8 @@ def as_surface(c):
         if L >= 0.915: return fmt(*S3)
         if L >= 0.86:  return fmt(*mix(S3, S4, 0.5))
         if L >= 0.74:  return fmt(*S4)
-        if L >= 0.45:  return fmt(*from_hls(hls(c)[0], 0.30 + (L - 0.45) * 0.35, hls(c)[2]))
-        if L >= 0.22:  return fmt(*from_hls(hls(c)[0], L + 0.05, hls(c)[2]))
+        if L >= 0.45:  return fmt(*cool(0.30 + (L - 0.45) * 0.35))
+        if L >= 0.22:  return fmt(*cool(L + 0.05))
         return None        # a dark surface: handled with its text by flip()
     h, _, s = hls(c)
     if L >= 0.84:          # a pale tint: the hue as a wash
@@ -222,13 +243,9 @@ def as_text(c):
             v = max(0.4, min(0.84, 1.08 - L))
         else:
             v = 0.4
-        # The floor is #b4b4b4, not #818181. That older value read 5.4:1 on a
-        # black page and only 3.2:1 on this one, so keeping it would have
-        # quietly taken the whole dark side below AA — on the one colour that
-        # is explicitly meant to recede. Lifting it costs nothing visually,
-        # since this is still the quietest step in the ramp.
-        v = max(v, 0.706)      # never quieter than #b4b4b4
-        return fmt(*from_hls(0, v, 0), a=a)
+        # The floor is #adb5bd, the last step of STEEL: the quietest grey that
+        # still clears AA on the page and on a card.
+        return fmt(*steel(v), a=a)
     if L >= 0.85:
         return None            # light coloured text is already on something dark
     h, _, s = hls(c)

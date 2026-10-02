@@ -177,7 +177,7 @@ OEdu follows Apple's design language:
 
 ### 4.1a Obsidian — the student side is dark
 
-Everything a student sees sits on Obsidian: the page is `#353535`, with a surface ramp climbing from it (`--paper` `#444447`, `--sunk` `#525256`, `--press` `#5f5f64`). The console, the family view and the signed-out welcome page stay light. The head of `learn/index.html` sets `<html data-look="obsidian">` for any `/student/` address before anything is drawn, and signing in or out at the root sets or clears it (`setLook` in `learn/app.js`). `learn/obsidian.css` holds the whole look, in two parts:
+Everything a student sees sits on Obsidian: the page is `#343a40` (Gunmetal, from the Light Steel palette), with a surface ramp climbing from it (`--paper` `#3e454c`, `--sunk` `#495057`, `--press` `#525960`). The console, the family view and the signed-out welcome page stay light. The head of `learn/index.html` sets `<html data-look="obsidian">` for any `/student/` address before anything is drawn, and signing in or out at the root sets or clears it (`setLook` in `learn/app.js`). `learn/obsidian.css` holds the whole look, in two parts:
 
 - **Written by hand** — the tokens (`--paper`, `--ink`, … re-pointed to dark values, every text step AA or better), then the layer that makes it one object: dark glass for the bar and anything floating, cards a step lighter than the page with a rim of light and a long soft shadow, titles lit from above, the blue accent carrying a faint glow of its own colour, the "what next" panels lit from one corner, and lesson diagrams turned into the page (inverted, with every hue rotated back to itself) while photographs stay photographs.
 

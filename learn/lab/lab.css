@@ -34,7 +34,7 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
   --lw-grid: rgba(255,255,255,.06);
   --lw-axis: rgba(255,255,255,.55);
   --lw-surface: var(--canvas);
-  --lw-tile: #1f2024;
+  --lw-tile: #212529;
 }
 
 /* ================================================================== Math */
