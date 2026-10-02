@@ -12,7 +12,7 @@
   var LAB = window.OPLO_LAB, P = LAB && LAB.PATH;
   if (!P || !P.parts || !P.parts.alg) return;
   P.define("alg", {
-    title: "Algebra Pathway",
+    title: "Algebra I",
     blurb: "From integers to the quadratic formula: seventy topics, and a check that finds the ones you're ready for.",
     cats: [
       { id: "num", name: "Numbers", short: "Numbers", hue: "#6b95ff", blurb: "Integers, fractions, decimals, percents, powers" },

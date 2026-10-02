@@ -208,6 +208,12 @@ html[data-look="obsidian"] .lx-legend i.master {
 html[data-look="obsidian"] .lx-unit.done .n {
   background: var(--fill);
 }
+html[data-look="obsidian"] .lx-umeter {
+  --ink-3: var(--ink-3-fill);
+}
+html[data-look="obsidian"] .lx-umeter i {
+  background: var(--fill);
+}
 html[data-look="obsidian"] .lx-pill[aria-pressed="true"] {
   color: #353535;
 }

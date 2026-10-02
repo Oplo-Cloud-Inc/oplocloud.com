@@ -1668,33 +1668,43 @@
     v.appendChild(hero);
     var kind = courseKind(c);
     if (kind) v.appendChild(kind);
-    // A course with a panel (Algebra I) carries its Pathway ring above the units.
-    if (c.hub && c.hubPanel && window.OPLO_LAB && window.OPLO_LAB.hub) {
+    /* A course with a panel (Algebra I) opens on one card — what you know,
+       and the one thing worth doing next — and then its units. The panel is
+       that course's picture of mastery and its map, so the page does not draw
+       a second of either: one course, one measure, one next step. */
+    var paneled = c.hub && c.hubPanel && window.OPLO_LAB && window.OPLO_LAB.hub;
+    if (paneled) {
       var pw = el("div", "pw-panel");
       v.appendChild(pw);
-      window.OPLO_LAB.hub(pw, hubCtx(c), "");
+      var pctx = hubCtx(c);
+      pctx.panel = true;
+      window.OPLO_LAB.hub(pw, pctx, "");
     }
 
     var two = el("div", "lx-two");
     var main = el("div");
 
-    var pct = coursePct(c);
-    var mast = el("div", "lx-panel");
-    mast.style.marginBottom = "22px";
-    var bars = units.map(function (u) {
-      return '<i class="' + band(mastery(c, u.n)) + '"></i>';
-    }).join("");
-    mast.innerHTML = "<h3>Course mastery — " + pct + "%</h3>" +
-      '<div class="lx-mastery">' + bars + "</div>" +
-      '<div class="lx-legend"><span><i></i>Not started</span><span><i class="fam"></i>Familiar</span>' +
-      '<span><i class="prof"></i>Proficient</span><span><i class="master"></i>Mastered</span></div>' +
-      dimRow(c, units);
-    main.appendChild(mast);
+    if (!paneled) {
+      var pct = coursePct(c);
+      var mast = el("div", "lx-panel");
+      mast.style.marginBottom = "22px";
+      var bars = units.map(function (u) {
+        return '<i class="' + band(mastery(c, u.n)) + '"></i>';
+      }).join("");
+      mast.innerHTML = "<h3>Course mastery — " + pct + "%</h3>" +
+        '<div class="lx-mastery">' + bars + "</div>" +
+        '<div class="lx-legend"><span><i></i>Not started</span><span><i class="fam"></i>Familiar</span>' +
+        '<span><i class="prof"></i>Proficient</span><span><i class="master"></i>Mastered</span></div>' +
+        dimRow(c, units);
+      main.appendChild(mast);
 
-    if (units.some(function (u) { return u.play || u.set || u.lab; })) {
-      main.appendChild(window.OPLO_KMAP.teaser(mapModel(c), {
-        hue: c.hue, onOpen: function () { openMap(c); }
-      }));
+      if (units.some(function (u) { return u.play || u.set || u.lab; })) {
+        main.appendChild(window.OPLO_KMAP.teaser(mapModel(c), {
+          hue: c.hue, onOpen: function () { openMap(c); }
+        }));
+      }
+    } else {
+      main.appendChild(el("h2", "lx-spine", "Units"));
     }
 
     var list = el("div", "lx-units");
@@ -1711,8 +1721,12 @@
       if (u.lab) bits.push("Interactive lessons · practice · unit test");
       if (u.set) bits.push(SET(u.set).cards.length + " terms");
       if (!bits.length) bits.push("Syllabus only");
+      // On a paneled page a unit carries its own progress, since there is no
+      // course-mastery panel above to read it from.
+      var um = paneled && u.lab ? mastery(c, u.n) : null;
       b.innerHTML = '<span class="n">' + u.n + "</span>" +
         '<span class="txt"><b>' + esc(u.t) + "</b><span>" + bits.join(" · ") + "</span></span>" +
+        (um != null ? '<span class="lx-umeter" role="img" aria-label="' + um + '% mastered"><i style="width:' + um + '%"></i></span>' : "") +
         '<span class="go">' + svg(I.chev, true) + "</span>";
       b.addEventListener("click", function () { openUnit(c, u.n); });
       list.appendChild(b);

@@ -94,7 +94,9 @@ What students use today is three separate adaptive systems side by side:
 - **The lab** (`learn/lab/`, `learn/alg/`) is Brilliant-style: lessons, skills levelled 0–4, unit tests.
 - **The Algebra I course** follows OpenStax.
 
-Each keeps its own record. So does `learn/learn.js`, which uses the five-dimension model described in `OEdu-Architecture.md` §6. In practice the product is "ALEKS + OpenStax + Brilliant", the arrangement the directive's first line rules out. The engine is the way out of that, but only once the other systems feed it.
+Each keeps its own record. So does `learn/learn.js`, which uses the five-dimension model described in `OEdu-Architecture.md` §6.
+
+The Algebra I *page* no longer shows the seams. It used to stack Pathway's own headline, an eight-colour ring and an eight-slice list on top of a separate course-mastery panel, a second map and the units. It now opens on one card, `renderBand` in `learn/lab/pathui.js`: what you know (the ring, drawn in the single accent) beside one next step and the reason for it. Below that are the units, in the book's order. Topic pages are try-first: a problem comes before the idea, and a miss shows the worked solution with the idea. The records underneath are still separate, so step 2 of §4 stands. In practice the product is "ALEKS + OpenStax + Brilliant", the arrangement the directive's first line rules out. The engine is the way out of that, but only once the other systems feed it.
 
 | # | Directive | In the engine | In the product | Gap |
 |---|---|---|---|---|
