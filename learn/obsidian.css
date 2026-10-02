@@ -208,6 +208,12 @@ html[data-look="obsidian"] .lx-legend i.master {
 html[data-look="obsidian"] .lx-unit.done .n {
   background: var(--fill);
 }
+html[data-look="obsidian"] .lx-umeter {
+  --ink-3: var(--ink-3-fill);
+}
+html[data-look="obsidian"] .lx-umeter i {
+  background: var(--fill);
+}
 html[data-look="obsidian"] .lx-pill[aria-pressed="true"] {
   color: #353535;
 }
@@ -1390,9 +1396,6 @@ html[data-look="obsidian"] .ch-sn-dot.seen::before {
 html[data-look="obsidian"] .ch-sn-dot.cur::before {
   background: var(--fill);
 }
-html[data-look="obsidian"] .ch-card {
-  box-shadow: 0 1px 2px rgba(0,0,0,0.132), 0 12px 40px rgba(0,0,0,0.155), 0 0 0 1px var(--hair);
-}
 html[data-look="obsidian"] .ch-btn:hover:not(:disabled) {
   --ink-3: var(--ink-3-fill);
 }
@@ -1401,29 +1404,6 @@ html[data-look="obsidian"] .ch-btn.primary {
 }
 html[data-look="obsidian"] .ch-btn.primary:hover:not(:disabled) {
   background: var(--fill-d);
-}
-html[data-look="obsidian"] .ch-hintline {
-  background: rgba(255,192,31,0.124);
-  color: #ffe299;
-}
-html[data-look="obsidian"] .ch-sheet.ok {
-  background: rgba(62,224,137,0.141);
-  box-shadow: inset 0 0 0 1px rgba(83,234,168,0.264);
-}
-html[data-look="obsidian"] .ch-sheet.ok > b:first-child {
-  color: #a3f5d1;
-}
-html[data-look="obsidian"] .ch-sheet.no {
-  background: rgba(255,174,31,0.124);
-  box-shadow: inset 0 0 0 1px rgba(255,177,61,0.264);
-}
-html[data-look="obsidian"] .ch-sheet.model {
-  background: rgba(54,137,231,0.106);
-  box-shadow: inset 0 0 0 1px rgba(61,158,255,0.216);
-}
-html[data-look="obsidian"] .ch-opt:hover:not(:disabled) {
-  background: #525256;
-  --ink-3: var(--ink-3-fill);
 }
 html[data-look="obsidian"] .ch-opt.on {
   background: rgba(31,120,255,0.08);
@@ -1604,7 +1584,7 @@ html[data-look="obsidian"] :is(
   .lx-setcard, .lx-stand-card, .km-stat, .km-m, .km-sheet, .km-c, .km-teaser,
   .pd-card, .rt-card, .ln-card, .gm-card, .rd-def, .rd-call, .rd-check, .rd-panel,
   .gr-hero, .gr-card, .gr-kpi, .gr-focus, .gr-risk, .gr-path, .gr-exams, .gr-cur, .gr-year, .gr-rec,
-  .lx-exam-card, .lx-exams-empty, .exh-card, .ch-card, .chx, .kc, .mg,
+  .lx-exam-card, .lx-exams-empty, .exh-card, .chx, .kc, .mg,
   .lb-next, .lb-test, .lb-lesson, .lb-skill, .chx-cta, .chx.review
 ) {
   background-color: var(--paper);
@@ -1745,9 +1725,10 @@ html[data-look="obsidian"] :is(.nb-seg[aria-pressed="true"], .lx-exam-tab[aria-c
 }
 /* The calculator's display is a well of black. */
 html[data-look="obsidian"] .xc-screen { background: #000; color: #fff; box-shadow: inset 0 0 0 1px var(--hair); }
-/* The Lab's manipulatives sit in a black well inside the card; their pieces
+/* The Lab's manipulatives sit on the page itself, with no well of their
+   own — a lesson step has no card around it (challenge.css); their pieces
    are #212124. The function machine is a flat blue. */
-html[data-look="obsidian"] :is(.lw, .lb-unit, .ch-card) { --lw-surface: #000000; --lw-tile: #212124; }
+html[data-look="obsidian"] :is(.lw, .lb-unit, .ch-card) { --lw-surface: var(--canvas); --lw-tile: #212124; }
 html[data-look="obsidian"] .lw-mbox { background: var(--fill); box-shadow: none; }
 /* The record's charts, in the dark palette: the same two series, the same
    meanings, each colour lifted to read on a dark page. */
@@ -1770,7 +1751,7 @@ html[data-look="obsidian"] .gr {
    because a step of grey alone is not enough for everyone. */
 @media (prefers-contrast: more) {
   html[data-look="obsidian"] :is(.lx-card, .lx-panel, .lx-unit, .lx-mode, .lx-note, .lx-stand-card, .gr-card, .gr-kpi,
-        .ch-card, .chx, .rd-panel, .rd-call, .rd-check, .lb-next, .lb-test, .lb-lesson, .lb-skill,
+        .chx, .rd-panel, .rd-call, .rd-check, .lb-next, .lb-test, .lb-lesson, .lb-skill,
         .lx-resume, .lx-next, .lx-today-strip) {
     box-shadow: inset 0 0 0 1px var(--rule);
   }

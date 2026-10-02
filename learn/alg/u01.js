@@ -136,7 +136,7 @@
         hints: ["Positive $x$ is right; negative $y$ is down."], why: "$C$ is 2 right and 4 down." },
 
       { type: "learn", kicker: "So — where to start?",
-        prompt: "If you got the three solving problems and the sort right the first time, you're ready: go straight to **Lesson 1.1**. If a few of them slipped, you're still ready — the unit starts from here, and every lesson tells you what it needs before it uses it. If **the solving** felt shaky, do lessons 1.4, 1.6 and 1.7 slowly; they are about exactly that. For a longer refresher, **Algebra Pathway** (under Math) checks what you already know and lets you learn only what you're ready for.",
+        prompt: "If you got the three solving problems and the sort right the first time, you're ready: go straight to **Lesson 1.1**. If a few of them slipped, you're still ready — the unit starts from here, and every lesson tells you what it needs before it uses it. If **the solving** felt shaky, do lessons 1.4, 1.6 and 1.7 slowly; they are about exactly that. For a longer refresher, the **placement check** on the Algebra I page finds what you already know and lets you learn only what you're ready for.",
         after: "Nothing is locked. You can open any lesson from the unit page whenever you like." }
     ]
   });

@@ -979,7 +979,9 @@ window.OPLO_CHALLENGE = (function () {
     card.appendChild(hints);
     var sheet = el("div", "ch-sheet");
     sheet.setAttribute("role", "status");
-    card.appendChild(sheet);
+    // The verdict sits in the bar at the bottom, beside the button that acts
+    // on it, rather than as a panel in the middle of the work.
+    foot.appendChild(sheet);
 
     var hintBtn = button("ch-btn ghost ch-hint", icon(I.bulb) + "<span>Hint</span>");
     var showBtn = button("ch-btn ghost ch-show", icon(I.eye) + "<span>Show me</span>");

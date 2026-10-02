@@ -33,7 +33,7 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
   --lw-orange: #ffa04a;
   --lw-grid: rgba(255,255,255,.06);
   --lw-axis: rgba(255,255,255,.55);
-  --lw-surface: #121315;
+  --lw-surface: var(--canvas);
   --lw-tile: #1f2024;
 }
 
@@ -110,7 +110,7 @@ html[data-look="obsidian"] .lb-in { background: rgba(255,255,255,.045); }
 html[data-look="obsidian"] .lb-key { background: rgba(255,255,255,.07); }
 html[data-look="obsidian"] .lb-key:hover { background: rgba(255,255,255,.12); }
 .ch-after, .ch-then { margin-top: 18px; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
-.ch-then { padding: 14px 16px; border-radius: 14px; background: color-mix(in srgb, var(--blue) 9%, transparent); color: var(--ink); }
+.ch-then { padding: 2px 0 2px 16px; border-left: 2px solid var(--blue); font-size: 17px; color: var(--ink); }
 .ch-then.in { animation: ch-drop .3s var(--ease); }
 .ch-scene { margin-top: 20px; }
 
@@ -621,7 +621,7 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 
 /* ---------------------------------------------------------------- Walk
    A worked example: a numbered line of maths, and its reason beside it. */
-.lw-wk { list-style: none; margin: 0; padding: 6px 18px; border-radius: 18px; background: var(--lw-surface); display: grid; }
+.lw-wk { list-style: none; margin: 0; padding: 0; background: none; display: grid; }
 .lw-wk-row {
   display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: baseline; gap: 6px 12px;
   padding: 16px 0; border-top: 1px solid var(--hair);
@@ -634,7 +634,7 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lw-wk-m:empty { display: none; }
 .lw-wk-m:empty + .lw-wk-s { font-size: 17px; color: var(--ink); }
 .lw-walk .lw-tools { justify-content: center; }
-.lw-walk.solved .lw-wk { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--lw-green) 45%, transparent); }
+.lw-walk.solved .lw-wk-row:last-child .lw-wk-n { color: var(--lw-green); }
 @media (prefers-reduced-motion: reduce) { .lw-wk-row.in { animation: none; } }
 
 /* =============================================================== Shell
@@ -643,7 +643,7 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lb-side {
   position: fixed; z-index: 30; top: calc(var(--bar) + 13px); left: 12px; bottom: 12px; width: 300px;
   display: flex; flex-direction: column; gap: 12px; padding: 14px 8px 10px;
-  border-radius: 20px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair);
+  background: transparent; box-shadow: inset -1px 0 0 var(--hair);
 }
 /* A lesson sits in the middle of the window. With the sidebar out, the page
    keeps the sidebar's room on the left and as much again on the right, so the
@@ -768,7 +768,7 @@ html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,
 .lb-side-scrim { display: none; }
 @media (max-width: 1099px) {
   .lx-wrap:has(#v-lab.on .lb-shell) { max-width: var(--well); padding-left: max(var(--gut), env(safe-area-inset-left)); }
-  .lb-shell .lb-side { display: none; box-shadow: 0 0 0 1px var(--hair), 0 24px 60px rgba(0,0,0,.35); }
+  .lb-shell .lb-side { display: none; border-radius: 20px; background: var(--paper); box-shadow: 0 0 0 1px var(--hair), 0 24px 60px rgba(0,0,0,.35); }
   .lb-shell .lb-side-show { display: grid; }
   .lb-shell .ch-stepnav { padding-left: 46px; }
   .lb-shell.peek .lb-side { display: flex; }

@@ -330,9 +330,10 @@
     ".pw-pill.m { color: var(--pw-good); background: color-mix(in srgb, var(--pw-good) 14%, transparent); }",
     ".pw-pill.l { color: var(--pw-mid); background: color-mix(in srgb, var(--pw-mid) 16%, transparent); }",
     ".pw-pill.r { color: var(--blue); background: color-mix(in srgb, var(--blue) 14%, transparent); }",
-    ".pw-tabs { display: inline-flex; padding: 3px; border-radius: 99px; background: var(--sunk); gap: 2px; }",
-    ".pw-tabs button { border: 0; background: none; height: 32px; padding: 0 18px; border-radius: 99px; font-size: 13.5px; font-weight: 600; color: var(--ink-3); }",
-    ".pw-tabs button.on { background: var(--paper); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 0 0 1px var(--hair); }",
+    ".pw-tabs { display: inline-flex; gap: 24px; }",
+    ".pw-tabs button { border: 0; background: none; padding: 0 0 7px; font-size: 15px; font-weight: 600; color: var(--ink-3); box-shadow: inset 0 -2px 0 transparent; transition: color .15s var(--ease), box-shadow .15s var(--ease); }",
+    ".pw-tabs button:hover { color: var(--ink-2); }",
+    ".pw-tabs button.on { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }",
     ".pw-pre { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-3); }",
     ".pw-idea { font-size: 16.5px; line-height: 1.6; color: var(--ink-2); margin: 0; }",
     ".pw-idea b { color: var(--ink); }",
@@ -342,8 +343,8 @@
     ".pw-wm { font-size: 19px; line-height: 1.5; }",
     ".pw-wy { margin-top: 3px; color: var(--ink-3); font-size: 14px; line-height: 1.5; }",
     ".pw-hide { display: none; }",
-    ".pw-q { position: relative; width: 100%; background: var(--paper); border-radius: 24px; padding: 26px 30px 26px; box-shadow: 0 0 0 1px var(--hair); }",
-    ".pw-stem { font-size: 19px; line-height: 1.6; min-width: 0; }",
+    ".pw-q { position: relative; width: 100%; padding: 8px 0 0; }",
+    ".pw-stem { font-family: var(--font); font-size: 22px; line-height: 1.5; font-weight: 500; letter-spacing: -.01em; min-width: 0; }",
     ".pw-stem .m { font-size: 1.08em; }",
     ".pw-sys { display: grid; gap: 6px; margin: 12px 0 2px; padding: 12px 20px; border-left: 3px solid var(--rule); font-size: 1.05em; width: fit-content; }",
     ".pw-fig { display: flex; justify-content: center; margin: 16px 0 4px; }",
@@ -352,9 +353,9 @@
     ".pw-plane .tk { fill: var(--ink-3); font-size: 10px; font-family: var(--text); } .pw-plane .pl { fill: var(--ink); font-size: 13px; font-weight: 700; font-family: var(--text); }",
     ".pw-plane .ln { stroke: var(--blue); stroke-width: 2.4; stroke-linecap: round; } .pw-plane .ln.b { stroke: #ff7a9c; }",
     ".pw-plane .pt { fill: var(--blue); stroke: var(--paper); stroke-width: 2; }",
-    ".pw-ans { margin-top: 20px; }",
+    ".pw-ans { margin-top: 26px; }",
     ".pw-inp { display: flex; align-items: center; gap: 10px; max-width: 460px; }",
-    ".pw-inp input { flex: 1; min-width: 0; height: 52px; padding: 0 18px; border-radius: 15px; border: 0; background: var(--sunk); color: var(--ink); font-size: 20px; font-family: var(--text); box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow .15s; outline: none; }",
+    ".pw-inp input { flex: 1; min-width: 0; height: 52px; padding: 0 18px; border-radius: 15px; border: 0; background: transparent; color: var(--ink); font-size: 20px; font-family: var(--text); box-shadow: inset 0 0 0 1.5px var(--rule); transition: box-shadow .15s; outline: none; }",
     ".pw-inp input:focus { box-shadow: inset 0 0 0 2px var(--blue); }",
     ".pw-inp input.right { box-shadow: inset 0 0 0 2px var(--pw-good); } .pw-inp input.wrong { box-shadow: inset 0 0 0 2px var(--pw-low); }",
     ".pw-unit { color: var(--ink-3); font-size: 15px; }",
@@ -364,12 +365,12 @@
     ".pw-pal button { height: 32px; min-width: 40px; padding: 0 12px; border-radius: 10px; border: 0; background: var(--sunk); color: var(--ink-2); font-size: 14.5px; font-weight: 600; }",
     ".pw-pal button:hover { background: color-mix(in srgb, var(--ink) 12%, var(--paper)); }",
     ".pw-opts { display: grid; gap: 10px; }",
-    ".pw-opt { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; padding: 13px 16px; border-radius: 16px; border: 0; background: var(--sunk); font-size: 17px; line-height: 1.45; transition: background .15s, box-shadow .15s, transform .12s; }",
-    ".pw-opt:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 11%, var(--paper)); }",
+    ".pw-opt { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; padding: 13px 16px; border-radius: 16px; border: 0; background: transparent; box-shadow: inset 0 0 0 1.5px var(--rule); font-size: 17px; line-height: 1.45; transition: background .15s, box-shadow .15s, transform .12s; }",
+    ".pw-opt:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3); }",
     ".pw-opt.on { box-shadow: inset 0 0 0 2px var(--blue); background: color-mix(in srgb, var(--blue) 10%, var(--paper)); }",
     ".pw-opt.right { box-shadow: inset 0 0 0 2px var(--pw-good); background: color-mix(in srgb, var(--pw-good) 12%, var(--paper)); }",
     ".pw-opt.wrong { box-shadow: inset 0 0 0 2px var(--pw-low); background: color-mix(in srgb, var(--pw-low) 10%, var(--paper)); }",
-    ".pw-l { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--paper); box-shadow: 0 0 0 1px var(--rule); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: var(--ink-2); }",
+    ".pw-l { flex: none; width: 28px; height: 28px; border-radius: 50%; background: transparent; box-shadow: 0 0 0 1px var(--rule); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: var(--ink-2); }",
     ".pw-t { min-width: 0; }",
     ".pw-q.locked .pw-opt { cursor: default; }",
     ".pw-steps { display: flex; gap: 7px; align-items: center; }",
@@ -377,15 +378,18 @@
     ".pw-steps i.on { background: var(--h, var(--pw-good)); }",
     ".pw-steps i.pop { animation: pw-pop .7s var(--ease) both; }",
     "@keyframes pw-pop { 0% { transform: scaleY(.4) scaleX(.6); } 55% { transform: scaleY(1.7) scaleX(1.06); } 100% { transform: none; } }",
-    ".pw-verdict { margin-top: 18px; padding: 16px 20px; border-radius: 18px; display: grid; gap: 6px; animation: pw-in .3s var(--ease) both; }",
-    ".pw-verdict b { font-size: 16.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }",
-    ".pw-verdict p { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); }",
-    ".pw-verdict.good { background: color-mix(in srgb, var(--pw-good) 13%, transparent); } .pw-verdict.good b { color: var(--pw-good); }",
-    ".pw-verdict.bad { background: color-mix(in srgb, var(--pw-low) 11%, transparent); } .pw-verdict.bad b { color: var(--pw-low); }",
-    ".pw-verdict.note { background: var(--sunk); }",
+    ".pw-verdict { margin-top: 24px; padding: 2px 0 2px 18px; border-left: 2px solid var(--ink-3); display: grid; gap: 6px; animation: pw-in .3s var(--ease) both; }",
+    ".pw-verdict > b { font-size: 16.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }",
+    ".pw-verdict p { margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); }",
+    ".pw-verdict.good { border-left-color: var(--pw-good); } .pw-verdict.good > b { color: var(--pw-good); }",
+    ".pw-verdict.bad { border-left-color: var(--pw-low); } .pw-verdict.bad > b { color: var(--pw-low); }",
+    ".pw-verdict.note { border-left-color: var(--ink-3); }",
     ".pw-verdict .pw-i { width: 19px; height: 19px; }",
-    ".pw-hint { margin-top: 14px; padding: 12px 16px; border-radius: 14px; background: color-mix(in srgb, var(--pw-mid) 13%, transparent); color: var(--ink-2); font-size: 14.5px; line-height: 1.5; animation: pw-in .3s var(--ease) both; display: flex; gap: 10px; }",
+    ".pw-hint { margin-top: 18px; padding: 2px 0 2px 16px; border-left: 2px solid var(--pw-mid); color: var(--ink-2); font-size: 15.5px; line-height: 1.55; animation: pw-in .3s var(--ease) both; display: flex; gap: 10px; }",
     ".pw-hint .pw-i { color: var(--pw-mid); margin-top: 1px; width: 17px; height: 17px; }",
+    /* a topic, a check, a review: set on the page, no cards */
+    ":is(.pw-learn, .pw-check, .pw-review) :is(.pw-card, .pw-hero) { background: none; box-shadow: none; border-radius: 0; padding: 0; }",
+    ":is(.pw-learn, .pw-check, .pw-review) .pw-hero h2 { font-size: clamp(28px, 3.4vw, 36px); }",
     /* check */
     ".pw-chk-head { display: flex; align-items: center; gap: 16px; }",
     ".pw-prog { flex: 1; height: 6px; border-radius: 99px; background: var(--sunk); overflow: hidden; }",
@@ -417,8 +421,8 @@
     ".pw-lane { position: absolute; left: 0; right: 0; border-radius: 14px; background: color-mix(in srgb, var(--h) 5%, transparent); }",
     ".pw-lane-l { position: absolute; left: 12px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: color-mix(in srgb, var(--h) 75%, var(--ink-3)); }",
     ".pw-map-key { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }",
-    ".pw-map-key i { display: inline-block; width: 22px; height: 12px; border-radius: 99px; margin-right: 7px; vertical-align: -1px; background: var(--ink-2); }",
-    ".pw-map-key i.l { opacity: .4; } .pw-map-key i.r { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-2); } .pw-map-key i.n { background: var(--sunk); }",
+    ".pw-map-key i { display: inline-block; width: 22px; height: 12px; border-radius: 99px; margin-right: 7px; vertical-align: -1px; background: var(--blue); }",
+    ".pw-map-key i.l { opacity: .4; } .pw-map-key i.r { background: transparent; box-shadow: inset 0 0 0 1.5px var(--blue); } .pw-map-key i.n { background: var(--sunk); }",
     ".pw-toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 50; background: var(--ink); color: var(--paper); padding: 11px 20px; border-radius: 99px; font-size: 14px; font-weight: 600; box-shadow: 0 12px 30px rgba(0,0,0,.28); animation: pw-in .3s var(--ease) both; }",
     ".pw-loading { display: grid; place-items: center; min-height: 240px; color: var(--ink-3); }",
     "@media (prefers-reduced-motion: reduce) { .in, .pw-verdict, .pw-hint, .pw-cat.open .pw-cat-b { animation: none; } .pw-steps i.pop { animation: none; } }"
@@ -444,7 +448,7 @@
     var def = P.get(cid), cc = P.catCounts(cid), total = def.topics.length;
     var R0 = 150, W = 560, Hh = 410, cx = W / 2, cy = Hh / 2;
     host.innerHTML = "";
-    var svg = svgEl("svg", { "class": "pw-ring", viewBox: "0 0 " + W + " " + Hh, role: "img", "aria-label": "Your progress in " + def.title });
+    var svg = svgEl("svg", { "class": "pw-ring" + (o.mono ? " mono" : ""), viewBox: "0 0 " + W + " " + Hh, role: "img", "aria-label": "Your progress in " + def.title });
     var g = svgEl("g", { transform: "translate(" + cx + " " + cy + ")" });
     svg.appendChild(g);
     var a = -Math.PI / 2, gap = 0.028, slices = [];
@@ -548,11 +552,16 @@
     setTimeout(function () { t.remove(); }, 2600);
   }
   function catOf(def, tid) { var t = def.idx[tid]; return def.cats.filter(function (c) { return c.id === t.cat; })[0]; }
+  /* Colour is spent on state. Outside the map — where the slices are lanes
+     you navigate by — a topic is drawn in the one accent, and its slice is
+     named in words, so the course page, a topic and a check read as one
+     product rather than eight colour-coded ones. */
+  var ACCENT = "var(--blue)";
   function chipFor(def, cid, t, o) {
     var st = P.status(cid, t.id), ready = !st && t.pre.every(function (p) { return P.known(cid, p); });
     var cat = catOf(def, t.id);
     var b = el("button", "pw-chip " + (st || (ready ? "r" : "")), (st === "m" ? icon(I.check) : "") + esc(t.name));
-    b.type = "button"; b.style.setProperty("--h", cat.hue);
+    b.type = "button"; b.style.setProperty("--h", ACCENT);
     b.title = st === "m" ? "Mastered" : st === "l" ? "Learned — a check will confirm it" : ready ? "Ready to learn" : "Not yet";
     b.addEventListener("click", function () { go("Learn/" + t.id); });
     return b;
@@ -623,7 +632,7 @@
         nxt.forEach(function (t) {
           var cat = catOf(def, t.id);
           var b = el("button", "pw-nx", '<span class="d"></span><span><b>' + esc(t.name) + '</b><small>' + esc(cat.name) + '</small></span>' + icon(I.arrow));
-          b.type = "button"; b.style.setProperty("--h", cat.hue);
+          b.type = "button"; b.style.setProperty("--h", ACCENT);
           b.addEventListener("click", function () { go("Learn/" + t.id); });
           list.appendChild(b);
         });
@@ -692,6 +701,156 @@
     return r;
   }
 
+  /* ================================================================== Band
+     The course page's own panel. Not a second product above the units: one
+     card, in the course page's voice, that answers two questions and stops —
+     what do you know, and what is worth doing next. The ring is drawn in the
+     one accent (colour is spent on state), the next step is one decision
+     with its reason beside it, and everything else this kit can do is a quiet
+     row under that decision rather than a section of its own. */
+  css([
+    /* one card, split in two, in the course page's own panel language */
+    ".pw-band { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); background: var(--paper); border: 1px solid var(--hair); border-radius: var(--r); margin-top: 26px; overflow: hidden; }",
+    ".pw-band-know { padding: 20px 24px 18px; border-right: 1px solid var(--hair); min-width: 0; }",
+    ".pw-band-next { padding: 20px 26px 18px; display: flex; flex-direction: column; min-width: 0; }",
+    ".pw-band .pw-lbl { font-family: var(--font); text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 600; color: var(--ink); margin: 0 0 12px; }",
+    ".pw-band .pw-lbl .pw-i { color: var(--ink-3); width: 15px; height: 15px; }",
+    ".pw-band .pw-bigpct b { font-size: 46px; }",
+    ".pw-band .pw-bigpct span { font-size: 14px; }",
+    ".pw-band .pw-ringwrap { max-width: 430px; margin: 2px auto 0; }",
+    ".pw-band .pw-legend { justify-content: center; margin: 4px 0 0; font-size: 12.5px; }",
+    ".pw-band .pw-legend i { background: var(--blue); }",
+    ".pw-band .pw-legend i.l { opacity: .42; }",
+    ".pw-band .pw-legend i.n { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }",
+    ".pw-ring.mono .pw-fl, .pw-ring.mono .pw-fm { fill: var(--blue); }",
+    ".pw-band-k { font-size: 12.5px; font-weight: 600; color: var(--blue); margin: 2px 0 0; }",
+    ".pw-band-t { font-family: var(--font); font-size: 27px; line-height: 1.14; letter-spacing: -.02em; font-weight: 700; margin: 4px 0 8px; }",
+    ".pw-band-why { font-size: 14.5px; line-height: 1.55; color: var(--ink-2); margin: 0; max-width: 46ch; }",
+    ".pw-band .pw-acts { margin-top: 18px; }",
+    ".pw-band-alts { margin-top: 22px; border-top: 1px solid var(--hair); display: grid; }",
+    ".pw-band-alt { display: grid; grid-template-columns: 20px minmax(0, 1fr) 16px; gap: 12px; align-items: center; text-align: left; width: 100%; background: none; border: 0; border-bottom: 1px solid var(--hair); padding: 11px 2px; }",
+    ".pw-band-alt b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -.005em; transition: color .15s var(--ease); }",
+    ".pw-band-alt small { display: block; font-size: 12.5px; color: var(--ink-3); margin-top: 1px; }",
+    ".pw-band-alt .pw-i { width: 18px; height: 18px; color: var(--ink-3); justify-self: center; }",
+    ".pw-band-alt .pw-go { width: 15px; height: 15px; transition: transform .15s var(--ease); }",
+    ".pw-band-alt:hover b { color: var(--blue); }",
+    ".pw-band-alt:hover .pw-go { transform: translateX(2px); }",
+    ".pw-band-alt:focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 55%, transparent); outline-offset: -2px; border-radius: 8px; }",
+    ".pw-dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.6px var(--blue); justify-self: center; }",
+    ".pw-band-note { margin-top: auto; padding-top: 14px; font-size: 12.5px; }",
+    "@media (max-width: 860px) { .pw-band { grid-template-columns: 1fr; } .pw-band-know { border-right: 0; border-bottom: 1px solid var(--hair); } }",
+    "@media (max-width: 560px) { .pw-band-know, .pw-band-next { padding: 18px 16px; } .pw-band .pw-ring text { font-size: 19px; } .pw-band .pw-ring text.n { display: none; } .pw-band-t { font-size: 23px; } .pw-band .pw-btn.lg { width: 100%; } }"
+  ]);
+
+  function upNext(def, cid, ctx) {
+    var counts = P.counts(cid), due = P.checkDue(cid), dueTopics = P.due(cid), ready = pickNext(def, cid, 3);
+    var saved = readChk(ctx), resuming = saved && saved.cid === cid && saved.ans && saved.ans.length;
+    var known = counts.m + counts.l, out = { alts: [] };
+    function alt(ico, label, sub, fn) { out.alts.push({ ico: ico, label: label, sub: sub, fn: fn }); }
+    var unit1 = ctx.go && ctx.go.unit ? function () { ctx.go.unit(1); } : null;
+
+    if (resuming) {
+      out.kicker = due === "first" ? "Placement check" : "Knowledge check";
+      out.title = "Pick up where you stopped";
+      out.why = "You've answered " + plural(saved.ans.length, "question") + " so far. The rest takes less time than the start did.";
+      out.cta = "Carry on"; out.fn = function () { go("Check"); };
+    } else if (due === "first" && !known) {
+      out.kicker = "Start here";
+      out.title = "Find out where you stand";
+      out.why = "About 25 questions that adapt as you answer. Nothing is marked as you go, and “I haven't learned this yet” is always a fair answer — it makes the check shorter.";
+      out.cta = "Start the placement check"; out.fn = function () { go("Check"); };
+      if (unit1) alt(I.play, "Or start at the beginning", "Unit 1 · Linear equations, lesson by lesson", unit1);
+    } else if (due === "topics" || due === "time") {
+      out.kicker = "Knowledge check";
+      out.title = "See what has stuck";
+      out.why = due === "topics" ? "You've learned " + plural(P.rec(cid).since, "topic") + " since your last check. A check confirms them and returns anything that has faded."
+        : "It's been a couple of weeks. A check confirms what you still know and returns anything that has faded.";
+      out.cta = "Take the check"; out.fn = function () { go("Check"); };
+    } else if (dueTopics.length >= 3) {
+      out.kicker = "Review";
+      out.title = "Refresh " + plural(dueTopics.length, "topic");
+      out.why = "Not seen for a while. One quick question each keeps them from fading — cheaper now than relearning later.";
+      out.cta = "Review"; out.fn = function () { go("Review"); };
+    } else if (ready.length) {
+      var t0 = ready.shift();
+      out.kicker = "Ready to learn";
+      out.title = t0.name;
+      out.why = "Everything it builds on is already in your ring" + (t0.pre.length ? " — " + t0.pre.slice(0, 2).map(function (p) { return def.idx[p].name.toLowerCase(); }).join(" and ") : "") + ".";
+      out.cta = "Start"; out.fn = function () { go("Learn/" + t0.id); };
+    } else {
+      out.kicker = "Knowledge check";
+      out.title = counts.todo ? "Nothing is ready yet" : "You've learned every topic";
+      out.why = counts.todo ? "A check finds what you can build on next." : "Keep it honest: a check confirms what you still know.";
+      out.cta = "Take a check"; out.fn = function () { go("Check"); };
+    }
+
+    // Whatever wasn't chosen is still one tap away, as a row.
+    if (out.title !== "Find out where you stand") {
+      ready.forEach(function (t) { alt(null, t.name, "Ready to learn · " + catOf(def, t.id).name, function () { go("Learn/" + t.id); }); });
+      if (out.kicker !== "Review" && dueTopics.length) alt(I.refresh, "Refresh " + plural(dueTopics.length, "topic"), "One quick question each", function () { go("Review"); });
+      if (out.kicker !== "Knowledge check" && !resuming && due !== "first") alt(I.target, "Knowledge check", "Confirms what you've learned", function () { go("Check"); });
+      if (due === "first" && !resuming) alt(I.target, "Placement check", "Find what else you already know", function () { go("Check"); });
+    }
+    return out;
+  }
+
+  function renderBand(host, ctx) {
+    CTX = ctx;
+    var cid = ctx.course, def = P.get(cid), rec = P.rec(cid);
+    host.innerHTML = "";
+    var r = el("section", "pw-root pw-band in");
+    r.setAttribute("aria-label", "Your " + def.title);
+    host.appendChild(r);
+    var counts = P.counts(cid), known = counts.m + counts.l;
+
+    /* what you know */
+    var kn = el("div", "pw-band-know");
+    kn.appendChild(el("p", "pw-lbl", icon(I.ring) + "What you know"));
+    var big = el("div", "pw-bigpct");
+    big.innerHTML = "<b>" + Math.round(known / counts.n * 100) + "%</b><span>" +
+      (known ? "of " + esc(def.title) + " — " + plural(known, "topic") + " of " + counts.n : "of " + counts.n + " topics, so far") + "</span>";
+    kn.appendChild(big);
+    var rw = el("div", "pw-ringwrap");
+    kn.appendChild(rw);
+    drawRing(rw, cid, { mono: true, from: rec.prefs && rec.prefs.seen, onSlice: function () { go("Graph"); } });
+    rec.prefs = rec.prefs || {}; rec.prefs.seen = seenNow(cid);
+    P.save();
+    kn.appendChild(el("div", "pw-legend", "<span><i></i>Mastered · " + counts.m + "</span><span><i class=\"l\"></i>Learned · " + counts.l +
+      "</span><span><i class=\"n\"></i>To go · " + counts.todo + "</span>"));
+    r.appendChild(kn);
+
+    /* what's next */
+    var n = upNext(def, cid, ctx);
+    var nx = el("div", "pw-band-next");
+    nx.appendChild(el("p", "pw-lbl", icon(I.play) + "Up next"));
+    nx.appendChild(el("p", "pw-band-k", esc(n.kicker)));
+    nx.appendChild(el("h3", "pw-band-t", esc(n.title)));
+    nx.appendChild(el("p", "pw-band-why", fmt(n.why)));
+    var acts = el("div", "pw-acts");
+    var cta = el("button", "pw-btn primary lg", esc(n.cta) + icon(I.arrow)); cta.type = "button";
+    cta.addEventListener("click", n.fn);
+    acts.appendChild(cta);
+    nx.appendChild(acts);
+    var rows = el("div", "pw-band-alts");
+    n.alts.slice(0, 3).forEach(function (a) {
+      var b = el("button", "pw-band-alt", (a.ico ? icon(a.ico) : '<span class="pw-dot"></span>') +
+        "<span><b>" + esc(a.label) + "</b><small>" + esc(a.sub) + "</small></span>" + icon(I.arrow, "pw-go"));
+      b.type = "button";
+      b.addEventListener("click", a.fn);
+      rows.appendChild(b);
+    });
+    var mp = el("button", "pw-band-alt", icon(I.map) + "<span><b>Every topic, and what it rests on</b><small>The map — nothing is locked</small></span>" + icon(I.arrow, "pw-go"));
+    mp.type = "button";
+    mp.addEventListener("click", function () { go("Graph"); });
+    rows.appendChild(mp);
+    nx.appendChild(rows);
+    nx.appendChild(el("p", "pw-muted pw-band-note", "Private to you. It measures what you can do now — it isn’t a grade."));
+    r.appendChild(nx);
+
+    P.onSync(function () { if (host.isConnected && host.querySelector(".pw-band")) renderBand(host, ctx); });
+    return r;
+  }
+
   /* ================================================================== Learn */
   var LEARN = {};   // per topic, this visit: streak, misses, stage
   function renderLearn(host, ctx, tid) {
@@ -700,12 +859,12 @@
     if (!t) return renderHome(host, ctx);
     var cat = catOf(def, tid), rec = P.rec(cid);
     var r = root(host, "pw-learn");
-    r.style.setProperty("--h", cat.hue);
+    r.style.setProperty("--h", ACCENT);
     var wrap = el("div", "pw-narrow"); r.appendChild(wrap);
-    backLink(wrap, "Your ring", home);
+    backLink(wrap, def.title, home);
     var st = P.status(cid, tid), ready = t.pre.every(function (p) { return P.known(cid, p); });
     var head = el("div", "in");
-    head.innerHTML = '<div class="pw-top2"><span class="pw-eyebrow" style="color:' + cat.hue + '">' + esc(cat.name) + '</span><span class="pw-pill ' + (st || (ready ? "r" : "")) + '">' + (st === "m" ? "Mastered" : st === "l" ? "Learned" : ready ? "Ready to learn" : "Not yet") + '</span></div><h1 class="pw-h1" style="font-size:clamp(28px,3.6vw,38px)">' + esc(t.name) + "</h1>";
+    head.innerHTML = '<div class="pw-top2"><span class="pw-eyebrow">' + esc(cat.name) + '</span><span class="pw-pill ' + (st || (ready ? "r" : "")) + '">' + (st === "m" ? "Mastered" : st === "l" ? "Learned" : ready ? "Ready to learn" : "Not yet") + '</span></div><h1 class="pw-h1" style="font-size:clamp(28px,3.6vw,38px)">' + esc(t.name) + "</h1>";
     wrap.appendChild(head);
     var unknownPre = t.pre.filter(function (p) { return !P.known(cid, p); });
     if (t.pre.length) {
@@ -713,11 +872,15 @@
       t.pre.forEach(function (p) { pre.appendChild(chipFor(def, cid, def.idx[p])); });
       wrap.appendChild(pre);
     }
-    var S = LEARN[tid] || (LEARN[tid] = { streak: 0, miss: 0, n: 0, stage: st ? "practice" : "idea", ex: 0, hinted: false });
+    /* Try first. A topic opens on a problem, before any explanation, the way
+       the lab's lessons do: the attempt makes the idea an answer to a question
+       the student now has. A wrong first try costs nothing, and the idea and a
+       worked example are one tap away — and shown at once after a miss. */
+    var S = LEARN[tid] || (LEARN[tid] = { streak: 0, miss: 0, n: 0, stage: "practice", ex: 0, hinted: false });
     var tabs = el("div", "pw-tabs"), stageHost = el("div", "pw-stage");
-    var tIdea = el("button", null, "Idea"), tPr = el("button", null, "Practice");
+    var tIdea = el("button", null, "The idea"), tPr = el("button", null, "Try it");
     tIdea.type = tPr.type = "button";
-    tabs.appendChild(tIdea); tabs.appendChild(tPr);
+    tabs.appendChild(tPr); tabs.appendChild(tIdea);
     wrap.appendChild(tabs); wrap.appendChild(stageHost);
     function setStage(s) { S.stage = s; tIdea.classList.toggle("on", s === "idea"); tPr.classList.toggle("on", s === "practice"); if (s === "idea") idea(); else practice(); }
     tIdea.addEventListener("click", function () { setStage("idea"); });
@@ -771,7 +934,7 @@
       var stepsRow = el("div", "pw-steps");
       stepsRow.setAttribute("aria-label", S.streak + " of 3 right in a row");
       for (var i = 0; i < 3; i++) stepsRow.appendChild(el("i", i < S.streak ? "on" : ""));
-      head2.appendChild(el("span", "pw-muted", "Three right in a row and it's in your ring"));
+      head2.appendChild(el("span", "pw-muted", !st && S.n === 0 && !S.miss ? "Try one before anything is explained \u2014 a wrong first try costs nothing" : "Three right in a row and it's in your ring"));
       head2.appendChild(stepsRow);
       stageHost.appendChild(head2);
       var d = S.miss >= 2 ? 1 : [1, 2, 2][Math.min(S.streak, 2)];
@@ -811,6 +974,7 @@
           var vd = el("div", "pw-verdict bad", "<b>" + icon(I.x) + "Not quite</b>" + (say ? "<p>" + fmt(say) + "</p>" : "") + "<p>The answer is <b style=\"color:var(--ink)\">" + ansHTML(item.a) + "</b>. Here's how to get it:</p>");
           fbHost.appendChild(vd);
           fbHost.appendChild(walkView(item.walk));
+          if (!st && S.miss === 1 && t.idea) fbHost.appendChild(el("div", "pw-verdict note", "<b>" + icon(I.bulb) + "The idea</b><p>" + fmt(t.idea) + "</p>"));
           if (S.miss >= 2 && unknownPre.length) {
             var stuck = el("div", "pw-verdict note", "<b>Feeling stuck?</b><p>This builds on " + esc(def.idx[unknownPre[0]].name) + ", which isn't in your ring yet.</p>");
             var sb = el("button", "pw-btn sm", "Open " + esc(def.idx[unknownPre[0]].name)); sb.type = "button";
@@ -840,6 +1004,7 @@
         fbHost.innerHTML = ""; acts.style.display = "none";
         fbHost.appendChild(el("div", "pw-verdict note", "<b>That's fine — let's see how it works</b><p>The answer is <b style=\"color:var(--ink)\">" + ansHTML(item.a) + "</b>.</p>"));
         fbHost.appendChild(walkView(item.walk));
+        if (!st && S.miss === 1 && t.idea) fbHost.appendChild(el("div", "pw-verdict note", "<b>" + icon(I.bulb) + "The idea</b><p>" + fmt(t.idea) + "</p>"));
         var more = el("div", "pw-acts");
         var nb = el("button", "pw-btn primary", "Try another" + icon(I.arrow)); nb.type = "button"; nb.addEventListener("click", practice);
         var ib = el("button", "pw-btn ghost", "Read the idea again"); ib.type = "button"; ib.addEventListener("click", function () { setStage("idea"); });
@@ -871,7 +1036,7 @@
         shown.forEach(function (x) {
           var cx = catOf(def, x.id), isNew = newly.indexOf(x) > -1;
           var b = el("button", "pw-nx" + (isNew ? " now" : ""), '<span class="d"></span><span><b>' + esc(x.name) + (isNew ? '<span class="pw-nowtag">Now ready</span>' : "") + "</b><small>" + esc(cx.name) + "</small></span>" + icon(I.arrow));
-          b.type = "button"; b.style.setProperty("--h", cx.hue);
+          b.type = "button"; b.style.setProperty("--h", ACCENT);
           b.addEventListener("click", function () { go("Learn/" + x.id); });
           list.appendChild(b);
         });
@@ -908,7 +1073,7 @@
     var wrap = el("div", "pw-narrow"); r.appendChild(wrap);
     var saved = readChk(ctx);
     if (saved && saved.cid === cid && saved.ans && saved.ans.length) return runCheck(wrap, ctx, saved);
-    backLink(wrap, "Your ring", home);
+    backLink(wrap, def.title, home);
     var c = el("div", "pw-card pw-hero in");
     c.innerHTML = '<div class="pw-eyebrow">' + icon(I.target) + (first ? "Placement Check" : "Knowledge Check") + "</div>" +
       "<h2>" + (first ? "Let's find out what you already know." : "Let's see what has stuck.") + "</h2>" +
@@ -1026,7 +1191,7 @@
       bc.appendChild(el("p", "pw-lbl", icon(I.refresh) + "Back to learn"));
       bc.appendChild(el("p", "pw-muted", "These had faded. They're not lost — the second time goes faster."));
       var ul = el("ul", "pw-list"); ul.style.marginTop = "10px";
-      res.back.slice(0, 6).forEach(function (id) { var t = def.idx[id], cat = catOf(def, id), li = el("li", null, "<i></i>" + esc(t.name)); li.firstChild.style.setProperty("--h", cat.hue); ul.appendChild(li); });
+      res.back.slice(0, 6).forEach(function (id) { var t = def.idx[id], cat = catOf(def, id), li = el("li", null, "<i></i>" + esc(t.name)); li.firstChild.style.setProperty("--h", ACCENT); ul.appendChild(li); });
       bc.appendChild(ul); side.appendChild(bc);
     }
     var nx = pickNext(def, cid, 4), nc = el("div", "pw-card");
@@ -1036,7 +1201,7 @@
       nx.forEach(function (t) {
         var cat = catOf(def, t.id);
         var b = el("button", "pw-nx", '<span class="d"></span><span><b>' + esc(t.name) + '</b><small>' + esc(cat.name) + "</small></span>" + icon(I.arrow));
-        b.type = "button"; b.style.setProperty("--h", cat.hue);
+        b.type = "button"; b.style.setProperty("--h", ACCENT);
         b.addEventListener("click", function () { go("Learn/" + t.id); });
         list.appendChild(b);
       });
@@ -1056,7 +1221,7 @@
     var cid = ctx.course, def = P.get(cid);
     var r = root(host, "pw-review");
     var wrap = el("div", "pw-narrow"); r.appendChild(wrap);
-    backLink(wrap, "Your ring", home);
+    backLink(wrap, def.title, home);
     var due = P.due(cid).sort(function (a, b) { return (P.rec(cid).t[a.id].at || 0) - (P.rec(cid).t[b.id].at || 0); }).slice(0, 6);
     if (!due.length) {
       var c0 = el("div", "pw-card in");
@@ -1073,7 +1238,7 @@
       var pg = el("div", "pw-prog", "<i></i>"), nn = el("span", "pw-chk-n", (i + 1) + " of " + due.length);
       top.appendChild(pg); top.appendChild(nn); inner.appendChild(top);
       requestAnimationFrame(function () { var b = pg.firstChild; if (b) b.style.width = Math.round(i / due.length * 100) + "%"; });
-      var lab = el("p", "pw-eyebrow", '<span style="color:' + cat.hue + '">' + esc(t.name) + "</span>" + (retry ? " · one more, a little easier" : "")); lab.style.margin = "12px 0 8px";
+      var lab = el("p", "pw-eyebrow", '<span style="color:var(--ink-2)">' + esc(t.name) + "</span>" + (retry ? " · one more, a little easier" : "")); lab.style.margin = "12px 0 8px";
       inner.appendChild(lab);
       var made = P.item(cid, t.id, retry ? 1 : 2), item = made.item, qv = questionView(item, {});
       inner.appendChild(qv.node);
@@ -1126,7 +1291,7 @@
     CTX = ctx;
     var cid = ctx.course, def = P.get(cid);
     var r = root(host, "pw-mapp");
-    backLink(r, "Your ring", home);
+    backLink(r, def.title, home);
     header(r, def, { eyebrow: def.title, title: "How it all fits together", lede: "Every topic, and what it rests on. Filled means mastered, tinted means learned, outlined means you're ready for it. Nothing is locked — click any topic." });
     var key = el("div", "pw-map-key", '<span><i></i>Mastered</span><span><i class="l"></i>Learned</span><span><i class="r"></i>Ready</span><span><i class="n"></i>Not yet</span>');
     r.appendChild(key);
@@ -1153,9 +1318,9 @@
     var W = X0 + (maxD + 1) * CW + 12, Hh = y;
     inner.style.width = W + "px"; inner.style.height = Hh + "px";
     lanes.forEach(function (l) {
-      var d = el("div", "pw-lane"); d.style.top = l.y + "px"; d.style.height = l.h + "px"; d.style.setProperty("--h", l.c.hue);
+      var d = el("div", "pw-lane"); d.style.top = l.y + "px"; d.style.height = l.h + "px"; d.style.setProperty("--h", "var(--ink-3)");
       inner.appendChild(d);
-      var lb = el("div", "pw-lane-l", esc(l.c.name)); lb.style.top = (l.y + 7) + "px"; lb.style.setProperty("--h", l.c.hue);
+      var lb = el("div", "pw-lane-l", esc(l.c.name)); lb.style.top = (l.y + 7) + "px"; lb.style.setProperty("--h", "var(--ink-3)");
       inner.appendChild(lb);
     });
     var svg = svgEl("svg", { width: W, height: Hh, viewBox: "0 0 " + W + " " + Hh });
@@ -1173,7 +1338,7 @@
       var st = P.status(cid, t.id), ready = !st && t.pre.every(function (p) { return P.known(cid, p); });
       var cat = catOf(def, t.id);
       var n = el("button", "pw-node " + (st || (ready ? "r" : "")), "<span>" + esc(t.name) + "</span>");
-      n.type = "button"; n.style.left = pos[t.id].x + "px"; n.style.top = pos[t.id].y + "px"; n.style.width = NW + "px"; n.style.setProperty("--h", cat.hue);
+      n.type = "button"; n.style.left = pos[t.id].x + "px"; n.style.top = pos[t.id].y + "px"; n.style.width = NW + "px"; n.style.setProperty("--h", ACCENT);
       n.title = t.name;
       n.addEventListener("click", function () { go("Learn/" + t.id); });
       function lit() {
@@ -1199,13 +1364,14 @@
       if (a === "Check") return renderCheck(host, ctx);
       if (a === "Review") return renderReview(host, ctx);
       if (a === "Graph") return renderMap(host, ctx);
+      if (!a && ctx.panel) return renderBand(host, ctx);
       return renderHome(host, ctx);
     } catch (e) {
       if (window.console) console.error(e);
       host.innerHTML = "";
-      host.appendChild(el("div", "lb-none", "<b>Algebra Pathway couldn't open.</b><p>" + esc(e && e.message || "Something went wrong.") + "</p>"));
+      host.appendChild(el("div", "lb-none", "<b>This part of " + esc((P.get(ctx.course) || {}).title || "the course") + " couldn't open.</b><p>" + esc(e && e.message || "Something went wrong.") + "</p>"));
     }
   });
 
-  P.ui = { renderHome: renderHome, drawRing: drawRing, questionView: questionView };
+  P.ui = { renderHome: renderHome, renderBand: renderBand, drawRing: drawRing, questionView: questionView };
 })();

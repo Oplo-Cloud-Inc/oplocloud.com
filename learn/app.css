@@ -312,6 +312,11 @@ svg { display: block; }
 .lx-unit .txt b { display: block; font-family: var(--font); font-size: 15.5px; font-weight: 600; letter-spacing: -.01em; }
 .lx-unit .txt span { display: block; margin-top: 2px; font-size: 13px; color: var(--ink-3); }
 .lx-unit .go { flex: none; color: var(--ink-3); }
+/* A unit's own progress, on a course page whose panel replaces the
+   course-mastery bars (Algebra I). Tokens only, so both looks follow. */
+.lx-umeter { flex: none; width: 64px; height: 4px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
+.lx-umeter i { display: block; height: 100%; border-radius: 4px; background: var(--blue); }
+.lx-spine { font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 12px; }
 .lx-part {
   margin: 30px 0 13px; font-family: var(--font); font-size: 12px; font-weight: 600;
   color: var(--ink-3);
@@ -5243,6 +5248,13 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
 .lx-kind b { flex: none; font-size: 14.5px; font-weight: 650; }
 .lx-kind.school b { color: var(--blue); }
 .lx-kind span { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+/* On a phone the sentence takes a line of its own, under the label and
+   button, instead of a column one word wide between them. */
+@media (max-width: 560px) {
+  .lx-kind { flex-wrap: wrap; gap: 8px 12px; }
+  .lx-kind span { order: 3; flex-basis: 100%; }
+  .lx-kind .lx-btn, .lx-kind .lx-lanelink { margin-left: auto; }
+}
 /* The Self-learning page. */
 .lx-owngrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; margin-top: 26px; }
 .lx-owncard { padding: 20px; border-radius: 20px; background: var(--paper); box-shadow: 0 0 0 .5px var(--hair); }

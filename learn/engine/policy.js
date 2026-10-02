@@ -254,8 +254,16 @@
          Serving practice is what branch 6 is for. A concept the engine cannot
          ask a discriminating question of is not probe-eligible, and that is a
          content gap for Teacher.plan to report rather than something to paper
-         over with a question that was never going to settle anything. */
-      var probes = unseen(C.forConcept(u.concept.id, "probe"), recent);
+         over with a question that was never going to settle anything.
+
+         Filtered strictly, not through `unseen`, whose "never return nothing"
+         fallback hands back the full list when every probe was just served.
+         For a concept with one authored probe that meant the probe a repair
+         had put on screen a moment ago was served again as a diagnosis — the
+         same item twice in three steps, in about 1 run in 50 of test.js. A
+         probe the student has just seen settles nothing new, so the branch
+         yields instead. */
+      var probes = C.forConcept(u.concept.id, "probe").filter(function (i) { return fresh(recent, i.id); });
       var probeIt = probes[0];
       if (probeIt) {
         var uRep = chosenRep(u, model);
