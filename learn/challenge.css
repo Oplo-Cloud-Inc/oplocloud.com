@@ -68,11 +68,12 @@
 .ch-sn-dot:disabled::before { opacity: .5; }
 .ch-sn-dot:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
 
-/* -------------------------------------------------------------- Card */
+/* -------------------------------------------------------------- Step
+   No card. A step is set straight on the page, the way a page of a good
+   book is: the question, the thing to move, and room around them. The only
+   frames left are the ones that are something to press. */
 .ch-card {
-  position: relative; padding: 34px 38px 26px; border-radius: 22px;
-  background: var(--paper);
-  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 40px rgba(0,0,0,.05), 0 0 0 1px var(--hair);
+  position: relative; padding: 18px 0 0;
 }
 .ch-card.in { animation: ch-in .38s var(--ease); }
 @keyframes ch-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -82,7 +83,7 @@
 }
 .ch-kind span { font-weight: 500; }
 .ch-prompt {
-  font-family: var(--font); font-size: 21px; line-height: 1.38; font-weight: 500;
+  font-family: var(--font); font-size: 23px; line-height: 1.4; font-weight: 500;
   letter-spacing: -.012em; color: var(--ink); outline: none; max-width: 40em;
 }
 .ch-prompt p + p { margin-top: 10px; }
@@ -96,7 +97,7 @@
 .ch-art { margin-top: 20px; }
 .ch-art svg { display: block; width: 100%; height: auto; }
 .ch-art .ch-cap { margin-top: 8px; font-size: 13px; color: var(--ink-3); }
-.ch-work { margin-top: 24px; }
+.ch-work { margin-top: 30px; }
 
 /* ----------------------------------------------------------- Buttons */
 .ch-btn {
@@ -117,8 +118,10 @@
 .ch-btn[hidden] { display: none; }
 
 .ch-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--hair);
+  position: sticky; bottom: 0;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 34px; padding: 16px 0 calc(18px + env(safe-area-inset-bottom));
+  background: var(--canvas);
 }
 .ch-foot-l { display: flex; gap: 2px; margin-left: -14px; }
 .ch-foot .ch-btn.primary { margin-left: auto; }
@@ -127,26 +130,23 @@
 .ch-hints { display: grid; gap: 8px; margin-top: 18px; }
 .ch-hints:empty { display: none; }
 .ch-hintline {
-  display: block; padding: 11px 15px; border-radius: 12px;
-  background: #fff8e6; color: #5c4200; font-size: 14.5px; line-height: 1.5;
+  display: block; padding: 2px 0 2px 16px; border-left: 2px solid var(--amber);
+  color: var(--ink-2); font-size: 15.5px; line-height: 1.55;
 }
-.ch-hintline b { font-weight: 600; }
+.ch-hintline b { font-weight: 600; color: var(--ink); }
 .ch-hintline.in { animation: ch-drop .3s var(--ease); }
 @keyframes ch-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
 .ch-sheet { display: none; }
 .ch-sheet.on {
-  display: block; margin-top: 18px; padding: 15px 18px; border-radius: 14px;
-  font-size: 15px; line-height: 1.55; color: var(--ink);
+  display: block; order: -1; flex-basis: 100%; max-height: 42vh; overflow-y: auto;
+  padding: 0 0 4px; font-size: 16px; line-height: 1.55; color: var(--ink);
 }
 .ch-sheet.in { animation: ch-drop .3s var(--ease); }
 .ch-sheet b { font-weight: 600; }
-.ch-sheet.ok     { background: #e9f6ef; box-shadow: inset 0 0 0 1px rgba(18,145,90,.22); }
-.ch-sheet.ok > b:first-child { color: #0b6b41; }
-.ch-sheet.no     { background: #fff6e6; box-shadow: inset 0 0 0 1px rgba(178,106,0,.22); }
+.ch-sheet > b:first-child { font-family: var(--font); font-size: 18px; }
+.ch-sheet.ok > b:first-child { color: var(--green); }
 .ch-sheet.no > b:first-child { color: var(--amber); }
-.ch-sheet.shown  { background: var(--canvas); }
-.ch-sheet.model  { background: #eef5fd; box-shadow: inset 0 0 0 1px rgba(0,113,227,.18); }
 .ch-why { margin-top: 6px; color: var(--ink); }
 /* A worked reason, a sentence to a line. */
 .ch-why .ch-ln { display: block; }
@@ -163,12 +163,12 @@
 .ch-options { display: grid; gap: 9px; }
 .ch-opt {
   display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
-  padding: 14px 16px; border-radius: 14px; background: var(--paper);
-  box-shadow: inset 0 0 0 1.5px var(--hair);
-  font-size: 16px; line-height: 1.42; color: var(--ink);
+  padding: 15px 18px; border-radius: 14px; background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--rule);
+  font-size: 17px; line-height: 1.42; color: var(--ink);
   transition: box-shadow .15s var(--ease), background .15s var(--ease), color .15s var(--ease), transform .1s var(--ease);
 }
-.ch-opt:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--rule); background: #fcfcfd; }
+.ch-opt:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
 .ch-opt:active:not(:disabled) { transform: scale(.995); }
 .ch-opt:disabled { cursor: default; }
 .ch-mark, .ch-box {
@@ -211,7 +211,7 @@
 
 .ch-tray {
   display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; min-height: 58px;
-  padding: 10px; border-radius: 14px; background: var(--canvas);
+  padding: 0; border-radius: 14px; background: transparent;
   transition: background .15s var(--ease), box-shadow .15s var(--ease);
 }
 .ch-tray.empty { min-height: 0; padding: 0; background: transparent; }
@@ -233,7 +233,7 @@
 .ch-bins { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: 12px; }
 .ch-bins .ch-target {
   min-height: 150px; padding: 12px; border-radius: 16px;
-  box-shadow: inset 0 0 0 1.5px var(--hair); background: var(--paper);
+  border: 1.5px dashed var(--rule); background: transparent;
 }
 .ch-bins .ch-target-head { padding: 2px 2px 10px; font-size: 14px; color: var(--ink); }
 .ch-bins .ch-holder { flex-direction: column; align-items: stretch; }

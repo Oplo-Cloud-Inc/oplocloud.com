@@ -42,7 +42,7 @@ window.OPLO_LAB = (function () {
     "lab/geotools.js": "3a389b5e",
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
-    "lab/pathui.js": "0c484c10",
+    "lab/pathui.js": "564c164a",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",
