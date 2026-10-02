@@ -238,6 +238,8 @@ New components should use the tokens, not literal colours; then both looks follo
 
 ## 6. Progress Model
 
+This section describes `learn/learn.js`, the model in the product today. The learning engine (`learn/engine/`) holds a different one — six rungs, six dimensions, a posterior behind every claim — and is meant to replace it; see [docs/OEDU_LEARNING_ENGINE.md](docs/OEDU_LEARNING_ENGINE.md).
+
 ### 6.1 Mastery Dimensions
 
 Five dimensions, weighted by cognitive demand:
