@@ -826,13 +826,21 @@ window.OPLO_CHALLENGE = (function () {
      for every step to jump straight to it. Each step is named the way the
      lesson names it — "Start here", "Watch" — and a problem by its number. */
   function stepInfo() {
-    var n = 0;
+    var n = 0, last = "", rep = 0;
+    // A lesson taught step by step (it has a guided example) names every step
+    // by its part of the lesson — Warm up, Watch, Together — so the list reads
+    // as the lesson's plan. An unnamed problem takes the name before it.
+    var arc = P.path.steps.some(function (s) { return s.type === "guided"; });
     return P.path.steps.map(function (s, i) {
       var r = P.session[s.id] || (P.opts.record !== false && result(s.id));
       var prob = isProblem(s);
       if (prob) n++;
-      return { i: i, problem: prob, n: prob ? n : null,
-               label: prob ? "Problem " + n : String(s.kicker || "The idea").replace(/<[^>]+>/g, ""),
+      var k = String(s.kicker || "").replace(/<[^>]+>/g, "");
+      var label = prob ? "Problem " + n : k || "The idea", named = !prob;
+      if (arc && k) { last = k; rep = 1; label = k; named = true; }
+      else if (arc && prob && last) { rep++; label = last + " " + rep; named = true; }
+      return { i: i, problem: prob, named: named, n: prob ? n : null,
+               label: label,
                state: r && (r.solved || r.seen) ? (s.type === "learn" ? "seen" : r.first ? "first" : "helped") : "",
                current: i === P.ix, open: i <= P.max };
     });
@@ -874,7 +882,7 @@ window.OPLO_CHALLENGE = (function () {
       d.title = s.open ? s.label : s.label + " — not reached yet";
     });
     var probs = info.filter(function (s) { return s.problem; }).length;
-    nv.lab.innerHTML = here ? "<b>" + esc(here.label) + (here.problem ? " of " + probs : "") + "</b><span>Step " + (P.ix + 1) + " of " + count + "</span>"
+    nv.lab.innerHTML = here ? "<b>" + esc(here.label) + (here.problem && !here.named ? " of " + probs : "") + "</b><span>Step " + (P.ix + 1) + " of " + count + "</span>"
       : "<b>" + esc(P.path.endTitle || "Done") + "</b><span>" + count + " steps</span>";
     nv.prev.disabled = P.ix <= 0;
     nv.next.disabled = P.ix >= count - 1;
@@ -1018,7 +1026,15 @@ window.OPLO_CHALLENGE = (function () {
     });
 
     showBtn.addEventListener("click", function () {
-      ui.reveal();
+      // A guided example shows the one line in hand; the rest is still the student's.
+      if (ui.reveal() === "more") {
+        st.hints = Math.max(st.hints, 1);
+        P.slip[s.id] = true;
+        showBtn.hidden = true;
+        say("shown more", "<b>Here's that step.</b> Read it, then do the next one.");
+        check.disabled = !ui.ready();
+        return;
+      }
       st.done = true;
       record(false, true);
       done(false);
@@ -1028,6 +1044,8 @@ window.OPLO_CHALLENGE = (function () {
       if (st.done) { next(); return; }
       var r = ui.check();
       if (r.rate) { rate(r.model); return; }
+      // One line of a guided example is right: its next line opens, the problem still in hand.
+      if (r.ok && r.more) { say("ok more", r.say || "<b>Right.</b>"); showBtn.hidden = true; check.disabled = !ui.ready(); return; }
       st.tries++;
       // A piece that was solved with slips along the way (a wrong tap on the
       // order-of-operations board) is right, but not right first time.
@@ -1040,7 +1058,7 @@ window.OPLO_CHALLENGE = (function () {
       } else {
         say("no", "<b>Not quite.</b> " + (r.say || s.nudge || "Look again — and try a hint if you're stuck."));
         check.disabled = !ui.ready();
-        if (st.tries >= 2) showBtn.hidden = false;
+        if (st.tries >= (ui.helpAt || 2)) showBtn.hidden = false;
       }
     });
 
@@ -1121,7 +1139,7 @@ window.OPLO_CHALLENGE = (function () {
     }
     function clearSheet() {
       if (st.done) return;
-      if (sheet.classList.contains("no")) { sheet.className = "ch-sheet"; sheet.innerHTML = ""; }
+      if (sheet.classList.contains("no") || sheet.classList.contains("more")) { sheet.className = "ch-sheet"; sheet.innerHTML = ""; }
     }
     P.enter = function () {
       if (!check.hidden && !check.disabled) check.click();

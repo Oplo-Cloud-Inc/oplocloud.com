@@ -30,6 +30,9 @@
      tester      two expressions side by side at the same x
      share       division as fitting pieces — and why pieces of size 0 can't
      walk        a worked example, one line at a time, each with its reason —
+                 with `how`, the method's named steps as a rail (also: method,
+                 guided, spotline: the how-to box, the example the student
+                 writes step by step, and find-the-error) —
                  and, beside it, a picture that builds up with the lines
      move        a shape on a grid you slide, turn, flip or scale — the four
                  transformations, done rather than described
@@ -1600,10 +1603,38 @@
      beside it, the reason for it in plain words; "Next step" shows the next
      line, so a beginner reads one move at a time instead of a finished
      calculation. spec: { rows: [{ m: tex, say: text, fig }], start: 1 }. With
-     gate, Continue waits until every line has been shown. */
+     gate, Continue waits until every line has been shown.
+
+     A method with named steps is taught with the same piece. `how` is the
+     method — ["Isolate", ...] or [["Isolate", "Get one variable alone."], ...]
+     — drawn as a rail over the lines with the step in hand lit, and a row
+     says which step it belongs to (`step`, counted from 1). A row may also
+     `ask` the student to call the move before it is shown ({ prompt,
+     options: [{ t, fb }], answer }): nothing is marked, and the right tap
+     shows the line. */
+  function howName(h) { return Array.isArray(h) ? h[0] : h; }
+  function rail(how) {
+    var ol = el("ol", "lw-rail");
+    how.forEach(function (h, i) { ol.appendChild(el("li", "", "<b>" + (i + 1) + "</b><span>" + fmt(howName(h)) + "</span>")); });
+    return { el: ol, at: function (n, all) {
+      [].forEach.call(ol.children, function (li, i) { li.className = all || i + 1 < n ? "done" : i + 1 === n ? "cur" : ""; });
+    } };
+  }
+  // One line of a worked example. A line that opens a new step of the method says so.
+  function wkRow(list, how, r, prev, fresh) {
+    var li = el("li", "lw-wk-row" + (fresh ? " in" : ""));
+    var st = how && r.step && (!prev || prev.step !== r.step)
+      ? '<span class="lw-wk-st">Step ' + r.step + " · " + fmt(howName(how[r.step - 1])) + "</span>" : "";
+    li.innerHTML = st + '<span class="lw-wk-n">' + (list.children.length + 1) + "</span>" +
+      '<span class="lw-wk-m">' + (r.m != null ? m(r.m) : "") + "</span>" +
+      '<span class="lw-wk-s">' + (r.say || "") + "</span>";
+    list.appendChild(li);
+  }
   CH.addKind("walk", function (spec, seed, mode) {
     var api = {}, rows = spec.rows || [], k = Math.min(rows.length, spec.start || 1);
     var box = el("div", "lw lw-walk");
+    var rl = spec.how ? rail(spec.how) : null;
+    if (rl) box.appendChild(rl.el);
     // A row may carry a picture (`fig`, from LAB.fig): the drawing beside the
     // lines shows the latest one, so it builds up a line at a time, the way a
     // teacher adds to the board while talking.
@@ -1624,32 +1655,165 @@
     var tools = el("div", "lw-tools");
     tools.appendChild(go);
     box.appendChild(tools);
-    function row(r, i, fresh) {
-      var li = el("li", "lw-wk-row" + (fresh ? " in" : ""));
-      li.innerHTML = '<span class="lw-wk-n">' + (i + 1) + "</span>" +
-        '<span class="lw-wk-m">' + (r.m != null ? m(r.m) : "") + "</span>" +
-        '<span class="lw-wk-s">' + (r.say || "") + "</span>";
-      list.appendChild(li);
+    var ask = el("div", "lw-ask");
+    box.appendChild(ask);
+    function row(i, fresh) { wkRow(list, spec.how, rows[i], rows[i - 1], fresh); }
+    for (var i0 = 0; i0 < k; i0++) row(i0, false);
+    function show() { row(k, true); k++; paint(); }
+    // The next line may be one the student is asked to call first.
+    function quiz() {
+      var q = rows[k] && rows[k].ask;
+      ask.hidden = !q;
+      ask.innerHTML = "";
+      if (!q) return;
+      ask.appendChild(el("div", "lw-ask-q", q.prompt || "What comes next?"));
+      var opts = el("div", "lw-ask-o"), note = el("p", "lw-ask-fb");
+      LAB.rng("ask:" + seed + ":" + k).shuffle(q.options.map(function (o, j) { return j; })).forEach(function (j) {
+        var o = q.options[j], b = button("lw-btn", typeof o === "string" ? fmt(o) : o.t);
+        b.addEventListener("click", function () {
+          if (j === q.answer) { show(); return; }
+          b.disabled = true;
+          b.classList.add("no");
+          note.innerHTML = (typeof o !== "string" && o.fb) || "Not that one. Look at the step that's lit and try again.";
+        });
+        opts.appendChild(b);
+      });
+      ask.appendChild(opts);
+      ask.appendChild(note);
     }
-    rows.slice(0, k).forEach(function (r, i) { row(r, i, false); });
     function paint() {
-      tools.hidden = k >= rows.length;
-      box.classList.toggle("solved", k >= rows.length);
+      var end = k >= rows.length;
+      quiz();
+      tools.hidden = end || !ask.hidden;
+      box.classList.toggle("solved", end);
+      if (rl) rl.at(((ask.hidden ? rows[k - 1] : rows[k]) || {}).step, end);
       showFig();
       if (api.onChange) api.onChange();
     }
     go.addEventListener("click", function () {
       if (k >= rows.length) return;
-      row(rows[k], k, true);
-      k++;
-      paint();
-      if (k < rows.length) go.focus();
+      show();
+      if (k < rows.length && !tools.hidden) go.focus();
     });
     paint();
     api.el = box;
     api.ready = function () { return mode.explore && spec.gate ? k >= rows.length : true; };
     api.check = function () { return { ok: true }; };
-    api.reveal = function () { while (k < rows.length) { row(rows[k], k, false); k++; } paint(); };
+    api.reveal = function () { while (k < rows.length) { row(k, false); k++; } paint(); };
+    return api;
+  });
+
+  /* ================================================================ Method
+     The steps of a method, named and numbered, the way a book prints its
+     "How to" box. spec: { how: [[name, what it means], ...] }. */
+  CH.addKind("method", function (spec) {
+    var api = {}, box = el("div", "lw lw-method"), ol = el("ol", "lw-how");
+    (spec.how || []).forEach(function (h, i) {
+      var li = el("li", "", "<b>" + (i + 1) + "</b><span><strong>" + fmt(howName(h)) + "</strong>" +
+        (Array.isArray(h) && h[1] ? fmt(h[1]) : "") + "</span>");
+      li.style.animationDelay = i * 90 + "ms";
+      ol.appendChild(li);
+    });
+    box.appendChild(ol);
+    api.el = box;
+    api.ready = function () { return true; };
+    api.check = function () { return { ok: true }; };
+    api.reveal = function () {};
+    return api;
+  });
+
+  /* ================================================================ Guided
+     The worked example the student writes: the same method, one step at a
+     time. Each step is named, asks for that line only and is checked on its
+     own; a right answer writes the line on the board with its reason and
+     opens the next. "Show me" writes the one line in hand and moves on, so a
+     student stuck on step 2 still does steps 3 to 5 (challenge.js: `more`).
+     spec: { how, steps: [{ step, ask, type: "choice" | "num" | any kind,
+     ...that kind's own fields, m: tex of the finished line, say, hint }] }. */
+  CH.addKind("guided", function (spec, seed) {
+    var api = { helpAt: 1 }, steps = spec.steps || [], k = 0, cur = null, slips = 0;
+    var box = el("div", "lw lw-walk lw-guided");
+    var rl = spec.how ? rail(spec.how) : null;
+    if (rl) box.appendChild(rl.el);
+    var list = el("ol", "lw-wk");
+    box.appendChild(list);
+    var now = el("div", "lw-now");
+    box.appendChild(now);
+    function open() {
+      var s = steps[k];
+      now.innerHTML = "";
+      cur = null;
+      now.hidden = !s;
+      box.classList.toggle("solved", !s);
+      if (rl) rl.at(s ? s.step : 0, !s);
+      if (!s) return;
+      if (spec.how && s.step) now.appendChild(el("p", "lw-now-st", "Step " + s.step + " · " + fmt(howName(spec.how[s.step - 1]))));
+      if (s.ask) now.appendChild(el("div", "lw-now-q", s.ask));
+      cur = CH.kinds[s.type || "choice"](s, seed + ":" + k, {});
+      cur.onChange = function () { if (api.onChange) api.onChange(); };
+      cur.onEnter = function () { if (api.onEnter) api.onEnter(); };
+      now.appendChild(cur.el);
+      if (k && cur.focus) cur.focus();
+    }
+    function write() { wkRow(list, spec.how, steps[k], steps[k - 1], true); k++; open(); }
+    open();
+    api.el = box;
+    api.ready = function () { return !cur || cur.ready(); };
+    api.check = function () {
+      if (!cur) return { ok: true, helped: slips > 0 };
+      var s = steps[k], r = cur.check();
+      if (!r.ok) { slips++; return { ok: false, say: r.say || s.hint || null }; }
+      write();
+      if (!cur) return { ok: true, helped: slips > 0 };
+      return { ok: true, more: true, say: "<b>Right.</b> " + (spec.how && steps[k].step !== s.step ? "On to step " + steps[k].step + "." : "Keep going.") };
+    };
+    api.reveal = function () {
+      if (!cur) return;
+      slips++;
+      write();
+      return cur ? "more" : undefined;
+    };
+    api.focus = function () { if (cur && cur.focus) cur.focus(); };
+    api.sub = function () { return cur; };   // the piece in hand, for the test harness
+    return api;
+  });
+
+  /* ============================================================= Spot line
+     Find the error: a worked solution with one wrong line. Tap the line where
+     it first goes wrong; the right pick shows the line as it should have been.
+     spec: { lines: [tex], answer: index, fix: tex, fb: { index: reply } }. */
+  CH.addKind("spotline", function (spec) {
+    var api = {}, picked = null, box = el("div", "lw lw-spot");
+    var btns = spec.lines.map(function (t, i) {
+      var b = button("lw-spot-l", '<span class="lw-spot-n">Line ' + (i + 1) + '</span><span class="lw-spot-m">' + m(t) + "</span>");
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () {
+        if (b.disabled) return;
+        picked = i;
+        btns.forEach(function (c) { c.classList.toggle("on", c === b); c.classList.remove("no"); c.setAttribute("aria-pressed", String(c === b)); });
+        api.onChange();
+      });
+      box.appendChild(b);
+      return b;
+    });
+    function found() {
+      btns.forEach(function (c, i) { c.disabled = true; c.classList.remove("on", "no"); if (i === spec.answer) c.classList.add("bad"); });
+      if (spec.fix != null && !box.querySelector(".lw-spot-fix")) {
+        box.insertBefore(el("div", "lw-spot-fix", '<span class="lw-spot-n">Should be</span><span class="lw-spot-m">' + m(spec.fix) + "</span>"),
+          btns[spec.answer].nextSibling);
+      }
+    }
+    api.el = box;
+    api.ready = function () { return picked != null; };
+    api.check = function () {
+      if (picked === spec.answer) { found(); return { ok: true }; }
+      var fb = spec.fb && spec.fb[picked];
+      btns[picked].classList.add("no");
+      btns[picked].classList.remove("on");
+      picked = null;
+      return { ok: false, say: fb ? fmt(fb) : "That line follows from the one above it. Check each line against the line before." };
+    };
+    api.reveal = found;
     return api;
   });
 

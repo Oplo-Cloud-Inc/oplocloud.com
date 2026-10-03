@@ -35,7 +35,7 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "7516d097",
+    "lab/widgets.js": "32332b0b",
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
@@ -43,21 +43,21 @@ window.OPLO_LAB = (function () {
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
-    "lab/algkit.js": "bacfcf57",
+    "lab/algkit.js": "22f8557d",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",
     "path/alg-d.js": "84267203",
     "path/alg.js": "b48987b4",
-    "alg/u01.js": "fa1860f5",
-    "alg/u02.js": "e6e18706",
-    "alg/u03.js": "797ee7ef",
-    "alg/u04.js": "1090b39a",
-    "alg/u05.js": "a3409469",
-    "alg/u06.js": "18fa132d",
-    "alg/u07.js": "cbd16e87",
-    "alg/u08.js": "dcd87f00",
-    "alg/u09.js": "5912973e",
+    "alg/u01.js": "14dc251e",
+    "alg/u02.js": "51ff3a78",
+    "alg/u03.js": "5f26331e",
+    "alg/u04.js": "7ad8783e",
+    "alg/u05.js": "33e7d5da",
+    "alg/u06.js": "3ae17712",
+    "alg/u07.js": "d711e75c",
+    "alg/u08.js": "a0478410",
+    "alg/u09.js": "7fe3bebf",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "332193f8",
     "geo/u09.js": "503d988a",
@@ -259,7 +259,7 @@ window.OPLO_LAB = (function () {
   var PARA_KEYS = { prompt: "p", then: "p", after: "p", why: "span" };
 
   // Every text field of a step, formatted once, before it is played.
-  var TEXT_KEYS = ["prompt", "t", "fb", "why", "nudge", "label", "after", "then", "say", "caption", "placeholderHtml", "right"];
+  var TEXT_KEYS = ["prompt", "t", "fb", "why", "nudge", "label", "after", "then", "say", "caption", "placeholderHtml", "right", "ask", "hint"];
   function fmtStep(x) {
     if (Array.isArray(x)) return x.map(fmtStep);
     if (!x || typeof x !== "object" || x.nodeType) return x;

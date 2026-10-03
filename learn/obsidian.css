@@ -1583,6 +1583,12 @@ html[data-look="obsidian"] .lb-node.cur .lb-dot {
 html[data-look="obsidian"] .lb-go {
   background: var(--fill);
 }
+html[data-look="obsidian"] .lw-rail li.cur b {
+  background: var(--fill);
+}
+html[data-look="obsidian"] .lw-how li b {
+  background: var(--fill);
+}
 /* ===== end of generated ===== */
 
 /* ==========================================================================

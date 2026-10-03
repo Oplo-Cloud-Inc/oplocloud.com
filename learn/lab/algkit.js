@@ -19,7 +19,7 @@
              hints, why }
      A gap is [[answer]]; [[a|b]] accepts either. Text and pieces may hold $maths$.
      In LAB.addConcepts, keep: true builds after the lesson's "Name it" card
-     instead of replacing it.
+     instead of replacing it; a lesson with a guided example ends on its build.
 
    Loaded only for Algebra I, after the manipulatives (lab/core.js COURSE_KIT).
    ========================================================================== */
@@ -269,6 +269,8 @@
       if (!step.prompt) step.prompt = "Put the pieces where they belong to build this lesson's big idea.";
       if (!step.hints) step.hints = ["Read the sentence aloud with a piece in place. Does it say what you saw in this lesson?"];
       if (!step.why) step.why = "That's this lesson's big idea, built. It is saved under **Concepts you've built** on the unit page.";
+      // A lesson taught step by step (it has a guided example) ends by building its idea.
+      if (l.steps.some(function (s) { return s.type === "guided"; })) { step.kicker = "Sum it up"; l.steps.push(step); return; }
       if (step.at != null) { l.steps.splice(step.at, 0, step); return; }   // at: n puts it before step n
       var at = -1;
       l.steps.forEach(function (s, i) { if (at < 0 && s.type === "learn" && !s.scene && /Name it/.test(s.kicker || "")) at = i; });

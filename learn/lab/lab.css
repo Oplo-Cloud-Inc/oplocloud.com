@@ -637,6 +637,74 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lw-walk.solved .lw-wk-row:last-child .lw-wk-n { color: var(--lw-green); }
 @media (prefers-reduced-motion: reduce) { .lw-wk-row.in { animation: none; } }
 
+/* ---------------------------------------------------------------- Method
+   A method's named steps: the "How to" box (method), and the same steps as a
+   rail over a worked example (walk) and over the one the student writes
+   (guided), with the step in hand lit. */
+.lw-rail { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.lw-rail li {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 6px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--hair);
+  transition: color .25s var(--ease), background-color .25s var(--ease), box-shadow .25s var(--ease);
+}
+.lw-rail li b {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  font-size: 11px; font-variant-numeric: tabular-nums; background: var(--hair); color: var(--ink-2);
+}
+.lw-rail li.cur { color: var(--ink); background: color-mix(in srgb, var(--blue) 14%, transparent); box-shadow: inset 0 0 0 1.5px var(--blue); }
+.lw-rail li.cur b { background: var(--blue); color: #fff; }
+.lw-rail li.done { color: var(--ink-2); }
+.lw-rail li.done b { background: var(--lw-green); color: #fff; font-size: 0; }
+.lw-rail li.done b::before { content: "\2713"; font-size: 11px; }
+.lw-wk-st { grid-column: 1 / -1; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--blue); }
+
+.lw-how { list-style: none; margin: 0 auto; padding: 0; display: grid; gap: 10px; width: min(100%, 580px); text-align: left; }
+.lw-how li {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 14px; align-items: start; padding: 13px 18px 13px 14px;
+  border-radius: 14px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair); animation: ch-drop .35s var(--ease) both;
+}
+.lw-how li b { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 14px; }
+.lw-how li span { font-size: 15.5px; line-height: 1.45; color: var(--ink-2); }
+.lw-how li strong { display: block; font-size: 17px; color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .lw-how li { animation: none; } }
+
+/* Call the next move before it is shown. */
+.lw-ask { display: grid; gap: 10px; justify-items: center; padding: 16px 0 2px; border-top: 1px solid var(--hair); }
+.lw-ask[hidden], .lw-now[hidden] { display: none; }
+.lw-ask-q { font-size: 17px; font-weight: 600; line-height: 1.45; color: var(--ink); text-align: center; }
+.lw-ask-q p { margin: 0; }
+.lw-ask-o { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.lw-ask-o .lw-btn { font-size: 17px; }
+.lw-ask-o .lw-btn.no { opacity: .45; text-decoration: line-through; cursor: default; }
+.lw-ask-fb { margin: 0; min-height: 1.45em; font-size: 15px; line-height: 1.45; color: var(--ink-2); text-align: center; }
+
+/* The line in hand of a guided example. */
+.lw-now { display: grid; gap: 12px; justify-items: center; padding: 18px 0 2px; border-top: 1px solid var(--hair); }
+.lw-guided .lw-wk:empty { display: none; }
+.lw-guided .lw-wk:empty + .lw-now { border-top: 0; padding-top: 4px; }
+.lw-now-st { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--blue); }
+.lw-now-q { max-width: 620px; font-size: 18px; line-height: 1.45; color: var(--ink); text-align: center; }
+.lw-now > .ch-options, .lw-now > .lb-ans { width: 100%; }
+.lw-guided.solved .lw-wk-row:last-child .lw-wk-m { color: var(--lw-green); }
+
+/* Find the error: a worked solution, one line of it wrong. */
+.lw-spot { display: grid; gap: 8px; justify-items: center; }
+.lw-spot-l, .lw-spot-fix {
+  display: grid; grid-template-columns: 76px minmax(0, 1fr) 76px; align-items: center; width: min(100%, 540px);
+  padding: 10px 14px; border: 0; border-radius: 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair);
+  color: var(--ink); font: inherit; cursor: pointer; transition: box-shadow .2s var(--ease), background-color .2s var(--ease);
+}
+.lw-spot-n { font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--ink-3); text-align: left; }
+.lw-spot-m { font-size: 22px; text-align: center; overflow-x: auto; }
+.lw-spot-l:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.lw-spot-l.on { box-shadow: inset 0 0 0 2px var(--blue); background: color-mix(in srgb, var(--blue) 12%, var(--paper)); }
+.lw-spot-l.no { box-shadow: inset 0 0 0 2px var(--lw-yellow); }
+.lw-spot-l.bad { box-shadow: inset 0 0 0 2px var(--lw-red); background: color-mix(in srgb, var(--lw-red) 12%, var(--paper)); }
+.lw-spot-l.bad .lw-spot-m { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.lw-spot-l:disabled { cursor: default; }
+.lw-spot-fix { cursor: default; box-shadow: inset 0 0 0 2px var(--lw-green); background: color-mix(in srgb, var(--lw-green) 12%, var(--paper)); animation: ch-drop .3s var(--ease); }
+.lw-spot-fix .lw-spot-n { color: var(--lw-green); }
+
 /* =============================================================== Shell
    A lesson's frame, laid out like a Mac app: a sidebar at the leading edge
    with the whole unit in it. See lab/core.js, frame(). */
