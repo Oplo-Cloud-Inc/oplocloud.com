@@ -651,10 +651,16 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
    narrower window it moves right only as far as it must to clear the
    sidebar. With the sidebar put away there is nothing to clear, so the work
    is centered on the window, always. (352px = the sidebar's 12 + 300 + 40;
-   760px = the lesson's width, .ch in challenge.css.) */
+   760px = the lesson's width, .ch in challenge.css. The 40px of air beside
+   the sidebar may tighten to 16px — a lead of 328px — before the work gives
+   up the centre, which is what keeps it dead centre on a 1440px laptop.) */
 .lx-wrap:has(#v-lab.on .lb-shell) {
-  max-width: none; padding-left: calc(12px + 300px + 40px);
-  padding-right: max(var(--gut), min(calc(12px + 300px + 40px), calc(100vw - 352px - 760px)));
+  --lb-lead: clamp(328px, calc((100vw - 760px) / 2), 352px);
+  max-width: none; padding-left: var(--lb-lead);
+  /* The same room on the right as on the left, for as long as that leaves the
+     work 620px: on a 1280px window the lesson narrows a little and stays in
+     the middle rather than keeping its width and sliding off-centre. */
+  padding-right: max(var(--gut), min(var(--lb-lead), calc(100vw - var(--lb-lead) - 620px)));
 }
 .lx-wrap:has(#v-lab.on .lb-shell.side-off) {
   padding-left: max(var(--gut), env(safe-area-inset-left)); padding-right: max(var(--gut), env(safe-area-inset-right));
@@ -891,3 +897,14 @@ html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,
 .lw-solid-stage canvas:active { cursor: grabbing; }
 .lw-solid-stage canvas:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
 .lw-solid.solved .lw-solid-stage { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--lw-green) 45%, transparent); }
+
+/* ------------------------------------------------------------ Centred
+   The lab's own pieces on the same centre line as the question above them
+   (challenge.css, Centred): a typed answer and its keypad, a row of figures,
+   a mat of tiles, and a worked example's lines. */
+.lb-ans-row, .lb-preview, .lb-keys { justify-content: center; }
+.lw-pat { justify-content: safe center; }
+.lw-wk-row { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+.lw-wk-n { display: none; }      /* a line number at the far edge of a centred line is noise */
+.lw-wk-s { grid-column: 1; }
+.lw-mat-in, .lw-mat-row { justify-content: center; }

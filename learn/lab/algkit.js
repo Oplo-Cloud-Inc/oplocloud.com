@@ -32,8 +32,9 @@
   var CSS = [
     ".ab-build{display:grid;gap:18px}",
     ".ab-card{position:relative;padding:20px 24px 22px;border-radius:18px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--rule);font-size:20px;line-height:2.15;color:var(--ink);transition:box-shadow .35s var(--ease,ease),transform .35s var(--ease,ease)}",
-    ".ab-name{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:12px;line-height:1.4;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}",
+    ".ab-name{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 6px;font-size:12px;line-height:1.4;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}",
     ".ab-name i{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--sunk,rgba(127,127,127,.15));font-style:normal;font-size:12px}",
+    ".ab-line{text-align:center}",
     ".ab-gap{display:inline-flex;align-items:center;justify-content:center;min-width:4.4em;min-height:1.8em;margin:0 .12em;padding:0 .6em;border-radius:10px;border:1.5px dashed var(--ink-3);background:transparent;color:var(--ink);font:inherit;font-size:.92em;line-height:1.5;vertical-align:baseline;cursor:pointer;transition:background-color .2s,border-color .2s,box-shadow .2s,transform .2s}",
     ".ab-gap:hover{border-color:var(--ink-2)}",
     ".ab-gap.sel,.ab-gap.over{border-color:var(--blue);box-shadow:0 0 0 3px rgba(10,132,255,.25)}",

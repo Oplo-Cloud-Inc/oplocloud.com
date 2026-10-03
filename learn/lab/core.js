@@ -43,7 +43,7 @@ window.OPLO_LAB = (function () {
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
-    "lab/algkit.js": "e6b86884",
+    "lab/algkit.js": "bacfcf57",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",

@@ -434,3 +434,27 @@
 .chx-cta span { font-size: 14px; line-height: 1.45; color: var(--ink-2); }
 .chx-cta .chx-go { color: var(--blue); flex: none; }
 .chx-cta .chx-go svg { width: 20px; height: 20px; }
+
+/* ------------------------------------------------------------ Centred
+   Work sits in the middle of the canvas. The question, the thing to answer
+   with or move, the hints, the verdict and the button share one centre line,
+   so the eye never travels from a question at the left edge to a button at
+   the right. What is there to be *read* — a passage, a quotation, a list —
+   keeps its own left edge inside that centred block, because centred
+   paragraphs are hard to read. Nothing here inherits: only the elements
+   named are centred, so a kit's own piece is laid out as its author left it. */
+.ch-kind, .ch-prompt, .ch-then, .ch-after { text-align: center; }
+.ch-prompt { margin-left: auto; margin-right: auto; }
+.ch-prompt blockquote, .ch-prompt ol, .ch-prompt ul { text-align: left; }
+.ch-work { display: flex; flex-direction: column; align-items: center; }
+.ch-work > * { width: 100%; min-width: 0; }
+.ch-work > .ch-num { width: auto; }
+.ch-options { max-width: 600px; margin-left: auto; margin-right: auto; }
+.ch-hints { justify-items: center; }
+.ch-hintline { width: fit-content; max-width: 100%; }
+.ch-foot { justify-content: center; }
+.ch-foot-l { margin-left: 0; }
+.ch-foot .ch-btn.primary { margin-left: 0; }
+.ch-sheet.on { text-align: center; }
+.ch-rate { justify-content: center; }
+.ch-tray { justify-content: center; }
