@@ -469,6 +469,61 @@ window.OPLO = (function () {
   };
 
 
+  /* Algebra II — the course after Algebra I and Geometry. It follows OpenStax
+     Intermediate Algebra 2e a chapter at a time (unit N is chapter N), and every
+     section is one lesson taught the same way as Algebra I: the method, a worked
+     example, one done together, then alone. The units live in learn/alg2/. */
+  var ALG2 = {
+    id: "alg2", t: "Algebra II", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
+    lab: true,
+    d: "Every kind of equation and function after the line, taught one step at a time.",
+    lede: "Algebra II picks up where Algebra I stops. Each lesson shows the method, works one example with you watching, " +
+          "does the next one together, and then hands it to you. It follows its textbook a section at a time, from linear " +
+          "equations and systems through polynomials, rational expressions, radicals and quadratics to exponential and " +
+          "logarithmic functions, conics and sequences.",
+    glyph: '<path d="M4 5c5 0 5 14 8 14s3-14 8-14"/>',
+    objectives: [
+      "Solve linear equations and inequalities, including compound and absolute value inequalities, and use them to model problems.",
+      "Graph lines and linear inequalities, write the equation of a line, and work with relations and functions.",
+      "Solve systems of linear equations in two and three variables by graphing, substitution, elimination, matrices and determinants.",
+      "Add, subtract, multiply, divide and factor polynomials, and solve polynomial equations.",
+      "Simplify, combine and solve with rational expressions, radicals, rational exponents and complex numbers.",
+      "Solve and graph quadratic equations and functions by every method, and solve quadratic inequalities.",
+      "Compose and invert functions, and evaluate, graph and solve with exponential and logarithmic functions.",
+      "Work with circles, parabolas, ellipses and hyperbolas, and with sequences, series and the Binomial Theorem."
+    ],
+    units: [
+      { t: "Foundations", lab: true,
+        desc: "The language of algebra, integers, fractions, decimals and the properties of real numbers: the tools every later unit uses." },
+      { t: "Solving Linear Equations", lab: true,
+        desc: "A general strategy for linear equations, a problem-solving strategy, formulas, mixture and motion problems, and linear, compound and absolute value inequalities." },
+      { t: "Graphs and Functions", lab: true,
+        desc: "Graphing lines, slope, the equation of a line, linear inequalities in two variables, relations and functions, and the graphs of functions." },
+      { t: "Systems of Linear Equations", lab: true,
+        desc: "Systems in two and three variables by graphing, substitution and elimination, applications and mixtures, matrices, determinants, and systems of inequalities." },
+      { t: "Polynomials and Polynomial Functions", lab: true,
+        desc: "Adding and subtracting polynomials, the properties of exponents and scientific notation, multiplying polynomials, and dividing them." },
+      { t: "Factoring", lab: true,
+        desc: "The greatest common factor and grouping, trinomials, special products, a general strategy for factoring, and polynomial equations." },
+      { t: "Rational Expressions and Functions", lab: true,
+        desc: "Multiplying, dividing, adding and subtracting rational expressions, complex fractions, rational equations and their applications, and rational inequalities." },
+      { t: "Roots and Radicals", lab: true,
+        desc: "Roots, simplifying radicals, rational exponents, operations with radicals, radical equations and functions, and the complex number system." },
+      { t: "Quadratic Equations and Functions", lab: true,
+        desc: "The Square Root Property, completing the square, the Quadratic Formula, equations in quadratic form, applications, graphing parabolas, and quadratic inequalities." },
+      { t: "Exponential and Logarithmic Functions", lab: true,
+        desc: "Composite and inverse functions, exponential and logarithmic functions and their graphs, the properties of logarithms, and exponential and logarithmic equations." },
+      { t: "Conics", lab: true,
+        desc: "The distance and midpoint formulas, circles, parabolas, ellipses and hyperbolas, and systems of nonlinear equations." },
+      { t: "Sequences, Series and Binomial Theorem", lab: true,
+        desc: "Sequences and their general terms, arithmetic and geometric sequences and series, and the Binomial Theorem." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "The course follows OpenStax Intermediate Algebra 2e a chapter at a time: each unit is a chapter of the book and " +
+              "each lesson one of its sections, taught with the book's own steps. Adapted from OpenStax (Rice University), " +
+              "CC BY-NC-SA 4.0; the questions, figures and feedback are OEdu's own."
+  };
+
   /* Geometry is a lab course like Algebra I: its units are interactive
      lessons, practice that generates its own problems, and tests
      (learn/lab/, learn/geo/, and its own kit in learn/lab/geotools.js).
@@ -746,7 +801,8 @@ window.OPLO = (function () {
       courses: [SEEING,
         ALG,
         G8,
-        GEO] },
+        GEO,
+        ALG2] },
     { n: "Science", hue: GREEN,
       d: "Method first: what would have to be true, and how would you find out.",
       courses: [
@@ -775,6 +831,7 @@ window.OPLO = (function () {
     seeing: { 1: [], 2: [1], 3: [2] },
     alg: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [5], 7: [4, 6], 8: [7], 9: [8] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
+    alg2: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [5], 7: [6], 8: [5], 9: [6, 8], 10: [3, 9], 11: [9], 12: [3] },
     geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [4], 6: [3, 4], 7: [4], 8: [7], 9: [1], 10: [4], 11: [6, 8], 12: [11], 13: [12] },
     biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
            13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] },

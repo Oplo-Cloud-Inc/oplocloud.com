@@ -43,7 +43,7 @@ window.OPLO_LAB = (function () {
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
-    "lab/algkit.js": "22f8557d",
+    "lab/algkit.js": "02d98548",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",
@@ -58,6 +58,18 @@ window.OPLO_LAB = (function () {
     "alg/u07.js": "d711e75c",
     "alg/u08.js": "a0478410",
     "alg/u09.js": "7fe3bebf",
+    "alg2/u01.js": "98799c83",
+    "alg2/u02.js": "8b1c4b46",
+    "alg2/u03.js": "1f6c24d1",
+    "alg2/u04.js": "9bee2714",
+    "alg2/u05.js": "5f4f41ab",
+    "alg2/u06.js": "4b4ddee9",
+    "alg2/u07.js": "8b5d37b2",
+    "alg2/u08.js": "a7d1328c",
+    "alg2/u09.js": "edb24f3b",
+    "alg2/u10.js": "1c46a838",
+    "alg2/u11.js": "af802903",
+    "alg2/u12.js": "1fbb7169",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "332193f8",
     "geo/u09.js": "503d988a",
@@ -999,7 +1011,7 @@ window.OPLO_LAB = (function () {
      lab/pathkit.js, pathhelp.js, pathui.js and path/alg*.js; and Algebra I
      adds its concept builder, lab/algkit.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alg: PATH_KIT.concat(["lab/algkit.js"]) };
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js" };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */
   function kitFor(courseId) {

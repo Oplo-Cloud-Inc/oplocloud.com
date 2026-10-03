@@ -1,7 +1,7 @@
 /* ==========================================================================
-   Algebra I — the concept builder.
+   Algebra I and II — the concept builder.
 
-   Every lesson in Algebra I names one idea. Reading the name is passive; this
+   Every lesson in Algebra I and II names one idea. Reading the name is passive; this
    makes it something the student builds. A sentence or a formula is shown
    with gaps, and a tray of pieces (words or maths) sits under it. Drag a
    piece into a gap, or tap it and it drops into the next empty one; tap a
@@ -21,7 +21,7 @@
      In LAB.addConcepts, keep: true builds after the lesson's "Name it" card
      instead of replacing it; a lesson with a guided example ends on its build.
 
-   Loaded only for Algebra I, after the manipulatives (lab/core.js COURSE_KIT).
+   Loaded only for Algebra I and II, after the manipulatives (lab/core.js COURSE_KIT).
    ========================================================================== */
 (function () {
   "use strict";
