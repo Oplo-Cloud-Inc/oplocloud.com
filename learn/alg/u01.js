@@ -1950,5 +1950,38 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders
+     Each lesson's big idea, built from pieces (lab/algkit.js). */
+  L.addConcepts("alg:1", {
+    2: { name: "Variables, expressions, constraints", frame: "A letter for a number that can change is a [[variable]]. An [[expression]] like $10p + 5$ works out a value for any $p$. A [[constraint]] limits what is possible.",
+         chips: ["constant", "equation"] },
+    3: { name: "Equation", frame: "An [[equation]] says two expressions are worth the [[same]]. To write one from a story, say the relationship in [[words]] first.",
+         chips: ["inequality", "different"] },
+    4: { name: "Rules in tables", frame: "A table can hide a [[rule]]: the same move turns every input into its [[output]], and an [[equation]] says it in one line.",
+         chips: ["slope", "input"] },
+    5: { name: "Solution", frame: "A [[solution]] is a value that makes an equation [[true]]. Test a value by [[substituting]] it.",
+         chips: ["false", "guessing"] },
+    6: { name: "Graph of an equation", frame: "The graph of an equation shows [[all]] its solutions. A point is on the graph exactly when its coordinates make the equation [[true]].",
+         chips: ["some", "false"] },
+    7: { name: "Equivalent equations", frame: "[[Equivalent]] equations have exactly the same [[solutions]]. Doing the same thing to [[both sides]] keeps an equation equivalent.",
+         chips: ["one side", "Different"] },
+    8: { name: "Moves that lose solutions", frame: "Dividing both sides by [[$x$]] can lose the solution $x = 0$. If solving leaves something [[false]], like $3 = 5$, there is no solution; if it leaves something always [[true]], every number works.",
+         chips: ["$2$", "maybe"] },
+    9: { name: "Solving for a variable", frame: "When you keep asking about one quantity, solve the equation [[for]] it: get that variable [[alone]] on one side.",
+         chips: ["with", "together"] },
+    10: { name: "Rearranging formulas", frame: "Rearranging a formula is [[solving]] with letters: undo the operations in [[reverse]] order.",
+          chips: ["guessing", "the same"] },
+    11: { name: "Slope and intercept", frame: "In $y = mx + b$, $m$ is the [[slope]], the rate of change, and $b$ is the [[$y$-intercept]], the starting amount.",
+          chips: ["$x$-intercept", "area"] },
+    12: { name: "Slope and intercept from any form", at: 4, frame: "To read slope and intercept from any form, solve for [[$y$]] first. Then the coefficient of $x$ is the [[slope]] and the constant is the [[$y$-intercept]].",
+          chips: ["$x$", "area"] },
+    13: { name: "Writing a line", frame: "A line comes from a slope and a point: $y - y_1 = m(x - x_1)$ is [[point-slope]] form. Given two points, find the [[slope]] first.",
+          chips: ["standard", "intercept"] },
+    14: { name: "One line, four views", at: 3, frame: "A line's table, graph, equation and story all describe the [[same]] relationship. In a table, the change in $y$ for each 1 in $x$ is the [[slope]].",
+          chips: ["different", "intercept"] },
+    15: { name: "Parallel and perpendicular", keep: true, frame: "[[Parallel]] lines have equal slopes. [[Perpendicular]] lines have slopes that multiply to [[$-1$]].",
+          chips: ["$1$", "Equal"] },
+    16: { name: "Direct variation", at: 3, frame: "In [[direct variation]], $y = kx$: $y \\div x$ is always the same number, the [[constant of variation]], and the graph passes through the [[origin]].",
+          chips: ["slope-intercept", "$y$-intercept"] }
+  });
 })();
-

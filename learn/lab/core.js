@@ -43,20 +43,21 @@ window.OPLO_LAB = (function () {
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
+    "lab/algkit.js": "e6b86884",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",
     "path/alg-d.js": "84267203",
     "path/alg.js": "b48987b4",
-    "alg/u01.js": "afbdb1d4",
-    "alg/u02.js": "a91950ee",
-    "alg/u03.js": "57921414",
-    "alg/u04.js": "c90d33ff",
-    "alg/u05.js": "facd9a77",
-    "alg/u06.js": "0bfaa39b",
-    "alg/u07.js": "ce28fd5f",
-    "alg/u08.js": "571fcffa",
-    "alg/u09.js": "b3c33306",
+    "alg/u01.js": "fa1860f5",
+    "alg/u02.js": "e6e18706",
+    "alg/u03.js": "797ee7ef",
+    "alg/u04.js": "1090b39a",
+    "alg/u05.js": "a3409469",
+    "alg/u06.js": "18fa132d",
+    "alg/u07.js": "cbd16e87",
+    "alg/u08.js": "dcd87f00",
+    "alg/u09.js": "5912973e",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "332193f8",
     "geo/u09.js": "503d988a",
@@ -995,9 +996,10 @@ window.OPLO_LAB = (function () {
      page itself — in lab/satkit.js; Geometry keeps its desk — a ruler, a
      protractor, compass work, solids to turn — in lab/geotools.js; Algebra
      Pathway keeps its adaptive engine, its pages and its seventy topics in
-     lab/pathkit.js, pathhelp.js, pathui.js and path/alg*.js. */
+     lab/pathkit.js, pathhelp.js, pathui.js and path/alg*.js; and Algebra I
+     adds its concept builder, lab/algkit.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alg: PATH_KIT };
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alg: PATH_KIT.concat(["lab/algkit.js"]) };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */
   function kitFor(courseId) {

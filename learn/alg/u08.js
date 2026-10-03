@@ -533,4 +533,31 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders */
+  L.addConcepts("alg:8", {
+    2: { name: "Quadratic equation", frame: "An equation that can be written $ax^2 + bx + c = 0$ is a [[quadratic equation]]. Solving it finds the [[input]] that gives an output, and a solution must also make [[sense]] in the situation.",
+         chips: ["output", "linear equation"] },
+    3: { name: "Writing the equation", frame: "To find when a quantity reaches a value, set its expression [[equal]] to that value, then move everything to one side so that it equals [[zero]].",
+         chips: ["one", "greater"] },
+    4: { name: "Square roots", frame: "If $x^2 = k$ with $k$ positive, then $x$ is [[$\\pm\\sqrt{k}$]]: two solutions. If $k = 0$ there is one; if $k$ is [[negative]], there are none.",
+         chips: ["$\\sqrt{k}$", "positive"], fb: { "$\\sqrt{k}$": "That's only one of them. $(-3)^2$ is 9 as well." } },
+    5: { name: "Zero product property", frame: "If $a \\cdot b = 0$, then $a = 0$ [[or]] $b = 0$. It only works when the product equals [[zero]].",
+         chips: ["and", "six"], fb: { "and": "Only one of them needs to be zero." } },
+    6: { name: "How many solutions", frame: "A quadratic equation has [[two]], one or no real solutions: the graph [[crosses]] the axis twice, touches it, or misses it. Never [[divide]] by a variable that might be zero.",
+          chips: ["three", "multiply"] },
+    7: { name: "Sum and product", frame: "$(x + p)(x + q) = x^2 + (p + q)x + pq$: the two numbers' [[sum]] is $b$ and their [[product]] is $c$.",
+         chips: ["difference", "quotient"] },
+    8: { name: "Negative constants", at: 3, frame: "If $c$ is negative, the two numbers have [[opposite]] signs, and the [[larger]] one has the sign of $b$.",
+         chips: ["the same", "smaller"] },
+    9: { name: "Difference of squares", frame: "A sum times its matching difference: $(a + b)(a - b) =$ [[$a^2 - b^2$]]. Read backwards, it factors a [[difference of two squares]].",
+         chips: ["$a^2 + b^2$", "sum of two squares"] },
+    10: { name: "Solve by factoring", at: 2, frame: "Get [[zero]] on one side, [[factor]], set each factor equal to zero, and [[check]] the solutions.",
+          chips: ["one", "divide"] },
+    11: { name: "The ac method", frame: "To factor $ax^2 + bx + c$, find two numbers that multiply to [[$a \\cdot c$]] and add to [[$b$]], split the middle term, then [[group]].",
+          chips: ["$c$", "$a$"] },
+    12: { name: "From zeros to equation", frame: "A quadratic with zeros $m$ and $n$ is $f(x) = a(x - m)(x - n)$. The zeros don't fix [[$a$]]; one more [[point]] does.",
+          chips: ["$m$", "zero"] },
+    13: { name: "Quadratic regression", frame: "Quadratic [[regression]] finds the parabola of best fit, as linear regression finds the best [[line]]. Its predictions only hold [[inside]] the data's range.",
+          chips: ["outside", "curve"] }
+  });
 })();

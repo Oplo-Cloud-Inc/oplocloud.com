@@ -1085,4 +1085,37 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders */
+  L.addConcepts("alg:2", {
+    2: { name: "Solution of a system", frame: "Two equations that must both be true at once form a [[system]]. Its solution makes [[every]] equation true: on a graph, it is where the lines [[cross]].",
+         chips: ["line", "one", "never meet"], fb: { "one": "A solution has to work in *every* equation, not just one.", "never meet": "Lines that never meet are parallel. Then there is no solution at all.", "line": "One equation in two variables makes a line. Two of them together are a system." } },
+    3: { name: "Systems from situations", at: 6, frame: "To model a situation, write [[one equation]] for each relationship. Where their graphs cross, both descriptions [[agree]].",
+         chips: ["one number", "disagree"], fb: { "disagree": "At the crossing point the two lines share a point: both descriptions are true at once.", "one number": "Each relationship needs a whole equation." } },
+    4: { name: "Substitution", frame: "If one equation says what $y$ [[equals]], put that expression in place of [[$y$]] in the other equation. Two unknowns become [[one]].",
+         chips: ["$x$", "two", "multiplies"], fb: { "two": "Substituting removes a variable: two unknowns become one.", "$x$": "The expression is equal to $y$, so it takes $y$'s place." } },
+    5: { name: "Elimination", frame: "Add or subtract the equations so that one variable [[cancels]]. Opposite coefficients: [[add]]. Matching coefficients: [[subtract]].",
+         chips: ["doubles", "multiply"], fb: { "doubles": "The aim is to make a variable vanish, not to double it." } },
+    6: { name: "Why elimination works", frame: "Adding two true equations gives another [[true]] equation with the [[same]] solution, because equal amounts are added to [[both sides]].",
+         chips: ["false", "a new", "one side"], fb: { "a new": "The solution doesn't change. That's why the method is allowed.", "one side": "Equal amounts go on both sides, which keeps the balance." } },
+    7: { name: "Multiply, then eliminate", frame: "Multiplying an equation by a non-zero number gives an [[equivalent]] equation: its line doesn't [[move]]. Multiply until a variable's coefficients [[match]].",
+         chips: ["different", "disappear"], fb: { "different": "Multiplying both sides by the same number keeps every solution: it's the same line." } },
+    8: { name: "How many solutions", frame: "Different slopes: one solution. Same slope, different intercepts: [[parallel]] lines, [[no]] solution. Same slope and same intercept: the [[same line]], infinitely many.",
+         chips: ["perpendicular", "two"], fb: { "perpendicular": "Perpendicular lines have different slopes, so they cross once.", "two": "Two straight lines can't cross exactly twice." } },
+    9: { name: "Inequalities", frame: "An inequality is a constraint with [[room]] in it: a whole range of values works. “At least 5” is [[$x \\ge 5$]]; “at most 5” is [[$x \\le 5$]].",
+         chips: ["$x < 5$", "$x > 5$"], fb: { "$x < 5$": "That leaves 5 itself out. “At least” and “at most” include it.", "$x > 5$": "That leaves 5 itself out. “At least” and “at most” include it." } },
+    10: { name: "Solution set", frame: "The [[solution set]] is every value that makes the inequality true. Solve the matching [[equation]] for the boundary, then [[test]] one value.",
+          chips: ["answer", "guess"], fb: { "guess": "Testing one value is the reliable move: it tells you which side works." } },
+    11: { name: "The flip rule", frame: "Multiplying or dividing both sides by a [[negative]] number [[reverses]] the inequality. Adding and subtracting [[never]] do.",
+          chips: ["positive", "keeps", "always"], fb: { "positive": "Dividing by a positive number keeps the order. It's the negatives that flip it.", "always": "Adding the same amount to both sides never changes the order." } },
+    12: { name: "Half-planes", frame: "A linear inequality in two variables is true on a [[half-plane]]. The line is its [[boundary]]: [[solid]] for $\\le$ or $\\ge$, dashed for $<$ or $>$.",
+          chips: ["single point", "dashed"], fb: { "dashed": "Dashed leaves the line out. That's for the strict symbols, $<$ and $>$." } },
+    13: { name: "Hidden constraints", frame: "A situation adds [[hidden]] constraints: amounts can't be [[negative]] and may have to be [[whole numbers]]. Only part of the half-plane makes sense.",
+          chips: ["positive", "fractions"], fb: { "positive": "The hidden rule is that amounts can't be *negative*.", "fractions": "Often only whole numbers make sense: no half tickets." } },
+    14: { name: "Graph by intercepts", frame: "To graph a constraint quickly, find its two [[intercepts]]: set one variable to [[0]] and solve for the other. Then test a point to choose the [[side]].",
+          chips: ["slopes", "1"], fb: { "1": "Setting a variable to 0 is what puts the point on an axis." } },
+    15: { name: "Systems of inequalities", frame: "The solution of a system of inequalities is the [[overlap]] of the shaded regions. Every point there makes [[every]] inequality true.",
+          chips: ["edge", "one"], fb: { "one": "A point in the overlap passes every test, not just one." } },
+    16: { name: "Feasible region", frame: "The region where every constraint holds is the [[feasible region]]. The best plan is usually at a [[corner]], where two [[boundaries]] meet.",
+          chips: ["origin", "middle"], fb: { "middle": "Profit keeps improving as you move outward, so the best plan sits on the edge, at a corner." } }
+  });
 })();

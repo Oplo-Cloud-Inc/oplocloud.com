@@ -533,4 +533,29 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders */
+  L.addConcepts("alg:9", {
+    2: { name: "Perfect square", frame: "$(x + n)^2 = x^2 + 2nx + n^2$: in a perfect square, the $x$-coefficient is [[twice]] $n$ and the constant is $n$ [[squared]].",
+         chips: ["half", "doubled"] },
+    3: { name: "Completing the square", frame: "To complete the square for $x^2 + bx$, take [[half]] of $b$, [[square]] it, and add it to [[both sides]].",
+         chips: ["double", "one side"], fb: { "one side": "In an equation, whatever you add must go on both sides." } },
+    4: { name: "The method", at: 2, frame: "Move the [[constant]], complete the square, write the left side as a [[squared bracket]], then take square roots with [[$\\pm$]].",
+         chips: ["$+$", "sum"] },
+    5: { name: "Choosing a method", at: 3, frame: "If $x^2$ has a coefficient, [[divide]] it out first. Completing the square works [[every]] time; factoring is a shortcut when the expression [[factors]].",
+         chips: ["multiply", "never"] },
+    6: { name: "Irrational solutions", frame: "$\\sqrt{7}$ is [[irrational]]: its decimal never ends or repeats, so an exact answer keeps the [[root]], like $x = 2 \\pm \\sqrt{5}$.",
+         chips: ["rational", "decimal"] },
+    7: { name: "The quadratic formula", frame: "$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$It solves [[any]] equation $ax^2 + bx + c = 0$. Read off $a$, $b$ and $c$ with their [[signs]]; the $\\pm$ gives [[two]] solutions.",
+         chips: ["some", "three"] },
+    8: { name: "The discriminant", frame: "The [[discriminant]], $b^2 - 4ac$, counts the real solutions: positive gives [[two]], zero gives one, negative gives [[none]].",
+         chips: ["one", "coefficient"] },
+    9: { name: "Where the formula comes from", frame: "The quadratic formula is [[completing the square]], done once with letters. The $\\pm$ comes from taking the [[square root]].",
+         chips: ["factoring", "dividing"] },
+    10: { name: "Three forms", at: 3, frame: "Standard form shows the [[$y$-intercept]], factored form the [[zeros]], and vertex form the [[vertex]].",
+          chips: ["slope"] },
+    11: { name: "Into vertex form", frame: "To rewrite an expression in vertex form, [[add and subtract]] the number that completes the square, so its value doesn't [[change]].",
+          chips: ["multiply", "grow"] },
+    12: { name: "Maximum and minimum", frame: "In $y = a(x - h)^2 + k$, a negative $a$ makes $k$ the [[maximum]]; a positive $a$ makes it the [[minimum]]. It happens at $x =$ [[$h$]].",
+          chips: ["$k$", "average"] }
+  });
 })();

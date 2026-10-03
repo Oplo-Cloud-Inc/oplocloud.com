@@ -517,4 +517,19 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders */
+  L.addConcepts("alg:3", {
+    2: { name: "Linear model", keep: true, frame: "A [[linear model]] is a line that describes the [[trend]] in data. It doesn't pass through every point, but it lets you [[predict]].",
+         chips: ["scatter plot", "prove"], fb: { "prove": "A model summarises the data so you can estimate new values. It doesn't prove anything." } },
+    3: { name: "Line of best fit", frame: "The line of best fit makes the sum of the squared [[misses]] as [[small]] as possible. A good fit leaves points on [[both sides]].",
+         chips: ["large", "one side"], fb: { "one side": "If every point were on one side, the line could move closer to them all." } },
+    4: { name: "Residual", frame: "A [[residual]] is actual minus [[predicted]]. A point above the line has a [[positive]] residual.",
+         chips: ["negative", "average"], fb: { "negative": "Above the line, the actual value is bigger than the prediction: the residual is positive." } },
+    5: { name: "Correlation coefficient", frame: "The correlation coefficient $r$ is always between [[$-1$]] and [[$1$]]. Its sign gives the [[direction]], and its size the strength.",
+         chips: ["$0$", "$100$", "speed"], fb: { "$100$": "$r$ is never bigger than 1.", "$0$": "$r$ can be 0, but it goes all the way down to $-1$." } },
+    6: { name: "Describing a correlation", frame: "To describe a relationship using $r$, say its [[direction]], its [[strength]], and the [[context]].",
+         chips: ["slope", "units"], fb: { "slope": "$r$ isn't a slope. It describes direction and strength." } },
+    7: { name: "Correlation and causation", frame: "In a [[causal]] relationship, one variable brings about the change in the other. [[Correlation]] alone never proves it: a [[hidden]] variable may drive both.",
+          chips: ["linear", "Causation"], fb: { "Causation": "It's correlation that can't prove cause." } }
+  });
 })();

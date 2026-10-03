@@ -754,4 +754,37 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders */
+  L.addConcepts("alg:5", {
+    2: { name: "Exponent rules", frame: "To multiply powers of the same base, [[add]] the exponents. Any non-zero number to the power 0 is [[1]]. A negative exponent means [[one over]] the positive power.",
+         chips: ["multiply", "0", "negative"], fb: { "0": "$2^0$ sits between $2^1 = 2$ and $2^{-1} = \\frac{1}{2}$ in the halving pattern: it is 1.", "negative": "$x^{-n} = \\frac{1}{x^n}$: a negative exponent divides, it doesn't make the value negative." } },
+    3: { name: "Rational exponents", frame: "A fraction as an exponent is a [[root]]: the [[denominator]] says which root. For $x^{\\frac{m}{n}}$, take the root, then raise it to the power [[$m$]].",
+         chips: ["numerator", "$n$"] },
+    4: { name: "Linear vs exponential growth", frame: "[[Linear]] growth adds the same amount each step: constant differences. [[Exponential]] growth multiplies by the same amount: constant [[ratios]].",
+         chips: ["Quadratic", "sums"] },
+    5: { name: "Exponential function", frame: "In $f(x) = a \\cdot b^x$, $a$ is the [[initial value]], the output when $x = 0$, and $b$ is the [[growth factor]], what the output is [[multiplied]] by each step.",
+         chips: ["slope", "added"], fb: { "added": "Exponential functions multiply by $b$ each step. Adding would be linear." } },
+    6: { name: "Exponential decay", frame: "When the factor $b$ is between [[0]] and [[1]], the quantity [[decays]]: it shrinks by the same fraction each step.",
+         chips: ["2", "grows"] },
+    7: { name: "Negative exponents and powers of ten", frame: "A negative input in $a \\cdot b^x$ means steps [[before]] the start: each step back [[divides]] by $b$. A negative power of 10 makes a number [[smaller]] than 1.",
+         chips: ["after", "bigger"] },
+    8: { name: "Exponential graphs", frame: "The graph of $y = a \\cdot b^x$ crosses the $y$-axis at [[$(0, a)$]]. It rises when $b$ is [[greater]] than 1, and it never touches the [[$x$-axis]].",
+         chips: ["$(0, b)$", "less"] },
+    9: { name: "Exponential situations as functions", frame: "An exponential situation is a [[function]]: each time has one amount. $f(3) = 800$ means after [[3]] weeks there are [[800]] flies.",
+         chips: ["8", "100"] },
+    10: { name: "Between the whole numbers", frame: "Exponential functions take inputs [[between]] whole numbers too, so $m(0.5)$ makes sense and the graph is a smooth [[curve]].",
+          chips: ["only at", "line"] },
+    11: { name: "Changing rates", frame: "A linear function's rate of change is [[constant]]. A growing exponential's average rate of change keeps [[increasing]]; a decaying one falls fast, then more [[slowly]].",
+          chips: ["decreasing", "quickly"] },
+    12: { name: "Choosing a model", frame: "A model needn't hit every point. Roughly constant ratios suggest an [[exponential]] model; roughly constant differences, a [[linear]] one.",
+          chips: ["quadratic"] },
+    13: { name: "Reading b from a graph", frame: "For $y = 8 \\cdot b^x$ with $b$ between 0 and 1, a smaller $b$ makes the graph fall [[faster]]. At $x = 1$ the graph is at height [[$8b$]].",
+          chips: ["slower", "$8 + b$"] },
+    14: { name: "Exponential from two points", at: 4, frame: "Through $(0, a)$ and $(1, c)$, the initial value is [[$a$]] and the factor is [[$c \\div a$]]. Of two exponentials, the larger [[factor]] wins in the end.",
+          chips: ["$c - a$", "start"] },
+    15: { name: "Exponential beats linear", frame: "Exponential growth always [[overtakes]] linear growth in the end, however big the linear one's [[head start]].",
+          chips: ["trails", "slope"] },
+    16: { name: "Equal intervals", frame: "Over equal intervals, a linear function changes by equal [[differences]] and an exponential function by equal [[factors]].",
+          chips: ["sums", "exponents"] }
+  });
 })();

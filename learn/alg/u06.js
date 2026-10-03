@@ -457,4 +457,21 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders */
+  L.addConcepts("alg:6", {
+    2: { name: "Polynomials", frame: "A [[polynomial]] is a sum of terms. Only [[like terms]], with the same variable to the same power, combine. The highest power is the [[degree]].",
+         chips: ["coefficients", "slope"] },
+    3: { name: "Multiplying polynomials", frame: "To multiply polynomials, multiply [[every]] term of one by every term of the other: the [[distributive property]]. Squaring a binomial always gives a [[middle term]].",
+         chips: ["one", "no middle term"], fb: { "no middle term": "$(x + 3)^2 = x^2 + 6x + 9$: the middle term is there, twice $3x$." } },
+    4: { name: "Remainder and factor theorems", frame: "Dividing $P(x)$ by $(x - c)$ leaves the remainder [[$P(c)$]]. So $(x - c)$ is a [[factor]] exactly when $P(c)$ equals [[$0$]].",
+         chips: ["$P(0)$", "$1$"] },
+    5: { name: "Factoring out", frame: "Factoring runs multiplication [[backwards]]. Take out the [[greatest common factor]] first; with four terms, try [[grouping]].",
+         chips: ["forwards", "slope"] },
+    6: { name: "Factoring trinomials", frame: "To factor $x^2 + bx + c$, find two numbers that [[multiply]] to $c$ and [[add]] to $b$.",
+         chips: ["divide", "subtract"] },
+    7: { name: "Special products", frame: "$a^2 + 2ab + b^2$ is a [[perfect square]], $(a + b)^2$. $a^2 - b^2$ is a [[difference of squares]], $(a + b)(a - b)$. A [[sum]] of squares doesn't factor.",
+         chips: ["product"] },
+    8: { name: "Factoring strategy", at: 4, frame: "Always take out the [[common factor]] first. Then count the [[terms]], and keep going until no factor can be factored [[again]].",
+         chips: ["slope", "once"] }
+  });
 })();

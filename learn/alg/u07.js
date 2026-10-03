@@ -753,4 +753,41 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders */
+  L.addConcepts("alg:7", {
+    2: { name: "A new pattern", frame: "When the first differences change but the [[second]] differences are constant, the relationship is [[quadratic]]: the area $x(10 - x)$ has an [[$x^2$]] in it.",
+         chips: ["first", "exponential", "$x^3$"] },
+    3: { name: "Quadratic expression", frame: "A [[quadratic]] expression has a squared variable as its [[highest]] power, like $n^2 + 2n$.",
+         chips: ["linear", "only"] },
+    4: { name: "Testing for quadratic", frame: "With equal input steps: linear means constant [[first differences]], quadratic means constant [[second differences]], exponential means constant [[ratios]].",
+         chips: ["sums"] },
+    5: { name: "Quadratic vs exponential", frame: "Exponential growth eventually [[overtakes]] quadratic growth, because it [[multiplies]] where the quadratic only adds a little more each step.",
+         chips: ["trails", "adds"] },
+    6: { name: "Falling objects", frame: "A dropped object falls $d = 16t^2$ feet: a [[quadratic]] function of time. It falls [[faster]] every second.",
+         chips: ["linear", "slower"] },
+    7: { name: "Launched objects", frame: "In $h(t) = 5 + 80t - 16t^2$, the 5 is the [[starting height]], the $80t$ is the [[launch]], and the $-16t^2$ is [[gravity]].",
+         chips: ["peak"] },
+    8: { name: "Parabola", frame: "The graph of a quadratic is a [[parabola]]. Its turning point is the [[vertex]], and its $x$-intercepts are the function's [[zeros]].",
+         chips: ["line", "slope"] },
+    9: { name: "Equivalent quadratics", frame: "$(x + 2)(x + 5)$ and $x^2 + 7x + 10$ are [[equivalent]]: equal for [[every]] value of $x$. But $(x + 2)^2$ is [[not]] $x^2 + 4$.",
+         chips: ["one", "always"] },
+    10: { name: "Two forms", frame: "[[Standard]] form is a sum, $ax^2 + bx + c$. [[Factored]] form is a [[product]] of factors.",
+          chips: ["Vertex", "sum"] },
+    11: { name: "What each form shows", frame: "Factored form shows the [[$x$-intercepts]]. Standard form shows the [[$y$-intercept]], $c$.",
+          chips: ["vertex", "slope"] },
+    12: { name: "Symmetry", frame: "A parabola is [[symmetric]]: its vertex is [[halfway]] between the zeros, on the [[axis of symmetry]].",
+          chips: ["slope", "at a zero"] },
+    13: { name: "The roles of a and c", frame: "In $y = ax^2 + c$, $c$ moves the parabola [[up or down]]. A [[negative]] $a$ opens it downward, and a larger $|a|$ makes it [[narrower]].",
+          chips: ["positive", "wider"] },
+    14: { name: "Vertex from standard form", frame: "For $y = ax^2 + bx + c$, the vertex is at $x =$ [[$\\frac{-b}{2a}$]]. The constant $c$ is still the [[$y$-intercept]].",
+          chips: ["$\\frac{b}{2a}$", "$x$-intercept"], fb: { "$\\frac{b}{2a}$": "It's $-b$ on top: for $x^2 - 6x$, the vertex is at $+3$." } },
+    15: { name: "Reading a height model", at: 3, frame: "In a height model, the vertex gives the [[greatest height]], the positive zero is when it [[lands]], and the vertical intercept is where it [[starts]].",
+          chips: ["slope"] },
+    16: { name: "Vertex form", frame: "In $y = a(x - h)^2 + k$ the vertex is [[$(h, k)$]]. So $(x - 3)^2$ means $h$ is [[$3$]], and $(x + 3)^2$ means $h$ is [[$-3$]].",
+          chips: ["$(k, h)$"], fb: { "$(k, h)$": "$x$ comes first: $h$ is the horizontal position." } },
+    17: { name: "Sketch from vertex form", at: 3, frame: "Plot the [[vertex]], find one more point, and [[mirror]] it across the axis of symmetry. If $a$ is negative, the vertex is a [[maximum]].",
+          chips: ["minimum", "intercept"] },
+    18: { name: "Moving a parabola", at: 3, frame: "Replacing $x$ with $x - h$ moves the graph [[right]] by $h$. Adding $k$ moves it [[up]] by $k$. Changing $a$ [[stretches]] or flips it.",
+          chips: ["left", "down"], fb: { "left": "$(x - 4)^2$ is zero at $x = 4$: the graph moves right." } }
+  });
 })();

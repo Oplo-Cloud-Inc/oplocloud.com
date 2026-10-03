@@ -968,4 +968,43 @@
     ],
     skills: SKILLS
   });
+  /* ===================================================== Concept builders */
+  L.addConcepts("alg:4", {
+    2: { name: "Function", frame: "A [[function]] assigns exactly [[one]] output to each input. The input is the [[independent]] variable; the output depends on it.",
+         chips: ["relation", "two", "dependent"], fb: { "two": "Exactly one output for each input: that's what makes it predictable.", "dependent": "The output depends on the input, so the input is the independent one." } },
+    3: { name: "Function notation", frame: "$f(5) = 13$ means: input [[5]], output [[13]]. It is read “$f$ [[of]] 5”.",
+         chips: ["times", "f"], fb: { "times": "The brackets don't mean multiply: $f(5)$ is “$f$ of 5”." } },
+    4: { name: "Reading statements", at: 3, frame: "A statement like $T(5) = 13$ pairs an [[input]] with its [[output]]. Comparing $T(2)$ with $T(8)$ compares two [[outputs]].",
+         chips: ["inputs", "slopes"], fb: { "inputs": "$T(2)$ and $T(8)$ are outputs: two heights of the graph." } },
+    5: { name: "Rules and tables", frame: "To evaluate a rule, [[substitute]] the input. In a linear table, the change per step is what [[multiplies]] $x$, and the output at $x = 0$ is what's [[added]].",
+         chips: ["divides", "ignore"] },
+    6: { name: "Evaluate or solve", frame: "[[Evaluating]] starts from an input and finds the output. [[Solving]] starts from an output and finds the input. A graph is a function if every [[vertical]] line meets it at most once.",
+         chips: ["Graphing", "horizontal"], fb: { "horizontal": "Two inputs may share an output. The test uses vertical lines." } },
+    7: { name: "Features of a graph", keep: true, frame: "The highest point is the [[maximum]]. Where the graph meets the vertical axis is the [[vertical intercept]]. Where it rises left to right, it is [[increasing]].",
+         chips: ["minimum", "decreasing"] },
+    8: { name: "Slope", frame: "Slope is [[rise]] over [[run]]: the change in [[$y$]] divided by the change in $x$. A vertical line's slope is [[undefined]].",
+         chips: ["$x$", "zero"], fb: { "zero": "Zero is a horizontal line's slope. A vertical line has a run of 0, and you can't divide by 0." } },
+    9: { name: "Average rate of change", frame: "The [[average rate of change]] from $a$ to $b$ is $\\frac{f(b) - f(a)}{b - a}$: the [[slope]] of the line joining two points of the graph.",
+         chips: ["maximum", "area"] },
+    10: { name: "Graphs tell stories", at: 2, frame: "On a distance–time graph, a steep piece means moving [[fast]], a flat piece means [[standing still]], and a falling piece means [[coming back]].",
+          chips: ["slowly", "speeding up"] },
+    11: { name: "Comparing graphs", frame: "Where two graphs [[cross]], the outputs are equal. Where one graph is [[higher]], its output is greater. The [[steeper]] graph changes faster.",
+          chips: ["lower", "flatter"] },
+    12: { name: "Transformations", at: 5, frame: "A change outside the brackets moves a graph [[vertically]], the way the sign says. A change inside the brackets moves it [[horizontally]], the [[opposite]] way.",
+          chips: ["the same"], fb: { "the same": "Inside changes run backwards: $f(x - 4)$ moves right." } },
+    13: { name: "Domain and range", frame: "The [[domain]] is every possible input. The [[range]] is every output those inputs produce.",
+          chips: ["slope", "intercept"] },
+    14: { name: "Domain and range from a graph", frame: "Read the domain along the [[horizontal]] axis and the range along the [[vertical]] axis. A [[filled]] end point is included; an open one is not.",
+          chips: ["empty"] },
+    15: { name: "Sequence", frame: "A [[sequence]] is a list of numbers in order, and each number is a [[term]]. Some add the same amount each time; others [[multiply]] by the same amount.",
+          chips: ["set", "divide"] },
+    16: { name: "Geometric sequence", frame: "In a [[geometric]] sequence, each term is the last one [[multiplied]] by the same number: the [[common ratio]].",
+          chips: ["arithmetic", "added"] },
+    17: { name: "Arithmetic sequence", frame: "In an [[arithmetic]] sequence, each term is the last one [[plus]] the same number: the [[common difference]].",
+          chips: ["geometric", "times"] },
+    18: { name: "Recursive definition", frame: "A [[recursive]] definition gives the [[first term]] and a rule that builds each term from the [[one before]].",
+          chips: ["explicit", "last term"] },
+    19: { name: "The nth term", frame: "The $n$th term of an arithmetic sequence is the first term plus [[$n - 1$]] steps of the common [[difference]]. An explicit formula goes straight to any [[term]].",
+          chips: ["$n$", "ratio"], fb: { "$n$": "From term 1 to term $n$ there are $n - 1$ steps." } }
+  });
 })();
