@@ -70,8 +70,8 @@ FILL = {"var(--blue)": "var(--fill)", "var(--blue-d)": "var(--fill-d)"}
 # and each surface above it is a step up the same ramp, so a card stands on the
 # page the way a card does and never reads as a hole in it.
 #
-#   #212529  Shadow Grey  the browser's own bar, one step below the page
-#   #343a40  Gunmetal     the page
+#   #1c1c1c               the browser's own bar, one step below the page
+#   #252525               the page (the user's choice, 2026-10-03)
 #   #3e454c               a card        (half way from Gunmetal to Iron Grey)
 #   #495057  Iron Grey    a fill inside a card
 #   #525960               a pressed or hovered fill
@@ -93,7 +93,7 @@ FILL = {"var(--blue)": "var(--fill)", "var(--blue-d)": "var(--fill-d)"}
 #   surface they are painted on, which is the harder test.
 #
 # Each step is verified rather than eyeballed; see tools/check_obsidian_contrast.py.
-BG = (52, 58, 64)      # #343a40 the page
+BG = (37, 37, 37)      # #252525 the page
 S1 = (62, 69, 76)      # #3e454c a card
 S2 = (73, 80, 87)      # #495057 a fill inside a card
 S3 = (82, 89, 96)      # #525960 a pressed or hovered fill

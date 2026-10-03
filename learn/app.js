@@ -18458,7 +18458,7 @@
   function studentChrome() {
     var v = getComputedStyle(document.documentElement).getPropertyValue("--chrome");
     v = String(v || "").trim();
-    return v || "#212529";
+    return v || "#1c1c1c";
   }
 
   function setLook(mode) {
