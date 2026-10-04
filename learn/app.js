@@ -1617,13 +1617,20 @@
     });
   }
 
+  function subjectOf(c) { return SC.subjects().filter(function (s) { return s.n === c.subject; })[0]; }
+  function trail(c, upTo) {
+    var t = [{ t: "Explore", go: explore }];
+    if (c && subjectOf(c)) t.push({ t: c.subject, go: function () { openSubject(subjectOf(c)); } });
+    if (c && upTo !== "course") t.push({ t: c.t, go: function () { openCourse(c); } });
+    return t;
+  }
   function openSubject(s, silent) {
     if (!s) { explore(); return; }
     if (!silent) enter("subject:" + s.n, s.n, function () { openSubject(s, true); }, false, slug(s.n));
     S.subject = s;
     var v = $("#v-subject");
     v.innerHTML = "";
-    v.appendChild(el("p", "lx-eyebrow", "Subject"));
+    v.appendChild(window.OPLO_LAB.crumbs(trail().concat({ t: s.n })));
     v.appendChild(el("h1", "lx-h1", esc(s.n)));
     v.appendChild(el("p", "lx-lede", esc(s.d)));
     var g = el("div", "lx-grid");
@@ -1658,8 +1665,8 @@
     ic.innerHTML = svg(c.glyph, true);
     row.appendChild(ic);
     var htxt = el("div");
-    htxt.innerHTML = '<p class="lx-eyebrow">' + esc(c.subject) + "</p>" +
-                     '<h1 class="lx-h1">' + esc(c.t) + "</h1>";
+    htxt.innerHTML = '<h1 class="lx-h1">' + esc(c.t) + "</h1>";
+    htxt.insertBefore(window.OPLO_LAB.crumbs(trail(c, "course").concat({ t: c.t })), htxt.firstChild);
     row.appendChild(htxt);
     hero.appendChild(row);
     hero.appendChild(el("p", "lx-lede", esc(c.lede || c.d)));
@@ -1793,7 +1800,7 @@
 
     var v = $("#v-unit");
     v.innerHTML = "";
-    v.appendChild(el("p", "lx-eyebrow", esc(c.t) + " · Unit " + n));
+    v.appendChild(window.OPLO_LAB.crumbs(trail(c).slice(1).concat({ t: "Unit " + n })));
     v.appendChild(el("h1", "lx-h1", esc(u.t)));
     if (u.desc) v.appendChild(el("p", "lx-lede", esc(u.desc)));
 
@@ -1868,9 +1875,10 @@
   function labCtx(c, n) {
     var u = n ? unitsOf(c).filter(function (x) { return x.n === n; })[0] : null;
     return {
-      course: c.id, courseTitle: c.t, n: n, title: u ? u.t : "", desc: u ? u.desc : "", me: S.me,
+      course: c.id, courseTitle: c.t, subject: c.subject, n: n, title: u ? u.t : "", desc: u ? u.desc : "", me: S.me,
       units: unitsOf(c).filter(function (x) { return x.lab; }).map(function (x) { return x.n; }),
       go: {
+        subject: subjectOf(c) ? function () { openSubject(subjectOf(c)); } : null,
         course: function () { openCourse(c); },
         unit: function () { openUnit(c, n); },
         lesson: function (k) { openLab(c, n, "l" + k); },

@@ -35,7 +35,7 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "54c2652c",
+    "lab/widgets.js": "1a756574",
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
@@ -60,15 +60,15 @@ window.OPLO_LAB = (function () {
     "prealg/u09.js": "e0bd850e",
     "prealg/u10.js": "4addbd0a",
     "prealg/u11.js": "46eb034b",
-    "alg/u01.js": "e54d7ae2",
-    "alg/u02.js": "51ff3a78",
-    "alg/u03.js": "5f26331e",
-    "alg/u04.js": "7ad8783e",
-    "alg/u05.js": "33e7d5da",
-    "alg/u06.js": "3ae17712",
-    "alg/u07.js": "d711e75c",
-    "alg/u08.js": "a0478410",
-    "alg/u09.js": "7fe3bebf",
+    "alg/u01.js": "9b95fdc7",
+    "alg/u02.js": "d0f34b92",
+    "alg/u03.js": "0c1e1423",
+    "alg/u04.js": "3830f22e",
+    "alg/u05.js": "e44d589a",
+    "alg/u06.js": "a17ec87a",
+    "alg/u07.js": "90b358b1",
+    "alg/u08.js": "cf2d755c",
+    "alg/u09.js": "0471e11a",
     "alg2/u01.js": "98799c83",
     "alg2/u02.js": "8b1c4b46",
     "alg2/u03.js": "1f6c24d1",
@@ -199,6 +199,8 @@ window.OPLO_LAB = (function () {
           push('<span class="mol">' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "overarc" || cmd === "widehat") {      // an arc of a circle: a curved cap over its letters
           push('<span class="marc">' + mathHTML(group()) + "</span>", "val");
+        } else if (cmd === "op") {                                   // the move just made, to both sides: stands out from the rest
+          push('<span class="mop">' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "cancel") {
           push('<span class="mcx">' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "color") {
@@ -1116,8 +1118,33 @@ window.OPLO_LAB = (function () {
     doc: '<path d="M7 3.5h6.5l5 5V19a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M13.5 3.5v5h5"/>',
     book: '<path d="M4 5.5h5.5A2.5 2.5 0 0 1 12 8v11a2 2 0 0 0-2-2H4z"/><path d="M20 5.5h-5.5A2.5 2.5 0 0 0 12 8v11a2 2 0 0 1 2-2h6z"/>',
     test: '<rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 3.5h6"/><path d="m8.5 12.5 2.2 2.2 4.8-5"/>',
-    done: '<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.2 9.6"/>'
+    done: '<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.2 9.6"/>',
+    chev: '<path d="m9.5 6 6 6-6 6"/>',
+    folder: '<path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4.2l2 2.5H19a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17z"/>'
   };
+  /* The trail of pages above this one, after BoardUI's Breadcrumb: small
+     links that take a soft pill under the pointer, a chevron between them,
+     and the page you are on last, which is not a link.
+     items: [{ t: text, go: function }]; one with no `go` is the current page. */
+  function crumbs(items, label) {
+    var nav = el("nav", "bc"), ol = el("ol");
+    nav.setAttribute("aria-label", label || "Breadcrumb");
+    items.filter(Boolean).forEach(function (it, i) {
+      if (i) ol.appendChild(el("li", "bc-sep", '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m4.5 3 3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>')).setAttribute("aria-hidden", "true");
+      var li = el("li");
+      if (it.go) { var a = button("bc-a", esc(it.t)); a.addEventListener("click", it.go); li.appendChild(a); }
+      else { li.className = "bc-cur"; li.setAttribute("aria-current", "page"); li.textContent = it.t; }
+      ol.appendChild(li);
+    });
+    nav.appendChild(ol);
+    // Too long for its place: the end of the trail, nearest to where you are, is the part in sight.
+    requestAnimationFrame(function () { nav.scrollLeft = nav.scrollWidth; });
+    return nav;
+  }
+  // Subject, course: the two pages above every unit.
+  function trailOf(ctx) {
+    return [ctx.subject && ctx.go.subject ? { t: ctx.subject, go: ctx.go.subject } : null, { t: ctx.courseTitle || "Course", go: ctx.go.course }];
+  }
   function svg(d, fill) {
     return '<svg viewBox="0 0 24 24" fill="' + (fill ? "currentColor" : "none") + '" stroke="' + (fill ? "none" : "currentColor") +
       '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + "</svg>";
@@ -1136,8 +1163,8 @@ window.OPLO_LAB = (function () {
     if (ctx.course) wrap.setAttribute("data-course", ctx.course);
     host.appendChild(wrap);
     var head = el("header", "lb-uhead");
-    head.innerHTML = '<p class="lx-eyebrow">' + esc(ctx.courseTitle) + " · Unit " + ctx.n + "</p>" +
-      '<h1 class="lx-h1">' + esc(ctx.title) + "</h1>" + (ctx.desc ? '<p class="lx-lede">' + esc(ctx.desc) + "</p>" : "");
+    head.innerHTML = '<h1 class="lx-h1">' + esc(ctx.title) + "</h1>" + (ctx.desc ? '<p class="lx-lede">' + esc(ctx.desc) + "</p>" : "");
+    head.insertBefore(crumbs(trailOf(ctx).concat({ t: "Unit " + ctx.n })), head.firstChild);
     wrap.appendChild(head);
     var body = el("div", "lb-loading", "<span></span><span></span><span></span>");
     wrap.appendChild(body);
@@ -1303,7 +1330,8 @@ window.OPLO_LAB = (function () {
     var side = el("aside", "lb-side");
     side.setAttribute("aria-label", "Unit " + u.n + " contents");
     var top = el("div", "lb-side-top");
-    top.innerHTML = '<div class="lb-side-unit"><span>' + esc(ctx.courseTitle || "") + " · Unit " + u.n + "</span><b>" + fmt(u.title) + "</b></div>";
+    top.innerHTML = '<div class="lb-side-unit"><b>' + fmt(u.title) + "</b></div>";
+    top.firstChild.insertBefore(crumbs(trailOf(ctx).concat({ t: "Unit " + u.n, go: function () { ctx.go.unit(u.n); } })), top.firstChild.firstChild);
     var hide = button("lb-side-btn", svg(ICON.sidebar));
     hide.setAttribute("aria-label", "Hide sidebar");
     hide.title = "Hide sidebar";
@@ -1325,16 +1353,36 @@ window.OPLO_LAB = (function () {
     search.appendChild(clear);
     side.appendChild(search);
 
+    /* The list is a tree, after BoardUI's Tree View: Lessons and Practice are
+       its branches, each lesson, quiz, test and skill a row inside one, and
+       the lesson being played opens out into its steps. A chevron marks a
+       branch, guide lines join a row to its parent (lab.css), and the arrow
+       keys walk it (below). */
     var list = el("div", "lb-side-list");
+    var tree = el("div", "tv");
+    tree.setAttribute("role", "tree");
+    tree.setAttribute("aria-label", "Unit " + u.n + ": lessons and practice");
     var none = el("p", "lb-side-none");
+    function lead(branch, ico) {
+      return '<span class="tv-lead">' + (branch ? '<span class="tv-chev">' + svg(ICON.chev) + "</span>" : '<span class="tv-gap"></span>') +
+        '<span class="tv-ico">' + ico + "</span></span>";
+    }
+    function item(b, level, find, owns, open) {
+      b.setAttribute("role", "treeitem");
+      b.setAttribute("aria-level", level);
+      b.tabIndex = -1;
+      b.dataset.find = String(find).toLowerCase();
+      if (owns) { b.setAttribute("aria-owns", owns); b.setAttribute("aria-expanded", String(open)); }
+    }
     // The lesson being played lists its own steps under its row, so a
     // student can go back to a problem, and forward again. Clicking the
     // lesson itself folds them away.
     var stepsEl = null;
     function section(key, name, items) {
-      var sec = el("section", "lb-sec" + (SIDE.folded[key] ? " folded" : ""));
-      var h = button("lb-sec-h", "<span>" + name + "</span>" + svg(ICON.down));
-      h.setAttribute("aria-expanded", String(!SIDE.folded[key]));
+      var sec = el("div", "lb-sec" + (SIDE.folded[key] ? " folded" : ""));
+      sec.setAttribute("role", "none");
+      var h = button("tv-row lb-sec-h", lead(true, svg(ICON.folder)) + '<span class="lb-row-t">' + name + '</span><span class="tv-end">' + items.length + "</span>");
+      item(h, 1, name, "tv-" + key, !SIDE.folded[key]);
       h.addEventListener("click", function () {
         SIDE.folded[key] = !SIDE.folded[key];
         sec.classList.toggle("folded", SIDE.folded[key]);
@@ -1342,16 +1390,19 @@ window.OPLO_LAB = (function () {
       });
       sec.appendChild(h);
       var ul = el("ul", "lb-rows");
+      ul.id = "tv-" + key;
+      ul.setAttribute("role", "group");
       items.forEach(function (it) {
         var li = el("li");
+        li.setAttribute("role", "none");
         var cur = isHere(it, here);
         var open = cur && it.kind === "lesson";
         var ico = it.kind === "quiz" ? ICON.target : it.kind === "test" ? ICON.test : it.kind === "skill" ? ICON.bolt : it.read ? ICON.book : ICON.doc;
         var end = it.kind === "skill" ? pips(it.lv) : it.done ? '<span class="lb-row-done" aria-label="Done">' + svg(ICON.done) + "</span>" : "";
-        var b = button("lb-row k-" + it.kind + (it.done ? " done" : ""),
-          '<span class="lb-row-ico">' + svg(ico, it.kind === "skill") + "</span>" +
-          '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.label + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end +
-          (open ? '<span class="lb-row-fold" aria-hidden="true">' + svg(ICON.down) + "</span>" : ""));
+        var b = button("tv-row lb-row k-" + it.kind + (it.done ? " done" : ""),
+          lead(open, svg(ico, it.kind === "skill")) +
+          '<span class="lb-row-t">' + (it.kind === "lesson" ? '<i>' + it.label + "</i>" : "") + esc(stripMath(it.title)) + "</span>" + end);
+        item(b, 2, stripMath(it.title), open ? "tv-steps" : null, !SIDE.stepsFolded);
         if (cur) b.setAttribute("aria-current", "page");
         b.title = (it.kind === "lesson" ? it.label + ": " : "") + stripMath(it.title);
         b.addEventListener("click", function () {
@@ -1365,6 +1416,8 @@ window.OPLO_LAB = (function () {
         if (open) {
           li.classList.add("lb-open");
           stepsEl = el("ol", "lb-steps");
+          stepsEl.id = "tv-steps";
+          stepsEl.setAttribute("role", "group");
           stepsEl.setAttribute("aria-label", "Steps in this lesson");
           li.appendChild(stepsEl);
           foldSteps(li, b, SIDE.stepsFolded);
@@ -1372,7 +1425,7 @@ window.OPLO_LAB = (function () {
         ul.appendChild(li);
       });
       sec.appendChild(ul);
-      list.appendChild(sec);
+      tree.appendChild(sec);
     }
     function foldSteps(li, b, folded) {
       SIDE.stepsFolded = folded;
@@ -1384,8 +1437,43 @@ window.OPLO_LAB = (function () {
     // places), then practice.
     section("unit", "Lessons", unitSeq(u));
     section("skills", "Practice", skillSeq(u));
+    list.appendChild(tree);
     list.appendChild(none);
     side.appendChild(list);
+
+    /* One tab stop, and the keys BoardUI's tree answers to: up and down
+       through the rows in sight, right to open a branch or step into it,
+       left to close it or go up to its parent, Home and End, and letters to
+       find a row by its name. Enter and Space are the row's own click. */
+    var typed = "", typedAt = 0;
+    function mark(b) {
+      [].forEach.call(tree.querySelectorAll('.tv-row[tabindex="0"]'), function (x) { x.tabIndex = -1; });
+      b.tabIndex = 0;
+    }
+    tree.addEventListener("focusin", function (e) { var b = e.target.closest(".tv-row"); if (b) mark(b); });
+    tree.addEventListener("keydown", function (e) {
+      var b = e.target.closest(".tv-row");
+      if (!b || e.metaKey || e.ctrlKey || e.altKey) return;
+      var all = [].filter.call(tree.querySelectorAll(".tv-row"), function (x) { return x.offsetParent && !x.disabled; });
+      var i = all.indexOf(b), exp = b.getAttribute("aria-expanded"), to = null;
+      if (e.key === "ArrowDown") to = all[i + 1];
+      else if (e.key === "ArrowUp") to = all[i - 1];
+      else if (e.key === "Home") to = all[0];
+      else if (e.key === "End") to = all[all.length - 1];
+      else if (e.key === "ArrowRight") { if (exp === "false") b.click(); else if (exp === "true") to = all[i + 1]; else return; }
+      else if (e.key === "ArrowLeft") {
+        var g = b.closest('[role="group"]');
+        if (exp === "true") b.click(); else if (g) to = tree.querySelector('[aria-owns="' + g.id + '"]'); else return;
+      } else if (e.key.length === 1 && /\S/.test(e.key)) {
+        var now = Date.now();
+        typed = now - typedAt > 600 ? e.key.toLowerCase() : typed + e.key.toLowerCase();
+        typedAt = now;
+        to = all.slice(i + 1).concat(all).filter(function (x) { return x.dataset.find.indexOf(typed) === 0; })[0];
+        if (!to) return;
+      } else return;
+      e.preventDefault();
+      if (to) to.focus();
+    });
 
     function filter() {
       var q = SIDE.q = inp.value.trim().toLowerCase(), any = false;
@@ -1401,6 +1489,7 @@ window.OPLO_LAB = (function () {
         sec.classList.toggle("searching", !!q);
         if (shown) any = true;
       });
+      tree.hidden = !any;
       none.hidden = any;
       none.textContent = any ? "" : "Nothing in this unit matches “" + inp.value.trim() + "”.";
     }
@@ -1431,8 +1520,10 @@ window.OPLO_LAB = (function () {
       stepsEl.innerHTML = "";
       info.forEach(function (st) {
         var li = el("li");
-        var b = button("lb-step" + (st.current ? " cur" : "") + (st.state ? " " + st.state : ""),
-          '<span class="lb-step-dot" aria-hidden="true"></span><span class="lb-step-t">' + esc(st.label) + "</span>");
+        li.setAttribute("role", "none");
+        var b = button("tv-row lb-step" + (st.current ? " cur" : "") + (st.state ? " " + st.state : ""),
+          '<span class="tv-lead"><span class="tv-gap"></span><span class="tv-ico"><span class="lb-step-dot" aria-hidden="true"></span></span></span><span class="lb-step-t">' + esc(st.label) + "</span>");
+        item(b, 3, st.label);
         b.disabled = !st.open;
         if (st.current) b.setAttribute("aria-current", "step");
         b.title = st.open ? st.label : st.label + " — not reached yet";
@@ -1461,6 +1552,7 @@ window.OPLO_LAB = (function () {
         list.scrollTop += c.bottom - a.top <= list.clientHeight - 16 ? a.top - box.top - 8 : c.top - box.top - list.clientHeight / 3;
       });
     };
+    mark(tree.querySelector('.tv-row[aria-current="page"]') || tree.querySelector(".tv-row"));
     shell.appendChild(side);
     shell.appendChild(scrim);
     shell.appendChild(show);
@@ -1774,6 +1866,6 @@ window.OPLO_LAB = (function () {
     fmtStep: fmtStep, hub: hub, addHub: addHub,
     _lessonPath: lessonPath, _genStep: genStep,
     // widgets
-    W: W, el: el, esc: esc, button: button, svg: svg
+    W: W, el: el, esc: esc, button: button, svg: svg, crumbs: crumbs
   };
 })();

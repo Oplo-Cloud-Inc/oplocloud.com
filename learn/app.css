@@ -189,6 +189,23 @@ svg { display: block; }
   font-family: var(--font); font-size: 12px; font-weight: 600;
   letter-spacing: .006em; color: var(--ink-3); margin-bottom: 9px;
 }
+/* The trail of pages above this one, after BoardUI's Breadcrumb (lab/core.js,
+   crumbs): 12px medium, a soft pill under the pointer, a chevron between the
+   links, and the page you are on last, a shade darker and not a link. It
+   scrolls sideways, without a bar, sooner than wrap. */
+.bc { display: flex; align-items: center; margin: 0 0 9px -4px; padding: 0 4px; overflow-x: auto; scrollbar-width: none; }
+.bc::-webkit-scrollbar { display: none; }
+.bc ol { display: flex; align-items: center; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.bc li { display: flex; align-items: center; font-family: var(--font); font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap; }
+.bc-a {
+  margin: 0 -4px; padding: 2px 4px; border-radius: 6px; font: inherit; color: var(--ink-3);
+  transition: color .15s var(--ease), background-color .15s var(--ease);
+}
+.bc-a:hover { color: var(--ink-2); background: var(--sunk); }
+.bc-a:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.bc-sep { color: var(--ink-3); }
+.bc-sep svg { display: block; width: 12px; height: 12px; }
+.bc-cur { color: var(--ink-2); }
 .lx-note {
   margin-top: 44px; padding: 16px 19px; border-radius: 13px; background: var(--paper);
   border: 1px solid var(--hair); font-size: 14px; line-height: 1.55; color: var(--ink-2);

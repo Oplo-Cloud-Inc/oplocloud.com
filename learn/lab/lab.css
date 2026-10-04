@@ -738,8 +738,8 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lb-shell.side-off .lb-side { display: none; }
 
 .lb-side-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 2px 6px 0 12px; }
-.lb-side-unit { display: grid; gap: 3px; min-width: 0; padding-top: 3px; }
-.lb-side-unit span { font-size: 12px; font-weight: 600; color: var(--ink-3); }
+.lb-side-unit { display: grid; gap: 5px; min-width: 0; padding-top: 3px; }
+.lb-side-unit .bc { margin-bottom: 0; }
 .lb-side-unit b { font-family: var(--font); font-size: 17px; font-weight: 600; line-height: 1.2; letter-spacing: -.01em; color: var(--ink); }
 .lb-side-btn, .lb-side-show {
   flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
@@ -772,72 +772,85 @@ html[data-look="obsidian"] .lb-change { background: rgba(255,255,255,.045); }
 .lb-search-x svg { width: 14px; height: 14px; }
 .lb-search.has .lb-search-x { display: grid; }
 
-.lb-side-list { flex: 1; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: 12px; padding: 0 4px 6px; }
-.lb-sec-h {
-  display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 6px 10px;
-  border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--ink-2);
-}
-.lb-sec-h:hover { color: var(--ink); }
-.lb-sec-h svg { width: 15px; height: 15px; color: var(--ink-3); transition: transform .2s var(--ease); }
-.lb-sec.folded:not(.searching) .lb-sec-h svg { transform: rotate(-90deg); }
+/* The unit as a tree, after BoardUI's Tree View (lab/core.js, frame): a
+   bordered card of rows, 36px tall with 12px corners; a chevron and a folder
+   on each branch; each level 20px further in; a soft fill under the pointer
+   and on the row you are on. Lessons and Practice are the branches, the
+   lesson being played opens into its steps. */
+.lb-side-list { position: relative; flex: 1; min-height: 0; overflow-y: auto; padding: 0 4px 6px; }
+.tv { display: flex; flex-direction: column; padding: 8px; border: 1px solid var(--hair); border-radius: 24px; --tv-guide: color-mix(in srgb, var(--ink) 22%, transparent); }
+.tv[hidden] { display: none; }
+.lb-rows, .lb-steps { list-style: none; margin: 0; padding: 0; }
 .lb-sec.folded:not(.searching) .lb-rows { display: none; }
-.lb-rows { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 2px; }
-.lb-row {
-  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 12px 8px 10px;
-  border-radius: 12px; text-align: left; color: var(--ink); font-size: 14px; line-height: 1.3;
-  transition: background .12s var(--ease);
+.tv-row {
+  position: relative; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px;
+  padding: 8px 8px 8px calc(8px + (var(--lv, 1) - 1) * 20px);
+  border-radius: 12px; text-align: left; font-size: 14px; line-height: 20px; color: var(--ink);
+  transition: background-color .15s var(--ease), color .15s var(--ease);
 }
-.lb-row:hover { background: var(--sunk); }
-.lb-row-ico { flex: none; display: grid; place-items: center; width: 20px; height: 20px; color: var(--blue); }
-.lb-row-ico svg { width: 18px; height: 18px; }
-.lb-row.k-quiz .lb-row-ico { color: #a78bfa; }
-.lb-row.k-test .lb-row-ico { color: var(--amber); }
-.lb-row.k-skill .lb-row-ico { color: var(--ink-3); }
-.lb-row-t { flex: 1; min-width: 0; }
+.lb-rows .tv-row { --lv: 2; }
+.lb-steps .tv-row { --lv: 3; min-height: 32px; padding-top: 6px; padding-bottom: 6px; font-size: 13px; color: var(--ink-2); }
+.tv-row:hover:not(:disabled) { background: var(--sunk); }
+.tv-row:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.tv-row:disabled { opacity: .45; cursor: default; }
+.tv-lead { flex: none; display: flex; align-items: center; gap: 4px; height: 20px; }
+.tv-chev { display: grid; place-items: center; width: 20px; height: 20px; color: var(--ink-3); }
+.tv-chev svg { width: 16px; height: 16px; transition: transform .15s var(--ease); }
+.tv-row[aria-expanded="true"] .tv-chev svg { transform: rotate(90deg); }
+.lb-sec.searching > .tv-row .tv-chev svg { transform: rotate(90deg); }
+.tv-gap { width: 8px; }
+.tv-ico { display: grid; place-items: center; width: 16px; height: 16px; color: var(--blue); }
+.tv-ico svg { width: 16px; height: 16px; }
+.lb-sec-h .tv-ico { color: var(--ink-3); }
+.lb-row.k-quiz .tv-ico { color: #a78bfa; }
+.lb-row.k-test .tv-ico { color: var(--amber); }
+.lb-row.k-skill .tv-ico { color: var(--ink-3); }
+.tv-end { flex: none; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lb-row-t, .lb-step-t { flex: 1; min-width: 0; }
 .lb-row-t i { display: inline-block; min-width: 16px; margin-right: 6px; font-style: normal; font-variant-numeric: tabular-nums; color: var(--ink-3); }
-/* The lesson being played, opened out into its steps: a line down the side,
-   a dot for each step (blue where you are, green solved first time, amber
-   solved with help, pale blue read), and the steps not reached yet faded. */
-.lb-steps { list-style: none; margin: 4px 0 6px 19px; padding: 0 0 0 12px; border-left: 1.5px solid var(--hair); display: grid; gap: 1px; }
-.lb-step {
-  display: flex; align-items: center; gap: 9px; width: 100%; min-height: 32px; padding: 5px 10px;
-  border-radius: 9px; text-align: left; font-size: 13px; line-height: 1.25; color: var(--ink-2);
-  transition: background .12s var(--ease), color .12s var(--ease);
-}
-.lb-step:hover:not(:disabled):not(.cur) { background: var(--sunk); color: var(--ink); }
-.lb-step:disabled { opacity: .45; cursor: default; }
-.lb-step-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
-.lb-step.seen .lb-step-dot { background: #b9d6f6; box-shadow: none; }
-.lb-step.first .lb-step-dot { background: var(--green); box-shadow: none; }
-.lb-step.helped .lb-step-dot { background: #e0a43c; box-shadow: none; }
-.lb-step.cur { color: #fff; font-weight: 600; background: var(--fill, var(--blue)); }
-.lb-step.cur .lb-step-dot { background: #fff; box-shadow: none; }
-.lb-step-t { flex: 1; min-width: 0; }
-html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,229,0.45); }
 .lb-row-done { flex: none; display: grid; color: var(--green); }
 .lb-row-done svg { width: 17px; height: 17px; }
 .lb-row .lb-pips { flex: none; gap: 2px; }
 .lb-row .lb-pips i { width: 5px; height: 12px; border-radius: 2px; }
-.lb-side-list { position: relative; }
-/* Where you are: a filled pill in the accent. */
-.lb-row[aria-current="page"] { background: var(--fill, var(--blue)); color: #fff; }
-.lb-row[aria-current="page"] :is(.lb-row-ico, .lb-row-t i, .lb-row-done) { color: #fff; }
+/* Guide lines. Under an open branch a line drops from its chevron; each row
+   inside takes an elbow off that line, and the line runs on past it while
+   there are rows below. A step also carries the line of the level above. */
+.tv-row::before {
+  content: ""; position: absolute; inset: -1px 0; pointer-events: none; color: var(--tv-guide);
+  background:
+    linear-gradient(currentColor, currentColor) var(--trunk-x, -9px) 0 / 1px 100% no-repeat,
+    linear-gradient(currentColor, currentColor) var(--tail-x, -9px) 100% / 1px calc(50% + 6px) no-repeat,
+    linear-gradient(currentColor, currentColor) var(--bridge-x, -9px) 100% / 1px calc(50% - 8px) no-repeat;
+}
+.lb-rows .tv-row::after {
+  content: ""; position: absolute; left: 18px; top: -1px; width: 16px; height: calc(50% + 1px); pointer-events: none;
+  border: solid var(--tv-guide); border-width: 0 0 1px 1px; border-bottom-left-radius: 6px;
+}
+.lb-rows .tv-row[aria-expanded]::after { width: 12px; }
+.lb-steps .tv-row::after { left: 38px; }
+.lb-sec:not(.folded) > .tv-row, .lb-sec.searching > .tv-row { --bridge-x: 18px; }
+.lb-rows > li:has(~ li:not([hidden])) > .tv-row { --tail-x: 18px; }
+.lb-rows > li:has(~ li:not([hidden])) .lb-steps .tv-row { --trunk-x: 18px; }
+.lb-open:not(.folded) > .tv-row { --bridge-x: 38px; }
+.lb-steps > li:not(:last-child) > .tv-row { --tail-x: 38px; }
+.lb-sec.searching .lb-open > .tv-row { --bridge-x: -9px; }
+/* The lesson being played, opened out into its steps: a dot for each step
+   (blue where you are, green solved first time, amber solved with help, pale
+   blue read), and the steps not reached yet faded. */
+.lb-step-dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.lb-step.seen .lb-step-dot { background: #b9d6f6; box-shadow: none; }
+.lb-step.first .lb-step-dot { background: var(--green); box-shadow: none; }
+.lb-step.helped .lb-step-dot { background: #e0a43c; box-shadow: none; }
+.lb-step.cur .lb-step-dot { background: var(--blue); box-shadow: none; }
+html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,229,0.45); }
+/* Where you are: the soft fill, and the words in semibold. While the lesson
+   is open on a step, the step has the fill and the lesson keeps the weight;
+   folded, or on the summary, the lesson has the fill again. */
+.tv-row[aria-current="page"], .lb-step.cur { background: var(--sunk); color: var(--ink); font-weight: 600; }
+.lb-open.on-step:not(.folded) > .tv-row[aria-current="page"]:not(:hover) { background: transparent; }
+.lb-open.folded .lb-steps, .lb-sec.searching .lb-steps { display: none; }
 .lb-side-none { margin: 4px 12px; font-size: 14px; color: var(--ink-3); }
 .lb-side-none:empty { display: none; }
-
-/* The lesson you are in folds its steps away when it is clicked. While it
-   is open on a step, the step has the pill and the lesson drops to bold;
-   folded, or on the summary, the lesson has the pill again. */
-.lb-row-fold { flex: none; display: grid; margin-right: -4px; color: var(--ink-3); }
-.lb-row-fold svg { width: 15px; height: 15px; transition: transform .2s var(--ease); }
-.lb-open.folded .lb-row-fold svg { transform: rotate(-90deg); }
-.lb-row[aria-current="page"] .lb-row-fold { color: #fff; }
-.lb-open.folded .lb-steps, .lb-sec.searching .lb-steps { display: none; }
-.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"] { background: transparent; color: var(--ink); font-weight: 600; }
-.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"]:hover { background: var(--sunk); }
-.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"] .lb-row-ico { color: var(--blue); }
-.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"] :is(.lb-row-t i, .lb-row-fold) { color: var(--ink-3); }
-.lb-open.on-step:not(.folded) > .lb-row[aria-current="page"] .lb-row-done { color: var(--green); }
 
 /* On a narrow window the sidebar floats over the page when it is asked for,
    and a click outside it or Escape puts it away. */
@@ -941,7 +954,9 @@ html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,
 
 /* A worked example with a picture: the drawing beside the lines on a wide
    card (and kept in view while they are read), above them on a narrow one. */
-.lw-walk.has-fig { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-areas: "fig list" "fig tools"; gap: 14px 18px; align-items: start; }
+.lw-walk.has-fig { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-areas: "rail rail" "fig list" "fig tools" "fig ask"; gap: 14px 18px; align-items: start; }
+.lw-walk.has-fig .lw-rail { grid-area: rail; }
+.lw-walk.has-fig .lw-ask { grid-area: ask; }
 .lw-walk.has-fig .lw-wk-fig { grid-area: fig; position: sticky; top: 16px; }
 .lw-walk.has-fig .lw-wk { grid-area: list; }
 .lw-walk.has-fig .lw-tools { grid-area: tools; }
@@ -949,7 +964,7 @@ html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,
 .lw-wk-fig.in { animation: lw-figin .35s var(--ease); }
 @keyframes lw-figin { from { opacity: .35; } to { opacity: 1; } }
 @media (max-width: 720px) {
-  .lw-walk.has-fig { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fig" "list" "tools"; }
+  .lw-walk.has-fig { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "fig" "list" "tools" "ask"; }
   .lw-walk.has-fig .lw-wk-fig { position: static; }
 }
 @media (prefers-reduced-motion: reduce) { .lw-wk-fig.in { animation: none; } }
@@ -997,3 +1012,21 @@ html[data-look="obsidian"] { --term-0: #fde047; --term-1: #7dd3fc; --term-2: #f9
 .lw-xt-b.one { border-color: var(--term-0); }
 .lw-xt-b:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
 .lw-xt-read { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: center; font-size: 19px; }
+
+/* ---- Small steps: the move just made on both sides (\op{…} in a worked line), and the equation mat (LAB.matFig). */
+:root { --move: #c2410c; }
+html[data-look="obsidian"] { --move: #fb923c; }
+.m .mop { color: var(--move); background: color-mix(in srgb, var(--move) 16%, transparent); border-radius: .28em; padding: 0 .16em; margin: 0 .05em; font-weight: 600; }
+.lw-stack { text-align: center; }
+.lw-stk { display: inline-grid; grid-template-columns: auto repeat(var(--n), auto); gap: 8px 10px; justify-items: end; align-items: baseline; font-size: 24px; padding: 14px 18px; border-radius: 12px; background: var(--lw-surface); }
+.lw-stk-r { display: contents; }
+.lw-stk-o { color: var(--move); font-weight: 600; }
+.lw-stk-rule { grid-column: 1 / -1; justify-self: stretch; border-top: 2px solid var(--ink-2); }
+.lw-box { display: inline-grid; grid-template-columns: auto repeat(var(--n), minmax(84px, auto)); gap: 5px; font-size: 20px; align-items: center; justify-items: center; }
+.lw-box-h { padding: 4px 10px; color: var(--ink-2); }
+.lw-box-c { align-self: stretch; justify-self: stretch; display: grid; place-items: center; min-height: 58px; padding: 6px 10px; border-radius: 8px; background: var(--lw-surface); border: 1px solid var(--lw-grid); }
+.lw-box-c.lit { border-color: var(--move); background: color-mix(in srgb, var(--move) 16%, transparent); }
+.lw-xt-eq { font-family: var(--lw-mathf, serif); font-size: 22px; fill: var(--ink); }
+.lw-xt-gone { opacity: .45; }
+.lw-xt-cut { stroke: var(--move); stroke-width: 2; stroke-linecap: round; }
+.lw-xt-ring { fill: none; stroke: var(--move); stroke-width: 1.6; stroke-dasharray: 5 4; }

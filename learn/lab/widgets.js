@@ -1548,6 +1548,65 @@
       esc(o.alt || ((o.a || 0) + " long tiles and " + (o.b || 0) + " small tiles.")) + '"><rect class="lf-bg" width="' + W + '" height="' + T.h + '" rx="12"/>' + T.s + "</svg>" +
       (o.cap ? "<figcaption>" + fmt(o.cap) + "</figcaption>" : "") + "</figure>";
   };
+  /* The equation mat: a still picture of an equation in tiles, left side | = | right side, for a line of a worked
+     example. LAB.matFig({ l: [x, c], r: [x, c], v: "x", per: 5, take: { l: [x, c], r: [x, c] }, share: n, cap, alt })
+       l, r    how many long tiles and small tiles are on each side
+       take    the tiles being taken from each side just now: drawn ghosted and crossed
+       share   n: both sides are laid out in n matching rows, the first one ringed: one long tile for each share */
+  LAB.matFig = function (o) {
+    var v = o.v || "x", per = o.per || 5, rowH = 26, pad = 14, s = "", take = o.take || {};
+    function side(q, t, x0) {
+      t = t || [0, 0];
+      var nx = q[0], nc = q[1], share = o.share, perRow = share ? Math.max(1, Math.ceil(nc / share)) : per, xw = nx ? 62 : 0, out = "", h = 1;
+      for (var i = 0; i < nx; i++) {
+        var gone = i >= nx - t[0], y = pad + i * rowH;
+        out += '<g class="' + (gone ? "lw-xt-gone" : "") + '"><rect class="lw-xt-x" x="' + x0 + '" y="' + y + '" width="54" height="20" rx="4"/><text class="lw-xt-l" x="' + (x0 + 27) + '" y="' + (y + 14.5) + '" text-anchor="middle" font-style="italic">' + esc(v) + "</text>" +
+          (gone ? '<line class="lw-xt-cut" x1="' + (x0 + 4) + '" y1="' + (y + 18) + '" x2="' + (x0 + 50) + '" y2="' + (y + 2) + '"/>' : "") + "</g>";
+        h = Math.max(h, i + 1);
+      }
+      for (var j = 0; j < nc; j++) {
+        var g2 = j >= nc - t[1], cx = x0 + xw + (j % perRow) * 24, cy = pad + Math.floor(j / perRow) * rowH;
+        out += '<g class="' + (g2 ? "lw-xt-gone" : "") + '"><rect class="lw-xt-1" x="' + cx + '" y="' + cy + '" width="20" height="20" rx="4"/><text class="lw-xt-l" x="' + (cx + 10) + '" y="' + (cy + 14.5) + '" text-anchor="middle">1</text>' +
+          (g2 ? '<line class="lw-xt-cut" x1="' + (cx + 3) + '" y1="' + (cy + 17) + '" x2="' + (cx + 17) + '" y2="' + (cy + 3) + '"/>' : "") + "</g>";
+        h = Math.max(h, Math.floor(j / perRow) + 1);
+      }
+      if (!nx && !nc) out += '<text class="lw-xt-l" x="' + (x0 + 10) + '" y="' + (pad + 15) + '" text-anchor="middle">0</text>';
+      return { s: out, w: Math.max(24, xw + Math.min(nc, perRow) * 24), h: h };
+    }
+    var Lp = side(o.l, take.l, pad), eqX = pad + Lp.w + 22, Rp = side(o.r, take.r, eqX + 26), rows = Math.max(Lp.h, Rp.h), W = eqX + 26 + Rp.w + pad, H = rows * rowH + 2 * pad - 6;
+    s += '<text class="lw-xt-eq" x="' + (eqX + 6) + '" y="' + (pad + (rows * rowH - 6) / 2 + 7) + '" text-anchor="middle">=</text>' + Lp.s + Rp.s;
+    if (o.share) s += '<rect class="lw-xt-ring" x="' + (pad - 5) + '" y="' + (pad - 5) + '" width="' + (W - 2 * pad + 10) + '" height="30" rx="8"/>';
+    return '<figure class="lf" style="max-width:' + Math.max(W, 220) + 'px"><svg class="lf-svg" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(o.alt || "An equation shown in tiles.") + '">' +
+      '<rect class="lf-bg" width="' + W + '" height="' + H + '" rx="12"/>' + s + "</svg>" + (o.cap ? "<figcaption>" + fmt(o.cap) + "</figcaption>" : "") + "</figure>";
+  };
+  /* Two equations stacked for elimination: like terms in columns, the sign in front of the second one, a rule,
+     and what the adding or subtracting gives. Each equation is a list of cells, one for each column.
+     LAB.stackFig({ rows: [[tex, ...], [tex, ...]], op: "+" | "-", sum: [tex, ...], cap, alt }) */
+  LAB.stackFig = function (o) {
+    function line(cells, cls, sign) {
+      return '<div class="lw-stk-r' + (cls || "") + '"><span class="lw-stk-o">' + (sign || "") + "</span>" +
+        cells.map(function (c) { return '<span class="lw-stk-c">' + (c ? m(c) : "") + "</span>"; }).join("") + "</div>";
+    }
+    return '<figure class="lf lw-stack" role="img" aria-label="' + esc(o.alt || "Two equations, one above the other.") + '">' +
+      '<div class="lw-stk" style="--n:' + o.rows[0].length + '">' + line(o.rows[0]) + line(o.rows[1], "", o.op === "-" ? "−" : o.op || "") +
+      (o.sum ? '<div class="lw-stk-rule"></div>' + line(o.sum, " sum") : "") + "</div>" +
+      (o.cap ? "<figcaption>" + fmt(o.cap) + "</figcaption>" : "") + "</figure>";
+  };
+  /* The area model: one factor's parts down the side, the other's along the top, and a product in each cell.
+     LAB.boxFig({ top: [tex, ...], side: [tex, ...], cells: [[tex, ...], ...], lit: [row, col], cap, alt })
+     A cell left empty stays blank, so the box can fill up line by line; `lit` marks the cell just filled. */
+  LAB.boxFig = function (o) {
+    var s = '<div class="lw-box" style="--n:' + o.top.length + '"><span></span>' +
+      o.top.map(function (t) { return '<span class="lw-box-h">' + m(t) + "</span>"; }).join("");
+    o.side.forEach(function (t, r) {
+      s += '<span class="lw-box-h">' + m(t) + "</span>" + o.top.map(function (_, c) {
+        var v = (o.cells[r] || [])[c];
+        return '<span class="lw-box-c' + (o.lit && o.lit[0] === r && o.lit[1] === c ? " lit" : "") + '">' + (v ? m(v) : "") + "</span>";
+      }).join("");
+    });
+    return '<figure class="lf lw-stack" role="img" aria-label="' + esc(o.alt || "An area model.") + '">' + s + "</div>" +
+      (o.cap ? "<figcaption>" + fmt(o.cap) + "</figcaption>" : "") + "</figure>";
+  };
   CH.addKind("xtiles", function (spec, seed, mode) {
     var api = {}, a = spec.a || 0, b = spec.b || 0, v = spec.v || "x", x = spec.x.v, t = spec.target || {}, moved = false, built = false;
     var box = el("div", "lw lw-xtiles"), svg = svgRoot(560, 120), read = el("div", "lw-read lw-xt-read");
@@ -1721,7 +1780,7 @@
      the x-tile's, so the lines match the algebra tiles. */
   var TERM_SEP = /^\\(?:le|ge|ne|neq|leq|geq|approx|to|qquad|quad|pm|Rightarrow|iff)(?![a-zA-Z])|^\\[;,]/;
   function termKind(s) {
-    var t = s.replace(/\\[a-zA-Z]+/g, " ");
+    var t = s.replace(/\\op\{[^{}]*\}/g, " ").replace(/\\[a-zA-Z]+/g, " ");   // the move is not part of the term
     var v = (t.match(/[a-zA-Z](?:_\{?\w+\}?)?(?:\^\{?\d+\}?)?/g) || []).sort().join("");
     return v || (/\d/.test(t) ? "#" : "");
   }
@@ -1752,6 +1811,11 @@
     }
     while (i < s.length) {
       var ch = s[i];
+      if (ch === "\\" && !depth && s.slice(i, i + 4) === "\\op{") {   // a move keeps its own colour: pass it through whole
+        for (var j = i + 4, d = 1; j < s.length && d; j++) { if (s[j] === "{") d++; else if (s[j] === "}") d--; }
+        out += colour(cur) + s.slice(i, j); cur = ""; i = j;
+        continue;
+      }
       if (ch === "\\") {
         var sep = depth ? null : TERM_SEP.exec(s.slice(i)), cmd = sep || /^\\(?:[a-zA-Z]+|.)/.exec(s.slice(i));
         if (sep) { out += colour(cur) + sep[0]; cur = ""; } else cur += cmd[0];
@@ -1760,7 +1824,7 @@
       }
       if (ch === "{" || ch === "(" || ch === "[") depth++;
       else if (ch === "}" || ch === ")" || ch === "]") depth--;
-      if (!depth && (/[=<>,+]/.test(ch) || (ch === "-" && cur.trim()))) { out += colour(cur) + ch; cur = ""; }
+      if (!depth && (/[=<>,+]/.test(ch) || (ch === "-" && (cur.trim() || /\}$/.test(out))))) { out += colour(cur) + ch; cur = ""; }
       else cur += ch;
       i++;
     }
@@ -1876,7 +1940,8 @@
      opens the next. "Show me" writes the one line in hand and moves on, so a
      student stuck on step 2 still does steps 3 to 5 (challenge.js: `more`).
      spec: { how, steps: [{ step, ask, type: "choice" | "num" | any kind,
-     ...that kind's own fields, m: tex of the finished line, say, hint }] }. */
+     ...that kind's own fields, m: tex of the finished line, say, hint,
+     lead: [{ m, say }] }] }. */
   CH.addKind("guided", function (spec, seed) {
     var api = { helpAt: 1 }, steps = spec.steps || [], k = 0, cur = null, slips = 0;
     var box = el("div", "lw lw-walk lw-guided");
@@ -1903,7 +1968,12 @@
       if (k && cur.focus) cur.focus();
     }
     var tc = spec.terms ? { n: 0 } : null;
-    function write() { wkRow(list, spec.how, steps[k], steps[k - 1], true, tc); k++; open(); }
+    // A step may carry `lead`: the small lines that come before its own, so the board never skips one.
+    function write() {
+      var s = steps[k], prev = steps[k - 1];
+      (s.lead || []).concat(s).forEach(function (r) { wkRow(list, spec.how, { step: s.step, m: r.m, say: r.say }, prev, true, tc); prev = s; });
+      k++; open();
+    }
     open();
     api.el = box;
     api.ready = function () { return !cur || cur.ready(); };
