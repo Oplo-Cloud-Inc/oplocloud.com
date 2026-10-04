@@ -199,6 +199,22 @@ New components should use the tokens, not literal colours; then both looks follo
 9. **Local first.** Offline, work stays here and is marked owed.
 10. **A gradebook that explains itself.** Missing, excused, and late mean what they say; every change is kept.
 
+### 4.3 Learning as small habits
+
+OEdu assumes that a student gets good at a subject through small actions repeated, not through one large effort. The platform's job is to make the next small action likely, and then likely again tomorrow. The frame is the four laws of habit from James Clear's *Atomic Habits*, turned into tests that every student-facing screen, lesson and feature has to pass.
+
+1. **Obvious.** The next thing to do is on the screen, and there is one of it. A lesson opens at its next step. A unit says which lesson comes next. The "Ready?" check ends by saying where to start. No student page ends without a next action.
+2. **Attractive.** The work itself is the draw: things to move, build and watch (tiles, a balance, a ruler, a figure to drag), and colour that carries meaning (a term keeps its colour down a worked example). Nothing decorative competes with it. Points and badges never stand in for the pleasure of getting it.
+3. **Easy.** Starting costs nothing. Nothing is locked. A lesson is about twelve minutes, in steps of a minute or two, and its first step is one the student can already do. Help is one tap away: a hint, then the worked answer. The mathematics may be hard; the instructions never are.
+4. **Satisfying.** Every step answers at once, and says why. Progress is visible and only ever rises (rule 6 above). A lesson ends on a summary the student put together.
+
+Two rules follow from the same idea.
+
+- **One per cent.** Work comes in pieces small enough to finish in one sitting. One step every day beats one unit once. Anything that counts days must reward coming back and never punish a gap.
+- **Identity.** The product speaks to the student as someone who does this subject ("Now you", "On your own"), and shows evidence of it: what they can now do, not only what they scored. A wrong answer gets a reason, not a verdict.
+
+When a lesson or a feature fails one of the four tests, fix that before adding anything to it. "Obvious" and "easy" come first: an attractive, satisfying step that the student cannot find or cannot start is not used.
+
 ## 5. API Surface
 
 ### 5.1 Endpoints Used by the Frontend
