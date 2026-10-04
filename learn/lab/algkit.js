@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Prealgebra, Algebra I and II — the concept builder.
+   Prealgebra, Algebra I and II, Geometry — the concept builder.
 
    Every lesson in these courses names one idea. Reading the name is passive; this
    makes it something the student builds. A sentence or a formula is shown
@@ -21,7 +21,7 @@
      In LAB.addConcepts, keep: true builds after the lesson's "Name it" card
      instead of replacing it; a lesson with a guided example ends on its build.
 
-   Loaded only for Prealgebra and Algebra I and II, after the manipulatives (lab/core.js COURSE_KIT).
+   Loaded only for Prealgebra, Algebra I and II and Geometry, after the manipulatives (lab/core.js COURSE_KIT).
    ========================================================================== */
 (function () {
   "use strict";

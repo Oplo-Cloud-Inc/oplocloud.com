@@ -35,7 +35,7 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "32332b0b",
+    "lab/widgets.js": "54c2652c",
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
@@ -43,7 +43,7 @@ window.OPLO_LAB = (function () {
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
-    "lab/algkit.js": "a36c19cb",
+    "lab/algkit.js": "ec6dd5e1",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",
@@ -60,7 +60,7 @@ window.OPLO_LAB = (function () {
     "prealg/u09.js": "e0bd850e",
     "prealg/u10.js": "4addbd0a",
     "prealg/u11.js": "46eb034b",
-    "alg/u01.js": "14dc251e",
+    "alg/u01.js": "e54d7ae2",
     "alg/u02.js": "51ff3a78",
     "alg/u03.js": "5f26331e",
     "alg/u04.js": "7ad8783e",
@@ -82,8 +82,18 @@ window.OPLO_LAB = (function () {
     "alg2/u11.js": "af802903",
     "alg2/u12.js": "1fbb7169",
     "g8/u01.js": "3c0c775e",
-    "geo/u01.js": "332193f8",
-    "geo/u09.js": "503d988a",
+    "geo/u01.js": "bff77c19",
+    "geo/u02.js": "95091d49",
+    "geo/u03.js": "3632309c",
+    "geo/u04.js": "1b1c991f",
+    "geo/u05.js": "7b6d5f6c",
+    "geo/u06.js": "bc7ea108",
+    "geo/u07.js": "1f763e74",
+    "geo/u08.js": "d3cfcab8",
+    "geo/u09.js": "50509e26",
+    "geo/u10.js": "7339d5f7",
+    "geo/u11.js": "f7afd022",
+    "geo/u12.js": "016ce805",
     "biz/u01.js": "42aebe47",
     "biz/u02.js": "df0245cf",
     "hist/u01.js": "647c1892",
@@ -187,6 +197,8 @@ window.OPLO_LAB = (function () {
           push("<b>" + mathHTML(group()) + "</b>", "val");
         } else if (cmd === "overline") {
           push('<span class="mol">' + mathHTML(group()) + "</span>", "val");
+        } else if (cmd === "overarc" || cmd === "widehat") {      // an arc of a circle: a curved cap over its letters
+          push('<span class="marc">' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "cancel") {
           push('<span class="mcx">' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "color") {
@@ -672,7 +684,8 @@ window.OPLO_LAB = (function () {
       seen[k] = true;
       opts.push(x);
     });
-    var order = o.keep ? opts : R.shuffle(opts);
+    // keep: the same order every time (by name), so the right answer is not always the first one.
+    var order = o.keep ? opts.slice().sort(function (a, b) { return String(a.t) < String(b.t) ? -1 : 1; }) : R.shuffle(opts);
     var step = { type: "choice", options: order, answer: order.indexOf(opts[0]), keep: true };
     Object.keys(o).forEach(function (k) { if (["right", "wrong", "keep"].indexOf(k) < 0) step[k] = o[k]; });
     return step;
@@ -1022,7 +1035,7 @@ window.OPLO_LAB = (function () {
      lab/pathkit.js, pathhelp.js, pathui.js and path/alg*.js; and Algebra I
      adds its concept builder, lab/algkit.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: "lab/geotools.js", alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js" };
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js" };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */
   function kitFor(courseId) {

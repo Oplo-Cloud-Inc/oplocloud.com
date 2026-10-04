@@ -26,6 +26,7 @@
      trick       think of a number: the same steps with a number and a letter
      evalsteps   order of operations: tap what comes next
      tilemat     algebra tiles for like terms: zero pairs cancel
+     xtiles      algebra tiles for ax + b: the long tile stretches with x
      rectangle   a rectangle sized with sliders; its perimeter and area live
      tester      two expressions side by side at the same x
      share       division as fitting pieces — and why pieces of size 0 can't
@@ -1512,6 +1513,95 @@
     return api;
   });
 
+  /* ============================================================== X-tiles
+     Algebra tiles for an expression ax + b. A long tile is the variable: it
+     stretches as the slider changes x. A small tile is 1, and never changes.
+     So the picture shows which part of an expression varies and which is
+     fixed, what the expression is worth, and when an equation or a limit holds.
+
+     spec: { a, b, v: "t" (the variable's letter), x: { v, min, max },
+             build: true      tray buttons add and take away tiles
+             target: { a, b } build this expression
+                   | { total } slide until the tiles are worth this (an equation)
+                   | { max }   slide to the largest x that stays within this (a constraint)
+             answer: x (or { a, b }) for Show me,  gate: explore waits for a move }
+     LAB.tileFig({ a, b, v, x }) is the same picture, still: for a question or a worked line. */
+  function tilesInner(a, b, v, x, W) {
+    var u = 20, rowH = 26, s = "", x0 = Math.round((W - Math.max(x, 1) * u) / 2 - (b ? Math.min(b, 6) * 12 : 0)), y = 12;
+    x0 = Math.max(14, x0);
+    for (var i = 0; i < a; i++, y += rowH) {
+      var w = Math.max(x, 0.3) * u;
+      s += '<rect class="lw-xt-x' + (x ? "" : " zero") + '" x="' + x0 + '" y="' + y + '" width="' + w + '" height="20" rx="4"/>';
+      if (x >= 1) s += '<text class="lw-xt-l" x="' + (x0 + w / 2) + '" y="' + (y + 14.5) + '" text-anchor="middle" font-style="italic">' + esc(v) + "</text>";
+    }
+    var ux = x0 + Math.max(x, 1) * u + 18, per = 6;
+    for (var j = 0; j < b; j++) {
+      var cx = ux + (j % per) * 24, cy = 12 + Math.floor(j / per) * rowH;
+      s += '<rect class="lw-xt-1" x="' + cx + '" y="' + cy + '" width="20" height="20" rx="4"/><text class="lw-xt-l" x="' + (cx + 10) + '" y="' + (cy + 14.5) + '" text-anchor="middle">1</text>';
+    }
+    return { s: s, h: Math.max(a, Math.ceil(b / per), 1) * rowH + 18 };
+  }
+  function tilesTex(a, b, v) { return (a ? "\\color{t1}{" + (a === 1 ? "" : a) + v + "}" : "") + (a && b ? " + " : "") + (b || !a ? "\\color{t0}{" + b + "}" : ""); }
+  LAB.tileFig = function (o) {
+    var W = o.w || 360, T = tilesInner(o.a || 0, o.b || 0, o.v || "x", o.x == null ? 4 : o.x, W);
+    return '<figure class="lf" style="max-width:' + W + 'px"><svg class="lf-svg" viewBox="0 0 ' + W + " " + T.h + '" role="img" aria-label="' +
+      esc(o.alt || ((o.a || 0) + " long tiles and " + (o.b || 0) + " small tiles.")) + '"><rect class="lf-bg" width="' + W + '" height="' + T.h + '" rx="12"/>' + T.s + "</svg>" +
+      (o.cap ? "<figcaption>" + fmt(o.cap) + "</figcaption>" : "") + "</figure>";
+  };
+  CH.addKind("xtiles", function (spec, seed, mode) {
+    var api = {}, a = spec.a || 0, b = spec.b || 0, v = spec.v || "x", x = spec.x.v, t = spec.target || {}, moved = false, built = false;
+    var box = el("div", "lw lw-xtiles"), svg = svgRoot(560, 120), read = el("div", "lw-read lw-xt-read");
+    box.appendChild(svg);
+    if (spec.build) {
+      var tray = el("div", "lw-xt-tray");
+      [["+ " + v + " tile", 1, 0], ["− " + v + " tile", -1, 0], ["+ 1 tile", 0, 1], ["− 1 tile", 0, -1]].forEach(function (q) {
+        var bt = button("lw-xt-b" + (q[1] ? " x" : " one"), q[0].replace(v + " tile", "<i>" + esc(v) + "</i> tile"));
+        bt.addEventListener("click", function () { a = Math.max(0, Math.min(8, a + q[1])); b = Math.max(0, Math.min(12, b + q[2])); built = true; paint(); });
+        tray.appendChild(bt);
+      });
+      box.appendChild(tray);
+    }
+    var ctl = el("div", "lw-sliders");
+    ctl.appendChild(slider("$" + v + "$", spec.x, function (n) { x = n; moved = true; paint(); }).el);
+    box.appendChild(ctl);
+    box.appendChild(read);
+    function total() { return a * x + b; }
+    function hit() {
+      if (t.a != null) return a === t.a && b === t.b;
+      if (t.total != null) return total() === t.total;
+      if (t.max != null) return total() <= t.max && a * (x + 1) + b > t.max;
+      return true;
+    }
+    function paint() {
+      var T = tilesInner(a, b, v, x, 560);
+      svg.setAttribute("viewBox", "0 0 560 " + T.h);
+      svg.innerHTML = T.s;
+      svg.setAttribute("aria-label", a + " long tiles, each " + x + " long, and " + b + " small tiles. Together they are worth " + total() + ".");
+      var over = t.max != null && total() > t.max, tag = "";
+      if (t.total != null) tag = '<span class="lw-tag' + (hit() ? " good" : "") + '">aim: ' + t.total + "</span>";
+      if (t.max != null) tag = '<span class="lw-tag ' + (over ? "bad" : hit() ? "good" : "") + '">limit: ' + t.max + (over ? " · over" : "") + "</span>";
+      if (t.a != null) tag = '<span class="lw-tag' + (hit() ? " good" : "") + '">build:&nbsp;' + m(tilesTex(t.a, t.b, v)) + "</span>";
+      read.innerHTML = (a || b ? "<span>" + m(tilesTex(a, b, v) + (a ? " = \\color{t1}{" + (a === 1 ? "" : a) + "(" + x + ")}" + (b ? " + \\color{t0}{" + b + "}" : "") : "") + " = " + total()) + "</span>" : "<span>No tiles yet.</span>") + tag;
+      box.classList.toggle("solved", !!spec.target && hit());
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.ready = function () { return spec.target ? (t.a != null ? built : moved) || hit() : mode.explore ? (spec.gate ? moved : true) : moved; };
+    api.check = function () {
+      if (hit()) return { ok: true };
+      if (t.a != null) return { ok: false, say: "Count the tiles: you need " + t.a + " long and " + t.b + " small." };
+      if (t.total != null) return { ok: false, say: total() > t.total ? "Too much: the tiles are worth " + total() + ". Slide $" + v + "$ down." : "Not enough: the tiles are worth " + total() + ". Slide $" + v + "$ up." };
+      return { ok: false, say: total() > t.max ? "That is " + total() + ": over the limit of " + t.max + "." : "There is room for more: one more would still be within " + t.max + "." };
+    };
+    api.reveal = function () {
+      var ans = spec.answer;
+      if (ans && ans.a != null) { a = ans.a; b = ans.b; built = true; paint(); }
+      else if (ans != null) { var inp = ctl.querySelector("input"); inp.value = ans; inp.dispatchEvent(new Event("input")); }
+    };
+    return api;
+  });
+
   /* =============================================================== Tester
      Two expressions, one value of x, both worked out side by side — the
      way to test whether they are equivalent. spec: { a, b, x: { v, min, max },
@@ -1621,12 +1711,68 @@
     } };
   }
   // One line of a worked example. A line that opens a new step of the method says so.
-  function wkRow(list, how, r, prev, fresh) {
+  /* ------------------------------------------------------- Term colours
+     A worked example can colour its terms (`terms: true` on a walk, a guided
+     example or a find-the-error), so the eye can follow each one down the
+     lines. Like terms share a colour: every constant, every x-term, every
+     y-term. A term that is gone takes its colour with it; terms that combine
+     keep theirs. `map` remembers the colours for the whole example.
+     Constants take t0, the unit tile's colour, and the first variable t1,
+     the x-tile's, so the lines match the algebra tiles. */
+  var TERM_SEP = /^\\(?:le|ge|ne|neq|leq|geq|approx|to|qquad|quad|pm|Rightarrow|iff)(?![a-zA-Z])|^\\[;,]/;
+  function termKind(s) {
+    var t = s.replace(/\\[a-zA-Z]+/g, " ");
+    var v = (t.match(/[a-zA-Z](?:_\{?\w+\}?)?(?:\^\{?\d+\}?)?/g) || []).sort().join("");
+    return v || (/\d/.test(t) ? "#" : "");
+  }
+  // "3(x + 2)…" → ["3", "x + 2", "…"]: the first bracket at the top level that holds a sum.
+  function termParen(b) {
+    for (var i = 0, br = 0; i < b.length; i++) {
+      if (b[i] === "{") br++; else if (b[i] === "}") br--;
+      else if (b[i] === "(" && !br) {
+        for (var j = i + 1, d = 1; j < b.length && d; j++) { if (b[j] === "(") d++; else if (b[j] === ")") d--; }
+        var inner = b.slice(i + 1, j - 1);
+        if (!d && /\S\s*[+\-=]/.test(inner)) return [b.slice(0, i), inner, b.slice(j)];
+        i = j - 1;
+      }
+    }
+    return null;
+  }
+  function termTex(tex, map) {
+    var s = String(tex).replace(/\\left\(/g, "(").replace(/\\right\)/g, ")"), out = "", cur = "", depth = 0, i = 0;
+    function colour(chunk) {
+      var b = chunk.trim();
+      if (!b || /\\text\{|\\color\{/.test(b)) return chunk;
+      var lead = /^\s*/.exec(chunk)[0], tail = /\s*$/.exec(chunk)[0], p = termParen(b);
+      if (p) return lead + p[0] + "(" + termTex(p[1], map) + ")" + (p[2] ? colour(p[2]) : "") + tail;
+      var k = termKind(b);
+      if (!k) return chunk;
+      if (map[k] == null) map[k] = k === "#" ? 0 : (map.n++ % 5) + 1;
+      return lead + "\\color{t" + map[k] + "}{" + b + "}" + tail;
+    }
+    while (i < s.length) {
+      var ch = s[i];
+      if (ch === "\\") {
+        var sep = depth ? null : TERM_SEP.exec(s.slice(i)), cmd = sep || /^\\(?:[a-zA-Z]+|.)/.exec(s.slice(i));
+        if (sep) { out += colour(cur) + sep[0]; cur = ""; } else cur += cmd[0];
+        i += cmd[0].length;
+        continue;
+      }
+      if (ch === "{" || ch === "(" || ch === "[") depth++;
+      else if (ch === "}" || ch === ")" || ch === "]") depth--;
+      if (!depth && (/[=<>,+]/.test(ch) || (ch === "-" && cur.trim()))) { out += colour(cur) + ch; cur = ""; }
+      else cur += ch;
+      i++;
+    }
+    return out + colour(cur);
+  }
+  LAB.termTex = termTex;
+  function wkRow(list, how, r, prev, fresh, tc) {
     var li = el("li", "lw-wk-row" + (fresh ? " in" : ""));
     var st = how && r.step && (!prev || prev.step !== r.step)
       ? '<span class="lw-wk-st">Step ' + r.step + " · " + fmt(howName(how[r.step - 1])) + "</span>" : "";
     li.innerHTML = st + '<span class="lw-wk-n">' + (list.children.length + 1) + "</span>" +
-      '<span class="lw-wk-m">' + (r.m != null ? m(r.m) : "") + "</span>" +
+      '<span class="lw-wk-m">' + (r.m != null ? m(tc ? termTex(r.m, tc) : r.m) : "") + "</span>" +
       '<span class="lw-wk-s">' + (r.say || "") + "</span>";
     list.appendChild(li);
   }
@@ -1657,7 +1803,8 @@
     box.appendChild(tools);
     var ask = el("div", "lw-ask");
     box.appendChild(ask);
-    function row(i, fresh) { wkRow(list, spec.how, rows[i], rows[i - 1], fresh); }
+    var tc = spec.terms ? { n: 0 } : null;
+    function row(i, fresh) { wkRow(list, spec.how, rows[i], rows[i - 1], fresh, tc); }
     for (var i0 = 0; i0 < k; i0++) row(i0, false);
     function show() { row(k, true); k++; paint(); }
     // The next line may be one the student is asked to call first.
@@ -1755,7 +1902,8 @@
       now.appendChild(cur.el);
       if (k && cur.focus) cur.focus();
     }
-    function write() { wkRow(list, spec.how, steps[k], steps[k - 1], true); k++; open(); }
+    var tc = spec.terms ? { n: 0 } : null;
+    function write() { wkRow(list, spec.how, steps[k], steps[k - 1], true, tc); k++; open(); }
     open();
     api.el = box;
     api.ready = function () { return !cur || cur.ready(); };
@@ -1783,9 +1931,9 @@
      it first goes wrong; the right pick shows the line as it should have been.
      spec: { lines: [tex], answer: index, fix: tex, fb: { index: reply } }. */
   CH.addKind("spotline", function (spec) {
-    var api = {}, picked = null, box = el("div", "lw lw-spot");
+    var api = {}, picked = null, box = el("div", "lw lw-spot"), tc = spec.terms ? { n: 0 } : null;
     var btns = spec.lines.map(function (t, i) {
-      var b = button("lw-spot-l", '<span class="lw-spot-n">Line ' + (i + 1) + '</span><span class="lw-spot-m">' + m(t) + "</span>");
+      var b = button("lw-spot-l", '<span class="lw-spot-n">Line ' + (i + 1) + '</span><span class="lw-spot-m">' + m(tc ? termTex(t, tc) : t) + "</span>");
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
         if (b.disabled) return;
@@ -1799,7 +1947,7 @@
     function found() {
       btns.forEach(function (c, i) { c.disabled = true; c.classList.remove("on", "no"); if (i === spec.answer) c.classList.add("bad"); });
       if (spec.fix != null && !box.querySelector(".lw-spot-fix")) {
-        box.insertBefore(el("div", "lw-spot-fix", '<span class="lw-spot-n">Should be</span><span class="lw-spot-m">' + m(spec.fix) + "</span>"),
+        box.insertBefore(el("div", "lw-spot-fix", '<span class="lw-spot-n">Should be</span><span class="lw-spot-m">' + m(tc ? termTex(spec.fix, tc) : spec.fix) + "</span>"),
           btns[spec.answer].nextSibling);
       }
     }

@@ -61,6 +61,8 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
 .m .mr-b { border-top: .07em solid currentColor; padding: .08em .08em 0 .06em; margin-top: .14em; line-height: 1.05; }
 .m .mr-i { font-size: .6em; margin-right: -.3em; margin-top: -.1em; }
 .m .mol { text-decoration: overline; }
+.m .marc { position: relative; display: inline-block; padding-top: .3em; }
+.m .marc::before { content: ""; position: absolute; left: .04em; right: .04em; top: .04em; height: .3em; border: .07em solid currentColor; border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
 /* A ray, AB with an arrow over it (one head); a line (a head at each end). */
 .m .mray { position: relative; display: inline-block; padding-top: .34em; }
 .m .mray::before {
@@ -976,3 +978,22 @@ html[data-look="obsidian"] .lb-step.seen .lb-step-dot { background: rgba(56,139,
 .lw-wk-n { display: none; }      /* a line number at the far edge of a centred line is noise */
 .lw-wk-s { grid-column: 1; }
 .lw-mat-in, .lw-mat-row { justify-content: center; }
+
+/* ---- Term colours (LAB.termTex) and the algebra tiles that match them: t0 is a constant (the small tile), t1 the
+   first variable (the long tile), t2… the next variables. Like terms keep one colour down a worked example. */
+:root { --term-0: #a16207; --term-1: #0369a1; --term-2: #be185d; --term-3: #4d7c0f; --term-4: #7e22ce; --term-5: #0f766e; }
+html[data-look="obsidian"] { --term-0: #fde047; --term-1: #7dd3fc; --term-2: #f9a8d4; --term-3: #bef264; --term-4: #d8b4fe; --term-5: #5eead4; }
+.m .mc-t0 { color: var(--term-0); } .m .mc-t1 { color: var(--term-1); } .m .mc-t2 { color: var(--term-2); }
+.m .mc-t3 { color: var(--term-3); } .m .mc-t4 { color: var(--term-4); } .m .mc-t5 { color: var(--term-5); }
+.m [class^="mc-t"] { font-weight: 600; }
+.lw-xtiles { display: grid; gap: 12px; justify-items: center; }
+.lw-xtiles svg { width: 100%; max-width: 560px; height: auto; }
+.lw-xt-x { fill: color-mix(in srgb, var(--term-1) 30%, transparent); stroke: var(--term-1); stroke-width: 1.6; transition: width .18s ease; }
+.lw-xt-x.zero { stroke-dasharray: 3 3; }
+.lw-xt-1 { fill: color-mix(in srgb, var(--term-0) 30%, transparent); stroke: var(--term-0); stroke-width: 1.6; }
+.lw-xt-l { font-family: var(--lw-mathf, serif); font-size: 13px; fill: var(--ink); pointer-events: none; }
+.lw-xt-tray { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.lw-xt-b { padding: 7px 14px; border-radius: 999px; font: 600 14px var(--text); color: var(--ink); background: transparent; border: 1.5px solid var(--term-1); cursor: pointer; }
+.lw-xt-b.one { border-color: var(--term-0); }
+.lw-xt-b:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+.lw-xt-read { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: center; font-size: 19px; }

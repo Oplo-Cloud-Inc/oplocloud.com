@@ -576,56 +576,59 @@ window.OPLO = (function () {
               "CC BY-NC-SA 4.0; the questions, figures and feedback are OEdu's own."
   };
 
-  /* Geometry is a lab course like Algebra I: its units are interactive
-     lessons, practice that generates its own problems, and tests
-     (learn/lab/, learn/geo/, and its own kit in learn/lab/geotools.js).
-     The units follow the course textbook, Glencoe Geometry, a chapter to a
-     unit; the text and problems are our own. */
+  /* Geometry is a lab course like Algebra I and II: its units are interactive
+     lessons in the same teach-first order, practice that generates its own
+     problems, and tests (learn/lab/, learn/geo/, and its own kit in
+     learn/lab/geotools.js). The units follow the course textbook, Holt
+     Geometry, a chapter to a unit and a section to a lesson. That book is
+     not an open one: only the order of topics is the book's. Every sentence,
+     example, figure and question here is our own. */
   var GEO = {
     id: "geo", t: "Geometry", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
     lab: true,
     d: "Proof as an argument you could win, not a form to fill in.",
-    lede: "Geometry done with your hands: a ruler, a protractor and a compass on the screen, and shapes you slide, turn and fold " +
-          "until the rule is obvious — then written down. It follows its textbook a chapter at a time; every idea is met by " +
-          "moving something, practised until it is easy, and tested until it sticks.",
+    lede: "Geometry done with your hands: a ruler, a protractor and a compass on the screen, and figures you drag until the " +
+          "rule is obvious. Then it is written down. Each lesson shows the method, works one example with you watching, does the " +
+          "next one together, and then hands it to you. It follows its textbook a section at a time.",
     glyph: '<path d="M12 4 21 19H3z"/>',
     objectives: [
       "Use the words and tools of geometry precisely: points, lines and planes, measuring segments and angles, distance and midpoints.",
-      "Reason from definitions and postulates, and write proofs about segments, angles and parallel lines.",
+      "Reason from definitions, postulates and theorems, and write two-column, flowchart and paragraph proofs.",
+      "Use the angles made by parallel lines and a transversal, and the slopes and equations of lines.",
       "Prove triangles congruent or similar, and use that to find missing lengths and angles.",
-      "Use the Pythagorean theorem, special right triangles and trigonometry.",
-      "Perform translations, rotations, reflections and dilations, and say what each keeps the same.",
-      "Work with circles, and find the areas, surface areas and volumes of figures and solids."
+      "Work with the special segments of a triangle, quadrilaterals, the Pythagorean theorem and trigonometry.",
+      "Find perimeters, areas, surface areas and volumes, and use the angles, arcs and segments of circles.",
+      "Perform reflections, translations, rotations and dilations, and describe symmetry."
     ],
     units: [
-      { t: "Tools of Geometry", lab: true,
-        desc: "Points, lines and planes; measuring segments and angles with a ruler, the coordinate plane and a protractor; angle pairs; polygons and solids." },
-      { t: "Reasoning and Proof", lab: true,
-        desc: "Conjectures and counterexamples, logic and if–then statements, deductive reasoning, and the first proofs about segments and angles." },
+      { t: "Foundations for Geometry", lab: true,
+        desc: "Points, lines and planes; measuring segments and angles; pairs of angles; formulas; midpoint and distance; and a first look at transformations." },
+      { t: "Geometric Reasoning", lab: true,
+        desc: "Conjectures and counterexamples, conditional and biconditional statements, deductive reasoning, and algebraic, two-column, flowchart and paragraph proofs." },
       { t: "Parallel and Perpendicular Lines", lab: true,
-        desc: "Lines cut by a transversal and the angles they make, slopes and equations of lines, proving lines parallel, and distance." },
-      { t: "Congruent Triangles", lab: true,
-        desc: "Classifying triangles and their angles, proving triangles congruent by SSS, SAS, ASA and AAS, isosceles triangles, and coordinate proof." },
-      { t: "Relationships in Triangles", lab: true,
-        desc: "Bisectors, medians and altitudes; inequalities in a triangle; indirect proof; and the triangle inequality." },
-      { t: "Quadrilaterals", lab: true,
-        desc: "Angles of polygons, and parallelograms, rectangles, rhombi, squares and trapezoids: their properties, and how to prove a figure is one." },
-      { t: "Proportions and Similarity", lab: true,
-        desc: "Ratios and proportions, similar polygons and triangles, and the proportional parts that parallel lines make." },
+        desc: "The angles a transversal makes, proving lines parallel, perpendicular lines, and slopes and equations of lines." },
+      { t: "Triangle Congruence", lab: true,
+        desc: "Classifying triangles, their angle sums, congruent triangles by SSS, SAS, ASA, AAS and HL, CPCTC, coordinate proof, and isosceles triangles." },
+      { t: "Properties and Attributes of Triangles", lab: true,
+        desc: "Bisectors, medians, altitudes and midsegments; indirect proof and triangle inequalities; the Pythagorean theorem and special right triangles." },
+      { t: "Polygons and Quadrilaterals", lab: true,
+        desc: "Angle sums of polygons, and parallelograms, rectangles, rhombuses, squares, kites and trapezoids: their properties, and how to prove a figure is one." },
+      { t: "Similarity", lab: true,
+        desc: "Ratios and proportions, similar polygons, triangle similarity by AA, SSS and SAS, proportional parts, indirect measurement, and dilations." },
       { t: "Right Triangles and Trigonometry", lab: true,
-        desc: "The geometric mean, the Pythagorean theorem and its converse, special right triangles, sine, cosine and tangent, and the laws of sines and cosines." },
-      { t: "Transformations", lab: true,
-        desc: "The four moves on the coordinate plane — sliding, turning, flipping and scaling a figure — and what each one keeps the same." },
+        desc: "The geometric mean, sine, cosine and tangent, solving right triangles, angles of elevation and depression, the laws of sines and cosines, and vectors." },
+      { t: "Extending Perimeter, Circumference, and Area", lab: true,
+        desc: "Area formulas for triangles, quadrilaterals, circles and regular polygons; composite figures; the coordinate plane; scaling; and geometric probability." },
+      { t: "Spatial Reasoning", lab: true,
+        desc: "Solids and their nets, drawings and cross sections; Euler's formula and distance in space; and the surface area and volume of prisms, cylinders, pyramids, cones and spheres." },
       { t: "Circles", lab: true,
-        desc: "Arcs and chords, inscribed angles, tangents and secants, special segments, and the equation of a circle." },
-      { t: "Areas of Polygons and Circles", lab: true,
-        desc: "Areas of parallelograms, triangles, trapezoids, regular polygons, circles and composite figures, and geometric probability." },
-      { t: "Extending Surface Area", lab: true,
-        desc: "Drawing solids, and the surface areas of prisms, cylinders, pyramids, cones and spheres." },
-      { t: "Extending Volume", lab: true,
-        desc: "Volumes of prisms, cylinders, pyramids, cones and spheres, similar solids, and coordinates in space." }
+        desc: "Tangents, arcs and chords, sector area and arc length, inscribed angles, angles and segments made by chords, secants and tangents, and the equation of a circle." },
+      { t: "Extending Transformational Geometry", lab: true,
+        desc: "Reflections, translations, rotations and their compositions; symmetry; tessellations; and dilations." }
     ],
-    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]]
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "The course follows Holt Geometry (Holt, Rinehart and Winston) a chapter at a time: each unit is a chapter of the book " +
+              "and each lesson one of its sections, in the book's order. Every explanation, example, figure and question is OEdu's own."
   };
 
   var MEDIA = {
@@ -886,7 +889,7 @@ window.OPLO = (function () {
     alg: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [5], 7: [4, 6], 8: [7], 9: [8] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
     alg2: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [5], 7: [6], 8: [5], 9: [6, 8], 10: [3, 9], 11: [9], 12: [3] },
-    geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [4], 6: [3, 4], 7: [4], 8: [7], 9: [1], 10: [4], 11: [6, 8], 12: [11], 13: [12] },
+    geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [4], 6: [4], 7: [4], 8: [5, 7], 9: [6], 10: [9], 11: [8], 12: [7] },
     biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
            13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] },
     hist: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [3], 7: [6], 8: [2], 9: [2], 10: [7], 11: [10], 12: [5],
