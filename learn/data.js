@@ -382,6 +382,58 @@ window.OPLO = (function () {
     ]
   };
 
+  /* Prealgebra — the course before Algebra I. It follows OpenStax Prealgebra 2e
+     a chapter at a time (unit N is chapter N), and every section is one lesson
+     taught the way Algebra I and II are: the method, a worked example, one done
+     together, then alone. The units live in learn/prealg/. */
+  var PREALG = {
+    id: "prealg", t: "Prealgebra", hue: BLUE, subject: "Math", level: "Introductory", tag: "Interactive",
+    lab: true,
+    d: "From whole numbers to first equations: the arithmetic that algebra stands on.",
+    lede: "Prealgebra builds the ground floor. Each lesson shows the method, works one example with you watching, does " +
+          "the next one together, and then hands it to you. It follows its textbook a section at a time: whole numbers, " +
+          "integers, fractions, decimals and percents, then the first equations, geometry, polynomials and graphs.",
+    glyph: '<path d="M12 5v14M5 12h14"/>',
+    objectives: [
+      "Add, subtract, multiply and divide whole numbers, integers, fractions and decimals, and know which to use.",
+      "Read and write the language of algebra: variables, expressions, exponents and the order of operations.",
+      "Work with percents, ratios, rates and proportions, and use them for tax, discount and interest.",
+      "Use the properties of real numbers to simplify expressions, and convert between units of measurement.",
+      "Solve linear equations in one variable, including ones with fractions and decimals.",
+      "Solve problems about money and about angles, triangles, rectangles, circles and solids.",
+      "Add, multiply and factor simple polynomials, and use integer exponents and scientific notation.",
+      "Plot points, graph linear equations, find intercepts, and understand the slope of a line."
+    ],
+    units: [
+      { t: "Whole Numbers", lab: true,
+        desc: "Place value and rounding, then adding, subtracting, multiplying and dividing whole numbers." },
+      { t: "The Language of Algebra", lab: true,
+        desc: "Variables, expressions and the order of operations, a first look at equations, and multiples, factors and prime factorization." },
+      { t: "Integers", lab: true,
+        desc: "Negative numbers, absolute value, the four operations with integers, and equations that use them." },
+      { t: "Fractions", lab: true,
+        desc: "Picturing fractions, multiplying and dividing them, mixed numbers, adding and subtracting with any denominators, and equations with fractions." },
+      { t: "Decimals", lab: true,
+        desc: "Decimal place value and operations, decimals and fractions, averages and probability, ratios and rates, and square roots." },
+      { t: "Percents", lab: true,
+        desc: "What a percent is, percent problems, sales tax, commission and discount, simple interest, and proportions." },
+      { t: "The Properties of Real Numbers", lab: true,
+        desc: "Rational and irrational numbers, the commutative, associative and distributive properties, identities and inverses, and systems of measurement." },
+      { t: "Solving Linear Equations", lab: true,
+        desc: "The properties of equality, variables and constants on both sides, and equations with fraction or decimal coefficients." },
+      { t: "Math Models and Geometry", lab: true,
+        desc: "A problem-solving strategy, money problems, angles and triangles, rectangles and trapezoids, circles, volume and surface area, and formulas." },
+      { t: "Polynomials", lab: true,
+        desc: "Adding and subtracting polynomials, the properties of exponents, multiplying polynomials, dividing monomials, scientific notation, and a first look at factoring." },
+      { t: "Graphs", lab: true,
+        desc: "The rectangular coordinate system, graphing linear equations, intercepts, and the slope of a line." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "The course follows OpenStax Prealgebra 2e a chapter at a time: each unit is a chapter of the book and each " +
+              "lesson one of its sections, taught with the book's own steps. Adapted from OpenStax (Rice University), " +
+              "CC BY-NC-SA 4.0; the questions, figures and feedback are OEdu's own."
+  };
+
   /* Algebra I is a lab course: its units are interactive lessons, practice
      that generates its own problems, and tests (learn/lab/, learn/alg/). Its
      nine units are the nine units of OpenStax Algebra 1, in the book's order. */
@@ -799,6 +851,7 @@ window.OPLO = (function () {
     { n: "Math", hue: BLUE,
       d: "Arithmetic, algebra and geometry, done by seeing why rather than remembering how.",
       courses: [SEEING,
+        PREALG,
         ALG,
         G8,
         GEO,
@@ -829,6 +882,7 @@ window.OPLO = (function () {
   var PRE = {
     media: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [2], 7: [6], 8: [6, 7], 9: [5, 7] },
     seeing: { 1: [], 2: [1], 3: [2] },
+    prealg: { 1: [], 2: [1], 3: [2], 4: [2], 5: [4], 6: [5], 7: [3, 5], 8: [7], 9: [8], 10: [7], 11: [8] },
     alg: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [5], 7: [4, 6], 8: [7], 9: [8] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
     alg2: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [5], 7: [6], 8: [5], 9: [6, 8], 10: [3, 9], 11: [9], 12: [3] },

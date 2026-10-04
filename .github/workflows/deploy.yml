@@ -73,7 +73,7 @@ jobs:
           for f in learn/app.js learn/learn.js learn/store.js learn/annotate.js learn/api.js learn/kmap.js \
                    learn/parent/parent.js learn/parent/viz.js learn/home.js learn/landing.js learn/oplo-search.js \
                    assets/js/oplo-search.js learn/oplo-menu.js assets/js/oplo-menu.js worker/index.js dev/dev.js worker/dev.js \
-                   learn/challenge.js learn/lab/core.js learn/lab/widgets.js learn/alg/u*.js learn/alg2/u*.js learn/g8/u*.js learn/geo/u*.js; do
+                   learn/challenge.js learn/lab/core.js learn/lab/widgets.js learn/prealg/u*.js learn/alg/u*.js learn/alg2/u*.js learn/g8/u*.js learn/geo/u*.js; do
             node --check "$f"
           done
       - name: Every site link resolves
