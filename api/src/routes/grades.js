@@ -14,10 +14,16 @@ import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must } from "../core/guard.js";
 import { computeGrade, courseWeights, coursePolicy, classSignal } from "../services/grades.js";
-import { activityOf } from "./courses.js";
+import { activityOf, detailsOf } from "./courses.js";
 import { submissionShape } from "./submissions.js";
 
 const STATUSES = ["marked", "missing", "excused"];
+const STICKERS = ["star", "thumbs", "clap", "fire", "heart", "rocket", "trophy", "hundred", "smile", "think"];
+
+function detailOf(g) {
+  if (!g || !g.detail_json) return null;
+  try { return JSON.parse(g.detail_json); } catch { return null; }
+}
 
 function shape(g) {
   return {
@@ -25,8 +31,36 @@ function shape(g) {
     courseId: g.course_id, title: g.title, category: g.category,
     score: g.score, outOf: g.out_of, status: g.status || "marked",
     late: !!g.late, extraCredit: !!g.extra_credit,
+    mark: g.mark || null, detail: detailOf(g),
     feedback: g.feedback, gradedBy: g.graded_by, gradedAt: g.graded_at
   };
+}
+
+/* How a score was arrived at, and the sticker on it. `rubric` is the points
+   given for each requirement, in the rubric's order; `as` is what the teacher
+   typed when it was not the score itself ("25+2", "85%", "B+"). */
+function readDetail(v) {
+  if (v === null) return null;
+  if (typeof v !== "object" || Array.isArray(v)) {
+    throw ApiError.badRequest("detail must be an object or null.", "detail");
+  }
+  const out = {};
+  if (Array.isArray(v.rubric) && v.rubric.length) {
+    if (v.rubric.length > 12) throw ApiError.badRequest("A rubric has at most 12 requirements.", "detail.rubric");
+    out.rubric = v.rubric.map((x, i) =>
+      check.number(x, `detail.rubric[${i}]`, { min: 0, max: 100000, allowNull: true }));
+  }
+  if (v.as) out.as = check.string(v.as, "detail.as", { max: 24 });
+  if (v.sticker) out.sticker = check.oneOf(v.sticker, "detail.sticker", STICKERS);
+  return Object.keys(out).length ? out : null;
+}
+
+/* A course's rules with the grades its teachers set by hand laid over them.
+   Every screen that shows a grade asks for the rules here, so an override is
+   in all of them or none. */
+export async function rulesFor(ctx, course) {
+  const overrides = course ? await ctx.repo.listCourseDocs(course.id, "override") : [];
+  return { weights: courseWeights(course), policy: coursePolicy(course, overrides) };
 }
 
 function shapeEvent(e) {
@@ -61,7 +95,8 @@ export async function list(ctx) {
   out.summaries = [];
   for (const [cid, list] of byCourse) {
     const course = await ctx.repo.findCourse(cid);
-    const computed = computeGrade(list, courseWeights(course), coursePolicy(course));
+    const rules = await rulesFor(ctx, course);
+    const computed = computeGrade(list, rules.weights, rules.policy, accountId);
     if (computed) out.summaries.push({ courseId: cid, courseTitle: course && course.title, ...computed });
   }
   return json(out);
@@ -116,11 +151,10 @@ export async function gradebook(ctx, { courseId }) {
     byStudent.get(g.account_id).push(g);
   }
 
-  const weights = courseWeights(course);
-  const policy = coursePolicy(course);
+  const { weights, policy } = await rulesFor(ctx, course);
   const summaries = {};
   for (const s of students) {
-    const computed = computeGrade(byStudent.get(s.id) || [], weights, policy);
+    const computed = computeGrade(byStudent.get(s.id) || [], weights, policy, s.id);
     if (computed) summaries[s.id] = computed;
   }
 
@@ -129,12 +163,18 @@ export async function gradebook(ctx, { courseId }) {
   return json({
     course: {
       id: course.id, code: course.code, title: course.title,
-      subject: course.subject, grading: weights || [["Work", 100]]
+      subject: course.subject, grading: weights || [["Work", 100]],
+      // The rest of the course's rules, so the sheet can say what they are
+      // without a second request — and never has to guess the scale.
+      policy: { latePenalty: policy.latePenalty, drop: policy.drop, minScore: policy.minScore,
+                scale: policy.scale, terms: policy.terms, marks: policy.marks }
     },
+    overrides: policy.overrides,
     students,
     assignments: assignments.map((a) => ({
       id: a.id, title: a.title, category: a.category, outOf: a.out_of,
-      dueAt: a.due_at, status: a.status, extraCredit: !!a.extra_credit, activity: activityOf(a)
+      dueAt: a.due_at, status: a.status, extraCredit: !!a.extra_credit, activity: activityOf(a),
+      details: detailsOf(a)
     })),
     drafts: allWork.filter((a) => a.status === "draft").length,
     grades: grades.map(shape),
@@ -209,6 +249,11 @@ async function writeOne(ctx, actor, entry, cache) {
     feedback: entry.feedback === undefined ? undefined
       : (entry.feedback === null ? null
          : check.string(entry.feedback, "feedback", { min: 0, max: 4000 })),
+    // A special mark's code. What it counts as is the status and the score
+    // beside it; this is only the name the teacher gave it.
+    mark: entry.mark === undefined ? undefined
+      : (entry.mark === null ? null : check.string(entry.mark, "mark", { max: 8 })),
+    detail: entry.detail === undefined ? undefined : readDetail(entry.detail),
     note: entry.note ? check.string(entry.note, "note", { min: 0, max: 500 }) : null,
     gradedBy: actor.id
   });
@@ -224,7 +269,8 @@ async function writeOne(ctx, actor, entry, cache) {
 async function summaryFor(ctx, courseId, accountId) {
   const course = await ctx.repo.findCourse(courseId);
   const rows = await ctx.repo.listGrades({ courseId, accountId });
-  const computed = computeGrade(rows, courseWeights(course), coursePolicy(course));
+  const rules = await rulesFor(ctx, course);
+  const computed = computeGrade(rows, rules.weights, rules.policy, accountId);
   return computed ? { courseId, accountId, ...computed } : null;
 }
 
@@ -377,7 +423,7 @@ export async function whatif(ctx, { courseId }) {
       row = { assignment_id: assignmentId, account_id: accountId, score: null,
               out_of: a.out_of, status: "marked", late: 0, category: a.category,
               title: a.title, extra_credit: a.extra_credit,
-              work_created_at: a.created_at };
+              due_at: a.due_at, work_created_at: a.created_at };
       hypothetical.push(row);
     }
     if (score !== undefined) row.score = score;
@@ -385,12 +431,26 @@ export async function whatif(ctx, { courseId }) {
     if (c.late !== undefined) row.late = c.late ? 1 : 0;
   }
 
-  const weights = courseWeights(course);
-  const policy = coursePolicy(course);
-  return json({
-    now: computeGrade(rows, weights, policy),
-    then: computeGrade(hypothetical, weights, policy)
-  });
+  const { weights, policy } = await rulesFor(ctx, course);
+  const now = computeGrade(rows, weights, policy, accountId);
+  const out = { now, then: computeGrade(hypothetical, weights, policy, accountId) };
+
+  /* What each piece of work did to the grade: the grade as it stands, less
+     the grade with that one piece taken out. Asked for by name because it is
+     a grade computed once per mark, and most what-ifs do not want it. A hand
+     override is left out of both sides — it would make every answer zero. */
+  if (body.impact && now) {
+    const plain = { ...policy, overrides: {} };
+    const whole = computeGrade(rows, weights, plain, accountId);
+    out.impact = whole ? rows
+      .filter((r) => r.status !== "excused" && (r.score != null || r.status === "missing"))
+      .map((r) => {
+        const without = computeGrade(rows.filter((x) => x !== r), weights, plain, accountId);
+        return { assignmentId: r.assignment_id, title: r.title,
+                 delta: without ? Math.round((whole.exact - without.exact) * 10) / 10 : null };
+      }) : [];
+  }
+  return json(out);
 }
 
 /* GET /api/v1/grades/history?assignmentId=&accountId=&courseId=

@@ -18,10 +18,16 @@
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must, teachesStudent, guardsStudent, isLearnAdmin } from "../core/guard.js";
-import { computeGrade, courseWeights, coursePolicy, classSignal } from "../services/grades.js";
+import { computeGrade, classSignal, assignedTo, coursePolicy } from "../services/grades.js";
 import { readinessFor, reportFor } from "../services/reporting.js";
-import { activityOf } from "./courses.js";
+import { activityOf, detailsOf } from "./courses.js";
+import { rulesFor } from "./grades.js";
 import { submissionShape } from "./submissions.js";
+
+function gradeDetail(g) {
+  if (!g || !g.detail_json) return null;
+  try { return JSON.parse(g.detail_json); } catch { return null; }
+}
 
 /* The courses this person teaches. An administrator is not automatically a
    teacher of everything — an admin who teaches two classes sees two classes
@@ -52,7 +58,7 @@ async function loadCourse(ctx, course) {
     byStudent.get(g.account_id).push(g);
   }
   return { course, students, assignments, grades, byPair, byStudent,
-           weights: courseWeights(course), policy: coursePolicy(course) };
+           ...(await rulesFor(ctx, course)) };
 }
 
 /* GET /api/v1/teaching
@@ -75,7 +81,7 @@ export async function teaching(ctx) {
 
     let sum = 0, graded = 0, low = 0;
     for (const s of c.students) {
-      const computed = computeGrade(c.byStudent.get(s.id) || [], c.weights, c.policy);
+      const computed = computeGrade(c.byStudent.get(s.id) || [], c.weights, c.policy, s.id);
       if (!computed) continue;
       sum += computed.percent;
       graded++;
@@ -131,7 +137,7 @@ export async function students(ctx) {
     const c = await loadCourse(ctx, course);
     for (const s of c.students) {
       const grades = c.byStudent.get(s.id) || [];
-      const summary = computeGrade(grades, c.weights, c.policy);
+      const summary = computeGrade(grades, c.weights, c.policy, s.id);
       const marked = new Set(grades.filter((g) => g.score != null ||
                                                   g.status === "missing" ||
                                                   g.status === "excused")
@@ -144,7 +150,7 @@ export async function students(ctx) {
         grade: summary ? { percent: summary.percent, letter: summary.letter,
                            countedWeight: summary.countedWeight } : null,
         missing: grades.filter((g) => g.status === "missing").length,
-        unmarked: c.assignments.filter((a) => !marked.has(a.id)).length
+        unmarked: c.assignments.filter((a) => !marked.has(a.id) && assignedTo(a, s.id)).length
       });
       people.set(s.id, entry);
     }
@@ -247,18 +253,23 @@ export async function coursework(ctx) {
 
   const work = [];
   for (const course of enrolled) {
+    // The course's floor, so a screen can say what missing work counts as.
+    const minScore = coursePolicy(course).minScore;
     const assignments = (await ctx.repo.listAssignments(course.id))
-      .filter((a) => a.status !== "draft");      // not set yet
+      .filter((a) => a.status !== "draft" && assignedTo(a, accountId));   // set, and for them
     for (const a of assignments) {
       const g = byAssignment.get(a.id);
       const h = handed.get(a.id);
       work.push({
         courseId: course.id, courseTitle: course.title, courseCode: course.code,
         assignmentId: a.id, title: a.title, category: a.category,
-        outOf: a.out_of, dueAt: a.due_at, extraCredit: !!a.extra_credit,
+        outOf: a.out_of, dueAt: a.due_at, extraCredit: !!a.extra_credit, minScore,
         // Where on OEdu it is done, if it is done on OEdu, and whether it
         // has been handed in there.
         activity: activityOf(a),
+        details: detailsOf(a),
+        mark: g ? g.mark || null : null,
+        detail: gradeDetail(g),
         submittedAt: h ? h.submittedAt : null,
         result: h ? h.result : null,
         // `null` means no row at all: nobody has marked it and nobody has said
@@ -334,9 +345,10 @@ export async function readiness(ctx) {
     let ready = 0, review = 0, blocked = 0;
     for (const s of c.students) {
       const grades = c.byStudent.get(s.id) || [];
-      const summary = computeGrade(grades, c.weights, c.policy);
+      const summary = computeGrade(grades, c.weights, c.policy, s.id);
       const state = readinessFor({
-        courseTitle: course.title, grades, assignments: c.assignments,
+        courseTitle: course.title, grades,
+        assignments: c.assignments.filter((a) => assignedTo(a, s.id)),
         summary, comment: commentFor.get(s.id)
       });
       if (state.state === "ready") ready++;
@@ -445,8 +457,8 @@ export async function report(ctx, { accountId }) {
       ctx.repo.listAssignments(course.id),
       ctx.repo.listGrades({ courseId: course.id, accountId })
     ]);
-    courses.push({ course, assignments, grades, weights: courseWeights(course),
-                   policy: coursePolicy(course),
+    courses.push({ course, assignments: assignments.filter((a) => assignedTo(a, accountId)),
+                   grades, ...(await rulesFor(ctx, course)),
                    comment: commentFor.get(course.id) || null });
   }
 

@@ -19,6 +19,7 @@
 
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
+import { assignedTo } from "../services/grades.js";
 
 export function submissionShape(s) {
   let result = null;
@@ -49,6 +50,7 @@ export async function submit(ctx, { assignmentId }) {
   if (!(await ctx.repo.isEnrolled(a.course_id, actor.id, "student"))) {
     throw ApiError.forbidden("Only a student in this course can hand this work in.");
   }
+  if (!assignedTo(a, actor.id)) throw ApiError.notFound("No such assignment.");
   const body = await readJson(ctx.request, { limit: 8 * 1024 });
   const result = readResult(body.result);
   const row = await ctx.repo.putSubmission(assignmentId, actor.id, JSON.stringify(result));

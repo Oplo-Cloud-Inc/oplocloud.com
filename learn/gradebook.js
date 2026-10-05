@@ -521,7 +521,7 @@ window.OPLO_GRADEBOOK = (function () {
                                                         : urgent.length + " things need your attention"));
       urgent.forEach(function (w) {
         box.appendChild(el("p", null, "<b>" + esc(w.title) + "</b> — " + (w.state === "missing"
-          ? "missing. It counts as 0 until you hand it in."
+          ? "missing. It counts as " + num(w.outOf * (w.minScore || 0) / 100) + " until you hand it in."
           : "was due " + esc(when(w.dueMs)) + " and hasn’t been graded. Hand it in if you haven’t.")));
       });
       h.appendChild(box);
@@ -574,16 +574,18 @@ window.OPLO_GRADEBOOK = (function () {
     var wrap = el("div", "sg-a s-" + w.state);
     var right;
     if (w.state === "graded") {
-      right = '<span class="sc b-' + band(w.pct) + '"><b>' + num(w.score) + " / " + num(w.outOf) + "</b><small>" +
+      right = '<span class="sc b-' + band(w.pct) + '"><b>' + sticker(w) + num(w.score) + " / " + num(w.outOf) + "</b><small>" +
         w.pct + "%</small></span>";
     } else {
-      right = '<span class="tag ' + w.state + '">' +
-        ({ missing: "Missing", late: "Late", coming: "Not graded yet", excused: "Excused" }[w.state]) + "</span>";
+      // A mark of the teacher's own (INC, ABS) is shown by its code.
+      right = '<span class="tag ' + w.state + '">' + sticker(w) +
+        esc(w.mark || { missing: "Missing", late: "Late", coming: "Not graded yet", excused: "Excused" }[w.state]) + "</span>";
     }
     var sub = [];
     if (w.category) sub.push(esc(w.category));
     if (w.dueMs != null) sub.push((w.state === "coming" ? "Due " : "Was due ") + esc(when(w.dueMs)));
     if (w.late && w.state === "graded") sub.push("Handed in late");
+    if (w.mark && w.state === "graded") sub.push("Marked " + esc(w.mark));
     if (w.extraCredit) sub.push("Extra credit");
     if (w.dropped) sub.push("Dropped — doesn’t count");
     if (w.feedback) sub.push('<em class="sg-fbtag">Teacher feedback</em>');
@@ -605,10 +607,16 @@ window.OPLO_GRADEBOOK = (function () {
     return wrap;
   }
 
+  /* The sticker a teacher put on a mark, if they did. */
+  function sticker(w) {
+    var k = w.detail && w.detail.sticker, f = window.OPLO_TEACH && window.OPLO_TEACH.sticker;
+    return k && f ? '<span class="sg-sticker" aria-hidden="true">' + f(k) + "</span> " : "";
+  }
+
   function fillDetail(box, w) {
     var lines = [];
     if (w.state === "graded") lines.push("You got <b>" + num(w.score) + " out of " + num(w.outOf) + "</b> (" + w.pct + "%).");
-    else if (w.state === "missing") lines.push("This is marked missing, so it counts as <b>0 out of " + num(w.outOf) +
+    else if (w.state === "missing") lines.push("This is marked " + esc(w.mark || "missing") + ", so it counts as <b>" + num(w.outOf * (w.minScore || 0) / 100) + " out of " + num(w.outOf) +
       "</b> until you hand it in.");
     else if (w.state === "excused") lines.push("You were excused from this. It doesn’t count toward your grade.");
     else lines.push("Not graded yet. It’s out of " + num(w.outOf) + " points.");
@@ -617,6 +625,14 @@ window.OPLO_GRADEBOOK = (function () {
     if (w.dropped) lines.push("Your teacher’s rules drop this mark, so it doesn’t count.");
     if (w.extraCredit) lines.push("Extra credit can only raise your grade.");
     box.appendChild(el("p", null, lines.join(" ")));
+    // How the score was made up, when the work was marked against a rubric.
+    var rub = w.details && w.details.rubric, got = w.detail && w.detail.rubric;
+    if (rub && got) {
+      box.appendChild(el("p", "sg-muted", rub.map(function (r, i) {
+        return esc(r.name) + " <b>" + (got[i] == null ? "—" : num(got[i])) + " / " + num(r.points) + "</b>";
+      }).join(" · ")));
+    }
+    if (w.details && w.details.about) box.appendChild(el("p", "sg-muted", esc(w.details.about)));
     if (w.feedback) {
       var fb = el("div", "sg-fb");
       fb.appendChild(el("small", null, "Feedback from your teacher"));
@@ -661,6 +677,10 @@ window.OPLO_GRADEBOOK = (function () {
     if (s.dropped && s.dropped.length) notes.push("Dropped: " + s.dropped.map(function (d) { return esc(d.title); }).join(", ") + ".");
     if (s.lateCount) notes.push("Late work cost " + num(s.latePenalty) + (s.latePenalty === 1 ? " point." : " points."));
     if (s.extraCredit) notes.push(num(s.extraCredit) + " points of extra credit are included.");
+    if (s.flooredCount) notes.push(s.flooredCount + (s.flooredCount === 1 ? " mark was" : " marks were") + " lifted to this class’s minimum score.");
+    if (s.terms) notes.push("Your grade is the grading periods, weighted: " + s.terms.filter(function (t) { return t.percent != null; })
+      .map(function (t) { return esc(t.name) + " " + t.percent + "%"; }).join(", ") + ".");
+    if (s.override) notes.push("Your teacher set this grade" + (s.override.computed != null ? "; from your marks alone it is " + s.override.computed + "%." : "."));
     if (notes.length) sec.appendChild(el("p", "sg-muted", notes.join(" ")));
     return sec;
   }

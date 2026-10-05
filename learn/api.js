@@ -205,6 +205,20 @@ window.OPLO_API = (function () {
       removeAssignment: function (assignmentId) { return del("/assignments/" + assignmentId); },
       gradebook: function (id) { return get("/courses/" + id + "/gradebook"); },
 
+      /* What a course's teachers keep about it that is not a grade: a seating
+         chart, lesson plans, stock comments, objectives, an override, an
+         announcement. A student of the course is sent announcements only. */
+      docs: function (id, kind) {
+        return get("/courses/" + id + "/docs" + q({ kind: kind })).then(function (r) { return r.docs; });
+      },
+      putDoc: function (id, kind, docId, body) {
+        return put("/courses/" + id + "/docs/" + kind + "/" + encodeURIComponent(docId), { body: body })
+          .then(function (r) { return r.doc; });
+      },
+      removeDoc: function (id, kind, docId) {
+        return del("/courses/" + id + "/docs/" + kind + "/" + encodeURIComponent(docId));
+      },
+
       /* Hand in work that was set on OEdu, with what OEdu measured. Not a
          mark: the teacher marks it. Only a student in the course can. */
       submit: function (assignmentId, result) {
@@ -256,9 +270,9 @@ window.OPLO_API = (function () {
          because the alternative is a second implementation of the weighting,
          the drop rule and the late penalty — and two of those part company
          the first time a policy changes. Writes nothing. */
-      whatif: function (courseId, accountId, changes) {
+      whatif: function (courseId, accountId, changes, impact) {
         return post("/courses/" + courseId + "/whatif",
-          { accountId: accountId, changes: [].concat(changes || []) });
+          { accountId: accountId, changes: [].concat(changes || []), impact: !!impact });
       },
 
       history: function (opts) {

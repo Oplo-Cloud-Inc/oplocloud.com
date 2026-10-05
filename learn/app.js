@@ -759,7 +759,10 @@
      with the same code, carrying the row's id, or the row itself when nothing
      was shipped for it. */
   function courseFromRow(row) {
-    var match = allCourses().filter(function (c) { return c.id === row.code; })[0];
+    // By its code, or by the shipped course it was made from: the same course
+    // taught to a second roster has a code of its own (alg-2).
+    var from = row.body && row.body.from;
+    var match = allCourses().filter(function (c) { return c.id === row.code || (from && c.id === from); })[0];
     if (!match) return fromDbCourse(row);
     match.dbId = row.id;
     return match;
@@ -1095,10 +1098,12 @@
       : w.status === "missing" ? "missing" : late ? "late" : st && st.started ? "going" : "todo";
     var row = el("div", "sw-row " + state);
     var said = {
-      marked: cxNum(w.score) + " / " + cxNum(w.outOf), excused: "Excused", handed: "Handed in",
-      missing: "Not handed in", late: "Past due", going: "In progress", todo: w.dueAt ? "" : "No due date"
+      marked: cxNum(w.score) + " / " + cxNum(w.outOf), excused: w.mark || "Excused", handed: "Handed in",
+      missing: w.mark || "Not handed in", late: "Past due", going: "In progress", todo: w.dueAt ? "" : "No due date"
     }[state];
-    var when = w.status === "missing" ? "counted as 0 of " + cxNum(w.outOf)
+    // A sticker from the teacher goes with the mark.
+    if (w.detail && w.detail.sticker && window.OPLO_TEACH && window.OPLO_TEACH.sticker) said = window.OPLO_TEACH.sticker(w.detail.sticker) + " " + said;
+    var when = w.status === "missing" ? "counted as " + cxNum(w.outOf * (w.minScore || 0) / 100) + " of " + cxNum(w.outOf)
       : state === "handed" ? "waiting for your teacher to mark it"
       : state === "excused" ? "not part of your grade"
       : w.dueAt ? (late ? "was due " + dayName(w.dueAt) : "due " + dayName(w.dueAt)) : "";
@@ -1116,6 +1121,18 @@
       row.appendChild(go);
     }
     if (w.feedback) row.appendChild(el("p", "fb", esc(w.feedback)));
+    // What the teacher wrote for whoever is doing it, and where to find it.
+    var d = w.details || {};
+    if (!marked && (d.about || d.link)) {
+      var about = el("p", "fb", esc(d.about || ""));
+      if (d.link && /^https:\/\//i.test(d.link)) {
+        var ln = el("a", null, esc(d.link.replace(/^https:\/\//i, "").slice(0, 48)));
+        ln.href = d.link; ln.target = "_blank"; ln.rel = "noopener noreferrer";
+        if (d.about) about.appendChild(document.createTextNode(" "));
+        about.appendChild(ln);
+      }
+      row.appendChild(about);
+    }
     return row;
   }
 
@@ -1308,6 +1325,23 @@
     v.appendChild(list);
     var cards = {};
     mine.forEach(function (c) { var card = classCard(c); cards[c.dbId || c.id] = card; list.appendChild(card); });
+    // What each teacher has announced, at the head of its course's work.
+    mine.forEach(function (c) {
+      if (!c.dbId) return;
+      API.courses.docs(c.dbId, "announce").then(function (posts) {
+        var card = cards[c.dbId], host = card && card.querySelector(".lx-class-work");
+        if (!host || !posts.length) return;
+        var news = el("div", "sw-list");
+        posts.sort(function (a, b) { return (b.body.at || 0) - (a.body.at || 0); }).slice(0, 3).forEach(function (p) {
+          var row = el("div", "sw-row");
+          row.innerHTML = "<span class='ic'>" + svg('<path d="M4 10v4a1 1 0 0 0 1 1h2l6 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16.5 9a4 4 0 0 1 0 6"/>', true) + "</span>" +
+            "<span class='t'><b>" + esc(p.body.title) + "</b><span>" + esc("Announcement" + (p.body.by ? " · " + p.body.by : "") + " · " + dayName(p.body.at || p.updatedAt)) + "</span></span>";
+          if (p.body.text) row.appendChild(el("p", "fb", esc(p.body.text)));
+          news.appendChild(row);
+        });
+        host.parentNode.insertBefore(news, host);
+      }, function () { /* the work below still stands */ });
+    });
     loadWork().then(function (data) {
       mine.forEach(function (c) {
         var card = cards[c.dbId || c.id], host = card && card.querySelector(".lx-class-work");
@@ -8899,7 +8933,8 @@
       { k: "roster", name: "Gradebook", icon: "table" },
       { k: "tograde", name: "To Grade", icon: "inbox" },
       { k: "assignments", name: "Assignments", icon: "stack" },
-      { k: "assessments", name: "Assessments", icon: "checklist" }] },
+      { k: "assessments", name: "Assessments", icon: "checklist" },
+      { k: "plans", name: "Lesson Plans", icon: "calendar" }] },
     { head: "Learning", items: [
       { k: "lessons", name: "Lessons", icon: "play" },
       { k: "standards", name: "Standards", icon: "target" },
@@ -8908,10 +8943,12 @@
     { head: "Students", items: [
       { k: "students", name: "Students", icon: "people" },
       { k: "groups", name: "Groups", icon: "groups" },
+      { k: "seating", name: "Seating", icon: "seat" },
       { k: "attendance", name: "Attendance", icon: "clock" }] },
     { head: "Insights", items: [
       { k: "analytics", name: "Analytics", icon: "chart" },
-      { k: "interventions", name: "Interventions", icon: "lifebuoy" }] },
+      { k: "interventions", name: "Interventions", icon: "lifebuoy" },
+      { k: "reports", name: "Reports", icon: "doc" }] },
     { head: "Communicate", items: [
       { k: "messages", name: "Messages", icon: "mail" },
       { k: "announcements", name: "Announcements", icon: "megaphone" }] }
@@ -8925,7 +8962,6 @@
   // Reached from inside other places rather than from the rail.
   TEACHER_SECTIONS.push(
     { k: "activity", name: "Grade history", group: "Teach", icon: "wave", hidden: true },
-    { k: "reports", name: "Reports", group: "Insights", icon: "doc", hidden: true },
     { k: "work", name: "Work", group: "Teach", icon: "stack", hidden: true },
     { k: "sets", name: "Study sets", group: "Learning", icon: "folder", hidden: true });
 
@@ -8943,6 +8979,7 @@
     megaphone: '<path d="M4 10v4a1 1 0 0 0 1 1h2l6 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16.5 9a4 4 0 0 1 0 6"/><path d="M8 15.5 9 20"/>',
     help: '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.4a2.4 2.4 0 1 1 3.3 2.2c-.7.3-1 .8-1 1.5v.4"/><circle cx="12" cy="16.6" r=".5"/>',
     sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/>',
+    seat: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
     down: '<path d="m7 10 5 5 5-5"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     back: '<path d="m14.5 6-6 6 6 6"/>'
@@ -10590,6 +10627,38 @@
     }), { average: true }));
     if (d.capped) ge.appendChild(el("p", "cx-note", "Counted from each course’s latest " + HISTORY_LIMIT + " changes; a busy course may have had more."));
 
+    // ---- Rising and falling: each student's later marks against their
+    //      earlier ones, so a slide is seen before the average shows it.
+    if (!admin) {
+      var moves = growthRows(d).filter(function (x) { return Math.abs(x.change) >= 5; }).sort(function (a, b) { return a.change - b.change; });
+      var rf = card("cx-s12", "Rising and falling", "wave", "var(--cx-teal)",
+        { label: "Grade trends", go: function () { S.anView = "trends"; openAdmin(false, "analytics"); } });
+      if (!moves.length) {
+        rf.appendChild(el("p", "cx-note", "Nobody’s later marks are five points from their earlier ones. A student needs four marks in a course before a change can be seen."));
+      } else {
+        var cols = el("div", "tx-moves");
+        [["Falling", moves.filter(function (x) { return x.change < 0; }).slice(0, 4)],
+         ["Rising", moves.filter(function (x) { return x.change > 0; }).reverse().slice(0, 4)]].forEach(function (side) {
+          var col = el("div", "cx-list");
+          col.appendChild(el("p", "tx-movehead", side[0]));
+          if (!side[1].length) col.appendChild(el("p", "cx-note", "Nobody."));
+          side[1].forEach(function (x) {
+            var b = el("button", "cx-li");
+            b.type = "button";
+            b.innerHTML = avatarHtml(x.s) + '<span class="t"><b>' + esc(x.s.name) + "</b><span>" + esc(x.course.title) + " · now " + x.now + "%</span></span>" +
+              '<span class="r">' + changeHtml(x.change) + "</span>";
+            b.addEventListener("click", function () {
+              var full = students.filter(function (s) { return s.id === x.s.id; })[0];
+              if (full) openStudentSheet(full);
+            });
+            col.appendChild(b);
+          });
+          cols.appendChild(col);
+        });
+        rf.appendChild(cols);
+      }
+    }
+
     // ---- Who needs someone to look.
     var risk = students.filter(function (s) { return (s.standing != null && s.standing < CX_PASS) || s.missing >= 2; })
       .sort(function (a, b) { return (a.standing == null ? 999 : a.standing) - (b.standing == null ? 999 : b.standing) || b.missing - a.missing; });
@@ -11097,9 +11166,22 @@
         " points of extra credit are included, which can raise this grade and " +
         "could never have lowered it.");
     }
-    if (sum.missingCount) {
+    if (sum.missingCount && !sum.flooredCount) {
       bits.push(sum.missingCount + (sum.missingCount === 1 ? " piece" : " pieces") +
         " of work marked as not handed in is counted as a zero, because it is one.");
+    }
+    if (sum.flooredCount) {
+      bits.push(sum.flooredCount + (sum.flooredCount === 1 ? " mark was" : " marks were") +
+        " lifted to this course's minimum score.");
+    }
+    if (sum.terms) {
+      bits.push("The grade is this course's grading periods, weighted: " +
+        sum.terms.filter(function (t) { return t.percent != null; })
+          .map(function (t) { return esc(t.name) + " " + t.percent + "%"; }).join(", ") + ".");
+    }
+    if (sum.override) {
+      bits.push("This grade was set by the teacher" +
+        (sum.override.computed != null ? "; from the marks alone it is " + sum.override.computed + "%." : "."));
     }
     return bits.join(" ");
   }
@@ -11594,29 +11676,18 @@
      A cell holds one of four things and has to be readable as which. */
   function cellText(g) {
     if (!g) return "";
+    if (g.mark) return g.mark;
     if (g.status === "missing") return "M";
     if (g.status === "excused") return "Ex";
     return g.score == null ? "" : String(g.score);
   }
 
-  /* What a teacher typed, read as what they meant. Empty clears; `m` is not
-     handed in; `e` does not apply. Anything else must be a number, and if it
-     is not, nothing is written — a typo is not a grade. */
-  function readCell(raw) {
-    var t = String(raw == null ? "" : raw).trim().toLowerCase();
-    if (!t || t === "-" || t === "—") return { status: "marked", score: null, late: false };
-    if (t === "m" || t === "missing") return { status: "missing", score: null, late: false };
-    if (t === "e" || t === "ex" || t === "excused") return { status: "excused", score: null, late: false };
-
-    /* A trailing `l` means it came in late. Late is not a status — the mark
-       is still a mark — so it rides along with the number rather than
-       replacing it, and `18l` is the fastest way to say both at once. */
-    var late = false;
-    if (/l$/.test(t) && t.length > 1) { late = true; t = t.slice(0, -1).trim(); }
-
-    var n = Number(t);
-    if (!isFinite(n) || n < 0) return null;
-    return { status: "marked", score: n, late: late };
+  /* What a teacher typed, read as what they meant — points, 85%, B+, 25+2,
+     m, e, one of the course's own marks — or null when it is none of them: a
+     typo is not a grade. One reading (teach.js), for the sheet, the paste,
+     the grading panel and the seating chart alike. */
+  function readCell(raw, work, policy) {
+    return tx().readEntry(raw, work ? work.outOf : 100, policy || (BOOK && BOOK.course.policy));
   }
 
   function sameMark(g, want) {
@@ -11624,6 +11695,7 @@
                      score: g.score == null ? null : Number(g.score), late: !!g.late }
                  : { status: "marked", score: null, late: false };
     return have.status === want.status && have.late === !!want.late &&
+           ((g && g.mark) || null) === (want.mark || null) &&
            have.score === (want.score == null ? null : Number(want.score));
   }
 
@@ -11686,7 +11758,9 @@
       var b = el("button", "gb-c col");
       b.type = "button";
       b.dataset.c = ci;
-      b.title = a.title + " · " + (a.category || "uncategorised") + " · out of " + a.outOf;
+      b.title = a.title + " · " + (a.category || "uncategorised") + " · out of " + a.outOf +
+        (a.details && a.details.rubric ? " · marked with a rubric" : "") +
+        (a.details && a.details.assignees ? " · for " + cxPlural(a.details.assignees.length, "student") : "");
       b.innerHTML = "<b>" + esc(a.title) + "</b><span>out of " + a.outOf + "</span>" +
         (col.unmarked ? "<i class='gb-owed" + (col.overdue ? " late" : "") + "'>" +
                         col.unmarked + "</i>" : "");
@@ -11724,6 +11798,9 @@
         var cell = { r: ri, c: ci, student: st, work: a, input: input, wrap: wrap,
                      grade: gradeAt(a.id, st.id) };
         input.value = cellText(cell.grade);
+        // Work set for a few students is nobody else's: no mark to enter.
+        var who = a.details && a.details.assignees;
+        if (who && who.indexOf(st.id) < 0) { input.disabled = true; input.placeholder = "·"; wrap.title = "Not set for " + st.name; }
         paintCell(cell);
 
         input.addEventListener("focus", function () { selectCell(cell); });
@@ -11756,7 +11833,8 @@
     host.appendChild(scroll);
 
     host.appendChild(el("p", "gb-hint",
-      "Type a score. <b>m</b> for not handed in, <b>e</b> for excused, " +
+      "Type a score, a percent (<b>85%</b>), a mark (<b>B+</b>) or an adjustment (<b>25+2</b>, <b>40-5%</b>). " +
+      "<b>m</b> for not handed in, <b>e</b> for excused, " +
       "<b>18l</b> for a mark handed in late, <b>blank</b> for not marked yet. " +
       "<b>Return</b> moves to the next student, <b>Tab</b> to the next piece of work. " +
       "<b>Paste</b> a column of marks from a spreadsheet straight into a cell."));
@@ -11766,7 +11844,8 @@
 
   function courseOf() {
     return { id: BOOK.course.id, title: BOOK.course.title, code: BOOK.course.code,
-             subject: BOOK.course.subject, body: { grading: BOOK.course.grading } };
+             subject: BOOK.course.subject, body: { grading: BOOK.course.grading },
+             policy: BOOK.course.policy };
   }
 
   function gradeAt(assignmentId, accountId) {
@@ -11789,6 +11868,7 @@
     }
     if (g && g.feedback) cls += " noted";
     if (g && g.late) cls += " tardy";
+    if (cell.input.disabled) { cell.wrap.className = "gb-c cell na"; return; }
     // Handed in on OEdu and not marked yet: a dot, and what OEdu measured.
     var sub = handedIn(cell.work.id, cell.student.id);
     if (sub && !(g && (g.score != null || g.status === "excused"))) {
@@ -11903,10 +11983,10 @@
      per keystroke would briefly store 9 while somebody types 95, and a grade
      that flickers is a grade a student can see flicker. */
   function saveCell(cell) {
-    var want = readCell(cell.input.value);
+    var want = readCell(cell.input.value, cell.work);
     if (!want) {
       cell.input.value = cellText(cell.grade);
-      toast("A score, m for not handed in, or e for excused.");
+      toast("A score, a percent like 85%, a mark like B+, m for not handed in, or e for excused.");
       return;
     }
     if (sameMark(cell.grade, want)) { cell.input.value = cellText(cell.grade); return; }
@@ -11917,9 +11997,15 @@
     }
 
     cell.wrap.classList.add("busy");
-    API.grades.put(cell.work.id, cell.student.id,
-                   { score: want.score, status: want.status, late: want.late,
-                     outOf: cell.work.outOf })
+    var patch = { score: want.score, status: want.status, late: want.late,
+                  outOf: cell.work.outOf, mark: want.mark || null };
+    // What was typed, when it was not the score itself. A sticker already on
+    // the mark is the teacher's and stays.
+    if (want.as) {
+      var had = cell.grade && cell.grade.detail;
+      patch.detail = had && had.sticker ? { sticker: had.sticker, as: want.as } : { as: want.as };
+    }
+    API.grades.put(cell.work.id, cell.student.id, patch)
       .then(function (r) {
         cell.wrap.classList.remove("busy");
         cell.grade = r.grade;
@@ -12064,8 +12150,9 @@
       var raw = lines[i];
       if (!String(raw).trim()) { skipped.push(r0 + i); continue; }
       var cols = String(raw).split("\t").filter(function (x) { return String(x).trim(); });
-      var want = readCell(cols[cols.length - 1]);
+      var want = readCell(cols[cols.length - 1], work);
       var student = BOOK.students[r0 + i];
+      if (BOOK.cells[r0 + i][c].input.disabled) { skipped.push(r0 + i); continue; }   // not set for them
       if (!want) { bad.push(student.name + " · “" + trim(String(raw).trim(), 14) + "”"); continue; }
       if (want.score != null && want.score > work.outOf * 1.5) {
         bad.push(student.name + " · " + want.score + " over " + work.outOf);
@@ -12091,7 +12178,8 @@
 
     var entries = wanted.map(function (x) {
       return { assignmentId: work.id, accountId: x.student.id, outOf: work.outOf,
-               score: x.want.score, status: x.want.status, late: x.want.late };
+               score: x.want.score, status: x.want.status, late: x.want.late,
+               mark: x.want.mark || null };
     });
 
     API.grades.batch(entries).then(function (res) {
@@ -12199,6 +12287,9 @@
       : g.status === "excused" ? "Excused — not part of their grade"
       : g.score == null ? "Not marked"
       : g.score + " out of " + cell.work.outOf + (g.late ? " · handed in late" : "");
+    if (g && g.mark) state = g.mark + " — " + state;
+    if (g && g.detail && g.detail.as && g.score != null) state += " · entered as " + g.detail.as;
+    if (g && g.detail && g.detail.sticker) state += " " + tx().stickerChar(g.detail.sticker);
     bar.appendChild(el("div", "gb-istate", esc(state)));
 
     var fb = el("input", "gb-ifb");
@@ -12249,9 +12340,19 @@
       bar.appendChild(all);
     }
 
+    function reload() { loadBook(BOOK.host, BOOK.course.id); }
+    tx().columnTools(bar, BOOK, a, reload);
+    var one = el("button", "gb-ibtn", "Grade one by one");
+    one.type = "button";
+    one.addEventListener("click", function () { openGrading(courseOf(), a); });
+    bar.appendChild(one);
+
     var edit = el("button", "gb-ibtn", "Edit work");
     edit.type = "button";
-    edit.addEventListener("click", function () { openAssignments(courseOf()); });
+    edit.addEventListener("click", function () {
+      if (consoleMode() === "admin") openAssignments(courseOf());
+      else openAssignSheet({ assignment: Object.assign({ courseId: BOOK.course.id }, a), done: reload });
+    });
     bar.appendChild(edit);
   }
 
@@ -12444,6 +12545,9 @@
           mark.innerHTML = '<p class="admin-shape quiet">Nothing marked yet.</p>';
         }
         v.appendChild(mark);
+        // Work set for a few students is theirs alone.
+        work = work.filter(function (a) { return a.status !== "draft" && !(a.details && a.details.assignees && a.details.assignees.indexOf(st.id) < 0); });
+        tx().studentTools(v, course, st, work, byAssignment, sum, render);
 
         var list = el("div", "gb-marks");
         work.forEach(function (a) {
@@ -12453,9 +12557,25 @@
             : g.status === "missing" ? "not handed in"
             : g.status === "excused" ? "excused"
             : g.score == null ? "not marked" : g.score + " / " + a.outOf;
+          if (g && g.mark) state = g.mark + " · " + state;
           row.innerHTML = "<div class='t'><b>" + esc(a.title) + "</b><span>" +
             esc(a.category || "—") + " · " + esc(state) + "</span></div>" +
             (g && g.feedback ? "<p class='fb'>" + esc(g.feedback) + "</p>" : "");
+          // Marking by student: the same cell as the sheet's, down a page.
+          var inp = el("input", "gb-minput");
+          inp.type = "text";
+          inp.inputMode = "decimal";
+          inp.setAttribute("aria-label", "Mark for " + a.title + ", out of " + a.outOf);
+          inp.value = cellText(g);
+          inp.addEventListener("keydown", function (e) { if (e.key === "Enter") inp.blur(); });
+          inp.addEventListener("change", function () {
+            var want = readCell(inp.value, a, course.policy);
+            if (!want) { inp.value = cellText(g); toast("A score, a percent like 85%, a mark like B+, m or e."); return; }
+            if (sameMark(g, want)) return;
+            attempt(API.grades.put(a.id, st.id, { score: want.score, status: want.status, late: want.late, outOf: a.outOf, mark: want.mark || null }),
+              function () { SCHOOL = null; render(); });
+          });
+          row.appendChild(inp);
           var h = el("button", "gb-ibtn", "History");
           h.type = "button";
           h.addEventListener("click", function () {
@@ -12469,7 +12589,7 @@
 
         v.appendChild(el("p", "cn-sub",
           "This is what " + esc(st.firstName || st.name) + " sees on their own Grades tab, " +
-          "computed by the server from the same record. Marks are entered on the sheet."));
+          "computed by the server from the same record. Type a mark here, or on the sheet."));
         show("admin");
       }, function (e) { failed(node, e, render); });
       show("admin");
@@ -13925,7 +14045,10 @@
   // The shipped curriculum a database course carries, matched by its code.
   function curriculumOf(row) {
     if (!row) return null;
-    var hit = allCourses().filter(function (c) { return c.id === row.code; })[0];
+    // By its code, or — for a second course made from the same one, whose
+    // code had to differ (alg-2) — by the course it says it was made from.
+    var from = row.body && row.body.from;
+    var hit = allCourses().filter(function (c) { return c.id === row.code || (from && c.id === from); })[0];
     return hit || fromDbCourse(row);
   }
   function activityCourse(act) {
@@ -14047,7 +14170,12 @@
   /* --------------------------------------------------------- Grading
      One piece of work, one student at a time: what they handed in on OEdu,
      the mark, a comment, and on to the next. The OEdu result is shown, and
-     can be taken as the mark with one press — it is never taken silently. */
+     can be taken as the mark with one press — it is never taken silently.
+
+     Names can be hidden: the list becomes Student 1, Student 2 in an order
+     that says nothing about who is who, so an essay is marked for what it
+     says. A rubric's subtotals, stock comments and a sticker come from
+     teach.js. */
   function openGrading(course, a, startId) {
     enter("grading:" + a.id, trim(a.title, 18), function () { openGrading(course, a); });
     var v = $("#v-admin");
@@ -14074,8 +14202,19 @@
         return work.dueAt && work.dueAt <= Date.now() ? "late" : "open";
       }
       var ORDER = { handed: 0, late: 1, missing: 2, open: 3, marked: 4, excused: 5 };
-      roster.sort(function (x, y) { return ORDER[state(x)] - ORDER[state(y)] || String(x.name).localeCompare(String(y.name)); });
+      // Work set for a few students is marked for those students only.
+      var who = work.details && work.details.assignees;
+      if (who) roster = roster.filter(function (s) { return who.indexOf(s.id) > -1; });
+      function order() {
+        roster.sort(function (x, y) {
+          return ORDER[state(x)] - ORDER[state(y)] ||
+            (S.anon ? String(x.id).localeCompare(String(y.id)) : String(x.name).localeCompare(String(y.name)));
+        });
+      }
+      order();
       var at = Math.max(0, roster.findIndex(function (s) { return startId ? s.id === startId : true; }));
+      function nm(s, i) { return S.anon ? "Student " + (i + 1) : s.name; }
+      function av(s) { return S.anon ? '<span class="admin-av anon" aria-hidden="true"></span>' : avatarHtml(s); }
 
       var split = el("div", "gq");
       var left = el("div", "gq-list");
@@ -14090,12 +14229,17 @@
         var counts = {};
         roster.forEach(function (s) { var k = state(s); counts[k] = (counts[k] || 0) + 1; });
         left.appendChild(el("p", "gq-sum", (counts.handed || 0) + " handed in · " + (counts.marked || 0) + " marked · " + roster.length + " students"));
+        var hide = el("button", "cn-btn small gq-anon", S.anon ? "Show names" : "Hide names");
+        hide.type = "button";
+        hide.setAttribute("aria-pressed", String(!!S.anon));
+        hide.addEventListener("click", function () { S.anon = !S.anon; order(); at = 0; draw(); });
+        left.appendChild(hide);
         roster.forEach(function (s, i) {
           var st = state(s), g = marks[s.id];
           var b = el("button", "gq-li" + (i === at ? " on" : ""));
           b.type = "button";
-          b.innerHTML = avatarHtml(s) + '<span class="t"><b>' + esc(s.name) + "</b><span class='st " + st + "'>" + esc(SAY[st]) + "</span></span>" +
-            '<span class="m">' + (g && g.score != null ? cxNum(g.score) : g && g.status === "missing" ? "M" : g && g.status === "excused" ? "Ex" : "") + "</span>";
+          b.innerHTML = av(s) + '<span class="t"><b>' + esc(nm(s, i)) + "</b><span class='st " + st + "'>" + esc(SAY[st]) + "</span></span>" +
+            '<span class="m">' + (g && g.mark ? esc(g.mark) : g && g.score != null ? cxNum(g.score) : g && g.status === "missing" ? "M" : g && g.status === "excused" ? "Ex" : "") + "</span>";
           b.addEventListener("click", function () { at = i; draw(); });
           left.appendChild(b);
         });
@@ -14107,7 +14251,7 @@
         if (!s) { right.appendChild(cnEmpty("Nobody is enrolled.", "Enrol students and their work appears here.")); return; }
         var g = marks[s.id], sub = subs[s.id], st = state(s);
         var head = el("div", "gq-who");
-        head.innerHTML = avatarHtml(s) + "<span><b>" + esc(s.name) + "</b><span>" + esc(SAY[st]) +
+        head.innerHTML = av(s) + "<span><b>" + esc(nm(s, at)) + "</b><span>" + esc(SAY[st]) +
           (sub ? " · " + esc(whenName(sub.submittedAt)) : "") + "</span></span>";
         right.appendChild(head);
 
@@ -14117,7 +14261,7 @@
           ev.innerHTML = "<p class='k'>On OEdu · " + esc(activityName(work.activity)) + "</p>" + (res
             ? "<b>" + (res.pct != null ? res.pct + "%" : res.score != null ? cxNum(res.score) + (res.outOf ? " / " + cxNum(res.outOf) : "") : "Done") + "</b>" +
               "<span>" + esc(res.detail || "Finished on OEdu.") + "</span>"
-            : "<b>Not handed in yet</b><span>" + esc(s.firstName || s.name) + " hasn’t finished it on OEdu.</span>");
+            : "<b>Not handed in yet</b><span>" + esc(S.anon ? "This student" : s.firstName || s.name) + " hasn’t finished it on OEdu.</span>");
         } else {
           ev.innerHTML = "<p class='k'>Done elsewhere</p><span>This work isn’t on OEdu, so there is nothing handed in here. Mark it from what you collected.</span>";
         }
@@ -14126,9 +14270,11 @@
         var form = el("div", "gq-form");
         var score = field("Mark out of " + cxNum(work.outOf), g && g.score != null ? String(g.score) : "", "Score");
         score.input.inputMode = "decimal";
-        var fb = areaField("Comment for " + (s.firstName || s.name), g && g.feedback ? g.feedback : "", "Optional — they see this with the mark", 3);
+        var fb = areaField("Comment for " + (S.anon ? "this student" : s.firstName || s.name), g && g.feedback ? g.feedback : "", "Optional — they see this with the mark", 3);
         form.appendChild(score);
         form.appendChild(fb);
+        var extra = tx().gradingExtras({ course: course, work: work, grade: g, score: score.input, comment: fb.input });
+        form.appendChild(extra.node);
         right.appendChild(form);
 
         var acts = cnActions();
@@ -14140,6 +14286,7 @@
         }
         function save(patch, next) {
           patch.feedback = fb.input.value.trim() || null;
+          patch.detail = extra.detail();
           return API.grades.put(work.id, s.id, patch).then(function (r) {
             marks[s.id] = r.grade;
             if (BOOK && BOOK.course && BOOK.course.id === course.id) BOOK = null;
@@ -14152,13 +14299,13 @@
         var go = cnAction("Save and next", function () {
           var t = score.input.value.trim();
           if (!t) { toast("Type a mark, or choose Not handed in or Excused."); return; }
-          var n = Number(t);
-          if (!isFinite(n) || n < 0) { toast("A mark is a number."); return; }
-          save({ status: "marked", score: n }, true);
+          var want = readCell(t, work, book.course.policy);
+          if (!want) { toast("A score, a percent like 85%, or a mark like B+."); return; }
+          save({ status: want.status, score: want.score, late: want.late, mark: want.mark || null }, true);
         }, true);
         acts.appendChild(go);
-        acts.appendChild(cnAction("Not handed in", function () { save({ status: "missing", score: null }, true); }));
-        acts.appendChild(cnAction("Excused", function () { save({ status: "excused", score: null }, true); }));
+        acts.appendChild(cnAction("Not handed in", function () { save({ status: "missing", score: null, mark: null }, true); }));
+        acts.appendChild(cnAction("Excused", function () { save({ status: "excused", score: null, mark: null }, true); }));
         right.appendChild(acts);
         var nav = el("div", "gq-nav");
         var prev = cnAction("‹ Previous", function () { at = Math.max(0, at - 1); draw(); });
@@ -14197,15 +14344,49 @@
       if (!cs.length) { slot.appendChild(el("p", "cx-note", "You aren’t teaching a course yet.")); return; }
       var courseId = (a && a.courseId) || o.courseId || (currentCourse(cs) || cs[0]).id;
       var act = a ? a.activity : (o.act || null);
-      var where = act && act.kind === "offline" ? "else" : act ? "oedu" : (o.where || "oedu");
+      // Work that already exists and names nothing on OEdu is done elsewhere:
+      // opening it to change its date must not point it at a lesson.
+      var where = act && act.kind === "offline" ? "else" : act ? "oedu" : a ? "else" : (o.where || "oedu");
 
-      var cF = el("label", "admin-field");
-      cF.innerHTML = "<span>Course</span>";
-      var cSel = el("select");
-      cs.forEach(function (c) { var op = el("option"); op.value = c.id; op.textContent = c.title; if (c.id === courseId) op.selected = true; cSel.appendChild(op); });
-      cSel.disabled = !!a;              // work belongs to its course
-      cF.appendChild(cSel);
+      /* Who it is for comes first: the teacher's courses — each one a
+         roster they teach — any number of them at once, each with its own due
+         date, because one meets on Monday and the next on Tuesday. One piece
+         of work is set in each course ticked. Work that already exists
+         belongs to its course, so changing it shows that course alone. */
+      var cF = el("div", "admin-field as-courses");
+      cF.innerHTML = "<span>" + (a ? "Course, and when it’s due" : "For — and when it’s due in each") + "</span>";
+      var targets = (a ? cs.filter(function (c) { return c.id === courseId; }) : cs).map(function (c) {
+        var r = el("label", "as-course");
+        var cb = el("input");
+        cb.type = "checkbox";
+        cb.checked = c.id === courseId;
+        cb.disabled = !!a;
+        var nm = el("span", "nm", "<b>" + esc(c.title) + "</b><small>" + esc(c.level || c.subject || "") + "</small>");
+        var dt = el("input");
+        dt.type = "date";
+        dt.setAttribute("aria-label", "Due date in " + c.title);
+        r.appendChild(cb); r.appendChild(nm); r.appendChild(dt);
+        cF.appendChild(r);
+        return { c: c, cb: cb, date: dt, row: r, sub: nm.querySelector("small") };
+      });
       slot.appendChild(cF);
+      function chosen() { return targets.filter(function (t) { return t.cb.checked; }); }
+      function dueOf(t) {
+        if (!t.date.value) return null;
+        var d2 = new Date(t.date.value + "T23:59:59");
+        return isFinite(d2.getTime()) ? d2.getTime() : null;
+      }
+      if (a && a.dueAt && targets[0]) {
+        var dd = new Date(Number(a.dueAt));
+        targets[0].date.value = dd.getFullYear() + "-" + ("0" + (dd.getMonth() + 1)).slice(-2) + "-" + ("0" + dd.getDate()).slice(-2);
+      }
+      // How many are in each, beside its name, once the books have been read.
+      loadSchool().then(function (d) {
+        targets.forEach(function (t) {
+          var c = courseBook(d, t.c.id);
+          if (c) t.sub.textContent = cxPlural(c.students, "student") + (t.c.level ? " · " + t.c.level : "");
+        });
+      }, function () { /* the names still stand */ });
 
       var whereF = el("div", "admin-field");
       whereF.innerHTML = "<span>Students do it</span>";
@@ -14243,13 +14424,6 @@
       slot.appendChild(catF);
       var outOf = field("Out of", a ? String(a.outOf) : "10");
       slot.appendChild(outOf);
-      var due = field("Due", "", "optional");
-      due.input.type = "date";
-      if (a && a.dueAt) {
-        var dd = new Date(Number(a.dueAt));
-        due.input.value = dd.getFullYear() + "-" + ("0" + (dd.getMonth() + 1)).slice(-2) + "-" + ("0" + dd.getDate()).slice(-2);
-      }
-      slot.appendChild(due);
       var xcF = el("label", "admin-field");
       xcF.innerHTML = "<span>Extra credit</span>";
       var xc = el("select");
@@ -14260,10 +14434,14 @@
       slot.appendChild(xcF);
       var note = el("p", "cn-fine as-note");
       slot.appendChild(note);
+      // How it is marked, what it is about, who it is for (teach.js).
+      var more = tx().detailsEditor(chosen().map(function (t) { return t.c; }), a ? a.details : (o.details || null));
+      slot.appendChild(more.node);
 
       var choices = [], titled = !!(a && a.title);
       title.input.addEventListener("input", function () { titled = !!title.input.value.trim(); });
-      function row() { return cs.filter(function (c) { return c.id === cSel.value; })[0]; }
+      // The first course ticked is the one the categories and lessons are read from.
+      function row() { return (chosen()[0] || targets[0]).c; }
       function fillCats() {
         var weights = (row().body && row().body.grading) || [["Work", 100]];
         cat.innerHTML = "";
@@ -14324,7 +14502,15 @@
         var want = p.kind === "test" ? /test|assess|exam/i : p.kind === "lesson" || p.kind === "set" ? /home|class|practice|work/i : null;
         if (want && !a) [].some.call(cat.options, function (op) { if (want.test(op.value)) { op.selected = true; return true; } return false; });
       }
-      cSel.addEventListener("change", function () { act = null; fillCats(); fillWhat(); });
+      var lead = row().id;
+      targets.forEach(function (t) {
+        t.cb.addEventListener("change", function () {
+          t.row.classList.toggle("off", !t.cb.checked);
+          if (row().id !== lead) { lead = row().id; act = null; fillCats(); fillWhat(); }
+          more.courses(chosen().map(function (x) { return x.c; }));
+        });
+        t.row.classList.toggle("off", !t.cb.checked);
+      });
       uSel.addEventListener("change", function () { act = null; fillWhat(); });
       wSel.addEventListener("change", function () { if (!a) titled = false; suggest(); });
       fillCats();
@@ -14334,19 +14520,42 @@
       function send(status) {
         var t = title.input.value.trim();
         if (!t) { toast("Give it a title."); return; }
-        var n = Number(outOf.input.value);
+        // A rubric's points are what the work is out of.
+        var n = more.rubricTotal() || Number(outOf.input.value);
         if (!isFinite(n) || n <= 0) { toast("What is it out of?"); return; }
-        var dueAt = null;
-        if (due.input.value) { var d2 = new Date(due.input.value + "T23:59:59"); if (isFinite(d2.getTime())) dueAt = d2.getTime(); }
-        var data = { title: t, category: cat.value, outOf: n, dueAt: dueAt, extraCredit: !!xc.value, activity: picked() };
-        if (status) data.status = status;
-        var p = a ? API.courses.updateAssignment(a.id, data) : API.courses.addAssignment(cSel.value, data);
-        attempt(p, function () {
-          toast(status === "draft" ? "Saved as a draft." : a ? "Saved." : "Assigned.");
+        var why = more.problem();
+        if (why) { toast(why); return; }
+        // One piece of work in each course ticked, with that course's date —
+        // and, when it is for a few students, only where one of them is.
+        var into = chosen().filter(function (x) { return !more.skips(x.c.id); });
+        if (!into.length) { toast(chosen().length ? "None of the students ticked are in those courses." : "Tick at least one course."); return; }
+        function dataFor(x) {
+          return { title: t, category: cat.value, outOf: n, dueAt: dueOf(x), extraCredit: !!xc.value, activity: picked(),
+                   details: more.value(x.c.id), status: status || undefined };
+        }
+        function finish() {
+          toast(status === "draft" ? "Saved as a draft." : a ? "Saved." : into.length > 1 ? "Assigned in " + into.length + " courses." : "Assigned.");
           SCHOOL = null; BOOK = null;
           sheet.close();
           teachCounts();
           if (o.done) o.done(); else openAdmin(true, S.tab);
+        }
+        if (a) { attempt(API.courses.updateAssignment(a.id, dataFor(into[0])), finish); return; }
+        /* Each course is its own write. One that is refused must not hide the
+           ones that were made, or be made twice by trying again: a course
+           that took the work is unticked, so Assign retries only the rest. */
+        Promise.all(into.map(function (x) {
+          return API.courses.addAssignment(x.c.id, dataFor(x)).then(function () {
+            x.cb.checked = false;
+            x.row.classList.add("off");
+            return null;
+          }, function (e) { return x.c.title + " — " + ((e && e.message) || "the server refused it"); });
+        })).then(function (failed) {
+          failed = failed.filter(Boolean);
+          if (!failed.length) { finish(); return; }
+          SCHOOL = null; BOOK = null;
+          teachCounts();
+          toast("Not set in " + failed.join("; ") + ". The rest are assigned.");
         });
       }
       var go = el("button", "lx-btn lg", a && a.status !== "draft" ? "Save" : "Assign");
@@ -14407,9 +14616,10 @@
   function courseBook(d, id) { return d.courses.filter(function (c) { return c.id === id; })[0] || null; }
 
   /* ----------------------------------------------------------- Gradebook
-     Overview · Grades · Standards · Missing · Grade History, for the course
-     at its head. Grades is the sheet itself. */
-  var GB_VIEWS = [["overview", "Overview"], ["grades", "Grades"], ["standards", "Standards"], ["missing", "Missing"], ["history", "Grade History"]];
+     Overview · Grades · Standards · Missing · Grade History · Setup, for the
+     course at its head. Grades is the sheet itself; Setup is the course's
+     rules — its scale, categories, drops, special marks and periods. */
+  var GB_VIEWS = [["overview", "Overview"], ["grades", "Grades"], ["standards", "Standards"], ["missing", "Missing"], ["history", "Grade History"], ["setup", "Setup"]];
   function tabTeachGradebook(v) {
     var head = el("div", "tr-pagehead");
     v.appendChild(head);
@@ -14434,12 +14644,13 @@
         loadBook(sheet, cur.id);
         return;
       }
+      if (S.gbView === "setup") { tx().gbSetup(host, cur); return; }
       var n2 = loading(host, "the course");
       loadSchool().then(function (d) {
         n2.remove();
         var c = courseBook(d, cur.id);
         if (!c) { host.appendChild(cnEmpty("This course has no gradebook yet.", "")); return; }
-        ({ overview: gbOverview, standards: gbStandards, missing: gbMissing, history: gbHistory })[S.gbView](host, c, d);
+        ({ overview: gbOverview, standards: tx().mastery, missing: gbMissing, history: gbHistory })[S.gbView](host, c, d);
       }, function (e) { failed(n2, e, function () { openAdmin(true, "roster"); }); });
     }, function (e) { failed(node, e, function () { openAdmin(true, "roster"); }); });
   }
@@ -14506,24 +14717,6 @@
     var tagged = {};
     Object.keys(byA).forEach(function (id) { var a = byA[id]; (tagged[a.activity.unit] = tagged[a.activity.unit] || []).push(a); });
     return { units: U, tagged: tagged, untagged: (c.book.assignments || []).length - Object.keys(byA).length };
-  }
-
-  function gbStandards(host, c) {
-    var cur = curriculumOf(c.raw), units = cur ? unitsOf(cur) : [];
-    var st = unitStanding(c);
-    host.appendChild(el("p", "cn-sub", "Each unit of " + esc(c.title) + ", from the marks on work tied to it. Work set on OEdu is tied to its unit; for other work, pick the unit when you set it."));
-    var t = cnTable([{ label: "Unit", w: "minmax(220px, 2fr)" }, { label: "Average", w: "100px", align: "right" }, { label: "Marks", w: "80px", align: "right" },
-                     { label: "Below " + CX_PASS + "%", w: "110px", align: "right" }, { label: "", w: "140px", align: "right" }]);
-    units.forEach(function (u) {
-      var x = st.units[u.n], avg = x ? Math.round(x.s / x.n * 100) : null;
-      var bar = avg == null ? "" : '<span class="tr-meter"><i style="width:' + avg + '%"></i></span>';
-      t.row(["<b>Unit " + u.n + "</b> <span class='cn-none'>" + esc(u.t) + "</span>" + bar, cxPct(avg, avg != null && avg < CX_PASS), x ? String(x.n) : cxNone(),
-             x ? String(Object.keys(x.low).length) : cxNone(), "<span class='cn-none'>" + (st.tagged[u.n] ? cxPlural(st.tagged[u.n].length, "piece") + " of work" : "No work yet") + "</span>"],
-        function () { openAssignSheet({ courseId: c.id, act: { kind: "unit", course: cur.id, unit: u.n, title: u.t } }); }, "u" + u.n);
-    });
-    host.appendChild(t);
-    if (!units.length) host.appendChild(el("p", "cx-note", "This course has no units on OEdu, so there is nothing to tie work to."));
-    if (st.untagged) host.appendChild(el("p", "cx-note", cxPlural(st.untagged, "piece") + " of work in this course " + (st.untagged === 1 ? "isn’t" : "aren’t") + " tied to a unit, so " + (st.untagged === 1 ? "it isn’t" : "they aren’t") + " counted here."));
   }
 
   function gbMissing(host, c) {
@@ -14814,7 +15007,7 @@
       var cur = coursePill(head, r[0]);
       consoleHead(head, null, "Standards");
       var c = courseBook(r[1], cur.id);
-      if (c) gbStandards(v, c);
+      if (c) { var host = el("div"); v.appendChild(host); tx().mastery(host, c); }
     }, function (e) { failed(node, e, function () { openAdmin(true, "standards"); }); });
   }
 
@@ -15109,14 +15302,8 @@
     soonPage(v, "Communicate", "Messages", "One place for every conversation — students, families, colleagues.",
       ["A conversation per student, with their family on it when you choose", "Messages to colleagues who teach the same students",
        "A note on work you have marked, answered in one place"],
-      "Messaging needs somewhere to keep conversations, and that isn’t built yet. Comments on marks already reach students with the mark.",
-      [["To Grade", function () { openAdmin(false, "tograde"); }]]);
-  }
-  function tabTeachAnnouncements(v) {
-    soonPage(v, "Communicate", "Announcements", "One message to everyone in a course.",
-      ["Post to a course — students see it on their School page", "Schedule for later", "Families copied when you choose"],
-      "Announcements aren’t built yet. Work you set shows up on every student’s School page as soon as you assign it.",
-      [["New assignment", function () { openAssignSheet({}); }]]);
+      "Messaging needs somewhere to keep conversations, and that isn’t built yet. An announcement reaches a whole course today, and a comment on a mark reaches its student with the mark.",
+      [["Announcements", function () { openAdmin(false, "announcements"); }], ["To Grade", function () { openAdmin(false, "tograde"); }]]);
   }
 
   /* ------------------------------------------------------------------ Help */
@@ -15129,7 +15316,7 @@
     keys.id = "help-keys";
     var kt = cnTable([{ label: "", w: "minmax(120px, 1fr)" }, { label: "", w: "auto", align: "right" }]);
     [["Search OEdu", cmd + "K"], ["Show or hide the sidebar", cmd + "\\"], ["Next cell in the gradebook", "Tab · ↵"], ["Not handed in", "m"], ["Excused", "e"],
-     ["Late", "a score then l — 18l"], ["Save and go to the next student", "↵ in Grading"], ["Leave focus mode", "Esc"]].forEach(function (k) {
+     ["Late", "a score then l — 18l"], ["A percent", "85%"], ["A mark on your scale", "B+"], ["Extra credit, or a penalty", "25+2 · 40-5%"], ["One of your special marks", "its code — INC"], ["Save and go to the next student", "↵ in Grading"], ["Leave focus mode", "Esc"]].forEach(function (k) {
       kt.row([esc(k[0]), "<kbd class='tr-kbd'>" + esc(k[1]) + "</kbd>"]);
     });
     keys.appendChild(kt);
@@ -15139,7 +15326,10 @@
       "<b>A hand-in is not a mark.</b> What OEdu measured is shown beside the student. You decide the mark — one press takes OEdu’s.",
       "<b>Self-learning is theirs.</b> Courses students take up on their own are never graded, and you can’t see them. Only work you set, and mark, counts.",
       "<b>Drafts</b> stay out of students’ sight until you assign them.",
-      "<b>Standards</b> are your course’s units: work tied to a unit adds up to how the course is doing on it."
+      "<b>Standards</b> are your course’s units and your own objectives: work tied to one adds up to who has mastered it.",
+      "<b>The course’s rules</b> — its scale, weighted categories, dropped scores, minimum score, special marks and grading periods — are in Gradebook › Setup. The server applies them to every grade.",
+      "<b>One piece of work, several courses.</b> New assignment starts with who it is for: tick every course it goes to and give each its own due date. For a makeup or a different task, choose Specific students — for everyone else it does not exist.",
+      "<b>A column’s tools.</b> Press a column’s heading in the gradebook for its distribution, a curve, filling the blanks, or marking it one student at a time."
     ].map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul>";
     var nt = cxSection(grid, "cx-s12", "Notifications", "");
     nt.id = "help-notify";
@@ -15151,11 +15341,34 @@
     }
   }
 
+  /* The teacher's own tools — setup, curves, rubrics, seating, plans — live
+     in teach.js and are built from this console's own pieces, handed over
+     once, the first time one is wanted. */
+  var TX = null;
+  function tx() {
+    if (TX) return TX;
+    TX = window.OPLO_TEACH({
+      el: el, esc: esc, API: API, S: S, toast: toast, trim: trim, CX_PASS: CX_PASS,
+      loading: loading, failed: failed, attempt: attempt, field: field, areaField: areaField,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnActions: cnActions,
+      cxSection: cxSection, cxMetrics: cxMetrics, cxSheet: cxSheet, cxPrint: cxPrint,
+      cxNone: cxNone, cxNum: cxNum, cxPlural: cxPlural, barChart: barChart,
+      consoleHead: consoleHead, coursePill: coursePill, subNav: subNav, teachCourses: teachCourses,
+      avatarFor: avatarFor, whenName: whenName, openAdmin: openAdmin, openAssignSheet: openAssignSheet,
+      curriculumOf: curriculumOf, unitsOf: unitsOf,
+      // A course's rules or an override changed: what was read is stale.
+      invalidate: function () { SCHOOL = null; TEACH_COURSES = null; }
+    });
+    return TX;
+  }
+  function txTab(k) { return function (v) { tx().tabs[k](v); }; }
+
   var TEACH_TABS = {
+    seating: txTab("seating"), plans: txTab("plans"),
     today: consoleHome, courses: tabCourses, roster: tabTeachGradebook, tograde: tabToGrade, assignments: tabTeachAssignments,
     assessments: tabTeachAssessments, lessons: tabTeachLessons, standards: tabTeachStandards, curriculum: tabTeachCurriculum,
     resources: tabTeachResources, students: tabStudents, groups: tabTeachGroups, attendance: tabTeachAttendance,
-    analytics: tabTeachAnalytics, interventions: tabTeachInterventions, messages: tabTeachMessages, announcements: tabTeachAnnouncements,
+    analytics: tabTeachAnalytics, interventions: tabTeachInterventions, messages: tabTeachMessages, announcements: txTab("announcements"),
     system: tabSystem, help: tabTeachHelp, activity: tabActivity, reports: tabReports, work: tabWork, sets: tabSets
   };
 
@@ -17518,14 +17731,16 @@
         level: level.input.value.trim(),
         summary: summary.input.value.trim(),
         status: "published",
-        body: {
+        // Over what the course already carries: its scale, drops, periods and
+        // the rest are set elsewhere and must survive a save here.
+        body: Object.assign({}, body, {
           grading: weights,
           units: units.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
           lessons: lessons.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
           standards: standards.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
           dcis: dcis.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean),
           practices: practices.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean)
-        }
+        })
       };
       if (!payload.title) { toast("A course needs a title."); return; }
       save.disabled = true;

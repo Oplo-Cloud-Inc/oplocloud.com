@@ -718,3 +718,149 @@ body.t-console[data-appearance="dark"] .tr-tip { background: #f5f5f7; color: #1d
 body.is-console .gb-c.cell.handed { position: relative; background: var(--cx-accent-soft); }
 body.is-console .gb-c.cell.handed::after { content: ""; position: absolute; top: 5px; right: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--cx-accent); pointer-events: none; }
 body.is-console .gb-c.cell.handed input::placeholder { color: var(--cx-accent); opacity: .75; }
+
+/* ==========================================================================
+   The teacher's own tools (teach.js): the course's rules, a column's tools,
+   a student's what-if, rubrics and stickers, the mastery chart, seating,
+   lesson plans, announcements. The same look as the rest of the console:
+   hairlines, one accent, nothing that is not information.
+   ========================================================================== */
+
+/* A short list edited in place. */
+.tx-rows { margin: 10px 0 0; }
+.tx-row { display: grid; grid-template-columns: var(--cols); gap: 8px; align-items: center; margin-bottom: 6px; }
+.tx-row.head span { font-size: 11.5px; font-weight: 500; color: var(--cx-label-2); }
+.tx-row input, .tx-row select, .tx-select, .tx-wrow input, .tx-rrow input, .tx-seat input, .gb-minput {
+  min-width: 0; width: 100%; box-sizing: border-box; padding: 7px 9px; font: inherit; font-size: 13.5px;
+  border-radius: 8px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label);
+}
+.tx-row input:focus, .tx-row select:focus, .tx-select:focus, .tx-wrow input:focus, .tx-rrow input:focus, .tx-seat input:focus, .gb-minput:focus {
+  outline: none; border-color: var(--cx-accent); box-shadow: 0 0 0 3px var(--cx-accent-soft);
+}
+.tx-rm { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: var(--cx-label-3); font-size: 17px; line-height: 1; cursor: pointer; }
+.tx-rm:hover { background: var(--cx-fill); color: var(--cx-red); }
+.tx-add { margin-top: 2px; padding: 4px 0; border: 0; background: none; color: var(--cx-accent); font: inherit; font-size: 13px; cursor: pointer; }
+.tx-add:hover { opacity: .7; }
+.tx-select { width: auto; max-width: 100%; }
+.tx-save { margin-top: 32px; }
+.tx-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 16px; }
+.tx-lab { font-size: 12px; font-weight: 500; color: var(--cx-label-2); margin: 16px 0 2px; }
+.tx-check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--cx-label); margin: 8px 0; cursor: pointer; }
+.tx-check input { accent-color: var(--cx-accent); margin: 0; }
+.tx-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0 14px; max-height: 190px; overflow: auto; }
+details.tx-more { grid-column: 1 / -1; border-top: .5px solid var(--cx-sep); padding-top: 12px; }
+details.tx-more > summary { cursor: pointer; font-size: 13.5px; color: var(--cx-accent); list-style: none; }
+details.tx-more > summary::-webkit-details-marker { display: none; }
+details.tx-more[open] > summary { margin-bottom: 12px; }
+details.tx-more .admin-field { margin-bottom: 12px; }
+
+/* The sheet: work set for a few students, and marking down a student's page. */
+body.is-console .gb-c.cell.na { background: var(--cx-fill-2); }
+body.is-console .gb-c.cell.na input { color: var(--cx-label-3); text-align: center; }
+.gb-minput { width: 84px; flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+.admin-av.anon { background: var(--cx-bar-2) !important; }
+.gq-anon { margin: 0 6px 10px; }
+
+/* A student in a course: what if, the override, each piece's weight. */
+.tx-stools { margin: 18px 0 6px; }
+.tx-ovnote { font-size: 13px; color: var(--cx-orange); margin: 8px 0 0; }
+.tx-whatif { display: flex; gap: 28px; align-items: baseline; margin: 10px 0 6px; font-size: 13px; color: var(--cx-label-2); }
+.tx-whatif b { display: block; font-size: 28px; font-weight: 300; letter-spacing: -.02em; color: var(--cx-label); }
+.tx-whatif .to b { color: var(--cx-accent); }
+.tx-wlist { margin-top: 12px; border-top: .5px solid var(--cx-sep); }
+.tx-wrow { display: flex; align-items: center; gap: 14px; padding: 8px 0; border-bottom: .5px solid var(--cx-sep); }
+.tx-wrow > span { flex: 1; min-width: 0; }
+.tx-wrow b { display: block; font-size: 14px; font-weight: 500; }
+.tx-wrow small { font-size: 12px; color: var(--cx-label-2); }
+.tx-wrow input { width: 76px; text-align: right; }
+.tx-impact { margin: 28px 0 8px; max-width: 760px; }
+.tx-impact h3, .tx-map h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 2px; }
+.tx-irow { display: grid; grid-template-columns: minmax(120px, 220px) 1fr 52px; gap: 12px; align-items: center; padding: 5px 0; font-size: 13px; }
+.tx-irow .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-irow .bar { position: relative; height: 8px; background: linear-gradient(var(--cx-sep), var(--cx-sep)) center / .5px 100% no-repeat; }
+.tx-irow .bar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--cx-bar); }
+.tx-irow .bar i.neg { background: var(--cx-red); }
+.tx-irow b { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+.tx-irow b.bad { color: var(--cx-red); }
+
+/* Marking: a rubric's subtotals, stock comments, a sticker. */
+.tx-extras { display: grid; gap: 14px; }
+.tx-rubric .k { font-size: 12px; font-weight: 500; color: var(--cx-label-2); margin: 0 0 6px; }
+.tx-rrow { display: grid; grid-template-columns: 1fr 72px 54px; gap: 10px; align-items: center; padding: 5px 0; border-top: .5px solid var(--cx-sep); font-size: 13.5px; }
+.tx-rrow input { text-align: right; }
+.tx-rrow small { color: var(--cx-label-2); font-size: 12.5px; }
+.tx-bank { display: flex; flex-wrap: wrap; gap: 6px; }
+.tx-chip { border: .5px solid var(--cx-sep); background: none; color: var(--cx-label); border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 12.5px; cursor: pointer; }
+.tx-chip:hover { background: var(--cx-fill); }
+.tx-chip.edit { color: var(--cx-accent); border-style: dashed; }
+.tx-stickers { display: flex; gap: 4px; }
+.tx-sticker { width: 34px; height: 34px; border: 0; border-radius: 9px; background: none; font-size: 19px; line-height: 1; cursor: pointer; filter: grayscale(1); opacity: .55; }
+.tx-sticker:hover { background: var(--cx-fill); opacity: 1; }
+.tx-sticker.on { background: var(--cx-accent-soft); filter: none; opacity: 1; box-shadow: inset 0 0 0 1px var(--cx-accent); }
+
+/* Standards: every student against every objective. */
+.tx-mwrap { overflow: auto; margin: 0 0 4px; border-top: .5px solid var(--cx-sep); border-bottom: .5px solid var(--cx-sep); }
+.tx-mastery { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.tx-mastery td { min-width: 96px; }
+.tx-mastery th { text-align: left; font-weight: 500; padding: 8px 12px 8px 0; white-space: nowrap; position: sticky; left: 0; background: var(--cx-bg); }
+.tx-mastery thead th { vertical-align: bottom; color: var(--cx-label-2); font-size: 11.5px; padding: 10px 6px; min-width: 76px; text-align: center; position: static; }
+.tx-mastery thead th:first-child { text-align: left; padding-left: 0; }
+.tx-mastery thead th b { display: block; color: var(--cx-label); font-size: 12.5px; font-weight: 600; }
+.tx-mastery thead th span { display: block; font-weight: 400; white-space: normal; line-height: 1.25; }
+.tx-mastery td { text-align: center; padding: 0; height: 34px; border-left: 2px solid var(--cx-bg); border-top: 2px solid var(--cx-bg); font-weight: 500; }
+.tx-mastery td.l4 { background: color-mix(in srgb, var(--cx-ok) 30%, transparent); }
+.tx-mastery td.l3 { background: color-mix(in srgb, var(--cx-ok) 13%, transparent); }
+.tx-mastery td.l2 { background: color-mix(in srgb, var(--cx-orange) 16%, transparent); }
+.tx-mastery td.l1 { background: color-mix(in srgb, var(--cx-red) 20%, transparent); }
+.tx-mastery td.na { color: var(--cx-label-3); background: var(--cx-fill-2); font-weight: 400; }
+.tx-mastery tfoot th, .tx-mastery tfoot td { border-top: .5px solid var(--cx-sep); font-weight: 600; }
+.tx-map { margin-top: 40px; }
+
+/* Seating: a room, and a seat for everyone in it. */
+.tx-room { position: relative; height: min(64vh, 620px); min-height: 420px; border: .5px solid var(--cx-sep); border-radius: 14px; background: var(--cx-fill-2); overflow: hidden; touch-action: none; }
+.tx-front { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--cx-label-3); pointer-events: none; }
+.tx-seat { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 10px 7px; min-width: 64px; border-radius: 11px; background: var(--cx-bg); border: .5px solid var(--cx-sep); cursor: grab; user-select: none; }
+.tx-seat .nm { font-size: 12px; font-weight: 500; white-space: nowrap; }
+.tx-seat .admin-av { width: 28px; height: 28px; font-size: 11px; }
+.tx-seat.drag { cursor: grabbing; z-index: 2; border-color: var(--cx-accent); box-shadow: 0 6px 22px rgba(0, 0, 0, .14); }
+.tx-seat.ok { border-color: var(--cx-ok); }
+.tx-seat input { width: 54px; padding: 3px 5px; text-align: center; font-size: 12.5px; cursor: text; }
+
+/* Lesson plans: a month. */
+.tx-month { display: flex; align-items: center; gap: 8px; }
+.tx-month b { min-width: 150px; text-align: center; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.tx-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: .5px solid var(--cx-sep); border-left: .5px solid var(--cx-sep); }
+.tx-cal .dow { padding: 7px 8px; font-size: 11.5px; font-weight: 500; color: var(--cx-label-2); border-right: .5px solid var(--cx-sep); border-bottom: .5px solid var(--cx-sep); }
+.tx-cal .pad, .tx-cal .day { min-height: 104px; border-right: .5px solid var(--cx-sep); border-bottom: .5px solid var(--cx-sep); }
+.tx-cal .pad { background: var(--cx-fill-2); }
+.tx-cal .day { padding: 5px 6px 7px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tx-cal .day .n { align-self: flex-start; min-width: 24px; height: 24px; border: 0; border-radius: 50%; background: none; color: var(--cx-label-2); font: inherit; font-size: 12.5px; cursor: pointer; }
+.tx-cal .day .n:hover { background: var(--cx-fill); color: var(--cx-label); }
+.tx-cal .day.today .n { background: var(--cx-accent); color: #fff; font-weight: 600; }
+.tx-cal .plan { border: 0; text-align: left; font: inherit; font-size: 12px; line-height: 1.3; padding: 3px 6px; border-radius: 5px; background: var(--cx-accent-soft); color: var(--cx-label); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-cal .plan:hover { box-shadow: inset 0 0 0 1px var(--cx-accent); }
+.tx-cal .due { font-size: 11.5px; color: var(--cx-label-2); padding: 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Announcements. */
+.tx-compose { max-width: 680px; display: grid; gap: 12px; margin: 18px 0 30px; }
+.tx-feed { max-width: 680px; border-top: .5px solid var(--cx-sep); }
+.tx-post { padding: 16px 0; border-bottom: .5px solid var(--cx-sep); }
+.tx-post header { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
+.tx-post header b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.tx-post time, .tx-post small { font-size: 12px; color: var(--cx-label-2); }
+.tx-post p { margin: 6px 0 8px; font-size: 14px; line-height: 1.5; }
+.tx-post .cn-btn { margin-left: 12px; }
+
+/* Today: rising and falling. */
+.tx-moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; }
+.tx-movehead { font-size: 12px; font-weight: 500; color: var(--cx-label-2); margin: 0 0 4px; }
+
+/* Setting work: the courses it is for, and when it is due in each. */
+.as-courses { grid-column: 1 / -1; }
+.as-course { display: grid; grid-template-columns: 18px minmax(0, 1fr) 160px; gap: 12px; align-items: center; padding: 9px 0; border-top: .5px solid var(--cx-sep); cursor: pointer; }
+.as-course:last-child { border-bottom: .5px solid var(--cx-sep); }
+.as-course input[type="checkbox"] { accent-color: var(--cx-accent); margin: 0; width: 16px; height: 16px; }
+.as-course .nm b { display: block; font-size: 14px; font-weight: 500; letter-spacing: -.005em; }
+.as-course .nm small { display: block; font-size: 12px; color: var(--cx-label-2); }
+body.is-console .admin-field .as-course input[type="date"] { width: 100%; padding: 6px 8px; font-size: 13px; }
+.as-course.off .nm, .as-course.off input[type="date"] { opacity: .4; }

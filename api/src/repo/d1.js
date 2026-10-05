@@ -527,12 +527,13 @@ export class D1Repository {
     await this.db.prepare(
       `INSERT INTO learn_assignments
          (id, course_id, title, category, out_of, due_at, extra_credit, status,
-          activity_json, created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          activity_json, details_json, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(assignmentId, data.courseId, data.title, data.category || null,
            data.outOf ?? 100, data.dueAt || null, data.extraCredit ? 1 : 0,
            data.status || "open",
            data.activity ? JSON.stringify(data.activity) : null,
+           data.details ? JSON.stringify(data.details) : null,
            data.createdBy || null, t, t).run();
     return this.findAssignment(assignmentId);
   }
@@ -547,6 +548,10 @@ export class D1Repository {
     if (patch.activity !== undefined) {
       fields.push("activity_json = ?");
       values.push(patch.activity ? JSON.stringify(patch.activity) : null);
+    }
+    if (patch.details !== undefined) {
+      fields.push("details_json = ?");
+      values.push(patch.details ? JSON.stringify(patch.details) : null);
     }
     if (!fields.length) return this.findAssignment(assignmentId);
     values.push(now(), assignmentId);
@@ -627,7 +632,7 @@ export class D1Repository {
      from a service, because a history that a caller can forget to write is
      not a history. */
   async upsertGrade({ assignmentId, accountId, score, outOf, status, late, feedback,
-                      note, gradedBy }) {
+                      mark, detail, note, gradedBy }) {
     const before = await this.db.prepare(
       `SELECT * FROM learn_grades WHERE assignment_id = ? AND account_id = ?`
     ).bind(assignmentId, accountId).first();
@@ -638,10 +643,11 @@ export class D1Repository {
       await this.db.prepare(
         `INSERT INTO learn_grades
            (id, assignment_id, account_id, score, out_of, status, late, feedback,
-            graded_by, graded_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            mark, detail_json, graded_by, graded_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(gradeId, assignmentId, accountId, score ?? null, outOf ?? 100,
-             status || "marked", late ? 1 : 0, feedback ?? null, gradedBy || null, t).run();
+             status || "marked", late ? 1 : 0, feedback ?? null, mark ?? null,
+             detail ? JSON.stringify(detail) : null, gradedBy || null, t).run();
       await this.recordGradeEvent({
         assignmentId, accountId, fromScore: null, fromStatus: null,
         toScore: score ?? null, toStatus: status || "marked", note, actorId: gradedBy, at: t
@@ -662,6 +668,20 @@ export class D1Repository {
     const scoreChanged = score !== undefined &&
       (score == null ? before.score != null : Number(score) !== Number(before.score));
     const statusChanged = status !== undefined && status !== before.status;
+
+    /* A special mark and the working behind a score describe the score they
+       were given with. When the score or the status changes and nothing was
+       said about them, they are about a mark that is no longer there: the
+       code goes, and so does how the old score was arrived at. A sticker is
+       the teacher's, not the score's, and stays. */
+    if (mark !== undefined) set("mark", mark);
+    else if ((scoreChanged || statusChanged) && before.mark) set("mark", null);
+    if (detail !== undefined) set("detail_json", detail ? JSON.stringify(detail) : null);
+    else if ((scoreChanged || statusChanged) && before.detail_json) {
+      let kept = null;
+      try { const d = JSON.parse(before.detail_json); if (d && d.sticker) kept = { sticker: d.sticker }; } catch { kept = null; }
+      set("detail_json", kept ? JSON.stringify(kept) : null);
+    }
     if (!fields.length) return this.findGrade(before.id);
 
     set("graded_by", gradedBy || before.graded_by || null);
@@ -748,6 +768,38 @@ export class D1Repository {
          JOIN learn_assignments a ON a.id = e.assignment_id
         WHERE e.id = ?`
     ).bind(eventId).first();
+  }
+
+  /* --------------------------------------------------------- Course documents
+     What a course's teachers keep about it that is not a grade: a seating
+     chart, lesson plans, their stock comments, an override. Read whole and
+     written whole, one row each. */
+
+  async listCourseDocs(courseId, kind = null) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_course_docs
+        WHERE course_id = ? AND (? IS NULL OR kind = ?) ORDER BY updated_at DESC`
+    ).bind(courseId, kind, kind).all();
+    return results || [];
+  }
+
+  async putCourseDoc({ courseId, kind, docId, body, actorId }) {
+    await this.db.prepare(
+      `INSERT INTO learn_course_docs (course_id, kind, doc_id, body_json, updated_by, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT (course_id, kind, doc_id) DO UPDATE SET
+         body_json = excluded.body_json, updated_by = excluded.updated_by,
+         updated_at = excluded.updated_at`
+    ).bind(courseId, kind, docId, JSON.stringify(body), actorId || null, now()).run();
+    return this.db.prepare(
+      `SELECT * FROM learn_course_docs WHERE course_id = ? AND kind = ? AND doc_id = ?`
+    ).bind(courseId, kind, docId).first();
+  }
+
+  async deleteCourseDoc(courseId, kind, docId) {
+    await this.db.prepare(
+      `DELETE FROM learn_course_docs WHERE course_id = ? AND kind = ? AND doc_id = ?`
+    ).bind(courseId, kind, docId).run();
   }
 
   /* ----------------------------------------------------------- Reporting
