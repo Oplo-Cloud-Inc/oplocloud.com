@@ -12,13 +12,26 @@
    those early fetches are already right. This corrects it anywhere else (a
    local preview serves the app from /learn/). A "#section" link on the
    welcome page still means this page, not the folder.
-   The student side is dark (obsidian.css), and is marked here, before
-   anything is drawn, so a student never sees a light frame first. */
+
+   The student side is dark (obsidian.css), marked with
+   <html data-look="obsidian">, and this is the first guess at it: an
+   address whose first segment names a role is read for that role and
+   painted before anything is drawn, so a student reloading their own page
+   never sees a light frame first. It is a guess and it stays one — it knows
+   only the address bar. Once the server has said who is signed in, app.js
+   setLook() decides, from the role, and is the one writer from then on. That
+   is what makes the canvas hold for the student routes whose addresses do
+   not say "student": a deep link, a course, a unit, a lesson, a lab, a
+   sitting, and the way back. */
 (function () {
-  var m = /^(.*?\/)(admin|teacher|student)(?:\/|$)/.exec(location.pathname);
+  var m = /^(.*?\/)(admin|teacher|student|parent)(?:\/|$)/.exec(location.pathname);
   var b = document.querySelector("base");
   b.href = m ? m[1] : location.pathname.replace(/[^\/]*$/, "");
-  if (m && m[2] === "student") document.documentElement.setAttribute("data-look", "obsidian");
+  if (m && m[2] === "student") {
+    document.documentElement.setAttribute("data-look", "obsidian");
+    var tc = document.querySelector('meta[name="theme-color"]');
+    if (tc) tc.setAttribute("content", "#1f232b");   /* --chrome; see obsidian.css */
+  }
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest('a[href^="#"]');
     if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
@@ -33,13 +46,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OEdu</title>
 <meta name="description" content="OEdu — courses you work through by solving, and study sets you drill until they stick.">
-<!-- The student canvas is #353535. theme-color paints the browser's own
-     chrome, so matching the canvas exactly would leave no bar to see; the
-     page's darkest step below it is used instead, which reads as the same
-     surface family rather than a different one. Staff, admin and family
-     addresses keep the light canvas they have always had. -->
-<meta name="theme-color" content="#2b2b2d" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<!-- Browser chrome. #ffffff is what every address has always had: staff,
+     admin, family, the signed-out welcome page and the marketing site. A
+     student is dark whatever their Mac is set to, so a media query is the
+     wrong key — on a light-preference machine it would put a white bar over
+     a #30343f page. The script below and app.js setLook() write the
+     student's own bar instead, and put #ffffff back for everyone else. -->
+<meta name="theme-color" content="#ffffff">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='12 12 76 76'%3E%3Cpath fill='%231d1d1f' fill-rule='evenodd' d='M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,8 +65,8 @@
 <link rel="stylesheet" href="gradebook.css?v=b544c19b">
 <link rel="stylesheet" href="checks.css?v=a381359b">
 <link rel="stylesheet" href="challenge.css?v=08f22e7b">
-<link rel="stylesheet" href="lab/lab.css?v=aed07c23">
-<link rel="stylesheet" href="obsidian.css?v=1b8de383">
+<link rel="stylesheet" href="lab/lab.css?v=458f653b">
+<link rel="stylesheet" href="obsidian.css?v=6c178aed">
 <link rel="stylesheet" href="console.css?v=9433456c">
 </head>
 <body>
@@ -476,10 +489,7 @@
 
     <nav class="lx-top" id="topNav" aria-label="Sections">
       <button type="button" data-view="my" aria-current="true">Home</button>
-      <button type="button" data-view="classes" id="navClasses" hidden>School</button>
       <button type="button" data-view="grades" id="navGrades" hidden>Grades</button>
-      <button type="button" data-view="exams" id="navExams" hidden>Exams</button>
-      <button type="button" data-view="own" id="navOwn" hidden>Self-learning</button>
       <button type="button" data-view="explore">Explore</button>
       <button type="button" data-view="progress">Progress</button>
     </nav>
@@ -647,6 +657,6 @@
 <script src="lab/core.js?v=d3ff46b1"></script>
 <script src="exam.js?v=65b52660"></script>
 <script src="gradebook.js?v=370ad7fd"></script>
-<script src="app.js?v=2caba682"></script>
+<script src="app.js?v=a8b539c7"></script>
 </body>
 </html>

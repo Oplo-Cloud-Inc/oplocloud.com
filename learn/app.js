@@ -569,18 +569,7 @@
     var a = seg[0] || "";
     if (!a) { home(); return true; }
     if (sameName(a, "Explore")) { explore(); return true; }
-    if (sameName(a, "Exams")) {
-      openExams();
-      // /Exams/<id> is the sitting itself, which exam.js owns. While the app
-      // is starting, exam.js is about to be asked what to resume and is told
-      // this one; after that it is opened directly.
-      if (seg[1] && window.OPLO_EXAM) {
-        if (S.booting) S.examAsked = seg[1]; else window.OPLO_EXAM.open(seg[1]);
-      }
-      return true;
-    }
-    if (sameName(a, "School") || sameName(a, "Classes")) { openClasses(); return true; }
-    if (sameName(a, "Self-learning")) { openOwn(); return true; }
+
     if (sameName(a, "Progress")) { openProgress(); return true; }
     if (sameName(a, "Grades")) { openGrades(false, seg.slice(1)); return true; }
     if (sameName(a, "Account")) { openAccount(); return true; }
@@ -655,12 +644,8 @@
      course. Until the server says so, they are not in the bar. */
   function setEnrolledTabs() {
     var has = !!(S.me && (S.me.assigned || []).length);
-    ["#navClasses", "#navGrades", "#navExams"].forEach(function (id) {
-      var tab = $(id);
-      if (tab) tab.hidden = !(has && S.me && S.me.role === "student");
-    });
-    var own = $("#navOwn");
-    if (own) own.hidden = !(S.me && S.me.role === "student");
+    var grades = $("#navGrades");
+    if (grades) grades.hidden = !(has && S.me && S.me.role === "student");
   }
 
   function show(view) {
@@ -1145,90 +1130,6 @@
     v.appendChild(el("p", "lx-hello", greeting() + ", " + esc(S.me.first) + "."));
     v.appendChild(el("h1", "lx-h1", "Here is where you are."));
     v.appendChild(standing());
-
-    var lanes = el("div", "lx-lanes");
-    v.appendChild(lanes);
-
-    /* ---- School ------------------------------------------------------ */
-    var school = el("section", "lx-lane school");
-    lanes.appendChild(school);
-    var mine = enrolled();
-    school.innerHTML = "<header class='lx-lanehead'><p class='k'>School</p><h2>" + esc(schoolOf()) + "</h2>" +
-      "<p>What your school put you in, and the work your teachers set. This is what’s graded.</p></header>";
-    var workSlot = el("div", "lx-lanebody");
-    school.appendChild(workSlot);
-    if (mine.length) {
-      workSlot.appendChild(el("p", "lx-lanesub", "Set by your teachers"));
-      var wait = el("p", "lx-lanenote", "Looking for work…");
-      workSlot.appendChild(wait);
-      loadWork().then(function (data) {
-        wait.remove();
-        if (!data.work.length) { workSlot.appendChild(el("p", "lx-lanenote", "Nothing has been set yet.")); return; }
-        var t = data.totals, bits = [];
-        if (t.overdue) bits.push("<b>" + t.overdue + " past due</b>");
-        if (t.missing) bits.push("<b>" + t.missing + " marked as not handed in</b>");
-        if (bits.length) workSlot.insertBefore(el("p", "lx-lanenote", bits.join(" · ")), workSlot.children[1]);
-        var n = schoolWorkList(workSlot, data.work, 5);
-        if (n > 5 || data.work.length > 5) {
-          var all = el("button", "lx-lanelink", "All work ›");
-          all.type = "button";
-          all.addEventListener("click", function () { openClasses(); });
-          workSlot.appendChild(all);
-        }
-      }, function () {
-        wait.textContent = "Couldn’t reach the server, so what your teachers have set isn’t shown here.";
-      });
-
-      school.appendChild(el("p", "lx-lanesub", "Your courses"));
-      var cl = el("div", "lx-crow-list");
-      mine.forEach(function (c) { cl.appendChild(courseRow(c, "school")); });
-      school.appendChild(cl);
-
-      var given = Object.keys(dbSets);
-      if (given.length) {
-        school.appendChild(el("p", "lx-lanesub", "Study sets from your teachers"));
-        var sg = el("div", "lx-crow-list");
-        given.forEach(function (id) {
-          var set = dbSets[id], b = el("button", "lx-crow");
-          b.type = "button";
-          b.innerHTML = '<span class="ic">' + svg(I.cards, true) + "</span><span class='t'><b>" + esc(set.t) + "</b><span>" + set.cards.length + " terms</span></span>";
-          b.addEventListener("click", function () { openSet(id); });
-          sg.appendChild(b);
-        });
-        school.appendChild(sg);
-      }
-      var sstep = nextStep(mine);
-      if (sstep) school.appendChild(stepCard(sstep, "Practice next", "Practice isn’t graded — only work your teachers set is."));
-    } else {
-      school.appendChild(el("div", "lx-lanenone", "<b>No school courses yet</b><p>When your school puts you in a course, it appears here with the work your teachers set.</p>"));
-    }
-
-    /* ---- Self-learning ---------------------------------------------- */
-    var own = el("section", "lx-lane own");
-    lanes.appendChild(own);
-    own.innerHTML = "<header class='lx-lanehead'><p class='k'>Self-learning</p><h2>On your own</h2>" +
-      "<p>Courses you chose. Never graded, not on your school record, and only you can see them.</p></header>";
-    var mineOwn = ownCourses();
-    var ostep = nextStep(mineOwn);
-    if (ostep) own.appendChild(stepCard(ostep, "Pick up where you left off", null));
-    if (mineOwn.length) {
-      own.appendChild(el("p", "lx-lanesub", "You’re learning"));
-      var ol = el("div", "lx-crow-list");
-      mineOwn.slice(0, 5).forEach(function (c) { ol.appendChild(courseRow(c, "own")); });
-      own.appendChild(ol);
-      if (mineOwn.length > 5) {
-        var more = el("button", "lx-lanelink", "All " + mineOwn.length + " ›");
-        more.type = "button";
-        more.addEventListener("click", function () { openOwn(); });
-        own.appendChild(more);
-      }
-    } else {
-      own.appendChild(el("div", "lx-lanenone", "<b>Nothing yet</b><p>Start any course in Explore and it shows up here — for you, not for a grade.</p>"));
-    }
-    var ex = el("button", "lx-btn quiet", "Find something to learn");
-    ex.type = "button";
-    ex.addEventListener("click", explore);
-    own.appendChild(ex);
 
     /* ---- Account-wide: what trips you up --------------------------- */
     v.appendChild(el("h2", "lx-h2", "What you keep getting wrong"));
@@ -18444,7 +18345,7 @@
   function studentChrome() {
     var v = getComputedStyle(document.documentElement).getPropertyValue("--chrome");
     v = String(v || "").trim();
-    return v || "#2b2b2d";
+    return v || "#1f232b";
   }
 
   function setLook(mode) {
@@ -18546,7 +18447,7 @@
        Each is set only if it is there: a tab missing from the bar must not
        stop the app from drawing, and it did — every sign-in and every reload
        died here and left the bar over an empty page. */
-    var navAdmin = $("#navAdmin"), navGrades = $("#navGrades"), navExams = $("#navExams");
+    var navAdmin = $("#navAdmin"), navGrades = $("#navGrades");
     if (navAdmin) {
       navAdmin.hidden = !allowedTabs().length;
       navAdmin.textContent = who.role === "admin" ? "Console" : "My students";
@@ -18654,7 +18555,7 @@
     TRAIL = []; POS = -1;            // the next person's history starts from nothing
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     document.body.classList.remove("is-admin");
-    ["#navAdmin", "#navClasses", "#navGrades", "#navExams"].forEach(function (id) {
+    ["#navAdmin", "#navGrades"].forEach(function (id) {
       var tab = $(id);
       if (tab) tab.hidden = true;
     });
