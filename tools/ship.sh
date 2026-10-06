@@ -99,7 +99,7 @@ fi
 
 # --------------------------------------------------------------------------
 say "Verify what is about to be published"
-for f in learn/app.js learn/teach.js learn/learn.js learn/store.js learn/annotate.js learn/api.js learn/kmap.js \
+for f in learn/app.js learn/teach.js learn/kern.js learn/learn.js learn/store.js learn/annotate.js learn/api.js learn/kmap.js \
          learn/parent/parent.js learn/parent/viz.js learn/home.js learn/landing.js learn/oplo-search.js assets/js/oplo-search.js learn/oplo-menu.js assets/js/oplo-menu.js worker/index.js \
          dev/dev.js worker/dev.js; do
   node --check "$WT/$f"

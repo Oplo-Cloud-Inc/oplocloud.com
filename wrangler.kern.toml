@@ -1,0 +1,30 @@
+# ===========================================================================
+# Kern — kern.oplocloud.com. The OEdu app for learning on your own, by doing:
+# no classroom, no grades. It is the same files as edu.oplocloud.com (./learn);
+# the hostname alone switches it into Kern (learn/index.html), so there is
+# nothing to keep in step. Same Worker code, its own Worker and domain.
+#
+#   npx wrangler deploy --env production -c wrangler.kern.toml
+# ===========================================================================
+name = "oplo-kern"
+main = "worker/index.js"
+compatibility_date = "2026-05-01"
+workers_dev = true
+
+[assets]
+directory = "./learn"
+binding = "ASSETS"
+not_found_handling = "none"
+
+[env.production]
+name = "oplo-kern"
+main = "worker/index.js"
+
+[env.production.assets]
+directory = "./learn"
+binding = "ASSETS"
+not_found_handling = "none"
+
+[[env.production.routes]]
+pattern = "kern.oplocloud.com"
+custom_domain = true

@@ -1,0 +1,11 @@
+/* Kern's front door. Only drawn when kern.js has replaced the welcome page. */
+#gate.kern-gate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; overflow: auto;
+  background: var(--paper, #fff); color: var(--ink, #1d1d1f); }
+#gate.kern-gate.ld-wait > * { visibility: hidden; }
+.kern-hero { width: min(560px, 100% - 48px); padding: 48px 0; text-align: center; }
+.kern-mark { width: 34px; height: 34px; margin: 0 auto 18px; display: block; }
+.kern-k { margin: 0 0 14px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3, #6e6e73); }
+.kern-hero h1 { margin: 0 0 16px; font-size: clamp(40px, 8vw, 68px); font-weight: 300; letter-spacing: -.035em; line-height: 1.02; }
+.kern-sub { margin: 0 auto 30px; max-width: 42ch; font-size: 18px; line-height: 1.5; color: var(--ink-2, #424245); }
+.kern-err { min-height: 1.2em; margin: 14px 0 0; font-size: 13px; color: #d70015; }
+.kern-fine { margin: 26px auto 0; max-width: 46ch; font-size: 12.5px; line-height: 1.55; color: var(--ink-3, #6e6e73); }

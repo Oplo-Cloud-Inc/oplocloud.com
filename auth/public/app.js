@@ -36,6 +36,7 @@
      anything that was not written down here. */
   var NAMES = {
     "edu.oplocloud.com": "OEdu",
+    "kern.oplocloud.com": "Kern",
     "dev.oplocloud.com": "Oplo Developer",
     "roxan.oplocloud.com": "Roxan",
     "efm.oplocloud.com": "OC EFM",

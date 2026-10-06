@@ -134,6 +134,13 @@
      writing them is followed by R.save(). */
   var R = null;           // the persisted record; null until somebody signs in
   var Progress = null;    // the record's sync with the account (sync.js); null signed out
+  /* Kern (kern.oplocloud.com) is this app with the school taken out: courses
+     learned by doing, chosen by the learner, never graded. Everybody who signs
+     in is a learner whatever roles their account holds; there is no School,
+     Grades or Exams, and nothing a teacher set. The switch is the address
+     (index.html), so one set of files serves both. */
+  var KERN = !!window.OPLO_KERN;
+
   var S = {
     me: null,             // the signed-in student
     view: "my",
@@ -654,6 +661,12 @@
   /* Classes, Grades and Exams belong to a student a teacher has put in a
      course. Until the server says so, they are not in the bar. */
   function setEnrolledTabs() {
+    if (KERN) {
+      ["#navClasses", "#navGrades", "#navExams"].forEach(function (id) { var t = $(id); if (t) t.hidden = true; });
+      var mine = $("#navOwn");
+      if (mine) { mine.hidden = false; mine.textContent = "My courses"; }
+      return;
+    }
     var has = !!(S.me && (S.me.assigned || []).length);
     ["#navClasses", "#navGrades", "#navExams"].forEach(function (id) {
       var tab = $(id);
@@ -752,6 +765,7 @@
      that shows courses a student is not enrolled in, and then removes them a
      second later, is worse than one that waits. */
   function enrolled() {
+    if (KERN) return [];
     return ((S.me && S.me.assigned) || []).map(courseFromRow);
   }
 
@@ -1009,7 +1023,7 @@
   // Starting something in a course nobody put you in puts it on your list.
   function adoptIfOwn(c) {
     if (!learnerHere() || !c || c.stub || inSchool(c)) return;
-    if (R.adopt(c.id)) toast("“" + c.t + "” is in Self-learning — not graded, and only you see it.");
+    if (R.adopt(c.id)) toast(KERN ? "“" + c.t + "” is on your list." : "“" + c.t + "” is in Self-learning — not graded, and only you see it.");
   }
 
   /* The work set for this student, kept for half a minute so the home page
@@ -1168,7 +1182,7 @@
 
     /* ---- School ------------------------------------------------------ */
     var school = el("section", "lx-lane school");
-    lanes.appendChild(school);
+    if (!KERN) lanes.appendChild(school);
     var mine = enrolled();
     school.innerHTML = "<header class='lx-lanehead'><p class='k'>School</p><h2>" + esc(schoolOf()) + "</h2>" +
       "<p>What your school put you in, and the work your teachers set. This is what’s graded.</p></header>";
@@ -1223,8 +1237,11 @@
     /* ---- Self-learning ---------------------------------------------- */
     var own = el("section", "lx-lane own");
     lanes.appendChild(own);
-    own.innerHTML = "<header class='lx-lanehead'><p class='k'>Self-learning</p><h2>On your own</h2>" +
-      "<p>Courses you chose. Never graded, not on your school record, and only you can see them.</p></header>";
+    own.innerHTML = KERN
+      ? "<header class='lx-lanehead'><p class='k'>Learn by doing</p><h2>Your courses</h2>" +
+        "<p>Courses you chose. Nothing here is graded, and only you can see it.</p></header>"
+      : "<header class='lx-lanehead'><p class='k'>Self-learning</p><h2>On your own</h2>" +
+        "<p>Courses you chose. Never graded, not on your school record, and only you can see them.</p></header>";
     var mineOwn = ownCourses();
     var ostep = nextStep(mineOwn);
     if (ostep) own.appendChild(stepCard(ostep, "Pick up where you left off", null));
@@ -1303,6 +1320,7 @@
      Every course the school put this student in, and all the work set in
      it — soonest first, with what came back. */
   function openClasses(silent) {
+    if (KERN) { home(); return; }
     if (!silent) root("classes", "School", function () { openClasses(true); }, "School");
     var v = $("#v-classes");
     v.innerHTML = "";
@@ -1407,7 +1425,7 @@
     if (!silent) root("own", "Self-learning", function () { openOwn(true); }, "Self-learning");
     var v = $("#v-own");
     v.innerHTML = "";
-    v.appendChild(el("p", "lx-eyebrow", "Self-learning"));
+    v.appendChild(el("p", "lx-eyebrow", KERN ? "Learn by doing" : "Self-learning"));
     v.appendChild(el("h1", "lx-h1", "On your own"));
     v.appendChild(el("p", "lx-lede", "Courses you chose to learn. Never graded, not on your school record, and your teachers can’t see them — " +
       "your progress here is kept in your account for you alone."));
@@ -1465,13 +1483,13 @@
       box.appendChild(w);
     } else {
       var on = R && R.own().indexOf(c.id) > -1;
-      box.innerHTML = "<b>Self-learning</b><span>Not graded, not on your school record, and only you can see your progress.</span>";
-      var b = el("button", "lx-btn quiet", on ? "On your list ✓" : "Add to Self-learning");
+      box.innerHTML = KERN ? "<b>Your courses</b><span>Nothing is graded, and only you can see your progress.</span>" : "<b>Self-learning</b><span>Not graded, not on your school record, and only you can see your progress.</span>";
+      var b = el("button", "lx-btn quiet", on ? "On your list ✓" : (KERN ? "Add to my courses" : "Add to Self-learning"));
       b.type = "button";
       b.addEventListener("click", function () {
         if (!R) return;
-        if (R.own().indexOf(c.id) > -1) { R.drop(c.id); b.textContent = "Add to Self-learning"; toast("Taken off your list."); }
-        else { R.adopt(c.id); b.textContent = "On your list ✓"; toast("Added to Self-learning."); }
+        if (R.own().indexOf(c.id) > -1) { R.drop(c.id); b.textContent = (KERN ? "Add to my courses" : "Add to Self-learning"); toast("Taken off your list."); }
+        else { R.adopt(c.id); b.textContent = "On your list ✓"; toast(KERN ? "Added to your courses." : "Added to Self-learning."); }
       });
       box.appendChild(b);
     }
@@ -7072,6 +7090,7 @@
      what-if calculator, the report card (gradebook.js). The path to
      graduation is its last tab, drawn here as it always was. */
   function openGrades(silent, at) {
+    if (KERN) { home(); return; }
     root("grades", "Grades", function () { openGrades(true); }, "Grades");
     var v = $("#v-grades");
     v.innerHTML = "";
@@ -7117,6 +7136,7 @@
      student has been set, runs a sitting and keeps the work safe. This only
      gives it the screen. */
   function openExams(silent) {
+    if (KERN) { home(); return; }
     if (!silent) root("exams", "Exams", function () { openExams(true); }, "Exams");
     noFoot(); progress(null);
     show("exams");
@@ -18716,7 +18736,7 @@
        home. The app's own addresses are the same page, so moving between them
        changes the URL and not the document; the family view is another page. */
     var H = window.OPLO_HOME;
-    var dest = H.destination(who.roles, location, new URLSearchParams(location.search).get("next"));
+    var dest = H.destination(KERN ? [] : who.roles, location, new URLSearchParams(location.search).get("next"));
     if (!dest.stay) {
       if (dest.mode === "parent") { location.replace(dest.href); return; }
       history.replaceState(null, "", dest.href);
