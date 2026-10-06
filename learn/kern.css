@@ -1,11 +1,145 @@
 /* Kern's front door. Only drawn when kern.js has replaced the welcome page. */
 #gate.kern-gate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; overflow: auto;
-  background: var(--paper, #fff); color: var(--ink, #1d1d1f); }
+  background: #141414; color: #fff; }
 #gate.kern-gate.ld-wait > * { visibility: hidden; }
 .kern-hero { width: min(560px, 100% - 48px); padding: 48px 0; text-align: center; }
 .kern-mark { width: 34px; height: 34px; margin: 0 auto 18px; display: block; }
-.kern-k { margin: 0 0 14px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3, #6e6e73); }
+.kern-k { margin: 0 0 14px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #9a9aa6; }
 .kern-hero h1 { margin: 0 0 16px; font-size: clamp(40px, 8vw, 68px); font-weight: 300; letter-spacing: -.035em; line-height: 1.02; }
-.kern-sub { margin: 0 auto 30px; max-width: 42ch; font-size: 18px; line-height: 1.5; color: var(--ink-2, #424245); }
+.kern-sub { margin: 0 auto 30px; max-width: 42ch; font-size: 18px; line-height: 1.5; color: #c9c9d1; }
 .kern-err { min-height: 1.2em; margin: 14px 0 0; font-size: 13px; color: #d70015; }
-.kern-fine { margin: 26px auto 0; max-width: 46ch; font-size: 12.5px; line-height: 1.55; color: var(--ink-3, #6e6e73); }
+.kern-fine { margin: 26px auto 0; max-width: 46ch; font-size: 12.5px; line-height: 1.55; color: #9a9aa6; }
+
+
+/* ==========================================================================
+   Kern's look: near-black, one calm column, soft outlined cards, and one
+   large button that feels pressed. Everything arrives with a short rise, so
+   moving between places is smooth rather than a cut. Under html.kern only.
+   ========================================================================== */
+html.kern[data-look="obsidian"] {
+  --obsidian: #141414; --canvas: #141414; --chrome: #141414;
+  --paper: #1b1b1d; --sunk: #232326; --raise: #2a2a2d; --elevated: #2a2a2d; --press: #323236;
+  --ink: #fff; --prose: #ececf0; --ink-2: #c9c9d1; --ink-3: #9a9aa6; --ink-3-fill: #c9c9d1;
+  --rule: rgba(255,255,255,.16); --hair: rgba(255,255,255,.11);
+  --blue: #8d9bff; --blue-d: #a9b4ff; --fill: #5468ff; --fill-d: #6678ff;
+  --kern: #5468ff; --kern-deep: #3c4ee0;
+  --kern-ease: cubic-bezier(.2, .8, .2, 1);
+  --well: 620px;
+}
+html.kern body { background: #141414; }
+
+/* The bar: flat, centred over the column, an underline for where you are. */
+html.kern body .lx-bar { background: #141414; backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom: 1px solid var(--hair); }
+html.kern .lx-bar-in { max-width: 760px; margin-inline: auto; height: 54px; }
+html.kern .lx-name { font-weight: 600; letter-spacing: -.02em; }
+html.kern .lx-top { gap: 4px; margin-left: 10px; }
+html.kern body .lx-top button { border-radius: 0; height: 54px; padding: 0 12px; background: none; color: var(--ink-3); font-weight: 600; box-shadow: inset 0 -2px 0 transparent; transition: color .2s var(--kern-ease), box-shadow .25s var(--kern-ease); }
+html.kern body .lx-top button:hover { background: none; color: var(--ink); }
+html.kern body .lx-top button[aria-current="true"] { background: none; color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
+html.kern #rankChip { display: none; }
+
+/* The button: a pill with a lip under it. It sinks when pressed. */
+html.kern body .lx-btn { height: 48px; padding: 0 26px; border-radius: 60px; font-weight: 600; font-size: 16px; background: var(--kern); color: #fff;
+  box-shadow: 0 4px 0 var(--kern-deep); transform: translateY(0); transition: transform .1s ease-out, box-shadow .1s ease-out, filter .15s ease-out; }
+html.kern body .lx-btn:hover { background: var(--kern); filter: brightness(1.08); }
+html.kern body .lx-btn:active { transform: translateY(4px); box-shadow: 0 0 0 var(--kern-deep); }
+html.kern body .lx-btn:disabled { transform: none; box-shadow: 0 4px 0 var(--kern-deep); filter: grayscale(.6); }
+html.kern body .lx-btn.quiet { background: #2a2a2d; color: var(--ink); box-shadow: 0 4px 0 #1e1e20; }
+html.kern body .lx-btn.quiet:active { box-shadow: 0 0 0 #1e1e20; }
+html.kern body .lx-btn.ghost { background: none; box-shadow: none; height: auto; }
+
+/* Views rise in. */
+@keyframes kern-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+html.kern .lx-view.on { animation: kern-fade .3s ease-out both; }
+@keyframes kern-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ------------------------------------------------------------- The column */
+html.kern .kh { max-width: 600px; margin: 0 auto; }
+html.kern .kh > * { animation: kern-rise .5s var(--kern-ease) both; animation-delay: calc(var(--k, 0) * 70ms); }
+.kh-hi { margin: 8px 0 22px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.kh-sub { margin: -14px 0 28px; color: var(--ink-3); font-size: 15px; }
+.kh-h2 { margin: 38px 0 14px; font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.kh-card { border: 1px solid var(--rule); border-radius: 24px; background: #141414; padding: 22px; position: relative; }
+.kh-row { display: grid; grid-template-columns: 1fr 1.18fr; gap: 14px; align-items: stretch; margin-top: 52px; }
+.kh .bar { display: block; height: 6px; border-radius: 6px; background: #2c2c30; overflow: hidden; }
+.kh .bar i { display: block; height: 100%; border-radius: 6px; background: var(--kern); transition: width .7s var(--kern-ease); }
+.kh .eb { margin: 0; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--kern); }
+
+/* The week. */
+.kh-streak { display: flex; flex-direction: column; gap: 14px; }
+.kh-big { display: flex; align-items: baseline; gap: 8px; }
+.kh-big b { font-size: 44px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+.kh-big span { color: var(--ink-3); font-size: 14px; font-weight: 600; }
+.kh-days { display: flex; justify-content: space-between; border-top: 1px solid var(--hair); padding-top: 14px; }
+.kh-days .d { display: grid; justify-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--ink-3); }
+.kh-days .d i { width: 22px; height: 22px; border-radius: 50%; background: #2a2a2d; transition: background .3s, transform .3s var(--kern-ease); }
+.kh-days .d.on i { background: var(--kern); transform: scale(1.08); }
+.kh-days .d.today i { box-shadow: 0 0 0 2px #141414, 0 0 0 4px var(--ink-3); }
+.kh-days .d.today.on i { box-shadow: 0 0 0 2px #141414, 0 0 0 4px var(--kern); }
+.kh-say { margin: 0; color: var(--ink-3); font-size: 13.5px; line-height: 1.5; }
+.kh-goal { display: grid; gap: 7px; margin-top: auto; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+
+/* What is next. The course's picture stands on the card's top edge. */
+.kh-next { display: flex; flex-direction: column; gap: 10px; text-align: center; align-items: center; padding-top: 64px; }
+.kh-next h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+.kh-next .bar { width: 62%; }
+.kh-pop { position: absolute; top: -40px; left: 50%; width: 84px; height: 84px; margin-left: -42px; display: grid; place-items: center; border-radius: 22px; background: #1d1f33; border: 1px solid var(--rule);
+  animation: kern-bob 4s ease-in-out infinite; }
+.kh-pop svg { width: 44px; height: 44px; }
+@keyframes kern-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.kh-steps { list-style: none; margin: 8px 0 8px; padding: 0; width: 100%; display: grid; gap: 14px; text-align: left; }
+.kh-steps li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; color: var(--ink-3); }
+.kh-steps li i { flex: none; width: 34px; height: 22px; border-radius: 50%; background: #2a2a2d; box-shadow: 0 3px 0 #1d1d20; }
+.kh-steps li.now { color: var(--ink); font-weight: 700; }
+.kh-steps li.now i { background: #3b3f66; box-shadow: 0 0 0 3px #141414, 0 0 0 5px var(--kern), 0 0 18px rgba(84,104,255,.55); }
+.kh-go { width: 100%; margin-top: auto; }
+
+/* Ask for something to learn. */
+.kh-ask { margin: 22px auto 0; max-width: 440px; padding: 14px 16px 12px; border: 1px solid var(--rule); border-radius: 20px; background: #1b1b1d; transition: border-color .2s, box-shadow .2s; }
+.kh-ask:focus-within { border-color: var(--kern); box-shadow: 0 0 0 4px rgba(84,104,255,.18); }
+.kh-ask input { width: 100%; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; font-size: 15px; padding: 2px 0 10px; }
+.kh-ask input::placeholder { color: var(--ink-3); }
+.kh-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.kh-chip { border: 1px solid var(--hair); background: #232326; color: var(--ink-2); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 12.5px; cursor: pointer; transition: background .15s, transform .12s; }
+.kh-chip:hover { background: #2c2c30; }
+.kh-chip:active { transform: scale(.96); }
+.kh-hits { max-width: 440px; margin: 10px auto 0; display: grid; gap: 8px; }
+.kh-hit { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 16px; background: #1b1b1d; color: var(--ink); text-align: left; cursor: pointer;
+  animation: kern-rise .35s var(--kern-ease) both; animation-delay: calc(var(--i, 0) * 45ms); transition: border-color .15s, transform .12s; }
+.kh-hit:hover { border-color: var(--kern); }
+.kh-hit:active { transform: scale(.985); }
+.kh-hit .ic { width: 30px; height: 30px; flex: none; } .kh-hit .ic svg { width: 100%; height: 100%; }
+.kh-hit .t { flex: 1; min-width: 0; } .kh-hit .t b { display: block; font-size: 15px; } .kh-hit .t span { font-size: 12.5px; color: var(--ink-3); }
+.kh-hit .go { font-size: 13px; font-weight: 700; color: var(--blue); }
+.kh-none { margin: 4px 2px; color: var(--ink-3); font-size: 13.5px; text-align: center; }
+
+/* Course tiles: an outlined square, how far you are, the name beneath. */
+.kh-tiles, .kh-panel { display: flex; gap: 12px 12px; flex-wrap: wrap; }
+.kh-tilewrap { width: 96px; display: grid; gap: 9px; justify-items: center; }
+.kh-tilewrap .nm { font-size: 13px; font-weight: 600; text-align: center; line-height: 1.25; color: var(--ink-2); }
+.kh-tile { position: relative; width: 96px; height: 96px; display: grid; justify-items: center; align-content: center; gap: 10px; border: 1.5px solid #4a4a50; border-radius: 18px; background: #141414; color: var(--ink); cursor: pointer;
+  box-shadow: 0 3px 0 #2a2a2e; animation: kern-rise .5s var(--kern-ease) both; animation-delay: calc(var(--i, 0) * 55ms + 120ms); transition: transform .1s ease-out, box-shadow .1s ease-out, border-color .2s; }
+.kh-tile:hover { border-color: var(--kern); }
+.kh-tile:active { transform: translateY(3px); box-shadow: 0 0 0 #2a2a2e; }
+.kh-tile .eb { position: absolute; top: 9px; left: 11px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: var(--ink-3); }
+.kh-tile .ic { width: 38px; height: 38px; margin-top: 6px; } .kh-tile .ic svg { width: 100%; height: 100%; }
+.kh-tile .bar { position: absolute; left: 14px; right: 14px; bottom: 12px; height: 4px; }
+.kh-link { display: block; margin: 38px auto 0; border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 13.5px; cursor: pointer; transition: color .15s; }
+.kh-link:hover { color: var(--ink); }
+
+/* Courses: a path for each subject. */
+.kh-path { margin: 0 0 40px; }
+.kh-path header { display: flex; gap: 18px; align-items: center; margin-bottom: 16px; }
+.kh-path header .ic { width: 56px; height: 56px; flex: none; } .kh-path header .ic svg { width: 100%; height: 100%; }
+.kh-path h2 { margin: 2px 0 3px; font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.kh-path header p:not(.eb) { margin: 0; color: var(--ink-3); font-size: 13.5px; line-height: 1.4; }
+.kh-panel { background: #1c1c1e; border-radius: 20px; padding: 20px 16px 18px; position: relative; gap: 16px 12px; }
+.kh-panel .kh-tilewrap + .kh-tilewrap::before { content: ""; position: absolute; left: -12px; top: 47px; width: 12px; height: 2px; background: #2e2e32; }
+.kh-panel .kh-tilewrap { position: relative; }
+
+@media (max-width: 640px) {
+  .kh-row { grid-template-columns: 1fr; gap: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.kern *, html.kern *::before, html.kern *::after { animation: none !important; transition: none !important; }
+}

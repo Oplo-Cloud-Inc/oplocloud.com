@@ -1170,7 +1170,120 @@
   }
 
   /* ------------------------------------------------------------------ Home */
+  /* ------------------------------------------------------------ Kern Home
+     One narrow column, one thing to do. A greeting; beside each other, how
+     the week is going and the next step of whatever you are learning, with a
+     single large button; a box to ask for something to learn; your courses.
+     Every piece rises into place a beat after the one before it. */
+  function kernFind(host, input) {
+    host.innerHTML = "";
+    var q = String(input.value || "").trim().toLowerCase();
+    if (!q) return;
+    var hits = allCourses().filter(function (c) {
+      return !c.stub && (c.t + " " + (c.subject || "") + " " + (c.d || "")).toLowerCase().indexOf(q) > -1;
+    }).slice(0, 6);
+    if (!hits.length) { host.appendChild(el("p", "kh-none", "Nothing called that yet. Try “algebra”, “biology” or “business”.")); return; }
+    hits.forEach(function (c, i) {
+      var b = el("button", "kh-hit");
+      b.style.setProperty("--i", i);
+      b.type = "button";
+      b.innerHTML = '<span class="ic" style="color:' + c.hue + '">' + svg(c.glyph, true) + "</span><span class='t'><b>" + esc(c.t) + "</b><span>" +
+        esc(c.subject) + " · " + unitsOf(c).length + " units</span></span><span class='go'>Open</span>";
+      b.addEventListener("click", function () { openCourse(c); });
+      host.appendChild(b);
+    });
+  }
+  function kernTile(c, i) {
+    var b = el("button", "kh-tile");
+    b.type = "button";
+    b.style.setProperty("--i", i);
+    var pct = coursePct(c);
+    b.innerHTML = '<span class="eb">' + esc(c.stub ? "Soon" : unitsOf(c).length + " units") + '</span><span class="ic" style="color:' + c.hue + '">' + svg(c.glyph, true) + "</span>" +
+      '<span class="bar"><i style="width:' + pct + '%"></i></span>';
+    var wrap = el("div", "kh-tilewrap");
+    wrap.appendChild(b);
+    wrap.appendChild(el("span", "nm", esc(c.t)));
+    b.addEventListener("click", function () { if (c.stub) toast("“" + c.t + "” isn’t written yet."); else openCourse(c); });
+    return wrap;
+  }
+  function drawKernHome() {
+    var v = $("#v-my");
+    v.innerHTML = "";
+    var g = R.d.game, mine = ownCourses(), col = el("div", "kh");
+    v.appendChild(col);
+    col.appendChild(el("h1", "kh-hi", "Welcome, " + esc(S.me.first) + "!"));
+    var row = el("div", "kh-row");
+    col.appendChild(row);
+
+    // How the week is going.
+    var st = el("section", "kh-card kh-streak");
+    var wk = G.week(R, ST);
+    st.innerHTML = '<div class="kh-big"><b>' + g.streak + "</b><span>" + (g.streak === 1 ? "day" : "days") + " in a row</span></div>" +
+      '<div class="kh-days">' + wk.map(function (d, i) {
+        return '<span class="d' + (d.xp ? " on" : "") + (i === 6 ? " today" : "") + '" title="' + esc(d.day + " — " + d.xp + " XP") + '"><i></i>' + esc(d.label) + "</span>";
+      }).join("") + "</div>" +
+      '<p class="kh-say">' + (g.today >= g.goal ? "Today’s goal is met. Nice."
+        : g.streak ? "Learn something today to keep it going."
+        : "Solve a few problems to start a streak.") + "</p>" +
+      '<div class="kh-goal"><span>' + g.today + " / " + g.goal + ' XP today</span><span class="bar"><i style="width:' + Math.min(100, Math.round(g.today / Math.max(1, g.goal) * 100)) + '%"></i></span></div>';
+    row.appendChild(st);
+
+    // What is next.
+    var step = nextStep(mine), nx = el("section", "kh-card kh-next");
+    if (step) {
+      var target = step.weak ? unitsOf(step.course).filter(function (x) { return x.n === step.weak.n; })[0] : step.unit;
+      var later = unitsOf(step.course).filter(function (x) { return x.n > target.n && (x.play || x.set || x.lab); })[0];
+      nx.innerHTML = '<span class="kh-pop" style="color:' + step.course.hue + '">' + svg(step.course.glyph, true) + "</span>" +
+        "<h2>" + esc(step.course.t) + '</h2><p class="eb">Unit ' + target.n + "</p>" +
+        '<span class="bar"><i style="width:' + coursePct(step.course) + '%"></i></span>' +
+        '<ol class="kh-steps"><li class="now"><i></i><b>' + esc(target.t) + "</b></li>" + (later ? "<li><i></i><span>" + esc(later.t) + "</span></li>" : "") + "</ol>";
+      var go = el("button", "lx-btn kh-go", step.pct ? "Continue" : "Start");
+      go.type = "button";
+      go.addEventListener("click", function () { openUnit(step.course, target.n); });
+      nx.appendChild(go);
+    } else {
+      nx.innerHTML = '<h2>Pick something to learn</h2><p class="kh-say">Every course here is worked through by solving. Nothing is graded.</p>';
+      var ex = el("button", "lx-btn kh-go", "Explore courses");
+      ex.type = "button";
+      ex.addEventListener("click", explore);
+      nx.appendChild(ex);
+    }
+    row.appendChild(nx);
+
+    // Ask for something to learn.
+    var ask = el("div", "kh-ask");
+    ask.innerHTML = '<input type="search" placeholder="What do you want to learn?" aria-label="Find a course" autocomplete="off" spellcheck="false">';
+    var input = ask.querySelector("input"), hits = el("div", "kh-hits"), chips = el("div", "kh-chips");
+    allCourses().filter(function (c) { return !c.stub; }).slice(0, 3).forEach(function (c) {
+      var b = el("button", "kh-chip", "Learn " + esc(String(c.t).toLowerCase()));
+      b.type = "button";
+      b.addEventListener("click", function () { input.value = c.t; kernFind(hits, input); });
+      chips.appendChild(b);
+    });
+    input.addEventListener("input", function () { kernFind(hits, input); chips.hidden = !!input.value; });
+    ask.appendChild(chips);
+    col.appendChild(ask);
+    col.appendChild(hits);
+
+    // Your courses.
+    if (mine.length) {
+      col.appendChild(el("h2", "kh-h2", "Your courses"));
+      var tiles = el("div", "kh-tiles");
+      mine.forEach(function (c, i) { tiles.appendChild(kernTile(c, i)); });
+      col.appendChild(tiles);
+    }
+    if (S.mistakes.length) {
+      var mk = el("button", "kh-link", "What you keep getting wrong · " + S.mistakes.length + " ›");
+      mk.type = "button";
+      mk.addEventListener("click", function () { openMistakes(); });
+      col.appendChild(mk);
+    }
+    // The pieces rise in one after the other.
+    [].forEach.call(col.children, function (n, i) { n.style.setProperty("--k", i); });
+  }
+
   function drawMy() {
+    if (KERN) { drawKernHome(); return; }
     var v = $("#v-my");
     v.innerHTML = "";
     v.appendChild(el("p", "lx-hello", greeting() + ", " + esc(S.me.first) + "."));
@@ -1631,7 +1744,29 @@
   }
 
   /* --------------------------------------------------------------- Explore */
+  /* Kern's catalogue: a path for each subject — what it is, then its courses
+     in a row on a quiet panel, joined by a line, each with how far you are. */
+  function drawKernExplore() {
+    var v = $("#v-explore"), col = el("div", "kh");
+    v.innerHTML = "";
+    v.appendChild(col);
+    col.appendChild(el("h1", "kh-hi", "Courses"));
+    col.appendChild(el("p", "kh-sub", "Pick one and learn it by doing. Step by step, nothing graded."));
+    SC.subjects().forEach(function (s) {
+      var live = s.courses.filter(function (c) { return !c.stub; }), lead = live[0] || s.courses[0];
+      var path = el("section", "kh-path");
+      path.innerHTML = '<header><span class="ic" style="color:' + (lead ? lead.hue : "#8a96ff") + '">' + (lead ? svg(lead.glyph, true) : "") + '</span><div><p class="eb">' +
+        s.courses.length + (s.courses.length === 1 ? " course" : " courses") + "</p><h2>" + esc(s.n) + "</h2><p>" + esc(s.d) + "</p></div></header>";
+      var panel = el("div", "kh-panel");
+      s.courses.forEach(function (c, i) { panel.appendChild(kernTile(c, i)); });
+      path.appendChild(panel);
+      col.appendChild(path);
+    });
+    [].forEach.call(col.children, function (n, i) { n.style.setProperty("--k", i); });
+  }
+
   function drawExplore() {
+    if (KERN) { drawKernExplore(); return; }
     var v = $("#v-explore");
     v.innerHTML = "";
     v.appendChild(el("h1", "lx-h1", "Explore"));
