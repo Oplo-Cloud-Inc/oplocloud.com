@@ -63,30 +63,97 @@
 .intro .cta-row { margin-top: 22px; gap: 10px 32px; }
 
 /* -------------------------------------------------------------------- Doors
-   One entry for each door in the bar, on white, in two columns, each set off
-   from the one above by a hairline. Words and a link; no boxes, no pictures. */
+    Full-viewport product tiles, stacked vertically like apple.com. Each door
+    is a dark or light card filling the screen width, with centered text over
+    a background colour or image. The nav overlaps the first tile. */
 .doors {
-  max-width: 1024px; margin: 0 auto;
-  padding: 0 var(--gutter) clamp(64px, 10vh, 112px);
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: clamp(32px, 6vw, 88px);
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 0 max(var(--gutter), env(safe-area-inset-left))
+           max(var(--gutter), env(safe-area-inset-right));
+  max-width: 1440px; margin: 0 auto;
+  padding-bottom: clamp(48px, 8vh, 96px);
 }
-.door { border-top: 1px solid var(--rule); padding: 36px 0 44px; text-align: left; }
-.door .eyebrow { margin-bottom: 8px; font-size: 15px; }
-.door .t-title { font-size: 32px; line-height: 36px; }
-.door .t-lead { margin-top: 10px; max-width: 30ch; font-size: 19px; line-height: 1.4; }
-.door .cta-row { justify-content: flex-start; margin-top: 16px; }
+.door {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 580px; padding: 64px var(--gutter) 56px;
+  border-radius: 20px; text-align: center;
+  background: var(--canvas); color: var(--ink);
+}
+.door.dark { background: var(--void); color: var(--ink-lt); }
+.door.dark .muted, .door.dark .eyebrow { color: var(--ink-lt-2); }
+.door.dark .cta { color: var(--blue-dark); }
+.door .eyebrow { margin-bottom: 10px; font-size: clamp(15px, 1.6vw, 21px); }
+.door .t-title {
+  font-size: clamp(32px, 4.4vw, 56px); line-height: 1.07;
+  letter-spacing: -.015em; max-width: 16ch; margin-inline: auto;
+}
+.door .t-lead {
+  margin-top: 14px; max-width: 38ch; margin-inline: auto;
+  font-size: clamp(17px, 1.6vw, 21px); line-height: 1.38;
+}
+.door .cta-row { justify-content: center; margin-top: 20px; gap: 10px 28px; }
+.door-bg {
+  position: absolute; inset: 0; z-index: 0;
+  object-fit: cover; width: 100%; height: 100%; pointer-events: none;
+}
+.door > *:not(.door-bg) { position: relative; z-index: 1; }
+
+@media (min-width: 735px) {
+  .doors {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .door.wide { grid-column: span 2; min-height: 640px; }
+}
 
 /* -------------------------------------------------------------- Small screens
-   Desktop is the first-class layout; this only keeps a phone from breaking.
-   The picture is wider than a phone is, so it is shown whole — the word would
-   be cut in half by a crop — with the buttons under it on the same black. */
+    Matched to apple.com at 375x812 (iPhone SE/X). Full-viewport tiles,
+    edge-to-edge, tight spacing, no radius, nav overlapping hero. */
 @media (max-width: 734px) {
-  .band.art.hero { height: auto; min-height: 0; padding-top: var(--nav); justify-content: flex-start; }
-  .hero > .hero-img { position: relative; height: auto; aspect-ratio: 16 / 9; }
-  .band.art.hero > .hero-foot { padding-top: 20px; padding-bottom: 36px; }
-  .hero-ctas { gap: 12px; }
-  .doors { grid-template-columns: 1fr; }
-  .door { padding: 28px 0 32px; }
-  .door .t-title { font-size: 28px; line-height: 32px; }
+    .band.art.hero {
+    height: 66.667svh; min-height: 0;
+    padding-top: 0; justify-content: flex-end;
+  }
+  .hero > .hero-img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: 50% 30%;
+  }
+  .band.art.hero > .hero-foot {
+    padding: 0 16px max(44px, calc(env(safe-area-inset-bottom) + 20px));
+  }
+  .hero-ctas { gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .pill { font-size: 14px; min-height: 36px; padding: 0 16px; border-radius: 980px; }
+
+  .intro {
+    padding: 40px 16px 32px;
+  }
+  .intro .t-display {
+    font-size: 24px; line-height: 1.12; letter-spacing: -.01em;
+  }
+  .intro .t-lead { margin-top: 12px; font-size: 15px; line-height: 1.4; }
+  .intro .cta-row { margin-top: 16px; gap: 8px 24px; }
+  .intro .cta { font-size: 15px; }
+
+    .doors {
+    gap: 6px; padding: 0 0 40px;
+    max-width: none;
+  }
+  .door {
+    min-height: 520px; padding: 48px 24px 40px;
+    border-radius: 0;
+  }
+  .door:first-child { padding-top: 48px; }
+  .door .eyebrow { margin-bottom: 6px; font-size: 13px; letter-spacing: .02em; text-transform: uppercase; }
+  .door .t-title {
+    font-size: 28px; line-height: 1.07; letter-spacing: -.015em;
+    max-width: 14ch;
+  }
+  .door .t-lead {
+    margin-top: 8px; max-width: 30ch;
+    font-size: 14px; line-height: 1.36; letter-spacing: .005em;
+  }
+  .door .cta-row { margin-top: 14px; gap: 8px 20px; }
+  .door .cta { font-size: 14px; }
 }
