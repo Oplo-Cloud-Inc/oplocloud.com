@@ -51,6 +51,9 @@ MARK_D  = ("M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.64843
 # OEdu is a product on its own hostname, not a folder on this site. Every link
 # to it is absolute for that reason, and `rel()` leaves absolute targets alone.
 OEDU = "https://edu.oplocloud.com/"
+# Kern: the same app for learning on your own, by doing. Its own hostname, and
+# listed with OEdu because it is part of the same family of products.
+KERN = "https://kern.oplocloud.com/"
 # The developer site is the same kind of thing: its own hostname, linked to
 # absolutely from here. It is defined this far up because the pages below link
 # to it; the rest of what builds it is at the bottom, beside OEdu's.
@@ -161,7 +164,7 @@ MENUS = [
     [("Explore Solutions", [("Who It’s For", "solutions/"), ("Personal", "solutions/#personal"),
                             ("Education", OEDU), ("Developers", "developers/"),
                             ("Business and Government", "solutions/#institutions")]),
-     ("Education", [("OEdu", OEDU), ("Students", OEDU + "#students"),
+     ("Education", [("OEdu", OEDU), ("Kern", KERN), ("Students", OEDU + "#students"),
                     ("Teachers", OEDU + "#teachers"), ("Families", OEDU + "#families"),
                     ("Schools", OEDU + "#schools")]),
      ("Developers", [("Documentation", "developers/#docs"), ("SDKs", "developers/#sdks"),
