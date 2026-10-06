@@ -11,19 +11,21 @@
 .kern-fine { margin: 26px auto 0; max-width: 46ch; font-size: 12.5px; line-height: 1.55; color: #9a9aa6; }
 
 
+/* Signed out, the page has no student look; the front door still needs the same accent. */
+#gate.kern-gate .lx-btn.lg { height: 52px; padding: 0 30px; }
+
 /* ==========================================================================
    Kern's look: near-black, one calm column, soft outlined cards, and one
    large button that feels pressed. Everything arrives with a short rise, so
    moving between places is smooth rather than a cut. Under html.kern only.
    ========================================================================== */
+html.kern { --kern: #5468ff; --kern-deep: #3c4ee0; --kern-ease: cubic-bezier(.2, .8, .2, 1); }
 html.kern[data-look="obsidian"] {
   --obsidian: #141414; --canvas: #141414; --chrome: #141414;
   --paper: #1b1b1d; --sunk: #232326; --raise: #2a2a2d; --elevated: #2a2a2d; --press: #323236;
   --ink: #fff; --prose: #ececf0; --ink-2: #c9c9d1; --ink-3: #9a9aa6; --ink-3-fill: #c9c9d1;
   --rule: rgba(255,255,255,.16); --hair: rgba(255,255,255,.11);
   --blue: #8d9bff; --blue-d: #a9b4ff; --fill: #5468ff; --fill-d: #6678ff;
-  --kern: #5468ff; --kern-deep: #3c4ee0;
-  --kern-ease: cubic-bezier(.2, .8, .2, 1);
   --well: 620px;
 }
 html.kern body { background: #141414; }
