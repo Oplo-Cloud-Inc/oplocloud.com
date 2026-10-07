@@ -632,6 +632,52 @@ window.OPLO = (function () {
               "Every explanation, example, figure and question is OEdu's own."
   };
 
+  /* Grade 1 Math — for Kern (a child learning at home), so it is only listed
+     where window.OPLO_KERN is set. It follows NCERT's Class 1 mathematics
+     book, Joyful Mathematics, a chapter to a unit. Only the order of ideas is
+     the book's: Moti the cat, her room, every picture, sentence and question
+     is OEdu's own. A child of six cannot read a page or type a number, so the
+     lessons are things to move and tap, and every screen is read aloud (see
+     learn/lab/k1kit.js). Unit 1 is written; the others are listed, not yet
+     open. */
+  var G1 = {
+    id: "g1", t: "Grade 1 Math", hue: "#ff8a3d", subject: "Math", level: "Grade 1", tag: "Interactive",
+    lab: true,
+    d: "Where things are, how many, and what goes with what, learned by moving things about.",
+    lede: "Move a cat about a room and the words for where things are come by themselves: on, under, inside, outside, above, " +
+          "below. Then before and after on a little train, and sorting. Every screen is read aloud, nothing needs typing, and " +
+          "there is always something to do away from the screen too.",
+    glyph: '<path d="M4.5 20c-1.2-4.2-1.2-9 .8-13l4 2.6a8.4 8.4 0 0 1 5.4 0l4-2.6c2 4 2 8.8.8 13z"/><path d="M9.2 13.6v.01M14.8 13.6v.01M10.6 16.4q1.4 1 2.8 0"/>',
+    objectives: [
+      "Say where things are with the words on, under, inside, outside, above, below, top, middle and bottom.",
+      "Say what comes before and after in a line, and count the ones before and after.",
+      "Sort things into groups by colour, shape or size, and say why they belong together.",
+      "Recognise and name shapes, then count and write the numbers from 1 to 9, and on to 20.",
+      "Add and take away with small numbers, then up to 20.",
+      "Compare lengths and weights, read numbers to 99, and find patterns.",
+      "Tell the time of day, share in equal groups, know coins and notes, and read a simple tally."
+    ],
+    units: [
+      { art: "g1", t: "Where Is Moti?", lab: true,
+        desc: "The words for where things are: on, under, inside, outside, above, below, top, middle and bottom. Before and after on a train. Sorting things into groups." },
+      { t: "Long and Round", desc: "Shapes: long things, round things, and the shapes that things are made of." },
+      { t: "Numbers 1 to 9", desc: "Counting and writing the numbers from 1 to 9, and what each one means." },
+      { t: "Making 10", desc: "The numbers from 10 to 20, made out of tens and ones." },
+      { t: "Adding and Taking Away", desc: "Putting groups together and taking some away, with numbers up to 9." },
+      { t: "Adding and Taking Away up to 20", desc: "Addition and subtraction with the numbers up to 20." },
+      { t: "Measuring", desc: "Long and short, heavy and light, and measuring with things around you." },
+      { t: "Numbers 21 to 99", desc: "Reading, counting and ordering the numbers from 21 to 99." },
+      { t: "Patterns", desc: "Finding and making patterns with shapes, colours and numbers." },
+      { t: "Time", desc: "Morning, noon and night, the days of the week, and what we do when." },
+      { t: "Equal Groups", desc: "Making groups that are the same size, and counting them together." },
+      { t: "Money", desc: "Coins and notes, and how much things cost." },
+      { t: "Collecting Data", desc: "Counting and comparing, and showing what you counted with pictures." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "The course follows NCERT Class 1 Mathematics (Joyful Mathematics) a chapter at a time: unit 1 is the book's first chapter. " +
+              "Every story, picture, explanation and question is OEdu's own."
+  };
+
   var MEDIA = {
     id: "media", t: "Media Arts", hue: "#8f5cff", subject: "English", level: "Introductory",
     tag: "Arts and Design",
@@ -854,12 +900,12 @@ window.OPLO = (function () {
         stub("write", "Writing to Be Understood", "English", "#8f5cff", "Sentences that survive being read once. Structure, evidence, revision.", BOOK)] },
     { n: "Math", hue: BLUE,
       d: "Arithmetic, algebra and geometry, done by seeing why rather than remembering how.",
-      courses: [SEEING,
+      courses: (window.OPLO_KERN ? [G1] : []).concat([SEEING,
         PREALG,
         ALG,
         G8,
         GEO,
-        ALG2] },
+        ALG2]) },
     { n: "Science", hue: GREEN,
       d: "Method first: what would have to be true, and how would you find out.",
       courses: [
@@ -890,6 +936,7 @@ window.OPLO = (function () {
     alg: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [5], 7: [4, 6], 8: [7], 9: [8] },
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
     alg2: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [5], 7: [6], 8: [5], 9: [6, 8], 10: [3, 9], 11: [9], 12: [3] },
+    g1: { 1: [], 2: [1], 3: [1], 4: [3], 5: [4], 6: [5], 7: [6], 8: [4], 9: [3], 10: [], 11: [5], 12: [4], 13: [3] },
     geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [4], 6: [4], 7: [4], 8: [5, 7], 9: [6], 10: [9], 11: [8], 12: [7] },
     biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
            13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] },

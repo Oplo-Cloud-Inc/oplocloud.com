@@ -44,11 +44,18 @@ window.OPLO_LAB = (function () {
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
     "lab/algkit.js": "ec6dd5e1",
+    "lab/k1art.js": "b96867df",
+    "lab/k1geom.js": "38408767",
+    "lab/k1kit.js": "6e395ef5",
+    "lab/k1kinds.js": "03e272ae",
+    "lab/k1scenes.js": "cee1f232",
+    "lab/k1.css": "ccb41b18",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",
     "path/alg-d.js": "84267203",
     "path/alg.js": "b48987b4",
+    "g1/u01.js": "29e9bd21",
     "prealg/u01.js": "07a42f16",
     "prealg/u02.js": "81f3d35d",
     "prealg/u03.js": "25b284a9",
@@ -1021,8 +1028,8 @@ window.OPLO_LAB = (function () {
   function script(path) {
     if (loading[path]) return loading[path];
     loading[path] = new Promise(function (ok, fail) {
-      var s = document.createElement("script");
-      s.src = path + "?v=" + (FILES[path] || "dev");
+      var css = /\.css$/.test(path), s = document.createElement(css ? "link" : "script");
+      if (css) { s.rel = "stylesheet"; s.href = path + "?v=" + (FILES[path] || "dev"); } else s.src = path + "?v=" + (FILES[path] || "dev");
       s.onload = ok;
       s.onerror = function () { delete loading[path]; fail(new Error("Couldn't load " + path)); };
       document.head.appendChild(s);
@@ -1042,7 +1049,8 @@ window.OPLO_LAB = (function () {
      lab/pathkit.js, pathhelp.js, pathui.js and path/alg*.js; and Algebra I
      adds its concept builder, lab/algkit.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js" };
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js",
+                     g1: ["lab/k1.css", "lab/k1art.js", "lab/k1geom.js", "lab/k1kit.js", "lab/k1kinds.js", "lab/k1scenes.js"] };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */
   function kitFor(courseId) {
@@ -1668,7 +1676,7 @@ window.OPLO_LAB = (function () {
     return {
       eyebrow: lessonName(u, l) + " · Unit " + u.n,
       title: l.title,
-      endTitle: "Lesson complete.",
+      endTitle: (u.end && u.end.title) || "Lesson complete.", endLine: u.end && u.end.line, endLabels: u.end && u.end.labels, k1: !!u.k1,
       steps: l.steps.map(function (s, i) {
         var x = fmtStep(s);
         x.id = x.id || (lessonKey(l) + ":" + i);

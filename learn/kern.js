@@ -56,6 +56,15 @@
     cpctc: '<path class="tb sa" d="M5 46 11 16 25 46z"/><path class="tb sb" d="M39 46 53 16 59 46z"/><path class="sc dsh" d="M11 16 53 16M5 46 59 46M25 46 39 46"/>',
     iso: '<path class="tb sa" d="M32 8 55 52H9z"/><path class="sc" d="M17 28.6 23.4 32.2M46.6 28.6 40.2 32.2"/><path class="sw" d="M16 46a9 9 0 0 0 6-6M48 46a9 9 0 0 1-6-6"/>',
     ctr: '<path class="tb sa" d="M5 48 9 16 26 48z"/><path class="sw dsh" d="M32 8v48"/><path class="tb sb" d="M59 48 55 16 38 48z"/>',
+    // Grade 1 Math — Where Is Moti?
+    g1: '<path class="tb sw" d="M12 48C9 38 9 26 15 16l11 7a21 21 0 0 1 12 0l11-7c6 10 6 22 3 32z"/><circle class="fc" cx="24" cy="34" r="3"/><circle class="fc" cx="40" cy="34" r="3"/><path class="sc" d="M28 42q4 3 8 0"/><path class="sb" d="M8 38 17 40M8 45 17 44M56 38 47 40M56 45 47 44"/>',
+    onunder: '<path class="sw" d="M9 30H55M17 30V51M47 30V51"/><circle class="fc" cx="32" cy="19" r="6"/><circle class="fa" cx="32" cy="43" r="5.5"/>',
+    inout: '<path class="sw" d="M8 22V50H34V22"/><path class="sb" d="M8 22 4 16M34 22 38 16"/><circle class="fc" cx="21" cy="40" r="6"/><circle class="fa" cx="49" cy="43" r="6"/>',
+    abovebelow: '<path class="sw" d="M9 32H55"/><circle class="fc" cx="32" cy="14" r="6"/><circle class="fa" cx="32" cy="50" r="6"/><path class="sb" d="M32 22V27M32 37V42"/>',
+    topbottom: '<rect class="tc sc" x="12" y="8" width="40" height="13" rx="4"/><rect class="tb sw" x="12" y="25" width="40" height="13" rx="4"/><rect class="ta sa" x="12" y="42" width="40" height="13" rx="4"/>',
+    train: '<path class="tb sw" d="M5 28H24V46H5z"/><path class="sw" d="M9 22H17V28"/><path class="tc sc" d="M27 32H58V46H27z"/><path class="sa" d="M33 32V46M43 32V46M52 32V46"/><circle class="fw" cx="12" cy="50" r="4"/><circle class="fw" cx="36" cy="50" r="4"/><circle class="fw" cx="50" cy="50" r="4"/><path class="sb" d="M12 14q2-4 5 0"/>',
+    sort: '<circle class="fa" cx="16" cy="18" r="6"/><circle class="fa" cx="30" cy="22" r="6"/><circle class="fc" cx="16" cy="44" r="6"/><circle class="fc" cx="30" cy="48" r="6"/><circle class="fb" cx="48" cy="20" r="6"/><circle class="fb" cx="50" cy="42" r="6"/><path class="sw dsh" d="M8 32H56M40 8V56"/>',
+    room: '<path class="sw" d="M6 46H58M6 30V52M58 40V52"/><rect class="tb sb" x="10" y="30" width="48" height="12" rx="4"/><circle class="fc" cx="46" cy="16" r="6"/><path class="sg" d="M20 20l5 5 9-10"/>',
     // Ways of ending a unit
     quiz: '<circle class="sb" cx="32" cy="32" r="23"/><circle class="sa" cx="32" cy="32" r="14"/><circle class="fc" cx="32" cy="32" r="5.2"/>',
     test: '<path class="tc sc" d="M20 9h24v15a12 12 0 0 1-24 0z"/><path class="sc" d="M20 14h-8c0 9 4 13 10 14M44 14h8c0 9-4 13-10 14M32 36v10M22 55h20"/>',

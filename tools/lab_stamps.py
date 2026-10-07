@@ -27,7 +27,7 @@ import sys
 
 LEARN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "learn")
 CORE = os.path.join(LEARN, "lab", "core.js")
-COURSES = ["prealg", "alg", "alg2", "g8", "geo", "biz", "hist", "sat"]
+COURSES = ["g1", "prealg", "alg", "alg2", "g8", "geo", "biz", "hist", "sat"]
 
 
 def stamp(path):
@@ -36,7 +36,7 @@ def stamp(path):
 
 
 def build():
-    files = [("lab/" + f, os.path.join(LEARN, "lab", f)) for f in ("widgets.js", "bizkit.js", "histkit.js", "satkit.js", "geotools.js", "pathkit.js", "pathhelp.js", "pathui.js", "algkit.js")]
+    files = [("lab/" + f, os.path.join(LEARN, "lab", f)) for f in ("widgets.js", "bizkit.js", "histkit.js", "satkit.js", "geotools.js", "pathkit.js", "pathhelp.js", "pathui.js", "algkit.js", "k1art.js", "k1geom.js", "k1kit.js", "k1kinds.js", "k1scenes.js", "k1.css")]
     files += [("path/" + os.path.basename(p), p) for p in sorted(glob.glob(os.path.join(LEARN, "path", "*.js")))]
     for c in COURSES:
         for p in sorted(glob.glob(os.path.join(LEARN, c, "u[0-9][0-9].js"))):

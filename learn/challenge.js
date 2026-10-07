@@ -949,6 +949,9 @@ window.OPLO_CHALLENGE = (function () {
     var prompt = el("div", "ch-prompt", s.prompt || s.t || "");
     prompt.tabIndex = -1;
     card.appendChild(prompt);
+    // A course can dress its own cards (Grade 1 reads each one aloud): a step it owns carries `k1`.
+    var cardHook = window.OPLO_CHALLENGE && window.OPLO_CHALLENGE.cardHook;
+    if (cardHook) cardHook(card, s, function (f) { DISPOSE.push(f); });
 
     var foot = el("footer", "ch-foot");
     if (s.type === "learn") {
@@ -1017,7 +1020,7 @@ window.OPLO_CHALLENGE = (function () {
 
     var st = { tries: 0, hints: 0, done: false };
     hintBtn.hidden = !(s.hints && s.hints.length);
-    ui.onChange = function () { check.disabled = !ui.ready(); clearSheet(); };
+    ui.onChange = function () { if (st.done) return; check.disabled = !ui.ready(); clearSheet(); };
     ui.onEnter = function () { if (!check.disabled) check.click(); };
 
     hintBtn.addEventListener("click", function () {
@@ -1067,7 +1070,7 @@ window.OPLO_CHALLENGE = (function () {
         record(true);
         done(true);
       } else {
-        say("no", "<b>Not quite.</b> " + (r.say || s.nudge || "Look again — and try a hint if you're stuck."));
+        say("no", "<b>" + (s.no || "Not quite.") + "</b> " + (r.say || s.nudge || "Look again — and try a hint if you're stuck."));
         check.disabled = !ui.ready();
         if (st.tries >= (ui.helpAt || 2)) showBtn.hidden = false;
       }
@@ -1105,8 +1108,8 @@ window.OPLO_CHALLENGE = (function () {
       showBtn.hidden = true;
       var why = s.why ? '<p class="ch-why">' + s.why + "</p>" : "";
       say(ok ? "ok" : "shown",
-        (ok ? "<b>" + (st.tries === 1 && !st.hints ? "Right." : "Right — you got there.") + "</b>"
-            : "<b>Here's the answer.</b> " + (P.opts.shownNote || (P.opts.path ? "Read it through, then keep going." :
+        (ok ? "<b>" + (s.yes ? s.yes[st.tries === 1 && !st.hints ? 0 : 1] : st.tries === 1 && !st.hints ? "Right." : "Right — you got there.") + "</b>"
+            : "<b>" + (s.shown || "Here's the answer.") + "</b> " + (s.shownNote != null ? s.shownNote : P.opts.shownNote || (P.opts.path ? "Read it through, then keep going." :
               "It will come back in the unit review."))) + why);
       armNext();
     }
@@ -1219,18 +1222,21 @@ window.OPLO_CHALLENGE = (function () {
     var card = el("article", "ch-card ch-end" + (reduced() ? "" : " in"));
     card.appendChild(el("div", "ch-endmark", '<svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23"/>' +
       '<path d="m16 27 7 7 13-15"/></svg>'));
-    card.appendChild(el("h2", "ch-endh", P.path.endTitle || (P.path.review ? "Review done." : "Challenge complete.")));
-    card.appendChild(el("p", "ch-endsum", clean.length + " of " + steps.length + " solved first try, without a hint."));
+    var lab = P.path.endLabels || {};
+    var endH = P.path.endTitle || (P.path.review ? "Review done." : "Challenge complete."), endL = P.path.endLine ? P.path.endLine(clean.length, steps.length) : clean.length + " of " + steps.length + " solved first try, without a hint.";
+    card.appendChild(el("h2", "ch-endh", endH));
+    card.appendChild(el("p", "ch-endsum", endL));
+    if (P.path.k1 && window.OPLO_CHALLENGE.cardHook) window.OPLO_CHALLENGE.cardHook(card, { k1: 1, say: endH + " " + endL }, function (f) { DISPOSE.push(f); });
     var two = el("div", "ch-endcols");
     var a = skills(clean), b = skills(helped);
-    if (a.length) two.appendChild(el("section", "ch-endcol good", "<h3>You showed you can</h3><ul>" +
+    if (a.length) two.appendChild(el("section", "ch-endcol good", "<h3>" + esc(lab.good || "You showed you can") + "</h3><ul>" +
       a.map(function (k) { return "<li>" + icon(I.check) + "<span>" + esc(k) + "</span></li>"; }).join("") + "</ul>"));
-    if (b.length) two.appendChild(el("section", "ch-endcol again", "<h3>Worth another look</h3><ul>" +
+    if (b.length) two.appendChild(el("section", "ch-endcol again", "<h3>" + esc(lab.again || "Worth another look") + "</h3><ul>" +
       b.map(function (k) { return "<li>" + icon(I.again) + "<span>" + esc(k) + "</span></li>"; }).join("") + "</ul>"));
     card.appendChild(two);
     var acts = el("div", "ch-endacts");
     if (helped.length) {
-      var again = button("ch-btn", icon(I.again) + "<span>Try those " + helped.length + " again</span>");
+      var again = button("ch-btn", icon(I.again) + "<span>" + (lab.retry ? lab.retry(helped.length) : "Try those " + helped.length + " again") + "</span>");
       again.addEventListener("click", function () {
         var only = helped.map(function (s) { return s.id; });
         play(P.opts.host, Object.assign({}, P.opts, { only: only, round: (P.opts.round || 0) + 1 }));
