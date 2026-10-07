@@ -828,6 +828,61 @@ window.OPLO = (function () {
               "The units follow its chapters and its photographs are credited where they appear; the readings, lessons, examples and problems are OEdu's own."
   };
 
+  /* Introduction to Philosophy is a lab course, and its units follow the chapters
+     of OpenStax's Introduction to Philosophy. Each lesson teaches one idea the way
+     a good teacher would: a worked example first, then the student does each step
+     with help, then alone. The philosophy is done rather than read about — an
+     argument pulled apart line by line, a set of beliefs tested for a contradiction,
+     a conversation in which you ask the questions (learn/lab/, the kit in
+     learn/lab/philkit.js, the units in learn/phil/). A unit without a file yet
+     stays on the syllabus. */
+  var PHIL = {
+    id: "phil", t: "Introduction to Philosophy", hue: "#9a86e6", subject: "Humanities",
+    level: "High School", tag: "Reading & Interactive", lab: true,
+    d: "The biggest questions — what is real, what can we know, what is right — and the tools for working on them, learned by using them.",
+    lede: "Philosophy is not a list of famous names. It is a way of working: take a big question, find the reasons, test them against cases, " +
+          "and notice what you really believe. You will pull arguments apart, run thought experiments, question the way Socrates did, " +
+          "and learn the tools philosophers use, one small step at a time.",
+    glyph: '<path d="M12 3.5a7.5 7.5 0 0 0-4.6 13.4V20l3.4-2.3a7.5 7.5 0 1 0 1.2-14.2z"/><path d="M10.1 9.6a2 2 0 1 1 3 1.7c-.7.4-1.1.9-1.1 1.7"/><path d="M12 15.6v.2"/>',
+    objectives: [
+      "Explain what philosophy is, where it began around the world, and what makes a question philosophical.",
+      "Reason clearly: find the premises and conclusion of an argument, test beliefs for contradiction, and spot fallacies.",
+      "Take an idea apart, run a thought experiment, and weigh what a view costs before accepting it.",
+      "Trace the great traditions: Indigenous, Indian, Chinese, Greek, Jewish, Christian and Islamic philosophy.",
+      "Ask what is real, what we can know, and what is right — and compare the main answers to each.",
+      "Apply philosophical tools to hard cases in medicine, technology and government."
+    ],
+    units: [
+      { t: "Introduction to philosophy", lab: true,
+        desc: "What philosophy is, how philosophers weigh evidence and test ideas, and Socrates as the model of a philosophical life." },
+      { t: "Critical thinking, research, reading, and writing", lab: true,
+        desc: "How the mind makes inferences and mistakes, habits of careful thinking, and how to research, read and write philosophy." },
+      { t: "The early history of philosophy around the world", lab: true,
+        desc: "Indigenous philosophy, classical Indian philosophy and classical Chinese philosophy." },
+      { t: "The emergence of classical philosophy", lab: true,
+        desc: "Reading the history of philosophy, the great Greek philosophers, and Jewish, Christian and Islamic philosophy." },
+      { t: "Logic and reasoning", lab: true,
+        desc: "Philosophical methods for discovering truth, logical statements, arguments, kinds of inference, and informal fallacies." },
+      { t: "Metaphysics", lab: true,
+        desc: "What things are made of, the self and identity, the universe and the existence of God, and free will." },
+      { t: "Epistemology", lab: true,
+        desc: "What knowledge is, how beliefs are justified, skepticism, and the problems of knowing in today's world." },
+      { t: "Value theory", lab: true,
+        desc: "Facts and values, basic questions about value, metaethics, well-being, and the philosophy of beauty." },
+      { t: "Normative moral theory", lab: true,
+        desc: "What a moral theory must do, and the main answers: consequentialism, deontology, virtue ethics, Daoism and feminist ethics." },
+      { t: "Applied ethics", lab: true,
+        desc: "Hard cases in bioethics, environmental ethics, and business and emerging technology." },
+      { t: "Political philosophy", lab: true,
+        desc: "Government through history, forms of government, legitimacy and duty, and political ideologies." },
+      { t: "Contemporary philosophies and social theories", lab: true,
+        desc: "Enlightenment social theory, the Marxist solution, continental philosophy, the Frankfurt School and postmodernism." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "Introduction to Philosophy — OpenStax, Rice University (openstax.org), CC BY-NC-SA 4.0. " +
+              "The units follow its chapters and its pictures are credited where they appear; the lessons, examples and problems are OEdu's own."
+  };
+
   /* SAT Math is test prep built as a system rather than a pile of questions
      (learn/lab/satkit.js, learn/sat/): an adaptive Brain Scan, a map of every
      skill, missions made from it, a coach that answers a miss with questions
@@ -921,7 +976,7 @@ window.OPLO = (function () {
         stub("civ",  "Civics",        "Social Studies", "#e8a317", "How power is arranged, checked, and used where you live.", GLOBE)] },
     { n: "Humanities", hue: "#d4533b",
       d: "The human story — how people lived, believed and made sense of their world, read closely and questioned like a historian.",
-      courses: [HIST] },
+      courses: [HIST, PHIL] },
     { n: "Test Prep", hue: "#0d9488",
       d: "The tests that open doors — the skills they measure, and how to show them under the clock.",
       courses: [SATM] }
@@ -945,6 +1000,7 @@ window.OPLO = (function () {
            13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] },
     hist: { 1: [], 2: [1], 3: [2], 4: [3], 5: [3], 6: [3], 7: [6], 8: [2], 9: [2], 10: [7], 11: [10], 12: [5],
             13: [7], 14: [12], 15: [9], 16: [14], 17: [16] },
+    phil: { 1: [], 2: [1], 3: [1], 4: [3], 5: [2], 6: [5], 7: [5], 8: [1], 9: [8], 10: [9], 11: [8], 12: [11] },
     sat: { 1: [], 2: [1], 3: [], 4: [] }
   };
 

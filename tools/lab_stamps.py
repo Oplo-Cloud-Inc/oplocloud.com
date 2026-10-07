@@ -7,7 +7,7 @@ a lab course — the manipulatives and each unit's lessons — with a stamp that
 changes whenever a file does, so a browser never runs yesterday's copy. This
 rewrites that map from the files on disk: learn/lab/widgets.js, a course's
 own kit (learn/lab/bizkit.js for Business, learn/lab/histkit.js for Global
-History I, learn/lab/satkit.js for SAT Math, learn/lab/geotools.js for Geometry, learn/lab/path*.js
+History I, learn/lab/philkit.js for Introduction to Philosophy, learn/lab/satkit.js for SAT Math, learn/lab/geotools.js for Geometry, learn/lab/path*.js
 and learn/path/*.js for Algebra Pathway) and every learn/<course>/uNN.js
 that exists, stamped with the first eight characters of
 its SHA-1. A unit whose file does not exist yet is left out, and its page
@@ -27,7 +27,7 @@ import sys
 
 LEARN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "learn")
 CORE = os.path.join(LEARN, "lab", "core.js")
-COURSES = ["g1", "prealg", "alg", "alg2", "g8", "geo", "biz", "hist", "sat"]
+COURSES = ["g1", "prealg", "alg", "alg2", "g8", "geo", "biz", "hist", "phil", "sat"]
 
 
 def stamp(path):
@@ -36,7 +36,7 @@ def stamp(path):
 
 
 def build():
-    files = [("lab/" + f, os.path.join(LEARN, "lab", f)) for f in ("widgets.js", "bizkit.js", "histkit.js", "satkit.js", "geotools.js", "pathkit.js", "pathhelp.js", "pathui.js", "algkit.js", "k1art.js", "k1geom.js", "k1kit.js", "k1kinds.js", "k1scenes.js", "k1.css")]
+    files = [("lab/" + f, os.path.join(LEARN, "lab", f)) for f in ("widgets.js", "bizkit.js", "histkit.js", "philkit.js", "satkit.js", "geotools.js", "pathkit.js", "pathhelp.js", "pathui.js", "algkit.js", "k1art.js", "k1geom.js", "k1kit.js", "k1kinds.js", "k1scenes.js", "k1.css")]
     files += [("path/" + os.path.basename(p), p) for p in sorted(glob.glob(os.path.join(LEARN, "path", "*.js")))]
     for c in COURSES:
         for p in sorted(glob.glob(os.path.join(LEARN, c, "u[0-9][0-9].js"))):
