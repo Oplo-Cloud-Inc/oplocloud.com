@@ -799,7 +799,7 @@
   function unitsOf(c) {
     if (c.units) {
       return c.units.map(function (u, i) {
-        return { n: i + 1, t: u.t, desc: u.desc, play: !!u.play, set: u.set,
+        return { n: i + 1, t: u.t, desc: u.desc, art: u.art, play: !!u.play, set: u.set,
                  lab: !!u.lab && !!(window.OPLO_LAB && window.OPLO_LAB.has(c.id, i + 1)) };
       });
     }
@@ -1841,6 +1841,7 @@
       show("course");
       return;
     }
+    if (KERN) { drawKernCourse(c); return; }
     var v = $("#v-course");
     v.innerHTML = "";
     var units = unitsOf(c);
@@ -1965,6 +1966,84 @@
     two.appendChild(side);
     v.appendChild(two);
 
+    markSubjectNav(c.subject);
+    noFoot(); progress(null);
+    show("course");
+  }
+
+
+  /* Kern's course page: what the course is, the one unit to do next, and the
+     units as a path of pads. Nothing is locked; a unit not yet written is
+     dimmed and says so. */
+  function drawKernCourse(c) {
+    var v = $("#v-course"), units = unitsOf(c), A = window.KERN_ART;
+    v.innerHTML = "";
+    var col = el("div", "kcp");
+    v.appendChild(col);
+    var head = el("header", "kp-head");
+    var row = el("div", "kcp-row");
+    var ic = el("span", "kcp-ic");
+    ic.style.background = c.hue + "22"; ic.style.color = c.hue; ic.innerHTML = svg(c.glyph, true);
+    var tx = el("div");
+    tx.appendChild(window.OPLO_LAB.crumbs(trail(c, "course").concat({ t: c.t })));
+    tx.appendChild(el("h1", null, esc(c.t)));
+    row.appendChild(ic); row.appendChild(tx); head.appendChild(row);
+    head.appendChild(el("p", null, esc(c.d || c.lede || "")));
+    var live = function (u) { return u.play || u.set || u.lab || u.read; };
+    var meta = el("div", "kp-meta");
+    meta.innerHTML = "<span>" + units.length + " units</span><span>" + esc(c.level || "") + "</span><span>" + coursePct(c) + "% mastered</span>";
+    head.appendChild(meta);
+    col.appendChild(head);
+
+    var nextU = units.filter(function (u) { return live(u) && mastery(c, u.n) < 85; })[0] || units.filter(live)[0] || units[0];
+    if (nextU) {
+      var nb = el("section", "kp-next");
+      nb.innerHTML = A.pad(nextU.art, nextU.n).replace("kp-pad", "kp-pad big") +
+        '<div class="tx"><span class="eb">' + (coursePct(c) ? "Up next" : "Start here") + " · Unit " + nextU.n + "</span><b>" + esc(nextU.t) + "</b><span>" + esc(nextU.desc || "") + "</span></div>";
+      var go = el("button", "lx-btn", coursePct(c) ? "Continue" : "Start");
+      go.type = "button";
+      go.addEventListener("click", function () { openUnit(c, nextU.n); });
+      nb.appendChild(go);
+      col.appendChild(nb);
+    }
+    if (S.me && !document.body.classList.contains("is-staff") && R) {
+      var on = R.own().indexOf(c.id) > -1, add = el("button", "lx-btn quiet kp-wide", on ? "On your list ✓" : "Add to my courses");
+      add.type = "button";
+      add.addEventListener("click", function () {
+        if (R.own().indexOf(c.id) > -1) { R.drop(c.id); add.textContent = "Add to my courses"; toast("Taken off your list."); }
+        else { R.adopt(c.id); add.textContent = "On your list ✓"; toast("Added to your courses."); }
+      });
+      col.appendChild(add);
+    }
+
+    col.appendChild(el("h2", "kp-h2", "Units"));
+    var WAVE = [0, 30, 48, 30, 0, -30, -48, -30], path = el("ol", "kp-path");
+    units.forEach(function (u, i) {
+      var m = mastery(c, u.n), soon = !live(u);
+      var li = el("li", "kp-node" + (m >= 85 ? " done" : "") + (nextU && u.n === nextU.n ? " cur" : "") + (soon ? " soon" : ""));
+      li.style.setProperty("--o", WAVE[i % WAVE.length]); li.style.setProperty("--i", i);
+      var first = String(u.desc || "").split(/(?<=\.)\s/)[0];
+      var b = el("button", "kp-hit");
+      b.type = "button";
+      b.innerHTML = A.pad(u.art, u.n) + '<span class="kp-lab"><b>' + esc(u.t) + "</b><span>" + (soon ? "Coming soon" : "Unit " + u.n + (m ? " · " + m + "%" : "")) + "</span>" +
+        (nextU && u.n === nextU.n ? '<span class="kp-go">' + (coursePct(c) ? "Continue" : "Start") + "</span>" : "") + "</span>";
+      b.addEventListener("click", function () { openUnit(c, u.n); });
+      li.appendChild(b);
+      path.appendChild(li);
+    });
+    col.appendChild(path);
+    if (c.lab && window.OPLO_LAB) {
+      var cc = el("button", "lx-btn quiet kp-wide", "Course challenge · two problems from every unit");
+      cc.type = "button";
+      cc.addEventListener("click", function () { openLab(c, null, "Challenge"); });
+      col.appendChild(cc);
+    }
+    if (c.objectives || c.textbook) {
+      var more = el("details", "kp-more");
+      more.innerHTML = "<summary>What you will be able to do</summary>" + (c.objectives ? "<ul>" + c.objectives.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" : "") +
+        (c.textbook ? "<p>" + esc(c.textbook) + "</p>" : "");
+      col.appendChild(more);
+    }
     markSubjectNav(c.subject);
     noFoot(); progress(null);
     show("course");

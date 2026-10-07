@@ -1,20 +1,23 @@
 /* ==========================================================================
-   Geometry — Unit 2: Geometric Reasoning. See lab/core.js for the format
-   and lab/geotools.js for the drawing kit.
+   Geometry — Unit 2: Reasoning and Proof. See lab/core.js for the format and
+   lab/geotools.js for the drawing kit.
 
-   Follows Holt Geometry, Chapter 2, section for section (2-1 to 2-7), after
-   a readiness check. Only the order of topics is the book's: every
-   sentence, example, figure and question here is OEdu's own.
+   Follows CK-12 Geometry (CK-12 Foundation, CC BY-SA), Chapter 2, section
+   for section (2.1 to 2.8), after a readiness check. The sentences,
+   examples, figures and questions are OEdu's own; the order and the ideas are
+   the book's. A short lab on logic puzzles sits after deductive reasoning.
 
-   Inductive reasoning and counterexamples (2-1), conditional statements
-   (2-2), deductive reasoning (2-3), biconditionals and definitions (2-4),
-   and proof: algebraic (2-5), two-column (2-6), flowchart and paragraph
-   (2-7). In a worked proof each line is a statement, and the words beside
-   it are its reason.
+   Inductive reasoning (2.1), conditional statements and the biconditional
+   (2.2), deductive reasoning (2.3), algebraic properties (2.4), diagrams
+   (2.5), two-column proofs (2.6), segment and angle congruence theorems
+   (2.7), and proofs about angle pairs (2.8). In a worked proof each line is
+   a statement, and the words beside it are its reason. Most lessons open on
+   something to do with your hands before anything is named (kicker "Explore").
 
-   Lessons carry v: 4 (see Unit 1). Skills are hg2-….
+   Lessons carry v: 5, so a record kept from the Holt-based Unit 2 (v 4) does
+   not mark these done. Skills are hg2-…
 
-   Eight lessons, seven skills, three quizzes, and the unit test.
+   Nine lessons and a lab, nine skills, three quizzes, and the unit test.
    ========================================================================== */
 (function () {
   "use strict";
@@ -524,12 +527,27 @@
     label(A, 0, 1); label(B, tilt, 5);
     return plain([0, 8.4], [-1.5, 3.9], items, { u: o.u || 40, w: o.w, alt: o.alt || "Two " + (tilt ? "" : "parallel ") + "lines " + nm[0] + " and " + nm[1] + " cut by a transversal " + nm[2] + ", making eight angles numbered 1 to 8: 1 and 2 above the upper line, 3 and 4 below it, 5 and 6 above the lower line, 7 and 8 below it." });
   }
+
+  /* --------------------------------------------- Hands-on scenes (sketch) */
+  // A point along the line through a and b (k = 0 at a, 1 at b), for drawing a line or a ray to the frame's edge.
+  function farPt(a, b, k) { return [a[0] + k * (b[0] - a[0]), a[1] + k * (b[1] - a[1])]; }
+  function lineThru(a, b, c) { return { dline: [farPt(a, b, -40), farPt(a, b, 41)], c: c }; }
+  function rayThru(a, b, c) { return { dline: [a, farPt(a, b, 41)], ray: true, c: c }; }
+  function crossOf(a, b, c) { return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); }
+  function samePt(a, b) { return Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6; }
+  function r10(v) { return Math.round(v * 10) / 10; }
+  function n1(v) { return num(r10(v)); }
+  function deg0(v) { return Math.round(v); }
+  // The angle at v from a to b, 0–180, in whole degrees.
+  function angAt(a, v, b) { return Math.round(GT.angle(a, v, b)); }
+  // "Found: acute ✓ right ✓ …": the kinds a drag has shown so far, as a line of words.
+  function found(list, seen) { return list.map(function (k) { return (seen[k[0]] ? "**" + k[1] + " ✓**" : "<span class='gt-dim'>" + k[1] + "</span>"); }).join(" · "); }
   /* ============================================================ Ready? */
   LESSONS.push({
-    title: "Are you ready? Three quick checks",
+    title: "Are you ready? Three quick checks", art: "ready",
     tag: "Ready?",
     blurb: "Before Chapter 2 · Angle pairs, solving equations, and number patterns.",
-    mins: 6, v: 4,
+    mins: 6, v: 5,
     steps: [
       { type: "num", kicker: "Check 1 · Angle pairs", prompt: "Two angles are supplementary. One measures 65°. Find the other.", post: "°", answer: 115, skill: "Supplementary angles",
         near: [{ v: 25, fb: "That is the complement. Supplementary angles add to 180°." }], hints: ["$180 - 65$."], why: "$180 - 65 = 115$." },
@@ -549,20 +567,42 @@
         after: "Nothing is locked. Open any lesson whenever you like." }
     ]
   });
-  /* =============================== 2-1 · Inductive reasoning and conjectures */
+  /* ============================================== 2.1 · Inductive reasoning */
   var HOW_2_1 = [["Look", "Look at several cases, and find what stays the same or how it changes."],
                  ["Conjecture", "State the pattern as a general rule you believe is true."],
                  ["Test", "Test more cases. One case that breaks the rule, a counterexample, proves it false."]];
+  // Points round a circle, placed so that no three chords meet at one point: n points make 1 + C(n,2) + C(n,4) regions.
+  var ANG21 = [10, 62, 119, 171, 223, 281, 332];
+  function regions21(n) { var c2 = n * (n - 1) / 2, c4 = n < 4 ? 0 : n * (n - 1) * (n - 2) * (n - 3) / 24; return 1 + c2 + c4; }
   LESSONS.push({
-    title: "Inductive reasoning and conjectures",
-    blurb: "Book 2-1 · Finding patterns, making conjectures, and disproving one with a counterexample.",
-    mins: 12, v: 4,
+    title: "Inductive reasoning", art: "ind",
+    blurb: "Section 2.1 · Visual and number patterns, conjectures, and disproving one with a counterexample.",
+    mins: 14, v: 5,
     steps: [
       { type: "num", kicker: "Warm up", prompt: "Find the next number: 3, 7, 11, 15, …", answer: 19, skill: "Patterns",
         near: [{ v: 18, fb: "Each number is 4 more than the last." }], hints: ["What is added each time?"], why: "Add 4 each time: $15 + 4 = 19$." },
       { type: "learn", kicker: "Explore", prompt: "Step through the figures. How many squares are added each time?",
         scene: { type: "pattern", a: 3, d: 2, n: 1, max: 6, gate: true, gateN: 5 }, gate: true,
         after: "Each figure has 2 more squares than the last. A rule you believe from examples like these is a conjecture." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Put $n$ points on a circle and join **every** pair. How many regions does the circle split into? Slide $n$ up, and predict before you look.",
+        scene: { type: "sketch", x: [-3.3, 3.3], y: [-3.0, 3.0], u: 46, grid: false, gate: true,
+          params: { n: { min: 1, max: 7, step: 1, v: 3, label: "points $n$" } },
+          track: function (s) { return "n" + s.p.n; },
+          draw: function (s) {
+            var O = [0, 0], n = s.p.n, P = ANG21.slice(0, n).map(function (a) { return GT.polar(O, 2.5, a); }), items = [{ circle: [O, 2.5], c: "blue" }], i, j;
+            for (i = 0; i < n; i++) for (j = i + 1; j < n; j++) items.push({ seg: [P[i], P[j]], c: "purple" });
+            P.forEach(function (p) { items.push({ pt: p, c: "orange" }); });
+            return items;
+          },
+          readout: function (s) {
+            var rows = "", ks = Object.keys(s.tracked).map(function (k) { return +k.slice(1); }).sort(function (a, b) { return a - b; });
+            ks.forEach(function (k) { var r = regions21(k), g = Math.pow(2, k - 1); rows += "<tr" + (r === g ? ' class="ok"' : "") + "><td>$" + k + "$</td><td>$" + r + "$</td><td>$" + g + "$</td></tr>"; });
+            return "$n = " + s.p.n + "$ points: **" + regions21(s.p.n) + " regions**" +
+              '<div class="gt-log"><table><thead><tr><th>$n$</th><th>regions</th><th>doubling guess</th></tr></thead><tbody>' + rows + "</tbody></table></div>";
+          },
+          goal: function (s) { return !!s.tracked.n6; } },
+        then: "Up to $n = 5$ the regions double: 1, 2, 4, 8, 16. Then $n = 6$ gives **31**, not 32. One counterexample breaks a conjecture, however many cases agree." },
       { type: "learn", kicker: "The idea",
         prompt: "**Inductive reasoning** draws a general rule from particular cases. The rule is a **conjecture**: a statement you believe is true. Examples can support a conjecture, but they never prove it. A single **counterexample**, one case where it fails, proves it false.",
         scene: { type: "method", how: HOW_2_1 } },
@@ -619,19 +659,72 @@
         answer: 0, skill: "Conjectures", hints: ["Is a pattern the same as a proof?"], why: "A pattern suggests a rule. It does not guarantee it." }
     ]
   });
-
-  /* ================================================ 2-2 · Conditional statements */
+  /* ============================================ 2.2 · Conditional statements */
   var HOW_2_2 = [["Parts", "Find the hypothesis (after “if”) and the conclusion (after “then”)."],
                  ["Rearrange", "Converse: swap them. Inverse: negate both. Contrapositive: swap and negate."],
                  ["Truth", "Decide whether each statement is true. One counterexample makes it false."]];
+  // The dogs-and-mammals picture: where each animal has been dropped, and whether that is the right place.
+  function venn22(s) {
+    var inP = function (t) { return GT.dist(t, [-0.5, 0.1]) < 1.25; }, inQ = function (t) { return GT.dist(t, [0.4, 0.2]) < 2.5; };
+    return { Pood: inP(s.Pood), Cat: inQ(s.Cat) && !inP(s.Cat), Trout: !inQ(s.Trout) };
+  }
+  var FORMS22 = {
+    orig: { s: "If a number is divisible by 6, then it is divisible by 3.", t: true, why: "Every multiple of 6 is also a multiple of 3.", b: [{ t: "p", c: "blue" }, { t: "q", c: "green" }] },
+    conv: { s: "If a number is divisible by 3, then it is divisible by 6.", t: false, why: "Counterexample: 9 is divisible by 3 but not by 6.", b: [{ t: "q", c: "green" }, { t: "p", c: "blue" }] },
+    inv: { s: "If a number is not divisible by 6, then it is not divisible by 3.", t: false, why: "Counterexample: 9 is not divisible by 6 but is divisible by 3.", b: [{ t: "not p", c: "blue" }, { t: "not q", c: "green" }] },
+    ctr: { s: "If a number is not divisible by 3, then it is not divisible by 6.", t: true, why: "A number that is not a multiple of 3 cannot be a multiple of 6.", b: [{ t: "not q", c: "green" }, { t: "not p", c: "blue" }] }
+  };
   LESSONS.push({
-    title: "Conditional statements",
-    blurb: "Book 2-2 · Hypothesis and conclusion, truth value, and the converse, inverse and contrapositive.",
-    mins: 12, v: 4,
+    title: "Conditional statements", art: "cond",
+    blurb: "Section 2.2 · If-then statements, hypothesis and conclusion, the converse, inverse and contrapositive, and the biconditional.",
+    mins: 15, v: 5,
     steps: [
       { type: "choice", kicker: "Warm up", prompt: "In “If it is raining, then the ground is wet”, which part is the condition?",
         options: [{ t: "it is raining" }, { t: "the ground is wet", fb: "That is what follows from the condition." }],
         answer: 0, skill: "Hypothesis and conclusion", hints: ["It comes after “if”."], why: "The “if” part is the condition: the hypothesis." },
+      { type: "learn", kicker: "Explore",
+        prompt: "“If an animal is a **dog**, then it is a **mammal**.” Drag each animal to where it belongs in the picture.",
+        scene: { type: "sketch", x: [-4.4, 4.4], y: [-3.1, 3.3], u: 48, grid: false, gate: true,
+          pts: { Pood: { at: [-3.6, 2.4], drag: true, snap: 0.1, c: "orange", say: "poodle" }, Cat: { at: [3.6, 2.4], drag: true, snap: 0.1, c: "orange", say: "cat" }, Trout: { at: [-0.5, -0.2], drag: true, snap: 0.1, c: "orange", say: "trout" } },
+          draw: function (s) {
+            var ok = venn22(s), items = [{ ell: [[0.4, 0.2], 2.6, 2.6], fill: true, c: "blue" }, { ell: [[-0.5, 0.1], 1.35, 1.35], fill: true, c: "green" },
+              { word: "mammals", at: [1.5, 1.85], c: "blue" }, { word: "dogs", at: [-0.5, 0.75], c: "green" }];
+            [["Pood", "poodle"], ["Cat", "cat"], ["Trout", "trout"]].forEach(function (t) { items.push({ word: t[1], at: [s[t[0]][0], s[t[0]][1] + 0.55], c: ok[t[0]] ? "green" : "ink" }); });
+            return items;
+          },
+          readout: function (s) {
+            var ok = venn22(s), n = (ok.Pood ? 1 : 0) + (ok.Cat ? 1 : 0) + (ok.Trout ? 1 : 0);
+            return n === 3 ? "Every dog sits **inside** the mammals circle. So the conditional is true, and the hypothesis circle fits inside the conclusion circle."
+              : "In the right place: " + n + " of 3. A poodle is a dog; a cat is a mammal but not a dog; a trout is neither.";
+          },
+          goal: function (s) { var ok = venn22(s); return ok.Pood && ok.Cat && ok.Trout; } },
+        then: "“If $p$, then $q$” is true when everything in the **hypothesis** circle is also in the **conclusion** circle. That is why the conditional goes one way only: not every mammal is a dog." },
+      { type: "learn", kicker: "Explore",
+        prompt: "“If it is raining, then the ground is wet.” Switch $p$ and $q$. When is the promise **broken**?",
+        scene: { type: "ttable", gate: true, mode: "explore",
+          vars: [{ id: "p", say: "It is raining." }, { id: "q", say: "The ground is wet." }],
+          cols: [{ h: "p \\to q", f: function (v) { return !v.p || v.q; } }],
+          say: function (v) { var t = !v.p || v.q; return (v.p ? "It is raining" : "It is not raining") + ", and the ground is " + (v.q ? "wet" : "dry") + ": the statement is <b class='" + (t ? "t" : "f") + "'>" + (t ? "true" : "false") + "</b>."; } },
+        then: "A conditional is **false in exactly one case**: the hypothesis is true and the conclusion is false. If it is not raining, the promise is never tested, so it counts as true." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Press each button to rearrange “If a number is divisible by 6, then it is divisible by 3.” Which versions are true?",
+        scene: { type: "sketch", x: [-4.4, 4.4], y: [-0.4, 3.2], u: 48, grid: false, gate: true,
+          chips: { form: { v: "orig", opts: [["orig", "Original"], ["conv", "Converse"], ["inv", "Inverse"], ["ctr", "Contrapositive"]] } },
+          draw: function (s) {
+            var f = FORMS22[s.c.form], items = [], xs = [-2.2, 2.2];
+            [0, 1].forEach(function (i) {
+              var x = xs[i], b = f.b[i];
+              items.push({ path: [[x - 1.15, 1.0], [x + 1.15, 1.0], [x + 1.15, 2.2], [x - 1.15, 2.2]], closed: true, fill: true, c: b.c }, { word: b.t, at: [x, 1.6], name: true, c: "ink" });
+            });
+            items.push({ arrow: [[-0.95, 1.6], [0.95, 1.6]], c: "ink" });
+            return items;
+          },
+          readout: function (s) {
+            var f = FORMS22[s.c.form];
+            return "“" + f.s + "”<br><b class='" + (f.t ? "t" : "f") + "'>" + (f.t ? "True" : "False") + "</b> · " + f.why + "<br><span class='gt-dim'>Tried " + Object.keys(s.seen.form).length + " of 4</span>";
+          },
+          goal: function (s) { return Object.keys(s.seen.form).length >= 4; } },
+        then: "The original and its **contrapositive** are true together. The **converse** and the **inverse** are true together too: here both are false, and 9 is the counterexample." },
       { type: "learn", kicker: "The idea",
         prompt: "A **conditional** has the form “if $p$, then $q$”: $p$ is the **hypothesis** and $q$ the **conclusion**. It is false only when $p$ is true and $q$ is false. Swapping and negating the two parts gives three related statements.",
         scene: { type: "method", how: HOW_2_2 } },
@@ -671,12 +764,14 @@
         options: [{ t: "If a figure is a square, then it is a rectangle." }, { t: "If a figure is a rectangle, then it is a square.", fb: "That says all rectangles are squares, which is a different claim." }],
         answer: 0, skill: "Write a conditional", hints: ["“All A are B” means: if something is an A, then it is a B."], why: "Being a square is the condition. Being a rectangle follows." },
       { type: "learn", kicker: "A harder case",
-        prompt: "What is the truth value of “If $2 + 2 = 5$, then a triangle has four sides”?",
-        scene: { type: "walk", how: [["Hypothesis", "Is the hypothesis true?"], ["Conclusion", "If it is, is the conclusion true as well?"], ["Value", "A conditional is false only when a true hypothesis leads to a false conclusion."]], rows: [
-          { step: 1, m: "2 + 2 = 5", say: "The hypothesis is false." },
-          { step: 2, m: "\\text{the conclusion is never tested}", say: "With a false hypothesis, the conditional's promise is never called on." },
-          { step: 3, m: "\\text{true}", say: "Odd, but standard: a conditional with a false hypothesis counts as true, because it breaks no promise." }] },
-        gate: true },
+        prompt: "Sometimes the converse is true as well. Watch “An angle is a right angle if and only if it measures 90°” taken apart.",
+        scene: { type: "walk", how: [["Split", "A biconditional hides two conditionals: $p \\to q$ and its converse $q \\to p$."], ["Test", "Decide whether each one is true."], ["Say", "A biconditional is true only when both are true."]], rows: [
+          { step: 1, m: "p \\to q", say: "If an angle is a right angle, then it measures 90°: that is the definition.",
+            ask: { prompt: "How many conditionals are hidden in “if and only if”?", answer: 0, options: [{ t: "Two: one each way" }, { t: "One", fb: "“Only if” adds the converse: the statement runs both ways." }] } },
+          { step: 1, m: "q \\to p", say: "If an angle measures 90°, then it is a right angle." },
+          { step: 2, m: "p \\to q \\text{ true} \\qquad q \\to p \\text{ true}", say: "No counterexample to either one." },
+          { step: 3, m: "p \\leftrightarrow q", say: "Both ways are true, so the biconditional is true. It is written with a double arrow." }] },
+        gate: true, then: "A good **definition** is always a biconditional: it works both ways." },
       { type: "choice", kicker: "Try it", prompt: "Which related statement always has the same truth value as the conditional itself?",
         options: [{ t: "The contrapositive" }, { t: "The converse", fb: "A converse can be false when the conditional is true: squares and four sides." }, { t: "The inverse", fb: "The inverse goes with the converse, not with the conditional." }],
         answer: 0, skill: "Converse, inverse, contrapositive", hints: ["Which one both swaps and negates?"], why: "A conditional and its contrapositive are logically equivalent." },
@@ -691,19 +786,40 @@
         answer: 0, skill: "Truth value", hints: ["Is Ana under 12?"], why: "A conditional promises something only when its hypothesis is true." }
     ]
   });
-
-  /* ====================== 2-3 · Using deductive reasoning to verify conjectures */
+  /* =============================================== 2.3 · Deductive reasoning */
   var HOW_2_3 = [["Facts", "List what is given: the true conditional, and the true fact."],
                  ["Law", "Detachment: $p \\to q$ and $p$ give $q$. Syllogism: $p \\to q$ and $q \\to r$ give $p \\to r$."],
                  ["Conclude", "State the conclusion, or say that none follows."]];
+  // The squares, rectangles and quadrilaterals picture: where F sits, and what follows.
+  function where23(F) {
+    var inSq = GT.dist(F, [0, -0.5]) < 0.9, inRect = GT.dist(F, [0, -0.1]) < 1.85, inQuad = GT.dist(F, [0, 0.2]) < 2.7;
+    if (inSq) return { k: "sq", say: "$F$ is a **square**. Then it is a rectangle (Law of Detachment), and a quadrilateral (Law of Syllogism)." };
+    if (inRect) return { k: "rect", say: "$F$ is a **rectangle**. Then it is a quadrilateral. But nothing says it is a square." };
+    if (inQuad) return { k: "quad", say: "$F$ is a **quadrilateral**. Nothing more follows: it may or may not be a rectangle." };
+    return { k: "out", say: "$F$ is **not** a quadrilateral. So it cannot be a rectangle or a square either." };
+  }
   LESSONS.push({
-    title: "Deductive reasoning",
-    blurb: "Book 2-3 · Drawing conclusions with the Law of Detachment and the Law of Syllogism.",
-    mins: 12, v: 4,
+    title: "Deductive reasoning", art: "ded",
+    blurb: "Section 2.3 · Drawing conclusions with the Law of Detachment and the Law of Syllogism, and how it differs from inductive reasoning.",
+    mins: 14, v: 5,
     steps: [
       { type: "choice", kicker: "Warm up", prompt: "Which kind of reasoning argues from facts and rules instead of from examples?",
         options: [{ t: "Deductive reasoning" }, { t: "Inductive reasoning", fb: "Inductive reasoning goes from examples to a conjecture." }],
         answer: 0, skill: "Kinds of reasoning", hints: ["Lesson 2-1 used examples."], why: "Deductive reasoning works from what is known to be true." },
+      { type: "learn", kicker: "Explore",
+        prompt: "“Every square is a rectangle. Every rectangle is a quadrilateral.” Drag the figure $F$ around the picture. What can you **conclude** about it?",
+        scene: { type: "sketch", x: [-4.4, 4.4], y: [-3.1, 3.3], u: 48, grid: false, gate: true,
+          pts: { F: { at: [3.6, -2.4], drag: true, snap: 0.1, c: "orange", say: "The figure F" } },
+          track: function (s) { return where23(s.F).k; },
+          draw: function (s) {
+            return [{ ell: [[0, 0.2], 2.8, 2.8], fill: true, c: "blue" }, { ell: [[0, -0.1], 1.95, 1.95], fill: true, c: "purple" }, { ell: [[0, -0.5], 1.0, 1.0], fill: true, c: "green" },
+              { word: "quadrilaterals", at: [0, 2.4], c: "blue" }, { word: "rectangles", at: [0, 1.4], c: "purple" }, { word: "squares", at: [0, -0.5], c: "green" }, { word: "F", at: [s.F[0], s.F[1] + 0.5], eq: true, c: "ink" }];
+          },
+          readout: function (s) {
+            return where23(s.F).say + "<br>" + found([["sq", "Square"], ["rect", "Rectangle only"], ["quad", "Quadrilateral only"], ["out", "Neither"]], s.tracked);
+          },
+          goal: function (s) { return Object.keys(s.tracked).length >= 4; } },
+        then: "Where $F$ sits is the **fact**. The circles are the **conditionals**. A fact that matches a hypothesis lets you conclude; a fact that only matches a conclusion tells you nothing new about the hypothesis." },
       { type: "learn", kicker: "The idea",
         prompt: "**Deductive reasoning** draws conclusions from facts, definitions and properties by logic. If the given statements are true, the conclusion must be true. Two laws do the work: the **Law of Detachment** and the **Law of Syllogism**.",
         scene: { type: "method", how: HOW_2_3 } },
@@ -764,88 +880,56 @@
         answer: 0, skill: "Law of Detachment", hints: ["Is the hypothesis true for Lia?"], why: "The hypothesis holds, so the conclusion does." }
     ]
   });
-  /* ================================= 2-4 · Biconditional statements and definitions */
-  var HOW_2_4 = [["Split", "Write the two conditionals inside it: $p \\to q$ and its converse $q \\to p$."],
-                 ["Test", "Decide whether each one is true."],
-                 ["Decide", "The biconditional is true only if both are."]];
+  /* ================================================== Lab · Logic puzzles */
   LESSONS.push({
-    title: "Biconditional statements and definitions",
-    blurb: "Book 2-4 · “If and only if”, the two conditionals inside it, and why a good definition is a biconditional.",
-    mins: 12, v: 4,
+    title: "Logic puzzles", tag: "Lab", art: "ded",
+    blurb: "Hands-on with deduction: a grid puzzle, then a river to cross. Every clue is a fact, and every step is a conclusion.",
+    mins: 12, v: 5,
     steps: [
-      { type: "choice", kicker: "Warm up", prompt: "What is the converse of “If a number is even, then it is divisible by 2”?",
-        options: [{ t: "If a number is divisible by 2, then it is even." }, { t: "If a number is not even, then it is not divisible by 2.", fb: "That negates both parts: the inverse." }],
-        answer: 0, skill: "Converse", hints: ["Swap the two parts."], why: "A converse swaps the hypothesis and the conclusion." },
-      { type: "learn", kicker: "The idea",
-        prompt: "When a conditional and its converse are both true, they join into one **biconditional**: “$p$ if and only if $q$”, written $p \\iff q$. Every good **definition** is a biconditional, because it has to work in both directions.",
-        scene: { type: "method", how: HOW_2_4 } },
-      { type: "learn", kicker: "Watch",
-        prompt: "Watch “An angle is a right angle if and only if it measures 90°” tested.",
-        scene: { type: "walk", how: HOW_2_4, rows: [
-          { step: 1, m: "p \\to q", say: "If an angle is a right angle, then it measures 90°." },
-          { step: 1, m: "q \\to p", say: "If an angle measures 90°, then it is a right angle.",
-            ask: { prompt: "The second conditional is the first one's…", answer: 0,
-                   options: [{ t: "converse" }, { t: "inverse", fb: "Nothing is negated. The two parts have swapped." }] } },
-          { step: 2, m: "p \\to q\\text{: true} \\qquad q \\to p\\text{: true}", say: "Both hold." },
-          { step: 3, m: "p \\iff q\\text{: true}", say: "It is the definition of a right angle." }] },
-        gate: true, then: "“If and only if” is two promises in one sentence." },
-      { type: "guided", kicker: "Together",
-        prompt: "Now you test “A number is divisible by 6 if and only if it is divisible by 3.”",
-        how: HOW_2_4, skill: "Biconditionals",
-        steps: [
-          { step: 1, ask: "Which two conditionals are inside it?", type: "choice", answer: 0,
-            options: [{ t: "“If divisible by 6, then by 3” and “if divisible by 3, then by 6”" }, { t: "“If divisible by 6, then by 3” and “if not divisible by 6, then not by 3”", fb: "The second of those is the inverse. A biconditional holds the conditional and its converse." }],
-            m: "p \\to q \\qquad q \\to p", say: "The conditional and its converse." },
-          { step: 2, ask: "Is “if a number is divisible by 6, then it is divisible by 3” true?", type: "choice", answer: 0,
-            options: [{ t: "Yes: $6 = 3 \\cdot 2$" }, { t: "No", fb: "Every multiple of 6 is $3 \\cdot 2 \\cdot k$, so 3 divides it." }],
-            m: "p \\to q\\text{: true}", say: "A multiple of 6 is a multiple of 3." },
-          { step: 2, ask: "Is “if a number is divisible by 3, then it is divisible by 6” true?", type: "choice", answer: 0,
-            options: [{ t: "No: 9 is a counterexample" }, { t: "Yes", fb: "Try 9 or 15." }],
-            m: "q \\to p\\text{: false}", say: "9 is divisible by 3 but not by 6." },
-          { step: 3, ask: "So the biconditional is…", type: "choice", answer: 0,
-            options: [{ t: "false" }, { t: "true", fb: "Both conditionals have to be true." }],
-            m: "p \\iff q\\text{: false}", say: "One false conditional is enough." }],
-        why: "Split, test, decide. Now two on your own." },
-      { type: "choice", kicker: "On your own", prompt: "Which of these is a biconditional?",
-        options: [{ t: "Two lines are perpendicular if and only if they meet at right angles." }, { t: "If two lines are perpendicular, then they meet at right angles.", fb: "That is a single conditional: one direction only." }, { t: "Perpendicular lines meet at right angles.", fb: "That is one direction only, without even an “if”." }],
-        answer: 0, skill: "Biconditionals", hints: ["Look for “if and only if”."], why: "“If and only if” makes it work both ways." },
-      { type: "choice", prompt: "“A triangle is a polygon with three sides.” Which biconditional says the same thing?",
-        options: [{ t: "A figure is a triangle if and only if it is a polygon with three sides." }, { t: "If a figure is a triangle, then it is a polygon.", fb: "True, but it drops “three sides” and only goes one way." }],
-        answer: 0, skill: "Definitions", hints: ["A definition must work in both directions."], why: "A triangle is such a polygon, and every such polygon is a triangle." },
-      { type: "learn", kicker: "A harder case",
-        prompt: "A true conditional and its true converse can be joined. Start from “If $2x + 5 = 11$, then $x = 3$.”",
-        scene: { type: "walk", how: HOW_2_4, rows: [
-          { step: 1, m: "2x + 5 = 11 \\to x = 3", say: "The conditional." },
-          { step: 1, m: "x = 3 \\to 2x + 5 = 11", say: "Its converse." },
-          { step: 2, m: "\\text{both true}", say: "Solving gives $x = 3$, and substituting 3 gives $6 + 5 = 11$." },
-          { step: 3, m: "2x + 5 = 11 \\iff x = 3", say: "$2x + 5 = 11$ if and only if $x = 3$." }] },
-        gate: true },
-      { type: "choice", kicker: "Try it", prompt: "“A figure is a square if and only if it has four right angles.” True or false?",
-        options: [{ t: "False: a rectangle that is not a square has four right angles" }, { t: "True", fb: "A square does have four right angles, but so does every rectangle." }],
-        answer: 0, skill: "Biconditionals", hints: ["Test the converse: four right angles, so a square?"], why: "The converse fails, so the biconditional is false." },
-      { type: "choice", kicker: "Find the error",
-        prompt: "Sam writes: “A rectangle is a figure with four sides.” Why is that a poor definition?",
-        options: [{ t: "It does not work backwards: a figure with four sides need not be a rectangle." },
-                  { t: "A rectangle does not have four sides.", fb: "It does. The trouble is in the other direction." },
-                  { t: "It is a good definition.", fb: "A kite has four sides too." }],
-        answer: 0, skill: "Definitions", hints: ["Read it backwards. Is it still true?"], why: "A definition must be reversible." },
-      { type: "choice", kicker: "Use it", prompt: "A club rule: “You may vote if and only if you have paid your dues.” Dana has paid. Eli has not. What does the rule say?",
-        options: [{ t: "Dana may vote, and Eli may not" }, { t: "Dana may vote, and the rule says nothing about Eli", fb: "“Only if” rules Eli out: voting requires paid dues." }],
-        answer: 0, skill: "Biconditionals", hints: ["“If” covers Dana. What does “only if” cover?"], why: "A biconditional works in both directions." }
+      { type: "learn", kicker: "The puzzle",
+        prompt: "A **logic puzzle** is deductive reasoning in disguise. Each clue is a fact. You **cannot** guess, and you cannot use a hunch: every ✓ or × you place must follow from the clues. Press a box once for ×, twice for ✓, three times to clear it. Press a clue when you have used it.",
+        after: "Nothing here is timed. A box you are not sure about can stay empty." },
+      { type: "lgrid", kicker: "Puzzle 1", prompt: "Four friends each play a **different** instrument. Who plays what?",
+        rows: ["Mei", "Noor", "Omar", "Pia"], cols: ["Cello", "Drums", "Flute", "Harp"], answer: [1, 2, 3, 0],
+        clues: ["Neither Mei nor Noor plays a string instrument (the cello or the harp).", "Mei does not play the flute.", "Pia does not play the harp."],
+        skill: "Logic grids", hints: ["Clue 1 puts Mei and Noor on the drums and the flute, in some order. So Omar and Pia have the two string instruments.", "Clue 2 tells you which of Mei and Noor has the drums."],
+        why: "Clue 1: Mei and Noor have drums and flute. Clue 2: Mei has the drums, so Noor has the flute. Clue 3: Pia has the cello, so Omar has the harp." },
+      { type: "choice", prompt: "Once you place a ✓ in a box, why can you put a × in **every other box** in its row and its column?",
+        options: [{ t: "Each friend plays exactly one instrument, and each instrument belongs to exactly one friend" }, { t: "The clues say so", fb: "The clues do not say it. It comes from the way the puzzle is set up." }, { t: "To make the grid look tidy", fb: "It is a deduction, not decoration." }],
+        answer: 0, skill: "Logic grids", hints: ["What would it mean to have two ✓ in the same row?"], why: "Two ✓ in one row would give one friend two instruments; two in a column would give one instrument two players." },
+      { type: "lgrid", kicker: "Puzzle 2", prompt: "Four students each join a **different** club. Who joins which?",
+        rows: ["Jo", "Kit", "Lee", "Max"], cols: ["Art", "Chess", "Choir", "Robotics"], answer: [1, 0, 3, 2],
+        clues: ["Jo is not in Art, Choir or Robotics.", "Kit is in neither Robotics nor Choir.", "Max is not in Robotics."],
+        skill: "Logic grids", hints: ["Clue 1 leaves one club for Jo.", "Once Jo has Chess, Kit's two choices become one."],
+        why: "Jo has Chess. Kit is left with Art. Max is not in Robotics, so Max has Choir, and Lee has Robotics." },
+      { type: "learn", kicker: "A puzzle with a map",
+        prompt: "A farmer must take a **wolf**, a **goat** and a **cabbage** across a river in a boat that holds him and **one** of them. Left alone, the wolf eats the goat, and the goat eats the cabbage. Press a thing to take it across. Every place you reach is drawn in the network.",
+        scene: { type: "crossing", gate: true }, gate: true,
+        then: "Each vertex is one arrangement, written as the ordered pair (near bank, far bank). Each crossing is an edge. The dead ends are the arrangements where something gets eaten." },
+      { type: "num", prompt: "Press “Show the whole network”. What is the **fewest** number of crossings that gets everyone across?",
+        scene: { type: "crossing" }, answer: 7, skill: "Logic grids",
+        near: [{ v: 6, fb: "Count the edges on a shortest path from the start to the finish, not the vertices." }, { v: 8, fb: "That is a path with a detour. Look for a shorter one." }],
+        hints: ["Trace one of the two blue paths from the first vertex to the last."], why: "The shortest ways across take 7 crossings. There are two of them, one going the other way round the middle." },
+      { type: "choice", prompt: "What is the advantage of drawing the **whole** network, instead of finding just one way across?",
+        options: [{ t: "You can see every solution, and every dead end, at once" }, { t: "It is quicker to draw", fb: "Drawing the whole network takes longer." }, { t: "It makes the puzzle harder", fb: "It makes the structure of the puzzle visible." }],
+        answer: 0, skill: "Logic grids", hints: ["Think about how many routes the network shows."], why: "The network shows all the routes, so you can compare them and see which ones are shortest." }
     ]
   });
-
-  /* ========================================================== 2-5 · Algebraic proof */
+  /* ============================================== 2.4 · Algebraic properties */
   var HOW_2_5 = [["Given", "Write the given equation as the first statement."],
                  ["Steps", "Change one thing at a time, and name the property that allows it."],
                  ["Prove", "Stop when you reach the statement to be proved."]];
   LESSONS.push({
-    title: "Algebraic proof",
-    blurb: "Book 2-5 · The properties of equality as reasons, and the reflexive, symmetric and transitive properties.",
-    mins: 12, v: 4,
+    title: "Algebraic properties", art: "alg",
+    blurb: "Section 2.4 · The properties of equality as reasons, and the same properties for congruence.",
+    mins: 14, v: 5,
     steps: [
       { type: "num", kicker: "Warm up", prompt: "Solve $3x - 4 = 11$.", pre: "$x =$", answer: 5, skill: "Solve an equation",
         near: [{ v: 7 / 3, tol: 1e-6, fb: "Add 4 to both sides first: $3x = 15$." }], hints: ["$3x = 15$."], why: "$3x = 15$, so $x = 5$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "The scale is balanced: $2x + 3 = 9$. Do the **same thing to both sides** to get $x$ alone. Then try taking something from one side only.",
+        scene: { type: "balance", L: { x: 2, c: 3 }, R: { x: 0, c: 9 }, x: 3, gate: "solve" }, gate: true,
+        then: "Every move you made to **both** sides was a property of equality: the Subtraction Property (take the same from each side), then the Division Property (divide each side by the same number). Each is a reason you can write in a proof." },
       { type: "learn", kicker: "The idea",
         prompt: "A **proof** is an argument in which every step has a reason. In an algebraic proof the reasons are the properties of equality: what you do to one side you do to the other, and the name of the property says what you did.",
         scene: { type: "method", how: HOW_2_5 } },
@@ -907,16 +991,105 @@
         near: [{ v: 64.8, tol: 1e-6, fb: "Multiply 36 by $\\frac{5}{9}$, the reciprocal, not by $\\frac{9}{5}$." }], hints: ["$36 = \\frac{9}{5}C$."], why: "$36 \\cdot \\frac{5}{9} = 20$." }
     ]
   });
-  /* ========================================================== 2-6 · Geometric proof */
+  /* ======================================================== 2.5 · Diagrams */
+  var HOW_2_5D = [["Read", "Read what the drawing **tells** you: points on lines, tick marks, arcs, little squares, and the given facts."],
+                  ["Ignore", "Ignore what it only **looks** like: sizes, angle measures, parallel or perpendicular lines."],
+                  ["Mark", "Add every given fact to the drawing, and use only those."]];
+  var FIG_D25 = tri([[0, 0], [6, 0], [3, 3.6]], { names: "ABC", ticks: [0, 1, 1] }, "Triangle ABC. The sides BC and CA carry one tick mark each, so they are marked as congruent.");
+  var FIG_D25B = shapes([[[[0, 0], [5, 0], [5, 3], [0, 3]], { names: "ABCD", right: [0] }]], { extra: [{ seg: [[0, 0], [5, 3]], c: "orange", dash: true }, { pt: [2.5, 1.5], name: "E", at: "n" }], alt: "Rectangle ABCD with a square marking the right angle at A, and a dashed diagonal from A to C with a point E on it." });
+  LESSONS.push({
+    title: "Diagrams", art: "diag",
+    blurb: "Section 2.5 · Drawing the diagram for a problem, reading the marks, and what you may and may not assume.",
+    mins: 14, v: 5,
+    steps: [
+      { type: "choice", kicker: "Warm up", prompt: "In a diagram, what tells you that two sides are **congruent**?",
+        options: [{ t: "Matching tick marks on the two sides" }, { t: "They look the same length", fb: "Drawings are not always to scale. Looks tell you nothing." }, { t: "They are drawn next to each other", fb: "Where they sit does not say how long they are." }],
+        answer: 0, skill: "Read a diagram", hints: ["Think of the little marks across a side."], why: "Matching tick marks are the drawing's way of saying “congruent”." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Do **not** trust your eyes. Turn the ray until the angle **looks** like a right angle. Then read the measure.",
+        scene: { type: "sketch", x: [-3.7, 3.7], y: [-0.7, 3.5], u: 56, grid: false, gate: true,
+          pts: { P: { at: GT.polar([0, 0], 2.7, 62), drag: true, c: "orange", on: { circle: [[0, 0], 2.7], snapDeg: 1, range: [30, 150] }, say: "The turning ray" } },
+          track: function (s) { var a = Math.round(GT.dir([0, 0], s.P)); return a === 90 ? "exact" : Math.abs(a - 90) <= 6 ? "near" : null; },
+          draw: function (s) {
+            var O = [0, 0], a = Math.round(GT.dir(O, s.P));
+            return [{ angle: [[1, 0], O, GT.polar(O, 1, a)], say: a + "°", r: 40, right: a === 90, c: a === 90 ? "green" : "orange" }, { dline: [O, [3.3, 0]], ray: true }, { dline: [O, GT.polar(O, 3.3, a)], ray: true, c: "orange" },
+              { pt: O, name: "B", at: "s" }, { pt: [2.6, 0], name: "A", at: "s" }, { pt: GT.polar(O, 2.6, a), name: "C", at: "n" }];
+          },
+          readout: function (s) {
+            var a = Math.round(GT.dir([0, 0], s.P));
+            return (a === 90 ? "$m\\angle ABC = 90°$ exactly. But only a **little square**, or a given, would let you say so in a proof." :
+              Math.abs(a - 90) <= 6 ? "$m\\angle ABC = " + a + "°$. It **looks** like a right angle, and it is not." : "$m\\angle ABC = " + a + "°$.") + "<br>" + found([["near", "Looks right but isn't"], ["exact", "Exactly 90°"]], s.tracked);
+          },
+          goal: function (s) { return s.tracked.near && s.tracked.exact; } },
+        then: "A drawing can look like 90° and be 88°. In geometry you use only what is **marked** (a small square, tick marks, arcs) or **given**, never how a figure looks." },
+      { type: "learn", kicker: "The idea",
+        prompt: "A diagram helps you think, but it is **not to scale**. You may assume that points drawn on a line are on it. You may **not** assume sizes, right angles or parallel lines unless they are marked or given.",
+        scene: { type: "method", how: HOW_2_5D } },
+      { type: "learn", kicker: "Watch",
+        prompt: "Watch what can and cannot be taken from this diagram.",
+        scene: { type: "walk", how: HOW_2_5D, rows: [
+          { step: 1, m: "\\overline{BC} \\cong \\overline{CA}", say: "One tick mark on $\\overline{BC}$ and one on $\\overline{CA}$: they are marked as congruent.", fig: FIG_D25 },
+          { step: 2, m: "AB \\text{ looks longer}", say: "It **looks** longer than the other two sides. That is not a fact: ignore it.",
+            ask: { prompt: "Does $AB$ being drawn longer tell you anything?", answer: 0, options: [{ t: "No: only marks and givens count" }, { t: "Yes: it is longer", fb: "Drawings are not to scale, so how long a side looks proves nothing." }] } },
+          { step: 2, m: "\\angle C \\text{ looks like } 90°?", say: "No square marks it, and nothing is given. Ignore it too." },
+          { step: 3, m: "\\overline{BC} \\cong \\overline{CA}", say: "The one fact to carry into a proof: two congruent sides." }] },
+        gate: true, then: "The marks said one thing. Everything else was just the way it was drawn." },
+      { type: "guided", kicker: "Together",
+        prompt: "Rectangle $ABCD$ has a diagonal from $A$ to $C$, with $E$ on it. Now you decide what the diagram lets you say.", art: FIG_D25B,
+        how: HOW_2_5D, skill: "Read a diagram",
+        steps: [
+          { step: 1, ask: "The little square at $A$ means…", type: "choice", answer: 0,
+            options: [{ t: "$\\angle DAB$ is a right angle" }, { t: "$A$ is the longest corner", fb: "A square marks a right angle, nothing about size." }],
+            m: "m\\angle DAB = 90°", say: "A little square is the mark for a right angle." },
+          { step: 2, ask: "$E$ looks like the middle of the diagonal. Can you say $AE = EC$?", type: "choice", answer: 0,
+            options: [{ t: "No: nothing marks or gives it" }, { t: "Yes: it looks like the midpoint", fb: "Looking like a midpoint is not enough. It would need tick marks or a given." }],
+            m: "AE = EC \\text{ ?}", say: "Not marked, so not allowed." },
+          { step: 3, ask: "$E$ is drawn on the diagonal. Can you say $A$, $E$ and $C$ are collinear?", type: "choice", answer: 0,
+            options: [{ t: "Yes: a point drawn on a line is on it" }, { t: "No", fb: "Points drawn on a line are on it: that part of a diagram you may trust." }],
+            m: "A, E, C \\text{ collinear}", say: "Points on a drawn line are on the line." }],
+        why: "Read, ignore, mark. Now two on your own." },
+      { type: "sort", kicker: "On your own", prompt: "Looking at a diagram, can you **assume** each statement, or not?",
+        bins: ["You may assume it", "You may not"],
+        cards: [{ t: "Three points drawn on one line are collinear", bin: 0, fb: "Points on a drawn line are on it." }, { t: "Two sides with matching ticks are congruent", bin: 0, fb: "Tick marks are marked facts." },
+                { t: "An angle that looks like 90° is a right angle", bin: 1, fb: "It needs a little square or a given." }, { t: "Two lines that look parallel are parallel", bin: 1, fb: "They need arrowheads or a given." },
+                { t: "A point that looks like the midpoint is the midpoint", bin: 1, fb: "It needs tick marks or a given." }, { t: "Two lines that cross meet at one point", bin: 0, fb: "Two distinct lines meet in at most one point." }],
+        skill: "Read a diagram", hints: ["Is it a mark or a given, or only how it looks?"], why: "Marks and givens count. Looks do not." },
+      { type: "choice", prompt: "Which postulate says: “If two distinct lines intersect, then they meet in exactly one point”?",
+        options: [{ t: "The Intersecting Lines Postulate" }, { t: "The Ruler Postulate", fb: "That one is about measuring distances." }, { t: "The Segment Addition Postulate", fb: "That one adds parts of a segment." }],
+        answer: 0, skill: "Basic postulates", hints: ["It is named for what it is about."], why: "Two crossing lines share exactly one point." },
+      { type: "learn", kicker: "A harder case",
+        prompt: "Turning words into a diagram. “$M$ is the midpoint of $\\overline{AB}$, and $N$ is the midpoint of $\\overline{BC}$, where $B$ is between $A$ and $C$.” Watch the drawing built.",
+        scene: { type: "walk", how: HOW_2_5D, rows: [
+          { step: 1, m: "A, B, C \\text{ collinear}", say: "$B$ is between $A$ and $C$, so draw them on one line, in that order.", fig: segRow([["A", 0], ["B", 3.3], ["C", 6.6]], {}) },
+          { step: 2, m: "M \\text{ and } N", say: "The midpoints go half-way along each part, wherever they happen to fall.", fig: segRow([["A", 0], ["M", 1.65], ["B", 3.3], ["N", 4.95], ["C", 6.6]], {}) },
+          { step: 3, m: "AM = MB \\qquad BN = NC", say: "Mark each pair of halves with its own tick marks: one tick for the first pair, two for the second.",
+            fig: segRow([["A", 0], ["M", 1.65], ["B", 3.3], ["N", 4.95], ["C", 6.6]], { ticks: [[0, 1, 1], [1, 2, 1], [2, 3, 2], [3, 4, 2]] }),
+            ask: { prompt: "Why two ticks on the second pair?", answer: 0, options: [{ t: "They are a different pair: the halves of $BC$ need not equal the halves of $AB$" }, { t: "To show they are longer", fb: "Ticks say which sides match. They say nothing about size." }] } }] },
+        gate: true, then: "A good diagram holds exactly the given facts, with a separate mark for each pair that matches." },
+      { type: "choice", kicker: "Try it", prompt: "A problem says “$\\overrightarrow{BD}$ bisects $\\angle ABC$.” How should the diagram show it?",
+        options: [{ t: "Matching arcs in the two angles $\\angle ABD$ and $\\angle DBC$" }, { t: "A little square at $B$", fb: "A square means a right angle, which is not given." }, { t: "Tick marks on $\\overline{AB}$ and $\\overline{BC}$", fb: "Ticks go on sides. A bisector makes angles equal." }],
+        answer: 0, skill: "Mark a diagram", hints: ["Equal angles are marked with matching arcs."], why: "Matching arcs mark congruent angles." },
+      { type: "choice", kicker: "Find the error",
+        prompt: "Zoe looks at a drawing and writes: “$\\overline{AB} \\parallel \\overline{CD}$, because they look parallel.” What is wrong?",
+        options: [{ t: "Looking parallel is not a reason. It needs matching arrowheads, or to be given." },
+                  { t: "Nothing: parallel lines never meet, and these do not.", fb: "A drawing is too small to show whether two lines meet far away." },
+                  { t: "She should have said they are perpendicular.", fb: "Nothing in the drawing says that either." }],
+        answer: 0, skill: "Read a diagram", hints: ["What would the drawing have to show?"], why: "Only marks or givens can be used as reasons." },
+      { type: "choice", kicker: "Use it", prompt: "A problem says: “In $\\triangle PQR$, $\\overline{PQ} \\cong \\overline{PR}$.” Which marks belong on your diagram?",
+        options: [{ t: "One tick mark on $\\overline{PQ}$ and one on $\\overline{PR}$" }, { t: "A little square at $P$", fb: "No right angle is given." }, { t: "An arc at each of $Q$ and $R$", fb: "Nothing about the angles is given." }],
+        answer: 0, skill: "Mark a diagram", hints: ["The given is about two sides being equal."], why: "Two congruent sides: matching tick marks on both." }
+    ]
+  });
+  /* ================================================ 2.6 · Two-column proof */
   var HOW_2_6 = [["Given", "List the given information, and mark it on the figure."],
                  ["Link", "Move one step at a time. Each statement needs a reason: a definition, a postulate, a property or a theorem."],
                  ["Prove", "End with the statement you were asked to prove."]];
   var FIG_LINPAIR = rayFig([0, 0], [{ d: 0, name: "A" }, { d: 125, name: "C" }, { d: 180, name: "B" }],
     { vname: "O", num: [{ i: 0, j: 1, t: "1" }, { i: 1, j: 2, t: "2" }], y: [-0.9, 3.2], alt: "A straight line AB with a ray OC rising from it. The ray makes angle 1 on the right and angle 2 on the left." });
   LESSONS.push({
-    title: "Geometric proof",
-    blurb: "Book 2-6 · Theorems and two-column proofs: a statement on the left, and its reason on the right.",
-    mins: 12, v: 4,
+    title: "Two-column proof", art: "proof",
+    blurb: "Section 2.6 · Draw the diagram, list the given and the prove, and write each statement with its reason beside it.",
+    mins: 14, v: 5,
     steps: [
       { type: "choice", kicker: "Warm up", prompt: "$\\angle 1$ and $\\angle 2$ form a linear pair. What must be true of them?", art: FIG_LINPAIR,
         options: [{ t: "They are supplementary" }, { t: "They are congruent", fb: "Only if each happens to be 90°." }, { t: "They are complementary", fb: "Together they make a straight angle: 180°, not 90°." }],
@@ -956,6 +1129,12 @@
         items: [nb("$\\angle 1$ and $\\angle 2$ are a linear pair. (Given)"), nb("$\\angle 1$ and $\\angle 2$ are supplementary. (Linear Pair Theorem)"), nb("$m\\angle 1 + m\\angle 2 = 180°$ (Definition of supplementary angles)"), nb("$115° + m\\angle 2 = 180°$ (Substitution)"), nb("$m\\angle 2 = 65°$ (Subtraction Property of Equality)")],
         skill: "Two-column proof", hints: ["Start with what is given. End with what is to be proved.", "Each statement must come after the one it depends on."],
         why: "Given, then the theorem, then its definition, then the number put in, then the subtraction." },
+      { type: "slots", prompt: "Given: $\\angle 1$ and $\\angle 2$ are complementary, and $\\angle 2 \\cong \\angle 3$. Prove: $m\\angle 1 + m\\angle 3 = 90°$. Drop in the **reason** for each statement. The first and third are given.",
+        slots: [{ id: "a", label: nb("$m\\angle 1 + m\\angle 2 = 90°$") }, { id: "b", label: nb("$m\\angle 2 = m\\angle 3$") }, { id: "c", label: nb("$m\\angle 1 + m\\angle 3 = 90°$") }],
+        cards: [{ t: "Definition of complementary angles", slot: "a", fb: "Complementary means the measures add to 90°." }, { t: "Definition of congruent angles", slot: "b", fb: "Congruent angles have equal measures." },
+                { t: "Substitution Property", slot: "c", fb: "$m\\angle 3$ takes the place of $m\\angle 2$." }, { t: "Reflexive Property", fb: "Reflexive gives a quantity equal to itself." }, { t: "Definition of a right angle", fb: "Nothing here is a right angle." }],
+        skill: "Two-column proof", hints: ["Which fact turns a word into an equation? Which turns one equation into another?"],
+        why: "The definition of complementary gives the sum, the definition of congruent gives equal measures, and substitution joins them." },
       { type: "choice", prompt: "Which theorem says that all right angles are congruent?",
         options: [{ t: "The Right Angle Congruence Theorem" }, { t: "The Linear Pair Theorem", fb: "That one says a linear pair is supplementary." }, { t: "The Congruent Supplements Theorem", fb: "That one is about angles supplementary to the same angle." }],
         answer: 0, skill: "Theorems about angles", hints: ["Its name says what it is about."], why: "Every right angle measures 90°, so any two are congruent." },
@@ -981,83 +1160,202 @@
         answer: 0, skill: "Theorems about angles", hints: ["Both are supplements of the same angle."], why: "Supplements of the same angle are congruent." }
     ]
   });
-
-  /* =============================================== 2-7 · Flowchart and paragraph proofs */
-  var HOW_2_7 = [["Boxes", "Read each box: a statement, with its reason written under it."],
-                 ["Arrows", "Follow the arrows: a box follows from the boxes that point to it."],
-                 ["End", "The last box is the statement proved."]];
-  var FLOW_VERT = flow([{ at: [2.6, 3.3], t: "∠1, ∠2: linear pair", r: "Given (figure)" }, { at: [2.6, 1.3], t: "∠2, ∠3: linear pair", r: "Given (figure)" },
-    { at: [8.6, 3.3], t: "∠1, ∠2 supplementary", r: "Linear Pair Thm." }, { at: [8.6, 1.3], t: "∠2, ∠3 supplementary", r: "Linear Pair Thm." },
-    { at: [14.4, 2.3], t: "∠1 ≅ ∠3", r: "Congruent Suppl. Thm.", w: 4.6 }],
-    [[0, 2], [1, 3], [2, 4], [3, 4]], { x: [0, 16.8], y: [0.3, 4.3], u: 34, alt: "A flowchart proof. Two boxes on the left say that angles 1 and 2, and angles 2 and 3, are linear pairs. Each leads to a box saying the pair is supplementary, by the Linear Pair Theorem. Both of those lead to the last box: angle 1 is congruent to angle 3, by the Congruent Supplements Theorem." });
+  /* ============================== 2.7 · Segment and angle congruence theorems */
+  var HOW_2_7 = [["Given", "State what is given and what you are to prove."],
+                 ["Equation", "Turn each congruence into an equation, using the definition of congruent."],
+                 ["Back", "Use a property of equality, then turn the last equation back into a congruence."]];
+  var HOW_2_7B = [["Halves", "A midpoint cuts a segment in two equal halves: write each half as half the whole."],
+                  ["Equal", "The whole segments are equal, so their halves are equal."],
+                  ["Back", "Turn the equal lengths back into congruent segments."]];
+  var FIG_ANG27 = rayFig([0, 0], [{ d: 0, name: "A" }, { d: 40, name: "B" }, { d: 85, name: "C" }, { d: 140, name: "D" }],
+    { vname: "O", wedges: [{ i: 0, j: 1, say: "1", r: 36 }, { i: 1, j: 2, say: "2", c: "green", r: 48 }, { i: 2, j: 3, say: "3", c: "purple", r: 36 }], alt: "Rays OA, OB, OC and OD from O. Angle AOB is marked 1, angle BOC is 2 and angle COD is 3." });
   LESSONS.push({
-    title: "Flowchart and paragraph proofs",
-    blurb: "Book 2-7 · The same proof in boxes and arrows, and in sentences.",
-    mins: 12, v: 4,
+    title: "Segment and angle congruence theorems", art: "cong",
+    blurb: "Section 2.7 · Congruence has the same three properties as equality, and they let you prove theorems about segments and angles.",
+    mins: 14, v: 5,
     steps: [
-      { type: "choice", kicker: "Warm up", prompt: "In any proof, what must every statement have?",
-        options: [{ t: "A reason" }, { t: "A number", fb: "Numbering helps, but it is not what makes a proof." }, { t: "A figure", fb: "A figure helps you see it. It proves nothing." }],
-        answer: 0, skill: "Proof", hints: ["Think of the right-hand column."], why: "A statement without a reason is only a claim." },
+      { type: "choice", kicker: "Warm up", prompt: "If $\\overline{AB} \\cong \\overline{CD}$, what is true of their **lengths**?",
+        options: [{ t: "They are equal: $AB = CD$" }, { t: "They are congruent: $AB \\cong CD$", fb: "Lengths are numbers. Numbers are equal, not congruent." }, { t: "Nothing", fb: "That is exactly what congruent segments mean." }],
+        answer: 0, skill: "Congruent or equal", hints: ["Congruent figures have equal measures."], why: "Congruent segments have equal lengths: that is the definition." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$\\overline{AB}$ stays put. Drag $D$ and $F$ to change $\\overline{CD}$ and $\\overline{EF}$. Make **all three** segments congruent.",
+        scene: { type: "sketch", x: [0, 11], y: [0, 4], u: 54, grid: false, gate: true,
+          pts: { D: { at: [3.5, 2.2], drag: true, c: "orange", on: { fn: function (p) { return [Math.max(1.5, Math.min(10.5, Math.round(p[0] * 2) / 2)), 2.2]; } }, say: "Point D" },
+                 F: { at: [7.5, 1.0], drag: true, c: "orange", on: { fn: function (p) { return [Math.max(1.5, Math.min(10.5, Math.round(p[0] * 2) / 2)), 1.0]; } }, say: "Point F" } },
+          draw: function (s) {
+            var ab = 4, cd = s.D[0] - 1, ef = s.F[0] - 1, c1 = cd === ab, c2 = ef === cd, c3 = ef === ab;
+            return [{ seg: [[1, 3.4], [5, 3.4]], c: "blue", marks: c1 || c3 ? 1 : 0 }, { seg: [[1, 2.2], s.D], c: c1 ? "blue" : "ink", marks: c1 || c2 ? 1 : 0 }, { seg: [[1, 1.0], s.F], c: c3 ? "blue" : "ink", marks: c2 || c3 ? 1 : 0 },
+              { pt: [1, 3.4], name: "A", at: "w" }, { pt: [5, 3.4], name: "B", at: "e" }, { pt: [1, 2.2], name: "C", at: "w" }, { pt: s.D, name: "D", at: "e", c: "orange" }, { pt: [1, 1.0], name: "E", at: "w" }, { pt: s.F, name: "F", at: "e", c: "orange" }];
+          },
+          readout: function (s) {
+            var cd = s.D[0] - 1, ef = s.F[0] - 1, ab = 4, t = [];
+            if (cd === ab) t.push("$\\overline{AB} \\cong \\overline{CD}$"); if (ef === cd) t.push("$\\overline{CD} \\cong \\overline{EF}$"); if (ef === ab) t.push("$\\overline{AB} \\cong \\overline{EF}$");
+            return "$AB = 4$ · $CD = " + n1(cd) + "$ · $EF = " + n1(ef) + "$<br>" + (t.length ? t.join(" · ") : "No two are congruent yet.");
+          },
+          goal: function (s) { return s.D[0] - 1 === 4 && s.F[0] - 1 === 4; } },
+        then: "When $\\overline{AB} \\cong \\overline{CD}$ and $\\overline{CD} \\cong \\overline{EF}$, the third, $\\overline{AB} \\cong \\overline{EF}$, comes free. That is the **Transitive Property of Congruence**." },
       { type: "learn", kicker: "The idea",
-        prompt: "A proof can be laid out in different ways. A **flowchart proof** puts each statement in a box, with its reason beneath, and arrows show which statements lead to which. A **paragraph proof** gives the same steps in sentences.",
+        prompt: "Congruence behaves like equality. It is **reflexive** ($\\overline{AB} \\cong \\overline{AB}$), **symmetric** (if $\\overline{AB} \\cong \\overline{CD}$ then $\\overline{CD} \\cong \\overline{AB}$) and **transitive**. To prove a theorem about congruent segments or angles, turn each congruence into an equation, work with the equations, and turn the answer back.",
         scene: { type: "method", how: HOW_2_7 } },
       { type: "learn", kicker: "Watch",
-        prompt: "$\\angle 1$ and $\\angle 3$ are vertical angles, with $\\angle 2$ between them. Watch this flowchart proof read.", art: FLOW_VERT,
+        prompt: "Given: $\\angle 1 \\cong \\angle 2$ and $\\angle 2 \\cong \\angle 3$. Prove: $\\angle 1 \\cong \\angle 3$. Watch each statement get its reason.", art: FIG_ANG27,
         scene: { type: "walk", how: HOW_2_7, rows: [
+          { step: 1, m: "\\angle 1 \\cong \\angle 2 \\qquad \\angle 2 \\cong \\angle 3", say: "Given." },
+          { step: 2, m: "m\\angle 1 = m\\angle 2 \\qquad m\\angle 2 = m\\angle 3", say: "Definition of congruent angles.",
+            ask: { prompt: "What does the definition of congruent angles let you write?", answer: 0, options: [{ t: "Their measures are equal" }, { t: "Their measures add to 180°", fb: "That is supplementary. Congruent means equal." }] } },
+          { step: 3, m: "m\\angle 1 = m\\angle 3", say: "Transitive Property of Equality." },
+          { step: 3, m: "\\angle 1 \\cong \\angle 3", say: "Definition of congruent angles, read the other way." }] },
+        gate: true, then: "This proves the **Transitive Property of Congruence** for angles: the three-line argument works for segments in the same way." },
+      { type: "guided", kicker: "Together",
+        prompt: "Given: $\\angle A \\cong \\angle B$. Prove the **Symmetric Property**: $\\angle B \\cong \\angle A$. Now you supply the reasons.",
+        how: HOW_2_7, skill: "Congruence properties",
+        steps: [
+          { step: 1, ask: "What is the reason for the first statement, $\\angle A \\cong \\angle B$?", type: "choice", answer: 0,
+            options: [{ t: "Given" }, { t: "Definition of congruent angles", fb: "That comes next. The first statement is what you are told." }],
+            m: "\\angle A \\cong \\angle B", say: "Given." },
+          { step: 2, ask: "Next, $m\\angle A = m\\angle B$. Which reason?", type: "choice", answer: 0,
+            options: [{ t: "Definition of congruent angles" }, { t: "Symmetric Property of Equality", fb: "Not yet. First turn the congruence into an equation." }],
+            m: "m\\angle A = m\\angle B", say: "Definition of congruent angles." },
+          { step: 3, ask: "Swapping the two sides gives $m\\angle B = m\\angle A$. Which reason?", type: "choice", answer: 0,
+            options: [{ t: "Symmetric Property of Equality" }, { t: "Reflexive Property of Equality", fb: "Reflexive says a measure equals itself, not that two sides can swap." }],
+            m: "m\\angle B = m\\angle A", say: "Symmetric Property of Equality." },
+          { step: 3, ask: "The last line turns it back. Which reason?", type: "choice", answer: 0,
+            options: [{ t: "Definition of congruent angles" }, { t: "Given", fb: "It was not given: it has been proved." }],
+            m: "\\angle B \\cong \\angle A", say: "Definition of congruent angles." }],
+        why: "Given, equation, back. Now two on your own." },
+      { type: "slots", kicker: "On your own", prompt: "Match each statement to the property of congruence it shows.",
+        slots: [{ id: "r", label: "Reflexive" }, { id: "s", label: "Symmetric" }, { id: "t", label: "Transitive" }],
+        cards: [{ t: nb("$\\overline{PQ} \\cong \\overline{PQ}$"), slot: "r", fb: "A segment is congruent to itself." },
+                { t: nb("If $\\angle X \\cong \\angle Y$, then $\\angle Y \\cong \\angle X$."), slot: "s", fb: "The two sides change places." },
+                { t: nb("If $\\overline{AB} \\cong \\overline{CD}$ and $\\overline{CD} \\cong \\overline{EF}$, then $\\overline{AB} \\cong \\overline{EF}$."), slot: "t", fb: "A chain passes the congruence along." }],
+        skill: "Congruence properties", hints: ["Itself? Swapped? Passed along a chain?"], why: "Reflexive: itself. Symmetric: swapped. Transitive: a chain." },
+      { type: "num", prompt: "$\\angle A \\cong \\angle B$ and $\\angle B \\cong \\angle C$. $m\\angle A = 47°$. Find $m\\angle C$.", post: "°", answer: 47, skill: "Congruence properties",
+        near: [{ v: 94, fb: "Congruent angles are equal, not added together." }, { v: 43, fb: "That is the complement of 47°. Congruent means equal." }],
+        hints: ["$\\angle A \\cong \\angle C$ by the Transitive Property."], why: "$\\angle A \\cong \\angle C$, so $m\\angle C = 47°$." },
+      { type: "learn", kicker: "A harder case",
+        prompt: "Given: $\\overline{AB} \\cong \\overline{CD}$, $M$ is the midpoint of $\\overline{AB}$ and $N$ is the midpoint of $\\overline{CD}$. Prove: $\\overline{AM} \\cong \\overline{CN}$.",
+        scene: { type: "walk", how: HOW_2_7B, rows: [
+          { step: 1, m: "AM = \\frac{1}{2}AB \\qquad CN = \\frac{1}{2}CD", say: "Definition of midpoint: each half is half the whole.",
+            fig: segRow([["A", 0], ["M", 1.5], ["B", 3]], { ticks: [[0, 1, 1], [1, 2, 1]], alt: "Segment AB with midpoint M." }) },
+          { step: 2, m: "AB = CD", say: "The segments are congruent, so their lengths are equal.",
+            ask: { prompt: "Which definition turns $\\overline{AB} \\cong \\overline{CD}$ into $AB = CD$?", answer: 0, options: [{ t: "The definition of congruent segments" }, { t: "The definition of midpoint", fb: "That one halves a segment. Here we only turn a congruence into an equation." }] } },
+          { step: 2, m: "\\frac{1}{2}AB = \\frac{1}{2}CD", say: "Multiplication Property of Equality." },
+          { step: 3, m: "AM = CN", say: "Substitution." },
+          { step: 3, m: "\\overline{AM} \\cong \\overline{CN}", say: "Definition of congruent segments." }] },
+        gate: true },
+      { type: "choice", kicker: "Try it", prompt: "In a proof, you go from $\\overline{AB} \\cong \\overline{CD}$ to $AB = CD$. What is the reason?",
+        options: [{ t: "Definition of congruent segments" }, { t: "Given", fb: "It is not a new fact: it is the same fact written another way." }, { t: "Reflexive Property", fb: "Reflexive gives a segment congruent to itself." }],
+        answer: 0, skill: "Congruence properties", hints: ["Which definition turns a congruence into an equation?"], why: "The definition says congruent segments have equal lengths." },
+      { type: "choice", kicker: "Find the error",
+        prompt: "A proof says: $m\\angle 1 = m\\angle 2$ and $m\\angle 2 = m\\angle 3$, so $m\\angle 1 = m\\angle 3$. Reason: Reflexive Property of Equality. What is wrong?",
+        options: [{ t: "The reason is the Transitive Property: the equal quantities are linked in a chain." }, { t: "The conclusion should be $m\\angle 1 = m\\angle 2$.", fb: "That was already given." }, { t: "Nothing. It is right.", fb: "Reflexive only says a measure equals itself." }],
+        answer: 0, skill: "Congruence properties", hints: ["Two things equal to the same third thing…"], why: "Equal to the same thing, so equal to each other: Transitive." },
+      { type: "num", kicker: "Use it", prompt: "Plank 1 is the same length as plank 2, and plank 2 is the same length as plank 3. Plank 3 is 2.4 m. How long is plank 1?", post: "m", answer: 2.4, tol: 1e-9, skill: "Congruence properties",
+        near: [{ v: 4.8, fb: "The planks are the same length. They do not add." }], hints: ["Plank 1 is congruent to plank 3."], why: "Transitive: plank 1 is also 2.4 m." }
+    ]
+  });
+  /* ================================================ 2.8 · Proofs about angle pairs */
+  var HOW_2_8 = [["Mark", "Mark the figure with the given facts."],
+                 ["Equations", "Turn each fact into an equation: a sum for supplementary or complementary, equal measures for congruent."],
+                 ["Link", "Join the equations with substitution or a property, and end with the claim."]];
+  var FLOW_VERT28 = flow([{ at: [2.6, 3.3], t: "∠1, ∠2: linear pair", r: "Given (figure)" }, { at: [2.6, 1.3], t: "∠2, ∠3: linear pair", r: "Given (figure)" },
+    { at: [8.6, 3.3], t: "∠1, ∠2 supplementary", r: "Linear Pair Post." }, { at: [8.6, 1.3], t: "∠2, ∠3 supplementary", r: "Linear Pair Post." },
+    { at: [14.4, 2.3], t: "∠1 ≅ ∠3", r: "Congruent Suppl. Thm.", w: 4.6 }],
+    [[0, 2], [1, 3], [2, 4], [3, 4]], { x: [0, 16.8], y: [0.3, 4.3], u: 34, alt: "A flowchart proof. Two boxes on the left say that angles 1 and 2, and angles 2 and 3, are linear pairs. Each leads to a box saying the pair is supplementary, by the Linear Pair Postulate. Both of those lead to the last box: angle 1 is congruent to angle 3, by the Congruent Supplements Theorem." });
+  var FIG_X28 = xFig(58, { alt: "Two lines crossing, making four angles numbered 1 to 4 in order round the crossing point." });
+  function pair28(s) {
+    if (s.selList.length < 2) return null;
+    var a = +s.selList[0], b = +s.selList[1], d = Math.abs(a - b);
+    return d === 2 ? { k: "vertical", say: "$\\angle " + a + " \\cong \\angle " + b + "$: **vertical angles**. Both are supplementary to the angle between them." }
+      : { k: "linear", say: "$\\angle " + a + "$ and $\\angle " + b + "$: a **linear pair**, so they add up to 180°." };
+  }
+  LESSONS.push({
+    title: "Proofs about angle pairs", art: "ap",
+    blurb: "Section 2.8 · Theorems about right, complementary, supplementary and vertical angles, and how to prove them.",
+    mins: 15, v: 5,
+    steps: [
+      { type: "num", kicker: "Warm up", prompt: "$\\angle 1$ and $\\angle 2$ are supplementary. $m\\angle 1 = 70°$. Find $m\\angle 2$.", post: "°", answer: 110, skill: "Angle pairs",
+        near: [{ v: 20, fb: "That is the complement. Supplementary angles add up to 180°." }], hints: ["$180 - 70$."], why: "$180 - 70 = 110$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Turn the orange line. Tap **any two** angles and read how they are related. Find a **linear pair** and a pair of **vertical angles**.",
+        scene: { type: "sketch", x: [-3.7, 3.7], y: [-3.2, 3.2], u: 50, grid: false, gate: true,
+          pts: { H: { at: GT.polar([0, 0], 2.7, 58), drag: true, c: "orange", on: { circle: [[0, 0], 2.7], snapDeg: 1, range: [25, 155] }, say: "The turning line" } },
+          taps: { "1": { at: function (s) { var a = GT.dir([0, 0], s.H); return GT.polar([0, 0], 1.3, a / 2); }, label: "1", r: 16 },
+                  "2": { at: function (s) { var a = GT.dir([0, 0], s.H); return GT.polar([0, 0], 1.3, (a + 180) / 2); }, label: "2", r: 16 },
+                  "3": { at: function (s) { var a = GT.dir([0, 0], s.H); return GT.polar([0, 0], 1.3, 180 + a / 2); }, label: "3", r: 16 },
+                  "4": { at: function (s) { var a = GT.dir([0, 0], s.H); return GT.polar([0, 0], 1.3, 180 + (a + 180) / 2); }, label: "4", r: 16 } }, maxSel: 2,
+          track: function (s) { var p = pair28(s); return p ? p.k : null; },
+          draw: function (s) {
+            var O = [0, 0], a = Math.round(GT.dir(O, s.H)), R = { 1: [0, a], 2: [a, 180], 3: [180, 180 + a], 4: [180 + a, 360] }, items = [];
+            s.selList.forEach(function (k, i) { items.push({ angle: [GT.polar(O, 1, R[k][0]), O, GT.polar(O, 1, R[k][1])], r: 62 + i * 6, c: i ? "green" : "orange" }); });
+            items.push({ dline: [GT.polar(O, 3.2, 180), [3.2, 0]] }, { dline: [GT.polar(O, 2.9, a + 180), GT.polar(O, 2.9, a)], c: "orange" }, { pt: O });
+            return items;
+          },
+          readout: function (s) {
+            var a = Math.round(GT.dir([0, 0], s.H)), p = pair28(s), m = { 1: a, 2: 180 - a, 3: a, 4: 180 - a };
+            return (p ? p.say + "<br>$m\\angle " + s.selList[0] + " = " + m[s.selList[0]] + "°$ and $m\\angle " + s.selList[1] + " = " + m[s.selList[1]] + "°$" : "Tap two angles.") + "<br>" + found([["vertical", "Vertical angles"], ["linear", "A linear pair"]], s.tracked);
+          },
+          goal: function (s) { return s.tracked.vertical && s.tracked.linear; } },
+        then: "However the line turns, **vertical** angles stay equal, and a **linear pair** always adds up to 180°. The proofs in this lesson say **why**." },
+      { type: "learn", kicker: "The idea",
+        prompt: "Theorems about angle pairs are proved from definitions and postulates. The **Linear Pair Postulate** says a linear pair is supplementary. From it: supplements of the same angle are congruent, and so are vertical angles. So are complements of the same angle, and all right angles.",
+        scene: { type: "method", how: HOW_2_8 } },
+      { type: "learn", kicker: "Watch",
+        prompt: "$\\angle 1$ and $\\angle 3$ are vertical angles, with $\\angle 2$ between them. Watch a flowchart prove they are congruent.", art: FLOW_VERT28,
+        scene: { type: "walk", how: HOW_2_8, rows: [
           { step: 1, m: "\\angle 1, \\angle 2 \\qquad \\angle 2, \\angle 3", say: "The two boxes on the left: each pair is a linear pair, as the figure shows." },
-          { step: 2, m: "\\text{each pair is supplementary}", say: "One arrow from each box: the Linear Pair Theorem.",
-            ask: { prompt: "Which theorem turns “linear pair” into “supplementary”?", answer: 0,
-                   options: [{ t: "The Linear Pair Theorem" }, { t: "The Congruent Supplements Theorem", fb: "That one comes next: it needs two supplementary pairs." }] } },
+          { step: 2, m: "\\text{each pair is supplementary}", say: "One arrow from each box: the Linear Pair Postulate.",
+            ask: { prompt: "What does the Linear Pair Postulate say about the two angles?", answer: 0, options: [{ t: "They are supplementary" }, { t: "They are congruent", fb: "Only if both happen to measure 90°." }] } },
           { step: 2, m: "\\text{two arrows into one box}", say: "The last box needs both facts: $\\angle 1$ and $\\angle 3$ are both supplementary to $\\angle 2$." },
           { step: 3, m: "\\angle 1 \\cong \\angle 3", say: "Congruent Supplements Theorem. This proves the Vertical Angles Theorem." }] },
         gate: true, then: "Vertical angles are congruent: now it is a theorem, not just something you noticed." },
       { type: "guided", kicker: "Together",
-        prompt: "$A$, $B$, $C$ and $D$ lie on a line in that order, and $\\overline{AB} \\cong \\overline{CD}$. Now you read the proof that $\\overline{AC} \\cong \\overline{BD}$.",
-        art: segRow([["A", 0], ["B", 2], ["C", 4.6], ["D", 6.6]], { ticks: [[0, 1, 1], [2, 3, 1]], alt: "Points A, B, C and D on a segment, with AB and CD marked as equal." }),
-        how: HOW_2_7, skill: "Read a proof",
+        prompt: "Given: $\\angle A$ and $\\angle B$ are right angles. Prove: $\\angle A \\cong \\angle B$. Now you supply the steps.",
+        how: HOW_2_8, skill: "Angle pair proofs",
         steps: [
-          { step: 1, ask: "The first box says $AB = CD$. What is written under it?", type: "choice", answer: 0,
-            options: [{ t: "Given" }, { t: "Segment Addition Postulate", fb: "That comes later. The first box is what you are told." }],
-            m: "AB = CD", say: "Given." },
-          { step: 2, ask: "The next box adds $BC$ to both sides. Which property is its reason?", type: "choice", answer: 0,
-            options: [{ t: "Addition Property of Equality" }, { t: "Reflexive Property of Equality", fb: "Reflexive gives $BC = BC$. Adding it to both sides is the Addition Property." }],
-            m: "AB + BC = BC + CD", say: "Addition Property of Equality." },
-          { step: 2, ask: "$AB + BC$ is the whole of which segment?", type: "choice", answer: 0,
-            options: [{ t: "$\\overline{AC}$" }, { t: "$\\overline{AD}$", fb: "$\\overline{AD}$ would need $CD$ as well." }],
-            m: "AC = BD", say: "Segment Addition Postulate, then substitution." },
-          { step: 3, ask: "The last box writes that as a congruence. Which one?", type: "choice", answer: 0,
-            options: [{ t: "$\\overline{AC} \\cong \\overline{BD}$" }, { t: "$\\overline{AB} \\cong \\overline{BD}$", fb: "The equal lengths are $AC$ and $BD$." }],
-            m: "\\overline{AC} \\cong \\overline{BD}", say: "Definition of congruent segments. This is the Common Segments Theorem." }],
-        why: "Boxes, arrows, end. Now two on your own." },
-      { type: "order", kicker: "On your own", prompt: "A paragraph proof that two congruent angles which are supplementary must both be right angles. Put its sentences in order.",
-        items: [nb("It is given that $\\angle 1 \\cong \\angle 2$ and that they are supplementary."), nb("By the definitions, $m\\angle 1 = m\\angle 2$ and $m\\angle 1 + m\\angle 2 = 180°$."), nb("By substitution, $m\\angle 1 + m\\angle 1 = 180°$."), nb("So $m\\angle 1 = 90°$, and $m\\angle 2 = 90°$ as well."), "Both angles are right angles."],
+          { step: 1, ask: "What is the reason for “$\\angle A$ and $\\angle B$ are right angles”?", type: "choice", answer: 0,
+            options: [{ t: "Given" }, { t: "Definition of a right angle", fb: "That is used next. These two statements are what you are told." }],
+            m: "\\angle A \\text{ and } \\angle B \\text{ are right angles}", say: "Given." },
+          { step: 2, ask: "What can you write from the definition of a right angle?", type: "choice", answer: 0,
+            options: [{ t: "$m\\angle A = 90°$ and $m\\angle B = 90°$" }, { t: "$m\\angle A + m\\angle B = 90°$", fb: "Each right angle is 90° by itself. The sum would be 180°." }],
+            m: "m\\angle A = 90° \\qquad m\\angle B = 90°", say: "Definition of a right angle." },
+          { step: 3, ask: "Which property lets you say $m\\angle A = m\\angle B$?", type: "choice", answer: 0,
+            options: [{ t: "Transitive (or Substitution) Property: both equal 90°" }, { t: "Symmetric Property", fb: "Symmetric only swaps the two sides of one equation." }],
+            m: "m\\angle A = m\\angle B", say: "Both equal 90°." },
+          { step: 3, ask: "The last step turns it back. What do you write?", type: "choice", answer: 0,
+            options: [{ t: "$\\angle A \\cong \\angle B$, by the definition of congruent angles" }, { t: "$\\angle A \\cong \\angle B$, by the Given", fb: "It has been proved, not given." }],
+            m: "\\angle A \\cong \\angle B", say: "Definition of congruent angles. This proves: all right angles are congruent." }],
+        why: "Mark, equations, link. Now two on your own." },
+      { type: "slots", kicker: "On your own", prompt: "Prove that vertical angles are congruent. $\\angle 1$ and $\\angle 2$ are a linear pair, and so are $\\angle 2$ and $\\angle 3$, so each pair sums to 180°. Drop in the **reason** for each statement.", art: FIG_X28,
+        slots: [{ id: "a", label: nb("$m\\angle 1 + m\\angle 2 = m\\angle 2 + m\\angle 3$") }, { id: "b", label: nb("$m\\angle 1 = m\\angle 3$") }, { id: "c", label: nb("$\\angle 1 \\cong \\angle 3$") }],
+        cards: [{ t: "Substitution: both sums equal 180°", slot: "a", fb: "Both sums are 180°, so they are equal." }, { t: "Subtraction Property of Equality", slot: "b", fb: "Take $m\\angle 2$ from both sides." }, { t: "Definition of congruent angles", slot: "c", fb: "Equal measures mean congruent angles." },
+                { t: "Reflexive Property", fb: "Reflexive gives a quantity equal to itself." }, { t: "Given", fb: "These statements were worked out, not given." }],
+        skill: "Angle pair proofs", hints: ["Start from the two linear pairs: what do their sums equal?"], why: "Two sums that both equal 180° are equal; subtract the common angle; then turn the equation back into a congruence." },
+      { type: "order", prompt: "A paragraph proof that two congruent angles which are supplementary must both be right angles. Put its sentences in order.",
+        items: [nb("It is given that $\\angle 1 \\cong \\angle 2$ and that they are supplementary."), nb("By the definitions, $m\\angle 1 = m\\angle 2$ and $m\\angle 1 + m\\angle 2 = 180°$."), nb("By substitution, $m\\angle 1 + m\\angle 1 = 180°$."), nb("So $m\\angle 1 = 90°$, and $m\\angle 2 = 90°$ as well."), nb("Both are right angles.")],
         skill: "Paragraph proof", hints: ["A paragraph proof starts from what is given.", "Each sentence uses the one before it."],
         why: "Given, definitions, substitution, the arithmetic, and the conclusion." },
-      { type: "sort", prompt: "Which kind of proof does each description fit?",
-        bins: ["Two-column", "Flowchart", "Paragraph"],
-        cards: [{ t: "Statements on the left, reasons on the right", bin: 0, fb: "Two columns." }, { t: "Boxes joined by arrows", bin: 1, fb: "A flowchart." },
-                { t: "Sentences, with each reason woven in", bin: 2, fb: "A paragraph." }],
-        skill: "Kinds of proof", hints: ["Picture each one on the page."],
-        why: "Three layouts for the same argument." },
       { type: "learn", kicker: "A harder case",
-        prompt: "Any flowchart proof can be rewritten in two columns.",
-        scene: { type: "walk", how: [["Order", "Follow the arrows to list the statements in order."], ["Columns", "Write each box's statement on the left and its reason on the right."], ["Check", "Every statement must come after the ones it depends on."]], rows: [
-          { step: 1, m: "\\text{given} \\to \\text{theorem} \\to \\text{conclusion}", say: "Read along the arrows, and the flowchart is already in order." },
-          { step: 2, m: "\\text{statements} \\qquad \\text{reasons}", say: "Each box splits into two cells: what is claimed, and why." },
-          { step: 3, m: "\\text{support first}", say: "Two boxes on the same level can go in either order. A box never goes before the ones that point to it." }] },
+        prompt: "The same idea with complements. Given: $\\angle X$ and $\\angle Z$ are complementary, and so are $\\angle Y$ and $\\angle Z$. Prove: $\\angle X \\cong \\angle Y$.",
+        scene: { type: "walk", how: HOW_2_8, rows: [
+          { step: 1, m: "\\angle X, \\angle Z \\text{ complementary} \\qquad \\angle Y, \\angle Z \\text{ complementary}", say: "Given." },
+          { step: 2, m: "m\\angle X + m\\angle Z = 90° \\qquad m\\angle Y + m\\angle Z = 90°", say: "Definition of complementary angles.",
+            ask: { prompt: "What do complementary angles add up to?", answer: 0, options: [{ t: "90°" }, { t: "180°", fb: "That is supplementary." }] } },
+          { step: 2, m: "m\\angle X + m\\angle Z = m\\angle Y + m\\angle Z", say: "Substitution: both sums equal 90°." },
+          { step: 3, m: "m\\angle X = m\\angle Y", say: "Subtraction Property of Equality: take $m\\angle Z$ from both sides." },
+          { step: 3, m: "\\angle X \\cong \\angle Y", say: "Definition of congruent angles: the **Congruent Complements Theorem**." }] },
         gate: true },
-      { type: "choice", kicker: "Try it", prompt: "In this flowchart, which box depends on **two** earlier boxes?", art: FLOW_VERT,
-        options: [{ t: "$\\angle 1 \\cong \\angle 3$" }, { t: "“$\\angle 1$, $\\angle 2$ supplementary”", fb: "Only one arrow points to it." }, { t: "“$\\angle 1$, $\\angle 2$: linear pair”", fb: "No arrow points to it: it is a starting box." }],
-        answer: 0, skill: "Read a proof", hints: ["Count the arrows that point into each box."], why: "Two arrows point into the last box." },
+      { type: "choice", kicker: "Try it", prompt: "$\\angle P$ and $\\angle Q$ are each supplementary to $\\angle R$. Which theorem tells you $\\angle P \\cong \\angle Q$?",
+        options: [{ t: "The Congruent Supplements Theorem" }, { t: "The Congruent Complements Theorem", fb: "The angles are supplementary, not complementary." }, { t: "The Right Angle Congruence Theorem", fb: "Nothing says they are right angles." }],
+        answer: 0, skill: "Angle pair proofs", hints: ["Two angles supplementary to the same angle."], why: "Supplements of the same angle are congruent." },
       { type: "choice", kicker: "Find the error",
-        prompt: "A paragraph proof says: “$\\angle 1$ and $\\angle 2$ are vertical angles, so they are supplementary.” What is wrong?",
+        prompt: "A proof says: “$\\angle 1$ and $\\angle 3$ are vertical angles, so they are supplementary.” What is wrong?",
         options: [{ t: "Vertical angles are congruent, not supplementary: the reason does not support the statement." },
-                  { t: "A paragraph proof cannot use theorems.", fb: "It can. It just has to use them correctly." },
+                  { t: "Vertical angles cannot be named with numbers.", fb: "They can: that is how figures name them." },
                   { t: "Nothing. It is right.", fb: "Two vertical angles of 40° add to 80°, not 180°." }],
-        answer: 0, skill: "Paragraph proof", hints: ["What does the Vertical Angles Theorem actually say?"], why: "The Vertical Angles Theorem gives congruence." },
-      { type: "choice", kicker: "Use it", prompt: "You want a reader to see at a glance how two separate facts combine into one conclusion. Which layout shows that best?",
-        options: [{ t: "A flowchart proof" }, { t: "A paragraph proof", fb: "Sentences run in a single line. They cannot show two paths meeting." }],
-        answer: 0, skill: "Kinds of proof", hints: ["Which one can draw two arrows into one box?"], why: "Arrows show which facts each statement depends on." }
+        answer: 0, skill: "Angle pair proofs", hints: ["What does the Vertical Angles Theorem say?"], why: "Vertical angles are congruent." },
+      { type: "num", kicker: "Use it", prompt: "Two roads cross. One of the angles they make is 38°. What is the angle **directly opposite** it?", post: "°", answer: 38, skill: "Angle pair proofs",
+        near: [{ v: 142, fb: "That is the angle next to it, which makes a linear pair. The opposite angle is a vertical angle." }], hints: ["Vertical angles are congruent."], why: "Vertical angles are congruent, so it is 38° too." }
     ]
   });
   /* ================================================================ Skills */
@@ -1104,20 +1402,7 @@
           wrong: [0, 1, 2].filter(function (j) { return j !== k; }).map(function (j) { return { t: forms[j], fb: "That is the " + names[j] + "." }; }),
           hints: ["Converse: swap. Inverse: negate both. Contrapositive: swap and negate."], why: ["The converse swaps the two parts.", "The inverse negates both parts.", "The contrapositive swaps and negates."][k] });
       } },
-    { id: "hg2-deductive", title: "Detachment and syllogism", lesson: 4,
-      gen: function (R) {
-        var c = R.pick(CHAINS), kind = R.int(0, 2), bare = function (t) { return t.replace(/\.$/, ""); };
-        if (kind === 0) return mc(R, { prompt: "Given: “" + c.c1 + "” Also given: " + c.p + " What follows?", right: bare(c.q) + ", by the Law of Detachment.",
-          wrong: [{ t: "Nothing follows.", fb: "The fact matches the hypothesis, so the conclusion follows." }, { t: bare(c.q) + ", by the Law of Syllogism.", fb: "Syllogism joins two conditionals. Here there is one conditional and one fact." }],
-          hints: ["Does the fact match the hypothesis or the conclusion?"], why: "The hypothesis is true, so the conclusion can be detached." });
-        if (kind === 1) return mc(R, { prompt: "Given: “" + c.c1 + "” Also given: " + c.q + " What follows?", right: "Nothing follows.",
-          wrong: [{ t: bare(c.p) + ", by the Law of Detachment.", fb: "The fact matches the conclusion, not the hypothesis." }, { t: bare(c.p) + ", by the Law of Syllogism.", fb: "Syllogism needs two conditionals. And this fact matches a conclusion." }],
-          hints: ["Does the fact match the hypothesis or the conclusion?"], why: "Knowing the conclusion is true says nothing about the hypothesis." });
-        return mc(R, { prompt: "Given: “" + c.c1 + "” and “" + c.c2 + "” What follows?", right: c.pr,
-          wrong: [{ t: c.rp, fb: "That is the converse. The chain runs from the first hypothesis to the last conclusion." }, { t: "Nothing follows.", fb: "The first conclusion is the second hypothesis, so the two join." }],
-          hints: ["The Law of Syllogism: $p \\to q$ and $q \\to r$ give $p \\to r$."], why: "By the Law of Syllogism, the first hypothesis leads to the last conclusion." });
-      } },
-    { id: "hg2-biconditional", title: "Biconditional statements", lesson: 5,
+    { id: "hg2-biconditional", title: "Biconditional statements", lesson: 3,
       gen: function (R) {
         var B = R.pick([
           ["A number is even if and only if it is divisible by 2.", true, "Both directions hold: this is the definition of an even number."],
@@ -1138,6 +1423,19 @@
         return mc(R, { prompt: "True or false? “" + B[0] + "”", right: B[1] ? "True" : "False", wrong: [{ t: B[1] ? "False" : "True", fb: B[2] }], keep: true,
           hints: ["Test the conditional, and then test its converse."], why: B[2] });
       } },
+    { id: "hg2-deductive", title: "Detachment and syllogism", lesson: 4,
+      gen: function (R) {
+        var c = R.pick(CHAINS), kind = R.int(0, 2), bare = function (t) { return t.replace(/\.$/, ""); };
+        if (kind === 0) return mc(R, { prompt: "Given: “" + c.c1 + "” Also given: " + c.p + " What follows?", right: bare(c.q) + ", by the Law of Detachment.",
+          wrong: [{ t: "Nothing follows.", fb: "The fact matches the hypothesis, so the conclusion follows." }, { t: bare(c.q) + ", by the Law of Syllogism.", fb: "Syllogism joins two conditionals. Here there is one conditional and one fact." }],
+          hints: ["Does the fact match the hypothesis or the conclusion?"], why: "The hypothesis is true, so the conclusion can be detached." });
+        if (kind === 1) return mc(R, { prompt: "Given: “" + c.c1 + "” Also given: " + c.q + " What follows?", right: "Nothing follows.",
+          wrong: [{ t: bare(c.p) + ", by the Law of Detachment.", fb: "The fact matches the conclusion, not the hypothesis." }, { t: bare(c.p) + ", by the Law of Syllogism.", fb: "Syllogism needs two conditionals. And this fact matches a conclusion." }],
+          hints: ["Does the fact match the hypothesis or the conclusion?"], why: "Knowing the conclusion is true says nothing about the hypothesis." });
+        return mc(R, { prompt: "Given: “" + c.c1 + "” and “" + c.c2 + "” What follows?", right: c.pr,
+          wrong: [{ t: c.rp, fb: "That is the converse. The chain runs from the first hypothesis to the last conclusion." }, { t: "Nothing follows.", fb: "The first conclusion is the second hypothesis, so the two join." }],
+          hints: ["The Law of Syllogism: $p \\to q$ and $q \\to r$ give $p \\to r$."], why: "By the Law of Syllogism, the first hypothesis leads to the last conclusion." });
+      } },
     { id: "hg2-property", title: "Name the property", lesson: 6,
       gen: function (R) {
         var a = R.int(2, 9), b = R.int(2, 9), c = R.int(11, 40);
@@ -1155,7 +1453,7 @@
           wrong: R.shuffle(ALL.filter(function (t) { return t !== P[1]; })).slice(0, 3).map(function (t) { return { t: t, fb: "Look at what was done: " + { Addition: "something was added to both sides.", Subtraction: "something was subtracted from both sides.", Multiplication: "both sides were multiplied.", Division: "both sides were divided.", Reflexive: "a quantity is set equal to itself.", Symmetric: "the two sides changed places.", Transitive: "two equations were chained through a shared side.", Distributive: "parentheses were removed." }[P[1].split(" ")[0]] }; }),
           hints: ["Say in words what changed between the “if” and the “then”."], why: P[1] + "." });
       } },
-    { id: "hg2-reason", title: "Give the reason for a step", lesson: 7,
+    { id: "hg2-reason", title: "Give the reason for a step", lesson: 8,
       gen: function (R) {
         var S = R.pick([
           ["$\\angle 1$ and $\\angle 2$ are supplementary.", "$m\\angle 1 + m\\angle 2 = 180°$", "Definition of supplementary angles"],
@@ -1171,7 +1469,7 @@
           wrong: R.shuffle(ALL.filter(function (t) { return t !== S[2]; })).slice(0, 3).map(function (t) { return { t: t, fb: "That one does not turn the first statement into the second." }; }),
           hints: ["Which definition, postulate or theorem takes you from the first statement to the second?"], why: S[2] + "." });
       } },
-    { id: "hg2-theorem", title: "Use the angle theorems", lesson: 8,
+    { id: "hg2-theorem", title: "Use the angle theorems", lesson: 10,
       gen: function (R) {
         var a = R.int(25, 155), kind = R.int(0, 2);
         if (kind === 0) return { type: "num", prompt: "$\\angle 1$ and $\\angle 2$ form a linear pair, and $m\\angle 1 = " + a + "°$. Find $m\\angle 2$.", post: "°", answer: 180 - a,
@@ -1180,18 +1478,52 @@
           near: near(a, [{ v: 180 - a, fb: "That is the angle beside it. Vertical angles are congruent." }]), hints: ["Vertical Angles Theorem."], why: "Vertical angles are congruent: $" + a + "°$." };
         return { type: "num", prompt: "$\\angle A$ and $\\angle B$ are both supplementary to $\\angle C$, and $m\\angle A = " + a + "°$. Find $m\\angle B$.", post: "°", answer: a,
           near: near(a, [{ v: 180 - a, fb: "That is $m\\angle C$. Supplements of the same angle are congruent to each other." }]), hints: ["Congruent Supplements Theorem."], why: "Supplements of the same angle are congruent: $" + a + "°$." };
+      } },
+    { id: "hg2-diagram", title: "What a diagram tells you", lesson: 7,
+      gen: function (R) {
+        var C = R.pick([
+          { s: "Three points are drawn on one straight line, so they are collinear.", yes: true, why: "Points drawn on a line are on it." },
+          { s: "Two sides have matching tick marks, so they are congruent.", yes: true, why: "Matching tick marks are the mark for congruent sides." },
+          { s: "A small square marks an angle, so it is a right angle.", yes: true, why: "A little square is the mark for a right angle." },
+          { s: "Two angles carry matching arcs, so they are congruent.", yes: true, why: "Matching arcs mark congruent angles." },
+          { s: "An angle looks like 90°, so it is a right angle.", yes: false, why: "It needs a little square or a given fact: looks prove nothing." },
+          { s: "Two lines look parallel, so they are parallel.", yes: false, why: "It needs matching arrowheads or a given fact." },
+          { s: "A point looks like the midpoint of a segment, so it is the midpoint.", yes: false, why: "It needs tick marks or a given fact." },
+          { s: "One side looks longer than another, so it is longer.", yes: false, why: "A drawing is not to scale." },
+          { s: "Two angles are shown side by side on a line, so they form a linear pair.", yes: true, why: "Adjacent angles whose outer sides lie on a line are a linear pair, and the line is drawn." },
+          { s: "Two lines cross at a point, so the angles across from each other are vertical angles.", yes: true, why: "Crossing lines make vertical angles, and the crossing is drawn." },
+          { s: "A line through the middle of a figure is marked with arrowheads, so it is a line, not a segment.", yes: true, why: "Arrowheads mean the line goes on forever." },
+          { s: "Two segments carry the same number of tick marks, so they are congruent.", yes: true, why: "The same number of ticks is the mark for congruent segments." },
+          { s: "Two angles look the same size, so they are congruent.", yes: false, why: "Equal-looking angles need matching arcs or a given fact." },
+          { s: "A triangle looks isosceles, so it is isosceles.", yes: false, why: "It needs tick marks or a given fact." },
+          { s: "Two segments look perpendicular, so they are perpendicular.", yes: false, why: "It needs a little square or a given fact." },
+          { s: "Two angles look supplementary, so their measures add to 180°.", yes: false, why: "It needs a straight line drawn through them, or a given fact." }]);
+        return mc(R, { prompt: "A diagram shows this: “" + C.s + "” Can you assume it?", right: C.yes ? "Yes: the diagram marks it" : "No: it only looks that way", keep: true,
+          wrong: [{ t: C.yes ? "No: it only looks that way" : "Yes: the diagram marks it", fb: C.yes ? "That fact is marked or drawn in the diagram, so you can use it." : "Looking a certain way is not marked or given, so it cannot be used." }],
+          hints: ["Is it marked or given, or does it just look that way?"], why: C.why });
+      } },
+    { id: "hg2-congruence", title: "Properties of congruence", lesson: 9,
+      gen: function (R) {
+        var n = letters(R, 6), k = R.int(0, 2), seg = R.chance(0.5), ov = seg ? function (a, b) { return "$\\overline{" + a + b + "}$"; } : function (a, b) { return "$\\angle " + a + b + "$"; };
+        var ang = function (a, b) { return seg ? "\\overline{" + a + b + "}" : "\\angle " + a + b; };
+        var stmt = [ "$" + ang(n[0], n[1]) + " \\cong " + ang(n[0], n[1]) + "$", "If $" + ang(n[0], n[1]) + " \\cong " + ang(n[2], n[3]) + "$, then $" + ang(n[2], n[3]) + " \\cong " + ang(n[0], n[1]) + "$.",
+          "If $" + ang(n[0], n[1]) + " \\cong " + ang(n[2], n[3]) + "$ and $" + ang(n[2], n[3]) + " \\cong " + ang(n[4], n[5]) + "$, then $" + ang(n[0], n[1]) + " \\cong " + ang(n[4], n[5]) + "$." ][k];
+        var names = ["Reflexive", "Symmetric", "Transitive"];
+        return mc(R, { prompt: "Which property of congruence is this? " + stmt, right: names[k], keep: true,
+          wrong: names.filter(function (x, j) { return j !== k; }).map(function (x) { return { t: x, fb: { Reflexive: "Reflexive: a figure is congruent to itself.", Symmetric: "Symmetric: the two sides change places.", Transitive: "Transitive: a chain, passed along." }[x] }; }),
+          hints: ["Itself? Swapped? Passed along a chain?"], why: ["A figure is congruent to itself: Reflexive.", "The two sides swapped places: Symmetric.", "A chain of two congruences gives a third: Transitive."][k] });
       } }
   ];
   L.unit("geo", 2, {
-    title: "Geometric Reasoning",
+    title: "Reasoning and Proof",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 4, blurb: "Patterns and counterexamples, conditional statements, and deductive reasoning.",
-        skills: ["hg2-pattern", "hg2-conditional", "hg2-deductive"], per: 2 },
-      { title: "Quiz 2", after: 6, blurb: "Biconditionals, and the properties used in algebraic proof.",
-        skills: ["hg2-biconditional", "hg2-property"], per: 3 },
-      { title: "Quiz 3", after: 8, blurb: "Reasons in a proof, and the angle theorems.",
-        skills: ["hg2-reason", "hg2-theorem"], per: 3 }
+      { title: "Quiz 1", after: 4, blurb: "Patterns and counterexamples, conditional and biconditional statements, and deductive reasoning.",
+        skills: ["hg2-pattern", "hg2-conditional", "hg2-biconditional", "hg2-deductive"], per: 2 },
+      { title: "Quiz 2", after: 8, blurb: "Properties of equality, diagrams, and the reasons in a proof.",
+        skills: ["hg2-property", "hg2-diagram", "hg2-reason"], per: 2 },
+      { title: "Quiz 3", after: 10, blurb: "Properties of congruence and the angle theorems.",
+        skills: ["hg2-congruence", "hg2-theorem"], per: 3 }
     ],
     skills: SKILLS
   });
@@ -1199,17 +1531,19 @@
   L.addConcepts("geo:2", {
     2: { name: "Inductive reasoning", frame: "[[Inductive]] reasoning goes from examples to a rule. The rule is a [[conjecture]]. Examples can support it, but one [[counterexample]] proves it false.",
          chips: ["Deductive", "theorem"] },
-    3: { name: "Conditional statements", frame: "In “if $p$, then $q$”, $p$ is the [[hypothesis]] and $q$ the [[conclusion]]. The [[converse]] swaps them. The [[contrapositive]] swaps and negates, and always has the same truth value as the conditional.",
+    3: { name: "Conditional statements", frame: "In “if $p$, then $q$”, $p$ is the [[hypothesis]] and $q$ the [[conclusion]]. The [[converse]] swaps them. The [[contrapositive]] swaps and negates, and is true exactly when the conditional is. “If and only if” says both ways are true.",
          chips: ["inverse", "definition"] },
     4: { name: "Deductive reasoning", frame: "[[Deductive]] reasoning draws conclusions from facts and rules. The Law of [[Detachment]]: $p \\to q$ and $p$ give $q$. The Law of [[Syllogism]]: $p \\to q$ and $q \\to r$ give $p \\to r$.",
          chips: ["Inductive", "Converse"] },
-    5: { name: "Biconditionals", frame: "“$p$ if and only if $q$” is true when the conditional and its [[converse]] are [[both]] true. Every good [[definition]] can be written this way.",
-         chips: ["inverse", "either"] },
-    6: { name: "Algebraic proof", frame: "In a proof every statement has a [[reason]]. The [[Reflexive]] Property says a quantity equals itself, the [[Symmetric]] Property swaps the two sides, and the [[Transitive]] Property links a chain.",
+    6: { name: "Algebraic properties", frame: "In a proof every statement has a [[reason]]. The [[Reflexive]] Property says a quantity equals itself, the [[Symmetric]] Property swaps the two sides, and the Transitive Property chains equal things.",
          chips: ["figure", "Distributive"] },
-    7: { name: "Two-column proof", frame: "A [[theorem]] is a statement that has been proved. A two-column proof lists [[statements]] on the left and [[reasons]] on the right, from the given facts to what was to be proved.",
+    7: { name: "Diagrams", frame: "A diagram is [[not to scale]]. Use what is marked or given: tick marks, arcs, little squares and points on lines. Never use how a figure [[looks]].",
+         chips: ["measure", "guess"] },
+    8: { name: "Two-column proof", frame: "A [[theorem]] is a statement that has been proved. A two-column proof lists [[statements]] on the left and [[reasons]] on the right, from the given facts to the claim.",
          chips: ["postulate", "figures"] },
-    8: { name: "Flowchart and paragraph proofs", frame: "A [[flowchart]] proof puts statements in boxes joined by [[arrows]]. A [[paragraph]] proof gives the same steps in sentences. The Vertical Angles Theorem says vertical angles are [[congruent]].",
-         chips: ["two-column", "supplementary"] }
+    9: { name: "Congruence theorems", frame: "Congruence is [[reflexive]], [[symmetric]] and [[transitive]], like equality. To prove it, turn a congruence into an [[equation]], and back.",
+         chips: ["diagram", "converse"] },
+    10: { name: "Angle pair proofs", frame: "Angles [[supplementary]] to the same angle are congruent, and so are angles [[complementary]] to it. [[Vertical]] angles are congruent, and all right angles are congruent.",
+         chips: ["adjacent", "acute"] }
   });
 })();

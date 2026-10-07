@@ -1,20 +1,23 @@
 /* ==========================================================================
-   Geometry — Unit 4: Triangle Congruence. See lab/core.js for the format
-   and lab/geotools.js for the drawing kit.
+   Geometry — Unit 4: Congruent Triangles. See lab/core.js for the format and
+   lab/geotools.js for the drawing kit.
 
-   Follows Holt Geometry, Chapter 4, section for section (4-1 to 4-8), after
-   a readiness check. Only the order of topics is the book's: every
-   sentence, example, figure and question here is OEdu's own.
+   Follows CK-12 Geometry (CK-12 Foundation, CC BY-SA), Chapter 4, section
+   for section (4.1 to 4.8), after a readiness check. The sentences,
+   examples, figures and questions are OEdu's own; the order and the ideas are
+   the book's.
 
-   Classifying triangles (4-1), the angle sum and exterior angles (4-2),
-   congruent triangles and corresponding parts (4-3), SSS and SAS (4-4),
-   ASA, AAS and HL (4-5), CPCTC (4-6), coordinate proof (4-7), and isosceles
-   and equilateral triangles (4-8). Figures mark congruent sides with ticks
-   and congruent angles with arcs (shapes / polyItems).
+   Triangle sums and exterior angles (4.1), congruent figures (4.2), SSS
+   (4.3), ASA and AAS (4.4), SAS and HL (4.5), using congruent triangles:
+   CPCTC (4.6), isosceles and equilateral triangles (4.7), and congruence
+   transformations (4.8). Figures mark congruent sides with ticks and
+   congruent angles with arcs (shapes / polyItems). Classifying triangles is
+   in Unit 1 (1.6), where the book puts it.
 
-   Lessons carry v: 4 (see Unit 1). Skills are hg4-….
+   Lessons carry v: 5, so a record kept from the Holt-based Unit 4 (v 4) does
+   not mark these done. Skills are hg4-…
 
-   Nine lessons, eight skills, three quizzes, and the unit test.
+   Nine lessons, seven skills, three quizzes, and the unit test.
    ========================================================================== */
 (function () {
   "use strict";
@@ -34,6 +37,35 @@
       { seg: [A, B], c: "blue" }, { seg: [D, C], c: "green" }].concat(o.extra || [],
       [{ pt: A, name: n[0], at: "nw" }, { pt: B, name: n[1], at: "sw" }, { pt: E, name: n[2], at: "n" }, { pt: C, name: n[3], at: "ne" }, { pt: D, name: n[4], at: "se" }]), { u: 30, alt: alt });
   }
+
+  /* ---- Hands-on helpers for the triangle lessons. */
+  // The three angles of a triangle in whole degrees that add to exactly 180 (the largest remainders get the extra degree).
+  function angles3(A, B, C) {
+    var raw = [GT.angle(B, A, C), GT.angle(A, B, C), GT.angle(A, C, B)], fl = raw.map(Math.floor), left = 180 - fl[0] - fl[1] - fl[2];
+    raw.map(function (v, i) { return [v - fl[i], i]; }).sort(function (a, b) { return b[0] - a[0]; }).slice(0, Math.max(0, left)).forEach(function (z) { fl[z[1]]++; });
+    return fl;
+  }
+  function area3(A, B, C) { return Math.abs(crossOf(A, B, C)) / 2; }
+  // A copy of a triangle you can slide (drag A′), turn (the slider) and flip (the button), and a ghost it has to cover.
+  function fitMove(P, s) {
+    var rot = s.p.rot * Math.PI / 180, c = Math.cos(rot), sn = Math.sin(rot), f = s.c.flip === "yes" ? -1 : 1;
+    return P.map(function (p) { var x = f * (p[0] - P[0][0]), y = p[1] - P[0][1]; return [s.Q[0] + x * c - y * sn, s.Q[1] + x * sn + y * c]; });
+  }
+  function fitsOk(M, T) { return M.every(function (p, i) { return GT.dist(p, T[i]) < 0.2; }); }
+  function fitScene(P, T, o) {
+    o = o || {};
+    return { type: "sketch", x: o.x || [-1, 11], y: o.y || [-1, 6.5], u: o.u || 44, grid: false, gate: true,
+      pts: { Q: { at: o.start || [1, 4.5], drag: true, snap: 0.5, c: "orange", say: "Corner A′: drag to slide the copy" } },
+      params: { rot: { min: -180, max: 180, step: 15, v: o.rot0 || 0, label: "turn", show: function (v) { return "$" + v + "°$"; } } },
+      chips: { flip: { v: "no", opts: [["no", "Not flipped"], ["yes", "Flipped over"]] } },
+      draw: function (s) {
+        var M = fitMove(P, s), ok = fitsOk(M, T);
+        return [{ poly: T, c: "soft", dash: true, names: o.tnames || ["D", "E", "F"] }, { poly: M, c: ok ? "green" : "blue", fill: true, names: ["A′", "B′", "C′"] }];
+      },
+      readout: function (s) { return fitsOk(fitMove(P, s), T) ? "**It fits.** Every corner lands on its partner, so the two triangles are **congruent**." : "Slide, turn or flip the blue copy until it covers the dashed triangle exactly."; },
+      goal: function (s) { return fitsOk(fitMove(P, s), T); } };
+  }
+  var T_RT = [[0, 0], [3.6, 0], [0, 2.6]];
   var L = window.OPLO_LAB;
   var poly = L.poly, frac = L.frac, num = L.num, mc = L.mc, signed = L.signed;
 
@@ -540,12 +572,27 @@
     label(A, 0, 1); label(B, tilt, 5);
     return plain([0, 8.4], [-1.5, 3.9], items, { u: o.u || 40, w: o.w, alt: o.alt || "Two " + (tilt ? "" : "parallel ") + "lines " + nm[0] + " and " + nm[1] + " cut by a transversal " + nm[2] + ", making eight angles numbered 1 to 8: 1 and 2 above the upper line, 3 and 4 below it, 5 and 6 above the lower line, 7 and 8 below it." });
   }
+
+  /* --------------------------------------------- Hands-on scenes (sketch) */
+  // A point along the line through a and b (k = 0 at a, 1 at b), for drawing a line or a ray to the frame's edge.
+  function farPt(a, b, k) { return [a[0] + k * (b[0] - a[0]), a[1] + k * (b[1] - a[1])]; }
+  function lineThru(a, b, c) { return { dline: [farPt(a, b, -40), farPt(a, b, 41)], c: c }; }
+  function rayThru(a, b, c) { return { dline: [a, farPt(a, b, 41)], ray: true, c: c }; }
+  function crossOf(a, b, c) { return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); }
+  function samePt(a, b) { return Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6; }
+  function r10(v) { return Math.round(v * 10) / 10; }
+  function n1(v) { return num(r10(v)); }
+  function deg0(v) { return Math.round(v); }
+  // The angle at v from a to b, 0–180, in whole degrees.
+  function angAt(a, v, b) { return Math.round(GT.angle(a, v, b)); }
+  // "Found: acute ✓ right ✓ …": the kinds a drag has shown so far, as a line of words.
+  function found(list, seen) { return list.map(function (k) { return (seen[k[0]] ? "**" + k[1] + " ✓**" : "<span class='gt-dim'>" + k[1] + "</span>"); }).join(" · "); }
   /* ============================================================ Ready? */
   LESSONS.push({
-    title: "Are you ready? Three quick checks",
+    title: "Are you ready? Three quick checks", art: "ready",
     tag: "Ready?",
     blurb: "Before Chapter 4 · Kinds of angle, equations, and distance and midpoint.",
-    mins: 6, v: 4,
+    mins: 6, v: 5,
     steps: [
       { type: "choice", kicker: "Check 1 · Angles", prompt: "An angle measures 124°. What kind of angle is it?",
         options: [{ t: "Obtuse" }, { t: "Acute", fb: "Acute angles are less than 90°." }, { t: "Right", fb: "A right angle is exactly 90°." }],
@@ -565,89 +612,8 @@
         after: "Nothing is locked. Open any lesson whenever you like." }
     ]
   });
-  /* ================================================= 4-1 · Classifying triangles */
-  var HOW_4_1 = [["Angles", "Look at the angles. All three acute: acute. One right angle: right. One obtuse angle: obtuse. All three congruent: equiangular."],
-                 ["Sides", "Count the congruent sides. Three: equilateral. At least two: isosceles. None: scalene."],
-                 ["Name", "Put the two names together, such as a right scalene triangle."]];
-  var FIG_OBT = tri([[0, 0], [5, 0], [2.5, 1.45]], { names: "ABC", ticks: [0, 1, 1], angs: [null, null, "120°"] }, "Triangle ABC. Sides BC and CA each carry one tick mark. The angle at C is 120 degrees."),
-      FIG_345 = tri([[0, 0], [4, 0], [0, 3]], { names: "PQR", right: [0], sides: ["4", "5", "3"] }, "Triangle PQR with a right angle at P. PQ is 4, QR is 5 and RP is 3."),
-      FIG_LEGS = tri([[0, 0], [3, 0], [1.5, 4.1]], { names: "ABC", ticks: [0, 1, 1], sides: ["x + 4", "2x + 3", "4x − 7"] }, "Triangle ABC. Sides BC and CA each carry one tick mark. AB is x + 4, BC is 2x + 3 and CA is 4x − 7."),
-      FIG_EQ = tri([[0, 0], [4, 0], [2, 3.46]], { names: "JKL", ticks: [1, 1, 1], sides: ["3x − 2", "x + 8", null] }, "Triangle JKL with one tick mark on every side. JK is 3x − 2 and KL is x + 8.");
-  LESSONS.push({
-    title: "Classifying triangles",
-    blurb: "Book 4-1 · Name a triangle by its angles and by its sides, and use the name to find lengths.",
-    mins: 12, v: 4,
-    steps: [
-      { type: "choice", kicker: "Warm up", prompt: "Which of these is an obtuse angle?",
-        options: [{ t: "$115°$" }, { t: "$90°$", fb: "Exactly 90° is a right angle." }, { t: "$75°$", fb: "Less than 90° is acute." }],
-        answer: 0, skill: "Classify angles", hints: ["Obtuse: more than 90° and less than 180°."], why: "115° is between 90° and 180°." },
-      { type: "learn", kicker: "The idea",
-        prompt: "A triangle gets two names. One comes from its **angles**: acute, right, obtuse or equiangular. The other comes from its **sides**: equilateral, isosceles or scalene. Matching tick marks show congruent sides.",
-        scene: { type: "method", how: HOW_4_1 } },
-      { type: "learn", kicker: "Watch",
-        prompt: "Watch this triangle get both of its names.",
-        scene: { type: "walk", how: HOW_4_1, rows: [
-          { step: 1, m: "m\\angle C = 120°", say: "One angle is more than 90°.", fig: FIG_OBT },
-          { step: 1, m: "\\text{obtuse}", say: "One obtuse angle makes an obtuse triangle." },
-          { step: 2, m: "\\overline{BC} \\cong \\overline{CA}", say: "The matching tick marks show two congruent sides.",
-            ask: { prompt: "A triangle with at least two congruent sides is…", answer: 0,
-                   options: [{ t: "isosceles" }, { t: "scalene", fb: "Scalene means no congruent sides." }] } },
-          { step: 2, m: "\\text{isosceles}", say: "At least two congruent sides." },
-          { step: 3, m: "\\text{obtuse isosceles triangle}", say: "The angle name, then the side name." }] },
-        gate: true, then: "Angles give one name and sides give the other." },
-      { type: "guided", kicker: "Together",
-        prompt: "Now you classify $\\triangle PQR$.", art: FIG_345,
-        how: HOW_4_1, skill: "Classify triangles",
-        steps: [
-          { step: 1, ask: "The small square marks a right angle. What is the triangle called by its angles?", type: "choice", answer: 0,
-            options: [{ t: "Right" }, { t: "Acute", fb: "An acute triangle has three acute angles. This one has a 90° angle." }, { t: "Obtuse", fb: "An obtuse triangle has an angle greater than 90°." }],
-            m: "\\text{right}", say: "One right angle." },
-          { step: 2, ask: "The sides are 3, 4 and 5. Are any two of them congruent?", type: "choice", answer: 0,
-            options: [{ t: "No: it is scalene" }, { t: "Yes: it is isosceles", fb: "3, 4 and 5 are all different." }],
-            m: "\\text{scalene}", say: "No two sides have the same length." },
-          { step: 3, ask: "What is its full name?", type: "choice", answer: 0,
-            options: [{ t: "Right scalene triangle" }, { t: "Right isosceles triangle", fb: "Isosceles needs at least two congruent sides." }, { t: "Acute scalene triangle", fb: "It has a right angle." }],
-            m: "\\text{right scalene triangle}", say: "The angle name, then the side name." }],
-        why: "Angles, sides, name. Now two on your own." },
-      { type: "sort", kicker: "On your own", prompt: "Each card lists the three angles of a triangle. Classify each triangle.",
-        bins: ["Acute", "Right", "Obtuse"],
-        cards: [{ t: nb("$70°, 60°, 50°$"), bin: 0, fb: "All three are less than 90°." }, { t: nb("$90°, 45°, 45°$"), bin: 1, fb: "One angle is exactly 90°." },
-                { t: nb("$110°, 40°, 30°$"), bin: 2, fb: "110° is an obtuse angle." }, { t: nb("$60°, 60°, 60°$"), bin: 0, fb: "Equiangular, and every angle is acute." },
-                { t: nb("$100°, 50°, 30°$"), bin: 2, fb: "100° is an obtuse angle." }, { t: nb("$90°, 62°, 28°$"), bin: 1, fb: "One angle is exactly 90°." }],
-        skill: "Classify triangles", hints: ["Look at the largest angle of each."],
-        why: "The largest angle decides: less than, equal to, or more than 90°." },
-      { type: "choice", prompt: "A triangle has sides of 6 cm, 6 cm and 9 cm. Classify it by its sides.",
-        options: [{ t: "Isosceles" }, { t: "Equilateral", fb: "All three sides would have to be congruent." }, { t: "Scalene", fb: "Two of the sides are both 6 cm." }],
-        answer: 0, skill: "Classify triangles", hints: ["How many sides have the same length?"], why: "Two congruent sides: isosceles." },
-      { type: "learn", kicker: "A harder case",
-        prompt: "The name can find lengths. $\\triangle ABC$ is isosceles, with $\\overline{BC} \\cong \\overline{CA}$. Find all three sides.",
-        scene: { type: "walk", how: [["Equal", "Congruent sides have equal lengths: write an equation."], ["Solve", "Solve for $x$."], ["Substitute", "Put $x$ back in to find each length."]], rows: [
-          { step: 1, m: "2x + 3 = 4x - 7", say: "Congruent sides have equal lengths.", fig: FIG_LEGS },
-          { step: 2, m: "10 = 2x", say: "Subtract $2x$ and add 7 on both sides." },
-          { step: 2, m: "x = 5", say: "Divide by 2." },
-          { step: 3, m: "BC = 2(5) + 3 = 13", say: "Substitute 5.",
-            ask: { prompt: "What is $BC = 2x + 3$ when $x = 5$?", answer: 0,
-                   options: [{ t: "13" }, { t: "10", fb: "$2(5) = 10$, then add 3." }] } },
-          { step: 3, m: "CA = 4(5) - 7 = 13", say: "The same, as it must be." },
-          { step: 3, m: "AB = 5 + 4 = 9", say: "The third side." }] },
-        gate: true },
-      { type: "num", kicker: "Try it", prompt: "$\\triangle JKL$ is equilateral. Find the length of each side.", art: FIG_EQ, answer: 13, skill: "Classify triangles",
-        near: [{ v: 5, fb: "That is $x$. Substitute it to get the length." }],
-        hints: ["All sides are equal: $3x - 2 = x + 8$.", "$x = 5$. Now substitute."], why: "$2x = 10$, so $x = 5$ and each side is $3(5) - 2 = 13$." },
-      { type: "choice", kicker: "Find the error",
-        prompt: "A triangle has angles of 90°, 50° and 40°. Omar calls it obtuse, because 90° is its biggest angle. What is wrong?",
-        options: [{ t: "It is a right triangle. An obtuse triangle needs an angle greater than 90°." },
-                  { t: "It is acute, because two of its angles are acute.", fb: "Every triangle has at least two acute angles. The largest angle decides." },
-                  { t: "Nothing. Omar is correct.", fb: "90° is a right angle, not an obtuse one." }],
-        answer: 0, skill: "Classify triangles", hints: ["What kind of angle is exactly 90°?"], why: "One right angle makes a right triangle." },
-      { type: "num", kicker: "Use it", prompt: "A jeweller bends wire into equilateral triangles with sides of 2 cm. How many triangles can she make from 30 cm of wire?", answer: 5, skill: "Classify triangles",
-        near: [{ v: 15, fb: "Each triangle has three sides, so it uses 6 cm of wire." }],
-        hints: ["One triangle uses $3 \\cdot 2$ cm."], why: "$30 \\div 6 = 5$." }
-    ]
-  });
-
-  /* ===================================== 4-2 · Angle relationships in triangles */
-  var HOW_4_2 = [["Sum", "The three angle measures of a triangle add to 180°."],
+  /* ================================================== 4.1 · Triangle sums */
+  var HOW_4_1 = [["Sum", "The three angle measures of a triangle add to 180°."],
                  ["Equation", "Write the sum as an equation, with a letter for what is missing."],
                  ["Solve", "Solve it, then check that the three measures add to 180°."]];
   var FIG_SUM = tri([[0, 0], [5, 0], [3.49, 3.74]], { names: "ABC", angs: ["47°", "68°", "x°"] }, "Triangle ABC. The angle at A is 47 degrees, the angle at B is 68 degrees and the angle at C is x degrees."),
@@ -659,18 +625,44 @@
   var FIG_EXT = extFig([[0, 0], [4, 0], [2, 2.86]], ["55°", null, "70°"], "?", "Triangle ABC with side AB extended past B to D. The angle at A is 55 degrees and the angle at C is 70 degrees. The exterior angle CBD is marked with a question mark."),
       FIG_EXTX = extFig([[0, 0], [4, 0], [3.31, 3.94]], ["50°", null, "(2x + 10)°"], "(5x)°", "Triangle ABC with side AB extended past B to D. The angle at A is 50 degrees, the angle at C is 2x + 10 degrees, and the exterior angle CBD is 5x degrees.");
   LESSONS.push({
-    title: "Angle relationships in triangles",
-    blurb: "Book 4-2 · The angles of a triangle add to 180°, and an exterior angle equals its two remote interior angles.",
-    mins: 12, v: 4,
+    title: "Triangle sums", art: "sum",
+    blurb: "Section 4.1 · The angles of a triangle add up to 180°, and an exterior angle equals the sum of the two remote interior angles.",
+    mins: 14, v: 5,
     steps: [
       { type: "num", kicker: "Warm up", prompt: "Solve $x + 62 + 48 = 180$.", pre: "$x =$", answer: 70, skill: "Solve an equation",
         near: [{ v: 110, fb: "That is $62 + 48$. Subtract it from 180." }], hints: ["$x + 110 = 180$."], why: "$180 - 110 = 70$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Drag the corners of $\\triangle ABC$ into **any** shape. Look at the three angles each time, and add them up. Try at least three different triangles.",
+        scene: { type: "sketch", x: [-1, 11], y: [-0.5, 6.5], u: 46, grid: false, gate: true,
+          pts: { A: { at: [1, 0.8], drag: true, snap: 0.1, say: "Corner A" }, B: { at: [9, 0.8], drag: true, snap: 0.1, say: "Corner B" }, C: { at: [4.5, 5], drag: true, snap: 0.1, c: "orange", say: "Corner C" } },
+          draw: function (s) {
+            var a = angles3(s.A, s.B, s.C), ok = area3(s.A, s.B, s.C) > 0.4;
+            return ok ? [{ poly: [s.A, s.B, s.C], c: "blue", fill: true }, { angle: [s.B, s.A, s.C], say: a[0] + "°", r: 30, c: "orange" }, { angle: [s.C, s.B, s.A], say: a[1] + "°", r: 30, c: "green" }, { angle: [s.A, s.C, s.B], say: a[2] + "°", r: 30, c: "purple" },
+              { pt: s.A, name: "A", at: "sw" }, { pt: s.B, name: "B", at: "se" }, { pt: s.C, name: "C", at: "n", c: "orange" }] : [{ pt: s.A, name: "A", at: "sw" }, { pt: s.B, name: "B", at: "se" }, { pt: s.C, name: "C", at: "n" }];
+          },
+          readout: function (s) { var a = angles3(s.A, s.B, s.C); return area3(s.A, s.B, s.C) > 0.4 ? "$" + a[0] + "° + " + a[1] + "° + " + a[2] + "° = 180°$" : "The three corners are almost in a line: pull one away."; },
+          log: { need: 3, when: function (s) { return area3(s.A, s.B, s.C) > 0.4; }, cols: [{ h: "$\\angle A$", f: function (s) { return "$" + angles3(s.A, s.B, s.C)[0] + "°$"; } }, { h: "$\\angle B$", f: function (s) { return "$" + angles3(s.A, s.B, s.C)[1] + "°$"; } },
+            { h: "$\\angle C$", f: function (s) { return "$" + angles3(s.A, s.B, s.C)[2] + "°$"; } }, { h: "sum", f: function () { return "$180°$"; } }] } },
+        then: "However you stretch it, the three angles add up to **180°**: the **Triangle Sum Theorem**. A conjecture from examples becomes a theorem when it is proved." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Side $\\overline{AB}$ is extended past $B$. Drag $C$ and compare the **exterior angle** with the two angles of the triangle that are **not** next to it.",
+        scene: { type: "sketch", x: [-1, 12], y: [-0.5, 6.5], u: 44, grid: false, gate: true,
+          pts: { C: { at: [7.5, 4.5], drag: true, snap: 0.1, c: "orange", on: { fn: function (p) { return [Math.round(p[0] * 10) / 10, Math.max(0.8, Math.round(p[1] * 10) / 10)]; } }, say: "Corner C" } },
+          draw: function (s) {
+            var A = [1, 0.5], B = [7, 0.5], D = [11, 0.5], C = s.C, a = angles3(A, B, C), ext = 180 - a[1];
+            return [{ poly: [A, B, C], c: "blue", fill: true }, { dline: [B, D], ray: true }, { angle: [B, A, C], say: a[0] + "°", r: 30, c: "orange" }, { angle: [A, C, B], say: a[2] + "°", r: 28, c: "purple" },
+              { angle: [D, B, C], say: ext + "°", r: 36, c: "green" }, { pt: A, name: "A", at: "sw" }, { pt: B, name: "B", at: "s" }, { pt: C, name: "C", at: "n", c: "orange" }];
+          },
+          readout: function (s) { var a = angles3([1, 0.5], [7, 0.5], s.C); return "exterior angle $= " + (180 - a[1]) + "°$ · remote angles $" + a[0] + "° + " + a[2] + "° = " + (a[0] + a[2]) + "°$"; },
+          log: { need: 3, cols: [{ h: "$\\angle A$", f: function (s) { return "$" + angles3([1, 0.5], [7, 0.5], s.C)[0] + "°$"; } }, { h: "$\\angle C$", f: function (s) { return "$" + angles3([1, 0.5], [7, 0.5], s.C)[2] + "°$"; } },
+            { h: "$\\angle A + \\angle C$", f: function (s) { var a = angles3([1, 0.5], [7, 0.5], s.C); return "$" + (a[0] + a[2]) + "°$"; } }, { h: "exterior", f: function (s) { return "$" + (180 - angles3([1, 0.5], [7, 0.5], s.C)[1]) + "°$"; } }] } },
+        then: "The exterior angle always equals the sum of the two **remote interior** angles: the **Exterior Angle Theorem**. It is the triangle sum and a linear pair, working together." },
       { type: "learn", kicker: "The idea",
         prompt: "**Triangle Sum Theorem:** the angle measures of a triangle add to 180°. Why? Draw a line through one vertex, parallel to the opposite side. Alternate interior angles carry the other two angles up beside the third, and the three fill a straight line.",
-        scene: { type: "method", how: HOW_4_2 } },
+        scene: { type: "method", how: HOW_4_1 } },
       { type: "learn", kicker: "Watch",
         prompt: "Watch the third angle found.",
-        scene: { type: "walk", how: HOW_4_2, rows: [
+        scene: { type: "walk", how: HOW_4_1, rows: [
           { step: 1, m: "m\\angle A + m\\angle B + m\\angle C = 180°", say: "The Triangle Sum Theorem.", fig: FIG_SUM },
           { step: 2, m: "47 + 68 + x = 180", say: "Put in the two measures you know." },
           { step: 3, m: "115 + x = 180", say: "Add the two.",
@@ -680,7 +672,7 @@
         gate: true, then: "Two angles always give you the third." },
       { type: "guided", kicker: "Together",
         prompt: "Now you. Find $x$, and then the angle at $E$.", art: FIG_SUMX,
-        how: HOW_4_2, skill: "Triangle Sum Theorem",
+        how: HOW_4_1, skill: "Triangle Sum Theorem",
         steps: [
           { step: 1, ask: "What do the three measures add to?", type: "num", answer: 180, hint: "The Triangle Sum Theorem.",
             m: "(2x + 10) + (3x - 5) + 60 = 180", say: "The Triangle Sum Theorem." },
@@ -722,27 +714,30 @@
         hints: ["Wall, ground and ladder make a right triangle."], why: "$90 - 72 = 18$." }
     ]
   });
-
-  /* ====================================================== 4-3 · Congruent triangles */
-  var HOW_4_3 = [["Order", "Read the congruence statement. The order of the letters tells you which vertices match."],
+  /* ============================================== 4.2 · Congruent figures */
+  var HOW_4_2 = [["Order", "Read the congruence statement. The order of the letters tells you which vertices match."],
                  ["Angles", "Match the angles: first letter with first, second with second, third with third."],
                  ["Sides", "Match the sides the same way: the first two letters with the first two letters, and so on."]];
   var FIG_CONG = twoTris("ABC", "DEF", {}, {}, "Two triangles of the same size and shape, ABC and DEF."),
       FIG_PQR = twoTris("PQR", "XYZ", { sides: ["9"], angs: [null, "45°"] }, {}, "Two triangles of the same size and shape, PQR and XYZ. PQ is 9 and the angle at Q is 45 degrees."),
       FIG_KITE6 = kite([1.6, 1.9], { ticks: [0, 2, 1] }, null, "Kite ABCD with diagonal BD. AB and CB each carry one tick mark. AD and CD each carry two.", "BADC");
+  var P42 = [[0, 0], [3, 0], [1, 2]], T42 = fitMove(P42, { Q: [8, 2.5], p: { rot: 90 }, c: { flip: "yes" } });
   LESSONS.push({
-    title: "Congruent triangles",
-    blurb: "Book 4-3 · Corresponding sides and angles, and what a congruence statement tells you.",
-    mins: 12, v: 4,
+    title: "Congruent figures", art: "cfig",
+    blurb: "Section 4.2 · Figures that match exactly, the congruence statement, and the corresponding parts.",
+    mins: 14, v: 5,
     steps: [
       { type: "num", kicker: "Warm up", prompt: "$\\overline{AB} \\cong \\overline{CD}$ and $AB = 7$. What is $CD$?", answer: 7, skill: "Congruent segments",
         hints: ["Congruent segments have equal lengths."], why: "Congruent segments have the same length." },
+      { type: "learn", kicker: "Explore",
+        prompt: "The blue triangle is a copy of $\\triangle ABC$. **Slide** it (drag $A′$), **turn** it (the slider) and **flip** it (the button) until it covers the dashed triangle $DEF$ exactly.",
+        scene: fitScene(P42, T42, { start: [1, 4.5] }) },
       { type: "learn", kicker: "The idea",
         prompt: "Two triangles are **congruent** when all three pairs of **corresponding sides** and all three pairs of **corresponding angles** are congruent. The statement $\\triangle ABC \\cong \\triangle DEF$ lists the vertices in matching order: $A$ with $D$, $B$ with $E$, $C$ with $F$.",
-        scene: { type: "method", how: HOW_4_3 } },
+        scene: { type: "method", how: HOW_4_2 } },
       { type: "learn", kicker: "Watch",
         prompt: "Watch the six pairs of corresponding parts read from $\\triangle ABC \\cong \\triangle DEF$.",
-        scene: { type: "walk", how: HOW_4_3, rows: [
+        scene: { type: "walk", how: HOW_4_2, rows: [
           { step: 1, m: "\\triangle ABC \\cong \\triangle DEF", say: "$A$ matches $D$, $B$ matches $E$, $C$ matches $F$.", fig: FIG_CONG },
           { step: 2, m: "\\angle A \\cong \\angle D", say: "First letter with first letter.",
             ask: { prompt: "Which angle matches $\\angle A$?", answer: 0,
@@ -753,7 +748,7 @@
         gate: true, then: "Six pairs in all: three of angles and three of sides." },
       { type: "guided", kicker: "Together",
         prompt: "Now you. $\\triangle PQR \\cong \\triangle XYZ$. Find $m\\angle Y$ and $XY$.", art: FIG_PQR,
-        how: HOW_4_3, skill: "Corresponding parts",
+        how: HOW_4_2, skill: "Corresponding parts",
         steps: [
           { step: 1, ask: "Which vertex of $\\triangle XYZ$ matches $Q$?", type: "choice", answer: 0,
             options: [{ t: "$Y$" }, { t: "$X$", fb: "$Q$ is the second letter of $PQR$." }, { t: "$Z$", fb: "$Q$ is the second letter of $PQR$." }],
@@ -799,174 +794,293 @@
         hints: ["$\\angle B \\cong \\angle E$, so $m\\angle B = 67°$.", "Then use the Triangle Sum Theorem."], why: "$180 - 48 - 67 = 65$." }
     ]
   });
-  /* ============================================ 4-4 · Triangle congruence: SSS and SAS */
-  var HOW_4_4 = [["Mark", "Mark what is given, and add any shared side or vertical angles."],
-                 ["Count", "Three pairs of sides: SSS. Two pairs of sides and the angle between them: SAS."],
-                 ["State", "Write the congruence, with the vertices in matching order."]];
-  var PAR_A = [0, 0], PAR_B = [1.5, 2.6], PAR_C = [6, 2.6], PAR_D = [4.5, 0];
-  var FIG_PAR = shapes([[[PAR_A, PAR_B, PAR_C, PAR_D], { names: "ABCD", ticks: [1, 2, 1, 2] }]], { extra: [{ seg: [PAR_A, PAR_C], c: "green" }],
-        alt: "Quadrilateral ABCD with diagonal AC. AB and CD each carry one tick mark. BC and DA each carry two." }),
-      FIG_BOW = bowtie("ABECD", "Segments AD and BC cross at E. AE and DE each carry one tick mark. BE and CE each carry two. A is joined to B, and D to C."),
-      FIG_SAS = twoTris("ABC", "DEF", { ticks: [1, 0, 2], arcs: [1, 0, 0] }, null, "Triangles ABC and DEF. AB and DE carry one tick mark, CA and FD carry two, and the angles at A and D carry one arc."),
-      FIG_SSA = twoTris("ABC", "DEF", { ticks: [1, 2, 0], arcs: [1, 0, 0] }, null, "Triangles ABC and DEF. AB and DE carry one tick mark, BC and EF carry two, and the angles at A and D carry one arc."),
-      T_7810 = [[0, 0], [3.5, 0], [3.04, 3.97]],
-      FIG_ALG = twoTris("ABC", "DEF", { sides: ["x + 3", "2x", "3x − 2"] }, { sides: ["7", "8", "10"] }, "Triangles ABC and DEF. AB is x + 3, BC is 2x and CA is 3x − 2. DE is 7, EF is 8 and FD is 10.", T_7810);
+  /* ============================================ 4.3 · Triangle congruence: SSS */
+  var HOW_4_3 = [["Mark", "Mark the three pairs of congruent sides: the given ones, and any side the two triangles share."],
+                 ["Match", "Check that all three pairs are **corresponding** sides."],
+                 ["Say", "State SSS, and write the congruence with the corners in matching order."]];
+  var HOW_4_3C = [["Label", "Name the corners of each triangle and find all three side lengths."],
+                  ["Compare", "Put the lengths in order and compare them pair by pair."],
+                  ["Say", "If all three match, state SSS and write the congruence."]];
+  var FIG_SSS = kite([1.8, 2], { ticks: [0, 2, 1] }, null, "Triangles ABC and ADC share side AC. AB and AD carry one tick mark each, and CB and CD carry two.");
+  var FIG_SSS2 = twoTris("ABC", "DEF", { ticks: [1, 2, 3] }, null, "Triangles ABC and DEF. Their three pairs of sides carry one, two and three tick marks.");
+  var SQ43 = { A: [0, 0], B: [4, 0], C: [0, 3] }, SQ43b = { D: [1, 1], E: [5, 1], F: [1, 4] };
+  var STICK43 = { ab: 5, ac: 4.5, bc: 3 };
+  // The two places the corner C can be when AB = 5, AC = 4.5 and BC = 3: above or below the base.
+  function apex43(A, B, up) {
+    var d = GT.dist(A, B), x = (STICK43.ac * STICK43.ac - STICK43.bc * STICK43.bc + d * d) / (2 * d), h = Math.sqrt(STICK43.ac * STICK43.ac - x * x), ux = (B[0] - A[0]) / d, uy = (B[1] - A[1]) / d, k = up ? 1 : -1;
+    return [A[0] + x * ux - k * h * uy, A[1] + x * uy + k * h * ux];
+  }
   LESSONS.push({
-    title: "Triangle congruence: SSS and SAS",
-    blurb: "Book 4-4 · Three pairs of sides, or two pairs of sides and the included angle, prove triangles congruent.",
-    mins: 12, v: 4,
+    title: "Triangle congruence: SSS", art: "sss",
+    blurb: "Section 4.3 · Three pairs of congruent sides are enough to make two triangles congruent: the SSS Postulate.",
+    mins: 14, v: 5,
     steps: [
-      { type: "choice", kicker: "Warm up", prompt: "In $\\triangle ABC$, which angle is formed by sides $\\overline{AB}$ and $\\overline{BC}$?",
-        options: [{ t: "$\\angle B$" }, { t: "$\\angle A$", fb: "$\\overline{BC}$ does not reach $A$." }, { t: "$\\angle C$", fb: "$\\overline{AB}$ does not reach $C$." }],
-        answer: 0, skill: "Included angle", hints: ["Which point is on both sides?"], why: "Both sides end at $B$. $\\angle B$ is the **included angle** of those two sides." },
+      { type: "choice", kicker: "Warm up", prompt: "You have three sticks, 3 cm, 4 cm and 5 cm, and join their ends to make a triangle. How many **different** triangles can you make?",
+        options: [{ t: "Only one shape: any other is the same triangle turned or flipped" }, { t: "Many", fb: "Try bending it: the sticks are straight, and the ends are joined, so nothing can move." }, { t: "None", fb: "3 + 4 > 5, so the three sticks do reach round." }],
+        answer: 0, skill: "SSS", hints: ["Could you change an angle without changing a side?"], why: "Three sides fix the triangle completely." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$\\overline{AB}$ is fixed at 5. The two other sticks have lengths 4.5 and 3. Drag $C$, and try the other button too. Which can **change shape**?",
+        scene: { type: "sketch", x: [-1, 11], y: [-4.2, 5], u: 42, grid: false, gate: true,
+          pts: { C: { at: apex43([1, 0.5], [6, 0.5], true), drag: true, c: "orange", on: { fn: function (p, s) {
+            var A = [1, 0.5], B = [6, 0.5];
+            if (s.c.kind === "quad") { var a = Math.atan2(p[1] - B[1], p[0] - B[0]); return [B[0] + 3 * Math.cos(a), B[1] + 3 * Math.sin(a)]; }
+            var up = apex43(A, B, true), dn = apex43(A, B, false); return GT.dist(p, up) < GT.dist(p, dn) ? up : dn;
+          } }, say: "Corner C" } },
+          chips: { kind: { v: "tri", opts: [["tri", "Three sticks (a triangle)"], ["quad", "Four sticks (a four-sided shape)"]] } },
+          draw: function (s) {
+            var A = [1, 0.5], B = [6, 0.5], C = s.C, items;
+            if (s.c.kind === "tri") items = [{ poly: [A, B, C], c: "blue", fill: true }, { len: "5", seg: [A, B], side: 1, off: 16 }, { len: "3", seg: [B, C], side: -1, off: 14 }, { len: "4.5", seg: [C, A], side: -1, off: 14 }];
+            else { var D = [C[0] + A[0] - B[0], C[1] + A[1] - B[1]]; items = [{ poly: [A, B, C, D], c: "purple", fill: true }, { len: "5", seg: [A, B], side: 1, off: 16 }, { len: "3", seg: [B, C], side: -1, off: 14 }, { len: "5", seg: [C, D], side: -1, off: 14 }, { len: "3", seg: [D, A], side: 1, off: 14 }, { pt: D, name: "D", at: "n" }]; }
+            return items.concat([{ pt: A, name: "A", at: "sw" }, { pt: B, name: "B", at: "se" }, { pt: C, name: "C", at: "n", c: "orange" }]);
+          },
+          readout: function (s) { return s.c.kind === "tri" ? "**Three sticks: the triangle is rigid.** Drag as you like: the corner can only flip to the other side of $\\overline{AB}$." : "**Four sticks: the shape wobbles.** The side lengths stay the same, but the angles change."; },
+          goal: function (s) { return Object.keys(s.seen.kind).length >= 2 && s.moved; } },
+        then: "With sides fixed, a triangle cannot change its shape. That is why triangles brace bridges and gates, and why **three pairs of congruent sides** are enough: the **SSS Postulate**." },
       { type: "learn", kicker: "The idea",
-        prompt: "You do not need all six pairs. **SSS:** three pairs of congruent sides make triangles congruent, because three side lengths fix a triangle's shape. **SAS:** two pairs of sides and the **included angle**, the angle between them, are enough as well.",
+        prompt: "**SSS:** if three sides of one triangle are congruent to three sides of another, the triangles are congruent. The sides must be **corresponding**: the shortest to the shortest, the longest to the longest. A side the two triangles share counts as one pair, by the **Reflexive Property**.",
+        scene: { type: "method", how: HOW_4_3 } },
+      { type: "learn", kicker: "Watch",
+        prompt: "Given: $\\overline{AB} \\cong \\overline{AD}$ and $\\overline{CB} \\cong \\overline{CD}$. Prove: $\\triangle ABC \\cong \\triangle ADC$. Watch SSS used.",
+        scene: { type: "walk", how: HOW_4_3, rows: [
+          { step: 1, m: "\\overline{AB} \\cong \\overline{AD} \\qquad \\overline{CB} \\cong \\overline{CD}", say: "Two pairs are given: the tick marks show them.", fig: FIG_SSS },
+          { step: 1, m: "\\overline{AC} \\cong \\overline{AC}", say: "The third pair is the side the two triangles **share**. Reflexive Property.",
+            ask: { prompt: "Which side do the two triangles share?", answer: 0, options: [{ t: "$\\overline{AC}$" }, { t: "$\\overline{BD}$", fb: "$\\overline{BD}$ is not a side of either triangle." }] } },
+          { step: 2, m: "AB \\leftrightarrow AD \\quad CB \\leftrightarrow CD \\quad AC \\leftrightarrow AC", say: "Each pair matches the same place in both triangles." },
+          { step: 3, m: "\\triangle ABC \\cong \\triangle ADC", say: "SSS. The corners are written in matching order." }] },
+        gate: true, then: "Three pairs of congruent sides: SSS." },
+      { type: "guided", kicker: "Together",
+        prompt: "In these two triangles the tick marks show congruent sides. Now you decide whether they must be congruent.", art: FIG_SSS2,
+        how: HOW_4_3, skill: "SSS",
+        steps: [
+          { step: 1, ask: "How many pairs of congruent sides do the tick marks show?", type: "num", answer: 3, near: [{ v: 2, fb: "Count the three different tick patterns: one, two and three." }], hint: "One tick, two ticks, three ticks.",
+            m: "3 \\text{ pairs}", say: "Three pairs: one, two and three ticks." },
+          { step: 2, ask: "Are the sides matched in the same places in both triangles?", type: "choice", answer: 0,
+            options: [{ t: "Yes: each tick pattern is in the same place in both" }, { t: "No", fb: "Each pair of ticks sits on the matching side of each triangle." }],
+            m: "AB \\leftrightarrow DE \\quad BC \\leftrightarrow EF \\quad CA \\leftrightarrow FD", say: "Corresponding sides." },
+          { step: 3, ask: "Which statement is right?", type: "choice", answer: 0,
+            options: [{ t: "$\\triangle ABC \\cong \\triangle DEF$ by SSS" }, { t: "$\\triangle ABC \\cong \\triangle FED$ by SSS", fb: "The corners must be listed in matching order: $A$ with $D$, $B$ with $E$, $C$ with $F$." }],
+            m: "\\triangle ABC \\cong \\triangle DEF", say: "SSS, with the corners in matching order." }],
+        why: "Mark, match, say. Now two on your own." },
+      { type: "num", kicker: "On your own", prompt: "$\\triangle ABC \\cong \\triangle DEF$ by SSS. $AB = 2x + 3$ and $DE = 13$. Find $x$.", answer: 5, skill: "SSS",
+        near: [{ v: 8, fb: "Subtract 3 first: $2x = 10$." }], hints: ["Corresponding sides are equal: $2x + 3 = 13$."], why: "$2x = 10$, so $x = 5$." },
+      { type: "sort", prompt: "Each card says what is known about two triangles. Does it give **SSS**?",
+        bins: ["SSS", "Not SSS"],
+        cards: [{ t: "Three pairs of congruent sides", bin: 0, fb: "That is exactly SSS." }, { t: "Two pairs of sides and one pair of angles", bin: 1, fb: "That is a different test." }, { t: "Three pairs of congruent angles", bin: 1, fb: "Equal angles say nothing about size." },
+                { t: "Two pairs of congruent sides and a shared third side", bin: 0, fb: "The shared side is the third pair." }, { t: "Sides 5, 7, 9 in one and 9, 5, 7 in the other", bin: 0, fb: "The same three lengths, in a different order: they still match up." }],
+        skill: "SSS", hints: ["Count the pairs of congruent **sides**."], why: "SSS needs three pairs of congruent sides, and nothing else." },
+      { type: "learn", kicker: "A harder case",
+        prompt: "SSS can be checked with coordinates. $A(0, 0)$, $B(4, 0)$, $C(0, 3)$ and $D(1, 1)$, $E(5, 1)$, $F(1, 4)$. Are the triangles congruent?",
+        scene: { type: "walk", how: HOW_4_3C, rows: [
+          { step: 1, m: "AB = 4 \\quad BC = \\sqrt{16 + 9} = 5 \\quad CA = 3", say: "A horizontal side, a vertical side, and the slanted one by the distance formula.",
+            fig: grid([-1, 7], [-1, 6], [{ poly: [[0, 0], [4, 0], [0, 3]], names: "ABC", c: "blue" }, { poly: [[1, 1], [5, 1], [1, 4]], names: "DEF", c: "green" }], { u: 28, alt: "Triangle ABC with corners (0, 0), (4, 0) and (0, 3), and triangle DEF with corners (1, 1), (5, 1) and (1, 4)." }) },
+          { step: 1, m: "DE = 4 \\quad EF = \\sqrt{16 + 9} = 5 \\quad FD = 3", say: "The same three calculations for the second triangle.",
+            ask: { prompt: "What is $EF$?", answer: 0, options: [{ t: "5" }, { t: "7", fb: "Square the differences, add, then take the root: $\\sqrt{16 + 9}$." }] } },
+          { step: 2, m: "4 = 4 \\quad 5 = 5 \\quad 3 = 3", say: "The three lengths match pair by pair." },
+          { step: 3, m: "\\triangle ABC \\cong \\triangle DEF", say: "SSS: the second triangle is the first one moved 1 right and 1 up." }] },
+        gate: true },
+      { type: "choice", kicker: "Try it", prompt: "A gate is a rectangle with a hinge on each side, so it can sag into a parallelogram. A diagonal brace is added. Why does the brace stop it?",
+        options: [{ t: "The brace makes two triangles, and a triangle with fixed sides cannot change shape (SSS)" }, { t: "The brace is heavy", fb: "Weight is not the reason. The brace makes the shape rigid." }, { t: "The brace makes the sides longer", fb: "The sides stay the same length." }],
+        answer: 0, skill: "SSS", hints: ["Think of the sticks in the Explore."], why: "Two triangles with fixed sides are rigid, so the gate cannot sag." },
+      { type: "choice", kicker: "Find the error",
+        prompt: "$\\triangle PQR$ has sides 3, 4 and 5. $\\triangle XYZ$ has sides 3, 4 and 6. Mia says they are congruent by SSS. What is wrong?",
+        options: [{ t: "Only two pairs of sides match. SSS needs all three: 5 and 6 are different." }, { t: "The sides must be in order, but they are.", fb: "Order is fine. The third pair simply is not equal." }, { t: "Nothing. It is right.", fb: "5 is not 6, so the third pair does not match." }],
+        answer: 0, skill: "SSS", hints: ["Compare the longest sides."], why: "Two matching pairs are not enough: the third pair fails." },
+      { type: "num", kicker: "Use it", prompt: "Two roof trusses are triangles with sides of 6 m, 6 m and 8 m. The first has a vertical post 4.47 m tall at the middle. How tall is the post on the second truss, which is congruent to it?", post: "m", answer: 4.47, tol: 0.01, skill: "SSS",
+        near: [{ v: 8, fb: "That is the base. The post is the height at the middle." }], hints: ["Congruent triangles have congruent heights."], why: "The two trusses are congruent by SSS, so the matching posts are the same height: 4.47 m." }
+    ]
+  });
+  /* ======================================= 4.4 · Triangle congruence: ASA and AAS */
+  var HOW_4_4 = [["Mark", "Mark the two pairs of congruent angles and the one pair of congruent sides."],
+                 ["Place", "Is the side **between** the two angles (ASA), or **not** between them (AAS)?"],
+                 ["Say", "State ASA or AAS, and write the congruence with the corners in matching order."]];
+  var FIG_ASA = kite([1.8, 2], { arcs: [1, 2, 0] }, null, "Triangles ABC and ADC share side AC. The angles at A and C are each marked as equal in the two triangles, with one arc at A and two at C.");
+  var FIG_ASA2 = twoTris("ABC", "DEF", { arcs: [1, 2, 0], ticks: [1, 0, 0] }, null, "Triangles ABC and DEF. The angles at A and B carry one and two arcs, and side AB carries one tick mark. In DEF, the same marks sit on D, E and DE.");
+  var FIG_AAS = twoTris("ABC", "DEF", { arcs: [1, 2, 0], ticks: [0, 0, 1] }, null, "Triangles ABC and DEF. The angles at A and B carry one and two arcs, and side CA carries one tick mark. In DEF, the same marks sit on D, E and FD.");
+  var G44 = { a: 50, b: 60, ab: 5 };
+  function apex44(al, be) {
+    var a = al * Math.PI / 180, b = be * Math.PI / 180, t = G44.ab * Math.sin(b) / Math.sin(a + b);
+    return [t * Math.cos(a), t * Math.sin(a)];
+  }
+  LESSONS.push({
+    title: "Triangle congruence: ASA and AAS", art: "asa",
+    blurb: "Section 4.4 · Two angles and the side between them (ASA), or two angles and a side that is not between them (AAS).",
+    mins: 14, v: 5,
+    steps: [
+      { type: "choice", kicker: "Warm up", prompt: "In $\\triangle ABC$, which side lies **between** $\\angle A$ and $\\angle B$?",
+        options: [{ t: "$\\overline{AB}$" }, { t: "$\\overline{BC}$", fb: "$\\overline{BC}$ touches $\\angle B$ and $\\angle C$." }, { t: "$\\overline{CA}$", fb: "$\\overline{CA}$ touches $\\angle C$ and $\\angle A$." }],
+        answer: 0, skill: "Included side", hints: ["It joins the two corners."], why: "$\\overline{AB}$ joins $A$ and $B$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$\\overline{AB}$ is fixed at 5. Slide the two angles, $\\alpha$ at $A$ and $\\beta$ at $B$, until your blue triangle covers the dashed one. How much freedom do you have?",
+        scene: { type: "sketch", x: [-1.5, 8], y: [-0.8, 5], u: 54, grid: false, gate: true,
+          params: { al: { min: 20, max: 100, step: 5, v: 75, label: "angle at $A$", show: function (v) { return "$" + v + "°$"; } }, be: { min: 20, max: 100, step: 5, v: 40, label: "angle at $B$", show: function (v) { return "$" + v + "°$"; } } },
+          draw: function (s) {
+            var A = [0, 0], B = [5, 0], C = apex44(s.p.al, s.p.be), fit = s.p.al === G44.a && s.p.be === G44.b, C0 = apex44(G44.a, G44.b);
+            return [{ poly: [A, B, C0], c: "soft", dash: true }, { poly: [A, B, C], c: fit ? "green" : "blue", fill: true }, { angle: [B, A, C], say: s.p.al + "°", r: 34, c: "orange" }, { angle: [C, B, A], say: s.p.be + "°", r: 34, c: "purple" },
+              { pt: A, name: "A", at: "sw" }, { pt: B, name: "B", at: "se" }, { pt: C, name: "C", at: "n" }];
+          },
+          readout: function (s) {
+            var g = 180 - s.p.al - s.p.be;
+            return "$\\angle A = " + s.p.al + "°$ · $\\angle B = " + s.p.be + "°$ · so $\\angle C = 180° - " + s.p.al + "° - " + s.p.be + "° = " + g + "°$" + (s.p.al === G44.a && s.p.be === G44.b ? "<br>**It fits.** Nothing else covers the dashed triangle." : "");
+          },
+          goal: function (s) { return s.p.al === G44.a && s.p.be === G44.b; } },
+        then: "Two angles and the side **between** them fix the triangle: that is **ASA**. And the third angle is forced ($180°$ minus the other two), so two angles and **any** side do too: that is **AAS**." },
+      { type: "learn", kicker: "The idea",
+        prompt: "**ASA:** two angles and the **included side** (the side between them) of one triangle are congruent to those of another. **AAS:** two angles and a side that is **not** between them. Both prove the triangles congruent: the third angles must match too.",
         scene: { type: "method", how: HOW_4_4 } },
       { type: "learn", kicker: "Watch",
-        prompt: "Watch SSS used. Given: $\\overline{AB} \\cong \\overline{CD}$ and $\\overline{BC} \\cong \\overline{DA}$.",
+        prompt: "Given: $\\overline{AC}$ bisects $\\angle BAD$ and $\\angle BCD$. Prove: $\\triangle ABC \\cong \\triangle ADC$. Watch ASA used.",
         scene: { type: "walk", how: HOW_4_4, rows: [
-          { step: 1, m: "\\overline{AB} \\cong \\overline{CD} \\qquad \\overline{BC} \\cong \\overline{DA}", say: "Given, and marked with ticks.", fig: FIG_PAR },
-          { step: 1, m: "\\overline{AC} \\cong \\overline{CA}", say: "Reflexive Property: both triangles use the diagonal.",
-            ask: { prompt: "The two triangles share one side. Which?", answer: 0,
-                   options: [{ t: "$\\overline{AC}$" }, { t: "$\\overline{BD}$", fb: "$\\overline{BD}$ is not drawn. The diagonal drawn is $\\overline{AC}$." }] } },
-          { step: 2, m: "\\text{three pairs of sides: SSS}", say: "Side, side, side." },
-          { step: 3, m: "\\triangle ABC \\cong \\triangle CDA", say: "$A$ matches $C$, $B$ matches $D$, and $C$ matches $A$." }] },
-        gate: true, then: "A shared side counts: it is congruent to itself." },
+          { step: 1, m: "\\angle BAC \\cong \\angle DAC \\qquad \\angle BCA \\cong \\angle DCA", say: "A bisector cuts an angle into two congruent angles: two pairs, marked with arcs.", fig: FIG_ASA },
+          { step: 1, m: "\\overline{AC} \\cong \\overline{AC}", say: "The two triangles share $\\overline{AC}$. Reflexive Property." },
+          { step: 2, m: "\\overline{AC} \\text{ is between } \\angle A \\text{ and } \\angle C", say: "The shared side joins the two marked corners.",
+            ask: { prompt: "Is the shared side between the two marked angles?", answer: 0, options: [{ t: "Yes: it joins $A$ and $C$" }, { t: "No", fb: "The two marked corners are $A$ and $C$, and $\\overline{AC}$ runs between them." }] } },
+          { step: 3, m: "\\triangle ABC \\cong \\triangle ADC", say: "ASA." }] },
+        gate: true, then: "Angle, **side between**, angle: ASA." },
       { type: "guided", kicker: "Together",
-        prompt: "Now you. $\\overline{AD}$ and $\\overline{BC}$ cross at $E$. Use the tick marks to show $\\triangle AEB \\cong \\triangle DEC$.", art: FIG_BOW,
-        how: HOW_4_4, skill: "SSS and SAS",
+        prompt: "In these two triangles the marks show congruent parts. Now you decide which rule proves them congruent.", art: FIG_AAS,
+        how: HOW_4_4, skill: "ASA and AAS",
         steps: [
-          { step: 1, ask: "Which angles are congruent without being given?", type: "choice", answer: 0,
-            options: [{ t: "$\\angle AEB$ and $\\angle DEC$: they are vertical angles" }, { t: "$\\angle A$ and $\\angle D$", fb: "Nothing says so yet." }],
-            m: "\\angle AEB \\cong \\angle DEC", say: "Vertical Angles Theorem." },
-          { step: 2, ask: "Is $\\angle AEB$ between sides $\\overline{AE}$ and $\\overline{BE}$?", type: "choice", answer: 0,
-            options: [{ t: "Yes: it is the included angle" }, { t: "No", fb: "Both sides end at $E$, the vertex of the angle." }],
-            m: "\\text{side, included angle, side}", say: "The angle is between the two marked sides." },
-          { step: 2, ask: "Which postulate fits?", type: "choice", answer: 0,
-            options: [{ t: "SAS" }, { t: "SSS", fb: "Only two pairs of sides are known." }],
-            m: "\\text{SAS}", say: "Side, angle, side." },
-          { step: 3, ask: "Which statement has the vertices in matching order?", type: "choice", answer: 0,
-            options: [{ t: "$\\triangle AEB \\cong \\triangle DEC$" }, { t: "$\\triangle AEB \\cong \\triangle CED$", fb: "$A$ matches $D$, because $\\overline{AE} \\cong \\overline{DE}$." }],
-            m: "\\triangle AEB \\cong \\triangle DEC", say: "$A$ with $D$, $E$ with $E$, $B$ with $C$." }],
-        why: "Mark, count, state. Now two on your own." },
-      { type: "sort", kicker: "On your own", prompt: "Each card says what is known to be congruent in two triangles. Which postulate proves them congruent?",
-        bins: ["SSS", "SAS", "Not enough"],
-        cards: [{ t: "Three pairs of sides", bin: 0, fb: "Side, side, side." }, { t: "Two pairs of sides and the angle between them", bin: 1, fb: "The included angle: side, angle, side." },
-                { t: "Two pairs of sides and an angle not between them", bin: 2, fb: "The angle must be the included one." }, { t: "Two pairs of sides and a shared third side", bin: 0, fb: "The shared side is congruent to itself." },
-                { t: "Two pairs of sides that meet at vertical angles", bin: 1, fb: "The vertical angles are congruent, and they are included." }, { t: "Three pairs of angles", bin: 2, fb: "Angles fix the shape but not the size." }],
-        skill: "SSS and SAS", hints: ["For SAS, the angle has to be between the two sides."],
-        why: "SSS needs three sides. SAS needs the included angle." },
-      { type: "choice", prompt: "Which postulate proves these triangles congruent?", art: FIG_SAS,
-        options: [{ t: "SAS" }, { t: "SSS", fb: "Only two pairs of sides are marked." }, { t: "Neither", fb: "The marked angle is between the two marked sides." }],
-        answer: 0, skill: "SSS and SAS", hints: ["Where is the marked angle?"], why: "The angle at $A$ is between $\\overline{AB}$ and $\\overline{CA}$: side, angle, side." },
-      { type: "learn", kicker: "A harder case",
-        prompt: "Sometimes the lengths are expressions. Show that $\\triangle ABC \\cong \\triangle DEF$ when $x = 4$.",
-        scene: { type: "walk", how: [["Substitute", "Put the value in for each side."], ["Compare", "Compare the three pairs of sides."], ["Decide", "Name the postulate."]], rows: [
-          { step: 1, m: "AB = 4 + 3 = 7", say: "Substitute $x = 4$.", fig: FIG_ALG },
-          { step: 1, m: "BC = 2(4) = 8", say: "And again." },
-          { step: 1, m: "CA = 3(4) - 2 = 10", say: "The third side.",
-            ask: { prompt: "What is $3x - 2$ when $x = 4$?", answer: 0,
-                   options: [{ t: "10" }, { t: "6", fb: "Multiply first: $12 - 2$." }] } },
-          { step: 2, m: "AB = DE \\qquad BC = EF \\qquad CA = FD", say: "7 and 7, 8 and 8, 10 and 10." },
-          { step: 3, m: "\\triangle ABC \\cong \\triangle DEF \\text{ by SSS}", say: "Three pairs of congruent sides." }] },
-        gate: true },
-      { type: "choice", kicker: "Try it", prompt: "You know $\\overline{AB} \\cong \\overline{DE}$ and $\\angle B \\cong \\angle E$. Which other pair lets you use SAS?",
-        options: [{ t: "$\\overline{BC} \\cong \\overline{EF}$" }, { t: "$\\overline{AC} \\cong \\overline{DF}$", fb: "Then $\\angle B$ would not be between the two sides." }, { t: "$\\angle A \\cong \\angle D$", fb: "SAS needs two pairs of sides." }],
-        answer: 0, skill: "SSS and SAS", hints: ["$\\angle B$ must be between the two sides. Which sides meet at $B$?"], why: "$\\overline{AB}$ and $\\overline{BC}$ meet at $B$, so $\\angle B$ is included." },
-      { type: "choice", kicker: "Find the error",
-        prompt: "Dev says these triangles are congruent by SAS. What is wrong?", art: FIG_SSA,
-        options: [{ t: "The marked angle is not between the two marked sides, so SAS does not apply." },
-                  { t: "He should have said SSS.", fb: "Only two pairs of sides are marked." },
-                  { t: "Nothing. Two sides and an angle are marked.", fb: "For SAS the angle must be the included one." }],
-        answer: 0, skill: "SSS and SAS", hints: ["Which angle is between $\\overline{AB}$ and $\\overline{BC}$?"], why: "The included angle of $\\overline{AB}$ and $\\overline{BC}$ is $\\angle B$, but $\\angle A$ is marked." },
-      { type: "choice", kicker: "Use it", prompt: "A rectangular gate sags until a diagonal brace is nailed across it. Why does the brace hold it in shape?",
-        options: [{ t: "It makes triangles, and three fixed side lengths allow only one triangle" }, { t: "It makes the gate heavier", fb: "Weight does not stop the corners from turning." }, { t: "It makes the angles of the gate add to 180°", fb: "A rectangle's angles add to 360°, with or without a brace." }],
-        answer: 0, skill: "SSS and SAS", hints: ["Think of SSS."], why: "SSS: a triangle with fixed sides cannot change shape." }
-    ]
-  });
-
-  /* ======================================= 4-5 · Triangle congruence: ASA, AAS and HL */
-  var HOW_4_5 = [["Mark", "Mark what is given, and add any shared side or vertical angles."],
-                 ["Pattern", "Read round the triangle. ASA: the side is between the two angles. AAS: it is not between them. HL: a right triangle's hypotenuse and a leg."],
-                 ["State", "Name the rule and write the congruence in matching order."]];
-  var T_RT = [[0, 0], [3.6, 0], [0, 2.6]];
-  var FIG_ASA = kite([1.8, 2], { arcs: [1, 2, 0] }, null, "Triangles ABC and ADC share side AC. The angles at A on each side of AC carry one arc. The angles at C on each side of AC carry two."),
-      FIG_AAS = twoTris("ABC", "DEF", { arcs: [1, 2, 0], ticks: [0, 1, 0] }, null, "Triangles ABC and DEF. The angles at A and D carry one arc, the angles at B and E carry two, and sides BC and EF carry one tick mark."),
-      FIG_HL = twoTris("ABC", "DEF", { right: [0], ticks: [1, 2, 0] }, null, "Right triangles ABC and DEF, with right angles at A and D. Legs AB and DE carry one tick mark. Sides BC and EF, opposite the right angles, carry two.", T_RT),
-      FIG_HLK = kite([0.893, 1.915], { right: [2], ticks: [0, 0, 1] }, null, "Triangles ABC and ADC share side AC. The angles at B and D are right angles. AB and AD each carry one tick mark.");
-  LESSONS.push({
-    title: "Triangle congruence: ASA, AAS and HL",
-    blurb: "Book 4-5 · Two angles and a side, or a right triangle's hypotenuse and leg, prove triangles congruent.",
-    mins: 12, v: 4,
-    steps: [
-      { type: "choice", kicker: "Warm up", prompt: "In $\\triangle ABC$, which side lies between $\\angle A$ and $\\angle B$?",
-        options: [{ t: "$\\overline{AB}$" }, { t: "$\\overline{BC}$", fb: "$\\overline{BC}$ is opposite $\\angle A$." }, { t: "$\\overline{AC}$", fb: "$\\overline{AC}$ is opposite $\\angle B$." }],
-        answer: 0, skill: "Included side", hints: ["Which side joins the two vertices?"], why: "$\\overline{AB}$ joins $A$ and $B$. It is the **included side** of those two angles." },
-      { type: "learn", kicker: "The idea",
-        prompt: "Three more ways. **ASA:** two angles and the **included side**, the side between them. **AAS:** two angles and a side that is not between them. **HL:** in right triangles, the hypotenuse and one leg. The parts must be in the same positions in both triangles.",
-        scene: { type: "method", how: HOW_4_5 } },
-      { type: "learn", kicker: "Watch",
-        prompt: "Watch ASA used. Given: $\\overline{AC}$ bisects $\\angle BAD$ and $\\angle BCD$.",
-        scene: { type: "walk", how: HOW_4_5, rows: [
-          { step: 1, m: "\\angle BAC \\cong \\angle DAC \\qquad \\angle BCA \\cong \\angle DCA", say: "A bisector makes two congruent angles.", fig: FIG_ASA },
-          { step: 1, m: "\\overline{AC} \\cong \\overline{AC}", say: "Reflexive Property: the shared side." },
-          { step: 2, m: "\\text{angle, included side, angle}", say: "$\\overline{AC}$ joins the vertices of the two marked angles.",
-            ask: { prompt: "Where is side $\\overline{AC}$?", answer: 0,
-                   options: [{ t: "Between the two marked angles" }, { t: "Opposite one of them", fb: "Its endpoints $A$ and $C$ are the vertices of the marked angles." }] } },
-          { step: 3, m: "\\triangle ABC \\cong \\triangle ADC \\text{ by ASA}", say: "$B$ matches $D$." }] },
-        gate: true, then: "Angle, side between, angle: ASA." },
-      { type: "guided", kicker: "Together",
-        prompt: "Now you. Which rule proves these triangles congruent?", art: FIG_AAS,
-        how: HOW_4_5, skill: "ASA, AAS and HL",
-        steps: [
-          { step: 1, ask: "Which pair of sides is marked congruent?", type: "choice", answer: 0,
-            options: [{ t: "$\\overline{BC}$ and $\\overline{EF}$" }, { t: "$\\overline{AB}$ and $\\overline{DE}$", fb: "Those sides have no tick marks." }],
-            m: "\\overline{BC} \\cong \\overline{EF}", say: "One pair of sides, with two pairs of angles." },
-          { step: 2, ask: "Is $\\overline{BC}$ between $\\angle A$ and $\\angle B$?", type: "choice", answer: 0,
-            options: [{ t: "No: it is opposite $\\angle A$" }, { t: "Yes", fb: "The side between $\\angle A$ and $\\angle B$ is $\\overline{AB}$." }],
-            m: "\\text{angle, angle, side}", say: "The side is not the included one." },
-          { step: 2, ask: "Which rule fits?", type: "choice", answer: 0,
-            options: [{ t: "AAS" }, { t: "ASA", fb: "ASA needs the side between the two angles." }],
-            m: "\\text{AAS}", say: "Angle, angle, side." },
-          { step: 3, ask: "Which statement is in matching order?", type: "choice", answer: 0,
-            options: [{ t: "$\\triangle ABC \\cong \\triangle DEF$" }, { t: "$\\triangle ABC \\cong \\triangle EDF$", fb: "$\\angle A$ matches $\\angle D$: both have one arc." }],
-            m: "\\triangle ABC \\cong \\triangle DEF", say: "$A$ with $D$, $B$ with $E$, $C$ with $F$." }],
-        why: "Mark, pattern, state. Now two on your own." },
+          { step: 1, ask: "Which parts are marked as congruent?", type: "choice", answer: 0,
+            options: [{ t: "Two angles ($A$ and $B$) and the side $\\overline{CA}$" }, { t: "Two sides and an angle", fb: "Count the arcs and the ticks: two arcs and one tick." }],
+            m: "\\angle A \\cong \\angle D \\quad \\angle B \\cong \\angle E \\quad \\overline{CA} \\cong \\overline{FD}", say: "Two angles and one side." },
+          { step: 2, ask: "Is $\\overline{CA}$ between $\\angle A$ and $\\angle B$?", type: "choice", answer: 0,
+            options: [{ t: "No: it joins $C$ and $A$" }, { t: "Yes", fb: "The side between $A$ and $B$ would be $\\overline{AB}$." }],
+            m: "\\overline{CA} \\text{ is not between } A \\text{ and } B", say: "Not between the two marked corners." },
+          { step: 3, ask: "So which rule is it?", type: "choice", answer: 0,
+            options: [{ t: "AAS" }, { t: "ASA", fb: "ASA needs the side **between** the two angles." }],
+            m: "\\triangle ABC \\cong \\triangle DEF \\text{ by AAS}", say: "Two angles and a side that is not between them: AAS." }],
+        why: "Mark, place, say. Now two on your own." },
       { type: "slots", kicker: "On your own", prompt: "Match each description to its rule.",
-        slots: [{ id: "asa", label: "ASA" }, { id: "aas", label: "AAS" }, { id: "hl", label: "HL" }, { id: "sas", label: "SAS" }],
-        cards: [{ t: "Two angles and the side between them", slot: "asa", fb: "The included side." }, { t: "Two angles and a side not between them", slot: "aas", fb: "Angle, angle, then a side outside them." },
-                { t: "Right triangles: the hypotenuse and a leg", slot: "hl", fb: "Only for right triangles." }, { t: "Two sides and the angle between them", slot: "sas", fb: "The included angle." }],
-        skill: "ASA, AAS and HL", hints: ["Read the letters in order round the triangle."],
-        why: "The middle letter is the part in the middle." },
-      { type: "choice", prompt: "Both of these are right triangles. Which rule proves them congruent?", art: FIG_HL,
-        options: [{ t: "HL" }, { t: "SSS", fb: "Only two pairs of sides are marked." }, { t: "ASA", fb: "Only one pair of angles, the right angles, is known." }],
-        answer: 0, skill: "ASA, AAS and HL", hints: ["The side opposite the right angle is the hypotenuse."], why: "A pair of hypotenuses and a pair of legs: HL." },
+        slots: [{ id: "asa", label: "ASA" }, { id: "aas", label: "AAS" }, { id: "no", label: "Not enough" }],
+        cards: [{ t: nb("Two angles and the side **between** them"), slot: "asa", fb: "The included side." }, { t: nb("Two angles and a side **not** between them"), slot: "aas", fb: "A side that touches only one of the two angles." },
+                { t: nb("Three angles and no side"), slot: "no", fb: "Equal angles can sit on triangles of different sizes." }],
+        skill: "ASA and AAS", hints: ["Is the side between the angles?"], why: "Between: ASA. Not between: AAS. No side: not enough." },
+      { type: "num", prompt: "In $\\triangle ABC$ and $\\triangle DEF$, $\\angle A \\cong \\angle D$ and $\\angle B \\cong \\angle E$. $m\\angle A = 50°$ and $m\\angle B = 64°$. Find $m\\angle F$.", post: "°", answer: 66, skill: "ASA and AAS",
+        near: [{ v: 64, fb: "That is $m\\angle B$. Use the triangle sum: $\\angle C \\cong \\angle F$, and $\\angle C = 180 - 50 - 64$." }], hints: ["The third angles must match, too: $180 - 50 - 64$."], why: "$m\\angle C = 180 - 50 - 64 = 66$, and $\\angle F \\cong \\angle C$." },
       { type: "learn", kicker: "A harder case",
-        prompt: "**HL** in a proof. Given: $\\angle B$ and $\\angle D$ are right angles, and $\\overline{AB} \\cong \\overline{AD}$. Prove: $\\triangle ABC \\cong \\triangle ADC$.",
-        scene: { type: "walk", how: [["Right", "Check that both are right triangles."], ["Hyp, leg", "Find a pair of congruent hypotenuses and a pair of congruent legs."], ["State", "Conclude by HL."]], rows: [
-          { step: 1, m: "\\angle B \\text{ and } \\angle D \\text{ are right angles}", say: "So both triangles are right triangles.", fig: FIG_HLK },
-          { step: 2, m: "\\overline{AC} \\cong \\overline{AC}", say: "The shared side is opposite each right angle: it is the hypotenuse of both.",
-            ask: { prompt: "The hypotenuse is opposite the right angle. Which side is the hypotenuse of $\\triangle ABC$?", answer: 0,
-                   options: [{ t: "$\\overline{AC}$" }, { t: "$\\overline{AB}$", fb: "$\\overline{AB}$ touches the right angle at $B$: it is a leg." }] } },
-          { step: 2, m: "\\overline{AB} \\cong \\overline{AD}", say: "Given: a pair of legs." },
-          { step: 3, m: "\\triangle ABC \\cong \\triangle ADC \\text{ by HL}", say: "Hypotenuse and leg." }] },
+        prompt: "Why is AAS as good as ASA? Given: $\\angle A \\cong \\angle D$, $\\angle B \\cong \\angle E$ and $\\overline{BC} \\cong \\overline{EF}$. Watch the AAS case turned into ASA.", art: FIG_AAS,
+        scene: { type: "walk", how: [["Third", "Use the triangle sum to find the third pair of congruent angles."], ["Reshape", "Now two angles and the side between them are known."], ["Say", "Prove the triangles congruent."]], rows: [
+          { step: 1, m: "\\angle C \\cong \\angle F", say: "Both are $180°$ minus two congruent angles: Third Angle Theorem." },
+          { step: 2, m: "\\angle B, \\overline{BC}, \\angle C \\;\\text{ and }\\; \\angle E, \\overline{EF}, \\angle F", say: "$\\overline{BC}$ is between $\\angle B$ and $\\angle C$.",
+            ask: { prompt: "Which pair of angles does $\\overline{BC}$ sit between?", answer: 0, options: [{ t: "$\\angle B$ and $\\angle C$" }, { t: "$\\angle A$ and $\\angle B$", fb: "$\\overline{AB}$ sits between those. $\\overline{BC}$ joins $B$ and $C$." }] } },
+          { step: 3, m: "\\triangle ABC \\cong \\triangle DEF", say: "ASA. So AAS always works too." }] },
         gate: true },
       { type: "choice", kicker: "Try it", prompt: "Which of these does **not** prove two triangles congruent?",
-        options: [{ t: "AAA" }, { t: "AAS", fb: "Two angles and a side not between them do prove it." }, { t: "HL", fb: "It does, for right triangles." }],
-        answer: 0, skill: "ASA, AAS and HL", hints: ["Can two triangles have the same angles and different sizes?"], why: "Three pairs of angles give the same shape, but not the same size." },
+        options: [{ t: "Three pairs of congruent angles (AAA)" }, { t: "Two angles and an included side (ASA)", fb: "ASA does prove it." }, { t: "Two angles and a non-included side (AAS)", fb: "AAS does prove it." }],
+        answer: 0, skill: "ASA and AAS", hints: ["Could one triangle be a bigger copy of the other?"], why: "AAA gives the same shape, but the size can differ." },
       { type: "choice", kicker: "Find the error",
-        prompt: "Two right triangles have both pairs of legs congruent. Kim writes “congruent by HL”. What is wrong?",
-        options: [{ t: "HL needs the hypotenuse. Two legs with the right angle between them is SAS." },
-                  { t: "The triangles are not congruent.", fb: "They are congruent: by SAS." },
-                  { t: "Nothing. They are right triangles.", fb: "HL means hypotenuse and leg. No hypotenuse is known here." }],
-        answer: 0, skill: "ASA, AAS and HL", hints: ["What does the H stand for?"], why: "Leg, right angle, leg is side, included angle, side: SAS." },
-      { type: "choice", kicker: "Use it", prompt: "Two lookouts stand 100 m apart on a straight shore. Each measures the angle between the shore and a boat. Why is that enough to fix where the boat is?",
-        options: [{ t: "ASA: two angles and the side between them allow only one triangle" }, { t: "SSS: all three sides are known", fb: "Only one length, the 100 m, is measured." }, { t: "It is not enough", fb: "Two angles and the included side fix the triangle." }],
-        answer: 0, skill: "ASA, AAS and HL", hints: ["What is measured: one side and…?"], why: "The 100 m of shore is the included side of the two measured angles." }
+        prompt: "Both triangles have a 50° angle, a 70° angle and a side of 6. Ben says they are congruent by ASA, but in one triangle the 6 is **opposite** the 50° angle, and in the other it is between the two angles. What is wrong?",
+        options: [{ t: "The sides are not corresponding: the 6 is in a different place in each triangle." }, { t: "Nothing. ASA works.", fb: "ASA needs the side in the same place in both triangles." }, { t: "AAS would prove it.", fb: "AAS needs the side in the same place as well." }],
+        answer: 0, skill: "ASA and AAS", hints: ["Are the equal sides corresponding?"], why: "The equal parts must be in matching positions. Here the 6 sits in a different place, so the triangles can differ." },
+      { type: "choice", kicker: "Use it", prompt: "Two lookouts stand 100 m apart on a straight shore. Each measures the angle between the shore and the line of sight to a boat. Tia and Ravi stand at the same two places and measure the same two angles on another day. What can you say about the two boat positions?",
+        options: [{ t: "They are the same place: the two triangles are congruent by ASA" }, { t: "They could be anywhere", fb: "Two angles and the side between them leave only one triangle." }, { t: "They are on the same line", fb: "Both are fixed by the two angles and the 100 m baseline." }],
+        answer: 0, skill: "ASA and AAS", hints: ["Two angles and the side between them."], why: "ASA: the baseline and the two angles fix the triangle, so the boat can only be in one place." }
     ]
   });
-
-  /* ================================================ 4-6 · Triangle congruence: CPCTC */
+  /* ========================================== 4.5 · Triangle congruence: SAS and HL */
+  var HOW_4_5 = [["Mark", "Mark two pairs of congruent sides and the pair of congruent angles, or the hypotenuse and a leg of two right triangles."],
+                 ["Place", "Is the angle **between** the two sides (SAS)? Are both triangles right triangles (HL)?"],
+                 ["Say", "State SAS or HL, and write the congruence with the corners in matching order."]];
+  var FIG_SAS5 = bowtie("ABECD", "Segments AD and BC cross at E. AE and DE carry one tick mark each, and BE and CE carry two.");
+  var FIG_HL5 = twoTris("ABC", "DEF", { right: [1], ticks: [2, 0, 1] }, null, "Right triangles ABC and DEF, each with a right angle at its second corner. Leg AB carries two tick marks, and the hypotenuse CA carries one; the same in DEF.");
+  var SSA5 = { A: [0, 0], C: [4.5 * Math.cos(40 * Math.PI / 180), 4.5 * Math.sin(40 * Math.PI / 180)] };
+  var SSA5B = [[3.447 - 1.368, 0], [3.447 + 1.368, 0]];
+  // "What fixes a triangle?": for each set of three parts, the triangles that can be built from them.
+  function fix45(k) {
+    var A = [0, 0], B = [5, 0], C = [2, 3], items = [], ok = true, say = "";
+    function tri3(P, c, o) {
+      o = o || {};
+      items.push({ poly: P, c: c, fill: !o.dash, dash: o.dash });
+      (o.ticks || []).forEach(function (t) { if (t[2]) items.push({ seg: [P[t[0]], P[t[1]]], marks: t[2], c: c }); });
+      (o.arcs || []).forEach(function (a) { items.push({ amarks: [P[a[0]], P[a[1]], P[a[2]]], n: a[3], r: 22 }); });
+    }
+    var mv = function (P, dx) { return P.map(function (p) { return [p[0] + dx, p[1]]; }); };
+    var flip = function (P, dx) { return P.map(function (p) { return [dx - p[0], p[1]]; }); };
+    if (k === "sss") { tri3([A, B, C], "blue", { ticks: [[0, 1, 1], [1, 2, 2], [2, 0, 3]] }); tri3(flip([A, B, C], 12), "soft", { dash: true, ticks: [[0, 1, 1], [1, 2, 2], [2, 0, 3]] }); say = "**SSS.** Only one triangle has these three sides. Any other you build is the same one, flipped or turned."; }
+    else if (k === "sas") { tri3([A, B, C], "blue", { ticks: [[0, 1, 1], [2, 0, 2]], arcs: [[1, 0, 2, 1]] }); tri3(flip([A, B, C], 12), "soft", { dash: true, ticks: [[0, 1, 1], [2, 0, 2]], arcs: [[2, 0, 1, 1]] }); say = "**SAS.** Two sides and the angle **between** them: the third side has no choice."; }
+    else if (k === "asa") { tri3([A, B, C], "blue", { ticks: [[0, 1, 1]], arcs: [[1, 0, 2, 1], [0, 1, 2, 2]] }); tri3(flip([A, B, C], 12), "soft", { dash: true, ticks: [[0, 1, 1]], arcs: [[2, 0, 1, 1], [0, 1, 2, 2]] }); say = "**ASA.** Two angles and the side between them: the other two sides are forced."; }
+    else if (k === "aas") { tri3([A, B, C], "blue", { ticks: [[1, 2, 1]], arcs: [[1, 0, 2, 1], [0, 1, 2, 2]] }); tri3(flip([A, B, C], 12), "soft", { dash: true, ticks: [[1, 2, 1]], arcs: [[2, 0, 1, 1], [0, 1, 2, 2]] }); say = "**AAS.** Two angles and a side that is not between them: the third angle is forced, and then it is ASA."; }
+    else if (k === "aaa") { tri3([A, B, C], "blue", { arcs: [[1, 0, 2, 1], [0, 1, 2, 2], [0, 2, 1, 3]] }); tri3([A, [8, 0], [3.2, 4.8]], "orange", { dash: true, arcs: [[1, 0, 2, 1], [0, 1, 2, 2], [0, 2, 1, 3]] }); ok = false; say = "**AAA.** The same three angles fit a small triangle and a big one. **Not enough.**"; }
+    else { // SSA: the two triangles share A, C and the angle at A, and BC = 3.2 in both
+      var P1 = [SSA5.A, [SSA5B[0][0], 0], SSA5.C], P2 = [SSA5.A, [SSA5B[1][0], 0], SSA5.C];
+      tri3(P2, "orange", { dash: true }); tri3(P1, "blue", { ticks: [[2, 0, 1], [1, 2, 2]], arcs: [[1, 0, 2, 1]] });
+      items.push({ seg: [P2[1], P2[2]], marks: 2, c: "orange" }); ok = false; say = "**SSA.** Two sides and an angle **not** between them leave **two** triangles: the same three parts, but a different third side. **Not enough.**";
+    }
+    return { items: items, ok: ok, say: say };
+  }
+  LESSONS.push({
+    title: "Triangle congruence: SAS and HL", art: "sas",
+    blurb: "Section 4.5 · Two sides and the angle between them (SAS), the hypotenuse and a leg of right triangles (HL), and which sets of parts are not enough.",
+    mins: 14, v: 5,
+    steps: [
+      { type: "choice", kicker: "Warm up", prompt: "In $\\triangle ABC$, which angle is **between** the sides $\\overline{AB}$ and $\\overline{BC}$?",
+        options: [{ t: "$\\angle B$" }, { t: "$\\angle A$", fb: "$\\angle A$ is between $\\overline{AB}$ and $\\overline{AC}$." }, { t: "$\\angle C$", fb: "$\\angle C$ is between $\\overline{CA}$ and $\\overline{CB}$." }],
+        answer: 0, skill: "Included angle", hints: ["It sits where the two sides meet."], why: "$\\angle B$ is where $\\overline{AB}$ and $\\overline{BC}$ meet." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Which sets of **three parts** are enough to fix a triangle? Press each button. Does the figure leave any other triangle possible?",
+        scene: { type: "sketch", x: [-1.5, 13], y: [-0.8, 5.4], u: 38, grid: false, gate: true,
+          chips: { kind: { v: "sss", opts: [["sss", "SSS"], ["sas", "SAS"], ["asa", "ASA"], ["aas", "AAS"], ["aaa", "AAA"], ["ssa", "SSA"]] } },
+          draw: function (s) { return fix45(s.c.kind).items; },
+          readout: function (s) { var f = fix45(s.c.kind); return f.say + "<br><b class='" + (f.ok ? "t" : "f") + "'>" + (f.ok ? "Enough: the triangles are congruent." : "Not enough: the triangles can differ.") + "</b><br><span class='gt-dim'>Tried " + Object.keys(s.seen.kind).length + " of 6</span>"; },
+          goal: function (s) { return Object.keys(s.seen.kind).length >= 6; } },
+        then: "**SSS, SAS, ASA** and **AAS** each fix the triangle. **AAA** and **SSA** do not. For right triangles there is one more, **HL**." },
+      { type: "learn", kicker: "The idea",
+        prompt: "**SAS:** two sides and the **included angle** of one triangle are congruent to those of another. **HL:** the hypotenuse and a leg of one right triangle are congruent to those of another right triangle. The angle must be **between** the sides: SSA does not work.",
+        scene: { type: "method", how: HOW_4_5 } },
+      { type: "learn", kicker: "Watch",
+        prompt: "Segments $\\overline{AD}$ and $\\overline{BC}$ cross at $E$, and $E$ is the midpoint of both. Prove: $\\triangle AEB \\cong \\triangle DEC$. Watch SAS used.",
+        scene: { type: "walk", how: HOW_4_5, rows: [
+          { step: 1, m: "\\overline{AE} \\cong \\overline{DE} \\qquad \\overline{BE} \\cong \\overline{CE}", say: "$E$ is the midpoint of each segment: two pairs of congruent sides.", fig: FIG_SAS5 },
+          { step: 1, m: "\\angle AEB \\cong \\angle DEC", say: "Vertical angles are congruent.",
+            ask: { prompt: "Why are $\\angle AEB$ and $\\angle DEC$ congruent?", answer: 0, options: [{ t: "They are vertical angles" }, { t: "They are marked in the figure", fb: "No arcs are drawn. They are equal because two lines cross." }] } },
+          { step: 2, m: "\\angle AEB \\text{ is between } \\overline{AE} \\text{ and } \\overline{BE}", say: "The angle sits between the two sides, in each triangle." },
+          { step: 3, m: "\\triangle AEB \\cong \\triangle DEC", say: "SAS." }] },
+        gate: true, then: "Side, **angle between**, side: SAS." },
+      { type: "guided", kicker: "Together",
+        prompt: "These are right triangles, with the marks shown. Now you decide which rule proves them congruent.", art: FIG_HL5,
+        how: HOW_4_5, skill: "SAS and HL",
+        steps: [
+          { step: 1, ask: "What are the two marked sides?", type: "choice", answer: 0,
+            options: [{ t: "A leg ($\\overline{AB}$) and the hypotenuse ($\\overline{CA}$)" }, { t: "Two legs", fb: "The hypotenuse is the side opposite the right angle, $\\overline{CA}$, and it is marked." }],
+            m: "AB \\cong DE \\quad CA \\cong FD", say: "A leg and the hypotenuse." },
+          { step: 2, ask: "Are both triangles right triangles?", type: "choice", answer: 0,
+            options: [{ t: "Yes: both show a right angle" }, { t: "No", fb: "Both have the little square at $B$ and $E$." }],
+            m: "\\angle B = \\angle E = 90°", say: "Two right triangles." },
+          { step: 3, ask: "Which rule is it?", type: "choice", answer: 0,
+            options: [{ t: "HL" }, { t: "SAS", fb: "The marked parts are two sides, but the angle between them is not marked." }],
+            m: "\\triangle ABC \\cong \\triangle DEF \\text{ by HL}", say: "Hypotenuse and leg of two right triangles: HL." }],
+        why: "Mark, place, say. Now two on your own." },
+      { type: "sort", kicker: "On your own", prompt: "Each card says what is known about two triangles. Which rule gives congruence?",
+        bins: ["SAS", "HL", "Neither"],
+        cards: [{ t: nb("Two sides and the angle between them"), bin: 0, fb: "The included angle." }, { t: nb("The hypotenuse and a leg of two right triangles"), bin: 1, fb: "HL." },
+                { t: nb("Two sides and an angle **not** between them"), bin: 2, fb: "SSA: the triangle can come out two ways." }, { t: nb("A leg and an acute angle"), bin: 2, fb: "That is not SAS, because the angle is not between two sides, and not HL." },
+                { t: nb("The hypotenuse and a leg, but one triangle is not right-angled"), bin: 2, fb: "HL needs both triangles to be right triangles." }],
+        skill: "SAS and HL", hints: ["Is the angle between the sides? Are both triangles right-angled?"], why: "SAS needs the angle between the two sides. HL needs two right triangles." },
+      { type: "num", prompt: "$\\triangle ABC \\cong \\triangle DEF$ by SAS, with $\\angle B$ and $\\angle E$ the included angles. $m\\angle B = (3x + 5)°$ and $m\\angle E = 50°$. Find $x$.", answer: 15, skill: "SAS and HL",
+        near: [{ v: 18.33, tol: 0.01, fb: "Subtract 5 first: $3x = 45$." }], hints: ["Corresponding angles are equal: $3x + 5 = 50$."], why: "$3x = 45$, so $x = 15$." },
+      { type: "learn", kicker: "A harder case",
+        prompt: "Why does SSA fail? In both triangles, $m\\angle A = 40°$, $AC = 4.5$ and $BC = 3.2$. Watch two different triangles come out.",
+        scene: { type: "walk", how: [["Fix", "Draw the angle and the side next to it."], ["Swing", "Swing the third side $BC$ round until it touches the base."], ["Count", "Count the places where it touches."]], rows: [
+          { step: 1, m: "\\angle A = 40° \\qquad AC = 4.5", say: "Start with the angle and the side next to it. The side $BC = 3.2$ must reach from $C$ down to the base.",
+            fig: plain([-0.6, 6], [-0.5, 3.6], [{ dline: [[0, 0], [5.8, 0]], ray: true }, { seg: [SSA5.A, SSA5.C], c: "blue" }, { pt: SSA5.A, name: "A", at: "sw" }, { pt: SSA5.C, name: "C", at: "n" }], { u: 42, alt: "A base ray from A, and segment AC of length 4.5 rising at 40 degrees." }) },
+          { step: 2, m: "BC = 3.2", say: "A segment of length 3.2 from $C$ reaches the base at **two** places.",
+            fig: plain([-0.6, 6], [-0.5, 3.6], [{ dline: [[0, 0], [5.8, 0]], ray: true }, { seg: [SSA5.A, SSA5.C], c: "blue" }, { seg: [SSA5B[0].concat([]), SSA5.C], c: "green" }, { seg: [SSA5B[1], SSA5.C], c: "orange" }, { pt: SSA5.A, name: "A", at: "sw" }, { pt: SSA5.C, name: "C", at: "n" }, { pt: SSA5B[0], name: "B", at: "s", c: "green" }, { pt: SSA5B[1], name: "B′", at: "s", c: "orange" }], { u: 42, alt: "From C, two segments of length 3.2 reach the base at two different points, B and B′." }),
+            ask: { prompt: "How many places does $BC$ reach the base?", answer: 0, options: [{ t: "Two" }, { t: "One", fb: "Swing it: it touches the base on the way down and again further along." }] } },
+          { step: 3, m: "\\triangle ABC \\not\\cong \\triangle AB′C", say: "Two different triangles with the same SSA parts: $AB$ is about 2.1 in one and 4.8 in the other. So SSA proves nothing." }] },
+        gate: true },
+      { type: "choice", kicker: "Try it", prompt: "You know $\\overline{AB} \\cong \\overline{DE}$ and $\\angle B \\cong \\angle E$. Which extra fact lets you prove $\\triangle ABC \\cong \\triangle DEF$ by SAS?",
+        options: [{ t: "$\\overline{BC} \\cong \\overline{EF}$" }, { t: "$\\overline{AC} \\cong \\overline{DF}$", fb: "That side is opposite the known angle. It makes SSA, which is not enough." }, { t: "$\\angle A \\cong \\angle D$", fb: "That gives ASA, not SAS." }],
+        answer: 0, skill: "SAS and HL", hints: ["The angle must be between the two sides."], why: "$\\overline{AB}$ and $\\overline{BC}$ are the sides next to $\\angle B$." },
+      { type: "choice", kicker: "Find the error",
+        prompt: "Dev says these triangles are congruent by SAS: both have sides of 5 and 7, and a 40° angle, but in one the 40° is between the 5 and the 7, and in the other it is opposite the 7. What is wrong?",
+        options: [{ t: "The angle must be between the two sides in **both** triangles. Here it is not." }, { t: "Nothing: sides and an angle are enough.", fb: "Only the included angle works. SSA can give two triangles." }, { t: "The sides must be equal.", fb: "They are: the problem is where the angle is." }],
+        answer: 0, skill: "SAS and HL", hints: ["Is the angle in the same place in both?"], why: "Not between the sides in one triangle: that is SSA, which is not a test." },
+      { type: "choice", kicker: "Use it", prompt: "Two pairs of scissor blades are each 8 cm long, hinged together, and opened to the **same** angle. How do the cut ends compare?",
+        options: [{ t: "The triangles formed are congruent by SAS, so the tips are the same distance apart" }, { t: "The tips are not related", fb: "Two sides and the angle between them fix the triangle." }, { t: "The tips are always 8 cm apart", fb: "That only happens at one angle (60°)." }],
+        answer: 0, skill: "SAS and HL", hints: ["Two sides and the angle between them."], why: "SAS: the third side, the tip-to-tip distance, is the same." }
+    ]
+  });
+  /* ============================================ 4.6 · Using congruent triangles */
   var HOW_4_6 = [["Triangles", "Find two triangles that contain the parts you want."],
                  ["Congruent", "Prove the triangles congruent: SSS, SAS, ASA, AAS or HL."],
                  ["CPCTC", "Corresponding parts of congruent triangles are congruent."]];
@@ -976,14 +1090,31 @@
         { u: 22, alt: "A coordinate grid. Triangle ABC has A at (1, 1), B at (4, 1) and C at (1, 5). Triangle DEF has D at (−1, −1), E at (−1, −4) and F at (−5, −1)." }),
       FIG_POND = bowtie("ABECD", "Segments AD and BC cross at E. AE and DE each carry one tick mark. BE and CE each carry two. AB is the width of the pond, and DC is 42 metres.",
         { extra: [{ len: "42 m", seg: [[2.6, -1.6], [2.6, 1.3]], side: -1, off: 16 }, { len: "pond", seg: [[-2.6, 1.6], [-2.6, -1.3]], side: -1, off: 20 }] });
+  var FIG_BOW = bowtie("ABECD", "Segments AD and BC cross at E. AE and DE each carry one tick mark. BE and CE each carry two.");
   LESSONS.push({
-    title: "Triangle congruence: CPCTC",
-    blurb: "Book 4-6 · Once triangles are congruent, all their corresponding parts are congruent.",
-    mins: 12, v: 4,
+    title: "Using congruent triangles", art: "cpctc",
+    blurb: "Section 4.6 · Once two triangles are congruent, all their matching parts are congruent: CPCTC, used to prove more.",
+    mins: 14, v: 5,
     steps: [
       { type: "choice", kicker: "Warm up", prompt: "$\\triangle ABC \\cong \\triangle DEF$. Which angle is congruent to $\\angle B$?",
         options: [{ t: "$\\angle E$" }, { t: "$\\angle D$", fb: "$\\angle D$ matches $\\angle A$." }, { t: "$\\angle F$", fb: "$\\angle F$ matches $\\angle C$." }],
         answer: 0, skill: "Corresponding parts", hints: ["$B$ is the second letter."], why: "Second letter with second letter." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$\\triangle ABC$ and $\\triangle ADC$ are mirror images over $\\overline{AC}$. Drag $B$ and watch the **matching parts**. Do they ever stop matching?",
+        scene: { type: "sketch", x: [-1.2, 6.2], y: [-3.6, 3.6], u: 44, grid: false, gate: true,
+          pts: { B: { at: [2, 2.4], drag: true, snap: 0.1, c: "orange", on: { fn: function (p) { return [Math.round(p[0] * 10) / 10, Math.max(0.6, Math.round(p[1] * 10) / 10)]; } }, say: "Corner B" } },
+          draw: function (s) {
+            var A = [0, 0], C = [5, 0], B = s.B, D = [B[0], -B[1]], a = angles3(A, C, B), eq = 1;
+            return [{ poly: [A, C, B], c: "blue", fill: true }, { poly: [A, C, D], c: "green", fill: true }, { seg: [A, B], marks: 1, c: "blue" }, { seg: [A, D], marks: 1, c: "green" }, { seg: [C, B], marks: 2, c: "blue" }, { seg: [C, D], marks: 2, c: "green" },
+              { amarks: [A, B, C], n: 1, r: 20 }, { amarks: [A, D, C], n: 1, r: 20 }, { pt: A, name: "A", at: "w" }, { pt: C, name: "C", at: "e" }, { pt: B, name: "B", at: "n", c: "orange" }, { pt: D, name: "D", at: "s" }];
+          },
+          readout: function (s) {
+            var A = [0, 0], C = [5, 0], a = angles3(A, C, s.B), ab = GT.dist(A, s.B);
+            return "$AB = AD = " + n1(ab) + "$ · $CB = CD = " + n1(GT.dist(C, s.B)) + "$ · $\\angle B = \\angle D = " + a[2] + "°$";
+          },
+          log: { need: 3, cols: [{ h: "$AB$", f: function (s) { return "$" + n1(GT.dist([0, 0], s.B)) + "$"; } }, { h: "$AD$", f: function (s) { return "$" + n1(GT.dist([0, 0], [s.B[0], -s.B[1]])) + "$"; } },
+            { h: "$\\angle B$", f: function (s) { return "$" + angles3([0, 0], [5, 0], s.B)[2] + "°$"; } }, { h: "$\\angle D$", f: function (s) { return "$" + angles3([0, 0], [5, 0], [s.B[0], -s.B[1]])[2] + "°$"; } }] } },
+        then: "Once two triangles are congruent, **every** pair of matching parts is congruent, however the figure is stretched. That is **CPCTC**: corresponding parts of congruent triangles are congruent." },
       { type: "learn", kicker: "The idea",
         prompt: "**CPCTC** means “corresponding parts of congruent triangles are congruent.” Once two triangles are proved congruent, every other pair of matching sides and angles is congruent too. So to prove two segments or two angles congruent, find triangles that contain them.",
         scene: { type: "method", how: HOW_4_6 } },
@@ -1047,95 +1178,8 @@
         hints: ["$\\triangle AEB \\cong \\triangle DEC$ by SAS."], why: "By CPCTC, $AB = DC = 42$ m." }
     ]
   });
-  /* ========================================== 4-7 · Introduction to coordinate proof */
-  var HOW_4_7 = [["Place", "Put the figure on the plane: a vertex at the origin and a side along an axis."],
-                 ["Label", "Give every vertex its coordinates. For a general figure, use variables."],
-                 ["Calculate", "Use the midpoint, distance or slope formula to prove the statement."]];
-  var FIG_RT64 = grid([-1, 8], [-1, 6], [{ poly: [[0, 0], [6, 0], [0, 4]], names: "OAB" }, { seg: [[0, 0], [3, 2]], dash: true, c: "orange" }, { pt: [3, 2], name: "M", at: "ne", c: "orange" }],
-        { u: 28, alt: "A coordinate grid. Right triangle OAB has O at the origin, A at (6, 0) and B at (0, 4). M, at (3, 2), is the midpoint of AB, and a dashed segment joins M to O." }),
-      FIG_RECT = grid([-1, 10], [-1, 8], [{ poly: [[0, 0], [8, 0], [8, 6], [0, 6]], names: "OABC" }, { seg: [[0, 0], [8, 6]], c: "orange" }, { seg: [[8, 0], [0, 6]], c: "green" }],
-        { u: 24, alt: "A coordinate grid. Rectangle OABC has O at the origin, A at (8, 0), B at (8, 6) and C at (0, 6). Both diagonals are drawn." }),
-      FIG_GEN = grid([-1, 7], [-1, 5], [{ poly: [[0, 0], [5.4, 0], [0, 3.4]], c: "blue" }, { seg: [[0, 0], [2.7, 1.7]], dash: true, c: "orange" },
-        { pt: [0, 0], name: "O(0, 0)", at: "sw" }, { pt: [5.4, 0], name: "A(2a, 0)", at: "s" }, { pt: [0, 3.4], name: "B(0, 2b)", at: "ne" }, { pt: [2.7, 1.7], name: "M(a, b)", at: "ne", c: "orange" }],
-        { u: 34, nums: false, alt: "Axes without numbers. Right triangle OAB has O at the origin, A at (2a, 0) on the x-axis and B at (0, 2b) on the y-axis. M, at (a, b), is the midpoint of AB." }),
-      FIG_ISO = grid([-6, 6], [-1, 5], [{ poly: [[-4, 0], [4, 0], [0, 3]], names: "PQR" }],
-        { u: 24, alt: "A coordinate grid. Triangle PQR has P at (−4, 0), Q at (4, 0) and R at (0, 3)." });
-  LESSONS.push({
-    title: "Introduction to coordinate proof",
-    blurb: "Book 4-7 · Place a figure on the coordinate plane and prove facts about it with formulas.",
-    mins: 12, v: 4,
-    steps: [
-      { type: "pair", kicker: "Warm up", prompt: "Find the midpoint of the segment from $(0, 0)$ to $(6, 8)$. Type it as $(x, y)$.", answer: [3, 4], skill: "Midpoint Formula",
-        near: [{ v: [6, 8], fb: "That is the endpoint. Halve each coordinate." }], hints: ["Average the $x$s and average the $y$s."], why: "$\\left(\\frac{6}{2}, \\frac{8}{2}\\right) = (3, 4)$." },
-      { type: "learn", kicker: "The idea",
-        prompt: "A **coordinate proof** puts a figure on the coordinate plane and proves a statement with the midpoint, distance and slope formulas. Place the figure so the arithmetic is easy: a vertex at the origin, and a side along an axis.",
-        scene: { type: "method", how: HOW_4_7 } },
-      { type: "learn", kicker: "Watch",
-        prompt: "Watch a right triangle with legs of 6 and 4 placed, and a fact about its hypotenuse proved.",
-        scene: { type: "walk", how: HOW_4_7, rows: [
-          { step: 1, m: "O(0, 0) \\qquad A(6, 0) \\qquad B(0, 4)", say: "The right angle at the origin, and a leg along each axis.", fig: FIG_RT64 },
-          { step: 2, m: "M = \\left(\\frac{6 + 0}{2}, \\frac{0 + 4}{2}\\right) = (3, 2)", say: "The midpoint of the hypotenuse $\\overline{AB}$." },
-          { step: 3, m: "MA = \\sqrt{3^2 + 2^2} = \\sqrt{13}", say: "From $(3, 2)$ to $(6, 0)$." },
-          { step: 3, m: "MB = \\sqrt{3^2 + 2^2} = \\sqrt{13}", say: "From $(3, 2)$ to $(0, 4)$.",
-            ask: { prompt: "Now from $M(3, 2)$ to the origin. What is $MO$?", answer: 0,
-                   options: [{ t: "$\\sqrt{13}$" }, { t: "$5$", fb: "$\\sqrt{3^2 + 2^2} = \\sqrt{9 + 4}$." }] } },
-          { step: 3, m: "MO = \\sqrt{13}", say: "The midpoint of the hypotenuse is the same distance from all three vertices." }] },
-        gate: true, then: "Place, label, calculate." },
-      { type: "guided", kicker: "Together",
-        prompt: "Now you. Prove that a rectangle 8 wide and 6 high has congruent diagonals.", art: FIG_RECT,
-        how: HOW_4_7, skill: "Coordinate proof",
-        steps: [
-          { step: 1, ask: "Where is the best place for the rectangle?", type: "choice", answer: 0,
-            options: [{ t: "A vertex at the origin, with sides along the axes" }, { t: "Anywhere, tilted", fb: "A tilted figure makes every calculation harder." }],
-            m: "O(0, 0) \\qquad A(8, 0)", say: "One side along the $x$-axis." },
-          { step: 2, ask: "The vertex opposite $O$ is $B(8, y)$. What is $y$?", type: "num", answer: 6, near: [{ v: 8, fb: "8 is the width, already used for $x$. How high is the rectangle?" }], hint: "The rectangle is 6 high.",
-            m: "B(8, 6) \\qquad C(0, 6)", say: "8 across and 6 up." },
-          { step: 3, ask: "Find $OB$, from $(0, 0)$ to $(8, 6)$.", type: "num", answer: 10, near: [{ v: 14, fb: "Square each, add, then take the root." }], hint: "$\\sqrt{8^2 + 6^2}$.",
-            m: "OB = \\sqrt{8^2 + 6^2} = 10", say: "$\\sqrt{64 + 36} = \\sqrt{100}$." },
-          { step: 3, ask: "Find $AC$, from $(8, 0)$ to $(0, 6)$.", type: "num", answer: 10, near: [{ v: 14, fb: "Square each, add, then take the root." }], hint: "$\\sqrt{8^2 + 6^2}$.",
-            m: "AC = \\sqrt{8^2 + 6^2} = 10", say: "$OB = AC$: the diagonals are congruent." }],
-        why: "Place, label, calculate. Now two on your own." },
-      { type: "plane", kicker: "On your own", prompt: "Place a right triangle with a leg of 5 along the $x$-axis and a leg of 3 along the $y$-axis. The right angle is at the origin $O$. Drag $A$ and $B$ to the other two vertices.",
-        x: [-2, 8], y: [-2, 6],
-        points: [{ id: "O", x: 0, y: 0, drag: false, label: "O", coords: false }, { id: "A", x: 3, y: 2, drag: true, label: "A" }, { id: "B", x: 2, y: 4, drag: true, label: "B" }],
-        check: function (st) {
-          var p = st.pt("A"), q = st.pt("B");
-          function is(u, x, y) { return u.x === x && u.y === y; }
-          if ((is(p, 5, 0) && is(q, 0, 3)) || (is(q, 5, 0) && is(p, 0, 3))) return { ok: true };
-          if ((is(p, 3, 0) && is(q, 0, 5)) || (is(q, 3, 0) && is(p, 0, 5))) return { ok: false, say: "The other way round: the leg of 5 lies along the $x$-axis." };
-          return { ok: false, say: "One vertex is 5 units along the $x$-axis. The other is 3 units up the $y$-axis." };
-        },
-        answer: { points: { A: [5, 0], B: [0, 3] } }, skill: "Coordinate proof",
-        hints: ["A point on the $x$-axis has $y = 0$. A point on the $y$-axis has $x = 0$."], why: "$A(5, 0)$ and $B(0, 3)$: a leg on each axis." },
-      { type: "choice", prompt: "A rectangle of width $2a$ and height $2b$ has a vertex at the origin and sides along the positive axes. What are the coordinates of the opposite vertex?",
-        options: [{ t: "$(2a, 2b)$" }, { t: "$(2b, 2a)$", fb: "The width goes across: it is the $x$-coordinate." }, { t: "$(a, b)$", fb: "That is the centre of the rectangle." }],
-        answer: 0, skill: "Coordinate proof", hints: ["Across by the width, up by the height."], why: "$2a$ across and $2b$ up." },
-      { type: "learn", kicker: "A harder case",
-        prompt: "With **variables**, one proof covers every size. Prove it for any right triangle, with legs $2a$ and $2b$.",
-        scene: { type: "walk", how: HOW_4_7, rows: [
-          { step: 1, m: "O(0, 0) \\qquad A(2a, 0) \\qquad B(0, 2b)", say: "Using $2a$ and $2b$ keeps the midpoint free of fractions.", fig: FIG_GEN },
-          { step: 2, m: "M = \\left(\\frac{2a + 0}{2}, \\frac{0 + 2b}{2}\\right) = (a, b)", say: "The midpoint of the hypotenuse." },
-          { step: 3, m: "MO = \\sqrt{a^2 + b^2}", say: "From $(a, b)$ to the origin." },
-          { step: 3, m: "MA = \\sqrt{(2a - a)^2 + (0 - b)^2} = \\sqrt{a^2 + b^2}", say: "From $(a, b)$ to $(2a, 0)$.",
-            ask: { prompt: "What is $(2a - a)^2$?", answer: 0,
-                   options: [{ t: "$a^2$" }, { t: "$4a^2$", fb: "Subtract first: $2a - a = a$." }] } },
-          { step: 3, m: "MB = \\sqrt{(a - 0)^2 + (b - 2b)^2} = \\sqrt{a^2 + b^2}", say: "All three distances are equal, in every right triangle." }] },
-        gate: true },
-      { type: "num", kicker: "Try it", prompt: "An isosceles triangle is placed with its base along the $x$-axis and its top vertex on the $y$-axis. Find the length of side $\\overline{PR}$.", art: FIG_ISO, answer: 5, skill: "Coordinate proof",
-        near: [{ v: 7, fb: "Square each difference, add, then take the root." }], hints: ["From $(-4, 0)$ to $(0, 3)$: $\\sqrt{4^2 + 3^2}$."], why: "$\\sqrt{16 + 9} = 5$. $QR$ is 5 as well, so the triangle is isosceles." },
-      { type: "choice", kicker: "Find the error",
-        prompt: "For a proof about **every** right triangle, Sam labels the vertices $(0, 0)$, $(a, 0)$ and $(0, a)$. What is wrong?",
-        options: [{ t: "Both legs are $a$, so the proof covers only isosceles right triangles. The legs need different letters." },
-                  { t: "The right angle must not be at the origin.", fb: "The origin is the best place for it." },
-                  { t: "Nothing. It is a right triangle.", fb: "It is, but one with two equal legs. What about the others?" }],
-        answer: 0, skill: "Coordinate proof", hints: ["How long is each leg?"], why: "Use $(a, 0)$ and $(0, b)$, so the legs can differ." },
-      { type: "num", kicker: "Use it", prompt: "A rectangular garden is 12 m long and 5 m wide. Place it with a corner at the origin. How long is a straight path from that corner to the opposite corner?", post: "m", answer: 13, skill: "Coordinate proof",
-        near: [{ v: 17, fb: "The path is the diagonal, not two sides." }], hints: ["From $(0, 0)$ to $(12, 5)$."], why: "$\\sqrt{12^2 + 5^2} = \\sqrt{169} = 13$." }
-    ]
-  });
-
-  /* ========================================== 4-8 · Isosceles and equilateral triangles */
-  var HOW_4_8 = [["Sides", "Find the congruent sides: the legs. The angles opposite them are the base angles."],
+  /* ============================================ 4.7 · Isosceles and equilateral triangles */
+  var HOW_4_7 = [["Sides", "Find the congruent sides: the legs. The angles opposite them are the base angles."],
                  ["Equal", "Base angles are congruent. And if two angles are congruent, the sides opposite them are congruent."],
                  ["Solve", "Use the 180° sum, or set the equal parts equal, to find what is missing."]];
   var FIG_I40 = tri([[0, 0], [3, 0], [1.5, 4.1]], { names: "ABC", ticks: [0, 1, 1], angs: ["x°", "x°", "40°"] }, "Isosceles triangle ABC. Sides BC and CA each carry one tick mark. The angle at C is 40 degrees, and the angles at A and B are each x degrees."),
@@ -1144,18 +1188,35 @@
       FIG_E60 = tri([[0, 0], [4, 0], [2, 3.46]], { names: "RST", ticks: [1, 1, 1], angs: ["(2x + 10)°", null, null] }, "Equilateral triangle RST, with one tick mark on every side. The angle at R is 2x + 10 degrees.", { u: 34 }),
       FIG_EA = tri([[0, 0], [4, 0], [2, 3.46]], { names: "UVW", arcs: [1, 1, 1], sides: ["4y − 3", "2y + 9", null] }, "Triangle UVW, with one arc in every angle. UV is 4y − 3 and VW is 2y + 9.");
   LESSONS.push({
-    title: "Isosceles and equilateral triangles",
-    blurb: "Book 4-8 · Base angles of an isosceles triangle are congruent, and every angle of an equilateral triangle is 60°.",
-    mins: 12, v: 4,
+    title: "Isosceles and equilateral triangles", art: "iso",
+    blurb: "Section 4.7 · Congruent sides make congruent base angles, and the other way round; equilateral means equiangular.",
+    mins: 14, v: 5,
     steps: [
       { type: "num", kicker: "Warm up", prompt: "Solve $2x + 40 = 180$.", pre: "$x =$", answer: 70, skill: "Solve an equation",
         near: [{ v: 110, fb: "Subtract 40, then divide by 2." }], hints: ["$2x = 140$."], why: "$2x = 140$, so $x = 70$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "The base $\\overline{AB}$ stays put. Drag the top corner $C$. Watch the two **base angles**. Then try the other button.",
+        scene: { type: "sketch", x: [-1, 7], y: [-0.5, 6], u: 54, grid: false, gate: true,
+          pts: { C: { at: [3, 4], drag: true, snap: 0.1, c: "orange", on: { fn: function (p, s) { var y = Math.max(0.8, Math.round(p[1] * 10) / 10); return [s.c.apex === "line" ? 3 : Math.round(p[0] * 10) / 10, y]; } }, say: "Top corner C" } },
+          chips: { apex: { v: "line", opts: [["line", "Keep $C$ above the middle"], ["free", "Move $C$ anywhere"]] } },
+          track: function (s) { var A = [0, 0], B = [6, 0], ca = GT.dist(s.C, A), cb = GT.dist(s.C, B); return Math.abs(ca - cb) < 0.06 ? "equal" : "unequal"; },
+          draw: function (s) {
+            var A = [0, 0], B = [6, 0], C = s.C, ca = GT.dist(C, A), cb = GT.dist(C, B), iso = Math.abs(ca - cb) < 0.06, a = angles3(A, B, C), col = iso ? "green" : "blue";
+            return [{ poly: [A, B, C], c: col, fill: true }, { seg: [A, C], marks: iso ? 1 : 0, c: col }, { seg: [B, C], marks: iso ? 1 : 0, c: col }, { angle: [B, A, C], say: a[0] + "°", r: 34, c: "orange" }, { angle: [C, B, A], say: a[1] + "°", r: 34, c: "orange" },
+              { pt: A, name: "A", at: "sw" }, { pt: B, name: "B", at: "se" }, { pt: C, name: "C", at: "n", c: "orange" }];
+          },
+          readout: function (s) {
+            var A = [0, 0], B = [6, 0], ca = GT.dist(s.C, A), cb = GT.dist(s.C, B), a = angles3(A, B, s.C), iso = Math.abs(ca - cb) < 0.06;
+            return "$CA = " + n1(ca) + "$ · $CB = " + n1(cb) + "$ · $\\angle A = " + a[0] + "°$ · $\\angle B = " + a[1] + "°$<br>" + (iso ? "**Two equal sides, two equal base angles.**" : "Unequal sides: unequal base angles.");
+          },
+          goal: function (s) { return s.tracked.equal && s.tracked.unequal; } },
+        then: "When two sides are congruent, the angles **opposite** them are congruent: the **Isosceles Triangle Theorem**. And it works backwards: equal base angles mean equal sides." },
       { type: "learn", kicker: "The idea",
         prompt: "In an isosceles triangle, the two congruent sides are the **legs**. They meet at the **vertex angle**. The third side is the **base**, and the two **base angles** lie on it. **Isosceles Triangle Theorem:** the base angles are congruent. Its converse is true as well.",
-        scene: { type: "method", how: HOW_4_8 } },
+        scene: { type: "method", how: HOW_4_7 } },
       { type: "learn", kicker: "Watch",
         prompt: "Watch the base angles found from the vertex angle.",
-        scene: { type: "walk", how: HOW_4_8, rows: [
+        scene: { type: "walk", how: HOW_4_7, rows: [
           { step: 1, m: "\\overline{BC} \\cong \\overline{CA}", say: "The legs. The base angles are at $A$ and $B$.", fig: FIG_I40 },
           { step: 2, m: "m\\angle A = m\\angle B = x°", say: "Isosceles Triangle Theorem." },
           { step: 3, m: "x + x + 40 = 180", say: "The Triangle Sum Theorem." },
@@ -1166,7 +1227,7 @@
         gate: true, then: "The vertex angle gives the base angles, and the other way round." },
       { type: "guided", kicker: "Together",
         prompt: "Now you. Find the vertex angle of $\\triangle DEF$.", art: FIG_I52,
-        how: HOW_4_8, skill: "Isosceles triangles",
+        how: HOW_4_7, skill: "Isosceles triangles",
         steps: [
           { step: 1, ask: "The legs are $\\overline{EF}$ and $\\overline{FD}$. Which two angles are the base angles?", type: "choice", answer: 0,
             options: [{ t: "$\\angle D$ and $\\angle E$" }, { t: "$\\angle D$ and $\\angle F$", fb: "$\\angle F$ is where the legs meet: the vertex angle." }],
@@ -1209,6 +1270,99 @@
         hints: ["An isosceles triangle with a vertex angle of 110°."], why: "$180 - 110 = 70$, and $70 \\div 2 = 35$." }
     ]
   });
+  /* ========================================== 4.8 · Congruence transformations */
+  var HOW_4_8 = [["Move", "Describe the move: a slide (translation), a flip (reflection) or a turn (rotation)."],
+                 ["Match", "Say where each corner goes: $A$ to $A′$, $B$ to $B′$, $C$ to $C′$."],
+                 ["Say", "A slide, flip or turn keeps size and shape, so the triangles are congruent."]];
+  var P48 = [[0, 0], [3, 0], [1, 2]];
+  var T48a = fitMove(P48, { Q: [7, 2], p: { rot: 0 }, c: { flip: "no" } }), T48b = fitMove(P48, { Q: [7.5, 1.5], p: { rot: -60 }, c: { flip: "yes" } });
+  LESSONS.push({
+    title: "Congruence transformations", art: "ctr",
+    blurb: "Section 4.8 · Sliding, flipping and turning a figure keeps its size and shape: the moves that make congruent figures.",
+    mins: 15, v: 5,
+    steps: [
+      { type: "choice", kicker: "Warm up", prompt: "You move a triangle on a table. Which moves do **not** change its size or its shape?",
+        options: [{ t: "Slide it, flip it over, or turn it" }, { t: "Stretch it", fb: "Stretching changes the size or the shape." }, { t: "Squash one corner", fb: "That changes the shape." }],
+        answer: 0, skill: "Rigid motions", hints: ["Think of a cut-out of the triangle."], why: "A cut-out triangle slid, flipped or turned is still the same triangle." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Slide the blue copy of $\\triangle ABC$ (drag $A′$) until it covers the dashed triangle. Only a **slide** is needed.",
+        scene: fitScene(P48, T48a, { start: [1, 4.5] }) },
+      { type: "learn", kicker: "Explore",
+        prompt: "This time the dashed triangle is **flipped** and **turned**. Use all three controls to cover it.",
+        scene: fitScene(P48, T48b, { start: [1, 1] }) },
+      { type: "learn", kicker: "Explore",
+        prompt: "Slide, turn and flip the copy as you like. Do its **side lengths** or **angles** ever change? Try at least three different moves.",
+        scene: { type: "sketch", x: [-1, 11], y: [-1, 7], u: 44, grid: false, gate: true,
+          pts: { Q: { at: [6, 3], drag: true, snap: 0.5, c: "orange", say: "Corner A′" } },
+          params: { rot: { min: -180, max: 180, step: 15, v: 0, label: "turn", show: function (v) { return "$" + v + "°$"; } } },
+          chips: { flip: { v: "no", opts: [["no", "Not flipped"], ["yes", "Flipped over"]] } },
+          draw: function (s) {
+            var M = fitMove(P48, s), O = P48.map(function (p) { return [p[0] + 0.5, p[1] + 3]; });
+            return [{ poly: O, c: "ink", names: ["A", "B", "C"] }, { poly: M, c: "blue", fill: true, names: ["A′", "B′", "C′"] }];
+          },
+          readout: function (s) { var M = fitMove(P48, s); return "$AB = " + n1(GT.dist(P48[0], P48[1])) + "$ and $A′B′ = " + n1(GT.dist(M[0], M[1])) + "$ · $\\angle A = " + angAt(P48[1], P48[0], P48[2]) + "°$ and $\\angle A′ = " + angAt(M[1], M[0], M[2]) + "°$"; },
+          log: { need: 3, cols: [{ h: "the move", f: function (s) { return "$A′$ at " + "$(" + num(s.Q[0]) + ", " + num(s.Q[1]) + ")$" + (s.p.rot ? ", turned $" + s.p.rot + "°$" : "") + (s.c.flip === "yes" ? ", flipped" : ""); } }, { h: "$AB$", f: function (s) { return "$" + n1(GT.dist(P48[0], P48[1])) + "$"; } }, { h: "$A′B′$", f: function (s) { var M = fitMove(P48, s); return "$" + n1(GT.dist(M[0], M[1])) + "$"; } },
+            { h: "$\\angle A$", f: function () { return "$" + angAt(P48[1], P48[0], P48[2]) + "°$"; } }, { h: "$\\angle A′$", f: function (s) { var M = fitMove(P48, s); return "$" + angAt(M[1], M[0], M[2]) + "°$"; } }] } },
+        then: "However you move it, every length and every angle stays the same. A slide, a flip and a turn are called **rigid motions**, and the copy is always **congruent** to the original." },
+      { type: "learn", kicker: "The idea",
+        prompt: "A **translation** slides every point the same distance the same way. A **reflection** flips a figure over a line. A **rotation** turns it about a point. These **rigid motions** keep lengths and angles, so a figure and its image are congruent. And congruent figures can always be matched by a rigid motion.",
+        scene: { type: "method", how: HOW_4_8 } },
+      { type: "learn", kicker: "Watch",
+        prompt: "Reflect $\\triangle ABC$ over the $y$-axis: $A(1, 1)$, $B(4, 1)$, $C(2, 3)$. Watch the image found and the congruence stated.",
+        scene: { type: "walk", how: HOW_4_8, rows: [
+          { step: 1, m: "(x, y) \\to (-x, y)", say: "Flipping over the $y$-axis changes the sign of $x$ and keeps $y$.",
+            fig: grid([-6, 6], [-1, 5], [{ poly: [[1, 1], [4, 1], [2, 3]], names: "ABC", c: "blue" }, { mirror: "y" }], { u: 26, alt: "Triangle ABC on the right of the y-axis, with corners A(1, 1), B(4, 1) and C(2, 3)." }) },
+          { step: 2, m: "A′(-1, 1) \\quad B′(-4, 1) \\quad C′(-2, 3)", say: "Each corner goes to the mirror place on the other side.",
+            fig: grid([-6, 6], [-1, 5], [{ poly: [[1, 1], [4, 1], [2, 3]], names: "ABC", c: "blue" }, { poly: [[-1, 1], [-4, 1], [-2, 3]], names: ["A′", "B′", "C′"], c: "green" }, { mirror: "y" }], { u: 26, alt: "Triangle ABC and its mirror image A′B′C′ on the other side of the y-axis." }),
+            ask: { prompt: "Where does $B(4, 1)$ go?", answer: 0, options: [{ t: "$(-4, 1)$" }, { t: "$(4, -1)$", fb: "That is the reflection over the $x$-axis. Over the $y$-axis, $x$ changes sign." }] } },
+          { step: 3, m: "AB = A′B′ = 3", say: "Every length is unchanged: for instance $AB = 3$ and $A′B′ = 3$." },
+          { step: 3, m: "\\triangle ABC \\cong \\triangle A′B′C′", say: "A reflection is a rigid motion, so the triangles are congruent." }] },
+        gate: true, then: "The corners are listed in matching order: $A$ with $A′$, $B$ with $B′$, $C$ with $C′$." },
+      { type: "guided", kicker: "Together",
+        prompt: "Slide $\\triangle ABC$ with the rule $(x, y) \\to (x + 5, y - 2)$. $A(-3, 1)$, $B(0, 4)$ and $C(-2, -1)$. Now you find the image.",
+        how: HOW_4_8, skill: "Rigid motions",
+        steps: [
+          { step: 1, ask: "What kind of move is $(x, y) \\to (x + 5, y - 2)$?", type: "choice", answer: 0,
+            options: [{ t: "A translation (a slide)" }, { t: "A reflection", fb: "A reflection changes a sign. Here every point moves the same way." }],
+            m: "\\text{translation: 5 right, 2 down}", say: "Every point moves 5 right and 2 down." },
+          { step: 2, ask: "Where does $A(-3, 1)$ go? Type the $x$-coordinate of $A′$.", type: "num", answer: 2, near: [{ v: -8, fb: "Add 5, do not subtract." }], hint: "$-3 + 5$.",
+            m: "A′(2, -1)", say: "$(-3 + 5, 1 - 2) = (2, -1)$." },
+          { step: 2, ask: "Where does $B(0, 4)$ go? Type the $y$-coordinate of $B′$.", type: "num", answer: 2, near: [{ v: 6, fb: "Subtract 2, do not add." }], hint: "$4 - 2$.",
+            m: "B′(5, 2)", say: "$(0 + 5, 4 - 2) = (5, 2)$." },
+          { step: 3, ask: "Is $\\triangle A′B′C′$ congruent to $\\triangle ABC$?", type: "choice", answer: 0,
+            options: [{ t: "Yes: a translation is a rigid motion" }, { t: "No: it has moved", fb: "Moving without stretching keeps size and shape." }],
+            m: "\\triangle ABC \\cong \\triangle A′B′C′", say: "A rigid motion makes congruent figures." }],
+        why: "Move, match, say. Now two on your own." },
+      { type: "sort", kicker: "On your own", prompt: "Name the rigid motion.",
+        bins: ["Translation", "Reflection", "Rotation"],
+        cards: [{ t: nb("A figure slides 4 units right"), bin: 0, fb: "Every point moves the same way." }, { t: nb("A figure is flipped over a line"), bin: 1, fb: "A mirror image." },
+                { t: nb("A figure turns 90° about a point"), bin: 2, fb: "A turn about a centre." }, { t: nb("$(x, y) \\to (x, -y)$"), bin: 1, fb: "The sign of $y$ changes: a flip over the $x$-axis." },
+                { t: nb("$(x, y) \\to (x - 3, y + 1)$"), bin: 0, fb: "The same shift for every point." }, { t: nb("A figure rotates 180° about the origin"), bin: 2, fb: "A half turn." }],
+        skill: "Rigid motions", hints: ["Slide, flip, or turn?"], why: "Translation slides, reflection flips, rotation turns." },
+      { type: "pair", prompt: "Rotate the point $(3, 1)$ by $90°$ **counterclockwise** about the origin, with the rule $(x, y) \\to (-y, x)$. Type the image as $(x, y)$.", answer: [-1, 3], skill: "Rigid motions",
+        near: [{ v: [1, -3], fb: "That is a clockwise turn. Use $(-y, x)$." }, { v: [-3, 1], fb: "That is a half turn about the $y$-axis. Use $(-y, x)$." }], hints: ["$x$ becomes $-y$ and $y$ becomes $x$."], why: "$(-1, 3)$: the point was to the right of the origin, and is now above it." },
+      { type: "learn", kicker: "A harder case",
+        prompt: "A rotation of $180°$ about the origin sends $(x, y)$ to $(-x, -y)$. Is the image congruent to the original? Watch the sides compared.",
+        scene: { type: "walk", how: HOW_4_8, rows: [
+          { step: 1, m: "(x, y) \\to (-x, -y)", say: "A half turn about the origin.",
+            fig: grid([-5, 5], [-4, 4], [{ poly: [[1, 1], [4, 1], [2, 3]], names: "ABC", c: "blue" }, { poly: [[-1, -1], [-4, -1], [-2, -3]], names: ["A′", "B′", "C′"], c: "green" }], { u: 28, alt: "Triangle ABC in the upper right, and its half-turn image A′B′C′ in the lower left." }) },
+          { step: 2, m: "A′(-1, -1) \\quad B′(-4, -1) \\quad C′(-2, -3)", say: "Every coordinate changes sign.",
+            ask: { prompt: "Where does $C(2, 3)$ go?", answer: 0, options: [{ t: "$(-2, -3)$" }, { t: "$(-2, 3)$", fb: "That flips over the $y$-axis. A half turn changes both signs." }] } },
+          { step: 3, m: "AB = 3 \\quad A′B′ = 3", say: "$|4 - 1| = 3$ and $|-4 - (-1)| = 3$. The other sides match as well." },
+          { step: 3, m: "\\triangle ABC \\cong \\triangle A′B′C′", say: "SSS, or simply: a rotation is a rigid motion." }] },
+        gate: true },
+      { type: "choice", kicker: "Try it", prompt: "A triangle is **dilated** with scale factor 2: each side is doubled. Is the image congruent to the original?",
+        options: [{ t: "No: the size changed, so a dilation is not a rigid motion" }, { t: "Yes: it is the same shape", fb: "Congruent means the same size **and** shape." }, { t: "Yes, by AAA", fb: "AAA does not prove congruence. The sides are twice as long." }],
+        answer: 0, skill: "Rigid motions", hints: ["Does a dilation keep lengths?"], why: "The sides are doubled, so the images are similar, not congruent." },
+      { type: "choice", kicker: "Find the error",
+        prompt: "Sam reflects $\\triangle ABC$ and writes: “$\\triangle ABC \\cong \\triangle B′A′C′$.” What is wrong?",
+        options: [{ t: "The corners must be listed in matching order: $A$ with $A′$, so it is $\\triangle ABC \\cong \\triangle A′B′C′$." }, { t: "A reflection does not give congruent triangles.", fb: "It does. A reflection is a rigid motion." }, { t: "Nothing. It is right.", fb: "$B′$ is the image of $B$, so it cannot stand in $A$'s place." }],
+        answer: 0, skill: "Rigid motions", hints: ["Which corner is the image of $A$?"], why: "A congruence statement lists corresponding corners in order." },
+      { type: "choice", kicker: "Use it", prompt: "A rubber stamp is pressed on paper, printing a mirror image of its letters. Which rigid motion relates the stamp to its print?",
+        options: [{ t: "A reflection: the print is flipped" }, { t: "A translation", fb: "A slide would keep the letters facing the same way." }, { t: "A rotation", fb: "A turn would not reverse the letters." }],
+        answer: 0, skill: "Rigid motions", hints: ["Is the print a mirror image?"], why: "A mirror image is a reflection." }
+    ]
+  });
   /* ================================================================ Skills */
   var TRI_NAMES = [["ABC", "DEF"], ["JKL", "MNP"], ["PQR", "XYZ"], ["RST", "UVW"], ["GHJ", "KLM"]];
   var RULE_FB = { SSS: "SSS needs three pairs of sides.", SAS: "SAS needs two pairs of sides and the angle between them.", ASA: "ASA needs two pairs of angles and the side between them.",
@@ -1235,32 +1389,7 @@
              AAS: "Two pairs of angles and a side that is not between them.", HL: "Right triangles, with the hypotenuse and a leg.", AAA: "Three pairs of angles fix the shape but not the size." }[rule] });
   }
   var SKILLS = [
-    { id: "hg4-classify", title: "Classify triangles", lesson: 2,
-      gen: function (R) {
-        var k = R.int(0, 2);
-        if (k === 0) {
-          var kind = R.pick(["Acute", "Right", "Obtuse"]), big = kind === "Acute" ? R.int(61, 88) : kind === "Right" ? 90 : R.int(95, 130), rest = 180 - big;
-          var a = kind === "Acute" ? R.int(Math.max(rest - 88, 30), Math.min(88, rest - 30)) : R.int(15, rest - 15), b = rest - a, T = R.shuffle([big, a, b]);
-          var FB = { Acute: "An acute triangle has three acute angles.", Right: "A right triangle has one angle of exactly 90°.", Obtuse: "An obtuse triangle has one angle greater than 90°." };
-          return mc(R, { prompt: "A triangle has angles of " + T[0] + "°, " + T[1] + "° and " + T[2] + "°. Classify it by its angles.", right: kind,
-            wrong: ["Acute", "Right", "Obtuse"].filter(function (x) { return x !== kind; }).map(function (x) { return { t: x, fb: FB[x] }; }),
-            hints: ["Look at the largest angle: " + Math.max(big, a, b) + "°."], why: FB[kind] });
-        }
-        if (k === 1) {
-          var s = R.int(4, 12), kind2 = R.pick(["Equilateral", "Isosceles", "Scalene"]), S = kind2 === "Equilateral" ? [s, s, s] : kind2 === "Isosceles" ? R.shuffle([s, s, s + R.int(1, 4)]) : R.shuffle([s, s + 1, s + R.int(2, 3)]);
-          var FB2 = { Equilateral: "Equilateral means all three sides are congruent.", Isosceles: "Isosceles means two sides are congruent.", Scalene: "Scalene means no two sides are congruent." };
-          return mc(R, { prompt: "A triangle has sides of " + S[0] + " cm, " + S[1] + " cm and " + S[2] + " cm. Which name fits it best?", right: kind2,
-            wrong: ["Equilateral", "Isosceles", "Scalene"].filter(function (x) { return x !== kind2; }).map(function (x) { return { t: x, fb: FB2[x] }; }),
-            hints: ["How many of the sides have the same length?"], why: FB2[kind2] });
-        }
-        // Isosceles: p x + q = r x − t on the legs.
-        var x = R.int(3, 9), p = R.int(1, 3), r = p + R.int(1, 2), leg = p * x + R.int(1, 9), q = leg - p * x, t = r * x - leg;
-        if (t <= 0) { r = p + 2; x = Math.max(x, 6); leg = p * x + 3; q = 3; t = r * x - leg; }
-        return { type: "num", prompt: "The legs of an isosceles triangle measure $" + poly([[p, "x"], [q, ""]]) + "$ and $" + poly([[r, "x"], [-t, ""]]) + "$. Find the length of each leg.", answer: leg,
-          near: near(leg, [{ v: x, fb: "That is $x$. Substitute it to get the length." }]),
-          hints: ["The legs are congruent: $" + poly([[p, "x"], [q, ""]]) + " = " + poly([[r, "x"], [-t, ""]]) + "$.", "$x = " + x + "$. Now substitute."], why: "$x = " + x + "$, so each leg is $" + leg + "$." };
-      } },
-    { id: "hg4-sum", title: "Angles of a triangle", lesson: 3,
+    { id: "hg4-sum", title: "Angles of a triangle", lesson: 2,
       gen: function (R) {
         var k = R.int(0, 3), a = R.int(28, 75), b = R.int(30, 70);
         if (a + b > 150) b = 150 - a;
@@ -1277,7 +1406,7 @@
           near: near(x, [{ v: (180 - d - e) / (m + n), tol: 0.01, fb: "The exterior angle **equals** the sum of the remote interior angles." }]),
           hints: ["$" + m + "x = " + d + " + " + poly([[n, "x"], [e, ""]]) + "$."], why: "$" + (m - n) + "x = " + (d + e) + "$, so $x = " + x + "$." };
       } },
-    { id: "hg4-corresponding", title: "Corresponding parts", lesson: 4,
+    { id: "hg4-corresponding", title: "Corresponding parts", lesson: 3,
       gen: function (R) {
         var N = R.pick(TRI_NAMES), A = N[0], B = N[1], i = R.int(0, 2), j = (i + 1) % 3, k = R.int(0, 2);
         if (k === 0) return mc(R, { prompt: "$\\triangle " + A + " \\cong \\triangle " + B + "$. Which angle corresponds to $\\angle " + A[i] + "$?", right: "$\\angle " + B[i] + "$",
@@ -1292,7 +1421,7 @@
           near: near(x, [{ v: len / c, tol: 0.01, fb: "Subtract " + d + " before you divide." }]),
           hints: ["Corresponding sides are congruent: $" + c + "x + " + d + " = " + len + "$."], why: "$" + c + "x = " + (len - d) + "$, so $x = " + x + "$." };
       } },
-    { id: "hg4-sss-sas", title: "SSS, SAS, or not enough", lesson: 5,
+    { id: "hg4-sss-sas", title: "SSS, SAS, or not enough", lesson: 6,
       gen: function (R) {
         var rule = R.pick(["SSS", "SAS", "SSA", "SAS", "SSS"]);
         return ruleQ(R, rule, rule === "SSA" ? "Not enough" : rule, ["SSS", "SAS", "Not enough"]);
@@ -1319,19 +1448,7 @@
           wrong: [{ t: "Nothing: CPCTC needs no other step", fb: "CPCTC is about parts of **congruent triangles**, so the triangles come first." }, { t: "That the angles look the same in the drawing", fb: "How a drawing looks is not a reason." }],
           hints: ["Read what CPCTC stands for."], why: "First the triangles, by SSS, SAS, ASA, AAS or HL. Then CPCTC." });
       } },
-    { id: "hg4-coordinate", title: "Coordinate proof", lesson: 8,
-      gen: function (R) {
-        var k = R.int(0, 2), T = R.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17], [9, 12, 15]]);
-        if (k === 0) { var a = R.int(2, 7), b = R.int(2, 6);
-          return { type: "pair", prompt: "A right triangle has vertices $(0, 0)$, $(" + 2 * a + ", 0)$ and $(0, " + 2 * b + ")$. Find the midpoint of its hypotenuse. Type it as $(x, y)$.", answer: [a, b],
-            near: [{ v: [2 * a, 2 * b], fb: "Halve each sum: the midpoint is half-way along." }], hints: ["The hypotenuse joins $(" + 2 * a + ", 0)$ and $(0, " + 2 * b + ")$.", "Average the $x$s and average the $y$s."],
-            why: "$\\left(\\frac{" + 2 * a + " + 0}{2}, \\frac{0 + " + 2 * b + "}{2}\\right) = (" + a + ", " + b + ")$." }; }
-        if (k === 1) return { type: "num", prompt: "A rectangle has vertices $(0, 0)$, $(" + T[1] + ", 0)$, $(" + T[1] + ", " + T[0] + ")$ and $(0, " + T[0] + ")$. Find the length of a diagonal.", answer: T[2],
-          near: near(T[2], [{ v: T[0] + T[1], fb: "Square each side, add, then take the root." }]), hints: ["From $(0, 0)$ to $(" + T[1] + ", " + T[0] + ")$: $\\sqrt{" + T[1] + "^2 + " + T[0] + "^2}$."], why: "$\\sqrt{" + (T[1] * T[1]) + " + " + (T[0] * T[0]) + "} = " + T[2] + "$." };
-        return { type: "num", prompt: "An isosceles triangle has its base from $(-" + T[0] + ", 0)$ to $(" + T[0] + ", 0)$ and its top vertex at $(0, " + T[1] + ")$. Find the length of each of the two congruent sides.", answer: T[2],
-          near: near(T[2], [{ v: 2 * T[0], fb: "That is the base. Find the distance from an end of the base to the top vertex." }]), hints: ["From $(" + T[0] + ", 0)$ to $(0, " + T[1] + ")$: $\\sqrt{" + T[0] + "^2 + " + T[1] + "^2}$."], why: "$\\sqrt{" + (T[0] * T[0]) + " + " + (T[1] * T[1]) + "} = " + T[2] + "$." };
-      } },
-    { id: "hg4-isosceles", title: "Isosceles and equilateral triangles", lesson: 9,
+    { id: "hg4-isosceles", title: "Isosceles and equilateral triangles", lesson: 8,
       gen: function (R) {
         var k = R.int(0, 3);
         if (k === 0) { var v = 2 * R.int(10, 60), base = (180 - v) / 2;
@@ -1349,38 +1466,49 @@
         return { type: "num", prompt: "An angle of an equilateral triangle measures $(" + poly([[c, "x"], [d, ""]]) + ")°$. Find $x$.", pre: "$x =$", answer: x2,
           near: near(x2, [{ v: (180 - d) / c, tol: 0.01, fb: "One angle of an equilateral triangle is 60°, not 180°." }]),
           hints: ["Every angle of an equilateral triangle is 60°."], why: "$" + poly([[c, "x"], [d, ""]]) + " = 60$, so $x = " + x2 + "$." };
+      } },
+    { id: "hg4-transform", title: "Slide, flip and turn", lesson: 9,
+      gen: function (R) {
+        var P = [R.int(-5, 5), R.int(-5, 5)], k = R.int(0, 3), x = P[0], y = P[1], dx = R.int(1, 6) * R.pick([1, -1]), dy = R.int(1, 6) * R.pick([1, -1]), Q, say, rule, why;
+        if (k === 0) { Q = [x + dx, y + dy]; rule = "the translation $(x, y) \\to (x " + (dx < 0 ? "- " + (-dx) : "+ " + dx) + ", y " + (dy < 0 ? "- " + (-dy) : "+ " + dy) + ")$"; why = "Add " + dx + " to $x$ and " + dy + " to $y$."; }
+        else if (k === 1) { Q = [-x, y]; rule = "a reflection over the $y$-axis, $(x, y) \\to (-x, y)$"; why = "The sign of $x$ changes."; }
+        else if (k === 2) { Q = [x, -y]; rule = "a reflection over the $x$-axis, $(x, y) \\to (x, -y)$"; why = "The sign of $y$ changes."; }
+        else { Q = [-y, x]; rule = "a rotation of 90° counterclockwise about the origin, $(x, y) \\to (-y, x)$"; why = "$x$ becomes $-y$ and $y$ becomes $x$."; }
+        var cand = [[-Q[0], Q[1]], [Q[0], -Q[1]], [Q[1], Q[0]]].filter(function (c) { return c[0] !== Q[0] || c[1] !== Q[1]; });
+        return { type: "pair", prompt: "Find the image of $" + pt(P) + "$ under " + rule + ". Type it as $(x, y)$.", answer: Q,
+          near: cand.slice(0, 2).map(function (c) { return { v: c, fb: "Check the rule again: apply it to each coordinate in turn." }; }), hints: ["Use the rule on $x$ and on $y$ separately."], why: why + " The image is $" + pt(Q) + "$." };
       } }
   ];
   L.unit("geo", 4, {
-    title: "Triangle Congruence",
+    title: "Congruent Triangles",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 4, blurb: "Classifying triangles, the angles of a triangle, and corresponding parts.",
-        skills: ["hg4-classify", "hg4-sum", "hg4-corresponding"], per: 2 },
-      { title: "Quiz 2", after: 7, blurb: "SSS, SAS, ASA, AAS and HL, and CPCTC.",
-        skills: ["hg4-sss-sas", "hg4-asa-aas-hl", "hg4-cpctc"], per: 2 },
-      { title: "Quiz 3", after: 9, blurb: "Coordinate proof, and isosceles and equilateral triangles.",
-        skills: ["hg4-coordinate", "hg4-isosceles"], per: 3 }
+      { title: "Quiz 1", after: 3, blurb: "The angles of a triangle, and corresponding parts of congruent figures.",
+        skills: ["hg4-sum", "hg4-corresponding"], per: 3 },
+      { title: "Quiz 2", after: 6, blurb: "SSS, SAS, ASA, AAS and HL: which rule proves a pair of triangles congruent.",
+        skills: ["hg4-sss-sas", "hg4-asa-aas-hl"], per: 3 },
+      { title: "Quiz 3", after: 9, blurb: "CPCTC, isosceles and equilateral triangles, and congruence transformations.",
+        skills: ["hg4-cpctc", "hg4-isosceles", "hg4-transform"], per: 2 }
     ],
     skills: SKILLS
   });
   /* ===================================================== Concept builders */
   L.addConcepts("geo:4", {
-    2: { name: "Classifying triangles", frame: "By its angles a triangle is acute, [[right]], obtuse or equiangular. By its sides it is equilateral, [[isosceles]] or [[scalene]]. Congruent sides have [[equal]] lengths.",
-         chips: ["parallel", "supplementary"] },
-    3: { name: "Angles of a triangle", frame: "The angle measures of a triangle add to [[180°]]. The acute angles of a right triangle are [[complementary]]. An exterior angle equals the [[sum]] of its two [[remote]] interior angles.",
-         chips: ["360°", "difference"] },
-    4: { name: "Congruent triangles", frame: "Congruent triangles have three pairs of congruent [[corresponding]] sides and three pairs of congruent corresponding [[angles]]. In a congruence statement, the [[order]] of the letters shows which vertices match.",
-         chips: ["parallel", "length"] },
-    5: { name: "SSS and SAS", frame: "[[SSS]]: three pairs of congruent sides. [[SAS]]: two pairs of sides and the [[included]] angle, the one between them. A shared side is congruent to [[itself]].",
-         chips: ["AAA", "opposite"] },
-    6: { name: "ASA, AAS and HL", frame: "[[ASA]]: two angles and the included side. [[AAS]]: two angles and a side not between them. [[HL]]: in right triangles, the hypotenuse and a [[leg]].",
-         chips: ["AAA", "SSA"] },
-    7: { name: "CPCTC", frame: "Corresponding parts of [[congruent]] triangles are congruent. First prove the [[triangles]] congruent. Then CPCTC gives any other pair of matching [[sides]] or angles.",
-         chips: ["similar", "lines"] },
-    8: { name: "Coordinate proof", frame: "Place the figure with a vertex at the [[origin]] and a side along an [[axis]]. Label the vertices, using [[variables]] for a general figure. Then use the midpoint, [[distance]] or slope formula.",
-         chips: ["protractor", "ruler"] },
-    9: { name: "Isosceles and equilateral", frame: "The [[base]] angles of an isosceles triangle are congruent. If two angles are congruent, the sides [[opposite]] them are congruent. Every angle of an equilateral triangle measures [[60°]].",
-         chips: ["90°", "vertex"] }
+    2: { name: "Triangle sums", frame: "The three angles of a triangle add up to [[180]]°. An exterior angle equals the sum of the two [[remote]] interior angles.",
+         chips: ["360", "adjacent"] },
+    3: { name: "Congruent figures", frame: "Congruent figures have the same [[size]] and [[shape]]. Their corresponding sides and angles are congruent, and the corners are written in matching [[order]].",
+         chips: ["scale", "random"] },
+    4: { name: "SSS", frame: "If three sides of one triangle are congruent to three sides of another, the triangles are [[congruent]]: SSS. A [[shared]] side counts, by the Reflexive Property.",
+         chips: ["similar", "equal angles"] },
+    5: { name: "ASA and AAS", frame: "Two angles and the side [[between]] them (ASA), or a side [[not]] between them (AAS), make the triangle. AAA does not: it only fixes the [[shape]].",
+         chips: ["size", "SSA"] },
+    6: { name: "SAS and HL", frame: "Two sides and the [[included]] angle (SAS), or the hypotenuse and a leg of right triangles (HL), prove triangles congruent. SSA does [[not]].",
+         chips: ["AAA", "any angle"] },
+    7: { name: "Using congruent triangles", frame: "Once two triangles are shown congruent, [[CPCTC]]: every pair of corresponding parts is congruent. Prove the triangles first, then use it.",
+         chips: ["before", "similar"] },
+    8: { name: "Isosceles triangles", frame: "Angles opposite congruent sides are [[congruent]], and the other way round. An equilateral triangle is [[equiangular]], with three 60° angles.",
+         chips: ["90", "scalene"] },
+    9: { name: "Congruence transformations", frame: "A [[translation]], a reflection and a rotation keep lengths and angles, so the image is [[congruent]] to the figure. A dilation does not.",
+         chips: ["dilation", "stretch"] }
   });
 })();

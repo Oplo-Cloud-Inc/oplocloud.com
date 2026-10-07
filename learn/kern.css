@@ -145,3 +145,200 @@ html.kern .kh > * { animation: kern-rise .5s var(--kern-ease) both; animation-de
 @media (prefers-reduced-motion: reduce) {
   html.kern *, html.kern *::before, html.kern *::after { animation: none !important; transition: none !important; }
 }
+
+/* ==========================================================================
+   Kern — the lesson. One idea to a screen, in a framed card on the black
+   page; whatever is drawn sits on a light stage; answers are pills; right
+   glows green and "look again" glows gold (never red); the verdict is a
+   speech bubble from a small round guide; the one big button is pressed.
+   Only under html.kern, so edu.oplocloud.com's lessons are untouched.
+   ========================================================================== */
+html.kern { --kern-ok: #35c97b; --kern-ok-d: #208a53; --kern-no: #e8b64c; --kern-no-d: #a97c1f; --stage: #e8ebf1; }
+
+/* The page steps aside for the card. */
+html.kern body:has(.lb-shell) .lx-bar { display: none; }
+html.kern .ch { max-width: 700px; padding-top: 0; }
+html.kern .ch-stage { display: block; }
+
+/* ----------------------------------------------------------- Step bar */
+html.kern .ch-stepnav { gap: 14px; margin: 6px 0 18px; }
+html.kern .ch-sn-btn { width: 36px; height: 36px; background: none; box-shadow: none; color: var(--ink-3); }
+html.kern .ch-sn-btn:hover:not(:disabled) { background: #232326; color: var(--ink); }
+html.kern .ch-sn-lab { display: none; }
+html.kern .ch-sn-dots { gap: 5px; }
+html.kern .ch-sn-dot { height: 22px; }
+html.kern .ch-sn-dot::before { top: 7px; height: 8px; border-radius: 8px; background: #2c2c30; }
+html.kern .ch-sn-dot.seen::before { background: #5a62a8; }
+html.kern .ch-sn-dot.first::before { background: var(--kern-ok); }
+html.kern .ch-sn-dot.helped::before { background: var(--kern-no); }
+html.kern .ch-sn-dot.cur::before { background: var(--kern); transform: scaleY(1.25); box-shadow: 0 0 14px rgba(84,104,255,.6); }
+html.kern .ch-sn-x { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--ink-3); transition: background .15s, color .15s; }
+html.kern .ch-sn-x:hover { background: #232326; color: var(--ink); }
+html.kern .ch-sn-x svg { width: 18px; height: 18px; }
+
+/* ----------------------------------------------------------- The card */
+html.kern .ch-card {
+  display: flex; flex-direction: column; min-height: 520px;
+  padding: 34px 44px 0; border: 1.5px solid var(--rule); border-radius: 30px; background: #161618;
+  transition: border-color .35s var(--kern-ease), box-shadow .45s var(--kern-ease);
+}
+html.kern .ch-card.is-ok { border-color: var(--kern-ok); box-shadow: 0 0 0 1px rgba(53,201,123,.35), 0 0 60px -14px rgba(53,201,123,.55); }
+html.kern .ch-card.is-no { border-color: var(--kern-no); box-shadow: 0 0 0 1px rgba(232,182,76,.3), 0 0 60px -14px rgba(232,182,76,.5); }
+html.kern .ch-kind { margin-bottom: 14px; text-align: center; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--kern); }
+html.kern .ch-kind span { letter-spacing: .02em; text-transform: none; color: var(--ink-3); font-weight: 600; }
+html.kern .ch-prompt { margin-inline: auto; font-size: 21px; line-height: 1.5; font-weight: 500; }
+html.kern .ch-art { margin-top: 24px; }
+html.kern .ch-work { margin-top: 26px; }
+html.kern .ch-after, html.kern .ch-then { margin-inline: auto; max-width: 34em; }
+html.kern .ch-then { border-left: 0; padding: 12px 18px; border-radius: 16px; background: rgba(84,104,255,.12); text-align: center; }
+
+/* --------------------------------------------------------- The stage
+   What is drawn sits on a light card, with the light palette inside it, so a
+   figure reads as a picture rather than as writing on the page. */
+html.kern[data-look="obsidian"] :is(.ch-art figure.lf, .lw-wk figure.lf, .gt-stage, .lw-plane-row, .lw-move .lw-mv, .gt-cross-scene, .lw-balance .lw-svg, .lw-tiles-stage, .lw-sq-stage, .lw-rectw .lw-svg) {
+  --ink: #1b1b1f; --ink-2: #44444d; --ink-3: #6a6a74; --paper: #fff; --canvas: var(--stage); --sunk: #d9dde5; --hair: rgba(0,0,0,.12); --rule: rgba(0,0,0,.22);
+  --lw-surface: var(--stage); --lw-tile: #fff; --lw-grid: rgba(0,0,0,.08); --lw-axis: rgba(0,0,0,.55);
+  --lw-blue: #3b6ef6; --lw-yellow: #f2b724; --lw-red: #e5484d; --lw-green: #1fa463; --lw-purple: #7c4dff; --lw-orange: #ee7d28; --blue: #3b6ef6; --green: #1fa463;
+  color: var(--ink);
+}
+html.kern[data-look="obsidian"] :is(.ch-art figure.lf, .lw-wk figure.lf, .gt-stage, .lw-plane-row, .gt-cross-scene) { background: var(--stage); border-radius: 22px; }
+html.kern .ch-art figure.lf, html.kern .lw-wk figure.lf { padding: 8px; }
+html.kern .gt-stage { padding: 10px; }
+html.kern .lw-plane-row { padding: 10px; }
+html.kern .lf-bg { fill: var(--stage); }
+html.kern .gt-sketch .lw-read { margin-top: 2px; }
+
+/* ----------------------------------------------------------- Answers */
+html.kern .ch-options { gap: 10px; }
+html.kern .ch-opt {
+  padding: 16px 20px; border-radius: 18px; background: #1d1d20; font-size: 17px; font-weight: 500;
+  box-shadow: inset 0 0 0 2px #34343a, 0 3px 0 #0c0c0d;
+  transition: box-shadow .15s var(--kern-ease), background .15s, transform .1s;
+}
+html.kern .ch-opt:hover:not(:disabled) { box-shadow: inset 0 0 0 2px #50505a, 0 3px 0 #0c0c0d; background: #222226; }
+html.kern .ch-opt:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 0 0 0 2px #50505a, 0 1px 0 #0c0c0d; }
+html.kern .ch-opt.on { background: rgba(84,104,255,.14); box-shadow: inset 0 0 0 2px var(--kern), 0 3px 0 #1f2766; }
+html.kern .ch-opt.yes { background: rgba(53,201,123,.13); color: #dff7ea; box-shadow: inset 0 0 0 2px var(--kern-ok), 0 3px 0 var(--kern-ok-d); }
+html.kern .ch-opt.no { background: rgba(232,182,76,.09); color: var(--ink-2); box-shadow: inset 0 0 0 2px rgba(232,182,76,.55), 0 3px 0 #4d3a10; }
+html.kern .ch-mark, html.kern .ch-box { background: transparent; box-shadow: inset 0 0 0 2px #50505a; }
+html.kern .ch-opt.on .ch-mark { box-shadow: inset 0 0 0 6px var(--kern); }
+html.kern .ch-opt.yes .ch-mark { box-shadow: inset 0 0 0 6px var(--kern-ok); }
+html.kern .ch-cardlet { background: #1d1d20; box-shadow: inset 0 0 0 2px #34343a, 0 3px 0 #0c0c0d; border-radius: 14px; }
+html.kern .ch-cardlet.sel { background: rgba(84,104,255,.16); box-shadow: inset 0 0 0 2px var(--kern), 0 3px 0 #1f2766; }
+html.kern .ch-cardlet.ok { background: rgba(53,201,123,.14); color: #dff7ea; box-shadow: inset 0 0 0 2px var(--kern-ok); }
+html.kern .ch-cardlet.no { background: rgba(232,182,76,.1); box-shadow: inset 0 0 0 2px rgba(232,182,76,.6); }
+html.kern .lw-btn { background: #1d1d20; box-shadow: inset 0 0 0 2px #34343a, 0 3px 0 #0c0c0d; height: 40px; font-weight: 600; }
+html.kern .lw-btn:hover { box-shadow: inset 0 0 0 2px #50505a, 0 3px 0 #0c0c0d; }
+html.kern .lw-btn:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #50505a, 0 1px 0 #0c0c0d; }
+html.kern .lw-btn.on { background: rgba(84,104,255,.16); box-shadow: inset 0 0 0 2px var(--kern), 0 3px 0 #1f2766; }
+html.kern .lw-btn.ghost { background: none; box-shadow: none; }
+
+/* ----------------------------------------------------------- The foot */
+html.kern .ch-foot { margin-top: auto; padding: 22px 0 26px; gap: 10px 12px; background: linear-gradient(transparent, #161618 26%); }
+html.kern .ch-foot-l { margin-left: 0; }
+html.kern .ch-btn { height: 48px; border-radius: 60px; font-weight: 600; font-size: 16px; }
+html.kern .ch-btn.ghost { color: var(--ink-3); }
+html.kern .ch-btn.ghost:hover:not(:disabled) { background: #232326; }
+html.kern .ch-btn.primary {
+  min-width: 190px; margin-inline: auto; background: var(--kern); color: #fff; box-shadow: 0 4px 0 var(--kern-deep);
+  transition: transform .1s ease-out, box-shadow .1s ease-out, filter .15s, background .25s;
+}
+html.kern .ch-foot .ch-btn.primary { margin-left: auto; }
+html.kern .ch-btn.primary:hover:not(:disabled) { background: var(--kern); filter: brightness(1.08); }
+html.kern .ch-btn.primary:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 var(--kern-deep); }
+html.kern .ch-btn.primary:disabled { opacity: 1; background: #2a2a2e; color: #6f6f7a; box-shadow: 0 4px 0 #1c1c1f; }
+html.kern .ch-card.is-ok .ch-btn.primary { background: var(--kern-ok); box-shadow: 0 4px 0 var(--kern-ok-d); color: #07240f; }
+html.kern .ch-card.is-ok .ch-btn.primary:active { box-shadow: 0 0 0 var(--kern-ok-d); }
+html.kern .ch-card.is-no .ch-btn.primary { background: var(--kern-no); box-shadow: 0 4px 0 var(--kern-no-d); color: #2b1f06; }
+
+/* The verdict: a speech bubble from a small round guide. */
+html.kern .ch-sheet.on {
+  display: flex; align-items: flex-start; gap: 14px; order: -1; flex-basis: 100%; max-height: 40vh; text-align: left;
+  padding: 14px 18px 14px 14px; border-radius: 22px 22px 22px 8px; background: rgba(53,201,123,.12); box-shadow: inset 0 0 0 1.5px rgba(53,201,123,.4);
+  font-size: 15.5px; line-height: 1.55; color: #e5f8ee;
+}
+html.kern .ch-sheet.on.no, html.kern .ch-sheet.on.more { background: rgba(232,182,76,.1); box-shadow: inset 0 0 0 1.5px rgba(232,182,76,.45); color: #f6e9cc; }
+html.kern .ch-sheet.on.shown, html.kern .ch-sheet.on.model { background: rgba(84,104,255,.12); box-shadow: inset 0 0 0 1.5px rgba(84,104,255,.45); color: #e8eaff; }
+html.kern .ch-sheet.on::before {
+  content: ""; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--kern) center / 22px no-repeat;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='12 12 76 76'%3E%3Cpath fill='white' fill-rule='evenodd' d='M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0'/%3E%3C/svg%3E");
+  box-shadow: 0 3px 0 var(--kern-deep);
+}
+html.kern .ch-sheet.on.ok::before { background-color: var(--kern-ok); box-shadow: 0 3px 0 var(--kern-ok-d); }
+html.kern .ch-sheet.on.no::before, html.kern .ch-sheet.on.more::before { background-color: var(--kern-no); box-shadow: 0 3px 0 var(--kern-no-d); }
+html.kern .ch-sheet.ok > b:first-child, html.kern .ch-sheet.no > b:first-child { color: inherit; font-size: 16.5px; }
+html.kern .ch-sheet .ch-says { flex: 1; min-width: 0; }
+html.kern .ch-hintline { border-left-color: var(--kern-no); }
+
+/* ==========================================================================
+   Kern — pads and paths. A course is a path of unit pads, a unit a path of
+   lesson pads, each with a small flat drawing; the one to do next glows.
+   Nothing is locked: every pad opens.
+   ========================================================================== */
+.kp-pad { position: relative; flex: none; display: grid; place-items: center; width: 70px; height: 70px; border-radius: 50%;
+  background: #1c1d33; box-shadow: inset 0 0 0 2px #2f3162, 0 5px 0 #0d0d18; transition: transform .12s var(--kern-ease), box-shadow .12s var(--kern-ease), background .2s; }
+.kp-pad svg { width: 46px; height: 46px; fill: none; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.kp-pad .sa { stroke: #8d9bff; } .kp-pad .sb { stroke: #5fd6ff; } .kp-pad .sc { stroke: #ffc94d; } .kp-pad .sw { stroke: #f2f2f7; } .kp-pad .sg { stroke: #4ade80; }
+.kp-pad .fa { fill: #8d9bff; stroke: none; } .kp-pad .fb { fill: #5fd6ff; stroke: none; } .kp-pad .fc { fill: #ffc94d; stroke: none; } .kp-pad .fw { fill: #fff; stroke: none; }
+.kp-pad .ta { fill: rgba(141,155,255,.22); } .kp-pad .tb { fill: rgba(95,214,255,.17); } .kp-pad .tc { fill: rgba(255,201,77,.18); }
+.kp-pad .dsh { stroke-dasharray: 3 4.5; }
+.kp-pad.plain b { font-size: 22px; font-weight: 700; color: #aab4ff; letter-spacing: -.02em; }
+.kp-pad.big { width: 92px; height: 92px; } .kp-pad.big svg { width: 62px; height: 62px; }
+.kp-pad.sm { width: 54px; height: 54px; box-shadow: inset 0 0 0 2px #2f3162, 0 4px 0 #0d0d18; } .kp-pad.sm svg { width: 36px; height: 36px; }
+
+.kp-path { list-style: none; margin: 30px 0 0; padding: 0; display: grid; gap: 20px; }
+.kp-node { position: relative; left: calc(var(--o, 0) * 1px); width: 380px; max-width: 100%; margin-inline: auto; animation: kern-rise .5s var(--kern-ease) both; animation-delay: calc(var(--i, 0) * 45ms); }
+.kp-hit { display: flex; align-items: center; gap: 18px; width: 100%; text-align: left; padding: 6px; border-radius: 40px; color: var(--ink); background: none; cursor: pointer; transition: background .15s; }
+.kp-hit:hover { background: rgba(255,255,255,.04); }
+.kp-hit:hover .kp-pad { transform: translateY(-3px); }
+.kp-hit:active .kp-pad { transform: translateY(3px); box-shadow: inset 0 0 0 2px #2f3162, 0 1px 0 #0d0d18; }
+.kp-hit:focus-visible { outline: 2px solid var(--kern); outline-offset: 2px; }
+.kp-lab { min-width: 0; display: grid; gap: 3px; }
+.kp-lab b { font-size: 16.5px; font-weight: 700; letter-spacing: -.01em; line-height: 1.25; }
+.kp-lab span { font-size: 13px; color: var(--ink-3); line-height: 1.4; }
+.kp-node.done .kp-pad { background: #14291f; box-shadow: inset 0 0 0 2px #2a8a57, 0 5px 0 #0a1a12; }
+.kp-node.done .kp-pad::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; border-radius: 50%; background: #35c97b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2307240f' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 15px no-repeat; box-shadow: 0 0 0 3px #141414; }
+.kp-node.cur .kp-pad { background: #25285a; box-shadow: inset 0 0 0 2.5px var(--kern), 0 5px 0 #151845, 0 0 0 7px rgba(84,104,255,.18), 0 0 30px rgba(84,104,255,.5); }
+.kp-node.cur .kp-lab b { color: #fff; }
+.kp-node.quiz .kp-pad { background: #2b1d3a; box-shadow: inset 0 0 0 2px #6c4a9a, 0 5px 0 #130c1b; }
+.kp-node.test .kp-pad { background: #33290f; box-shadow: inset 0 0 0 2px #a07a1c, 0 5px 0 #171205; }
+.kp-node.soon { opacity: .5; }
+.kp-go { display: inline-flex; align-items: center; justify-self: start; margin-top: 4px; height: 30px; padding: 0 14px; border-radius: 30px; background: var(--kern); color: #fff !important; font-size: 13px !important; font-weight: 700; box-shadow: 0 3px 0 var(--kern-deep); }
+
+/* A page's head: what it is, and one big thing to do. */
+.kp-head { margin: 8px 0 8px; }
+.kp-head h1 { margin: 10px 0 8px; font-size: 30px; font-weight: 700; letter-spacing: -.03em; line-height: 1.12; }
+.kp-head p { margin: 0; color: var(--ink-2); font-size: 15.5px; line-height: 1.55; max-width: 46ch; }
+.kp-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.kp-meta span { padding: 4px 12px; border-radius: 30px; background: #232326; color: var(--ink-2); font-size: 12.5px; font-weight: 600; }
+.kp-next { display: flex; align-items: center; gap: 20px; margin-top: 22px; padding: 20px 22px; border: 1.5px solid var(--kern); border-radius: 26px; background: linear-gradient(135deg, rgba(84,104,255,.16), rgba(84,104,255,.04)); box-shadow: 0 0 40px -18px rgba(84,104,255,.7); }
+.kp-next .tx { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.kp-next .tx .eb { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+.kp-next .tx b { font-size: 19px; font-weight: 700; letter-spacing: -.02em; line-height: 1.25; }
+.kp-next .tx span { font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
+.kp-next .lx-btn, .kp-next .kp-btn { flex: none; }
+.kp-h2 { margin: 44px 0 12px; font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.kp-skills { display: flex; flex-wrap: wrap; gap: 8px; }
+.kp-skill { display: inline-flex; align-items: center; gap: 10px; padding: 9px 15px; border-radius: 30px; background: #1d1d20; box-shadow: inset 0 0 0 2px #34343a, 0 3px 0 #0c0c0d; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; transition: transform .1s, box-shadow .1s; }
+.kp-skill:hover { box-shadow: inset 0 0 0 2px #50505a, 0 3px 0 #0c0c0d; }
+.kp-skill:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #50505a, 0 1px 0 #0c0c0d; }
+.kp-skill .pips { display: inline-flex; gap: 3px; } .kp-skill .pips i { width: 7px; height: 7px; border-radius: 50%; background: #3a3a40; } .kp-skill .pips i.on { background: var(--kern); }
+.kp-more { margin-top: 36px; border-top: 1px solid var(--hair); padding-top: 18px; }
+.kp-more summary { cursor: pointer; font-size: 15px; font-weight: 700; color: var(--ink); list-style: none; }
+.kp-more summary::before { content: "+"; display: inline-block; width: 20px; color: var(--kern); font-weight: 700; }
+.kp-more[open] summary::before { content: "–"; }
+.kp-more ul { margin: 12px 0 0; padding-left: 20px; color: var(--ink-2); font-size: 14.5px; line-height: 1.6; display: grid; gap: 6px; }
+.kp-more p { margin: 12px 0 0; color: var(--ink-3); font-size: 13.5px; line-height: 1.55; }
+.kp-wide { margin-top: 18px; width: 100%; }
+
+/* The course and unit pages' headers. */
+html.kern .kcp { max-width: 600px; margin: 0 auto; padding-bottom: 90px; }
+html.kern .kcp > * { animation: kern-rise .5s var(--kern-ease) both; }
+.kcp-row { display: flex; align-items: center; gap: 18px; }
+.kcp-row > div { flex: 1; min-width: 0; text-align: left; }
+.kcp-ic { flex: none; display: grid; place-items: center; width: 68px; height: 68px; border-radius: 20px; }
+.kcp-ic svg { width: 34px; height: 34px; }
+.kcp-row h1 { margin: 6px 0 0; }
+html.kern .lb-unit { max-width: 600px; margin: 0 auto; padding-bottom: 90px; }
+html.kern .lb-uhead h1.lx-h1 { font-size: 30px; font-weight: 700; letter-spacing: -.03em; margin: 10px 0 8px; }
+html.kern .lb-uhead .lx-lede { font-size: 15.5px; line-height: 1.55; color: var(--ink-2); max-width: 46ch; margin: 0; }

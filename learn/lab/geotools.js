@@ -71,7 +71,72 @@
     ".gt-solid3 svg{cursor:grab}.gt-solid3 svg.on{cursor:grabbing}" +
     ".gt-hint{text-align:center;font-size:13px;color:var(--ink-3)}" +
     ".gt-pname{font-size:22px;fill:currentColor;paint-order:stroke;stroke:var(--lw-surface);stroke-width:4px;stroke-linejoin:round}" +
-    ".gt-scr{font-size:1.22em;line-height:1;font-style:normal}"
+    ".gt-scr{font-size:1.22em;line-height:1;font-style:normal}" +
+    /* ---- sliders, option buttons and the observation table under a sketch */
+    ".gt-ctl{display:grid;gap:10px;width:min(520px,100%);margin:0 auto}.gt-ctl[hidden]{display:none}" +
+    ".gt-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}" +
+    ".gt-chips .lw-sl-name{margin-right:4px}" +
+    "@keyframes gt-pulse{from{transform:scale(1);opacity:.8}to{transform:scale(2.6);opacity:0}}" +
+    ".gt-pulse{fill:none;stroke:var(--c);stroke-width:2.5;pointer-events:none;transform-box:fill-box;transform-origin:center;animation:gt-pulse 1.7s ease-out infinite}" +
+    "@media (prefers-reduced-motion:reduce){.gt-pulse{animation:none;opacity:.5}}" +
+    ".gt-log{overflow:auto;display:flex;justify-content:center}" +
+    ".gt-log table{border-collapse:collapse;font-size:16px;font-variant-numeric:tabular-nums}" +
+    ".gt-log th{font-weight:600;font-size:14px;color:var(--ink-2);padding:6px 18px;text-align:center;border-bottom:1.5px solid var(--lw-axis);white-space:nowrap}" +
+    ".gt-log td{padding:6px 18px;text-align:center;border-bottom:1px solid var(--lw-grid);white-space:nowrap}" +
+    ".gt-log tr.ok td{color:var(--lw-green);font-weight:600}.gt-log tr.ph td{color:var(--ink-3)}" +
+    ".m .mneg{margin-right:.06em}" +
+    ".gt-dim{opacity:.45}" +
+    ".gt-tap{cursor:pointer;outline:none}.gt-tap-c{fill:var(--paper);stroke:var(--c);stroke-width:2;stroke-dasharray:4 3;transition:fill .12s}" +
+    ".gt-tap.c-blue{--c:var(--lw-blue)}.gt-tap.c-green{--c:var(--lw-green)}.gt-tap.c-orange{--c:var(--lw-orange)}.gt-tap.c-red{--c:var(--lw-red)}.gt-tap.c-purple{--c:var(--lw-purple)}" +
+    ".gt-tap:hover .gt-tap-c,.gt-tap:focus-visible .gt-tap-c{stroke-dasharray:none;stroke-width:3}" +
+    ".gt-tap.on .gt-tap-c{fill:var(--c);stroke-dasharray:none}.gt-tap-l{font:600 15px var(--lw-mathf,var(--text));fill:var(--ink);pointer-events:none}.gt-tap.on .gt-tap-l{fill:#fff}" +
+    /* ---- truth tables */
+    ".gt-tt{gap:16px}.gt-tt-sw{display:grid;gap:10px}" +
+    ".gt-tt-var{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}" +
+    ".gt-tt-name{font-size:21px;min-width:22px;text-align:center}.gt-tt-say{color:var(--ink-2);font-size:16px}" +
+    ".gt-tt-seg{display:inline-flex;gap:6px}" +
+    ".gt-tt-wrap{overflow:auto;display:flex;justify-content:center}" +
+    ".gt-tt-table{border-collapse:separate;border-spacing:0;font-size:18px;font-variant-numeric:tabular-nums}" +
+    ".gt-tt-table th{padding:8px 18px;font-weight:600;border-bottom:1.5px solid var(--lw-axis);text-align:center;white-space:nowrap}" +
+    ".gt-tt-table td{padding:6px 18px;text-align:center;font-weight:600;min-width:52px;border-bottom:1px solid var(--lw-grid)}" +
+    ".gt-tt-table .gt-tt-v:last-of-type{border-right:1.5px solid var(--lw-axis)}" +
+    ".gt-tt-table td.t,.gt-read b.t,.lw-read b.t,.gt-tt-cell.t{color:var(--lw-green)}" +
+    ".gt-tt-table td.f,.lw-read b.f,.gt-tt-cell.f{color:var(--lw-red)}" +
+    ".gt-tt-table td.q{color:var(--ink-3);font-weight:400}" +
+    ".gt-tt-table tr.here td{background:color-mix(in srgb,var(--lw-blue) 14%,transparent)}" +
+    ".gt-tt-cell{width:46px;height:36px;border-radius:10px;font:inherit;font-weight:700;background:var(--paper);box-shadow:inset 0 0 0 1.5px var(--rule);cursor:pointer}" +
+    ".gt-tt-cell.blank{box-shadow:inset 0 0 0 1.5px var(--ink-3);opacity:.7}" +
+    ".gt-tt-cell:hover{box-shadow:inset 0 0 0 2px var(--lw-blue)}.gt-tt-cell.given{opacity:.65;cursor:default;box-shadow:none;background:transparent}" +
+    ".gt-tt-cell.no{box-shadow:inset 0 0 0 2.5px var(--lw-red)}" +
+    /* ---- logic grid */
+    ".gt-lg{gap:16px}.gt-lg-row{display:flex;gap:28px;align-items:flex-start;justify-content:center;flex-wrap:wrap}" +
+    ".gt-lg-clues{margin:0;padding:0 0 0 22px;max-width:340px;display:grid;gap:8px;font-size:16px;line-height:1.45;color:var(--ink)}" +
+    ".gt-lg-clues li{cursor:pointer;padding:2px 6px;border-radius:8px}.gt-lg-clues li:hover{background:var(--canvas)}" +
+    ".gt-lg-clues li.used{color:var(--ink-3);text-decoration:line-through}" +
+    ".gt-lg-note{text-align:center;font-size:13px;color:var(--ink-3)}" +
+    ".gt-lg-table{border-collapse:separate;border-spacing:4px}" +
+    ".gt-lg-table th{font-weight:600;font-size:15px;padding:4px 8px;text-align:center}.gt-lg-table tbody th{text-align:right}" +
+    ".gt-lg-cell{width:50px;height:46px;border-radius:12px;font-size:24px;font-weight:700;line-height:1;background:var(--paper);box-shadow:inset 0 0 0 1.5px var(--rule);color:var(--ink-3);cursor:pointer;transition:box-shadow .12s,background .12s}" +
+    ".gt-lg-cell:hover{box-shadow:inset 0 0 0 2px var(--lw-blue)}" +
+    ".gt-lg-cell.x{color:var(--lw-red)}.gt-lg-cell.v{color:var(--paper);background:var(--lw-green);box-shadow:none}.gt-lg-cell.auto{color:var(--ink-3);opacity:.45}" +
+    ".gt-lg-cell.no{box-shadow:inset 0 0 0 3px var(--lw-red)}" +
+    /* ---- river crossing */
+    ".gt-cross{gap:12px}.gt-cross-scene{display:flex;justify-content:center}" +
+    ".gt-cross-svg{width:100%;max-width:620px;height:auto;border-radius:14px;overflow:hidden}" +
+    ".gt-bank{fill:color-mix(in srgb,var(--lw-green) 22%,var(--canvas))}.gt-water{fill:color-mix(in srgb,var(--lw-blue) 24%,var(--canvas))}" +
+    ".gt-wave{fill:none;stroke:color-mix(in srgb,var(--lw-blue) 55%,var(--ink-3));stroke-width:2;stroke-linecap:round;opacity:.6}" +
+    ".gt-boat{fill:color-mix(in srgb,var(--lw-orange) 55%,var(--canvas));stroke:var(--lw-orange);stroke-width:2;stroke-linejoin:round}" +
+    ".gt-tok{cursor:pointer;outline:none}.gt-tok-c{fill:var(--c);stroke:var(--paper);stroke-width:3;transition:r .12s}" +
+    ".gt-tok:hover .gt-tok-c,.gt-tok:focus-visible .gt-tok-c{r:29}.gt-tok.c-blue{--c:var(--lw-blue)}.gt-tok.c-red{--c:var(--lw-red)}.gt-tok.c-green{--c:var(--lw-green)}.gt-tok.c-orange{--c:var(--lw-orange)}" +
+    ".gt-tok-l{font:700 22px var(--text);fill:#fff}.gt-tok-n{font:600 13px var(--text);fill:var(--ink)}" +
+    ".gt-cross-msg{min-height:30px;font-size:17px}.gt-cross-msg b.f{color:var(--lw-red)}.gt-cross-msg b.t{color:var(--lw-green)}" +
+    ".gt-cross-bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.gt-cross-bar .lw-btn:disabled{opacity:.4;cursor:default}" +
+    ".gt-cross-net{overflow:auto;display:flex;justify-content:center}.gt-net-svg{width:100%;max-width:660px;height:auto}" +
+    ".gt-edge{stroke:var(--ink-3);stroke-width:1.5;opacity:.45}.gt-edge.on{stroke:var(--lw-blue);stroke-width:2.5;opacity:1}" +
+    ".gt-vtx rect{fill:var(--paper);stroke:var(--rule);stroke-width:1.5}.gt-vtx text{font:600 12px var(--text);fill:var(--ink-2)}" +
+    ".gt-vtx.seen rect{stroke:var(--lw-blue)}.gt-vtx.seen text{fill:var(--ink)}.gt-vtx.here rect{fill:var(--lw-blue);stroke:var(--lw-blue)}.gt-vtx.here text{fill:#fff}" +
+    ".gt-vtx.dead rect{fill:color-mix(in srgb,var(--lw-red) 25%,var(--paper));stroke:var(--lw-red)}.gt-vtx.goal rect{stroke:var(--lw-green);stroke-width:2.5}.gt-vtx.goal.here rect{fill:var(--lw-green)}" +
+    ""
   );
 
   /* ---------------------------------------------------------------- Type
@@ -407,6 +472,7 @@
   function project(p, on, s) {
     function P(v) { return typeof v === "string" ? s[v] : v; }
     if (!on) return p;
+    if (on.fn) return on.fn(p, s);
     if (on.x != null) return [on.x, p[1]];
     if (on.y != null) return [p[0], on.y];
     if (on.circle) {
@@ -427,7 +493,7 @@
   }
   function snapPt(p, pt, s) {
     var on = pt.on, sn = pt.snap;
-    if (on && on.circle) return project(p, on, s);
+    if (on && (on.circle || on.fn)) return project(p, on, s);
     if (sn) {
       if (on && (on.seg || on.line || on.ray)) {
         // Snap the distance along the line, so a slanted line still snaps.
@@ -441,6 +507,39 @@
     }
     return project(p, on, s);
   }
+  /* A slider under a drawing: its label, its range and its value as it moves. */
+  function gtSlider(label, o, onInput, onDone) {
+    var row = el("label", "lw-slider");
+    var name = el("span", "lw-sl-name", fmt(label));
+    var input = el("input");
+    input.type = "range";
+    input.min = o.min; input.max = o.max; input.step = o.step || 1; input.value = o.v;
+    input.setAttribute("aria-label", String(label).replace(/\$|\\[a-z]+|[{}]/g, ""));
+    var val = el("span", "lw-sl-val");
+    row.appendChild(name); row.appendChild(input); row.appendChild(val);
+    function show() { val.innerHTML = o.show ? fmt(o.show(+input.value)) : fmt("$" + num(+input.value) + "$"); }
+    input.addEventListener("input", function () { show(); onInput(+input.value); });
+    if (onDone) input.addEventListener("change", function () { onDone(+input.value); });
+    show();
+    return { el: row, input: input, set: function (v) { input.value = v; show(); } };
+  }
+  /* A row of option buttons: one is on. o = { opts: [[value, label], …], v }. */
+  function gtChips(label, o, onPick) {
+    var row = el("div", "gt-chips"), btns = {};
+    if (label) row.appendChild(el("span", "lw-sl-name", fmt(label)));
+    function set(v) {
+      Object.keys(btns).forEach(function (k) { btns[k].classList.toggle("on", k === String(v)); btns[k].setAttribute("aria-pressed", String(k === String(v))); });
+    }
+    o.opts.forEach(function (op) {
+      var b = button("lw-btn", fmt(op[1]));
+      btns[op[0]] = b;
+      b.addEventListener("click", function () { set(op[0]); onPick(op[0]); });
+      row.appendChild(b);
+    });
+    set(o.v);
+    return { el: row, set: set };
+  }
+
   CH.addKind("sketch", function (spec, seed, mode) {
     var api = {}, moved = false, locked = false;
     var box = el("div", "lw gt-sketch");
@@ -451,6 +550,23 @@
     var names = Object.keys(spec.pts || {});
     var s = {};
     names.forEach(function (k) { s[k] = spec.pts[k].at.slice(); });
+    // Sliders and option buttons: s.p.k and s.c.k in draw, readout and goal.
+    s.p = {}; s.c = {}; s.sel = {}; s.selList = []; s.seen = {}; s.tracked = {};
+    var ctl = el("div", "gt-ctl"), sl = {}, chs = {};
+    Object.keys(spec.params || {}).forEach(function (k) {
+      var o = spec.params[k];
+      s.p[k] = o.v;
+      sl[k] = gtSlider(o.label || "$" + k + "$", o, function (v) { s.p[k] = v; moved = true; paint(); },
+        function () { if (logSpec && logSpec.auto !== false) logAdd(); });
+      ctl.appendChild(sl[k].el);
+    });
+    Object.keys(spec.chips || {}).forEach(function (k) {
+      var o = spec.chips[k];
+      s.c[k] = o.v; s.seen[k] = {}; s.seen[k][o.v] = true;
+      chs[k] = gtChips(o.label, o, function (v) { s.c[k] = v; s.seen[k][v] = true; moved = true; paint(); });
+      ctl.appendChild(chs[k].el);
+    });
+    ctl.hidden = !(Object.keys(sl).length + Object.keys(chs).length);
     if (spec.protractor) names.forEach(function (k) {
       var pt = spec.pts[k];
       if (!pt.on) pt.on = { circle: [[0, 0], (spec.R || 150) + 8], snapDeg: pt.snapDeg || 1, range: [0, 180] };
@@ -483,6 +599,18 @@
     stage.appendChild(svg);
     var layer = S("g", {}, svg), handles = S("g", {}, svg);
     box.appendChild(read);
+    box.appendChild(ctl);
+    // A table that fills as the student tries positions: what the drawing
+    // showed each time, side by side, so the pattern can be seen.
+    var logSpec = spec.log || null, logRows = [], logBox = logSpec ? el("div", "gt-log") : null, logBtn = null;
+    if (logBox) {
+      box.appendChild(logBox);
+      if (logSpec.auto === false) {
+        logBtn = button("lw-btn", fmt(logSpec.add || "Add this to the table"));
+        logBtn.addEventListener("click", function () { logAdd(); });
+        box.appendChild(logBtn);
+      }
+    }
     if (cap) box.appendChild(cap);
 
     function drawItems(items) {
@@ -501,15 +629,58 @@
       }
       return figInner(Object.assign({}, spec, { items: items, cap: null, bg: true })).inner;
     }
+    function logPaint() {
+      if (!logBox) return;
+      var need = logSpec.need || 0, h = "<table><thead><tr>" + logSpec.cols.map(function (c) { return "<th>" + fmt(c.h) + "</th>"; }).join("") + "</tr></thead><tbody>";
+      logRows.forEach(function (r) { h += "<tr" + (r.ok ? ' class="ok"' : "") + ">" + r.vals.map(function (v) { return "<td>" + fmt(v) + "</td>"; }).join("") + "</tr>"; });
+      for (var i = logRows.length; i < Math.max(need, logSpec.show || 0); i++) h += '<tr class="ph">' + logSpec.cols.map(function () { return "<td>·</td>"; }).join("") + "</tr>";
+      logBox.innerHTML = h + "</tbody></table>";
+    }
+    function logAdd() {
+      if (!logSpec) return;
+      var st = state();
+      if (logSpec.when && !logSpec.when(st)) return;                              // a position the table is not about is not added
+      var vals = logSpec.cols.map(function (c) { return c.f(st); }), key = vals.join("|");
+      if (logRows.some(function (r) { return r.key === key; })) return;          // a position already in the table is not added twice
+      logRows.push({ key: key, vals: vals, ok: logSpec.ok ? !!logSpec.ok(st) : false });
+      if (logRows.length > (logSpec.max || 6)) logRows.shift();
+      logPaint();
+      if (api.onChange) api.onChange();
+    }
+    // What the drawing has shown so far (spec.track(s) → a key per kind of thing seen): “find all four”.
+    function trackNow() { if (spec.track) { var key = spec.track(s); if (key != null) s.tracked[key] = true; } }
+    var tapNames = Object.keys(spec.taps || {});
+    function tapHandles() {
+      tapNames.forEach(function (k) {
+        var t = spec.taps[k], on = !!s.sel[k], at = typeof t.at === "function" ? t.at(s) : t.at;
+        var g = S("g", { class: "gt-tap" + (on ? " on" : "") + " c-" + (t.c || "blue"), transform: "translate(" + f1(X(at[0])) + "," + f1(Y(at[1])) + ")", role: "button", tabindex: "0", "aria-pressed": String(on) }, handles);
+        g.setAttribute("aria-label", (t.say || t.label || k) + (on ? ", chosen" : ""));
+        S("circle", { r: t.r || 20, class: "gt-tap-c" }, g);
+        var tx = S("text", { y: 5, "text-anchor": "middle", class: "gt-tap-l" }, g); tx.textContent = t.label || k;
+        function flip() {
+          if (locked) return;
+          if (s.sel[k]) { delete s.sel[k]; s.selList = s.selList.filter(function (x) { return x !== k; }); }
+          else { s.sel[k] = true; s.selList.push(k); var mx = spec.maxSel || 99; while (s.selList.length > mx) delete s.sel[s.selList.shift()]; }
+          moved = true; paint();
+          var again = handles.querySelector('.gt-tap[aria-label^="' + (t.say || t.label || k).replace(/"/g, "") + '"]'); if (again) again.focus();
+        }
+        g.dataset.tk = k;
+        g.addEventListener("click", flip);
+        g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } });
+      });
+    }
     function paint() {
+      trackNow();
       var items = spec.draw ? spec.draw(s) : [];
       layer.innerHTML = (base || "") + drawItems(items);
       handles.innerHTML = "";
+      tapHandles();
       names.forEach(function (k) {
         var pt = spec.pts[k];
-        if (!pt.drag || locked) return;
+        if (!pt.drag || locked || (pt.hide && pt.hide(s))) return;
         var g = S("g", { class: "lw-pt c-" + (pt.c || "blue"), transform: "translate(" + f1(X(s[k][0])) + "," + f1(Y(s[k][1])) + ")" }, handles);
         S("circle", { r: 20, class: "lw-hit" }, g);
+        if (!moved && window.OPLO_KERN) S("circle", { r: 10, class: "gt-pulse" }, g);   // Kern: "drag me", until something has moved
         S("circle", { r: 8.5, class: "lw-dot" }, g);
         g.setAttribute("aria-label", (pt.say || "Point " + (pt.name || k)) + ". Drag it, or use the arrow keys.");
         g.setAttribute("data-k", k);
@@ -520,7 +691,7 @@
       svg.setAttribute("aria-label", spec.describe ? spec.describe(state()) : "A drawing with points you can move.");
       if (api.onChange) api.onChange();
     }
-    function state() { var o = Object.assign({}, s); o.moved = moved; return o; }
+    function state() { var o = Object.assign({}, s); o.moved = moved; o.rows = logRows.length; return o; }
     function place(k, p) {
       if (!pr && !ru) {
         var xr = spec.x || [-6, 6], yr = spec.y || [-6, 6];
@@ -537,18 +708,28 @@
         e.preventDefault(); active = true;
         try { g.setPointerCapture(e.pointerId); } catch (x) { /* synthetic */ }
         g.classList.add("on");
+        var pl = g.querySelector(".gt-pulse"); if (pl) pl.remove();
       });
       g.addEventListener("pointermove", function (e) {
         if (!active) return;
         var q = svgPt(svg, e);
         place(k, [VX(q.x), VY(q.y)]);
         g.setAttribute("transform", "translate(" + f1(X(s[k][0])) + "," + f1(Y(s[k][1])) + ")");
+        trackNow();
         var items = spec.draw ? spec.draw(s) : [];
         layer.innerHTML = (base || "") + drawItems(items);
+        [].forEach.call(handles.querySelectorAll(".gt-tap"), function (tg) {                // spots that follow the drawing move with it
+          var t = spec.taps[tg.dataset.tk]; if (t && typeof t.at === "function") { var at = t.at(s); tg.setAttribute("transform", "translate(" + f1(X(at[0])) + "," + f1(Y(at[1])) + ")"); }
+        });
         read.innerHTML = spec.readout ? fmt(spec.readout(state())) : "";
         if (api.onChange) api.onChange();
       });
-      function end() { if (!active) return; active = false; g.classList.remove("on"); paint(); var again = handles.querySelector('[data-k="' + k + '"]'); if (again && document.activeElement === document.body) { /* leave focus alone */ } }
+      function end() {
+        if (!active) return;
+        active = false; g.classList.remove("on");
+        paint();
+        if (logSpec && logSpec.auto !== false) logAdd();
+      }
       g.addEventListener("pointerup", end);
       g.addEventListener("pointercancel", end);
       g.addEventListener("keydown", function (e) {
@@ -572,13 +753,18 @@
         var again = handles.querySelector('[data-k="' + k + '"]');
         if (again) again.focus();
       });
+      g.addEventListener("keyup", function (e) {
+        if (logSpec && logSpec.auto !== false && /^Arrow/.test(e.key)) logAdd();
+      });
     }
     paint();
+    logPaint();
     api.el = box;
     api.state = state;
     api.ready = function () {
-      if (spec.goal && (mode.explore || !spec.check)) return mode.explore ? !!spec.goal(state()) : moved || !!spec.goal(state());
-      if (mode.explore) return spec.gate ? moved : true;
+      var logOk = !(logSpec && logSpec.need) || logRows.length >= logSpec.need;
+      if (spec.goal && (mode.explore || !spec.check)) return mode.explore ? (!!spec.goal(state()) && logOk) : moved || !!spec.goal(state());
+      if (mode.explore) return spec.gate ? (moved && logOk) : true;
       return moved;
     };
     api.check = function () {
@@ -589,10 +775,17 @@
     };
     api.reveal = function () {
       var a = spec.answer || {};
-      Object.keys(a).forEach(function (k) { if (s[k]) s[k] = a[k].slice(); });
+      names.forEach(function (k) { if (a[k]) s[k] = a[k].slice(); });
+      Object.keys(a.p || {}).forEach(function (k) { s.p[k] = a.p[k]; if (sl[k]) sl[k].set(a.p[k]); });
+      Object.keys(a.c || {}).forEach(function (k) { s.c[k] = a.c[k]; if (chs[k]) chs[k].set(a.c[k]); });
       moved = true; locked = true;
       paint();
     };
+    // For a test: put a point, a slider or an option where a hand would.
+    api.put = function (k, p) { place(k, p); paint(); if (logSpec && logSpec.auto !== false) logAdd(); };
+    api.setParam = function (k, v) { s.p[k] = v; if (sl[k]) sl[k].set(v); moved = true; paint(); };
+    api.tap = function (k) { var el0 = handles.querySelector('.gt-tap[aria-label^="' + ((spec.taps[k] || {}).say || (spec.taps[k] || {}).label || k) + '"]'); if (el0) el0.dispatchEvent(new MouseEvent("click", { bubbles: true })); };
+    api.setChip = function (k, v) { s.c[k] = v; s.seen[k][v] = true; if (chs[k]) chs[k].set(v); moved = true; paint(); };
     return api;
   });
 
@@ -833,6 +1026,351 @@
     api.ready = function () { return mode.explore && spec.gate ? turned > 60 : true; };
     api.check = function () { return { ok: true }; };
     api.reveal = function () { turned = 100; paint(); };
+    return api;
+  });
+
+  /* =========================================================== Truth table
+     Statements p, q, … each true or false, and what a compound statement
+     built from them is, row by row.
+
+       { type: "ttable", vars: ["p", "q"] | [{ id, say }], mode: "explore" | "fill",
+         cols: [{ h: "p \\wedge q", f: function (v) { return v.p && v.q; } }, …],
+         say: function (v, r) → words under the switches (explore),
+         need: rows to visit before it is done (explore; default every row),
+         given: [column indexes shown already (fill)] }
+
+     explore  Switch each statement true or false. The table fills a row at a
+              time, the row you have set; the rest stay “?” until you get there.
+     fill     The table is there; press a cell to make it T, then F, then empty.
+              Check marks the wrong cells. */
+  CH.addKind("ttable", function (spec, seed, mode) {
+    var api = {}, fill = spec.mode === "fill";
+    var vars = (spec.vars || []).map(function (v) { return typeof v === "string" ? { id: v } : v; });
+    var n = vars.length, rows = [];
+    for (var i = 0; i < (1 << n); i++) { var r = {}; vars.forEach(function (v, j) { r[v.id] = !((i >> (n - 1 - j)) & 1); }); rows.push(r); }
+    var box = el("div", "lw gt-tt");
+    var cur = {}, visited = {}, moved = false, locked = false;
+    vars.forEach(function (v) { cur[v.id] = true; });
+    var TF = function (b) { return b ? "T" : "F"; };
+    var hd = "";
+    var sw = el("div", "gt-tt-sw");
+    var swb = {};
+    if (!fill) {
+      vars.forEach(function (v) {
+        var row = el("div", "gt-tt-var");
+        row.appendChild(el("span", "gt-tt-name", fmt("$" + v.id + "$")));
+        if (v.say) row.appendChild(el("span", "gt-tt-say", fmt(v.say)));
+        var seg = el("div", "gt-tt-seg");
+        [[true, "True"], [false, "False"]].forEach(function (o) {
+          var b = button("lw-btn", o[1]);
+          b.addEventListener("click", function () { cur[v.id] = o[0]; moved = true; mark(); paint(); });
+          seg.appendChild(b);
+          swb[v.id + (o[0] ? "T" : "F")] = b;
+        });
+        row.appendChild(seg);
+        sw.appendChild(row);
+      });
+      box.appendChild(sw);
+    }
+    var wrap = el("div", "gt-tt-wrap"), tbl = el("table", "gt-tt-table");
+    wrap.appendChild(tbl);
+    box.appendChild(wrap);
+    var read = el("div", "lw-read");
+    box.appendChild(read);
+    var cells = {};              // fill mode: the student's marks, "r:c" → true | false
+    var given = {};
+    (spec.given || []).forEach(function (c) { given[c] = true; });
+    function rowIx(v) { for (var i = 0; i < rows.length; i++) { var ok = true; vars.forEach(function (x) { if (rows[i][x.id] !== v[x.id]) ok = false; }); if (ok) return i; } return 0; }
+    function mark() { visited[rowIx(cur)] = true; }
+    function value(ri, ci) { return !!spec.cols[ci].f(rows[ri]); }
+    function paint() {
+      var h = "<thead><tr>" + vars.map(function (v) { return '<th class="gt-tt-v">' + fmt("$" + v.id + "$") + "</th>"; }).join("") +
+        spec.cols.map(function (c) { return "<th>" + fmt("$" + c.h + "$") + "</th>"; }).join("") + "</tr></thead><tbody>";
+      var here = fill ? -1 : rowIx(cur);
+      rows.forEach(function (r, ri) {
+        h += '<tr class="' + (ri === here ? "here" : "") + '">' + vars.map(function (v) { return '<td class="gt-tt-v ' + (r[v.id] ? "t" : "f") + '">' + TF(r[v.id]) + "</td>"; }).join("");
+        spec.cols.forEach(function (c, ci) {
+          if (fill) {
+            var k = ri + ":" + ci, mk = given[ci] ? value(ri, ci) : cells[k];
+            h += '<td><button type="button" class="gt-tt-cell ' + (mk == null ? "blank" : mk ? "t" : "f") + (given[ci] ? " given" : "") + (bad[k] ? " no" : "") + '" data-k="' + k + '"' + (given[ci] || locked ? " disabled" : "") +
+              ' aria-label="Row ' + (ri + 1) + ", " + c.h.replace(/\\[a-z]+/g, "") + ": " + (mk == null ? "empty" : mk ? "true" : "false") + '">' + (mk == null ? "" : TF(mk)) + "</button></td>";
+          } else if (visited[ri]) {
+            var v2 = value(ri, ci);
+            h += '<td class="' + (v2 ? "t" : "f") + '">' + TF(v2) + "</td>";
+          } else h += '<td class="q">?</td>';
+        });
+        h += "</tr>";
+      });
+      tbl.innerHTML = h + "</tbody>";
+      if (fill) [].forEach.call(tbl.querySelectorAll(".gt-tt-cell"), function (b) {
+        b.addEventListener("click", function () {
+          var k = b.getAttribute("data-k"), c = cells[k];
+          cells[k] = c == null ? true : c === true ? false : null;
+          if (cells[k] == null) delete cells[k];
+          delete bad[k]; moved = true; paint();
+        });
+      });
+      else {
+        vars.forEach(function (v) {
+          swb[v.id + "T"].classList.toggle("on", cur[v.id] === true); swb[v.id + "F"].classList.toggle("on", cur[v.id] === false);
+          swb[v.id + "T"].setAttribute("aria-pressed", String(cur[v.id] === true)); swb[v.id + "F"].setAttribute("aria-pressed", String(cur[v.id] === false));
+        });
+        read.innerHTML = spec.say ? fmt(spec.say(cur)) : spec.cols.map(function (c) {
+          var b = !!c.f(cur);
+          return fmt("$" + c.h + "$") + " is <b class='" + (b ? "t" : "f") + "'>" + (b ? "true" : "false") + "</b>";
+        }).join(' <span class="lw-sep"></span> ');
+      }
+      read.hidden = fill;
+      if (api.onChange) api.onChange();
+    }
+    var bad = {};
+    if (!fill) mark();
+    paint();
+    api.el = box;
+    api.visited = function () { return Object.keys(visited).length; };
+    api.set = function (id, b) { cur[id] = b; moved = true; mark(); paint(); };
+    api.ready = function () {
+      if (fill) {
+        var all = true;
+        rows.forEach(function (r, ri) { spec.cols.forEach(function (c, ci) { if (!given[ci] && cells[ri + ":" + ci] == null) all = false; }); });
+        return all;
+      }
+      return mode.explore && !spec.gate ? true : Object.keys(visited).length >= (spec.need || rows.length);
+    };
+    api.check = function () {
+      if (!fill) return { ok: true };
+      bad = {}; var nb = 0;
+      rows.forEach(function (r, ri) { spec.cols.forEach(function (c, ci) { if (!given[ci] && cells[ri + ":" + ci] !== value(ri, ci)) { bad[ri + ":" + ci] = true; nb++; } }); });
+      paint();
+      if (!nb) { locked = true; paint(); return { ok: true }; }
+      return { ok: false, say: nb === 1 ? "One cell is wrong — it is marked." : nb + " cells are wrong — they are marked." + (spec.nudge ? " " + spec.nudge : "") };
+    };
+    api.reveal = function () {
+      if (fill) rows.forEach(function (r, ri) { spec.cols.forEach(function (c, ci) { cells[ri + ":" + ci] = value(ri, ci); }); });
+      else rows.forEach(function (r, ri) { visited[ri] = true; });
+      bad = {}; locked = true; paint();
+    };
+    return api;
+  });
+
+  /* ============================================================ Logic grid
+     A puzzle of who has what. Press a cell to cross it out (×), press again
+     to mark it a match (✓), again to clear it. A ✓ rules out the rest of its
+     row and column, and those cells grey over by themselves — pull the ✓ off
+     and they come back.
+
+       { type: "lgrid", rows: ["Ada", …], cols: ["Cello", …], answer: [2, 0, …],
+         clues: ["…", …], start: [[row, col, "x" | "v"], …] }
+
+     answer[i] is the column that row i matches. */
+  CH.addKind("lgrid", function (spec, seed, mode) {
+    var api = {}, R = spec.rows, C = spec.cols, nR = R.length, nC = C.length;
+    var m = [], moved = false, locked = false, bad = {};
+    for (var i = 0; i < nR; i++) { m.push([]); for (var j = 0; j < nC; j++) m[i].push(""); }
+    (spec.start || []).forEach(function (s0) { m[s0[0]][s0[1]] = s0[2]; });
+    var box = el("div", "lw gt-lg");
+    var layout = el("div", "gt-lg-row");
+    var cl = el("ol", "gt-lg-clues"), used = {};
+    (spec.clues || []).forEach(function (t, k) {
+      var li = el("li", "", fmt(t));
+      li.tabIndex = 0;
+      li.setAttribute("role", "button");
+      li.setAttribute("aria-pressed", "false");
+      function tog() { used[k] = !used[k]; li.classList.toggle("used", !!used[k]); li.setAttribute("aria-pressed", String(!!used[k])); }
+      li.addEventListener("click", tog);
+      li.addEventListener("keydown", function (e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); tog(); } });
+      cl.appendChild(li);
+    });
+    if (spec.clues && spec.clues.length) layout.appendChild(cl);
+    var tbl = el("table", "gt-lg-table");
+    layout.appendChild(tbl);
+    box.appendChild(layout);
+    var note = el("div", "gt-lg-note", spec.clues && spec.clues.length ? "Press a clue once you have used it." : "");
+    note.hidden = !(spec.clues && spec.clues.length);
+    box.appendChild(note);
+    function hasV(i, j) { for (var a = 0; a < nC; a++) if (m[i][a] === "v" && a !== j) return true; for (var b = 0; b < nR; b++) if (m[b][j] === "v" && b !== i) return true; return false; }
+    function paint() {
+      var h = "<thead><tr><th></th>" + C.map(function (c) { return "<th>" + fmt(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
+      for (var i = 0; i < nR; i++) {
+        h += "<tr><th>" + fmt(R[i]) + "</th>";
+        for (var j = 0; j < nC; j++) {
+          var v = m[i][j], auto = !v && hasV(i, j);
+          h += '<td><button type="button" class="gt-lg-cell ' + (v === "v" ? "v" : v === "x" ? "x" : auto ? "auto" : "") + (bad[i + ":" + j] ? " no" : "") + '" data-i="' + i + '" data-j="' + j + '"' + (locked ? " disabled" : "") +
+            ' aria-label="' + esc(String(R[i]).replace(/<[^>]+>|\$/g, "") + ", " + String(C[j]).replace(/<[^>]+>|\$/g, "")) + ": " + (v === "v" ? "match" : v === "x" ? "ruled out" : auto ? "ruled out by a match" : "empty") + '">' +
+            (v === "v" ? "✓" : v === "x" || auto ? "×" : "") + "</button></td>";
+        }
+        h += "</tr>";
+      }
+      tbl.innerHTML = h + "</tbody>";
+      [].forEach.call(tbl.querySelectorAll(".gt-lg-cell"), function (b) {
+        b.addEventListener("click", function () {
+          var i = +b.getAttribute("data-i"), j = +b.getAttribute("data-j");
+          m[i][j] = m[i][j] === "" ? "x" : m[i][j] === "x" ? "v" : "";
+          delete bad[i + ":" + j]; moved = true; paint();
+          var again = tbl.querySelector('[data-i="' + i + '"][data-j="' + j + '"]'); if (again) again.focus();
+        });
+      });
+      if (api.onChange) api.onChange();
+    }
+    function picks() { return m.map(function (row) { var v = -1; row.forEach(function (c, j) { if (c === "v") v = v === -1 ? j : -2; }); return v; }); }
+    function solved() { var p = picks(); return p.every(function (v, i) { return v === spec.answer[i]; }); }
+    paint();
+    api.el = box;
+    api.solved = solved;
+    api.mark = function (i, j, v) { m[i][j] = v; moved = true; paint(); };
+    api.ready = function () { return mode.explore ? (spec.gate ? solved() : true) : picks().every(function (v) { return v >= 0; }); };
+    api.check = function () {
+      var p = picks(); bad = {};
+      var wrong = 0;
+      p.forEach(function (v, i) { if (v >= 0 && v !== spec.answer[i]) { bad[i + ":" + v] = true; wrong++; } });
+      var multi = p.some(function (v) { return v === -2; });
+      paint();
+      if (solved()) { locked = true; paint(); return { ok: true }; }
+      if (multi) return { ok: false, say: "A row has more than one ✓. Each one matches exactly one." };
+      return { ok: false, say: wrong ? (wrong === 1 ? "One match is wrong — it is marked." : wrong + " matches are wrong — they are marked.") + " Read the clues again." : "Every ✓ so far is right, but a row is still without one." };
+    };
+    api.reveal = function () { for (var i = 0; i < nR; i++) for (var j = 0; j < nC; j++) m[i][j] = j === spec.answer[i] ? "v" : ""; bad = {}; locked = true; paint(); };
+    return api;
+  });
+
+  /* ======================================================= River crossing
+     The farmer, the wolf, the goat and the cabbage. The boat holds the farmer
+     and one thing. Left alone, the wolf eats the goat and the goat eats the
+     cabbage. Press a thing to take it across; press the farmer to cross
+     alone. Every state you reach is drawn as a vertex in a network; every
+     crossing is an edge. A state where something is eaten is a dead end.
+
+       { type: "crossing", gate: true }                                      */
+  CH.addKind("crossing", function (spec, seed, mode) {
+    var api = {};
+    var NAMES = ["Farmer", "Wolf", "Goat", "Cabbage"], LET = ["F", "W", "G", "C"], COL = ["blue", "red", "green", "orange"];
+    // A state is four bits: bit k set = thing k is on the far bank.
+    function side(st, k) { return (st >> k) & 1; }
+    function unsafe(st) {
+      var f = side(st, 0);
+      return (side(st, 1) === side(st, 2) && side(st, 1) !== f) || (side(st, 2) === side(st, 3) && side(st, 2) !== f);
+    }
+    function label(st) {
+      var a = "", b = "";
+      LET.forEach(function (l, k) { if (side(st, k)) b += l; else a += l; });
+      return "(" + (a || "—") + ", " + (b || "—") + ")";
+    }
+    function moves(st) {
+      var out = [], f = side(st, 0);
+      out.push(st ^ 1);
+      for (var k = 1; k < 4; k++) if (side(st, k) === f) out.push(st ^ 1 ^ (1 << k));
+      return out;
+    }
+    var GOAL = 15, START = 0;
+    // The whole network of workable states, for the “show it all” button.
+    var full = {}, order = [START], seen = {}; seen[START] = 0;
+    for (var q = 0; q < order.length; q++) {
+      var st0 = order[q];
+      full[st0] = moves(st0).filter(function (t) { return !unsafe(t); });
+      full[st0].forEach(function (t) { if (seen[t] == null) { seen[t] = seen[st0] + 1; order.push(t); } });
+    }
+    var cur = START, path = [START], nodes = {}, edges = {}, count = 0, won = false, showAll = false, msg = "";
+    nodes[START] = true;
+    var box = el("div", "lw gt-cross");
+    var scene = el("div", "gt-cross-scene");
+    box.appendChild(scene);
+    var status = el("div", "lw-read gt-cross-msg");
+    box.appendChild(status);
+    var bar = el("div", "gt-cross-bar");
+    var undo = button("lw-btn ghost", "Undo"), reset = button("lw-btn ghost", "Start again"), all = button("lw-btn ghost", "Show the whole network");
+    bar.appendChild(undo); bar.appendChild(reset); bar.appendChild(all);
+    box.appendChild(bar);
+    var net = el("div", "gt-cross-net");
+    box.appendChild(net);
+    function ek(a, b) { return Math.min(a, b) + "-" + Math.max(a, b); }
+    function go(to) {
+      if (won && !unsafe(cur)) return;
+      if (unsafe(cur)) return;
+      nodes[to] = true; edges[ek(cur, to)] = [cur, to];
+      cur = to; path.push(to); count++;
+      if (unsafe(cur)) msg = "bad";
+      else if (cur === GOAL) { won = true; msg = "won"; }
+      else msg = "";
+      paint();
+    }
+    undo.addEventListener("click", function () { if (path.length < 2) return; path.pop(); cur = path[path.length - 1]; count = Math.max(0, count - 1); won = false; msg = ""; paint(); });
+    reset.addEventListener("click", function () { cur = START; path = [START]; count = 0; won = false; msg = ""; paint(); });
+    all.addEventListener("click", function () { showAll = !showAll; all.textContent = showAll ? "Hide the rest" : "Show the whole network"; paint(); });
+    function tok(k, x, y, onBank) {
+      var g = '<g class="gt-tok c-' + COL[k] + (onBank ? "" : " boat") + '" transform="translate(' + x + "," + y + ')" data-k="' + k + '" tabindex="0" role="button" aria-label="' + NAMES[k] + (k === 0 ? ": cross alone" : ": take across") + '">' +
+        '<circle r="26" class="gt-tok-c"/><text class="gt-tok-l" y="7" text-anchor="middle">' + LET[k] + "</text><text class=\"gt-tok-n\" y=\"46\" text-anchor=\"middle\">" + NAMES[k] + "</text></g>";
+      return g;
+    }
+    function paintScene() {
+      var f = side(cur, 0), W = 620, H = 190, h = '<svg viewBox="0 0 ' + W + " " + H + '" class="gt-cross-svg" role="img" aria-label="' + esc("The farmer is on the " + (f ? "far" : "near") + " bank. " + LET.map(function (l, k) { return NAMES[k] + " is on the " + (side(cur, k) ? "far" : "near") + " bank."; }).join(" ")) + '">';
+      h += '<rect x="0" y="0" width="150" height="' + H + '" class="gt-bank"/><rect x="' + (W - 150) + '" y="0" width="150" height="' + H + '" class="gt-bank"/>';
+      h += '<rect x="150" y="0" width="' + (W - 300) + '" height="' + H + '" class="gt-water"/>';
+      h += '<path class="gt-wave" d="M190 70q15-10 30 0t30 0t30 0M390 130q15-10 30 0t30 0t30 0M300 40q12-8 24 0t24 0"/>';
+      // The boat, on the farmer's bank.
+      var bx = f ? W - 150 - 118 : 150 + 18;
+      h += '<path class="gt-boat" d="M' + bx + " 112h100l-16 26h-68z\"/>";
+      // The things, on their banks: near bank at x 28–122, far bank at W-122.
+      var slot = [0, 0], pos = [];
+      for (var k = 0; k < 4; k++) {
+        var b = side(cur, k);
+        var idx = slot[b]++;
+        pos[k] = [b ? W - 150 + 28 + (idx % 2) * 62 + 20 : 28 + (idx % 2) * 62 + 20, 36 + Math.floor(idx / 2) * 78];
+      }
+      for (k = 0; k < 4; k++) h += tok(k, pos[k][0], pos[k][1], true);
+      h += "</svg>";
+      scene.innerHTML = h;
+      [].forEach.call(scene.querySelectorAll(".gt-tok"), function (g) {
+        function act() {
+          var k = +g.getAttribute("data-k");
+          if (unsafe(cur)) return;
+          if (k === 0) go(cur ^ 1); else if (side(cur, k) === side(cur, 0)) go(cur ^ 1 ^ (1 << k));
+          else { msg = "far"; paint(); }
+        }
+        g.addEventListener("click", act);
+        g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); } });
+      });
+    }
+    function paintNet() {
+      // Levels: how many crossings from the start along the shortest way.
+      var vs = Object.keys(showAll ? Object.assign({}, nodes, (function () { var o = {}; order.forEach(function (s0) { o[s0] = true; }); return o; })()) : nodes).map(Number);
+      var lvl = {}, byL = {};
+      vs.forEach(function (v) {
+        var l = seen[v] != null ? seen[v] : (function () { var best = 99; Object.keys(edges).forEach(function (k) { var e = edges[k]; if (e[1] === v && seen[e[0]] != null) best = Math.min(best, seen[e[0]] + 1); if (e[0] === v && seen[e[1]] != null) best = Math.min(best, seen[e[1]] + 1); }); return best === 99 ? 1 : best; })();
+        lvl[v] = l; (byL[l] = byL[l] || []).push(v);
+      });
+      var maxL = Math.max.apply(null, vs.map(function (v) { return lvl[v]; }).concat([0])), maxN = Math.max.apply(null, Object.keys(byL).map(function (l) { return byL[l].length; }).concat([1]));
+      var W = 660, rowH = 38, H = Math.max(80, maxN * rowH + 24), pos = {};
+      Object.keys(byL).forEach(function (l) {
+        var arr = byL[l].sort(function (a, b) { return a - b; });
+        arr.forEach(function (v, i) { pos[v] = [44 + (W - 88) * (maxL ? lvl[v] / Math.max(maxL, 7) : 0), H / 2 + (i - (arr.length - 1) / 2) * rowH]; });
+      });
+      var h = '<svg viewBox="0 0 ' + W + " " + H + '" class="gt-net-svg" role="img" aria-label="' + esc("A network of the states reached so far: " + vs.length + " vertices.") + '">';
+      var drawn = {};
+      function edge(a, b, on) { var k = ek(a, b); if (drawn[k] || !pos[a] || !pos[b]) return; drawn[k] = 1; h += '<line class="gt-edge' + (on ? " on" : "") + '" x1="' + pos[a][0] + '" y1="' + pos[a][1] + '" x2="' + pos[b][0] + '" y2="' + pos[b][1] + '"/>'; }
+      if (showAll) order.forEach(function (a) { full[a].forEach(function (b) { edge(a, b, !!edges[ek(a, b)]); }); });
+      Object.keys(edges).forEach(function (k) { edge(edges[k][0], edges[k][1], true); });
+      vs.forEach(function (v) {
+        var p = pos[v], cls = (v === cur ? " here" : "") + (unsafe(v) ? " dead" : nodes[v] ? " seen" : "") + (v === GOAL ? " goal" : "");
+        h += '<g class="gt-vtx' + cls + '" transform="translate(' + p[0] + "," + p[1] + ')"><rect x="-36" y="-12" width="72" height="24" rx="12"/><text y="4.5" text-anchor="middle">' + label(v) + "</text></g>";
+      });
+      net.innerHTML = h + "</svg>";
+    }
+    function paint() {
+      paintScene(); paintNet();
+      status.innerHTML = msg === "bad" ? "<b class='f'>Dead end.</b> " + (side(cur, 1) === side(cur, 2) && side(cur, 1) !== side(cur, 0) ? "The wolf eats the goat." : "The goat eats the cabbage.") + " Press Undo."
+        : msg === "won" ? "<b class='t'>Across!</b> " + count + " crossings. Is there a way with fewer? Press “Show the whole network”."
+        : msg === "far" ? "That one is on the other bank. The farmer can only take what is with him."
+        : "Crossings: " + count + (count ? "" : " · Press a thing to take it across.");
+      undo.disabled = path.length < 2;
+      if (api.onChange) api.onChange();
+    }
+    paint();
+    api.el = box;
+    api.go = function (k) { var s0 = cur; if (k === 0) go(s0 ^ 1); else if (side(s0, k) === side(s0, 0)) go(s0 ^ 1 ^ (1 << k)); };
+    api.won = function () { return won; };
+    api.ready = function () { return mode.explore ? (spec.gate ? won : true) : won; };
+    api.check = function () { return { ok: won, say: won ? null : "Get all four across first." }; };
+    api.reveal = function () { showAll = true; all.textContent = "Hide the rest"; paint(); };
     return api;
   });
 

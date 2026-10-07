@@ -601,34 +601,35 @@ window.OPLO = (function () {
       "Perform reflections, translations, rotations and dilations, and describe symmetry."
     ],
     units: [
-      { t: "Foundations for Geometry", lab: true,
-        desc: "Points, lines and planes; measuring segments and angles; pairs of angles; formulas; midpoint and distance; and a first look at transformations." },
-      { t: "Geometric Reasoning", lab: true,
-        desc: "Conjectures and counterexamples, conditional and biconditional statements, deductive reasoning, and algebraic, two-column, flowchart and paragraph proofs." },
-      { t: "Parallel and Perpendicular Lines", lab: true,
-        desc: "The angles a transversal makes, proving lines parallel, perpendicular lines, and slopes and equations of lines." },
-      { t: "Triangle Congruence", lab: true,
-        desc: "Classifying triangles, their angle sums, congruent triangles by SSS, SAS, ASA, AAS and HL, CPCTC, coordinate proof, and isosceles triangles." },
-      { t: "Properties and Attributes of Triangles", lab: true,
+      { art: "pla", t: "Basics of Geometry", lab: true,
+        desc: "Points, lines and planes; segments and distance; rays and angles; midpoints and bisectors; angle pairs; classifying triangles and polygons; and solving problems." },
+      { art: "proof", t: "Reasoning and Proof", lab: true,
+        desc: "Inductive reasoning and counterexamples, conditional statements, deductive reasoning, algebraic properties, diagrams, and two-column proofs about segments and angles." },
+      { art: "trans", t: "Parallel and Perpendicular Lines", lab: true,
+        desc: "Lines and angles, parallel lines and transversals, proving lines parallel, slopes and equations of lines, perpendicular lines, and non-Euclidean geometry." },
+      { art: "tri", t: "Congruent Triangles", lab: true,
+        desc: "Triangle angle sums, congruent figures, SSS, ASA, AAS, SAS and HL, using congruent triangles, isosceles and equilateral triangles, and congruence transformations." },
+      { art: "iso", t: "Properties and Attributes of Triangles", lab: true,
         desc: "Bisectors, medians, altitudes and midsegments; indirect proof and triangle inequalities; the Pythagorean theorem and special right triangles." },
-      { t: "Polygons and Quadrilaterals", lab: true,
+      { art: "poly", t: "Polygons and Quadrilaterals", lab: true,
         desc: "Angle sums of polygons, and parallelograms, rectangles, rhombuses, squares, kites and trapezoids: their properties, and how to prove a figure is one." },
-      { t: "Similarity", lab: true,
+      { art: "sss", t: "Similarity", lab: true,
         desc: "Ratios and proportions, similar polygons, triangle similarity by AA, SSS and SAS, proportional parts, indirect measurement, and dilations." },
-      { t: "Right Triangles and Trigonometry", lab: true,
+      { art: "sas", t: "Right Triangles and Trigonometry", lab: true,
         desc: "The geometric mean, sine, cosine and tangent, solving right triangles, angles of elevation and depression, the laws of sines and cosines, and vectors." },
-      { t: "Extending Perimeter, Circumference, and Area", lab: true,
+      { art: "ang", t: "Extending Perimeter, Circumference, and Area", lab: true,
         desc: "Area formulas for triangles, quadrilaterals, circles and regular polygons; composite figures; the coordinate plane; scaling; and geometric probability." },
-      { t: "Spatial Reasoning", lab: true,
+      { art: "noneu", t: "Spatial Reasoning", lab: true,
         desc: "Solids and their nets, drawings and cross sections; Euler's formula and distance in space; and the surface area and volume of prisms, cylinders, pyramids, cones and spheres." },
-      { t: "Circles", lab: true,
+      { art: "ded", t: "Circles", lab: true,
         desc: "Tangents, arcs and chords, sector area and arc length, inscribed angles, angles and segments made by chords, secants and tangents, and the equation of a circle." },
-      { t: "Extending Transformational Geometry", lab: true,
+      { art: "ctr", t: "Extending Transformational Geometry", lab: true,
         desc: "Reflections, translations, rotations and their compositions; symmetry; tessellations; and dilations." }
     ],
     grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
-    textbook: "The course follows Holt Geometry (Holt, Rinehart and Winston) a chapter at a time: each unit is a chapter of the book " +
-              "and each lesson one of its sections, in the book's order. Every explanation, example, figure and question is OEdu's own."
+    textbook: "Units 1 to 4 follow CK-12 Geometry (CK-12 Foundation, licensed CC BY-SA) a chapter at a time: each unit is a chapter of the book " +
+              "and each lesson one of its sections, in the book's order. Units 5 to 12 follow Holt Geometry (Holt, Rinehart and Winston) in the same way. " +
+              "Every explanation, example, figure and question is OEdu's own."
   };
 
   var MEDIA = {

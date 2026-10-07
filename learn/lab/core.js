@@ -39,7 +39,7 @@ window.OPLO_LAB = (function () {
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/satkit.js": "0815b9c7",
-    "lab/geotools.js": "3a389b5e",
+    "lab/geotools.js": "1aca5190",
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
@@ -82,10 +82,10 @@ window.OPLO_LAB = (function () {
     "alg2/u11.js": "af802903",
     "alg2/u12.js": "1fbb7169",
     "g8/u01.js": "3c0c775e",
-    "geo/u01.js": "bff77c19",
-    "geo/u02.js": "95091d49",
-    "geo/u03.js": "3632309c",
-    "geo/u04.js": "1b1c991f",
+    "geo/u01.js": "a3bd33f8",
+    "geo/u02.js": "327da4b8",
+    "geo/u03.js": "9304a2e9",
+    "geo/u04.js": "dbc72da2",
     "geo/u05.js": "7b6d5f6c",
     "geo/u06.js": "bc7ea108",
     "geo/u07.js": "1f763e74",
@@ -134,10 +134,13 @@ window.OPLO_LAB = (function () {
     in: "∈", sqrt: "√", checkmark: "✓", cancel: "", quad: " ", qquad: "  ",
     Rightarrow: "⇒", implies: "⇒", iff: "⇔", perp: "⊥", parallel: "∥", angle: "∠", triangle: "△",
     emptyset: "∅", cup: "∪", cap: "∩", mid: "∣", star: "⋆", bullet: "•", square: "□", Box: "□",
-    cong: "≅", sim: "∼", prime: "′", odot: "⊙"
+    cong: "≅", sim: "∼", prime: "′", odot: "⊙",
+    // Logic: and, or, if and only if, therefore.
+    wedge: "∧", land: "∧", vee: "∨", lor: "∨", leftrightarrow: "↔", longleftrightarrow: "↔", Leftrightarrow: "⇔",
+    therefore: "∴", because: "∵"
   };
-  var REL = { "=": 1, "<": 1, ">": 1, "≤": 1, "≥": 1, "≠": 1, "≈": 1, "→": 1, "⇒": 1, "⇔": 1, "∈": 1, "≅": 1, "∼": 1 };
-  var BIN = { "+": 1, "−": 1, "±": 1, "∓": 1, "·": 1, "×": 1, "÷": 1 };
+  var REL = { "=": 1, "<": 1, ">": 1, "≤": 1, "≥": 1, "≠": 1, "≈": 1, "→": 1, "⇒": 1, "⇔": 1, "∈": 1, "≅": 1, "∼": 1, "↔": 1 };
+  var BIN = { "+": 1, "−": 1, "±": 1, "∓": 1, "·": 1, "×": 1, "÷": 1, "∧": 1, "∨": 1 };
 
   function mathHTML(src) {
     var i = 0, s = String(src);
@@ -201,6 +204,8 @@ window.OPLO_LAB = (function () {
           push('<span class="marc">' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "op") {                                   // the move just made, to both sides: stands out from the rest
           push('<span class="mop">' + mathHTML(group()) + "</span>", "val");
+        } else if (cmd === "neg" || cmd === "lnot") {                // ∼p: the tilde sits close against what it negates
+          push('<span class="mneg">∼</span>', "op");
         } else if (cmd === "cancel") {
           push('<span class="mcx">' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "color") {
@@ -1178,6 +1183,7 @@ window.OPLO_LAB = (function () {
     });
   }
   function paintUnit(wrap, u, ctx) {
+    if (window.OPLO_KERN && window.KERN_ART) { paintUnitKern(wrap, u, ctx); return; }
     // Mastery across the unit's skills, one square each.
     var bar = el("div", "lb-ubar");
     var pct = unitMastery(u);
@@ -1263,6 +1269,77 @@ window.OPLO_LAB = (function () {
     // A unit may add to its own page: Business Unit 1 shows its concept deck.
     if (typeof u.page === "function") { try { u.page(wrap, ctx); } catch (e) { /* the page stands without it */ } }
   }
+
+  /* Kern's unit page: where you are, the one thing to do next, and the unit
+     as a path of pads — a lesson, a quiz after it, the unit test at the end.
+     Nothing is locked: every pad opens. */
+  var WAVE = [0, 30, 48, 30, 0, -30, -48, -30];
+  function paintUnitKern(wrap, u, ctx) {
+    var A = window.KERN_ART, pct = unitMastery(u);
+    var nextLesson = u.lessons.filter(function (l) { return !lessonDone(l); })[0];
+    var weakest = u.skills.slice().sort(function (a, b) { return level(a.id) - level(b.id); })[0];
+    var openQuiz = u.quizzes.filter(function (q) { return !REC.tests[q.unit + ":q" + q.k] && u.lessons.slice(0, q.after).every(lessonDone); })[0];
+    var artOf = function (l) { return l.art || (l.tag === "Ready?" ? "ready" : null); };
+    var next = nextLesson ? { k: lessonName(u, nextLesson), t: nextLesson.title, d: nextLesson.blurb, art: artOf(nextLesson), n: lessonNo(u, nextLesson), go: function () { ctx.go.lesson(nextLesson.k); } }
+      : openQuiz ? { k: openQuiz.title, t: "Check what's stuck so far", d: openQuiz.skills.length * (openQuiz.per || 2) + " questions.", art: "quiz", go: function () { ctx.go.quiz(openQuiz.k); } }
+      : weakest && level(weakest.id) < 3 ? { k: "Practice", t: stripMath(weakest.title), d: "Your weakest skill here.", art: "solve", go: function () { ctx.go.practice(weakest.id); } }
+      : { k: "Unit test", t: "Show what you know", d: "One problem from every skill.", art: "test", go: function () { ctx.go.test(); } };
+
+    var meta = el("div", "kp-meta lb-block");
+    meta.innerHTML = "<span>" + u.lessons.length + " lessons</span>" + (u.quizzes.length ? "<span>" + u.quizzes.length + " quizzes</span>" : "") + "<span>" + pct + "% mastered</span>";
+    wrap.appendChild(meta);
+
+    var nb = el("section", "kp-next lb-block");
+    nb.innerHTML = A.pad(next.art, next.n).replace("kp-pad", "kp-pad big") +
+      '<div class="tx"><span class="eb">Up next · ' + esc(next.k) + "</span><b>" + fmt(next.t) + "</b><span>" + fmt(next.d || "") + "</span></div>";
+    var go = button("lx-btn", hasStarted(nextLesson || {}) ? "Continue" : "Start");
+    go.addEventListener("click", next.go);
+    nb.appendChild(go);
+    wrap.appendChild(nb);
+
+    var sec = el("section", "lb-block"), path = el("ol", "kp-path"), idx = 0;
+    sec.appendChild(el("h2", "kp-h2", "Lessons"));
+    function node(cls, art, n, title, sub, onGo, cur) {
+      var li = el("li", "kp-node " + cls + (cur ? " cur" : ""));
+      li.style.setProperty("--o", WAVE[idx % WAVE.length]);
+      li.style.setProperty("--i", idx);
+      idx++;
+      var b = button("kp-hit", A.pad(art, n) + '<span class="kp-lab"><b>' + title + "</b><span>" + sub + "</span>" + (cur ? '<span class="kp-go">' + (hasStarted({}) ? "Continue" : "Start") + "</span>" : "") + "</span>");
+      b.addEventListener("click", onGo);
+      li.appendChild(b);
+      path.appendChild(li);
+    }
+    u.lessons.forEach(function (l) {
+      var done = lessonDone(l), mins = l.mins || Math.max(4, Math.round(l.steps.length * 0.9));
+      node(done ? "done" : "", artOf(l), l.tag ? l.tag.charAt(0) : lessonNo(u, l), fmt(l.title),
+        (l.tag ? esc(l.tag) + " · " : u.n + "." + lessonNo(u, l) + " · ") + l.steps.length + " steps · about " + mins + " min",
+        function () { ctx.go.lesson(l.k); }, l === nextLesson);
+      u.quizzes.filter(function (q) { return q.after === l.k; }).forEach(function (q) {
+        var best = REC.tests[q.unit + ":q" + q.k];
+        node("quiz" + (best ? " done" : ""), "quiz", "", esc(q.title), q.skills.length * (q.per || 2) + " questions" + (best ? " · best " + Math.round(best.best * 100) + "%" : ""),
+          function () { ctx.go.quiz(q.k); }, q === openQuiz && !nextLesson);
+      });
+    });
+    var tBest = (REC.tests[u.key] || {}).best;
+    node("test" + (tBest != null ? " done" : ""), "test", "", "Unit test", u.skills.length + " questions" + (tBest != null ? " · best " + Math.round(tBest * 100) + "%" : ""),
+      function () { ctx.go.test(); }, !nextLesson && !openQuiz && !(weakest && level(weakest.id) < 3));
+    sec.appendChild(path);
+    wrap.appendChild(sec);
+
+    var pb = el("section", "lb-block");
+    pb.appendChild(el("h2", "kp-h2", "Practice"));
+    var list = el("div", "kp-skills");
+    u.skills.forEach(function (sk) {
+      var lv = level(sk.id), pips = "";
+      for (var i = 0; i < 4; i++) pips += '<i class="' + (i < lv ? "on" : "") + '"></i>';
+      var b = button("kp-skill", "<span>" + fmt(sk.title) + '</span><span class="pips" title="' + LEVELS[lv] + '">' + pips + "</span>");
+      b.addEventListener("click", function () { ctx.go.practice(sk.id); });
+      list.appendChild(b);
+    });
+    pb.appendChild(list);
+    wrap.appendChild(pb);
+    if (typeof u.page === "function") { try { u.page(wrap, ctx); } catch (e) { /* the page stands without it */ } }
+  }
   function hasStarted(l) {
     return false;
   }
@@ -1287,9 +1364,15 @@ window.OPLO_LAB = (function () {
      segment for each step. */
   var SIDE = { q: "", folded: {}, scroll: null, stepsFolded: false };
   var NARROW = "(max-width: 1099px)";
-  function sideHidden() { try { return localStorage.getItem("oplo.lab.side") === "hidden"; } catch (e) { return false; } }
+  // Kern opens a lesson on the lesson alone: the sidebar is closed until someone opens it, and remembers that.
+  function sideHidden() {
+    try { var v = localStorage.getItem("oplo.lab.side"); return window.OPLO_KERN ? v !== "shown" : v === "hidden"; } catch (e) { return !!window.OPLO_KERN; }
+  }
   function setSideHidden(v) {
-    try { if (v) localStorage.setItem("oplo.lab.side", "hidden"); else localStorage.removeItem("oplo.lab.side"); } catch (e) { /* private window */ }
+    try {
+      if (window.OPLO_KERN) { if (v) localStorage.removeItem("oplo.lab.side"); else localStorage.setItem("oplo.lab.side", "shown"); }
+      else if (v) localStorage.setItem("oplo.lab.side", "hidden"); else localStorage.removeItem("oplo.lab.side");
+    } catch (e) { /* private window */ }
   }
   // The unit in the order it is taken: lessons, each quiz after its lesson,
   // then the unit test.
@@ -1608,6 +1691,7 @@ window.OPLO_LAB = (function () {
       var here = { kind: "lesson", k: k }, work = frame(host, ctx, u, here);
       CH.play(work, {
         path: path, me: ctx.me, after: after, stepNav: true, at: at, onStep: work.paintSteps,
+        close: function () { ctx.go.unit(); },
         onFinish: function () {
           REC.lessons[lessonKey(u.lessons[k - 1])] = { done: true, at: Date.now() };
           changed();

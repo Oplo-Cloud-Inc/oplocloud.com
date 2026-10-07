@@ -72,6 +72,7 @@ window.OPLO_CHALLENGE = (function () {
     next:  '<path d="m9.5 6 6 6-6 6"/>',
     again: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5V9h4.5"/>',
     spark: '<path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/><circle cx="12" cy="12" r="2.2"/>',
+    x:     '<path d="M6 6l12 12M18 6 6 18"/>',
     eye:   '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>'
   };
   function reduced() {
@@ -865,6 +866,14 @@ window.OPLO_CHALLENGE = (function () {
     nxt.addEventListener("click", function () { go(P.ix + 1); });
     mid.appendChild(lab);
     mid.appendChild(dots);
+    // Kern: a way out, first in the row, back to where the lesson came from.
+    if (window.OPLO_KERN && P.opts.close) {
+      var x = button("ch-sn-x", icon(I.x));
+      x.setAttribute("aria-label", "Leave the lesson");
+      x.title = "Leave the lesson";
+      x.addEventListener("click", function () { P.opts.close(); });
+      nav.appendChild(x);
+    }
     nav.appendChild(prev);
     nav.appendChild(mid);
     nav.appendChild(nxt);
@@ -922,6 +931,8 @@ window.OPLO_CHALLENGE = (function () {
   function build(type, spec, seed, mode) {
     var ui = KINDS[type](spec, seed, mode || {});
     if (ui.destroy) DISPOSE.push(ui.destroy);
+    // A test may ask to be handed every scene it builds (labtest/explore-test.js).
+    if (window.__OPLO_TEST) (window.__scenes = window.__scenes || []).push({ type: type, ui: ui });
     return ui;
   }
 
@@ -1129,17 +1140,23 @@ window.OPLO_CHALLENGE = (function () {
         });
         row.appendChild(b);
       });
-      sheet.appendChild(row);
+      (sheet.querySelector(".ch-says") || sheet).appendChild(row);
       focusSoon(row.firstChild);
     }
+    // The verdict. Kern frames the card by it (green: right, gold: look again) and sets it as a bubble.
     function say(kind, html) {
       sheet.className = "ch-sheet on " + kind + (reduced() ? "" : " in");
-      sheet.innerHTML = html;
+      sheet.innerHTML = window.OPLO_KERN ? '<div class="ch-says">' + html + "</div>" : html;
+      card.classList.toggle("is-ok", /(^| )ok( |$)/.test(kind));
+      card.classList.toggle("is-no", /(^| )no( |$)/.test(kind));
       P.live.textContent = sheet.textContent;
     }
     function clearSheet() {
       if (st.done) return;
-      if (sheet.classList.contains("no") || sheet.classList.contains("more")) { sheet.className = "ch-sheet"; sheet.innerHTML = ""; }
+      if (sheet.classList.contains("no") || sheet.classList.contains("more")) {
+        sheet.className = "ch-sheet"; sheet.innerHTML = "";
+        card.classList.remove("is-ok", "is-no");
+      }
     }
     P.enter = function () {
       if (!check.hidden && !check.disabled) check.click();

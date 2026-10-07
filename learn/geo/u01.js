@@ -1,28 +1,28 @@
 /* ==========================================================================
-   Geometry — Unit 1: Foundations for Geometry. See lab/core.js for the
-   format and lab/geotools.js for the drawing kit.
+   Geometry — Unit 1: Basics of Geometry. See lab/core.js for the format and
+   lab/geotools.js for the drawing kit.
 
-   The course follows its textbook, Holt Geometry, a chapter to a unit and a
-   section to a lesson: this is Chapter 1, sections 1-1 to 1-7, after a
-   readiness check. That book is not an open one, so only the order of
-   topics is the book's. Every sentence, example, figure and question here
-   is OEdu's own.
+   Units 1 to 4 follow CK-12 Geometry (CK-12 Foundation, CC BY-SA), a
+   chapter to a unit and a section to a lesson. This is Chapter 1, sections
+   1.1 to 1.8, after a readiness check. The sentences, examples, figures and
+   questions are OEdu's own; the order and the ideas are the book's.
 
    Each lesson is taught in the same order as Algebra I and II: warm up, the
    idea (a method with named steps), a worked example to watch, one done
    together, on your own, a harder case, try it, find the error, use it,
-   and the concept built at the end.
+   and the concept built at the end. Most of them also open on one or two
+   things to do with your hands — drag a point, slide a slider, press a
+   button — before anything is named (kicker "Explore").
 
-   Points, lines and planes (1-1), measuring and constructing segments and
-   angles (1-2, 1-3), pairs of angles (1-4), formulas for perimeter, area and
-   circumference (1-5), midpoint and distance on the coordinate plane (1-6),
-   and a first look at transformations (1-7).
+   Points, lines and planes (1.1), segments and distance (1.2), rays and
+   angles (1.3), segments and angles: midpoints and bisectors (1.4), angle
+   pairs (1.5), classifying triangles (1.6), classifying polygons (1.7) and
+   problem solving in geometry (1.8).
 
-   Lessons carry v: 4. Unit 1 was the transformations unit (v 1–2) and then
-   "Tools of Geometry" (v 3): a record from those must not mark these done.
-   Skills are hg1-…, clear of the old geo1-… and geo-… ids.
+   Lessons carry v: 5, so a record kept from the Holt-based Unit 1 (v 4) or
+   the older ones (v 1–3) does not mark these done. Skills are hg1-…
 
-   Eight lessons, eight skills, three quizzes, and the unit test.
+   Nine lessons, eight skills, three quizzes, and the unit test.
    ========================================================================== */
 (function () {
   "use strict";
@@ -532,12 +532,27 @@
     label(A, 0, 1); label(B, tilt, 5);
     return plain([0, 8.4], [-1.5, 3.9], items, { u: o.u || 40, w: o.w, alt: o.alt || "Two " + (tilt ? "" : "parallel ") + "lines " + nm[0] + " and " + nm[1] + " cut by a transversal " + nm[2] + ", making eight angles numbered 1 to 8: 1 and 2 above the upper line, 3 and 4 below it, 5 and 6 above the lower line, 7 and 8 below it." });
   }
+
+  /* --------------------------------------------- Hands-on scenes (sketch) */
+  // A point along the line through a and b (k = 0 at a, 1 at b), for drawing a line or a ray to the frame's edge.
+  function farPt(a, b, k) { return [a[0] + k * (b[0] - a[0]), a[1] + k * (b[1] - a[1])]; }
+  function lineThru(a, b, c) { return { dline: [farPt(a, b, -40), farPt(a, b, 41)], c: c }; }
+  function rayThru(a, b, c) { return { dline: [a, farPt(a, b, 41)], ray: true, c: c }; }
+  function crossOf(a, b, c) { return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); }
+  function samePt(a, b) { return Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6; }
+  function r10(v) { return Math.round(v * 10) / 10; }
+  function n1(v) { return num(r10(v)); }
+  function deg0(v) { return Math.round(v); }
+  // The angle at v from a to b, 0–180, in whole degrees.
+  function angAt(a, v, b) { return Math.round(GT.angle(a, v, b)); }
+  // "Found: acute ✓ right ✓ …": the kinds a drag has shown so far, as a line of words.
+  function found(list, seen) { return list.map(function (k) { return (seen[k[0]] ? "**" + k[1] + " ✓**" : "<span class='gt-dim'>" + k[1] + "</span>"); }).join(" · "); }
   /* ============================================================ Ready? */
   LESSONS.push({
-    title: "Are you ready? Three quick checks",
+    title: "Are you ready? Three quick checks", art: "ready",
     tag: "Ready?",
     blurb: "Before Chapter 1 · Reading a ruler, a little algebra, and the coordinate plane.",
-    mins: 6, v: 4,
+    mins: 6, v: 5,
     steps: [
       { type: "num", kicker: "Check 1 · Measuring", prompt: "A pencil lies along a ruler from the 2 cm mark to the 9 cm mark. How long is it?",
         post: "cm", answer: 7, skill: "Measure a length",
@@ -557,11 +572,11 @@
       { type: "num", prompt: "Simplify $\\sqrt{3^2 + 4^2}$.", answer: 5, skill: "Square roots",
         near: [{ v: 7, fb: "Square and add first: $9 + 16 = 25$. Then take the root." }], hints: ["$\\sqrt{9 + 16}$."], why: "$\\sqrt{25} = 5$." },
       { type: "learn", kicker: "So, where to start?",
-        prompt: "All right first time? Go straight to **Lesson 1-1**. If **check 2** slipped, Algebra I Unit 1 has the practice. If **check 3** slipped, lesson 1-6 begins with the plane and takes it slowly.",
+        prompt: "All right first time? Go straight to **Lesson 1.1**. If **check 2** slipped, Algebra I Unit 1 has the practice. If **check 3** slipped, lesson 1.2 includes the plane and takes it slowly.",
         after: "Nothing is locked. Open any lesson whenever you like." }
     ]
   });
-  /* ================================= 1-1 · Understanding points, lines and planes */
+  /* ============================================ 1.1 · Points, lines and planes */
   var HOW_1_1 = [["Kind", "Decide what it is: a line, a segment or a ray."],
                  ["Points", "Pick the points that name it. A segment or a ray starts with an endpoint."],
                  ["Symbol", "Write the letters under the right symbol."]];
@@ -576,13 +591,45 @@
     return plain([0, 7.4], [0.2, 3.8], [{ dline: [[1, 1.1], [6.6, 3]], ray: true }, { pt: [1, 1.1], name: a, at: "nw" }, { pt: [4, 2.12], name: b, at: "nw" }], { u: 40, alt: alt });
   }
   LESSONS.push({
-    title: "Points, lines and planes",
-    blurb: "Book 1-1 · The undefined terms, segments and rays, naming figures, and where lines and planes meet.",
-    mins: 12, v: 4,
+    title: "Points, lines and planes", art: "pla",
+    blurb: "Section 1.1 · The three undefined terms, collinear and coplanar points, segments and rays, and where figures meet.",
+    mins: 14, v: 5,
     steps: [
       { type: "choice", kicker: "Warm up", prompt: "An arrowhead means “this goes on for ever”. Which figure has exactly **one** endpoint?", art: FIG_KINDS,
         options: [{ t: "The one through $E$ and $F$" }, { t: "The one through $A$ and $B$", fb: "It has an arrowhead at each end: no endpoints at all." }, { t: "The one from $C$ to $D$", fb: "It stops at both ends: two endpoints." }],
         answer: 0, skill: "Lines, segments and rays", hints: ["Count the ends that stop at a dot with no arrowhead beyond it."], why: "It starts at $E$ and never stops: a ray." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Drag $A$, $B$ and $C$. Can you get all three onto **one line**?",
+        scene: { type: "sketch", x: [0, 10], y: [0, 4.6], u: 58, axes: false, nums: false, gate: true,
+          pts: { A: { at: [1.5, 1], drag: true, snap: 0.5, say: "Point A" }, B: { at: [4, 2.5], drag: true, snap: 0.5, say: "Point B" }, C: { at: [7, 1], drag: true, snap: 0.5, c: "orange", say: "Point C" } },
+          draw: function (s) {
+            var ok = !samePt(s.A, s.B) && Math.abs(crossOf(s.A, s.B, s.C)) < 1e-6;
+            return (samePt(s.A, s.B) ? [] : [lineThru(s.A, s.B, ok ? "green" : "blue")]).concat([
+              { pt: s.A, name: "A", at: "nw", c: ok ? "green" : "blue" }, { pt: s.B, name: "B", at: "nw", c: ok ? "green" : "blue" }, { pt: s.C, name: "C", at: "ne", c: ok ? "green" : "orange" }]);
+          },
+          readout: function (s) {
+            if (samePt(s.A, s.B)) return "$A$ and $B$ are on top of each other. Pull them apart: two points are needed for a line.";
+            return Math.abs(crossOf(s.A, s.B, s.C)) < 1e-6 ? "$A$, $B$ and $C$ are **collinear**: one line holds all three."
+              : "$\\overleftrightarrow{AB}$ is the only line through $A$ and $B$. $C$ is **not** on it.";
+          },
+          goal: function (s) { return !samePt(s.A, s.B) && Math.abs(crossOf(s.A, s.B, s.C)) < 1e-6; } },
+        then: "Two points always make one line. A third point is on it only when the three line up: that is what **collinear** means." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Drag $A$ and $B$, and press each button. The **name** changes with the figure.",
+        scene: { type: "sketch", x: [0, 10], y: [0, 4.2], u: 58, grid: false, gate: true,
+          pts: { A: { at: [2.5, 1.4], drag: true, snap: 0.5, say: "Point A" }, B: { at: [6.5, 2.8], drag: true, snap: 0.5, c: "orange", say: "Point B" } },
+          chips: { kind: { v: "line", opts: [["line", "Line"], ["seg", "Segment"], ["rayA", "Ray from $A$"], ["rayB", "Ray from $B$"]] } },
+          draw: function (s) {
+            var k = s.c.kind, fig = k === "line" ? lineThru(s.A, s.B, "blue") : k === "seg" ? { seg: [s.A, s.B], c: "blue" } : k === "rayA" ? rayThru(s.A, s.B, "blue") : rayThru(s.B, s.A, "blue");
+            return (samePt(s.A, s.B) ? [] : [fig]).concat([{ pt: s.A, name: "A", at: "n", c: "ink" }, { pt: s.B, name: "B", at: "n", c: "ink" }]);
+          },
+          readout: function (s) {
+            var t = { line: "$\\overleftrightarrow{AB}$ · a **line**: it goes on both ways, so it has no endpoints.", seg: "$\\overline{AB}$ · a **segment**: it stops at $A$ and at $B$, its two endpoints.",
+                      rayA: "$\\overrightarrow{AB}$ · a **ray**: it starts at $A$ and goes on through $B$.", rayB: "$\\overrightarrow{BA}$ · a **ray**: it starts at $B$ and goes on through $A$." }[s.c.kind];
+            return t + "<br><span class='gt-dim'>Tried " + Object.keys(s.seen.kind).length + " of 4</span>";
+          },
+          goal: function (s) { return Object.keys(s.seen.kind).length >= 4; } },
+        then: "The bar or the arrows over the letters say what the figure is. A ray is named from its endpoint, so $\\overrightarrow{AB}$ and $\\overrightarrow{BA}$ are different rays." },
       { type: "learn", kicker: "The idea",
         prompt: "Geometry starts from three things that are never defined: a **point** (a location), a **line** (straight, endless both ways) and a **plane** (a flat surface, endless). A **segment** is the part of a line between two endpoints. A **ray** starts at an endpoint and never stops.",
         scene: { type: "method", how: HOW_1_1 } },
@@ -642,26 +689,52 @@
         answer: 0, skill: "Postulates", hints: ["The tips of the legs are points. The ground is a surface."], why: "Three feet always fit one plane. A fourth may be off it." }
     ]
   });
-
-  /* ================================ 1-2 · Measuring and constructing segments */
+  /* ============================================ 1.2 · Segments and distance */
   var HOW_1_2 = [["Draw", "Sketch the segment and mark the lengths you know."],
-                 ["Equation", "Write how the lengths are related: parts add up to the whole, or two halves are equal."],
+                 ["Equation", "Write how the lengths are related: the parts add up to the whole."],
                  ["Solve", "Solve, then answer what was asked."]];
+  var HOW_1_2G = [["Read", "Read the two coordinates that change."],
+                  ["Subtract", "Subtract one from the other, and drop any minus sign."],
+                  ["Say", "Write the distance with its units."]];
+  var G12A = [-3, 2], G12B = [4, 2];
   LESSONS.push({
-    title: "Measuring and constructing segments",
-    blurb: "Book 1-2 · Length, congruent segments, the Segment Addition Postulate, midpoints, and copying a segment.",
-    mins: 12, v: 4,
+    title: "Segments and distance", art: "seg",
+    blurb: "Section 1.2 · Measuring with a ruler, the Ruler Postulate, the Segment Addition Postulate, and distance on a grid.",
+    mins: 14, v: 5,
     steps: [
       { type: "sketch", kicker: "Warm up", prompt: "The length of a segment is the distance between its endpoints. Drag $B$ until $AB = 4.5$ cm.",
         ruler: { unit: "cm", div: 10, len: 6 },
         pts: { B: { at: [2, 0], drag: true, snap: 0.1, on: { seg: [[0.6, 0], [5.9, 0]] }, say: "Point B" } },
         draw: function (s) { return [{ rseg: [0, s.B[0]], names: ["A", "B"] }]; },
-        readout: function (s) { return "$AB = " + num(Math.round(s.B[0] * 10) / 10) + "$ cm"; },
+        readout: function (s) { return "$AB = " + n1(s.B[0]) + "$ cm"; },
         goal: function (s) { return Math.abs(s.B[0] - 4.5) < 1e-6; },
         answer: { B: [4.5, 0] }, skill: "Measure a segment",
         hints: ["Each small mark is one tenth of a centimetre.", "4.5 is half-way between the 4 and the 5."], why: "$A$ is at 0 and $B$ at 4.5, so $AB = 4.5$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Slide **both** ends along the ruler. The segment does not have to start at 0. Try three different places.",
+        scene: { type: "sketch", ruler: { unit: "cm", div: 2, len: 10 }, gate: true,
+          pts: { A: { at: [2, 0], drag: true, snap: 0.5, on: { seg: [[0.4, 0], [9.8, 0]] }, say: "Point A" }, B: { at: [7, 0], drag: true, snap: 0.5, c: "orange", on: { seg: [[0.4, 0], [9.8, 0]] }, say: "Point B" } },
+          draw: function (s) { return [{ rseg: [Math.min(s.A[0], s.B[0]), Math.max(s.A[0], s.B[0])], names: ["A", "B"] }]; },
+          readout: function (s) { return "$A$ reads $" + n1(s.A[0]) + "$ and $B$ reads $" + n1(s.B[0]) + "$ · $AB = |" + n1(s.B[0]) + " - " + n1(s.A[0]) + "| = " + n1(Math.abs(s.B[0] - s.A[0])) + "$ cm"; },
+          log: { need: 3, cols: [{ h: "$A$ reads", f: function (s) { return "$" + n1(s.A[0]) + "$"; } }, { h: "$B$ reads", f: function (s) { return "$" + n1(s.B[0]) + "$"; } }, { h: "$AB$", f: function (s) { return "$" + n1(Math.abs(s.B[0] - s.A[0])) + "$ cm"; } }] } },
+        then: "That is the **Ruler Postulate**: the distance between two points is the absolute value of the difference of their readings. Where you start does not matter." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$B$ is between $A$ and $C$. Drag $B$, and then drag $A$ or $C$. Watch the parts and the whole.",
+        scene: { type: "sketch", x: [0, 12], y: [0, 2.6], u: 48, grid: false, gate: true,
+          pts: { A: { at: [1, 1.2], drag: true, snap: 0.5, on: { fn: function (p, s) { return [Math.max(0.5, Math.min(Math.round(p[0] * 2) / 2, s.B[0] - 0.5)), 1.2]; } }, say: "Point A" },
+                 C: { at: [11, 1.2], drag: true, snap: 0.5, on: { fn: function (p, s) { return [Math.min(11.5, Math.max(Math.round(p[0] * 2) / 2, s.B[0] + 0.5)), 1.2]; } }, say: "Point C" },
+                 B: { at: [4, 1.2], drag: true, snap: 0.5, c: "orange", on: { seg: ["A", "C"], inset: 0.02 }, say: "Point B" } },
+          draw: function (s) {
+            var ab = Math.abs(s.B[0] - s.A[0]), bc = Math.abs(s.C[0] - s.B[0]);
+            return [{ seg: [s.A, s.B], c: "blue" }, { seg: [s.B, s.C], c: "green" }, { len: n1(ab), seg: [s.A, s.B], side: 1, off: 18, c: "blue" }, { len: n1(bc), seg: [s.B, s.C], side: 1, off: 18, c: "green" },
+              { pt: s.A, name: "A", at: "s" }, { pt: s.B, name: "B", at: "s", c: "orange" }, { pt: s.C, name: "C", at: "s" }];
+          },
+          readout: function (s) { var ab = Math.abs(s.B[0] - s.A[0]), bc = Math.abs(s.C[0] - s.B[0]); return "$AB + BC = " + n1(ab) + " + " + n1(bc) + " = " + n1(ab + bc) + "$ · $AC = " + n1(Math.abs(s.C[0] - s.A[0])) + "$"; },
+          log: { need: 3, cols: [{ h: "$AB$", f: function (s) { return "$" + n1(Math.abs(s.B[0] - s.A[0])) + "$"; } }, { h: "$BC$", f: function (s) { return "$" + n1(Math.abs(s.C[0] - s.B[0])) + "$"; } },
+                  { h: "$AB + BC$", f: function (s) { return "$" + n1(Math.abs(s.C[0] - s.A[0])) + "$"; } }, { h: "$AC$", f: function (s) { return "$" + n1(Math.abs(s.C[0] - s.A[0])) + "$"; } }] } },
+        then: "The two columns match every time. That is the **Segment Addition Postulate**: if $B$ is between $A$ and $C$, then $AB + BC = AC$." },
       { type: "learn", kicker: "The idea",
-        prompt: "The **length** of $\\overline{AB}$ is written $AB$. If $B$ is **between** $A$ and $C$, the parts add up to the whole: $AB + BC = AC$, the **Segment Addition Postulate**. Segments of equal length are **congruent**. A **midpoint** cuts a segment into two congruent halves.",
+        prompt: "The **length** of $\\overline{AB}$ is written $AB$. The **Ruler Postulate** says you find it by subtracting the readings and dropping any minus sign. The **Segment Addition Postulate** says that if $B$ is between $A$ and $C$, the parts add up to the whole: $AB + BC = AC$.",
         scene: { type: "method", how: HOW_1_2 } },
       { type: "learn", kicker: "Watch",
         prompt: "$B$ is between $A$ and $C$. $AB = 3x - 1$, $BC = 2x + 4$ and $AC = 23$. Watch $AB$ found.",
@@ -676,34 +749,43 @@
           { step: 3, m: "3(4) - 1 = 11", say: "The question asked for $AB$, not for $x$: $AB = 11$." }] },
         gate: true, then: "Check: $BC = 2(4) + 4 = 12$, and $11 + 12 = 23$." },
       { type: "guided", kicker: "Together",
-        prompt: "$M$ is the midpoint of $\\overline{PQ}$. $PM = 4x + 3$ and $MQ = 6x - 5$. Now you find $PQ$.",
-        art: segRow([["P", 0], ["M", 3.3], ["Q", 6.6]], { over: [[0, 1, "4x + 3"], [1, 2, "6x - 5"]], ticks: [[0, 1, 1], [1, 2, 1]] }),
-        how: HOW_1_2, skill: "Midpoints",
+        prompt: "$B$ is between $A$ and $C$. $AB = 2x + 3$, $BC = 3x - 2$ and $AC = 31$. Now you find $BC$.",
+        art: segRow([["A", 0], ["B", 3.3], ["C", 6.6]], { over: [[0, 1, "2x + 3"], [1, 2, "3x - 2"]], under: [[0, 2, "31"]] }),
+        how: HOW_1_2, skill: "Segment Addition",
         steps: [
-          { step: 1, ask: "$M$ is the midpoint. What does that say about $PM$ and $MQ$?", type: "choice", answer: 0,
-            options: [{ t: "They are equal" }, { t: "They add up to 180", fb: "That is about angles. A midpoint makes two equal lengths." }],
-            m: "PM = MQ", say: "The tick marks show the two halves are congruent." },
-          { step: 2, ask: "Which equation follows?", type: "choice", answer: 0,
-            options: [{ t: "$4x + 3 = 6x - 5$" }, { t: "$(4x + 3) + (6x - 5) = 0$", fb: "The halves are equal to each other. Their sum is the whole length." }],
-            m: "4x + 3 = 6x - 5", say: "Equal halves." },
-          { step: 3, ask: "Solve it. What is $x$?", type: "num", answer: 4, near: [{ v: -4, fb: "$8 = 2x$, so $x$ is positive." }, { v: 1, fb: "Subtract $4x$ and add 5: $8 = 2x$." }], hint: "$3 + 5 = 6x - 4x$.",
-            m: "x = 4", say: "$8 = 2x$." },
-          { step: 3, ask: "$PM = 4(4) + 3 = 19$. So what is the whole length $PQ$?", type: "num", answer: 38, near: [{ v: 19, fb: "That is one half. $PQ$ is both halves." }], hint: "Two equal halves.",
-            m: "PQ = 19 + 19 = 38", say: "Both halves together." }],
+          { step: 1, ask: "Which segment is the **whole**?", type: "choice", answer: 0,
+            options: [{ t: "$\\overline{AC}$: it runs from end to end" }, { t: "$\\overline{AB}$", fb: "$\\overline{AB}$ is only the first part." }],
+            m: "AC = 31", say: "The whole is the segment from $A$ to $C$." },
+          { step: 2, ask: "Which equation says the parts add to the whole?", type: "choice", answer: 0,
+            options: [{ t: "$(2x + 3) + (3x - 2) = 31$" }, { t: "$2x + 3 = 3x - 2$", fb: "That would make the two parts equal, which only a midpoint does." }],
+            m: "(2x + 3) + (3x - 2) = 31", say: "$AB + BC = AC$." },
+          { step: 3, ask: "Solve it. What is $x$?", type: "num", answer: 6, near: [{ v: 5.6, tol: 0.01, fb: "Combine first: $5x + 1 = 31$." }], hint: "$5x + 1 = 31$, so $5x = 30$.",
+            m: "x = 6", say: "$5x + 1 = 31$, so $5x = 30$." },
+          { step: 3, ask: "The question asked for $BC = 3x - 2$. What is $BC$?", type: "num", answer: 16, near: [{ v: 6, fb: "That is $x$. Put it back into $3x - 2$." }], hint: "$3(6) - 2$.",
+            m: "BC = 3(6) - 2 = 16", say: "$BC = 16$. Check: $AB = 15$ and $15 + 16 = 31$." }],
         why: "Draw, equation, solve. Now two on your own." },
       { type: "num", kicker: "On your own", prompt: "$B$ is between $A$ and $C$. $AB = 7$ and $AC = 19$. Find $BC$.",
         art: segRow([["A", 0], ["B", 2.4], ["C", 6.6]], { over: [[0, 1, "7"], [1, 2, "?"]], under: [[0, 2, "19"]] }),
         answer: 12, skill: "Segment Addition",
         near: [{ v: 26, fb: "$AC$ is the whole. Subtract the part you know." }], hints: ["$7 + BC = 19$."], why: "$19 - 7 = 12$." },
-      { type: "num", prompt: "$M$ is the midpoint of $\\overline{RS}$, and $RS = 26$. Find $RM$.", answer: 13, skill: "Midpoints",
-        near: [{ v: 52, fb: "A midpoint halves the segment. It does not double it." }], hints: ["Half of 26."], why: "$26 \\div 2 = 13$." },
+      { type: "sketch", kicker: "On your own", prompt: "$A$ is at $(-2, 1)$. Drag $B$ up or down the line $x = -2$ until $AB = 6$.",
+        x: [-5, 5], y: [-6, 8], u: 32,
+        pts: { B: { at: [-2, 4], drag: true, snap: 1, on: { x: -2 }, c: "orange", say: "Point B" } },
+        draw: function (s) { return [{ seg: [[-2, 1], s.B], c: "blue" }, { pt: [-2, 1], name: "A", at: "e" }, { pt: s.B, name: "B", at: "e", c: "orange" }]; },
+        readout: function (s) { return "$B = (-2, " + num(s.B[1]) + ")$ · $AB = |" + num(s.B[1]) + " - 1| = " + num(Math.abs(s.B[1] - 1)) + "$"; },
+        goal: function (s) { return Math.abs(s.B[1] - 1) === 6; },
+        fb: function (s) { return Math.abs(s.B[1] - 1) < 6 ? "Too short. Move $B$ further from $A$." : "Too long. Move $B$ closer to $A$."; },
+        answer: { B: [-2, 7] }, skill: "Distance on a grid",
+        hints: ["The points line up vertically, so only the $y$-values change.", "$|y - 1| = 6$ has two answers: $y = 7$ or $y = -5$."], why: "$|7 - 1| = 6$. $B$ at $(-2, -5)$ also works: $|-5 - 1| = 6$." },
       { type: "learn", kicker: "A harder case",
-        prompt: "A **construction** uses only a compass and a straightedge. Copy $\\overline{XY}$ without measuring it.",
-        scene: { type: "walk", how: [["Line", "Draw a line and mark a point $P$ on it."], ["Open", "Open the compass to the length of the segment."], ["Mark", "Keep that opening, put the point on $P$, and mark the line."]], rows: [
-          { step: 1, say: "A line, and a point $P$ on it where the copy will start.", fig: consCopySeg(1) },
-          { step: 2, say: "The compass point on $X$ and the pencil on $Y$: the opening is now the length $XY$.", fig: consCopySeg(2) },
-          { step: 3, say: "With the same opening and the point on $P$, the arc crosses the line at $Q$.", fig: consCopySeg(3) },
-          { step: 3, m: "\\overline{PQ} \\cong \\overline{XY}", say: "Same opening, same length: the segments are congruent." }] },
+        prompt: "On a grid, two points that line up side to side differ only in $x$. Watch the distance from $(-3, 2)$ to $(4, 2)$ found.",
+        scene: { type: "walk", how: HOW_1_2G, rows: [
+          { step: 1, m: "(-3, 2) \\quad (4, 2)", say: "Same $y$-value: the points line up side to side, so only $x$ changes.",
+            fig: grid([-5, 6], [-1, 5], [{ seg: [G12A, G12B], c: "blue" }, { pt: G12A, name: "A", at: "n" }, { pt: G12B, name: "B", at: "n" }], { u: 30, alt: "The points A(−3, 2) and B(4, 2) joined by a horizontal segment on a grid." }) },
+          { step: 2, m: "|4 - (-3)| = 7", say: "Subtract the $x$-values, then drop any minus sign.",
+            ask: { prompt: "Which numbers do you subtract?", answer: 0,
+                   options: [{ t: "The $x$-values: they are the ones that change" }, { t: "The $y$-values", fb: "Both are 2. Nothing changes up and down." }] } },
+          { step: 3, m: "AB = 7 \\text{ units}", say: "The distance is 7 units." }] },
         gate: true },
       { type: "num", kicker: "Try it", prompt: "On a number line, distance is the absolute value of the difference of the coordinates. Find $JK$.",
         art: numLine(-5, 7, [{ v: -3, name: "J" }, { v: 5, name: "K" }]),
@@ -720,17 +802,20 @@
         near: [{ v: 680, fb: "$SF$ is the whole course. Subtract the first leg." }], hints: ["$280 + CF = 400$."], why: "$400 - 280 = 120$." }
     ]
   });
-
-  /* ================================== 1-3 · Measuring and constructing angles */
+  /* ================================================ 1.3 · Rays and angles */
   var HOW_1_3 = [["Parts", "Name the whole angle and the parts a ray cuts it into."],
-                 ["Equation", "Write how they are related: parts add up to the whole, or a bisector makes equal parts."],
+                 ["Equation", "Write how they are related: the parts add up to the whole."],
                  ["Solve", "Solve, then answer what was asked."]];
+  var HOW_1_3P = [["Read", "Read where each side crosses the same scale."],
+                  ["Subtract", "Subtract one reading from the other, and drop any minus sign."],
+                  ["Say", "Write the measure with its degree sign."]];
   var FIG_AOC = rayFig([0, 0], [{ d: 0, name: "A" }, { d: 40, name: "B" }, { d: 105, name: "C" }],
     { vname: "O", wedges: [{ i: 0, j: 1, say: "40°" }, { i: 1, j: 2, say: "x", c: "green", r: 30 }], alt: "Rays OA, OB and OC from O. Angle AOB is 40 degrees, and angle BOC is marked x." });
+  var O13 = [0, 0];
   LESSONS.push({
-    title: "Measuring and constructing angles",
-    blurb: "Book 1-3 · Naming and classifying angles, the protractor, the Angle Addition Postulate, and bisecting an angle.",
-    mins: 12, v: 4,
+    title: "Rays and angles", art: "ang",
+    blurb: "Section 1.3 · Rays, naming and classifying angles, the protractor, and the Angle Addition Postulate.",
+    mins: 14, v: 5,
     steps: [
       { type: "sketch", kicker: "Warm up", prompt: "Drag the orange point to open the angle until $m\\angle ABC = 70°$.",
         protractor: true, names: ["A", "B", "C"],
@@ -741,6 +826,44 @@
         fb: function (s) { return Math.round(GT.dir([0, 0], s.B)) === 110 ? "That is 70 on the **inner** scale. Side $\\overrightarrow{BA}$ lies on the 0 of the outer scale, so read the outer numbers." : "Not yet: read the scale that starts at 0 on side $\\overrightarrow{BA}$."; },
         answer: { B: GT.polar([0, 0], 158, 70) }, skill: "Measure an angle",
         hints: ["Side $\\overrightarrow{BA}$ is on the right, at 0 of the **outer** scale.", "Turn the orange side until it crosses 70 on that scale."], why: "Counting from the 0 on side $\\overrightarrow{BA}$, the other side crosses 70." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Open and close the angle. There are **four** kinds. Can you find them all?",
+        scene: { type: "sketch", x: [-3.7, 3.7], y: [-0.7, 3.5], u: 56, grid: false, gate: true,
+          pts: { P: { at: GT.polar(O13, 2.7, 40), drag: true, c: "orange", on: { circle: [O13, 2.7], snapDeg: 1, range: [4, 180] }, say: "The turning ray" } },
+          track: function (s) { var a = Math.round(GT.dir(O13, s.P)); return a >= 180 ? "straight" : a === 90 ? "right" : a > 90 ? "obtuse" : "acute"; },
+          draw: function (s) {
+            var a = Math.min(180, Math.round(GT.dir(O13, s.P))), kind = a >= 180 ? "straight" : a === 90 ? "right" : a > 90 ? "obtuse" : "acute";
+            var col = { acute: "blue", right: "green", obtuse: "purple", straight: "orange" }[kind];
+            return [{ angle: [[1, 0], O13, GT.polar(O13, 1, a)], say: a + "°", r: 38, c: col, right: a === 90 },
+              { dline: [O13, [3.3, 0]], ray: true }, { dline: [O13, GT.polar(O13, 3.3, a)], ray: true, c: "orange" },
+              { pt: O13, name: "B", at: "s" }, { pt: [2.6, 0], name: "A", at: "s" }, { pt: GT.polar(O13, 2.6, a), name: "C", at: a > 150 ? "s" : "n" }];
+          },
+          readout: function (s) {
+            var a = Math.min(180, Math.round(GT.dir(O13, s.P))), kind = a >= 180 ? "straight" : a === 90 ? "right" : a > 90 ? "obtuse" : "acute";
+            return "$m\\angle ABC = " + a + "°$ · **" + kind + "**<br>" + found([["acute", "Acute"], ["right", "Right"], ["obtuse", "Obtuse"], ["straight", "Straight"]], s.tracked);
+          },
+          goal: function (s) { return Object.keys(s.tracked).length >= 4; } },
+        then: "**Acute** is less than 90°, **right** is exactly 90°, **obtuse** is between 90° and 180°, and **straight** is exactly 180°: its sides make a line." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$\\overrightarrow{OA}$ and $\\overrightarrow{OC}$ stay put. Drag $\\overrightarrow{OB}$ **between** them, and a few times outside.",
+        scene: { type: "sketch", x: [-3.7, 3.7], y: [-0.7, 3.5], u: 56, grid: false, gate: true,
+          pts: { B: { at: GT.polar(O13, 2.7, 45), drag: true, c: "orange", on: { circle: [O13, 2.7], snapDeg: 1, range: [0, 180] }, say: "Ray OB" } },
+          draw: function (s) {
+            var b = Math.round(GT.dir(O13, s.B)), inside = b > 0 && b < 120;
+            var items = [{ dline: [O13, [3.3, 0]], ray: true }, { dline: [O13, GT.polar(O13, 3.3, 120)], ray: true }, { dline: [O13, GT.polar(O13, 3.3, b)], ray: true, c: "orange" },
+              { pt: O13, name: "O", at: "s" }, { pt: [2.6, 0], name: "A", at: "s" }, { pt: GT.polar(O13, 2.6, 120), name: "C", at: "n" }, { pt: GT.polar(O13, 2.6, b), name: "B", at: b > 140 ? "w" : "n", c: "orange" }];
+            if (inside) items.unshift({ angle: [[1, 0], O13, GT.polar(O13, 1, b)], say: b + "°", r: 34, c: "blue" }, { angle: [GT.polar(O13, 1, b), O13, GT.polar(O13, 1, 120)], say: (120 - b) + "°", r: 56, c: "green" });
+            return items;
+          },
+          readout: function (s) {
+            var b = Math.round(GT.dir(O13, s.B));
+            return b > 0 && b < 120 ? "$m\\angle AOB + m\\angle BOC = " + b + "° + " + (120 - b) + "° = 120° = m\\angle AOC$"
+              : "$\\overrightarrow{OB}$ is **outside** $\\angle AOC$: the parts do not add up to $m\\angle AOC$.";
+          },
+          log: { need: 3, when: function (s) { var b = Math.round(GT.dir(O13, s.B)); return b > 0 && b < 120; },
+                 cols: [{ h: "$m\\angle AOB$", f: function (s) { return "$" + Math.round(GT.dir(O13, s.B)) + "°$"; } }, { h: "$m\\angle BOC$", f: function (s) { return "$" + (120 - Math.round(GT.dir(O13, s.B))) + "°$"; } },
+                         { h: "sum", f: function () { return "$120°$"; } }, { h: "$m\\angle AOC$", f: function () { return "$120°$"; } }] } },
+        then: "When $\\overrightarrow{OB}$ is inside the angle, the parts always add up to the whole: the **Angle Addition Postulate**." },
       { type: "learn", kicker: "The idea",
         prompt: "An **angle** is two rays with a common endpoint, its **vertex**. **Acute** is less than 90°, **right** is exactly 90°, **obtuse** is between 90° and 180°, and **straight** is 180°. A ray inside an angle cuts it into parts that add to the whole: the **Angle Addition Postulate**.",
         scene: { type: "method", how: HOW_1_3 } },
@@ -755,20 +878,20 @@
           { step: 3, m: "x = 65", say: "$m\\angle BOC = 65°$." }] },
         gate: true, then: "The vertex is always the middle letter of an angle's name." },
       { type: "guided", kicker: "Together",
-        prompt: "$\\overrightarrow{QS}$ **bisects** $\\angle PQR$. $m\\angle PQS = (5x - 4)°$ and $m\\angle SQR = (3x + 10)°$. Now you find $m\\angle PQR$.",
-        art: rayFig([0, 0], [{ d: 0, name: "R" }, { d: 31, name: "S" }, { d: 62, name: "P" }], { vname: "Q", marks: [{ i: 0, j: 1 }, { i: 1, j: 2 }], alt: "Ray QS between rays QR and QP, with the two angles it makes marked as equal." }),
-        how: HOW_1_3, skill: "Angle bisectors",
+        prompt: "$\\overrightarrow{QS}$ lies inside $\\angle PQR$. $m\\angle PQR = 118°$, $m\\angle PQS = (4x - 6)°$ and $m\\angle SQR = (2x + 4)°$. Now you find $m\\angle SQR$.",
+        art: rayFig([0, 0], [{ d: 0, name: "R" }, { d: 44, name: "S" }, { d: 118, name: "P" }], { vname: "Q", wedges: [{ i: 0, j: 1, say: "(2x + 4)°", c: "green", r: 34 }, { i: 1, j: 2, say: "(4x − 6)°", r: 48 }], alt: "Ray QS between rays QR and QP. Angle PQR is 118 degrees. The two parts are marked (2x + 4) and (4x − 6) degrees." }),
+        how: HOW_1_3, skill: "Angle Addition",
         steps: [
-          { step: 1, ask: "A bisector cuts an angle into two parts that are…", type: "choice", answer: 0,
-            options: [{ t: "congruent: equal in measure" }, { t: "supplementary", fb: "Supplementary angles add to 180°. To bisect is to cut in half." }],
-            m: "\\angle PQS \\cong \\angle SQR", say: "Two equal halves." },
-          { step: 2, ask: "Which equation follows?", type: "choice", answer: 0,
-            options: [{ t: "$5x - 4 = 3x + 10$" }, { t: "$(5x - 4) + (3x + 10) = 90$", fb: "Nothing says the whole angle is 90°. The halves are equal to each other." }],
-            m: "5x - 4 = 3x + 10", say: "Equal measures." },
-          { step: 3, ask: "Solve it. What is $x$?", type: "num", answer: 7, near: [{ v: 3, fb: "$2x = 14$." }], hint: "$5x - 3x = 10 + 4$.",
-            m: "x = 7", say: "$2x = 14$." },
-          { step: 3, ask: "Each half measures $5(7) - 4 = 31°$. What is $m\\angle PQR$?", type: "num", answer: 62, near: [{ v: 31, fb: "That is one half. The whole angle is both halves." }], hint: "Two halves.",
-            m: "m\\angle PQR = 31 + 31 = 62", say: "Both halves together: 62°." }],
+          { step: 1, ask: "Which angle is the whole?", type: "choice", answer: 0,
+            options: [{ t: "$\\angle PQR$, the big one" }, { t: "$\\angle SQR$", fb: "$\\angle SQR$ is one of the two parts." }],
+            m: "m\\angle PQR = 118°", say: "$\\overrightarrow{QS}$ is inside it, so the other two are its parts." },
+          { step: 2, ask: "Which equation says the parts add to the whole?", type: "choice", answer: 0,
+            options: [{ t: "$(4x - 6) + (2x + 4) = 118$" }, { t: "$4x - 6 = 2x + 4$", fb: "That would make the parts equal. Nothing says $\\overrightarrow{QS}$ is a bisector." }],
+            m: "(4x - 6) + (2x + 4) = 118", say: "The parts add up to the whole." },
+          { step: 3, ask: "Solve it. What is $x$?", type: "num", answer: 20, near: [{ v: 19.67, tol: 0.01, fb: "Combine first: $6x - 2 = 118$." }], hint: "$6x - 2 = 118$, so $6x = 120$.",
+            m: "x = 20", say: "$6x - 2 = 118$, so $6x = 120$." },
+          { step: 3, ask: "The question asked for $m\\angle SQR = 2x + 4$. What is it?", type: "num", answer: 44, near: [{ v: 20, fb: "That is $x$. Put it back into $2x + 4$." }], hint: "$2(20) + 4$.",
+            m: "m\\angle SQR = 2(20) + 4 = 44°", say: "Check: $m\\angle PQS = 4(20) - 6 = 74°$ and $74 + 44 = 118$." }],
         why: "Parts, equation, solve. Now two on your own." },
       { type: "sort", kicker: "On your own", prompt: "Classify each angle by its measure.",
         bins: ["Acute", "Right", "Obtuse", "Straight"],
@@ -781,13 +904,15 @@
         post: "°", answer: 75, skill: "Angle Addition",
         near: [{ v: 181, fb: "128° is the whole angle. Subtract the part you know." }], hints: ["$53 + x = 128$."], why: "$128 - 53 = 75$." },
       { type: "learn", kicker: "A harder case",
-        prompt: "An angle can be bisected with a compass and a straightedge, with no protractor at all.",
-        scene: { type: "walk", how: [["Arc", "With the point on the vertex, draw an arc across both sides."], ["Cross", "From each crossing point, with one opening, draw arcs that cross inside the angle."], ["Ray", "Draw the ray from the vertex through that crossing."]], rows: [
-          { step: 1, say: "An arc centred on $A$ crosses the sides at $B$ and $C$.", fig: consBisectAngle(1) },
-          { step: 2, say: "An arc from $B$.", fig: consBisectAngle(2) },
-          { step: 2, say: "The same opening from $C$: the two arcs cross at $D$.", fig: consBisectAngle(3) },
-          { step: 3, m: "\\angle BAD \\cong \\angle DAC", say: "$\\overrightarrow{AD}$ bisects the angle.", fig: consBisectAngle(4) }] },
-        gate: true },
+        prompt: "A protractor works like a ruler: you do not have to start at 0. Watch an angle read from two marks.",
+        scene: { type: "walk", how: HOW_1_3P, rows: [
+          { step: 1, m: "25° \\quad 110°", say: "Side $\\overrightarrow{OA}$ crosses 25 and side $\\overrightarrow{OB}$ crosses 110, on the **same** scale.",
+            fig: GT.protractor({ a: 25, b: 110, names: ["A", "O", "B"], w: 360, alt: "A protractor with an angle whose sides cross 25 and 110 on the outer scale." }) },
+          { step: 2, m: "|110 - 25| = 85", say: "Subtract the readings, then drop any minus sign.",
+            ask: { prompt: "Why do we subtract?", answer: 0,
+                   options: [{ t: "The angle is the gap between the two marks" }, { t: "To find the bigger mark", fb: "We want the size of the opening between them." }] } },
+          { step: 3, m: "m\\angle AOB = 85°", say: "The angle measures 85°: acute." }] },
+        gate: true, then: "This is the **Protractor Postulate**: the measure of an angle is the absolute value of the difference of its readings." },
       { type: "choice", kicker: "Try it", prompt: "An angle has its vertex at $K$, and its sides pass through $J$ and $L$. Which name is correct?",
         options: [{ t: "$\\angle JKL$" }, { t: "$\\angle KJL$", fb: "The vertex must be the middle letter." }, { t: "$\\angle JLK$", fb: "The vertex must be the middle letter." }],
         answer: 0, skill: "Name an angle", hints: ["Where does the vertex go in the name?"], why: "The vertex, $K$, sits in the middle." },
@@ -803,14 +928,134 @@
         near: [{ v: 21, fb: "The door opens further, so the angles add." }], hints: ["$37 + 58$."], why: "$37 + 58 = 95$: just past a right angle, so obtuse." }
     ]
   });
-  /* ===================================================== 1-4 · Pairs of angles */
-  var HOW_1_4 = [["Pair", "Decide how the angles are related: complementary (sum 90°), supplementary (sum 180°) or vertical (equal)."],
+  /* =========================================== 1.4 · Segments and angles */
+  var HOW_1_4 = [["Mark", "Mark what is equal: the two halves of a segment, or the two parts of an angle."],
+                 ["Equation", "Set the two equal halves equal to each other."],
+                 ["Solve", "Solve, then answer what was asked."]];
+  var HOW_1_4G = [["Set up", "Call the unknown end $(x, y)$ and write the midpoint rule for each coordinate."],
+                  ["Solve $x$", "The $x$ of the midpoint is the average of the two $x$-values."],
+                  ["Solve $y$", "The $y$ of the midpoint is the average of the two $y$-values."]];
+  var M14A = [-3, 4], M14B = [5, 0], M14M = [1, 2];
+  LESSONS.push({
+    title: "Segments and angles", art: "sega",
+    blurb: "Section 1.4 · Congruent segments and angles, midpoints and bisectors, and finding a midpoint on a grid.",
+    mins: 14, v: 5,
+    steps: [
+      { type: "num", kicker: "Warm up", prompt: "On a number line, which number is half-way between 2 and 10?", answer: 6, skill: "Midpoint",
+        near: [{ v: 4, fb: "That is half the distance between them. The half-way point is $2 + 4$." }, { v: 12, fb: "Add them, then halve: the average." }], hints: ["The average of 2 and 10."], why: "$\\frac{2 + 10}{2} = 6$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Slide $M$ along $\\overline{AB}$. Find the spot that cuts it into two **equal** halves.",
+        scene: { type: "sketch", x: [0, 12], y: [0, 2.6], u: 48, grid: false, gate: true,
+          pts: { M: { at: [3, 1.2], drag: true, snap: 0.5, c: "orange", on: { seg: [[1, 1.2], [11, 1.2]], inset: 0.02 }, say: "Point M" } },
+          draw: function (s) {
+            var am = s.M[0] - 1, mb = 11 - s.M[0], eq = am === mb, c = eq ? "green" : "blue";
+            return [{ seg: [[1, 1.2], s.M], c: c, marks: eq ? 1 : 0 }, { seg: [s.M, [11, 1.2]], c: c, marks: eq ? 1 : 0 },
+              { len: n1(am), seg: [[1, 1.2], s.M], side: 1, off: 18, c: c }, { len: n1(mb), seg: [s.M, [11, 1.2]], side: 1, off: 18, c: c },
+              { pt: [1, 1.2], name: "A", at: "s" }, { pt: [11, 1.2], name: "B", at: "s" }, { pt: s.M, name: "M", at: "s", c: eq ? "green" : "orange" }];
+          },
+          readout: function (s) {
+            var am = s.M[0] - 1, mb = 11 - s.M[0];
+            return am === mb ? "$AM = MB = " + n1(am) + "$ · $M$ is the **midpoint**, and $\\overline{AM} \\cong \\overline{MB}$." : "$AM = " + n1(am) + "$ and $MB = " + n1(mb) + "$: not equal yet.";
+          },
+          goal: function (s) { return s.M[0] - 1 === 11 - s.M[0]; } },
+        then: "A **midpoint** cuts a segment into two **congruent** parts. Any point, line or ray that does this is a **bisector** of the segment." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$\\overrightarrow{OA}$ and $\\overrightarrow{OC}$ stay put. Turn $\\overrightarrow{OB}$ until it cuts $\\angle AOC$ into two **equal** angles.",
+        scene: { type: "sketch", x: [-3.7, 3.7], y: [-0.7, 3.5], u: 56, grid: false, gate: true,
+          pts: { B: { at: GT.polar([0, 0], 2.7, 28), drag: true, c: "orange", on: { circle: [[0, 0], 2.7], snapDeg: 1, range: [0, 100] }, say: "Ray OB" } },
+          draw: function (s) {
+            var O = [0, 0], b = Math.round(GT.dir(O, s.B)), eq = b === 50, c = eq ? "green" : "blue";
+            var items = [{ dline: [O, [3.3, 0]], ray: true }, { dline: [O, GT.polar(O, 3.3, 100)], ray: true }, { dline: [O, GT.polar(O, 3.3, b)], ray: true, c: eq ? "green" : "orange" },
+              { pt: O, name: "O", at: "s" }, { pt: [2.6, 0], name: "A", at: "s" }, { pt: GT.polar(O, 2.6, 100), name: "C", at: "n" }, { pt: GT.polar(O, 2.6, b), name: "B", at: "e", c: eq ? "green" : "orange" }];
+            if (b > 0 && b < 100) items.unshift({ angle: [[1, 0], O, GT.polar(O, 1, b)], say: b + "°", r: 36, c: c }, { angle: [GT.polar(O, 1, b), O, GT.polar(O, 1, 100)], say: (100 - b) + "°", r: 58, c: c });
+            if (eq) items.push({ amarks: [[1, 0], O, GT.polar(O, 1, 50)], n: 1, r: 26 }, { amarks: [GT.polar(O, 1, 50), O, GT.polar(O, 1, 100)], n: 1, r: 26 });
+            return items;
+          },
+          readout: function (s) {
+            var b = Math.round(GT.dir([0, 0], s.B));
+            return b === 50 ? "$m\\angle AOB = m\\angle BOC = 50°$ · $\\overrightarrow{OB}$ **bisects** $\\angle AOC$, and the two angles are congruent." : "$m\\angle AOB = " + b + "°$ and $m\\angle BOC = " + (100 - b) + "°$: not equal yet.";
+          },
+          goal: function (s) { return Math.round(GT.dir([0, 0], s.B)) === 50; } },
+        then: "An **angle bisector** cuts an angle into two **congruent** angles. The matching arcs in the picture say they are equal." },
+      { type: "learn", kicker: "The idea",
+        prompt: "Segments with equal lengths are **congruent**, written $\\overline{AB} \\cong \\overline{CD}$. A **midpoint** cuts a segment into two congruent parts, and an **angle bisector** cuts an angle into two congruent angles. Either way, the two parts are **equal**: that gives an equation.",
+        scene: { type: "method", how: HOW_1_4 } },
+      { type: "learn", kicker: "Watch",
+        prompt: "$M$ is the midpoint of $\\overline{PQ}$. $PM = 5x - 2$ and $MQ = 3x + 10$. Watch $PQ$ found.",
+        scene: { type: "walk", how: HOW_1_4, rows: [
+          { step: 1, m: "PM = 5x - 2 \\quad MQ = 3x + 10", say: "The tick marks show the two halves are congruent.",
+            fig: segRow([["P", 0], ["M", 3.3], ["Q", 6.6]], { over: [[0, 1, "5x - 2"], [1, 2, "3x + 10"]], ticks: [[0, 1, 1], [1, 2, 1]] }) },
+          { step: 2, m: "5x - 2 = 3x + 10", say: "Equal halves: set the two expressions equal.",
+            ask: { prompt: "Why are they equal?", answer: 0,
+                   options: [{ t: "$M$ is the midpoint" }, { t: "$M$ is between $P$ and $Q$", fb: "Between is not enough. Only a midpoint makes the parts equal." }] } },
+          { step: 3, m: "2x = 12", say: "Subtract $3x$ and add 2." },
+          { step: 3, m: "x = 6", say: "Divide by 2." },
+          { step: 3, m: "PQ = 28 + 28 = 56", say: "$PM = 5(6) - 2 = 28$, and the other half is 28 too: $PQ = 56$." }] },
+        gate: true, then: "Check: $MQ = 3(6) + 10 = 28$. Equal, as a midpoint needs." },
+      { type: "guided", kicker: "Together",
+        prompt: "$\\overrightarrow{QS}$ **bisects** $\\angle PQR$. $m\\angle PQS = (5x - 4)°$ and $m\\angle SQR = (3x + 10)°$. Now you find $m\\angle PQR$.",
+        art: rayFig([0, 0], [{ d: 0, name: "R" }, { d: 31, name: "S" }, { d: 62, name: "P" }], { vname: "Q", marks: [{ i: 0, j: 1 }, { i: 1, j: 2 }], alt: "Ray QS between rays QR and QP, with the two angles it makes marked as equal." }),
+        how: HOW_1_4, skill: "Angle bisectors",
+        steps: [
+          { step: 1, ask: "A bisector cuts an angle into two parts that are…", type: "choice", answer: 0,
+            options: [{ t: "congruent: equal in measure" }, { t: "supplementary", fb: "Supplementary angles add to 180°. To bisect is to cut in half." }],
+            m: "\\angle PQS \\cong \\angle SQR", say: "Two equal halves." },
+          { step: 2, ask: "Which equation follows?", type: "choice", answer: 0,
+            options: [{ t: "$5x - 4 = 3x + 10$" }, { t: "$(5x - 4) + (3x + 10) = 90$", fb: "Nothing says the whole angle is 90°. The halves are equal to each other." }],
+            m: "5x - 4 = 3x + 10", say: "Equal measures." },
+          { step: 3, ask: "Solve it. What is $x$?", type: "num", answer: 7, near: [{ v: 3, fb: "$2x = 14$." }], hint: "$5x - 3x = 10 + 4$.",
+            m: "x = 7", say: "$2x = 14$." },
+          { step: 3, ask: "Each half measures $5(7) - 4 = 31°$. What is $m\\angle PQR$?", type: "num", answer: 62, near: [{ v: 31, fb: "That is one half. The whole angle is both halves." }], hint: "Two halves.",
+            m: "m\\angle PQR = 31 + 31 = 62", say: "Both halves together: 62°." }],
+        why: "Mark, equation, solve. Now two on your own." },
+      { type: "num", kicker: "On your own", prompt: "$M$ is the midpoint of $\\overline{RS}$, and $RS = 26$. Find $RM$.", answer: 13, skill: "Midpoints",
+        near: [{ v: 52, fb: "A midpoint halves the segment. It does not double it." }], hints: ["Half of 26."], why: "$26 \\div 2 = 13$." },
+      { type: "plane", kicker: "On your own", prompt: "$A(-3, 4)$ and $B(5, 0)$ are the ends of a segment. Click its **midpoint**.",
+        x: [-6, 6], y: [-3, 6], click: "point", marks: [{ x: -3, y: 4, label: "A" }, { x: 5, y: 0, label: "B" }], segs: [[-3, 4, 5, 0, "blue"]],
+        answer: { point: M14M }, skill: "Midpoint on a grid",
+        clickFb: function (c) { return c && c[0] === 2 && c[1] === 2 ? "That is $(2, 2)$: close, but check the $x$: half-way between $-3$ and $5$ is $1$." : "Average the $x$-values, then average the $y$-values."; },
+        hints: ["Half-way between $-3$ and $5$ across: $\\frac{-3 + 5}{2}$.", "Half-way between 4 and 0 up: $\\frac{4 + 0}{2}$."], why: "$\\left(\\frac{-3 + 5}{2}, \\frac{4 + 0}{2}\\right) = (1, 2)$." },
+      { type: "learn", kicker: "A harder case",
+        prompt: "$M(1, 2)$ is the midpoint of $\\overline{AB}$, and $A$ is $(-3, 4)$. Watch the other end, $B$, found.",
+        scene: { type: "walk", how: HOW_1_4G, rows: [
+          { step: 1, m: "A(-3, 4) \\quad M(1, 2) \\quad B(x, y)", say: "$M$ is half-way, so each of its coordinates is the average of the ends'.",
+            fig: grid([-5, 7], [-1, 6], [{ seg: [M14A, M14B], c: "blue", dash: true }, { pt: M14A, name: "A", at: "n" }, { pt: M14M, name: "M", at: "n", c: "orange" }, { pt: M14B, name: "B?", at: "n", open: true }], { u: 28, alt: "A on the left, M half-way along, and the other end B still to be found." }) },
+          { step: 2, m: "\\frac{-3 + x}{2} = 1", say: "Average the $x$-values and set it equal to $M$'s $x$.",
+            ask: { prompt: "What is $x$?", answer: 0, options: [{ t: "5" }, { t: "2", fb: "Multiply both sides by 2: $-3 + x = 2$, so $x = 5$." }] } },
+          { step: 2, m: "x = 5", say: "$-3 + x = 2$, so $x = 5$." },
+          { step: 3, m: "\\frac{4 + y}{2} = 2", say: "Do the same for the $y$-values." },
+          { step: 3, m: "y = 0", say: "$4 + y = 4$, so $y = 0$: $B = (5, 0)$." }] },
+        gate: true, then: "Check: the average of $-3$ and $5$ is 1, and the average of 4 and 0 is 2. That is $M$." },
+      { type: "choice", kicker: "Try it", prompt: "$AB = 8$ cm and $CD = 8$ cm. Which statement is written correctly?",
+        options: [{ t: "$\\overline{AB} \\cong \\overline{CD}$ and $AB = CD$" }, { t: "$\\overline{AB} = \\overline{CD}$", fb: "Segments are congruent, not equal. It is their **lengths** that are equal." }, { t: "$AB \\cong CD$", fb: "A length is a number, and numbers are equal, not congruent." }],
+        answer: 0, skill: "Congruent or equal", hints: ["Congruent goes with figures. Equal goes with numbers."], why: "Figures are congruent ($\\cong$); their measures are equal ($=$)." },
+      { type: "choice", kicker: "Find the error",
+        prompt: "A ray bisects a 70° angle. Max says the two angles measure 140° each. What is wrong?",
+        options: [{ t: "To bisect is to cut in half, so each part is 35°." }, { t: "Each part should be 70°.", fb: "Two 70° angles would make 140°, not 70°." }, { t: "Nothing. It is right.", fb: "The parts must add up to the whole, 70°, not 280°." }],
+        answer: 0, skill: "Angle bisectors", hints: ["The two parts must add up to the whole angle."], why: "$70 \\div 2 = 35$, and $35 + 35 = 70$." },
+      { type: "num", kicker: "Use it", prompt: "A zipline cable from tower $A$ to tower $B$ is 84 m long. A platform stands at its midpoint. How far is the platform from tower $B$?",
+        post: "m", answer: 42, skill: "Midpoints",
+        near: [{ v: 168, fb: "A midpoint halves the cable. It does not double it." }], hints: ["Half of 84."], why: "$84 \\div 2 = 42$." }
+    ]
+  });
+  /* ======================================================= 1.5 · Angle pairs */
+  var HOW_1_5 = [["Pair", "Decide how the angles are related: complementary (sum 90°), supplementary (sum 180°) or vertical (equal)."],
                  ["Equation", "Write that relation as an equation."],
                  ["Solve", "Solve, then find the measure that was asked for."]];
+  // What two tapped angles (1–5 round a point) are to each other: sectors of 0–50, 50–120, 120–180, 180–230, 230–360 degrees.
+  var SECT15 = { 1: [0, 50], 2: [50, 120], 3: [120, 180], 4: [180, 230], 5: [230, 360] };
+  function pairKind(s) {
+    if (s.selList.length < 2) return "";
+    var a = SECT15[s.selList[0]], b = SECT15[s.selList[1]], share = a[1] === b[0] || b[1] === a[0] || (a[0] === 0 && b[1] === 360) || (b[0] === 0 && a[1] === 360);
+    var opp = Math.abs(a[0] - b[0]) === 180 && Math.abs(a[1] - b[1]) === 180;
+    if (opp) return "vertical angles";
+    if (share) return (a[1] - a[0]) + (b[1] - b[0]) === 180 ? "a linear pair" : "adjacent, but not a linear pair";
+    return "not a special pair";
+  }
   LESSONS.push({
-    title: "Pairs of angles",
-    blurb: "Book 1-4 · Adjacent angles and linear pairs, complementary and supplementary angles, and vertical angles.",
-    mins: 12, v: 4,
+    title: "Angle pairs", art: "pair",
+    blurb: "Section 1.5 · Complementary and supplementary angles, the Linear Pair Postulate, adjacent angles and vertical angles.",
+    mins: 15, v: 5,
     steps: [
       { type: "num", kicker: "Warm up", prompt: "Two angles add up to 90°. One measures 25°. What is the other?", post: "°", answer: 65, skill: "Complementary angles",
         near: [{ v: 155, fb: "They add up to 90°, not 180°." }], hints: ["$90 - 25$."], why: "$90 - 25 = 65$." },
@@ -829,12 +1074,49 @@
           } },
         gate: true,
         after: "Angles across from each other stay equal. Angles side by side always add to 180°." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$\\overrightarrow{OA}$ and $\\overrightarrow{OC}$ stay put. Drag $\\overrightarrow{OB}$, then press the other button. How do the two angles change?",
+        scene: { type: "sketch", x: [-3.7, 3.7], y: [-0.7, 3.5], u: 56, grid: false, gate: true,
+          pts: { Bc: { at: GT.polar([0, 0], 2.7, 35), drag: true, c: "orange", on: { circle: [[0, 0], 2.7], snapDeg: 1, range: [1, 89] }, hide: function (s) { return s.c.kind !== "comp"; }, say: "Ray OB" },
+                 Bs: { at: GT.polar([0, 0], 2.7, 70), drag: true, c: "orange", on: { circle: [[0, 0], 2.7], snapDeg: 1, range: [1, 179] }, hide: function (s) { return s.c.kind !== "supp"; }, say: "Ray OB" } },
+          chips: { kind: { v: "comp", opts: [["comp", "Complementary pair"], ["supp", "Supplementary pair"]] } },
+          draw: function (s) {
+            var O = [0, 0], comp = s.c.kind === "comp", tot = comp ? 90 : 180, b = Math.round(GT.dir(O, comp ? s.Bc : s.Bs));
+            return [{ angle: [[1, 0], O, GT.polar(O, 1, b)], say: b + "°", r: 34, c: "blue" }, { angle: [GT.polar(O, 1, b), O, GT.polar(O, 1, tot)], say: (tot - b) + "°", r: 56, c: "green", right: false },
+              { dline: [O, [3.3, 0]], ray: true }, { dline: [O, GT.polar(O, 3.3, tot)], ray: true }, { dline: [O, GT.polar(O, 3.3, b)], ray: true, c: "orange" },
+              { pt: O, name: "O", at: "s" }, { pt: [2.6, 0], name: "A", at: "s" }, { pt: GT.polar(O, 2.6, tot), name: "C", at: comp ? "n" : "w" }, { pt: GT.polar(O, 2.6, b), name: "B", at: "e", c: "orange" }].concat(comp ? [{ angle: [[1, 0], O, [0, 1]], right: true, r: 14, c: "ink" }] : []);
+          },
+          readout: function (s) {
+            var O = [0, 0], comp = s.c.kind === "comp", tot = comp ? 90 : 180, b = Math.round(GT.dir(O, comp ? s.Bc : s.Bs));
+            return "$" + b + "° + " + (tot - b) + "° = " + tot + "°$ · " + (comp ? "**complementary**: they add up to 90°" : "**supplementary**: they add up to 180°");
+          },
+          goal: function (s) { return Object.keys(s.seen.kind).length >= 2; } },
+        then: "**Complementary** angles add up to 90° (a right angle). **Supplementary** angles add up to 180° (a straight angle). Each one is the other's missing piece." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Tap **any two** angles. The picture says how they are related. Can you find a **linear pair** and a pair of **vertical angles**?",
+        scene: { type: "sketch", x: [-3.7, 3.7], y: [-3.4, 3.4], u: 50, grid: false, gate: true,
+          taps: { "1": { at: GT.polar([0, 0], 1.55, 25), label: "1", r: 17 }, "2": { at: GT.polar([0, 0], 1.55, 82), label: "2", r: 17 }, "3": { at: GT.polar([0, 0], 1.55, 150), label: "3", r: 17 },
+                  "4": { at: GT.polar([0, 0], 1.55, 205), label: "4", r: 17 }, "5": { at: GT.polar([0, 0], 1.55, 295), label: "5", r: 17 } }, maxSel: 2,
+          track: function (s) { return pairKind(s); },
+          draw: function (s) {
+            var O = [0, 0], R = { 1: [0, 50], 2: [50, 120], 3: [120, 180], 4: [180, 230], 5: [230, 360] }, items = [];
+            s.selList.forEach(function (k, i) { items.push({ angle: [GT.polar(O, 1, R[k][0]), O, GT.polar(O, 1, R[k][1])], r: 70 + i * 6, c: i ? "green" : "orange" }); });
+            [0, 50, 120, 180, 230].forEach(function (d) { items.push({ dline: [O, GT.polar(O, 3.2, d)], ray: true, c: d === 120 ? "purple" : "ink" }); });
+            items.push({ dline: [O, GT.polar(O, 3.2, 0)], ray: true }, { pt: O });
+            return items;
+          },
+          readout: function (s) {
+            return (s.selList.length < 2 ? "Tap two angles." : "$\\angle " + s.selList[0] + "$ and $\\angle " + s.selList[1] + "$: **" + pairKind(s) + "**") + "<br>" +
+              found([["vertical angles", "Vertical angles"], ["a linear pair", "A linear pair"]], s.tracked);
+          },
+          goal: function (s) { return s.tracked["vertical angles"] && s.tracked["a linear pair"]; } },
+        then: "**Adjacent** angles share a vertex and a side. A **linear pair** is adjacent with its outer sides in a line, so it adds up to 180°. **Vertical angles** sit opposite each other and are congruent." },
       { type: "learn", kicker: "The idea",
         prompt: "**Adjacent** angles share a vertex and a side. A **linear pair** is adjacent with its outer sides in a line, so it adds to 180°. **Complementary** angles add to 90° and **supplementary** angles to 180°. **Vertical** angles, opposite each other where two lines cross, are congruent.",
-        scene: { type: "method", how: HOW_1_4 } },
+        scene: { type: "method", how: HOW_1_5 } },
       { type: "learn", kicker: "Watch",
         prompt: "Two supplementary angles measure $(3x + 10)°$ and $(2x + 20)°$. Watch both found.",
-        scene: { type: "walk", how: HOW_1_4, rows: [
+        scene: { type: "walk", how: HOW_1_5, rows: [
           { step: 1, m: "\\text{supplementary: the sum is } 180°", say: "That one word gives the equation." },
           { step: 2, m: "(3x + 10) + (2x + 20) = 180", say: "The two measures add up to 180.",
             ask: { prompt: "What do supplementary angles add up to?", answer: 0,
@@ -846,7 +1128,7 @@
       { type: "guided", kicker: "Together",
         prompt: "$\\angle 1$ and $\\angle 3$ are vertical angles. $m\\angle 1 = (4x + 6)°$ and $m\\angle 3 = (6x - 20)°$. Now you find $m\\angle 1$.",
         art: xFig(58, { alt: "Two lines crossing, making four angles numbered 1 to 4. Angles 1 and 3 are opposite each other." }),
-        how: HOW_1_4, skill: "Vertical angles",
+        how: HOW_1_5, skill: "Vertical angles",
         steps: [
           { step: 1, ask: "Vertical angles are…", type: "choice", answer: 0,
             options: [{ t: "congruent: equal in measure" }, { t: "supplementary", fb: "That is a linear pair: angles side by side. Vertical angles are opposite each other." }],
@@ -866,7 +1148,7 @@
         hints: ["Call the supplement $s$. Then $4s + s = 180$."], why: "$5s = 180$, so $s = 36$ and the angle is $4 \\cdot 36 = 144$." },
       { type: "learn", kicker: "A harder case",
         prompt: "The complement of an angle is 12° more than twice the angle. Find the angle.",
-        scene: { type: "walk", how: HOW_1_4, rows: [
+        scene: { type: "walk", how: HOW_1_5, rows: [
           { step: 1, m: "\\text{angle } x \\qquad \\text{complement } 90 - x", say: "Complementary angles add to 90°, so the complement is what is left." },
           { step: 2, m: "90 - x = 2x + 12", say: "“Is 12 more than twice the angle.”" },
           { step: 3, m: "78 = 3x", say: "Add $x$ and subtract 12." },
@@ -889,225 +1171,377 @@
         near: [{ v: 112, fb: "The wall and the ground meet at 90°, so the two angles are complementary." }], hints: ["The wall, the ground and the ladder make a right triangle: the two acute angles add to 90°."], why: "$90 - 68 = 22$." }
     ]
   });
-
-  /* =============================================== 1-5 · Using formulas in geometry */
-  var HOW_1_5 = [["Formula", "Write the formula that fits the figure and what is asked."],
-                 ["Substitute", "Put in the lengths you know."],
-                 ["Simplify", "Work it out, with units: plain units for a length, square units for an area."]];
+  /* ============================================== 1.6 · Classifying triangles */
+  var HOW_1_6 = [["Angles", "Look at the angles. All three acute: acute. One right angle: right. One obtuse angle: obtuse. All three congruent: equiangular."],
+                 ["Sides", "Count the congruent sides. Three: equilateral. At least two: isosceles. None: scalene."],
+                 ["Name", "Put the two names together, such as a right scalene triangle."]];
+  var FIG_OBT = tri([[0, 0], [5, 0], [2.5, 1.45]], { names: "ABC", ticks: [0, 1, 1], angs: [null, null, "120°"] }, "Triangle ABC. Sides BC and CA each carry one tick mark. The angle at C is 120 degrees."),
+      FIG_345 = tri([[0, 0], [4, 0], [0, 3]], { names: "PQR", right: [0], sides: ["4", "5", "3"] }, "Triangle PQR with a right angle at P. PQ is 4, QR is 5 and RP is 3."),
+      FIG_LEGS = tri([[0, 0], [3, 0], [1.5, 4.1]], { names: "ABC", ticks: [0, 1, 1], sides: ["x + 4", "2x + 3", "4x − 7"] }, "Triangle ABC. Sides BC and CA each carry one tick mark. AB is x + 4, BC is 2x + 3 and CA is 4x − 7."),
+      FIG_EQ = tri([[0, 0], [4, 0], [2, 3.46]], { names: "JKL", ticks: [1, 1, 1], sides: ["3x − 2", "x + 8", null] }, "Triangle JKL with one tick mark on every side. JK is 3x − 2 and KL is x + 8.");
+  // A triangle on A(−2, 0) and B(2, 0), with its third corner at C: what it is called by its sides, and by its angles.
+  function sideKind16(C) {
+    var A = [-2, 0], B = [2, 0], ab = 4, bc = GT.dist(B, C), ca = GT.dist(C, A), eq = function (u, v) { return Math.abs(u - v) < 0.08; };
+    return eq(ab, bc) && eq(bc, ca) ? "equilateral" : eq(ab, bc) || eq(bc, ca) || eq(ab, ca) ? "isosceles" : "scalene";
+  }
+  function angleKind16(C) {
+    var A = [-2, 0], B = [2, 0], m = Math.max(GT.angle(B, A, C), GT.angle(A, B, C), GT.angle(A, C, B));
+    return Math.abs(m - 90) < 0.6 ? "right" : m > 90 ? "obtuse" : "acute";
+  }
   LESSONS.push({
-    title: "Using formulas in geometry",
-    blurb: "Book 1-5 · Perimeter and area of rectangles, squares and triangles, and the circumference and area of a circle.",
-    mins: 12, v: 4,
+    title: "Classifying triangles", art: "tri",
+    blurb: "Section 1.6 · Name a triangle by its angles and by its sides, and use the name to find lengths.",
+    mins: 14, v: 5,
     steps: [
-      { type: "choice", kicker: "Warm up", prompt: "Which one measures the distance **around** a figure?",
-        options: [{ t: "Perimeter" }, { t: "Area", fb: "Area measures the surface inside." }],
-        answer: 0, skill: "Perimeter and area", hints: ["Think of a fence."], why: "Perimeter goes round the edge. Area fills the inside." },
-      { type: "learn", kicker: "Explore", prompt: "Size the rectangle so that its perimeter is **24** and its area is **32**.",
-        scene: { type: "rectangle", l: { v: 5, min: 1, max: 10 }, w: { v: 3, min: 1, max: 6 }, target: { P: 24, A: 32 }, answer: [8, 4] }, gate: true,
-        after: "Two rectangles can share a perimeter and still have different areas." },
+      { type: "choice", kicker: "Warm up", prompt: "Which of these is an obtuse angle?",
+        options: [{ t: "$115°$" }, { t: "$90°$", fb: "Exactly 90° is a right angle." }, { t: "$75°$", fb: "Less than 90° is acute." }],
+        answer: 0, skill: "Classify angles", hints: ["Obtuse: more than 90° and less than 180°."], why: "115° is between 90° and 180°." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$A$ and $B$ stay put. Drag $C$ anywhere. What do you notice about the **sides**? Find all three kinds of triangle.",
+        scene: { type: "sketch", x: [-4, 4], y: [-0.4, 4.4], u: 54, grid: false, gate: true,
+          pts: { C: { at: [1.4, 2.6], drag: true, c: "orange", on: { fn: function (p) { return [Math.round(p[0] * 10) / 10, Math.max(0.4, Math.round(p[1] * 10) / 10)]; } }, say: "Corner C" } },
+          track: function (s) { return sideKind16(s.C); },
+          draw: function (s) {
+            var A = [-2, 0], B = [2, 0], C = s.C, k = sideKind16(C), eq = function (u, v) { return Math.abs(u - v) < 0.08; };
+            var ab = 4, bc = GT.dist(B, C), ca = GT.dist(C, A), col = { scalene: "blue", isosceles: "purple", equilateral: "green" }[k];
+            return [{ poly: [A, B, C], c: col }, { seg: [A, B], c: col, marks: eq(ab, bc) && eq(ab, ca) ? 1 : eq(ab, bc) || eq(ab, ca) ? 1 : 0 }, { seg: [B, C], c: col, marks: eq(bc, ab) || eq(bc, ca) ? 1 : 0 }, { seg: [C, A], c: col, marks: eq(ca, ab) || eq(ca, bc) ? 1 : 0 },
+              { pt: A, name: "A", at: "s" }, { pt: B, name: "B", at: "s" }, { pt: C, name: "C", at: "n", c: "orange" }];
+          },
+          readout: function (s) {
+            var A = [-2, 0], B = [2, 0];
+            return "$AB = 4$ · $BC = " + n1(GT.dist(B, s.C)) + "$ · $CA = " + n1(GT.dist(s.C, A)) + "$ → **" + sideKind16(s.C) + "**<br>" + found([["scalene", "Scalene"], ["isosceles", "Isosceles"], ["equilateral", "Equilateral"]], s.tracked);
+          },
+          goal: function (s) { return Object.keys(s.tracked).length >= 3; } },
+        then: "**Scalene**: no two sides congruent. **Isosceles**: at least two congruent sides. **Equilateral**: all three congruent. Matching tick marks show which sides are congruent." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Drag $C$ again, and watch the **angles**. Find an acute triangle, a right triangle and an obtuse triangle.",
+        scene: { type: "sketch", x: [-4, 4], y: [-0.4, 4.4], u: 54, grid: false, gate: true,
+          pts: { C: { at: [0.6, 2.6], drag: true, c: "orange", on: { fn: function (p) { return [Math.round(p[0] * 10) / 10, Math.max(0.4, Math.round(p[1] * 10) / 10)]; } }, say: "Corner C" } },
+          track: function (s) { return angleKind16(s.C); },
+          draw: function (s) {
+            var A = [-2, 0], B = [2, 0], C = s.C, k = angleKind16(C), col = { acute: "blue", right: "green", obtuse: "purple" }[k], a = angAt(B, A, C), b = angAt(A, B, C), c = angAt(A, C, B);
+            var items = [{ poly: [A, B, C], c: col }, { pt: A, name: "A", at: "s" }, { pt: B, name: "B", at: "s" }, { pt: C, name: "C", at: "n", c: "orange" },
+              { angle: [B, A, C], say: a + "°", r: 30, right: a === 90, c: "orange" }, { angle: [C, B, A], say: b + "°", r: 30, right: b === 90, c: "orange" }, { angle: [A, C, B], say: c + "°", r: 26, right: c === 90, c: "orange" }];
+            return items;
+          },
+          readout: function (s) {
+            var A = [-2, 0], B = [2, 0];
+            return "$" + angAt(B, A, s.C) + "° + " + angAt(A, B, s.C) + "° + " + angAt(A, s.C, B) + "°$ → **" + angleKind16(s.C) + "**<br>" + found([["acute", "Acute"], ["right", "Right"], ["obtuse", "Obtuse"]], s.tracked);
+          },
+          goal: function (s) { return Object.keys(s.tracked).length >= 3; } },
+        then: "**Acute**: all three angles less than 90°. **Right**: one angle exactly 90°. **Obtuse**: one angle greater than 90°. The largest angle decides." },
       { type: "learn", kicker: "The idea",
-        prompt: "**Perimeter** is the distance around: $P = 2l + 2w$ for a rectangle, $P = 4s$ for a square, the sum of the sides for a triangle. **Area** is the surface inside: $A = lw$, $A = s^2$, $A = \\frac{1}{2}bh$. For a circle, $C = 2\\pi r$ and $A = \\pi r^2$.",
-        scene: { type: "method", how: HOW_1_5 } },
-      { type: "learn", kicker: "Watch",
-        prompt: "Watch the perimeter and the area of this rectangle found.",
-        scene: { type: "walk", how: HOW_1_5, rows: [
-          { step: 1, m: "P = 2l + 2w \\qquad A = lw", say: "One formula for each question.",
-            fig: shapes([[[[0, 0], [6, 0], [6, 2.7], [0, 2.7]], { sides: ["9 in.", "4 in.", null, null] }]], { alt: "A rectangle 9 inches long and 4 inches wide." }) },
-          { step: 2, m: "P = 2(9) + 2(4)", say: "Length 9 and width 4." },
-          { step: 2, m: "A = 9 \\cdot 4", say: "The same two numbers, in the other formula.",
-            ask: { prompt: "Which formula gives the area of a rectangle?", answer: 0,
-                   options: [{ t: "$A = lw$" }, { t: "$A = 2l + 2w$", fb: "That is the perimeter." }] } },
-          { step: 3, m: "P = 26 \\text{ in.}", say: "A length: inches." },
-          { step: 3, m: "A = 36 \\text{ in.}^2", say: "An area: square inches." }] },
-        gate: true, then: "The units tell you which of the two you have found." },
-      { type: "guided", kicker: "Together",
-        prompt: "A circle has radius 5 cm. Now you find its circumference, to the nearest tenth.",
-        how: HOW_1_5, skill: "Circumference",
-        steps: [
-          { step: 1, ask: "Which formula gives the circumference?", type: "choice", answer: 0,
-            options: [{ t: "$C = 2\\pi r$" }, { t: "$A = \\pi r^2$", fb: "That is the area of the circle." }],
-            m: "C = 2\\pi r", say: "The distance around a circle." },
-          { step: 2, ask: "Substitute $r = 5$. What is $2 \\cdot 5$?", type: "num", answer: 10, hint: "$2 \\cdot 5$.",
-            m: "C = 2\\pi(5) = 10\\pi", say: "$10\\pi$ is the exact answer." },
-          { step: 3, ask: "Use $\\pi \\approx 3.14$. What is $10\\pi$, to the nearest tenth?", type: "num", answer: 31.4, tol: 0.05, near: [{ v: 78.5, tol: 0.05, fb: "That is the area, $\\pi r^2$." }], hint: "$10 \\cdot 3.14$.",
-            m: "C \\approx 31.4 \\text{ cm}", say: "A length, so plain centimetres." }],
-        why: "Formula, substitute, simplify. Now two on your own." },
-      { type: "num", kicker: "On your own", prompt: "A triangle has base 14 ft and height 9 ft. Find its area.",
-        art: shapes([[[[0, 0], [6, 0], [2, 3.4]], {}]], { extra: [{ seg: [[2, 3.4], [2, 0]], dash: "5 4", c: "orange" }, { angle: [[6, 0], [2, 0], [2, 3.4]], right: true, c: "orange" }, { word: "9 ft", at: [2.55, 1.6], c: "orange" }, { word: "14 ft", at: [3, -0.55] }], alt: "A triangle with base 14 feet. A dashed height of 9 feet meets the base at a right angle." }),
-        post: "square feet", answer: 63, skill: "Area of a triangle",
-        near: [{ v: 126, fb: "A triangle is half of the rectangle around it: $\\frac{1}{2}bh$." }], hints: ["$\\frac{1}{2} \\cdot 14 \\cdot 9$."], why: "$\\frac{1}{2} \\cdot 126 = 63$." },
-      { type: "num", prompt: "A square has perimeter 36 m. Find its area.", post: "square metres", answer: 81, skill: "Perimeter and area",
-        near: [{ v: 9, fb: "That is the side. The area is the side squared." }, { v: 1296, fb: "36 is the perimeter. Find the side first: $36 \\div 4$." }], hints: ["$4s = 36$, so $s = 9$."], why: "$s = 9$, so $A = 9^2 = 81$." },
-      { type: "learn", kicker: "A harder case",
-        prompt: "The circle formulas use the **radius**. A circle has diameter 12 m. Find its area, to the nearest tenth.",
-        scene: { type: "walk", how: HOW_1_5, rows: [
-          { step: 1, m: "A = \\pi r^2", say: "The area of a circle." },
-          { step: 2, m: "r = 12 \\div 2 = 6", say: "The radius is half the diameter." },
-          { step: 2, m: "A = \\pi (6)^2", say: "The radius, squared." },
-          { step: 3, m: "A = 36\\pi", say: "The exact area." },
-          { step: 3, m: "A \\approx 113.0 \\text{ m}^2", say: "$36 \\cdot 3.14 = 113.04$." }] },
-        gate: true },
-      { type: "num", kicker: "Try it", prompt: "Use $\\pi \\approx 3.14$. A circle has radius 4 in. Find its circumference, to the nearest tenth.", post: "in.", answer: 25.1, tol: 0.05, skill: "Circumference",
-        near: [{ v: 50.2, tol: 0.06, fb: "That is the area, $\\pi r^2$." }, { v: 12.6, tol: 0.06, fb: "$C = 2\\pi r$: do not leave out the 2." }], hints: ["$2 \\cdot 3.14 \\cdot 4$."], why: "$8 \\cdot 3.14 = 25.12$." },
-      { type: "choice", kicker: "Find the error",
-        prompt: "A rectangle is 7 cm by 3 cm. Lee says its area is “20 cm”. Which reply puts both mistakes right?",
-        options: [{ t: "20 is the perimeter. The area is $7 \\cdot 3 = 21$, in square centimetres." },
-                  { t: "The area is 21 cm.", fb: "The number is right now, but an area is measured in square units." },
-                  { t: "The area is 20 square centimetres.", fb: "The units are right now, but 20 is the perimeter: $2(7) + 2(3)$." }],
-        answer: 0, skill: "Perimeter and area", hints: ["Where could 20 have come from? And which units does an area take?"], why: "$A = lw = 21 \\text{ cm}^2$." },
-      { type: "num", kicker: "Use it", prompt: "A garden bed is a rectangle 12 ft by 5 ft. Fencing costs \\$3 a foot. What does it cost to fence it all the way round?",
-        post: "dollars", answer: 102, skill: "Perimeter and area",
-        near: [{ v: 180, fb: "That uses the area. A fence goes round the perimeter." }, { v: 34, fb: "That is the perimeter. Multiply by the price per foot." }], hints: ["$P = 2(12) + 2(5) = 34$ ft."], why: "$34 \\cdot 3 = 102$." }
-    ]
-  });
-  /* ======================= 1-6 · Midpoint and distance in the coordinate plane */
-  var HOW_1_6 = [["Label", "Call the points $(x_1, y_1)$ and $(x_2, y_2)$."],
-                 ["Subtract", "Subtract the $x$-coordinates, and subtract the $y$-coordinates."],
-                 ["Square", "Square each difference and add."],
-                 ["Root", "Take the square root."]];
-  var A16 = [-2, 1], B16 = [4, 9];
-  LESSONS.push({
-    title: "Midpoint and distance in the coordinate plane",
-    blurb: "Book 1-6 · The Midpoint Formula, the Distance Formula, and the Pythagorean Theorem behind it.",
-    mins: 12, v: 4,
-    steps: [
-      { type: "num", kicker: "Warm up", prompt: "On a number line, which number is half-way between 2 and 10?", answer: 6, skill: "Midpoint",
-        near: [{ v: 4, fb: "That is half the distance between them. The half-way point is $2 + 4$." }, { v: 12, fb: "Add them, then halve: the average." }], hints: ["The average of 2 and 10."], why: "$\\frac{2 + 10}{2} = 6$." },
-      { type: "learn", kicker: "The idea",
-        prompt: "The **midpoint** of a segment averages the coordinates of its endpoints. The **distance** between two points is the hypotenuse of a right triangle whose legs are the differences in $x$ and in $y$, so by the Pythagorean Theorem $d = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}$.",
+        prompt: "A triangle gets two names. One comes from its **angles**: acute, right, obtuse or equiangular. The other comes from its **sides**: equilateral, isosceles or scalene. Matching tick marks show congruent sides.",
         scene: { type: "method", how: HOW_1_6 } },
       { type: "learn", kicker: "Watch",
-        prompt: "Watch the distance from $A(-2, 1)$ to $B(4, 9)$ found.",
+        prompt: "Watch this triangle get both of its names.",
         scene: { type: "walk", how: HOW_1_6, rows: [
-          { step: 1, m: "A(-2, 1) \\quad B(4, 9)", say: "$x_1 = -2$, $y_1 = 1$, $x_2 = 4$, $y_2 = 9$.",
-            fig: grid([-4, 6], [-1, 10], [{ seg: [A16, B16], c: "blue" }, { pt: A16, name: "A", at: "w" }, { pt: B16, name: "B", at: "e" }], { u: 20, alt: "The segment from A(−2, 1) to B(4, 9) on a grid." }) },
-          { step: 2, m: "4 - (-2) = 6 \\qquad 9 - 1 = 8", say: "6 across and 8 up: the legs of a right triangle.",
-            fig: grid([-4, 6], [-1, 10], [{ seg: [A16, B16], c: "blue" }].concat(legs(A16, B16), [{ pt: A16, name: "A", at: "w" }, { pt: B16, name: "B", at: "e" }]), { u: 20, alt: "The same segment as the hypotenuse of a right triangle with legs 6 and 8." }),
-            ask: { prompt: "What is $4 - (-2)$?", answer: 0,
-                   options: [{ t: "6" }, { t: "2", fb: "Subtracting $-2$ adds 2." }] } },
-          { step: 3, m: "6^2 + 8^2 = 100", say: "$36 + 64$." },
-          { step: 4, m: "d = \\sqrt{100} = 10", say: "$AB = 10$." }] },
-        gate: true, then: "The Distance Formula is the Pythagorean Theorem with coordinates." },
+          { step: 1, m: "m\\angle C = 120°", say: "One angle is more than 90°.", fig: FIG_OBT },
+          { step: 1, m: "\\text{obtuse}", say: "One obtuse angle makes an obtuse triangle." },
+          { step: 2, m: "\\overline{BC} \\cong \\overline{CA}", say: "The matching tick marks show two congruent sides.",
+            ask: { prompt: "A triangle with at least two congruent sides is…", answer: 0,
+                   options: [{ t: "isosceles" }, { t: "scalene", fb: "Scalene means no congruent sides." }] } },
+          { step: 2, m: "\\text{isosceles}", say: "At least two congruent sides." },
+          { step: 3, m: "\\text{obtuse isosceles triangle}", say: "The angle name, then the side name." }] },
+        gate: true, then: "Angles give one name and sides give the other." },
       { type: "guided", kicker: "Together",
-        prompt: "Now you find the distance from $P(1, -3)$ to $Q(6, 9)$.",
-        how: HOW_1_6, skill: "Distance Formula",
+        prompt: "Now you classify $\\triangle PQR$.", art: FIG_345,
+        how: HOW_1_6, skill: "Classify triangles",
         steps: [
-          { step: 1, ask: "Which two numbers are the $x$-coordinates?", type: "choice", answer: 0,
-            options: [{ t: "1 and 6" }, { t: "1 and $-3$", fb: "Those are the two coordinates of $P$. The $x$-coordinates come first in each pair." }],
-            m: "P(1, -3) \\quad Q(6, 9)", say: "$x$: 1 and 6. $y$: $-3$ and 9." },
-          { step: 2, ask: "Subtract the $y$-coordinates: $9 - (-3)$.", type: "num", answer: 12, near: [{ v: 6, fb: "Subtracting $-3$ adds 3." }], hint: "$9 + 3$.",
-            m: "6 - 1 = 5 \\qquad 9 - (-3) = 12", say: "5 across and 12 up." },
-          { step: 3, ask: "Square and add: $5^2 + 12^2$.", type: "num", answer: 169, near: [{ v: 34, fb: "Square each one: $25 + 144$." }, { v: 289, fb: "Square each difference first, then add." }], hint: "$25 + 144$.",
-            m: "5^2 + 12^2 = 169", say: "$25 + 144$." },
-          { step: 4, ask: "What is $\\sqrt{169}$?", type: "num", answer: 13, near: [{ v: 84.5, tol: 1e-9, fb: "A square root is not a half." }], hint: "$13 \\cdot 13$.",
-            m: "d = \\sqrt{169} = 13", say: "$PQ = 13$." }],
-        why: "Label, subtract, square, root. Now two on your own." },
-      { type: "pair", kicker: "On your own", prompt: "Average the $x$s and average the $y$s. Find the midpoint of the segment from $(-4, 2)$ to $(6, 8)$. Type it as $(x, y)$.",
-        answer: [1, 5], skill: "Midpoint Formula",
-        near: [{ v: [2, 10], fb: "Those are the sums. Divide each by 2." }, { v: [5, 3], fb: "Add the coordinates, then halve. Do not subtract them." }],
-        hints: ["$\\frac{-4 + 6}{2}$ and $\\frac{2 + 8}{2}$."], why: "$\\left(\\frac{2}{2}, \\frac{10}{2}\\right) = (1, 5)$." },
-      { type: "num", prompt: "Find the distance between $(0, 0)$ and $(8, 15)$.", answer: 17, skill: "Distance Formula",
-        near: [{ v: 23, fb: "Square each difference, add, then take the root." }, { v: 289, fb: "That is $d^2$. Take the square root." }], hints: ["$8^2 + 15^2 = 289$."], why: "$\\sqrt{64 + 225} = \\sqrt{289} = 17$." },
+          { step: 1, ask: "The small square marks a right angle. What is the triangle called by its angles?", type: "choice", answer: 0,
+            options: [{ t: "Right" }, { t: "Acute", fb: "An acute triangle has three acute angles. This one has a 90° angle." }, { t: "Obtuse", fb: "An obtuse triangle has an angle greater than 90°." }],
+            m: "\\text{right}", say: "One right angle." },
+          { step: 2, ask: "The sides are 3, 4 and 5. Are any two of them congruent?", type: "choice", answer: 0,
+            options: [{ t: "No: it is scalene" }, { t: "Yes: it is isosceles", fb: "3, 4 and 5 are all different." }],
+            m: "\\text{scalene}", say: "No two sides have the same length." },
+          { step: 3, ask: "What is its full name?", type: "choice", answer: 0,
+            options: [{ t: "Right scalene triangle" }, { t: "Right isosceles triangle", fb: "Isosceles needs at least two congruent sides." }, { t: "Acute scalene triangle", fb: "It has a right angle." }],
+            m: "\\text{right scalene triangle}", say: "The angle name, then the side name." }],
+        why: "Angles, sides, name. Now two on your own." },
+      { type: "sort", kicker: "On your own", prompt: "Each card lists the three angles of a triangle. Classify each triangle.",
+        bins: ["Acute", "Right", "Obtuse"],
+        cards: [{ t: nb("$70°, 60°, 50°$"), bin: 0, fb: "All three are less than 90°." }, { t: nb("$90°, 45°, 45°$"), bin: 1, fb: "One angle is exactly 90°." },
+                { t: nb("$110°, 40°, 30°$"), bin: 2, fb: "110° is an obtuse angle." }, { t: nb("$60°, 60°, 60°$"), bin: 0, fb: "Equiangular, and every angle is acute." },
+                { t: nb("$100°, 50°, 30°$"), bin: 2, fb: "100° is an obtuse angle." }, { t: nb("$90°, 62°, 28°$"), bin: 1, fb: "One angle is exactly 90°." }],
+        skill: "Classify triangles", hints: ["Look at the largest angle of each."],
+        why: "The largest angle decides: less than, equal to, or more than 90°." },
+      { type: "choice", prompt: "A triangle has sides of 6 cm, 6 cm and 9 cm. Classify it by its sides.",
+        options: [{ t: "Isosceles" }, { t: "Equilateral", fb: "All three sides would have to be congruent." }, { t: "Scalene", fb: "Two of the sides are both 6 cm." }],
+        answer: 0, skill: "Classify triangles", hints: ["How many sides have the same length?"], why: "Two congruent sides: isosceles." },
       { type: "learn", kicker: "A harder case",
-        prompt: "The Midpoint Formula can run backwards. $M(3, -1)$ is the midpoint of $\\overline{AB}$, and $A$ is $(-1, 2)$. Find $B$.",
-        scene: { type: "walk", how: [["Set up", "Write the midpoint formula with the unknown endpoint $(x, y)$."], ["x", "Solve the equation for $x$."], ["y", "Solve the equation for $y$."]], rows: [
-          { step: 1, m: "\\left(\\frac{-1 + x}{2}, \\frac{2 + y}{2}\\right) = (3, -1)", say: "The averages must equal the midpoint's coordinates." },
-          { step: 2, m: "\\frac{-1 + x}{2} = 3", say: "The $x$-coordinates." },
-          { step: 2, m: "x = 7", say: "$-1 + x = 6$." },
-          { step: 3, m: "\\frac{2 + y}{2} = -1", say: "The $y$-coordinates." },
-          { step: 3, m: "y = -4", say: "$2 + y = -2$." },
-          { step: 3, m: "B(7, -4)", say: "From $A$ to $M$ is 4 right and 3 down. The same again reaches $B$." }] },
+        prompt: "The name can find lengths. $\\triangle ABC$ is isosceles, with $\\overline{BC} \\cong \\overline{CA}$. Find all three sides.",
+        scene: { type: "walk", how: [["Equal", "Congruent sides have equal lengths: write an equation."], ["Solve", "Solve for $x$."], ["Substitute", "Put $x$ back in to find each length."]], rows: [
+          { step: 1, m: "2x + 3 = 4x - 7", say: "Congruent sides have equal lengths.", fig: FIG_LEGS },
+          { step: 2, m: "10 = 2x", say: "Subtract $2x$ and add 7 on both sides." },
+          { step: 2, m: "x = 5", say: "Divide by 2." },
+          { step: 3, m: "BC = 2(5) + 3 = 13", say: "Substitute 5.",
+            ask: { prompt: "What is $BC = 2x + 3$ when $x = 5$?", answer: 0,
+                   options: [{ t: "13" }, { t: "10", fb: "$2(5) = 10$, then add 3." }] } },
+          { step: 3, m: "CA = 4(5) - 7 = 13", say: "The same, as it must be." },
+          { step: 3, m: "AB = 5 + 4 = 9", say: "The third side." }] },
         gate: true },
-      { type: "num", kicker: "Try it", prompt: "Find the distance between $(1, 2)$ and $(4, 7)$, to the nearest tenth.", answer: 5.8, tol: 0.05, skill: "Distance Formula",
-        near: [{ v: 8, fb: "Square each difference, add, then take the root." }, { v: 34, fb: "That is $d^2$. Take the square root." }], hints: ["$3^2 + 5^2 = 34$."], why: "$\\sqrt{34} \\approx 5.83$." },
-      { type: "spotline", kicker: "Find the error",
-        prompt: "The distance from $(1, 3)$ to $(5, 6)$. Tap the line where the work **first** goes wrong.",
-        lines: ["d = \\sqrt{(5 - 1)^2 + (6 - 3)^2}", "d = \\sqrt{4 + 3}", "d = \\sqrt{7}"], answer: 1, fix: "d = \\sqrt{16 + 9}",
-        fb: { 0: "The formula is filled in correctly.", 2: LATER }, skill: "Distance Formula",
-        hints: ["What happened to the squares?"],
-        why: "Each difference is squared: $16 + 9 = 25$, so $d = 5$." },
-      { type: "num", kicker: "Use it", prompt: "On a park map, each grid unit is 1 km. A ranger station is at $(2, 1)$ and a lookout tower at $(11, 13)$. How far apart are they?",
-        post: "km", answer: 15, skill: "Distance Formula",
-        near: [{ v: 21, fb: "That walks round the corner. The straight-line distance is the hypotenuse." }], hints: ["9 across and 12 up."], why: "$\\sqrt{9^2 + 12^2} = \\sqrt{225} = 15$." }
+      { type: "num", kicker: "Try it", prompt: "$\\triangle JKL$ is equilateral. Find the length of each side.", art: FIG_EQ, answer: 13, skill: "Classify triangles",
+        near: [{ v: 5, fb: "That is $x$. Substitute it to get the length." }],
+        hints: ["All sides are equal: $3x - 2 = x + 8$.", "$x = 5$. Now substitute."], why: "$2x = 10$, so $x = 5$ and each side is $3(5) - 2 = 13$." },
+      { type: "choice", kicker: "Find the error",
+        prompt: "A triangle has angles of 90°, 50° and 40°. Omar calls it obtuse, because 90° is its biggest angle. What is wrong?",
+        options: [{ t: "It is a right triangle. An obtuse triangle needs an angle greater than 90°." },
+                  { t: "It is acute, because two of its angles are acute.", fb: "Every triangle has at least two acute angles. The largest angle decides." },
+                  { t: "Nothing. Omar is correct.", fb: "90° is a right angle, not an obtuse one." }],
+        answer: 0, skill: "Classify triangles", hints: ["What kind of angle is exactly 90°?"], why: "One right angle makes a right triangle." },
+      { type: "num", kicker: "Use it", prompt: "A jeweller bends wire into equilateral triangles with sides of 2 cm. How many triangles can she make from 30 cm of wire?", answer: 5, skill: "Classify triangles",
+        near: [{ v: 15, fb: "Each triangle has three sides, so it uses 6 cm of wire." }],
+        hints: ["One triangle uses $3 \\cdot 2$ cm."], why: "$30 \\div 6 = 5$." }
     ]
   });
-
-  /* ========================= 1-7 · Transformations in the coordinate plane */
-  var HOW_1_7 = [["Rule", "Read the rule: what is added to $x$, and what is added to $y$."],
-                 ["Apply", "Apply it to every vertex of the preimage."],
-                 ["Draw", "Plot the image points, join them, and name them with primes."]];
-  var T17 = [[-4, 1], [-1, 3], [-2, -1]], T17b = [[1, -1], [4, 1], [3, -3]];
+  /* ============================================== 1.7 · Classifying polygons */
+  var HOW_1_7 = [["Look", "Is it a polygon? It must be closed, with straight sides that meet only at their endpoints."],
+                 ["Shape", "Convex or concave? Join two corners: does the segment stay inside?"],
+                 ["Count", "Count the sides and give it its name: triangle, quadrilateral, pentagon…"]];
+  var HOW_1_7D = [["Label", "Call the ends $(x_1, y_1)$ and $(x_2, y_2)$."],
+                  ["Subtract", "Subtract the $x$-values, and subtract the $y$-values."],
+                  ["Square", "Square each difference and add."],
+                  ["Root", "Take the square root."]];
+  var PG17 = [[0, 0], [4, 0], [4.7, 2.7], [2.3, 1.3], [0.4, 2.9]];
+  var NAMES17 = { 3: "triangle", 4: "quadrilateral", 5: "pentagon", 6: "hexagon", 7: "heptagon", 8: "octagon", 9: "nonagon", 10: "decagon", 12: "dodecagon" };
+  function segsCross17(a, b, c, d) {
+    var o1 = crossOf(a, b, c), o2 = crossOf(a, b, d), o3 = crossOf(c, d, a), o4 = crossOf(c, d, b);
+    return o1 * o2 < -1e-9 && o3 * o4 < -1e-9;
+  }
+  function inside17(P, q) {
+    var c = false;
+    for (var i = 0, j = P.length - 1; i < P.length; j = i++) {
+      if ((P[i][1] > q[1]) !== (P[j][1] > q[1]) && q[0] < (P[j][0] - P[i][0]) * (q[1] - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c;
+    }
+    return c;
+  }
+  // The quadrilateral A B C D with D free: convex, concave, or not a polygon at all (two sides cross).
+  var Q17 = { A: [-3, 0.4], B: [3, 0.4], C: [2.2, 3.6] };
+  function shape17(D) {
+    var A = Q17.A, B = Q17.B, C = Q17.C;
+    if (segsCross17(A, B, C, D) || segsCross17(B, C, D, A)) return "crossed";
+    var s = [crossOf(A, B, C), crossOf(B, C, D), crossOf(C, D, A), crossOf(D, A, B)];
+    return s.every(function (v) { return v > 1e-9; }) || s.every(function (v) { return v < -1e-9; }) ? "convex" : "concave";
+  }
   LESSONS.push({
-    title: "Transformations in the coordinate plane",
-    blurb: "Book 1-7 · Reflections, rotations and translations, and translating a figure with a coordinate rule.",
-    mins: 12, v: 4,
+    title: "Classifying polygons", art: "poly",
+    blurb: "Section 1.7 · What makes a polygon, convex and concave polygons, naming a polygon by its sides, and side lengths on a grid.",
+    mins: 14, v: 5,
     steps: [
-      { type: "choice", kicker: "Warm up", prompt: "The grey triangle was moved onto the blue one. What kind of move was it?",
-        art: grid([-6, 6], [-1, 5], [{ poly: [[-5, 1], [-2, 1], [-2, 4]], c: "soft" }, { poly: [[5, 1], [2, 1], [2, 4]], c: "blue" }], { u: 22, alt: "A grey triangle on the left of the y-axis and its mirror image in blue on the right." }),
-        options: [{ t: "A flip over the $y$-axis" }, { t: "A slide to the right", fb: "A slide would keep it facing the same way. This one faces the other way." }, { t: "A turn about the origin", fb: "A half turn would also put it upside down." }],
-        answer: 0, skill: "Identify transformations", hints: ["Is the blue triangle facing the same way as the grey one?"], why: "Each point is as far from the $y$-axis as before, on the other side: a reflection." },
-      { type: "learn", kicker: "Explore", prompt: "**Drag** $P$ to at least four places and watch its image $P'$. What happens to each coordinate?",
-        scene: { type: "map", map: { kind: "translate", by: [3, -2] }, start: [-2, 1], need: 4, x: [-6, 6], y: [-6, 6], u: 26 }, gate: true,
-        after: "Every point slides the same way: 3 right and 2 down." },
+      { type: "choice", kicker: "Warm up", prompt: "Which of these shapes is a **polygon**?",
+        art: FS([plain([0, 5], [0, 4], [{ poly: [[0.6, 0.6], [4.4, 0.6], [2.5, 3.4]], c: "blue" }, { word: "A", at: [0.5, 3.5], c: "ink" }], { u: 26, w: 140, alt: "Shape A: a triangle." }),
+                 plain([0, 5], [0, 4], [{ circle: [[2.5, 2], 1.5], c: "blue" }, { word: "B", at: [0.5, 3.5], c: "ink" }], { u: 26, w: 140, alt: "Shape B: a circle." }),
+                 plain([0, 5], [0, 4], [{ seg: [[0.8, 0.8], [2.4, 3.2]], c: "blue" }, { seg: [[2.4, 3.2], [4.2, 0.8]], c: "blue" }, { word: "C", at: [0.5, 3.5], c: "ink" }], { u: 26, w: 140, alt: "Shape C: two segments in a V, not closed." })]),
+        options: [{ t: "A, the triangle" }, { t: "B, the circle", fb: "A circle has no straight sides at all." }, { t: "C, the V", fb: "It is not closed: its ends do not meet." }],
+        answer: 0, skill: "What is a polygon", hints: ["A polygon is closed and has only straight sides."], why: "Only the triangle is closed and made entirely of line segments." },
+      { type: "learn", kicker: "Explore",
+        prompt: "$A$, $B$ and $C$ stay put. Drag corner $D$ anywhere. Find all **three** things that can happen.",
+        scene: { type: "sketch", x: [-4, 4], y: [-0.3, 4.4], u: 54, grid: false, gate: true,
+          pts: { D: { at: [-2.2, 3.2], drag: true, c: "orange", on: { fn: function (p) { return [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]; } }, say: "Corner D" } },
+          track: function (s) { return shape17(s.D); },
+          draw: function (s) {
+            var A = Q17.A, B = Q17.B, C = Q17.C, D = s.D, k = shape17(D), col = { convex: "green", concave: "purple", crossed: "red" }[k], P = [A, B, C, D];
+            var items = [{ poly: P, c: col, names: "ABCD", fill: k !== "crossed" }];
+            if (k !== "crossed") [[A, C], [B, D]].forEach(function (d) { items.push({ seg: d, c: inside17(P, [(d[0][0] + d[1][0]) / 2, (d[0][1] + d[1][1]) / 2]) ? "blue" : "red", dash: true }); });
+            items.push({ pt: D, name: "", c: "orange" });
+            return items;
+          },
+          readout: function (s) {
+            var k = shape17(s.D);
+            return (k === "convex" ? "**Convex**: both diagonals stay inside the shape." : k === "concave" ? "**Concave**: a diagonal (in red) leaves the shape; a corner points inward."
+              : "**Not a polygon**: two sides cross each other.") + "<br>" + found([["convex", "Convex"], ["concave", "Concave"], ["crossed", "Not a polygon"]], s.tracked);
+          },
+          goal: function (s) { return Object.keys(s.tracked).length >= 3; } },
+        then: "A polygon's sides meet only at their endpoints. If every segment joining two corners stays inside, it is **convex**. If one leaves the shape, it is **concave**." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Slide to add sides to a regular polygon. Each number of sides has its own **name**. Can you meet six of them?",
+        scene: { type: "sketch", x: [-3.2, 3.2], y: [-2.8, 2.8], u: 50, grid: false, gate: true,
+          params: { n: { min: 3, max: 12, step: 1, v: 3, label: "sides $n$" } },
+          track: function (s) { return NAMES17[s.p.n] || null; },
+          draw: function (s) { return [{ poly: reg(s.p.n, 2.4, [0, 0], 90), c: "purple", fill: true }]; },
+          readout: function (s) {
+            var nm = NAMES17[s.p.n];
+            return "$n = " + s.p.n + "$ · " + (nm ? "a **" + nm + "**" : "an **$" + s.p.n + "$-gon**") + "<br>" + found([["triangle", "triangle"], ["quadrilateral", "quadrilateral"], ["pentagon", "pentagon"], ["hexagon", "hexagon"], ["heptagon", "heptagon"], ["octagon", "octagon"], ["nonagon", "nonagon"], ["decagon", "decagon"], ["dodecagon", "dodecagon"]], s.tracked);
+          },
+          goal: function (s) { return Object.keys(s.tracked).length >= 6; } },
+        then: "The prefix tells the number of sides: *tri* 3, *quad* 4, *penta* 5, *hexa* 6, *hepta* 7, *octa* 8, *nona* 9, *deca* 10. With $n$ sides, it is an **$n$-gon**." },
       { type: "learn", kicker: "The idea",
-        prompt: "A **transformation** moves a figure. The original is the **preimage** and the result is the **image**, named with primes: $A \\to A'$. A **reflection** flips over a line, a **rotation** turns about a point, and a **translation** slides every point the same distance the same way.",
+        prompt: "A **polygon** is a closed figure made only of line segments, its **sides**, that meet at their endpoints, its **vertices**. A polygon is **convex** if every segment joining two corners stays inside it, and **concave** if one leaves. It is named by its number of sides.",
         scene: { type: "method", how: HOW_1_7 } },
       { type: "learn", kicker: "Watch",
-        prompt: "Watch $\\triangle ABC$ translated by the rule $(x, y) \\to (x + 5, y - 2)$.",
+        prompt: "Watch this figure get its full name.",
         scene: { type: "walk", how: HOW_1_7, rows: [
-          { step: 1, m: "(x, y) \\to (x + 5, y - 2)", say: "5 right and 2 down.",
-            fig: grid([-5, 5], [-4, 4], [{ poly: T17, c: "soft", names: ["A", "B", "C"] }], { u: 24, alt: "Triangle ABC with A(−4, 1), B(−1, 3) and C(−2, −1)." }) },
-          { step: 2, m: "A(-4, 1) \\to A'(1, -1)", say: "$-4 + 5 = 1$ and $1 - 2 = -1$.",
-            ask: { prompt: "What is $-4 + 5$?", answer: 0,
-                   options: [{ t: "$1$" }, { t: "$-9$", fb: "Adding 5 moves right: $-4 + 5 = 1$." }] } },
-          { step: 2, m: "B(-1, 3) \\to B'(4, 1)", say: "The same rule for every vertex." },
-          { step: 2, m: "C(-2, -1) \\to C'(3, -3)", say: "$-2 + 5 = 3$ and $-1 - 2 = -3$." },
-          { step: 3, m: "\\triangle A'B'C'", say: "Same size, same shape, facing the same way.",
-            fig: grid([-5, 5], [-4, 4], [{ poly: T17, c: "soft", names: ["A", "B", "C"] }, { poly: T17b, c: "blue", names: ["A'", "B'", "C'"] }, { arrow: [T17[1], T17b[1]], c: "orange" }], { u: 24, alt: "Triangle ABC and its image A′B′C′, 5 to the right and 2 down." }) }] },
-        gate: true, then: "A translation never turns or flips a figure." },
+          { step: 1, m: "\\text{closed, straight sides}", say: "Every side is a straight segment, and the corners meet end to end: it is a polygon.",
+            fig: plain([-0.6, 5.4], [-0.5, 3.5], [{ poly: PG17, names: "ABCDE", c: "blue" }], { u: 44, alt: "A five-sided figure ABCDE with one corner, D, pointing inward." }) },
+          { step: 2, m: "\\overline{CE}", say: "Join two corners, $C$ and $E$.",
+            fig: plain([-0.6, 5.4], [-0.5, 3.5], [{ poly: PG17, names: "ABCDE", c: "blue" }, { seg: [PG17[2], PG17[4]], c: "red", dash: true }], { u: 44, alt: "The same figure with a dashed segment from C to E, which passes outside the figure." }),
+            ask: { prompt: "Does the dashed segment stay inside the figure?", answer: 0,
+                   options: [{ t: "No, it leaves it" }, { t: "Yes, all of it", fb: "Look at the dent at $D$: the segment passes above the figure there." }] } },
+          { step: 2, m: "\\text{concave}", say: "One segment between corners leaves the shape, so it is concave." },
+          { step: 3, m: "5 \\text{ sides}", say: "Count: $AB$, $BC$, $CD$, $DE$, $EA$." },
+          { step: 3, m: "\\text{concave pentagon}", say: "The shape word first, then the name for five sides." }] },
+        gate: true, then: "Full name: a **concave pentagon**." },
       { type: "guided", kicker: "Together",
-        prompt: "Now you find the image of $P(2, -3)$ under $(x, y) \\to (x - 6, y + 4)$.",
-        how: HOW_1_7, skill: "Translations",
+        prompt: "Now you name this figure.",
+        art: plain([-0.4, 5.4], [-0.3, 4.2], [{ poly: [[1.4, 0], [3.6, 0], [4.9, 1.9], [3.6, 3.8], [1.4, 3.8], [0.1, 1.9]], names: "ABCDEF", c: "blue" }], { u: 44, alt: "A six-sided figure ABCDEF whose corners all point outward." }),
+        how: HOW_1_7, skill: "Classify polygons",
         steps: [
-          { step: 1, ask: "What does the rule do to $x$?", type: "choice", answer: 0,
-            options: [{ t: "Subtracts 6: the point moves 6 left" }, { t: "Adds 6: the point moves 6 right", fb: "The rule says $x - 6$." }],
-            m: "(x, y) \\to (x - 6, y + 4)", say: "6 left and 4 up." },
-          { step: 2, ask: "The $x$-coordinate: what is $2 - 6$?", type: "num", answer: -4, near: [{ v: 4, fb: "$2 - 6$ is negative." }, { v: 8, fb: "Subtract 6. Do not add it." }], hint: "6 to the left of 2.",
-            m: "2 - 6 = -4", say: "The new $x$." },
-          { step: 2, ask: "The $y$-coordinate: what is $-3 + 4$?", type: "num", answer: 1, near: [{ v: -7, fb: "Add 4. Do not subtract it." }, { v: -1, fb: "4 up from $-3$ passes 0 and reaches 1." }], hint: "4 up from $-3$.",
-            m: "-3 + 4 = 1", say: "The new $y$." },
-          { step: 3, ask: "Name the image.", type: "choice", answer: 0,
-            options: [{ t: "$P'(-4, 1)$" }, { t: "$P'(1, -4)$", fb: "$x$ comes first." }, { t: "$P(-4, 1)$", fb: "An image carries a prime: $P'$." }],
-            m: "P'(-4, 1)", say: "The image of $P$." }],
-        why: "Rule, apply, draw. Now two on your own." },
-      { type: "plot", kicker: "On your own", prompt: "Draw the image of $\\triangle ABC$ under $(x, y) \\to (x + 4, y + 1)$. Click where $A'$ goes, then $B'$, then $C'$.",
-        x: [-6, 6], y: [-6, 6], u: 26, show: [{ poly: [[-5, -2], [-2, -2], [-4, 1]], c: "soft", names: ["A", "B", "C"] }],
-        target: [[-1, -1], [2, -1], [0, 2]], names: ["A'", "B'", "C'"], skill: "Translations",
-        hints: ["Every vertex goes 4 right and 1 up.", "$A(-5, -2)$ goes to $(-1, -1)$."], why: "$A'(-1, -1)$, $B'(2, -1)$ and $C'(0, 2)$: each 4 right and 1 up." },
-      { type: "choice", prompt: "$A(1, 2) \\to A'(-1, 2)$, $B(3, 2) \\to B'(-3, 2)$ and $C(3, 5) \\to C'(-3, 5)$. Which transformation is it?",
-        options: [{ t: "A reflection across the $y$-axis" }, { t: "A translation to the left", fb: "$A$ moved 2 but $B$ moved 6. A translation moves every point the same distance." }, { t: "A rotation of 180° about the origin", fb: "That would change the sign of $y$ as well." }],
-        answer: 0, skill: "Identify transformations", hints: ["Which coordinate changed, and how?"], why: "Each $x$ changed sign and each $y$ stayed: a flip over the $y$-axis." },
+          { step: 1, ask: "Is it a polygon?", type: "choice", answer: 0,
+            options: [{ t: "Yes: closed, with straight sides" }, { t: "No", fb: "It is closed, and every side is straight." }],
+            m: "\\text{polygon}", say: "Closed, straight sides, meeting at the corners." },
+          { step: 2, ask: "Does a segment joining two corners ever leave the figure?", type: "choice", answer: 0,
+            options: [{ t: "No: all stay inside" }, { t: "Yes", fb: "Every corner points outward, so none leaves it." }],
+            m: "\\text{convex}", say: "Every corner points outward: convex." },
+          { step: 3, ask: "How many sides does it have?", type: "num", answer: 6, near: [{ v: 5, fb: "Count again: $AB$, $BC$, $CD$, $DE$, $EF$, $FA$." }], hint: "Count the corners: one for each side.",
+            m: "6 \\text{ sides}", say: "Six sides." },
+          { step: 3, ask: "What is its full name?", type: "choice", answer: 0,
+            options: [{ t: "Convex hexagon" }, { t: "Concave hexagon", fb: "Nothing points inward, so it is convex." }, { t: "Convex pentagon", fb: "A pentagon has five sides. Count again." }],
+            m: "\\text{convex hexagon}", say: "Convex, with six sides." }],
+        why: "Look, shape, count. Now two on your own." },
+      { type: "sort", kicker: "On your own", prompt: "Is it a polygon, or not?",
+        bins: ["Polygon", "Not a polygon"],
+        cards: [{ t: "A triangle", bin: 0, fb: "Three straight sides, closed." }, { t: "A circle", bin: 1, fb: "A circle has no straight sides." }, { t: "A stop sign's outline", bin: 0, fb: "Eight straight sides, closed." },
+                { t: "A letter V", bin: 1, fb: "It is not closed." }, { t: "A star with five points", bin: 0, fb: "Straight sides, closed, meeting at corners: a concave polygon." }, { t: "A cube", bin: 1, fb: "A cube is not flat: a polygon lies in one plane." }],
+        skill: "What is a polygon", hints: ["Closed? Only straight sides? All in one flat plane?"],
+        why: "A polygon is flat, closed, and made only of straight segments." },
+      { type: "num", prompt: "Find the length of the side from $A(1, 2)$ to $B(7, 10)$.",
+        art: grid([-1, 9], [0, 12], [{ seg: [[1, 2], [7, 10]], c: "blue" }, { pt: [1, 2], name: "A", at: "w" }, { pt: [7, 10], name: "B", at: "e" }], { u: 22, alt: "A segment from A(1, 2) to B(7, 10) on a grid." }),
+        answer: 10, skill: "Distance formula",
+        near: [{ v: 14, fb: "That is $6 + 8$. Square the differences, add, then take the square root." }, { v: 100, fb: "That is $d^2$. Take the square root." }],
+        hints: ["$(7 - 1)^2 + (10 - 2)^2 = 36 + 64$."], why: "$\\sqrt{6^2 + 8^2} = \\sqrt{100} = 10$." },
       { type: "learn", kicker: "A harder case",
-        prompt: "From coordinates alone, decide which transformation maps $A(1, 3) \\to A'(-3, 1)$ and $B(4, 3) \\to B'(-3, 4)$.",
-        scene: { type: "walk", how: [["Compare", "Compare each point with its image."], ["Pattern", "The same change for every point is a translation. A sign change is a reflection. A swap of coordinates is a rotation."], ["Name", "Name the transformation."]], rows: [
-          { step: 1, m: "(1, 3) \\to (-3, 1) \\qquad (4, 3) \\to (-3, 4)", say: "The points move different distances: not a translation.",
-            fig: grid([-5, 5], [-1, 5], [{ seg: [[1, 3], [4, 3]], c: "soft" }, { pt: [1, 3], name: "A", at: "n" }, { pt: [4, 3], name: "B", at: "n" }, { seg: [[-3, 1], [-3, 4]], c: "blue" }, { pt: [-3, 1], name: "A'", at: "w", c: "blue" }, { pt: [-3, 4], name: "B'", at: "w", c: "blue" }], { u: 24, alt: "Segment AB, lying flat, and its image A′B′, standing upright on the other side of the y-axis." }) },
-          { step: 2, m: "(x, y) \\to (-y, x)", say: "The coordinates swap, and the new $x$ changes sign." },
-          { step: 3, m: "\\text{a rotation of } 90° \\text{ about the origin}", say: "A quarter turn counterclockwise: the flat segment now stands upright." }] },
+        prompt: "The perimeter is the sum of the sides. Watch the perimeter of the triangle with corners $(0, 0)$, $(6, 0)$ and $(6, 8)$.",
+        scene: { type: "walk", how: HOW_1_7D, rows: [
+          { step: 1, m: "(0, 0) \\to (6, 8)", say: "Two sides are horizontal and vertical. The slanted one needs the distance formula.",
+            fig: grid([-1, 8], [-1, 10], [{ poly: [[0, 0], [6, 0], [6, 8]], names: "ABC", c: "blue" }], { u: 24, alt: "A right triangle with corners A(0, 0), B(6, 0) and C(6, 8)." }) },
+          { step: 2, m: "6 - 0 = 6 \\qquad 8 - 0 = 8", say: "The differences in $x$ and in $y$." },
+          { step: 3, m: "6^2 + 8^2 = 100", say: "$36 + 64$.",
+            ask: { prompt: "What is $6^2 + 8^2$?", answer: 0, options: [{ t: "100" }, { t: "14", fb: "Square first: $36 + 64$." }] } },
+          { step: 4, m: "AC = \\sqrt{100} = 10", say: "The slanted side is 10." },
+          { step: 4, m: "6 + 8 + 10 = 24", say: "Add the three sides: the perimeter is 24 units." }] },
         gate: true },
-      { type: "pair", kicker: "Try it", prompt: "Find the image of $(-3, 5)$ under $(x, y) \\to (x + 7, y - 8)$. Type it as $(x, y)$.",
-        answer: [4, -3], skill: "Translations",
-        near: [{ v: [-10, 13], fb: "The rule adds 7 to $x$ and subtracts 8 from $y$. You did the opposite." }, { v: [-3, 4], fb: "$x$ comes first: $-3 + 7$, then $5 - 8$." }],
-        hints: ["$-3 + 7$ and $5 - 8$."], why: "$(-3 + 7, 5 - 8) = (4, -3)$." },
+      { type: "choice", kicker: "Try it", prompt: "A polygon has 12 sides. What is it called?",
+        options: [{ t: "A dodecagon" }, { t: "A decagon", fb: "A decagon has 10 sides." }, { t: "A nonagon", fb: "A nonagon has 9 sides." }],
+        answer: 0, skill: "Name a polygon", hints: ["*Dodeca* means twelve."], why: "Twelve sides: a dodecagon." },
       { type: "choice", kicker: "Find the error",
-        prompt: "Under $(x, y) \\to (x - 3, y + 2)$, Max says the image of $(5, 1)$ is $(8, -1)$. What went wrong?",
-        options: [{ t: "He did the opposite to each coordinate. It is $(5 - 3, 1 + 2) = (2, 3)$." },
-                  { t: "He swapped the coordinates. It is $(-1, 8)$.", fb: "A translation never swaps coordinates." },
-                  { t: "Nothing. It is right.", fb: "The rule subtracts 3 from $x$, but 8 is more than 5." }],
-        answer: 0, skill: "Translations", hints: ["Apply the rule exactly as written."], why: "$(5 - 3, 1 + 2) = (2, 3)$." },
-      { type: "pair", kicker: "Use it", prompt: "A game piece at $(2, 1)$ moves 1 right and 2 up, and then 2 right and 1 up. Where does it end? Type it as $(x, y)$.",
-        answer: [5, 4], skill: "Translations",
-        near: [{ v: [3, 3], fb: "That is after the first move only." }], hints: ["First to $(3, 3)$. Then 2 right and 1 up."], why: "$(2 + 1 + 2, 1 + 2 + 1) = (5, 4)$: one translation by $(x + 3, y + 3)$." }
+        prompt: "Rob says a star-shaped figure cannot be a polygon, because its corners point inward. What is wrong?",
+        options: [{ t: "A polygon only needs straight sides that meet at their ends. Corners pointing inward make it concave." },
+                  { t: "Nothing. A polygon must be convex.", fb: "Convex polygons are one kind. Concave polygons are polygons too." },
+                  { t: "A star has curved sides.", fb: "A five-pointed star is drawn with straight segments." }],
+        answer: 0, skill: "Convex or concave", hints: ["Is being convex part of the definition of a polygon?"], why: "Convex or concave, it is still a polygon." },
+      { type: "num", kicker: "Use it", prompt: "A stop sign is a regular octagon with sides of 12 inches. How far is it round the edge?",
+        post: "in", answer: 96, skill: "Name a polygon",
+        near: [{ v: 8, fb: "That is the number of sides. Multiply by the length of each." }], hints: ["8 sides of 12 inches."], why: "$8 \\times 12 = 96$ inches." }
+    ]
+  });
+  /* ===================================== 1.8 · Problem solving in geometry */
+  var HOW_1_8 = [["Ask", "What is it asking for? What do I need to know to find it?"],
+                 ["Draw", "Sketch it, and label the sketch with what you are told."],
+                 ["Plan", "Pick the tool that fits: a formula, a postulate, a theorem."],
+                 ["Check", "Calculate, then ask: did I answer the question, and does it make sense?"]];
+  var GR18 = [[0, 0], [9, 0], [9, 12], [0, 12]];
+  LESSONS.push({
+    title: "Problem solving in geometry", art: "solve",
+    blurb: "Section 1.8 · Understand the problem, draw it, choose a tool, and check the answer.",
+    mins: 14, v: 5,
+    steps: [
+      { type: "num", kicker: "Warm up", prompt: "A rectangle is 8 cm long and 6 cm wide. What is its perimeter?", post: "cm", answer: 28, skill: "Perimeter",
+        near: [{ v: 48, fb: "That is the area, $8 \\times 6$. The perimeter is the distance **round** the edge." }, { v: 14, fb: "That is one length plus one width. Go all the way round." }],
+        hints: ["Two lengths and two widths."], why: "$8 + 6 + 8 + 6 = 28$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Make a rectangle by dragging $C$. Its diagonal is $\\overline{AC}$. Find **three** rectangles whose diagonal is a **whole number**.",
+        scene: { type: "sketch", x: [-1, 14], y: [-1, 11], u: 34, gate: true,
+          pts: { C: { at: [6, 4], drag: true, snap: 1, c: "orange", on: { fn: function (p) { return [Math.max(1, Math.min(13, Math.round(p[0]))), Math.max(1, Math.min(10, Math.round(p[1])))]; } }, say: "Corner C" } },
+          draw: function (s) {
+            var w = s.C[0], h = s.C[1], d = Math.sqrt(w * w + h * h), whole = Math.abs(d - Math.round(d)) < 1e-9, c = whole ? "green" : "blue";
+            return [{ poly: [[0, 0], [w, 0], [w, h], [0, h]], c: c }, { seg: [[0, 0], [w, h]], c: whole ? "green" : "orange", dash: true },
+              { len: String(w), seg: [[0, 0], [w, 0]], side: -1, off: 16 }, { len: String(h), seg: [[w, 0], [w, h]], side: -1, off: 16 },
+              { pt: [0, 0], name: "A", at: "sw" }, { pt: [w, h], name: "C", at: "ne", c: "orange" }];
+          },
+          readout: function (s) {
+            var w = s.C[0], h = s.C[1], d = Math.sqrt(w * w + h * h), whole = Math.abs(d - Math.round(d)) < 1e-9;
+            return "$" + w + "^2 + " + h + "^2 = " + (w * w + h * h) + "$ · $AC = \\sqrt{" + (w * w + h * h) + "} " + (whole ? "= " + Math.round(d) + "$ ✓" : "\\approx " + n1(d) + "$");
+          },
+          log: { need: 3, when: function (s) { var d = Math.sqrt(s.C[0] * s.C[0] + s.C[1] * s.C[1]); return Math.abs(d - Math.round(d)) < 1e-9; },
+                 cols: [{ h: "width", f: function (s) { return "$" + s.C[0] + "$"; } }, { h: "height", f: function (s) { return "$" + s.C[1] + "$"; } }, { h: "diagonal", f: function (s) { return "$" + Math.round(Math.sqrt(s.C[0] * s.C[0] + s.C[1] * s.C[1])) + "$"; } }] } },
+        then: "The diagonal comes from the **distance formula**, $\\sqrt{w^2 + h^2}$, and most rectangles give a number that goes on for ever. A few give a whole number, such as 3, 4, 5." },
+      { type: "learn", kicker: "Explore",
+        prompt: "A rectangle is 8 cm by 6 cm. How long is its diagonal? Look at the same problem **three ways**, and ask which one gives you a tool.",
+        scene: { type: "sketch", x: [-1.7, 10.4], y: [-1.3, 7.6], u: 40, grid: false, gate: true,
+          chips: { rep: { v: "plain", opts: [["plain", "Just the shape"], ["blocks", "In square blocks"], ["grid", "On a grid"]] } },
+          draw: function (s) {
+            var k = s.c.rep, items = [], i;
+            if (k !== "plain") { for (i = 0; i <= 8; i++) items.push({ seg: [[i, 0], [i, 6]], c: "soft" }); for (i = 0; i <= 6; i++) items.push({ seg: [[0, i], [8, i]], c: "soft" }); }
+            if (k === "grid") items.push({ seg: [[-1.2, 0], [9.6, 0]] }, { seg: [[0, -0.9], [0, 7]] });
+            items.push({ poly: [[0, 0], [8, 0], [8, 6], [0, 6]], c: "blue" }, { seg: [[0, 0], [8, 6]], c: "orange", dash: true }, { len: "8 cm", seg: [[0, 0], [8, 0]], side: -1, off: 16 }, { len: "6 cm", seg: [[8, 0], [8, 6]], side: -1, off: 16 });
+            if (k === "grid") items.push({ word: "(0, 0)", at: [-0.9, -0.55], c: "orange" }, { word: "(8, 6)", at: [9.1, 6.6], c: "orange" }, { pt: [0, 0], c: "orange" }, { pt: [8, 6], c: "orange" });
+            return items;
+          },
+          readout: function (s) {
+            return { plain: "**Just the shape.** Easy to see, but nothing here tells you how to find the diagonal.", blocks: "**In blocks.** The diagonal cuts through the blocks. Still no tool for it.", grid: "**On a grid.** The ends are $(0, 0)$ and $(8, 6)$, so the **distance formula** is the tool."}[s.c.rep] + "<br><span class='gt-dim'>Tried " + Object.keys(s.seen.rep).length + " of 3</span>";
+          },
+          goal: function (s) { return Object.keys(s.seen.rep).length >= 3; } },
+        then: "The same problem can be drawn many ways. Choose the drawing that **gives you a tool**: here, the grid." },
+      { type: "learn", kicker: "The idea",
+        prompt: "A problem is easier in four moves. **Ask** what it wants and what you need. **Draw** it and label the drawing. **Plan** by choosing the right tool from your toolbox. Then calculate, and **check** that you answered the question and that the answer makes sense.",
+        scene: { type: "method", how: HOW_1_8 } },
+      { type: "learn", kicker: "Watch",
+        prompt: "A rectangular garden bed has corners at $(0, 0)$, $(9, 0)$, $(9, 12)$ and $(0, 12)$, in metres. A hose runs corner to corner along $\\overline{AC}$. Watch its length found.",
+        scene: { type: "walk", how: HOW_1_8, rows: [
+          { step: 1, m: "AC = ?", say: "It asks for the length of the diagonal. I need the coordinates of its two ends." },
+          { step: 2, m: "A(0, 0) \\quad C(9, 12)", say: "Draw the bed on a grid, and label its corners.",
+            fig: grid([-1, 11], [-1, 14], [{ poly: GR18, names: "ABCD", c: "blue" }, { seg: [[0, 0], [9, 12]], c: "orange", dash: true }], { u: 20, alt: "A rectangle on a grid with corners (0, 0), (9, 0), (9, 12) and (0, 12), and a dashed diagonal from (0, 0) to (9, 12)." }) },
+          { step: 3, m: "d = \\sqrt{(9 - 0)^2 + (12 - 0)^2}", say: "Both ends have coordinates: the distance formula is the tool.",
+            ask: { prompt: "Which tool fits?", answer: 0,
+                   options: [{ t: "The distance formula" }, { t: "The Segment Addition Postulate", fb: "That one adds parts of a segment. Here we are given the two ends." }] } },
+          { step: 4, m: "\\sqrt{81 + 144} = \\sqrt{225} = 15", say: "The hose is 15 m long." },
+          { step: 4, m: "15 > 12 \\quad 15 > 9", say: "Sensible: a diagonal is longer than either side." }] },
+        gate: true, then: "Ask, draw, plan, check. The check is a habit: a diagonal shorter than a side would have been a warning." },
+      { type: "guided", kicker: "Together",
+        prompt: "A drone flies in a straight line from $P(2, 3)$ to $Q(14, 8)$ on a map, in blocks. How far does it fly? Now you solve it.",
+        art: grid([0, 16], [0, 11], [{ seg: [[2, 3], [14, 8]], c: "blue" }, { pt: [2, 3], name: "P", at: "nw" }, { pt: [14, 8], name: "Q", at: "ne" }], { u: 22, alt: "A segment from P(2, 3) to Q(14, 8) on a grid." }),
+        how: HOW_1_8, skill: "Problem solving",
+        steps: [
+          { step: 1, ask: "What is the problem asking for?", type: "choice", answer: 0,
+            options: [{ t: "The distance from $P$ to $Q$" }, { t: "The area of a shape", fb: "No area is asked for. It is a straight-line distance." }],
+            m: "PQ = ?", say: "The length of the flight." },
+          { step: 2, ask: "The map is already a grid. How far across is it from $P$ to $Q$?", type: "num", answer: 12, near: [{ v: 14, fb: "That is $Q$'s $x$. Subtract: $14 - 2$." }], hint: "$14 - 2$.",
+            m: "14 - 2 = 12", say: "12 blocks across." },
+          { step: 3, ask: "How far up is it? Then the tool is the distance formula.", type: "num", answer: 5, near: [{ v: 8, fb: "That is $Q$'s $y$. Subtract: $8 - 3$." }], hint: "$8 - 3$.",
+            m: "8 - 3 = 5", say: "5 blocks up. Across and up make the legs of a right triangle." },
+          { step: 4, ask: "Now calculate $\\sqrt{12^2 + 5^2}$. How far does it fly?", type: "num", answer: 13, near: [{ v: 17, fb: "That is $12 + 5$. Square, add, then take the root." }, { v: 169, fb: "That is $d^2$. Take the square root." }], hint: "$144 + 25 = 169$.",
+            m: "\\sqrt{144 + 25} = \\sqrt{169} = 13", say: "13 blocks. It is longer than 12 and longer than 5: it makes sense." }],
+        why: "Ask, draw, plan, check. Now two on your own." },
+      { type: "choice", kicker: "On your own", prompt: "A problem gives you the coordinates of two points and asks how far apart they are. Which tool do you pick?",
+        options: [{ t: "The distance formula" }, { t: "The Angle Addition Postulate", fb: "That is for angles that share a vertex." }, { t: "The perimeter formula", fb: "No shape is given: just two points." }],
+        answer: 0, skill: "Choose a tool", hints: ["Two points with coordinates: how do you find the distance?"], why: "Two coordinates, one distance: the distance formula." },
+      { type: "num", prompt: "A rectangular field is 20 m long and 15 m wide. A path runs corner to corner. How long is the path?",
+        art: grid([-1, 22], [-1, 17], [{ poly: [[0, 0], [20, 0], [20, 15], [0, 15]], c: "blue" }, { seg: [[0, 0], [20, 15]], c: "orange", dash: true }], { u: 14, alt: "A rectangle 20 wide and 15 high on a grid with a dashed diagonal." }),
+        post: "m", answer: 25, skill: "Problem solving",
+        near: [{ v: 35, fb: "That is $20 + 15$, the way round two sides. The diagonal is shorter than that." }, { v: 625, fb: "That is $d^2$. Take the square root." }],
+        hints: ["Put the corners at $(0, 0)$ and $(20, 15)$.", "$\\sqrt{400 + 225}$."], why: "$\\sqrt{20^2 + 15^2} = \\sqrt{625} = 25$ m." },
+      { type: "learn", kicker: "A harder case",
+        prompt: "A plan can use more than one tool. Mia walks 12 m east and then 5 m north. How much shorter is the straight way?",
+        scene: { type: "walk", how: HOW_1_8, rows: [
+          { step: 1, m: "(12 + 5) - d = ?", say: "It asks for the **difference** between the two routes: the walk round, and the straight line." },
+          { step: 2, m: "A(0, 0) \\quad B(12, 0) \\quad C(12, 5)", say: "A right triangle: the walk is two sides, and the straight way is the third.",
+            fig: grid([-1, 14], [-1, 7], [{ poly: [[0, 0], [12, 0], [12, 5]], names: "ABC", c: "blue" }, { seg: [[0, 0], [12, 5]], c: "orange", dash: true }], { u: 24, alt: "A right triangle with corners A(0, 0), B(12, 0) and C(12, 5). The walk goes along AB and BC; the straight way is AC." }) },
+          { step: 3, m: "12 + 5 = 17 \\qquad d = \\sqrt{12^2 + 5^2}", say: "Two tools: add the two legs, and use the distance formula for the third side.",
+            ask: { prompt: "What is $12 + 5$?", answer: 0, options: [{ t: "17 m: the walk" }, { t: "13 m", fb: "13 is the straight line. $12 + 5$ is the walk round." }] } },
+          { step: 4, m: "17 - 13 = 4", say: "The straight way is 13 m, so it saves 4 m. It is shorter than 17 m, as it must be." }] },
+        gate: true },
+      { type: "order", kicker: "Try it", prompt: "Put the four moves of problem solving in order.",
+        items: ["Ask: what is it asking for, and what do I need?", "Draw and label a sketch.", "Plan: choose the tool that fits.", "Check: did I answer it, and does it make sense?"],
+        skill: "Problem solving", hints: ["Understand the question before you choose a tool."], why: "Ask, draw, plan, check." },
+      { type: "choice", kicker: "Find the error",
+        prompt: "Dan finds the diagonal of an 8 cm by 6 cm rectangle and gets 3 cm. Which question would have caught the mistake?",
+        options: [{ t: "“Does my answer make sense?” A diagonal cannot be shorter than a side." },
+                  { t: "“Did I use a pencil?”", fb: "A pencil helps, but it does not tell you the answer is wrong." },
+                  { t: "“Is the rectangle drawn neatly?”", fb: "A neat drawing does not check the number." }],
+        answer: 0, skill: "Problem solving", hints: ["Compare 3 cm with the sides, 8 cm and 6 cm."], why: "The diagonal is longer than both sides, so 3 cm cannot be right: it is 10 cm." },
+      { type: "num", kicker: "Use it", prompt: "A screen is 16 inches wide and 12 inches tall. A scratch runs from one corner to the opposite corner. How long is the scratch?",
+        post: "in", answer: 20, skill: "Problem solving",
+        near: [{ v: 28, fb: "That is $16 + 12$. A diagonal is shorter than the two sides added." }], hints: ["$\\sqrt{16^2 + 12^2}$."], why: "$\\sqrt{256 + 144} = \\sqrt{400} = 20$ inches." }
     ]
   });
   /* ================================================================ Skills */
@@ -1161,7 +1595,15 @@
           wrong: ["Acute", "Right", "Obtuse", "Straight"].filter(function (t) { return t !== cls; }).map(function (t) { return { t: t, fb: { Acute: "Acute is less than 90°.", Right: "Right is exactly 90°.", Obtuse: "Obtuse is between 90° and 180°.", Straight: "Straight is exactly 180°." }[t] }; }),
           hints: ["Compare it with 90° and with 180°."], why: { Acute: "Less than 90°.", Right: "Exactly 90°.", Obtuse: "Between 90° and 180°.", Straight: "Exactly 180°." }[cls] });
       } },
-    { id: "hg1-pairs", title: "Complementary, supplementary and vertical angles", lesson: 5,
+    { id: "hg1-midpoint", title: "Find a midpoint", lesson: 5,
+      gen: function (R) {
+        var mx = R.int(-4, 4), my = R.int(-4, 4), dx = R.int(1, 4), dy = R.int(1, 4) * R.pick([1, -1]), P = [mx - dx, my - dy], Q = [mx + dx, my + dy];
+        return { type: "pair", prompt: "Find the midpoint of the segment from $" + pt(P) + "$ to $" + pt(Q) + "$. Type it as $(x, y)$.", answer: [mx, my],
+          near: [{ v: [2 * mx, 2 * my], fb: "Those are the sums. Divide each by 2." }, { v: [dx, dy], fb: "Add the coordinates, then halve. Do not subtract them." }],
+          hints: ["$\\frac{" + P[0] + " + " + (Q[0] < 0 ? "(" + Q[0] + ")" : Q[0]) + "}{2}$ and $\\frac{" + P[1] + " + " + (Q[1] < 0 ? "(" + Q[1] + ")" : Q[1]) + "}{2}$."],
+          why: "$\\left(\\frac{" + 2 * mx + "}{2}, \\frac{" + 2 * my + "}{2}\\right) = " + pt([mx, my]) + "$." };
+      } },
+    { id: "hg1-pairs", title: "Complementary, supplementary and vertical angles", lesson: 6,
       gen: function (R) {
         var kind = R.int(0, 2), a = R.int(12, 78);
         if (kind === 0) { var comp = R.chance(0.5), tot = comp ? 90 : 180, g = comp ? a : R.int(25, 155);
@@ -1180,57 +1622,57 @@
           near: near(k * s0, [{ v: s0, fb: "That is the " + (sup ? "supplement" : "complement") + ". The angle is " + k + " times as large." }]),
           hints: ["Call the smaller one $s$. Then $" + k + "s + s = " + T + "$."], why: "$" + (k + 1) + "s = " + T + "$, so $s = " + s0 + "$ and the angle is $" + k * s0 + "°$." };
       } },
-    { id: "hg1-formula", title: "Perimeter, area and circumference", lesson: 6,
+    { id: "hg1-triangle", title: "Classify triangles", lesson: 7,
       gen: function (R) {
-        var kind = R.int(0, 3), l = R.int(5, 16), w = R.int(2, l - 1), b = 2 * R.int(2, 9), h = R.int(3, 12), r = R.int(2, 12);
-        if (kind === 0) { var per = R.chance(0.5), ans = per ? 2 * l + 2 * w : l * w;
-          return { type: "num", prompt: "A rectangle is " + l + " cm long and " + w + " cm wide. Find its **" + (per ? "perimeter" : "area") + "**.", post: per ? "cm" : "square cm", answer: ans,
-            near: near(ans, [{ v: per ? l * w : 2 * l + 2 * w, fb: per ? "That is the area. Perimeter is the distance around." : "That is the perimeter. Area is length times width." }]),
-            hints: [per ? "$2(" + l + ") + 2(" + w + ")$." : "$" + l + " \\cdot " + w + "$."], why: per ? "$P = " + 2 * l + " + " + 2 * w + " = " + ans + "$." : "$A = " + l + " \\cdot " + w + " = " + ans + "$." }; }
-        if (kind === 1) return { type: "num", prompt: "A triangle has base " + b + " in. and height " + h + " in. Find its area.", post: "square inches", answer: b * h / 2,
-          near: [{ v: b * h, fb: "A triangle is half of the rectangle around it: $\\frac{1}{2}bh$." }], hints: ["$\\frac{1}{2} \\cdot " + b + " \\cdot " + h + "$."], why: "$\\frac{1}{2} \\cdot " + b * h + " = " + b * h / 2 + "$." };
-        if (kind === 2) { var s = R.int(3, 14);
-          return { type: "num", prompt: "A square has perimeter " + 4 * s + " m. Find its area.", post: "square metres", answer: s * s,
-            near: near(s * s, [{ v: s, fb: "That is the side. The area is the side squared." }]), hints: ["$4s = " + 4 * s + "$, so $s = " + s + "$."], why: "$s = " + s + "$, so $A = " + s * s + "$." }; }
-        var area = R.chance(0.5), C = Math.round(2 * 3.14 * r * 10) / 10, A = Math.round(3.14 * r * r * 10) / 10;
-        return { type: "num", prompt: "Use $\\pi \\approx 3.14$. A circle has radius " + r + " cm. Find its " + (area ? "area" : "circumference") + ", to the nearest tenth.", post: area ? "square cm" : "cm", answer: area ? A : C, tol: 0.06,
-          near: near(area ? A : C, [{ v: area ? C : A, tol: 0.06, fb: area ? "That is the circumference. Area is $\\pi r^2$." : "That is the area. Circumference is $2\\pi r$." }]),
-          hints: [area ? "$3.14 \\cdot " + r + "^2$." : "$2 \\cdot 3.14 \\cdot " + r + "$."], why: area ? "$3.14 \\cdot " + r * r + " \\approx " + num(A) + "$." : "$6.28 \\cdot " + r + " \\approx " + num(C) + "$." };
+        var byAngles = R.chance(0.5);
+        if (byAngles) {
+          var t = R.pick(["acute", "right", "obtuse"]), a, b, c;
+          if (t === "right") { a = 90; b = R.int(20, 70); c = 90 - b; }
+          else if (t === "obtuse") { a = R.int(95, 140); b = R.int(12, 180 - a - 12); c = 180 - a - b; }
+          else { do { a = R.int(40, 85); b = R.int(40, 85); c = 180 - a - b; } while (c >= 89 || c < 25); }
+          var ang = R.shuffle([a, b, c]);
+          return mc(R, { prompt: "A triangle has angles of $" + ang[0] + "°$, $" + ang[1] + "°$ and $" + ang[2] + "°$. How is it classified by its angles?", right: t[0].toUpperCase() + t.slice(1), keep: true,
+            wrong: ["Acute", "Right", "Obtuse"].filter(function (x) { return x.toLowerCase() !== t; }).map(function (x) { return { t: x, fb: { Acute: "Acute needs all three angles under 90°.", Right: "Right needs an angle of exactly 90°.", Obtuse: "Obtuse needs an angle over 90°." }[x] }; }),
+            hints: ["Look at the largest angle: under, equal to, or over 90°."], why: "The largest angle is " + Math.max(a, b, c) + "°, which is " + (t === "acute" ? "under 90°" : t === "right" ? "exactly 90°" : "over 90°") + "." });
+        }
+        var s = R.pick(["scalene", "isosceles", "equilateral"]), x = R.int(3, 11), y, z;
+        if (s === "equilateral") { y = x; z = x; }
+        else if (s === "isosceles") { y = x; do { z = R.int(2, 2 * x - 1); } while (z === x); }
+        else { do { y = R.int(3, 12); z = R.int(3, 12); } while (x === y || y === z || x === z || x + y <= z || x + z <= y || y + z <= x); }
+        var sd = R.shuffle([x, y, z]);
+        return mc(R, { prompt: "A triangle has sides of " + sd[0] + " cm, " + sd[1] + " cm and " + sd[2] + " cm. How is it classified by its sides?", right: s[0].toUpperCase() + s.slice(1), keep: true,
+          wrong: ["Scalene", "Isosceles", "Equilateral"].filter(function (w) { return w.toLowerCase() !== s; }).map(function (w) { return { t: w, fb: { Scalene: "Scalene means no two sides are equal.", Isosceles: "Isosceles means at least two sides are equal.", Equilateral: "Equilateral means all three sides are equal." }[w] }; }),
+          hints: ["How many of the sides have the same length?"], why: { scalene: "No two sides are equal.", isosceles: "Two sides are equal.", equilateral: "All three sides are equal." }[s] });
       } },
-    { id: "hg1-midpoint", title: "Find a midpoint", lesson: 7,
+    { id: "hg1-polygon", title: "Name a polygon", lesson: 8,
       gen: function (R) {
-        var mx = R.int(-4, 4), my = R.int(-4, 4), dx = R.int(1, 4), dy = R.int(1, 4) * R.pick([1, -1]), P = [mx - dx, my - dy], Q = [mx + dx, my + dy];
-        return { type: "pair", prompt: "Find the midpoint of the segment from $" + pt(P) + "$ to $" + pt(Q) + "$. Type it as $(x, y)$.", answer: [mx, my],
-          near: [{ v: [2 * mx, 2 * my], fb: "Those are the sums. Divide each by 2." }, { v: [dx, dy], fb: "Add the coordinates, then halve. Do not subtract them." }],
-          hints: ["$\\frac{" + P[0] + " + " + (Q[0] < 0 ? "(" + Q[0] + ")" : Q[0]) + "}{2}$ and $\\frac{" + P[1] + " + " + (Q[1] < 0 ? "(" + Q[1] + ")" : Q[1]) + "}{2}$."],
-          why: "$\\left(\\frac{" + 2 * mx + "}{2}, \\frac{" + 2 * my + "}{2}\\right) = " + pt([mx, my]) + "$." };
+        var N = { 3: "triangle", 4: "quadrilateral", 5: "pentagon", 6: "hexagon", 7: "heptagon", 8: "octagon", 9: "nonagon", 10: "decagon", 12: "dodecagon" }, ks = Object.keys(N).map(Number), n = R.pick(ks);
+        if (R.chance(0.5)) {
+          var wrong = R.shuffle(ks.filter(function (k) { return k !== n; })).slice(0, 2).map(function (k) { return { t: N[k], fb: "A " + N[k] + " has " + k + " sides." }; });
+          return mc(R, { prompt: "A polygon has " + n + " sides. What is it called?", right: N[n], wrong: wrong, hints: ["Match the number of sides to its prefix."], why: "A polygon with " + n + " sides is a " + N[n] + "." });
+        }
+        var others = R.shuffle(ks.filter(function (k) { return k !== n; })).slice(0, 2);
+        return mc(R, { prompt: "How many sides does a " + N[n] + " have?", right: String(n), wrong: others.map(function (k) { return { t: String(k), fb: "A " + N[k] + " has " + k + " sides." }; }), keep: true, hints: ["Think of the prefix: it counts the sides."], why: "A " + N[n] + " has " + n + " sides." });
       } },
-    { id: "hg1-distance", title: "Find a distance", lesson: 7,
+    { id: "hg1-distance", title: "Find a distance", lesson: 8,
       gen: function (R) {
         var T = R.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17], [9, 12, 15], [12, 16, 20], [7, 24, 25]]), sw = R.chance(0.5), dx = (sw ? T[1] : T[0]) * R.pick([1, -1]), dy = (sw ? T[0] : T[1]) * R.pick([1, -1]);
         var P = [R.int(-5, 5), R.int(-5, 5)], Q = [P[0] + dx, P[1] + dy];
         return { type: "num", prompt: "Find the distance between $" + pt(P) + "$ and $" + pt(Q) + "$.", answer: T[2],
           near: [{ v: Math.abs(dx) + Math.abs(dy), fb: "That goes round the corner. Square each difference, add, then take the root." }, { v: T[2] * T[2], fb: "That is $d^2$. Take the square root." }],
           hints: ["The differences are " + Math.abs(dx) + " and " + Math.abs(dy) + ".", "$" + Math.abs(dx) + "^2 + " + Math.abs(dy) + "^2 = " + T[2] * T[2] + "$."], why: "$\\sqrt{" + dx * dx + " + " + dy * dy + "} = \\sqrt{" + T[2] * T[2] + "} = " + T[2] + "$." };
-      } },
-    { id: "hg1-translate", title: "Translate a point", lesson: 8,
-      gen: function (R) {
-        var P = [R.int(-6, 6), R.int(-6, 6)], a = R.int(1, 8) * R.pick([1, -1]), b = R.int(1, 8) * R.pick([1, -1]);
-        return { type: "pair", prompt: "Find the image of $" + pt(P) + "$ under $(x, y) \\to (x " + plusMinus(a) + ", y " + plusMinus(b) + ")$. Type it as $(x, y)$.", answer: [P[0] + a, P[1] + b],
-          near: [{ v: [P[0] - a, P[1] - b], fb: "You did the opposite to each coordinate. Apply the rule as written." }, { v: [P[1] + b, P[0] + a], fb: "$x$ comes first." }],
-          hints: ["$" + P[0] + " " + plusMinus(a) + "$ and $" + P[1] + " " + plusMinus(b) + "$."], why: "$" + pt([P[0] + a, P[1] + b]) + "$: " + move(a, b) + "." };
       } }
   ];
   L.unit("geo", 1, {
-    title: "Foundations for Geometry",
+    title: "Basics of Geometry",
     lessons: LESSONS,
     quizzes: [
-      { title: "Quiz 1", after: 4, blurb: "Naming figures, segment addition and midpoints, and angles.",
+      { title: "Quiz 1", after: 4, blurb: "Naming figures, segment addition, and angles.",
         skills: ["hg1-name", "hg1-segment", "hg1-angle"], per: 2 },
-      { title: "Quiz 2", after: 6, blurb: "Pairs of angles, and perimeter, area and circumference.",
-        skills: ["hg1-pairs", "hg1-formula"], per: 3 },
-      { title: "Quiz 3", after: 8, blurb: "Midpoint, distance, and translations.",
-        skills: ["hg1-midpoint", "hg1-distance", "hg1-translate"], per: 2 }
+      { title: "Quiz 2", after: 6, blurb: "Midpoints on a grid, and pairs of angles.",
+        skills: ["hg1-midpoint", "hg1-pairs"], per: 3 },
+      { title: "Quiz 3", after: 9, blurb: "Classifying triangles and polygons, and distance on a grid.",
+        skills: ["hg1-triangle", "hg1-polygon", "hg1-distance"], per: 2 }
     ],
     skills: SKILLS
   });
@@ -1238,17 +1680,19 @@
   L.addConcepts("geo:1", {
     2: { name: "Points, lines and planes", frame: "A point, a line and a plane are the [[undefined]] terms. A [[segment]] has two endpoints, and a [[ray]] has one. Points on the same line are [[collinear]].",
          chips: ["coplanar", "angle"] },
-    3: { name: "Segments", frame: "If $B$ is between $A$ and $C$, then $AB + BC = $ [[AC]]. Segments with the same length are [[congruent]]. A [[midpoint]] divides a segment into two congruent segments.",
+    3: { name: "Segments and distance", frame: "The distance between two points is the absolute value of the difference of their readings: the [[Ruler]] Postulate. If $B$ is between $A$ and $C$, then $AB + BC = $ [[AC]].",
          chips: ["BC", "parallel"] },
-    4: { name: "Angles", frame: "An angle is two rays with a common endpoint, the [[vertex]]. An [[acute]] angle is less than 90° and an [[obtuse]] angle is more. An angle [[bisector]] divides an angle into two congruent angles.",
+    4: { name: "Rays and angles", frame: "An angle is two rays with a common endpoint, the [[vertex]]. An [[acute]] angle is less than 90°, and an [[obtuse]] angle is more. The parts of an angle add up to the whole: the Angle [[Addition]] Postulate.",
          chips: ["right", "midpoint"] },
-    5: { name: "Pairs of angles", frame: "[[Complementary]] angles add to 90° and [[supplementary]] angles add to 180°. A linear pair is supplementary. [[Vertical]] angles are congruent.",
+    5: { name: "Segments and angles", frame: "A [[midpoint]] cuts a segment into two congruent segments, and an angle [[bisector]] cuts an angle into two congruent angles. Congruent figures have equal [[measures]].",
+         chips: ["vertex", "straight"] },
+    6: { name: "Angle pairs", frame: "[[Complementary]] angles add to 90° and [[supplementary]] angles add to 180°. A linear pair is supplementary. [[Vertical]] angles are congruent.",
          chips: ["Adjacent", "Acute"] },
-    6: { name: "Formulas", frame: "[[Perimeter]] is the distance around a figure, and [[area]] is the surface inside it, in square units. A circle's formulas use its [[radius]]: $C = 2\\pi r$ and $A = \\pi r^2$.",
-         chips: ["diameter", "volume"] },
-    7: { name: "Midpoint and distance", frame: "A midpoint's coordinates are the [[averages]] of the endpoints' coordinates. The distance between two points is the [[hypotenuse]] of a right triangle whose [[legs]] are the differences in $x$ and in $y$.",
-         chips: ["sums", "slope"] },
-    8: { name: "Transformations", frame: "A transformation maps a [[preimage]] onto its [[image]]. A [[translation]] slides every point the same way, a reflection flips over a line, and a [[rotation]] turns about a point.",
-         chips: ["dilation", "midpoint"] }
+    7: { name: "Classifying triangles", frame: "A triangle is named by its angles (acute, right, obtuse) and by its sides: [[scalene]] has no congruent sides, isosceles at least two, and [[equilateral]] all three.",
+         chips: ["quadrilateral", "obtuse"] },
+    8: { name: "Classifying polygons", frame: "A polygon is a closed figure made of segments. It is [[convex]] if every segment joining two corners stays inside, and concave if one leaves. A polygon with $n$ sides is an [[n-gon]].",
+         chips: ["circle", "ray"] },
+    9: { name: "Problem solving", frame: "Ask what is wanted, [[draw]] it, plan with the right tool, and [[check]] that the answer makes sense.",
+         chips: ["guess", "skip"] }
   });
 })();
