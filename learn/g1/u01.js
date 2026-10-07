@@ -74,9 +74,9 @@
         hints: ["The ball must go down below the table.", "Put it between the legs."], why: G.sentence("the ball", "under", "the table") }),
       put({ kicker: "Two things", prompt: "Put Moti " + W("on") + " the bed. Put the ball " + W("under") + " the bed.", scene: S.bed(), tasks: [{ item: "moti", rel: "on", ref: "bed" }, { item: "ball", rel: "under", ref: "bed" }], skill: T_ON,
         hints: ["Moti goes on the top of the bed.", "The ball goes down below the bed."], why: G.sentence("Moti", "on", "the bed") + " " + G.sentence("the ball", "under", "the bed") }),
-      pick({ kicker: "Look", prompt: "A boy is sitting by a big tree. Where is he?", scene: S.boyTree(), sentence: "The boy is {} the tree.", options: ["on", "under"], answer: "under", skill: T_ON,
+      pick({ kicker: "Look", prompt: "A boy is reading a book. Where is he?", scene: S.boyTree(), sentence: "The boy is {} the tree.", options: ["on", "under"], answer: "under", skill: T_ON,
         hints: ["Is the boy up in the tree, or down below it?"], look: "Look at the boy again.", why: G.sentence("the boy", "under", "the tree") }),
-      pick({ kicker: "Look", prompt: "Two birds are in the tree. Where are the birds?", scene: S.boyTree(), sentence: "The birds are {} the tree.", options: ["on", "under"], answer: "on", skill: T_ON,
+      pick({ kicker: "Look", prompt: "Look at the two birds. Where are they?", scene: S.boyTree(), sentence: "The birds are {} the tree.", options: ["on", "under"], answer: "on", skill: T_ON,
         hints: ["Are the birds sitting in the tree, or down below it?"], look: "Look at the birds again.", why: "The birds are " + W("on") + " the tree." }),
       put({ kicker: "Your turn", prompt: "Put a bird " + W("on") + " the tree. Put Moti " + W("under") + " the tree.", scene: S.tree({ moti: true, motiX: 520 }),
         tasks: [{ item: "bird1", rel: "on", ref: "tree" }, { item: "moti", rel: "under", ref: "tree" }], skill: T_ON,
@@ -278,7 +278,7 @@
         bins: BINS3(214, 156, [null, null, null]), rule: "any", avoid: ["colour"], show: "shape",
         hints: ["Look at the shapes. Are they all round?", "Or look at the size: big and small."], why: "You found a new way to sort." }),
       learn({ kicker: "Play for real", prompt: "Sort things at home: spoons, socks, or toys. Put the same together. Say why they are the same.", art: still(S.leaves()), after: "Then tap Continue." }),
-      learn({ kicker: "Remember", prompt: "Things can be put in a group when they are the same in some way: the same colour, the same shape, or the same size.", art: still(STILL_SORTED) })
+      learn({ kicker: "Remember", prompt: "Same things go together. The same colour. The same shape. The same size.", art: still(STILL_SORTED) })
     ]
   });
 

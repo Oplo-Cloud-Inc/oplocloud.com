@@ -674,6 +674,9 @@ window.OPLO = (function () {
       { t: "Collecting Data", desc: "Counting and comparing, and showing what you counted with pictures." }
     ],
     grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    grownup: "Sit with your child for the first few lessons. Every screen is read aloud and nothing needs typing, so a child who cannot read yet can still do it. " +
+             "Each lesson ends with something to do away from the screen: please do it together, because that is where the words stick. " +
+             "Nothing is timed and nothing is marked. If a step is hard, press Hint, or just try again.",
     textbook: "The course follows NCERT Class 1 Mathematics (Joyful Mathematics) a chapter at a time: unit 1 is the book's first chapter. " +
               "Every story, picture, explanation and question is OEdu's own."
   };

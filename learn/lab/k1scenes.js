@@ -84,7 +84,7 @@
     o = o || {};
     return mk("shelfwall", [ref("shelf", "shelf", 320, 0.95), mv("ball", "ball", 26, 0.85, { label: "the ball" }), mv("duck", "duck", 84, 0.75, { label: "the duck" }), mv("bear", "bear", 536, 0.55, { label: "the bear" })].concat(o.four ? [mv("block", "block", 560, 0.6, { label: "the block" })] : []), { alt: "A tall cupboard with three racks, and three toys to put in it." });
   };
-  S.shelfMoti = function () { return mk("shelfwall", [ref("shelf", "shelf", 320, 0.95), moti(24)], { alt: "A cupboard with three racks, and Moti." }); };
+  S.shelfMoti = function () { return mk("shelfwall", [ref("shelf", "shelf", 320, 0.95), moti(24, { s: 0.5 })], { alt: "A cupboard with three racks, and Moti." }); };
   S.tower = function (o) {
     o = o || {};
     var cols = o.colours || ["red", "blue", "green"], P = { red: ["#e8505b", "#bf3943"], blue: ["#4a8cff", "#2f67d1"], green: ["#47b872", "#2f8f55"], yellow: ["#ffd23f", "#e0a91d"], purple: ["#8a63f0", "#6b46d1"], orange: ["#ff9244", "#d96d1f"] };

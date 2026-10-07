@@ -295,7 +295,7 @@
             S.settle(T); paint(T); S.layer(T); S.shadowOf(T); S.moved[T.id] = true; S.emit("drop", T);
           }, 450);
         } else if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault(); S.select(S.sel === T ? null : T); S.emit("pick", T);
+          e.preventDefault(); e.stopPropagation(); S.select(S.sel === T ? null : T); S.emit("pick", T);
         }
       });
     }
@@ -313,7 +313,8 @@
     function wireTap(T) {
       function fire(e) { if (S.locked) return; if (e && e.preventDefault) e.preventDefault(); S.emit("tap", T); }
       T.box.addEventListener("click", fire);
-      T.node.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") fire(e); });
+      // Enter on a thing taps it; it must not also press the card's Check or Continue.
+      T.node.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); fire(e); } });
     }
 
     /* ---- marks drawn over things: a ring, a tick, a number */

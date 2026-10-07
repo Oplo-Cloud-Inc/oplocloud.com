@@ -2038,6 +2038,11 @@
       cc.addEventListener("click", function () { openLab(c, null, "Challenge"); });
       col.appendChild(cc);
     }
+    if (c.grownup) {
+      var gu = el("details", "kp-more");
+      gu.innerHTML = "<summary>For the grown-up</summary><p>" + esc(c.grownup) + "</p>";
+      col.appendChild(gu);
+    }
     if (c.objectives || c.textbook) {
       var more = el("details", "kp-more");
       more.innerHTML = "<summary>What you will be able to do</summary>" + (c.objectives ? "<ul>" + c.objectives.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" : "") +
