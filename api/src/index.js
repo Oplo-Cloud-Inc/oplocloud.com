@@ -216,7 +216,9 @@ export default {
         repo: new D1Repository(env.DB),
         waitUntil: (p) => executionCtx.waitUntil(p),
         actor: null,
-        rotate: null
+        rotate: null,
+        // Handlers written as (ctx) read their route params here; the rest take them as a second argument.
+        params: found.params
       };
       // Resolved once per request, from the session token alone. This is the
       // only place the caller's identity is established, and it is never read

@@ -484,6 +484,39 @@ window.OPLO_API = (function () {
       mine: function () { return get("/family/applications" + q({ today: localDay() })); }
     },
 
+    /* ------------------------------------------------------- Attendance
+       One register per course and day. The server decides who may write one
+       (the course's teacher, a dean, a principal, a registrar) and who may
+       read the school's: this object only asks. */
+    attendance: {
+      list: function (opts) {
+        opts = opts || {};
+        return get("/attendance" + q({ courseId: opts.courseId, accountId: opts.accountId, day: opts.day, from: opts.from, to: opts.to }))
+          .then(function (r) { return r.attendance; });
+      },
+      put: function (day, courseId, marks) {
+        return put("/attendance", { day: day, courseId: courseId || null, marks: marks });
+      },
+      summary: function (from, to) { return get("/attendance/summary" + q({ from: from, to: to })); }
+    },
+
+    /* ------------------------------------------------- Marking periods
+       Open, grading, posted, locked: one way forward. Posting a course
+       freezes what each student earned in it, and a posted grade moves only
+       by a request someone else approves. */
+    periods: {
+      list: function () { return get("/periods").then(function (r) { return r.periods; }); },
+      create: function (data) { return post("/periods", data).then(function (r) { return r.period; }); },
+      move: function (id, state) { return patch("/periods/" + id, { state: state }).then(function (r) { return r.period; }); },
+      post: function (id, courseId) { return post("/periods/" + id + "/post", { courseId: courseId }, { timeout: 30000 }); },
+      posted: function (id, opts) {
+        opts = opts || {};
+        return get("/periods/" + id + "/posted" + q({ courseId: opts.courseId, accountId: opts.accountId })).then(function (r) { return r.posted; });
+      },
+      changes: function (status) { return get("/grade-changes" + q({ status: status })); },
+      decide: function (id, approve, note) { return post("/grade-changes/" + id + "/decision", { approve: !!approve, note: note || null }); }
+    },
+
     /* --------------------------------------------------------- Progress
        The student's own record, synchronised across their devices. Scoped
        finely — one study set, one unit — so two devices working on different
