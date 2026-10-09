@@ -97,6 +97,7 @@ window.OPLO_LAB = (function () {
     "precalc/u05.js": "ca01ba2b",
     "precalc/u06.js": "5036569e",
     "precalc/u07.js": "68aa7333",
+    "precalc/u08.js": "8d5c040f",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "a3bd33f8",
     "geo/u02.js": "327da4b8",
