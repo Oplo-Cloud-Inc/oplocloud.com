@@ -158,10 +158,10 @@
   function slide(f, o) {
     var xr = o.x, snap = o.snap || 1, nme = o.name || "f", lim = o.xlim || [Math.ceil((xr[0] + 0.3) / snap) * snap, Math.floor((xr[1] - 0.3) / snap) * snap];
     // The figure stays about 300 px tall: on a laptop the whole card, its buttons and its readout must fit one screen.
-    var u = o.u || Math.min(Math.floor(300 / (o.y[1] - o.y[0])), Math.floor(480 / (xr[1] - xr[0])));
+    var u = o.u || Math.min(Math.floor(340 / (o.y[1] - o.y[0])), Math.floor(480 / (xr[1] - xr[0])));
     function fix(p) { var x = Math.round(p[0] / snap) * snap; x = Math.max(lim[0], Math.min(lim[1], x)); return [x, f(x)]; }
     var W0 = (xr[1] - xr[0]) * u + 48, H0 = (o.y[1] - o.y[0]) * u + 48;
-    var sc = { type: "sketch", x: o.x, y: o.y, u: u, gate: true, w: o.w || Math.min(480, Math.round(320 * W0 / H0)),
+    var sc = { type: "sketch", x: o.x, y: o.y, u: u, gate: true, w: o.w || Math.min(480, Math.round(360 * W0 / H0)),
       pts: { P: { at: fix([o.from == null ? 0 : o.from, 0]), drag: true, c: "orange", say: "The input", on: { fn: fix } } },
       draw: function (s) {
         var x = s.P[0], y = s.P[1];
@@ -230,6 +230,7 @@
     ab: { f: Math.abs, lab: "$|x|$", pts: [[-2, 2], [-1, 1], [0, 0], [1, 1], [2, 2]] },
     rt: { f: function (x) { return x < 0 ? NaN : Math.sqrt(x); }, lab: "$\\sqrt{x}$", pts: [[0, 0], [1, 1], [4, 2]] },
     cb: { f: function (x) { return x * x * x; }, lab: "$x^3$", pts: [[-1, -1], [0, 0], [1, 1]] },
+    lin: { f: function (x) { return x; }, lab: "$x$", pts: [[0, 0], [1, 1], [2, 2]] },
     hat: { f: pw([[-3, 0], [-1, 2], [1, 2], [3, 0]]), lab: "hat", pts: [[-3, 0], [-1, 2], [1, 2], [3, 0]] }
   };
   // A graph you move with sliders onto a dashed target:
@@ -240,12 +241,13 @@
     var chips = { fn: { label: "Start from", v: o.keys[0], opts: o.keys.map(function (k) { return [k, PARENTS[k].lab]; }) } };
     var xr = o.x || [-7, 7], yr = o.y || [-7, 7];
     function same(p) { return Object.keys(o.target).every(function (k) { return Math.abs(p[k] - o.target[k]) < 1e-9; }); }
-    return { type: "sketch", x: xr, y: yr, u: o.u || 22, w: o.w || 340, gate: true, pts: {}, params: o.params, chips: o.keys.length > 1 ? chips : undefined,
+    var u0 = o.u || 22, W0 = (xr[1] - xr[0]) * u0 + 48, H0 = (yr[1] - yr[0]) * u0 + 48;
+    return { type: "sketch", x: xr, y: yr, u: u0, w: o.w || Math.min(480, Math.round(360 * W0 / H0)), gate: true, pts: {}, params: o.params, chips: o.keys.length > 1 ? chips : undefined, gx: o.gx, gy: o.gy, step: o.step, stepY: o.stepY,
       draw: function (s) {
-        var P = PARENTS[o.keys.length > 1 ? s.c.fn : o.keys[0]], items = curve(P.f, xr[0], xr[1], "soft", yr);
+        var P = PARENTS[o.keys.length > 1 ? s.c.fn : o.keys[0]], items = o.noGhost ? [] : curve(P.f, xr[0], xr[1], "soft", yr);
         items = items.concat(curve(o.tf(P.f, o.target), xr[0], xr[1], "orange", yr, true), curve(o.tf(P.f, s.p), xr[0], xr[1], "blue", yr));
         if (o.extra) items = items.concat(o.extra(s.p));
-        P.pts.forEach(function (pt) { items.push({ pt: pt, c: "soft" }); var q = o.map(pt, s.p); if (Math.abs(q[0]) <= xr[1] && Math.abs(q[1]) <= yr[1]) items.push({ pt: q, c: "blue" }); });
+        if (!o.noPts) P.pts.forEach(function (pt) { if (!o.noGhost) items.push({ pt: pt, c: "soft" }); var q = o.map(pt, s.p); if (Math.abs(q[0]) <= xr[1] && Math.abs(q[1]) <= yr[1]) items.push({ pt: q, c: "blue" }); });
         return items;
       },
       readout: function (s) { return o.read(s.p) + (same(s.p) ? "<br>✓ on the target" : "<br>· not on the target yet"); },
@@ -257,6 +259,17 @@
     var it = [{ seg: [[lo, y], [hi, y]], c: "soft" }];
     for (var t = lo; t <= hi; t++) { it.push({ seg: [[t, y - 0.15], [t, y + 0.15]], c: "soft" }); it.push({ text: String(t), at: [t, y - 0.65], eq: true, c: "soft" }); }
     return it;
+  }
+  // A fraction as TeX, reduced: ratTex(6, -4) is "-\\frac{3}{2}"; whole numbers stay whole.
+  function ratTex(n, d) {
+    if (d < 0) { n = -n; d = -d; }
+    var g = L.gcd(Math.abs(n), d) || 1; n /= g; d /= g;
+    return d === 1 ? String(n) : (n < 0 ? "-" : "") + "\\frac{" + Math.abs(n) + "}{" + d + "}";
+  }
+  // Do two dragged points both sit on y = mx + c (and differ)?
+  function onLine(st, a, b, m, c) {
+    var p = st.pt(a), q = st.pt(b);
+    return (p.x !== q.x || p.y !== q.y) && Math.abs(p.y - (m * p.x + c)) < 1e-9 && Math.abs(q.y - (m * q.x + c)) < 1e-9;
   }
   // The keys under an expression answer.
   var KEYS_POLY = [["$x$", "x"], ["$x^2$", "x^2"], ["$x^3$", "x^3"], ["$+$", "+"], ["$-$", "-"], ["$($", "("], ["$)$", ")"]];

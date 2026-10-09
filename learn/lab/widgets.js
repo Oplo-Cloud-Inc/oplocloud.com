@@ -2129,8 +2129,10 @@
     if (o.bg !== false) out.push('<rect class="lf-bg" width="' + W + '" height="' + H + '" rx="12"/>');
     if (grid) {
       var gd = "";
-      for (var gx = Math.ceil(xr[0]); gx <= xr[1]; gx++) gd += "M" + X(gx) + " " + Y(yr[0]) + "V" + Y(yr[1]);
-      for (var gy = Math.ceil(yr[0]); gy <= yr[1]; gy++) gd += "M" + X(xr[0]) + " " + Y(gy) + "H" + X(xr[1]);
+      // gx, gy: the spacing of the grid lines (default 1), for windows that run to tens or hundreds.
+      var gsx = o.gx || 1, gsy = o.gy || gsx, gi;
+      for (gi = Math.ceil(xr[0] / gsx - 1e-9); gi * gsx <= xr[1] + 1e-9; gi++) gd += "M" + X(gi * gsx) + " " + Y(yr[0]) + "V" + Y(yr[1]);
+      for (gi = Math.ceil(yr[0] / gsy - 1e-9); gi * gsy <= yr[1] + 1e-9; gi++) gd += "M" + X(xr[0]) + " " + Y(gi * gsy) + "H" + X(xr[1]);
       out.push('<path class="lf-grid" d="' + gd + '"/>');
     }
     var hasX = 0 >= yr[0] && 0 <= yr[1], hasY = 0 >= xr[0] && 0 <= xr[1];
@@ -2144,7 +2146,8 @@
         if (v === 0 && hasY) continue;
         out.push('<text class="lf-num" x="' + X(v) + '" y="' + (ny + 13) + '" text-anchor="middle">' + String(v).replace("-", "−") + "</text>");
       }
-      for (v = Math.ceil(yr[0] / step) * step; v <= yr[1]; v += step) {
+      var stepY = o.stepY || step;
+      for (v = Math.ceil(yr[0] / stepY) * stepY; v <= yr[1]; v += stepY) {
         if (v === 0 && hasX) continue;
         out.push('<text class="lf-num" x="' + (nx - 5) + '" y="' + (Y(v) + 3.5) + '" text-anchor="end">' + String(v).replace("-", "−") + "</text>");
       }
@@ -2379,7 +2382,8 @@
         t = S("text", { x: X(v), y: (hasX ? Y(0) : Y(yr[0])) + 14, "text-anchor": "middle", class: "lw-num" }, svg);
         t.textContent = String(v).replace("-", "−");
       }
-      for (v = Math.ceil(yr[0] / step) * step; v <= yr[1]; v += step) {
+      var stepY = o.stepY || step;
+      for (v = Math.ceil(yr[0] / stepY) * stepY; v <= yr[1]; v += stepY) {
         if (v === 0 && hasX) continue;
         t = S("text", { x: (hasY ? X(0) : X(xr[0])) - 5, y: Y(v) + 4, "text-anchor": "end", class: "lw-num" }, svg);
         t.textContent = String(v).replace("-", "−");
