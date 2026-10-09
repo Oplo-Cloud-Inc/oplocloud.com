@@ -240,8 +240,10 @@ html.kern .kh > * { animation: kern-rise .5s var(--kern-ease) both; animation-de
    ========================================================================== */
 html.kern { --kern-ok: #35c97b; --kern-ok-d: #208a53; --kern-no: #e8b64c; --kern-no-d: #a97c1f; --stage: #e8ebf1; }
 
-/* The page steps aside for the card. */
-html.kern body:has(.lb-shell) .lx-bar { display: none; }
+/* The page steps aside for the card — only while the lesson is the view on
+   screen. #v-lab keeps its last lesson in the DOM after you leave, so a bare
+   :has(.lb-shell) kept the bar hidden on every page afterwards. */
+html.kern body:has(#v-lab.on .lb-shell) .lx-bar { display: none; }
 html.kern .ch { max-width: 700px; padding-top: 0; }
 html.kern .ch-stage { display: block; }
 
