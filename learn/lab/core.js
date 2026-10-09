@@ -39,6 +39,7 @@ window.OPLO_LAB = (function () {
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/philkit.js": "3a494f5b",
+    "lab/edpkit.js": "b4fc8305",
     "lab/satkit.js": "0815b9c7",
     "lab/geotools.js": "1aca5190",
     "lab/pathkit.js": "4161c15f",
@@ -105,7 +106,7 @@ window.OPLO_LAB = (function () {
     "biz/u01.js": "42aebe47",
     "biz/u02.js": "df0245cf",
     "hist/u01.js": "647c1892",
-    "phil/u01.js": "e6ffa166",
+    "phil/u01.js": "c540b7be",
     "sat/u01.js": "71ec9896",
     "sat/u02.js": "f73eb842",
     "sat/u03.js": "f1c87358",
@@ -1052,9 +1053,10 @@ window.OPLO_LAB = (function () {
      adds its concept builder, lab/algkit.js. Introduction to Philosophy borrows
      the history kit's reading pages and the concept builder, and adds its own
      scenes (an argument to take apart, beliefs to test, a Socratic conversation)
-     in lab/philkit.js. */
+     in lab/philkit.js, and the watch · read · write format (a film that stops to ask,
+     a reading with questions inside, a response checked against a model) in lab/edpkit.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", phil: ["lab/histkit.js", "lab/algkit.js", "lab/philkit.js"], sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js",
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", phil: ["lab/histkit.js", "lab/algkit.js", "lab/philkit.js", "lab/edpkit.js"], sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js",
                      g1: ["lab/k1.css", "lab/k1art.js", "lab/k1geom.js", "lab/k1kit.js", "lab/k1kinds.js", "lab/k1scenes.js"] };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */

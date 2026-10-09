@@ -58,115 +58,73 @@
   }
 
   /* ============================================================ Lesson 1
-     What is philosophy? The word, the old story behind it, and the kind of
-     question that starts it (section 1.1: the opening, "What Is Philosophy?"). */
+     What is philosophy? Taught the watch · read · write way (lab/edpkit.js):
+     a short film that stops to ask, a reading with questions inside it, and a
+     response in the learner's own words, checked against a model. The film is
+     the course's own, on its YouTube channel, and is played exactly as it was made (section 1.1). */
   LESSONS[1] = {
+    v: 2,
     title: "What is philosophy?",
-    blurb: "The word, the old story behind it, and the kind of question that starts it all.",
-    mins: 10,
+    blurb: "A short film that stops to ask you things, a reading with questions inside it, then your own words.",
+    mins: 14,
     steps: [
-      { type: "sort", kicker: "Warm up", skill: "Kinds of question",
-        prompt: "Some questions are settled by looking something up or measuring it. Others have to be **thought through**.<br><br>Sort these.",
-        bins: ["Look it up or measure", "Think it through"],
-        cards: [{ t: "How tall is Mount Everest?", bin: 0, fb: "A surveyor can measure it. Once it's measured, the question is over." },
-                { t: "How many days are in a leap year?", bin: 0, fb: "That's a fact you look up. Nobody has to argue about it." },
-                { t: "What is the boiling point of water at sea level?", bin: 0, fb: "A thermometer and a pot settle it." },
-                { t: "Is it ever right to break a promise?", bin: 1, fb: "No ruler or lab can settle this. You have to reason about why promises matter." },
-                { t: "What makes something fair?", bin: 1, fb: "You could measure how people split a pizza, but \"fair\" is not a thing you can measure. You have to think about what it means." },
-                { t: "If every plank of a ship is replaced, one by one, is it still the same ship?", bin: 1, fb: "Every plank can be counted. The puzzle is what \"the same ship\" even means." }],
-        hints: ["Ask of each one: could a ruler, a clock or a lab settle it?"],
-        why: "Everest, the leap year and boiling water can be measured or looked up.<br>Promises, fairness and the ship need **thinking**: they ask what something really is, or what is right." },
+      { type: "learn", kicker: "Watch", prompt: "",
+        scene: { type: "watch", id: "phil1-film", youtube: "anoAsItMmm8", duration: 474.1, title: "What is philosophy?",
+          chapters: [{ t: 0, n: "Welcome" }, { t: 25.8, n: "Sages" }, { t: 223.7, n: "Roots of science" }, { t: 321.2, n: "How it hangs together" }, { t: 431.5, n: "Recap" }],
+          stops: [
+            { id: "p1-guess", at: 12.8, kind: "reflect", q: "Before we begin: in a sentence, what do you think philosophy is?", placeholder: "Philosophy is…" },
+            { id: "p1-oruka", at: 165.9, from: 137.7, kind: "mc",
+              q: "Oruka interviewed sages and kept only some of their sayings. Which ones?",
+              options: [{ t: "The ones that showed a reasoned way of inquiring into how things really are", ok: true },
+                        { t: "The oldest ones", fb: "Age wasn't his test. He kept the sayings that showed *reasoned* inquiry, whatever their age." },
+                        { t: "The ones everyone already agreed with", fb: "Agreement wasn't the test either. These sages kept a critical distance from their own culture's wisdom." },
+                        { t: "The ones about the gods", fb: "The subject wasn't the test. The question was whether the saying gave good reasons." }],
+              why: "That is what makes folk wisdom into **philosophy**: asking for good reasons." },
+            { id: "p1-traits", at: 206.6, from: 33.4, kind: "multi",
+              q: "Which **three** traits did the sages share?",
+              options: [{ t: "Willingness to question tradition", ok: true }, { t: "Curiosity about nature and our place in it", ok: true }, { t: "Applying reason", ok: true },
+                        { t: "Winning every argument", fb: "Nobody was judged on winning. The three traits were about questioning, curiosity and reason." },
+                        { t: "Repeating the old stories exactly", fb: "It's the opposite: they were willing to *question* tradition." }],
+              why: "Question tradition, be curious about nature, apply reason. Keep those three: the next part shows them at work." },
+            { id: "p1-sci", at: 306.4, from: 223.7, kind: "mc",
+              q: "What made the work of Xenophanes, Democritus and Pythagoras **scientific**?",
+              options: [{ t: "They used reason to look for hidden causes and patterns", ok: true },
+                        { t: "They ran careful experiments in a laboratory", fb: "There were no labs. What mattered was the *kind of explanation*: reasoned, and looking beneath what we see. Labs came much later." },
+                        { t: "They agreed with the sages' old stories", fb: "They explained nature through reason instead of leaning on the old stories." },
+                        { t: "They were the first people ever to ask questions", fb: "People asked questions long before. What was new was *how* they answered." }],
+              why: "A rainbow from clouds, a world of atoms, a nature that follows number: each looks for a **hidden cause or pattern** behind what we see." },
+            { id: "p1-sand", at: 380.2, from: 363.2, kind: "mc",
+              q: "A beach's sand grain count changes every day. True, but is it worth a philosopher's time?",
+              options: [{ t: "Not much. The number teaches nothing about how things hang together", ok: true },
+                        { t: "Yes. Every fact is equally worth studying", fb: "No topic is ruled out in principle, but not all deserve equal attention." },
+                        { t: "No, because nobody could count them", fb: "Whether you *can* count them isn't the point. A perfect count still wouldn't help us understand how things fit together." }],
+              why: "Philosophers choose the questions that help us understand the world and our place in it." }
+          ] } },
 
-      { type: "learn", kicker: "The word",
-        prompt: "The name for the second kind of question has two Greek pieces. Turn over both cards.",
-        scene: { type: "turn", cols: 2, cards: [
-          { i: "heart", name: "philo", t: "Greek for **loving**. It is in *Philadelphia*, the \"city of brotherly love\".", c: "orange" },
-          { i: "lamp", name: "sophia", t: "Greek for **wisdom**. It hides in *sophisticated*, and in *sophomore*, which once meant a \"wise fool\".", c: "blue" }] },
-        gate: true,
-        then: "Put them together and you get **philosophy**: the *love of wisdom*. A philosopher is a lover of wisdom." },
+      { type: "learn", kicker: "Read", prompt: "A lover, not an owner",
+        scene: { type: "doc", meta: "2 min", blocks: [
+          ["fig", "friends", "Philosophy often starts like this: friends talking late, and someone asking *but why?*"],
+          "Ask ten people what philosophy is and you will get ten answers. That is not a failure. It is a clue. Philosophy is hard to define because it asks about the **widest** things there are: nature, the mind, right and wrong, beauty, and how people live together.",
+          ["q", { id: "p1-wide", kind: "mc", q: "Why is philosophy so hard to define?",
+            options: [{ t: "It asks about the widest things there are", ok: true },
+                      { t: "Nobody has ever asked it a real question", fb: "People have asked big questions for thousands of years. The trouble is that there are so many kinds." },
+                      { t: "It was only invented recently", fb: "It is among the oldest kinds of thinking. The film went back to ancient India, China, Africa and Greece." }],
+            why: "A subject that has to be able to ask about *everything* can't be pinned down in one line." }],
+          "The first Greek thinkers we now call philosophers were not called that. They were called [[sages|Wise people. Many early cultures honoured a few of them: the ones you asked when a question was too big for everyone else.]]. One old story says a thinker named Pythagoras was the first to use the new word about himself. Asked what he was, he said he was no wise man, because only a god is truly wise. He was a **lover** of wisdom.",
+          ["note", "A story told long after", "We only know this story from writers who lived centuries later, so historians hold it loosely. Even if it is only a story, it makes a real point: it is a humbler job to *love* wisdom than to *claim* it.", "scroll"],
+          ["q", { id: "p1-humble", kind: "mc", q: "Why is “lover of wisdom” a humbler name than “wise man”?",
+            options: [{ t: "A lover is still searching; a wise man says he has already arrived", ok: true },
+                      { t: "A lover knows less than a wise man ever did", fb: "It isn't about how much anyone knows. It's about whether you claim to have finished looking." },
+                      { t: "“Lover” is just a fancier word for a student", fb: "A philosopher isn't a student of one fixed subject. The name is about going after wisdom, not about school." }],
+            why: "A lover of wisdom keeps going after it. Calling yourself *wise* says the search is over." }],
+          ["ask", "Which would you rather be called: wise, or a lover of wisdom? Why?"]
+        ] } },
 
-      read({ title: "A lover, not an owner", kicker: "Read", blocks: [
-        ["fig", "friends", "Philosophy often starts like this: friends talking late, and someone asking *but why?*"],
-        "Ask ten people what philosophy is and you will get ten answers. That is not a failure. It is a clue. Philosophy is hard to define because it asks about the **widest** things there are: nature, the mind, right and wrong, beauty, and how people live together.",
-        "The first Greek thinkers we now call philosophers were not called that. They were called [[sages|Wise people. Many early cultures honoured a few of them: the ones you asked when a question was too big for everyone else.]]. One old story says a thinker named Pythagoras was the first to use the new word about himself. Asked what he was, he said he was no wise man, because only a god is truly wise. He was a **lover** of wisdom.",
-        ["note", "A story told long after", "We only know this story from writers who lived centuries later, so historians hold it loosely. Even if it is only a story, it makes a real point: it is a humbler job to *love* wisdom than to *claim* it.", "scroll"],
-        ["ask", "Which would you rather be called: wise, or a lover of wisdom? Why?"]
-      ] }),
-
-      { type: "choice", kicker: "Check",
-        prompt: "Why is \"lover of wisdom\" a humbler name than \"wise man\"?",
-        options: [{ t: "A lover is still searching; a wise man says he has already arrived" },
-                  { t: "A lover knows less than a wise man ever did", fb: "It isn't about how much anyone knows. It's about whether you claim to have finished looking." },
-                  { t: "\"Lover\" is just a fancier word for a student", fb: "A philosopher isn't a student of one fixed subject. The name is about going after wisdom, not about school." }],
-        answer: 0,
-        hints: ["Think about the difference between loving something and owning it."],
-        why: "A lover of wisdom keeps going after it.<br>Calling yourself *wise* says the search is over." },
-
-      { type: "learn", kicker: "The idea",
-        prompt: "So what does a philosopher go after? **Everything**, in five big parts. Turn over each card.",
-        scene: { type: "turn", cols: 3, cards: [
-          { i: "mountain", name: "Nature", t: "What is the world made of? Why is there anything at all?", c: "green" },
-          { i: "bubble", name: "The mind", t: "What is a thought? Could a machine ever feel something?", c: "purple" },
-          { i: "scale", name: "Right and wrong", t: "Is it ever fine to lie? What do we owe each other?", c: "red" },
-          { i: "music", name: "Beauty", t: "Is beauty only in the eye of the beholder?", c: "orange" },
-          { i: "people", name: "Living together", t: "Why should anyone obey a law? What would a fair society look like?", c: "blue" }] },
-        gate: true,
-        then: "Nature, the mind, right and wrong, beauty, and how we live together. Philosophy is the one subject that has to be able to ask about **all** of them." },
-
-      { type: "slots", kicker: "Together", skill: "Kinds of question",
-        prompt: "Which part of the world is each question about? Match them.",
-        slots: [{ id: "nat", label: "Nature" }, { id: "mind", label: "The mind" }, { id: "right", label: "Right and wrong" },
-                { id: "beauty", label: "Beauty" }, { id: "soc", label: "Living together" }],
-        cards: [{ t: "Why is there something rather than nothing?", slot: "nat", fb: "That asks about the world itself: why it exists at all." },
-                { t: "What is it like to be you, and could a robot ever feel that?", slot: "mind", fb: "That's about thoughts and feelings: the mind." },
-                { t: "Is it wrong to lie to protect a friend?", slot: "right", fb: "Whether an act is wrong is a question about right and wrong." },
-                { t: "Does a song have to be pretty to be good?", slot: "beauty", fb: "That asks what makes something beautiful or good to hear." },
-                { t: "When is it fair for a government to make a rule?", slot: "soc", fb: "Rules and fairness for a whole community: living together." }],
-        hints: ["Which card is about feelings and thoughts? Which one is about a rule for a whole country?"],
-        why: "The first is about nature, the second about the mind, the third right and wrong, the fourth beauty, the fifth living together." },
-
-      { type: "learn", kicker: "The idea",
-        prompt: "There is one more thing that makes philosophy different. Every subject takes some things for granted.",
-        art: tiles([{ i: "flask", t: "Biology takes it for granted that there is a living world to study" },
-                    { i: "numbers", t: "Math takes its starting rules for granted", c: "blue" },
-                    { i: "bubble", t: "Philosophy asks about those too", c: "orange" }]),
-        then: "A philosopher is **not allowed to take anything for granted**, because the next question might be about exactly that." },
-
-      { type: "choice", kicker: "Try it", skill: "Kinds of question",
-        prompt: "Which of these could a philosopher ask, but a biology lab would not start with?",
-        options: [{ t: "Is there really a world outside my own mind?" },
-                  { t: "How fast can a cheetah run?", fb: "A biologist can time that with a stopwatch. It takes the living world for granted." },
-                  { t: "How many chambers does a human heart have?", fb: "That is a fact for a biology book. Nobody has to question the world to answer it." }],
-        answer: 0,
-        hints: ["Which one questions something biology starts out *assuming*?"],
-        why: "Biology assumes there is a world of living things to measure.<br>Philosophy can ask whether and how we know there is a world at all." },
-
-      { type: "multi", kicker: "A harder case", skill: "Kinds of question",
-        prompt: "Not every question is worth a philosopher's time. Pick the ones that **are**.",
-        options: [{ t: "How many grains of sand make a heap?", ok: true, fb: "Yes: it asks what *heap* even means, and where \"not a heap\" turns into \"a heap\"." },
-                  { t: "How many grains of sand are on this beach?", ok: false, fb: "Someone could count them, in theory. Knowing the number wouldn't teach you anything about how the world fits together." },
-                  { t: "Does everything that happens have a cause?", ok: true, fb: "Yes: it asks about how all events fit together." },
-                  { t: "What time does the library open?", ok: false, fb: "A fact you look up." },
-                  { t: "What makes a life go well?", ok: true, fb: "Yes: it asks about the basics of how to live." }],
-        hints: ["A philosophical question asks what something *is*, or how things *fit together*. A plain fact doesn't."],
-        why: "Philosophers choose questions that are **informative**: ones that help us understand how things fit together.<br>Counting grains of sand, or checking a timetable, doesn't." },
-
-      { type: "choice", kicker: "Use it", skill: "Kinds of question",
-        prompt: "\"What is philosophy?\" Is that a philosophical question, or one a dictionary can settle?",
-        options: [{ t: "Philosophical. Deciding what counts as the widest, most basic questions is one of those questions" },
-                  { t: "A dictionary settles it. It lists the meaning", fb: "A dictionary only reports how people already use the word. It can't say whether that use is the right one." },
-                  { t: "Neither. It has no answer, so there is nothing to ask", fb: "\"Hard to answer\" isn't \"nothing to ask\". Working on a hard question is exactly what philosophy is." }],
-        answer: 0,
-        hints: ["Could a thermometer or a dictionary decide what the *widest and most basic* questions are?"],
-        why: "Trying to define philosophy is itself a piece of philosophy.<br>A dictionary reports how a word is used. It can't tell you what is worth asking." },
-
-      { type: "explain", kicker: "Say it",
-        prompt: "In your own words: what makes a question **philosophical**?",
-        model: "A philosophical question is about the basics: what is real, what we can know, what is right, what is beautiful, how to live together. You can't settle it with a ruler or a quick lookup. You have to reason about it, and nothing is off limits, not even the things other subjects take for granted." },
-
-      concept(1, "Philosophy", "**Philosophy** is the [[love]] of [[wisdom]]: asking the widest, most basic questions, and taking [[nothing]] for granted.",
-        { chips: ["facts", "answers", "everything"],
-          fb: { "facts": "Philosophy isn't a pile of facts. Facts are what you look up.", "answers": "A lover of wisdom keeps looking. It's the search the name is about.", "everything": "Careful: it's the opposite. A philosopher takes *nothing* for granted." } })
+      { type: "learn", kicker: "Write", prompt: "Now say it in your own words: what is philosophy? Use one person or example from the film.",
+        scene: { type: "write", id: "phil1-write", recall: "p1-guess", placeholder: "Philosophy is…", min: 12,
+          frames: ["Philosophy is…", "In the film,", "That counts as philosophy because"],
+          model: "Philosophy is the love of wisdom: asking the widest, most basic questions, such as how everything fits together, and answering them with reasons. In the film, Thales didn't stop at predicting an eclipse. He asked what all matter is made of, and that isn't something you can settle by looking it up. You have to reason about it.",
+          rubric: ["Says philosophy asks the widest, most basic questions, or how everything fits together", "Uses a person or an example from the film", "Gives a reason, not only a claim"] } }
     ]
   };
 
@@ -3059,7 +3017,9 @@ L.unit("phil", 1, {
       { title: "Quiz 4", after: 16, blurb: "Socrates: his sources and trial, the limits of knowledge, his method, and the examined life.", skills: ["phil1-socrates", "phil1-limits", "phil1-method", "phil1-examined"], per: 2 },
       { title: "Quiz 5", after: 19, blurb: "The harm principle, ahimsa, the fields of philosophy, and the toolkit.", skills: ["phil1-harm", "phil1-ahimsa", "phil1-fields", "phil1-toolkit"], per: 2 }
     ],
-    skills: SKILLS
+    skills: SKILLS,
+    // A lesson of watching, reading and writing has no graded problems to count.
+    end: { line: function (clean, total) { return total ? clean + " of " + total + " solved first try, without a hint." : "You watched it, read it, and said it in your own words."; } }
   });
   L.addConcepts("phil:1", {});
 })();
