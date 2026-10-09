@@ -1140,6 +1140,7 @@ window.OPLO_LAB = (function () {
     test: '<rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 3.5h6"/><path d="m8.5 12.5 2.2 2.2 4.8-5"/>',
     done: '<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.2 9.6"/>',
     chev: '<path d="m9.5 6 6 6-6 6"/>',
+    chevL: '<path d="m14.5 6-6 6 6 6"/>',
     folder: '<path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4.2l2 2.5H19a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17z"/>'
   };
   /* The trail of pages above this one, after BoardUI's Breadcrumb: small
@@ -1422,7 +1423,14 @@ window.OPLO_LAB = (function () {
       var off = !shell.classList.contains("side-off");
       shell.classList.toggle("side-off", off);
       setSideHidden(off);
+      // Kern has one handle on the window's edge, "<" to close and ">" to open (kern.css): it stays where the hand is.
+      if (window.OPLO_KERN) { sideLabel(); show.focus(); return; }
       (off ? show : hide).focus();
+    }
+    function sideLabel() {
+      var t = shell.classList.contains("side-off") ? "Show sidebar" : "Hide sidebar";
+      show.setAttribute("aria-label", t);
+      show.title = t;
     }
 
     var side = el("aside", "lb-side");
@@ -1602,10 +1610,11 @@ window.OPLO_LAB = (function () {
     clear.addEventListener("click", function (e) { e.preventDefault(); inp.value = ""; filter(); inp.focus(); });
     filter();
 
-    var show = button("lb-side-show", svg(ICON.sidebar));
+    var show = button("lb-side-show", svg(window.OPLO_KERN ? ICON.chevL : ICON.sidebar));
     show.setAttribute("aria-label", "Show sidebar");
     show.title = "Show sidebar";
     show.addEventListener("click", toggle);
+    if (window.OPLO_KERN) sideLabel();
     var scrim = el("div", "lb-side-scrim");
     scrim.addEventListener("click", function () { shell.classList.remove("peek"); });
     side.addEventListener("keydown", function (e) { if (e.key === "Escape" && shell.classList.contains("peek")) { shell.classList.remove("peek"); show.focus(); } });

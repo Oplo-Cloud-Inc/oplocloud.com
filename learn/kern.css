@@ -1,8 +1,17 @@
 /* Kern's front door. Only drawn when kern.js has replaced the welcome page. */
-#gate.kern-gate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; overflow: auto;
+#gate.kern-gate { position: fixed; inset: 0; z-index: 50; display: grid; grid-template-rows: auto 1fr; place-items: center; overflow: auto;
   background: #141414; color: #fff; }
 #gate.kern-gate.ld-wait > * { visibility: hidden; }
-.kern-hero { width: min(560px, 100% - 48px); padding: 48px 0; text-align: center; }
+/* The same bar as the app's, signed out: the mark and the name, and the one thing to do.
+   --well and --gut are the signed-in look's (obsidian, below); signed out they are
+   app.css's wider ones, so the same numbers are written out to line up with the app's bar. */
+.kern-gatebar { grid-row: 1; justify-self: stretch; align-self: start; border-bottom: 1px solid rgba(255,255,255,.11); }
+.kern-gatebar-in { max-width: 1120px; height: var(--bar); margin-inline: auto; display: flex; align-items: center; gap: 12px;
+  padding-inline: clamp(24px, 4.4vw, 60px); }
+.kern-gatebar .kern-mark { width: 21px; height: 21px; margin: 0; }
+.kern-gatename { font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
+html.kern body .kern-gatebar .lx-btn { margin-left: auto; height: 40px; padding: 0 22px; font-size: 15px; }
+.kern-hero { grid-row: 2; width: min(560px, 100% - 48px); padding: 48px 0; text-align: center; }
 .kern-mark { width: 34px; height: 34px; margin: 0 auto 18px; display: block; }
 .kern-k { margin: 0 0 14px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #9a9aa6; }
 .kern-hero h1 { margin: 0 0 16px; font-size: clamp(40px, 8vw, 68px); font-weight: 300; letter-spacing: -.035em; line-height: 1.02; }
@@ -240,9 +249,10 @@ html.kern .kh > * { animation: kern-rise .5s var(--kern-ease) both; animation-de
    ========================================================================== */
 html.kern { --kern-ok: #35c97b; --kern-ok-d: #208a53; --kern-no: #e8b64c; --kern-no-d: #a97c1f; --stage: #e8ebf1; }
 
-/* The page steps aside for the card — only while the lesson is the view on
+/* The page steps aside for the lesson — only while the lesson is the view on
    screen. #v-lab keeps its last lesson in the DOM after you leave, so a bare
-   :has(.lb-shell) kept the bar hidden on every page afterwards. */
+   :has(.lb-shell) kept the bar hidden on every page afterwards. Lessons,
+   quizzes, tests and practice are a focus view: no bar, just the work. */
 html.kern body:has(#v-lab.on .lb-shell) .lx-bar { display: none; }
 html.kern .ch { max-width: 700px; padding-top: 0; }
 html.kern .ch-stage { display: block; }
@@ -263,21 +273,53 @@ html.kern .ch-sn-x { flex: none; display: grid; place-items: center; width: 36px
 html.kern .ch-sn-x:hover { background: #232326; color: var(--ink); }
 html.kern .ch-sn-x svg { width: 18px; height: 18px; }
 
-/* ----------------------------------------------------------- The card */
-html.kern .ch-card {
-  display: flex; flex-direction: column; min-height: 520px;
-  padding: 34px 44px 0; border: 1.5px solid var(--rule); border-radius: 30px; background: #161618;
-  transition: border-color .35s var(--kern-ease), box-shadow .45s var(--kern-ease);
+/* ------------------------------------------------------- The sidebar
+   One handle, centred on the window's height: ">" on the window's edge opens the
+   sidebar, "<" on the sidebar's edge closes it. The sidebar slides in and out and
+   the handle rides its edge, turning as it goes. (On a narrow window the sidebar
+   floats over the page and lab.css keeps its own button; the arrow just points in.) */
+html.kern .lb-side-show svg { width: 18px; height: 18px; transform: rotate(180deg); }
+@media (min-width: 1100px) {
+  html.kern .lb-side { top: 16px; bottom: 16px; transition: transform .5s var(--kern-ease), opacity .3s var(--kern-ease), visibility 0s; }
+  html.kern .lb-shell.side-off .lb-side { display: flex; transform: translateX(calc(-100% - 12px)); opacity: 0; visibility: hidden; pointer-events: none;
+    transition: transform .5s var(--kern-ease), opacity .3s var(--kern-ease), visibility 0s .5s; }
+  html.kern .lb-side-btn { display: none; }
+  html.kern .lb-side-show { display: grid; place-items: center; z-index: 31; top: 50%; left: 300px; width: 24px; height: 64px; margin-top: -32px;
+    border-radius: 12px; background: var(--canvas); color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--hair);
+    transition: left .5s var(--kern-ease), border-radius .5s var(--kern-ease), background .2s, color .2s; }
+  html.kern .lb-shell.side-off .lb-side-show { left: 0; border-radius: 0 12px 12px 0; }
+  html.kern .lb-side-show:hover { background: #232326; color: var(--ink); }
+  html.kern .lb-side-show svg { transform: none; transition: transform .5s var(--kern-ease); }
+  html.kern .lb-shell.side-off .lb-side-show svg { transform: rotate(180deg); }
 }
-html.kern .ch-card.is-ok { border-color: var(--kern-ok); box-shadow: 0 0 0 1px rgba(53,201,123,.35), 0 0 60px -14px rgba(53,201,123,.55); }
-html.kern .ch-card.is-no { border-color: var(--kern-no); box-shadow: 0 0 0 1px rgba(232,182,76,.3), 0 0 60px -14px rgba(232,182,76,.5); }
+
+/* ----------------------------------------------------------- The step
+   No card. A step is set straight on the page, as challenge.css has it, and the
+   only boxes left are the ones that are something to press (answers, the check
+   button) and the stage a picture sits on. How an answer went is a soft wash of
+   green or gold behind the work, not an outline around it. */
+html.kern .ch-card {
+  position: relative; isolation: isolate;
+  display: flex; flex-direction: column; min-height: 520px; padding: 18px 44px 0;
+}
+/* How the card looks is raised past the courses' own rules (Business draws a gradient
+   frame and an accent edge); how it is laid out is not, so a course can still set that. */
+html.kern body .ch-card.ch-card { border: 0; border-radius: 0; background: none; box-shadow: none; }
+html.kern body .ch-card.ch-card::before { content: ""; position: absolute; inset: -30px -100px 0; height: auto; z-index: -1; border-radius: 0; background: none; pointer-events: none; opacity: 0; transition: opacity .6s var(--kern-ease); }
+html.kern body .ch-card.ch-card.is-ok::before { opacity: 1; background: radial-gradient(52% 58% at 50% 46%, rgba(53,201,123,.15), transparent 72%); }
+html.kern body .ch-card.ch-card.is-no::before { opacity: 1; background: radial-gradient(52% 58% at 50% 46%, rgba(232,182,76,.13), transparent 72%); }
 html.kern .ch-kind { margin-bottom: 14px; text-align: center; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--kern); }
 html.kern .ch-kind span { letter-spacing: .02em; text-transform: none; color: var(--ink-3); font-weight: 600; }
 html.kern .ch-prompt { margin-inline: auto; font-size: 21px; line-height: 1.5; font-weight: 500; }
 html.kern .ch-art { margin-top: 24px; }
 html.kern .ch-work { margin-top: 26px; }
 html.kern .ch-after, html.kern .ch-then { margin-inline: auto; max-width: 34em; }
-html.kern .ch-then { border-left: 0; padding: 12px 18px; border-radius: 16px; background: rgba(84,104,255,.12); text-align: center; }
+html.kern .ch-then { border-left: 0; padding: 0; background: none; color: var(--ink-2); text-align: center; }
+/* What is only read stays off a box too: a list is its numbers and its words, and a
+   sentence being built is the sentence — its gaps and chips are what you work with. */
+html.kern .lw-how { gap: 24px; }
+html.kern .lw-how li { padding: 0; background: none; box-shadow: none; }
+html.kern .ab-card, html.kern .ab-build.built .ab-card { padding: 8px 0; background: none; box-shadow: none; transform: none; }
 
 /* --------------------------------------------------------- The stage
    What is drawn sits on a light card, with the light palette inside it, so a
@@ -321,7 +363,7 @@ html.kern .lw-btn.on { background: rgba(84,104,255,.16); box-shadow: inset 0 0 0
 html.kern .lw-btn.ghost { background: none; box-shadow: none; }
 
 /* ----------------------------------------------------------- The foot */
-html.kern .ch-foot { margin-top: auto; padding: 22px 0 26px; gap: 10px 12px; background: linear-gradient(transparent, #161618 26%); }
+html.kern .ch-foot { margin-top: auto; padding: 22px 0 26px; gap: 10px 12px; background: linear-gradient(transparent, var(--canvas) 26%); }
 html.kern .ch-foot-l { margin-left: 0; }
 html.kern .ch-btn { height: 48px; border-radius: 60px; font-weight: 600; font-size: 16px; }
 html.kern .ch-btn.ghost { color: var(--ink-3); }
