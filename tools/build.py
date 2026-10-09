@@ -578,24 +578,8 @@ PAGES.append(("developers/index.html", section_page(
 # that already exist: nothing here is a new claim, and every old top-level
 # page is reachable from one of them in a single click.
 # ==========================================================================
-PAGES.append(("products/index.html", section_page(
-    "products/", 1, "Products — Oplo",
-    "Everything Oplo makes: the silicon and the machine, the software on it, the intelligence inside it, and the membership that carries an account across all three.",
-    "Products", "Everything we make, in one place.",
-    "Four things built as one system rather than four companies negotiating an interface between them.",
-    [("dark", "hardware", "Hardware", "The machine, made whole.",
-      "Silicon designed for the software that runs on it, and a device that belongs to the person holding it rather than to whoever is watching.",
-      [("Oplo hardware", "hardware/")]),
-     ("", "software", "Software", "Built for a person, not an org chart.",
-      "Tools that assume one user with taste. The operating system, the apps and the updates are ours, so there is nobody to point at when something is wrong.",
-      [("Oplo software", "software/")]),
-     ("", "intelligence", "Intelligence", "Close to you, not to a data centre.",
-      "Models that run on the device in your hand, on silicon designed to carry them, so the private part of personal computing stays on the machine.",
-      [("Oplo intelligence", "intelligence/")]),
-     ("", "membership", "Oplo+", "One membership, the whole system.",
-      "The account, the storage and the services that follow you across every Oplo device, sold as one thing rather than assembled out of six subscriptions.",
-      [("Oplo+", "plus/")])],
-    ["Oplo products are in development. Nothing on this page is an offer of sale or a commitment to a specification."])))
+# Products is built further down, after Oplo+: its last tile borrows that
+# page's perks and icons, and a name has to exist before it is used.
 
 PAGES.append(("solutions/index.html", section_page(
     "solutions/", 1, "Solutions — Oplo",
@@ -1586,6 +1570,186 @@ def plus_page():
     return ("plus/index.html", out + footer(depth, notes))
 
 PAGES.append(plus_page())
+
+
+# --------------------------------------------------------------- Products
+# Modelled on apple.com/services: a large opener with a row of icons, then a
+# grid of big rounded tiles, each in a colour world of its own, the whole tile
+# a link. The copy is the page's own, unchanged; what is new is the layout and
+# the art. A tile's ground never moves — only its words and its art fade in —
+# because the bars read the colour under them to decide whether to turn dark,
+# and a tile that is invisible but still there would turn them dark over white. Nothing here is for sale, so there is no buy button — each tile
+# says "In development" — and the art is abstract and says so in the notes.
+# Its rules are in assets/css/oplo-products.css, loaded by this page alone.
+# It sits below Oplo+ because its last tile reuses that page's perks and icons.
+
+PR_GLYPHS = {
+    "chip":   '<rect x="6" y="6" width="12" height="12" rx="2.4"/><rect x="9.6" y="9.6" width="4.8" height="4.8" rx="1"/>'
+              '<path d="M9 2.8v3.2M15 2.8v3.2M9 18v3.2M15 18v3.2M2.8 9H6M2.8 15H6M18 9h3.2M18 15h3.2"/>',
+    "apps":   '<rect x="3.6" y="3.6" width="7.2" height="7.2" rx="2.1"/><rect x="13.2" y="3.6" width="7.2" height="7.2" rx="2.1"/>'
+              '<rect x="3.6" y="13.2" width="7.2" height="7.2" rx="2.1"/><rect x="13.2" y="13.2" width="7.2" height="7.2" rx="2.1"/>',
+    "spark":  '<path d="M12 3.4c.7 3.9 1.9 5.1 5.8 5.8-3.9.7-5.1 1.9-5.8 5.8-.7-3.9-1.9-5.1-5.8-5.8 3.9-.7 5.1-1.9 5.8-5.8z"/>'
+              '<path d="M18 15.2c.3 1.6.8 2.1 2.4 2.4-1.6.3-2.1.8-2.4 2.4-.3-1.6-.8-2.1-2.4-2.4 1.6-.3 2.1-.8 2.4-2.4z"/>',
+    "plus":   '<path d="M12 4.6v14.8M4.6 12h14.8"/>',
+    "layers": '<path d="M12 3.4 3.2 7.9 12 12.4l8.8-4.5z"/><path d="M3.2 12.1 12 16.6l8.8-4.5"/><path d="M3.2 16.3 12 20.8l8.8-4.5"/>',
+    "arrow":  '<path d="M5.5 2.5 11 8l-5.5 5.5"/>',
+}
+
+
+def pr_svg(name, vb="0 0 24 24"):
+    src = PR_GLYPHS.get(name) or ICONS[name]
+    return f'<svg viewBox="{vb}" aria-hidden="true" focusable="false">{src}</svg>'
+
+
+def pr_mark(cls="", fill="currentColor"):
+    """The Oplo mark, for placing inside the art."""
+    return (f'<svg class="{cls}" viewBox="{MARK_VB}" aria-hidden="true" focusable="false">'
+            f'<g transform="translate({MARK_TR})"><path fill="{fill}" d="{MARK_D}"/></g></svg>')
+
+
+def pr_die():
+    """The hardware tile's art: a package seen from above — rings, pins, and the
+    Oplo mark where the logic would be. A plan of nothing in particular."""
+    pins = ""
+    pitch, n = 30, 10
+    start = 240 - (n - 1) * pitch / 2
+    for i in range(n):
+        p = start + i * pitch
+        pins += f"M{p:g} 34v20M{p:g} 426v-20M34 {p:g}h20M426 {p:g}h-20"
+    return f'''<svg class="hw-die" viewBox="0 0 480 480" aria-hidden="true" focusable="false">
+      <defs>
+        <radialGradient id="prGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#2997ff" stop-opacity=".5"/><stop offset="1" stop-color="#2997ff" stop-opacity="0"/></radialGradient>
+        <linearGradient id="prPkg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b1e26"/><stop offset="1" stop-color="#090a0d"/></linearGradient>
+        <linearGradient id="prDie" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b404b"/><stop offset="1" stop-color="#14161b"/></linearGradient>
+        <linearGradient id="prRim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".5" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#2997ff" stop-opacity=".55"/></linearGradient>
+      </defs>
+      <circle cx="240" cy="240" r="236" fill="url(#prGlow)"/>
+      <path d="{pins}" stroke="#fff" stroke-opacity=".24" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <rect x="60" y="60" width="360" height="360" rx="52" fill="url(#prPkg)" stroke="url(#prRim)" stroke-width="1.5"/>
+      <rect x="96" y="96" width="288" height="288" rx="36" fill="none" stroke="#fff" stroke-opacity=".09" stroke-width="1.5"/>
+      <rect x="132" y="132" width="216" height="216" rx="26" fill="none" stroke="#fff" stroke-opacity=".13" stroke-width="1.5"/>
+      <path d="M132 132 96 96M348 132l36-36M132 348l-36 36M348 348l36 36" stroke="#2997ff" stroke-opacity=".5" stroke-width="1.5" stroke-linecap="round"/>
+      <rect x="172" y="172" width="136" height="136" rx="22" fill="url(#prDie)" stroke="url(#prRim)" stroke-width="1.5"/>
+      <svg x="210" y="211.7" width="60" height="56.6" viewBox="{MARK_VB}"><g transform="translate({MARK_TR})"><path fill="#fff" d="{MARK_D}"/></g></svg>
+    </svg>'''
+
+
+def pr_tile(cls, ident, eyebrow, status, head, lead, links, art):
+    """One tile. The first link is the main one: it is stretched over the whole
+    tile by the stylesheet. `status` and `art` are written by the caller."""
+    ls = "".join(
+        f'<a class="cta{" main" if i == 0 else ""}" href="{rel(1, h)}">{t}</a>' for i, (t, h) in enumerate(links))
+    return f'''  <article class="tile {cls}" id="{ident}">
+    <div class="tile-copy reveal">
+      <p class="tile-eyebrow"><span>{eyebrow}</span><span class="tag">{status}</span></p>
+      <h2 class="tile-title">{head}</h2>
+      <p class="tile-lead">{lead}</p>
+      <p class="tile-links">{ls}</p>
+    </div>
+{art}
+    <span class="tile-go" aria-hidden="true">{pr_svg("arrow", "0 0 16 16")}</span>
+  </article>
+'''
+
+
+def products_page():
+    depth = 1
+    links = [("Hardware", "#hardware"), ("Software", "#software"),
+             ("Intelligence", "#intelligence"), ("Oplo+", "#membership")]
+    css = stamp("assets/css/oplo-products.css")
+    out = head(depth, "Products — Oplo",
+               "Everything Oplo makes: the silicon and the machine, the software on it, the intelligence inside it, and the membership that carries an account across all three.",
+               "products/", f'<link rel="stylesheet" href="../assets/css/oplo-products.css?v={css}">')
+    out += nav(depth, "products/")
+    out += chapter(depth, "Products", links, "products/")
+    out += '<main class="pr" id="top">\n'
+
+    icons = "".join(
+        f'<li><a class="pr-ico {c}" href="{h}"><span class="ico">{pr_svg(g)}</span>{n}</a></li>'
+        for c, h, g, n in [("hw", "#hardware", "chip", "Hardware"), ("sw", "#software", "apps", "Software"),
+                           ("ai", "#intelligence", "spark", "Intelligence"), ("plus", "#membership", "plus", "Oplo+")])
+    out += f'''<section class="pr-hero">
+  <h1 class="pr-title reveal">Everything we make,<br class="br-wide"> <span class="pr-grad">in one place.</span></h1>
+  <p class="pr-sub reveal d1">Four things built as one system rather than four companies negotiating an interface between them.</p>
+  <ul class="pr-icons reveal d2" aria-label="Jump to a product">{icons}</ul>
+</section>
+<div class="pr-stage">
+<div class="pr-grid">
+'''
+
+    out += pr_tile(
+        "hw wide dark", "hardware", "Hardware", "In development<sup>1</sup>", "The machine, made whole.",
+        "Silicon designed for the software that runs on it, and a device that belongs to the person holding it rather than to whoever is watching.",
+        [("Learn more", "hardware/"), ("Silicon", "hardware/#silicon")],
+        f'    <div class="tile-art reveal d1">{pr_die()}</div>')
+
+    out += pr_tile(
+        "sw half", "software", "Software", "In development<sup>1</sup>", "Built for a person, not an org chart.",
+        "Tools that assume one user with taste. The operating system, the apps and the updates are ours, so there is nobody to point at when something is wrong.",
+        [("Learn more", "software/"), ("Updates", "software/#updates")],
+        f'''    <div class="tile-art sw-art reveal d1" aria-hidden="true">
+      <div class="sheets">
+        <div class="sheet s3"></div>
+        <div class="sheet s2"></div>
+        <div class="sheet s1"><div class="dots"><i></i><i></i><i></i></div><div class="app">{pr_mark(fill="#fff")}</div><b class="ln l1"></b><b class="ln l2"></b><div class="rows"><span class="r"><i></i><b></b></span><span class="r"><i></i><b></b></span><span class="r"><i></i><b></b></span></div></div>
+      </div>
+    </div>''')
+
+    out += pr_tile(
+        "ai half dark", "intelligence", "Intelligence", "In development<sup>1</sup>", "Close to you, not to a data centre.",
+        "Models that run on the device in your hand, on silicon designed to carry them, so the private part of personal computing stays on the machine.",
+        [("Learn more", "intelligence/"), ("Privacy", "privacy/")],
+        f'''    <div class="tile-art ai-art reveal d1">
+      <div class="orb" aria-hidden="true"><div class="orb-core">{pr_svg("spark")}</div></div>
+      <div class="ask"><q>{TABS[2][1]}</q><small>Reads {TABS[2][2]} &nbsp;·&nbsp; <em>stays on the device</em><sup>2</sup></small></div>
+    </div>''')
+
+    chips = "".join(f'<li class="chip">{pr_svg(g)}{n}</li>' for n, g, _ in PERKS)
+    out += pr_tile(
+        "plus wide", "membership", "Oplo+", "Not available yet<sup>3</sup>", "One membership, the whole system.",
+        "The account, the storage and the services that follow you across every Oplo device, sold as one thing rather than assembled out of six subscriptions.",
+        [("Learn more", "plus/"), ("Compare plans", "plus/#compare")],
+        f'    <div class="tile-art perks-art reveal d1"><ul class="perk-cloud" aria-label="Planned for Oplo+">{chips}</ul></div>')
+
+    out += '</div>\n</div>\n'
+
+    why = "".join(
+        f'''    <div class="pr-why-col reveal d{i}">
+      {pr_svg(g)}
+      <h3>{t}</h3>
+      <p>{d}</p>
+    </div>
+''' for i, (g, t, d) in enumerate([
+        ("layers", "Designed as one.",
+         "Silicon, software and models are shaped to each other, not negotiated between vendors."),
+        ("vault", "Private by default.",
+         "Personal context is read on the device it already lives on, because what never leaves cannot be collected."),
+        ("sync", "Follows you.",
+         "One account and one membership, carried across every Oplo device instead of assembled out of six subscriptions."),
+    ]))
+    out += f'''<section class="pr-why">
+  <div class="pr-why-in">
+    <h2 class="pr-why-title reveal">Better together. <span class="muted">By design.</span></h2>
+    <div class="pr-why-cols">
+{why}    </div>
+    <div class="pr-close">
+      <h2 class="reveal">Oplo is early, and says so.</h2>
+      <p class="reveal d1">Follow along as it takes shape, or tell us what you would want from it.</p>
+      <p class="cta-row reveal d2"><a class="cta" href="../newsroom/">Follow what ships</a><a class="cta" href="../contact/">Get in touch</a></p>
+    </div>
+  </div>
+</section>
+</main>
+'''
+    notes = [
+        "Oplo products are in development. Nothing on this page is an offer of sale or a commitment to a specification.",
+        "The example request is an illustration of intended use, not a recording of a working system. "
+        "The illustrations on this page are decorative: none is a rendering of a finished product.",
+        "Oplo+ is not available. No price has been set, and what it would include describes design intent.",
+    ]
+    return ("products/index.html", out + footer(depth, notes))
+
+PAGES.append(products_page())
 
 # ----------------------------------------------------- Company & utility
 def simple(slug, depth, title, desc, eyebrow, heading, lead, rows_html=""):
