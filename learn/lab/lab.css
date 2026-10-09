@@ -64,6 +64,12 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
 .m .mcb { font-size: 1.7em; font-weight: 200; line-height: 1; margin-right: .12em; display: inline-block; transform-origin: center; }
 .m .mcr { display: inline-flex; flex-direction: column; gap: .18em; text-align: left; }
 .m .mcrow { display: flex; gap: 1.1em; }
+.m .mmat { display: inline-flex; align-items: center; margin: 0 .2em; }
+.m .mmat .mcb { margin: 0 .05em; }
+.m .mmg { display: inline-flex; flex-direction: column; gap: .2em; }
+.m .mmrow { display: flex; gap: 1.1em; justify-content: center; }
+.m .mmc { min-width: .9em; text-align: center; }
+.m .mmc.aug { border-left: 1px solid currentColor; padding-left: .7em; margin-left: -.2em; }
 .m .mbb { font-family: var(--text); font-size: 1.04em; }
 .m .mr { display: inline-flex; align-items: flex-start; }
 .m .mr-s { font-size: 1.05em; margin-right: -.02em; }

@@ -98,6 +98,7 @@ window.OPLO_LAB = (function () {
     "precalc/u06.js": "5036569e",
     "precalc/u07.js": "68aa7333",
     "precalc/u08.js": "8d5c040f",
+    "precalc/u09.js": "1667d4fb",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "a3bd33f8",
     "geo/u02.js": "327da4b8",
@@ -222,6 +223,15 @@ window.OPLO_LAB = (function () {
           var rows = group().split("\\\\"), cells = rows.map(function (r) { return r.split("&"); });
           push('<span class="mcases"><span class="mcb" style="transform:scale(1,' + (0.55 + 0.5 * rows.length).toFixed(2) + ')">{</span><span class="mcr">' +
                cells.map(function (r) { return '<span class="mcrow">' + r.map(function (c2) { return "<span>" + mathHTML(c2) + "</span>"; }).join("") + "</span>"; }).join("") + "</span></span>", "val");
+        } else if (cmd === "mat" || cmd === "pmat" || cmd === "vmat" || cmd === "amat") {
+          // \mat{1 & 2 \\ 3 & 4}: a bracketed grid of cells. \pmat has round brackets, \vmat bars (a determinant),
+          // \amat an augmented matrix: square brackets, the last column set off by a rule.
+          var mrows = group().split("\\\\"), mcells = mrows.map(function (r) { return r.split("&"); }),
+              mopen = cmd === "pmat" ? "(" : cmd === "vmat" ? "|" : "[", mclose = cmd === "pmat" ? ")" : cmd === "vmat" ? "|" : "]",
+              msc = (0.55 + 0.5 * mrows.length).toFixed(2);
+          push('<span class="mmat"><span class="mcb" style="transform:scale(1,' + msc + ')">' + mopen + '</span><span class="mmg">' +
+               mcells.map(function (r) { return '<span class="mmrow">' + r.map(function (c2, j) { return '<span class="mmc' + (cmd === "amat" && j === r.length - 1 ? " aug" : "") + '">' + mathHTML(c2) + "</span>"; }).join("") + "</span>"; }).join("") +
+               '</span><span class="mcb" style="transform:scale(1,' + msc + ')">' + mclose + "</span></span>", "val");
         } else if (cmd === "mathbb") {
           var bb = group();
           push('<span class="mbb">' + (BLACKBOARD[bb] || esc(bb)) + "</span>", "val");
