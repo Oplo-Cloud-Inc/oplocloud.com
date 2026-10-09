@@ -94,6 +94,7 @@ window.OPLO_LAB = (function () {
     "precalc/u02.js": "95bd8411",
     "precalc/u03.js": "3e66d722",
     "precalc/u04.js": "556db4d7",
+    "precalc/u05.js": "6d074766",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "a3bd33f8",
     "geo/u02.js": "327da4b8",
@@ -366,12 +367,14 @@ window.OPLO_LAB = (function () {
      defined; that is tested at several awkward points, the way a teacher
      checks by substituting. */
   var FUNCS = { sqrt: Math.sqrt, abs: Math.abs, cbrt: Math.cbrt, sin: Math.sin, cos: Math.cos, tan: Math.tan,
+                sec: function (x) { return 1 / Math.cos(x); }, csc: function (x) { return 1 / Math.sin(x); }, cot: function (x) { return 1 / Math.tan(x); },
+                arcsin: Math.asin, arccos: Math.acos, arctan: Math.atan,   // angles are in radians; 35° is read as 35π/180
                 ln: Math.log, log: Math.log10, exp: Math.exp };
   function tokenize(src) {
     var s = String(src).replace(/−|–/g, "-").replace(/[×·]/g, "*").replace(/÷/g, "/")
       .replace(/≤/g, "<=").replace(/≥/g, ">=").replace(/≠/g, "!=").replace(/π/g, "pi").replace(/√/g, "sqrt")
       .replace(/²/g, "^2").replace(/³/g, "^3").replace(/\\cdot|\\times/g, "*").replace(/\\le/g, "<=")
-      .replace(/\\ge/g, ">=").replace(/\\pi/g, "pi");
+      .replace(/\\ge/g, ">=").replace(/\\pi/g, "pi").replace(/(\d+(?:\.\d+)?)\s*°/g, "($1*pi/180)");
     var out = [], i = 0;
     while (i < s.length) {
       var c = s[i];
