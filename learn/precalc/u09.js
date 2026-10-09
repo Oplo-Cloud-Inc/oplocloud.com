@@ -323,7 +323,7 @@
         options: [{ t: "$x = 2$ or $x = 3$" }, { t: "$x = -2$ or $x = -3$", fb: "$(x - 2)(x - 3) = 0$: set each factor to 0." }, { t: "$x = 1$ or $x = 6$", fb: "$1 \\cdot 6 = 6$ but $1 + 6 \\ne 5$." }],
         answer: 0, skill: "Factoring", hints: ["Two numbers that multiply to 6 and add to 5."], why: "$(x - 2)(x - 3) = 0$." },
       { type: "learn", kicker: "So, where to start?",
-        prompt: "All right first time? Go straight to **Lesson 9.1**. If **check 2** slipped, look again at lesson 2.2. If **check 5** slipped, revisit lesson 3.3.",
+        prompt: "All right first time? Go straight to **Lesson 9.1**. If **check 2** slipped, look again at lesson 2.1. If **check 5** slipped, revisit lesson 3.7.",
         after: "Nothing is locked. Open any lesson whenever you like." }
     ]
   });
