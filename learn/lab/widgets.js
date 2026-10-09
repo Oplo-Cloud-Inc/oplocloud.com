@@ -2092,12 +2092,12 @@
   }
   function fig(o) {
     o = o || {};
-    var xr = o.x || [-6, 6], yr = o.y || [-6, 6], u = o.u || 26;
+    var xr = o.x || [-6, 6], yr = o.y || [-6, 6], u = o.u || 26, sy = o.uy || u;   // uy: a different scale up the page, for a window much taller than it is wide
     var grid = o.grid !== false, axes = grid && o.axes !== false, nums = axes && o.nums !== false;
     var pad = o.pad != null ? o.pad : nums ? 24 : 16;
-    var W = Math.round((xr[1] - xr[0]) * u + 2 * pad), H = Math.round((yr[1] - yr[0]) * u + 2 * pad);
+    var W = Math.round((xr[1] - xr[0]) * u + 2 * pad), H = Math.round((yr[1] - yr[0]) * sy + 2 * pad);
     function X(v) { return +(pad + (v - xr[0]) * u).toFixed(1); }
-    function Y(v) { return +(pad + (yr[1] - v) * u).toFixed(1); }
+    function Y(v) { return +(pad + (yr[1] - v) * sy).toFixed(1); }
     function P(p) { return X(p[0]) + " " + Y(p[1]); }
     var out = [];
     function g(c, body) { out.push('<g class="lf-' + (FIG_C[c] ? c : "ink") + '">' + body + "</g>"); }

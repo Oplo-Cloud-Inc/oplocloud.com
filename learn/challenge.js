@@ -716,9 +716,14 @@ window.OPLO_CHALLENGE = (function () {
     return /^-?(\d+\.?\d*|\.\d+)$/.test(t) ? parseFloat(t) : NaN;
   }
 
+  // A step with `calc: true` also accepts a sum a student types, such as 2000*(1+0.05/12)^24 or ln(30)/ln(4):
+  // the lab sets the evaluator, and the answer shown beside the box is what the sum comes to.
+  var calcHook = null;
   KINDS.number = function (s) {
     var api = {};
-    var wrap = el("label", "ch-num");
+    var calc = !!s.calc && typeof calcHook === "function";
+    function read(t) { var v = readNum(t); return !isFinite(v) && calc ? calcHook(t) : v; }
+    var wrap = el("label", "ch-num" + (calc ? " calc" : ""));
     var inp = el("input");
     inp.type = "text";
     inp.inputMode = "decimal";
@@ -726,12 +731,17 @@ window.OPLO_CHALLENGE = (function () {
     inp.setAttribute("aria-label", s.label || "Your answer");
     wrap.appendChild(inp);
     if (s.unit) wrap.appendChild(el("span", "ch-unit", esc(s.unit)));
-    inp.addEventListener("input", function () { wrap.classList.remove("no"); api.onChange(); });
+    var shown = calc ? wrap.appendChild(el("span", "ch-calc")) : null;
+    inp.addEventListener("input", function () {
+      wrap.classList.remove("no");
+      if (shown) { var t = inp.value.trim(), v = read(t); shown.textContent = t && isFinite(v) && !isFinite(readNum(t)) ? "= " + String(Math.round(v * 1e6) / 1e6) : ""; }
+      api.onChange();
+    });
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter" && api.ready()) api.onEnter(); });
     api.el = wrap;
-    api.ready = function () { return isFinite(readNum(inp.value)); };
+    api.ready = function () { return isFinite(read(inp.value)); };
     api.check = function () {
-      var v = readNum(inp.value);
+      var v = read(inp.value);
       var ok = Math.abs(v - s.answer) <= (s.tol || 1e-9);
       wrap.classList.toggle("no", !ok);
       if (ok) { wrap.classList.add("yes"); inp.disabled = true; }
@@ -1285,6 +1295,7 @@ window.OPLO_CHALLENGE = (function () {
        seed, and returns { el, ready, check, reveal, focus?, destroy? }. */
     addKind: function (name, factory) { KINDS[name] = factory; },
     readNum: readNum,
+    setCalc: function (f) { calcHook = f; },
     kinds: KINDS,
     /* A step's record ({ seen, solved, … } or null), for the account given —
        Business's concept deck reads which of its steps have been seen. */

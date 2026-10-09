@@ -35,13 +35,13 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "0bc77059",
+    "lab/widgets.js": "f833ee90",
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/philkit.js": "3a494f5b",
     "lab/edpkit.js": "b4fc8305",
     "lab/satkit.js": "0815b9c7",
-    "lab/geotools.js": "1aca5190",
+    "lab/geotools.js": "2f2ceaa0",
     "lab/pathkit.js": "4161c15f",
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
@@ -90,9 +90,10 @@ window.OPLO_LAB = (function () {
     "alg2/u10.js": "1c46a838",
     "alg2/u11.js": "af802903",
     "alg2/u12.js": "1fbb7169",
-    "precalc/u01.js": "564c70fa",
-    "precalc/u02.js": "a0d7230a",
-    "precalc/u03.js": "e00b3470",
+    "precalc/u01.js": "1c282d10",
+    "precalc/u02.js": "95bd8411",
+    "precalc/u03.js": "3e66d722",
+    "precalc/u04.js": "556db4d7",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "a3bd33f8",
     "geo/u02.js": "327da4b8",
@@ -390,7 +391,8 @@ window.OPLO_LAB = (function () {
           out.push(fnMatch === "pi" ? { k: "num", v: Math.PI, pi: true } : { k: "fn", v: fnMatch });
           w = w.slice(fnMatch.length);
         }
-        for (var j = 0; j < w.length; j++) out.push({ k: "var", v: w[j] });
+        // A lone e just before ^ is Euler's number: e^x, e^(0.05*3).
+        for (var j = 0; j < w.length; j++) out.push(w[j] === "e" && j === w.length - 1 && s[i] === "^" ? { k: "num", v: Math.E } : { k: "var", v: w[j] });
         continue;
       }
       var two = s.slice(i, i + 2);
@@ -944,6 +946,8 @@ window.OPLO_LAB = (function () {
     CH.addKind("pair", kindPair);
     CH.addKind("numbers", kindNumbers);
     // A number with math in its label, and fractions accepted.
+    // The number box can take a sum a student types (a step says `calc: true`): digits, + - * / ^, brackets, ln, log, exp, sqrt, pi, e.
+    CH.setCalc(function (t) { try { var tr = parse(String(t)); if (Object.keys(varsOf(tr)).length) return NaN; var v = evalTree(tr, {}); return isFinite(v) ? v : NaN; } catch (e) { return NaN; } });
     var base = CH.kinds.number;
     CH.addKind("num", function (s, seed) {
       var x = base(Object.assign({}, s, { label: s.label ? String(s.label).replace(/<[^>]+>|\$/g, "") : null }), seed);

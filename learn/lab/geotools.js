@@ -238,14 +238,14 @@
   var EXTRA = { arc: 1, amarks: 1, plane: 1, len: 1, ell: 1, path: 1, word: 1, dline: 1 };
   function isExtra(it) { for (var k in EXTRA) if (it[k] != null) return true; return false; }
   function frame(o) {
-    var xr = o.x || [-6, 6], yr = o.y || [-6, 6], u = o.u || 26;
+    var xr = o.x || [-6, 6], yr = o.y || [-6, 6], u = o.u || 26, uy = o.uy || u;
     var grid = o.grid !== false, axes = grid && o.axes !== false, nums = axes && o.nums !== false;
     var pad = o.pad != null ? o.pad : nums ? 24 : 16;
     return {
-      xr: xr, yr: yr, u: u, pad: pad,
-      W: Math.round((xr[1] - xr[0]) * u + 2 * pad), H: Math.round((yr[1] - yr[0]) * u + 2 * pad),
+      xr: xr, yr: yr, u: u, uy: uy, pad: pad,
+      W: Math.round((xr[1] - xr[0]) * u + 2 * pad), H: Math.round((yr[1] - yr[0]) * uy + 2 * pad),
       X: function (v) { return +(pad + (v - xr[0]) * u).toFixed(1); },
-      Y: function (v) { return +(pad + (yr[1] - v) * u).toFixed(1); }
+      Y: function (v) { return +(pad + (yr[1] - v) * uy).toFixed(1); }
     };
   }
   GT.frame = frame;
@@ -591,7 +591,7 @@
       var F = frame(spec);
       W = F.W; H = F.H; X = F.X; Y = F.Y;
       VX = function (px) { return F.xr[0] + (px - F.pad) / F.u; };
-      VY = function (py) { return F.yr[1] - (py - F.pad) / F.u; };
+      VY = function (py) { return F.yr[1] - (py - F.pad) / F.uy; };
     }
     var svg = S("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
     svg.style.maxWidth = (spec.w || W) + "px";

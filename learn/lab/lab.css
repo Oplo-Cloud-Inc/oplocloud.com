@@ -50,7 +50,7 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
 .m .mrel { margin: 0 .3em; }
 .m .mu { margin-right: .04em; }
 .m .msp { display: inline-block; width: .2em; }
-.m .mt { font-family: var(--text); font-size: .88em; font-style: normal; }
+.m .mt { font-family: var(--text); font-size: .88em; font-style: normal; margin-right: .14em; }
 .m sup, .m sub { font-size: .7em; line-height: 0; position: relative; }
 .m sup { vertical-align: .6em; } .m sub { vertical-align: -.25em; }
 .m .mf { display: inline-flex; flex-direction: column; align-items: stretch; vertical-align: middle; margin: 0 .12em; text-align: center; font-size: .92em; }
