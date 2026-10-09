@@ -16,10 +16,15 @@ http.createServer((req, res) => {
   }
   const place = /^\/learn\/(admin|teacher|student)\//.test(p);
   p = p.replace(/^\/learn\/(admin|teacher|student)(?=\/)/, "/learn");
-  if (p.endsWith("/")) p += "index.html";
   // A place inside the app (/learn/student/Science/Biology) is the app, as the
   // production Worker answers it; a missing file with an extension stays 404.
-  if (place && !/\.[A-Za-z0-9]{1,8}$/.test(p) && !fs.existsSync(path.join(ROOT, p))) p = "/learn/index.html";
+  // A trailing slash (/learn/student/Science/) is the same place, so it is
+  // decided before "index.html" is appended, not after: "/Science/index.html"
+  // has an extension and would be a bare 404 with no top bar.
+  const dir = p.endsWith("/");
+  if (place && !/\.[A-Za-z0-9]{1,8}$/.test(p) &&
+      !fs.existsSync(path.join(ROOT, dir ? p + "index.html" : p))) p = "/learn/index.html";
+  else if (dir) p += "index.html";
   const file = path.join(ROOT, p);
   if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
   fs.readFile(file, (err, buf) => {
