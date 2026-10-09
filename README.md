@@ -140,23 +140,22 @@ everywhere else the words and the space are the design.
   fade-in as a section scrolls into view. An earlier version had a cursor-lit
   wordmark, parallax, tilting tiles and animated pictures; it was taken out on
   purpose, so do not add motion back without being asked.
-- **The Products page** — the one other place colour is spent, on purpose.
-  `products_page()` in `tools/build.py` builds it and
-  `assets/css/oplo-products.css` (loaded by `products/index.html` and nothing
-  else) styles it, after apple.com/services: a large opener with a gradient
-  phrase and a row of four icons that jump to their tiles, then a grid of big
-  rounded tiles (wide, two halves, wide), each in a colour world of its own —
-  black and blue for Hardware, white and blue for Software, black with the
-  opal glow for Intelligence, violet to coral for Oplo+ — and each one a single
-  link (the first link's `::before` is stretched over the tile; the second sits
-  above it). Nothing is for sale, so there is no buy button, and every tile
-  says "In development" (Oplo+ says "Not available yet"). The art is abstract —
-  a die, sheets of glass, a glow, the planned perks as chips — and the page's
-  notes say it is decorative, so a drawn thing is never mistaken for a product.
-  It deliberately names no app from the old suite (`/productivity/` and its
-  apps are served but not advertised). A tile's ground never moves; only its
-  words and art fade in, because the bars read the colour under them. Nothing
-  loops and nothing follows the pointer.
+- **The Products page** — two products, Kern and OEdu, laid out the way
+  apple.com/services lays out its services. `products_page()` in
+  `tools/build.py` builds it and `assets/css/oplo-products.css` (loaded by
+  `products/index.html` and nothing else) styles it: a centred title on white,
+  then two big rounded tiles side by side — light grey and black — each with a
+  lockup, a headline, a line of copy, a blue pill and a picture along its foot,
+  and each one a single link (the pill's `::before` is stretched over the
+  tile). The palette is the site's own; there is no colour of its own here.
+  **The pictures are not made yet.** Each tile holds an empty 3:2 box, dashed
+  and labelled "Image placeholder 1200 × 800". To fill one, put the file in
+  `assets/img/products/` and name it in `tools/build.py`:
+  `PR_IMAGES["kern"] = ("assets/img/products/kern.webp", "what it shows")`,
+  then rebuild — the box becomes an `<img>` of exactly the same size, so
+  nothing moves. A tile's ground never moves; only its words and picture fade
+  in, because the bars read the colour under them. Nothing loops and nothing
+  follows the pointer.
 - **Hero artwork** — the opening picture is `OploWebsite.svg`, a design export
   (Earth at night, with "Hello" over it) whose six megabytes are embedded
   images. `python3 tools/hero.py path/to/OploWebsite.svg` flattens it, exactly as
