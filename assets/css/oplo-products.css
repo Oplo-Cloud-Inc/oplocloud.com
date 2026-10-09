@@ -1,0 +1,253 @@
+/* ==========================================================================
+   Products — laid out the way Apple lays out its Services page.
+
+   Top to bottom: a black strip of the products, a centred opening, a one-line
+   banner, then one full-bleed stage per product with a shelf of cards under
+   it, a closing band, and numbered footnotes (those are the site's .notes).
+   Every measure below is Apple's at a 1440px window, written as a clamp so it
+   follows the window; the type is the system's own, which on a Mac is the
+   same face Apple sets it in.
+
+   The pictures are not made yet. Each image box is a placeholder:
+     stage   <figure class="svc-media"><div class="ph">…</div></figure>
+     card    <div class="svc-pic">…</div>
+   To fill one, put an <img> inside it and delete the placeholder; the picture
+   covers the box (object-fit) and the headline sits on a shade over it.
+   ========================================================================== */
+
+body:has(> main.svc) { padding-top: 0; }
+
+.svc {
+  --on: #f5f5f7;
+  --w: 980px;
+  --pad: max(var(--gutter), env(safe-area-inset-left));
+  --padb: clamp(26px, 3.4vw, 49px);
+  background: #000; color: var(--on);
+  font-family: var(--text);
+}
+
+/* ------------------------------------------------------------- Local nav
+   The products, as icons over their names, on black under the bar. */
+.svc-nav { background: #000; padding: var(--nav) var(--pad) 0; }
+.svc-nav ul {
+  display: flex; justify-content: center; gap: clamp(40px, 5.4vw, 78px);
+  max-width: var(--w); margin-inline: auto; padding: 26px 0 30px;
+}
+.svc-nav a {
+  display: flex; flex-direction: column; align-items: center; gap: 9px; min-width: 56px;
+  font-size: 12px; line-height: 1.33; letter-spacing: -.01em; color: var(--on);
+  opacity: .9; transition: opacity .25s var(--ease);
+}
+.svc-nav a:hover { opacity: 1; }
+.svc-nav .ic { width: 28px; height: 28px; transition: transform .4s var(--ease); }
+.svc-nav a:hover .ic { transform: translateY(-2px) scale(1.05); }
+
+/* --------------------------------------------------------------- Opening */
+.svc-hero {
+  background: #000; text-align: center;
+  padding: clamp(52px, 6.9vw, 100px) var(--pad) clamp(56px, 6.4vw, 92px);
+}
+.svc-hero h1 {
+  margin: 0 auto; font: 700 clamp(42px, 6.667vw, 96px)/1 var(--font);
+  letter-spacing: -.014em; text-wrap: balance;
+}
+.svc-hero p {
+  max-width: 861px; margin: clamp(22px, 2.7vw, 40px) auto 0;
+  font: 600 clamp(18px, 1.667vw, 24px)/1.1667 var(--text);
+  letter-spacing: .009em; text-wrap: balance;
+}
+
+/* ---------------------------------------------------------------- Buttons
+   Pills, as the Services page has them: a solid one and an outlined one. */
+.svc-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 12px 22px; border: 1px solid transparent; border-radius: 980px;
+  font: 500 17px/1.176 var(--text); letter-spacing: -.022em; white-space: nowrap;
+  transition: background-color .25s var(--ease), color .25s var(--ease),
+              border-color .25s var(--ease), transform .25s var(--ease);
+}
+.svc-btn:active { transform: scale(.97); }
+.svc-btn .fn { position: relative; top: -.5em; margin-left: 1px; font-size: .62em; line-height: 0; }
+.svc-btn.solid { background: var(--on); color: #000; }
+.svc-btn.solid:hover { background: #fff; }
+.svc-btn.ghost {
+  color: #fff; border-color: rgba(245,245,247,.9); background: rgba(0,0,0,.2);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.svc-btn.ghost:hover { background: rgba(255,255,255,.16); }
+.svc-btn.line { color: var(--on); border-color: var(--on); }
+.svc-btn.line:hover { background: rgba(245,245,247,.12); }
+.svc-btn.dark { background: #1d1d1f; color: #fff; }
+.svc-btn.dark:hover { background: #3a3a3d; }
+.svc-btn.line-dark { color: #1d1d1f; border-color: #1d1d1f; }
+.svc-btn.line-dark:hover { background: rgba(0,0,0,.06); }
+
+/* ---------------------------------------------------------------- Banner */
+.svc-banner { background: #161617; padding: clamp(22px, 3.5vw, 50px) var(--pad); }
+.svc-banner-in { max-width: var(--w); margin-inline: auto; display: flex; align-items: center; gap: 24px; }
+.svc-logo { flex: none; display: flex; color: var(--on); }
+.svc-logo svg { height: clamp(24px, 2.2vw, 32px); width: auto; }
+.svc-banner p {
+  flex: 1; text-align: center;
+  font: 700 clamp(15px, 1.46vw, 21px)/1.33 var(--font); letter-spacing: .011em;
+}
+
+/* ----------------------------------------------------------------- Stage */
+.svc-block { background: #fff; color: #1d1d1f; scroll-margin-top: var(--nav); }
+.svc-stage {
+  position: relative; isolation: isolate; overflow: hidden;
+  height: clamp(440px, 38.2vw, 700px);
+  background: #000; color: var(--on);
+}
+.svc-media { position: absolute; inset: 0; z-index: -1; margin: 0; }
+.svc-media > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* A shade under the words, so a picture can be bright and they stay readable. */
+.svc-stage::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(to top, rgba(0,0,0,.62), rgba(0,0,0,0) 58%);
+}
+
+/* The placeholder: an empty box with its own light, tinted for the product. */
+.ph {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding-bottom: 26%;
+  color: rgba(255,255,255,.34);
+  font: 600 12px/1 var(--text); letter-spacing: .09em; text-transform: uppercase;
+}
+.ph svg { width: 34px; height: 34px; }
+.kern .ph { background: radial-gradient(125% 150% at 72% 4%, #3b47b9 0%, #1b2058 36%, #0a0b1e 70%, #040410 100%); }
+.oedu .ph { background: radial-gradient(125% 150% at 28% 4%, #2c72b9 0%, #133b66 36%, #0a1522 70%, #04070c 100%); }
+
+/* What sits on the stage: who it is, what it says, where to go, what it is.
+   The buttons share a row with the headline, the way Apple's do. */
+.svc-in {
+  position: absolute; z-index: 1; bottom: 0;
+  left:  max(var(--pad), calc((100% - var(--w)) / 2));
+  right: max(var(--pad), calc((100% - var(--w)) / 2));
+  padding-bottom: var(--padb);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 28px; align-items: center;
+  grid-template-areas: "id id" "h cta" "cap cap";
+}
+.svc-id { grid-area: id; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.svc-id .ic { width: 22px; height: 22px; flex: none; }
+.svc-id .nm { font: 600 17px/1.18 var(--text); letter-spacing: -.03em; }
+.svc-id .tag {
+  margin-left: 3px; padding: 3px 9px 4px; border: 1px solid rgba(245,245,247,.78); border-radius: 980px;
+  font: 600 11px/1 var(--text); letter-spacing: -.01em;
+}
+.svc-h {
+  grid-area: h; margin: 0;
+  font: 700 clamp(28px, 2.78vw, 40px)/1 var(--font); letter-spacing: normal; text-wrap: balance;
+}
+.svc-cta { grid-area: cta; display: flex; gap: 12px; margin: 0; }
+.svc-cap {
+  grid-area: cap; margin: clamp(16px, 1.9vw, 28px) 0 0;
+  font: 400 12px/1.4 var(--text); letter-spacing: .08em; text-transform: uppercase;
+  color: rgba(245,245,247,.82);
+}
+
+/* Pause: the shelf below moves on its own, so it can be stopped. */
+.svc-pause {
+  display: none; position: absolute; z-index: 2;
+  right: clamp(16px, 3.4vw, 49px); bottom: calc(var(--padb) + clamp(30px, 3.9vw, 56px));
+  width: 34px; height: 34px; padding: 0; color: var(--on); opacity: .9;
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+}
+.oplo-motion .svc-pause { display: block; }
+.svc-pause:hover { opacity: 1; transform: scale(1.06); }
+.svc-pause svg { width: 100%; height: 100%; }
+.svc-pause .i-play { display: none; }
+.svc-block.is-paused .svc-pause .i-pause { display: none; }
+.svc-block.is-paused .svc-pause .i-play { display: block; }
+
+/* ----------------------------------------------------------------- Shelf
+   A row of cards that drifts left. It is two copies of the list in a track
+   that moves by exactly one list's width, so the loop has no seam. Without
+   the script, or for anyone who asks for less motion, it is an ordinary row
+   that scrolls by hand. */
+.svc-shelf {
+  background: #fff; overflow-x: auto; scrollbar-width: none;
+  padding: 15px 0 clamp(52px, 6.2vw, 88px) max(var(--pad), calc((100% - var(--w)) / 2));
+}
+.svc-shelf::-webkit-scrollbar { display: none; }
+.svc-track { display: flex; width: max-content; }
+.svc-list { display: flex; flex: none; gap: 15px; padding-right: 15px; }
+.svc-clone { display: none; }
+.oplo-motion .svc-shelf { overflow: hidden; }
+.oplo-motion .svc-clone { display: flex; }
+.oplo-motion .svc-track { animation: svc-run 96s linear infinite; will-change: transform; }
+.svc-block.is-paused .svc-track { animation-play-state: paused; }
+@keyframes svc-run { to { transform: translate3d(-50%, 0, 0); } }
+
+.svc-tile { flex: none; width: clamp(236px, 29.1vw, 419px); }
+.svc-pic {
+  aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden;
+  display: grid; place-items: center;
+  color: hsl(var(--h) 34% 52% / .5);
+  background: linear-gradient(145deg, hsl(var(--h) 40% 95%), hsl(calc(var(--h) + 14) 34% 87%));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.05);
+}
+.svc-pic svg { width: 30px; height: 30px; }
+.svc-pic > img { width: 100%; height: 100%; object-fit: cover; }
+.svc-pic:has(> img) > svg { display: none; }
+.svc-t, .svc-s { margin: 0; font: 400 14px/1.286 var(--text); letter-spacing: -.016em; }
+.svc-t { margin-top: 10px; color: #1d1d1f; }
+.svc-s { color: #6e6e73; }
+
+/* --------------------------------------------------------------- Closing
+   Where Apple closes on its bundle, this closes on the two products by name,
+   each in its own colour, and the two next steps. */
+.svc-end { background: #f9f9f9; color: #1d1d1f; padding: clamp(48px, 4.4vw, 64px) var(--pad); }
+.svc-end-in {
+  max-width: var(--w); margin-inline: auto; min-height: clamp(300px, 26vw, 374px);
+  display: grid; grid-template-columns: minmax(0, 665px) minmax(0, 1fr); align-items: center;
+}
+.svc-end-k {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 12px;
+  font: 600 clamp(34px, 3.5vw, 50px)/1 var(--font); letter-spacing: -.02em;
+}
+.svc-end-k svg { height: .86em; width: auto; }
+.svc-end h2 { max-width: 490px; margin: 0; font: 700 clamp(28px, 2.78vw, 40px)/1 var(--font); letter-spacing: normal; text-wrap: balance; }
+.svc-end .svc-cta { margin-top: clamp(22px, 2.2vw, 32px); }
+.svc-words {
+  display: grid; gap: clamp(8px, 1vw, 14px);
+  font: 600 clamp(38px, 4.2vw, 60px)/1.05 var(--font); letter-spacing: -.02em;
+}
+.svc-words li { display: flex; align-items: center; gap: .28em; }
+.svc-words svg { height: .8em; width: auto; }
+.w-kern { color: #5468ff; }
+.w-oedu { color: #0071e3; }
+
+/* ---------------------------------------------------------------- Narrow
+   The pause button lives in the margin beside the words. Where the window is
+   too narrow to leave it one, it moves to the corner of the stage. */
+@media (max-width: 1160px) {
+  .svc-pause { bottom: auto; top: 16px; right: 16px; }
+}
+@media (max-width: 900px) {
+  .svc-in { grid-template-columns: minmax(0, 1fr); grid-template-areas: "id" "h" "cta" "cap"; }
+  .svc-cta { margin-top: 20px; }
+}
+@media (max-width: 734px) {
+  .svc-nav ul { gap: 44px; padding: 18px 0 22px; }
+  .svc-banner-in { flex-wrap: wrap; justify-content: center; gap: 14px; text-align: center; }
+  .svc-banner p { flex: 1 1 100%; order: 2; }
+  .svc-banner .svc-btn { order: 3; }
+  .svc-stage { height: auto; min-height: 540px; display: flex; align-items: flex-end; }
+  .svc-in { position: relative; left: auto; right: auto; width: 100%; padding: 120px var(--pad) 30px; }
+  .svc-tile { width: 62vw; }
+  .svc-end-in { grid-template-columns: minmax(0, 1fr); }
+  .svc-words { margin-top: 40px; }
+}
+@media (max-width: 420px) {
+  .svc-cta { flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oplo-motion .svc-shelf { overflow-x: auto; }
+  .oplo-motion .svc-clone { display: none; }
+  .oplo-motion .svc-track { animation: none; will-change: auto; }
+  .oplo-motion .svc-pause { display: none; }
+  .svc-btn, .svc-nav a, .svc-nav .ic { transition: none; }
+}

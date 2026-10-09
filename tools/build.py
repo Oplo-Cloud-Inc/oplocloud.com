@@ -578,24 +578,142 @@ PAGES.append(("developers/index.html", section_page(
 # that already exist: nothing here is a new claim, and every old top-level
 # page is reachable from one of them in a single click.
 # ==========================================================================
-PAGES.append(("products/index.html", section_page(
-    "products/", 1, "Products — Oplo",
-    "Everything Oplo makes: the silicon and the machine, the software on it, the intelligence inside it, and the membership that carries an account across all three.",
-    "Products", "Everything we make, in one place.",
-    "Four things built as one system rather than four companies negotiating an interface between them.",
-    [("dark", "hardware", "Hardware", "The machine, made whole.",
-      "Silicon designed for the software that runs on it, and a device that belongs to the person holding it rather than to whoever is watching.",
-      [("Oplo hardware", "hardware/")]),
-     ("", "software", "Software", "Built for a person, not an org chart.",
-      "Tools that assume one user with taste. The operating system, the apps and the updates are ours, so there is nobody to point at when something is wrong.",
-      [("Oplo software", "software/")]),
-     ("", "intelligence", "Intelligence", "Close to you, not to a data centre.",
-      "Models that run on the device in your hand, on silicon designed to carry them, so the private part of personal computing stays on the machine.",
-      [("Oplo intelligence", "intelligence/")]),
-     ("", "membership", "Oplo+", "One membership, the whole system.",
-      "The account, the storage and the services that follow you across every Oplo device, sold as one thing rather than assembled out of six subscriptions.",
-      [("Oplo+", "plus/")])],
-    ["Oplo products are in development. Nothing on this page is an offer of sale or a commitment to a specification."])))
+# Products is laid out the way Apple lays out its Services page: a black
+# opening, a one-line banner, then one full-bleed stage per product with a
+# shelf of cards under it, then a closing band and numbered footnotes. The
+# pictures are not made yet, so every image box is a placeholder: to fill one,
+# put an <img> inside its <figure class="svc-media"> and delete the .ph div
+# (the stage and the shelf cards both work that way; see oplo-products.css).
+def _mark(cls=""):
+    c = f' class="{cls}"' if cls else ""
+    return (f'<svg{c} viewBox="{MARK_VB}" aria-hidden="true" focusable="false"><g transform="translate({MARK_TR})">'
+            f'<path fill="currentColor" d="{MARK_D}"/></g></svg>')
+
+
+_TILE = '<svg class="ic" viewBox="0 0 28 28" aria-hidden="true" focusable="false"><rect width="28" height="28" rx="6.5" fill="{c}"/>{g}</svg>'
+KERN_ICON = _TILE.format(c="#5468ff", g='<path d="M10.4 7.6v12.8M10.6 14.3l7-6.7M12.9 12.3l5.4 8.1" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>')
+OEDU_ICON = _TILE.format(c="#0071e3", g='<path d="M14 7.2 23 11.6 14 16 5 11.6Z" fill="#fff"/><path d="M8.6 14.6v3.3c0 1.3 2.4 2.5 5.4 2.5s5.4-1.2 5.4-2.5v-3.3L14 17.3Z" fill="#fff"/><path d="M23 12v4.6" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>')
+PICTURE = ('<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="3.5" y="5.5" width="25" height="21" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/>'
+           '<circle cx="11" cy="12.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/>'
+           '<path d="M4 23l7.5-7 5 4.5 4-3.5 8 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>')
+PAUSE = ('<svg viewBox="0 0 34 34" aria-hidden="true" focusable="false"><circle cx="17" cy="17" r="16" fill="none" stroke="currentColor" stroke-width="1.2"/>'
+         '<path class="i-pause" d="M13 11.5h2.8v11H13zM18.2 11.5H21v11h-2.8z" fill="currentColor"/>'
+         '<path class="i-play" d="M14 11.6v10.8l8.6-5.4Z" fill="currentColor"/></svg>')
+
+
+def _tiles(items, hue):
+    """The cards of one shelf. Each is an empty 16:9 box with a title and a
+    line under it; --h tints the placeholder so a row of them is not one grey."""
+    out = ""
+    for i, (title, sub) in enumerate(items):
+        out += (f'<li class="svc-tile" style="--h:{hue + (i * 7) % 28}"><div class="svc-pic" role="img" aria-label="Image placeholder">{PICTURE}</div>'
+                f'<p class="svc-t">{title}</p><p class="svc-s">{sub}</p></li>')
+    return out
+
+
+def _stage(ident, name, icon, tag, head, caption, solid, ghost, items, hue, depth):
+    """One product: the image stage with its words, then its shelf. `solid` and
+    `ghost` are (label, target, footnote-or-None) for the two buttons."""
+    def btn(kind, b):
+        label, target, fn = b
+        if fn:
+            return (f'<a class="svc-btn {kind}" href="{rel(depth, target)}" aria-label="{label}, footnote {fn}">'
+                    f'{label}<sup class="fn" aria-hidden="true">{fn}</sup></a>')
+        return f'<a class="svc-btn {kind}" href="{rel(depth, target)}">{label}</a>'
+    tiles = _tiles(items, hue)
+    return f'''<section class="svc-block {ident}" id="{ident}" aria-labelledby="{ident}-h" data-name="{name}">
+  <div class="svc-stage">
+    <figure class="svc-media" data-slot="{ident}-stage"><div class="ph" role="img" aria-label="Image placeholder for {name}">{PICTURE}<span>Image placeholder</span></div></figure>
+    <div class="svc-in">
+      <p class="svc-id reveal">{icon}<span class="nm">{name}</span><span class="tag">{tag}</span></p>
+      <h2 class="svc-h reveal d1" id="{ident}-h">{head}</h2>
+      <p class="svc-cta reveal d1">{btn("solid", solid)}{btn("ghost", ghost)}</p>
+      <p class="svc-cap reveal d2">{caption}</p>
+    </div>
+    <button class="svc-pause" type="button" aria-pressed="false" aria-label="Pause the {name} shelf">{PAUSE}</button>
+  </div>
+  <div class="svc-shelf reveal">
+    <div class="svc-track">
+      <ul class="svc-list" aria-label="{name} at a glance">{tiles}</ul>
+      <ul class="svc-list svc-clone" aria-hidden="true">{tiles}</ul>
+    </div>
+  </div>
+</section>
+'''
+
+
+def products_page():
+    depth, slug = 1, "products/"
+    css, js = stamp("assets/css/oplo-products.css"), stamp("assets/js/oplo-products.js")
+    a = rel(depth, "assets/")
+    # Apple sets these headlines in bold; the site loads Inter at 400-600 only, so
+    # 700 is asked for here rather than in every page's head.
+    extra = (f'<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap" rel="stylesheet">\n'
+             f'<link rel="stylesheet" href="{a}css/oplo-products.css?v={css}">\n'
+             f'<script src="{a}js/oplo-products.js?v={js}" defer></script>')
+    out = head(depth, "Products — Oplo",
+               "Kern, a free online platform for learning by doing, and OEdu, the student information system, learning management system and school operating system.",
+               slug, extra)
+    out += nav(depth, slug)
+    out += f'''<main class="svc">
+<nav class="svc-nav" aria-label="Oplo products">
+  <ul>
+    <li><a href="#kern">{KERN_ICON}<span>Kern</span></a></li>
+    <li><a href="#oedu">{OEDU_ICON}<span>OEdu</span></a></li>
+  </ul>
+</nav>
+<section class="svc-hero">
+  <h1 class="reveal">Learn by doing.<br>Run the school.</h1>
+  <p class="reveal d1">Kern is a free place to learn by doing: real practice, one small step at a time. OEdu is the system a school runs on: its students, its courses and its grades, in one place.</p>
+</section>
+<section class="svc-banner" aria-label="Oplo">
+  <div class="svc-banner-in">
+    <a class="svc-logo" href="{rel(depth, "company/")}" aria-label="About Oplo">{_mark()}</a>
+    <p>Kern to learn. OEdu to run the school.</p>
+    <a class="svc-btn line" href="{rel(depth, "company/")}">Learn more</a>
+  </div>
+</section>
+'''
+    out += _stage("kern", "Kern", KERN_ICON, "Free",
+                  'Learn it by doing it.<br class="br-wide"> Online, and free.',
+                  "A free online learn-by-doing platform",
+                  ("Start learning", KERN, 1), ("For schools", "#oedu", None),
+                  [("See one done", "Worked example"), ("Try one together", "Guided practice"),
+                   ("Now you", "On your own"), ("Stuck? Ask for a hint", "Hints"),
+                   ("See the idea", "Pictures"), ("One small step", "Short lessons"),
+                   ("Your own pace", "Self-paced"), ("Start anywhere", "Nothing is locked")],
+                  232, depth)
+    out += _stage("oedu", "OEdu", OEDU_ICON, "For schools",
+                  'Every record. Every course.<br class="br-wide"> One school system.',
+                  "Student information system &middot; Learning management system &middot; School operating system",
+                  ("Open OEdu", OEDU, 2), ("Bring your school", "contact/", None),
+                  [("Admin console", "For administrators"), ("Student records", "For administrators"),
+                   ("Courses", "For teachers"), ("Assignments", "For teachers and students"),
+                   ("Gradebook", "For teachers"), ("Attendance", "For teachers"),
+                   ("Student app", "For students"), ("Family view", "For families")],
+                  206, depth)
+    out += f'''<section class="svc-end">
+  <div class="svc-end-in">
+    <div class="svc-end-copy reveal">
+      <p class="svc-end-k">{_mark()}<span>Oplo</span></p>
+      <h2>Start with Kern. Bring OEdu to your school.</h2>
+      <p class="svc-cta"><a class="svc-btn dark" href="{KERN}">Open Kern</a><a class="svc-btn line-dark" href="{rel(depth, "contact/")}">Talk to us</a></p>
+    </div>
+    <ul class="svc-words reveal d1" aria-label="Oplo products">
+      <li class="w-kern">{_mark()}Kern</li>
+      <li class="w-oedu">{_mark()}OEdu</li>
+    </ul>
+  </div>
+</section>
+</main>
+'''
+    out += footer(depth, [
+        "Kern is free to use. Courses and features are added over time.",
+        "OEdu is set up and run by a school. To bring yours onto it, get in touch. What OEdu does changes as it is built, and nothing on this page is a commitment to a specification."])
+    return ("products/index.html", out)
+
+
+PAGES.append(products_page())
 
 PAGES.append(("solutions/index.html", section_page(
     "solutions/", 1, "Solutions — Oplo",
