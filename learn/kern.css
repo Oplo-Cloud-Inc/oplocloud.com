@@ -282,14 +282,14 @@ html.kern .ch-then { border-left: 0; padding: 12px 18px; border-radius: 16px; ba
 /* --------------------------------------------------------- The stage
    What is drawn sits on a light card, with the light palette inside it, so a
    figure reads as a picture rather than as writing on the page. */
-html.kern[data-look="obsidian"] :is(.ch-art figure.lf, .lw-wk figure.lf, .gt-stage, .lw-plane-row, .lw-move .lw-mv, .gt-cross-scene, .lw-balance .lw-svg, .lw-tiles-stage, .lw-sq-stage, .lw-rectw .lw-svg) {
+html.kern[data-look="obsidian"] :is(.ch-art figure.lf, .lw-wk figure.lf, .lw-wk-fig figure.lf, .gt-stage, .lw-plane-row, .lw-move .lw-mv, .gt-cross-scene, .lw-balance .lw-svg, .lw-tiles-stage, .lw-sq-stage, .lw-rectw .lw-svg) {
   --ink: #1b1b1f; --ink-2: #44444d; --ink-3: #6a6a74; --paper: #fff; --canvas: var(--stage); --sunk: #d9dde5; --hair: rgba(0,0,0,.12); --rule: rgba(0,0,0,.22);
   --lw-surface: var(--stage); --lw-tile: #fff; --lw-grid: rgba(0,0,0,.08); --lw-axis: rgba(0,0,0,.55);
   --lw-blue: #3b6ef6; --lw-yellow: #f2b724; --lw-red: #e5484d; --lw-green: #1fa463; --lw-purple: #7c4dff; --lw-orange: #ee7d28; --blue: #3b6ef6; --green: #1fa463;
   color: var(--ink);
 }
-html.kern[data-look="obsidian"] :is(.ch-art figure.lf, .lw-wk figure.lf, .gt-stage, .lw-plane-row, .gt-cross-scene) { background: var(--stage); border-radius: 22px; }
-html.kern .ch-art figure.lf, html.kern .lw-wk figure.lf { padding: 8px; }
+html.kern[data-look="obsidian"] :is(.ch-art figure.lf, .lw-wk figure.lf, .lw-wk-fig figure.lf, .gt-stage, .lw-plane-row, .gt-cross-scene) { background: var(--stage); border-radius: 22px; }
+html.kern .ch-art figure.lf, html.kern .lw-wk figure.lf, html.kern .lw-wk-fig figure.lf { padding: 8px; }
 html.kern .gt-stage { padding: 10px; }
 html.kern .lw-plane-row { padding: 10px; }
 html.kern .lf-bg { fill: var(--stage); }

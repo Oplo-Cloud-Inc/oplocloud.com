@@ -576,6 +576,64 @@ window.OPLO = (function () {
               "CC BY-NC-SA 4.0; the questions, figures and feedback are OEdu's own."
   };
 
+  /* Precalculus — for Kern (learning on your own, by doing), so it is only
+     listed where window.OPLO_KERN is set. It follows OpenStax Precalculus 2e a
+     chapter to a unit (unit N is chapter N) and teaches each section the way
+     the Algebra courses do: the method, one example worked while you watch,
+     one done together, then alone. The units live in learn/precalc/; the
+     drawings you move are sketches (learn/lab/geotools.js). Units are listed
+     as they open. */
+  var PRECALC = {
+    id: "precalc", t: "Precalculus", hue: BLUE, subject: "Math", level: "High School", tag: "Interactive",
+    lab: true,
+    d: "Functions, trigonometry and the ideas that lead to calculus, learned by moving things and watching what changes.",
+    lede: "Precalculus is the study of change, drawn. You slide a number and watch a graph bend, drag a point round a circle " +
+          "and watch a wave appear, and zoom in until a curve looks straight. Every lesson shows one idea, works an example with you " +
+          "watching, does the next together, and then hands it to you. It follows its textbook a section at a time, from functions " +
+          "and their graphs through polynomials, exponentials, trigonometry and conics to sequences and a first look at calculus.",
+    glyph: '<path d="M3 19c3-9 6-13 9-13s6 4 9 13"/><path d="M3 19h18"/>',
+    objectives: [
+      "Read, write and graph functions, combine them, compose them and invert them, and see how a graph moves when its formula changes.",
+      "Work with linear, quadratic, polynomial, rational, radical, exponential and logarithmic functions, and model with them.",
+      "Measure angles in degrees and radians, and use the unit circle and right triangles to find sines, cosines and tangents.",
+      "Graph the trigonometric functions and their inverses, and prove, simplify and use trigonometric identities.",
+      "Solve triangles of any shape with the Laws of Sines and Cosines, and work with polar coordinates, complex numbers, parametric equations and vectors.",
+      "Solve systems of equations and inequalities by substitution, elimination, matrices and determinants.",
+      "Describe ellipses, hyperbolas and parabolas by their equations and their foci, in rectangular and polar form.",
+      "Use sequences, series, counting and probability, and take a first look at limits, continuity and the derivative."
+    ],
+    units: [
+      { art: "pcfx", t: "Functions", lab: true,
+        desc: "What a function is, function notation, domain and range, rates of change, combining and composing functions, how graphs move, absolute value, and inverse functions." },
+      { art: "pcline", t: "Linear Functions", lab: true,
+        desc: "Slope and the forms of a line, graphing and writing linear functions, parallel and perpendicular lines, modeling with lines, and fitting a line to data." },
+      { art: "pcpoly", t: "Polynomial and Rational Functions", lab: true,
+        desc: "Complex numbers, quadratics, power and polynomial functions and their graphs, dividing polynomials, finding zeros, rational functions, radical functions, and variation." },
+      { art: "pcexp", t: "Exponential and Logarithmic Functions", lab: true,
+        desc: "Exponential growth and decay and their graphs, logarithms and their graphs and properties, solving exponential and logarithmic equations, and modeling with them." },
+      { art: "pcang", t: "Trigonometric Functions", lab: true,
+        desc: "Angles in degrees and radians, the unit circle with sine and cosine, tangent and the other trig functions, and right-triangle trigonometry." },
+      { art: "pcwave", t: "Periodic Functions", lab: true,
+        desc: "Graphing sine and cosine with amplitude, period and phase shift, graphing tangent and the other trig functions, and the inverse trig functions." },
+      { art: "pcid", t: "Trigonometric Identities and Equations", lab: true,
+        desc: "Simplifying and verifying identities, the sum and difference, double-angle and half-angle formulas, and solving and modeling with trigonometric equations." },
+      { art: "pcpolar", t: "Further Applications of Trigonometry", lab: true,
+        desc: "The Laws of Sines and Cosines, polar coordinates and their graphs, the polar form of complex numbers, parametric equations, and vectors." },
+      { art: "pcsys", t: "Systems of Equations and Inequalities", lab: true,
+        desc: "Systems in two and three variables, nonlinear systems, partial fractions, matrices, Gaussian elimination, inverse matrices and Cramer's Rule." },
+      { art: "pcconic", t: "Analytic Geometry", lab: true,
+        desc: "The ellipse, the hyperbola and the parabola, rotating the axes, and conic sections in polar coordinates." },
+      { art: "pcseq", t: "Sequences, Probability and Counting Theory", lab: true,
+        desc: "Sequences, arithmetic and geometric sequences, series, counting principles, the Binomial Theorem and probability." },
+      { art: "pclim", t: "Introduction to Calculus", lab: true,
+        desc: "Limits from tables and graphs, the properties of limits, continuity, and the derivative as a rate of change." }
+    ],
+    grading: [["Lessons", 20], ["Practice", 40], ["Unit tests & course challenge", 40]],
+    textbook: "The course follows OpenStax Precalculus 2e a chapter at a time: each unit is a chapter of the book and each lesson one " +
+              "idea from one of its sections, taught with the book's own steps. Adapted from OpenStax (Rice University), " +
+              "CC BY-NC-SA 4.0; the questions, figures and feedback are OEdu's own."
+  };
+
   /* Geometry is a lab course like Algebra I and II: its units are interactive
      lessons in the same teach-first order, practice that generates its own
      problems, and tests (learn/lab/, learn/geo/, and its own kit in
@@ -963,7 +1021,7 @@ window.OPLO = (function () {
         ALG,
         G8,
         GEO,
-        ALG2]) },
+        ALG2], window.OPLO_KERN ? [PRECALC] : []) },
     { n: "Science", hue: GREEN,
       d: "Method first: what would have to be true, and how would you find out.",
       courses: [
@@ -995,6 +1053,7 @@ window.OPLO = (function () {
     g8: { 1: [], 2: [1], 3: [2], 4: [3], 5: [], 6: [5], 7: [3] },
     alg2: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [5], 7: [6], 8: [5], 9: [6, 8], 10: [3, 9], 11: [9], 12: [3] },
     g1: { 1: [], 2: [1], 3: [1], 4: [3], 5: [4], 6: [5], 7: [6], 8: [4], 9: [3], 10: [], 11: [5], 12: [4], 13: [3] },
+    precalc: { 1: [], 2: [1], 3: [2], 4: [3], 5: [1], 6: [5], 7: [6], 8: [7], 9: [2], 10: [3], 11: [4], 12: [3] },
     geo: { 1: [], 2: [1], 3: [2], 4: [3], 5: [4], 6: [4], 7: [4], 8: [5, 7], 9: [6], 10: [9], 11: [8], 12: [7] },
     biz: { 1: [], 2: [1], 3: [1], 4: [1], 5: [4], 6: [1], 7: [6], 8: [7], 9: [8], 10: [6], 11: [1], 12: [11],
            13: [6], 14: [1], 15: [1], 16: [14, 15], 17: [] },

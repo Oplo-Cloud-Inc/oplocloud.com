@@ -27,7 +27,7 @@ import sys
 
 LEARN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "learn")
 CORE = os.path.join(LEARN, "lab", "core.js")
-COURSES = ["g1", "prealg", "alg", "alg2", "g8", "geo", "biz", "hist", "phil", "sat"]
+COURSES = ["g1", "prealg", "alg", "alg2", "precalc", "g8", "geo", "biz", "hist", "phil", "sat"]
 
 
 def stamp(path):

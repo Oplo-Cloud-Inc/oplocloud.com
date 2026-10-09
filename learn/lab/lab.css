@@ -56,6 +56,15 @@ html[data-look="obsidian"] .lw, html[data-look="obsidian"] .lb-unit, html[data-l
 .m .mf { display: inline-flex; flex-direction: column; align-items: stretch; vertical-align: middle; margin: 0 .12em; text-align: center; font-size: .92em; }
 .m .mf-n { padding: 0 .15em .08em; border-bottom: .07em solid currentColor; line-height: 1.1; }
 .m .mf-d { padding: .1em .15em 0; line-height: 1.1; }
+/* Precalculus: a binomial coefficient, a piecewise brace, the blackboard letters. */
+.m .mf.nobar > .mf-n { border-bottom: 0; }
+.m .mbin { display: inline-flex; align-items: center; }
+.m .mbin-p { font-size: 1.9em; line-height: .9; font-weight: 200; margin: 0 .02em; transform: scaleX(.8); }
+.m .mcases { display: inline-flex; align-items: center; margin: 0 .15em; }
+.m .mcb { font-size: 1.7em; font-weight: 200; line-height: 1; margin-right: .12em; display: inline-block; transform-origin: center; }
+.m .mcr { display: inline-flex; flex-direction: column; gap: .18em; text-align: left; }
+.m .mcrow { display: flex; gap: 1.1em; }
+.m .mbb { font-family: var(--text); font-size: 1.04em; }
 .m .mr { display: inline-flex; align-items: flex-start; }
 .m .mr-s { font-size: 1.05em; margin-right: -.02em; }
 .m .mr-b { border-top: .07em solid currentColor; padding: .08em .08em 0 .06em; margin-top: .14em; line-height: 1.05; }

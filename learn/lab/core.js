@@ -90,6 +90,7 @@ window.OPLO_LAB = (function () {
     "alg2/u10.js": "1c46a838",
     "alg2/u11.js": "af802903",
     "alg2/u12.js": "1fbb7169",
+    "precalc/u01.js": "74555366",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "a3bd33f8",
     "geo/u02.js": "327da4b8",
@@ -147,8 +148,18 @@ window.OPLO_LAB = (function () {
     cong: "≅", sim: "∼", prime: "′", odot: "⊙",
     // Logic: and, or, if and only if, therefore.
     wedge: "∧", land: "∧", vee: "∨", lor: "∨", leftrightarrow: "↔", longleftrightarrow: "↔", Leftrightarrow: "⇔",
-    therefore: "∴", because: "∵"
+    therefore: "∴", because: "∵",
+    // Precalculus: more of the Greek alphabet, sets, sums, and the composition ring.
+    phi: "φ", varphi: "φ", omega: "ω", Omega: "Ω", lambda: "λ", mu: "μ", sigma: "σ", Sigma: "Σ", tau: "τ",
+    gamma: "γ", Gamma: "Γ", rho: "ρ", epsilon: "ε", varepsilon: "ε", eta: "η", psi: "ψ", zeta: "ζ", kappa: "κ",
+    nu: "ν", xi: "ξ", chi: "χ", Pi: "Π", Theta: "Θ", Phi: "Φ", Psi: "Ψ",
+    notin: "∉", subset: "⊂", subseteq: "⊆", forall: "∀", exists: "∃", propto: "∝", vdots: "⋮", ddots: "⋱",
+    langle: "⟨", rangle: "⟩", sum: "∑", prod: "∏", comp: "∘", nabla: "∇", ell: "ℓ", lfloor: "⌊", rfloor: "⌋",
+    lceil: "⌈", rceil: "⌉", vert: "|", Vert: "‖", dots: "…", setminus: "∖", varnothing: "∅", leq: "≤", geq: "≥"
   };
+  var BLACKBOARD = { R: "ℝ", Z: "ℤ", Q: "ℚ", N: "ℕ", C: "ℂ" };
+  var FUNCS = { sin: 1, cos: 1, tan: 1, sec: 1, csc: 1, cot: 1, arcsin: 1, arccos: 1, arctan: 1, sinh: 1, cosh: 1, tanh: 1,
+                log: 1, ln: 1, lim: 1, det: 1, exp: 1, arg: 1, gcd: 1, max: 1, min: 1, mod: 1 };
   var REL = { "=": 1, "<": 1, ">": 1, "≤": 1, "≥": 1, "≠": 1, "≈": 1, "→": 1, "⇒": 1, "⇔": 1, "∈": 1, "≅": 1, "∼": 1, "↔": 1 };
   var BIN = { "+": 1, "−": 1, "±": 1, "∓": 1, "·": 1, "×": 1, "÷": 1, "∧": 1, "∨": 1 };
 
@@ -179,6 +190,9 @@ window.OPLO_LAB = (function () {
     }
     while (i < s.length) {
       var c = s[i];
+      if (c === "\\" && (s[i + 1] === "{" || s[i + 1] === "}")) {      // \{ and \}: the braces of a set
+        push(s[i + 1], s[i + 1] === "{" ? "open" : "val"); i += 2; continue;
+      }
       if (c === "\\") {
         var m = /^\\([a-zA-Z]+|[,;! ])/.exec(s.slice(i));
         if (!m) { i++; continue; }
@@ -193,6 +207,19 @@ window.OPLO_LAB = (function () {
           var body = group();
           push('<span class="mr">' + (idx ? '<span class="mr-i">' + mathHTML(idx) + "</span>" : "") +
                '<span class="mr-s">√</span><span class="mr-b">' + mathHTML(body) + "</span></span>", "val");
+        } else if (cmd === "binom") {
+          var bn = group(), bk = group();
+          push('<span class="mbin"><span class="mbin-p">(</span><span class="mf nobar"><span class="mf-n">' + mathHTML(bn) + '</span><span class="mf-d">' + mathHTML(bk) + '</span></span><span class="mbin-p">)</span></span>', "val");
+        } else if (cmd === "cases") {
+          // \cases{ a & b \\ c & d }: a brace, then rows of cells (a function, then the rule it holds on).
+          var rows = group().split("\\\\"), cells = rows.map(function (r) { return r.split("&"); });
+          push('<span class="mcases"><span class="mcb" style="transform:scale(1,' + (0.55 + 0.5 * rows.length).toFixed(2) + ')">{</span><span class="mcr">' +
+               cells.map(function (r) { return '<span class="mcrow">' + r.map(function (c2) { return "<span>" + mathHTML(c2) + "</span>"; }).join("") + "</span>"; }).join("") + "</span></span>", "val");
+        } else if (cmd === "mathbb") {
+          var bb = group();
+          push('<span class="mbb">' + (BLACKBOARD[bb] || esc(bb)) + "</span>", "val");
+        } else if (cmd === "vec") {
+          push('<span class="mray"><span class="mrh" aria-hidden="true"></span>' + mathHTML(group()) + "</span>", "val");
         } else if (cmd === "overline" || cmd === "bar") {
           // The bar over a repeating decimal: 0.\overline{27} — and over a
           // segment's two letters: \overline{AB}.
@@ -227,7 +254,7 @@ window.OPLO_LAB = (function () {
           push('<span class="msp"></span>', prev);
         } else if (cmd === "!") {
           /* negative space: ignored */
-        } else if (cmd === "sin" || cmd === "cos" || cmd === "tan" || cmd === "log" || cmd === "ln" || cmd === "max" || cmd === "min") {
+        } else if (FUNCS[cmd]) {
           push('<span class="mt">' + cmd + "</span>", "val");
         } else if (SYM[cmd] != null) {
           var ch = SYM[cmd];
@@ -1056,7 +1083,7 @@ window.OPLO_LAB = (function () {
      in lab/philkit.js, and the watch · read · write format (a film that stops to ask,
      a reading with questions inside, a response checked against a model) in lab/edpkit.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", phil: ["lab/histkit.js", "lab/algkit.js", "lab/philkit.js", "lab/edpkit.js"], sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js",
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", phil: ["lab/histkit.js", "lab/algkit.js", "lab/philkit.js", "lab/edpkit.js"], sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js", precalc: ["lab/geotools.js", "lab/algkit.js"],
                      g1: ["lab/k1.css", "lab/k1art.js", "lab/k1geom.js", "lab/k1kit.js", "lab/k1kinds.js", "lab/k1scenes.js"] };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */
