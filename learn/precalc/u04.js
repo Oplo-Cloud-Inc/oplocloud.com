@@ -795,7 +795,7 @@
           { step: 2, ask: "$e^{?} = \\frac{1}{e}$. What is the exponent?", type: "num", pre: "$? =$", answer: -1, near: [{ v: 1, fb: "$e^1 = e$. For $\\frac{1}{e}$ the exponent is negative." }], hint: "$e^{-1} = \\frac{1}{e}$.", m: "\\ln \\tfrac{1}{e} = -1", say: "A negative exponent flips." },
           { step: 3, ask: "Now $\\log 100000$: how many zeros does 100000 have?", type: "num", pre: "$\\log 100000 =$", answer: 5, near: [{ v: 6, fb: "Count the zeros, not the digits." }], hint: "$10^? = 100000$.", m: "\\log 100000 = 5", say: "Done." }],
         why: "Name it, ask the power question, answer." },
-      { type: "num", kicker: "On your own", prompt: "Use a calculator (type log(500)) to find $\\log 500$ to two decimal places.", pre: "$\\log 500 \\approx$", answer: 2.699, tol: 0.003, calc: true, skill: "Common and natural logs",
+      { type: "num", kicker: "On your own", prompt: "Use a calculator (the box accepts log(...) and ln(...)) to find $\\log 500$ to two decimal places.", pre: "$\\log 500 \\approx$", answer: 2.699, tol: 0.003, calc: true, skill: "Common and natural logs",
         near: [{ v: 6.21, tol: 0.003, fb: "That is $\\ln 500$, the natural log. LOG is base 10." }, { v: 500, fb: "That is the number. Press LOG first." }], hints: ["$100 < 500 < 1000$, so the answer is between 2 and 3."], why: "$\\log 500 \\approx 2.70$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**An equation.** Solve $10^x = 70$.",
@@ -1046,7 +1046,7 @@
     blurb: "Book 4.5 · Your calculator only has LOG and LN. One formula reaches every other base.",
     mins: 12, v: 1,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "Use a calculator: $\\ln 10 \\div \\ln 2$. Round to 2 decimal places. (Type ln(10)/ln(2).)", answer: 3.3219, tol: 0.0051, calc: true, skill: "Calculator logs",
+      { type: "num", kicker: "Warm up", prompt: "Use a calculator: $\\ln 10 \\div \\ln 2$. Round to 2 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", answer: 3.3219, tol: 0.0051, calc: true, skill: "Calculator logs",
         near: [{ v: 0.3, tol: 0.01, fb: "That is $\\ln 2 \\div \\ln 10$. Divide in the other order." }], hints: ["$\\ln 10 \\approx 2.303$ and $\\ln 2 \\approx 0.693$."], why: "$2.3026 \\div 0.6931 \\approx 3.32$." },
       { type: "learn", kicker: "Explore",
         prompt: "The blue graph is $y = b^x$. The orange dot marks the exponent $x = \\log_b N$ that gives $N$. Pick a base and a number, and compare the ratio of **logs** with the ratio of **natural logs**. Try at least **three bases** and **two numbers**.",
@@ -1073,10 +1073,10 @@
         how: HOW_11, skill: "Change of base",
         steps: [
           { step: 1, ask: "Which is the correct set-up?", type: "choice", answer: 0, options: [{ t: "$\\dfrac{\\ln 30}{\\ln 4}$" }, { t: "$\\dfrac{\\ln 4}{\\ln 30}$", fb: "The number, 30, goes on top." }, { t: "$\\dfrac{30}{4}$", fb: "A log is not a quotient of the numbers. Take the log of each." }], m: "\\frac{\\ln 30}{\\ln 4}", say: "Number over base." },
-          { step: 2, ask: "Calculate it. (Type ln(30)/ln(4).)", type: "num", pre: "$\\approx$", answer: 2.4534, tol: 0.00051, calc: true, near: [{ v: 7.5, fb: "That is $\\frac{30}{4}$. Take the logs first." }], hint: "$3.4012 \\div 1.3863$.", m: "\\approx 2.453", say: "About 2.453." },
+          { step: 2, ask: "Calculate it. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$\\approx$", answer: 2.4534, tol: 0.00051, calc: true, near: [{ v: 7.5, fb: "That is $\\frac{30}{4}$. Take the logs first." }], hint: "$3.4012 \\div 1.3863$.", m: "\\approx 2.453", say: "About 2.453." },
           { step: 3, ask: "Is that sensible? $4^2 = 16$ and $4^3 = 64$, and 30 is between them. So $\\log_4 30$ is between…", type: "choice", answer: 0, options: [{ t: "2 and 3" }, { t: "3 and 4", fb: "$4^3 = 64$ is already bigger than 30." }], m: "2 < 2.453 < 3", say: "It passes the check." }],
         why: "Pick a key, divide, check." },
-      { type: "num", kicker: "On your own", prompt: "Find $\\log_2 100$ to 3 decimal places. (Type ln(100)/ln(2).)", pre: "$\\log_2 100 \\approx$", answer: 6.6439, tol: 0.00051, calc: true, skill: "Change of base",
+      { type: "num", kicker: "On your own", prompt: "Find $\\log_2 100$ to 3 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$\\log_2 100 \\approx$", answer: 6.6439, tol: 0.00051, calc: true, skill: "Change of base",
         near: [{ v: 50, fb: "That is $100 \\div 2$. Take the logs first." }, { v: 0.1505, tol: 0.001, fb: "That is $\\ln 2 \\div \\ln 100$: upside down." }], hints: ["$\\frac{\\ln 100}{\\ln 2}$."], why: "$4.6052 \\div 0.6931 \\approx 6.644$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**An exponent to find.** Solve $2^x = 20$.",
@@ -1093,7 +1093,7 @@
         prompt: "Dee computes $\\log_5 12$ as $\\dfrac{\\log 5}{\\log 12} \\approx 0.648$. What is wrong?",
         options: [{ t: "It is upside down: $\\log_5 12 = \\dfrac{\\log 12}{\\log 5} \\approx 1.544$." }, { t: "Nothing is wrong.", fb: "Check: $5^{0.648} \\approx 2.8$, not 12." }, { t: "She should use LN, not LOG.", fb: "Either works, as long as the number is on top." }],
         answer: 0, skill: "Change of base", hints: ["Check: $5^{0.648}$."], why: "Number over base." },
-      { type: "num", kicker: "Use it", prompt: "Money grows 7% a year, so it multiplies by 1.07 each year. After $t$ years it has doubled when $1.07^t = 2$. Find $t$ to 2 decimal places. (Type ln(2)/ln(1.07).)", pre: "$t \\approx$", post: "years", answer: 10.2448, tol: 0.005, calc: true, skill: "Change of base",
+      { type: "num", kicker: "Use it", prompt: "Money grows 7% a year, so it multiplies by 1.07 each year. After $t$ years it has doubled when $1.07^t = 2$. Find $t$ to 2 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$t \\approx$", post: "years", answer: 10.2448, tol: 0.005, calc: true, skill: "Change of base",
         near: [{ v: 0.07, tol: 0.01, fb: "Take the log of both numbers: $t = \\log_{1.07} 2$." }, { v: 14.29, tol: 0.01, fb: "That is $1 \\div 0.07$, which is not right: use $\\log_{1.07} 2$." }], hints: ["$t = \\log_{1.07} 2 = \\frac{\\ln 2}{\\ln 1.07}$."], why: "$0.6931 \\div 0.06766 \\approx 10.24$ years." }
     ]
   });
@@ -1194,9 +1194,9 @@
         steps: [
           { step: 1, ask: "Is the exponential already alone?", type: "choice", answer: 0, options: [{ t: "Yes: $e^{0.5x} = 20$" }, { t: "No: divide by $e$", fb: "$e^{0.5x}$ is a single term. Nothing is multiplying it." }], m: "e^{0.5x} = 20", say: "Ready to take the log." },
           { step: 2, ask: "Take $\\ln$ of both sides. The left becomes…", type: "choice", answer: 0, options: [{ t: "$0.5x$, because $\\ln e^u = u$" }, { t: "$e \\cdot 0.5x$", fb: "$\\ln$ and $e^{\\ ?}$ undo each other: $\\ln e^u = u$." }], m: "0.5x = \\ln 20", say: "The natural log undoes $e$." },
-          { step: 3, ask: "$x = 2\\ln 20$. Calculate it (type 2*ln(20)).", type: "num", pre: "$x \\approx$", answer: 5.9915, tol: 0.0006, calc: true, near: [{ v: 2.9957, tol: 0.0003, fb: "That is $\\ln 20$. Multiply by 2: $x = \\frac{\\ln 20}{0.5}$." }], hint: "$\\ln 20 \\approx 2.9957$.", m: "x \\approx 5.9915", say: "Check: $e^{2.9957} = 20$." }],
+          { step: 3, ask: "$x = 2\\ln 20$. Calculate it (type it as an expression).", type: "num", pre: "$x \\approx$", answer: 5.9915, tol: 0.0006, calc: true, near: [{ v: 2.9957, tol: 0.0003, fb: "That is $\\ln 20$. Multiply by 2: $x = \\frac{\\ln 20}{0.5}$." }], hint: "$\\ln 20 \\approx 2.9957$.", m: "x \\approx 5.9915", say: "Check: $e^{2.9957} = 20$." }],
         why: "Isolate, take the log, solve." },
-      { type: "num", kicker: "On your own", prompt: "Solve $7^x = 100$ to 3 decimal places. (Type ln(100)/ln(7).)", pre: "$x \\approx$", answer: 2.3666, tol: 0.00051, calc: true, skill: "Exponential equations with logs",
+      { type: "num", kicker: "On your own", prompt: "Solve $7^x = 100$ to 3 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$x \\approx$", answer: 2.3666, tol: 0.00051, calc: true, skill: "Exponential equations with logs",
         near: [{ v: 14.29, tol: 0.001, fb: "That is $100 \\div 7$. Take the logs first." }, { v: 0.4225, tol: 0.001, fb: "That is $\\frac{\\ln 7}{\\ln 100}$: upside down." }], hints: ["$x = \\frac{\\ln 100}{\\ln 7}$."], why: "$4.6052 \\div 1.9459 \\approx 2.3666$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**The variable on both sides.** Solve $5^{x-1} = 3^x$.",
@@ -1214,7 +1214,7 @@
         prompt: "Solving $2^x = 7$, Jo writes $x = \\frac{7}{2}$. What is wrong?",
         options: [{ t: "The $x$ is in the exponent: divide only after taking logs, $x = \\frac{\\ln 7}{\\ln 2}$." }, { t: "Nothing is wrong.", fb: "Check: $2^{3.5} \\approx 11.3$, not 7." }, { t: "It should be $x = 7 - 2$.", fb: "Subtracting does not undo an exponent." }],
         answer: 0, skill: "Exponential equations with logs", hints: ["Check $2^{3.5}$."], why: "$x = \\frac{\\ln 7}{\\ln 2} \\approx 2.807$." },
-      { type: "num", kicker: "Use it", prompt: "Money grows 5% a year, so $1.05^t = 2$ when it has doubled. Find $t$ to 2 decimal places. (Type ln(2)/ln(1.05).)", pre: "$t \\approx$", post: "years", answer: 14.2067, tol: 0.005, calc: true, skill: "Exponential equations with logs",
+      { type: "num", kicker: "Use it", prompt: "Money grows 5% a year, so $1.05^t = 2$ when it has doubled. Find $t$ to 2 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$t \\approx$", post: "years", answer: 14.2067, tol: 0.005, calc: true, skill: "Exponential equations with logs",
         near: [{ v: 20, fb: "That is $1 \\div 0.05$. Use the logarithm." }], hints: ["$t = \\frac{\\ln 2}{\\ln 1.05}$."], why: "$0.6931 \\div 0.04879 \\approx 14.21$ years." }
     ]
   });
@@ -1321,7 +1321,7 @@
           { step: 2, ask: "What is $\\left(\\frac{1}{2}\\right)^3$? (A decimal is fine.)", type: "num", pre: "$=$", answer: 0.125, tol: 1e-9, shown: "1/8", near: [{ v: 0.5, fb: "Three halvings: $\\frac{1}{2} \\cdot \\frac{1}{2} \\cdot \\frac{1}{2}$." }], hint: "$\\frac{1}{8}$.", m: "A = 80\\left(\\tfrac{1}{2}\\right)^3", say: "The decay factor." },
           { step: 3, ask: "$80 \\cdot 0.125 =$", type: "num", pre: "$A =$", post: "mg", answer: 10, near: [{ v: 40, fb: "That is after one half-life. Use $\\frac{1}{8}$ of 80." }], hint: "$80 \\div 8$.", m: "A = 10", say: "10 mg are left." }],
         why: "Read, write, use it." },
-      { type: "num", kicker: "On your own", prompt: "A \\$25,000 car loses 12% of its value each year. What is it worth after 4 years, to the nearest cent? (Type 25000*0.88^4.)", pre: "value =", post: "dollars", answer: 14992.38, tol: 0.0051, calc: true, skill: "Growth and decay models",
+      { type: "num", kicker: "On your own", prompt: "A \\$25,000 car loses 12% of its value each year. What is it worth after 4 years, to the nearest cent? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "value =", post: "dollars", answer: 14992.38, tol: 0.0051, calc: true, skill: "Growth and decay models",
         near: [{ v: 13000, fb: "That subtracts 12% of \\$25,000 once... and for only one year. Use $b = 0.88$ four times." }, { v: 25000, fb: "That is the starting value." }], hints: ["$b = 1 - 0.12 = 0.88$."], why: "$25000 \\cdot 0.88^4 \\approx 14992.38$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**Find the growth factor from data.** A population grew from 50,000 in 2000 to 62,000 in 2010. What is the yearly growth factor?",
@@ -1380,9 +1380,9 @@
         steps: [
           { step: 1, ask: "Doubling means $N = 2N_0$. Divide by $N_0$: $e^{0.05t} =$", type: "num", pre: "$e^{0.05t} =$", answer: 2, near: [{ v: 0.05, fb: "Doubling means the ratio $\\frac{N}{N_0}$ is 2." }], hint: "$\\frac{2N_0}{N_0}$.", m: "e^{0.05t} = 2", say: "The equation to solve." },
           { step: 2, ask: "Take $\\ln$ of both sides. The left side becomes…", type: "choice", answer: 0, options: [{ t: "$0.05t$" }, { t: "$e \\cdot 0.05t$", fb: "$\\ln e^u = u$: they undo each other." }], m: "0.05t = \\ln 2", say: "The natural log undoes $e$." },
-          { step: 3, ask: "$t = \\dfrac{\\ln 2}{0.05}$. (Type ln(2)/0.05.)", type: "num", pre: "$t \\approx$", post: "hours", answer: 13.8629, tol: 0.0006, calc: true, near: [{ v: 0.6931, tol: 0.001, fb: "That is $\\ln 2$. Divide it by 0.05." }], hint: "$0.6931 \\div 0.05$.", m: "t \\approx 13.86", say: "About 13.9 hours." }],
+          { step: 3, ask: "$t = \\dfrac{\\ln 2}{0.05}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$t \\approx$", post: "hours", answer: 13.8629, tol: 0.0006, calc: true, near: [{ v: 0.6931, tol: 0.001, fb: "That is $\\ln 2$. Divide it by 0.05." }], hint: "$0.6931 \\div 0.05$.", m: "t \\approx 13.86", say: "About 13.9 hours." }],
         why: "Set up, take ln, divide." },
-      { type: "num", kicker: "On your own", prompt: "A substance has a half-life of 10 days. How many days until only **20%** is left? Solve $\\left(\\frac{1}{2}\\right)^{t/10} = 0.2$. (Type 10*ln(0.2)/ln(0.5).)", pre: "$t \\approx$", post: "days", answer: 23.2193, tol: 0.006, calc: true, skill: "Doubling time",
+      { type: "num", kicker: "On your own", prompt: "A substance has a half-life of 10 days. How many days until only **20%** is left? Solve $\\left(\\frac{1}{2}\\right)^{t/10} = 0.2$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$t \\approx$", post: "days", answer: 23.2193, tol: 0.006, calc: true, skill: "Doubling time",
         near: [{ v: 10, fb: "That is one half-life, which leaves 50%." }, { v: 20, fb: "Not a straight line: use logs." }], hints: ["$\\frac{t}{10}\\ln 0.5 = \\ln 0.2$."], why: "$t = 10 \\cdot \\frac{\\ln 0.2}{\\ln 0.5} \\approx 23.22$ days." },
       { type: "learn", kicker: "A harder case",
         prompt: "**Find the rate first.** A population is 400 at $t = 0$ and 600 at $t = 3$ (years), growing continuously: $N = 400e^{kt}$. Find $k$.",
@@ -1392,7 +1392,7 @@
           { step: 2, m: "3k = \\ln 1.5", say: "Take $\\ln$ of both sides." },
           { step: 3, m: "k = \\frac{\\ln 1.5}{3} \\approx 0.1352", say: "About 13.5% per year, continuously." }] },
         gate: true, then: "$k \\approx 0.1352$." },
-      { type: "num", kicker: "Try it", prompt: "How long does it take to double at 4% per year, **continuously**? Solve $e^{0.04t} = 2$. (Type ln(2)/0.04.)", pre: "$t \\approx$", post: "years", answer: 17.3287, tol: 0.006, calc: true, skill: "Doubling time",
+      { type: "num", kicker: "Try it", prompt: "How long does it take to double at 4% per year, **continuously**? Solve $e^{0.04t} = 2$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$t \\approx$", post: "years", answer: 17.3287, tol: 0.006, calc: true, skill: "Doubling time",
         near: [{ v: 18, fb: "That is the rule-of-72 estimate $72 \\div 4$. The exact answer is $\\frac{\\ln 2}{0.04}$." }], hints: ["$t = \\frac{\\ln 2}{0.04}$."], why: "$0.6931 \\div 0.04 \\approx 17.33$ years." },
       { type: "choice", kicker: "Find the error",
         prompt: "To solve $1.08^t = 2$, Lee writes $t = \\frac{2}{1.08} \\approx 1.85$. What is wrong?",
@@ -1511,7 +1511,7 @@
           { step: 2, ask: "$b =$", type: "num", pre: "$b =$", answer: 2, near: [{ v: 4, fb: "$4^3 = 64$. Which number cubed is 8?" }], hint: "$2 \\cdot 2 \\cdot 2$.", m: "b = 2", say: "Doubling each period." },
           { step: 3, ask: "Test by predicting: $f(5) = 12 \\cdot 2^5 =$", type: "num", pre: "$f(5) =$", answer: 384, near: [{ v: 60, fb: "The power first: $2^5 = 32$." }], hint: "$12 \\cdot 32$.", m: "f(5) = 384", say: "A prediction." }],
         why: "Look, fit, test." },
-      { type: "num", kicker: "On your own", prompt: "A model is $f(t) = 250(0.9)^t$. What does it predict at $t = 6$? Round to 2 decimal places. (Type 250*0.9^6.)", pre: "$f(6) \\approx$", answer: 132.86, tol: 0.0051, calc: true, skill: "Fitting exponential models",
+      { type: "num", kicker: "On your own", prompt: "A model is $f(t) = 250(0.9)^t$. What does it predict at $t = 6$? Round to 2 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$f(6) \\approx$", answer: 132.86, tol: 0.0051, calc: true, skill: "Fitting exponential models",
         near: [{ v: 1350, fb: "That multiplies $0.9$ by 6. Use the **power** $0.9^6$." }], hints: ["$0.9^6 \\approx 0.5314$."], why: "$250 \\cdot 0.531441 \\approx 132.86$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**Which model fits better?** Data at $x = 0, 1, 2, 3$: $3,\\ 5,\\ 9,\\ 17$. Model A is $3 \\cdot 1.8^x$ and model B is $3 \\cdot 2^x$.",
@@ -1528,7 +1528,7 @@
         prompt: "A model passes through $(0, 2)$ and $(1, 6)$. Ava writes $f(x) = 2 \\cdot 6^x$. What is wrong?",
         options: [{ t: "$b$ is the ratio $6 \\div 2 = 3$, so $f(x) = 2 \\cdot 3^x$." }, { t: "Nothing is wrong.", fb: "Check: $2 \\cdot 6^1 = 12$, not 6." }, { t: "$a$ should be 6.", fb: "$a$ is the output at $x = 0$: 2." }],
         answer: 0, skill: "Fitting exponential models", hints: ["Check $f(1)$."], why: "$f(1) = 2 \\cdot 3 = 6$." },
-      { type: "num", kicker: "Use it", prompt: "A town's population is modelled by $P(t) = 1200 \\cdot 1.04^t$. What is the population after 10 years, to 2 decimal places? (Type 1200*1.04^10.)", pre: "$P(10) \\approx$", answer: 1776.29, tol: 0.0051, calc: true, skill: "Fitting exponential models",
+      { type: "num", kicker: "Use it", prompt: "A town's population is modelled by $P(t) = 1200 \\cdot 1.04^t$. What is the population after 10 years, to 2 decimal places? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$P(10) \\approx$", answer: 1776.29, tol: 0.0051, calc: true, skill: "Fitting exponential models",
         near: [{ v: 1680, fb: "That adds 4% ten times to the start, without compounding. The power $1.04^{10}$ does the compounding." }], hints: ["$1.04^{10} \\approx 1.4802$."], why: "$1200 \\cdot 1.480244 \\approx 1776.29$." }
     ]
   });
@@ -1636,7 +1636,7 @@
         var P = R.pick([1000, 2000, 5000]), r = R.pick([3, 4, 5, 6, 8]), t = R.pick([2, 3, 5, 10]);
         if (R.chance(0.4)) {
           var ans = Math.round(P * Math.exp(r / 100 * t) * 100) / 100;
-          return { type: "num", prompt: "\\$" + P + " earns " + r + "% a year, compounded **continuously**, for " + t + " years. How much is there, to the nearest cent? (Type the sum, for example " + P + "*e^" + parseFloat((r * t / 100).toFixed(2)) + ".)", pre: "$A =$", post: "dollars", answer: ans, tol: 0.0051, calc: true,
+          return { type: "num", prompt: "\\$" + P + " earns " + r + "% a year, compounded **continuously**, for " + t + " years. How much is there, to the nearest cent? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$A =$", post: "dollars", answer: ans, tol: 0.0051, calc: true,
             near: near(ans, [{ v: Math.round(P * Math.pow(1 + r / 100, t) * 100) / 100, tol: 0.0051, fb: "That compounds once a year. Continuous compounding uses $Pe^{rt}$." }]),
             hints: ["$A = Pe^{rt}$ with $r = " + r / 100 + "$."], why: "$" + P + "e^{" + parseFloat((r * t / 100).toFixed(2)) + "} \\approx " + ans + "$." };
         }
@@ -1711,7 +1711,7 @@
     { id: "pc4-changebase", title: "Change of base", lesson: 12,
       gen: function (R) {
         var b = R.pick([2, 3, 4, 5, 6, 7]), N = R.pick([10, 20, 30, 50, 100]), ans = Math.log(N) / Math.log(b);
-        return { type: "num", prompt: "Find $\\log_{" + b + "} " + N + "$ to 3 decimal places. (Type ln(" + N + ")/ln(" + b + ").)", pre: "$\\approx$", answer: Math.round(ans * 10000) / 10000, tol: 0.00051, calc: true,
+        return { type: "num", prompt: "Find $\\log_{" + b + "} " + N + "$ to 3 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$\\approx$", answer: Math.round(ans * 10000) / 10000, tol: 0.00051, calc: true,
           near: near(ans, [{ v: Math.log(b) / Math.log(N), tol: 0.00051, fb: "That is upside down. The **number** goes on top: $\\frac{\\ln " + N + "}{\\ln " + b + "}$." }, { v: N / b, tol: 0.00051, fb: "Do not divide the numbers: take the log of each first." }]),
           hints: ["$\\frac{\\ln " + N + "}{\\ln " + b + "}$."], why: "$\\frac{" + f4(Math.log(N), 4) + "}{" + f4(Math.log(b), 4) + "} \\approx " + f4(ans, 3) + "$." };
       } },
@@ -1728,7 +1728,7 @@
     { id: "pc4-explogs", title: "Solve with logarithms", lesson: 14,
       gen: function (R) {
         var a = R.pick([1, 2, 3, 5]), b = R.pick([2, 3, 5, 7]), cc = R.pick([20, 50, 100, 200]), ans = Math.log(cc / a) / Math.log(b), lead = a === 1 ? "" : a + " \\cdot ";
-        return { type: "num", prompt: "Solve $" + lead + b + "^x = " + cc + "$ to 3 decimal places. (Type ln(" + (a === 1 ? cc : cc + "/" + a) + ")/ln(" + b + ").)", pre: "$x \\approx$", answer: Math.round(ans * 10000) / 10000, tol: 0.00051, calc: true,
+        return { type: "num", prompt: "Solve $" + lead + b + "^x = " + cc + "$ to 3 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$x \\approx$", answer: Math.round(ans * 10000) / 10000, tol: 0.00051, calc: true,
           near: near(ans, [{ v: cc / a / b, tol: 0.00051, fb: "Dividing does not undo an exponent: take the log of both sides." }].concat(a === 1 ? [] : [{ v: Math.log(cc) / Math.log(b), tol: 0.00051, fb: "Divide by " + a + " **first** so the exponential is alone: $" + b + "^x = \\frac{" + cc + "}{" + a + "}$." }])),
           hints: ["Isolate the power, then $x = \\frac{\\ln(\\text{right side})}{\\ln " + b + "}$."], why: "$x = \\frac{\\ln " + (cc / a) + "}{\\ln " + b + "} \\approx " + f4(ans, 3) + "$." };
       } },
@@ -1751,7 +1751,7 @@
             hints: ["$" + t + " \\div " + h + " = " + k + "$ half-lives."], why: "$" + A0 + " \\cdot \\left(\\frac{1}{2}\\right)^{" + k + "} = " + ans + "$." };
         }
         var grow = R.chance(0.6), r = R.pick([2, 3, 4, 5, 6, 8]), A1 = R.pick([1000, 5000, 12000, 25000]), t2 = R.int(3, 8), b = grow ? 1 + r / 100 : 1 - r / 100, ans2 = Math.round(A1 * Math.pow(b, t2) * 100) / 100;
-        return { type: "num", prompt: (grow ? "A population of " + A1 + " grows" : "A machine worth \\$" + A1 + " loses") + " " + r + "% every year. What is the " + (grow ? "population" : "value") + " after " + t2 + " years, to 2 decimal places? (Type " + A1 + "*" + f4(b, 2) + "^" + t2 + ".)", pre: "$A \\approx$", answer: ans2, tol: 0.0051, calc: true,
+        return { type: "num", prompt: (grow ? "A population of " + A1 + " grows" : "A machine worth \\$" + A1 + " loses") + " " + r + "% every year. What is the " + (grow ? "population" : "value") + " after " + t2 + " years, to 2 decimal places? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$A \\approx$", answer: ans2, tol: 0.0051, calc: true,
           near: near(ans2, [{ v: A1 * (1 + (grow ? 1 : -1) * r / 100 * t2), tol: 0.0051, fb: "That adds the percentage once for each year, without compounding. Use $b^t$." }, { v: Math.round(A1 * Math.pow(r / 100, t2) * 100) / 100, tol: 0.0051, fb: "The factor is $" + (grow ? "1 + " : "1 - ") + (r / 100) + " = " + f4(b, 2) + "$, not just the percentage." }]),
           hints: ["$b = " + (grow ? "1 + " : "1 - ") + r / 100 + " = " + f4(b, 2) + "$."], why: "$" + A1 + " \\cdot " + f4(b, 2) + "^{" + t2 + "} \\approx " + ans2 + "$." };
       } },
@@ -1759,12 +1759,12 @@
       gen: function (R) {
         if (R.chance(0.5)) {
           var r = R.pick([3, 4, 5, 6, 7, 8, 9]), ans = Math.log(2) / Math.log(1 + r / 100);
-          return { type: "num", prompt: "Money grows " + r + "% a year. How many years until it doubles? Answer to 2 decimal places. (Type ln(2)/ln(" + f4(1 + r / 100, 2) + ").)", pre: "$t \\approx$", post: "years", answer: Math.round(ans * 10000) / 10000, tol: 0.0051, calc: true,
+          return { type: "num", prompt: "Money grows " + r + "% a year. How many years until it doubles? Answer to 2 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$t \\approx$", post: "years", answer: Math.round(ans * 10000) / 10000, tol: 0.0051, calc: true,
             near: near(ans, [{ v: 72 / r, tol: 0.0051, fb: "That is the rule-of-72 estimate. The exact value uses the logarithm: $\\frac{\\ln 2}{\\ln " + f4(1 + r / 100, 2) + "}$." }, { v: 100 / r, tol: 0.0051, fb: "That is how long it takes to earn 100% *without* compounding. Use the logarithm." }]),
             hints: ["$t = \\frac{\\ln 2}{\\ln " + f4(1 + r / 100, 2) + "}$."], why: "$t = \\frac{\\ln 2}{\\ln " + f4(1 + r / 100, 2) + "} \\approx " + f4(ans, 2) + "$ years." };
         }
         var k = R.pick([2, 3, 5, 10]) / 100, mult = R.pick([2, 3, 5]), ans2 = Math.log(mult) / k;
-        return { type: "num", prompt: "A quantity grows continuously at " + k * 100 + "% per hour, $N = N_0e^{" + k + "t}$. How many hours until it is " + (mult === 2 ? "doubled" : mult + " times as big") + ", to 2 decimal places? (Type ln(" + mult + ")/" + k + ".)", pre: "$t \\approx$", post: "hours", answer: Math.round(ans2 * 10000) / 10000, tol: 0.0051, calc: true,
+        return { type: "num", prompt: "A quantity grows continuously at " + k * 100 + "% per hour, $N = N_0e^{" + k + "t}$. How many hours until it is " + (mult === 2 ? "doubled" : mult + " times as big") + ", to 2 decimal places? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$t \\approx$", post: "hours", answer: Math.round(ans2 * 10000) / 10000, tol: 0.0051, calc: true,
           near: near(ans2, [{ v: mult / k, tol: 0.0051, fb: "Take $\\ln$ of both sides: $kt = \\ln " + mult + "$, so $t = \\frac{\\ln " + mult + "}{" + k + "}$." }]),
           hints: ["$e^{" + k + "t} = " + mult + "$, so $" + k + "t = \\ln " + mult + "$."], why: "$t = \\frac{\\ln " + mult + "}{" + k + "} \\approx " + f4(ans2, 2) + "$." };
       } },

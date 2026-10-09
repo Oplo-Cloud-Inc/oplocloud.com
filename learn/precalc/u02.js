@@ -1057,7 +1057,7 @@
     { id: "pc2-slope", title: "Find a slope", lesson: 3,
       gen: function (R) {
         var x1 = R.int(-5, 4), y1 = R.int(-6, 6), dx = R.int(1, 5), dy = R.nz(-8, 8), x2 = x1 + dx, y2 = y1 + dy;
-        return { type: "num", prompt: "Find the slope of the line through $(" + x1 + ", " + y1 + ")$ and $(" + x2 + ", " + y2 + ")$. (A fraction like 3/4 is fine.)", pre: "$m =$", answer: dy / dx, tol: 1e-9, shown: L.fracText(dy, dx),
+        return { type: "num", prompt: "Find the slope of the line through $(" + x1 + ", " + y1 + ")$ and $(" + x2 + ", " + y2 + ")$. (A fraction is fine.)", pre: "$m =$", answer: dy / dx, tol: 1e-9, shown: L.fracText(dy, dx),
           near: near(dy / dx, [{ v: dx / dy, tol: 1e-9, fb: "Slope is rise over run: the change in $y$ goes on top." }, { v: -dy / dx, tol: 1e-9, fb: "Subtract in the same order on the top and on the bottom." }]),
           hints: ["$\\frac{y_2 - y_1}{x_2 - x_1}$."], why: "$\\frac{" + y2 + " - " + par(y1) + "}{" + x2 + " - " + par(x1) + "} = " + ratTex(dy, dx) + "$." };
       } },

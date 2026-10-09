@@ -450,7 +450,7 @@
         steps: [
           { step: 1, ask: "$\\theta = \\dfrac{s}{r} = \\dfrac{10}{5}$", type: "num", pre: "$\\theta =$", post: "radians", answer: 2, near: [{ v: 0.5, fb: "Arc length on top: $\\frac{10}{5}$, not $\\frac{5}{10}$." }, { v: 50, fb: "Divide, do not multiply." }], hint: "$10 \\div 5$.", m: "\\theta = 2", say: "2 radians." },
           { step: 2, ask: "A full turn is $2\\pi \\approx 6.28$. Is 2 radians more or less than a quarter turn ($\\frac{\\pi}{2} \\approx 1.57$)?", type: "choice", answer: 0, options: [{ t: "More: a little over a quarter turn" }, { t: "Less", fb: "$2 > 1.57$." }], m: "2 > \\tfrac{\\pi}{2}", say: "Between a quarter and a half turn." },
-          { step: 3, ask: "In degrees: $2 \\cdot \\dfrac{180}{\\pi}$. (Type 2*180/pi.)", type: "num", pre: "$\\approx$", post: "degrees", answer: 114.59, tol: 0.005, calc: true, near: [{ v: 360, fb: "Multiply by $\\frac{180}{\\pi}$, which is about 57.3." }], hint: "$\\approx 2 \\cdot 57.3$.", m: "\\approx 114.6^\\circ", say: "About 114.6°." }],
+          { step: 3, ask: "In degrees: $2 \\cdot \\dfrac{180}{\\pi}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$\\approx$", post: "degrees", answer: 114.59, tol: 0.005, calc: true, near: [{ v: 360, fb: "Multiply by $\\frac{180}{\\pi}$, which is about 57.3." }], hint: "$\\approx 2 \\cdot 57.3$.", m: "\\approx 114.6^\\circ", say: "About 114.6°." }],
         why: "Arc over radius, sense-check, convert." },
       { type: "choice", kicker: "On your own", prompt: "A **quarter** turn is how many radians?",
         options: [{ t: "$\\dfrac{\\pi}{2}$" }, { t: "$\\dfrac{\\pi}{4}$", fb: "That is an eighth of a turn." }, { t: "$\\dfrac{\\pi}{3}$", fb: "That is a sixth of a turn." }],
@@ -483,7 +483,7 @@
     blurb: "Book 5.1 · One fact, $180^\\circ = \\pi$ radians, converts everything.",
     mins: 12, v: 1,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "Simplify $\\dfrac{150}{180}$. (A fraction like 5/6 is fine.)", answer: 0.8333, tol: 0.001, shown: "5/6", skill: "Fractions",
+      { type: "num", kicker: "Warm up", prompt: "Simplify $\\dfrac{150}{180}$. (A fraction is fine.)", answer: 0.8333, tol: 0.001, shown: "5/6", skill: "Fractions",
         near: [{ v: 1.2, tol: 0.001, fb: "That is $\\frac{180}{150}$, upside down." }], hints: ["Divide top and bottom by 30."], why: "$\\frac{150}{180} = \\frac{5}{6}$." },
       { type: "learn", kicker: "Explore",
         prompt: "Drag the point round the circle. The readout gives the angle in **degrees** and in **radians**. Visit **six** different special angles (multiples of 30° or 45°).",
@@ -512,14 +512,14 @@
           { step: 2, ask: "Replace $\\pi$ by $180^\\circ$ in $\\dfrac{5\\pi}{4}$: $\\dfrac{5 \\cdot 180}{4} =$", type: "num", pre: "degrees =", answer: 225, near: [{ v: 900, fb: "Divide by 4 as well: $900 \\div 4$." }], hint: "$900 \\div 4$.", m: "\\frac{5 \\cdot 180^\\circ}{4}", say: "Swap $\\pi$ for $180^\\circ$." },
           { step: 3, ask: "Which quadrant is $225^\\circ$ in?", type: "choice", answer: 0, options: [{ t: "III" }, { t: "II", fb: "225 is past 180." }], m: "225^\\circ", say: "Check: $\\frac{5\\pi}{4}$ is just past $\\pi$." }],
         why: "Link, factor, simplify." },
-      { type: "num", kicker: "On your own", prompt: "Convert $60^\\circ$ to radians. (Type pi/3, or a decimal like 1.0472.)", pre: "radians =", answer: 1.0472, tol: 0.0006, calc: true, shown: "pi/3", skill: "Degrees and radians",
+      { type: "num", kicker: "On your own", prompt: "Convert $60^\\circ$ to radians. (You may type an expression such as 2*pi/7, or a decimal.)", pre: "radians =", answer: 1.0472, tol: 0.0006, calc: true, shown: "pi/3", skill: "Degrees and radians",
         near: [{ v: 60, fb: "That is the degrees. Multiply by $\\frac{\\pi}{180}$." }, { v: 3437.7, tol: 0.1, fb: "That is $60 \\cdot \\frac{180}{\\pi}$: the wrong way round." }], hints: ["$\\frac{60\\pi}{180}$."], why: "$\\frac{60\\pi}{180} = \\frac{\\pi}{3} \\approx 1.0472$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**A radian measure without $\\pi$.** Convert 2 radians to degrees.",
         scene: { type: "walk", how: HOW_3, rows: [
           { step: 1, m: "\\pi \\text{ rad} = 180^\\circ", say: "The same link." },
           { step: 2, m: "2 \\cdot \\frac{180}{\\pi}", say: "Radians to degrees: multiply by $\\frac{180}{\\pi}$.", ask: { prompt: "Does the answer keep a $\\pi$?", answer: 0, options: [{ t: "No: the $\\pi$ is on the bottom, so it is a decimal" }, { t: "Yes", fb: "2 has no $\\pi$ to cancel with, so $\\frac{360}{\\pi}$ is a decimal." }] } },
-          { step: 3, m: "\\frac{360}{\\pi} \\approx 114.6^\\circ", say: "Use a calculator (type 360/pi)." }] },
+          { step: 3, m: "\\frac{360}{\\pi} \\approx 114.6^\\circ", say: "Use a calculator (type it as an expression)." }] },
         gate: true, then: "$2$ radians $\\approx 114.6^\\circ$: a bit more than a quarter turn." },
       { type: "choice", kicker: "Try it", prompt: "$\\dfrac{7\\pi}{6}$ radians is how many degrees?",
         options: [{ t: "$210^\\circ$" }, { t: "$150^\\circ$", fb: "$\\frac{5\\pi}{6}$ is $150^\\circ$. Here: $\\frac{7 \\cdot 180}{6}$." }, { t: "$420^\\circ$", fb: "$\\frac{7 \\cdot 180}{6} = 210$: remember to divide by 6." }],
@@ -581,7 +581,7 @@
           { step: 2, m: "\\frac{9\\pi}{4} - \\frac{8\\pi}{4} = \\frac{\\pi}{4}", say: "Again." },
           { step: 3, m: "0 \\le \\tfrac{\\pi}{4} < 2\\pi", say: "In range: $\\frac{\\pi}{4}$ (45°)." }] },
         gate: true, then: "$\\dfrac{17\\pi}{4}$ is two full turns plus $\\dfrac{\\pi}{4}$." },
-      { type: "num", kicker: "Try it", prompt: "Find the angle between $0$ and $2\\pi$ coterminal with $-\\dfrac{7\\pi}{3}$. (Type 5pi/3, or a decimal.)", pre: "$\\theta \\approx$", answer: 5.236, tol: 0.0006, calc: true, shown: "5pi/3", skill: "Coterminal angles",
+      { type: "num", kicker: "Try it", prompt: "Find the angle between $0$ and $2\\pi$ coterminal with $-\\dfrac{7\\pi}{3}$. (You may type an expression such as 2*pi/7, or a decimal.)", pre: "$\\theta \\approx$", answer: 5.236, tol: 0.0006, calc: true, shown: "5pi/3", skill: "Coterminal angles",
         near: [{ v: -2.356, tol: 0.001, fb: "That is $-\\frac{7\\pi}{3} + 2\\pi$: still negative. Add another $2\\pi$." }, { v: 1.0472, tol: 0.001, fb: "That is $\\frac{\\pi}{3}$, which is coterminal with $+\\frac{7\\pi}{3}$, not with $-\\frac{7\\pi}{3}$." }], hints: ["Add $2\\pi = \\frac{6\\pi}{3}$ twice."], why: "$-\\frac{7\\pi}{3} + \\frac{12\\pi}{3} = \\frac{5\\pi}{3}$." },
       { type: "choice", kicker: "Find the error",
         prompt: "Lee says $-30^\\circ$ and $30^\\circ$ are coterminal because they are \"the same size\". What is wrong?",
@@ -629,10 +629,10 @@
         how: HOW_5, skill: "Arc length and sector area",
         steps: [
           { step: 1, ask: "$150^\\circ$ in radians is $\\dfrac{5\\pi}{6}$. Which is the arc length formula?", type: "choice", answer: 0, options: [{ t: "$s = r\\theta$" }, { t: "$s = \\frac{1}{2}r^2\\theta$", fb: "That is the **area** formula." }], m: "\\theta = \\tfrac{5\\pi}{6}", say: "Radians first." },
-          { step: 2, ask: "$s = 6 \\cdot \\dfrac{5\\pi}{6}$. (Type 5*pi.)", type: "num", pre: "$s \\approx$", answer: 15.708, tol: 0.006, calc: true, near: [{ v: 900, fb: "That used degrees: $6 \\cdot 150$." }], hint: "The 6s cancel: $5\\pi$.", m: "s = 5\\pi \\approx 15.71", say: "The edge of the sector." },
-          { step: 3, ask: "$A = \\tfrac{1}{2} \\cdot 6^2 \\cdot \\dfrac{5\\pi}{6}$. (Type 0.5*36*5*pi/6.)", type: "num", pre: "$A \\approx$", answer: 47.124, tol: 0.006, calc: true, near: [{ v: 15.708, tol: 0.006, fb: "That is the arc length. The area has $\\frac{1}{2}r^2$." }], hint: "$\\frac{1}{2} \\cdot 36 \\cdot \\frac{5\\pi}{6} = 15\\pi$.", m: "A = 15\\pi \\approx 47.12", say: "Square units." }],
+          { step: 2, ask: "$s = 6 \\cdot \\dfrac{5\\pi}{6}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$s \\approx$", answer: 15.708, tol: 0.006, calc: true, near: [{ v: 900, fb: "That used degrees: $6 \\cdot 150$." }], hint: "The 6s cancel: $5\\pi$.", m: "s = 5\\pi \\approx 15.71", say: "The edge of the sector." },
+          { step: 3, ask: "$A = \\tfrac{1}{2} \\cdot 6^2 \\cdot \\dfrac{5\\pi}{6}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$A \\approx$", answer: 47.124, tol: 0.006, calc: true, near: [{ v: 15.708, tol: 0.006, fb: "That is the arc length. The area has $\\frac{1}{2}r^2$." }], hint: "$\\frac{1}{2} \\cdot 36 \\cdot \\frac{5\\pi}{6} = 15\\pi$.", m: "A = 15\\pi \\approx 47.12", say: "Square units." }],
         why: "Radians, arc, area." },
-      { type: "num", kicker: "On your own", prompt: "Find the arc length of a sector with radius 8 and angle $\\dfrac{3\\pi}{4}$ radians. (Type 8*3*pi/4.)", pre: "$s \\approx$", answer: 18.85, tol: 0.006, calc: true, skill: "Arc length and sector area",
+      { type: "num", kicker: "On your own", prompt: "Find the arc length of a sector with radius 8 and angle $\\dfrac{3\\pi}{4}$ radians. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$s \\approx$", answer: 18.85, tol: 0.006, calc: true, skill: "Arc length and sector area",
         near: [{ v: 6, fb: "That leaves out the $\\pi$: $s = 8 \\cdot \\frac{3\\pi}{4} = 6\\pi$." }, { v: 90, fb: "$\\frac{3\\pi}{4}$ is the angle in radians: do not turn it into 135 first." }], hints: ["$s = r\\theta$."], why: "$6\\pi \\approx 18.85$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**Find the angle.** An arc of length $7\\pi$ lies on a circle of radius 12. What is the central angle in degrees?",
@@ -648,7 +648,7 @@
         prompt: "Dee finds the arc length for $r = 5$ and $\\theta = 60^\\circ$ as $s = 5 \\cdot 60 = 300$. What is wrong?",
         options: [{ t: "The angle must be in radians: $60^\\circ = \\frac{\\pi}{3}$, so $s = \\frac{5\\pi}{3}$." }, { t: "Nothing is wrong.", fb: "An arc of 300 on a circle of radius 5 would wrap round the circle nearly 10 times." }, { t: "She should square the radius.", fb: "That is for the area." }],
         answer: 0, skill: "Arc length and sector area", hints: ["Is 300 a sensible arc on a circle of radius 5?"], why: "$s = \\frac{5\\pi}{3} \\approx 5.24$." },
-      { type: "num", kicker: "Use it", prompt: "A windscreen wiper blade is 0.5 m long and sweeps through $120^\\circ$. How long is the arc its tip travels, in metres to 2 decimal places? (Type 0.5*2*pi/3.)", pre: "$s \\approx$", post: "m", answer: 1.05, tol: 0.006, calc: true, skill: "Arc length and sector area",
+      { type: "num", kicker: "Use it", prompt: "A windscreen wiper blade is 0.5 m long and sweeps through $120^\\circ$. How long is the arc its tip travels, in metres to 2 decimal places? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$s \\approx$", post: "m", answer: 1.05, tol: 0.006, calc: true, skill: "Arc length and sector area",
         near: [{ v: 60, fb: "That used degrees. Convert $120^\\circ$ to $\\frac{2\\pi}{3}$ radians first." }], hints: ["$s = 0.5 \\cdot \\frac{2\\pi}{3}$."], why: "$\\frac{\\pi}{3} \\approx 1.05$ m." }
     ]
   });
@@ -662,7 +662,7 @@
     blurb: "Book 5.1 · Turning fast is not the same as travelling fast: it depends how far you are from the centre.",
     mins: 13, v: 1,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "One revolution is $2\\pi$ radians. How many radians are in **3 revolutions**? Write it as a decimal to 2 places. (Type 6*pi.)", pre: "radians =", answer: 18.85, tol: 0.006, calc: true, skill: "Radians",
+      { type: "num", kicker: "Warm up", prompt: "One revolution is $2\\pi$ radians. How many radians are in **3 revolutions**? Write it as a decimal to 2 places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "radians =", answer: 18.85, tol: 0.006, calc: true, skill: "Radians",
         near: [{ v: 6.28, tol: 0.006, fb: "That is one revolution. Three revolutions: $3 \\cdot 2\\pi$." }], hints: ["$3 \\cdot 2\\pi = 6\\pi$."], why: "$6\\pi \\approx 18.85$." },
       { type: "learn", kicker: "Explore",
         prompt: "A point on the rim of a wheel of radius $r$ metres turns at $\\omega$ radians per second. Its speed along the rim is the orange arrow. Find **two different** combinations that give a speed of **6 metres per second**.",
@@ -688,11 +688,11 @@
         prompt: "A Ferris wheel of radius 20 m makes one rotation in 80 seconds. How fast does a car move?",
         how: HOW_6, skill: "Angular and linear speed",
         steps: [
-          { step: 1, ask: "$\\omega = \\dfrac{2\\pi}{80}$. (Type 2*pi/80.)", type: "num", pre: "$\\omega \\approx$", post: "rad/s", answer: 0.0785, tol: 0.0006, calc: true, near: [{ v: 0.0125, tol: 0.0006, fb: "That is revolutions per second, $\\frac{1}{80}$. Use radians: $\\frac{2\\pi}{80}$." }], hint: "One rotation is $2\\pi$ radians.", m: "\\omega = \\tfrac{\\pi}{40}", say: "A very slow turn." },
-          { step: 2, ask: "$v = r\\omega = 20 \\cdot \\dfrac{\\pi}{40}$. (Type 20*pi/40.)", type: "num", pre: "$v \\approx$", post: "m/s", answer: 1.5708, tol: 0.0006, calc: true, near: [{ v: 31.4, tol: 0.1, fb: "That is $20 \\cdot \\pi$: you forgot to divide by 40." }], hint: "$\\frac{20\\pi}{40} = \\frac{\\pi}{2}$.", m: "v = \\tfrac{\\pi}{2} \\approx 1.57", say: "About 1.6 metres per second." },
+          { step: 1, ask: "$\\omega = \\dfrac{2\\pi}{80}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$\\omega \\approx$", post: "rad/s", answer: 0.0785, tol: 0.0006, calc: true, near: [{ v: 0.0125, tol: 0.0006, fb: "That is revolutions per second, $\\frac{1}{80}$. Use radians: $\\frac{2\\pi}{80}$." }], hint: "One rotation is $2\\pi$ radians.", m: "\\omega = \\tfrac{\\pi}{40}", say: "A very slow turn." },
+          { step: 2, ask: "$v = r\\omega = 20 \\cdot \\dfrac{\\pi}{40}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$v \\approx$", post: "m/s", answer: 1.5708, tol: 0.0006, calc: true, near: [{ v: 31.4, tol: 0.1, fb: "That is $20 \\cdot \\pi$: you forgot to divide by 40." }], hint: "$\\frac{20\\pi}{40} = \\frac{\\pi}{2}$.", m: "v = \\tfrac{\\pi}{2} \\approx 1.57", say: "About 1.6 metres per second." },
           { step: 3, ask: "The units of $v$ are…", type: "choice", answer: 0, options: [{ t: "metres per second" }, { t: "radians per second", fb: "Radians per second is the **angular** speed. The linear speed is a length per time." }], m: "\\text{m/s}", say: "Length per time." }],
         why: "Angular speed, linear speed, units." },
-      { type: "num", kicker: "On your own", prompt: "A fan blade 0.5 m long spins at 3 revolutions per second. How fast does its tip move? (Type 0.5*3*2*pi.)", pre: "$v \\approx$", post: "m/s", answer: 9.42, tol: 0.006, calc: true, skill: "Angular and linear speed",
+      { type: "num", kicker: "On your own", prompt: "A fan blade 0.5 m long spins at 3 revolutions per second. How fast does its tip move? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$v \\approx$", post: "m/s", answer: 9.42, tol: 0.006, calc: true, skill: "Angular and linear speed",
         near: [{ v: 1.5, fb: "That is $r$ times the revolutions. Convert to radians: each revolution is $2\\pi$." }], hints: ["$\\omega = 3 \\cdot 2\\pi = 6\\pi$."], why: "$0.5 \\cdot 6\\pi = 3\\pi \\approx 9.42$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**Go backwards.** A bicycle with wheels of radius 0.35 m travels at 7 m/s. How fast are the wheels turning, in revolutions per second?",
@@ -707,7 +707,7 @@
         prompt: "Two children sit on a roundabout, one near the edge and one near the centre. Max says the one near the edge has the greater **angular** speed. What is wrong?",
         options: [{ t: "They turn through the same angle in the same time, so $\\omega$ is equal. The one at the edge has the greater **linear** speed." }, { t: "Nothing is wrong.", fb: "Both go once round in the same time: same $\\omega$." }, { t: "The one near the centre is faster.", fb: "Farther from the centre means a longer circle in the same time." }],
         answer: 0, skill: "Angular and linear speed", hints: ["Same time per turn means same angular speed."], why: "$\\omega$ is shared; $v = r\\omega$ grows with $r$." },
-      { type: "num", kicker: "Use it", prompt: "The Earth turns once in 24 hours. The radius at the equator is 6371 km. How fast does a person at the equator move because of the rotation, in km per hour? (Type 6371*2*pi/24.)", pre: "$v \\approx$", post: "km/h", answer: 1668, tol: 1, calc: true, skill: "Angular and linear speed",
+      { type: "num", kicker: "Use it", prompt: "The Earth turns once in 24 hours. The radius at the equator is 6371 km. How fast does a person at the equator move because of the rotation, in km per hour? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$v \\approx$", post: "km/h", answer: 1668, tol: 1, calc: true, skill: "Angular and linear speed",
         near: [{ v: 265.5, tol: 1, fb: "That is $\\frac{6371}{24}$. Include the $2\\pi$ radians in one turn." }], hints: ["$\\omega = \\frac{2\\pi}{24}$ radians per hour."], why: "$6371 \\cdot \\frac{\\pi}{12} \\approx 1668$ km/h." }
     ]
   });
@@ -754,8 +754,8 @@
         how: HOW_7, skill: "Unit circle",
         steps: [
           { step: 1, ask: "Which quadrant is $P$ in? ($x$ positive, $y$ negative)", type: "choice", answer: 0, options: [{ t: "IV" }, { t: "II", fb: "In quadrant II, $x$ is negative and $y$ positive." }, { t: "I", fb: "In quadrant I both are positive." }], m: "x > 0,\\ y < 0", say: "Quadrant IV." },
-          { step: 2, ask: "$\\cos\\theta = x$. (Type 5/13.)", type: "num", pre: "$\\cos\\theta \\approx$", answer: 0.3846, tol: 0.0006, near: [{ v: -0.9231, tol: 0.0006, fb: "That is $y$, the sine." }], hint: "The $x$-coordinate.", m: "\\cos\\theta = \\tfrac{5}{13}", say: "The $x$-coordinate." },
-          { step: 2, ask: "$\\sin\\theta = y$. (Type -12/13.)", type: "num", pre: "$\\sin\\theta \\approx$", answer: -0.9231, tol: 0.0006, near: [{ v: 0.9231, tol: 0.0006, fb: "The point is below the axis: negative." }], hint: "The $y$-coordinate.", m: "\\sin\\theta = -\\tfrac{12}{13}", say: "Negative in quadrant IV." },
+          { step: 2, ask: "$\\cos\\theta = x$. (A fraction or decimal is fine.)", type: "num", pre: "$\\cos\\theta \\approx$", answer: 0.3846, tol: 0.0006, near: [{ v: -0.9231, tol: 0.0006, fb: "That is $y$, the sine." }], hint: "The $x$-coordinate.", m: "\\cos\\theta = \\tfrac{5}{13}", say: "The $x$-coordinate." },
+          { step: 2, ask: "$\\sin\\theta = y$. (A fraction or decimal is fine.)", type: "num", pre: "$\\sin\\theta \\approx$", answer: -0.9231, tol: 0.0006, near: [{ v: 0.9231, tol: 0.0006, fb: "The point is below the axis: negative." }], hint: "The $y$-coordinate.", m: "\\sin\\theta = -\\tfrac{12}{13}", say: "Negative in quadrant IV." },
           { step: 3, ask: "Check: $\\left(\\frac{5}{13}\\right)^2 + \\left(\\frac{12}{13}\\right)^2 = \\frac{25 + 144}{169} =$", type: "num", pre: "$=$", answer: 1, near: [{ v: 169, fb: "That is the numerator. Divide by 169." }], hint: "$\\frac{169}{169}$.", m: "x^2 + y^2 = 1", say: "On the circle." }],
         why: "Find P, read x and y, check." },
       { type: "choice", kicker: "On your own", prompt: "What is $\\cos 180^\\circ$?",
@@ -857,7 +857,7 @@
     blurb: "Book 5.2 · Three triangles give the exact sine and cosine of the angles you will meet most.",
     mins: 14, v: 1,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "A square has sides of length 1. How long is its diagonal? (Type sqrt(2) or a decimal.)", pre: "diagonal $\\approx$", answer: 1.4142, tol: 0.0006, calc: true, shown: "sqrt(2)", skill: "Pythagorean theorem",
+      { type: "num", kicker: "Warm up", prompt: "A square has sides of length 1. How long is its diagonal? (You may type an expression such as sqrt(7), or a decimal.)", pre: "diagonal $\\approx$", answer: 1.4142, tol: 0.0006, calc: true, shown: "sqrt(2)", skill: "Pythagorean theorem",
         near: [{ v: 2, fb: "$1^2 + 1^2 = 2$ is the **square** of the diagonal. Take the square root." }], hints: ["$d^2 = 1 + 1$."], why: "$d = \\sqrt{2} \\approx 1.4142$." },
       { type: "learn", kicker: "Explore",
         prompt: "Pick $30^\\circ$, $45^\\circ$ or $60^\\circ$. The triangle inside the unit circle has hypotenuse 1, so its legs are the **cosine** (blue) and **sine** (orange). Look at **all three**.",
@@ -884,7 +884,7 @@
         steps: [
           { step: 1, ask: "At $45^\\circ$ the two legs are…", type: "choice", answer: 0, options: [{ t: "equal" }, { t: "different", fb: "At $45^\\circ$ the point is exactly halfway round the quarter circle: $x = y$." }], m: "x = y", say: "An isosceles right triangle." },
           { step: 2, ask: "$x^2 + x^2 = 1$, so $x^2 =$ (a decimal is fine)", type: "num", pre: "$x^2 =$", answer: 0.5, near: [{ v: 2, fb: "$2x^2 = 1$: divide by 2." }], hint: "$2x^2 = 1$.", m: "x^2 = \\tfrac{1}{2}", say: "Half." },
-          { step: 3, ask: "$x = \\sqrt{\\tfrac{1}{2}}$. (Type sqrt(1/2) or sqrt(2)/2.)", type: "num", pre: "$x \\approx$", answer: 0.7071, tol: 0.0006, calc: true, near: [{ v: 0.5, fb: "That is $x^2$. Take the square root." }], hint: "$\\frac{\\sqrt{2}}{2} \\approx 0.7071$.", m: "\\cos 45^\\circ = \\sin 45^\\circ = \\tfrac{\\sqrt{2}}{2}", say: "Both equal." }],
+          { step: 3, ask: "$x = \\sqrt{\\tfrac{1}{2}}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$x \\approx$", answer: 0.7071, tol: 0.0006, calc: true, near: [{ v: 0.5, fb: "That is $x^2$. Take the square root." }], hint: "$\\frac{\\sqrt{2}}{2} \\approx 0.7071$.", m: "\\cos 45^\\circ = \\sin 45^\\circ = \\tfrac{\\sqrt{2}}{2}", say: "Both equal." }],
         why: "Triangle, sides, value." },
       { type: "sort", kicker: "On your own", prompt: "Sort each value into the box it equals.",
         bins: ["1/2", "√2/2", "√3/2"],
@@ -897,13 +897,13 @@
           { step: 2, m: "h^2 + \\left(\\tfrac{1}{2}\\right)^2 = 1^2", say: "Pythagoras.", ask: { prompt: "$h^2 = 1 - \\frac{1}{4} =$", answer: 0, options: [{ t: "$\\frac{3}{4}$" }, { t: "$\\frac{1}{2}$", fb: "$\\left(\\frac{1}{2}\\right)^2 = \\frac{1}{4}$, and $1 - \\frac{1}{4} = \\frac{3}{4}$." }] } },
           { step: 3, m: "h = \\sqrt{\\tfrac{3}{4}} = \\tfrac{\\sqrt{3}}{2}", say: "The long leg. So $\\sin 60^\\circ = \\frac{\\sqrt{3}}{2}$." }] },
         gate: true, then: "$h = \\dfrac{\\sqrt{3}}{2} \\approx 0.866$." },
-      { type: "num", kicker: "Try it", prompt: "Find $\\cos 45^\\circ$ as a decimal. (Type sqrt(2)/2.)", pre: "$\\cos 45^\\circ \\approx$", answer: 0.7071, tol: 0.0006, calc: true, skill: "Special angles",
+      { type: "num", kicker: "Try it", prompt: "Find $\\cos 45^\\circ$ as a decimal. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$\\cos 45^\\circ \\approx$", answer: 0.7071, tol: 0.0006, calc: true, skill: "Special angles",
         near: [{ v: 0.5, fb: "$\\cos 60^\\circ = \\frac{1}{2}$. At $45^\\circ$ the legs are $\\frac{\\sqrt{2}}{2}$." }, { v: 0.866, tol: 0.0006, fb: "That is $\\cos 30^\\circ$." }], hints: ["The legs are equal: $x^2 = \\frac{1}{2}$."], why: "$\\frac{\\sqrt{2}}{2} \\approx 0.7071$." },
       { type: "choice", kicker: "Find the error",
         prompt: "Sam says $\\sin 60^\\circ = \\dfrac{1}{2}$, \"because 60 is bigger, so half\". What is wrong?",
         options: [{ t: "$\\sin 30^\\circ = \\frac{1}{2}$. At $60^\\circ$ the point is higher: $\\sin 60^\\circ = \\frac{\\sqrt{3}}{2} \\approx 0.866$." }, { t: "Nothing is wrong.", fb: "Sine grows from 0 at $0^\\circ$ to 1 at $90^\\circ$: at $60^\\circ$ it is well past one half." }, { t: "$\\sin 60^\\circ = \\frac{\\sqrt{2}}{2}$.", fb: "That is $\\sin 45^\\circ$." }],
         answer: 0, skill: "Special angles", hints: ["Sine rises from 0 to 1 as the angle goes from 0° to 90°."], why: "$\\sin 60^\\circ \\approx 0.866$." },
-      { type: "num", kicker: "Use it", prompt: "A point on a circle of radius 10 is at an angle of $60^\\circ$ from the positive $x$-axis. How high above the $x$-axis is it? (Type 10*sqrt(3)/2.)", pre: "height $\\approx$", answer: 8.66, tol: 0.006, calc: true, skill: "Special angles",
+      { type: "num", kicker: "Use it", prompt: "A point on a circle of radius 10 is at an angle of $60^\\circ$ from the positive $x$-axis. How high above the $x$-axis is it? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "height $\\approx$", answer: 8.66, tol: 0.006, calc: true, skill: "Special angles",
         near: [{ v: 5, fb: "That is $10\\cos 60^\\circ$, the horizontal distance." }], hints: ["height $= 10\\sin 60^\\circ$."], why: "$10 \\cdot \\frac{\\sqrt{3}}{2} \\approx 8.66$." }
     ]
   });
@@ -1017,7 +1017,7 @@
           { step: 2, ask: "$\\cos 60^\\circ$ is…", type: "choice", answer: 0, options: [{ t: "$\\frac{1}{2}$" }, { t: "$\\frac{\\sqrt{3}}{2}$", fb: "That is $\\sin 60^\\circ$." }], m: "\\cos 60^\\circ = \\tfrac{1}{2}, \\ \\ \\sin 60^\\circ = \\tfrac{\\sqrt{3}}{2}", say: "The sizes." },
           { step: 3, ask: "In quadrant IV, $y$ is…", type: "choice", answer: 0, options: [{ t: "negative, so $\\sin 300^\\circ = -\\frac{\\sqrt{3}}{2}$" }, { t: "positive", fb: "Quadrant IV is below the $x$-axis." }], m: "\\cos 300^\\circ = \\tfrac{1}{2}, \\ \\ \\sin 300^\\circ = -\\tfrac{\\sqrt{3}}{2}", say: "Positive cosine, negative sine." }],
         why: "Reference, values, signs." },
-      { type: "num", kicker: "On your own", prompt: "Find $\\cos 225^\\circ$ as a decimal. (Type -sqrt(2)/2.)", pre: "$\\cos 225^\\circ \\approx$", answer: -0.7071, tol: 0.0006, calc: true, skill: "Sine and cosine by reference angle",
+      { type: "num", kicker: "On your own", prompt: "Find $\\cos 225^\\circ$ as a decimal. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$\\cos 225^\\circ \\approx$", answer: -0.7071, tol: 0.0006, calc: true, skill: "Sine and cosine by reference angle",
         near: [{ v: 0.7071, tol: 0.0006, fb: "Quadrant III has a negative $x$-coordinate: cosine is negative." }], hints: ["Reference angle $45^\\circ$, quadrant III."], why: "$-\\frac{\\sqrt{2}}{2} \\approx -0.7071$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**A circle of radius 10.** Find the coordinates of the point on a circle of radius 10 at an angle of $120^\\circ$.",
@@ -1081,8 +1081,8 @@
         how: HOW_12, skill: "Six trigonometric functions",
         steps: [
           { step: 1, ask: "Which is $y$?", type: "choice", answer: 0, options: [{ t: "$-\\frac{12}{13}$" }, { t: "$\\frac{5}{13}$", fb: "That is $x$, the first coordinate." }], m: "x = \\tfrac{5}{13}, \\ \\ y = -\\tfrac{12}{13}", say: "Read the coordinates." },
-          { step: 2, ask: "$\\tan\\theta = \\dfrac{y}{x} =$ (type -12/5)", type: "num", pre: "$\\tan\\theta =$", answer: -2.4, tol: 0.001, near: [{ v: -0.4167, tol: 0.001, fb: "That is $\\frac{x}{y}$, the cotangent. Tangent is $\\frac{y}{x}$." }], hint: "$\\frac{-12/13}{5/13}$.", m: "\\tan\\theta = -\\tfrac{12}{5}", say: "The 13s cancel." },
-          { step: 3, ask: "$\\sec\\theta = \\dfrac{1}{x} =$ (type 13/5)", type: "num", pre: "$\\sec\\theta =$", answer: 2.6, tol: 0.001, near: [{ v: 0.3846, tol: 0.001, fb: "That is $x$ itself. Secant is $\\frac{1}{x}$." }], hint: "Flip $\\frac{5}{13}$.", m: "\\sec\\theta = \\tfrac{13}{5}", say: "Reciprocal of $x$." }],
+          { step: 2, ask: "$\\tan\\theta = \\dfrac{y}{x} =$ (a fraction or decimal is fine)", type: "num", pre: "$\\tan\\theta =$", answer: -2.4, tol: 0.001, near: [{ v: -0.4167, tol: 0.001, fb: "That is $\\frac{x}{y}$, the cotangent. Tangent is $\\frac{y}{x}$." }], hint: "$\\frac{-12/13}{5/13}$.", m: "\\tan\\theta = -\\tfrac{12}{5}", say: "The 13s cancel." },
+          { step: 3, ask: "$\\sec\\theta = \\dfrac{1}{x} =$ (a fraction or decimal is fine)", type: "num", pre: "$\\sec\\theta =$", answer: 2.6, tol: 0.001, near: [{ v: 0.3846, tol: 0.001, fb: "That is $x$ itself. Secant is $\\frac{1}{x}$." }], hint: "Flip $\\frac{5}{13}$.", m: "\\sec\\theta = \\tfrac{13}{5}", say: "Reciprocal of $x$." }],
         why: "Read, ratios, reciprocals." },
       { type: "sort", kicker: "On your own", prompt: "What is the value of each? (Think about the point on the unit circle.)",
         bins: ["0", "1", "−1", "undefined"],
@@ -1096,13 +1096,13 @@
           { step: 2, m: "y = -\\tfrac{4}{5}", say: "Choose the negative root." },
           { step: 3, m: "\\tan\\theta = \\frac{y}{x} = \\frac{-4/5}{3/5} = -\\tfrac{4}{3}", say: "Divide." }] },
         gate: true, then: "$\\tan\\theta = -\\dfrac{4}{3}$." },
-      { type: "num", kicker: "Try it", prompt: "$\\sin\\theta = \\dfrac{3}{5}$ and $\\cos\\theta = \\dfrac{4}{5}$. Find $\\tan\\theta$. (Type 3/4 or 0.75.)", pre: "$\\tan\\theta =$", answer: 0.75, tol: 0.001, skill: "Six trigonometric functions",
+      { type: "num", kicker: "Try it", prompt: "$\\sin\\theta = \\dfrac{3}{5}$ and $\\cos\\theta = \\dfrac{4}{5}$. Find $\\tan\\theta$. (A fraction or decimal is fine.)", pre: "$\\tan\\theta =$", answer: 0.75, tol: 0.001, skill: "Six trigonometric functions",
         near: [{ v: 1.3333, tol: 0.001, fb: "That is $\\cot\\theta = \\frac{\\cos}{\\sin}$. Tangent is sine over cosine." }], hints: ["$\\tan\\theta = \\frac{\\sin\\theta}{\\cos\\theta}$."], why: "$\\frac{3/5}{4/5} = \\frac{3}{4}$." },
       { type: "choice", kicker: "Find the error",
         prompt: "Ben says $\\sec\\theta = \\dfrac{1}{y}$. What is wrong?",
         options: [{ t: "Secant is $\\frac{1}{x}$, the reciprocal of **cosine**. Cosecant is $\\frac{1}{y}$." }, { t: "Nothing is wrong.", fb: "Secant goes with cosine: it is $\\frac{1}{\\cos\\theta} = \\frac{1}{x}$." }, { t: "Secant is $\\frac{y}{x}$.", fb: "That is the tangent." }],
         answer: 0, skill: "Six trigonometric functions", hints: ["Sec goes with Cos; Csc goes with Sin."], why: "$\\sec\\theta = \\frac{1}{x}$." },
-      { type: "num", kicker: "Use it", prompt: "The terminal side of an angle of $60^\\circ$ has **slope** $\\tan 60^\\circ$. What is this slope? (Type sqrt(3) or tan(60°).)", pre: "slope $\\approx$", answer: 1.7321, tol: 0.0006, calc: true, skill: "Six trigonometric functions",
+      { type: "num", kicker: "Use it", prompt: "The terminal side of an angle of $60^\\circ$ has **slope** $\\tan 60^\\circ$. What is this slope? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "slope $\\approx$", answer: 1.7321, tol: 0.0006, calc: true, skill: "Six trigonometric functions",
         near: [{ v: 0.5774, tol: 0.0006, fb: "That is $\\tan 30^\\circ$. At $60^\\circ$ the line is steeper." }], hints: ["$\\tan 60^\\circ = \\frac{\\sin 60^\\circ}{\\cos 60^\\circ} = \\frac{\\sqrt{3}/2}{1/2}$."], why: "$\\sqrt{3} \\approx 1.7321$." }
     ]
   });
@@ -1160,7 +1160,7 @@
           { step: 3, m: "\\sin(-30^\\circ) = -\\tfrac{1}{2}", say: "Below the axis: negative. In general $\\sin(-\\theta) = -\\sin\\theta$: sine is **odd**." },
           { step: 3, m: "\\cos(-60^\\circ) = \\cos 60^\\circ = \\tfrac{1}{2}", say: "Cosine keeps its sign: $\\cos(-\\theta) = \\cos\\theta$: cosine is **even**." }] },
         gate: true, then: "Sine, tangent, cosecant and cotangent are **odd**; cosine and secant are **even**." },
-      { type: "num", kicker: "Try it", prompt: "Find $\\cot 225^\\circ$. (Type 1.)", pre: "$\\cot 225^\\circ =$", answer: 1, skill: "Trigonometric functions by reference angle",
+      { type: "num", kicker: "Try it", prompt: "Find $\\cot 225^\\circ$. (A fraction or decimal is fine.)", pre: "$\\cot 225^\\circ =$", answer: 1, skill: "Trigonometric functions by reference angle",
         near: [{ v: -1, fb: "Quadrant III: tangent and cotangent are **positive**." }], hints: ["The reference angle is $45^\\circ$, and $\\cot 45^\\circ = 1$."], why: "$\\cot 225^\\circ = \\cot 45^\\circ = 1$." },
       { type: "choice", kicker: "Find the error",
         prompt: "Rae says $\\cos(-60^\\circ) = -\\dfrac{1}{2}$ \"because the angle is negative\". What is wrong?",
@@ -1211,8 +1211,8 @@
         how: HOW_14, skill: "Right triangle ratios",
         steps: [
           { step: 1, ask: "Which side is the hypotenuse?", type: "choice", answer: 0, options: [{ t: "13, the longest" }, { t: "12", fb: "The hypotenuse is the longest side, across from the right angle." }], m: "\\text{hyp} = 13, \\ \\text{opp} = 5, \\ \\text{adj} = 12", say: "The adjacent side is the one left over." },
-          { step: 2, ask: "$\\sin A = \\dfrac{\\text{opp}}{\\text{hyp}}$. (Type 5/13.)", type: "num", pre: "$\\sin A \\approx$", answer: 0.3846, tol: 0.0006, near: [{ v: 0.4167, tol: 0.0006, fb: "That is $\\tan A = \\frac{5}{12}$. Sine uses the hypotenuse." }], hint: "$\\frac{5}{13}$.", m: "\\sin A = \\tfrac{5}{13}", say: "Opposite over hypotenuse." },
-          { step: 3, ask: "$\\tan A = \\dfrac{\\text{opp}}{\\text{adj}}$. (Type 5/12.)", type: "num", pre: "$\\tan A \\approx$", answer: 0.4167, tol: 0.0006, near: [{ v: 0.3846, tol: 0.0006, fb: "That is $\\sin A$." }], hint: "$\\frac{5}{12}$.", m: "\\tan A = \\tfrac{5}{12}", say: "Opposite over adjacent." }],
+          { step: 2, ask: "$\\sin A = \\dfrac{\\text{opp}}{\\text{hyp}}$. (A fraction or decimal is fine.)", type: "num", pre: "$\\sin A \\approx$", answer: 0.3846, tol: 0.0006, near: [{ v: 0.4167, tol: 0.0006, fb: "That is $\\tan A = \\frac{5}{12}$. Sine uses the hypotenuse." }], hint: "$\\frac{5}{13}$.", m: "\\sin A = \\tfrac{5}{13}", say: "Opposite over hypotenuse." },
+          { step: 3, ask: "$\\tan A = \\dfrac{\\text{opp}}{\\text{adj}}$. (A fraction or decimal is fine.)", type: "num", pre: "$\\tan A \\approx$", answer: 0.4167, tol: 0.0006, near: [{ v: 0.3846, tol: 0.0006, fb: "That is $\\sin A$." }], hint: "$\\frac{5}{12}$.", m: "\\tan A = \\tfrac{5}{12}", say: "Opposite over adjacent." }],
         why: "Label, choose, write." },
       { type: "choice", kicker: "On your own", prompt: "A right triangle has legs 8 and 15 and hypotenuse 17. For the angle opposite the side 8, which is $\\cos A$?",
         options: [{ t: "$\\dfrac{15}{17}$" }, { t: "$\\dfrac{8}{17}$", fb: "That is $\\sin A$: the opposite side over the hypotenuse." }, { t: "$\\dfrac{8}{15}$", fb: "That is $\\tan A$." }],
@@ -1225,7 +1225,7 @@
           { step: 2, m: "\\text{long leg} = 10 \\cdot \\tfrac{\\sqrt{3}}{2} = 5\\sqrt{3}", say: "Opposite $60^\\circ$." },
           { step: 3, m: "\\sin 30^\\circ = \\frac{5}{10} = \\tfrac{1}{2}", say: "The same value as before: the ratio does not depend on the size." }] },
         gate: true, then: "Sides $5$, $5\\sqrt{3}$, $10$; and $\\sin 30^\\circ = \\frac{1}{2}$ still." },
-      { type: "num", kicker: "Try it", prompt: "In a right triangle the side opposite angle $A$ is 9 and the adjacent side is 12. Find $\\tan A$. (Type 9/12 or 0.75.)", pre: "$\\tan A =$", answer: 0.75, tol: 0.001, skill: "Right triangle ratios",
+      { type: "num", kicker: "Try it", prompt: "In a right triangle the side opposite angle $A$ is 9 and the adjacent side is 12. Find $\\tan A$. (A fraction or decimal is fine.)", pre: "$\\tan A =$", answer: 0.75, tol: 0.001, skill: "Right triangle ratios",
         near: [{ v: 1.3333, tol: 0.001, fb: "That is $\\cot A$. Tangent is opposite over adjacent." }], hints: ["$\\frac{\\text{opp}}{\\text{adj}}$."], why: "$\\frac{9}{12} = \\frac{3}{4}$." },
       { type: "choice", kicker: "Find the error",
         prompt: "Lee says $\\cos A = \\dfrac{\\text{opposite}}{\\text{hypotenuse}}$. What is wrong?",
@@ -1274,10 +1274,10 @@
         how: HOW_15, skill: "Solve a right triangle",
         steps: [
           { step: 1, ask: "Which ratio links the adjacent side and the hypotenuse?", type: "choice", answer: 0, options: [{ t: "cosine" }, { t: "sine", fb: "Sine uses the opposite side." }], m: "\\cos 40^\\circ = \\frac{8}{H}", say: "CAH." },
-          { step: 2, ask: "Solving $\\cos 40^\\circ = \\dfrac{8}{H}$ gives $H = \\dfrac{8}{\\cos 40^\\circ}$. (Type 8/cos(40°).)", type: "num", pre: "$H \\approx$", answer: 10.443, tol: 0.006, calc: true, near: [{ v: 6.128, tol: 0.006, fb: "That is $8\\cos 40^\\circ$. The unknown is on the **bottom**, so divide." }], hint: "$\\cos 40^\\circ \\approx 0.766$.", m: "H \\approx 10.44", say: "The hypotenuse." },
+          { step: 2, ask: "Solving $\\cos 40^\\circ = \\dfrac{8}{H}$ gives $H = \\dfrac{8}{\\cos 40^\\circ}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$H \\approx$", answer: 10.443, tol: 0.006, calc: true, near: [{ v: 6.128, tol: 0.006, fb: "That is $8\\cos 40^\\circ$. The unknown is on the **bottom**, so divide." }], hint: "$\\cos 40^\\circ \\approx 0.766$.", m: "H \\approx 10.44", say: "The hypotenuse." },
           { step: 3, ask: "Is that sensible? The hypotenuse must be…", type: "choice", answer: 0, options: [{ t: "longer than the adjacent side, 8" }, { t: "shorter than 8", fb: "The hypotenuse is always the longest side." }], m: "10.44 > 8", say: "It passes the check." }],
         why: "Sketch, pick a ratio, solve." },
-      { type: "num", kicker: "On your own", prompt: "The side opposite angle $A$ is 3 and the hypotenuse is 5. Find $A$ in degrees. (Type arcsin(3/5)*180/pi.)", pre: "$A \\approx$", post: "degrees", answer: 36.87, tol: 0.006, calc: true, skill: "Solve a right triangle",
+      { type: "num", kicker: "On your own", prompt: "The side opposite angle $A$ is 3 and the hypotenuse is 5. Find $A$ in degrees. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$A \\approx$", post: "degrees", answer: 36.87, tol: 0.006, calc: true, skill: "Solve a right triangle",
         near: [{ v: 0.6435, tol: 0.001, fb: "That is the angle in **radians**. Multiply by $\\frac{180}{\\pi}$." }, { v: 0.6, fb: "That is $\\sin A$, not the angle $A$. Use the inverse function." }], hints: ["$\\sin A = \\frac{3}{5}$, so $A = \\sin^{-1}(0.6)$."], why: "$\\sin^{-1}(0.6) \\approx 36.87^\\circ$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**Solve the whole triangle.** The hypotenuse is 20 and one angle is $25^\\circ$. Find the other angle and both legs.",
@@ -1294,7 +1294,7 @@
         prompt: "Max types sin(35) into his calculator and gets $-0.43$. The answer should be $0.57$. What is the problem?",
         options: [{ t: "The calculator is in radian mode: it is computing $\\sin(35\\text{ radians})$. Use degree mode, or type sin(35°)." }, { t: "Nothing is wrong.", fb: "$\\sin 35^\\circ$ must be positive: it is a first-quadrant angle." }, { t: "He should use cosine.", fb: "The calculator mode is the issue." }],
         answer: 0, skill: "Solve a right triangle", hints: ["35 radians is many full turns."], why: "$\\sin 35^\\circ \\approx 0.574$." },
-      { type: "num", kicker: "Use it", prompt: "A 6 m ladder leans against a wall and makes a $70^\\circ$ angle with the ground. How high up the wall does it reach? (Type 6*sin(70°).)", pre: "height $\\approx$", post: "m", answer: 5.64, tol: 0.006, calc: true, skill: "Solve a right triangle",
+      { type: "num", kicker: "Use it", prompt: "A 6 m ladder leans against a wall and makes a $70^\\circ$ angle with the ground. How high up the wall does it reach? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "height $\\approx$", post: "m", answer: 5.64, tol: 0.006, calc: true, skill: "Solve a right triangle",
         near: [{ v: 2.05, tol: 0.006, fb: "That is $6\\cos 70^\\circ$, the distance of the foot from the wall." }], hints: ["The height is the opposite side: $6\\sin 70^\\circ$."], why: "$6\\sin 70^\\circ \\approx 5.64$ m." }
     ]
   });
@@ -1308,7 +1308,7 @@
     blurb: "Book 5.4 · Heights and distances you cannot measure directly.",
     mins: 14, v: 1,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "Use a calculator: $\\tan 40^\\circ$ to 2 decimal places. (Type tan(40°).)", answer: 0.84, tol: 0.006, calc: true, skill: "Calculator trig",
+      { type: "num", kicker: "Warm up", prompt: "Use a calculator: $\\tan 40^\\circ$ to 2 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", answer: 0.84, tol: 0.006, calc: true, skill: "Calculator trig",
         near: [{ v: -2.23, tol: 0.006, fb: "That is the calculator in radian mode. Use degrees: type tan(40°)." }], hints: ["tan(40°) $\\approx$ 0.839."], why: "$\\tan 40^\\circ \\approx 0.84$." },
       { type: "learn", kicker: "Explore",
         prompt: "You stand 50 m from a tower that is **60 m** tall. The **angle of elevation** is the angle your line of sight makes above the horizontal. Slide the angle to find where your line of sight meets the **top** of the tower.",
@@ -1334,10 +1334,10 @@
         how: HOW_16, skill: "Elevation and depression",
         steps: [
           { step: 1, ask: "The angle of depression is measured from…", type: "choice", answer: 0, options: [{ t: "the horizontal, looking down" }, { t: "the vertical", fb: "Both elevation and depression are measured from the horizontal." }], m: "25^\\circ \\text{ below the horizontal}", say: "By alternate angles, the angle at the boat is also $25^\\circ$." },
-          { step: 2, ask: "The height 30 is opposite the $25^\\circ$ angle at the boat. $\\tan 25^\\circ = \\dfrac{30}{d}$, so $d = \\dfrac{30}{\\tan 25^\\circ}$. (Type 30/tan(25°).)", type: "num", pre: "$d \\approx$", post: "m", answer: 64.33, tol: 0.006, calc: true, near: [{ v: 13.99, tol: 0.006, fb: "That is $30\\tan 25^\\circ$. The distance is on the **bottom** of the ratio." }], hint: "$\\tan 25^\\circ \\approx 0.4663$.", m: "d \\approx 64.33", say: "About 64.3 metres." },
+          { step: 2, ask: "The height 30 is opposite the $25^\\circ$ angle at the boat. $\\tan 25^\\circ = \\dfrac{30}{d}$, so $d = \\dfrac{30}{\\tan 25^\\circ}$. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", type: "num", pre: "$d \\approx$", post: "m", answer: 64.33, tol: 0.006, calc: true, near: [{ v: 13.99, tol: 0.006, fb: "That is $30\\tan 25^\\circ$. The distance is on the **bottom** of the ratio." }], hint: "$\\tan 25^\\circ \\approx 0.4663$.", m: "d \\approx 64.33", say: "About 64.3 metres." },
           { step: 3, ask: "Is that sensible? A shallow $25^\\circ$ angle should put the boat…", type: "choice", answer: 0, options: [{ t: "farther away than the lighthouse is high" }, { t: "closer than 30 m", fb: "A shallow angle means a long way out." }], m: "64 > 30", say: "It passes the check." }],
         why: "Draw, ratio, solve." },
-      { type: "num", kicker: "On your own", prompt: "A pole 8 m tall casts a shadow 5 m long. What is the angle of elevation of the sun, in degrees? (Type arctan(8/5)*180/pi.)", pre: "$\\theta \\approx$", post: "degrees", answer: 57.99, tol: 0.006, calc: true, skill: "Elevation and depression",
+      { type: "num", kicker: "On your own", prompt: "A pole 8 m tall casts a shadow 5 m long. What is the angle of elevation of the sun, in degrees? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$\\theta \\approx$", post: "degrees", answer: 57.99, tol: 0.006, calc: true, skill: "Elevation and depression",
         near: [{ v: 32.01, tol: 0.006, fb: "That is the angle at the **top** of the pole. The sun's elevation is at the ground: opposite is the pole." }], hints: ["$\\tan\\theta = \\frac{8}{5}$."], why: "$\\tan^{-1}(1.6) \\approx 57.99^\\circ$." },
       { type: "learn", kicker: "A harder case",
         prompt: "**Two angles.** From one spot the angle of elevation to the top of a tower is $30^\\circ$. After walking 40 m **towards** it, the angle is $45^\\circ$. How tall is the tower?",
@@ -1348,13 +1348,13 @@
           { step: 3, m: "x(\\sqrt{3} - 1) = 40 \\ \\Rightarrow \\ x \\approx 54.64", say: "Multiply by $\\sqrt{3}$, gather the $x$ terms and divide." },
           { step: 3, m: "h = x \\approx 54.64 \\text{ m}", say: "The tower is about 54.6 metres tall." }] },
         gate: true, then: "$h \\approx 54.64$ m." },
-      { type: "num", kicker: "Try it", prompt: "A road rises 10 m for every 100 m of horizontal distance (a 10% grade). What angle does it make with the horizontal, in degrees? (Type arctan(0.1)*180/pi.)", pre: "$\\theta \\approx$", post: "degrees", answer: 5.71, tol: 0.006, calc: true, skill: "Elevation and depression",
+      { type: "num", kicker: "Try it", prompt: "A road rises 10 m for every 100 m of horizontal distance (a 10% grade). What angle does it make with the horizontal, in degrees? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$\\theta \\approx$", post: "degrees", answer: 5.71, tol: 0.006, calc: true, skill: "Elevation and depression",
         near: [{ v: 10, fb: "A 10% grade is not a 10° angle: use $\\tan^{-1}\\left(\\frac{10}{100}\\right)$." }], hints: ["$\\tan\\theta = \\frac{10}{100}$."], why: "$\\tan^{-1}(0.1) \\approx 5.71^\\circ$." },
       { type: "choice", kicker: "Find the error",
         prompt: "From the top of a cliff the angle of depression to a boat is $20^\\circ$. Ana says the angle of elevation of the cliff top, seen from the boat, is $70^\\circ$, \"because depression is measured from the vertical\". What is wrong?",
         options: [{ t: "Both are measured from the **horizontal**. The two horizontals are parallel, so the angle of elevation is also $20^\\circ$." }, { t: "Nothing is wrong.", fb: "Depression is measured down from the horizontal, not from the vertical." }, { t: "The two angles are not related.", fb: "Alternate angles between parallel lines are equal." }],
         answer: 0, skill: "Elevation and depression", hints: ["Parallel horizontals: alternate angles are equal."], why: "Depression and elevation are equal." },
-      { type: "num", kicker: "Use it", prompt: "A drone is 40 m above the ground and flies so that the angle of elevation from a point on the ground is $35^\\circ$. How far from the point is it, along the line of sight? (Type 40/sin(35°).)", pre: "distance $\\approx$", post: "m", answer: 69.74, tol: 0.006, calc: true, skill: "Elevation and depression",
+      { type: "num", kicker: "Use it", prompt: "A drone is 40 m above the ground and flies so that the angle of elevation from a point on the ground is $35^\\circ$. How far from the point is it, along the line of sight? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "distance $\\approx$", post: "m", answer: 69.74, tol: 0.006, calc: true, skill: "Elevation and depression",
         near: [{ v: 57.13, tol: 0.006, fb: "That is the **horizontal** distance, $\\frac{40}{\\tan 35^\\circ}$. The line of sight is the hypotenuse." }], hints: ["Height is opposite; the line of sight is the hypotenuse: sine."], why: "$\\frac{40}{\\sin 35^\\circ} \\approx 69.74$ m." }
     ]
   });
@@ -1397,14 +1397,14 @@
     { id: "pc5-arc", title: "Arc length and sector area", lesson: 6,
       gen: function (R) {
         var r = R.int(3, 12), d = R.pick([30, 45, 60, 90, 120, 150, 180]), th = d * Math.PI / 180;
-        if (R.chance(0.5)) { var s = Math.round(r * th * 100) / 100; return { type: "num", prompt: "Find the arc length of a sector with radius " + r + " and angle $" + d + "^\\circ$, to 2 decimal places. (Type " + r + "*" + d + "*pi/180.)", pre: "$s \\approx$", answer: s, tol: 0.006, calc: true, near: near(s, [{ v: r * d, fb: "Convert the angle to radians first: the formula $s = r\\theta$ needs radians." }]), hints: ["$\\theta = \\frac{" + d + "\\pi}{180}$, then $s = r\\theta$."], why: "$" + r + " \\cdot " + radTex(d) + " \\approx " + s + "$." }; }
+        if (R.chance(0.5)) { var s = Math.round(r * th * 100) / 100; return { type: "num", prompt: "Find the arc length of a sector with radius " + r + " and angle $" + d + "^\\circ$, to 2 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$s \\approx$", answer: s, tol: 0.006, calc: true, near: near(s, [{ v: r * d, fb: "Convert the angle to radians first: the formula $s = r\\theta$ needs radians." }]), hints: ["$\\theta = \\frac{" + d + "\\pi}{180}$, then $s = r\\theta$."], why: "$" + r + " \\cdot " + radTex(d) + " \\approx " + s + "$." }; }
         var A = Math.round(0.5 * r * r * th * 100) / 100;
-        return { type: "num", prompt: "Find the area of a sector with radius " + r + " and angle $" + d + "^\\circ$, to 2 decimal places. (Type 0.5*" + r + "^2*" + d + "*pi/180.)", pre: "$A \\approx$", answer: A, tol: 0.006, calc: true, near: near(A, [{ v: Math.round(r * th * 100) / 100, tol: 0.006, fb: "That is the arc length. The area is $\\frac{1}{2}r^2\\theta$." }]), hints: ["$A = \\frac{1}{2}r^2\\theta$ with $\\theta$ in radians."], why: "$\\frac{1}{2} \\cdot " + r * r + " \\cdot " + radTex(d) + " \\approx " + A + "$." };
+        return { type: "num", prompt: "Find the area of a sector with radius " + r + " and angle $" + d + "^\\circ$, to 2 decimal places. (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$A \\approx$", answer: A, tol: 0.006, calc: true, near: near(A, [{ v: Math.round(r * th * 100) / 100, tol: 0.006, fb: "That is the arc length. The area is $\\frac{1}{2}r^2\\theta$." }]), hints: ["$A = \\frac{1}{2}r^2\\theta$ with $\\theta$ in radians."], why: "$\\frac{1}{2} \\cdot " + r * r + " \\cdot " + radTex(d) + " \\approx " + A + "$." };
       } },
     { id: "pc5-speed", title: "Angular and linear speed", lesson: 7,
       gen: function (R) {
         var r = R.pick([0.25, 0.5, 2, 3, 5, 10, 20]), k = R.int(2, 6), v = Math.round(r * k * 2 * Math.PI * 100) / 100;
-        return { type: "num", prompt: "A wheel of radius " + r + " m turns " + k + " times every second. How fast does a point on its rim move, to 2 decimal places? (Type " + r + "*" + k + "*2*pi.)", pre: "$v \\approx$", post: "m/s", answer: v, tol: 0.006, calc: true,
+        return { type: "num", prompt: "A wheel of radius " + r + " m turns " + k + " times every second. How fast does a point on its rim move, to 2 decimal places? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$v \\approx$", post: "m/s", answer: v, tol: 0.006, calc: true,
           near: near(v, [{ v: r * k, fb: "Each turn is $2\\pi$ radians: $\\omega = " + k + " \\cdot 2\\pi$, then $v = r\\omega$." }]),
           hints: ["$\\omega = " + k + " \\cdot 2\\pi$, then $v = r\\omega$."], why: "$" + r + " \\cdot " + 2 * k + "\\pi \\approx " + v + "$ m/s." };
       } },
@@ -1412,7 +1412,7 @@
       gen: function (R) {
         var T = R.pick(TRIPLES5), a = R.pick([0, 1]) ? T[0] : T[1], b = a === T[0] ? T[1] : T[0], c = T[2], sx = R.pick([-1, 1]), sy = R.pick([-1, 1]), ask = R.pick(["cos", "sin"]);
         var x = sx * a, y = sy * b, ans = (ask === "cos" ? x : y) / c, q = sx > 0 ? (sy > 0 ? "I" : "IV") : (sy > 0 ? "II" : "III");
-        return { type: "num", prompt: "The point $\\left(" + ratTex(x, c) + ",\\ " + ratTex(y, c) + "\\right)$ is on the unit circle at angle $\\theta$. Find $\\" + ask + "\\theta$. (A fraction like " + x + "/" + c + " is fine.)", pre: "$\\" + ask + "\\theta =$", answer: ans, tol: 0.001,
+        return { type: "num", prompt: "The point $\\left(" + ratTex(x, c) + ",\\ " + ratTex(y, c) + "\\right)$ is on the unit circle at angle $\\theta$. Find $\\" + ask + "\\theta$. (A fraction is fine.)", pre: "$\\" + ask + "\\theta =$", answer: ans, tol: 0.001,
           near: near(ans, [{ v: (ask === "cos" ? y : x) / c, tol: 0.001, fb: "Cosine is the $x$-coordinate and sine is the $y$-coordinate." }, { v: -ans, tol: 0.001, fb: "Check the sign: the point is in quadrant " + q + "." }]),
           hints: ["$(x, y) = (\\cos\\theta, \\sin\\theta)$."], why: "$\\" + ask + "\\theta = " + ratTex(ask === "cos" ? x : y, c) + "$." };
       } },
@@ -1421,7 +1421,7 @@
         var T = R.pick(TRIPLES5), a = T[0], b = T[1], c = T[2], q = R.int(1, 4), sx = (q === 1 || q === 4) ? 1 : -1, sy = (q === 1 || q === 2) ? 1 : -1, givenSin = R.chance(0.5);
         var gv = givenSin ? sy * b : sx * b, ansN = givenSin ? sx * a : sy * a;
         var ans = ansN / c, gname = givenSin ? "sin" : "cos", aname = givenSin ? "cos" : "sin";
-        return { type: "num", prompt: "$\\" + gname + "\\theta = " + ratTex(gv, c) + "$ and $\\theta$ is in quadrant " + ROM[q] + ". Find $\\" + aname + "\\theta$. (A fraction like " + ansN + "/" + c + " is fine.)", pre: "$\\" + aname + "\\theta =$", answer: ans, tol: 0.001,
+        return { type: "num", prompt: "$\\" + gname + "\\theta = " + ratTex(gv, c) + "$ and $\\theta$ is in quadrant " + ROM[q] + ". Find $\\" + aname + "\\theta$. (A fraction is fine.)", pre: "$\\" + aname + "\\theta =$", answer: ans, tol: 0.001,
           near: near(ans, [{ v: -ans, tol: 0.001, fb: "Take the sign from the quadrant: " + (aname === "cos" ? "$x$" : "$y$") + " is " + (ans > 0 ? "positive" : "negative") + " in quadrant " + ROM[q] + "." }, { v: 1 - Math.abs(gv / c), tol: 0.001, fb: "The identity uses squares: $\\" + aname + "^2\\theta = 1 - \\" + gname + "^2\\theta$." }]),
           hints: ["$\\cos^2\\theta + \\sin^2\\theta = 1$, then choose the sign."], why: "$\\" + aname + "^2\\theta = 1 - \\left(" + ratTex(Math.abs(gv), c) + "\\right)^2$, so $\\" + aname + "\\theta = " + ratTex(ansN, c) + "$." };
       } },
@@ -1483,15 +1483,15 @@
     { id: "pc5-solvetri", title: "Find a side of a right triangle", lesson: 16,
       gen: function (R) {
         var A = R.pick([20, 25, 30, 35, 40, 50, 55, 65]), H = R.int(5, 20), t = R.int(0, 2), a = A * Math.PI / 180;
-        if (t === 0) { var o = Math.round(H * Math.sin(a) * 100) / 100; return { type: "num", prompt: "A right triangle has hypotenuse " + H + " and an angle $A = " + A + "^\\circ$. How long is the side **opposite** $A$? (Type " + H + "*sin(" + A + "°).)", pre: "$O \\approx$", answer: o, tol: 0.006, calc: true, near: near(o, [{ v: Math.round(H * Math.cos(a) * 100) / 100, tol: 0.006, fb: "That is the **adjacent** side, $H\\cos A$. Opposite is $H\\sin A$." }]), hints: ["$\\sin A = \\frac{O}{H}$."], why: "$" + H + "\\sin " + A + "^\\circ \\approx " + o + "$." }; }
-        if (t === 1) { var ad = Math.round(H * Math.cos(a) * 100) / 100; return { type: "num", prompt: "A right triangle has hypotenuse " + H + " and an angle $A = " + A + "^\\circ$. How long is the side **adjacent** to $A$? (Type " + H + "*cos(" + A + "°).)", pre: "adj $\\approx$", answer: ad, tol: 0.006, calc: true, near: near(ad, [{ v: Math.round(H * Math.sin(a) * 100) / 100, tol: 0.006, fb: "That is the **opposite** side, $H\\sin A$. Adjacent is $H\\cos A$." }]), hints: ["$\\cos A = \\frac{\\text{adj}}{H}$."], why: "$" + H + "\\cos " + A + "^\\circ \\approx " + ad + "$." }; }
-        var adj = H, hyp = Math.round(adj / Math.cos(a) * 100) / 100; return { type: "num", prompt: "In a right triangle the side **adjacent** to $A = " + A + "^\\circ$ is " + adj + ". How long is the hypotenuse? (Type " + adj + "/cos(" + A + "°).)", pre: "$H \\approx$", answer: hyp, tol: 0.006, calc: true, near: near(hyp, [{ v: Math.round(adj * Math.cos(a) * 100) / 100, tol: 0.006, fb: "The unknown is on the **bottom** of $\\cos A = \\frac{\\text{adj}}{H}$: divide." }]), hints: ["$H = \\frac{\\text{adj}}{\\cos A}$."], why: "$\\frac{" + adj + "}{\\cos " + A + "^\\circ} \\approx " + hyp + "$." };
+        if (t === 0) { var o = Math.round(H * Math.sin(a) * 100) / 100; return { type: "num", prompt: "A right triangle has hypotenuse " + H + " and an angle $A = " + A + "^\\circ$. How long is the side **opposite** $A$? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$O \\approx$", answer: o, tol: 0.006, calc: true, near: near(o, [{ v: Math.round(H * Math.cos(a) * 100) / 100, tol: 0.006, fb: "That is the **adjacent** side, $H\\cos A$. Opposite is $H\\sin A$." }]), hints: ["$\\sin A = \\frac{O}{H}$."], why: "$" + H + "\\sin " + A + "^\\circ \\approx " + o + "$." }; }
+        if (t === 1) { var ad = Math.round(H * Math.cos(a) * 100) / 100; return { type: "num", prompt: "A right triangle has hypotenuse " + H + " and an angle $A = " + A + "^\\circ$. How long is the side **adjacent** to $A$? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "adj $\\approx$", answer: ad, tol: 0.006, calc: true, near: near(ad, [{ v: Math.round(H * Math.sin(a) * 100) / 100, tol: 0.006, fb: "That is the **opposite** side, $H\\sin A$. Adjacent is $H\\cos A$." }]), hints: ["$\\cos A = \\frac{\\text{adj}}{H}$."], why: "$" + H + "\\cos " + A + "^\\circ \\approx " + ad + "$." }; }
+        var adj = H, hyp = Math.round(adj / Math.cos(a) * 100) / 100; return { type: "num", prompt: "In a right triangle the side **adjacent** to $A = " + A + "^\\circ$ is " + adj + ". How long is the hypotenuse? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$H \\approx$", answer: hyp, tol: 0.006, calc: true, near: near(hyp, [{ v: Math.round(adj * Math.cos(a) * 100) / 100, tol: 0.006, fb: "The unknown is on the **bottom** of $\\cos A = \\frac{\\text{adj}}{H}$: divide." }]), hints: ["$H = \\frac{\\text{adj}}{\\cos A}$."], why: "$\\frac{" + adj + "}{\\cos " + A + "^\\circ} \\approx " + hyp + "$." };
       } },
     { id: "pc5-elev", title: "Angles of elevation", lesson: 17,
       gen: function (R) {
         var d = R.pick([20, 30, 40, 50, 80]), A = R.pick([20, 25, 30, 35, 40, 50, 55]), h = Math.round(d * Math.tan(A * Math.PI / 180) * 100) / 100;
-        if (R.chance(0.6)) return { type: "num", prompt: "You stand " + d + " m from a building. The angle of elevation to its top is $" + A + "^\\circ$. How tall is the building (ignore your height)? (Type " + d + "*tan(" + A + "°).)", pre: "$h \\approx$", post: "m", answer: h, tol: 0.006, calc: true, near: near(h, [{ v: Math.round(d / Math.tan(A * Math.PI / 180) * 100) / 100, tol: 0.006, fb: "Height is the **opposite** side: $h = d\\tan A$, not $\\frac{d}{\\tan A}$." }]), hints: ["$\\tan A = \\frac{h}{d}$."], why: "$" + d + "\\tan " + A + "^\\circ \\approx " + h + "$ m." };
-        var ang = Math.round(Math.atan(h / d) * 180 / Math.PI * 100) / 100; return { type: "num", prompt: "A tree is " + h + " m tall and you stand " + d + " m from it. What is the angle of elevation to its top, in degrees? (Type arctan(" + h + "/" + d + ")*180/pi.)", pre: "$\\theta \\approx$", post: "degrees", answer: ang, tol: 0.006, calc: true, near: near(ang, [{ v: Math.round((90 - ang) * 100) / 100, tol: 0.006, fb: "That is the other acute angle. The elevation is measured at your feet, from the horizontal." }]), hints: ["$\\tan\\theta = \\frac{h}{d}$."], why: "$\\tan^{-1}\\left(\\frac{" + h + "}{" + d + "}\\right) \\approx " + ang + "^\\circ$." };
+        if (R.chance(0.6)) return { type: "num", prompt: "You stand " + d + " m from a building. The angle of elevation to its top is $" + A + "^\\circ$. How tall is the building (ignore your height)? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$h \\approx$", post: "m", answer: h, tol: 0.006, calc: true, near: near(h, [{ v: Math.round(d / Math.tan(A * Math.PI / 180) * 100) / 100, tol: 0.006, fb: "Height is the **opposite** side: $h = d\\tan A$, not $\\frac{d}{\\tan A}$." }]), hints: ["$\\tan A = \\frac{h}{d}$."], why: "$" + d + "\\tan " + A + "^\\circ \\approx " + h + "$ m." };
+        var ang = Math.round(Math.atan(h / d) * 180 / Math.PI * 100) / 100; return { type: "num", prompt: "A tree is " + h + " m tall and you stand " + d + " m from it. What is the angle of elevation to its top, in degrees? (The box accepts expressions such as 2*ln(5), 3*sin(20°) or 1.05^3.)", pre: "$\\theta \\approx$", post: "degrees", answer: ang, tol: 0.006, calc: true, near: near(ang, [{ v: Math.round((90 - ang) * 100) / 100, tol: 0.006, fb: "That is the other acute angle. The elevation is measured at your feet, from the horizontal." }]), hints: ["$\\tan\\theta = \\frac{h}{d}$."], why: "$\\tan^{-1}\\left(\\frac{" + h + "}{" + d + "}\\right) \\approx " + ang + "^\\circ$." };
       } }
   ];
   L.unit("precalc", 5, {

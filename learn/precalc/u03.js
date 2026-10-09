@@ -1587,7 +1587,7 @@
     blurb: "Book 3.7 · Intercepts, asymptotes and a few test points make the sketch.",
     mins: 14, v: 1,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "For $f(x) = \\dfrac{x - 1}{x + 2}$, find $f(0)$. (A fraction like -1/2 is fine.)", pre: "$f(0) =$", answer: -0.5, tol: 1e-9, shown: "-1/2", skill: "Evaluate a function",
+      { type: "num", kicker: "Warm up", prompt: "For $f(x) = \\dfrac{x - 1}{x + 2}$, find $f(0)$. (A fraction is fine.)", pre: "$f(0) =$", answer: -0.5, tol: 1e-9, shown: "-1/2", skill: "Evaluate a function",
         near: [{ v: 0.5, tol: 1e-9, fb: "Watch the sign: $\\frac{0 - 1}{0 + 2}$ is negative." }], hints: ["$\\frac{0 - 1}{0 + 2}$."], why: "$\\frac{-1}{2} = -\\frac{1}{2}$." },
       { type: "learn", kicker: "Explore",
         prompt: "$y = \\frac{a}{x - h} + k$ is $\\frac{1}{x}$ moved and stretched. Slide $a$, $h$, $k$ onto the dashed graph. Watch the **purple lines**.",
