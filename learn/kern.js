@@ -120,12 +120,18 @@
   var name = document.querySelector(".lx-name");
   if (name) name.textContent = "Kern";
 
-  /* The welcome page: one sentence and one button. app.js still owns the
-     sign-in (#gateGo, #gErr) and shows or hides the gate. */
+  /* The welcome page: the bar, one sentence and one button. app.js still owns
+     the sign-in (#gateGo, #gErr) and shows or hides the gate. */
   var gate = document.getElementById("gate");
   if (!gate) return;
   gate.className = "kern-gate ld-wait";
   gate.innerHTML =
+    '<header class="kern-gatebar"><div class="kern-gatebar-in">' +
+      '<svg class="kern-mark" viewBox="12 12 76 76" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" ' +
+        'd="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg>' +
+      '<span class="kern-gatename">Kern</span>' +
+      '<button class="lx-btn" type="button" id="gateBarGo">Sign in</button>' +
+    '</div></header>' +
     '<main class="kern-hero">' +
       '<svg class="kern-mark" viewBox="12 12 76 76" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" ' +
         'd="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg>' +
@@ -139,4 +145,6 @@
         'What you learn here is yours: no one sees it, and nothing is marked.</p>' +
     '</main>' +
     '<div id="ldSignin" hidden></div>';
+  // The bar's button is the page's button: #gateGo carries app.js's sign-in.
+  document.getElementById("gateBarGo").addEventListener("click", function () { document.getElementById("gateGo").click(); });
 })();
