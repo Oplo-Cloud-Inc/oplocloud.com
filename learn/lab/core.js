@@ -101,6 +101,7 @@ window.OPLO_LAB = (function () {
     "precalc/u09.js": "2923a153",
     "precalc/u10.js": "d70d0567",
     "precalc/u11.js": "09195f0b",
+    "precalc/u12.js": "890ff673",
     "g8/u01.js": "3c0c775e",
     "geo/u01.js": "a3bd33f8",
     "geo/u02.js": "327da4b8",
@@ -267,7 +268,7 @@ window.OPLO_LAB = (function () {
         } else if (cmd === "color") {
           var col = group(), what = group();
           push('<span class="mc-' + esc(col) + '">' + mathHTML(what) + "</span>", "val");
-        } else if (cmd === "left" || cmd === "right" || cmd === "big" || cmd === "Big") {
+        } else if (cmd === "left" || cmd === "right" || cmd === "big" || cmd === "Big" || cmd === "displaystyle" || cmd === "textstyle") {
           /* size hints: the brackets that follow are enough */
         } else if (cmd === "," || cmd === ";" || cmd === " ") {
           push('<span class="msp"></span>', prev);
