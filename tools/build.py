@@ -2762,7 +2762,19 @@ def split_top(prelude):
     return [p.strip() for p in parts if p.strip()]
 
 
-def scope_css(css, prefix):
+def place(prefix, sel, overlay):
+    """One selector under `prefix`. On a page that scrolls inside an overlay
+    there is no <body> below the prefix to match, so a selector that begins at
+    the body begins at the overlay instead: the site draws the bar's glass on
+    body::before, and here that layer is the overlay's own ::before."""
+    if overlay:
+        m = re.match(r"^(\.bars-dark )?body(?![\w-])(.*)$", sel)
+        if m:
+            return prefix + (".bars-dark" if m.group(1) else "") + m.group(2)
+    return prefix + " " + sel
+
+
+def scope_css(css, prefix, overlay=False):
     """Every selector in `css` prefixed, @-rules left as they are. The input
     is this site's own stylesheet, with no strings holding braces."""
     css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
@@ -2773,7 +2785,7 @@ def scope_css(css, prefix):
             if head.startswith("@"):
                 out.append(head + " {")
             else:
-                out.append(", ".join(prefix + " " + s for s in split_top(head)) + " {")
+                out.append(", ".join(place(prefix, s, overlay) for s in split_top(head)) + " {")
             buf = ""
         elif ch == "}":
             body = " ".join(buf.split())
@@ -2813,10 +2825,15 @@ def site_footer(notes=None):
     return absolute(foot[:foot.index("<script src=")]).strip() + "\n"
 
 
-def chrome_css(path, scope):
+def chrome_css(path, scope, overlay=False):
     """This site's bar, chapter bar and footer, cut from oplo-design.css by
     section heading and scoped under `scope`, so none of it can reach the page
-    around it and nothing there can reach it."""
+    around it and nothing there can reach it.
+
+    overlay says the page scrolls inside `scope` rather than in the window
+    (OEdu's and Kern's #gate). The bar's glass is a layer of the body there is
+    no body for; it becomes the overlay's own ::before, and the few tokens it
+    reads are put on the overlay."""
     src = io.open(os.path.join(ROOT, "assets/css/oplo-design.css"), encoding="utf-8").read()
     tokens = re.sub(r"/\*.*?\*/", "", re.search(r":root\s*\{(.*?)\}", src, re.S).group(1), flags=re.S)
     # One declaration per line. A value may run over several lines in the
@@ -2832,11 +2849,26 @@ def chrome_css(path, scope):
            # indent.
            + ", ".join(f"{scope} .{p}" for p in ("nav", "chapter", "foot", "notes")) + " {\n"
            + tokens + "\n}\n\n"
+           + (glass_tokens(src, scope) if overlay else "")
            + scope_css(css_section(src, "Nav") + css_section(src, "Chapter bar")
-                       + css_section(src, "Footer") + css_section(src, "Notes"), scope)
+                       + css_section(src, "Footer") + css_section(src, "Notes"), scope, overlay)
            + "@media (prefers-reduced-motion: reduce) {\n"
              f"  {scope} .nav-links, {scope} .nav-links a {{ transition: none !important; }}\n}}\n")
     io.open(os.path.join(ROOT, path), "w", encoding="utf-8").write(css)
+
+
+def glass_tokens(src, scope):
+    """The tokens the glass layer reads, on the overlay itself (the full set
+    sits on the bar, which is not where ::before of the overlay looks)."""
+    want = ("--nav", "--ease", "--glass", "--glass-dark", "--glass-blur", "--glass-edge", "--glass-edge-dark")
+    root = re.search(r":root\s*\{(.*?)\}", src, re.S).group(1)
+    root = re.sub(r"/\*.*?\*/", "", root, flags=re.S)
+    lines = []
+    for t in root.split(";"):
+        t = " ".join(t.split())
+        if t and t.split(":")[0].strip() in want:
+            lines.append("  " + t + ";")
+    return scope + " {\n" + "\n".join(lines) + "\n}\n\n"
 
 
 def chrome_js(folder):
@@ -2856,7 +2888,7 @@ def oedu_chrome():
     kern = chapter(0, "Kern", KERN_SECTIONS, "#top", ("Sign in", "#signin"))
     kern = kern.replace('class="chapter-cta" href="#signin"', 'class="chapter-cta" href="#signin" data-signin')
     regions(OEDU_PAGE, (("nav", absolute(nav(0))), ("chapter", sub), ("kernchapter", kern), ("foot", site_footer())))
-    chrome_css(OEDU_CSS, ".ld")
+    chrome_css(OEDU_CSS, ".ld", overlay=True)
     chrome_js("learn")
     print(f"  wrote {OEDU_PAGE} bar, chapter bar and footer, {OEDU_CSS}, learn/oplo-menu.js and learn/oplo-search.js")
 

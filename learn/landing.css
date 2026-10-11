@@ -104,7 +104,13 @@
   --rule: rgba(255, 255, 255, .16);
   --blue: #2997ff;
 }
-.ld .nav::before { background-color: rgba(22, 22, 23, .72); }
+/* The glass is the overlay's own ::before (oplo-chrome.css: the site draws it
+   on body::before, and a body is not here — this page scrolls inside #gate),
+   and it is dark for the same reason the bar is. An open menu or search is
+   one sheet with the bar, so the strip takes the sheet's colour. */
+.ld::before { background-color: var(--glass-dark); border-bottom-color: var(--glass-edge-dark); }
+.ld:has(.nav.menu-open)::before, .ld:has(.nav.searching)::before, .ld:has(.nav.open)::before { background-color: #161617; }
+.ld.ld-wait::before { visibility: hidden; }
 .ld .chapter {
   --ink: #f5f5f7; --ink-2: #a1a1a6;
   background: rgba(22, 22, 23, .72); color: var(--ink);

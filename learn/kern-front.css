@@ -22,11 +22,12 @@
   --kf-serif: "Newsreader", Georgia, "Times New Roman", serif;
   --kf-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 
-  background: #efece7; color: var(--kf-ink); font-family: var(--kf-sans); font-size: 17px; line-height: 1.6; letter-spacing: normal;
-  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  background: #efece7;
 }
+/* The page's own type. The bars and the footer keep what landing.css gives
+   them (the site's stack, tracking and leading), as on OEdu's page. */
+#gate.kf .kf-main { background: #fff; color: var(--kf-ink); font-family: var(--kf-sans); font-size: 17px; line-height: 1.6; letter-spacing: normal; text-rendering: optimizeLegibility; }
 #gate.kf .kf-main ul, #gate.kf .kf-main ol { margin: 0; padding: 0; list-style: none; }
-#gate.kf .kf-main { background: #fff; }
 body:has(#gate.kf:not([hidden])) .tt-open { display: none; }
 
 #gate.kf .kf-wrap { width: min(1110px, 100% - 64px); margin-inline: auto; }
@@ -62,7 +63,8 @@ body:has(#gate.kf:not([hidden])) .tt-open { display: none; }
    photograph; Kern's opens on paper, so the bar and everything it opens are
    light. (The chapter bar below it already follows the page, via .ld-light.) */
 #gate.kf .nav { --paper: #fff; --ink: #1d1d1f; --ink-2: #6e6e73; --ink-3: #6e6e73; --rule: #d2d2d7; --blue: #0066cc; }
-#gate.kf .nav::before { background-color: rgba(245, 243, 240, .72); }
+#gate.kf::before { background-color: var(--glass); border-bottom-color: var(--glass-edge); }
+#gate.kf:has(.nav.menu-open)::before, #gate.kf:has(.nav.searching)::before, #gate.kf:has(.nav.open)::before { background-color: #fff; }
 
 #gate.kf .kf-hero {
   position: relative; width: min(1216px, 100% - 96px); margin: 0 auto; padding: 70px 0 104px; min-height: 700px;
