@@ -938,6 +938,14 @@ window.OPLO_CHALLENGE = (function () {
   function dispose() {
     DISPOSE.splice(0).forEach(function (f) { try { f(); } catch (e) { /* already gone */ } });
   }
+  // A course can dress its own cards (Grade 1 reads each one aloud; Kern's courses add sound and the quiet-moment glow).
+  // `cardHook` is the one slot Grade 1 took; `cardHooks` is a list any kit may add to. Each is told the card, the step, and
+  // a way to register its clean-up.
+  function cardHooks(card, s) {
+    var C = window.OPLO_CHALLENGE || {}, reg = function (f) { DISPOSE.push(f); };
+    if (C.cardHook) C.cardHook(card, s, reg);
+    (C.cardHooks || []).forEach(function (f) { try { f(card, s, reg); } catch (e) { /* a hook must never stop a lesson */ } });
+  }
   function build(type, spec, seed, mode) {
     var ui = KINDS[type](spec, seed, mode || {});
     if (ui.destroy) DISPOSE.push(ui.destroy);
@@ -960,8 +968,7 @@ window.OPLO_CHALLENGE = (function () {
     prompt.tabIndex = -1;
     card.appendChild(prompt);
     // A course can dress its own cards (Grade 1 reads each one aloud): a step it owns carries `k1`.
-    var cardHook = window.OPLO_CHALLENGE && window.OPLO_CHALLENGE.cardHook;
-    if (cardHook) cardHook(card, s, function (f) { DISPOSE.push(f); });
+    cardHooks(card, s);
 
     var foot = el("footer", "ch-foot");
     if (s.type === "learn") {
@@ -1236,7 +1243,7 @@ window.OPLO_CHALLENGE = (function () {
     var endH = P.path.endTitle || (P.path.review ? "Review done." : "Challenge complete."), endL = P.path.endLine ? P.path.endLine(clean.length, steps.length) : clean.length + " of " + steps.length + " solved first try, without a hint.";
     card.appendChild(el("h2", "ch-endh", endH));
     card.appendChild(el("p", "ch-endsum", endL));
-    if (P.path.k1 && window.OPLO_CHALLENGE.cardHook) window.OPLO_CHALLENGE.cardHook(card, { k1: 1, say: endH + " " + endL }, function (f) { DISPOSE.push(f); });
+    cardHooks(card, { k1: P.path.k1 ? 1 : 0, end: 1, say: endH + " " + endL });
     var two = el("div", "ch-endcols");
     var a = skills(clean), b = skills(helped);
     if (a.length) two.appendChild(el("section", "ch-endcol good", "<h3>" + esc(lab.good || "You showed you can") + "</h3><ul>" +

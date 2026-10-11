@@ -78,6 +78,16 @@ S.nudge = function () { return ["moti"]; };   // a kind says what to point at af
 
 Test: `g1b/t/nudge.js` in the Grade 1 harness (33 checks: graph, validated actions, shared start time, settle within one beat, nudge, touch quiets it, sounds sequence, mute, count pitch, reduced motion).
 
+## 5b. Shared by Prealgebra (`learn/lab/feel.js`, `feel.css`)
+
+Grade 1's sound and beat were moved out of the picture kit into one module that Prealgebra loads too (`COURSE_KIT.prealg`, `COURSE_KIT.g1`). It acts only on Kern (`window.OPLO_KERN`) and only inside a course listed in `OPLO_FEEL.COURSES`; adding another course is one word.
+
+- **How it attaches:** `challenge.js` now runs a list, `OPLO_CHALLENGE.cardHooks`, as well as Grade 1's single `cardHook`, on every step and on the end card. A hook can never stop a lesson (each runs in a try).
+- **Graph for ordinary steps:** the typed-answer box is `answer`, the group of choices `options` with `option-1…`, then `hint`, `show-me`, `check` / `continue`, and any `control-n` / `field-n` inside a figure; each carries `data-scene-graph-name` and an `aria-description` that is kept current ("option 2, chosen", "Check. Not yet: answer first.").
+- **Nudge:** after 8 s of quiet (12 s on a page to read) the next thing to do glows on the shared beat, in this order: Continue once solved; Check once an answer is ready; the box to type in; the group of choices (never one choice); the first control of a figure; Continue on a reading page. A key press or touch lets the beat finish and starts the wait again.
+- **Sounds:** a tap for every press, the verdict once each time it changes (`yes`, `no`, `shown`), `done` on the end card; the same single bell switch as Grade 1, in a corner of each card; `oplo.sfx` (Grade 1's earlier `oplo.k1.sfx` is still read).
+- **Tests:** `g1b/t/feel.js` walks all 71 lessons / every step (named graph, unique names, sentence on every node, switch, an action to take), then types, chooses, mutes and reduces motion on real steps, and checks OEdu is untouched.
+
 ## 6. Not established
 
 - Whether Elm views draw SVG, HTML or both (needs a signed-in lesson).

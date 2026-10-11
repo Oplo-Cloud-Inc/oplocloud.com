@@ -46,9 +46,11 @@ window.OPLO_LAB = (function () {
     "lab/pathhelp.js": "e6aa4a45",
     "lab/pathui.js": "564c164a",
     "lab/algkit.js": "ec6dd5e1",
+    "lab/feel.js": "f6bfad7d",
+    "lab/feel.css": "c61f66b2",
     "lab/k1art.js": "b96867df",
     "lab/k1geom.js": "38408767",
-    "lab/k1kit.js": "5aabd11c",
+    "lab/k1kit.js": "7c887e7e",
     "lab/k1kinds.js": "57bbd833",
     "lab/k1scenes.js": "969ff5c6",
     "lab/k1.css": "e2c47803",
@@ -1108,8 +1110,8 @@ window.OPLO_LAB = (function () {
      in lab/philkit.js, and the watch · read · write format (a film that stops to ask,
      a reading with questions inside, a response checked against a model) in lab/edpkit.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", phil: ["lab/histkit.js", "lab/algkit.js", "lab/philkit.js", "lab/edpkit.js"], sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: "lab/algkit.js", precalc: ["lab/geotools.js", "lab/algkit.js"],
-                     g1: ["lab/k1.css", "lab/k1art.js", "lab/k1geom.js", "lab/k1kit.js", "lab/k1kinds.js", "lab/k1scenes.js"] };
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", phil: ["lab/histkit.js", "lab/algkit.js", "lab/philkit.js", "lab/edpkit.js"], sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: ["lab/feel.css", "lab/feel.js", "lab/algkit.js"], precalc: ["lab/geotools.js", "lab/algkit.js"],
+                     g1: ["lab/feel.css", "lab/feel.js", "lab/k1.css", "lab/k1art.js", "lab/k1geom.js", "lab/k1kit.js", "lab/k1kinds.js", "lab/k1scenes.js"] };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */
   function kitFor(courseId) {

@@ -1,0 +1,22 @@
+/* The feel of an activity (lab/feel.js): the sound switch, and the glow that says "this one". */
+
+/* Something lit by the beat: an outline, so the button's own shadow is left alone. Rests, drawn nothing, at its first
+   frame until the clock plays it (see clock() in feel.js). Where motion is reduced it stays lit, still. */
+.feel-glow { animation: feel-beat 2s ease-in-out infinite; }
+@keyframes feel-beat {
+  0%, 100% { outline: 0 solid rgba(255, 178, 31, 0); outline-offset: 2px; }
+  40% { outline: 5px solid rgba(255, 178, 31, .78); outline-offset: 5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feel-glow { animation: none; }
+  .feel-pulsing .feel-glow { outline: 4px solid rgba(255, 178, 31, .85); outline-offset: 4px; }
+}
+
+/* A small bell in the corner of a card: little sounds on or off, remembered. */
+.ch-card[data-feel] { position: relative; }
+.feel-sw { position: absolute; top: 4px; right: 4px; z-index: 3; width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 0; background: transparent; color: #aab0d6; cursor: pointer; transition: color .15s, background .15s; }
+.feel-sw svg { width: 20px; height: 20px; }
+.feel-sw:hover { background: rgba(255, 255, 255, .07); color: #dfe3ff; }
+.feel-sw.off { color: #6f7280; }
+.feel-sw:focus-visible { outline: 3px solid var(--kern, #5468ff); outline-offset: 2px; }

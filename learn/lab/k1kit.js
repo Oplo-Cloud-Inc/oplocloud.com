@@ -27,8 +27,8 @@
    ========================================================================== */
 (function () {
   "use strict";
-  var LAB = window.OPLO_LAB, CH = window.OPLO_CHALLENGE, A = window.OPLO_K1ART, G = window.OPLO_K1GEOM;
-  if (!LAB || !CH || !A || !G) return;
+  var LAB = window.OPLO_LAB, CH = window.OPLO_CHALLENGE, A = window.OPLO_K1ART, G = window.OPLO_K1GEOM, FEEL = window.OPLO_FEEL;
+  if (!LAB || !CH || !A || !G || !FEEL) return;
   if (window.OPLO_K1) return;
   var el = LAB.el, esc = LAB.esc, button = LAB.button;
   var NS = "http://www.w3.org/2000/svg";
@@ -91,67 +91,9 @@
   })();
 
   /* ================================================================ Sound
-     Little sounds, made in the browser (no files to load): a tick when a thing
-     is picked up, a soft landing when it is put down, a bell that rises with
-     each thing counted, three notes for "yes", two gentle falling ones for
-     "look again" — never a buzzer. Quiet on purpose, and one switch that is
-     remembered. They sit under the reading voice, which is never covered. */
-  var SFX = (function () {
-    var AC = window.AudioContext || window.webkitAudioContext, ctx = null, master = null, subs = [];
-    function readPref() { try { return localStorage.getItem("oplo.k1.sfx") !== "off"; } catch (e) { return true; } }
-    var on = readPref();
-    function ready() {
-      if (!AC) return false;
-      if (!ctx) {
-        try { ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination); }
-        catch (e) { AC = null; return false; }
-      }
-      if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) { /* no gesture yet */ } }
-      return true;
-    }
-    // One soft note: a quick attack and a long fall; `to` glides the pitch.
-    function note(f, at, dur, vol, type, to) {
-      var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + 0.004 + at;
-      o.type = type || "sine";
-      o.frequency.setValueAtTime(f, t);
-      if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur * 0.8);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(vol, t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g); g.connect(master);
-      o.start(t); o.stop(t + dur + 0.03);
-    }
-    function bell(f, at, dur, vol) { note(f, at, dur, vol, "sine"); note(f * 2, at, dur * 0.6, vol * 0.25, "sine"); }
-    var C5 = 523.25, E5 = 659.25, G5 = 783.99, C6 = 1046.5;
-    var LADDER = [C5, 587.33, E5, G5, 880, C6, 1174.66, 1318.51, 1567.98];       // a pentatonic climb: each number is higher
-    var SOUNDS = {
-      pick: function () { note(784, 0, 0.07, 0.05, "sine"); },
-      drop: function () { note(300, 0, 0.1, 0.09, "triangle", 170); },
-      tap: function () { note(587.33, 0, 0.06, 0.06, "sine"); },
-      count: function (n) { bell(LADDER[Math.max(0, Math.min(LADDER.length - 1, (n || 1) - 1))], 0, 0.22, 0.08); },
-      yes: function () { bell(C5, 0, 0.24, 0.07); bell(E5, 0.075, 0.24, 0.07); bell(G5, 0.15, 0.4, 0.07); },
-      no: function () { note(392, 0, 0.18, 0.06, "triangle"); note(329.63, 0.14, 0.26, 0.05, "triangle"); },
-      shown: function () { bell(E5, 0, 0.34, 0.06); },
-      hint: function () { note(880, 0, 0.05, 0.04, "sine"); note(880, 0.1, 0.05, 0.04, "sine"); },
-      done: function () { bell(C5, 0, 0.26, 0.07); bell(E5, 0.1, 0.26, 0.07); bell(G5, 0.2, 0.26, 0.07); bell(C6, 0.3, 0.6, 0.07); }
-    };
-    function play(name, arg) {
-      if (!on || !SOUNDS[name]) return false;
-      // A test can see what was meant to sound, even where there is no sound card.
-      if (window.__OPLO_TEST) (window.__sfxLog = window.__sfxLog || []).push(arg != null ? name + ":" + arg : name);
-      if (!ready()) return false;
-      try { SOUNDS[name](arg); return true; } catch (e) { return false; }
-    }
-    return {
-      can: !!AC, play: play,
-      isOn: function () { return on; },
-      set: function (v) { on = !!v; try { if (on) localStorage.removeItem("oplo.k1.sfx"); else localStorage.setItem("oplo.k1.sfx", "off"); } catch (e) { /* private window */ } subs.forEach(function (f) { f(on); }); },
-      sub: function (f) { subs.push(f); },
-      // Browsers start sound only after a touch or a key: wake it on the first one.
-      unlock: ready
-    };
-  })();
-  if (SFX.can) ["pointerdown", "keydown"].forEach(function (ev) { window.addEventListener(ev, function once() { window.removeEventListener(ev, once, true); SFX.unlock(); }, true); });
+     The little sounds and the beat they keep to live in lab/feel.js, which
+     Prealgebra shares; one switch, remembered, for both. */
+  var SFX = FEEL.SFX;
 
   /* ================================================================ Scene
      spec: { w, h, bg: "room" | "garden" | "plain" | "track", alt,
@@ -480,29 +422,13 @@
        clock (two seconds a beat) that is told to play, to settle — finish the beat
        it is in — or to pause, so rings made at different moments stay in step and
        nothing is cut off half way. */
-    var PERIOD = 2000, pstate = "paused", pstart = 0, psettle = null, flashT = null, rings = [];
-    function pnow() { var t = document.timeline && document.timeline.currentTime; return typeof t === "number" ? t : performance.now(); }
-    function psync() {
-      [].forEach.call(svg.querySelectorAll("[data-synced-to-pulse-timer]"), function (n) {
-        if (!n.getAnimations) return;
-        n.getAnimations().forEach(function (a) {
-          try { a.effect.updateTiming({ duration: PERIOD, iterations: Infinity }); } catch (e) { /* not a timed animation */ }
-          if (pstate === "paused") { try { a.pause(); a.currentTime = 0; } catch (e) { /* gone */ } }
-          else { try { a.play(); a.startTime = pstart; } catch (e) { /* gone */ } }
-        });
-      });
-      svg.classList.toggle("k1-pulsing", pstate !== "paused");
-    }
+    var clk = FEEL.clock(svg, { cls: "k1-pulsing" }), flashT = null, rings = [];
     function clearRings() { rings.forEach(function (r) { r.remove(); }); rings = []; }
-    S.pulseState = function () { return pstate; };
+    S.pulseState = function () { return clk.state(); };
     S.pulse = function (state) {
-      clearTimeout(psettle); psettle = null;
-      if (state === "playing") { if (pstate === "paused") pstart = pnow(); pstate = "playing"; psync(); }
-      else if (state === "settling" && pstate !== "paused") {
-        var left = PERIOD - ((pnow() - pstart) % PERIOD);
-        pstate = "settling"; psync();
-        psettle = setTimeout(function () { pstate = "paused"; psync(); clearRings(); }, left);
-      } else if (state === "paused") { pstate = "paused"; psync(); clearRings(); }
+      if (state === "playing") clk.play();
+      else if (state === "settling") clk.settle(clearRings);
+      else if (state === "paused") { clk.pause(); clearRings(); }
     };
     // actions: [ { tag: "highlight", ids: [...] } | { tag: "clear" } ] → { rejected: [names that are not in the picture] }
     S.act = function (actions) {
@@ -517,7 +443,7 @@
           var g = T.g;
           rings.push(svgEl("rect", { class: "k1-pulse", "data-synced-to-pulse-timer": "", "data-for": id, x: g.x - 9, y: g.y - 9, width: g.w + 18, height: g.h + 18, rx: 18 }, L.over));
         });
-        psync();
+        clk.sync();
       });
       return { rejected: rejected };
     };
@@ -526,7 +452,7 @@
       var r = S.act([{ tag: "clear" }, { tag: "highlight", ids: ids }]);
       S.pulse("playing");
       clearTimeout(flashT);
-      flashT = setTimeout(function () { S.pulse("settling"); }, (beats || 2) * PERIOD - 60);
+      flashT = setTimeout(function () { S.pulse("settling"); }, (beats || 2) * FEEL.PERIOD - 60);
       return r;
     };
     // A kind says which things a child who has gone quiet should be pointed at.
@@ -535,7 +461,7 @@
     (spec.things || []).forEach(function (ts) { S.add(ts); });
     (spec.labels || []).forEach(function (l) { S.text(l.x, l.y, l.t, l.cls); });
     S.sync();
-    S.destroy = function () { clearTimeout(psettle); clearTimeout(flashT); svg.remove(); S.ev = {}; };
+    S.destroy = function () { clk.destroy(); clearTimeout(flashT); svg.remove(); S.ev = {}; };
     return S;
   }
 
