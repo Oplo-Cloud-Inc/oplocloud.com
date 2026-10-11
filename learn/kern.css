@@ -1,28 +1,3 @@
-/* Kern's front door. Only drawn when kern.js has replaced the welcome page. */
-#gate.kern-gate { position: fixed; inset: 0; z-index: 50; display: grid; grid-template-rows: auto 1fr; place-items: center; overflow: auto;
-  background: #141414; color: #fff; }
-#gate.kern-gate.ld-wait > * { visibility: hidden; }
-/* The same bar as the app's, signed out: the mark and the name, and the one thing to do.
-   --well and --gut are the signed-in look's (obsidian, below); signed out they are
-   app.css's wider ones, so the same numbers are written out to line up with the app's bar. */
-.kern-gatebar { grid-row: 1; justify-self: stretch; align-self: start; border-bottom: 1px solid rgba(255,255,255,.11); }
-.kern-gatebar-in { max-width: 1120px; height: var(--bar); margin-inline: auto; display: flex; align-items: center; gap: 12px;
-  padding-inline: clamp(24px, 4.4vw, 60px); }
-.kern-gatebar .kern-mark { width: 21px; height: 21px; margin: 0; }
-.kern-gatename { font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
-html.kern body .kern-gatebar .lx-btn { margin-left: auto; height: 40px; padding: 0 22px; font-size: 15px; }
-.kern-hero { grid-row: 2; width: min(560px, 100% - 48px); padding: 48px 0; text-align: center; }
-.kern-mark { width: 34px; height: 34px; margin: 0 auto 18px; display: block; }
-.kern-k { margin: 0 0 14px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #9a9aa6; }
-.kern-hero h1 { margin: 0 0 16px; font-size: clamp(40px, 8vw, 68px); font-weight: 300; letter-spacing: -.035em; line-height: 1.02; }
-.kern-sub { margin: 0 auto 30px; max-width: 42ch; font-size: 18px; line-height: 1.5; color: #c9c9d1; }
-.kern-err { min-height: 1.2em; margin: 14px 0 0; font-size: 13px; color: #d70015; }
-.kern-fine { margin: 26px auto 0; max-width: 46ch; font-size: 12.5px; line-height: 1.55; color: #9a9aa6; }
-
-
-/* Signed out, the page has no student look; the front door still needs the same accent. */
-#gate.kern-gate .lx-btn.lg { height: 52px; padding: 0 30px; }
-
 /* ==========================================================================
    Kern's look: near-black, soft outlined cards, and one large button that
    feels pressed. It is meant to breathe: a wide page with generous side
