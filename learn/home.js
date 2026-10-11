@@ -6,7 +6,9 @@
    Account, as roles, so nobody is asked which door is theirs — this file turns
    those roles into an address.
 
-     /admin/    a school administrator, or a platform administrator
+     /admin/    a school administrator, or a platform administrator — and a
+                registrar or an admissions reviewer, whose console holds
+                Enrollment and nothing else
      /teacher/  a teacher or an author
      /student/  a student
      /parent/   a parent or guardian
@@ -32,8 +34,9 @@
       return roles.some(function (r) { return r.product === product && r.role === role; });
     }
     var admin = has("platform", "admin") || has("learn", "admin");
+    var office = has("learn", "registrar") || has("learn", "admissions");
     var out = [];
-    if (admin) out.push("admin");
+    if (admin || office) out.push("admin");
     if (admin || has("learn", "teacher") || has("learn", "author")) out.push("teacher");
     if (has("learn", "student")) out.push("student");
     if (admin || has("learn", "guardian")) out.push("parent");

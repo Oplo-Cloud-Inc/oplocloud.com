@@ -8580,9 +8580,20 @@
     { k: "courses", name: "Courses", group: "Curriculum", icon: "books", hidden: true },
     { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true });
 
+  /* A registrar or an admissions reviewer who is not an administrator gets
+     the school console with one place in it: Enrollment. Everything else in
+     it is read with an administrator's authority, and showing them a console
+     of pages the server would refuse is worse than showing them one. */
+  function officeOnly() {
+    var r = (S.me && S.me.roles) || [];
+    function has(p, n) { return r.some(function (x) { return x.product === p && x.role === n; }); }
+    return !has("platform", "admin") && !has("learn", "admin") && (has("learn", "registrar") || has("learn", "admissions"));
+  }
+
   function allowedTabs() {
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
-    return consoleMode() === "admin" ? ADMIN_SECTIONS : TEACHER_SECTIONS;
+    if (consoleMode() !== "admin") return TEACHER_SECTIONS;
+    return officeOnly() ? ADMIN_SECTIONS.filter(function (t) { return t.k === "enrollment"; }) : ADMIN_SECTIONS;
   }
 
   function sectionNamed(k) {
@@ -9243,7 +9254,9 @@
       b.addEventListener("click", function () { openAdmin(false, t.k); });
       return b;
     }
-    if (consoleMode() === "admin") {
+    if (consoleMode() === "admin" && officeOnly()) {
+      nav.appendChild(place({ k: "enrollment", name: "Enrollment" }, "people"));
+    } else if (consoleMode() === "admin") {
       ADMIN_TREE.forEach(function (t) {
         if (!t.kids) { nav.appendChild(place(t, t.icon)); return; }
         // A group: its row folds and unfolds; opening one you are not in
@@ -9279,7 +9292,7 @@
     who.type = "button";
     who.innerHTML = '<span class="av" aria-hidden="true"></span>' +
       '<span class="t"><b>' + esc(S.me.name) + "</b><span>" +
-      esc(S.me.role === "admin" ? "Administrator" : "Teacher") + "</span></span>";
+      esc(S.me.role === "admin" ? (officeOnly() ? "Enrollment office" : "Administrator") : "Teacher") + "</span></span>";
     var av = who.querySelector(".av");
     av.textContent = S.me.initials || "";
     av.style.background = S.me.hue || "";
@@ -12831,7 +12844,7 @@
     body.appendChild(head);
 
     var TABS = [["overview", "Overview"], ["grades", "Grades"], ["missing", "Missing work"], ["timeline", "Timeline"],
-                ["graduation", "Graduation"], ["family", "Family"]];
+                ["graduation", "Graduation"], ["family", "Family"], ["enrollment", "Enrollment"]];
     var seg = el("div", "cn-seg cx-360tabs");
     TABS.forEach(function (t) {
       var b = el("button", "cn-segb" + (S.s360tab === t[0] ? " on" : ""), t[1]);
@@ -12877,7 +12890,8 @@
       if (!D) return;
       pane.innerHTML = "";
       ({ overview: s360Overview, grades: s360Grades, missing: s360Missing, timeline: s360Timeline,
-         graduation: s360Graduation, family: s360Family }[S.s360tab] || s360Overview)(pane, D, s);
+         graduation: s360Graduation, family: s360Family,
+         enrollment: function (p, d, st) { enr().studentPanel(p, st); } }[S.s360tab] || s360Overview)(pane, D, s);
     }
   }
 
@@ -15450,59 +15464,25 @@
   }
 
   /* ============================================================= Students */
-  function tabEnrollment(v) {
-    var P = cxPage(v, "Students", "Enrollment", "Who is enrolled in what, how full each course is, and who is not in a course at all.");
-    P.tools.appendChild(cnAction("Add a person", function () { openPersonEditor(null); }));
-    P.tools.appendChild(cnAction("New course", function () { openCourseEditor(null); }, true));
-    var node = loading(v, "enrollment");
-    Promise.all([loadSchool(), API.accounts.list(S.me.orgId).catch(function () { return []; })]).then(function (r) {
-      node.remove();
-      var d = r[0], people = r[1] || [], staff = {}, enrolled = {};
-      d.teachers.forEach(function (t) { staff[t.id] = 1; });
-      staff[S.me.id] = 1;
-      d.students.forEach(function (s) { enrolled[s.id] = 1; });
-      var notIn = people.filter(function (p) { return !enrolled[p.id] && !staff[p.id]; });
-      var seats = d.courses.reduce(function (a, c) { return a + c.students; }, 0);
-      cxMetrics(v, [
-        { label: "Accounts", value: people.length },
-        { label: "Enrolled students", value: d.students.length },
-        { label: "In no course", value: notIn.length, note: "accounts that are not staff", go: function () { S.enrolView = "none"; openAdmin(true, "enrollment"); } },
-        { label: "Seats filled", value: seats, note: cxPlural(d.courses.length, "course") },
-        { label: "Average class", value: d.courses.length ? Math.round(seats / d.courses.length) : null, note: "students a course" }
-      ]);
-      var bar = el("div", "cn-bar");
-      S.enrolView = S.enrolView || "course";
-      var chips = cnFilters([{ k: "course", name: "By course", n: d.courses.length }, { k: "none", name: "In no course", n: notIn.length }],
-        S.enrolView, function (k) { S.enrolView = k; draw(); });
-      bar.appendChild(chips);
-      v.appendChild(bar);
-      var slot = el("div");
-      v.appendChild(slot);
-      function draw() {
-        chips.mark(S.enrolView);
-        slot.innerHTML = "";
-        var t;
-        if (S.enrolView === "none") {
-          if (!notIn.length) { slot.appendChild(cnEmpty("Everyone is in a course.", "Every account that is not staff is enrolled in at least one course.")); return; }
-          t = cnTable([{ label: "Name", w: "minmax(170px, 1.2fr)" }, { label: "Email", w: "minmax(180px, 1.3fr)" }, { label: "Title", w: "minmax(100px, .8fr)" }]);
-          notIn.forEach(function (p) { t.row([cxWho(p), "<span class='cn-mono'>" + esc(p.email || "—") + "</span>", p.title ? esc(p.title) : cxNone()], function () { openPersonEditor(p); }, p.id); });
-        } else {
-          t = cnTable([{ label: "Course", w: "minmax(180px, 1.4fr)" }, { label: "Department", w: "minmax(110px, .8fr)" }, { label: "Teachers", w: "minmax(130px, 1fr)" },
-                       { label: "Students", w: "84px", align: "right" }, { label: "", w: "96px", align: "right" }]);
-          d.courses.slice().sort(function (a, b) { return String(a.title).localeCompare(String(b.title)); }).forEach(function (c) {
-            var go = el("button", "cn-btn small", "Enrol…");
-            go.type = "button";
-            go.addEventListener("click", function (e) { e.stopPropagation(); openEnrol(c.raw); });
-            t.row(["<b>" + esc(c.title) + "</b>" + (c.level ? "<span class='cn-sub2'>" + esc(c.level) + "</span>" : ""), esc(c.subject || "—"),
-                   c.teachers.length ? esc(c.teachers.map(function (x) { return x.name; }).join(", ")) : "<span class='cn-mk warn'>none</span>",
-                   String(c.students), go], function () { S.rosterCourse = c.id; openAdmin(false, "rosters"); }, c.id);
-          });
-        }
-        slot.appendChild(t);
-      }
-      draw();
-    }, function (e) { failed(node, e, function () { openAdmin(true, "enrollment"); }); });
+  /* Enrollment is the school's admissions office — a queue of applications,
+     a record for each, a decision that is separate from enrolling — and it
+     lives in enroll.js, built from this console's own pieces. The rosters, and
+     who is in which course, are on Rosters. */
+  var ENR = null;
+  function enr() {
+    if (ENR) return ENR;
+    ENR = window.OPLO_ENROLL({
+      el: el, esc: esc, API: API, S: S, toast: toast, trim: trim,
+      loading: loading, failed: failed, attempt: attempt,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnActions: cnActions, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, avatarFor: avatarFor,
+      consoleHead: consoleHead, printHead: printHead, printTable: printTable, csvDownload: csvDownload,
+      enter: enter, goBack: goBack, show: show, openAdmin: openAdmin, railCount: railCount
+    });
+    return ENR;
   }
+
+  function tabEnrollment(v) { enr().tab(v); }
 
   function tabRosters(v) {
     var P = cxPage(v, "Students", "Rosters", "A course’s class list, or the whole school’s, with each student’s grade as it stands.");

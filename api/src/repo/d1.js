@@ -1534,4 +1534,416 @@ export class D1Repository {
     ).bind(from, to).all();
     return { byStatus: byStatus || [], top: top || [] };
   }
+
+  /* ----------------------------------------------------------- Enrollment
+     Applications, their documents and history, and the enrollments made from
+     them. The rules that act on these rows are in services/enrollment.js;
+     this block only reads and writes them. */
+
+  async getEnrollmentSettings(orgId) {
+    return this.db.prepare(
+      `SELECT * FROM learn_enrollment_settings WHERE org_id = ?`
+    ).bind(orgId).first();
+  }
+
+  async putEnrollmentSettings(orgId, body, actorId) {
+    await this.db.prepare(
+      `INSERT INTO learn_enrollment_settings (org_id, body_json, updated_by, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT (org_id) DO UPDATE SET
+         body_json = excluded.body_json, updated_by = excluded.updated_by,
+         updated_at = excluded.updated_at`
+    ).bind(orgId, JSON.stringify(body), actorId || null, now()).run();
+    return this.getEnrollmentSettings(orgId);
+  }
+
+  /* The next admission number, taken atomically. The row is made if it is
+     not there, so the first school to admit somebody needs no setup. */
+  async takeAdmissionNumber(orgId) {
+    await this.db.prepare(
+      `INSERT OR IGNORE INTO learn_enrollment_settings (org_id, body_json, admission_next, updated_at)
+       VALUES (?, '{}', 1, ?)`
+    ).bind(orgId, now()).run();
+    const row = await this.db.prepare(
+      `UPDATE learn_enrollment_settings SET admission_next = admission_next + 1
+        WHERE org_id = ? RETURNING admission_next - 1 AS n`
+    ).bind(orgId).first();
+    return row.n;
+  }
+
+  async findApplication(applicationId) {
+    return this.db.prepare(`SELECT * FROM learn_applications WHERE id = ?`).bind(applicationId).first();
+  }
+
+  async findApplicationByKey(createdBy, clientKey) {
+    return this.db.prepare(
+      `SELECT * FROM learn_applications WHERE created_by = ? AND client_key = ?`
+    ).bind(createdBy, clientKey).first();
+  }
+
+  /* The sequence number is taken in the same statement that inserts, so two
+     applications made at once cannot be given the same one. */
+  async createApplication(a) {
+    const applicationId = id("app");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_applications
+         (id, org_id, seq, student_id, school_year, entry_grade, enrollment_type, status,
+          legal_first, legal_last, preferred_name, dob, body_json, review_json,
+          assigned_to, due_on, intended_start, acceptance, source, client_key,
+          created_by, created_at, updated_at)
+       SELECT ?, ?, COALESCE(MAX(seq), 0) + 1, ?, ?, ?, ?, 'draft',
+              ?, ?, ?, ?, ?, '{}', ?, ?, ?, 'not_required', ?, ?, ?, ?, ?
+         FROM learn_applications WHERE org_id IS ?`
+    ).bind(applicationId, a.orgId || null, a.studentId || null, a.schoolYear, a.grade, a.type,
+           a.legalFirst || null, a.legalLast || null, a.preferredName || null, a.dob || null,
+           JSON.stringify(a.form || {}), a.assignedTo || null, a.dueOn || null, a.intendedStart || null,
+           a.source || "staff", a.clientKey || null, a.createdBy || null, t, t, a.orgId || null).run();
+    return this.findApplication(applicationId);
+  }
+
+  /* `patch` keys are the domain's names; only the ones given are written.
+     With `ifUpdatedAt` the write happens only if nobody changed the row since
+     it was read — the caller learns that by `null`. */
+  async updateApplication(applicationId, patch, { ifUpdatedAt } = {}) {
+    const map = {
+      studentId: "student_id", schoolYear: "school_year", grade: "entry_grade", type: "enrollment_type",
+      status: "status", legalFirst: "legal_first", legalLast: "legal_last", preferredName: "preferred_name",
+      dob: "dob", admissionNo: "admission_no", assignedTo: "assigned_to", dueOn: "due_on",
+      intendedStart: "intended_start", decision: "decision", decisionReason: "decision_reason",
+      decisionNote: "decision_note", decidedBy: "decided_by", decidedAt: "decided_at",
+      offerUntil: "offer_until", acceptance: "acceptance", acceptedAt: "accepted_at",
+      waitlistedAt: "waitlisted_at", enrollmentId: "enrollment_id", submittedAt: "submitted_at",
+      closedAt: "closed_at"
+    };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (patch.form !== undefined) { fields.push("body_json = ?"); values.push(JSON.stringify(patch.form)); }
+    if (patch.review !== undefined) { fields.push("review_json = ?"); values.push(JSON.stringify(patch.review)); }
+    const t = now();
+    fields.push("updated_at = ?");
+    values.push(t, applicationId);
+    let where = "id = ?";
+    if (ifUpdatedAt != null) { where += " AND updated_at = ?"; values.push(ifUpdatedAt); }
+    const res = await this.db.prepare(
+      `UPDATE learn_applications SET ${fields.join(", ")} WHERE ${where}`
+    ).bind(...values).run();
+    if (ifUpdatedAt != null && !(res.meta && res.meta.changes > 0)) return null;
+    return this.findApplication(applicationId);
+  }
+
+  /* Every application for a school year, or for all years. Filtering, sorting
+     and paging happen above: the computed things a queue shows (how complete,
+     what is blocking) depend on the school's settings, which SQL cannot see. */
+  async listApplications({ orgId, year = null } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_applications
+        WHERE (org_id IS ? OR org_id = ?) AND (? IS NULL OR school_year = ?)
+        ORDER BY updated_at DESC`
+    ).bind(orgId || null, orgId || null, year, year).all();
+    return results || [];
+  }
+
+  async listApplicationsOf(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_applications
+        WHERE created_by = ? OR student_id = ?
+        ORDER BY updated_at DESC`
+    ).bind(accountId, accountId).all();
+    return results || [];
+  }
+
+  /* The accounts the school already knows as students, with a date of birth
+     when the contact card has one — what a new application is checked
+     against. */
+  async listStudentIdentities(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.id, a.email, p.name, p.first_name, c.date_of_birth AS dob
+         FROM accounts a
+         JOIN account_roles r ON r.account_id = a.id AND r.product = 'learn' AND r.role = 'student'
+              AND (r.org_id IS NULL OR r.org_id = ?)
+         LEFT JOIN profiles p ON p.account_id = a.id
+         LEFT JOIN account_contacts c ON c.account_id = a.id
+        GROUP BY a.id
+        ORDER BY p.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  /* Students whose guardian has one of these email addresses — who a new
+     applicant's brothers and sisters already at the school are. */
+  async wardsOfGuardianEmails(emails) {
+    if (!emails.length) return [];
+    const marks = emails.map(() => "?").join(",");
+    const { results } = await this.db.prepare(
+      `SELECT s.id AS student_id, sp.name AS student_name, g.email_lower AS guardian_email
+         FROM learn_guardians lg
+         JOIN accounts g ON g.id = lg.guardian_id
+         JOIN accounts s ON s.id = lg.student_id
+         LEFT JOIN profiles sp ON sp.account_id = s.id
+        WHERE g.email_lower IN (${marks})`
+    ).bind(...emails).all();
+    return results || [];
+  }
+
+  async listDocuments(applicationId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_application_documents WHERE application_id = ? ORDER BY rowid`
+    ).bind(applicationId).all();
+    return results || [];
+  }
+
+  async listDocumentsFor(applicationIds) {
+    if (!applicationIds.length) return [];
+    const out = [];
+    // D1 allows 100 bound parameters a statement.
+    for (let i = 0; i < applicationIds.length; i += 90) {
+      const chunk = applicationIds.slice(i, i + 90);
+      const { results } = await this.db.prepare(
+        `SELECT * FROM learn_application_documents
+          WHERE application_id IN (${chunk.map(() => "?").join(",")}) ORDER BY rowid`
+      ).bind(...chunk).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* Brings an application's checklist in line with what its grade and type
+     require. A document that already has a status keeps it: a requirement
+     that was dropped later does not erase work already done. */
+  async syncDocuments(applicationId, defs) {
+    const t = now();
+    const existing = new Map((await this.listDocuments(applicationId)).map((d) => [d.key, d]));
+    const statements = [];
+    for (const d of defs) {
+      const have = existing.get(d.key);
+      if (!have) {
+        statements.push(this.db.prepare(
+          `INSERT INTO learn_application_documents
+             (application_id, key, label, required, sensitive, status, updated_at)
+           VALUES (?, ?, ?, ?, ?, 'missing', ?)`
+        ).bind(applicationId, d.key, d.label, d.required ? 1 : 0, d.sensitive ? 1 : 0, t));
+      } else {
+        statements.push(this.db.prepare(
+          `UPDATE learn_application_documents SET label = ?, required = ?, sensitive = ?
+            WHERE application_id = ? AND key = ?`
+        ).bind(d.label, d.required ? 1 : 0, d.sensitive ? 1 : 0, applicationId, d.key));
+      }
+    }
+    // A checklist row nobody touched, for a document no longer asked for, goes.
+    const keep = new Set(defs.map((d) => d.key));
+    for (const [key, d] of existing) {
+      if (!keep.has(key) && d.status === "missing" && !d.file_id) {
+        statements.push(this.db.prepare(
+          `DELETE FROM learn_application_documents WHERE application_id = ? AND key = ?`
+        ).bind(applicationId, key));
+      }
+    }
+    if (statements.length) await this.db.batch(statements);
+    return this.listDocuments(applicationId);
+  }
+
+  async updateDocument(applicationId, key, patch) {
+    const map = { status: "status", note: "note", fileId: "file_id", fileName: "file_name",
+                  fileType: "file_type", fileSize: "file_size", receivedAt: "received_at",
+                  reviewedBy: "reviewed_by", reviewedAt: "reviewed_at" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), applicationId, key);
+    await this.db.prepare(
+      `UPDATE learn_application_documents SET ${fields.join(", ")}
+        WHERE application_id = ? AND key = ?`
+    ).bind(...values).run();
+    return this.db.prepare(
+      `SELECT * FROM learn_application_documents WHERE application_id = ? AND key = ?`
+    ).bind(applicationId, key).first();
+  }
+
+  async putApplicationFile({ applicationId, key, name, type, size, data, actorId }) {
+    const fileId = id("file");
+    await this.db.prepare(
+      `INSERT INTO learn_application_files
+         (id, application_id, doc_key, name, type, size, data, uploaded_by, uploaded_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(fileId, applicationId, key, name, type, size, data, actorId || null, now()).run();
+    return fileId;
+  }
+
+  async getApplicationFile(fileId) {
+    return this.db.prepare(`SELECT * FROM learn_application_files WHERE id = ?`).bind(fileId).first();
+  }
+
+  /* A replaced scan is removed: what the registrar looked at is the document
+     on the checklist, and an old file nobody can see is only a liability. */
+  async deleteApplicationFiles(applicationId, key, exceptId) {
+    await this.db.prepare(
+      `DELETE FROM learn_application_files
+        WHERE application_id = ? AND doc_key = ? AND id IS NOT ?`
+    ).bind(applicationId, key, exceptId || null).run();
+  }
+
+  async addApplicationEvent(applicationId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_application_events
+         (id, application_id, at, actor_id, actor_name, kind, from_value, to_value, field, note, internal, meta_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("evt"), applicationId, now(), e.actorId || null, e.actorName || null, e.kind,
+           e.from == null ? null : String(e.from), e.to == null ? null : String(e.to),
+           e.field || null, e.note || null, e.internal === false ? 0 : 1,
+           e.meta ? JSON.stringify(e.meta) : null).run();
+  }
+
+  async listApplicationEvents(applicationId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_application_events WHERE application_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(applicationId).all();
+    return results || [];
+  }
+
+  async findEnrollment(enrollmentId) {
+    return this.db.prepare(`SELECT * FROM learn_enrollments WHERE id = ?`).bind(enrollmentId).first();
+  }
+
+  async findLiveEnrollment(studentId, year) {
+    return this.db.prepare(
+      `SELECT * FROM learn_enrollments
+        WHERE student_id = ? AND school_year = ? AND state IN ('enrolled', 'suspended')`
+    ).bind(studentId, year).first();
+  }
+
+  async listEnrollments({ orgId, year = null, studentId = null } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT e.*, p.name AS student_name, p.first_name, p.initials, p.avatar_hue, a.email AS student_email
+         FROM learn_enrollments e
+         JOIN accounts a ON a.id = e.student_id
+         LEFT JOIN profiles p ON p.account_id = e.student_id
+        WHERE (e.org_id IS ? OR e.org_id = ?) AND (? IS NULL OR e.school_year = ?)
+          AND (? IS NULL OR e.student_id = ?)
+        ORDER BY e.starts_on DESC, p.name`
+    ).bind(orgId || null, orgId || null, year, year, studentId, studentId).all();
+    return results || [];
+  }
+
+  async updateEnrollment(enrollmentId, patch) {
+    const map = { state: "state", startsOn: "starts_on", endsOn: "ends_on", exitReason: "exit_reason",
+                  exitNote: "exit_note", syncState: "sync_state", grade: "grade" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (patch.placements !== undefined) { fields.push("placements_json = ?"); values.push(JSON.stringify(patch.placements)); }
+    if (patch.sync !== undefined) { fields.push("sync_json = ?"); values.push(JSON.stringify(patch.sync)); }
+    fields.push("updated_at = ?");
+    values.push(now(), enrollmentId);
+    await this.db.prepare(
+      `UPDATE learn_enrollments SET ${fields.join(", ")} WHERE id = ?`
+    ).bind(...values).run();
+    return this.findEnrollment(enrollmentId);
+  }
+
+  /* Seats taken in each grade for a school year: students enrolled or
+     suspended, plus applications admitted but not yet enrolled. The unique
+     index and this count are what stop a grade being over-promised. */
+  async seatUsage(orgId, year) {
+    const { results } = await this.db.prepare(
+      `SELECT grade, COUNT(*) AS n FROM (
+         SELECT grade FROM learn_enrollments
+          WHERE (org_id IS ? OR org_id = ?) AND school_year = ? AND state IN ('enrolled', 'suspended')
+         UNION ALL
+         SELECT entry_grade AS grade FROM learn_applications
+          WHERE (org_id IS ? OR org_id = ?) AND school_year = ? AND status = 'admitted' AND enrollment_id IS NULL
+       ) GROUP BY grade`
+    ).bind(orgId || null, orgId || null, year, orgId || null, orgId || null, year).all();
+    const out = {};
+    for (const r of results || []) out[r.grade] = r.n;
+    return out;
+  }
+
+  /* Activation, as one transaction: the enrollment exists and the
+     application points at it, or neither happened. What is set up around it
+     afterwards is separate and retryable, so a class that cannot be joined
+     today never undoes a student that was admitted. */
+  async createEnrollmentFrom(application, e, event) {
+    const enrollmentId = id("enrl");
+    const t = now();
+    await this.db.batch([
+      this.db.prepare(
+        `INSERT INTO learn_enrollments
+           (id, org_id, student_id, application_id, school_year, grade, enrollment_type, state,
+            starts_on, previous_school, admission_no, placements_json, sync_json, sync_state,
+            created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'enrolled', ?, ?, ?, '[]', '[]', 'pending', ?, ?, ?)`
+      ).bind(enrollmentId, application.org_id || null, e.studentId, application.id, application.school_year,
+             e.grade, application.enrollment_type, e.startsOn, e.previousSchool || null,
+             e.admissionNo || null, e.createdBy || null, t, t),
+      this.db.prepare(
+        `UPDATE learn_applications
+            SET enrollment_id = ?, student_id = ?, closed_at = ?, updated_at = ?
+          WHERE id = ? AND enrollment_id IS NULL`
+      ).bind(enrollmentId, e.studentId, t, t, application.id),
+      this.db.prepare(
+        `INSERT INTO learn_application_events
+           (id, application_id, at, actor_id, actor_name, kind, from_value, to_value, field, note, internal, meta_json)
+         VALUES (?, ?, ?, ?, ?, 'enrollment', NULL, ?, NULL, ?, 0, ?)`
+      ).bind(id("evt"), application.id, t, event.actorId || null, event.actorName || null, "enrolled",
+             event.note || null, JSON.stringify({ enrollmentId, startsOn: e.startsOn, grade: e.grade }))
+    ]);
+    return this.findEnrollment(enrollmentId);
+  }
+
+  /* The people who work on enrollment: administrators, registrars and
+     admissions reviewers of this organization — who an application can be
+     assigned to. */
+  async listEnrollmentTeam(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.id, a.email, p.name, p.title, GROUP_CONCAT(DISTINCT r.role) AS roles
+         FROM account_roles r
+         JOIN accounts a ON a.id = r.account_id
+         LEFT JOIN profiles p ON p.account_id = a.id
+        WHERE a.status != 'suspended'
+          AND ((r.product = 'learn' AND r.role IN ('admin', 'registrar', 'admissions'))
+               OR (r.product = 'platform' AND r.role = 'admin'))
+          AND (r.org_id IS NULL OR r.org_id = ?)
+        GROUP BY a.id
+        ORDER BY p.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  /* Display names for a handful of accounts — who assigned, who verified. */
+  async namesFor(accountIds) {
+    const ids = [...new Set(accountIds.filter(Boolean))];
+    if (!ids.length) return {};
+    const { results } = await this.db.prepare(
+      `SELECT account_id, name FROM profiles WHERE account_id IN (${ids.map(() => "?").join(",")})`
+    ).bind(...ids).all();
+    const out = {};
+    for (const r of results || []) out[r.account_id] = r.name;
+    return out;
+  }
+
+  /* Enrollments that were set up ahead of their start date and whose course
+     placement has been waiting for it. */
+  async listEnrollmentsDue(orgId, day, limit = 25) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_enrollments
+        WHERE (org_id IS ? OR org_id = ?) AND state = 'enrolled'
+          AND placements_json LIKE '%"status":"scheduled"%' AND starts_on <= ?
+        ORDER BY starts_on LIMIT ?`
+    ).bind(orgId || null, orgId || null, day, limit).all();
+    return results || [];
+  }
+
+  async admissionNoOf(accountId) {
+    const row = await this.db.prepare(
+      `SELECT admission_no FROM learn_enrollments
+        WHERE student_id = ? AND admission_no IS NOT NULL ORDER BY created_at LIMIT 1`
+    ).bind(accountId).first();
+    return row ? row.admission_no : null;
+  }
 }

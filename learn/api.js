@@ -116,6 +116,14 @@ window.OPLO_API = (function () {
     return out.length ? "?" + out.join("&") : "";
   }
 
+  /* Today, as this person's own calendar says it — what an overdue date is
+     measured against. The server's clock is in UTC, which is yesterday for a
+     school in New York until evening and tomorrow for one in Pune by lunch. */
+  function localDay() {
+    var d = new Date();
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+
   /* The browser's offset from UTC, sent with anything that has to know what
      day it is for this person. A streak computed in UTC tells a student in
      Los Angeles who studied at 11pm that they missed a day. */
@@ -425,6 +433,55 @@ window.OPLO_API = (function () {
       clearRecord: function (studentId, section) {
         return del("/students/" + studentId + "/records/" + section);
       }
+    },
+
+    /* ------------------------------------------------------- Enrollment
+       Admitting a student, as a workflow. An application is one attempt to
+       be admitted for one school year; an enrollment is that student's year
+       once it has been approved and activated. Every step is a call to
+       `act`, and the server decides whether the step is true and who may
+       take it — a refusal comes back as a 409 carrying the `blockers`. */
+    enrollment: {
+      team: function () { return get("/enrollment/team").then(function (r) { return r.team; }); },
+      settings: function () { return get("/enrollment/settings"); },
+      putSettings: function (settings) { return put("/enrollment/settings", { settings: settings }); },
+      summary: function (year) { return get("/enrollment/summary" + q({ year: year, today: localDay() })); },
+      lookup: function (who) { return get("/enrollment/lookup" + q(who)); },
+      list: function (opts) {
+        opts = opts || {};
+        opts.today = localDay();
+        return get("/applications" + q(opts));
+      },
+      get: function (id) { return get("/applications/" + id + q({ today: localDay() })).then(function (r) { return r.application; }); },
+      create: function (data) { return post("/applications", data, { timeout: 20000 }); },
+      update: function (id, data) { return patch("/applications/" + id, data); },
+      act: function (id, action, data) {
+        return post("/applications/" + id + "/actions/" + action + q({ today: localDay() }), data || {}, { timeout: 30000 });
+      },
+      putDocument: function (id, key, data) {
+        return put("/applications/" + id + "/documents/" + encodeURIComponent(key), data);
+      },
+      /* A file is sent as base64 in JSON. The server holds a scan only up to
+         what a database row can carry and says so when it is more. */
+      uploadFile: function (id, key, file) {
+        return post("/applications/" + id + "/documents/" + encodeURIComponent(key) + "/file", file, { timeout: 60000 });
+      },
+      getFile: function (id, key) {
+        return get("/applications/" + id + "/documents/" + encodeURIComponent(key) + "/file", { timeout: 30000 })
+          .then(function (r) { return r.file; });
+      },
+      bulk: function (data) { return post("/applications/bulk", data); },
+      reenrol: function (data) { return post("/enrollment/reenrol", data, { timeout: 60000 }); },
+      enrollments: function (opts) {
+        opts = opts || {};
+        opts.today = localDay();
+        return get("/enrollments" + q(opts));
+      },
+      enrollmentAct: function (id, action, data) {
+        return post("/enrollments/" + id + "/actions/" + action + q({ today: localDay() }), data || {}, { timeout: 30000 });
+      },
+      /* What a family sees: the applications it made, or is family to. */
+      mine: function () { return get("/family/applications" + q({ today: localDay() })); }
     },
 
     /* --------------------------------------------------------- Progress

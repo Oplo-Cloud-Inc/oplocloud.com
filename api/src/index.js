@@ -40,6 +40,7 @@ import * as periods from "./routes/periods.js";
 import * as family from "./routes/family.js";
 import * as assessments from "./routes/assessments.js";
 import * as efm from "./routes/efm.js";
+import * as enrollment from "./routes/enrollment.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -137,6 +138,25 @@ const ROUTES = [
   ["PUT",    "/api/v1/progress", progress.put],
   ["GET",    "/api/v1/gamification/standing", progress.standing],
   ["POST",   "/api/v1/gamification/events",   progress.events],
+
+  ["GET",    "/api/v1/enrollment/settings",         enrollment.getSettings],
+  ["PUT",    "/api/v1/enrollment/settings",         enrollment.putSettings],
+  ["GET",    "/api/v1/enrollment/team",             enrollment.team],
+  ["GET",    "/api/v1/enrollment/summary",          enrollment.summary],
+  ["GET",    "/api/v1/enrollment/lookup",           enrollment.lookup],
+  ["POST",   "/api/v1/enrollment/reenrol",          enrollment.reenrol],
+  ["GET",    "/api/v1/applications",                enrollment.list],
+  ["POST",   "/api/v1/applications",                enrollment.create],
+  ["POST",   "/api/v1/applications/bulk",           enrollment.bulk],
+  ["GET",    "/api/v1/applications/:applicationId", enrollment.get],
+  ["PATCH",  "/api/v1/applications/:applicationId", enrollment.update],
+  ["POST",   "/api/v1/applications/:applicationId/actions/:action",           enrollment.act],
+  ["PUT",    "/api/v1/applications/:applicationId/documents/:key",            enrollment.putDocument],
+  ["POST",   "/api/v1/applications/:applicationId/documents/:key/file",       enrollment.putFile],
+  ["GET",    "/api/v1/applications/:applicationId/documents/:key/file",       enrollment.getFile],
+  ["GET",    "/api/v1/family/applications",         enrollment.mine],
+  ["GET",    "/api/v1/enrollments",                 enrollment.listEnrollments],
+  ["POST",   "/api/v1/enrollments/:enrollmentId/actions/:action", enrollment.enrollmentAct],
 
   ["GET",    "/api/v1/assessments",                 assessments.list],
   ["GET",    "/api/v1/assessments/:assessmentId",   assessments.get],
