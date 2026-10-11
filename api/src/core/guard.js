@@ -23,6 +23,8 @@
      learn.teacher   the courses they teach, and the students in them
      learn.author    content they wrote
      learn.guardian  the students they are family to — to read, never to write
+     learn.registrar   enrollment: file, verify documents, enroll — not decide
+     learn.admissions  enrollment: review and decide — not enroll
      learn.admin     everything inside their organization
      efm.user        OC EFM, the financial system — assigned, never open
      efm.viewer      OC EFM, to read only: the books, the reports, the trail
@@ -56,6 +58,8 @@ export const ACTIONS = [
   "guardian.read", "guardian.write",
   "record.read", "record.write",
   "assessment.read", "assessment.write",
+  "enrollment.read", "enrollment.write", "enrollment.verify", "enrollment.decide",
+  "enrollment.activate", "enrollment.sensitive", "enrollment.settings",
   "role.grant",
   "efm.read", "efm.write", "efm.admin"
 ];
@@ -282,6 +286,27 @@ export async function can(ctx, action, resource = {}) {
     case "assessment.write":
       return learnAdmin;
 
+    /* ------------------------------------------------------- Enrollment
+       The steps of admitting a student are held by different people on
+       purpose: whoever checks the papers is not the one who decides, and
+       neither of them is the one who creates the enrollment. An administrator
+       holds all of them; a registrar and an admissions reviewer hold the part
+       their name says. Sensitive documents and restricted notes — a support
+       plan, an identity number — are administrators', and nobody else's,
+       whatever else they may do. A family reaches its own application through
+       the route that checks they made it, never through these. */
+    case "enrollment.read":
+    case "enrollment.write":
+      return learnAdmin || hasRole(actor, "learn", "registrar", orgId) || hasRole(actor, "learn", "admissions", orgId);
+    case "enrollment.verify":
+    case "enrollment.activate":
+      return learnAdmin || hasRole(actor, "learn", "registrar", orgId);
+    case "enrollment.decide":
+      return learnAdmin || hasRole(actor, "learn", "admissions", orgId);
+    case "enrollment.sensitive":
+    case "enrollment.settings":
+      return learnAdmin;
+
     /* ------------------------------------------------------------ OC EFM
        The financial system is assigned, not open: a person has it because an
        administrator gave them the `efm` product (platform administrators have
@@ -332,6 +357,13 @@ const REASONS = {
   "role.grant": "Only administrators can change roles.",
   "assessment.read": "That assessment has not been set for you, or has not opened yet.",
   "assessment.write": "Only administrators can publish assessments.",
+  "enrollment.read": "Enrollment is run by the school's administrators and its registrar and admissions staff.",
+  "enrollment.write": "Enrollment is run by the school's administrators and its registrar and admissions staff.",
+  "enrollment.verify": "Checking documents is the registrar's. Ask them, or an administrator.",
+  "enrollment.decide": "Admission decisions are made by admissions reviewers and administrators.",
+  "enrollment.activate": "Creating an enrollment is the registrar's. Ask them, or an administrator.",
+  "enrollment.sensitive": "Only administrators can see or change restricted enrollment information.",
+  "enrollment.settings": "Only administrators can change what enrollment asks for.",
   "efm.read": "OC EFM is assigned to people by an administrator. Ask one to give you access.",
   "efm.write": "Your access to OC EFM is read-only. Ask an administrator to make you a member.",
   "efm.admin": "Only an OC EFM administrator can do that."

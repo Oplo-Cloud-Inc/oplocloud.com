@@ -364,9 +364,9 @@
       if (kids.length) return choose(kids[0]);
       if (S.admin) return pickStudent();
       if (hasRole(me, "learn", "guardian")) {
-        return noticeScreen("No student is linked to your account yet.",
-          "The school links a family to a student. Once they have, " + "everything the school keeps " +
-          "about your child appears here.");
+        // A family with nobody linked yet is most likely applying: that is
+        // where they belong, rather than on a page that says nothing.
+        return showApplications(null);
       }
       return noticeScreen("This is the family view.",
         "It is for parents and guardians. Your own work is in <a href='../'>OEdu</a>.");
@@ -397,6 +397,22 @@
       "<p style='color:var(--ink-2);font-size:17px;max-width:52ch'>" + body + "</p></div>";
     st.appendChild(box);
   }
+  /* Applications: asking for a place and following it. Drawn by apply.js into
+     the stage, with a way back to the record when there is one. */
+  function showApplications(back) {
+    shellOn();
+    $("#who").hidden = true;
+    $("#dock").hidden = true;
+    $("#findBtn").hidden = true;
+    $("#banner").hidden = true;
+    closeSheet(true);
+    var st = $("#stage");
+    st.innerHTML = "";
+    var kids = (S.family && S.family.students) || [];
+    var home = back || (kids.length ? function () { choose(S.student || kids[0]); } : null);
+    window.OPLO_APPLY.open(st, { me: S.me, back: home, toast: toast });
+  }
+
   function problemScreen(title, detail) {
     noticeScreen(title, esc(detail || "Something went wrong reaching the record.") +
       " <a href='' onclick='location.reload();return false'>Try again</a>.");
@@ -583,6 +599,9 @@
           seg.appendChild(b);
         });
         m.appendChild(seg);
+        if (hasRole(S.me, "learn", "guardian")) {
+          m.appendChild(btn("", icon("documents", 16) + "<span>Applications</span>", function () { closeMenu(); showApplications(null); }));
+        }
         var more = (S.me.roles || []).some(function (r) {
           return r.product === "platform" || (r.product === "learn" && r.role !== "guardian");
         });
