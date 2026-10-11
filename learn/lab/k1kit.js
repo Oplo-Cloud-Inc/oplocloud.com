@@ -19,8 +19,8 @@
                sentence each, in the attributes a screen reader reads. Hints,
                the glow after a quiet moment, and one day a tutor, all point
                at the picture through Scene.act, which takes only names that
-               are in the graph. Shaped on how Brilliant does it; see
-               docs/BRILLIANT_ACTIVITY_ARCHITECTURE.md.
+               are in the graph. The step says only whether it can be
+               checked and whether it is right; the player owns the rest.
      Steps     choose, put, tap, count, sort, paint: lab/k1kinds.js.
 
    Nothing here is specific to one lesson.

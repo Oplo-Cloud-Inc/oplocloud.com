@@ -48,7 +48,7 @@ window.OPLO_LAB = (function () {
     "lab/algkit.js": "ec6dd5e1",
     "lab/k1art.js": "b96867df",
     "lab/k1geom.js": "38408767",
-    "lab/k1kit.js": "e7379490",
+    "lab/k1kit.js": "5aabd11c",
     "lab/k1kinds.js": "57bbd833",
     "lab/k1scenes.js": "969ff5c6",
     "lab/k1.css": "e2c47803",
