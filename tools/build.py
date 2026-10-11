@@ -2662,6 +2662,10 @@ OEDU_PAGE = "learn/index.html"
 OEDU_CSS = "learn/oplo-chrome.css"
 OEDU_SECTIONS = [("Students", "#students"), ("Teachers", "#teachers"),
                  ("Families", "#families"), ("Schools", "#schools")]
+# Kern is the same page at another hostname (learn/index.html, switched by the
+# address), so it gets its own chapter bar the same way: written here, kept in
+# a <template>, and swapped in by kern-front.js when the address is Kern's.
+KERN_SECTIONS = [("How it works", "#kfTeach"), ("Courses", "#kfCourses"), ("Textbooks", "#kfBooks")]
 
 # ------------------------------------------------------- Oplo Developer
 # dev.oplocloud.com — the developer's door into Oplo. A third hostname
@@ -2849,7 +2853,9 @@ def oedu_chrome():
     # chapter bar's, below it, because that is the product's sign-in.
     sub = chapter(0, "OEdu", OEDU_SECTIONS, "#top", ("Sign in", "#signin"))
     sub = sub.replace('class="chapter-cta" href="#signin"', 'class="chapter-cta" href="#signin" data-signin')
-    regions(OEDU_PAGE, (("nav", absolute(nav(0))), ("chapter", sub), ("foot", site_footer())))
+    kern = chapter(0, "Kern", KERN_SECTIONS, "#top", ("Sign in", "#signin"))
+    kern = kern.replace('class="chapter-cta" href="#signin"', 'class="chapter-cta" href="#signin" data-signin')
+    regions(OEDU_PAGE, (("nav", absolute(nav(0))), ("chapter", sub), ("kernchapter", kern), ("foot", site_footer())))
     chrome_css(OEDU_CSS, ".ld")
     chrome_js("learn")
     print(f"  wrote {OEDU_PAGE} bar, chapter bar and footer, {OEDU_CSS}, learn/oplo-menu.js and learn/oplo-search.js")

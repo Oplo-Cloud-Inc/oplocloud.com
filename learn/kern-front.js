@@ -3,11 +3,19 @@
 
    What kern.oplocloud.com shows somebody who is not signed in: a page that
    says what Kern is, the way a good product page does, with one thing to do.
-   It replaces the welcome gate (#gate). app.js still owns the sign-in:
-   #gateGo carries its click handler and #gErr is where it writes; every
-   other "Sign in" on this page forwards its click to #gateGo. It never
-   touches the network, and nothing here is made up: the courses, units and
-   pads are read from the same catalogue the app itself draws.
+
+   It is edu.oplocloud.com's welcome page with its middle swapped. The site's
+   bar, the chapter bar's place and the site's footer are the ones
+   tools/build.py writes into learn/index.html for OEdu, so Kern has the
+   same bar every page of oplocloud.com has and cannot drift from it; the
+   chapter bar is Kern's own, written by the same build into a <template>.
+   Only what sits between them is replaced here.
+
+   app.js still owns the sign-in: #gateGo carries its click handler and #gErr
+   is where it writes. Every other "Sign in" is a [data-signin], which
+   landing.js hands to app.js, exactly as on the OEdu page. This file never
+   touches the network, and nothing on the page is made up: the courses,
+   units and pads are read from the same catalogue the app itself draws.
 
    The page scrolls inside #gate, not the body, as the welcome page always did.
    ========================================================================== */
@@ -28,8 +36,6 @@
   function $(sel, root) { return (root || gate).querySelector(sel); }
   function $$(sel, root) { return [].slice.call((root || gate).querySelectorAll(sel)); }
 
-  var MARK = '<svg class="kf-mark" viewBox="12 12 76 76" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" ' +
-    'd="M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"/></svg>';
   var CURSOR = '<svg viewBox="0 0 28 34" aria-hidden="true"><path d="M3 2.5v24l6.3-5.8 4.6 10.2 4.4-2-4.5-9.9 8.6-.5z" fill="#0b0b0c" ' +
     'stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg>';
   var CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5.5 12.5 4.3 4.3L18.5 7.8" fill="none" stroke="currentColor" ' +
@@ -151,17 +157,22 @@
       '" data-sub="' + i + '">' + esc(s.n) + "</button>";
   }).join("");
 
-  gate.className = "kf kern-gate ld-wait";
-  gate.innerHTML =
+  /* The page between the site's bar and the site's footer. Whatever is not the
+     OEdu welcome page that this file expects is left alone. */
+  var main = gate.querySelector("main.ld-main");
+  var edu = gate.querySelector(".chapter");
+  if (!main || !edu || !gate.classList.contains("ld")) return;
+  var tpl = document.getElementById("kernChapter");
+  var mine = tpl && tpl.content && tpl.content.querySelector(".chapter");
+  if (mine) edu.parentNode.replaceChild(document.importNode(mine, true), edu);
+  // OEdu's ribbon, its sign-in panel (a second #gateGo would shadow ours) and its film.
+  $$(".ld-ribbon, #ldSignin, #ldFilm").forEach(function (n) { n.parentNode.removeChild(n); });
+  gate.classList.add("kf");
+  main.className = "kf-main";
+
+  main.innerHTML =
     '<div class="kf-top">' +
-      '<header class="kf-nav" id="kfNav">' +
-        '<a class="kf-brand" href="#kfTop" aria-label="Kern">' + MARK + "<span>Kern</span></a>" +
-        '<div class="kf-nav-r">' +
-          '<button class="kf-btn kf-line" type="button" id="gateBarGo">Sign in</button>' +
-          '<button class="kf-btn kf-ink kf-cta" type="button" id="kfNavGo" tabindex="-1">Get started</button>' +
-        "</div>" +
-      "</header>" +
-      '<section class="kf-hero" id="kfTop">' +
+      '<section class="kf-hero">' +
         '<div class="kf-hero-t">' +
           '<h1 class="kf-rise">Learn<br>by doing.</h1>' +
           '<p class="kf-lede kf-rise">Courses you work through by solving, one small step at a time. No classroom, no grades. Just you and the problem.</p>' +
@@ -241,7 +252,7 @@
       "</div>" +
     "</div></section>" +
 
-    '<section class="kf-books"><div class="kf-wrap kf-row">' +
+    '<section class="kf-books" id="kfBooks"><div class="kf-wrap kf-row">' +
       '<div class="kf-row-t kf-rise"><h3>Follows a real textbook, a chapter at a time</h3>' +
         "<p>Most courses follow a published book, unit for unit, so what you learn lines up with what school teaches. Then every chapter is rebuilt as things you do.</p>" +
         '<p class="kf-note">Adapted from OpenStax (Rice University), CC BY-NC-SA 4.0. Every question, figure and piece of feedback is our own.</p></div>' +
@@ -250,37 +261,12 @@
 
     '<section class="kf-final"><div class="kf-final-in">' +
       '<h2 class="kf-rise">Pick a course.<br>Do the first step.</h2>' +
-      '<button class="kf-btn kf-big kf-white kf-rise" type="button" id="kfFinalGo">Get started</button>' +
+      '<button class="kf-btn kf-big kf-white kf-rise" type="button" data-signin>Get started</button>' +
       '<p class="kf-fine kf-rise">Free. You sign in with an Oplo Account. Your password is typed only at auth.oplocloud.com, in a tab of its own that closes when you are in.</p>' +
-    "</div></section>" +
-
-    '<footer class="kf-foot"><div class="kf-foot-in">' +
-      '<div class="kf-foot-brand">' + MARK + "<span>Kern</span></div>" +
-      '<nav class="kf-foot-cols" aria-label="Kern">' +
-        '<div><h4>Kern</h4><a href="#kfCourses">Courses</a><a href="#kfTeach">How it works</a></div>' +
-        '<div><h4>Oplo</h4><a href="https://oplocloud.com/products/">Products</a><a href="https://edu.oplocloud.com/">OEdu, for schools</a><a href="https://oplocloud.com/company/">About Oplo</a></div>' +
-        '<div><h4>Support</h4><a href="https://oplocloud.com/support/">Getting help</a><a href="https://oplocloud.com/contact/">Write to us</a><a href="https://oplocloud.com/privacy/">Privacy</a></div>' +
-      "</nav>" +
-      '<div class="kf-foot-bar"><span>Copyright &copy; 2026 Oplo, Inc. All rights reserved.</span>' +
-        '<span class="kf-foot-legal"><a href="https://oplocloud.com/legal/privacy-policy/">Privacy Policy</a><a href="https://oplocloud.com/legal/terms/">Terms of Use</a></span></div>' +
-    "</div></footer>" +
-    '<div id="ldSignin" hidden></div>';
+    "</div></section>";
 
   /* ----------------------------------------------------------------------
-     Sign in. Every button here is the page's one button.
-     ---------------------------------------------------------------------- */
-  ["gateBarGo", "kfNavGo", "kfFinalGo"].forEach(function (id) {
-    var b = document.getElementById(id);
-    if (b) b.addEventListener("click", function () { document.getElementById("gateGo").click(); });
-  });
-  // "Keep going" under the demo does the same, once it has been drawn.
-  gate.addEventListener("click", function (e) {
-    if (e.target.closest("[data-go]")) document.getElementById("gateGo").click();
-  });
-
-  /* ----------------------------------------------------------------------
-     Motion: things rise as they arrive; the bar gains its second button
-     once the first one has scrolled away.
+     Motion: things rise as they arrive.
      ---------------------------------------------------------------------- */
   var io = null;
   if ("IntersectionObserver" in window && !reduced) {
@@ -299,29 +285,16 @@
     } else start();
   }
 
-  var nav = $("#kfNav");
-  var navGo = $("#kfNavGo");
-  function onScroll() {
-    var y = gate.scrollTop;
-    nav.classList.toggle("stuck", y > 8);
-    var past = y > 520;
-    navGo.classList.toggle("on", past);
-    navGo.tabIndex = past ? 0 : -1;
+  /* The chapter bar takes the colour of what is under it. landing.js does
+     this from the photograph's frame, which this page does not have, so: light
+     over the paper, dark while the black closing band is under it. */
+  var bar = $(".chapter"), band = $(".kf-final");
+  function tint() {
+    var edge = bar.getBoundingClientRect().bottom, r = band.getBoundingClientRect();
+    gate.classList.toggle("ld-light", !(r.top <= edge + 2 && r.bottom > edge + 2));
   }
-  gate.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
-
-  /* In-page links scroll the gate itself, a little short of the target so the
-     bar does not sit on the heading. */
-  gate.addEventListener("click", function (e) {
-    var a = e.target.closest('a[href^="#"]');
-    if (!a) return;
-    var t = document.getElementById(a.getAttribute("href").slice(1));
-    if (!t) return;
-    e.preventDefault();
-    e.stopPropagation();
-    gate.scrollTo({ top: Math.max(0, t.offsetTop - 84), behavior: reduced ? "auto" : "smooth" });
-  }, true);
+  gate.addEventListener("scroll", function () { requestAnimationFrame(tint); }, { passive: true });
+  tint();
 
   /* ----------------------------------------------------------------------
      Courses: a subject's courses on the left, the chosen course's units on
@@ -442,7 +415,7 @@
       if (n === 0) fb.innerHTML = '<p class="kf-fb-idle">Drag the dot along the curve.</p>';
       else if (n === 1) fb.innerHTML = '<div class="kf-fb-ok"><span class="kf-badge">' + CHECK + "</span><p><b>That’s one.</b> There’s another.</p></div>";
       else fb.innerHTML = '<div class="kf-fb-ok"><span class="kf-badge">' + CHECK + "</span><p><b>Two inputs, one output.</b></p></div>" +
-        '<button class="kf-btn kf-kern kf-keep" type="button" data-go>Keep going</button>';
+        '<button class="kf-btn kf-kern kf-keep" type="button" data-signin>Keep going</button>';
       segs[1].classList.toggle("on", n === 2);
     }
     function mark(t) {

@@ -67,7 +67,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css?v=2d19bf6e">
-<link rel="stylesheet" href="oplo-chrome.css?v=98b29b8f">
+<link rel="stylesheet" href="oplo-chrome.css?v=f49eed32">
 <link rel="stylesheet" href="landing.css?v=4ecdb339">
 <link rel="stylesheet" href="exam.css?v=3869276c">
 <link rel="stylesheet" href="gradebook.css?v=b544c19b">
@@ -76,7 +76,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link rel="stylesheet" href="lab/lab.css?v=48c67464">
 <link rel="stylesheet" href="obsidian.css?v=98c418da">
 <link rel="stylesheet" href="kern.css?v=247f98cf">
-<link rel="stylesheet" href="kern-front.css?v=57aac25a">
+<link rel="stylesheet" href="kern-front.css?v=1a865404">
 <link rel="stylesheet" href="console.css?v=69ce44a2">
 </head>
 <body>
@@ -134,6 +134,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
         <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Products</h2><ul><li><a href="https://oplocloud.com/products/">All Products</a></li><li><a href="https://oplocloud.com/hardware/">Hardware</a></li><li><a href="https://oplocloud.com/software/">Software</a></li><li><a href="https://oplocloud.com/intelligence/">Intelligence</a></li><li><a href="https://oplocloud.com/plus/">Oplo+</a></li></ul></div>
         <div class="nav-menu-col"><h2 class="nav-menu-h">Hardware and Software</h2><ul><li><a href="https://oplocloud.com/hardware/#silicon">Silicon</a></li><li><a href="https://oplocloud.com/hardware/#devices">Devices</a></li><li><a href="https://oplocloud.com/hardware/#accessories">Accessories</a></li><li><a href="https://oplocloud.com/software/#apps">Apps</a></li><li><a href="https://oplocloud.com/software/#updates">Updates</a></li><li><a href="https://oplocloud.com/software/#downloads">Downloads</a></li></ul></div>
         <div class="nav-menu-col"><h2 class="nav-menu-h">Oplo+</h2><ul><li><a href="https://oplocloud.com/plus/#plans">Plans</a></li><li><a href="https://oplocloud.com/plus/#perks">What’s Included</a></li><li><a href="https://oplocloud.com/plus/#compare">Compare Plans</a></li><li><a href="https://oplocloud.com/plus/#faq">Questions</a></li></ul></div>
+        <div class="nav-menu-col"><h2 class="nav-menu-h">Education</h2><ul><li><a href="https://kern.oplocloud.com/">Kern</a></li><li><a href="https://edu.oplocloud.com/">OEdu</a></li></ul></div>
       </div>
       <div class="nav-menu" id="navMenu1" role="region" aria-label="Solutions">
         <div class="nav-menu-col big"><h2 class="nav-menu-h">Explore Solutions</h2><ul><li><a href="https://oplocloud.com/solutions/">Who It’s For</a></li><li><a href="https://oplocloud.com/solutions/#personal">Personal</a></li><li><a href="https://edu.oplocloud.com/">Education</a></li><li><a href="https://oplocloud.com/developers/">Developers</a></li><li><a href="https://oplocloud.com/solutions/#institutions">Business and Government</a></li></ul></div>
@@ -186,6 +187,19 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
   </div>
 </div>
 <!-- /oplo:chapter -->
+  <!-- Kern's chapter bar, in place of the one above when the address is Kern's
+       (kern-front.js). Written by tools/build.py like the one above. -->
+  <template id="kernChapter">
+  <!-- oplo:kernchapter -->
+<div class="chapter">
+  <div class="chapter-in">
+    <a class="chapter-name" href="#top">Kern</a>
+    <nav class="chapter-links" aria-label="Kern sections"><a href="#kfTeach">How it works</a><a href="#kfCourses">Courses</a><a href="#kfBooks">Textbooks</a></nav>
+    <a class="chapter-cta" href="#signin" data-signin>Sign in</a>
+  </div>
+</div>
+<!-- /oplo:kernchapter -->
+  </template>
 
   <aside class="ld-ribbon">
     <p>New this term: families can follow grades, exams and the road to graduation in the family view.
@@ -662,10 +676,10 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="kmap.js?v=0abacad4"></script>
 <script src="home.js?v=f44db797"></script>
 <script src="progress.js?v=1eb27a8b"></script>
-<script src="oplo-menu.js?v=1f5af215"></script>
+<script src="oplo-menu.js?v=f08f027c"></script>
 <script src="oplo-search.js?v=b2f48c6b"></script>
 <script src="kern.js?v=36956fb1"></script>
-<script src="kern-front.js?v=39cdd5f2"></script>
+<script src="kern-front.js?v=cafb983e"></script>
 <script src="landing.js?v=e0092d74"></script>
 <script src="challenge.js?v=efd204e4"></script>
 <script src="challenges-media9.js?v=1a1aa6ab"></script>
