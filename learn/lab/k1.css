@@ -78,6 +78,10 @@ html.kern [data-course="g1"] .ch-why { font-size: 18px; }
 .k1-label { fill: #34406a; font: 800 19px/1 system-ui, sans-serif; }
 .k1-zonehint { fill: rgba(255,255,255,.28); stroke: #ff4f9a; stroke-width: 4; stroke-dasharray: 10 8; animation: k1-march .8s linear infinite; }
 @keyframes k1-march { to { stroke-dashoffset: -18; } }
+/* A ring that says "this one": it beats on one two-second clock (see Scene.pulse in k1kit.js), which holds it at
+   its resting frame — drawn nothing — until told to play. Where motion is reduced it simply stays lit. */
+.k1-pulse { fill: none; stroke: #ffb21f; stroke-width: 4; opacity: 0; pointer-events: none; animation: k1-beat 2s ease-in-out infinite; }
+@keyframes k1-beat { 0% { opacity: 0; stroke-width: 3; } 35% { opacity: 1; stroke-width: 7; } 100% { opacity: 0; stroke-width: 3; } }
 .k1-binbox { fill: rgba(255,255,255,.62); stroke: #a9b8d8; stroke-width: 3; stroke-dasharray: 9 7; }
 .k1-bintx { fill: #3f4c78; font: 800 20px/1 system-ui, sans-serif; }
 
@@ -128,6 +132,8 @@ html.kern [data-course="g1"] .ch-why { font-size: 18px; }
 @media (prefers-reduced-motion: reduce) {
   .k1-th.k1-glide, .k1-th.k1-fall, .k1-in, .k1-cap { transition: none; }
   .k1-hop, .k1-shake, .k1-wd.pop, .k1-role-move.sel .k1-in, .k1-zonehint, .k1-crayons.nudge { animation: none; }
+  .k1-pulse { animation: none; }
+  .k1-pulsing .k1-pulse { opacity: .95; stroke-width: 5; }
 }
 
 /* A pair (or three) of small pictures, with a word under each. */

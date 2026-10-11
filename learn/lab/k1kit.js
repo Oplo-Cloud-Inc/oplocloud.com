@@ -4,14 +4,23 @@
 
    A six-year-old cannot read a paragraph, cannot type, and learns a word
    like "under" by putting something under something. So this course is
-   built from three things:
+   built from five things:
 
      Voice     every prompt is read aloud (the browser's own speech), with a
                Listen button and one switch that is remembered.
+     Sound     little sounds made in the browser: a tick, a soft landing, a
+               bell that climbs as things are counted, three notes for "yes".
+               One more switch, also remembered. Never a buzzer.
      Scenes    a picture whose parts can be dragged — or tapped, then tapped
                where they should go, or moved with the arrow keys — and that
                knows what is true of what, the moment it is let go: "Moti is
                ON the table." It says so whether that is the answer or not.
+     Graph     the same picture as named nodes ("moti", "table") with a
+               sentence each, in the attributes a screen reader reads. Hints,
+               the glow after a quiet moment, and one day a tutor, all point
+               at the picture through Scene.act, which takes only names that
+               are in the graph. Shaped on how Brilliant does it; see
+               docs/BRILLIANT_ACTIVITY_ARCHITECTURE.md.
      Steps     choose, put, tap, count, sort, paint: lab/k1kinds.js.
 
    Nothing here is specific to one lesson.
@@ -74,11 +83,75 @@
     return {
       can: can, say: say,
       stop: function () { if (can) try { ss.cancel(); } catch (e) { /* no voice */ } },
+      speaking: function () { return can && !!ss.speaking; },
       isOn: function () { return on; },
       set: function (v) { on = !!v; try { if (on) localStorage.removeItem("oplo.k1.voice"); else localStorage.setItem("oplo.k1.voice", "off"); } catch (e) { /* private window */ } if (!on) this.stop(); subs.forEach(function (f) { f(on); }); },
       sub: function (f) { subs.push(f); }
     };
   })();
+
+  /* ================================================================ Sound
+     Little sounds, made in the browser (no files to load): a tick when a thing
+     is picked up, a soft landing when it is put down, a bell that rises with
+     each thing counted, three notes for "yes", two gentle falling ones for
+     "look again" — never a buzzer. Quiet on purpose, and one switch that is
+     remembered. They sit under the reading voice, which is never covered. */
+  var SFX = (function () {
+    var AC = window.AudioContext || window.webkitAudioContext, ctx = null, master = null, subs = [];
+    function readPref() { try { return localStorage.getItem("oplo.k1.sfx") !== "off"; } catch (e) { return true; } }
+    var on = readPref();
+    function ready() {
+      if (!AC) return false;
+      if (!ctx) {
+        try { ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination); }
+        catch (e) { AC = null; return false; }
+      }
+      if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) { /* no gesture yet */ } }
+      return true;
+    }
+    // One soft note: a quick attack and a long fall; `to` glides the pitch.
+    function note(f, at, dur, vol, type, to) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + 0.004 + at;
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(f, t);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur * 0.8);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(master);
+      o.start(t); o.stop(t + dur + 0.03);
+    }
+    function bell(f, at, dur, vol) { note(f, at, dur, vol, "sine"); note(f * 2, at, dur * 0.6, vol * 0.25, "sine"); }
+    var C5 = 523.25, E5 = 659.25, G5 = 783.99, C6 = 1046.5;
+    var LADDER = [C5, 587.33, E5, G5, 880, C6, 1174.66, 1318.51, 1567.98];       // a pentatonic climb: each number is higher
+    var SOUNDS = {
+      pick: function () { note(784, 0, 0.07, 0.05, "sine"); },
+      drop: function () { note(300, 0, 0.1, 0.09, "triangle", 170); },
+      tap: function () { note(587.33, 0, 0.06, 0.06, "sine"); },
+      count: function (n) { bell(LADDER[Math.max(0, Math.min(LADDER.length - 1, (n || 1) - 1))], 0, 0.22, 0.08); },
+      yes: function () { bell(C5, 0, 0.24, 0.07); bell(E5, 0.075, 0.24, 0.07); bell(G5, 0.15, 0.4, 0.07); },
+      no: function () { note(392, 0, 0.18, 0.06, "triangle"); note(329.63, 0.14, 0.26, 0.05, "triangle"); },
+      shown: function () { bell(E5, 0, 0.34, 0.06); },
+      hint: function () { note(880, 0, 0.05, 0.04, "sine"); note(880, 0.1, 0.05, 0.04, "sine"); },
+      done: function () { bell(C5, 0, 0.26, 0.07); bell(E5, 0.1, 0.26, 0.07); bell(G5, 0.2, 0.26, 0.07); bell(C6, 0.3, 0.6, 0.07); }
+    };
+    function play(name, arg) {
+      if (!on || !SOUNDS[name]) return false;
+      // A test can see what was meant to sound, even where there is no sound card.
+      if (window.__OPLO_TEST) (window.__sfxLog = window.__sfxLog || []).push(arg != null ? name + ":" + arg : name);
+      if (!ready()) return false;
+      try { SOUNDS[name](arg); return true; } catch (e) { return false; }
+    }
+    return {
+      can: !!AC, play: play,
+      isOn: function () { return on; },
+      set: function (v) { on = !!v; try { if (on) localStorage.removeItem("oplo.k1.sfx"); else localStorage.setItem("oplo.k1.sfx", "off"); } catch (e) { /* private window */ } subs.forEach(function (f) { f(on); }); },
+      sub: function (f) { subs.push(f); },
+      // Browsers start sound only after a touch or a key: wake it on the first one.
+      unlock: ready
+    };
+  })();
+  if (SFX.can) ["pointerdown", "keydown"].forEach(function (ev) { window.addEventListener(ev, function once() { window.removeEventListener(ev, once, true); SFX.unlock(); }, true); });
 
   /* ================================================================ Scene
      spec: { w, h, bg: "room" | "garden" | "plain" | "track", alt,
@@ -200,11 +273,13 @@
       S.set(T, x, y, true);
       S.settle(T); paint(T); S.layer(T); S.shadowOf(T);
       S.moved[T.id] = true;
+      S.sync();
       if (!o2.quiet) S.emit("drop", T);
     };
     S.reset = function (ids) {
       S.movers().forEach(function (T) { if (ids && ids.indexOf(T.id) < 0) return; S.set(T, T.home.x, T.home.y, true); S.settle(T); paint(T); S.layer(T); S.shadowOf(T); delete S.moved[T.id]; });
       S.select(null);
+      S.sync();
     };
     S.lock = function (v) { S.locked = !!v; svg.classList.toggle("k1-locked", !!v); if (v) S.select(null); };
     S.select = function (T) {
@@ -260,7 +335,7 @@
         if (!drag || e.pointerId !== drag.id) return;
         if (!drag.moved) {
           if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 6) return;
-          drag.moved = true; node.classList.add("drag"); node.classList.remove("k1-glide"); S.select(null);
+          drag.moved = true; node.classList.add("drag"); node.classList.remove("k1-glide"); S.select(null); SFX.play("pick");
         }
         var p = pt(e);
         G.move(T.g, p.x - drag.dx, p.y - drag.dy); paint(T);
@@ -271,7 +346,7 @@
         var d = drag; drag = null;
         try { box.releasePointerCapture(d.id); } catch (x) { /* already gone */ }
         node.classList.remove("drag");
-        if (!d.moved) { S.layer(T); S.select(S.sel === T ? null : T); S.emit("pick", T); return; }
+        if (!d.moved) { S.layer(T); S.select(S.sel === T ? null : T); if (S.sel === T) SFX.play("pick"); S.emit("pick", T); return; }
         S.set(T, T.g.x, T.g.y, false);
         if (S.gravity) { S.fall(T); S.emit("drop", T); return; }
         S.settle(T); paint(T); S.layer(T); S.shadowOf(T);
@@ -295,7 +370,7 @@
             S.settle(T); paint(T); S.layer(T); S.shadowOf(T); S.moved[T.id] = true; S.emit("drop", T);
           }, 450);
         } else if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault(); e.stopPropagation(); S.select(S.sel === T ? null : T); S.emit("pick", T);
+          e.preventDefault(); e.stopPropagation(); S.select(S.sel === T ? null : T); if (S.sel === T) SFX.play("pick"); S.emit("pick", T);
         }
       });
     }
@@ -357,9 +432,110 @@
       setTimeout(function () { c.remove(); }, ms || 3200);
     };
 
+    /* ---- the picture as a named graph, and what can be done to it
+       Every thing is a node with a name ("moti", "table") that says what is true
+       of it just now, in the same attributes a screen reader reads. Anything that
+       wants to point at the picture — a hint, the nudge after a quiet moment, one
+       day a tutor — does it through `act`, which only takes names that are in the
+       graph: a made-up name is turned away, not drawn. */
+    svg.setAttribute("data-scene-graph-node", "true");
+    svg.setAttribute("data-scene-graph-name", "scene");
+    svg.__k1 = S;
+    // What is true of a thing, as a plain sentence: "Moti is on the table."
+    S.state = function (T) {
+      T = S.id(T);
+      if (T.role !== "move") return T.label;
+      var plural = !!T.spec.plural;
+      for (var i = 0; i < S.list.length; i++) {
+        var R = S.list[i];
+        if (R === T || R.role === "move" || R.role === "deco") continue;
+        var rel = G.which(T.g, R.g);
+        if (rel) return G.plain(G.sentence(T.label, rel, R.label, plural));
+      }
+      if (T.rest === S.ground && S.groundLabel) return G.plain(G.sentence(T.label, "on", S.groundLabel, plural));
+      return T.label;
+    };
+    S.sync = function () {
+      S.list.forEach(function (T) {
+        if (T.role === "deco") return;
+        T.node.setAttribute("data-scene-graph-node", "true");
+        T.node.setAttribute("data-scene-graph-name", T.id);
+        T.node.setAttribute("aria-description", S.state(T));
+      });
+    };
+    S.graph = function () {
+      return { name: "scene", description: spec.alt || "", children: S.list.filter(function (T) { return T.role !== "deco"; }).map(function (T) {
+        return { name: T.id, label: T.label, role: T.role, description: S.state(T) };
+      }) };
+    };
+    // The graph as text, one line a node: what a tutor (or a test) is handed.
+    S.text = function () {
+      var g = S.graph();
+      return ["scene: " + g.description].concat(g.children.map(function (c) { return "\t" + c.name + ": " + c.description; })).join("\n");
+    };
+    S.on("drop", S.sync); S.on("landed", S.sync);
+    S.on("drop", function () { SFX.play("drop"); });
+
+    /* A ring that pulses round a thing says "this one". Every ring beats on one
+       clock (two seconds a beat) that is told to play, to settle — finish the beat
+       it is in — or to pause, so rings made at different moments stay in step and
+       nothing is cut off half way. */
+    var PERIOD = 2000, pstate = "paused", pstart = 0, psettle = null, flashT = null, rings = [];
+    function pnow() { var t = document.timeline && document.timeline.currentTime; return typeof t === "number" ? t : performance.now(); }
+    function psync() {
+      [].forEach.call(svg.querySelectorAll("[data-synced-to-pulse-timer]"), function (n) {
+        if (!n.getAnimations) return;
+        n.getAnimations().forEach(function (a) {
+          try { a.effect.updateTiming({ duration: PERIOD, iterations: Infinity }); } catch (e) { /* not a timed animation */ }
+          if (pstate === "paused") { try { a.pause(); a.currentTime = 0; } catch (e) { /* gone */ } }
+          else { try { a.play(); a.startTime = pstart; } catch (e) { /* gone */ } }
+        });
+      });
+      svg.classList.toggle("k1-pulsing", pstate !== "paused");
+    }
+    function clearRings() { rings.forEach(function (r) { r.remove(); }); rings = []; }
+    S.pulseState = function () { return pstate; };
+    S.pulse = function (state) {
+      clearTimeout(psettle); psettle = null;
+      if (state === "playing") { if (pstate === "paused") pstart = pnow(); pstate = "playing"; psync(); }
+      else if (state === "settling" && pstate !== "paused") {
+        var left = PERIOD - ((pnow() - pstart) % PERIOD);
+        pstate = "settling"; psync();
+        psettle = setTimeout(function () { pstate = "paused"; psync(); clearRings(); }, left);
+      } else if (state === "paused") { pstate = "paused"; psync(); clearRings(); }
+    };
+    // actions: [ { tag: "highlight", ids: [...] } | { tag: "clear" } ] → { rejected: [names that are not in the picture] }
+    S.act = function (actions) {
+      var rejected = [];
+      (actions || []).forEach(function (a) {
+        if (!a) return;
+        if (a.tag === "clear") { clearRings(); return; }
+        if (a.tag !== "highlight") return;
+        (a.ids || []).forEach(function (id) {
+          var T = typeof id === "string" ? S.T[id] : null;
+          if (!T || T.role === "deco") { rejected.push(id); return; }
+          var g = T.g;
+          rings.push(svgEl("rect", { class: "k1-pulse", "data-synced-to-pulse-timer": "", "data-for": id, x: g.x - 9, y: g.y - 9, width: g.w + 18, height: g.h + 18, rx: 18 }, L.over));
+        });
+        psync();
+      });
+      return { rejected: rejected };
+    };
+    // Ring these for a couple of beats, then let them settle.
+    S.flash = function (ids, beats) {
+      var r = S.act([{ tag: "clear" }, { tag: "highlight", ids: ids }]);
+      S.pulse("playing");
+      clearTimeout(flashT);
+      flashT = setTimeout(function () { S.pulse("settling"); }, (beats || 2) * PERIOD - 60);
+      return r;
+    };
+    // A kind says which things a child who has gone quiet should be pointed at.
+    S.nudge = null;
+
     (spec.things || []).forEach(function (ts) { S.add(ts); });
     (spec.labels || []).forEach(function (l) { S.text(l.x, l.y, l.t, l.cls); });
-    S.destroy = function () { svg.remove(); S.ev = {}; };
+    S.sync();
+    S.destroy = function () { clearTimeout(psettle); clearTimeout(flashT); svg.remove(); S.ev = {}; };
     return S;
   }
 
@@ -379,35 +555,86 @@
      opens. What the guide says after Check is read too. */
   var spk = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.6a8 8 0 0 1 0 10.8"/></svg>';
   var mute = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></svg>';
+  var bellOn = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5.5 2 7 2 7H4s2-1.5 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>';
+  var bellOff = bellOn.replace("</svg>", '<path d="m4 4 16 16"/></svg>');
+  // A child who has gone quiet is pointed at what to move or tap: 8 s, and never while the voice is still reading.
+  var IDLE_MS = 8000;
+  function idleMs() { return window.__OPLO_TEST && window.__K1_IDLE ? window.__K1_IDLE : IDLE_MS; }
+
   CH.cardHook = function (card, s, reg) {
     if (!s || !s.k1) return;
     var text = s.say != null ? s.say : G.plain(s.prompt || s.t || "");
-    if (VOICE.can) {
+    if (VOICE.can || SFX.can) {
       var bar = el("div", "k1-voice");
-      var lis = button("k1-listen", spk + "<span>Listen</span>");
-      lis.setAttribute("aria-label", "Read this to me");
-      lis.addEventListener("click", function () { VOICE.say(text, { force: true }); });
-      var sw = button("k1-vsw", VOICE.isOn() ? spk : mute);
-      sw.setAttribute("role", "switch"); sw.setAttribute("aria-checked", String(VOICE.isOn())); sw.setAttribute("aria-label", "Read every screen aloud");
-      sw.title = VOICE.isOn() ? "Reading aloud is on. Press to turn it off." : "Reading aloud is off. Press to turn it on.";
-      var sync = function (on) { sw.innerHTML = on ? spk : mute; sw.setAttribute("aria-checked", String(on)); sw.classList.toggle("off", !on); sw.title = on ? "Reading aloud is on. Press to turn it off." : "Reading aloud is off. Press to turn it on."; };
-      sync(VOICE.isOn());
-      sw.addEventListener("click", function () { VOICE.set(!VOICE.isOn()); sync(VOICE.isOn()); if (VOICE.isOn()) VOICE.say(text); });
-      VOICE.sub(sync);
-      bar.appendChild(lis); bar.appendChild(sw);
+      if (VOICE.can) {
+        var lis = button("k1-listen", spk + "<span>Listen</span>");
+        lis.setAttribute("aria-label", "Read this to me");
+        lis.addEventListener("click", function () { VOICE.say(text, { force: true }); });
+        var sw = button("k1-vsw", VOICE.isOn() ? spk : mute);
+        sw.setAttribute("role", "switch"); sw.setAttribute("aria-checked", String(VOICE.isOn())); sw.setAttribute("aria-label", "Read every screen aloud");
+        sw.title = VOICE.isOn() ? "Reading aloud is on. Press to turn it off." : "Reading aloud is off. Press to turn it on.";
+        var sync = function (on) { sw.innerHTML = on ? spk : mute; sw.setAttribute("aria-checked", String(on)); sw.classList.toggle("off", !on); sw.title = on ? "Reading aloud is on. Press to turn it off." : "Reading aloud is off. Press to turn it on."; };
+        sync(VOICE.isOn());
+        sw.addEventListener("click", function () { VOICE.set(!VOICE.isOn()); sync(VOICE.isOn()); if (VOICE.isOn()) VOICE.say(text); });
+        VOICE.sub(sync);
+        bar.appendChild(lis); bar.appendChild(sw);
+      }
+      if (SFX.can) {
+        var bw = button("k1-vsw k1-ssw", SFX.isOn() ? bellOn : bellOff);
+        bw.setAttribute("role", "switch"); bw.setAttribute("aria-label", "Play little sounds");
+        var bsync = function (on) { bw.innerHTML = on ? bellOn : bellOff; bw.setAttribute("aria-checked", String(on)); bw.classList.toggle("off", !on); bw.title = on ? "Little sounds are on. Press to turn them off." : "Little sounds are off. Press to turn them on."; };
+        bsync(SFX.isOn());
+        bw.addEventListener("click", function () { SFX.set(!SFX.isOn()); bsync(SFX.isOn()); SFX.play("tap"); });
+        SFX.sub(bsync);
+        bar.appendChild(bw);
+      }
       card.appendChild(bar);
     }
+    // The end card has no problem on it: it gets the fanfare, once.
+    if (s.prompt == null && s.t == null && s.say != null) SFX.play("done");
     var t = setTimeout(function () { VOICE.say(text); }, reduced() ? 120 : 420);
-    var seen = "";
+    var seen = "", heard = "", vt = null;
     var mo = typeof MutationObserver === "function" ? new MutationObserver(function () {
       var sh = card.querySelector(".ch-sheet.on");
-      if (!sh) { seen = ""; return; }
+      if (!sh) { seen = ""; heard = ""; return; }
+      // The verdict has a sound of its own, once each time it changes.
+      var kind = sh.classList.contains("ok") ? "yes" : sh.classList.contains("no") ? "no" : sh.classList.contains("shown") ? "shown" : "";
+      if (kind && kind !== heard) { heard = kind; SFX.play(kind); }
       var tx = G.plain(sh.innerHTML);
-      if (tx && tx !== seen) { seen = tx; VOICE.say(tx); }
+      if (tx && tx !== seen) {
+        seen = tx;
+        // The chime lands first, then the words, so the chime does not cover the first of them.
+        clearTimeout(vt);
+        if (kind && SFX.isOn() && SFX.can) vt = setTimeout(function () { VOICE.say(tx); }, 320); else VOICE.say(tx);
+      }
     }) : null;
     if (mo) mo.observe(card, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
-    reg(function () { clearTimeout(t); if (mo) mo.disconnect(); VOICE.stop(); });
+
+    /* The quiet moment. Nothing touched for a while on a step that is still
+       open: whatever the picture says can be moved or tapped starts to glow,
+       on the one clock; the first touch lets the glow finish its beat. */
+    var idle = null, glowing = [];
+    function scenes() { return [].map.call(card.querySelectorAll(".k1-svg"), function (n) { return n.__k1; }).filter(function (S) { return S && S.nudge; }); }
+    function open() { return !card.querySelector(".ch-sheet.ok, .ch-sheet.shown"); }
+    function arm() { clearTimeout(idle); idle = setTimeout(go, idleMs()); }
+    function go() {
+      if (!open()) return;
+      if (VOICE.speaking()) { arm(); return; }
+      scenes().forEach(function (S) {
+        var ids = S.nudge();
+        if (ids && ids.length) { S.act([{ tag: "clear" }, { tag: "highlight", ids: ids }]); S.pulse("playing"); glowing.push(S); }
+      });
+    }
+    function calm() {
+      glowing.forEach(function (S) { S.pulse("settling"); });
+      glowing = [];
+      arm();
+    }
+    card.addEventListener("pointerdown", calm, true);
+    card.addEventListener("keydown", calm, true);
+    arm();
+    reg(function () { clearTimeout(t); clearTimeout(idle); clearTimeout(vt); if (mo) mo.disconnect(); VOICE.stop(); });
   };
 
-  window.OPLO_K1 = { Scene: Scene, still: still, VOICE: VOICE, G: G, A: A, el: el, esc: esc, button: button, svgEl: svgEl, reduced: reduced, later: later, clamp: clamp, spk: spk };
+  window.OPLO_K1 = { Scene: Scene, still: still, VOICE: VOICE, SFX: SFX, G: G, A: A, el: el, esc: esc, button: button, svgEl: svgEl, reduced: reduced, later: later, clamp: clamp, spk: spk };
 })();

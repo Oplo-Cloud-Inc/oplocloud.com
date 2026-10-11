@@ -19,7 +19,7 @@
   "use strict";
   var K = window.OPLO_K1, CH = window.OPLO_CHALLENGE;
   if (!K || !CH || CH.kinds.g1put) return;
-  var Scene = K.Scene, G = K.G, VOICE = K.VOICE, el = K.el, button = K.button, later = K.later, esc = K.esc, reduced = K.reduced;
+  var Scene = K.Scene, G = K.G, VOICE = K.VOICE, SFX = K.SFX, el = K.el, button = K.button, later = K.later, esc = K.esc, reduced = K.reduced;
   var REL = G.REL, WORDS = G.WORDS;
   var NUM = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
   function many(n) { return n === 1 ? "one" : NUM[n] || String(n); }
@@ -103,6 +103,13 @@
     api.solution = function () { return plan(); };
     api.scene = S;
     api.ready = function () { return Object.keys(S.moved).length > 0 && !won; };
+    // Quiet for a while: the things the words are about, that are not yet where they say.
+    S.nudge = function () {
+      if (won) return null;
+      var ids = [];
+      tasks.forEach(function (t) { if (!taskOK(t)) (t.group || [t.item]).forEach(function (id) { if (S.T[id] && S.T[id].role === "move" && ids.indexOf(id) < 0) ids.push(id); }); });
+      return ids;
+    };
     // For tests: the moves that solve it, and one move that is wrong.
     api.key = function () {
       var t = tasks[0], R = S.id(t.ref), id = t.item || t.group[0], T = S.id(id), opp = { on: "under", under: "on", inside: "outside", outside: "inside", above: "below", below: "above", top: "bottom", middle: "top", bottom: "top", near: "far", far: "near" }[t.rel];
@@ -132,6 +139,7 @@
       fails++;
       var t = bad[0], ids = t.group || [t.item];
       shake(S, ids.filter(function (id) { return !relOK(S, t, id); }));
+      S.flash(ids.filter(function (id) { return !relOK(S, t, id); }));
       if (fails >= 1 && t.rel !== "near" && t.rel !== "far") S.hint(t.ref, t.rel === "above" || t.rel === "below" ? null : (t.zone || (t.rel === "top" || t.rel === "middle" || t.rel === "bottom" ? t.rel : t.rel === "outside" ? "box" : t.rel)), 3000);
       return { ok: false, say: msg(t) };
     };
@@ -190,6 +198,7 @@
         var fresh = w && mark(w);
         f.say('<b class="k1w k1w-' + (inn ? "in" : "out") + ' big">' + key + "!</b>", false);
         VOICE.say(inn ? "In!" : "Out!");
+        SFX.play(inn ? "count" : "tap", inn ? tally.IN : undefined);
         if (inn) hop(S, [T.id]); else shake(S, [T.id]);
         if (fresh) chosen(api);
         S.lock(true);
@@ -197,6 +206,7 @@
       });
     }
     api.ready = function () { return words.every(function (w) { return got[w.key]; }); };
+    S.nudge = function () { return api.ready() || S.locked ? null : S.movers().map(function (T) { return T.id; }); };
     api.key = function () {
       if (s.toss) return { kind: "toss", ballId: S.movers()[0].id };
       var moves = [], mv = S.movers();
@@ -245,6 +255,7 @@
       b.addEventListener("click", function () {
         if (locked || b.disabled) return;
         picked = o.id;
+        SFX.play("tap");
         Object.keys(tiles).forEach(function (k) { tiles[k].classList.toggle("on", k === picked); tiles[k].setAttribute("aria-pressed", String(k === picked)); });
         paintSent();
         if (o.w) VOICE.say(o.w);
@@ -284,12 +295,14 @@
       if (locked) return;
       if (!multi) { Object.keys(on).forEach(function (id) { S.unmark(id); S.id(id).node.setAttribute("aria-pressed", "false"); delete on[id]; }); }
       if (on[T.id]) { delete on[T.id]; S.unmark(T, multi ? "tick" : "ring"); T.node.setAttribute("aria-pressed", "false"); }
-      else { on[T.id] = true; S.mark(T, multi ? "tick" : "ring"); T.node.setAttribute("aria-pressed", "true"); if (!reduced()) { var n = T.node.querySelector(".k1-in"); n.classList.remove("k1-hop"); void n.getBoundingClientRect(); n.classList.add("k1-hop"); } }
+      else { on[T.id] = true; SFX.play("tap"); S.mark(T, multi ? "tick" : "ring"); T.node.setAttribute("aria-pressed", "true"); if (!reduced()) { var n = T.node.querySelector(".k1-in"); n.classList.remove("k1-hop"); void n.getBoundingClientRect(); n.classList.add("k1-hop"); } }
       if (s.speakTap) VOICE.say(T.label);
       chosen(api);
       if (!multi && s.auto !== false) later(function () { if (on[T.id] && !locked && api.onEnter) api.onEnter(); }, 420);
     });
     api.ready = function () { return count() > 0 && !locked; };
+    // Quiet for a while: everything that can be tapped (not which ones are right).
+    S.nudge = function () { return locked ? null : S.list.filter(function (T) { return T.role === "tap" && !on[T.id]; }).map(function (T) { return T.id; }); };
     api.check = function () {
       var ids = Object.keys(on), extra = ids.filter(function (id) { return targets.indexOf(id) < 0; }), miss = s.any ? (ids.length ? [] : targets) : targets.filter(function (id) { return !on[id]; });
       if (!extra.length && !miss.length) { locked = true; S.lock(true); ids.forEach(function (id) { S.unmark(id); S.mark(id, "ok"); }); hop(S, ids); return { ok: true }; }
@@ -325,6 +338,7 @@
         b.addEventListener("click", function () {
           if (locked || b.disabled) return;
           picked = n;
+          SFX.play("tap");
           Object.keys(tiles).forEach(function (k) { tiles[k].classList.toggle("on", +k === n); });
           VOICE.say(many(n));
           chosen(api);
@@ -339,12 +353,15 @@
       if (locked) return;
       if (order.indexOf(T.id) > -1) return;
       order.push(T.id); S.mark(T, "num", String(order.length));
+      SFX.play("count", order.length);
       VOICE.say(many(order.length), { queue: false });
       f.say(order.map(function (x, i) { return G.cap(many(i + 1)); }).join(". ") + ".");
     });
     f.wrap.appendChild(again); f.wrap.appendChild(row);
     f.say("Tap each one to count it.");
     api.ready = function () { return picked != null && !locked; };
+    // Quiet for a while: the ones not counted yet.
+    S.nudge = function () { return locked ? null : S.list.filter(function (T) { return T.role === "tap" && order.indexOf(T.id) < 0; }).map(function (T) { return T.id; }); };
     api.check = function () {
       if (picked === s.answer) { locked = true; S.lock(true); tiles[picked].classList.add("yes"); Object.keys(tiles).forEach(function (k) { tiles[k].disabled = true; }); return { ok: true }; }
       var b = tiles[picked]; b.classList.add("no"); b.disabled = true; b.classList.remove("on"); picked = null;
@@ -423,6 +440,8 @@
       return ok;
     }
     api.ready = function () { return S.movers().some(function (T) { return T.bin; }) && !won; };
+    // Quiet for a while: whatever is still on the mat.
+    S.nudge = function () { return won ? null : S.movers().filter(function (T) { return !T.bin; }).map(function (T) { return T.id; }); };
     api.check = function () {
       var all = S.movers(), loose = all.filter(function (T) { return !T.bin; });
       if (loose.length) { loose.forEach(function (T) { S.mark(T, "no"); setTimeout(function () { S.unmark(T, "no"); }, 1400); shake(S, [T.id]); }); return { ok: false, say: "Put every one in a box. " + (loose.length === 1 ? "One is" : G.cap(many(loose.length)) + " are") + " still on the mat." }; }
@@ -479,6 +498,7 @@
       b.style.setProperty("--cc", CRAYON[name][0]); b.dataset.c = name; b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
         cur = name; [].forEach.call(pal.children, function (c) { c.classList.toggle("on", c === b); c.setAttribute("aria-pressed", String(c === b)); });
+        SFX.play("pick");
         VOICE.say(name);
       });
       pal.appendChild(b);
@@ -489,11 +509,14 @@
       if (locked) return;
       if (!cur) { f.say("Pick a crayon first."); VOICE.say("Pick a crayon first."); pal.classList.remove("nudge"); void pal.offsetWidth; pal.classList.add("nudge"); return; }
       f.say("");
+      SFX.play("drop");
       if (paint[T.id] === cur) { paint[T.id] = null; S.reart(T, { colour: PLAIN[0], dark: PLAIN[1] }); }
       else { paint[T.id] = cur; S.reart(T, { colour: CRAYON[cur][0], dark: CRAYON[cur][1] }); }
       chosen(api);
     });
     api.ready = function () { return Object.keys(paint).some(function (k) { return paint[k]; }) && !locked; };
+    // Quiet for a while, with a crayon in hand: the things that can be painted.
+    S.nudge = function () { return !cur || locked ? null : Object.keys(paint).filter(function (id) { return !paint[id]; }); };
     api.check = function () {
       var bad = Object.keys(paint).filter(function (id) { return (paint[id] || null) !== (goal[id] || null); });
       if (!bad.length) { locked = true; S.lock(true); hop(S, Object.keys(goal)); return { ok: true }; }
@@ -527,8 +550,9 @@
       var b = k, a = ids.length - 1 - k;
       f.say((s.noun || "Bogie") + " " + many(k + 1) + ". " + G.chip("before") + " it: " + (b ? many(b) : "none") + ". " + G.chip("after") + " it: " + (a ? many(a) : "none") + ".", true);
     }
-    S.on("tap", function (T) { var k = ids.indexOf(T.id); if (k < 0) return; seen[k] = true; show(k); chosen(api); });
+    S.on("tap", function (T) { var k = ids.indexOf(T.id); if (k < 0) return; seen[k] = true; SFX.play("tap"); show(k); chosen(api); });
     api.ready = function () { return Object.keys(seen).length >= goal; };
+    S.nudge = function () { return api.ready() ? null : ids.filter(function (id, i) { return !seen[i]; }); };
     api.key = function () { return { kind: "seq", ids: ids.slice(0, goal) }; };
     api.scene = S;
     api.destroy = function () { S.destroy(); };
@@ -553,6 +577,7 @@
           var p = fr.pos[id], T = S.id(id), q = Array.isArray(p) ? { x: p[0], y: p[1] } : G.solve(p.rel, T.g, S.id(p.ref).g, { zone: p.zone, ground: S.ground, W: S.W, n: p.n || 0 });
           S.moveTo(T, q.x, q.y, { quiet: true });
         });
+        if (Object.keys(fr.pos || {}).length) SFX.play("drop");
         f.say(fr.line || "");
         var plain = G.plain(fr.line || ""), hold = fr.hold || Math.max(2000, plain.length * 85);
         if (VOICE.isOn() && VOICE.can && plain) {
