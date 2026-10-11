@@ -1946,4 +1946,141 @@ export class D1Repository {
     ).bind(accountId).first();
     return row ? row.admission_no : null;
   }
+
+  /* ------------------------------------------------- Conduct and health
+     Two ledgers the office keeps and the school rules over. The rules —
+     who may read an entry, what a family is shown — are in guard.js and the
+     routes; this block reads and writes rows. */
+
+  async createConduct(c) {
+    const cid = id("cnd");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_conduct
+         (id, org_id, student_id, kind, category, severity, title, details, occurred_on, location,
+          course_id, people, action_taken, follow_up_on, status, family_sees, reported_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)`
+    ).bind(cid, c.orgId || null, c.studentId, c.kind, c.category || null, c.severity || null, c.title, c.details || null,
+           c.occurredOn, c.location || null, c.courseId || null, c.people || null, c.actionTaken || null,
+           c.followUpOn || null, c.familySees ? 1 : 0, c.reportedBy || null, t, t).run();
+    return this.findConduct(cid);
+  }
+
+  async findConduct(conductId) {
+    return this.db.prepare(
+      `SELECT c.*, sp.name AS student_name, rp.name AS reporter_name, cr.title AS course_title
+         FROM learn_conduct c
+         LEFT JOIN profiles sp ON sp.account_id = c.student_id
+         LEFT JOIN profiles rp ON rp.account_id = c.reported_by
+         LEFT JOIN learn_courses cr ON cr.id = c.course_id
+        WHERE c.id = ?`
+    ).bind(conductId).first();
+  }
+
+  async updateConduct(conductId, patch) {
+    const map = { category: "category", severity: "severity", title: "title", details: "details", occurredOn: "occurred_on",
+                  location: "location", courseId: "course_id", people: "people", actionTaken: "action_taken",
+                  followUpOn: "follow_up_on", status: "status", familySees: "family_sees", resolvedBy: "resolved_by",
+                  resolvedAt: "resolved_at" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(typeof patch[k] === "boolean" ? (patch[k] ? 1 : 0) : patch[k]); }
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), conductId);
+    await this.db.prepare(`UPDATE learn_conduct SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+    return this.findConduct(conductId);
+  }
+
+  async listConduct({ orgId, studentId, kind, status, from, to, reportedBy, familyOnly, limit = 500 } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT c.*, sp.name AS student_name, rp.name AS reporter_name, cr.title AS course_title
+         FROM learn_conduct c
+         LEFT JOIN profiles sp ON sp.account_id = c.student_id
+         LEFT JOIN profiles rp ON rp.account_id = c.reported_by
+         LEFT JOIN learn_courses cr ON cr.id = c.course_id
+        WHERE (? IS NULL OR c.org_id = ? OR c.org_id IS NULL)
+          AND (? IS NULL OR c.student_id = ?) AND (? IS NULL OR c.kind = ?) AND (? IS NULL OR c.status = ?)
+          AND (? IS NULL OR c.occurred_on >= ?) AND (? IS NULL OR c.occurred_on <= ?)
+          AND (? IS NULL OR c.reported_by = ?) AND (? = 0 OR c.family_sees = 1)
+        ORDER BY c.occurred_on DESC, c.created_at DESC LIMIT ?`
+    ).bind(orgId || null, orgId || null, studentId || null, studentId || null, kind || null, kind || null,
+           status || null, status || null, from || null, from || null, to || null, to || null,
+           reportedBy || null, reportedBy || null, familyOnly ? 1 : 0, limit).all();
+    return results || [];
+  }
+
+  async addConductEvent(conductId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_conduct_events (id, conduct_id, at, actor_id, actor_name, kind, note) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("cev"), conductId, now(), e.actorId || null, e.actorName || null, e.kind, e.note || null).run();
+  }
+
+  async listConductEvents(conductId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_conduct_events WHERE conduct_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(conductId).all();
+    return results || [];
+  }
+
+  async createHealth(h) {
+    const hid = id("hlt");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_health
+         (id, org_id, student_id, kind, title, detail, severity, on_date, due_on, status, flag, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)`
+    ).bind(hid, h.orgId || null, h.studentId, h.kind, h.title, h.detail || null, h.severity || null, h.onDate || null,
+           h.dueOn || null, h.flag || null, h.createdBy || null, t, t).run();
+    return this.findHealth(hid);
+  }
+
+  async findHealth(healthId) {
+    return this.db.prepare(
+      `SELECT h.*, sp.name AS student_name FROM learn_health h
+         LEFT JOIN profiles sp ON sp.account_id = h.student_id WHERE h.id = ?`
+    ).bind(healthId).first();
+  }
+
+  async updateHealth(healthId, patch) {
+    const map = { title: "title", detail: "detail", severity: "severity", onDate: "on_date", dueOn: "due_on",
+                  status: "status", flag: "flag" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), healthId);
+    await this.db.prepare(`UPDATE learn_health SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+    return this.findHealth(healthId);
+  }
+
+  async listHealth({ orgId, studentId, kind, status, studentIds, limit = 2000 } = {}) {
+    let where = `(? IS NULL OR h.org_id = ? OR h.org_id IS NULL) AND (? IS NULL OR h.student_id = ?)
+                 AND (? IS NULL OR h.kind = ?) AND (? IS NULL OR h.status = ?)`;
+    const binds = [orgId || null, orgId || null, studentId || null, studentId || null, kind || null, kind || null, status || null, status || null];
+    if (studentIds && studentIds.length) {
+      where += ` AND h.student_id IN (${studentIds.map(() => "?").join(",")})`;
+      binds.push(...studentIds);
+    }
+    const { results } = await this.db.prepare(
+      `SELECT h.*, sp.name AS student_name FROM learn_health h
+         LEFT JOIN profiles sp ON sp.account_id = h.student_id
+        WHERE ${where} ORDER BY sp.name, h.kind, h.on_date DESC LIMIT ?`
+    ).bind(...binds, limit).all();
+    return results || [];
+  }
+
+  async addHealthEvent(healthId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_health_events (id, health_id, at, actor_id, actor_name, kind, note) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("hev"), healthId, now(), e.actorId || null, e.actorName || null, e.kind, e.note || null).run();
+  }
+
+  async listHealthEvents(healthId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_health_events WHERE health_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(healthId).all();
+    return results || [];
+  }
 }

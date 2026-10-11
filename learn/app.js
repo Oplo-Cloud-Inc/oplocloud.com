@@ -8545,7 +8545,8 @@
       { k: "graduation", name: "Graduation" }] },
     { name: "Students", icon: "people", kids: [
       { k: "students", name: "Student 360" }, { k: "enrollment", name: "Enrollment" }, { k: "rosters", name: "Rosters" },
-      { k: "records", name: "Records" }, { k: "documents", name: "Documents" }, { k: "guardians", name: "Guardians" }] },
+      { k: "records", name: "Records" }, { k: "documents", name: "Documents" }, { k: "guardians", name: "Guardians" },
+      { k: "health", name: "Health" }] },
     { k: "attendance", name: "Attendance", icon: "check" },
     { k: "support", name: "Student Support", icon: "heart" },
     { name: "Analytics", icon: "chart", kids: [
@@ -8557,6 +8558,7 @@
     { k: "curriculum", name: "Curriculum", icon: "books" },
     { name: "Data Center", icon: "server", kids: [{ k: "data", name: "Exports" }, { k: "api", name: "API" }] },
     { k: "security", name: "Security", icon: "shield" },
+    { k: "office", name: "Reports", icon: "table" },
     { k: "activity", name: "Audit Log", icon: "wave" },
     { k: "system", name: "Settings", icon: "gear" },
     /* Places the platform does not keep records for yet. They are still here,
@@ -9377,7 +9379,7 @@
        people: tabPeople, permissions: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
        reportcards: tabReportCards, periods: tabPeriods, analytics: tabAnalytics, data: tabData, security: tabSecurity,
        standards: tabStandards, gpa: tabGpa, transcripts: tabTranscripts, graduation: tabGraduation,
-       enrollment: tabEnrollment, rosters: tabRosters, records: tabRecords, documents: tabDocuments, guardians: tabGuardians,
+       enrollment: tabEnrollment, office: tabOffice, health: tabHealth, rosters: tabRosters, records: tabRecords, documents: tabDocuments, guardians: tabGuardians,
        "an-assessments": tabAnAssessments, "an-standards": tabAnStandards, growth: tabGrowth, groups: tabGroups, longitudinal: tabLongitudinal,
        departments: tabDepartments, "teacher-analytics": tabTeacherAnalytics,
        scheduling: tabScheduling, attendance: tabAttendance, behavior: tabBehavior, support: tabSupport,
@@ -12858,7 +12860,8 @@
     body.appendChild(head);
 
     var TABS = [["overview", "Overview"], ["grades", "Grades"], ["missing", "Missing work"], ["attendance", "Attendance"], ["timeline", "Timeline"],
-                ["graduation", "Graduation"], ["family", "Family"], ["enrollment", "Enrollment"]];
+                ["graduation", "Graduation"], ["family", "Family"], ["enrollment", "Enrollment"],
+                ["behavior", "Behavior"], ["health", "Health"]];
     var seg = el("div", "cn-seg cx-360tabs");
     TABS.forEach(function (t) {
       var b = el("button", "cn-segb" + (S.s360tab === t[0] ? " on" : ""), t[1]);
@@ -12905,7 +12908,9 @@
       pane.innerHTML = "";
       ({ overview: s360Overview, grades: s360Grades, missing: s360Missing, timeline: s360Timeline,
          graduation: s360Graduation, family: s360Family, attendance: s360Attendance,
-         enrollment: function (p, d, st) { enr().studentPanel(p, st); } }[S.s360tab] || s360Overview)(pane, D, s);
+         enrollment: function (p, d, st) { enr().studentPanel(p, st); },
+         behavior: function (p, d, st) { care().studentBehavior(p, st); },
+         health: function (p, d, st) { care().studentHealth(p, st); } }[S.s360tab] || s360Overview)(pane, D, s);
     }
   }
 
@@ -15561,6 +15566,22 @@
 
   function tabEnrollment(v) { enr().tab(v); }
 
+  /* The office's own reports — honor roll, deficiency lists, ages by grade,
+     birthdays, labels — are computed in office.js from what the console
+     already reads, and are handed the same pieces. */
+  var OFF = null;
+  function off() {
+    if (OFF) return OFF;
+    OFF = window.OPLO_OFFICE({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed, CX_PASS: CX_PASS,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cxPage: cxPage, cxNone: cxNone, barChart: barChart,
+      cxPrint: cxPrint, printHead: printHead, printTable: printTable, csvDownload: csvDownload,
+      loadSchool: loadSchool, readFamilies: readFamilies, openAdmin: openAdmin
+    });
+    return OFF;
+  }
+  function tabOffice(v) { off().tab(v); }
+
   function tabRosters(v) {
     var P = cxPage(v, "Students", "Rosters", "A course’s class list, or the whole school’s, with each student’s grade as it stands.");
     var node = loading(v, "rosters");
@@ -16798,11 +16819,20 @@
       "Courses exist, but they are not placed in periods or rooms yet, so there is no timetable to build from.",
       [["Enrollment", function () { openAdmin(false, "enrollment"); }], ["Curriculum", function () { openAdmin(false, "curriculum"); }]]);
   }
-  function tabBehavior(v) {
-    soonPage(v, null, "Behavior", "Incidents, recognition and follow-up.",
-      ["Incidents, with what happened, where and who was involved", "Recognition, not only referrals", "Consequences and follow-up, and who owns each", "Patterns over time"],
-      "The platform keeps no behaviour records yet. It will need its own permissions — who may write one, and what a family sees — before it keeps any.",
-      [["Student Support", function () { openAdmin(false, "support"); }]]);
+  function tabBehavior(v) { care().behavior(v); }
+  function tabHealth(v) { care().health(v); }
+
+  /* Behavior and health are the office's most sensitive records and have
+     their own rules; they live in care.js and are handed the same pieces. */
+  var CARE = null;
+  function care() {
+    if (CARE) return CARE;
+    CARE = window.OPLO_CARE({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnActions: cnActions, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, csvDownload: csvDownload, openAdmin: openAdmin
+    });
+    return CARE;
   }
   function tabInventory(v) {
     soonPage(v, "School Operations", "Inventory", "The school’s things: devices, textbooks, equipment.",

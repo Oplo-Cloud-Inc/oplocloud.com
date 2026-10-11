@@ -89,9 +89,9 @@ window.OPLO_APPLY = (function () {
     return NS.mine().then(function (r) { DATA = r; return r; });
   }
 
-  function head(title, sub) {
+  function head(title, sub, eyebrow) {
     var f = h("header", "fa-head");
-    f.appendChild(h("p", "fh-eyebrow", "OEdu Family · Applications"));
+    f.appendChild(h("p", "fh-eyebrow", esc(eyebrow || "OEdu Family · Applications")));
     f.appendChild(h("h1", "fa-title", esc(title)));
     if (sub) f.appendChild(h("p", "fa-sub", esc(sub)));
     return f;
@@ -601,5 +601,45 @@ window.OPLO_APPLY = (function () {
     }, function (e) { toast(e.message); });
   }
 
-  return { open: open };
+  /* What the school has chosen to show a family about conduct, and a child's
+     own health record. Read-only; the school keeps both. */
+  function notes(host, opts) {
+    ROOT = host;
+    OPTS = opts || {};
+    host.innerHTML = "";
+    var st = OPTS.student;
+    var wrap = h("div", "fa-wrap");
+    wrap.appendChild(head("Conduct and health", st ? st.name + " — what the school keeps and has chosen to show you." : "", "OEdu Family · The school's record"));
+    var top = h("div", "fa-top");
+    if (OPTS.back) top.appendChild(btn("Back to the record", "quiet lg", OPTS.back));
+    wrap.appendChild(top);
+    host.appendChild(wrap);
+    if (!st) return;
+    var KINDS = { incident: "Incident", merit: "Merit", counseling: "Counseling" };
+    var HK = { allergy: "Allergy", condition: "Condition", immunization: "Immunization", medication: "Medication", screening: "Screening", visit: "Visit", insurance: "Insurance" };
+    var c = h("section", "fa-block"); c.appendChild(h("h2", null, "Conduct")); wrap.appendChild(c);
+    var m = h("section", "fa-block"); m.appendChild(h("h2", null, "Health")); wrap.appendChild(m);
+    API.conduct.forStudent(st.id).then(function (r) {
+      if (!r.entries.length) c.appendChild(h("p", "fa-note", "The school has not shared any entries."));
+      r.entries.forEach(function (e) {
+        var row = h("div", "fa-row");
+        row.innerHTML = "<span><b>" + esc(e.title) + "</b><small>" + esc((KINDS[e.kind] || e.kind) + " · " + day(e.occurredOn) +
+          (e.location ? " · " + e.location : "") + (e.details ? " — " + e.details : "") + (e.actionTaken ? " · What was done: " + e.actionTaken : "")) + "</small></span><em>" +
+          esc(e.status === "open" ? "Open" : "Resolved") + "</em>";
+        c.appendChild(row);
+      });
+    }, function (e) { c.appendChild(h("p", "fa-note", esc(e.message))); });
+    API.health.forStudent(st.id).then(function (r) {
+      var act = r.entries.filter(function (e) { return e.status === "active"; });
+      if (!act.length) m.appendChild(h("p", "fa-note", "Nothing is on file."));
+      act.forEach(function (e) {
+        var row = h("div", "fa-row");
+        row.innerHTML = "<span><b>" + esc(e.title) + "</b><small>" + esc([HK[e.kind] || e.kind, e.severity, e.onDate ? day(e.onDate) : "", e.detail].filter(Boolean).join(" · ")) +
+          "</small></span><em>" + esc(e.dueOn ? "Next " + day(e.dueOn) : "") + "</em>";
+        m.appendChild(row);
+      });
+    }, function (e) { m.appendChild(h("p", "fa-note", esc(e.message))); });
+  }
+
+  return { open: open, notes: notes };
 })();

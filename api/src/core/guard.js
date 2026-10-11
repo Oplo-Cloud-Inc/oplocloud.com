@@ -58,6 +58,7 @@ export const ACTIONS = [
   "guardian.read", "guardian.write",
   "record.read", "record.write",
   "assessment.read", "assessment.write",
+  "conduct.read", "conduct.write", "conduct.manage", "health.read", "health.write", "health.flags",
   "enrollment.read", "enrollment.write", "enrollment.verify", "enrollment.decide",
   "enrollment.activate", "enrollment.sensitive", "enrollment.settings",
   "role.grant",
@@ -332,6 +333,36 @@ export async function can(ctx, action, resource = {}) {
     case "assessment.write":
       return learnAdmin;
 
+    /* ----------------------------------------------- Conduct and health
+       Conduct is read by the people who run discipline, by the teacher who
+       wrote an entry, and — only where the school chose to show it — by the
+       family of the student it is about. A student reads none of it. Anyone
+       who teaches a student may record what they saw; settling an entry,
+       showing it to a family and removing it are the deans', principals',
+       counselors' and administrators'.
+
+       Health is the office's and the nurse's. A teacher is never given the
+       record: only the flags the school raised for the student, which say
+       what to know and do. A family reads their own child's. */
+    case "conduct.read":
+      if (hasAny(actor, ["dean", "principal", "counselor"], orgId) || staff) return true;
+      if (resource.accountId && await guardsStudent(ctx, actor, resource.accountId)) return true;
+      return resource.reportedBy === actor.id;
+    case "conduct.write":
+      if (staff) return true;
+      return teachesStudent(ctx, actor, resource.accountId);
+    case "conduct.manage":
+      return hasAny(actor, ["dean", "principal", "counselor"], orgId);
+
+    case "health.read":
+      if (hasAny(actor, ["nurse", "principal"], orgId)) return true;
+      return !!resource.accountId && (await guardsStudent(ctx, actor, resource.accountId));
+    case "health.write":
+      return hasAny(actor, ["nurse", "principal"], orgId);
+    case "health.flags":
+      if (staff || hasAny(actor, ["nurse"], orgId)) return true;
+      return teachesStudent(ctx, actor, resource.accountId);
+
     /* ------------------------------------------------------- Enrollment
        The steps of admitting a student are held by different people on
        purpose: whoever checks the papers is not the one who decides, and
@@ -409,6 +440,12 @@ const REASONS = {
   "attendance.write": "Attendance is taken by the teacher of the course, or corrected by a dean, principal or registrar.",
   "assessment.read": "That assessment has not been set for you, or has not opened yet.",
   "assessment.write": "Only administrators can publish assessments.",
+  "conduct.read": "Conduct records are read by the people who run discipline, the teacher who wrote an entry, and a family where the school chose to show it.",
+  "conduct.write": "You can record conduct for students you teach.",
+  "conduct.manage": "Settling, showing and removing conduct entries is for deans, principals, counselors and administrators.",
+  "health.read": "Health records are the office's and the nurse's. A family reads their own child's.",
+  "health.write": "Health records are kept by the nurse and the office.",
+  "health.flags": "You can see health alerts for students you teach.",
   "enrollment.read": "Enrollment is run by the school's administrators and its registrar and admissions staff.",
   "enrollment.write": "Enrollment is run by the school's administrators and its registrar and admissions staff.",
   "enrollment.verify": "Checking documents is the registrar's. Ask them, or an administrator.",

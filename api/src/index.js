@@ -41,6 +41,8 @@ import * as family from "./routes/family.js";
 import * as assessments from "./routes/assessments.js";
 import * as efm from "./routes/efm.js";
 import * as enrollment from "./routes/enrollment.js";
+import * as conduct from "./routes/conduct.js";
+import * as health from "./routes/health.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -138,6 +140,19 @@ const ROUTES = [
   ["PUT",    "/api/v1/progress", progress.put],
   ["GET",    "/api/v1/gamification/standing", progress.standing],
   ["POST",   "/api/v1/gamification/events",   progress.events],
+
+  ["GET",    "/api/v1/conduct",                     conduct.list],
+  ["POST",   "/api/v1/conduct",                     conduct.create],
+  ["GET",    "/api/v1/conduct/summary",             conduct.summary],
+  ["GET",    "/api/v1/conduct/:conductId",          conduct.get],
+  ["PATCH",  "/api/v1/conduct/:conductId",          conduct.update],
+  ["POST",   "/api/v1/conduct/:conductId/actions/:action", conduct.act],
+  ["GET",    "/api/v1/health-records",                      health.list],
+  ["POST",   "/api/v1/health-records",                      health.create],
+  ["GET",    "/api/v1/health-records/summary",              health.summary],
+  ["GET",    "/api/v1/health-records/flags",                health.flags],
+  ["PATCH",  "/api/v1/health-records/:healthId",            health.update],
+  ["GET",    "/api/v1/health-records/:healthId/history",    health.history],
 
   ["GET",    "/api/v1/enrollment/settings",         enrollment.getSettings],
   ["PUT",    "/api/v1/enrollment/settings",         enrollment.putSettings],

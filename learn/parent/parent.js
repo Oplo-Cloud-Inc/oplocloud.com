@@ -413,6 +413,16 @@
     window.OPLO_APPLY.open(st, { me: S.me, back: home, toast: toast });
   }
 
+  /* What the school has chosen to show about conduct, and the child's own
+     health record — read-only, drawn by apply.js. */
+  function showNotes() {
+    $("#banner").hidden = true;
+    closeSheet(true);
+    var st = $("#stage");
+    st.innerHTML = "";
+    window.OPLO_APPLY.notes(st, { student: S.student, back: function () { choose(S.student); }, toast: toast });
+  }
+
   function problemScreen(title, detail) {
     noticeScreen(title, esc(detail || "Something went wrong reaching the record.") +
       " <a href='' onclick='location.reload();return false'>Try again</a>.");
@@ -601,6 +611,9 @@
         m.appendChild(seg);
         if (hasRole(S.me, "learn", "guardian")) {
           m.appendChild(btn("", icon("documents", 16) + "<span>Applications</span>", function () { closeMenu(); showApplications(null); }));
+        }
+        if (S.student) {
+          m.appendChild(btn("", icon("wellness", 16) + "<span>Conduct and health</span>", function () { closeMenu(); showNotes(); }));
         }
         var more = (S.me.roles || []).some(function (r) {
           return r.product === "platform" || (r.product === "learn" && r.role !== "guardian");

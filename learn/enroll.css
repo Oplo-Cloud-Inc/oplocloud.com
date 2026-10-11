@@ -267,3 +267,32 @@ body.is-console .en-addrow { display: flex; gap: 10px; align-items: center; padd
 
 body.is-console .en-blk-h { font: inherit; font-size: inherit; font-weight: inherit; letter-spacing: inherit; color: inherit; text-align: left; padding: 0; }
 body.is-console .en-dlg-acts { position: sticky; bottom: -22px; padding: 14px 0 2px; background: var(--cx-bg); }
+
+/* ------------------------------------------------------------ Reports */
+body.is-console .of-wrap { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 0 48px; align-items: start; }
+body.is-console .of-list { position: sticky; top: 24px; display: grid; gap: 1px; }
+body.is-console .of-list h3 { margin: 18px 0 6px; font-size: 11.5px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: var(--cx-label-3); }
+body.is-console .of-list h3:first-child { margin-top: 0; }
+body.is-console .of-item { border: 0; background: none; font: inherit; font-size: 13.5px; text-align: left; padding: 6px 10px; border-radius: 8px; color: var(--cx-label); cursor: pointer; }
+body.is-console .of-item:hover { background: var(--cx-fill-2); }
+body.is-console .of-item.on { background: var(--cx-accent-soft); color: var(--cx-accent); font-weight: 500; }
+body.is-console .of-head h2 { margin: 0; font-family: var(--cx-display); font-size: 22px; font-weight: 600; letter-spacing: -.015em; }
+body.is-console .of-head p { margin: 4px 0 0; color: var(--cx-label-2); font-size: 13.5px; }
+body.is-console .of-params { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin: 18px 0 8px; }
+body.is-console .of-param { display: grid; gap: 4px; font-size: 12px; color: var(--cx-label-2); }
+body.is-console .of-param input, body.is-console .of-param select { height: 30px; padding: 0 10px; border-radius: 8px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label); font: inherit; font-size: 13px; }
+body.is-console .of-tools { margin-left: auto; display: flex; gap: 8px; }
+body.is-console .of-note { margin: 10px 0 16px; font-size: 13px; color: var(--cx-label-2); }
+
+/* ------------------------------------------------- Behavior and health */
+body.is-console .care-pick { position: relative; }
+body.is-console .care-pick-list { display: grid; margin-top: 4px; border-radius: 10px; background: var(--cx-card-2); }
+body.is-console .care-pick-list:empty { display: none; }
+body.is-console .care-pick-i { border: 0; background: none; font: inherit; font-size: 13.5px; text-align: left; padding: 8px 12px; cursor: pointer; color: var(--cx-label); }
+body.is-console .care-pick-i:hover { background: var(--cx-fill); }
+body.is-console .care-pick-i small { color: var(--cx-label-3); margin-left: 8px; }
+body.is-console .care-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 9px 0; border-bottom: .5px solid var(--cx-sep); }
+body.is-console .care-h.done { opacity: .55; }
+body.is-console .care-h-t b { font-weight: 500; font-size: 14px; }
+body.is-console .care-h-t small { display: block; font-size: 12px; color: var(--cx-label-2); margin-top: 2px; }
+body.is-console .care-h-t small.care-flag { color: var(--cx-orange); }

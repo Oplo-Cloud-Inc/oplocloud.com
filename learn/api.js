@@ -435,6 +435,28 @@ window.OPLO_API = (function () {
       }
     },
 
+    /* ------------------------------------------- Behavior and health
+       Conduct entries and health records. Who may read or write either is the
+       server's decision; a refusal comes back as a 403 with the rule named. */
+    conduct: {
+      list: function (o) { o = o || {}; return get("/conduct" + q(o)); },
+      forStudent: function (id) { return get("/conduct" + q({ studentId: id })); },
+      summary: function (today) { return get("/conduct/summary" + q({ today: today })); },
+      get: function (id) { return get("/conduct/" + id); },
+      create: function (data) { return post("/conduct", data); },
+      update: function (id, data) { return patch("/conduct/" + id, data); },
+      act: function (id, action, data) { return post("/conduct/" + id + "/actions/" + action, data || {}); }
+    },
+    health: {
+      list: function (o) { return get("/health-records" + q(o || {})); },
+      forStudent: function (id) { return get("/health-records" + q({ studentId: id })); },
+      summary: function (today) { return get("/health-records/summary" + q({ today: today })); },
+      flags: function (o) { return get("/health-records/flags" + q(o)).then(function (r) { return r.flags; }); },
+      create: function (data) { return post("/health-records", data); },
+      update: function (id, data) { return patch("/health-records/" + id, data); },
+      history: function (id) { return get("/health-records/" + id + "/history").then(function (r) { return r.events; }); }
+    },
+
     /* ------------------------------------------------------- Enrollment
        Admitting a student, as a workflow. An application is one attempt to
        be admitted for one school year; an enrollment is that student's year

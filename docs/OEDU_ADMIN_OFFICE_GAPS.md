@@ -1,6 +1,6 @@
 # OEdu Admin — what the school office expects, and where OEdu stands
 
-Checked 2026-10-11 against the deployed build (`platform-backend` + enrollment,
+Checked 2026-10-11 against the deployed build, then closed in part the same day (see *Built since*) (`platform-backend` + enrollment,
 `d715ba0`). A feature list of a typical student-information system for private
 schools — about 170 named reports and eight feature areas — was sorted into
 four columns. "Have" means a real page that reads real data; a page that only
@@ -71,3 +71,19 @@ exports and API surface, which exists.
 3. **Health records** — restricted; teachers see flags, not records.
 4. **Merge the attendance pages** from `claude/admin-compete`.
 5. **Announcements** — needs a decision about sending (email, in-app).
+
+## Built since
+
+| Need | Where | State |
+| --- | --- | --- |
+| Office reports pack (12 reports: honor roll, low grades, deficiency list, courses by average, school bell curve, averages by kind of work, age by grade, count by grade, gender and language, birthdays, not re-enrolled, labels) | Reports | each prints and downloads; computed from existing data, nothing stored |
+| Behavior and discipline: incidents, merits, counseling, follow-up, resolve, **family sees only what the school chooses to show** | Students → Behavior; Student 360; family view | `0018`; 15-step proof |
+| Health records: allergies, conditions, vaccinations (due dates), medications, screenings, visits, insurance; **teachers get flags only** | Students → Health; Student 360; family view (read-only) | `0018`; same proof |
+| Attendance, marking periods, grade-change approvals | merged from `claude/admin-compete` | pages live with the build |
+
+New roles: `nurse` (health) alongside the existing `dean`, `principal`, `counselor`.
+
+Not done, said plainly: a teacher records conduct through the API but has no
+form in the teacher console yet; the gradebook does not yet draw the health flag
+beside a student; nothing is emailed (OEdu sends no messages), so discipline
+alerts are the follow-up list and the family view, not email.
