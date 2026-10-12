@@ -18,9 +18,10 @@
              one chance to revise.
 
    Nothing here locks anything: a question can be skipped, any chapter can
-   be opened, and Continue is always there. The film is a YouTube embed of
-   the course's own upload, played as it was made; nothing is drawn over it
-   (YouTube's rules), so its controls are under it and the questions beside it.
+   be opened, and Continue is always there. The film plays from its own file
+   when the lesson gives one (scene.src), and from the course's YouTube upload
+   when it does not or the file will not start. Either way nothing is drawn over
+   it (YouTube's rules), so its controls are under it and the questions beside it.
 
    Design: the content is the interface. One clean frame for the film, a
    quiet panel for what to think about, choices as one grouped list, motion
@@ -205,13 +206,89 @@
     return ytLoad;
   }
 
+  /* The film's own file. A film that has one (spec.src: { hls, mp4, poster }) plays in a plain <video>
+     that answers to the few calls the YouTube player does, so nothing else in this kit knows which it
+     has. The picture is the file's own ladder, up to 1080p, not whatever a third party decides to serve.
+     HLS runs through lab/hls.min.js (loaded only for a film that has an HLS address), so the picture
+     starts on the best rung the window can use in every browser; a browser that cannot run it plays HLS
+     itself. Each way that cannot start hands over to the next, then to the mp4, then to the YouTube
+     copy, so a lesson never loses its film. */
+  var HLS_LIB = "lab/hls.min.js?v=1.7.3", hlsLoad = null;
+  function hlsApi() {
+    if (window.Hls) return Promise.resolve(window.Hls);
+    if (!hlsLoad) hlsLoad = new Promise(function (ok, fail) {
+      var s = document.createElement("script");
+      s.src = HLS_LIB;
+      s.onload = function () { if (window.Hls) ok(window.Hls); else { hlsLoad = null; fail(new Error("hls missing")); } };
+      s.onerror = function () { hlsLoad = null; fail(new Error("hls did not load")); };
+      document.head.appendChild(s);
+    });
+    return hlsLoad;
+  }
+  // on: { ready(), state(n) with 0 ended · 1 playing · 2 paused · 3 buffering, fail() }
+  function ownPlayer(stage, src, on) {
+    var v = el("video", "ed-video"), p = {}, hls = null, wait = 0, gen = 0, up = false, dead = false, tries = [];
+    v.playsInline = true; v.preload = "auto"; v.setAttribute("aria-label", "Film");
+    if (src.poster) v.poster = src.poster;
+    stage.appendChild(v);
+
+    function stopCurrent() { clearTimeout(wait); if (hls) { hls.destroy(); hls = null; } v.removeAttribute("src"); v.load(); }
+    // The next way to get the picture, or on.fail() when there is none. A way is given up on if it errors or says nothing for 10 s.
+    function next() {
+      if (dead) return;
+      stopCurrent();
+      var t = tries.shift(), g = ++gen;
+      if (!t) { dead = true; v.remove(); on.fail(); return; }
+      wait = setTimeout(function () { if (g === gen) next(); }, 10000);
+      t(g);
+    }
+    if (src.hls) tries.push(function (g) {
+      hlsApi().then(function (Hls) {
+        if (dead || g !== gen) return;
+        if (!Hls.isSupported()) { next(); return; }
+        // Start on the top rung the window can use (not the lowest to "test" the line), and fall back if the line cannot keep up.
+        hls = new Hls({ capLevelToPlayerSize: true, testBandwidth: false, abrEwmaDefaultEstimate: 6e6, maxBufferLength: 40 });
+        hls.on(Hls.Events.ERROR, function (e, d) {
+          if (!d || !d.fatal || g !== gen) return;
+          if (!up) next();                                                           // never started: try the next way
+          else if (d.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();   // started: stay with it
+          else if (d.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+        });
+        hls.loadSource(src.hls); hls.attachMedia(v);
+      }, function () { if (g === gen) next(); });
+    });
+    // Where the browser has no MSE (an older phone) it can still play HLS itself.
+    if (src.hls && v.canPlayType("application/vnd.apple.mpegurl")) tries.push(function () { v.src = src.hls; });
+    if (src.mp4) tries.push(function () { v.src = src.mp4; });
+
+    v.addEventListener("loadedmetadata", function () { if (dead || up) return; up = true; clearTimeout(wait); on.ready(); });
+    v.addEventListener("error", function () { if (!dead && !up && !hls && v.getAttribute("src")) next(); });   // hls.js reports its own
+    v.addEventListener("playing", function () { on.state(1); });
+    v.addEventListener("pause", function () { if (!v.ended) on.state(2); });
+    v.addEventListener("waiting", function () { if (!v.paused) on.state(3); });
+    v.addEventListener("ended", function () { on.state(0); });
+
+    p.el = v;
+    p.getCurrentTime = function () { return v.currentTime || 0; };
+    p.getDuration = function () { return isFinite(v.duration) ? v.duration : 0; };
+    p.seekTo = function (t) { v.currentTime = t; };
+    p.playVideo = function () { var r = v.play(); if (r && r.catch) r.catch(function () { /* a pause or seek cut the start short */ }); };
+    p.pauseVideo = function () { v.pause(); };
+    p.setPlaybackRate = function (r) { v.playbackRate = r; };
+    p.unloadModule = function () {};
+    p.destroy = function () { dead = true; stopCurrent(); v.remove(); };
+    next();
+    return p;
+  }
+
   CH.addKind("watch", function (spec, seed) {
     var api = {}, tkey = "t:" + (spec.id || seed), chapters = spec.chapters || [{ t: 0, n: "Film" }];
     var stops = (spec.stops || []).map(function (s) { return Object.assign({}, s, { done: !!mem("a:" + s.id) }); }).sort(function (a, b) { return a.at - b.at; });
     var dur = spec.duration || 1, raf = 0, prev = 0, asking = null, playing = false, ready = false, gone = false, yt = null, rates = [1, 1.25, 1.5, 2, 0.75], ri = 0, saveAt = 0, segs = [];
 
-    var box = el("div", "ed-watch"), main = el("div", "ed-main"), stage = el("div", "ed-stage"), host = document.createElement("div"), ctl = el("div", "ed-ctl wait"), side = el("aside", "ed-side");
-    stage.appendChild(host); main.appendChild(stage); main.appendChild(ctl); box.appendChild(main); box.appendChild(side);
+    var box = el("div", "ed-watch"), main = el("div", "ed-main"), stage = el("div", "ed-stage"), ctl = el("div", "ed-ctl wait"), side = el("aside", "ed-side");
+    var own = !!(spec.src && (spec.src.hls || spec.src.mp4));   // the film's own file, when it has one; YouTube otherwise
+    main.appendChild(stage); main.appendChild(ctl); box.appendChild(main); box.appendChild(side);
 
     var pp = button("ed-ib", IC.play), back = button("ed-ib", IC.back), scrub = el("div", "ed-scrub"), tip = el("span", "ed-tip"),
         time = el("span", "ed-time"), rate = button("ed-ib ed-rate", "1×"), fs = button("ed-ib", IC.full);
@@ -299,11 +376,13 @@
       if (document.activeElement && document.activeElement.tagName === "IFRAME") pp.focus({ preventScroll: true });
     }
     function failed() {
+      own = false;
       stage.innerHTML = '<div class="ed-missing"><b>The film couldn\'t load.</b><span>Check the connection, or <a href="https://youtu.be/' + esc(spec.youtube) + '" target="_blank" rel="noopener">watch it on YouTube</a>.</span></div>';
       ctl.hidden = true;
     }
     function onReady() {
       ready = true; ctl.classList.remove("wait");
+      link.hidden = own;
       var d = yt.getDuration();
       if (d > 1 && Math.abs(d - dur) > 1) { dur = d; build(); status(); }
       var t = mem(tkey);
@@ -315,12 +394,20 @@
       }
       paint(now());
     }
-    ytApi().then(function (YT) {
-      if (gone) return;
-      yt = new YT.Player(host, { host: "https://www.youtube-nocookie.com", videoId: spec.youtube, width: "100%", height: "100%",
-        playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3, cc_load_policy: 0, origin: location.origin },
-        events: { onReady: onReady, onStateChange: onState, onError: failed } });
-    }, failed);
+    function useYouTube() {
+      own = false; stage.innerHTML = "";
+      var host = document.createElement("div"); stage.appendChild(host);
+      ytApi().then(function (YT) {
+        if (gone) return;
+        yt = new YT.Player(host, { host: "https://www.youtube-nocookie.com", videoId: spec.youtube, width: "100%", height: "100%",
+          playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3, cc_load_policy: 0, origin: location.origin },
+          events: { onReady: onReady, onStateChange: onState, onError: failed } });
+      }, failed);
+    }
+    if (own) {
+      yt = ownPlayer(stage, spec.src, { ready: onReady, state: function (n) { onState({ data: n }); }, fail: function () { if (!gone) useYouTube(); } });
+      stage.addEventListener("click", function (e) { if (own && e.target === yt.el) toggle(); });   // a click on the film plays and pauses it
+    } else useYouTube();
 
     pp.addEventListener("click", toggle);
     back.addEventListener("click", function () { seek(now() - 10); });
@@ -361,6 +448,7 @@
     api.destroy = function () {
       gone = true; cancelAnimationFrame(raf);
       if (ready) { if (playing) mem(tkey, Math.floor(now())); try { yt.destroy(); } catch (e) { /* already gone */ } }
+      else if (yt && yt.el) yt.destroy();   // the film's own file, still loading: stop its download
       if (document.fullscreenElement === box) document.exitFullscreen();
     };
     return api;
@@ -468,7 +556,8 @@
     ".ed-watch { display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 26px; align-items: stretch; text-align: left; }",
     ".ed-main { min-width: 0; width: min(100%, calc((100vh - 392px) * 1.7778)); }",
     ".ed-stage { position: relative; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #0b0b0c; box-shadow: 0 0 0 1px rgba(255,255,255,.07), 0 50px 100px -50px rgba(0,0,0,.95); }",
-    ".ed-stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }",
+    ".ed-stage iframe, .ed-stage video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }",
+    ".ed-stage video { background: #000; object-fit: contain; cursor: pointer; }",
     ".ed-missing { position: absolute; inset: 0; display: grid; place-content: center; gap: 6px; text-align: center; padding: 24px; color: #fff; }",
     ".ed-missing span { color: rgba(255,255,255,.62); font-size: 14px; } .ed-missing a { color: #aab4ff; }",
     ".ed-ctl { display: flex; align-items: center; gap: 4px; padding: 12px 0 0; color: var(--ink, #fff); transition: opacity .3s; } .ed-ctl.wait { opacity: .4; pointer-events: none; }",
