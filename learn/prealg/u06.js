@@ -133,6 +133,24 @@
     for (var i = 0; i <= 10; i++) { items.push({ seg: [[i, 0], [i, 10]], c: "soft" }); items.push({ seg: [[0, i], [10, i]], c: "soft" }); }
     return fig({ grid: false, x: [0, 10], y: [0, 10], u: 18, pad: 6, alt: (o && o.alt) || "A ten-by-ten grid of 100 small squares, " + n + " of them shaded.", items: items });
   }
+  // A percent bar as a still picture: pbar(100, 25) is 25 of a whole of 100 (blue whole, orange part);
+  // pbar(40, 50) runs past the whole. o: { cells: 4, c: "orange", nopct: true, part: "name" }.
+  function pbar(whole, value, o) {
+    o = o || {};
+    var cells = o.cells || 4, f = value / whole, items = [], top = 2.6, bot = 0.5, c = o.c || "orange";
+    function rect(x0, x1, y0, y1, col, fill) { items.push({ poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], c: col, fill: fill }); }
+    rect(0, 10, top, top + 1, "blue", true);
+    rect(0, 10 * f, bot, bot + 1, c, true);
+    for (var i = 1; i < cells; i++) { items.push({ seg: [[10 * i / cells, top], [10 * i / cells, top + 1]], c: "soft" }); items.push({ seg: [[10 * i / cells, bot], [10 * i / cells, bot + 1]], c: "soft" }); }
+    if (f > 1) items.push({ seg: [[10, bot], [10, bot + 1]], c: "ink" });
+    items.push({ text: "0%", at: [0, top + 1.55], c: "soft" });
+    items.push({ text: "100%", at: [10, top + 1.55], c: "soft" });
+    items.push({ text: num(whole), at: [11.2, top + 0.5], c: "blue" });
+    items.push({ text: (o.part ? o.part + " " : "") + num(Math.round(value * 100) / 100), at: [10 * f + 1.4, bot + 0.5], c: c });
+    if (!o.nopct) items.push({ text: num(Math.round(f * 1000) / 10) + "%", at: [10 * f, bot + 1.55], c: c });
+    return fig({ grid: false, x: [-0.6, 13.4], y: [-0.2, 4.7], u: 30, pad: 6,
+      alt: "A percent bar: the whole is " + num(whole) + (o.nopct ? "" : ", and the part is " + num(Math.round(value * 100) / 100) + ", which is " + num(Math.round(f * 1000) / 10) + "% of it") + ".", items: items });
+  }
   // A typed 6/8 is marked as 3/4, so "in simplest form" is asked with two boxes instead:
   // Object.assign({ prompt: … }, fracIn(3, 4)).
   function fracIn(n, d) { return { type: "table", head: ["Numerator", "Denominator"], rows: [[null, null]], answers: [[0, 0, n], [0, 1, d]] }; }
@@ -178,13 +196,19 @@
                  ["Fraction", "Simplify the fraction over 100."]];
   LESSONS.push({
     title: "Understand percent",
-    blurb: "Book 6.1 · Percent means per hundred, and how percents, decimals and fractions convert into each other.",
-    mins: 12, v: 1,
+    blurb: "Book 6.1 · Percent means per hundred: a part of a bar, and how percents, decimals and fractions convert into each other.",
+    mins: 12, v: 2,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "The large square is cut into 100 small squares. How many are shaded?" + hundred(25),
-        answer: 25, skill: "Meaning of percent", hints: ["Two full columns of 10, and 5 more."], why: "25 out of 100: that is 25 **percent**." },
+      { type: "pctbar", kicker: "Warm up", prompt: "The long bar is the whole: 100. Make **25%** of it.", twist: "start",
+        whole: 100, cells: 4, goal: { pct: 25 }, skill: "Meaning of percent",
+        hints: ["The whole bar is four equal parts. 25% is one of them.", "$100 \\div 4 = 25$."],
+        why: "25% of 100 is 25: one quarter of the bar." },
+      { type: "learn", kicker: "Explore",
+        prompt: "Slide the bar to a percent. Then change the whole. What stays the same, and what changes?",
+        scene: { type: "pctbar", whole: 100, cells: 4, start: 50, wholes: [100, 20, 140], gate: true }, gate: true,
+        then: "The **percent** is how much of the bar. The **number** is what that part is worth for this whole." },
       { type: "learn", kicker: "The idea",
-        prompt: "**Percent** means “per hundred”. 25% is the ratio $\\frac{25}{100}$. So every percent can be written as a decimal and as a fraction, and back again.",
+        prompt: "**Percent** means “per hundred”. 25% is the ratio $\\frac{25}{100}$: 25 out of every 100 of the bar. So every percent can be written as a decimal and as a fraction, and back again.",
         scene: { type: "method", how: HOW_6_1 } },
       { type: "learn", kicker: "Watch",
         prompt: "Watch 36% written as a decimal and as a fraction.",
@@ -194,10 +218,10 @@
             ask: { prompt: "Dividing by 100 moves the decimal point which way?", answer: 0,
                    options: [{ t: "Two places to the left" }, { t: "Two places to the right", fb: "That would multiply by 100 and make the number bigger." }] } },
           { step: 3, m: "\\frac{36}{100} = \\frac{9}{25}", say: "4 divides both." },
-          { step: 3, m: "36% = 0.36 = \\frac{9}{25}", say: "Three names for the same number." }] },
+          { step: 3, m: "36% = 0.36 = \\frac{9}{25}", say: "Three names for the same number.", fig: pbar(100, 36, { cells: 5 }) }] },
         gate: true, then: "Percent to decimal: two places left. Decimal to percent: two places right." },
       { type: "guided", kicker: "Together",
-        prompt: "Now you write 125% as a decimal and as a fraction.",
+        prompt: "Now you write 125% as a decimal and as a fraction." + pbar(100, 125),
         how: HOW_6_1, skill: "Convert percents",
         steps: [
           { step: 1, ask: "Write 125% as a ratio. What is the denominator?", type: "num", answer: 100, hint: "Percent means per hundred.",
@@ -209,15 +233,16 @@
             options: [{ t: "$\\frac{5}{4}$" }, { t: "$\\frac{25}{20}$", fb: "5 still divides both." }, { t: "$\\frac{4}{5}$", fb: "More than 100% is more than 1." }],
             m: "\\frac{125}{100} = \\frac{5}{4}", say: "25 divides both. More than 100% is more than one whole." }],
         why: "Over 100, decimal, fraction. Now two on your own." },
-      { type: "num", kicker: "On your own", prompt: "Write 7.5% as a decimal.", answer: 0.075, tol: 1e-9, skill: "Convert percents",
+      { type: "pctbar", kicker: "On your own", prompt: "Both change this time. Make **60%** of 140.", twist: "both",
+        whole: 140, cells: 5, tone: 1, goal: { pct: 60 }, skill: "Meaning of percent",
+        hints: ["Each fifth of the bar is 20%. How many fifths make 60%?", "$140 \\div 5 = 28$, and 60% is three of those."],
+        why: "60% is three fifths of the bar: $3 \\cdot 28 = 84$." },
+      { type: "num", prompt: "Write 7.5% as a decimal.", answer: 0.075, tol: 1e-9, skill: "Convert percents",
         near: [{ v: 0.75, tol: 1e-9, fb: "Two places to the left: a zero is needed as a place holder." }, { v: 750, fb: "Divide by 100. Do not multiply." }],
         hints: ["$7.5 \\div 100$."], why: "$7.5 \\div 100 = 0.075$." },
-      { type: "slots", prompt: "Match each percent to its fraction.",
-        slots: [{ id: "a", label: "$\\frac{1}{2}$" }, { id: "b", label: "$\\frac{1}{4}$" }, { id: "c", label: "$\\frac{3}{4}$" }, { id: "d", label: "$\\frac{1}{5}$" }],
-        cards: [{ t: "50%", slot: "a", fb: "$\\frac{50}{100} = \\frac{1}{2}$." }, { t: "25%", slot: "b", fb: "$\\frac{25}{100} = \\frac{1}{4}$." },
-                { t: "75%", slot: "c", fb: "$\\frac{75}{100} = \\frac{3}{4}$." }, { t: "20%", slot: "d", fb: "$\\frac{20}{100} = \\frac{1}{5}$." }],
-        skill: "Convert percents", hints: ["Write each percent over 100 and simplify."],
-        why: "These four are worth knowing by heart." },
+      { type: "learn", kicker: "Takeaway",
+        prompt: "**Your bar.** The percent says how much of the bar. The number says how big the bar is. The same percent of a bigger whole is a bigger number.",
+        scene: { type: "pctbar", show: "last", fallback: { whole: 140, pct: 60, tone: 1, cells: 5 } } },
       { type: "learn", kicker: "A harder case",
         prompt: "Now the other way. Write $\\frac{3}{8}$ as a percent.",
         scene: { type: "walk", how: [["Decimal", "Divide the numerator by the denominator."],
@@ -250,10 +275,15 @@
   LESSONS.push({
     title: "Solve applications of percent",
     blurb: "Book 6.2 · The percent equation, finding the amount, the base or the percent, and percent change.",
-    mins: 12, v: 1,
+    mins: 12, v: 2,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "10% is one tenth. What is 10% of 80?", answer: 8, skill: "Percent of a number",
-        near: [{ v: 800, fb: "10% as a decimal is $0.10$, not 10." }], hints: ["$0.10 \\cdot 80$."], why: "$0.10 \\cdot 80 = 8$." },
+      { type: "pctbar", kicker: "Warm up", prompt: "The bar has ten equal parts, so each part is 10%. Make **10%** of 80.", twist: "whole",
+        whole: 80, cells: 10, goal: { pct: 10 }, skill: "Percent of a number",
+        hints: ["10% is one of the ten parts."], why: "$0.10 \\cdot 80 = 8$: one tenth of 80." },
+      { type: "learn", kicker: "Explore",
+        prompt: "12 is 20% of a bar. How long is the whole bar? Stretch the whole until its 20% mark meets the 12.",
+        scene: { type: "pctbar", base: { amount: 12, pct: 20, max: 100, start: 30, answer: 60 }, tone: 3, gate: true }, gate: true,
+        then: "The mark meets 12 when the whole is 60: 20% of 60 is 12. The whole is called the **base**." },
       { type: "learn", kicker: "The idea",
         prompt: "Every percent problem is one sentence: **amount = percent · base**. “Of” means multiply and “is” means equals. Two of the three are given. Write the percent as a decimal, and solve for the third.",
         scene: { type: "method", how: HOW_6_2 } },
@@ -265,7 +295,7 @@
             ask: { prompt: "What is 35% as a decimal?", answer: 0,
                    options: [{ t: "$0.35$" }, { t: "$3.5$", fb: "Divide by 100: two places to the left." }] } },
           { step: 2, m: "n = 31.5", say: "$35 \\cdot 90 = 3150$, with two decimal places." },
-          { step: 3, m: "31.5 < 45", say: "35% is less than half, and half of 90 is 45. Sensible." }] },
+          { step: 3, m: "31.5 < 45", say: "35% is less than half, and half of 90 is 45. Sensible.", fig: pbar(90, 31.5, { cells: 10 }) }] },
         gate: true, then: "The same sentence works whichever of the three numbers is missing." },
       { type: "guided", kicker: "Together",
         prompt: "Now you solve: “6.5% of what number is $1.17$?”",
@@ -283,19 +313,22 @@
       { type: "num", kicker: "On your own", prompt: "What is 36% of 150?", answer: 54, skill: "Find the amount",
         near: [{ v: 5400, fb: "36% as a decimal is $0.36$." }, { v: 5.4, tol: 1e-9, fb: "$36 \\cdot 150 = 5400$, with two decimal places." }],
         hints: ["$0.36 \\cdot 150$."], why: "$0.36 \\cdot 150 = 54$." },
-      { type: "num", prompt: "9 is 15% of what number?", answer: 60, skill: "Find the base",
-        near: [{ v: 1.35, tol: 1e-9, fb: "That is 15% of 9. Here 9 is the amount: divide 9 by $0.15$." }],
-        hints: ["$9 = 0.15b$."], why: "$9 \\div 0.15 = 60$." },
+      { type: "pctbar", prompt: "9 is 15% of what number? Stretch the whole until the 15% mark meets the 9.", twist: "find the whole",
+        base: { amount: 9, pct: 15, max: 100, start: 30, answer: 60 }, tone: 0, skill: "Find the base",
+        hints: ["The 15% mark is 15 hundredths of the way along the whole.", "$9 = 0.15b$."], why: "$9 \\div 0.15 = 60$." },
+      { type: "learn", kicker: "Takeaway",
+        prompt: "**One bar, three questions.** The whole is the base. The part is the amount. How much of the whole it is, is the percent. Know two and the bar gives you the third.",
+        scene: { type: "pctbar", show: "last", fallback: { whole: 60, pct: 15, tone: 0, cells: 4 } } },
       { type: "learn", kicker: "A harder case",
         prompt: "A price rises from \\$40 to \\$46. Find the **percent increase**.",
         scene: { type: "walk", how: [["Change", "Find the amount of increase or decrease."],
                                     ["Compare", "Write the change as a fraction of the original amount."],
                                     ["Percent", "Convert to a percent."]], rows: [
           { step: 1, m: "46 - 40 = 6", say: "The price went up by 6 dollars." },
-          { step: 2, m: "\\frac{6}{40} = 0.15", say: "The change, compared with the **original** price." },
+          { step: 2, m: "\\frac{6}{40} = 0.15", say: "The change, compared with the **original** price.", fig: pbar(40, 46, { nopct: true }) },
           { step: 3, m: "0.15 = 15%", say: "A 15% increase." }] },
         gate: true },
-      { type: "num", kicker: "Try it", prompt: "144 is what percent of 96?", post: "%", answer: 150, skill: "Find the percent",
+      { type: "num", kicker: "Try it", prompt: "144 is what percent of 96?" + pbar(96, 144, { nopct: true, cells: 4 }), post: "%", answer: 150, skill: "Find the percent",
         near: [{ v: 200 / 3, tol: 0.5, fb: "That is $96 \\div 144$. The amount, 144, is divided by the base, 96." }, { v: 1.5, tol: 1e-9, fb: "That is the decimal. Multiply by 100 for the percent." }],
         hints: ["$144 = p \\cdot 96$."], why: "$144 \\div 96 = 1.5$, which is 150%." },
       { type: "choice", kicker: "Find the error",
@@ -318,10 +351,15 @@
   LESSONS.push({
     title: "Sales tax, commission and discount",
     blurb: "Book 6.3 · Sales tax, commission, discount and mark-up: one calculation, used four ways.",
-    mins: 12, v: 1,
+    mins: 12, v: 2,
     steps: [
-      { type: "num", kicker: "Warm up", prompt: "What is 8% of 50?", answer: 4, skill: "Percent of a number",
-        near: [{ v: 400, fb: "8% as a decimal is $0.08$." }, { v: 40, fb: "8% as a decimal is $0.08$, not $0.8$." }], hints: ["$0.08 \\cdot 50$."], why: "$0.08 \\cdot 50 = 4$." },
+      { type: "pctbar", kicker: "Warm up", prompt: "An item costs \\$50 and the sales tax is 8%. Make the bar show the **tax**.", twist: "start",
+        whole: 50, cells: 10, tone: 2, goal: { pct: 8 }, skill: "Percent of a number",
+        hints: ["The tax is 8% of the price."], why: "$0.08 \\cdot 50 = 4$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "The whole is a price. Drag the bar past the end of the whole, then back short of it. When is the bar longer than the price? When is it shorter?",
+        scene: { type: "pctbar", whole: 250, cells: 10, tone: 2, start: 100, sides: true, gate: true }, gate: true,
+        then: "Longer than the price: something was **added** (tax, a mark-up). Shorter: something was **taken off** (a discount)." },
       { type: "learn", kicker: "The idea",
         prompt: "Sales tax, commission, discount and mark-up are all the same calculation: a **rate** times an **original amount**. Tax and mark-up are then added on. A discount is taken off.",
         scene: { type: "method", how: HOW_6_3 } },
@@ -332,11 +370,11 @@
           { step: 2, m: "0.06 \\cdot 250 = 15", say: "The sales tax, in dollars.",
             ask: { prompt: "The tax is 6% of what?", answer: 0,
                    options: [{ t: "The purchase price, 250" }, { t: "The total paid", fb: "The total is not known yet. Tax is worked out on the price." }] } },
-          { step: 3, m: "250 + 15 = 265", say: "Price plus tax." },
+          { step: 3, m: "250 + 15 = 265", say: "Price plus tax.", fig: pbar(250, 265, { cells: 10 }) },
           { step: 3, m: "1.06 \\cdot 250 = 265", say: "A shortcut: the total is 106% of the price." }] },
         gate: true, then: "The rate always multiplies the original amount." },
       { type: "guided", kicker: "Together",
-        prompt: "A \\$60 pair of shoes is 35% off. Now you find the sale price.",
+        prompt: "A \\$60 pair of shoes is 35% off. Now you find the sale price." + pbar(60, 39, { cells: 10 }),
         how: HOW_6_3, skill: "Discount",
         steps: [
           { step: 1, ask: "Write 35% as a decimal.", type: "num", answer: 0.35, tol: 1e-9, near: [{ v: 3.5, tol: 1e-9, fb: "Two places to the left." }], hint: "$35 \\div 100$.",
@@ -350,25 +388,24 @@
         post: "dollars", answer: 140, skill: "Commission",
         near: [{ v: 1400, fb: "4% as a decimal is $0.04$, not $0.4$." }, { v: 14000, fb: "4% as a decimal is $0.04$." }],
         hints: ["$0.04 \\cdot 3500$."], why: "$0.04 \\cdot 3500 = 140$." },
-      { type: "sort", prompt: "Is each one added to the price, or taken off?",
-        bins: ["Added on", "Taken off"],
-        cards: [{ t: "Sales tax", bin: 0, fb: "Tax is paid on top of the price." }, { t: "A discount", bin: 1, fb: "A discount lowers the price." },
-                { t: "A mark-up", bin: 0, fb: "A shop adds a mark-up to what it paid." }, { t: "A 20%-off coupon", bin: 1, fb: "A coupon is a discount." }],
-        skill: "Percent applications", hints: ["Which ones make you pay more?"],
-        why: "Tax and mark-up raise the price. Discounts lower it." },
+      { type: "pctbar", prompt: "A \\$80 coat is 25% off. Make the bar show the **sale price**.", twist: "both",
+        whole: 80, cells: 4, tone: 1, goal: { value: 60 }, skill: "Discount",
+        hints: ["25% off means you pay 75% of the price.", "$0.25 \\cdot 80 = 20$ comes off."], why: "$80 - 20 = 60$: 75% of the price." },
+      { type: "learn", kicker: "Takeaway",
+        prompt: "**Your bar.** A bar longer than the price has something added: tax or a mark-up. A bar shorter than the price has something taken off: a discount. The rate is always a part of the **original** price.",
+        scene: { type: "pctbar", show: "last", fallback: { whole: 80, pct: 75, tone: 1, cells: 4 } } },
       { type: "learn", kicker: "A harder case",
         prompt: "Sometimes the rate is the unknown. A shop buys a lamp for \\$40 and sells it for \\$52. Find the **mark-up rate**.",
         scene: { type: "walk", how: [["Amount", "Find the tax, discount or mark-up in dollars."],
                                     ["Divide", "Divide it by the original amount."],
                                     ["Percent", "Write the decimal as a percent."]], rows: [
-          { step: 1, m: "52 - 40 = 12", say: "The mark-up, in dollars." },
+          { step: 1, m: "52 - 40 = 12", say: "The mark-up, in dollars.", fig: pbar(40, 52, { nopct: true }) },
           { step: 2, m: "\\frac{12}{40} = 0.3", say: "Compared with the original cost." },
           { step: 3, m: "0.3 = 30%", say: "A 30% mark-up." }] },
         gate: true },
-      { type: "num", kicker: "Try it", prompt: "A store buys a chair for \\$24 and marks it up 50%. What is the list price, in dollars?",
-        post: "dollars", answer: 36, skill: "Mark-up",
-        near: [{ v: 12, fb: "That is the mark-up. Add it to the cost." }],
-        hints: ["$0.50 \\cdot 24$, then add."], why: "$24 + 12 = 36$." },
+      { type: "pctbar", kicker: "Try it", prompt: "A store buys a chair for \\$24 and marks it up 50%. Make the bar show the **list price**.", twist: "both",
+        whole: 24, cells: 4, tone: 3, max: 1.6, goal: { value: 36 }, skill: "Mark-up",
+        hints: ["The mark-up is half the cost: $0.50 \\cdot 24 = 12$.", "Then add it to the cost."], why: "$24 + 12 = 36$." },
       { type: "choice", kicker: "Find the error",
         prompt: "A \\$200 coat is 25% off, and then 10% sales tax is added. Lee says: “25% off and 10% on is 15% off, so \\$170.” What is wrong?",
         options: [{ t: "The two percents are of different amounts. The sale price is 150, and 10% tax on 150 gives 165." },
@@ -388,10 +425,14 @@
   LESSONS.push({
     title: "Simple interest",
     blurb: "Book 6.4 · The simple interest formula, and using it to find the interest, the rate or the principal.",
-    mins: 12, v: 1,
+    mins: 12, v: 2,
     steps: [
       { type: "num", kicker: "Warm up", prompt: "Write 4% as a decimal.", answer: 0.04, tol: 1e-9, skill: "Convert percents",
         near: [{ v: 0.4, tol: 1e-9, fb: "Two places to the left: a zero is needed as a place holder." }], hints: ["$4 \\div 100$."], why: "$4 \\div 100 = 0.04$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "The bar is the money put in. Slide one year's interest. Each year adds the same part, so the other years follow.",
+        scene: { type: "pctbar", whole: 800, cells: 10, start: 5, repeat: 3, tone: 0, gate: true }, gate: true,
+        then: "Interest is one year's part, counted once for every year: **principal × rate × time**." },
       { type: "learn", kicker: "The idea",
         prompt: "**Interest** is the fee for using money. Simple interest is $I = Prt$: the **principal** $P$, the amount borrowed or invested, times the yearly rate $r$ as a decimal, times the time $t$ in years.",
         scene: { type: "method", how: HOW_6_4 } },
@@ -418,13 +459,16 @@
           { step: 3, ask: "Multiply. What is the interest?", type: "num", answer: 300, near: [{ v: 150, fb: "That is one year of interest. The time is 2 years." }], hint: "$2500 \\cdot 0.06 = 150$.",
             m: "I = 300", say: "150 dollars a year, for 2 years." }],
         why: "List, substitute, solve. Now two on your own." },
-      { type: "num", kicker: "On your own", prompt: "Find the simple interest on \\$600 at 3% for 5 years.", post: "dollars", answer: 90, skill: "Simple interest",
-        near: [{ v: 9000, fb: "The rate must be a decimal: $0.03$." }, { v: 18, fb: "That is one year of interest. The time is 5 years." }],
-        hints: ["$600(0.03)(5)$."], why: "$600 \\cdot 0.03 = 18$ a year, for 5 years: 90." },
+      { type: "pctbar", kicker: "On your own", prompt: "\\$600 is invested at 3% simple interest for 5 years. Make **one year's** interest. The bars add up the rest.", twist: "both",
+        whole: 600, cells: 10, repeat: 5, tone: 2, goal: { pct: 3 }, skill: "Simple interest",
+        hints: ["One year's interest is 3% of \\$600.", "$0.03 \\cdot 600$."], why: "$600 \\cdot 0.03 = 18$ a year, for 5 years: 90." },
       { type: "num", prompt: "You invest \\$2000 at 4.5% simple interest for 2 years. How much is in the account at the end: principal plus interest?",
         post: "dollars", answer: 2180, skill: "Simple interest",
         near: nearBig(2180, [{ v: 180, fb: "That is the interest. Add the principal." }, { v: 2090, fb: "That is after one year. The time is 2 years." }]),
         hints: ["$I = 2000(0.045)(2)$, then add 2000."], why: "$I = 180$, and $2000 + 180 = 2180$." },
+      { type: "learn", kicker: "Takeaway",
+        prompt: "**Your bars.** Every year takes the same part of the principal. More years means more bars, never a bigger bar. Interest is one year's part, counted once for each year.",
+        scene: { type: "pctbar", show: "last", fallback: { whole: 600, pct: 3, tone: 2, cells: 10 } } },
       { type: "learn", kicker: "A harder case",
         prompt: "The formula can be solved for any of its letters. A loan of \\$800 costs \\$96 in interest over 2 years. Find the **rate**.",
         scene: { type: "walk", how: HOW_6_4, rows: [
@@ -457,11 +501,15 @@
   LESSONS.push({
     title: "Solve proportions",
     blurb: "Book 6.5 · Proportions, cross products, and percent problems written as proportions.",
-    mins: 12, v: 1,
+    mins: 12, v: 2,
     steps: [
       { type: "choice", kicker: "Warm up", prompt: "Is $\\frac{4}{6} = \\frac{6}{9}$ a true statement?",
         options: [{ t: "Yes: both simplify to $\\frac{2}{3}$" }, { t: "No", fb: "$\\frac{4}{6} = \\frac{2}{3}$ and $\\frac{6}{9} = \\frac{2}{3}$." }],
         answer: 0, skill: "Proportions", hints: ["Simplify each fraction."], why: "Both are $\\frac{2}{3}$." },
+      { type: "learn", kicker: "Explore",
+        prompt: "The top bar is 35 out of 100. The bottom bar is a whole of 80. Slide the bottom bar until it fills the same part of its whole.",
+        scene: { type: "pctbar", whole: 80, cells: 5, top: { whole: 100, fill: 35 }, tone: 3, gate: true }, gate: true,
+        then: "Same part of the whole: $\\frac{28}{80} = \\frac{35}{100}$. A percent is a proportion with a 100." },
       { type: "learn", kicker: "The idea",
         prompt: "A **proportion** says that two ratios are equal: $\\frac{a}{b} = \\frac{c}{d}$. In a true proportion the **cross products** are equal: $a \\cdot d = b \\cdot c$. That turns a proportion with an unknown into an equation you can solve.",
         scene: { type: "method", how: HOW_6_5 } },
@@ -496,12 +544,15 @@
         pre: "$c =$", post: "cups", answer: 5, skill: "Proportions in use",
         near: [{ v: 320, fb: "Cross multiply: $24c = 3 \\cdot 40$, then divide by 24." }],
         hints: ["$24c = 120$."], why: "$c = 120 \\div 24 = 5$." },
+      { type: "learn", kicker: "Takeaway",
+        prompt: "**Your bar.** A percent is a proportion with a 100 in it: the part is to the whole as the percent is to 100. The two bars are the same part of different wholes.",
+        scene: { type: "pctbar", show: "last", fallback: { whole: 80, pct: 35, tone: 3, cells: 5 } } },
       { type: "learn", kicker: "A harder case",
         prompt: "A percent problem is a proportion too: the amount is to the base as the percent is to 100. “What number is 45% of 80?”",
         scene: { type: "walk", how: [["Set up", "Write amount over base equal to percent over 100."],
                                     ["Cross", "Cross multiply."],
                                     ["Solve", "Divide to find the unknown."]], rows: [
-          { step: 1, m: "\\frac{n}{80} = \\frac{45}{100}", say: "The amount $n$ over the base 80 equals 45 over 100." },
+          { step: 1, m: "\\frac{n}{80} = \\frac{45}{100}", say: "The amount $n$ over the base 80 equals 45 over 100.", fig: pbar(80, 36, { cells: 5, nopct: true }) },
           { step: 2, m: "100n = 80 \\cdot 45", say: "The cross products." },
           { step: 2, m: "100n = 3600", say: "$80 \\cdot 45 = 3600$." },
           { step: 3, m: "n = 36", say: "Divide both sides by 100." }] },
@@ -543,7 +594,16 @@
       } },
     { id: "pa6-percent", title: "Solve the percent equation", lesson: 3,
       gen: function (R) {
-        var p = R.pick([5, 10, 15, 20, 25, 30, 35, 40, 45, 60, 75, 80]), base = R.int(2, 20) * 20, amt = p * base / 100, kind = R.int(0, 2);
+        var p = R.pick([5, 10, 15, 20, 25, 30, 35, 40, 45, 60, 75, 80]), base = R.int(2, 20) * 20, amt = p * base / 100, kind = R.int(0, 4);
+        // On the bar: make a percent of a whole, or stretch the whole until an amount is that percent of it.
+        if (kind === 3) return { type: "pctbar", prompt: "Make **" + p + "%** of " + base + ".", whole: base, cells: p % 20 === 0 ? 5 : 10, tone: R.int(0, 3), goal: { pct: p },
+          hints: ["$" + num(p / 100) + " \\cdot " + base + "$."], why: "$" + num(p / 100) + " \\cdot " + base + " = " + amt + "$." };
+        if (kind === 4) {
+          var rate = R.pick([10, 20, 25, 50]), part = R.int(2, 9), whole = part * 100 / rate;
+          return { type: "pctbar", prompt: part + " is " + rate + "% of what number? Stretch the whole until the " + rate + "% mark meets " + part + ".",
+            base: { amount: part, pct: rate, max: Math.ceil(whole * 1.6 / 10) * 10, start: Math.max(1, Math.round(whole / 2)), answer: whole }, tone: R.int(0, 3),
+            hints: ["$" + part + " = " + num(rate / 100) + "b$."], why: "$" + part + " \\div " + num(rate / 100) + " = " + whole + "$." };
+        }
         if (kind === 0) return { type: "num", prompt: "What is " + p + "% of " + base + "?", answer: amt,
           near: near(amt, [{ v: p * base, fb: p + "% as a decimal is $" + num(p / 100) + "$." }]), hints: ["$" + num(p / 100) + " \\cdot " + base + "$."], why: "$" + num(p / 100) + " \\cdot " + base + " = " + amt + "$." };
         if (kind === 1) return { type: "num", prompt: amt + " is " + p + "% of what number?", answer: base,
@@ -565,6 +625,9 @@
         var price = R.int(2, 30) * 10, kind = R.int(0, 2), rate = kind === 0 ? R.pick([5, 6, 8, 10]) : R.pick([10, 15, 20, 25, 30, 40, 50]);
         var amt = Math.round(price * rate) / 100, total = Math.round((kind === 1 ? price - amt : price + amt) * 100) / 100;
         var what = ["sales tax is " + rate + "%. What is the total cost", "it is " + rate + "% off. What is the sale price", "a shop marks it up " + rate + "%. What is the list price"][kind];
+        if (R.chance(0.4)) return { type: "pctbar", prompt: "An item costs \\$" + price + ", and " + ["the sales tax is " + rate + "%. Make the bar show the **total cost**.", "it is " + rate + "% off. Make the bar show the **sale price**.", "a shop marks it up " + rate + "%. Make the bar show the **list price**."][kind],
+          whole: price, cells: 10, tone: R.int(0, 3), max: 1.6, goal: { value: total },
+          hints: ["$" + num(rate / 100) + " \\cdot " + price + " = " + num(amt) + "$."], why: "$" + price + (kind === 1 ? " - " : " + ") + num(amt) + " = " + num(total) + "$." };
         return { type: "num", prompt: "An item costs \\$" + price + ", and " + what + ", in dollars?", post: "dollars", answer: total, tol: 1e-9,
           near: near(total, [{ v: amt, tol: 1e-9, fb: "That is the " + ["tax", "discount", "mark-up"][kind] + ". " + (kind === 1 ? "Subtract it from" : "Add it to") + " the price." },
                              { v: Math.round((kind === 1 ? price + amt : price - amt) * 100) / 100, tol: 1e-9, fb: kind === 1 ? "A discount is subtracted, not added." : "It is added on, not taken off." }]),
@@ -573,6 +636,9 @@
     { id: "pa6-interest", title: "Use the simple interest formula", lesson: 5,
       gen: function (R) {
         var P = R.int(2, 40) * 100, r = R.pick([2, 3, 4, 5, 6, 8]), t = R.int(2, 6), I = P * r * t / 100;
+        if (R.chance(0.3)) return { type: "pctbar", prompt: "\\$" + P + " is invested at " + r + "% simple interest for " + t + " years. Make **one year's** interest. The bars add up the rest.",
+          whole: P, cells: 10, repeat: t, tone: R.int(0, 3), goal: { pct: r },
+          hints: ["$" + num(r / 100) + " \\cdot " + P + "$."], why: "$" + P + "(" + num(r / 100) + ") = " + P * r / 100 + "$ a year, for " + t + " years: " + I + "." };
         if (R.chance(0.65)) return { type: "num", prompt: "Find the simple interest on \\$" + P + " at " + r + "% for " + t + " years.", post: "dollars", answer: I,
           near: nearBig(I, [{ v: I * 100, fb: "The rate must be written as a decimal: $" + num(r / 100) + "$." }, { v: I / t, tol: 1e-9, fb: "That is one year of interest. The time is " + t + " years." }]),
           hints: ["$I = " + P + "(" + num(r / 100) + ")(" + t + ")$."], why: "$" + P + "(" + num(r / 100) + ")(" + t + ") = " + I + "$." };

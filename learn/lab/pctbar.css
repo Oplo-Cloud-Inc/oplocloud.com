@@ -1,0 +1,45 @@
+/* The percent bar (lab/pctbar.js). One hue per whole: colour says "a new situation", never right or wrong.
+   Right and wrong are the label over the bar: green with a tick, gold with what the bar really was. */
+.pb { --pb: var(--lw-green, #1fa463); max-width: 640px; margin: 4px auto 0; }
+.pb.pb-t1 { --pb: var(--lw-purple, #8b5cf6); }
+.pb.pb-t2 { --pb: var(--lw-orange, #ee7d28); }
+.pb.pb-t3 { --pb: var(--lw-blue, #3b6ef6); }
+.pb-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pb-track { fill: var(--lw-grid, rgba(128,128,128,.12)); stroke: none; }
+.pb-fill { fill: var(--pb); }
+.pb-fill.pb-dim { opacity: .42; }
+.pb-fill.pb-ghost { opacity: .5; }
+.pb-edge { fill: none; stroke: var(--ink, #1d1d1f); stroke-width: 2; }
+.pb-cell { stroke: var(--paper, #fff); stroke-width: 1.5; opacity: .85; }
+.pb-over { fill: none; stroke: var(--lw-axis, rgba(128,128,128,.5)); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.pb-mark { stroke: var(--lw-yellow, #f2b724); stroke-width: 3; stroke-dasharray: 5 4; }
+.pb-guide { stroke: var(--lw-yellow, #f2b724); stroke-width: 2; stroke-dasharray: 4 5; }
+.pb-tx { font: 600 15px/1 var(--lw-mathf, serif); fill: var(--ink, #1d1d1f); }
+.pb-tx.pb-soft { fill: var(--ink-2, #6e6e73); font-weight: 500; }
+.pb-tx.pb-val { font-size: 17px; font-weight: 700; }
+.pb-tx.pb-tot { font-size: 17px; font-weight: 700; fill: var(--pb); }
+.pb-tx.pb-pct { font-size: 17px; font-weight: 700; fill: var(--ink-2, #6e6e73); }
+.pb-tx.pb-mk { fill: var(--lw-yellow, #f2b724); font-size: 17px; font-weight: 800; }
+.pb-tx.pb-ok { fill: var(--lw-green, #1fa463); }
+.pb-tx.pb-try { fill: var(--lw-yellow, #f2b724); }
+.pb-grab { fill: transparent; cursor: pointer; }
+.pb-handle { cursor: grab; outline: none; }
+.pb-handle:active { cursor: grabbing; }
+.pb-stem { stroke: var(--pb); stroke-width: 3; }
+.pb-hit { fill: transparent; }
+.pb-knob { fill: var(--pb); stroke: var(--paper, #fff); stroke-width: 4; }
+.pb-core { fill: var(--paper, #fff); opacity: .9; }
+.pb-handle:hover .pb-knob { r: 15; }
+.pb-handle:focus-visible .pb-knob { stroke: var(--blue, #2f6df0); }
+.pb-handle.done { cursor: default; }
+.pb-handle.done .pb-knob { fill: var(--lw-green, #1fa463); }
+.pb-handle.done .pb-core { display: none; }
+.pb-tick { fill: none; stroke: var(--paper, #fff); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.pb-read { margin-top: 6px; }
+.pb-wholes { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 12px 0 2px; flex-wrap: wrap; }
+.pb-wl { font-size: 15px; color: var(--ink-2, #6e6e73); }
+.pb-wb { min-width: 64px; padding: 8px 16px; border-radius: 999px; border: 2px solid var(--ink-2, #6e6e73); background: transparent; color: var(--ink, #1d1d1f); font: 700 17px/1 var(--lw-mathf, serif); cursor: pointer; transition: background .15s, border-color .15s; }
+.pb-wb:hover { border-color: var(--ink, #1d1d1f); }
+.pb-wb.on { background: var(--pb); border-color: var(--pb); color: #fff; }
+.pb-wb.pb-t1 { --pb: var(--lw-purple, #8b5cf6); } .pb-wb.pb-t2 { --pb: var(--lw-orange, #ee7d28); } .pb-wb.pb-t3 { --pb: var(--lw-blue, #3b6ef6); } .pb-wb { --pb: var(--lw-green, #1fa463); }
+.pb-wb:focus-visible { outline: 3px solid var(--blue, #2f6df0); outline-offset: 2px; }

@@ -48,6 +48,8 @@ window.OPLO_LAB = (function () {
     "lab/algkit.js": "ec6dd5e1",
     "lab/feel.js": "f6bfad7d",
     "lab/feel.css": "c61f66b2",
+    "lab/pctbar.js": "c20b74c6",
+    "lab/pctbar.css": "b3a128af",
     "lab/k1art.js": "b96867df",
     "lab/k1geom.js": "38408767",
     "lab/k1kit.js": "7c887e7e",
@@ -65,7 +67,7 @@ window.OPLO_LAB = (function () {
     "prealg/u03.js": "25b284a9",
     "prealg/u04.js": "8ca6066a",
     "prealg/u05.js": "05c63985",
-    "prealg/u06.js": "035bac48",
+    "prealg/u06.js": "9d8f555b",
     "prealg/u07.js": "e829833d",
     "prealg/u08.js": "8e2b41af",
     "prealg/u09.js": "e0bd850e",
@@ -1110,7 +1112,7 @@ window.OPLO_LAB = (function () {
      in lab/philkit.js, and the watch · read · write format (a film that stops to ask,
      a reading with questions inside, a response checked against a model) in lab/edpkit.js. */
   var PATH_KIT = ["lab/pathkit.js", "lab/pathhelp.js", "lab/pathui.js", "path/alg-a.js", "path/alg-b.js", "path/alg-c.js", "path/alg-d.js", "path/alg.js"];
-  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", phil: ["lab/histkit.js", "lab/algkit.js", "lab/philkit.js", "lab/edpkit.js"], sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: ["lab/feel.css", "lab/feel.js", "lab/algkit.js"], precalc: ["lab/geotools.js", "lab/algkit.js"],
+  var COURSE_KIT = { biz: "lab/bizkit.js", hist: "lab/histkit.js", phil: ["lab/histkit.js", "lab/algkit.js", "lab/philkit.js", "lab/edpkit.js"], sat: "lab/satkit.js", geo: ["lab/geotools.js", "lab/algkit.js"], alg: PATH_KIT.concat(["lab/algkit.js"]), alg2: "lab/algkit.js", prealg: ["lab/feel.css", "lab/feel.js", "lab/algkit.js", "lab/pctbar.css", "lab/pctbar.js"], precalc: ["lab/geotools.js", "lab/algkit.js"],
                      g1: ["lab/feel.css", "lab/feel.js", "lab/k1.css", "lab/k1art.js", "lab/k1geom.js", "lab/k1kit.js", "lab/k1kinds.js", "lab/k1scenes.js"] };
   /* A kit is one file, or a list loaded in order (Pathway's engine, its
      pages, then the topics that register with them). */
