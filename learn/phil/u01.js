@@ -69,9 +69,9 @@
     mins: 14,
     steps: [
       { type: "learn", kicker: "Watch", prompt: "",
-        /* src is the film's own file once it has one: hls (an .m3u8 address), mp4 as a second choice, poster (a still).
-           While it is empty, or if the file will not start, the YouTube copy plays. */
-        scene: { type: "watch", id: "phil1-film", youtube: "anoAsItMmm8", src: { hls: "", mp4: "", poster: "" }, duration: 474.1, title: "What is philosophy?",
+        /* src is the film's own file: hls (an .m3u8 address), mp4 as a second choice, poster (a still).
+           There is no YouTube copy; until src is filled the step says the film is not available. */
+        scene: { type: "watch", id: "phil1-film", src: { hls: "", mp4: "", poster: "" }, duration: 474.1, title: "What is philosophy?",
           chapters: [{ t: 0, n: "Welcome" }, { t: 25.8, n: "Sages" }, { t: 223.7, n: "Roots of science" }, { t: 321.2, n: "How it hangs together" }, { t: 431.5, n: "Recap" }],
           stops: [
             { id: "p1-guess", at: 12.8, kind: "reflect", q: "Before we begin: in a sentence, what do you think philosophy is?", placeholder: "Philosophy is…" },

@@ -19,8 +19,8 @@
 
    Nothing here locks anything: a question can be skipped, any chapter can
    be opened, and Continue is always there. The film plays from its own file
-   when the lesson gives one (scene.src), and from the course's YouTube upload
-   when it does not or the file will not start. Either way nothing is drawn over
+   when the lesson gives one (scene.src), and from a YouTube copy (scene.youtube)
+   only if the lesson names one and the file will not start. Either way nothing is drawn over
    it (YouTube's rules), so its controls are under it and the questions beside it.
 
    Design: the content is the interface. One clean frame for the film, a
@@ -303,7 +303,7 @@
       var b = button("ed-ch", "<span>" + esc(c.n) + "</span><i>" + clock(c.t) + "</i>");
       b._c = c; b.addEventListener("click", function () { seek(c.t); play(); }); list.appendChild(b); return b;
     });
-    var link = el("a", "ed-yt", "Watch on YouTube ↗"); link.href = "https://youtu.be/" + spec.youtube; link.target = "_blank"; link.rel = "noopener";
+    var link = el("a", "ed-yt", "Watch on YouTube ↗"); link.hidden = !spec.youtube; link.href = "https://youtu.be/" + spec.youtube; link.target = "_blank"; link.rel = "noopener";   // only a film that has a YouTube copy
     foot.appendChild(resume); foot.appendChild(link);
     [head, list, foot].forEach(function (n) { idle.appendChild(n); }); side.appendChild(idle);
 
@@ -377,12 +377,13 @@
     }
     function failed() {
       own = false;
-      stage.innerHTML = '<div class="ed-missing"><b>The film couldn\'t load.</b><span>Check the connection, or <a href="https://youtu.be/' + esc(spec.youtube) + '" target="_blank" rel="noopener">watch it on YouTube</a>.</span></div>';
+      stage.innerHTML = '<div class="ed-missing"><b>The film couldn\'t load.</b><span>Check the connection and try again' +
+        (spec.youtube ? ', or <a href="https://youtu.be/' + esc(spec.youtube) + '" target="_blank" rel="noopener">watch it on YouTube</a>' : "") + ".</span></div>";
       ctl.hidden = true;
     }
     function onReady() {
       ready = true; ctl.classList.remove("wait");
-      link.hidden = own;
+      link.hidden = own || !spec.youtube;
       var d = yt.getDuration();
       if (d > 1 && Math.abs(d - dur) > 1) { dur = d; build(); status(); }
       var t = mem(tkey);
@@ -405,9 +406,10 @@
       }, failed);
     }
     if (own) {
-      yt = ownPlayer(stage, spec.src, { ready: onReady, state: function (n) { onState({ data: n }); }, fail: function () { if (!gone) useYouTube(); } });
+      yt = ownPlayer(stage, spec.src, { ready: onReady, state: function (n) { onState({ data: n }); }, fail: function () { if (gone) return; if (spec.youtube) useYouTube(); else failed(); } });
       stage.addEventListener("click", function (e) { if (own && e.target === yt.el) toggle(); });   // a click on the film plays and pauses it
-    } else useYouTube();
+    } else if (spec.youtube) useYouTube();
+    else failed();   // no file and no YouTube copy yet
 
     pp.addEventListener("click", toggle);
     back.addEventListener("click", function () { seek(now() - 10); });
