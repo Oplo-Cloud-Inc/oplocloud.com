@@ -8555,6 +8555,10 @@
     { name: "Staff", icon: "badge", kids: [
       { k: "staff", name: "Teachers" }, { k: "departments", name: "Departments" }, { k: "permissions", name: "Permissions" },
       { k: "teacher-analytics", name: "Teacher Analytics" }] },
+    { name: "Facilities", icon: "building", kids: [
+      { k: "fx-orders", name: "Work orders" }, { k: "fx-spaces", name: "Spaces" }, { k: "fx-assets", name: "Assets" },
+      { k: "fx-upkeep", name: "Routines" }, { k: "fx-bookings", name: "Bookings" }, { k: "fx-vendors", name: "Vendors" },
+      { k: "fx-documents", name: "Documents" }, { k: "fx-reports", name: "Reports" }] },
     { k: "curriculum", name: "Curriculum", icon: "books" },
     { name: "Data Center", icon: "server", kids: [{ k: "data", name: "Exports" }, { k: "api", name: "API" }] },
     { k: "security", name: "Security", icon: "shield" },
@@ -8566,8 +8570,7 @@
     { name: "Not set up yet", icon: "rows", kids: [
       { k: "scheduling", name: "Scheduling" }, { k: "behavior", name: "Behavior" }, { k: "standards", name: "Standards" },
       { k: "an-standards", name: "Standards analytics" }, { k: "imports", name: "Imports" }, { k: "sis", name: "SIS Sync" },
-      { k: "sftp", name: "SFTP" }, { k: "state", name: "State Reporting" }, { k: "inventory", name: "Inventory" },
-      { k: "lockers", name: "Lockers" }, { k: "cafeteria", name: "Cafeteria" }] }
+      { k: "sftp", name: "SFTP" }, { k: "state", name: "State Reporting" }, { k: "lockers", name: "Lockers" }, { k: "cafeteria", name: "Cafeteria" }] }
   ];
   var ADMIN_SECTIONS = [];
   ADMIN_TREE.forEach(function (t) {
@@ -8582,20 +8585,34 @@
     { k: "courses", name: "Courses", group: "Curriculum", icon: "books", hidden: true },
     { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true });
 
-  /* A registrar or an admissions reviewer who is not an administrator gets
-     the school console with one place in it: Enrollment. Everything else in
-     it is read with an administrator's authority, and showing them a console
-     of pages the server would refuse is worse than showing them one. */
-  function officeOnly() {
+  /* Somebody who holds an office role and is not an administrator gets the
+     school console with the places that role works in, and nothing else.
+     Everything else in it is read with an administrator's authority, and
+     showing them a console of pages the server would refuse is worse than
+     showing them a short one. */
+  var FX_KEYS = ["fx-orders", "fx-spaces", "fx-assets", "fx-upkeep", "fx-bookings", "fx-vendors", "fx-documents", "fx-reports"];
+  var OFFICE_PLACES = { registrar: ["enrollment"], admissions: ["enrollment"], facilities: FX_KEYS, office: FX_KEYS, it: FX_KEYS };
+  function officeKeys() {
     var r = (S.me && S.me.roles) || [];
     function has(p, n) { return r.some(function (x) { return x.product === p && x.role === n; }); }
-    return !has("platform", "admin") && !has("learn", "admin") && (has("learn", "registrar") || has("learn", "admissions"));
+    if (has("platform", "admin") || has("learn", "admin")) return null;
+    var keys = [];
+    Object.keys(OFFICE_PLACES).forEach(function (role) {
+      if (has("learn", role)) OFFICE_PLACES[role].forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); });
+    });
+    return keys.length ? keys : null;
+  }
+  function officeOnly() { return !!officeKeys(); }
+  function officeLabel() {
+    var k = officeKeys() || [], enr = k.indexOf("enrollment") > -1, fac = k.indexOf("fx-orders") > -1;
+    return enr && fac ? "School office" : fac ? "Facilities" : "Enrollment office";
   }
 
   function allowedTabs() {
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
     if (consoleMode() !== "admin") return TEACHER_SECTIONS;
-    return officeOnly() ? ADMIN_SECTIONS.filter(function (t) { return t.k === "enrollment"; }) : ADMIN_SECTIONS;
+    var only = officeKeys();
+    return only ? ADMIN_SECTIONS.filter(function (t) { return only.indexOf(t.k) > -1; }) : ADMIN_SECTIONS;
   }
 
   function sectionNamed(k) {
@@ -8804,6 +8821,8 @@
     { head: "Insights", items: [
       { k: "analytics", name: "Analytics", icon: "chart" },
       { k: "interventions", name: "Interventions", icon: "lifebuoy" }] },
+    { head: "School", items: [
+      { k: "facilities", name: "Facilities", icon: "building" }] },
     { head: "Communicate", items: [
       { k: "messages", name: "Messages", icon: "mail" },
       { k: "announcements", name: "Announcements", icon: "megaphone" }] }
@@ -9257,7 +9276,7 @@
       return b;
     }
     if (consoleMode() === "admin" && officeOnly()) {
-      nav.appendChild(place({ k: "enrollment", name: "Enrollment" }, "people"));
+      allowedTabs().forEach(function (t) { if (!t.hidden) nav.appendChild(place(t, t.k === "enrollment" ? "people" : null)); });
     } else if (consoleMode() === "admin") {
       ADMIN_TREE.forEach(function (t) {
         if (!t.kids) { nav.appendChild(place(t, t.icon)); return; }
@@ -9294,7 +9313,7 @@
     who.type = "button";
     who.innerHTML = '<span class="av" aria-hidden="true"></span>' +
       '<span class="t"><b>' + esc(S.me.name) + "</b><span>" +
-      esc(S.me.role === "admin" ? (officeOnly() ? "Enrollment office" : "Administrator") : "Teacher") + "</span></span>";
+      esc(S.me.role === "admin" ? (officeOnly() ? officeLabel() : "Administrator") : "Teacher") + "</span></span>";
     var av = who.querySelector(".av");
     av.textContent = S.me.initials || "";
     av.style.background = S.me.hue || "";
@@ -9383,7 +9402,9 @@
        "an-assessments": tabAnAssessments, "an-standards": tabAnStandards, growth: tabGrowth, groups: tabGroups, longitudinal: tabLongitudinal,
        departments: tabDepartments, "teacher-analytics": tabTeacherAnalytics,
        scheduling: tabScheduling, attendance: tabAttendance, behavior: tabBehavior, support: tabSupport,
-       inventory: tabInventory, lockers: tabLockers, cafeteria: tabCafeteria,
+       inventory: tabFxAssets, lockers: tabLockers, cafeteria: tabCafeteria,
+       "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
+       "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
        sis: tabSis, imports: tabImports, sftp: tabSftp, api: tabApi, state: tabStateReporting }[S.tab] || consoleHome)(body);
 
     noFoot(); progress(null);
@@ -15076,6 +15097,7 @@
     assessments: tabTeachAssessments, lessons: tabTeachLessons, standards: tabTeachStandards, curriculum: tabTeachCurriculum,
     resources: tabTeachResources, students: tabStudents, groups: tabTeachGroups, attendance: tabTeachAttendance,
     analytics: tabTeachAnalytics, interventions: tabTeachInterventions, messages: tabTeachMessages, announcements: tabTeachAnnouncements,
+    facilities: tabFxStaff,
     system: tabSystem, help: tabTeachHelp, activity: tabActivity, reports: tabReports, work: tabWork, sets: tabSets
   };
 
@@ -15152,8 +15174,19 @@
         items.push({ t: cxPlural(missed.length, "register") + " not taken yet", s: missed.slice(0, 3).map(function (c) { return c.title; }).join(", ") + (missed.length > 3 ? " and " + (missed.length - 3) + " more" : ""),
                      tone: "orange", go: function () { openAdmin(false, "attendance"); } });
       }
-      Promise.all([API.periods.list().catch(function () { return []; }), API.periods.changes("pending").catch(function () { return { changes: [] }; })]).then(function (r) {
+      Promise.all([API.periods.list().catch(function () { return []; }), API.periods.changes("pending").catch(function () { return { changes: [] }; }),
+                   API.facilities.summary().catch(function () { return null; })]).then(function (r) {
         var today = isoDay(new Date());
+        // The building: what waits for a person to accept it, what has run out, what is overdue.
+        var fxs = r[2];
+        if (fxs && fxs.orders) {
+          var fo = fxs.orders, fd = fxs.documents, fb = fxs.bookings;
+          if (fo.pending) items.push({ t: cxPlural(fo.pending, "facilities request") + " waiting", s: "Somebody has to accept or decline each one.", tone: "orange", go: function () { openAdmin(false, "fx-orders"); } });
+          if (fo.overdue) items.push({ t: cxPlural(fo.overdue, "job") + " overdue", s: "Facilities work past its due date.", tone: "orange", go: function () { openAdmin(false, "fx-orders"); } });
+          if (fd && fd.expired) items.push({ t: cxPlural(fd.expired, "paper") + " run out", s: "Certificates or contracts past the date they end.", tone: "orange", go: function () { openAdmin(false, "fx-documents"); } });
+          else if (fd && fd.soon) items.push({ t: cxPlural(fd.soon, "paper") + " run out within 30 days", s: "Renew them before they lapse.", tone: "blue", go: function () { openAdmin(false, "fx-documents"); } });
+          if (fb && fb.pending) items.push({ t: cxPlural(fb.pending, "room booking") + " to decide", s: "Held rooms waiting for approval.", tone: "blue", go: function () { openAdmin(false, "fx-bookings"); } });
+        }
         if (r[1].canApprove && r[1].changes.length) {
           var c0 = r[1].changes[0];
           items.push({ t: cxPlural(r[1].changes.length, "grade change") + " to approve", s: (c0.studentName || "A student") + " · " + (c0.courseTitle || "") + " · " + (c0.fromPercent == null ? "—" : c0.fromPercent) + "% → " + c0.toPercent + "%",
@@ -16819,6 +16852,28 @@
       "Courses exist, but they are not placed in periods or rooms yet, so there is no timetable to build from.",
       [["Enrollment", function () { openAdmin(false, "enrollment"); }], ["Curriculum", function () { openAdmin(false, "curriculum"); }]]);
   }
+  /* Facilities: work orders, rooms, assets, upkeep, bookings, vendors, papers
+     and reports. Three files, one kit (facilities*.js, qr.js). */
+  var FX = null;
+  function fx() {
+    if (FX) return FX;
+    FX = window.OPLO_FX.make({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnActions: cnActions, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, printHead: printHead, printTable: printTable,
+      csvDownload: csvDownload, openAdmin: openAdmin
+    });
+    return FX;
+  }
+  function tabFxOrders(v) { fx().orders(v); }
+  function tabFxSpaces(v) { fx().spaces(v); }
+  function tabFxAssets(v) { fx().assets(v); }
+  function tabFxUpkeep(v) { fx().upkeep(v); }
+  function tabFxBookings(v) { fx().bookings(v); }
+  function tabFxVendors(v) { fx().vendors(v); }
+  function tabFxDocuments(v) { fx().documents(v); }
+  function tabFxReports(v) { fx().reports(v); }
+  function tabFxStaff(v) { fx().staff(v); }
   function tabBehavior(v) { care().behavior(v); }
   function tabHealth(v) { care().health(v); }
 
@@ -16833,11 +16888,6 @@
       cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, csvDownload: csvDownload, openAdmin: openAdmin
     });
     return CARE;
-  }
-  function tabInventory(v) {
-    soonPage(v, "School Operations", "Inventory", "The school’s things: devices, textbooks, equipment.",
-      ["Devices and textbooks, with who has each", "Checking out and returning", "What is lost, damaged or due back"],
-      "Not recorded in the platform yet.", null);
   }
   function tabLockers(v) {
     soonPage(v, "School Operations", "Lockers", "Who has which locker.",
@@ -18945,7 +18995,7 @@
     var H = window.OPLO_HOME;
     var dest = H.destination(who.roles, location, new URLSearchParams(location.search).get("next"));
     if (!dest.stay) {
-      if (dest.mode === "parent") { location.replace(dest.href); return; }
+      if (dest.mode === "parent" || dest.mode === "jobs") { location.replace(dest.href); return; }
       history.replaceState(null, "", dest.href);
     }
     setLook(dest.mode);

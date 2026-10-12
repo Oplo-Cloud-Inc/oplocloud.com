@@ -87,8 +87,15 @@ window.OPLO_API = (function () {
         if (text) { try { data = JSON.parse(text); } catch (e) { data = null; } }
         if (!res.ok) {
           var err = (data && data.error) || {};
-          throw ApiError(res.status, err.code || "http_" + res.status,
-                         err.message || "The server refused that.", err.field);
+          var fault = ApiError(res.status, err.code || "http_" + res.status,
+                               err.message || "The server refused that.", err.field);
+          /* Whatever else the server said about the refusal — the blockers of
+             an enrollment step, the dates of a booking that cannot be made,
+             the checklist lines still open — rides along on the error. */
+          Object.keys(err).forEach(function (k) {
+            if (k !== "code" && k !== "message" && k !== "field" && !(k in fault)) fault[k] = err[k];
+          });
+          throw fault;
         }
         return data;
       });
@@ -122,6 +129,14 @@ window.OPLO_API = (function () {
   function localDay() {
     var d = new Date();
     return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+
+  /* The school's day and clock as this person's own: "2026-10-12T09:30". A
+     booking is judged against it — hours, notice — and the server's clock is
+     in UTC. */
+  function localNow() {
+    var d = new Date();
+    return localDay() + "T" + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
   }
 
   /* The browser's offset from UTC, sent with anything that has to know what
@@ -455,6 +470,71 @@ window.OPLO_API = (function () {
       create: function (data) { return post("/health-records", data); },
       update: function (id, data) { return patch("/health-records/" + id, data); },
       history: function (id) { return get("/health-records/" + id + "/history").then(function (r) { return r.events; }); }
+    },
+
+    /* ------------------------------------------------------- Facilities
+       Rooms, what is in them, what has to be done, who holds a room when.
+       Every call carries the school's own day, because "overdue" and "too
+       late to book" are questions about this person's calendar, not the
+       server's. A refusal comes back as a 409 with `unavailable` or
+       `unfinished` saying exactly which. */
+    facilities: {
+      summary: function () { return get("/facilities/summary" + q({ today: localDay() })); },
+      team: function () { return get("/facilities/team").then(function (r) { return r.team; }); },
+      templates: function () { return get("/facilities/templates").then(function (r) { return r.templates; }); },
+      reports: function (from, to) { return get("/facilities/reports" + q({ from: from, to: to, today: localDay() })).then(function (r) { return r.report; }); },
+
+      spaces: function () { return get("/facilities/spaces").then(function (r) { return r.spaces; }); },
+      space: function (id) { return get("/facilities/spaces/" + id + q({ today: localDay() })); },
+      addSpaces: function (data) { return post("/facilities/spaces", data).then(function (r) { return r.spaces; }); },
+      updateSpace: function (id, data) { return patch("/facilities/spaces/" + id, data).then(function (r) { return r.space; }); },
+      spaceRules: function (data) { return put("/facilities/spaces/rules", data); },
+      count: function (id, codes, apply) {
+        return post("/facilities/spaces/" + id + "/count", { codes: codes, apply: !!apply, today: localDay() });
+      },
+
+      assets: function (o) { return get("/facilities/assets" + q(Object.assign({ today: localDay() }, o || {}))); },
+      asset: function (id) { return get("/facilities/assets/" + id + q({ today: localDay() })); },
+      addAsset: function (data) { return post("/facilities/assets", data).then(function (r) { return r.asset; }); },
+      updateAsset: function (id, data) { return patch("/facilities/assets/" + id, data).then(function (r) { return r.asset; }); },
+
+      orders: function (o) { return get("/facilities/orders" + q(Object.assign({ today: localDay() }, o || {}))); },
+      openIn: function (spaceId) { return get("/facilities/orders" + q({ brief: 1, spaceId: spaceId })).then(function (r) { return r.open; }); },
+      order: function (id) { return get("/facilities/orders/" + id + q({ today: localDay() })); },
+      addOrder: function (data) { data.today = localDay(); return post("/facilities/orders", data); },
+      updateOrder: function (id, data) { data.today = localDay(); return patch("/facilities/orders/" + id, data).then(function (r) { return r.order; }); },
+      act: function (id, action, data) {
+        data = data || {};
+        data.today = localDay();
+        return post("/facilities/orders/" + id + "/actions/" + action, data).then(function (r) { return r.order; });
+      },
+      addPhoto: function (id, file) { return post("/facilities/orders/" + id + "/files", file, { timeout: 30000 }); },
+      photo: function (id, fileId) { return get("/facilities/orders/" + id + "/files/" + fileId, { timeout: 30000 }).then(function (r) { return r.file; }); },
+
+      schedules: function () { return get("/facilities/schedules" + q({ today: localDay() })); },
+      schedule: function (id) { return get("/facilities/schedules/" + id + q({ today: localDay() })); },
+      addSchedule: function (data) { data.today = localDay(); return post("/facilities/schedules", data).then(function (r) { return r.schedule; }); },
+      updateSchedule: function (id, data) { data.today = localDay(); return patch("/facilities/schedules/" + id, data).then(function (r) { return r.schedule; }); },
+      scheduleAct: function (id, action) { return post("/facilities/schedules/" + id + "/actions/" + action, { today: localDay() }); },
+
+      bookings: function (o) { return get("/facilities/bookings" + q(Object.assign({ today: localDay() }, o || {}))); },
+      book: function (data) { data.nowAt = localNow(); return post("/facilities/bookings", data); },
+      bookAct: function (id, action, data) {
+        data = data || {};
+        data.today = localDay();
+        return post("/facilities/bookings/" + id + "/actions/" + action, data).then(function (r) { return r.bookings; });
+      },
+
+      vendors: function () { return get("/facilities/vendors" + q({ today: localDay() })).then(function (r) { return r.vendors; }); },
+      vendor: function (id) { return get("/facilities/vendors/" + id + q({ today: localDay() })); },
+      addVendor: function (data) { data.today = localDay(); return post("/facilities/vendors", data).then(function (r) { return r.vendor; }); },
+      updateVendor: function (id, data) { data.today = localDay(); return patch("/facilities/vendors/" + id, data).then(function (r) { return r.vendor; }); },
+
+      documents: function (o) { return get("/facilities/documents" + q(Object.assign({ today: localDay() }, o || {}))).then(function (r) { return r.documents; }); },
+      addDocument: function (data) { data.today = localDay(); return post("/facilities/documents", data).then(function (r) { return r.document; }); },
+      updateDocument: function (id, data) { data.today = localDay(); return patch("/facilities/documents/" + id, data).then(function (r) { return r.document; }); },
+      putDocumentFile: function (id, file) { return post("/facilities/documents/" + id + "/file", file, { timeout: 30000 }).then(function (r) { return r.document; }); },
+      documentFile: function (id) { return get("/facilities/documents/" + id + "/file", { timeout: 30000 }).then(function (r) { return r.file; }); }
     },
 
     /* ------------------------------------------------------- Enrollment

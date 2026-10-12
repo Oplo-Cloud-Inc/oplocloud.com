@@ -2083,4 +2083,509 @@ export class D1Repository {
     ).bind(healthId).all();
     return results || [];
   }
+
+  /* ------------------------------------------------------------ Facilities
+     Rooms, the things in them, what has to be done, who may use them when.
+     The rules — who may do what, when an order is due, whether a room is free —
+     are in guard.js and services/facilities.js; this block reads and writes
+     rows. */
+
+  async _patchRow(table, map, patch, rowId) {
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] === undefined) continue;
+      const v = patch[k];
+      fields.push(`${col} = ?`);
+      values.push(typeof v === "boolean" ? (v ? 1 : 0) : (v !== null && typeof v === "object" ? JSON.stringify(v) : v));
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), rowId);
+    await this.db.prepare(`UPDATE ${table} SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+  }
+
+  /* Who can be given work: the facilities team, the office, IT, the principal
+     and administrators. */
+  async listFacilityTeam(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.id, a.email, p.name, p.title, GROUP_CONCAT(DISTINCT r.role) AS roles
+         FROM account_roles r
+         JOIN accounts a ON a.id = r.account_id
+         LEFT JOIN profiles p ON p.account_id = a.id
+        WHERE a.status != 'suspended'
+          AND ((r.product = 'learn' AND r.role IN ('admin', 'facilities', 'office', 'it', 'principal'))
+               OR (r.product = 'platform' AND r.role = 'admin'))
+          AND (r.org_id IS NULL OR r.org_id = ?)
+        GROUP BY a.id
+        ORDER BY p.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  /* ---- spaces */
+
+  async listSpaces(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, ap.name AS approver_name,
+              (SELECT COUNT(*) FROM learn_assets a WHERE a.space_id = s.id AND a.status != 'retired') AS asset_count,
+              (SELECT COUNT(*) FROM learn_work_orders o WHERE o.space_id = s.id
+                  AND o.status IN ('pending', 'open', 'in_progress', 'on_hold')) AS open_count
+         FROM learn_spaces s
+         LEFT JOIN profiles ap ON ap.account_id = s.approver_id
+        WHERE s.org_id IS ? AND s.archived = 0
+        ORDER BY s.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  async findSpace(spaceId) {
+    return this.db.prepare(
+      `SELECT s.*, ap.name AS approver_name FROM learn_spaces s
+         LEFT JOIN profiles ap ON ap.account_id = s.approver_id WHERE s.id = ?`
+    ).bind(spaceId).first();
+  }
+
+  _spaceInsert(s) {
+    const t = now();
+    return this.db.prepare(
+      `INSERT INTO learn_spaces (id, org_id, parent_id, kind, name, code, capacity, bookable, rules_json, approver_id, notes, archived, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+    ).bind(s.id, s.orgId || null, s.parentId || null, s.kind, s.name, s.code || null, s.capacity ?? null,
+           s.bookable ? 1 : 0, s.rules ? JSON.stringify(s.rules) : null, s.approverId || null, s.notes || null, t, t);
+  }
+
+  async createSpaces(list) {
+    const rows = list.map((s) => ({ ...s, id: id("spc") }));
+    await this.db.batch(rows.map((s) => this._spaceInsert(s)));
+    return rows.map((s) => s.id);
+  }
+
+  async updateSpace(spaceId, patch) {
+    await this._patchRow("learn_spaces", { parentId: "parent_id", kind: "kind", name: "name", code: "code", capacity: "capacity",
+      bookable: "bookable", rules: "rules_json", approverId: "approver_id", notes: "notes", archived: "archived" }, patch, spaceId);
+    return this.findSpace(spaceId);
+  }
+
+  /* ---- assets */
+
+  async createAsset(a) {
+    const aid = id("ast");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_assets
+         (id, org_id, seq, space_id, name, kind, code, serial, custodian_id, custodian_label, status, condition,
+          installed_on, warranty_end, life_years, notes, created_at, updated_at)
+       SELECT ?, ?, COALESCE(MAX(seq), 0) + 1, ?, ?, ?,
+              COALESCE(?, 'AST-' || printf('%04d', COALESCE(MAX(seq), 0) + 1)),
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+         FROM learn_assets WHERE org_id IS ?`
+    ).bind(aid, a.orgId || null, a.spaceId || null, a.name, a.kind || null, a.code || null, a.serial || null,
+           a.custodianId || null, a.custodianLabel || null, a.status || "in_service", a.condition || null,
+           a.installedOn || null, a.warrantyEnd || null, a.lifeYears ?? null, a.notes || null, t, t, a.orgId || null).run();
+    return this.findAsset(aid);
+  }
+
+  async findAsset(assetId) {
+    return this.db.prepare(
+      `SELECT a.*, sp.name AS space_name, cp.name AS custodian_name FROM learn_assets a
+         LEFT JOIN learn_spaces sp ON sp.id = a.space_id
+         LEFT JOIN profiles cp ON cp.account_id = a.custodian_id WHERE a.id = ?`
+    ).bind(assetId).first();
+  }
+
+  async updateAsset(assetId, patch) {
+    await this._patchRow("learn_assets", { spaceId: "space_id", name: "name", kind: "kind", code: "code", serial: "serial",
+      custodianId: "custodian_id", custodianLabel: "custodian_label", status: "status", condition: "condition",
+      installedOn: "installed_on", warrantyEnd: "warranty_end", lifeYears: "life_years", lastSeenOn: "last_seen_on", notes: "notes" }, patch, assetId);
+    return this.findAsset(assetId);
+  }
+
+  async listAssets({ orgId, spaceId, status, custodianId, limit = 2000 } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT a.*, sp.name AS space_name, cp.name AS custodian_name FROM learn_assets a
+         LEFT JOIN learn_spaces sp ON sp.id = a.space_id
+         LEFT JOIN profiles cp ON cp.account_id = a.custodian_id
+        WHERE a.org_id IS ? AND (? IS NULL OR a.space_id = ?) AND (? IS NULL OR a.status = ?)
+          AND (? IS NULL OR a.custodian_id = ?)
+        ORDER BY a.name LIMIT ?`
+    ).bind(orgId || null, spaceId || null, spaceId || null, status || null, status || null,
+           custodianId || null, custodianId || null, limit).all();
+    return results || [];
+  }
+
+  async assetsByCodes(orgId, codes) {
+    const out = [];
+    for (let i = 0; i < codes.length; i += 80) {
+      const part = codes.slice(i, i + 80);
+      const { results } = await this.db.prepare(
+        `SELECT a.*, sp.name AS space_name FROM learn_assets a LEFT JOIN learn_spaces sp ON sp.id = a.space_id
+          WHERE a.org_id IS ? AND a.code IN (${part.map(() => "?").join(",")})`
+      ).bind(orgId || null, ...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* ---- work orders */
+
+  _orderInsert(o, verb = "INSERT") {
+    const t = now();
+    return this.db.prepare(
+      `${verb} INTO learn_work_orders
+         (id, org_id, seq, kind, title, details, category, priority, status, space_id, asset_id, vendor_id, schedule_id,
+          requested_by, assignee_id, due_on, due_key, checklist_json, client_key, created_at, updated_at)
+       SELECT ?, ?, COALESCE(MAX(seq), 0) + 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+         FROM learn_work_orders WHERE org_id IS ?`
+    ).bind(o.id, o.orgId || null, o.kind, o.title, o.details || null, o.category, o.priority, o.status,
+           o.spaceId || null, o.assetId || null, o.vendorId || null, o.scheduleId || null, o.requestedBy || null,
+           o.assigneeId || null, o.dueOn || null, o.dueKey || null,
+           o.checklist && o.checklist.length ? JSON.stringify(o.checklist) : null, o.clientKey || null, t, t, o.orgId || null);
+  }
+
+  async createOrder(o) {
+    const oid = id("wo");
+    await this._orderInsert({ ...o, id: oid }).run();
+    return this.findOrder(oid);
+  }
+
+  /* An order a schedule answers. The (schedule, due date) pair is unique, so a
+     second sync cannot make a second order; the schedule moves on once the
+     order exists, whichever sync made it. */
+  async generateOrder(o, schedulePatch) {
+    const oid = id("wo");
+    const r = await this._orderInsert({ ...o, id: oid }, "INSERT OR IGNORE").run();
+    let made = !!(r.meta && r.meta.changes);
+    if (!made) {
+      const have = await this.db.prepare(`SELECT id FROM learn_work_orders WHERE schedule_id = ? AND due_key = ?`)
+        .bind(o.scheduleId, o.dueKey).first();
+      if (!have) return { made: false, moved: false };
+    }
+    await this.updateSchedule(o.scheduleId, schedulePatch);
+    return { made, moved: true, id: made ? oid : null };
+  }
+
+  _orderSelect() {
+    return `SELECT o.*, sp.name AS space_name, a.name AS asset_name, a.code AS asset_code, v.name AS vendor_name,
+                   rq.name AS requester_name, asg.name AS assignee_name
+              FROM learn_work_orders o
+              LEFT JOIN learn_spaces sp ON sp.id = o.space_id
+              LEFT JOIN learn_assets a ON a.id = o.asset_id
+              LEFT JOIN learn_vendors v ON v.id = o.vendor_id
+              LEFT JOIN profiles rq ON rq.account_id = o.requested_by
+              LEFT JOIN profiles asg ON asg.account_id = o.assignee_id`;
+  }
+
+  async findOrder(orderId) {
+    return this.db.prepare(`${this._orderSelect()} WHERE o.id = ?`).bind(orderId).first();
+  }
+
+  async findOrderByKey(orgId, clientKey) {
+    return this.db.prepare(`${this._orderSelect()} WHERE o.org_id IS ? AND o.client_key = ?`).bind(orgId || null, clientKey).first();
+  }
+
+  async updateOrder(orderId, patch) {
+    await this._patchRow("learn_work_orders", { kind: "kind", title: "title", details: "details", category: "category",
+      priority: "priority", status: "status", spaceId: "space_id", assetId: "asset_id", vendorId: "vendor_id",
+      assigneeId: "assignee_id", dueOn: "due_on", startedAt: "started_at", completedAt: "completed_at",
+      completedBy: "completed_by", minutes: "minutes", checklist: "checklist_json", outcome: "outcome",
+      declineReason: "decline_reason" }, patch, orderId);
+    return this.findOrder(orderId);
+  }
+
+  async listOrders({ orgId, statuses, assigneeId, requestedBy, spaceId, assetId, vendorId, scheduleId, kind, overdueBefore, limit = 500 } = {}) {
+    const where = ["o.org_id IS ?"], binds = [orgId || null];
+    const eq = (col, v) => { if (v) { where.push(`${col} = ?`); binds.push(v); } };
+    if (statuses && statuses.length) { where.push(`o.status IN (${statuses.map(() => "?").join(",")})`); binds.push(...statuses); }
+    eq("o.assignee_id", assigneeId); eq("o.requested_by", requestedBy); eq("o.space_id", spaceId); eq("o.asset_id", assetId);
+    eq("o.vendor_id", vendorId); eq("o.schedule_id", scheduleId); eq("o.kind", kind);
+    if (overdueBefore) {
+      where.push("o.due_on IS NOT NULL AND o.due_on < ? AND o.status IN ('pending','open','in_progress','on_hold')");
+      binds.push(overdueBefore);
+    }
+    const { results } = await this.db.prepare(
+      `${this._orderSelect()} WHERE ${where.join(" AND ")}
+        ORDER BY CASE o.status WHEN 'pending' THEN 0 WHEN 'open' THEN 1 WHEN 'in_progress' THEN 1 WHEN 'on_hold' THEN 2 ELSE 3 END,
+                 CASE o.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
+                 COALESCE(o.due_on, '9999'), o.created_at DESC LIMIT ?`
+    ).bind(...binds, limit).all();
+    return results || [];
+  }
+
+  /* What is already open in a room, in a line each — enough to see that the
+     problem was reported, not enough to read other people's requests. */
+  async listOpenBrief(orgId, spaceId) {
+    const { results } = await this.db.prepare(
+      `SELECT id, seq, title, status, category, created_at FROM learn_work_orders
+        WHERE org_id IS ? AND space_id = ? AND status IN ('pending', 'open', 'in_progress', 'on_hold')
+        ORDER BY created_at DESC LIMIT 20`
+    ).bind(orgId || null, spaceId).all();
+    return results || [];
+  }
+
+  async openOrdersFor(scheduleId) {
+    const row = await this.db.prepare(
+      `SELECT COUNT(*) AS n FROM learn_work_orders WHERE schedule_id = ? AND status IN ('pending', 'open', 'in_progress', 'on_hold')`
+    ).bind(scheduleId).first();
+    return row ? row.n : 0;
+  }
+
+  async orderCounts(orgId, today, actorId) {
+    const row = await this.db.prepare(
+      `SELECT SUM(status = 'pending') AS pending, SUM(status = 'open') AS open,
+              SUM(status = 'in_progress') AS in_progress, SUM(status = 'on_hold') AS on_hold,
+              SUM(status IN ('pending','open','in_progress','on_hold') AND due_on IS NOT NULL AND due_on < ?) AS overdue,
+              SUM(status IN ('open','in_progress','on_hold') AND assignee_id = ?) AS mine,
+              SUM(status IN ('pending','open','in_progress','on_hold') AND assignee_id IS NULL AND status != 'pending') AS unassigned
+         FROM learn_work_orders WHERE org_id IS ?`
+    ).bind(today, actorId || "", orgId || null).first();
+    return row || {};
+  }
+
+  async ordersForReport(orgId, sinceMs) {
+    const { results } = await this.db.prepare(
+      `SELECT o.id, o.kind, o.status, o.category, o.priority, o.due_on, o.created_at, o.completed_at, o.minutes, sp.name AS space_name
+         FROM learn_work_orders o LEFT JOIN learn_spaces sp ON sp.id = o.space_id
+        WHERE o.org_id IS ? AND (o.created_at >= ? OR o.completed_at >= ? OR o.status IN ('pending','open','in_progress','on_hold'))
+        ORDER BY o.created_at DESC LIMIT 5000`
+    ).bind(orgId || null, sinceMs, sinceMs).all();
+    return results || [];
+  }
+
+  /* ---- schedules */
+
+  async createSchedule(s) {
+    const sid = id("sch");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_schedules
+         (id, org_id, kind, title, details, category, priority, space_id, asset_id, vendor_id, assignee_id, every, unit,
+          starts_on, ends_on, lead_days, from_completion, skip_if_open, skip_breaks, checklist_json, authority, source,
+          active, next_due_on, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`
+    ).bind(sid, s.orgId || null, s.kind, s.title, s.details || null, s.category, s.priority, s.spaceId || null,
+           s.assetId || null, s.vendorId || null, s.assigneeId || null, s.every, s.unit, s.startsOn, s.endsOn || null,
+           s.leadDays || 0, s.fromCompletion ? 1 : 0, s.skipIfOpen === false ? 0 : 1, s.skipBreaks ? 1 : 0,
+           s.checklist && s.checklist.length ? JSON.stringify(s.checklist) : null, s.authority || null, s.source || null,
+           s.nextDueOn || null, s.createdBy || null, t, t).run();
+    return this.findSchedule(sid);
+  }
+
+  _scheduleSelect() {
+    return `SELECT s.*, sp.name AS space_name, a.name AS asset_name, v.name AS vendor_name, asg.name AS assignee_name
+              FROM learn_schedules s
+              LEFT JOIN learn_spaces sp ON sp.id = s.space_id
+              LEFT JOIN learn_assets a ON a.id = s.asset_id
+              LEFT JOIN learn_vendors v ON v.id = s.vendor_id
+              LEFT JOIN profiles asg ON asg.account_id = s.assignee_id`;
+  }
+
+  async findSchedule(scheduleId) {
+    return this.db.prepare(`${this._scheduleSelect()} WHERE s.id = ?`).bind(scheduleId).first();
+  }
+
+  async listSchedules(orgId) {
+    const { results } = await this.db.prepare(
+      `${this._scheduleSelect()} WHERE s.org_id IS ? ORDER BY s.active DESC, COALESCE(s.next_due_on, '9999'), s.title`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  async updateSchedule(scheduleId, patch) {
+    await this._patchRow("learn_schedules", { title: "title", details: "details", category: "category", priority: "priority",
+      spaceId: "space_id", assetId: "asset_id", vendorId: "vendor_id", assigneeId: "assignee_id", every: "every", unit: "unit",
+      startsOn: "starts_on", endsOn: "ends_on", leadDays: "lead_days", fromCompletion: "from_completion",
+      skipIfOpen: "skip_if_open", skipBreaks: "skip_breaks", checklist: "checklist_json", authority: "authority",
+      source: "source", active: "active", nextDueOn: "next_due_on", lastDoneOn: "last_done_on",
+      lastGeneratedOn: "last_generated_on" }, patch, scheduleId);
+    return this.findSchedule(scheduleId);
+  }
+
+  /* Schedules whose window has opened: the due date minus its lead days is
+     today or earlier. */
+  async listDueSchedules(orgId, today, limit = 50) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_schedules
+        WHERE org_id IS ? AND active = 1 AND next_due_on IS NOT NULL
+          AND date(next_due_on, '-' || lead_days || ' day') <= ?
+        ORDER BY next_due_on LIMIT ?`
+    ).bind(orgId || null, today, limit).all();
+    return results || [];
+  }
+
+  /* ---- bookings */
+
+  async createBookings(list) {
+    const t = now();
+    const rows = list.map((b) => ({ ...b, id: id("bk") }));
+    await this.db.batch(rows.map((b) => this.db.prepare(
+      `INSERT INTO learn_bookings (id, org_id, space_id, title, notes, attendees, day, starts, ends, status, series_id,
+                                   booked_by, decided_by, decided_at, decision_note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(b.id, b.orgId || null, b.spaceId, b.title, b.notes || null, b.attendees ?? null, b.day, b.starts, b.ends,
+           b.status, b.seriesId || null, b.bookedBy || null, b.decidedBy || null, b.decidedAt || null, b.decisionNote || null, t, t)));
+    return rows.map((b) => b.id);
+  }
+
+  _bookingSelect() {
+    return `SELECT b.*, sp.name AS space_name, sp.approver_id AS space_approver, bp.name AS booker_name, dp.name AS decider_name
+              FROM learn_bookings b
+              JOIN learn_spaces sp ON sp.id = b.space_id
+              LEFT JOIN profiles bp ON bp.account_id = b.booked_by
+              LEFT JOIN profiles dp ON dp.account_id = b.decided_by`;
+  }
+
+  async findBooking(bookingId) {
+    return this.db.prepare(`${this._bookingSelect()} WHERE b.id = ?`).bind(bookingId).first();
+  }
+
+  async listBookings({ orgId, spaceId, from, to, bookedBy, statuses, seriesId, limit = 1000 } = {}) {
+    const where = ["b.org_id IS ?"], binds = [orgId || null];
+    const eq = (col, v) => { if (v) { where.push(`${col} = ?`); binds.push(v); } };
+    eq("b.space_id", spaceId); eq("b.booked_by", bookedBy); eq("b.series_id", seriesId);
+    if (from) { where.push("b.day >= ?"); binds.push(from); }
+    if (to) { where.push("b.day <= ?"); binds.push(to); }
+    if (statuses && statuses.length) { where.push(`b.status IN (${statuses.map(() => "?").join(",")})`); binds.push(...statuses); }
+    const { results } = await this.db.prepare(
+      `${this._bookingSelect()} WHERE ${where.join(" AND ")} ORDER BY b.day, b.starts LIMIT ?`
+    ).bind(...binds, limit).all();
+    return results || [];
+  }
+
+  async bookingsOnDays(spaceId, days) {
+    if (!days.length) return [];
+    const { results } = await this.db.prepare(
+      `SELECT id, day, starts, ends, status, title, series_id FROM learn_bookings
+        WHERE space_id = ? AND day IN (${days.map(() => "?").join(",")}) AND status IN ('pending', 'approved')`
+    ).bind(spaceId, ...days).all();
+    return results || [];
+  }
+
+  async decideBookings(ids, { status, decidedBy, note }) {
+    const t = now();
+    await this.db.batch(ids.map((bid) => this.db.prepare(
+      `UPDATE learn_bookings SET status = ?, decided_by = ?, decided_at = ?, decision_note = ?, updated_at = ? WHERE id = ?`
+    ).bind(status, decidedBy || null, t, note || null, t, bid)));
+  }
+
+  /* ---- vendors */
+
+  async createVendor(v) {
+    const vid = id("vnd");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_vendors (id, org_id, name, trade, contact_name, phone, email, notes, contract_ends_on, requires_json, active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
+    ).bind(vid, v.orgId || null, v.name, v.trade || null, v.contactName || null, v.phone || null, v.email || null,
+           v.notes || null, v.contractEndsOn || null, JSON.stringify(v.requires || []), t, t).run();
+    return this.findVendor(vid);
+  }
+
+  async findVendor(vendorId) {
+    return this.db.prepare(`SELECT * FROM learn_vendors WHERE id = ?`).bind(vendorId).first();
+  }
+
+  async listVendors(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT v.*, (SELECT COUNT(*) FROM learn_work_orders o WHERE o.vendor_id = v.id
+                      AND o.status IN ('pending','open','in_progress','on_hold')) AS open_count
+         FROM learn_vendors v WHERE v.org_id IS ? ORDER BY v.active DESC, v.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  async updateVendor(vendorId, patch) {
+    await this._patchRow("learn_vendors", { name: "name", trade: "trade", contactName: "contact_name", phone: "phone",
+      email: "email", notes: "notes", contractEndsOn: "contract_ends_on", requires: "requires_json", active: "active" }, patch, vendorId);
+    return this.findVendor(vendorId);
+  }
+
+  /* ---- documents and files */
+
+  async createFacilityDocument(d) {
+    const did = id("fdoc");
+    await this.db.prepare(
+      `INSERT INTO learn_documents (id, org_id, owner_kind, owner_id, kind, title, issued_on, expires_on, url, file_id, note, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(did, d.orgId || null, d.ownerKind, d.ownerId || null, d.kind, d.title, d.issuedOn || null, d.expiresOn || null,
+           d.url || null, d.fileId || null, d.note || null, d.createdBy || null, now()).run();
+    return this.findFacilityDocument(did);
+  }
+
+  async findFacilityDocument(documentId) {
+    return this.db.prepare(
+      `SELECT d.*, f.name AS file_name, f.type AS file_type, f.size AS file_size FROM learn_documents d
+         LEFT JOIN learn_facility_files f ON f.id = d.file_id WHERE d.id = ?`
+    ).bind(documentId).first();
+  }
+
+  async listFacilityDocuments({ orgId, ownerKind, ownerId, includeArchived = false, limit = 2000 } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT d.*, f.name AS file_name, f.type AS file_type, f.size AS file_size FROM learn_documents d
+         LEFT JOIN learn_facility_files f ON f.id = d.file_id
+        WHERE d.org_id IS ? AND (? IS NULL OR d.owner_kind = ?) AND (? IS NULL OR d.owner_id = ?)
+          AND (? = 1 OR d.archived_at IS NULL)
+        ORDER BY COALESCE(d.expires_on, '9999'), d.title LIMIT ?`
+    ).bind(orgId || null, ownerKind || null, ownerKind || null, ownerId || null, ownerId || null, includeArchived ? 1 : 0, limit).all();
+    return results || [];
+  }
+
+  async updateFacilityDocument(documentId, patch) {
+    const map = { kind: "kind", title: "title", issuedOn: "issued_on", expiresOn: "expires_on", url: "url", fileId: "file_id",
+                  note: "note", archivedAt: "archived_at" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    if (fields.length) {
+      values.push(documentId);
+      await this.db.prepare(`UPDATE learn_documents SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+    }
+    return this.findFacilityDocument(documentId);
+  }
+
+  async facilityDocumentCounts(orgId, today, soonDay) {
+    const row = await this.db.prepare(
+      `SELECT SUM(expires_on < ?) AS expired, SUM(expires_on >= ? AND expires_on <= ?) AS soon
+         FROM learn_documents WHERE org_id IS ? AND archived_at IS NULL AND expires_on IS NOT NULL`
+    ).bind(today, today, soonDay, orgId || null).first();
+    return row || {};
+  }
+
+  async putFacilityFile({ orgId, ownerKind, ownerId, name, type, size, data, actorId }) {
+    const fid = id("ffile");
+    await this.db.prepare(
+      `INSERT INTO learn_facility_files (id, org_id, owner_kind, owner_id, name, type, size, data, uploaded_by, uploaded_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(fid, orgId || null, ownerKind, ownerId, name, type, size, data, actorId || null, now()).run();
+    return fid;
+  }
+
+  async getFacilityFile(fileId) {
+    return this.db.prepare(`SELECT * FROM learn_facility_files WHERE id = ?`).bind(fileId).first();
+  }
+
+  async listFacilityFiles(ownerKind, ownerId) {
+    const { results } = await this.db.prepare(
+      `SELECT id, name, type, size, uploaded_by, uploaded_at FROM learn_facility_files
+        WHERE owner_kind = ? AND owner_id = ? ORDER BY uploaded_at`
+    ).bind(ownerKind, ownerId).all();
+    return results || [];
+  }
+
+  async deleteFacilityFile(fileId) {
+    await this.db.prepare(`DELETE FROM learn_facility_files WHERE id = ?`).bind(fileId).run();
+  }
+
+  /* ---- history */
+
+  async addFacilityEvent(orgId, ownerKind, ownerId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_facility_events (id, org_id, owner_kind, owner_id, at, actor_id, actor_name, kind, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("fev"), orgId || null, ownerKind, ownerId, now(), e.actorId || null, e.actorName || null, e.kind, e.note || null).run();
+  }
+
+  async listFacilityEvents(ownerKind, ownerId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_facility_events WHERE owner_kind = ? AND owner_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(ownerKind, ownerId).all();
+    return results || [];
+  }
 }

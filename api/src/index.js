@@ -43,6 +43,11 @@ import * as efm from "./routes/efm.js";
 import * as enrollment from "./routes/enrollment.js";
 import * as conduct from "./routes/conduct.js";
 import * as health from "./routes/health.js";
+import * as facilities from "./routes/facilities.js";
+import * as orders from "./routes/workorders.js";
+import * as upkeep from "./routes/upkeep.js";
+import * as bookings from "./routes/bookings.js";
+import * as vendors from "./routes/vendors.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -154,6 +159,44 @@ const ROUTES = [
   ["PATCH",  "/api/v1/health-records/:healthId",            health.update],
   ["GET",    "/api/v1/health-records/:healthId/history",    health.history],
 
+  ["GET",    "/api/v1/facilities/summary",                          facilities.summary],
+  ["GET",    "/api/v1/facilities/team",                             facilities.team],
+  ["GET",    "/api/v1/facilities/reports",                          facilities.reports],
+  ["GET",    "/api/v1/facilities/templates",                        upkeep.templates],
+  ["GET",    "/api/v1/facilities/spaces",                           facilities.listSpaces],
+  ["POST",   "/api/v1/facilities/spaces",                           facilities.createSpace],
+  ["PUT",    "/api/v1/facilities/spaces/rules",                     facilities.bulkRules],
+  ["GET",    "/api/v1/facilities/spaces/:spaceId",                  facilities.getSpace],
+  ["PATCH",  "/api/v1/facilities/spaces/:spaceId",                  facilities.updateSpace],
+  ["POST",   "/api/v1/facilities/spaces/:spaceId/count",            facilities.countSpace],
+  ["GET",    "/api/v1/facilities/assets",                           facilities.listAssets],
+  ["POST",   "/api/v1/facilities/assets",                           facilities.createAsset],
+  ["GET",    "/api/v1/facilities/assets/:assetId",                  facilities.getAsset],
+  ["PATCH",  "/api/v1/facilities/assets/:assetId",                  facilities.updateAsset],
+  ["GET",    "/api/v1/facilities/orders",                           orders.list],
+  ["POST",   "/api/v1/facilities/orders",                           orders.create],
+  ["GET",    "/api/v1/facilities/orders/:orderId",                  orders.get],
+  ["PATCH",  "/api/v1/facilities/orders/:orderId",                  orders.update],
+  ["POST",   "/api/v1/facilities/orders/:orderId/actions/:action",  orders.act],
+  ["POST",   "/api/v1/facilities/orders/:orderId/files",            orders.putFile],
+  ["GET",    "/api/v1/facilities/orders/:orderId/files/:fileId",    orders.getFile],
+  ["GET",    "/api/v1/facilities/schedules",                        upkeep.list],
+  ["POST",   "/api/v1/facilities/schedules",                        upkeep.create],
+  ["GET",    "/api/v1/facilities/schedules/:scheduleId",            upkeep.get],
+  ["PATCH",  "/api/v1/facilities/schedules/:scheduleId",            upkeep.update],
+  ["POST",   "/api/v1/facilities/schedules/:scheduleId/actions/:action", upkeep.act],
+  ["GET",    "/api/v1/facilities/bookings",                         bookings.list],
+  ["POST",   "/api/v1/facilities/bookings",                         bookings.create],
+  ["POST",   "/api/v1/facilities/bookings/:bookingId/actions/:action", bookings.act],
+  ["GET",    "/api/v1/facilities/vendors",                          vendors.listVendors],
+  ["POST",   "/api/v1/facilities/vendors",                          vendors.createVendor],
+  ["GET",    "/api/v1/facilities/vendors/:vendorId",                vendors.getVendor],
+  ["PATCH",  "/api/v1/facilities/vendors/:vendorId",                vendors.updateVendor],
+  ["GET",    "/api/v1/facilities/documents",                        vendors.listDocuments],
+  ["POST",   "/api/v1/facilities/documents",                        vendors.createDocument],
+  ["PATCH",  "/api/v1/facilities/documents/:documentId",            vendors.updateDocument],
+  ["POST",   "/api/v1/facilities/documents/:documentId/file",       vendors.putDocumentFile],
+  ["GET",    "/api/v1/facilities/documents/:documentId/file",       vendors.getDocumentFile],
   ["GET",    "/api/v1/enrollment/settings",         enrollment.getSettings],
   ["PUT",    "/api/v1/enrollment/settings",         enrollment.putSettings],
   ["GET",    "/api/v1/enrollment/team",             enrollment.team],

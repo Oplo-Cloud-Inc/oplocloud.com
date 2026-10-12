@@ -83,6 +83,10 @@ exports and API surface, which exists.
 
 New roles: `nurse` (health) alongside the existing `dean`, `principal`, `counselor`.
 
+Facilities (work orders, rooms and assets, upkeep and required checks, bookings,
+vendors and documents, reports, a phone page) is built: see
+`OEDU_ADMIN_FACILITIES_GAPS.md`. Inventory is now Facilities → Assets.
+
 Not done, said plainly: a teacher records conduct through the API but has no
 form in the teacher console yet; the gradebook does not yet draw the health flag
 beside a student; nothing is emailed (OEdu sends no messages), so discipline

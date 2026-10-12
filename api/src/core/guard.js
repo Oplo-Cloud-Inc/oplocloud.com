@@ -61,6 +61,7 @@ export const ACTIONS = [
   "conduct.read", "conduct.write", "conduct.manage", "health.read", "health.write", "health.flags",
   "enrollment.read", "enrollment.write", "enrollment.verify", "enrollment.decide",
   "enrollment.activate", "enrollment.sensitive", "enrollment.settings",
+  "facility.request", "facility.read", "facility.work", "facility.manage", "facility.decide",
   "role.grant",
   "period.read", "period.write", "grade.post", "grade.approve",
   "attendance.read", "attendance.write",
@@ -384,6 +385,26 @@ export async function can(ctx, action, resource = {}) {
     case "enrollment.settings":
       return learnAdmin;
 
+    /* ------------------------------------------------------- Facilities
+       Anyone on the staff may ask for something to be fixed and hold a room;
+       they read their own requests and the school's rooms, and nothing else.
+       The people who run the building read all of it and work the orders.
+       Setting the rules — schedules, vendors, who approves what — is the
+       facilities manager's and the principal's, and an administrator's.
+       Deciding a booking is the office's and the deans', or the one person
+       a room names as its approver. Nothing here touches money. */
+    case "facility.request":
+      return staff || hasAny(actor, ["teacher", "author", "nurse", "admissions", "facilities", "office", "it"], orgId);
+    case "facility.read":
+      return hasAny(actor, ["facilities", "office", "it", "principal", "dean"], orgId);
+    case "facility.work":
+      return hasAny(actor, ["facilities", "office", "it", "principal"], orgId);
+    case "facility.manage":
+      return hasAny(actor, ["facilities", "principal"], orgId);
+    case "facility.decide":
+      if (hasAny(actor, ["facilities", "office", "principal", "dean"], orgId)) return true;
+      return !!resource.approverId && resource.approverId === actor.id;
+
     /* ------------------------------------------------------------ OC EFM
        The financial system is assigned, not open: a person has it because an
        administrator gave them the `efm` product (platform administrators have
@@ -453,6 +474,11 @@ const REASONS = {
   "enrollment.activate": "Creating an enrollment is the registrar's. Ask them, or an administrator.",
   "enrollment.sensitive": "Only administrators can see or change restricted enrollment information.",
   "enrollment.settings": "Only administrators can change what enrollment asks for.",
+  "facility.request": "Requests and room bookings are for the school's staff.",
+  "facility.read": "The facilities records are read by the people who run the building. You can see your own requests.",
+  "facility.work": "Working on facilities orders is for the facilities team, the office and the principal.",
+  "facility.manage": "Facilities schedules, vendors and room rules are set by the facilities manager, the principal or an administrator.",
+  "facility.decide": "A booking is decided by the office, a dean, the principal, or the person this room names as its approver.",
   "efm.read": "OC EFM is assigned to people by an administrator. Ask one to give you access.",
   "efm.write": "Your access to OC EFM is read-only. Ask an administrator to make you a member.",
   "efm.admin": "Only an OC EFM administrator can do that."
