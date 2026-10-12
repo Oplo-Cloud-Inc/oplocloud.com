@@ -1193,6 +1193,18 @@
       host.appendChild(b);
     });
   }
+  /* The phone has its own pages (kern-phone.js): not these, made smaller, but
+     pages drawn for a phone. They get what they need from here and nothing else. */
+  function phoneOn() { return !!(KERN && window.KERN_PHONE && window.KERN_PHONE.on()); }
+  function phoneCtx() {
+    return {
+      S: S, R: R, G: G, ST: ST, SC: SC, el: el, esc: esc, svg: svg, $: $, toast: toast, show: show, noFoot: noFoot, progress: progress,
+      own: ownCourses, next: nextStep, pct: coursePct, mastery: mastery, units: unitsOf, courses: allCourses,
+      openCourse: openCourse, openUnit: openUnit, openSubject: openSubject, explore: explore, openMistakes: openMistakes, openLab: openLab,
+      subjectOf: subjectOf, mark: markSubjectNav, trail: trail
+    };
+  }
+  if (window.KERN_PHONE) window.KERN_PHONE.ctx = phoneCtx;
   function kernTile(c, i) {
     var b = el("button", "kh-tile");
     b.type = "button";
@@ -1207,6 +1219,7 @@
     return wrap;
   }
   function drawKernHome() {
+    if (phoneOn()) { window.KERN_PHONE.home(phoneCtx()); return; }
     var v = $("#v-my");
     v.innerHTML = "";
     var g = R.d.game, mine = ownCourses(), col = el("div", "kh");
@@ -1747,6 +1760,7 @@
   /* Kern's catalogue: a path for each subject — what it is, then its courses
      in a row on a quiet panel, joined by a line, each with how far you are. */
   function drawKernExplore() {
+    if (phoneOn()) { window.KERN_PHONE.explore(phoneCtx()); return; }
     var v = $("#v-explore"), col = el("div", "kh");
     v.innerHTML = "";
     v.appendChild(col);
@@ -1815,6 +1829,7 @@
     if (!s) { explore(); return; }
     if (!silent) enter("subject:" + s.n, s.n, function () { openSubject(s, true); }, false, slug(s.n));
     S.subject = s;
+    if (phoneOn()) { window.KERN_PHONE.subject(phoneCtx(), s); markSubjectNav(s.n); show("subject"); return; }
     var v = $("#v-subject");
     v.innerHTML = "";
     v.appendChild(window.OPLO_LAB.crumbs(trail().concat({ t: s.n })));
@@ -1976,6 +1991,7 @@
      units as a path of pads. Nothing is locked; a unit not yet written is
      dimmed and says so. */
   function drawKernCourse(c) {
+    if (phoneOn()) { window.KERN_PHONE.course(phoneCtx(), c); markSubjectNav(c.subject); noFoot(); progress(null); show("course"); return; }
     var v = $("#v-course"), units = unitsOf(c), A = window.KERN_ART;
     v.innerHTML = "";
     var col = el("div", "kcp");
@@ -2064,6 +2080,7 @@
     adoptIfOwn(c);
     if (u.lab && window.OPLO_LAB) {
       window.OPLO_LAB.renderUnit($("#v-unit"), labCtx(c, n));
+      if (phoneOn()) window.KERN_PHONE.unit($("#v-unit"), c, u);
       noFoot(); progress(null);
       show("unit");
       return;

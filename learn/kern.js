@@ -122,4 +122,129 @@
   if (name) name.textContent = "Kern";
 
   // The welcome page, before sign-in, is kern-front.js.
+
+  /* ----------------------------------------------------------------------
+     On a phone, what is secondary sits under a heading you tap: a unit's
+     practice list and concept cards, and Progress's badges. A <details> is
+     plain HTML, so the page is its main thing first and the rest is one tap
+     away; on a wider window, or without this script, they simply stay open.
+     ---------------------------------------------------------------------- */
+  var phone = window.matchMedia("(max-width: 700px)");
+  function wrap(box, head, count, keep) {
+    var d = document.createElement("details"), sum = document.createElement("summary");
+    d.className = (keep ? box.className + " " : "") + "kp-fold";
+    if (count) { var n = document.createElement("span"); n.textContent = count; head.appendChild(n); }
+    sum.appendChild(head);
+    d.appendChild(sum);
+    return d;
+  }
+  function fold() {
+    if (!phone.matches) return;
+    var unit = document.getElementById("v-unit");
+    if (unit) {
+      // Lessons stay open; the blocks after them (Practice, Concepts) fold.
+      [].slice.call(unit.querySelectorAll(".lb-unit > .lb-block, .lb-unit > .ab-binder")).forEach(function (box) {
+        var head = box.querySelector(":scope > h2");
+        if (!head || box.tagName === "DETAILS" || box.querySelector(".kp-path")) return;
+        var d = wrap(box, head, box.querySelector(".kp-skills") ? String(box.querySelectorAll(".kp-skill").length) : "", true);
+        while (box.firstChild) d.appendChild(box.firstChild);
+        box.parentNode.replaceChild(d, box);
+      });
+    }
+
+  }
+  function mount() {
+    // A unit fills in after it is drawn, so watch inside the view, and look once per frame.
+    var queued = false, obs = new MutationObserver(function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; fold(); });
+    });
+    ["v-unit"].forEach(function (id) {
+      var v = document.getElementById(id);
+      if (v) obs.observe(v, { childList: true, subtree: true });
+    });
+    // A window that grows (a phone turned sideways) opens them all again.
+    (phone.addEventListener ? phone.addEventListener.bind(phone, "change") : phone.addListener.bind(phone))(function () {
+      [].forEach.call(document.querySelectorAll("details.kp-fold"), function (d) { d.open = !phone.matches; });
+    });
+    fold();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mount); else mount();
+
+  /* ----------------------------------------------------------------------
+     The phone's menu. Not the laptop's row of tabs squeezed in: the header is
+     the mark, your streak and one button, and the button opens a page of its
+     own: the one thing to do next, the places to go in large type, the Tutor,
+     and you. Every row hands the tap to the control the laptop page already
+     has, so nothing here knows how the app moves. The header slides away as
+     you read down and is back the moment you read up.
+     ---------------------------------------------------------------------- */
+  var mq = window.matchMedia("(max-width: 700px)");
+  function h(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function menuInit() {
+    var header = document.querySelector(".lx-bar"), inner = document.querySelector(".lx-bar-in");
+    if (!header || !inner || document.getElementById("kpMenuBtn")) return;
+    var btn = h("button", "kp-menu-btn", "<i></i><i></i>");
+    btn.id = "kpMenuBtn"; btn.type = "button";
+    btn.setAttribute("aria-label", "Menu"); btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "kpMenu");
+    inner.appendChild(btn);
+    var panel = h("nav", "kp-menu"); panel.id = "kpMenu"; panel.setAttribute("aria-label", "Kern"); panel.hidden = true;
+    document.body.appendChild(panel);
+
+    var next = null;
+    function click(sel) { var e = document.querySelector(sel); if (e) e.click(); }
+    function build() {
+      var cur = (document.querySelector("#topNav button[aria-current='true']") || {}).dataset;
+      cur = cur && cur.view;
+      var out = "";
+      // The one thing to do next, if there is one: the same answer Home gives.
+      next = window.KERN_PHONE && window.KERN_PHONE.nextUp && window.KERN_PHONE.nextUp();
+      if (next) {
+        out += '<button type="button" class="kp-m-go" data-do="go" style="--h:' + esc(next.hue) + '"><span class="kp-m-ic">' + next.icon + '</span>' +
+          '<span class="kp-m-tx"><em>' + esc(next.label) + "</em><b>" + esc(next.course) + "</b><span>" + esc(next.unit) + "</span></span></button>";
+      }
+      var links = [["my", "Home"], ["explore", "Courses"], ["progress", "Progress"]];
+      out += '<ul class="kp-m-links">' + links.map(function (l) {
+        return '<li><button type="button" data-view="' + l[0] + '"' + (cur === l[0] ? ' aria-current="true"' : "") + ">" + l[1] + "</button></li>";
+      }).join("") + "</ul>";
+      var av = document.querySelector("#user .av"), nm = document.querySelector("#user .nm");
+      out += '<button type="button" class="kp-m-tutor" data-do="tutor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 7.5l9 4.5 9-4.5z"/><path d="M6 10v5.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V10"/></svg>Ask the Tutor</button>';
+      out += '<button type="button" class="kp-m-me" data-do="me"><span class="av">' + esc(av ? av.textContent : "") + '</span><span><b>' + esc(nm ? nm.textContent : "You") + '</b><em>Your account</em></span></button>';
+      panel.innerHTML = out;
+      [].forEach.call(panel.children, function (c, i) { c.style.setProperty("--i", i); });
+    }
+    function open(on) {
+      if (on === panel.classList.contains("on")) return;
+      if (on) { build(); panel.hidden = false; void panel.offsetWidth; header.classList.remove("kp-away"); }
+      panel.classList.toggle("on", on);
+      btn.setAttribute("aria-expanded", String(on));
+      btn.setAttribute("aria-label", on ? "Close menu" : "Menu");
+      document.documentElement.classList.toggle("kp-menu-open", on);
+      if (!on) setTimeout(function () { if (!panel.classList.contains("on")) panel.hidden = true; }, 340);
+    }
+    btn.addEventListener("click", function () { open(!panel.classList.contains("on")); });
+    panel.addEventListener("click", function (e) {
+      var t = e.target.closest("button"); if (!t) return;
+      open(false);
+      if (t.dataset.view) click('#topNav button[data-view="' + t.dataset.view + '"]');
+      else if (t.dataset.do === "go") { if (next) next.go(); }
+      else if (t.dataset.do === "tutor") click("#ttOpen");
+      else if (t.dataset.do === "me") click("#user");
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") open(false); });
+    mq.addEventListener ? mq.addEventListener("change", function () { if (!mq.matches) open(false); }) : mq.addListener(function () { if (!mq.matches) open(false); });
+
+    // Slide away reading down, come back reading up (never while the menu is open).
+    var last = window.pageYOffset || 0;
+    window.addEventListener("scroll", function () {
+      var y = window.pageYOffset || 0;
+      if (!mq.matches || panel.classList.contains("on")) { last = y; return; }
+      if (y > last + 8 && y > 90) header.classList.add("kp-away");
+      else if (y < last - 8 || y < 30) header.classList.remove("kp-away");
+      last = y;
+    }, { passive: true });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", menuInit); else menuInit();
 })();
