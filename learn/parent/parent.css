@@ -1027,3 +1027,7 @@ table.ftab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .fs { height: auto; box-shadow: none; border: 0; }
   .fs-body { overflow: visible; }
 }
+
+.fp-formbox { display: grid; gap: 10px; max-width: 520px; margin: 14px 0; }
+.fp-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; background: var(--chip); color: var(--ink); border: 1px solid var(--rule); }
+.fp-input:focus { outline: 2px solid var(--accent, #2997ff); }

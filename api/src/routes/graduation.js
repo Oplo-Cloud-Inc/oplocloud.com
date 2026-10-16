@@ -78,6 +78,13 @@ export async function get(ctx) {
   return json({ graduation: buildDashboard({ account, program, records, courses, exams, current, ehsCourses }) });
 }
 
+function enrolledAtOf(v) {
+  if (v == null || v === "") return null;
+  const ms = typeof v === "number" ? v : /^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? Date.parse(v + "T00:00:00Z") : NaN;
+  if (!Number.isFinite(ms) || ms < 0 || ms > 4102444800000) throw ApiError.badRequest("enrolledAt is a date, written YYYY-MM-DD.", "enrolledAt");
+  return ms;
+}
+
 /* PUT /api/v1/accounts/:accountId/program */
 export async function setProgram(ctx, { accountId }) {
   const actor = requireActor(ctx);
@@ -89,7 +96,9 @@ export async function setProgram(ctx, { accountId }) {
     program: body.program ? check.string(body.program, "program", { max: 160 }) : null,
     track,
     gradeLevel: body.gradeLevel != null ? check.number(body.gradeLevel, "gradeLevel", { min: 1, max: 13 }) : null,
-    enrolledAt: body.enrolledAt || null,
+    // Stored as milliseconds. A date written YYYY-MM-DD is accepted; anything else is refused here
+    // rather than stored and then breaking every read of the dashboard.
+    enrolledAt: enrolledAtOf(body.enrolledAt),
     expectedGrad: body.expectedGrad ? check.string(body.expectedGrad, "expectedGrad", { max: 7 }) : null
   });
   return json({ program });

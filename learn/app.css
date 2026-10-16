@@ -5665,6 +5665,7 @@ body.is-console .lx-lede { max-width: 66ch; font-size: 14.5px; color: var(--ink-
 .lx-class-work { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--hair); }
 .lx-class-h { margin: 0 0 12px; font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--ink-2); }
 .lx-class-none { margin: 0; font-size: 14.5px; color: var(--ink-3); }
+.lx-tt-day + .lx-tt-day { margin-top: 20px; }
 .lx-work { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .lx-work-row {
   display: flex; align-items: center; gap: 16px; padding: 12px 14px; border-radius: 14px;

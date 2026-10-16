@@ -12,7 +12,19 @@ The Course is the one thing people are enrolled in. It carries the curriculum �
 
 The written curriculum ships with the app (`data.js`) and is matched to a database course by its code, so a database course `media` shows the Media Arts units. A student can be enrolled in a course without having started it.
 
-OEdu has no Class (section, period, or "My Classes") concept. One was added on 2026-09-18 and removed the same day: a teacher's roster, gradebook and work are the course's, and there is no second object to keep in step with it. Do not reintroduce it.
+**Courses and sections (decided 2026-10-12, reversing 2026-09-18).** A school thinks in two layers, and OEdu now keeps both:
+
+- A **Course** is a subject in the school's list: World History, with a number, credits, a GPA scale and how it appears on a report card and a transcript (`learn_subjects`).
+- A **Section** is one instance of a course: its teachers, the periods it meets in, a room, a capacity, and a roster. A section **is** the database course described above, so the roster, the gradebook, the work and the registers still hang from one row and none of them moved. What a section adds is kept beside it (`learn_sections`).
+- A **Bell schedule** is a named day made of periods, with optional times; the **school calendar** says which bell schedule each weekday runs and which dates differ (a holiday, a staff day, a snow day).
+
+On 2026-09-18 a class concept was added and removed the same day, for a good reason: a second object that nobody keeps in step with the roster. That reason still holds, and is why a section is not a new object with its own roster: it is the roster's own row with schedule facts beside it. What the owner asked for on 2026-10-12 is the model a school office already uses, so the screens say Course and Section where a school says them.
+
+A **Plan** is the schedule as it is going to be, kept apart from the live one (`learn_schedule_drafts`, `learn_draft_sections`): a term plan is a change to the live sections, a year plan is next year's sections, made from this year's. A plan section has no gradebook and no roster of record, so nothing that reads courses can see a draft. Publishing is one routine that is previewed first and then run, so the preview cannot promise what the publish does differently; a year plan puts this year's sections **away** (status `archived`, roster and marks kept) and a student's day, a teacher's list and the registers skip them. What students ask for (`learn_course_requests`: must take, first, second, third choice) is what a plan is analysed against and built from.
+
+**Average daily attendance** is worked out from the registers, the school's codes and the periods a student's sections meet in (`services/ada.js`): a day is worth a whole, a half or nothing by the minutes in the room, with a minimum day needing no rule of its own. The school sets the minutes for a whole and for a half day in attendance settings; with none set, a day is whole when the student was marked in at all.
+
+The words "course" and "class" elsewhere in OEdu (teacher and student pages) still mean the section a person is in. Nothing here brings back "My Classes".
 
 ### 2.2 Entity Relationships
 
@@ -69,21 +81,30 @@ When a school puts a student in a course, the work is usually a lesson or an act
 ```
 Sign-in (Root)
 └── Home (role-based redirect)
-    └── Student home (/student/) — two lanes: School, and Self-learning
-        ├── School (courses the school assigned, work set, hand-ins)
-        ├── Grades (marks — school courses only)
-        ├── Self-learning (courses chosen on their own; not graded)
-        ├── Explore (open catalog)
-        │   ├── All courses → Course (units, study sets, mastery)
-        │   └── Published study sets
-        ├── Exams (assessments set for this student)
-        │   └── Briefing → Tasks → Review → Submitted
-        └── Progress (mastery, streak, badges)
+    └── Student portal (/student/) — the school's record, read by the student
+        ├── Overview (today's day, what is due, what needs attention)
+        ├── Schedule (week, month; the school's calendar)
+        ├── Academics
+        │   ├── Courses → one section: teachers, period, room, grade, marks, attendance
+        │   ├── Assignments (to do · past due · handed in · graded · tests)
+        │   ├── Grades (current, posted marking periods, what a goal needs)
+        │   └── Attendance (registers by day and course, with the school's own codes)
+        ├── Record
+        │   ├── Transcript (by year, credits, grade-point average)
+        │   └── Graduation (requirements credit by credit)
+        └── Me
+            ├── Profile (student, contact, family, documents)
+            ├── Requests (courses asked for next year)
+            └── Account (password, sessions)
 ```
+
+*Redesigned 2026-10-13.* OEdu's student side is a student information system, not a learning platform: the learning app (lessons, practice, tutor, XP, streaks, badges, ranks, Explore, self-learning) is Kern's, and the same code serves it when the page is on `kern.` (`window.OPLO_KERN`). Outside Kern, a student signs in to `learn/student.js` and `learn/student-record.js`, drawn in the console's own shell (`body.is-console.is-sis`), so it is one system with the school's and the teacher's consoles. See [docs/OEDU_STUDENT_PORTAL.md](docs/OEDU_STUDENT_PORTAL.md).
 
 ### 3.1a Addresses
 
-Every student place has an address, and the address is the place — typed, bookmarked, shared or reloaded, it opens the same screen (`learn/app.js`, `route()`). The browser's Back and Forward are the only back; the app draws no back button of its own.
+*On OEdu (outside Kern)* the student portal's places are `/student/Overview`, `/Schedule`, `/Courses`, `/Courses/<course code>`, `/Assignments` (and `/Assignments/late`, `/todo`, `/tests`), `/Grades`, `/Attendance`, `/Transcript`, `/Graduation`, `/Profile`, `/Requests`, `/Account`. The table below is the learning app's, which Kern serves.
+
+Every learning-app place has an address, and the address is the place — typed, bookmarked, shared or reloaded, it opens the same screen (`learn/app.js`, `route()`). The browser's Back and Forward are the only back; the app draws no back button of its own.
 
 ```
 /student/                                   Home
@@ -105,6 +126,10 @@ Every student place has an address, and the address is the place — typed, book
 The Worker answers any `/student/…` address without a file extension with the app itself, and the page sets its own base so its files load from the root at any depth. The page carries a plain `<base href="/">` too, which the script corrects when the app is served from a folder: the browser starts fetching files before any script runs, and without it a deep link fetched every file twice. The console (`/admin/`, `/teacher/`) has no addresses of its own yet.
 
 ### 3.2 Navigation
+
+*The student portal (OEdu):* a rail, as the other consoles have — Overview, Schedule, Academics (Courses, Assignments, Grades, Attendance), Record (Transcript, Graduation), Me (Profile, Requests, Account). A number beside Assignments is work past due or marked missing. ⌘K goes to a place, a course or a piece of work.
+
+*The learning app (Kern):* the top bar below.
 
 The top bar: Home · School · Grades · Exams · Self-learning · Explore · Progress. School, Grades and Exams appear once a school has put the student in a course.
 
@@ -175,9 +200,11 @@ OEdu follows Apple's design language:
 - **No decoration** — colour is spent on state and nothing else
 - **Motion** — subtle easing (`cubic-bezier(.28,.11,.32,1)`), `prefers-reduced-motion` respected
 
-### 4.1a Obsidian — the student side is dark
+### 4.1a Obsidian — the learning app is dark
 
-Everything a student sees sits on Obsidian: the page is `#343a40` (Gunmetal, from the Light Steel palette), with a surface ramp climbing from it (`--paper` `#3e454c`, `--sunk` `#495057`, `--press` `#525960`). The console, the family view and the signed-out welcome page stay light. The head of `learn/index.html` sets `<html data-look="obsidian">` for any `/student/` address before anything is drawn, and signing in or out at the root sets or clears it (`setLook` in `learn/app.js`). `learn/obsidian.css` holds the whole look, in two parts:
+*Since 2026-10-13 this is the learning app's look, which is Kern's.* The OEdu student portal takes the console's own Light, Dark or Automatic (`body.is-console`, `data-appearance`), like the teacher's and the school's, and `setLook` sets Obsidian only when the page is Kern.
+
+Everything a learner sees in the learning app sits on Obsidian: the page is `#343a40` (Gunmetal, from the Light Steel palette), with a surface ramp climbing from it (`--paper` `#3e454c`, `--sunk` `#495057`, `--press` `#525960`). The console, the family view and the signed-out welcome page stay light. The head of `learn/index.html` sets `<html data-look="obsidian">` for any `/student/` address before anything is drawn, and signing in or out at the root sets or clears it (`setLook` in `learn/app.js`). `learn/obsidian.css` holds the whole look, in two parts:
 
 - **Written by hand** — the tokens (`--paper`, `--ink`, … re-pointed to dark values, every text step AA or better), then the layer that makes it one object: dark glass for the bar and anything floating, cards a step lighter than the page with a rim of light and a long soft shadow, titles lit from above, the blue accent carrying a faint glow of its own colour, the "what next" panels lit from one corner, and lesson diagrams turned into the page (inverted, with every hue rotated back to itself) while photographs stay photographs.
 

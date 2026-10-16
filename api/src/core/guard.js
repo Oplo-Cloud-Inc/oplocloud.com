@@ -23,6 +23,8 @@
      learn.teacher   the courses they teach, and the students in them
      learn.author    content they wrote
      learn.guardian  the students they are family to — to read, never to write
+     learn.registrar   enrollment: file, verify documents, enroll — not decide
+     learn.admissions  enrollment: review and decide — not enroll
      learn.admin     everything inside their organization
      efm.user        OC EFM, the financial system — assigned, never open
      efm.viewer      OC EFM, to read only: the books, the reports, the trail
@@ -56,7 +58,13 @@ export const ACTIONS = [
   "guardian.read", "guardian.write",
   "record.read", "record.write",
   "assessment.read", "assessment.write",
+  "conduct.read", "conduct.write", "conduct.manage", "health.read", "health.write", "health.flags",
+  "enrollment.read", "enrollment.write", "enrollment.verify", "enrollment.decide",
+  "enrollment.activate", "enrollment.sensitive", "enrollment.settings",
+  "facility.request", "facility.read", "facility.work", "facility.manage", "facility.decide",
   "role.grant",
+  "period.read", "period.write", "grade.post", "grade.approve",
+  "attendance.read", "attendance.write",
   "efm.read", "efm.write", "efm.admin"
 ];
 
@@ -70,6 +78,16 @@ function hasRole(actor, product, role, orgId) {
 export const isPlatformAdmin = (actor) => hasRole(actor, "platform", "admin");
 export const isLearnAdmin = (actor, orgId) =>
   isPlatformAdmin(actor) || hasRole(actor, "learn", "admin", orgId);
+
+/* School staff who work across the whole school rather than through a course
+   they teach: counselors, deans, principals, registrars. They all see the
+   same school — one console, one set of screens — so reading is theirs
+   together; what each may CHANGE is decided per action below. */
+export const STAFF_ROLES = ["counselor", "dean", "principal", "registrar"];
+export const isStaff = (actor, orgId) =>
+  isLearnAdmin(actor, orgId) || STAFF_ROLES.some((r) => hasRole(actor, "learn", r, orgId));
+const hasAny = (actor, roles, orgId) =>
+  isLearnAdmin(actor, orgId) || roles.some((r) => hasRole(actor, "learn", r, orgId));
 
 /* Whether the actor teaches a given course. This is a database question, not
    a claim in a token, which is the whole point — a role in a session that has
@@ -115,12 +133,13 @@ export async function can(ctx, action, resource = {}) {
 
   const orgId = resource.orgId ?? resource.org_id ?? null;
   const learnAdmin = isLearnAdmin(actor, orgId);
+  const staff = isStaff(actor, orgId);
 
   switch (action) {
     /* -------------------------------------------------------- Accounts */
     case "account.read":
       if (resource.accountId === actor.id) return true;
-      if (learnAdmin) return true;
+      if (staff) return true;
       if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
@@ -215,7 +234,7 @@ export async function can(ctx, action, resource = {}) {
        names no student — is never theirs, and nor is a single write. */
     case "grade.read":
       if (resource.accountId === actor.id) return true;
-      if (learnAdmin) return true;
+      if (staff) return true;
       if (resource.accountId && await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesCourse(ctx, actor, resource.courseId);
 
@@ -243,7 +262,7 @@ export async function can(ctx, action, resource = {}) {
 
     case "progress.read":
       if (resource.accountId === actor.id) return true;
-      if (learnAdmin) return true;
+      if (staff) return true;
       if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
@@ -259,13 +278,46 @@ export async function can(ctx, action, resource = {}) {
     case "guardian.read":
     case "record.read":
       if (resource.accountId === actor.id) return true;
-      if (learnAdmin) return true;
+      if (staff) return true;
       if (await guardsStudent(ctx, actor, resource.accountId)) return true;
       return teachesStudent(ctx, actor, resource.accountId);
 
     case "guardian.write":
     case "record.write":
       return learnAdmin;
+
+    /* -------------------------------------------- Periods and the record
+       Everyone who works at the school may read the calendar of marking
+       periods. Opening, closing and locking one is the principal's,
+       registrar's or an administrator's: it decides what the school's record
+       says. A teacher posts grades for the courses they teach; approving a
+       change to a posted grade is not theirs, because a grade a teacher can
+       both request and approve is a grade nobody reviewed. */
+    case "period.read":
+      return staff || hasRole(actor, "learn", "teacher", orgId) ||
+             hasRole(actor, "learn", "student", orgId) || hasRole(actor, "learn", "guardian", orgId);
+
+    case "period.write":
+    case "grade.approve":
+      return hasAny(actor, ["principal", "registrar"], orgId);
+
+    case "grade.post":
+      return hasAny(actor, ["principal", "registrar"], orgId) ||
+             (await teachesCourse(ctx, actor, resource.courseId));
+
+    /* Attendance is taken by whoever is in the room, and corrected by the
+       people whose job is the school day. A student never writes it; a
+       family reads their own child's. */
+    case "attendance.read":
+      if (resource.accountId === actor.id) return true;
+      if (staff) return true;
+      if (resource.accountId && await guardsStudent(ctx, actor, resource.accountId)) return true;
+      if (resource.courseId) return teachesCourse(ctx, actor, resource.courseId);
+      return teachesStudent(ctx, actor, resource.accountId);
+
+    case "attendance.write":
+      if (hasAny(actor, ["dean", "principal", "registrar"], orgId)) return true;
+      return resource.courseId ? teachesCourse(ctx, actor, resource.courseId) : false;
 
     /* ------------------------------------------------------ Assessments
        The questions of an exam reach the students it was set for, once it
@@ -281,6 +333,77 @@ export async function can(ctx, action, resource = {}) {
 
     case "assessment.write":
       return learnAdmin;
+
+    /* ----------------------------------------------- Conduct and health
+       Conduct is read by the people who run discipline, by the teacher who
+       wrote an entry, and — only where the school chose to show it — by the
+       family of the student it is about. A student reads none of it. Anyone
+       who teaches a student may record what they saw; settling an entry,
+       showing it to a family and removing it are the deans', principals',
+       counselors' and administrators'.
+
+       Health is the office's and the nurse's. A teacher is never given the
+       record: only the flags the school raised for the student, which say
+       what to know and do. A family reads their own child's. */
+    case "conduct.read":
+      if (hasAny(actor, ["dean", "principal", "counselor"], orgId) || staff) return true;
+      if (resource.accountId && await guardsStudent(ctx, actor, resource.accountId)) return true;
+      return resource.reportedBy === actor.id;
+    case "conduct.write":
+      if (staff) return true;
+      return teachesStudent(ctx, actor, resource.accountId);
+    case "conduct.manage":
+      return hasAny(actor, ["dean", "principal", "counselor"], orgId);
+
+    case "health.read":
+      if (hasAny(actor, ["nurse", "principal"], orgId)) return true;
+      return !!resource.accountId && (await guardsStudent(ctx, actor, resource.accountId));
+    case "health.write":
+      return hasAny(actor, ["nurse", "principal"], orgId);
+    case "health.flags":
+      if (staff || hasAny(actor, ["nurse"], orgId)) return true;
+      return teachesStudent(ctx, actor, resource.accountId);
+
+    /* ------------------------------------------------------- Enrollment
+       The steps of admitting a student are held by different people on
+       purpose: whoever checks the papers is not the one who decides, and
+       neither of them is the one who creates the enrollment. An administrator
+       holds all of them; a registrar and an admissions reviewer hold the part
+       their name says. Sensitive documents and restricted notes — a support
+       plan, an identity number — are administrators', and nobody else's,
+       whatever else they may do. A family reaches its own application through
+       the route that checks they made it, never through these. */
+    case "enrollment.read":
+    case "enrollment.write":
+      return learnAdmin || hasRole(actor, "learn", "registrar", orgId) || hasRole(actor, "learn", "admissions", orgId);
+    case "enrollment.verify":
+    case "enrollment.activate":
+      return learnAdmin || hasRole(actor, "learn", "registrar", orgId);
+    case "enrollment.decide":
+      return learnAdmin || hasRole(actor, "learn", "admissions", orgId);
+    case "enrollment.sensitive":
+    case "enrollment.settings":
+      return learnAdmin;
+
+    /* ------------------------------------------------------- Facilities
+       Anyone on the staff may ask for something to be fixed and hold a room;
+       they read their own requests and the school's rooms, and nothing else.
+       The people who run the building read all of it and work the orders.
+       Setting the rules — schedules, vendors, who approves what — is the
+       facilities manager's and the principal's, and an administrator's.
+       Deciding a booking is the office's and the deans', or the one person
+       a room names as its approver. Nothing here touches money. */
+    case "facility.request":
+      return staff || hasAny(actor, ["teacher", "author", "nurse", "admissions", "facilities", "office", "it"], orgId);
+    case "facility.read":
+      return hasAny(actor, ["facilities", "office", "it", "principal", "dean"], orgId);
+    case "facility.work":
+      return hasAny(actor, ["facilities", "office", "it", "principal"], orgId);
+    case "facility.manage":
+      return hasAny(actor, ["facilities", "principal"], orgId);
+    case "facility.decide":
+      if (hasAny(actor, ["facilities", "office", "principal", "dean"], orgId)) return true;
+      return !!resource.approverId && resource.approverId === actor.id;
 
     /* ------------------------------------------------------------ OC EFM
        The financial system is assigned, not open: a person has it because an
@@ -330,8 +453,32 @@ const REASONS = {
   "record.read": "You can only see the school record of yourself, your own children, or students you teach.",
   "record.write": "The school record is kept by administrators. Families and teachers can read it but not change it.",
   "role.grant": "Only administrators can change roles.",
+  "period.read": "Marking periods are visible to people at the school.",
+  "period.write": "Only a principal, registrar or administrator can open, close or lock a marking period.",
+  "grade.post": "You can post grades only for courses you teach.",
+  "grade.approve": "Only a principal, registrar or administrator can approve a change to a posted grade.",
+  "attendance.read": "You can only see attendance for yourself, your own children, or students you teach.",
+  "attendance.write": "Attendance is taken by the teacher of the course, or corrected by a dean, principal or registrar.",
   "assessment.read": "That assessment has not been set for you, or has not opened yet.",
   "assessment.write": "Only administrators can publish assessments.",
+  "conduct.read": "Conduct records are read by the people who run discipline, the teacher who wrote an entry, and a family where the school chose to show it.",
+  "conduct.write": "You can record conduct for students you teach.",
+  "conduct.manage": "Settling, showing and removing conduct entries is for deans, principals, counselors and administrators.",
+  "health.read": "Health records are the office's and the nurse's. A family reads their own child's.",
+  "health.write": "Health records are kept by the nurse and the office.",
+  "health.flags": "You can see health alerts for students you teach.",
+  "enrollment.read": "Enrollment is run by the school's administrators and its registrar and admissions staff.",
+  "enrollment.write": "Enrollment is run by the school's administrators and its registrar and admissions staff.",
+  "enrollment.verify": "Checking documents is the registrar's. Ask them, or an administrator.",
+  "enrollment.decide": "Admission decisions are made by admissions reviewers and administrators.",
+  "enrollment.activate": "Creating an enrollment is the registrar's. Ask them, or an administrator.",
+  "enrollment.sensitive": "Only administrators can see or change restricted enrollment information.",
+  "enrollment.settings": "Only administrators can change what enrollment asks for.",
+  "facility.request": "Requests and room bookings are for the school's staff.",
+  "facility.read": "The facilities records are read by the people who run the building. You can see your own requests.",
+  "facility.work": "Working on facilities orders is for the facilities team, the office and the principal.",
+  "facility.manage": "Facilities schedules, vendors and room rules are set by the facilities manager, the principal or an administrator.",
+  "facility.decide": "A booking is decided by the office, a dean, the principal, or the person this room names as its approver.",
   "efm.read": "OC EFM is assigned to people by an administrator. Ask one to give you access.",
   "efm.write": "Your access to OC EFM is read-only. Ask an administrator to make you a member.",
   "efm.admin": "Only an OC EFM administrator can do that."

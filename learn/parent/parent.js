@@ -75,6 +75,7 @@
     iep: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4",
     supports: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6",
     wellness: "M12 20s-7-4.4-9-9a4.8 4.8 0 0 1 9-3 4.8 4.8 0 0 1 9 3c-2 4.6-9 9-9 9zM6.5 12h3l1.5-2.2 2 4.4 1.5-2.2h3",
+    inbox: "M4 6h16v12H4zM4.5 7l7.5 6 7.5-6",
     attendance: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M9 15l2 2 4-4",
     schedule: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.2 2",
     transportation: "M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12H5zM5 11h14M8 17v3M16 17v3M8.5 14h.01M15.5 14h.01",
@@ -246,6 +247,10 @@
       empty: "Report cards, letters and forms the school files appear here.",
       facts: [], columns: ["Document", "Date", "From", "Status"] },
 
+    { key: "inbox", name: "Messages", group: "family", icon: "inbox", size: "w2", record: false,
+      empty: "Messages from the school, and the way to write to a teacher." },
+    { key: "forms", name: "Forms and fees", group: "school", icon: "documents", size: "w2", record: false,
+      empty: "Forms to read and sign, and what is owed." },
     { key: "guardians", name: "Guardians", group: "family", icon: "guardians", size: "w2 h2 big", record: false,
       empty: "Nobody is linked to this student as family yet." },
     { key: "student", name: "Student", group: "family", icon: "student", size: "w2",
@@ -364,9 +369,9 @@
       if (kids.length) return choose(kids[0]);
       if (S.admin) return pickStudent();
       if (hasRole(me, "learn", "guardian")) {
-        return noticeScreen("No student is linked to your account yet.",
-          "The school links a family to a student. Once they have, " + "everything the school keeps " +
-          "about your child appears here.");
+        // A family with nobody linked yet is most likely applying: that is
+        // where they belong, rather than on a page that says nothing.
+        return showApplications(null);
       }
       return noticeScreen("This is the family view.",
         "It is for parents and guardians. Your own work is in <a href='../'>OEdu</a>.");
@@ -397,6 +402,32 @@
       "<p style='color:var(--ink-2);font-size:17px;max-width:52ch'>" + body + "</p></div>";
     st.appendChild(box);
   }
+  /* Applications: asking for a place and following it. Drawn by apply.js into
+     the stage, with a way back to the record when there is one. */
+  function showApplications(back) {
+    shellOn();
+    $("#who").hidden = true;
+    $("#dock").hidden = true;
+    $("#findBtn").hidden = true;
+    $("#banner").hidden = true;
+    closeSheet(true);
+    var st = $("#stage");
+    st.innerHTML = "";
+    var kids = (S.family && S.family.students) || [];
+    var home = back || (kids.length ? function () { choose(S.student || kids[0]); } : null);
+    window.OPLO_APPLY.open(st, { me: S.me, back: home, toast: toast });
+  }
+
+  /* What the school has chosen to show about conduct, and the child's own
+     health record — read-only, drawn by apply.js. */
+  function showNotes() {
+    $("#banner").hidden = true;
+    closeSheet(true);
+    var st = $("#stage");
+    st.innerHTML = "";
+    window.OPLO_APPLY.notes(st, { student: S.student, back: function () { choose(S.student); }, toast: toast });
+  }
+
   function problemScreen(title, detail) {
     noticeScreen(title, esc(detail || "Something went wrong reaching the record.") +
       " <a href='' onclick='location.reload();return false'>Try again</a>.");
@@ -472,7 +503,9 @@
       guardians: API.family.guardians(id),
       progress: API.progress.all(id),
       standing: API.gamification.standing(id),
-      contact: API.family.getContact(id)
+      contact: API.family.getContact(id),
+      register: API.attendance.family(id),
+      codes: API.attendance.codes()
     };
     var keys = Object.keys(calls);
     return Promise.all(keys.map(function (k) { return settle(calls[k]); })).then(function (out) {
@@ -583,6 +616,12 @@
           seg.appendChild(b);
         });
         m.appendChild(seg);
+        if (hasRole(S.me, "learn", "guardian")) {
+          m.appendChild(btn("", icon("documents", 16) + "<span>Applications</span>", function () { closeMenu(); showApplications(null); }));
+        }
+        if (S.student) {
+          m.appendChild(btn("", icon("wellness", 16) + "<span>Conduct and health</span>", function () { closeMenu(); showNotes(); }));
+        }
         var more = (S.me.roles || []).some(function (r) {
           return r.product === "platform" || (r.product === "learn" && r.role !== "guardian");
         });
@@ -1004,8 +1043,23 @@
   /* Where a section's content comes from: the school's own entry wins the
      label, because it is the more specific claim; then what can be computed
      from the record; then nothing. */
+  /* The registers, as the school put them online: every mark for this
+     student, or nothing while attendance is offline. */
+  function register() {
+    var reg = part("register"), cd = part("codes");
+    // A mark counts by the kind of its code, which the school chose; the five a school starts with are the fallback.
+    var kind = { present: "present", late: "tardy", absent: "absent", excused: "excused", cut: "absent" }, labels = {};
+    ((cd && cd.codes) || []).forEach(function (c) { kind[c.key] = c.kind; labels[c.key] = c.label; });
+    var rows = ((reg && reg.attendance) || []).filter(function (x) { return kind[x.status] !== "norecord"; });
+    var away = rows.filter(function (x) { return kind[x.status] === "absent" || kind[x.status] === "excused"; });
+    return { rows: rows, away: away, kind: kind, labels: labels,
+             late: rows.filter(function (x) { return kind[x.status] === "tardy"; }).length,
+             here: rows.length ? Math.round((rows.length - away.length) / rows.length * 100) : null };
+  }
+
   function sourceOf(key) {
     if (rec(key)) return "school";
+    if (key === "attendance" && register().rows.length) return "school";
     var g = grad(), w = part("work");
     switch (key) {
       case "grades": return g && ((g.courses || []).length || (g.ehsCourses || []).length || (g.trend || []).length || (g.current || []).length) ? "record" : "none";
@@ -1066,6 +1120,10 @@
   function glimpse(sec, src) {
     var g = grad();
     var k = sec.key;
+    if (k === "attendance" && register().rows.length && !rec(k)) {
+      var rg = register();
+      return { stat: rg.here + "<small>%</small>", sub: "in class · " + plural(rg.away.length, "absence") + " · " + rg.late + " late" };
+    }
     if (src === "school" && ["grades", "assessments", "graduation", "guardians", "promotion", "reading_math", "assignments", "student"].indexOf(k) < 0) {
       return recordGlimpse(sec);
     }
@@ -2351,14 +2409,91 @@
              "The absence of an entry is not a statement that there is no IEP." });
   };
   RENDER.wellness = function (gridNode) { recordPanel(gridNode, "wellness", { emptyTitle: "No wellness information shared" }); };
-  RENDER.attendance = function (gridNode) { recordPanel(gridNode, "attendance", { emptyTitle: "No attendance recorded yet" }); };
+  /* Attendance is read from the registers themselves once the school puts it
+     online: every absence and late, for every course, with the comment the
+     school wrote. Present is the ordinary day and is not listed. What the
+     school wrote by hand on the record sits beneath it. */
+  RENDER.attendance = function (gridNode) {
+    var rg = register(), rows = rg.rows;
+    if (rows.length) {
+      var late = rg.late, away = rg.away, here = rg.here;
+      var NAME = rg.labels;
+      var p = panel(gridNode, "s12", "From the registers",
+        "Every absence and late in every course, as the school’s teachers recorded it. A day in class is not listed.");
+      p.head.firstChild.insertBefore(h("span", "badge-src", "<i></i>From the school"), p.head.firstChild.firstChild);
+      p.appendChild(stats([
+        { l: "Classes recorded", v: String(rows.length) },
+        { l: "In class", v: here + "%" },
+        { l: "Absent", v: String(away.length), n: away.filter(function (x) { return rg.kind[x.status] === "excused"; }).length + " excused" },
+        { l: "Late", v: String(late) }
+      ]));
+      var list = rows.filter(function (x) { return rg.kind[x.status] !== "present"; })
+        .sort(function (a, b) { return a.day < b.day ? 1 : a.day > b.day ? -1 : 0; });
+      if (list.length) {
+        p.appendChild(table([{ label: "Day" }, { label: "Course" }, { label: "Mark" }, { label: "Comment" }], list.slice(0, 60).map(function (x) {
+          var d = x.day.split("-");
+          return { cells: [esc(new Date(+d[0], +d[1] - 1, +d[2]).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })),
+                           esc(x.courseTitle || ""), esc(NAME[x.status] || x.status), esc(x.note || "")] };
+        }), { caption: "Absences and lates" }));
+      }
+    }
+    if (!rows.length || rec("attendance") || S.admin) {
+      recordPanel(gridNode, "attendance", { emptyTitle: rows.length ? "Nothing more from the school" : "No attendance recorded yet",
+        empty: rows.length ? "Anything the registers do not say, such as attendance from before OEdu or a note for the family, can be added here." : undefined });
+    }
+  };
   RENDER.transportation = function (gridNode) { recordPanel(gridNode, "transportation", { emptyTitle: "No transportation on file" }); };
 
   /* ---------------------------------------------------------- Schedule */
+  /* The week as the school set it: periods, times and rooms, from the sections
+     the student is in. It is read after the page is drawn. */
+  function weekPanel(gridNode) {
+    var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    function clock(t) {
+      if (!t) return "";
+      var hr = +t.slice(0, 2);
+      return (hr % 12 || 12) + ":" + t.slice(3, 5) + (hr < 12 ? " AM" : " PM");
+    }
+    var p = panel(gridNode, "s12", "This week", esc(first()) + "’s periods, as the school has set them.");
+    var slot = h("div", null, "<p class='lede'>Loading the week…</p>");
+    p.appendChild(slot);
+    var who = S.student;
+    API.schedule.week(who.id).then(function (days) {
+      if (S.student !== who) return;
+      slot.innerHTML = "";
+      var rows = [], loose = {};
+      days.forEach(function (d) {
+        var name = DAYS[new Date(d.date + "T12:00:00").getDay()];
+        var dt = d.day || {};
+        // A course with no period meets "every day" to the server; here it is listed once, apart from the days.
+        (d.items || []).forEach(function (x) { if (!x.periods.length) loose[x.courseId] = x.title; });
+        if (dt.kind !== "school") { rows.push({ cells: [esc(name), "", esc("No school" + (dt.label ? " — " + dt.label : "")), "", ""] }); return; }
+        var items = (d.items || []).filter(function (x) { return x.meets && x.periods.length; });
+        items.sort(function (a, b) { return (a.startsAt || "99") < (b.startsAt || "99") ? -1 : (a.startsAt || "99") > (b.startsAt || "99") ? 1 : 0; });
+        if (!items.length) { rows.push({ cells: [esc(name), "", "No classes", "", ""] }); return; }
+        items.forEach(function (x, i) {
+          rows.push({ cells: [i ? "" : esc(name), esc(x.periods.join(", ")), esc(x.title),
+                              esc(x.startsAt ? clock(x.startsAt) + (x.endsAt ? " – " + clock(x.endsAt) : "") : ""), esc(x.room || "")] });
+        });
+      });
+      var unplaced = Object.keys(loose).map(function (k) { return loose[k]; });
+      if (rows.every(function (r) { return !r.cells[1]; })) {
+        slot.appendChild(h("p", "lede", unplaced.length ? "The school has not put " + esc(listOf(unplaced)) + " into periods yet." : "Nothing is scheduled this week."));
+        return;
+      }
+      slot.appendChild(table([{ label: "Day" }, { label: "Period" }, { label: "Course" }, { label: "Time" }, { label: "Room" }], rows, { caption: "This week" }));
+      if (unplaced.length) slot.appendChild(h("p", "lede", "Not in a period yet: " + esc(listOf(unplaced)) + "."));
+    }, function () {
+      slot.innerHTML = "";
+      slot.appendChild(h("p", "lede", "The week could not be read just now."));
+    });
+  }
+
   RENDER.schedule = function (gridNode) {
     var g = grad();
     var cur = (g && g.current) || [];
     recordPanel(gridNode, "schedule", { title: rec("schedule") ? "The timetable" : null, emptyTitle: "No timetable published yet" });
+    weekPanel(gridNode);
     if (cur.length) {
       var p = panel(gridNode, "s12", "Enrolled in OEdu", "Courses " + esc(first()) + " is taking now.");
       var people = h("div", "people");
@@ -2400,6 +2535,93 @@
       }
     } else problemFor(gridNode, "grad", "The enrollment record");
     recordPanel(gridNode, "enrollment", { title: rec("enrollment") ? "Enrollment details from the school" : null });
+  };
+
+  /* ----------------------------------------------------- Messages, forms */
+  RENDER.inbox = function (gridNode) {
+    var who = S.student;
+    var p = panel(gridNode, "s12", "Messages", "From the school and the teachers of " + esc(first()) + ".");
+    var bar = h("div", "act");
+    var write = h("button", "fb-btn sm", "Write to a teacher");
+    write.type = "button";
+    bar.appendChild(write);
+    p.appendChild(bar);
+    var list = h("div", null, "<p class='lede'>Reading your messages…</p>");
+    p.appendChild(list);
+    function draw() {
+      API.inbox.list("inbox").then(function (r) {
+        if (S.student !== who) return;
+        list.innerHTML = "";
+        if (!r.notices.length) { list.appendChild(h("p", "lede", "No messages.")); return; }
+        list.appendChild(table([{ label: "From" }, { label: "Subject" }, { label: "Kind" }, { label: "Date" }], r.notices.slice(0, 40).map(function (n) {
+          var d = new Date(n.createdAt);
+          return { cells: [esc(n.from ? n.from.name : "School"), (n.readAt ? "" : "<b>") + esc(n.title) + (n.readAt ? "" : "</b>") + (n.body ? "<br><small>" + esc(String(n.body).slice(0, 140)) + "</small>" : ""),
+            esc(n.kind), esc(d.toLocaleDateString(undefined, { day: "numeric", month: "short" }))] };
+        }), { caption: "Messages" }));
+        API.inbox.read();
+      }, function () { list.innerHTML = ""; list.appendChild(h("p", "lede", "Messages could not be read.")); });
+    }
+    draw();
+    write.addEventListener("click", function () {
+      API.schedule.studentSections(who.id).then(function (secs) {
+        var teachers = {}, names = [];
+        secs.forEach(function (sc) { (sc.teachers || []).forEach(function (t) { if (!teachers[t.id]) { teachers[t.id] = t.name; names.push(t.id); } }); });
+        if (!names.length) { toast("No teacher is linked to " + first() + "’s courses yet."); return; }
+        var box = h("div", "fp-formbox");
+        var to = h("select", "fp-input"); names.forEach(function (id) { var o = h("option"); o.value = id; o.textContent = teachers[id]; to.appendChild(o); });
+        var subj = h("input", "fp-input"); subj.placeholder = "Subject";
+        var body = h("textarea", "fp-input"); body.rows = 5; body.placeholder = "Your message";
+        var send = h("button", "fb-btn sm", "Send");
+        send.type = "button";
+        [to, subj, body, send].forEach(function (n) { box.appendChild(n); });
+        p.insertBefore(box, list);
+        send.addEventListener("click", function () {
+          if (!subj.value.trim() || !body.value.trim()) { toast("A subject and a message."); return; }
+          send.disabled = true;
+          API.inbox.send({ to: [to.value], title: subj.value.trim(), body: body.value.trim() }).then(function () {
+            toast("Sent"); box.remove();
+          }, function (e) { send.disabled = false; toast(e && e.message ? e.message : "That did not send."); });
+        });
+      });
+    });
+  };
+
+  RENDER.forms = function (gridNode) {
+    var who = S.student;
+    var p = panel(gridNode, "s12", "Forms and fees", "What the school asks " + esc(first()) + "’s family to read and sign, and what is owed.");
+    var host = h("div", null, "<p class='lede'>Reading…</p>");
+    p.appendChild(host);
+    Promise.all([API.items.list({ kind: "form" }), API.items.list({ kind: "signature", subjectId: who.id }),
+                 API.items.list({ kind: "invoice", subjectId: who.id }), API.items.list({ kind: "payment", subjectId: who.id })]).then(function (r) {
+      if (S.student !== who) return;
+      host.innerHTML = "";
+      var signed = {};
+      r[1].forEach(function (x) { signed[x.data.formId] = x; });
+      var forms = r[0].filter(function (f) { return (f.data.audience || "families") !== "staff"; });
+      if (!forms.length) host.appendChild(h("p", "lede", "No forms."));
+      else {
+        host.appendChild(table([{ label: "Form" }, { label: "Posted" }, { label: "" }], forms.map(function (f) {
+          var sg = signed[f.id];
+          return { cells: ["<b>" + esc(f.title) + "</b><br><small>" + esc(f.data.body || "").slice(0, 200) + "</small>", esc(f.dueOn || ""),
+            sg ? chip("good", "Signed by " + esc(sg.data.typedName)) : f.status === "open" ? "<button class='fb-btn sm' data-form='" + esc(f.id) + "' type='button'>Sign</button>" : chip("info", "Closed")] };
+        }), { caption: "Forms" }));
+        [].forEach.call(host.querySelectorAll("button[data-form]"), function (b) {
+          b.addEventListener("click", function () {
+            var name = prompt("Type your full name to sign for " + first() + ".");
+            if (!name || name.trim().length < 2) return;
+            API.items.create({ kind: "signature", title: "Signed", subjectId: who.id, status: "signed", data: { formId: b.dataset.form, typedName: name.trim() } })
+              .then(function () { toast("Signed"); location.reload(); }, function (e) { toast(e && e.message ? e.message : "That was not saved."); });
+          });
+        });
+      }
+      var paid = {};
+      r[3].forEach(function (x) { if (x.status !== "refunded") paid[x.data.invoiceId] = (paid[x.data.invoiceId] || 0) + Number(x.data.amount || 0); });
+      host.appendChild(h("h4", null, "Fees"));
+      if (!r[2].length) host.appendChild(h("p", "lede", "Nothing is owed and nothing has been invoiced."));
+      else host.appendChild(table([{ label: "Invoice" }, { label: "Due" }, { label: "Total" }, { label: "Paid" }, { label: "" }], r[2].map(function (x) {
+        return { cells: ["<b>" + esc(x.title) + "</b>", esc(x.dueOn || ""), esc(fixed(x.data.total, 2)), esc(fixed(paid[x.id] || 0, 2)), chip(x.status === "paid" ? "good" : "info", esc(x.status))] };
+      }), { caption: "Fees" }));
+    }, function () { host.innerHTML = ""; host.appendChild(h("p", "lede", "Forms could not be read.")); });
   };
 
   /* --------------------------------------------------------- Documents */

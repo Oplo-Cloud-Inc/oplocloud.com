@@ -479,7 +479,7 @@ export class D1Repository {
 
   async listCourseMembers(courseId, role) {
     const { results } = await this.db.prepare(
-      `SELECT cm.role, a.id, a.email, p.name, p.first_name, p.initials, p.avatar_hue
+      `SELECT cm.role, cm.created_at AS joined_at, a.id, a.email, p.name, p.first_name, p.initials, p.avatar_hue
          FROM learn_course_memberships cm
          JOIN accounts a ON a.id = cm.account_id
          LEFT JOIN profiles p ON p.account_id = a.id
@@ -1397,5 +1397,1866 @@ export class D1Repository {
        VALUES (?, ?, ?, ?)`
     ).bind(id("ach"), accountId, key, now()).run();
     return res.meta && res.meta.changes > 0;
+  }
+
+  /* ------------------------------------------------ Marking periods and record
+     The school's official record: periods, the grades posted in them, the
+     requests to change those, and attendance. Nothing here decides who may do
+     what; that is guard.js. */
+
+  async listPeriods(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_periods WHERE (? IS NULL OR org_id IS ? OR org_id = ?)
+        ORDER BY starts_on`
+    ).bind(orgId || null, orgId || null, orgId || null).all();
+    return results || [];
+  }
+
+  async findPeriod(periodId) {
+    return this.db.prepare(`SELECT * FROM learn_periods WHERE id = ?`).bind(periodId).first();
+  }
+
+  async createPeriod({ orgId, name, kind, startsOn, endsOn, passMark }) {
+    const periodId = id("per");
+    await this.db.prepare(
+      `INSERT INTO learn_periods (id, org_id, name, kind, starts_on, ends_on, pass_mark, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(periodId, orgId || null, name, kind, startsOn, endsOn, passMark, now()).run();
+    return this.findPeriod(periodId);
+  }
+
+  async setPeriodState(periodId, state, actorId) {
+    const t = now();
+    if (state === "posted") {
+      await this.db.prepare(
+        `UPDATE learn_periods SET state = ?, posted_at = ?, posted_by = ? WHERE id = ?`
+      ).bind(state, t, actorId, periodId).run();
+    } else if (state === "locked") {
+      await this.db.prepare(
+        `UPDATE learn_periods SET state = ?, locked_at = ?, locked_by = ? WHERE id = ?`
+      ).bind(state, t, actorId, periodId).run();
+    } else {
+      await this.db.prepare(
+        `UPDATE learn_periods SET state = ?, posted_at = NULL, posted_by = NULL WHERE id = ?`
+      ).bind(state, periodId).run();
+    }
+    return this.findPeriod(periodId);
+  }
+
+  async listPosted({ periodId, courseId, accountId }) {
+    const { results } = await this.db.prepare(
+      `SELECT pg.*, c.title AS course_title, p.name AS period_name, p.pass_mark,
+              pr.name AS student_name
+         FROM learn_posted_grades pg
+         JOIN learn_courses c ON c.id = pg.course_id
+         JOIN learn_periods p ON p.id = pg.period_id
+         LEFT JOIN profiles pr ON pr.account_id = pg.account_id
+        WHERE (? IS NULL OR pg.period_id = ?)
+          AND (? IS NULL OR pg.course_id = ?)
+          AND (? IS NULL OR pg.account_id = ?)
+        ORDER BY p.starts_on, c.title, pr.name`
+    ).bind(periodId || null, periodId || null, courseId || null, courseId || null,
+           accountId || null, accountId || null).all();
+    return results || [];
+  }
+
+  async findPosted(postedId) {
+    return this.db.prepare(
+      `SELECT pg.*, p.state AS period_state, p.pass_mark FROM learn_posted_grades pg
+         JOIN learn_periods p ON p.id = pg.period_id WHERE pg.id = ?`
+    ).bind(postedId).first();
+  }
+
+  /* Posting again while a period is still in grading replaces the earlier
+     snapshot; once posted, the route refuses before it gets here. */
+  async upsertPosted({ periodId, courseId, accountId, percent, letter, passing, parts, actorId }) {
+    await this.db.prepare(
+      `INSERT INTO learn_posted_grades
+         (id, period_id, course_id, account_id, percent, letter, passing, parts_json, posted_by, posted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (period_id, course_id, account_id) DO UPDATE SET
+         percent = excluded.percent, letter = excluded.letter, passing = excluded.passing,
+         parts_json = excluded.parts_json, posted_by = excluded.posted_by, posted_at = excluded.posted_at`
+    ).bind(id("pgr"), periodId, courseId, accountId, percent ?? null, letter ?? null,
+           passing ?? null, parts ? JSON.stringify(parts) : null, actorId || null, now()).run();
+  }
+
+  async createGradeChange({ postedId, fromPercent, toPercent, reason, actorId }) {
+    const changeId = id("gch");
+    await this.db.prepare(
+      `INSERT INTO learn_grade_changes
+         (id, posted_id, from_percent, to_percent, reason, requested_by, requested_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(changeId, postedId, fromPercent ?? null, toPercent, reason, actorId, now()).run();
+    return this.findGradeChange(changeId);
+  }
+
+  async findGradeChange(changeId) {
+    return this.db.prepare(
+      `SELECT gc.*, pg.course_id, pg.account_id, pg.period_id, p.state AS period_state,
+              p.pass_mark, c.title AS course_title, sp.name AS student_name,
+              rp.name AS requested_by_name, dp.name AS decided_by_name
+         FROM learn_grade_changes gc
+         JOIN learn_posted_grades pg ON pg.id = gc.posted_id
+         JOIN learn_periods p ON p.id = pg.period_id
+         JOIN learn_courses c ON c.id = pg.course_id
+         LEFT JOIN profiles sp ON sp.account_id = pg.account_id
+         LEFT JOIN profiles rp ON rp.account_id = gc.requested_by
+         LEFT JOIN profiles dp ON dp.account_id = gc.decided_by
+        WHERE gc.id = ?`
+    ).bind(changeId).first();
+  }
+
+  async listGradeChanges({ status, requestedBy }) {
+    const { results } = await this.db.prepare(
+      `SELECT gc.id FROM learn_grade_changes gc
+        WHERE (? IS NULL OR gc.status = ?) AND (? IS NULL OR gc.requested_by = ?)
+        ORDER BY gc.requested_at DESC LIMIT 200`
+    ).bind(status || null, status || null, requestedBy || null, requestedBy || null).all();
+    const out = [];
+    for (const r of results || []) out.push(await this.findGradeChange(r.id));
+    return out;
+  }
+
+  /* Approving rewrites the posted grade; the request row keeps what it was
+     and who decided, which is the record of why the number moved. */
+  async decideGradeChange({ changeId, approve, note, actorId, letter, passing }) {
+    const change = await this.findGradeChange(changeId);
+    const t = now();
+    const stmts = [this.db.prepare(
+      `UPDATE learn_grade_changes SET status = ?, decided_by = ?, decided_at = ?, decision_note = ?
+        WHERE id = ? AND status = 'pending'`
+    ).bind(approve ? "approved" : "denied", actorId, t, note || null, changeId)];
+    if (approve) {
+      stmts.push(this.db.prepare(
+        `UPDATE learn_posted_grades SET percent = ?, letter = ?, passing = ? WHERE id = ?`
+      ).bind(change.to_percent, letter, passing, change.posted_id));
+    }
+    await this.db.batch(stmts);
+    return this.findGradeChange(changeId);
+  }
+
+  /* One mark, and the line of history that goes with it. A mark that is
+     saved again unchanged writes nothing, so "who marked this" stays the
+     person who did. `via` says by which route it moved. */
+  async upsertAttendance({ accountId, courseId, day, status, note, actorId, via }) {
+    const existing = courseId
+      ? await this.db.prepare(`SELECT id, status, note FROM learn_attendance WHERE account_id = ? AND day = ? AND course_id = ?`)
+          .bind(accountId, day, courseId).first()
+      : await this.db.prepare(`SELECT id, status, note FROM learn_attendance WHERE account_id = ? AND day = ? AND course_id IS NULL`)
+          .bind(accountId, day).first();
+    const t = now(), n = note ?? null;
+    if (existing && existing.status === status && (existing.note ?? null) === n) return existing.id;
+    const log = this.db.prepare(
+      `INSERT INTO learn_attendance_log (id, account_id, course_id, day, from_status, to_status, from_note, to_note, via, by_id, at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("attlog"), accountId, courseId || null, day, existing ? existing.status : null, status,
+           existing ? existing.note ?? null : null, n, via || "register", actorId || null, t);
+    if (existing) {
+      await this.db.batch([
+        this.db.prepare(`UPDATE learn_attendance SET status = ?, note = ?, marked_by = ?, marked_at = ? WHERE id = ?`)
+          .bind(status, n, actorId || null, t, existing.id),
+        log
+      ]);
+      return existing.id;
+    }
+    const attId = id("att");
+    await this.db.batch([
+      this.db.prepare(
+        `INSERT INTO learn_attendance (id, account_id, course_id, day, status, note, marked_by, marked_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(attId, accountId, courseId || null, day, status, n, actorId || null, t),
+      log
+    ]);
+    return attId;
+  }
+
+  /* Takes marks away, each as a line in the history. Returns how many went.
+     Marks of another school's courses are not this school's to remove. */
+  async removeAttendance(ids, actorId, orgId) {
+    let removed = 0;
+    for (const attId of ids) {
+      const row = await this.db.prepare(
+        `SELECT a.* FROM learn_attendance a LEFT JOIN learn_courses c ON c.id = a.course_id
+          WHERE a.id = ? AND (? IS NULL OR c.org_id IS NULL OR c.org_id = ?)`
+      ).bind(attId, orgId || null, orgId || null).first();
+      if (!row) continue;
+      await this.db.batch([
+        this.db.prepare(`DELETE FROM learn_attendance WHERE id = ?`).bind(attId),
+        this.db.prepare(
+          `INSERT INTO learn_attendance_log (id, account_id, course_id, day, from_status, to_status, from_note, to_note, via, by_id, at)
+           VALUES (?, ?, ?, ?, ?, NULL, ?, NULL, 'remove', ?, ?)`
+        ).bind(id("attlog"), row.account_id, row.course_id, row.day, row.status, row.note ?? null, actorId || null, now())
+      ]);
+      removed++;
+    }
+    return removed;
+  }
+
+  async listAttendance({ courseId, accountId, day, from, to }) {
+    const { results } = await this.db.prepare(
+      `SELECT at.*, pr.name AS student_name, c.title AS course_title FROM learn_attendance at
+         LEFT JOIN profiles pr ON pr.account_id = at.account_id
+         LEFT JOIN learn_courses c ON c.id = at.course_id
+        WHERE (? IS NULL OR at.course_id = ?) AND (? IS NULL OR at.account_id = ?)
+          AND (? IS NULL OR at.day = ?) AND (? IS NULL OR at.day >= ?) AND (? IS NULL OR at.day <= ?)
+        ORDER BY at.day DESC, pr.name LIMIT 5000`
+    ).bind(courseId || null, courseId || null, accountId || null, accountId || null,
+           day || null, day || null, from || null, from || null, to || null, to || null).all();
+    return results || [];
+  }
+
+  /* The school-wide count by status for a span of days, and the students
+     with the most absences, for a dean or principal's first look. */
+  async attendanceSummary({ from, to, awayKeys, lateKeys }) {
+    const { results: byStatus } = await this.db.prepare(
+      `SELECT status, COUNT(*) AS n FROM learn_attendance
+        WHERE day >= ? AND day <= ? GROUP BY status`
+    ).bind(from, to).all();
+    const { results: top } = await this.db.prepare(
+      `SELECT at.account_id, pr.name AS student_name,
+              SUM(CASE WHEN at.status IN (${awayKeys.map(() => "?").join(",") || "''"}) THEN 1 ELSE 0 END) AS absences,
+              SUM(CASE WHEN at.status IN (${lateKeys.map(() => "?").join(",") || "''"}) THEN 1 ELSE 0 END) AS lates,
+              COUNT(*) AS days
+         FROM learn_attendance at LEFT JOIN profiles pr ON pr.account_id = at.account_id
+        WHERE at.day >= ? AND at.day <= ?
+        GROUP BY at.account_id ORDER BY absences DESC, lates DESC LIMIT 25`
+    ).bind(...awayKeys, ...lateKeys, from, to).all();
+    return { byStatus: byStatus || [], top: top || [] };
+  }
+
+  /* How the registers stood over a span of days: one line per course and
+     day that has any mark, who last wrote it and when. A course-day with no
+     line is a register nobody took. */
+  async attendanceCoverage({ orgId, from, to }) {
+    const { results } = await this.db.prepare(
+      `SELECT a.course_id, a.day, a.status, COUNT(*) AS n,
+              MAX(a.marked_at) AS at, a.marked_by AS by_id, p.name AS by_name
+         FROM learn_attendance a
+         JOIN learn_courses c ON c.id = a.course_id
+         LEFT JOIN profiles p ON p.account_id = a.marked_by
+        WHERE a.day >= ? AND a.day <= ? AND (? IS NULL OR c.org_id = ?)
+        GROUP BY a.course_id, a.day, a.status`
+    ).bind(from, to, orgId || null, orgId || null).all();
+    return results || [];
+  }
+
+  /* Marks that look wrong, three ways. Each list is capped, because a
+     school with a bad import should see the first two hundred, not wait for
+     all of them. `noSchool` is a list of days (weekends and closures). */
+  async attendanceProblems({ orgId, from, to, today, noSchool, awayKeys, hereKeys }) {
+    const cols = `a.id, a.account_id, p.name AS student_name, a.course_id, c.title AS course_title, a.day, a.status, a.note`;
+    const base = `FROM learn_attendance a
+         JOIN learn_courses c ON c.id = a.course_id
+         LEFT JOIN profiles p ON p.account_id = a.account_id
+        WHERE a.day >= ? AND a.day <= ? AND (? IS NULL OR c.org_id = ?)`;
+    const args = [from, to, orgId || null, orgId || null];
+    const notEnrolled = await this.db.prepare(
+      `SELECT ${cols} ${base}
+          AND NOT EXISTS (SELECT 1 FROM learn_course_memberships m
+                           WHERE m.course_id = a.course_id AND m.account_id = a.account_id AND m.role = 'student')
+        ORDER BY a.day DESC LIMIT 200`
+    ).bind(...args).all();
+    const days = (noSchool || []).slice(0, 120);
+    const dayMarks = days.length || today
+      ? await this.db.prepare(
+          `SELECT ${cols} ${base}
+              AND (a.day IN (${days.map(() => "?").join(",") || "''"}) OR (? IS NOT NULL AND a.day > ?))
+            ORDER BY a.day DESC LIMIT 200`
+        ).bind(...args, ...days, today || null, today || null).all()
+      : { results: [] };
+    // Absent from one course and in the room for another, the same day.
+    const disagree = await this.db.prepare(
+      `SELECT x.account_id, p.name AS student_name, x.day, x.course_id AS absent_course_id, cx.title AS absent_course_title,
+              y.course_id AS here_course_id, cy.title AS here_course_title, y.status AS here_status
+         FROM learn_attendance x
+         JOIN learn_attendance y ON y.account_id = x.account_id AND y.day = x.day AND y.course_id <> x.course_id
+         JOIN learn_courses cx ON cx.id = x.course_id
+         JOIN learn_courses cy ON cy.id = y.course_id
+         LEFT JOIN profiles p ON p.account_id = x.account_id
+        WHERE x.day >= ? AND x.day <= ? AND (? IS NULL OR cx.org_id = ?)
+          AND x.status IN (${awayKeys.map(() => "?").join(",") || "''"})
+          AND y.status IN (${hereKeys.map(() => "?").join(",") || "''"})
+        GROUP BY x.account_id, x.day
+        ORDER BY x.day DESC LIMIT 200`
+    ).bind(...args, ...awayKeys, ...hereKeys).all();
+    return { notEnrolled: notEnrolled.results || [], dayMarks: dayMarks.results || [], disagree: disagree.results || [] };
+  }
+
+  /* The history: one date for everybody, or one student for every date. */
+  async attendanceLog({ orgId, day, accountId, courseId, limit }) {
+    const { results } = await this.db.prepare(
+      `SELECT l.*, ps.name AS student_name, pb.name AS by_name, c.title AS course_title
+         FROM learn_attendance_log l
+         LEFT JOIN profiles ps ON ps.account_id = l.account_id
+         LEFT JOIN profiles pb ON pb.account_id = l.by_id
+         LEFT JOIN learn_courses c ON c.id = l.course_id
+        WHERE (? IS NULL OR l.day = ?) AND (? IS NULL OR l.account_id = ?) AND (? IS NULL OR l.course_id = ?)
+          AND (? IS NULL OR c.org_id IS NULL OR c.org_id = ?)
+        ORDER BY l.at DESC LIMIT ?`
+    ).bind(day || null, day || null, accountId || null, accountId || null, courseId || null, courseId || null,
+           orgId || null, orgId || null, limit || 500).all();
+    return results || [];
+  }
+
+  async getAttendanceSettings(orgId) {
+    if (!orgId) return null;
+    return this.db.prepare(`SELECT * FROM learn_attendance_settings WHERE org_id = ?`).bind(orgId).first();
+  }
+
+  async putAttendanceSettings(orgId, body, actorId) {
+    await this.db.prepare(
+      `INSERT INTO learn_attendance_settings (org_id, body_json, updated_by, updated_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT (org_id) DO UPDATE SET body_json = excluded.body_json,
+         updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+    ).bind(orgId, JSON.stringify(body), actorId || null, now()).run();
+    return this.getAttendanceSettings(orgId);
+  }
+
+  /* --------------------------------------------------------------- Schedule
+     Courses, sections, bell schedules and the calendar. A section is a row of
+     learn_courses; what is kept here is what the schedule adds to it. */
+
+  async listSubjects(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, (SELECT COUNT(*) FROM learn_sections x WHERE x.subject_id = s.id) AS sections
+         FROM learn_subjects s WHERE (? IS NULL OR s.org_id = ?) ORDER BY s.retired, s.position IS NULL, s.position, s.title`
+    ).bind(orgId || null, orgId || null).all();
+    return results || [];
+  }
+
+  async findSubject(subjectId) {
+    return this.db.prepare(`SELECT * FROM learn_subjects WHERE id = ?`).bind(subjectId).first();
+  }
+
+  async findSubjectByNumber(orgId, number) {
+    return this.db.prepare(`SELECT * FROM learn_subjects WHERE org_id = ? AND number = ?`).bind(orgId, number).first();
+  }
+
+  async createSubject(d) {
+    const sid = id("sub"), t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_subjects
+         (id, org_id, number, title, catalog_code, extracurricular, show_online, count_attendance, on_report_cards,
+          on_transcripts, college_credit, requestable, standards, duration, credits, max_credits, gpa, position,
+          grad_req, grades_json, gender, capacity, approval, description, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(sid, d.orgId, d.number, d.title, d.catalogCode ?? null, d.extracurricular ? 1 : 0, d.showOnline === false ? 0 : 1,
+           d.countAttendance === false ? 0 : 1, d.onReportCards === false ? 0 : 1, d.onTranscripts === false ? 0 : 1,
+           d.collegeCredit === false ? 0 : 1, d.requestable ? 1 : 0, d.standards ?? null, d.duration || "year",
+           d.credits ?? 0, d.maxCredits ?? null, d.gpa || "regular", d.position ?? null, d.gradReq ?? null,
+           d.grades ? JSON.stringify(d.grades) : null, d.gender ?? null, d.capacity ?? null, d.approval ? 1 : 0,
+           d.description ?? null, d.createdBy || null, t, t).run();
+    return this.findSubject(sid);
+  }
+
+  async updateSubject(subjectId, patch) {
+    const map = { number: "number", title: "title", catalogCode: "catalog_code", extracurricular: "extracurricular",
+      showOnline: "show_online", countAttendance: "count_attendance", onReportCards: "on_report_cards",
+      onTranscripts: "on_transcripts", collegeCredit: "college_credit", requestable: "requestable", standards: "standards",
+      duration: "duration", credits: "credits", maxCredits: "max_credits", gpa: "gpa", position: "position",
+      gradReq: "grad_req", gender: "gender", capacity: "capacity", approval: "approval", description: "description",
+      retired: "retired" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] === undefined) continue;
+      const v = patch[k];
+      fields.push(`${col} = ?`);
+      values.push(typeof v === "boolean" ? (v ? 1 : 0) : v);
+    }
+    if (patch.grades !== undefined) { fields.push("grades_json = ?"); values.push(patch.grades ? JSON.stringify(patch.grades) : null); }
+    if (!fields.length) return this.findSubject(subjectId);
+    values.push(now(), subjectId);
+    await this.db.prepare(`UPDATE learn_subjects SET ${fields.join(", ")}, updated_at = ? WHERE id = ?`).bind(...values).run();
+    return this.findSubject(subjectId);
+  }
+
+  /* Every section of a school: the course row, its schedule facts, who
+     teaches it and how many students are in it. Two aggregate reads, not one
+     per section. */
+  async listSections(orgId) {
+    const { results: courses } = await this.db.prepare(
+      `SELECT c.id, c.code, c.title, c.subject AS area, c.status, c.body_json,
+              sc.subject_id, sc.section_no, sc.tab, sc.room, sc.capacity, sc.periods_json,
+              sb.number AS subject_number, sb.title AS subject_title, sb.capacity AS subject_capacity, sb.duration, sb.credits
+         FROM learn_courses c
+         LEFT JOIN learn_sections sc ON sc.course_id = c.id
+         LEFT JOIN learn_subjects sb ON sb.id = sc.subject_id
+        WHERE (? IS NULL OR c.org_id = ?) ORDER BY c.title`
+    ).bind(orgId || null, orgId || null).all();
+    const { results: people } = await this.db.prepare(
+      `SELECT cm.course_id, cm.role, cm.account_id, p.name
+         FROM learn_course_memberships cm
+         JOIN learn_courses c ON c.id = cm.course_id
+         LEFT JOIN profiles p ON p.account_id = cm.account_id
+        WHERE (? IS NULL OR c.org_id = ?) AND cm.role IN ('teacher', 'assistant')
+        ORDER BY cm.created_at`
+    ).bind(orgId || null, orgId || null).all();
+    const { results: counts } = await this.db.prepare(
+      `SELECT cm.course_id, COUNT(*) AS n FROM learn_course_memberships cm
+         JOIN learn_courses c ON c.id = cm.course_id
+        WHERE (? IS NULL OR c.org_id = ?) AND cm.role = 'student' GROUP BY cm.course_id`
+    ).bind(orgId || null, orgId || null).all();
+    return { courses: courses || [], people: people || [], counts: counts || [] };
+  }
+
+  /* ------------------------------------------------------------ Drafts */
+
+  async listDrafts(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT d.*, (SELECT COUNT(*) FROM learn_draft_sections s WHERE s.draft_id = d.id) AS sections
+         FROM learn_schedule_drafts d WHERE d.org_id = ? ORDER BY d.published_at IS NOT NULL, d.created_at DESC`
+    ).bind(orgId).all();
+    return results || [];
+  }
+  async findDraft(draftId) { return this.db.prepare(`SELECT * FROM learn_schedule_drafts WHERE id = ?`).bind(draftId).first(); }
+  async createDraft(orgId, name, kind, withRosters, actorId) {
+    const did = id("drf");
+    await this.db.prepare(
+      `INSERT INTO learn_schedule_drafts (id, org_id, name, kind, with_rosters, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(did, orgId, name, kind, withRosters ? 1 : 0, actorId || null, now()).run();
+    return did;
+  }
+  async deleteDraft(draftId) { await this.db.prepare(`DELETE FROM learn_schedule_drafts WHERE id = ?`).bind(draftId).run(); }
+  async markDraftPublished(draftId) { await this.db.prepare(`UPDATE learn_schedule_drafts SET published_at = ? WHERE id = ?`).bind(now(), draftId).run(); }
+  async listDraftSections(draftId) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, sb.number AS subject_number, sb.title AS subject_title, sb.capacity AS subject_capacity
+         FROM learn_draft_sections s LEFT JOIN learn_subjects sb ON sb.id = s.subject_id
+        WHERE s.draft_id = ? ORDER BY s.position, s.title, s.section_no`
+    ).bind(draftId).all();
+    return results || [];
+  }
+  async findDraftSection(sid) { return this.db.prepare(`SELECT * FROM learn_draft_sections WHERE id = ?`).bind(sid).first(); }
+  async insertDraftSection(draftId, d) {
+    const sid = id("dsec");
+    await this.db.prepare(
+      `INSERT INTO learn_draft_sections (id, draft_id, source_course_id, subject_id, title, code, area, section_no, tab, room, capacity,
+          periods_json, teachers_json, students_json, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(sid, draftId, d.sourceCourseId || null, d.subjectId || null, d.title, d.code || null, d.area || null, d.sectionNo || null, d.tab || null,
+           d.room || null, d.capacity ?? null, JSON.stringify(d.periods || []), JSON.stringify(d.teachers || []), JSON.stringify(d.students || []), d.position || 0).run();
+    return sid;
+  }
+  async updateDraftSection(sid, d) {
+    await this.db.prepare(
+      `UPDATE learn_draft_sections SET subject_id = ?, title = ?, section_no = ?, tab = ?, room = ?, capacity = ?,
+          periods_json = ?, teachers_json = ?, students_json = ? WHERE id = ?`
+    ).bind(d.subjectId || null, d.title, d.sectionNo || null, d.tab || null, d.room || null, d.capacity ?? null,
+           JSON.stringify(d.periods || []), JSON.stringify(d.teachers || []), JSON.stringify(d.students || []), sid).run();
+  }
+  async deleteDraftSection(sid) { await this.db.prepare(`DELETE FROM learn_draft_sections WHERE id = ?`).bind(sid).run(); }
+
+  /* Every student's seat in every section of a school, with when they joined. */
+  async listStudentMemberships(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT cm.account_id, cm.course_id, cm.created_at AS joined
+         FROM learn_course_memberships cm JOIN learn_courses c ON c.id = cm.course_id
+        WHERE cm.role = 'student' AND (? IS NULL OR c.org_id = ?) AND c.status <> 'archived'`
+    ).bind(orgId || null, orgId || null).all();
+    return results || [];
+  }
+  /* The marks a rate is made from; over the cap the caller asks for less. */
+  async listAdaMarks({ orgId, from, to, limit }) {
+    const { results } = await this.db.prepare(
+      `SELECT a.account_id, a.course_id, a.day, a.status FROM learn_attendance a JOIN learn_courses c ON c.id = a.course_id
+        WHERE a.day >= ? AND a.day <= ? AND (? IS NULL OR c.org_id = ?) LIMIT ?`
+    ).bind(from, to, orgId || null, orgId || null, limit).all();
+    return results || [];
+  }
+
+  /* ----------------------------------------------------- Course requests */
+
+  async listRequests({ orgId, accountId, subjectId }) {
+    const { results } = await this.db.prepare(
+      `SELECT r.*, s.number, s.title, p.name AS student_name FROM learn_course_requests r
+         JOIN learn_subjects s ON s.id = r.subject_id LEFT JOIN profiles p ON p.account_id = r.account_id
+        WHERE r.org_id = ? AND (? IS NULL OR r.account_id = ?) AND (? IS NULL OR r.subject_id = ?)
+        ORDER BY r.account_id, r.rank, s.title`
+    ).bind(orgId, accountId || null, accountId || null, subjectId || null, subjectId || null).all();
+    return results || [];
+  }
+  async setRequests(orgId, accountId, list, actorId) {
+    const stmts = [this.db.prepare(`DELETE FROM learn_course_requests WHERE org_id = ? AND account_id = ?`).bind(orgId, accountId)];
+    for (const r of list) {
+      stmts.push(this.db.prepare(
+        `INSERT INTO learn_course_requests (id, org_id, account_id, subject_id, rank, set_by, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id("req"), orgId, accountId, r.subjectId, r.rank, actorId || null, now()));
+    }
+    await this.db.batch(stmts);
+  }
+
+  /* Just which periods each section meets in, for the registers. */
+  async listSectionPeriods(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT sc.course_id, sc.periods_json FROM learn_sections sc JOIN learn_courses c ON c.id = sc.course_id
+        WHERE (? IS NULL OR c.org_id = ?)`
+    ).bind(orgId || null, orgId || null).all();
+    return results || [];
+  }
+
+  async upsertSection(courseId, info, actorId) {
+    await this.db.prepare(
+      `INSERT INTO learn_sections (course_id, subject_id, section_no, tab, room, capacity, periods_json, updated_by, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (course_id) DO UPDATE SET subject_id = excluded.subject_id, section_no = excluded.section_no,
+         tab = excluded.tab, room = excluded.room, capacity = excluded.capacity, periods_json = excluded.periods_json,
+         updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+    ).bind(courseId, info.subjectId ?? null, info.sectionNo ?? null, info.tab ?? null, info.room ?? null,
+           info.capacity ?? null, JSON.stringify(info.periods || []), actorId || null, now()).run();
+  }
+
+  async findSection(courseId) {
+    return this.db.prepare(`SELECT * FROM learn_sections WHERE course_id = ?`).bind(courseId).first();
+  }
+
+  async listBellSchedules(orgId) {
+    const { results: schedules } = await this.db.prepare(
+      `SELECT * FROM learn_bell_schedules WHERE (? IS NULL OR org_id = ?) ORDER BY position, name`
+    ).bind(orgId || null, orgId || null).all();
+    const { results: periods } = await this.db.prepare(
+      `SELECT bp.* FROM learn_bell_periods bp JOIN learn_bell_schedules bs ON bs.id = bp.schedule_id
+        WHERE (? IS NULL OR bs.org_id = ?) ORDER BY bp.schedule_id, bp.position`
+    ).bind(orgId || null, orgId || null).all();
+    return { schedules: schedules || [], periods: periods || [] };
+  }
+
+  async findBellSchedule(scheduleId) {
+    return this.db.prepare(`SELECT * FROM learn_bell_schedules WHERE id = ?`).bind(scheduleId).first();
+  }
+
+  async createBellSchedule(orgId, name, minimumDay, periods) {
+    const bid = id("bell");
+    const last = await this.db.prepare(`SELECT COALESCE(MAX(position), -1) AS p FROM learn_bell_schedules WHERE org_id = ?`).bind(orgId).first();
+    const stmts = [this.db.prepare(
+      `INSERT INTO learn_bell_schedules (id, org_id, name, minimum_day, position, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(bid, orgId, name, minimumDay ? 1 : 0, (last ? last.p : -1) + 1, now())];
+    periods.forEach((p, i) => stmts.push(this.db.prepare(
+      `INSERT INTO learn_bell_periods (id, schedule_id, label, starts_at, ends_at, kind, position) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("bp"), bid, p.label, p.startsAt || null, p.endsAt || null, p.kind || "class", i)));
+    await this.db.batch(stmts);
+    return bid;
+  }
+
+  async updateBellSchedule(scheduleId, patch) {
+    const stmts = [];
+    if (patch.name !== undefined || patch.minimumDay !== undefined) {
+      stmts.push(this.db.prepare(
+        `UPDATE learn_bell_schedules SET name = COALESCE(?, name), minimum_day = COALESCE(?, minimum_day) WHERE id = ?`
+      ).bind(patch.name ?? null, patch.minimumDay === undefined ? null : patch.minimumDay ? 1 : 0, scheduleId));
+    }
+    if (patch.periods) {
+      stmts.push(this.db.prepare(`DELETE FROM learn_bell_periods WHERE schedule_id = ?`).bind(scheduleId));
+      patch.periods.forEach((p, i) => stmts.push(this.db.prepare(
+        `INSERT INTO learn_bell_periods (id, schedule_id, label, starts_at, ends_at, kind, position) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id("bp"), scheduleId, p.label, p.startsAt || null, p.endsAt || null, p.kind || "class", i)));
+    }
+    if (stmts.length) await this.db.batch(stmts);
+  }
+
+  async deleteBellSchedule(scheduleId) {
+    await this.db.prepare(`DELETE FROM learn_bell_schedules WHERE id = ?`).bind(scheduleId).run();
+  }
+
+  async bellScheduleInUse(orgId, scheduleId) {
+    const day = await this.db.prepare(`SELECT 1 AS x FROM learn_school_days WHERE org_id = ? AND schedule_id = ? LIMIT 1`).bind(orgId, scheduleId).first();
+    return !!day;
+  }
+
+  async getCalendar(orgId) {
+    return this.db.prepare(`SELECT * FROM learn_calendar WHERE org_id = ?`).bind(orgId).first();
+  }
+
+  async putCalendar(orgId, pattern, yearStart, yearEnd, actorId) {
+    await this.db.prepare(
+      `INSERT INTO learn_calendar (org_id, pattern_json, year_start, year_end, updated_by, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT (org_id) DO UPDATE SET pattern_json = excluded.pattern_json, year_start = excluded.year_start,
+         year_end = excluded.year_end, updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+    ).bind(orgId, JSON.stringify(pattern), yearStart ?? null, yearEnd ?? null, actorId || null, now()).run();
+  }
+
+  async listSchoolDays(orgId, from, to) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_school_days WHERE org_id = ? AND day >= ? AND day <= ? ORDER BY day`
+    ).bind(orgId, from, to).all();
+    return results || [];
+  }
+
+  async setSchoolDays(orgId, days) {
+    const stmts = [];
+    for (const d of days) {
+      if (d.kind === "clear") stmts.push(this.db.prepare(`DELETE FROM learn_school_days WHERE org_id = ? AND day = ?`).bind(orgId, d.day));
+      else stmts.push(this.db.prepare(
+        `INSERT INTO learn_school_days (org_id, day, kind, schedule_id, label) VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (org_id, day) DO UPDATE SET kind = excluded.kind, schedule_id = excluded.schedule_id, label = excluded.label`
+      ).bind(orgId, d.day, d.kind, d.scheduleId || null, d.label || null));
+    }
+    // D1 takes a batch of at most a hundred statements at a time.
+    for (let i = 0; i < stmts.length; i += 90) await this.db.batch(stmts.slice(i, i + 90));
+  }
+
+  /* ----------------------------------------------------------- Enrollment
+     Applications, their documents and history, and the enrollments made from
+     them. The rules that act on these rows are in services/enrollment.js;
+     this block only reads and writes them. */
+
+  async getEnrollmentSettings(orgId) {
+    return this.db.prepare(
+      `SELECT * FROM learn_enrollment_settings WHERE org_id = ?`
+    ).bind(orgId).first();
+  }
+
+  async putEnrollmentSettings(orgId, body, actorId) {
+    await this.db.prepare(
+      `INSERT INTO learn_enrollment_settings (org_id, body_json, updated_by, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT (org_id) DO UPDATE SET
+         body_json = excluded.body_json, updated_by = excluded.updated_by,
+         updated_at = excluded.updated_at`
+    ).bind(orgId, JSON.stringify(body), actorId || null, now()).run();
+    return this.getEnrollmentSettings(orgId);
+  }
+
+  /* The next admission number, taken atomically. The row is made if it is
+     not there, so the first school to admit somebody needs no setup. */
+  async takeAdmissionNumber(orgId) {
+    await this.db.prepare(
+      `INSERT OR IGNORE INTO learn_enrollment_settings (org_id, body_json, admission_next, updated_at)
+       VALUES (?, '{}', 1, ?)`
+    ).bind(orgId, now()).run();
+    const row = await this.db.prepare(
+      `UPDATE learn_enrollment_settings SET admission_next = admission_next + 1
+        WHERE org_id = ? RETURNING admission_next - 1 AS n`
+    ).bind(orgId).first();
+    return row.n;
+  }
+
+  async findApplication(applicationId) {
+    return this.db.prepare(`SELECT * FROM learn_applications WHERE id = ?`).bind(applicationId).first();
+  }
+
+  async findApplicationByKey(createdBy, clientKey) {
+    return this.db.prepare(
+      `SELECT * FROM learn_applications WHERE created_by = ? AND client_key = ?`
+    ).bind(createdBy, clientKey).first();
+  }
+
+  /* The sequence number is taken in the same statement that inserts, so two
+     applications made at once cannot be given the same one. */
+  async createApplication(a) {
+    const applicationId = id("app");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_applications
+         (id, org_id, seq, student_id, school_year, entry_grade, enrollment_type, status,
+          legal_first, legal_last, preferred_name, dob, body_json, review_json,
+          assigned_to, due_on, intended_start, acceptance, source, client_key,
+          created_by, created_at, updated_at)
+       SELECT ?, ?, COALESCE(MAX(seq), 0) + 1, ?, ?, ?, ?, 'draft',
+              ?, ?, ?, ?, ?, '{}', ?, ?, ?, 'not_required', ?, ?, ?, ?, ?
+         FROM learn_applications WHERE org_id IS ?`
+    ).bind(applicationId, a.orgId || null, a.studentId || null, a.schoolYear, a.grade, a.type,
+           a.legalFirst || null, a.legalLast || null, a.preferredName || null, a.dob || null,
+           JSON.stringify(a.form || {}), a.assignedTo || null, a.dueOn || null, a.intendedStart || null,
+           a.source || "staff", a.clientKey || null, a.createdBy || null, t, t, a.orgId || null).run();
+    return this.findApplication(applicationId);
+  }
+
+  /* `patch` keys are the domain's names; only the ones given are written.
+     With `ifUpdatedAt` the write happens only if nobody changed the row since
+     it was read — the caller learns that by `null`. */
+  async updateApplication(applicationId, patch, { ifUpdatedAt } = {}) {
+    const map = {
+      studentId: "student_id", schoolYear: "school_year", grade: "entry_grade", type: "enrollment_type",
+      status: "status", legalFirst: "legal_first", legalLast: "legal_last", preferredName: "preferred_name",
+      dob: "dob", admissionNo: "admission_no", assignedTo: "assigned_to", dueOn: "due_on",
+      intendedStart: "intended_start", decision: "decision", decisionReason: "decision_reason",
+      decisionNote: "decision_note", decidedBy: "decided_by", decidedAt: "decided_at",
+      offerUntil: "offer_until", acceptance: "acceptance", acceptedAt: "accepted_at",
+      waitlistedAt: "waitlisted_at", enrollmentId: "enrollment_id", submittedAt: "submitted_at",
+      closedAt: "closed_at"
+    };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (patch.form !== undefined) { fields.push("body_json = ?"); values.push(JSON.stringify(patch.form)); }
+    if (patch.review !== undefined) { fields.push("review_json = ?"); values.push(JSON.stringify(patch.review)); }
+    const t = now();
+    fields.push("updated_at = ?");
+    values.push(t, applicationId);
+    let where = "id = ?";
+    if (ifUpdatedAt != null) { where += " AND updated_at = ?"; values.push(ifUpdatedAt); }
+    const res = await this.db.prepare(
+      `UPDATE learn_applications SET ${fields.join(", ")} WHERE ${where}`
+    ).bind(...values).run();
+    if (ifUpdatedAt != null && !(res.meta && res.meta.changes > 0)) return null;
+    return this.findApplication(applicationId);
+  }
+
+  /* Every application for a school year, or for all years. Filtering, sorting
+     and paging happen above: the computed things a queue shows (how complete,
+     what is blocking) depend on the school's settings, which SQL cannot see. */
+  async listApplications({ orgId, year = null } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_applications
+        WHERE (org_id IS ? OR org_id = ?) AND (? IS NULL OR school_year = ?)
+        ORDER BY updated_at DESC`
+    ).bind(orgId || null, orgId || null, year, year).all();
+    return results || [];
+  }
+
+  async listApplicationsOf(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_applications
+        WHERE created_by = ? OR student_id = ?
+        ORDER BY updated_at DESC`
+    ).bind(accountId, accountId).all();
+    return results || [];
+  }
+
+  /* The accounts the school already knows as students, with a date of birth
+     when the contact card has one — what a new application is checked
+     against. */
+  async listStudentIdentities(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.id, a.email, p.name, p.first_name, c.date_of_birth AS dob
+         FROM accounts a
+         JOIN account_roles r ON r.account_id = a.id AND r.product = 'learn' AND r.role = 'student'
+              AND (r.org_id IS NULL OR r.org_id = ?)
+         LEFT JOIN profiles p ON p.account_id = a.id
+         LEFT JOIN account_contacts c ON c.account_id = a.id
+        GROUP BY a.id
+        ORDER BY p.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  /* Students whose guardian has one of these email addresses — who a new
+     applicant's brothers and sisters already at the school are. */
+  async wardsOfGuardianEmails(emails) {
+    if (!emails.length) return [];
+    const marks = emails.map(() => "?").join(",");
+    const { results } = await this.db.prepare(
+      `SELECT s.id AS student_id, sp.name AS student_name, g.email_lower AS guardian_email
+         FROM learn_guardians lg
+         JOIN accounts g ON g.id = lg.guardian_id
+         JOIN accounts s ON s.id = lg.student_id
+         LEFT JOIN profiles sp ON sp.account_id = s.id
+        WHERE g.email_lower IN (${marks})`
+    ).bind(...emails).all();
+    return results || [];
+  }
+
+  async listDocuments(applicationId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_application_documents WHERE application_id = ? ORDER BY rowid`
+    ).bind(applicationId).all();
+    return results || [];
+  }
+
+  async listDocumentsFor(applicationIds) {
+    if (!applicationIds.length) return [];
+    const out = [];
+    // D1 allows 100 bound parameters a statement.
+    for (let i = 0; i < applicationIds.length; i += 90) {
+      const chunk = applicationIds.slice(i, i + 90);
+      const { results } = await this.db.prepare(
+        `SELECT * FROM learn_application_documents
+          WHERE application_id IN (${chunk.map(() => "?").join(",")}) ORDER BY rowid`
+      ).bind(...chunk).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* Brings an application's checklist in line with what its grade and type
+     require. A document that already has a status keeps it: a requirement
+     that was dropped later does not erase work already done. */
+  async syncDocuments(applicationId, defs) {
+    const t = now();
+    const existing = new Map((await this.listDocuments(applicationId)).map((d) => [d.key, d]));
+    const statements = [];
+    for (const d of defs) {
+      const have = existing.get(d.key);
+      if (!have) {
+        statements.push(this.db.prepare(
+          `INSERT INTO learn_application_documents
+             (application_id, key, label, required, sensitive, status, updated_at)
+           VALUES (?, ?, ?, ?, ?, 'missing', ?)`
+        ).bind(applicationId, d.key, d.label, d.required ? 1 : 0, d.sensitive ? 1 : 0, t));
+      } else {
+        statements.push(this.db.prepare(
+          `UPDATE learn_application_documents SET label = ?, required = ?, sensitive = ?
+            WHERE application_id = ? AND key = ?`
+        ).bind(d.label, d.required ? 1 : 0, d.sensitive ? 1 : 0, applicationId, d.key));
+      }
+    }
+    // A checklist row nobody touched, for a document no longer asked for, goes.
+    const keep = new Set(defs.map((d) => d.key));
+    for (const [key, d] of existing) {
+      if (!keep.has(key) && d.status === "missing" && !d.file_id) {
+        statements.push(this.db.prepare(
+          `DELETE FROM learn_application_documents WHERE application_id = ? AND key = ?`
+        ).bind(applicationId, key));
+      }
+    }
+    if (statements.length) await this.db.batch(statements);
+    return this.listDocuments(applicationId);
+  }
+
+  async updateDocument(applicationId, key, patch) {
+    const map = { status: "status", note: "note", fileId: "file_id", fileName: "file_name",
+                  fileType: "file_type", fileSize: "file_size", receivedAt: "received_at",
+                  reviewedBy: "reviewed_by", reviewedAt: "reviewed_at" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), applicationId, key);
+    await this.db.prepare(
+      `UPDATE learn_application_documents SET ${fields.join(", ")}
+        WHERE application_id = ? AND key = ?`
+    ).bind(...values).run();
+    return this.db.prepare(
+      `SELECT * FROM learn_application_documents WHERE application_id = ? AND key = ?`
+    ).bind(applicationId, key).first();
+  }
+
+  async putApplicationFile({ applicationId, key, name, type, size, data, actorId }) {
+    const fileId = id("file");
+    await this.db.prepare(
+      `INSERT INTO learn_application_files
+         (id, application_id, doc_key, name, type, size, data, uploaded_by, uploaded_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(fileId, applicationId, key, name, type, size, data, actorId || null, now()).run();
+    return fileId;
+  }
+
+  async getApplicationFile(fileId) {
+    return this.db.prepare(`SELECT * FROM learn_application_files WHERE id = ?`).bind(fileId).first();
+  }
+
+  /* A replaced scan is removed: what the registrar looked at is the document
+     on the checklist, and an old file nobody can see is only a liability. */
+  async deleteApplicationFiles(applicationId, key, exceptId) {
+    await this.db.prepare(
+      `DELETE FROM learn_application_files
+        WHERE application_id = ? AND doc_key = ? AND id IS NOT ?`
+    ).bind(applicationId, key, exceptId || null).run();
+  }
+
+  async addApplicationEvent(applicationId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_application_events
+         (id, application_id, at, actor_id, actor_name, kind, from_value, to_value, field, note, internal, meta_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("evt"), applicationId, now(), e.actorId || null, e.actorName || null, e.kind,
+           e.from == null ? null : String(e.from), e.to == null ? null : String(e.to),
+           e.field || null, e.note || null, e.internal === false ? 0 : 1,
+           e.meta ? JSON.stringify(e.meta) : null).run();
+  }
+
+  async listApplicationEvents(applicationId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_application_events WHERE application_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(applicationId).all();
+    return results || [];
+  }
+
+  async findEnrollment(enrollmentId) {
+    return this.db.prepare(`SELECT * FROM learn_enrollments WHERE id = ?`).bind(enrollmentId).first();
+  }
+
+  async findLiveEnrollment(studentId, year) {
+    return this.db.prepare(
+      `SELECT * FROM learn_enrollments
+        WHERE student_id = ? AND school_year = ? AND state IN ('enrolled', 'suspended')`
+    ).bind(studentId, year).first();
+  }
+
+  async listEnrollments({ orgId, year = null, studentId = null } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT e.*, p.name AS student_name, p.first_name, p.initials, p.avatar_hue, a.email AS student_email
+         FROM learn_enrollments e
+         JOIN accounts a ON a.id = e.student_id
+         LEFT JOIN profiles p ON p.account_id = e.student_id
+        WHERE (e.org_id IS ? OR e.org_id = ?) AND (? IS NULL OR e.school_year = ?)
+          AND (? IS NULL OR e.student_id = ?)
+        ORDER BY e.starts_on DESC, p.name`
+    ).bind(orgId || null, orgId || null, year, year, studentId, studentId).all();
+    return results || [];
+  }
+
+  async updateEnrollment(enrollmentId, patch) {
+    const map = { state: "state", startsOn: "starts_on", endsOn: "ends_on", exitReason: "exit_reason",
+                  exitNote: "exit_note", syncState: "sync_state", grade: "grade" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    if (patch.placements !== undefined) { fields.push("placements_json = ?"); values.push(JSON.stringify(patch.placements)); }
+    if (patch.sync !== undefined) { fields.push("sync_json = ?"); values.push(JSON.stringify(patch.sync)); }
+    fields.push("updated_at = ?");
+    values.push(now(), enrollmentId);
+    await this.db.prepare(
+      `UPDATE learn_enrollments SET ${fields.join(", ")} WHERE id = ?`
+    ).bind(...values).run();
+    return this.findEnrollment(enrollmentId);
+  }
+
+  /* Seats taken in each grade for a school year: students enrolled or
+     suspended, plus applications admitted but not yet enrolled. The unique
+     index and this count are what stop a grade being over-promised. */
+  async seatUsage(orgId, year) {
+    const { results } = await this.db.prepare(
+      `SELECT grade, COUNT(*) AS n FROM (
+         SELECT grade FROM learn_enrollments
+          WHERE (org_id IS ? OR org_id = ?) AND school_year = ? AND state IN ('enrolled', 'suspended')
+         UNION ALL
+         SELECT entry_grade AS grade FROM learn_applications
+          WHERE (org_id IS ? OR org_id = ?) AND school_year = ? AND status = 'admitted' AND enrollment_id IS NULL
+       ) GROUP BY grade`
+    ).bind(orgId || null, orgId || null, year, orgId || null, orgId || null, year).all();
+    const out = {};
+    for (const r of results || []) out[r.grade] = r.n;
+    return out;
+  }
+
+  /* Activation, as one transaction: the enrollment exists and the
+     application points at it, or neither happened. What is set up around it
+     afterwards is separate and retryable, so a class that cannot be joined
+     today never undoes a student that was admitted. */
+  async createEnrollmentFrom(application, e, event) {
+    const enrollmentId = id("enrl");
+    const t = now();
+    await this.db.batch([
+      this.db.prepare(
+        `INSERT INTO learn_enrollments
+           (id, org_id, student_id, application_id, school_year, grade, enrollment_type, state,
+            starts_on, previous_school, admission_no, placements_json, sync_json, sync_state,
+            created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'enrolled', ?, ?, ?, '[]', '[]', 'pending', ?, ?, ?)`
+      ).bind(enrollmentId, application.org_id || null, e.studentId, application.id, application.school_year,
+             e.grade, application.enrollment_type, e.startsOn, e.previousSchool || null,
+             e.admissionNo || null, e.createdBy || null, t, t),
+      this.db.prepare(
+        `UPDATE learn_applications
+            SET enrollment_id = ?, student_id = ?, closed_at = ?, updated_at = ?
+          WHERE id = ? AND enrollment_id IS NULL`
+      ).bind(enrollmentId, e.studentId, t, t, application.id),
+      this.db.prepare(
+        `INSERT INTO learn_application_events
+           (id, application_id, at, actor_id, actor_name, kind, from_value, to_value, field, note, internal, meta_json)
+         VALUES (?, ?, ?, ?, ?, 'enrollment', NULL, ?, NULL, ?, 0, ?)`
+      ).bind(id("evt"), application.id, t, event.actorId || null, event.actorName || null, "enrolled",
+             event.note || null, JSON.stringify({ enrollmentId, startsOn: e.startsOn, grade: e.grade }))
+    ]);
+    return this.findEnrollment(enrollmentId);
+  }
+
+  /* The people who work on enrollment: administrators, registrars and
+     admissions reviewers of this organization — who an application can be
+     assigned to. */
+  async listEnrollmentTeam(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.id, a.email, p.name, p.title, GROUP_CONCAT(DISTINCT r.role) AS roles
+         FROM account_roles r
+         JOIN accounts a ON a.id = r.account_id
+         LEFT JOIN profiles p ON p.account_id = a.id
+        WHERE a.status != 'suspended'
+          AND ((r.product = 'learn' AND r.role IN ('admin', 'registrar', 'admissions'))
+               OR (r.product = 'platform' AND r.role = 'admin'))
+          AND (r.org_id IS NULL OR r.org_id = ?)
+        GROUP BY a.id
+        ORDER BY p.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  /* Display names for a handful of accounts — who assigned, who verified. */
+  async namesFor(accountIds) {
+    const ids = [...new Set(accountIds.filter(Boolean))];
+    if (!ids.length) return {};
+    const { results } = await this.db.prepare(
+      `SELECT account_id, name FROM profiles WHERE account_id IN (${ids.map(() => "?").join(",")})`
+    ).bind(...ids).all();
+    const out = {};
+    for (const r of results || []) out[r.account_id] = r.name;
+    return out;
+  }
+
+  /* Enrollments that were set up ahead of their start date and whose course
+     placement has been waiting for it. */
+  async listEnrollmentsDue(orgId, day, limit = 25) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_enrollments
+        WHERE (org_id IS ? OR org_id = ?) AND state = 'enrolled'
+          AND placements_json LIKE '%"status":"scheduled"%' AND starts_on <= ?
+        ORDER BY starts_on LIMIT ?`
+    ).bind(orgId || null, orgId || null, day, limit).all();
+    return results || [];
+  }
+
+  async admissionNoOf(accountId) {
+    const row = await this.db.prepare(
+      `SELECT admission_no FROM learn_enrollments
+        WHERE student_id = ? AND admission_no IS NOT NULL ORDER BY created_at LIMIT 1`
+    ).bind(accountId).first();
+    return row ? row.admission_no : null;
+  }
+
+  /* ------------------------------------------------- Conduct and health
+     Two ledgers the office keeps and the school rules over. The rules —
+     who may read an entry, what a family is shown — are in guard.js and the
+     routes; this block reads and writes rows. */
+
+  async createConduct(c) {
+    const cid = id("cnd");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_conduct
+         (id, org_id, student_id, kind, category, severity, title, details, occurred_on, location,
+          course_id, people, action_taken, follow_up_on, status, family_sees, reported_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)`
+    ).bind(cid, c.orgId || null, c.studentId, c.kind, c.category || null, c.severity || null, c.title, c.details || null,
+           c.occurredOn, c.location || null, c.courseId || null, c.people || null, c.actionTaken || null,
+           c.followUpOn || null, c.familySees ? 1 : 0, c.reportedBy || null, t, t).run();
+    return this.findConduct(cid);
+  }
+
+  async findConduct(conductId) {
+    return this.db.prepare(
+      `SELECT c.*, sp.name AS student_name, rp.name AS reporter_name, cr.title AS course_title
+         FROM learn_conduct c
+         LEFT JOIN profiles sp ON sp.account_id = c.student_id
+         LEFT JOIN profiles rp ON rp.account_id = c.reported_by
+         LEFT JOIN learn_courses cr ON cr.id = c.course_id
+        WHERE c.id = ?`
+    ).bind(conductId).first();
+  }
+
+  async updateConduct(conductId, patch) {
+    const map = { category: "category", severity: "severity", title: "title", details: "details", occurredOn: "occurred_on",
+                  location: "location", courseId: "course_id", people: "people", actionTaken: "action_taken",
+                  followUpOn: "follow_up_on", status: "status", familySees: "family_sees", resolvedBy: "resolved_by",
+                  resolvedAt: "resolved_at" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(typeof patch[k] === "boolean" ? (patch[k] ? 1 : 0) : patch[k]); }
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), conductId);
+    await this.db.prepare(`UPDATE learn_conduct SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+    return this.findConduct(conductId);
+  }
+
+  async listConduct({ orgId, studentId, kind, status, from, to, reportedBy, familyOnly, limit = 500 } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT c.*, sp.name AS student_name, rp.name AS reporter_name, cr.title AS course_title
+         FROM learn_conduct c
+         LEFT JOIN profiles sp ON sp.account_id = c.student_id
+         LEFT JOIN profiles rp ON rp.account_id = c.reported_by
+         LEFT JOIN learn_courses cr ON cr.id = c.course_id
+        WHERE (? IS NULL OR c.org_id = ? OR c.org_id IS NULL)
+          AND (? IS NULL OR c.student_id = ?) AND (? IS NULL OR c.kind = ?) AND (? IS NULL OR c.status = ?)
+          AND (? IS NULL OR c.occurred_on >= ?) AND (? IS NULL OR c.occurred_on <= ?)
+          AND (? IS NULL OR c.reported_by = ?) AND (? = 0 OR c.family_sees = 1)
+        ORDER BY c.occurred_on DESC, c.created_at DESC LIMIT ?`
+    ).bind(orgId || null, orgId || null, studentId || null, studentId || null, kind || null, kind || null,
+           status || null, status || null, from || null, from || null, to || null, to || null,
+           reportedBy || null, reportedBy || null, familyOnly ? 1 : 0, limit).all();
+    return results || [];
+  }
+
+  async addConductEvent(conductId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_conduct_events (id, conduct_id, at, actor_id, actor_name, kind, note) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("cev"), conductId, now(), e.actorId || null, e.actorName || null, e.kind, e.note || null).run();
+  }
+
+  async listConductEvents(conductId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_conduct_events WHERE conduct_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(conductId).all();
+    return results || [];
+  }
+
+  async createHealth(h) {
+    const hid = id("hlt");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_health
+         (id, org_id, student_id, kind, title, detail, severity, on_date, due_on, status, flag, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)`
+    ).bind(hid, h.orgId || null, h.studentId, h.kind, h.title, h.detail || null, h.severity || null, h.onDate || null,
+           h.dueOn || null, h.flag || null, h.createdBy || null, t, t).run();
+    return this.findHealth(hid);
+  }
+
+  async findHealth(healthId) {
+    return this.db.prepare(
+      `SELECT h.*, sp.name AS student_name FROM learn_health h
+         LEFT JOIN profiles sp ON sp.account_id = h.student_id WHERE h.id = ?`
+    ).bind(healthId).first();
+  }
+
+  async updateHealth(healthId, patch) {
+    const map = { title: "title", detail: "detail", severity: "severity", onDate: "on_date", dueOn: "due_on",
+                  status: "status", flag: "flag" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), healthId);
+    await this.db.prepare(`UPDATE learn_health SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+    return this.findHealth(healthId);
+  }
+
+  async listHealth({ orgId, studentId, kind, status, studentIds, limit = 2000 } = {}) {
+    let where = `(? IS NULL OR h.org_id = ? OR h.org_id IS NULL) AND (? IS NULL OR h.student_id = ?)
+                 AND (? IS NULL OR h.kind = ?) AND (? IS NULL OR h.status = ?)`;
+    const binds = [orgId || null, orgId || null, studentId || null, studentId || null, kind || null, kind || null, status || null, status || null];
+    if (studentIds && studentIds.length) {
+      where += ` AND h.student_id IN (${studentIds.map(() => "?").join(",")})`;
+      binds.push(...studentIds);
+    }
+    const { results } = await this.db.prepare(
+      `SELECT h.*, sp.name AS student_name FROM learn_health h
+         LEFT JOIN profiles sp ON sp.account_id = h.student_id
+        WHERE ${where} ORDER BY sp.name, h.kind, h.on_date DESC LIMIT ?`
+    ).bind(...binds, limit).all();
+    return results || [];
+  }
+
+  async addHealthEvent(healthId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_health_events (id, health_id, at, actor_id, actor_name, kind, note) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("hev"), healthId, now(), e.actorId || null, e.actorName || null, e.kind, e.note || null).run();
+  }
+
+  async listHealthEvents(healthId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_health_events WHERE health_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(healthId).all();
+    return results || [];
+  }
+
+  /* ------------------------------------------------------------ Facilities
+     Rooms, the things in them, what has to be done, who may use them when.
+     The rules — who may do what, when an order is due, whether a room is free —
+     are in guard.js and services/facilities.js; this block reads and writes
+     rows. */
+
+  async _patchRow(table, map, patch, rowId) {
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] === undefined) continue;
+      const v = patch[k];
+      fields.push(`${col} = ?`);
+      values.push(typeof v === "boolean" ? (v ? 1 : 0) : (v !== null && typeof v === "object" ? JSON.stringify(v) : v));
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), rowId);
+    await this.db.prepare(`UPDATE ${table} SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+  }
+
+  /* Who can be given work: the facilities team, the office, IT, the principal
+     and administrators. */
+  async listFacilityTeam(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.id, a.email, p.name, p.title, GROUP_CONCAT(DISTINCT r.role) AS roles
+         FROM account_roles r
+         JOIN accounts a ON a.id = r.account_id
+         LEFT JOIN profiles p ON p.account_id = a.id
+        WHERE a.status != 'suspended'
+          AND ((r.product = 'learn' AND r.role IN ('admin', 'facilities', 'office', 'it', 'principal'))
+               OR (r.product = 'platform' AND r.role = 'admin'))
+          AND (r.org_id IS NULL OR r.org_id = ?)
+        GROUP BY a.id
+        ORDER BY p.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  /* ---- spaces */
+
+  async listSpaces(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, ap.name AS approver_name,
+              (SELECT COUNT(*) FROM learn_assets a WHERE a.space_id = s.id AND a.status != 'retired') AS asset_count,
+              (SELECT COUNT(*) FROM learn_work_orders o WHERE o.space_id = s.id
+                  AND o.status IN ('pending', 'open', 'in_progress', 'on_hold')) AS open_count
+         FROM learn_spaces s
+         LEFT JOIN profiles ap ON ap.account_id = s.approver_id
+        WHERE s.org_id IS ? AND s.archived = 0
+        ORDER BY s.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  async findSpace(spaceId) {
+    return this.db.prepare(
+      `SELECT s.*, ap.name AS approver_name FROM learn_spaces s
+         LEFT JOIN profiles ap ON ap.account_id = s.approver_id WHERE s.id = ?`
+    ).bind(spaceId).first();
+  }
+
+  _spaceInsert(s) {
+    const t = now();
+    return this.db.prepare(
+      `INSERT INTO learn_spaces (id, org_id, parent_id, kind, name, code, capacity, bookable, rules_json, approver_id, notes, archived, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+    ).bind(s.id, s.orgId || null, s.parentId || null, s.kind, s.name, s.code || null, s.capacity ?? null,
+           s.bookable ? 1 : 0, s.rules ? JSON.stringify(s.rules) : null, s.approverId || null, s.notes || null, t, t);
+  }
+
+  async createSpaces(list) {
+    const rows = list.map((s) => ({ ...s, id: id("spc") }));
+    await this.db.batch(rows.map((s) => this._spaceInsert(s)));
+    return rows.map((s) => s.id);
+  }
+
+  async updateSpace(spaceId, patch) {
+    await this._patchRow("learn_spaces", { parentId: "parent_id", kind: "kind", name: "name", code: "code", capacity: "capacity",
+      bookable: "bookable", rules: "rules_json", approverId: "approver_id", notes: "notes", archived: "archived" }, patch, spaceId);
+    return this.findSpace(spaceId);
+  }
+
+  /* ---- assets */
+
+  async createAsset(a) {
+    const aid = id("ast");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_assets
+         (id, org_id, seq, space_id, name, kind, code, serial, custodian_id, custodian_label, status, condition,
+          installed_on, warranty_end, life_years, notes, created_at, updated_at)
+       SELECT ?, ?, COALESCE(MAX(seq), 0) + 1, ?, ?, ?,
+              COALESCE(?, 'AST-' || printf('%04d', COALESCE(MAX(seq), 0) + 1)),
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+         FROM learn_assets WHERE org_id IS ?`
+    ).bind(aid, a.orgId || null, a.spaceId || null, a.name, a.kind || null, a.code || null, a.serial || null,
+           a.custodianId || null, a.custodianLabel || null, a.status || "in_service", a.condition || null,
+           a.installedOn || null, a.warrantyEnd || null, a.lifeYears ?? null, a.notes || null, t, t, a.orgId || null).run();
+    return this.findAsset(aid);
+  }
+
+  async findAsset(assetId) {
+    return this.db.prepare(
+      `SELECT a.*, sp.name AS space_name, cp.name AS custodian_name FROM learn_assets a
+         LEFT JOIN learn_spaces sp ON sp.id = a.space_id
+         LEFT JOIN profiles cp ON cp.account_id = a.custodian_id WHERE a.id = ?`
+    ).bind(assetId).first();
+  }
+
+  async updateAsset(assetId, patch) {
+    await this._patchRow("learn_assets", { spaceId: "space_id", name: "name", kind: "kind", code: "code", serial: "serial",
+      custodianId: "custodian_id", custodianLabel: "custodian_label", status: "status", condition: "condition",
+      installedOn: "installed_on", warrantyEnd: "warranty_end", lifeYears: "life_years", lastSeenOn: "last_seen_on", notes: "notes" }, patch, assetId);
+    return this.findAsset(assetId);
+  }
+
+  async listAssets({ orgId, spaceId, status, custodianId, limit = 2000 } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT a.*, sp.name AS space_name, cp.name AS custodian_name FROM learn_assets a
+         LEFT JOIN learn_spaces sp ON sp.id = a.space_id
+         LEFT JOIN profiles cp ON cp.account_id = a.custodian_id
+        WHERE a.org_id IS ? AND (? IS NULL OR a.space_id = ?) AND (? IS NULL OR a.status = ?)
+          AND (? IS NULL OR a.custodian_id = ?)
+        ORDER BY a.name LIMIT ?`
+    ).bind(orgId || null, spaceId || null, spaceId || null, status || null, status || null,
+           custodianId || null, custodianId || null, limit).all();
+    return results || [];
+  }
+
+  async assetsByCodes(orgId, codes) {
+    const out = [];
+    for (let i = 0; i < codes.length; i += 80) {
+      const part = codes.slice(i, i + 80);
+      const { results } = await this.db.prepare(
+        `SELECT a.*, sp.name AS space_name FROM learn_assets a LEFT JOIN learn_spaces sp ON sp.id = a.space_id
+          WHERE a.org_id IS ? AND a.code IN (${part.map(() => "?").join(",")})`
+      ).bind(orgId || null, ...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* ---- work orders */
+
+  _orderInsert(o, verb = "INSERT") {
+    const t = now();
+    return this.db.prepare(
+      `${verb} INTO learn_work_orders
+         (id, org_id, seq, kind, title, details, category, priority, status, space_id, asset_id, vendor_id, schedule_id,
+          requested_by, assignee_id, due_on, due_key, checklist_json, client_key, created_at, updated_at)
+       SELECT ?, ?, COALESCE(MAX(seq), 0) + 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+         FROM learn_work_orders WHERE org_id IS ?`
+    ).bind(o.id, o.orgId || null, o.kind, o.title, o.details || null, o.category, o.priority, o.status,
+           o.spaceId || null, o.assetId || null, o.vendorId || null, o.scheduleId || null, o.requestedBy || null,
+           o.assigneeId || null, o.dueOn || null, o.dueKey || null,
+           o.checklist && o.checklist.length ? JSON.stringify(o.checklist) : null, o.clientKey || null, t, t, o.orgId || null);
+  }
+
+  async createOrder(o) {
+    const oid = id("wo");
+    await this._orderInsert({ ...o, id: oid }).run();
+    return this.findOrder(oid);
+  }
+
+  /* An order a schedule answers. The (schedule, due date) pair is unique, so a
+     second sync cannot make a second order; the schedule moves on once the
+     order exists, whichever sync made it. */
+  async generateOrder(o, schedulePatch) {
+    const oid = id("wo");
+    const r = await this._orderInsert({ ...o, id: oid }, "INSERT OR IGNORE").run();
+    let made = !!(r.meta && r.meta.changes);
+    if (!made) {
+      const have = await this.db.prepare(`SELECT id FROM learn_work_orders WHERE schedule_id = ? AND due_key = ?`)
+        .bind(o.scheduleId, o.dueKey).first();
+      if (!have) return { made: false, moved: false };
+    }
+    await this.updateSchedule(o.scheduleId, schedulePatch);
+    return { made, moved: true, id: made ? oid : null };
+  }
+
+  _orderSelect() {
+    return `SELECT o.*, sp.name AS space_name, a.name AS asset_name, a.code AS asset_code, v.name AS vendor_name,
+                   rq.name AS requester_name, asg.name AS assignee_name
+              FROM learn_work_orders o
+              LEFT JOIN learn_spaces sp ON sp.id = o.space_id
+              LEFT JOIN learn_assets a ON a.id = o.asset_id
+              LEFT JOIN learn_vendors v ON v.id = o.vendor_id
+              LEFT JOIN profiles rq ON rq.account_id = o.requested_by
+              LEFT JOIN profiles asg ON asg.account_id = o.assignee_id`;
+  }
+
+  async findOrder(orderId) {
+    return this.db.prepare(`${this._orderSelect()} WHERE o.id = ?`).bind(orderId).first();
+  }
+
+  async findOrderByKey(orgId, clientKey) {
+    return this.db.prepare(`${this._orderSelect()} WHERE o.org_id IS ? AND o.client_key = ?`).bind(orgId || null, clientKey).first();
+  }
+
+  async updateOrder(orderId, patch) {
+    await this._patchRow("learn_work_orders", { kind: "kind", title: "title", details: "details", category: "category",
+      priority: "priority", status: "status", spaceId: "space_id", assetId: "asset_id", vendorId: "vendor_id",
+      assigneeId: "assignee_id", dueOn: "due_on", startedAt: "started_at", completedAt: "completed_at",
+      completedBy: "completed_by", minutes: "minutes", checklist: "checklist_json", outcome: "outcome",
+      declineReason: "decline_reason" }, patch, orderId);
+    return this.findOrder(orderId);
+  }
+
+  async listOrders({ orgId, statuses, assigneeId, requestedBy, spaceId, assetId, vendorId, scheduleId, kind, overdueBefore, limit = 500 } = {}) {
+    const where = ["o.org_id IS ?"], binds = [orgId || null];
+    const eq = (col, v) => { if (v) { where.push(`${col} = ?`); binds.push(v); } };
+    if (statuses && statuses.length) { where.push(`o.status IN (${statuses.map(() => "?").join(",")})`); binds.push(...statuses); }
+    eq("o.assignee_id", assigneeId); eq("o.requested_by", requestedBy); eq("o.space_id", spaceId); eq("o.asset_id", assetId);
+    eq("o.vendor_id", vendorId); eq("o.schedule_id", scheduleId); eq("o.kind", kind);
+    if (overdueBefore) {
+      where.push("o.due_on IS NOT NULL AND o.due_on < ? AND o.status IN ('pending','open','in_progress','on_hold')");
+      binds.push(overdueBefore);
+    }
+    const { results } = await this.db.prepare(
+      `${this._orderSelect()} WHERE ${where.join(" AND ")}
+        ORDER BY CASE o.status WHEN 'pending' THEN 0 WHEN 'open' THEN 1 WHEN 'in_progress' THEN 1 WHEN 'on_hold' THEN 2 ELSE 3 END,
+                 CASE o.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
+                 COALESCE(o.due_on, '9999'), o.created_at DESC LIMIT ?`
+    ).bind(...binds, limit).all();
+    return results || [];
+  }
+
+  /* What is already open in a room, in a line each — enough to see that the
+     problem was reported, not enough to read other people's requests. */
+  async listOpenBrief(orgId, spaceId) {
+    const { results } = await this.db.prepare(
+      `SELECT id, seq, title, status, category, created_at FROM learn_work_orders
+        WHERE org_id IS ? AND space_id = ? AND status IN ('pending', 'open', 'in_progress', 'on_hold')
+        ORDER BY created_at DESC LIMIT 20`
+    ).bind(orgId || null, spaceId).all();
+    return results || [];
+  }
+
+  async openOrdersFor(scheduleId) {
+    const row = await this.db.prepare(
+      `SELECT COUNT(*) AS n FROM learn_work_orders WHERE schedule_id = ? AND status IN ('pending', 'open', 'in_progress', 'on_hold')`
+    ).bind(scheduleId).first();
+    return row ? row.n : 0;
+  }
+
+  async orderCounts(orgId, today, actorId) {
+    const row = await this.db.prepare(
+      `SELECT SUM(status = 'pending') AS pending, SUM(status = 'open') AS open,
+              SUM(status = 'in_progress') AS in_progress, SUM(status = 'on_hold') AS on_hold,
+              SUM(status IN ('pending','open','in_progress','on_hold') AND due_on IS NOT NULL AND due_on < ?) AS overdue,
+              SUM(status IN ('open','in_progress','on_hold') AND assignee_id = ?) AS mine,
+              SUM(status IN ('pending','open','in_progress','on_hold') AND assignee_id IS NULL AND status != 'pending') AS unassigned
+         FROM learn_work_orders WHERE org_id IS ?`
+    ).bind(today, actorId || "", orgId || null).first();
+    return row || {};
+  }
+
+  async ordersForReport(orgId, sinceMs) {
+    const { results } = await this.db.prepare(
+      `SELECT o.id, o.kind, o.status, o.category, o.priority, o.due_on, o.created_at, o.completed_at, o.minutes, sp.name AS space_name
+         FROM learn_work_orders o LEFT JOIN learn_spaces sp ON sp.id = o.space_id
+        WHERE o.org_id IS ? AND (o.created_at >= ? OR o.completed_at >= ? OR o.status IN ('pending','open','in_progress','on_hold'))
+        ORDER BY o.created_at DESC LIMIT 5000`
+    ).bind(orgId || null, sinceMs, sinceMs).all();
+    return results || [];
+  }
+
+  /* ---- schedules */
+
+  async createSchedule(s) {
+    const sid = id("sch");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_schedules
+         (id, org_id, kind, title, details, category, priority, space_id, asset_id, vendor_id, assignee_id, every, unit,
+          starts_on, ends_on, lead_days, from_completion, skip_if_open, skip_breaks, checklist_json, authority, source,
+          active, next_due_on, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`
+    ).bind(sid, s.orgId || null, s.kind, s.title, s.details || null, s.category, s.priority, s.spaceId || null,
+           s.assetId || null, s.vendorId || null, s.assigneeId || null, s.every, s.unit, s.startsOn, s.endsOn || null,
+           s.leadDays || 0, s.fromCompletion ? 1 : 0, s.skipIfOpen === false ? 0 : 1, s.skipBreaks ? 1 : 0,
+           s.checklist && s.checklist.length ? JSON.stringify(s.checklist) : null, s.authority || null, s.source || null,
+           s.nextDueOn || null, s.createdBy || null, t, t).run();
+    return this.findSchedule(sid);
+  }
+
+  _scheduleSelect() {
+    return `SELECT s.*, sp.name AS space_name, a.name AS asset_name, v.name AS vendor_name, asg.name AS assignee_name
+              FROM learn_schedules s
+              LEFT JOIN learn_spaces sp ON sp.id = s.space_id
+              LEFT JOIN learn_assets a ON a.id = s.asset_id
+              LEFT JOIN learn_vendors v ON v.id = s.vendor_id
+              LEFT JOIN profiles asg ON asg.account_id = s.assignee_id`;
+  }
+
+  async findSchedule(scheduleId) {
+    return this.db.prepare(`${this._scheduleSelect()} WHERE s.id = ?`).bind(scheduleId).first();
+  }
+
+  async listSchedules(orgId) {
+    const { results } = await this.db.prepare(
+      `${this._scheduleSelect()} WHERE s.org_id IS ? ORDER BY s.active DESC, COALESCE(s.next_due_on, '9999'), s.title`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  async updateSchedule(scheduleId, patch) {
+    await this._patchRow("learn_schedules", { title: "title", details: "details", category: "category", priority: "priority",
+      spaceId: "space_id", assetId: "asset_id", vendorId: "vendor_id", assigneeId: "assignee_id", every: "every", unit: "unit",
+      startsOn: "starts_on", endsOn: "ends_on", leadDays: "lead_days", fromCompletion: "from_completion",
+      skipIfOpen: "skip_if_open", skipBreaks: "skip_breaks", checklist: "checklist_json", authority: "authority",
+      source: "source", active: "active", nextDueOn: "next_due_on", lastDoneOn: "last_done_on",
+      lastGeneratedOn: "last_generated_on" }, patch, scheduleId);
+    return this.findSchedule(scheduleId);
+  }
+
+  /* Schedules whose window has opened: the due date minus its lead days is
+     today or earlier. */
+  async listDueSchedules(orgId, today, limit = 50) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_schedules
+        WHERE org_id IS ? AND active = 1 AND next_due_on IS NOT NULL
+          AND date(next_due_on, '-' || lead_days || ' day') <= ?
+        ORDER BY next_due_on LIMIT ?`
+    ).bind(orgId || null, today, limit).all();
+    return results || [];
+  }
+
+  /* ---- bookings */
+
+  async createBookings(list) {
+    const t = now();
+    const rows = list.map((b) => ({ ...b, id: id("bk") }));
+    await this.db.batch(rows.map((b) => this.db.prepare(
+      `INSERT INTO learn_bookings (id, org_id, space_id, title, notes, attendees, day, starts, ends, status, series_id,
+                                   booked_by, decided_by, decided_at, decision_note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(b.id, b.orgId || null, b.spaceId, b.title, b.notes || null, b.attendees ?? null, b.day, b.starts, b.ends,
+           b.status, b.seriesId || null, b.bookedBy || null, b.decidedBy || null, b.decidedAt || null, b.decisionNote || null, t, t)));
+    return rows.map((b) => b.id);
+  }
+
+  _bookingSelect() {
+    return `SELECT b.*, sp.name AS space_name, sp.approver_id AS space_approver, bp.name AS booker_name, dp.name AS decider_name
+              FROM learn_bookings b
+              JOIN learn_spaces sp ON sp.id = b.space_id
+              LEFT JOIN profiles bp ON bp.account_id = b.booked_by
+              LEFT JOIN profiles dp ON dp.account_id = b.decided_by`;
+  }
+
+  async findBooking(bookingId) {
+    return this.db.prepare(`${this._bookingSelect()} WHERE b.id = ?`).bind(bookingId).first();
+  }
+
+  async listBookings({ orgId, spaceId, from, to, bookedBy, statuses, seriesId, limit = 1000 } = {}) {
+    const where = ["b.org_id IS ?"], binds = [orgId || null];
+    const eq = (col, v) => { if (v) { where.push(`${col} = ?`); binds.push(v); } };
+    eq("b.space_id", spaceId); eq("b.booked_by", bookedBy); eq("b.series_id", seriesId);
+    if (from) { where.push("b.day >= ?"); binds.push(from); }
+    if (to) { where.push("b.day <= ?"); binds.push(to); }
+    if (statuses && statuses.length) { where.push(`b.status IN (${statuses.map(() => "?").join(",")})`); binds.push(...statuses); }
+    const { results } = await this.db.prepare(
+      `${this._bookingSelect()} WHERE ${where.join(" AND ")} ORDER BY b.day, b.starts LIMIT ?`
+    ).bind(...binds, limit).all();
+    return results || [];
+  }
+
+  async bookingsOnDays(spaceId, days) {
+    if (!days.length) return [];
+    const { results } = await this.db.prepare(
+      `SELECT id, day, starts, ends, status, title, series_id FROM learn_bookings
+        WHERE space_id = ? AND day IN (${days.map(() => "?").join(",")}) AND status IN ('pending', 'approved')`
+    ).bind(spaceId, ...days).all();
+    return results || [];
+  }
+
+  async decideBookings(ids, { status, decidedBy, note }) {
+    const t = now();
+    await this.db.batch(ids.map((bid) => this.db.prepare(
+      `UPDATE learn_bookings SET status = ?, decided_by = ?, decided_at = ?, decision_note = ?, updated_at = ? WHERE id = ?`
+    ).bind(status, decidedBy || null, t, note || null, t, bid)));
+  }
+
+  /* ---- vendors */
+
+  async createVendor(v) {
+    const vid = id("vnd");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_vendors (id, org_id, name, trade, contact_name, phone, email, notes, contract_ends_on, requires_json, active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
+    ).bind(vid, v.orgId || null, v.name, v.trade || null, v.contactName || null, v.phone || null, v.email || null,
+           v.notes || null, v.contractEndsOn || null, JSON.stringify(v.requires || []), t, t).run();
+    return this.findVendor(vid);
+  }
+
+  async findVendor(vendorId) {
+    return this.db.prepare(`SELECT * FROM learn_vendors WHERE id = ?`).bind(vendorId).first();
+  }
+
+  async listVendors(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT v.*, (SELECT COUNT(*) FROM learn_work_orders o WHERE o.vendor_id = v.id
+                      AND o.status IN ('pending','open','in_progress','on_hold')) AS open_count
+         FROM learn_vendors v WHERE v.org_id IS ? ORDER BY v.active DESC, v.name`
+    ).bind(orgId || null).all();
+    return results || [];
+  }
+
+  async updateVendor(vendorId, patch) {
+    await this._patchRow("learn_vendors", { name: "name", trade: "trade", contactName: "contact_name", phone: "phone",
+      email: "email", notes: "notes", contractEndsOn: "contract_ends_on", requires: "requires_json", active: "active" }, patch, vendorId);
+    return this.findVendor(vendorId);
+  }
+
+  /* ---- documents and files */
+
+  async createFacilityDocument(d) {
+    const did = id("fdoc");
+    await this.db.prepare(
+      `INSERT INTO learn_documents (id, org_id, owner_kind, owner_id, kind, title, issued_on, expires_on, url, file_id, note, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(did, d.orgId || null, d.ownerKind, d.ownerId || null, d.kind, d.title, d.issuedOn || null, d.expiresOn || null,
+           d.url || null, d.fileId || null, d.note || null, d.createdBy || null, now()).run();
+    return this.findFacilityDocument(did);
+  }
+
+  async findFacilityDocument(documentId) {
+    return this.db.prepare(
+      `SELECT d.*, f.name AS file_name, f.type AS file_type, f.size AS file_size FROM learn_documents d
+         LEFT JOIN learn_facility_files f ON f.id = d.file_id WHERE d.id = ?`
+    ).bind(documentId).first();
+  }
+
+  async listFacilityDocuments({ orgId, ownerKind, ownerId, includeArchived = false, limit = 2000 } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT d.*, f.name AS file_name, f.type AS file_type, f.size AS file_size FROM learn_documents d
+         LEFT JOIN learn_facility_files f ON f.id = d.file_id
+        WHERE d.org_id IS ? AND (? IS NULL OR d.owner_kind = ?) AND (? IS NULL OR d.owner_id = ?)
+          AND (? = 1 OR d.archived_at IS NULL)
+        ORDER BY COALESCE(d.expires_on, '9999'), d.title LIMIT ?`
+    ).bind(orgId || null, ownerKind || null, ownerKind || null, ownerId || null, ownerId || null, includeArchived ? 1 : 0, limit).all();
+    return results || [];
+  }
+
+  async updateFacilityDocument(documentId, patch) {
+    const map = { kind: "kind", title: "title", issuedOn: "issued_on", expiresOn: "expires_on", url: "url", fileId: "file_id",
+                  note: "note", archivedAt: "archived_at" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    if (fields.length) {
+      values.push(documentId);
+      await this.db.prepare(`UPDATE learn_documents SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+    }
+    return this.findFacilityDocument(documentId);
+  }
+
+  async facilityDocumentCounts(orgId, today, soonDay) {
+    const row = await this.db.prepare(
+      `SELECT SUM(expires_on < ?) AS expired, SUM(expires_on >= ? AND expires_on <= ?) AS soon
+         FROM learn_documents WHERE org_id IS ? AND archived_at IS NULL AND expires_on IS NOT NULL`
+    ).bind(today, today, soonDay, orgId || null).first();
+    return row || {};
+  }
+
+  async putFacilityFile({ orgId, ownerKind, ownerId, name, type, size, data, actorId }) {
+    const fid = id("ffile");
+    await this.db.prepare(
+      `INSERT INTO learn_facility_files (id, org_id, owner_kind, owner_id, name, type, size, data, uploaded_by, uploaded_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(fid, orgId || null, ownerKind, ownerId, name, type, size, data, actorId || null, now()).run();
+    return fid;
+  }
+
+  async getFacilityFile(fileId) {
+    return this.db.prepare(`SELECT * FROM learn_facility_files WHERE id = ?`).bind(fileId).first();
+  }
+
+  async listFacilityFiles(ownerKind, ownerId) {
+    const { results } = await this.db.prepare(
+      `SELECT id, name, type, size, uploaded_by, uploaded_at FROM learn_facility_files
+        WHERE owner_kind = ? AND owner_id = ? ORDER BY uploaded_at`
+    ).bind(ownerKind, ownerId).all();
+    return results || [];
+  }
+
+  async deleteFacilityFile(fileId) {
+    await this.db.prepare(`DELETE FROM learn_facility_files WHERE id = ?`).bind(fileId).run();
+  }
+
+  /* ---- history */
+
+  async addFacilityEvent(orgId, ownerKind, ownerId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_facility_events (id, org_id, owner_kind, owner_id, at, actor_id, actor_name, kind, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("fev"), orgId || null, ownerKind, ownerId, now(), e.actorId || null, e.actorName || null, e.kind, e.note || null).run();
+  }
+
+  async listFacilityEvents(ownerKind, ownerId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_facility_events WHERE owner_kind = ? AND owner_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(ownerKind, ownerId).all();
+    return results || [];
+  }
+
+  /* ===================================================== Inbox and notices */
+
+  /* A notice is one person's. `dedupe` makes a reminder once per person per key. */
+  async insertNotice(n) {
+    const nid = id("ntc");
+    const r = await this.db.prepare(
+      `INSERT OR IGNORE INTO learn_notices
+         (id, org_id, account_id, thread_id, kind, from_id, title, body, link, dedupe, box, created_at, read_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(nid, n.orgId || null, n.accountId, n.threadId || nid, n.kind || "message", n.fromId || null, n.title, n.body || null,
+            n.link || null, n.dedupe || null, n.box || "inbox", now(), n.read ? now() : null).run();
+    return (r.meta && r.meta.changes) ? nid : null;
+  }
+  async listNotices({ accountId, box, archived, limit }) {
+    const { results } = await this.db.prepare(
+      `SELECT n.*, p.name AS from_name FROM learn_notices n
+         LEFT JOIN profiles p ON p.account_id = n.from_id
+        WHERE n.account_id = ? AND n.box = ? AND ((? = 1 AND n.archived_at IS NOT NULL) OR (? = 0 AND n.archived_at IS NULL))
+        ORDER BY n.created_at DESC LIMIT ?`
+    ).bind(accountId, box, archived ? 1 : 0, archived ? 1 : 0, limit || 100).all();
+    return results || [];
+  }
+  async countUnread(accountId) {
+    const r = await this.db.prepare(
+      `SELECT COUNT(*) AS n FROM learn_notices WHERE account_id = ? AND box = 'inbox' AND read_at IS NULL AND archived_at IS NULL`
+    ).bind(accountId).first();
+    return r ? r.n : 0;
+  }
+  async markNotices(accountId, ids) {
+    if (!ids) {
+      await this.db.prepare(`UPDATE learn_notices SET read_at = ? WHERE account_id = ? AND read_at IS NULL`).bind(now(), accountId).run();
+      return;
+    }
+    for (const nid of ids) await this.db.prepare(`UPDATE learn_notices SET read_at = COALESCE(read_at, ?) WHERE id = ? AND account_id = ?`).bind(now(), nid, accountId).run();
+  }
+  async archiveNotices(accountId, ids, on) {
+    for (const nid of ids) await this.db.prepare(`UPDATE learn_notices SET archived_at = ? WHERE id = ? AND account_id = ?`).bind(on ? now() : null, nid, accountId).run();
+  }
+  async threadNotices(accountId, threadId) {
+    const { results } = await this.db.prepare(
+      `SELECT n.*, p.name AS from_name FROM learn_notices n LEFT JOIN profiles p ON p.account_id = n.from_id
+        WHERE n.account_id = ? AND n.thread_id = ? ORDER BY n.created_at, n.rowid`
+    ).bind(accountId, threadId).all();
+    return results || [];
+  }
+  async threadMembers(threadId) {
+    const { results } = await this.db.prepare(
+      `SELECT DISTINCT account_id FROM learn_notices WHERE thread_id = ? AND kind = 'message'`
+    ).bind(threadId).all();
+    return (results || []).map((r) => r.account_id);
+  }
+  async noticePrefs(accountId) {
+    const { results } = await this.db.prepare(`SELECT kind, in_app, email FROM learn_notice_prefs WHERE account_id = ?`).bind(accountId).all();
+    return results || [];
+  }
+  async setNoticePref(accountId, kind, inApp, email) {
+    await this.db.prepare(
+      `INSERT INTO learn_notice_prefs (account_id, kind, in_app, email) VALUES (?, ?, ?, ?)
+       ON CONFLICT(account_id, kind) DO UPDATE SET in_app = excluded.in_app, email = excluded.email`
+    ).bind(accountId, kind, inApp ? 1 : 0, email ? 1 : 0).run();
+  }
+  async queueEmail(e) {
+    await this.db.prepare(
+      `INSERT INTO learn_outbox (id, org_id, to_email, account_id, subject, body, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("eml"), e.orgId || null, e.to, e.accountId || null, e.subject, e.body || null, now()).run();
+  }
+  async listOutbox(orgId, status) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_outbox WHERE (org_id IS ? OR org_id = ?) AND (? IS NULL OR status = ?) ORDER BY created_at DESC LIMIT 200`
+    ).bind(orgId || null, orgId || null, status || null, status || null).all();
+    return results || [];
+  }
+  async markOutbox(oid, status, error) {
+    await this.db.prepare(`UPDATE learn_outbox SET status = ?, error = ?, sent_at = ? WHERE id = ?`)
+      .bind(status, error || null, status === "sent" ? now() : null, oid).run();
+  }
+  async accountsWithRole(orgId, roles) {
+    const marks = roles.map(() => "?").join(",");
+    const { results } = await this.db.prepare(
+      `SELECT DISTINCT r.account_id AS id FROM account_roles r
+        WHERE r.product = 'learn' AND r.role IN (${marks}) AND (r.org_id IS NULL OR r.org_id = ?)`
+    ).bind(...roles, orgId).all();
+    return (results || []).map((r) => r.id);
+  }
+  async guardianIdsOf(studentIds) {
+    if (!studentIds.length) return [];
+    const marks = studentIds.map(() => "?").join(",");
+    const { results } = await this.db.prepare(`SELECT DISTINCT guardian_id FROM learn_guardians WHERE student_id IN (${marks})`).bind(...studentIds).all();
+    return (results || []).map((r) => r.guardian_id);
+  }
+  async emailOf(accountId) {
+    const r = await this.db.prepare(`SELECT email FROM accounts WHERE id = ?`).bind(accountId).first();
+    return r ? r.email : null;
+  }
+
+  /* ================================================ The school's small records */
+
+  async insertItem(o) {
+    const iid = id("itm"), t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_items (id, org_id, kind, title, status, subject_id, course_id, starts_at, ends_at, due_on, data_json, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(iid, o.orgId, o.kind, o.title, o.status || null, o.subjectId || null, o.courseId || null, o.startsAt ?? null, o.endsAt ?? null,
+            o.dueOn || null, JSON.stringify(o.data || {}), o.createdBy || null, t, t).run();
+    return iid;
+  }
+  async findItem(itemId) { return this.db.prepare(`SELECT * FROM learn_items WHERE id = ?`).bind(itemId).first(); }
+  async updateItem(itemId, o) {
+    await this.db.prepare(
+      `UPDATE learn_items SET title = ?, status = ?, subject_id = ?, course_id = ?, starts_at = ?, ends_at = ?, due_on = ?, data_json = ?, updated_at = ? WHERE id = ?`
+    ).bind(o.title, o.status || null, o.subjectId || null, o.courseId || null, o.startsAt ?? null, o.endsAt ?? null, o.dueOn || null,
+            JSON.stringify(o.data || {}), now(), itemId).run();
+  }
+  async archiveItem(itemId) { await this.db.prepare(`UPDATE learn_items SET archived_at = ?, updated_at = ? WHERE id = ?`).bind(now(), now(), itemId).run(); }
+  async listItems({ orgId, kind, subjectIds, courseId, status, from, to, limit }) {
+    const where = ["i.org_id = ?", "i.kind = ?", "i.archived_at IS NULL"], bind = [orgId, kind];
+    if (subjectIds) { where.push(`i.subject_id IN (${subjectIds.map(() => "?").join(",") || "NULL"})`); bind.push(...subjectIds); }
+    if (courseId) { where.push("i.course_id = ?"); bind.push(courseId); }
+    if (status) { where.push("i.status = ?"); bind.push(status); }
+    if (from) { where.push("COALESCE(i.due_on, substr(datetime(i.starts_at / 1000, 'unixepoch'), 1, 10)) >= ?"); bind.push(from); }
+    if (to) { where.push("COALESCE(i.due_on, substr(datetime(i.starts_at / 1000, 'unixepoch'), 1, 10)) <= ?"); bind.push(to); }
+    const { results } = await this.db.prepare(
+      `SELECT i.*, p.name AS subject_name, c.title AS course_title
+         FROM learn_items i LEFT JOIN profiles p ON p.account_id = i.subject_id LEFT JOIN learn_courses c ON c.id = i.course_id
+        WHERE ${where.join(" AND ")} ORDER BY COALESCE(i.due_on, i.starts_at) DESC, i.created_at DESC LIMIT ?`
+    ).bind(...bind, limit || 300).all();
+    return results || [];
+  }
+
+  /* ===================================================================== Files */
+
+  async putFile(f) {
+    const fid = id("file");
+    await this.db.prepare(
+      `INSERT INTO learn_files (id, org_id, owner_kind, owner_id, name, type, size, data, uploaded_by, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(fid, f.orgId || null, f.ownerKind, f.ownerId, f.name, f.type, f.size, f.data, f.actorId || null, now()).run();
+    return fid;
+  }
+  async getFile(fid) { return this.db.prepare(`SELECT * FROM learn_files WHERE id = ?`).bind(fid).first(); }
+  async listFiles(ownerKind, ownerId) {
+    const { results } = await this.db.prepare(
+      `SELECT id, name, type, size, uploaded_by, uploaded_at FROM learn_files WHERE owner_kind = ? AND owner_id = ? ORDER BY uploaded_at`
+    ).bind(ownerKind, ownerId).all();
+    return results || [];
+  }
+  async deleteFile(fid) { await this.db.prepare(`DELETE FROM learn_files WHERE id = ?`).bind(fid).run(); }
+
+  /* ================================================================== District */
+
+  async childOrgs(parentId) {
+    const { results } = await this.db.prepare(`SELECT id, slug, name FROM organizations WHERE parent_id = ? ORDER BY name`).bind(parentId).all();
+    return results || [];
+  }
+  async setOrgParent(orgId, parentId) { await this.db.prepare(`UPDATE organizations SET parent_id = ?, updated_at = ? WHERE id = ?`).bind(parentId || null, now(), orgId).run(); }
+  async orgCounts(orgId) {
+    const roles = await this.db.prepare(
+      `SELECT role, COUNT(DISTINCT account_id) AS n FROM account_roles WHERE product = 'learn' AND org_id = ? GROUP BY role`
+    ).bind(orgId).all();
+    const sections = await this.db.prepare(`SELECT COUNT(*) AS n FROM learn_courses WHERE org_id = ? AND status = 'published'`).bind(orgId).first();
+    return { roles: Object.fromEntries((roles.results || []).map((r) => [r.role, r.n])), sections: sections ? sections.n : 0 };
+  }
+  async attendanceRate(orgId, from, to, awayKeys) {
+    const keys = awayKeys && awayKeys.length ? awayKeys : ["absent"];
+    const r = await this.db.prepare(
+      `SELECT COUNT(*) AS n, SUM(CASE WHEN a.status IN (${keys.map(() => "?").join(",")}) THEN 1 ELSE 0 END) AS away
+         FROM learn_attendance a JOIN learn_courses c ON c.id = a.course_id WHERE c.org_id = ? AND a.day >= ? AND a.day <= ?`
+    ).bind(...keys, orgId, from, to).first();
+    return r && r.n ? { marks: r.n, away: r.away || 0 } : { marks: 0, away: 0 };
+  }
+
+  /* The rows a state or district extract is made of: one per student of the school. */
+  async studentExtractRows(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.id, a.email, p.name, sp.grade_level, sp.program, sp.enrolled_at, c.date_of_birth, c.mailing_address
+         FROM account_roles r JOIN accounts a ON a.id = r.account_id
+         LEFT JOIN profiles p ON p.account_id = a.id
+         LEFT JOIN learn_student_programs sp ON sp.account_id = a.id
+         LEFT JOIN account_contacts c ON c.account_id = a.id
+        WHERE r.product = 'learn' AND r.role = 'student' AND (r.org_id = ? OR r.org_id IS NULL)
+        ORDER BY p.name`
+    ).bind(orgId).all();
+    return results || [];
+  }
+  async listOrgCourses(orgId) {
+    const { results } = await this.db.prepare(`SELECT id, code, title, subject, status FROM learn_courses WHERE org_id = ? ORDER BY title`).bind(orgId).all();
+    return results || [];
+  }
+  async listMemberships(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT cm.course_id, cm.role, c.code, a.id AS account_id, a.email, p.name
+         FROM learn_course_memberships cm JOIN learn_courses c ON c.id = cm.course_id
+         JOIN accounts a ON a.id = cm.account_id LEFT JOIN profiles p ON p.account_id = a.id
+        WHERE c.org_id = ? AND c.status = 'published' ORDER BY c.code, p.name`
+    ).bind(orgId).all();
+    return results || [];
+  }
+
+  async listFamilies(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT gp.name AS guardian, ga.email AS guardian_email, gc.cell_phone AS guardian_phone, g.relationship, g.is_primary,
+              sp.name AS student, sa.email AS student_email
+         FROM learn_guardians g
+         JOIN accounts ga ON ga.id = g.guardian_id LEFT JOIN profiles gp ON gp.account_id = ga.id
+         LEFT JOIN account_contacts gc ON gc.account_id = ga.id
+         JOIN accounts sa ON sa.id = g.student_id LEFT JOIN profiles sp ON sp.account_id = sa.id
+        WHERE g.org_id IS ? OR g.org_id = ?
+        ORDER BY sp.name, g.is_primary DESC`
+    ).bind(orgId, orgId).all();
+    return results || [];
   }
 }

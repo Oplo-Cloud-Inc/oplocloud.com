@@ -1,0 +1,110 @@
+/* ==========================================================================
+   OEdu console — the schedule (schedule.js).
+
+   Bell schedules and the calendar are tables of small things set against
+   each other, so they are drawn quietly: hairlines, one accent, colour only
+   where a day differs from the usual one.
+   ========================================================================== */
+
+body.is-console .sc-slot { min-width: 0; }
+body.is-console .sc-spacer { flex: 1; }
+body.is-console .sc-h3 { margin: 28px 0 10px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--cx-label); }
+body.is-console .sc-lab { margin: 18px 0 6px; font-size: 12px; font-weight: 500; color: var(--cx-label-2); }
+body.is-console .sc-wholine { display: flex; align-items: center; gap: 12px; margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+body.is-console .sc-dim { opacity: .5; }
+
+/* Fields */
+body.is-console .sc-in { box-sizing: border-box; width: 100%; min-width: 0; height: 32px; padding: 0 10px; border-radius: 8px; border: .5px solid var(--cx-sep);
+  background: var(--cx-bg); color: var(--cx-label); font: inherit; font-size: 13.5px; }
+body.is-console textarea.sc-in { height: auto; padding: 8px 10px; resize: vertical; }
+body.is-console .sc-in:focus, body.is-console .sc-sel:focus { outline: none; box-shadow: 0 0 0 3px var(--cx-accent-soft); }
+body.is-console .sc-sel { width: 100%; min-width: 0; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 13.5px; }
+body.is-console .sc-f { display: grid; gap: 5px; font-size: 12.5px; color: var(--cx-label-2); margin: 0; min-width: 0; }
+body.is-console .sc-fnote { font-size: 12px; color: var(--cx-label-3); line-height: 1.4; }
+body.is-console .sc-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin: 0 0 14px; }
+body.is-console .sc-row > * { flex: 1 1 150px; }
+body.is-console .sc-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--cx-label); cursor: pointer; }
+body.is-console .sc-check input { margin: 3px 0 0; }
+body.is-console .sc-check small { display: block; font-size: 12px; color: var(--cx-label-3); }
+body.is-console .sc-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 18px; margin: 8px 0; }
+body.is-console .sc-rm { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: var(--cx-label-3); font-size: 17px; line-height: 1; cursor: pointer; }
+body.is-console .sc-rm:hover { background: var(--cx-fill); color: var(--cx-red); }
+body.is-console .sc-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.7; }
+
+/* Bell schedules */
+body.is-console .sc-card { margin: 0 0 28px; padding: 0 0 4px; }
+body.is-console .sc-cardhead { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: .5px solid var(--cx-sep); }
+body.is-console .sc-cardhead .sc-in { width: 240px; font-weight: 600; font-size: 15px; }
+body.is-console .sc-cardacts { margin-left: auto; display: flex; gap: 4px; }
+body.is-console .sc-periods { margin: 8px 0 0; }
+body.is-console .sc-prow { display: grid; grid-template-columns: minmax(110px, 1.2fr) 118px 118px 70px minmax(140px, 1fr) 32px; gap: 8px; align-items: center; padding: 4px 0; }
+body.is-console .sc-prow.head span { font-size: 11.5px; font-weight: 500; color: var(--cx-label-2); }
+body.is-console .sc-min { font-size: 12.5px; color: var(--cx-label-2); font-variant-numeric: tabular-nums; }
+body.is-console .sc-cardfoot { display: flex; gap: 8px; justify-content: space-between; padding-top: 10px; }
+
+/* School days */
+body.is-console .sc-days { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 44px; align-items: start; }
+@media (max-width: 1100px) { body.is-console .sc-days { grid-template-columns: 1fr; } }
+body.is-console .sc-week h3 { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
+body.is-console .sc-wrow { display: grid; grid-template-columns: 90px 1fr; gap: 10px; align-items: center; padding: 5px 0; font-size: 13.5px; }
+body.is-console .sc-year { display: grid; gap: 10px; margin: 16px 0; }
+body.is-console .sc-monthbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+body.is-console .sc-monthbar b { min-width: 160px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+body.is-console .sc-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: .5px solid var(--cx-sep); border-left: .5px solid var(--cx-sep); }
+body.is-console .sc-dow { padding: 7px 8px; font-size: 11.5px; font-weight: 500; color: var(--cx-label-2); border-right: .5px solid var(--cx-sep); border-bottom: .5px solid var(--cx-sep); }
+body.is-console .sc-day { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 76px; padding: 6px 8px; margin: 0;
+  border: 0; border-right: .5px solid var(--cx-sep); border-bottom: .5px solid var(--cx-sep); border-radius: 0; background: none; text-align: left; font: inherit; cursor: pointer; color: var(--cx-label); }
+body.is-console .sc-day:hover { background: var(--cx-fill-2); }
+body.is-console .sc-day:focus-visible { outline: 2px solid var(--cx-accent); outline-offset: -2px; }
+body.is-console .sc-day b { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+body.is-console .sc-day span { font-size: 11.5px; line-height: 1.25; color: var(--cx-label-2); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+body.is-console .sc-day i { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--cx-accent); }
+body.is-console .sc-day.out { opacity: .4; }
+body.is-console .sc-day.today b { color: var(--cx-accent); font-weight: 700; }
+body.is-console .sc-day.k-none { background: repeating-linear-gradient(135deg, transparent 0 5px, var(--cx-fill-2) 5px 6px); }
+body.is-console .sc-day.k-holiday { background: color-mix(in srgb, var(--cx-orange) 10%, transparent); }
+body.is-console .sc-day.k-holiday span { color: var(--cx-orange); }
+body.is-console .sc-day.k-staff { background: color-mix(in srgb, var(--cx-accent) 8%, transparent); }
+body.is-console .sc-day.k-staff span { color: var(--cx-accent); }
+body.is-console .sc-day.k-canceled { background: color-mix(in srgb, var(--cx-red) 9%, transparent); }
+body.is-console .sc-day.k-canceled span { color: var(--cx-red); }
+body.is-console .sc-key { display: flex; gap: 16px; flex-wrap: wrap; margin: 10px 0 0; font-size: 12px; color: var(--cx-label-2); }
+body.is-console .sc-key span { display: inline-flex; align-items: center; gap: 6px; }
+body.is-console .sc-key span::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--cx-fill); }
+body.is-console .sc-key .k-holiday::before { background: color-mix(in srgb, var(--cx-orange) 30%, transparent); }
+body.is-console .sc-key .k-staff::before { background: color-mix(in srgb, var(--cx-accent) 28%, transparent); }
+body.is-console .sc-key .k-canceled::before { background: color-mix(in srgb, var(--cx-red) 28%, transparent); }
+body.is-console .sc-key span:last-child::before { display: none; }
+body.is-console .sc-key span:last-child i { width: 6px; height: 6px; border-radius: 50%; background: var(--cx-accent); }
+
+/* Sections */
+body.is-console .cx-bar .sc-spacer { flex: 1; }
+body.is-console .sc-gridwrap { overflow-x: auto; }
+body.is-console .sc-mgrid { display: grid; grid-template-columns: repeat(var(--n, 7), minmax(150px, 1fr)); gap: 14px; min-width: max-content; }
+body.is-console .sc-mcol h4 { margin: 0 0 8px; padding-bottom: 8px; border-bottom: .5px solid var(--cx-sep); font-size: 13px; font-weight: 600; }
+body.is-console .sc-mcol h4 small { margin-left: 8px; font-size: 11.5px; font-weight: 400; color: var(--cx-label-3); }
+body.is-console .sc-mcell { display: block; width: 100%; margin: 0 0 6px; padding: 8px 10px; border: .5px solid var(--cx-sep); border-radius: 10px; background: none; text-align: left; font: inherit; cursor: pointer; color: var(--cx-label); }
+body.is-console .sc-mcell:hover { background: var(--cx-fill-2); }
+body.is-console .sc-mcell b { display: block; font-size: 13px; font-weight: 500; }
+body.is-console .sc-mcell span { display: block; margin-top: 2px; font-size: 11.5px; color: var(--cx-label-2); }
+body.is-console .sc-mcell em { display: block; margin-top: 4px; font-style: normal; font-size: 11.5px; color: var(--cx-label-3); font-variant-numeric: tabular-nums; }
+body.is-console .sc-people { display: grid; gap: 4px; margin: 4px 0 10px; }
+body.is-console .sc-person { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+body.is-console .sc-person small { color: var(--cx-label-3); font-size: 12px; margin-right: auto; }
+body.is-console .sc-rosteracts { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* Finding a person */
+body.is-console .sc-find { position: relative; width: 280px; }
+body.is-console .sc-find-list { position: absolute; left: 0; top: calc(100% + 6px); z-index: 60; min-width: 280px; padding: 6px; border-radius: 12px; background: var(--cx-bg); box-shadow: var(--cx-shadow-hi); }
+body.is-console .sc-find-i { display: flex; width: 100%; padding: 7px 8px; border: 0; border-radius: 8px; background: none; text-align: left; cursor: pointer; color: var(--cx-label); font: inherit; }
+body.is-console .sc-find-i:hover, body.is-console .sc-find-i:focus-visible { background: var(--cx-fill); outline: none; }
+body.is-console .sc-find-none { margin: 0; padding: 8px; font-size: 13px; color: var(--cx-label-2); }
+body.is-console .cx-sheet .sc-find { width: 100%; }
+
+/* Plans, and what a student asked for */
+body.is-console .sc-planhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 6px; }
+body.is-console .sc-planname { margin: 0 6px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
+body.is-console .sc-asked { margin: 0 0 20px; padding: 4px 0 0; }
+body.is-console .sc-askrow { display: grid; grid-template-columns: minmax(160px, 1fr) 170px 32px; gap: 12px; align-items: center; padding: 6px 0; border-bottom: .5px solid var(--cx-sep); font-size: 13.5px; }
+body.is-console .sc-askfoot { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding-top: 12px; }
+body.is-console .sc-askfoot .sc-sel { max-width: 320px; }

@@ -13,7 +13,7 @@ function shape(row) {
   return {
     id: row.id, code: row.code, title: row.title, subject: row.subject,
     level: row.level, summary: row.summary, status: row.status,
-    orgId: row.org_id, createdBy: row.created_by,
+    orgId: row.org_id, createdBy: row.created_by, createdAt: row.created_at,
     myRole: row.my_role || null,
     body
   };
@@ -22,13 +22,15 @@ function shape(row) {
 export async function list(ctx) {
   const actor = requireActor(ctx);
   const mine = ctx.url.searchParams.get("mine") !== "false";
+  // A section put away (last year's, once a year plan is published) is not in anyone's list unless asked for.
+  const live = (rows) => (ctx.url.searchParams.get("archived") === "1" ? rows : rows.filter((r) => r.status !== "archived"));
   if (mine) {
-    const rows = await ctx.repo.listCourses({ accountId: actor.id });
+    const rows = live(await ctx.repo.listCourses({ accountId: actor.id }));
     return json({ courses: rows.map(shape) });
   }
   const orgId = ctx.url.searchParams.get("orgId") ||
     (actor.orgs && actor.orgs[0] ? actor.orgs[0].org_id : null);
-  const rows = await ctx.repo.listCourses({ orgId });
+  const rows = live(await ctx.repo.listCourses({ orgId }));
   const visible = [];
   for (const row of rows) {
     if (await can(ctx, "course.read", row)) visible.push(shape(row));
@@ -100,7 +102,7 @@ export async function members(ctx, { courseId }) {
   const rows = await ctx.repo.listCourseMembers(courseId);
   return json({ members: rows.map((m) => ({
     id: m.id, name: m.name, firstName: m.first_name, initials: m.initials,
-    hue: m.avatar_hue, email: m.email, role: m.role
+    hue: m.avatar_hue, email: m.email, role: m.role, joinedAt: m.joined_at
   })) });
 }
 

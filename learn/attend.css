@@ -1,0 +1,180 @@
+/* ==========================================================================
+   OEdu console — Attendance (attend.js).
+
+   Marks are letters, not coloured chips: a student's week is a grid of
+   quiet characters in which the few that matter (absent, late, excused) are
+   the only ones with colour. Everything is drawn from the console's own
+   tokens, so light and dark both come for free.
+   ========================================================================== */
+
+body.is-console .at-slot { min-width: 0; }
+body.is-console .at-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 20px; }
+body.is-console .at-h { margin: 0 0 18px; }
+body.is-console .at-h h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.02em; color: var(--cx-label); }
+body.is-console .at-h .cx-note { margin-top: 6px; }
+
+/* Date and finder */
+body.is-console .at-date { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+body.is-console .at-nb { width: 30px; height: 30px; border-radius: 8px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label);
+  font: inherit; font-size: 17px; line-height: 1; cursor: pointer; padding: 0; }
+body.is-console .at-nb:hover { background: var(--cx-fill); }
+body.is-console .at-nb:focus-visible { outline: 2px solid var(--cx-accent); outline-offset: 2px; }
+body.is-console .at-dateinput { height: 30px; padding: 0 8px; border-radius: 8px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label);
+  font: inherit; font-size: 13px; }
+body.is-console .at-dateinput:focus { outline: none; box-shadow: 0 0 0 3px var(--cx-accent-soft); }
+body.is-console .at-link { border: 0; background: none; padding: 0 6px; font: inherit; font-size: 13px; color: var(--cx-accent); cursor: pointer; }
+body.is-console .at-link:hover { opacity: .7; }
+body.is-console .at-metalab { font-size: 12.5px; color: var(--cx-label-2); }
+
+body.is-console .at-find { position: relative; }
+body.is-console .at-find-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 260px; padding: 6px; border-radius: 12px;
+  background: var(--cx-bg); box-shadow: var(--cx-shadow-hi); }
+body.is-console .at-find-i { display: flex; width: 100%; padding: 7px 8px; border: 0; border-radius: 8px; background: none; text-align: left; cursor: pointer; color: var(--cx-label); font: inherit; }
+body.is-console .at-find-i:hover, body.is-console .at-find-i:focus-visible { background: var(--cx-fill); outline: none; }
+body.is-console .at-find-none { margin: 0; padding: 8px; font-size: 13px; color: var(--cx-label-2); }
+
+/* The day */
+body.is-console .at-day { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 4px; }
+body.is-console .at-day b { font-size: 17px; font-weight: 600; letter-spacing: -.01em; color: var(--cx-label); }
+body.is-console .at-day span { font-size: 13px; color: var(--cx-orange); }
+
+/* A register, in its sheet */
+body.is-console .at-reg { max-height: 56vh; overflow-x: hidden; }
+body.is-console .cx-sheet:has(.at-reg) { width: min(800px, 100%); }
+body.is-console .at-regrow .cn-segb { padding: 0 9px; }
+body.is-console .at-regrow { border-bottom: .5px solid var(--cx-sep); }
+body.is-console .at-regrow .cx-regrow { border-bottom: 0; }
+body.is-console .at-regright { display: flex; align-items: center; gap: 8px; flex: none; }
+body.is-console .at-notebtn { border: 0; background: none; padding: 2px 4px; font: inherit; font-size: 12px; color: var(--cx-label-3); cursor: pointer; position: relative; }
+body.is-console .at-notebtn:hover { color: var(--cx-label); }
+body.is-console .at-notebtn.has { color: var(--cx-accent); }
+body.is-console .at-notebtn.has::after { content: ""; position: absolute; top: 0; right: -1px; width: 5px; height: 5px; border-radius: 50%; background: var(--cx-accent); }
+body.is-console .at-noteinput { width: 100%; box-sizing: border-box; height: 30px; padding: 0 10px; margin: 0 0 8px; border-radius: 8px; border: .5px solid var(--cx-sep);
+  background: var(--cx-bg); color: var(--cx-label); font: inherit; font-size: 13px; }
+body.is-console .at-noteinput:focus, body.is-console .at-notearea:focus { outline: none; box-shadow: 0 0 0 3px var(--cx-accent-soft); }
+body.is-console .at-notearea { width: 100%; box-sizing: border-box; margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; border: .5px solid var(--cx-sep);
+  background: var(--cx-bg); color: var(--cx-label); font: inherit; font-size: 13px; resize: vertical; }
+body.is-console .at-acts { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+body.is-console .cx-sheet .at-acts { margin-top: 14px; }
+
+/* One student */
+body.is-console .at-who { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 18px; }
+body.is-console .at-who .cn-who { font-size: 16px; font-weight: 600; }
+body.is-console .at-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+body.is-console .at-who-acts { display: flex; gap: 8px; width: 100%; justify-content: flex-end; }
+body.is-console .at-wrap { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
+body.is-console .at-main { flex: 1 1 560px; min-width: 0; overflow-x: auto; }
+body.is-console .at-legend { flex: 0 0 230px; position: sticky; top: 16px; }
+body.is-console .at-legend h3 { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--cx-label); }
+
+body.is-console .at-grid { border-collapse: collapse; width: 100%; font-size: 13px; }
+body.is-console .at-grid th { font-weight: 500; font-size: 11.5px; color: var(--cx-label-2); text-align: center; padding: 0 0 4px; white-space: nowrap; }
+body.is-console .at-grid th.at-wk { text-align: left; padding: 0 0 6px 6px; font-weight: 500; color: var(--cx-label-3); border-left: .5px solid var(--cx-sep); }
+body.is-console .at-grid th.at-course { text-align: left; min-width: 170px; padding-right: 16px; }
+body.is-console .at-grid td { padding: 1px 0; border-top: .5px solid var(--cx-sep); text-align: center; }
+body.is-console .at-grid td.at-wk0, body.is-console .at-grid th.at-wk0 { border-left: .5px solid var(--cx-sep); }
+body.is-console .at-grid tbody th.at-course { padding: 7px 16px 7px 0; border-top: .5px solid var(--cx-sep); font-weight: 400; }
+body.is-console .at-grid tbody th.at-course b { display: block; font-weight: 500; font-size: 13px; color: var(--cx-label); }
+body.is-console .at-grid tbody th.at-course span { display: block; font-size: 11.5px; color: var(--cx-label-3); font-weight: 400; }
+body.is-console .at-grid .at-n { width: 46px; padding: 0 0 0 10px; text-align: right; font-variant-numeric: tabular-nums; color: var(--cx-label-2); }
+body.is-console .at-grid th.at-n { font-size: 11.5px; }
+body.is-console .at-grid tr.at-all td, body.is-console .at-grid tr.at-all th { border-top: .5px solid var(--cx-label-3); }
+body.is-console .at-grid .at-allnote { color: transparent; }
+
+body.is-console .at-dayh { display: block; width: 100%; padding: 3px 0; border: 0; border-radius: 6px; background: none; font: inherit; cursor: pointer; color: var(--cx-label-2); line-height: 1.15; }
+body.is-console .at-dayh span { display: block; font-size: 10.5px; color: var(--cx-label-3); }
+body.is-console .at-dayh b { display: block; font-size: 12.5px; font-weight: 500; font-variant-numeric: tabular-nums; }
+body.is-console .at-dayh:hover { background: var(--cx-fill); }
+body.is-console .at-dayh.today b { color: var(--cx-accent); }
+body.is-console .at-dayh.off { opacity: .45; cursor: default; }
+body.is-console .at-dayh.on { background: var(--cx-accent-soft); color: var(--cx-accent); }
+
+body.is-console .at-cell { position: relative; width: 100%; min-width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: none;
+  font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+body.is-console .at-cell:hover:not(:disabled) { background: var(--cx-fill); }
+body.is-console .at-cell:focus-visible { outline: 2px solid var(--cx-accent); outline-offset: -2px; }
+body.is-console .at-cell:disabled { cursor: default; background: repeating-linear-gradient(135deg, transparent 0 4px, var(--cx-fill-2) 4px 5px); }
+body.is-console .at-cell.sel { background: var(--cx-accent-soft); }
+body.is-console .at-grid.armed .at-cell:not(:disabled) { cursor: copy; }
+body.is-console .at-cell.s-none { color: var(--cx-bar-2); font-weight: 400; }
+body.is-console .at-cell.s-present, body.is-console i.s-present { color: var(--cx-label-3); font-weight: 400; }
+body.is-console .at-cell.s-tardy, body.is-console i.s-tardy { color: var(--cx-orange); font-weight: 600; }
+body.is-console .at-cell.s-absent, body.is-console i.s-absent { color: var(--cx-red); font-weight: 600; }
+body.is-console .at-cell.s-excused, body.is-console i.s-excused { color: var(--cx-accent); font-weight: 600; }
+body.is-console .at-cell.s-norecord, body.is-console i.s-norecord { color: var(--cx-label-3); font-weight: 400; }
+body.is-console .at-cell.has-note::after { content: ""; position: absolute; top: 3px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--cx-label); }
+
+/* The legend: a mark you can pick up */
+body.is-console .at-code { display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 4px; padding: 7px 10px; border: .5px solid var(--cx-sep);
+  border-radius: 10px; background: none; color: var(--cx-label); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+body.is-console .at-code i { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--cx-fill);
+  font-style: normal; font-size: 12px; font-weight: 600; color: var(--cx-label-2); }
+body.is-console .at-code:hover { background: var(--cx-fill-2); }
+body.is-console .at-code.on { border-color: var(--cx-accent); box-shadow: 0 0 0 3px var(--cx-accent-soft); }
+body.is-console .at-notecodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 6px; margin: 12px 0 4px; }
+body.is-console .at-notecodes .at-code { margin: 0; }
+body.is-console .at-legend .at-f { display: block; margin-top: 14px; }
+body.is-console .at-how { margin: 14px 0 0; padding: 0 0 0 16px; font-size: 12px; line-height: 1.5; color: var(--cx-label-2); }
+body.is-console .at-how li { margin-bottom: 4px; }
+
+/* Bulk edit and settings */
+body.is-console .at-form, body.is-console .at-settings { display: grid; gap: 0; max-width: 720px; }
+body.is-console .at-step { padding: 20px 0; border-top: .5px solid var(--cx-sep); }
+body.is-console .at-step:first-child { border-top: 0; padding-top: 0; }
+body.is-console .at-step h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--cx-label); }
+body.is-console .at-step h3 i { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--cx-fill);
+  font-style: normal; font-size: 12px; font-weight: 600; color: var(--cx-label-2); }
+body.is-console .at-select { margin-top: 12px; width: 100%; max-width: 420px; }
+body.is-console .at-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+body.is-console .at-f { display: grid; gap: 5px; font-size: 12.5px; color: var(--cx-label-2); margin: 0; }
+body.is-console .at-fnote { font-size: 12px; color: var(--cx-label-3); line-height: 1.4; }
+body.is-console .at-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 18px; }
+body.is-console .at-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--cx-label); cursor: pointer; }
+body.is-console .at-check input { margin: 3px 0 0; }
+body.is-console .at-check small { display: block; font-size: 12px; color: var(--cx-label-3); }
+body.is-console .at-linkrow { margin-top: 8px; }
+body.is-console .at-go { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 20px; border-top: .5px solid var(--cx-sep); flex-wrap: wrap; }
+body.is-console .at-go .cx-note { margin: 0; }
+body.is-console .at-done { padding: 12px 0; }
+body.is-console .at-done b { font-size: 17px; font-weight: 600; color: var(--cx-label); }
+body.is-console .at-switch { font-size: 14px; }
+body.is-console .at-closed { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: .5px solid var(--cx-sep); font-size: 13.5px; color: var(--cx-label); }
+
+/* Find errors */
+body.is-console .at-tg { padding: 12px 0; border-top: .5px solid var(--cx-sep); }
+body.is-console .at-tg:first-of-type { border-top: 0; }
+body.is-console .at-tg h4, body.is-console .at-ph h4 { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--cx-label); }
+body.is-console .at-tg h4 small, body.is-console .at-ph h4 small { margin-left: 8px; font-size: 12.5px; font-weight: 400; color: var(--cx-orange); }
+body.is-console .at-tgrow { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(0, 3fr); gap: 16px; align-items: baseline; padding: 4px 0; }
+body.is-console .at-tgc { font-size: 13px; color: var(--cx-label); }
+body.is-console .at-tgd { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+body.is-console .at-chip { border: .5px solid var(--cx-sep); border-radius: 99px; background: none; padding: 2px 9px; font: inherit; font-size: 12px; color: var(--cx-label-2); cursor: pointer; }
+body.is-console .at-chip:hover { border-color: var(--cx-accent); color: var(--cx-accent); }
+body.is-console .at-ph { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+body.is-console .at-ph:first-of-type { margin-top: 0; }
+body.is-console .cx-card > .at-bar { margin-bottom: 8px; justify-content: flex-end; }
+body.is-console .at-slot .cn-tr .at-acts { justify-content: flex-end; }
+
+/* The school's own codes */
+body.is-console .at-codes { display: grid; margin-top: 14px; }
+body.is-console .at-crow { display: grid; grid-template-columns: 54px minmax(140px, 1fr) 130px auto auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: .5px solid var(--cx-sep); }
+body.is-console .at-crow.off { opacity: .55; }
+body.is-console .at-crow .at-noteinput { margin: 0; }
+body.is-console .at-cmark { text-align: center; text-transform: none; }
+body.is-console .at-ckind { min-width: 0; width: 100%; }
+body.is-console .at-cadmin { white-space: nowrap; }
+body.is-console .at-cmove { display: inline-flex; gap: 4px; }
+body.is-console .at-cactions { justify-content: flex-start; margin: 14px 0 0; }
+body.is-console .at-how-kinds { margin: 18px 0 0; border-collapse: collapse; font-size: 12.5px; max-width: 640px; }
+body.is-console .at-how-kinds th { text-align: left; font-weight: 500; color: var(--cx-label-2); padding: 4px 16px 6px 0; border-bottom: .5px solid var(--cx-sep); }
+body.is-console .at-how-kinds td { padding: 5px 16px 5px 0; border-bottom: .5px solid var(--cx-sep); color: var(--cx-label); }
+
+/* Grade attendance */
+body.is-console .at-num { width: 96px; margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+body.is-console .cx-sheet:has(.at-ga) { width: min(700px, 100%); }
+body.is-console .at-ga .at-form { max-width: none; }
+body.is-console .at-ga .at-step { padding: 16px 0; }
+
+/* Average daily attendance */
+body.is-console .at-ada { max-width: 760px; width: 100%; }
+body.is-console .at-ada th.n, body.is-console .at-ada td.n { text-align: right; padding-right: 22px; font-variant-numeric: tabular-nums; }

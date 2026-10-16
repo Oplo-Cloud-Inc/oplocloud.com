@@ -243,8 +243,9 @@ export async function coursework(ctx) {
     }
   }
 
+  // Work in a section that has been put away is not work anybody can act on.
   const enrolled = (await ctx.repo.listCourses({ accountId }))
-    .filter((c) => c.my_role === "student");
+    .filter((c) => c.my_role === "student" && c.status !== "archived");
 
   const grades = await ctx.repo.listGrades({ courseId: null, accountId });
   const byAssignment = new Map(grades.map((g) => [g.assignment_id, g]));
@@ -445,8 +446,10 @@ export async function report(ctx, { accountId }) {
   const account = await ctx.repo.findAccountById(accountId);
   if (!account) throw ApiError.notFound("No such account.");
 
+  // The report is this year's sections. A section put away is last year's, and is on the transcript.
+  const withArchived = ctx.url.searchParams.get("archived") === "1";
   const enrolled = (await ctx.repo.listCourses({ accountId }))
-    .filter((c) => c.my_role === "student");
+    .filter((c) => c.my_role === "student" && (withArchived || c.status !== "archived"));
 
   const comments = await ctx.repo.listReportComments({ accountId, term });
   const commentFor = new Map(comments.map((x) => [x.course_id, x]));
