@@ -1,0 +1,28 @@
+# Security headers for the OEdu app: edu.oplocloud.com and kern.oplocloud.com,
+# which publish this one directory (wrangler.toml, wrangler.kern.toml).
+#
+# Cloudflare reads this file at deploy and applies it to every asset answer,
+# including the ones worker/index.js hands back from env.ASSETS for /admin/,
+# /teacher/ and /student/. Nothing here changes what a page does: each line
+# only turns off something the app never uses. The sign-in page
+# (auth.oplocloud.com) and OC EFM (efm/_headers) already send this set.
+#
+#   nosniff        a file is read as the type it was served as, never guessed
+#   frame-ancestors / X-Frame-Options
+#                  no page may frame the app, so it cannot be clickjacked.
+#                  Nothing in this repository frames it.
+#   Permissions-Policy
+#                  the app uses no camera, microphone, location or payment API
+#   HSTS           the hostnames are https-only; a year, no preload
+#
+# Not here, on purpose: a Content-Security-Policy that restricts scripts. The
+# app is built on inline scripts and handlers, so a strict policy would blank
+# it. That needs the inline code moved into files first; until then
+# frame-ancestors is the only directive that is safe to send.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000
