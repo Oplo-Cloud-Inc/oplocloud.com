@@ -6,7 +6,10 @@
    Account, as roles, so nobody is asked which door is theirs — this file turns
    those roles into an address.
 
-     /admin/    a school administrator, or a platform administrator
+     /admin/    a school administrator, or a platform administrator — and a
+                registrar, an admissions reviewer, or somebody on the
+                facilities side (facilities, the office, IT), whose console
+                holds the places their role works in and nothing else
      /teacher/  a teacher or an author
      /student/  a student
      /parent/   a parent or guardian
@@ -32,8 +35,10 @@
       return roles.some(function (r) { return r.product === product && r.role === role; });
     }
     var admin = has("platform", "admin") || has("learn", "admin");
+    var office = has("learn", "registrar") || has("learn", "admissions") || has("learn", "facilities") ||
+                 has("learn", "office") || has("learn", "it");
     var out = [];
-    if (admin) out.push("admin");
+    if (admin || office) out.push("admin");
     if (admin || has("learn", "teacher") || has("learn", "author")) out.push("teacher");
     if (has("learn", "student")) out.push("student");
     if (admin || has("learn", "guardian")) out.push("parent");
@@ -68,6 +73,10 @@
     try {
       var u = new URL(next, origin);
       if (u.origin !== origin) return null;
+      // The phone page, /jobs/: a place of its own that a label on a door
+      // opens, and the one address outside the four that may be asked for.
+      var j = /^(.*\/)jobs\/$/.exec(u.pathname);
+      if (j && j[1] === root) return { mode: "jobs", href: u.pathname + u.search + u.hash };
       var p = parse(u.pathname);
       if (!p.mode || p.root !== root) return null;
       return { mode: p.mode, href: u.pathname + u.search + u.hash };
@@ -82,6 +91,10 @@
     var here = parse(loc.pathname);
     var ok = allowed(roles);
     var asked = nextFrom(next, here.root, loc.origin);
+    // /jobs/ is for the staff: anyone who has a console to go to.
+    if (asked && asked.mode === "jobs" && (ok.indexOf("admin") > -1 || ok.indexOf("teacher") > -1)) {
+      return { mode: "jobs", href: asked.href, stay: false };
+    }
     if (asked && ok.indexOf(asked.mode) > -1) {
       return { mode: asked.mode, href: asked.href, stay: false };
     }

@@ -1,0 +1,48 @@
+/* ==========================================================================
+   Facilities — the building's workspace.
+
+   Same tokens as the console and the same quiet: hairlines, one accent,
+   status as a dot and a word. Only what facilities adds is here — the
+   already-reported strip, checklist rows, photo thumbnails, room rules, the
+   QR label, and the starter-check rows. Dialog, button, chip and form styles
+   are enroll.css's.
+   ========================================================================== */
+
+body.is-console .fx-already { margin: 4px 0 14px; padding: 10px 14px; border-radius: 10px; background: var(--cx-accent-soft); font-size: 13px; line-height: 1.5; }
+body.is-console .fx-already:empty { display: none; }
+body.is-console .fx-already b { display: block; font-size: 12px; letter-spacing: .01em; color: var(--cx-label-2); margin-bottom: 2px; }
+body.is-console .fx-already span { display: block; }
+
+body.is-console .fx-check { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: .5px solid var(--cx-sep); font-size: 13.5px; }
+body.is-console .fx-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--cx-accent); flex: none; }
+body.is-console .fx-check select, body.is-console .fx-check input[type="text"] { height: 28px; font: inherit; font-size: 13px; border: .5px solid var(--cx-sep);
+  border-radius: 8px; background: var(--cx-bg); color: var(--cx-label); padding: 0 8px; min-width: 96px; }
+body.is-console .fx-check select:disabled, body.is-console .fx-check input:disabled { opacity: .55; }
+body.is-console .fx-check small, body.is-console .fx-note { color: var(--cx-label-2); font-size: 12.5px; }
+
+body.is-console .fx-photos { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 8px; }
+body.is-console .fx-photo { width: 96px; height: 96px; padding: 0; border: .5px solid var(--cx-sep); border-radius: 10px; background: var(--cx-fill); overflow: hidden;
+  font: inherit; font-size: 11px; color: var(--cx-label-2); cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; }
+body.is-console .fx-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+body.is-console .fx-linkrow { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 0; border: 0; border-bottom: .5px solid var(--cx-sep);
+  background: none; font: inherit; font-size: 13.5px; color: var(--cx-label); text-align: left; cursor: pointer; }
+body.is-console .fx-linkrow.flat { cursor: default; }
+body.is-console .fx-linkrow span:first-child { font-variant-numeric: tabular-nums; color: var(--cx-label-2); font-size: 12px; }
+body.is-console button.fx-linkrow:hover { background: var(--cx-fill); }
+
+body.is-console .fx-label { display: block; font-size: 12.5px; color: var(--cx-label-2); margin: 14px 0 6px; }
+body.is-console .fx-days { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+body.is-console .fx-days .en-radio { margin: 0; }
+body.is-console .fx-rules { margin: 6px 0 12px; }
+
+body.is-console .fx-label-row { display: flex; align-items: center; gap: 18px; }
+body.is-console .fx-label-row p { margin: 0; }
+body.is-console .fx-qr { flex: none; width: 120px; height: 120px; border: .5px solid var(--cx-sep); border-radius: 10px; overflow: hidden; background: #fff; }
+body.is-console .fx-qr svg { display: block; width: 100%; height: 100%; }
+
+body.is-console .fx-starter { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 10px 0; border-bottom: .5px solid var(--cx-sep); }
+body.is-console .fx-starter b { display: block; font-size: 13.5px; font-weight: 500; }
+body.is-console .fx-starter span, body.is-console .fx-starter small { display: block; font-size: 12.5px; color: var(--cx-label-2); line-height: 1.45; }
+body.is-console .fx-starter small { color: var(--cx-label-3); }
+body.is-console .fx-starter > div:last-child { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }

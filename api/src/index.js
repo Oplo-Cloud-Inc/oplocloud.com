@@ -37,9 +37,26 @@ import * as marks from "./routes/marks.js";
 import * as studysets from "./routes/studysets.js";
 import * as graduation from "./routes/graduation.js";
 import * as reporting from "./routes/reporting.js";
+import * as periods from "./routes/periods.js";
+import * as attendance from "./routes/attendance.js";
+import * as schedule from "./routes/schedule.js";
 import * as family from "./routes/family.js";
 import * as assessments from "./routes/assessments.js";
 import * as efm from "./routes/efm.js";
+import * as enrollment from "./routes/enrollment.js";
+import * as conduct from "./routes/conduct.js";
+import * as health from "./routes/health.js";
+import * as facilities from "./routes/facilities.js";
+import * as orders from "./routes/workorders.js";
+import * as upkeep from "./routes/upkeep.js";
+import * as bookings from "./routes/bookings.js";
+import * as vendors from "./routes/vendors.js";
+import * as inbox from "./routes/inbox.js";
+import * as items from "./routes/items.js";
+import * as files from "./routes/files.js";
+import * as exchange from "./routes/exchange.js";
+import * as district from "./routes/district.js";
+import * as feeds from "./routes/feeds.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -120,6 +137,90 @@ const ROUTES = [
   ["PATCH",  "/api/v1/transcripts/:recordId",            graduation.updateRecord],
   ["PATCH",  "/api/v1/transcript-courses/:courseId",     graduation.updateCourse],
 
+  ["GET",    "/api/v1/periods",                          periods.listPeriods],
+  ["POST",   "/api/v1/periods",                          periods.createPeriod],
+  ["PATCH",  "/api/v1/periods/:periodId",                periods.moveState],
+  ["POST",   "/api/v1/periods/:periodId/post",           periods.postCourse],
+  ["GET",    "/api/v1/periods/:periodId/posted",         periods.listPosted],
+  ["GET",    "/api/v1/grade-changes",                    periods.listChanges],
+  ["POST",   "/api/v1/grade-changes",                    periods.requestChange],
+  ["POST",   "/api/v1/grade-changes/:changeId/decision", periods.decideChange],
+  ["GET",    "/api/v1/attendance",                       periods.listAttendance],
+  ["PUT",    "/api/v1/attendance",                       periods.putAttendance],
+  ["GET",    "/api/v1/attendance/summary",               periods.attendanceSummary],
+  ["GET",    "/api/v1/inbox",                            inbox.list],
+  ["GET",    "/api/v1/inbox/unread",                     inbox.unread],
+  ["POST",   "/api/v1/inbox/read",                       inbox.read],
+  ["POST",   "/api/v1/inbox/archive",                    inbox.archive],
+  ["GET",    "/api/v1/inbox/prefs",                      inbox.getPrefs],
+  ["PUT",    "/api/v1/inbox/prefs",                      inbox.putPrefs],
+  ["GET",    "/api/v1/inbox/thread/:threadId",           inbox.thread],
+  ["POST",   "/api/v1/messages",                         inbox.send],
+  ["POST",   "/api/v1/reminders/run",                    inbox.runNow],
+  ["GET",    "/api/v1/outbox",                           inbox.outbox],
+  ["POST",   "/api/v1/outbox/flush",                     inbox.flush],
+  ["GET",    "/api/v1/item-kinds",                       items.kinds],
+  ["GET",    "/api/v1/items",                            items.list],
+  ["POST",   "/api/v1/items",                            items.create],
+  ["GET",    "/api/v1/items/:itemId",                    items.get],
+  ["PATCH",  "/api/v1/items/:itemId",                    items.update],
+  ["DELETE", "/api/v1/items/:itemId",                    items.remove],
+  ["POST",   "/api/v1/files",                            files.put],
+  ["GET",    "/api/v1/files/:fileId",                    files.get],
+  ["DELETE", "/api/v1/files/:fileId",                    files.remove],
+  ["GET",    "/api/v1/exchange/export",                  exchange.exportRows],
+  ["POST",   "/api/v1/exchange/import",                  exchange.importRows],
+  ["GET",    "/api/v1/exchange/extract",                 exchange.extract],
+  ["POST",   "/api/v1/exchange/webhooks/test",           exchange.testHooks],
+  ["GET",    "/api/v1/feeds/link",                       feeds.link],
+  ["GET",    "/api/v1/feeds/:accountId/:token/calendar.ics", feeds.calendar],
+  ["GET",    "/api/v1/district/summary",                 district.summary],
+  ["PATCH",  "/api/v1/district/schools/:orgId",          district.join],
+  ["GET",    "/api/v1/attendance/codes",                 attendance.getCodes],
+  ["GET",    "/api/v1/attendance/ada",                   attendance.ada],
+  ["GET",    "/api/v1/attendance/review",                attendance.review],
+  ["GET",    "/api/v1/attendance/log",                   attendance.log],
+  ["GET",    "/api/v1/attendance/settings",              attendance.getSettings],
+  ["PUT",    "/api/v1/attendance/settings",              attendance.putSettings],
+  ["POST",   "/api/v1/attendance/remove",                attendance.remove],
+  ["POST",   "/api/v1/courses/:courseId/attendance-grade", attendance.gradeAttendance],
+
+  // The schedule: courses, sections, bell schedules, the calendar, a day's timetable.
+  ["GET",    "/api/v1/subjects",                         schedule.listSubjects],
+  ["POST",   "/api/v1/subjects",                         schedule.createSubject],
+  ["PATCH",  "/api/v1/subjects/:subjectId",              schedule.updateSubject],
+  ["GET",    "/api/v1/sections",                         schedule.listSections],
+  ["POST",   "/api/v1/sections",                         schedule.createSection],
+  ["PUT",    "/api/v1/sections/:courseId",               schedule.putSection],
+  ["POST",   "/api/v1/sections/:courseId/students",      schedule.addStudents],
+  ["POST",   "/api/v1/sections/:courseId/drop",          schedule.dropStudents],
+  ["GET",    "/api/v1/students/:accountId/sections",     schedule.studentSections],
+  ["GET",    "/api/v1/bell-schedules",                   schedule.listBell],
+  ["POST",   "/api/v1/bell-schedules",                   schedule.createBell],
+  ["PATCH",  "/api/v1/bell-schedules/:scheduleId",       schedule.updateBell],
+  ["DELETE", "/api/v1/bell-schedules/:scheduleId",       schedule.deleteBell],
+  ["POST",   "/api/v1/bell-schedules/:scheduleId/weekdays", schedule.weekdays],
+  ["GET",    "/api/v1/calendar",                         schedule.getCalendar],
+  ["PUT",    "/api/v1/calendar/pattern",                 schedule.putPattern],
+  ["PUT",    "/api/v1/calendar/days",                    schedule.putDays],
+  ["GET",    "/api/v1/schedule/day",                     schedule.scheduleDay],
+  ["GET",    "/api/v1/schedule/mine",                    schedule.scheduleMine],
+  ["GET",    "/api/v1/schedule/drafts",                  schedule.listDrafts],
+  ["POST",   "/api/v1/schedule/drafts",                  schedule.createDraft],
+  ["GET",    "/api/v1/schedule/drafts/:draftId",         schedule.getDraft],
+  ["DELETE", "/api/v1/schedule/drafts/:draftId",         schedule.deleteDraft],
+  ["POST",   "/api/v1/schedule/drafts/:draftId/sections", schedule.addDraftSection],
+  ["PUT",    "/api/v1/schedule/drafts/:draftId/sections/:sectionId", schedule.putDraftSection],
+  ["DELETE", "/api/v1/schedule/drafts/:draftId/sections/:sectionId", schedule.deleteDraftSection],
+  ["POST",   "/api/v1/schedule/drafts/:draftId/sections/:sectionId/students", schedule.draftStudents],
+  ["GET",    "/api/v1/schedule/drafts/:draftId/publish", schedule.previewPublish],
+  ["POST",   "/api/v1/schedule/drafts/:draftId/publish", schedule.publishDraft],
+  ["POST",   "/api/v1/schedule/drafts/:draftId/build",   schedule.buildDraft],
+  ["GET",    "/api/v1/schedule/analyze",                 schedule.analyze],
+  ["POST",   "/api/v1/sections/archive",                 schedule.archiveSections],
+  ["GET",    "/api/v1/course-requests",                  schedule.getRequests],
+  ["PUT",    "/api/v1/course-requests/:accountId",       schedule.putRequests],
+
   ["GET",    "/api/v1/marks",           marks.list],
   ["POST",   "/api/v1/marks",           marks.put],
   ["DELETE", "/api/v1/marks/:markId",   marks.remove],
@@ -128,6 +229,76 @@ const ROUTES = [
   ["PUT",    "/api/v1/progress", progress.put],
   ["GET",    "/api/v1/gamification/standing", progress.standing],
   ["POST",   "/api/v1/gamification/events",   progress.events],
+
+  ["GET",    "/api/v1/conduct",                     conduct.list],
+  ["POST",   "/api/v1/conduct",                     conduct.create],
+  ["GET",    "/api/v1/conduct/summary",             conduct.summary],
+  ["GET",    "/api/v1/conduct/:conductId",          conduct.get],
+  ["PATCH",  "/api/v1/conduct/:conductId",          conduct.update],
+  ["POST",   "/api/v1/conduct/:conductId/actions/:action", conduct.act],
+  ["GET",    "/api/v1/health-records",                      health.list],
+  ["POST",   "/api/v1/health-records",                      health.create],
+  ["GET",    "/api/v1/health-records/summary",              health.summary],
+  ["GET",    "/api/v1/health-records/flags",                health.flags],
+  ["PATCH",  "/api/v1/health-records/:healthId",            health.update],
+  ["GET",    "/api/v1/health-records/:healthId/history",    health.history],
+
+  ["GET",    "/api/v1/facilities/summary",                          facilities.summary],
+  ["GET",    "/api/v1/facilities/team",                             facilities.team],
+  ["GET",    "/api/v1/facilities/reports",                          facilities.reports],
+  ["GET",    "/api/v1/facilities/templates",                        upkeep.templates],
+  ["GET",    "/api/v1/facilities/spaces",                           facilities.listSpaces],
+  ["POST",   "/api/v1/facilities/spaces",                           facilities.createSpace],
+  ["PUT",    "/api/v1/facilities/spaces/rules",                     facilities.bulkRules],
+  ["GET",    "/api/v1/facilities/spaces/:spaceId",                  facilities.getSpace],
+  ["PATCH",  "/api/v1/facilities/spaces/:spaceId",                  facilities.updateSpace],
+  ["POST",   "/api/v1/facilities/spaces/:spaceId/count",            facilities.countSpace],
+  ["GET",    "/api/v1/facilities/assets",                           facilities.listAssets],
+  ["POST",   "/api/v1/facilities/assets",                           facilities.createAsset],
+  ["GET",    "/api/v1/facilities/assets/:assetId",                  facilities.getAsset],
+  ["PATCH",  "/api/v1/facilities/assets/:assetId",                  facilities.updateAsset],
+  ["GET",    "/api/v1/facilities/orders",                           orders.list],
+  ["POST",   "/api/v1/facilities/orders",                           orders.create],
+  ["GET",    "/api/v1/facilities/orders/:orderId",                  orders.get],
+  ["PATCH",  "/api/v1/facilities/orders/:orderId",                  orders.update],
+  ["POST",   "/api/v1/facilities/orders/:orderId/actions/:action",  orders.act],
+  ["POST",   "/api/v1/facilities/orders/:orderId/files",            orders.putFile],
+  ["GET",    "/api/v1/facilities/orders/:orderId/files/:fileId",    orders.getFile],
+  ["GET",    "/api/v1/facilities/schedules",                        upkeep.list],
+  ["POST",   "/api/v1/facilities/schedules",                        upkeep.create],
+  ["GET",    "/api/v1/facilities/schedules/:scheduleId",            upkeep.get],
+  ["PATCH",  "/api/v1/facilities/schedules/:scheduleId",            upkeep.update],
+  ["POST",   "/api/v1/facilities/schedules/:scheduleId/actions/:action", upkeep.act],
+  ["GET",    "/api/v1/facilities/bookings",                         bookings.list],
+  ["POST",   "/api/v1/facilities/bookings",                         bookings.create],
+  ["POST",   "/api/v1/facilities/bookings/:bookingId/actions/:action", bookings.act],
+  ["GET",    "/api/v1/facilities/vendors",                          vendors.listVendors],
+  ["POST",   "/api/v1/facilities/vendors",                          vendors.createVendor],
+  ["GET",    "/api/v1/facilities/vendors/:vendorId",                vendors.getVendor],
+  ["PATCH",  "/api/v1/facilities/vendors/:vendorId",                vendors.updateVendor],
+  ["GET",    "/api/v1/facilities/documents",                        vendors.listDocuments],
+  ["POST",   "/api/v1/facilities/documents",                        vendors.createDocument],
+  ["PATCH",  "/api/v1/facilities/documents/:documentId",            vendors.updateDocument],
+  ["POST",   "/api/v1/facilities/documents/:documentId/file",       vendors.putDocumentFile],
+  ["GET",    "/api/v1/facilities/documents/:documentId/file",       vendors.getDocumentFile],
+  ["GET",    "/api/v1/enrollment/settings",         enrollment.getSettings],
+  ["PUT",    "/api/v1/enrollment/settings",         enrollment.putSettings],
+  ["GET",    "/api/v1/enrollment/team",             enrollment.team],
+  ["GET",    "/api/v1/enrollment/summary",          enrollment.summary],
+  ["GET",    "/api/v1/enrollment/lookup",           enrollment.lookup],
+  ["POST",   "/api/v1/enrollment/reenrol",          enrollment.reenrol],
+  ["GET",    "/api/v1/applications",                enrollment.list],
+  ["POST",   "/api/v1/applications",                enrollment.create],
+  ["POST",   "/api/v1/applications/bulk",           enrollment.bulk],
+  ["GET",    "/api/v1/applications/:applicationId", enrollment.get],
+  ["PATCH",  "/api/v1/applications/:applicationId", enrollment.update],
+  ["POST",   "/api/v1/applications/:applicationId/actions/:action",           enrollment.act],
+  ["PUT",    "/api/v1/applications/:applicationId/documents/:key",            enrollment.putDocument],
+  ["POST",   "/api/v1/applications/:applicationId/documents/:key/file",       enrollment.putFile],
+  ["GET",    "/api/v1/applications/:applicationId/documents/:key/file",       enrollment.getFile],
+  ["GET",    "/api/v1/family/applications",         enrollment.mine],
+  ["GET",    "/api/v1/enrollments",                 enrollment.listEnrollments],
+  ["POST",   "/api/v1/enrollments/:enrollmentId/actions/:action", enrollment.enrollmentAct],
 
   ["GET",    "/api/v1/assessments",                 assessments.list],
   ["GET",    "/api/v1/assessments/:assessmentId",   assessments.get],
@@ -152,6 +323,19 @@ function match(method, path) {
 }
 
 export default {
+  /* The Worker's own clock: reminders for every school, twice an hour. Each
+     reminder is made once per person per key, so a repeat says nothing twice. */
+  async scheduled(event, env, executionCtx) {
+    if (!env.DB) return;
+    const repo = new D1Repository(env.DB);
+    const { runReminders } = await import("./routes/inbox.js");
+    const { flushOutbox } = await import("./services/notify.js");
+    const orgs = await env.DB.prepare(`SELECT id FROM organizations WHERE kind = 'school'`).all();
+    for (const o of orgs.results || []) {
+      executionCtx.waitUntil(runReminders(repo, env, o.id).then(() => flushOutbox(repo, env, o.id)).catch(() => {}));
+    }
+  },
+
   async fetch(request, env, executionCtx) {
     const url = new URL(request.url);
 
@@ -187,7 +371,9 @@ export default {
         repo: new D1Repository(env.DB),
         waitUntil: (p) => executionCtx.waitUntil(p),
         actor: null,
-        rotate: null
+        rotate: null,
+        // Handlers written as (ctx) read their route params here; the rest take them as a second argument.
+        params: found.params
       };
       // Resolved once per request, from the session token alone. This is the
       // only place the caller's identity is established, and it is never read

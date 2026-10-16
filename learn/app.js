@@ -576,18 +576,7 @@
     var a = seg[0] || "";
     if (!a) { home(); return true; }
     if (sameName(a, "Explore")) { explore(); return true; }
-    if (sameName(a, "Exams")) {
-      openExams();
-      // /Exams/<id> is the sitting itself, which exam.js owns. While the app
-      // is starting, exam.js is about to be asked what to resume and is told
-      // this one; after that it is opened directly.
-      if (seg[1] && window.OPLO_EXAM) {
-        if (S.booting) S.examAsked = seg[1]; else window.OPLO_EXAM.open(seg[1]);
-      }
-      return true;
-    }
-    if (sameName(a, "School") || sameName(a, "Classes")) { openClasses(); return true; }
-    if (sameName(a, "Self-learning")) { openOwn(); return true; }
+
     if (sameName(a, "Progress")) { openProgress(); return true; }
     if (sameName(a, "Grades")) { openGrades(false, seg.slice(1)); return true; }
     if (sameName(a, "Account")) { openAccount(); return true; }
@@ -668,12 +657,8 @@
       return;
     }
     var has = !!(S.me && (S.me.assigned || []).length);
-    ["#navClasses", "#navGrades", "#navExams"].forEach(function (id) {
-      var tab = $(id);
-      if (tab) tab.hidden = !(has && S.me && S.me.role === "student");
-    });
-    var own = $("#navOwn");
-    if (own) own.hidden = !(S.me && S.me.role === "student");
+    var grades = $("#navGrades");
+    if (grades) grades.hidden = !(has && S.me && S.me.role === "student");
   }
 
   function show(view) {
@@ -1290,92 +1275,14 @@
     v.appendChild(el("h1", "lx-h1", "Here is where you are."));
     v.appendChild(standing());
 
-    var lanes = el("div", "lx-lanes");
-    v.appendChild(lanes);
-
-    /* ---- School ------------------------------------------------------ */
-    var school = el("section", "lx-lane school");
-    if (!KERN) lanes.appendChild(school);
-    var mine = enrolled();
-    school.innerHTML = "<header class='lx-lanehead'><p class='k'>School</p><h2>" + esc(schoolOf()) + "</h2>" +
-      "<p>What your school put you in, and the work your teachers set. This is what’s graded.</p></header>";
-    var workSlot = el("div", "lx-lanebody");
-    school.appendChild(workSlot);
-    if (mine.length) {
-      workSlot.appendChild(el("p", "lx-lanesub", "Set by your teachers"));
-      var wait = el("p", "lx-lanenote", "Looking for work…");
-      workSlot.appendChild(wait);
-      loadWork().then(function (data) {
-        wait.remove();
-        if (!data.work.length) { workSlot.appendChild(el("p", "lx-lanenote", "Nothing has been set yet.")); return; }
-        var t = data.totals, bits = [];
-        if (t.overdue) bits.push("<b>" + t.overdue + " past due</b>");
-        if (t.missing) bits.push("<b>" + t.missing + " marked as not handed in</b>");
-        if (bits.length) workSlot.insertBefore(el("p", "lx-lanenote", bits.join(" · ")), workSlot.children[1]);
-        var n = schoolWorkList(workSlot, data.work, 5);
-        if (n > 5 || data.work.length > 5) {
-          var all = el("button", "lx-lanelink", "All work ›");
-          all.type = "button";
-          all.addEventListener("click", function () { openClasses(); });
-          workSlot.appendChild(all);
-        }
-      }, function () {
-        wait.textContent = "Couldn’t reach the server, so what your teachers have set isn’t shown here.";
-      });
-
-      school.appendChild(el("p", "lx-lanesub", "Your courses"));
-      var cl = el("div", "lx-crow-list");
-      mine.forEach(function (c) { cl.appendChild(courseRow(c, "school")); });
-      school.appendChild(cl);
-
-      var given = Object.keys(dbSets);
-      if (given.length) {
-        school.appendChild(el("p", "lx-lanesub", "Study sets from your teachers"));
-        var sg = el("div", "lx-crow-list");
-        given.forEach(function (id) {
-          var set = dbSets[id], b = el("button", "lx-crow");
-          b.type = "button";
-          b.innerHTML = '<span class="ic">' + svg(I.cards, true) + "</span><span class='t'><b>" + esc(set.t) + "</b><span>" + set.cards.length + " terms</span></span>";
-          b.addEventListener("click", function () { openSet(id); });
-          sg.appendChild(b);
-        });
-        school.appendChild(sg);
-      }
-      var sstep = nextStep(mine);
-      if (sstep) school.appendChild(stepCard(sstep, "Practice next", "Practice isn’t graded — only work your teachers set is."));
-    } else {
-      school.appendChild(el("div", "lx-lanenone", "<b>No school courses yet</b><p>When your school puts you in a course, it appears here with the work your teachers set.</p>"));
+    /* ---- The week, as the school set it ----------------------------- */
+    if (enrolled().length) {
+      var wrap = el("div", "lx-classes");
+      var wk = el("section", "lx-class");
+      wrap.appendChild(wk);
+      v.appendChild(wrap);
+      timetable(wk);
     }
-
-    /* ---- Self-learning ---------------------------------------------- */
-    var own = el("section", "lx-lane own");
-    lanes.appendChild(own);
-    own.innerHTML = KERN
-      ? "<header class='lx-lanehead'><p class='k'>Learn by doing</p><h2>Your courses</h2>" +
-        "<p>Courses you chose. Nothing here is graded, and only you can see it.</p></header>"
-      : "<header class='lx-lanehead'><p class='k'>Self-learning</p><h2>On your own</h2>" +
-        "<p>Courses you chose. Never graded, not on your school record, and only you can see them.</p></header>";
-    var mineOwn = ownCourses();
-    var ostep = nextStep(mineOwn);
-    if (ostep) own.appendChild(stepCard(ostep, "Pick up where you left off", null));
-    if (mineOwn.length) {
-      own.appendChild(el("p", "lx-lanesub", "You’re learning"));
-      var ol = el("div", "lx-crow-list");
-      mineOwn.slice(0, 5).forEach(function (c) { ol.appendChild(courseRow(c, "own")); });
-      own.appendChild(ol);
-      if (mineOwn.length > 5) {
-        var more = el("button", "lx-lanelink", "All " + mineOwn.length + " ›");
-        more.type = "button";
-        more.addEventListener("click", function () { openOwn(); });
-        own.appendChild(more);
-      }
-    } else {
-      own.appendChild(el("div", "lx-lanenone", "<b>Nothing yet</b><p>Start any course in Explore and it shows up here — for you, not for a grade.</p>"));
-    }
-    var ex = el("button", "lx-btn quiet", "Find something to learn");
-    ex.type = "button";
-    ex.addEventListener("click", explore);
-    own.appendChild(ex);
 
     /* ---- Account-wide: what trips you up --------------------------- */
     v.appendChild(el("h2", "lx-h2", "What you keep getting wrong"));
@@ -1492,6 +1399,64 @@
     });
     noFoot(); progress(null);
     show("classes");
+  }
+
+  /* The week as this student has it: the periods, their times and rooms, as
+     the school set them. A day with no school says why. */
+  function timetable(host) {
+    var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    function clock(t) {
+      if (!t) return "";
+      var h = +t.slice(0, 2);
+      return (h % 12 || 12) + ":" + t.slice(3, 5) + (h < 12 ? " AM" : " PM");
+    }
+    host.appendChild(el("h2", "lx-class-h", "This week"));
+    var body = el("div");
+    host.appendChild(body);
+    body.appendChild(el("p", "lx-class-none", "Loading your week…"));
+    API.schedule.week().then(function (days) {
+      body.innerHTML = "";
+      var anyClass = false, loose = {};
+      days.forEach(function (d) {
+        // A course with no period meets "every day" to the server; it is listed once, below.
+        (d.items || []).forEach(function (x) { if (!x.periods.length) loose[x.courseId] = x.title; });
+        var items = (d.items || []).filter(function (x) { return x.meets && x.periods.length; });
+        items.sort(function (a, b) { return (a.startsAt || "99") < (b.startsAt || "99") ? -1 : (a.startsAt || "99") > (b.startsAt || "99") ? 1 : String(a.periods[0] || "").localeCompare(String(b.periods[0] || ""), undefined, { numeric: true }); });
+        var dt = d.day || {};
+        var label = DAYS[new Date(d.date + "T12:00:00").getDay()];
+        // The bell schedule is named only when it says something the weekday does not: a minimum day, an A-day.
+        var sched = dt.kind === "school" && d.schedule && d.schedule.name.toLowerCase().indexOf(label.toLowerCase()) < 0 ? d.schedule.name : "";
+        var blk = el("div", "lx-tt-day");
+        body.appendChild(blk);
+        blk.appendChild(el("h3", "lx-class-h", esc(label) + (sched ? " · " + esc(sched) : "")));
+        if (dt.kind !== "school") {
+          blk.appendChild(el("p", "lx-class-none", "No school" + (dt.label ? " — " + esc(dt.label) : "") + "."));
+          return;
+        }
+        if (!items.length) { blk.appendChild(el("p", "lx-class-none", "Nothing of yours meets.")); return; }
+        anyClass = true;
+        var ul = el("div", "sw-list");
+        items.forEach(function (x) {
+          var row = el("div", "sw-row");
+          var when = x.startsAt ? clock(x.startsAt) + (x.endsAt ? " – " + clock(x.endsAt) : "") : "";
+          row.innerHTML = "<span class='ic'>" + svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', true) + "</span>" +
+            "<span class='t'><b>" + esc(x.title) + "</b><span>" + esc([x.periods.join(", "), when, x.room ? "Room " + x.room : ""].filter(Boolean).join(" · ")) + "</span></span>";
+          ul.appendChild(row);
+        });
+        blk.appendChild(ul);
+      });
+      var unplaced = Object.keys(loose).map(function (k) { return loose[k]; });
+      if (!anyClass) {
+        body.innerHTML = "";
+        body.appendChild(el("p", "lx-class-none", unplaced.length
+          ? "Your school has not put " + esc(unplaced.join(", ")) + " into periods yet, so there is no timetable to show."
+          : "Nothing of yours is scheduled this week."));
+      } else if (unplaced.length) {
+        var more = el("div", "lx-tt-day");
+        more.appendChild(el("p", "lx-class-none", "Not in a period yet: " + esc(unplaced.join(", ")) + "."));
+        body.appendChild(more);
+      }
+    }, function () { body.innerHTML = ""; body.appendChild(el("p", "lx-class-none", "Your week could not be loaded just now.")); });
   }
 
   /* One course. Who teaches it arrives after it is drawn, so the card is
@@ -6888,6 +6853,8 @@
   }
 
   function openAccount(silent) {
+    // A student's account is a page of their own console, with no standing or streak in it.
+    if (S.me && consoleMode() === "student") { openStudentConsole(!!silent, "account"); return; }
     if (!silent) enter("account", "Account", function () { openAccount(true); }, false, "Account");
     var v = $("#v-account");
     v.innerHTML = "";
@@ -8838,6 +8805,8 @@
      school and marking a class are different jobs done at different times,
      and a console that offers both is a console that is clear about neither. */
   function consoleMode() {
+    // A student outside Kern signs in to the school's record, not to a course.
+    if (!KERN && S.me && S.me.role === "student") return "student";
     var H = window.OPLO_HOME, m = H && H.parse ? H.parse(location.pathname).mode : null;
     return S.me && S.me.role === "admin" && m !== "teacher" ? "admin" : "teacher";
   }
@@ -8850,33 +8819,79 @@
   var ADMIN_TREE = [
     { k: "today", name: "Overview", icon: "summary" },
     { name: "Academics", icon: "cap", kids: [
-      { k: "gradebook", name: "Gradebook" }, { k: "assessments", name: "Assessments" }, { k: "standards", name: "Standards" },
+      { k: "gradebook", name: "Gradebook" }, { k: "assessments", name: "Assessments" }, { k: "periods", name: "Marking Periods" },
       { k: "gpa", name: "GPA" }, { k: "transcripts", name: "Transcripts" }, { k: "reportcards", name: "Report Cards" },
       { k: "graduation", name: "Graduation" }] },
     { name: "Students", icon: "people", kids: [
       { k: "students", name: "Student 360" }, { k: "enrollment", name: "Enrollment" }, { k: "rosters", name: "Rosters" },
-      { k: "records", name: "Records" }, { k: "documents", name: "Documents" }, { k: "guardians", name: "Guardians" }] },
+      { k: "records", name: "Records" }, { k: "documents", name: "Documents" }, { k: "guardians", name: "Guardians" },
+      { k: "health", name: "Health" }] },
+    { name: "Schedule", icon: "calendar", kids: [
+      { k: "sc-days", name: "School Days" }, { k: "sc-bell", name: "Bell Schedules" }, { k: "sc-courses", name: "Courses" },
+      { k: "sc-sections", name: "Sections" }, { k: "sc-adddrop", name: "Add and Drop" },
+      { k: "sc-plans", name: "Plans" }] },
+    { k: "attendance", name: "Attendance", icon: "check" },
+    { name: "Student Support", icon: "heart", kids: [
+      { k: "support", name: "Watchlist" }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention" },
+      { k: "senplans", name: "Support Plans" }, { k: "accommodations", name: "Accommodations" }] },
+    { name: "Communicate", icon: "mail", kids: [
+      { k: "inbox", name: "Inbox" }, { k: "events", name: "Events" }, { k: "forms", name: "Forms" }, { k: "outbox", name: "Mail Queue" }] },
     { name: "Analytics", icon: "chart", kids: [
-      { k: "analytics", name: "Academic" }, { k: "an-assessments", name: "Assessments" }, { k: "an-standards", name: "Standards" },
+      { k: "analytics", name: "Academic" }, { k: "an-assessments", name: "Assessments" },
       { k: "growth", name: "Growth" }, { k: "groups", name: "Groups" }, { k: "longitudinal", name: "Longitudinal" }] },
     { name: "Staff", icon: "badge", kids: [
       { k: "staff", name: "Teachers" }, { k: "departments", name: "Departments" }, { k: "permissions", name: "Permissions" },
-      { k: "teacher-analytics", name: "Teacher Analytics" }] },
-    { k: "scheduling", name: "Scheduling", icon: "calendar" },
-    { k: "attendance", name: "Attendance", icon: "check" },
-    { k: "behavior", name: "Behavior", icon: "flag" },
-    { k: "support", name: "Student Support", icon: "heart" },
-    { k: "curriculum", name: "Curriculum", icon: "books" },
-    { name: "School Operations", icon: "building", kids: [
-      { k: "inventory", name: "Inventory" }, { k: "lockers", name: "Lockers" }, { k: "cafeteria", name: "Cafeteria" }] },
-    { name: "Data Center", icon: "server", kids: [
-      { k: "sis", name: "SIS Sync" }, { k: "imports", name: "Imports" }, { k: "data", name: "Exports" },
-      { k: "sftp", name: "SFTP" }, { k: "api", name: "API" }] },
-    { k: "state", name: "State Reporting", icon: "landmark" },
+      { k: "teacher-analytics", name: "Teacher Analytics" }, { k: "leave", name: "Leave" }, { k: "cover", name: "Cover" },
+      { k: "certs", name: "Certifications" }] },
+    { name: "School Operations", icon: "rows", kids: [
+      { k: "menus", name: "Menus" }, { k: "eligibility", name: "Meal Eligibility" }, { k: "lockers", name: "Lockers" }, { k: "checkouts", name: "Equipment" }] },
+    { name: "Finance", icon: "landmark", kids: [
+      { k: "fees", name: "Fees" }, { k: "invoices", name: "Invoices" }, { k: "payments", name: "Payments" }] },
+    { name: "Facilities", icon: "building", kids: [
+      { k: "fx-orders", name: "Work orders" }, { k: "fx-spaces", name: "Spaces" }, { k: "fx-assets", name: "Assets" },
+      { k: "fx-upkeep", name: "Routines" }, { k: "fx-bookings", name: "Bookings" }, { k: "fx-vendors", name: "Vendors" },
+      { k: "fx-documents", name: "Documents" }, { k: "fx-reports", name: "Reports" }] },
+    { name: "Curriculum", icon: "books", kids: [{ k: "curriculum", name: "Courses" }, { k: "curmap", name: "Curriculum Map" }] },
+    { name: "Data Center", icon: "server", kids: [{ k: "data", name: "Exports" }, { k: "imports", name: "Imports" }, { k: "sis", name: "Integrations" },
+      { k: "state", name: "State Reporting" }, { k: "district", name: "District" }, { k: "api", name: "API" }] },
     { k: "security", name: "Security", icon: "shield" },
+    { name: "Reports", icon: "table", kids: [{ k: "office", name: "Reports" }, { k: "builder", name: "Report Builder" }] },
     { k: "activity", name: "Audit Log", icon: "wave" },
-    { k: "system", name: "Settings", icon: "gear" }
+    { k: "system", name: "Settings", icon: "gear" },
+    /* Places the platform does not keep records for yet. They are still here,
+       and still say so, but folded away: a rail should be what works. */
+    { name: "Not set up yet", icon: "rows", kids: [
+      { k: "behavior", name: "Behavior" }, { k: "standards", name: "Standards" },
+      { k: "an-standards", name: "Standards analytics" }, { k: "sftp", name: "SFTP" }] }
   ];
+  /* The student's own console: the school's record of them, read by them.
+     Short, flat and in the order a student's questions come — where do I go,
+     what is due, how am I doing, am I marked in — then the record, then them.
+     It has no place for learning: that is Kern's. */
+  var STUDENT_TREE = [
+    { k: "today", name: "Overview", icon: "summary" },
+    { k: "inbox", name: "Inbox", icon: "mail" },
+    { k: "schedule", name: "Schedule", icon: "calendar" },
+    { head: "Academics" },
+    { k: "courses", name: "Courses", icon: "books" },
+    { k: "assignments", name: "Assignments", icon: "tray" },
+    { k: "grades", name: "Grades", icon: "chart" },
+    { k: "attendance", name: "Attendance", icon: "check" },
+    { head: "Record" },
+    { k: "transcript", name: "Transcript", icon: "table" },
+    { k: "graduation", name: "Graduation", icon: "cap" },
+    { head: "School" },
+    { k: "events", name: "Events", icon: "flag" },
+    { k: "forms", name: "Forms and fees", icon: "doc" },
+    { k: "menu", name: "Menu", icon: "rows" },
+    { head: "Me" },
+    { k: "profile", name: "Profile", icon: "person" },
+    { k: "requests", name: "Requests", icon: "doc" },
+    { k: "account", name: "Account", icon: "key" }
+  ];
+  var STUDENT_SECTIONS = STUDENT_TREE.filter(function (t) { return t.k; });
+  var STUDENT_NAMES = { today: "Overview", inbox: "Inbox", events: "Events", forms: "Forms", menu: "Menu", schedule: "Schedule", courses: "Courses", assignments: "Assignments", grades: "Grades",
+    attendance: "Attendance", transcript: "Transcript", graduation: "Graduation", profile: "Profile", requests: "Requests", account: "Account" };
   var ADMIN_SECTIONS = [];
   ADMIN_TREE.forEach(function (t) {
     if (!t.kids) { ADMIN_SECTIONS.push({ k: t.k, name: t.name, group: null, icon: t.icon }); return; }
@@ -8890,9 +8905,35 @@
     { k: "courses", name: "Courses", group: "Curriculum", icon: "books", hidden: true },
     { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true });
 
+  /* Somebody who holds an office role and is not an administrator gets the
+     school console with the places that role works in, and nothing else.
+     Everything else in it is read with an administrator's authority, and
+     showing them a console of pages the server would refuse is worse than
+     showing them a short one. */
+  var FX_KEYS = ["fx-orders", "fx-spaces", "fx-assets", "fx-upkeep", "fx-bookings", "fx-vendors", "fx-documents", "fx-reports"];
+  var OFFICE_PLACES = { registrar: ["enrollment"], admissions: ["enrollment"], facilities: FX_KEYS, office: FX_KEYS, it: FX_KEYS };
+  function officeKeys() {
+    var r = (S.me && S.me.roles) || [];
+    function has(p, n) { return r.some(function (x) { return x.product === p && x.role === n; }); }
+    if (has("platform", "admin") || has("learn", "admin")) return null;
+    var keys = [];
+    Object.keys(OFFICE_PLACES).forEach(function (role) {
+      if (has("learn", role)) OFFICE_PLACES[role].forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); });
+    });
+    return keys.length ? keys : null;
+  }
+  function officeOnly() { return !!officeKeys(); }
+  function officeLabel() {
+    var k = officeKeys() || [], enr = k.indexOf("enrollment") > -1, fac = k.indexOf("fx-orders") > -1;
+    return enr && fac ? "School office" : fac ? "Facilities" : "Enrollment office";
+  }
+
   function allowedTabs() {
+    if (S.me && consoleMode() === "student") return STUDENT_SECTIONS;
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
-    return consoleMode() === "admin" ? ADMIN_SECTIONS : TEACHER_SECTIONS;
+    if (consoleMode() !== "admin") return TEACHER_SECTIONS;
+    var only = officeKeys();
+    return only ? ADMIN_SECTIONS.filter(function (t) { return only.indexOf(t.k) > -1; }) : ADMIN_SECTIONS;
   }
 
   function sectionNamed(k) {
@@ -8960,7 +9001,9 @@
       var cs = { raw: c, book: gb, id: c.id, title: c.title, subject: c.subject, code: c.code, status: c.status, myRole: c.myRole, level: c.level,
                  students: roster.length, work: (gb.assignments || []).length, sum: 0, graded: 0, below: 0,
                  dist: { A: 0, B: 0, C: 0, D: 0, F: 0 }, cells: 0, dealt: 0, handed: 0, toMark: 0, overdue: 0, missing: 0,
-                 teachers: row.members.filter(function (m) { return m.role === "teacher" || m.role === "assistant"; }), needs: [] };
+                 teachers: row.members.filter(function (m) { return m.role === "teacher" || m.role === "assistant"; }), needs: [],
+                 // When each student joined the course: a register is complete when everyone who was in it that day has a mark.
+                 joined: row.members.reduce(function (o, m) { if (m.role === "student") o[m.id] = m.joinedAt || 0; return o; }, {}) };
       (gb.columns || []).forEach(function (col) {
         var a = due[col.assignmentId];
         if (!a) return;
@@ -9099,14 +9142,19 @@
       { k: "students", name: "Students", icon: "people" },
       { k: "groups", name: "Groups", icon: "groups" },
       { k: "seating", name: "Seating", icon: "seat" },
-      { k: "attendance", name: "Attendance", icon: "clock" }] },
+      { k: "attendance", name: "Attendance", icon: "clock" },
+      { k: "referrals", name: "Referrals", icon: "flag" }] },
     { head: "Insights", items: [
       { k: "analytics", name: "Analytics", icon: "chart" },
       { k: "interventions", name: "Interventions", icon: "lifebuoy" },
       { k: "reports", name: "Reports", icon: "doc" }] },
+    { head: "School", items: [
+      { k: "facilities", name: "Facilities", icon: "building" },
+      { k: "leave", name: "My leave", icon: "calendar" }] },
     { head: "Communicate", items: [
       { k: "messages", name: "Messages", icon: "mail" },
-      { k: "announcements", name: "Announcements", icon: "megaphone" }] }
+      { k: "announcements", name: "Announcements", icon: "megaphone" },
+      { k: "events", name: "Events", icon: "calendar" }] }
   ];
   var TEACHER_FOOT = [{ k: "system", name: "Settings", icon: "gear" }, { k: "help", name: "Help", icon: "help" }];
   var TEACHER_SECTIONS = [];
@@ -9326,7 +9374,7 @@
     var H = window.OPLO_HOME;
     if (!H || !S.me) return [];
     var at = H.parse(location.pathname);
-    var names = { admin: "School console", student: "Student view", parent: "Family view" };
+    var names = { admin: "School console", student: "Student portal", parent: "Family view" };
     return H.allowed(S.me.roles || []).filter(function (m) { return m !== "teacher" && names[m]; })
       .map(function (m) { return { mode: m, name: names[m], href: H.pathFor(at.root, m) }; });
   }
@@ -9500,6 +9548,7 @@
     trApply();
     trMe();
     teachCounts();
+    plat().watch();
   }
 
   /* What waits for the teacher, beside To Grade. Read from the same books the
@@ -9527,6 +9576,7 @@
      aim at, and the one thing a rail owes you is that it never moves. */
   function drawRail() {
     var rail = $("#rail");
+    if (consoleMode() === "student") { drawStudentRail(rail); return; }
     if (rail.dataset.built === "1") { markRail(); return; }
     rail.innerHTML = "";
     if (consoleMode() !== "admin") { drawTeachRail(rail); rail.dataset.built = "1"; markRail(); return; }
@@ -9556,7 +9606,9 @@
       b.addEventListener("click", function () { openAdmin(false, t.k); });
       return b;
     }
-    if (consoleMode() === "admin") {
+    if (consoleMode() === "admin" && officeOnly()) {
+      allowedTabs().forEach(function (t) { if (!t.hidden) nav.appendChild(place(t, t.k === "enrollment" ? "people" : null)); });
+    } else if (consoleMode() === "admin") {
       ADMIN_TREE.forEach(function (t) {
         if (!t.kids) { nav.appendChild(place(t, t.icon)); return; }
         // A group: its row folds and unfolds; opening one you are not in
@@ -9592,7 +9644,7 @@
     who.type = "button";
     who.innerHTML = '<span class="av" aria-hidden="true"></span>' +
       '<span class="t"><b>' + esc(S.me.name) + "</b><span>" +
-      esc(S.me.role === "admin" ? "Administrator" : "Teacher") + "</span></span>";
+      esc(S.me.role === "admin" ? (officeOnly() ? officeLabel() : "Administrator") : "Teacher") + "</span></span>";
     var av = who.querySelector(".av");
     av.textContent = S.me.initials || "";
     av.style.background = S.me.hue || "";
@@ -9651,6 +9703,7 @@
   }
 
   function openAdmin(silent, tab) {
+    if (S.me && consoleMode() === "student") { openStudentConsole(silent, tab); return; }
     if (!allowedTabs().length) return;
     var was = S.tab;
     S.tab = sectionNamed(tab || S.tab).k;
@@ -9675,17 +9728,124 @@
     ({ today: consoleHome, assessments: admin ? tabSchoolAssessments : tabAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, curriculum: tabCourses, activity: tabActivity,
        people: tabPeople, permissions: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
-       reportcards: tabReportCards, analytics: tabAnalytics, data: tabData, security: tabSecurity,
+       reportcards: tabReportCards, periods: tabPeriods, analytics: tabAnalytics, data: tabData, security: tabSecurity,
        standards: tabStandards, gpa: tabGpa, transcripts: tabTranscripts, graduation: tabGraduation,
-       enrollment: tabEnrollment, rosters: tabRosters, records: tabRecords, documents: tabDocuments, guardians: tabGuardians,
+       enrollment: tabEnrollment, office: tabOffice, health: tabHealth, rosters: tabRosters, records: tabRecords, documents: tabDocuments, guardians: tabGuardians,
        "an-assessments": tabAnAssessments, "an-standards": tabAnStandards, growth: tabGrowth, groups: tabGroups, longitudinal: tabLongitudinal,
        departments: tabDepartments, "teacher-analytics": tabTeacherAnalytics,
-       scheduling: tabScheduling, attendance: tabAttendance, behavior: tabBehavior, support: tabSupport,
-       inventory: tabInventory, lockers: tabLockers, cafeteria: tabCafeteria,
-       sis: tabSis, imports: tabImports, sftp: tabSftp, api: tabApi, state: tabStateReporting }[S.tab] || consoleHome)(body);
+       scheduling: tabScheduling, "sc-days": tabScDays, "sc-bell": tabScBell, "sc-courses": tabScCourses, "sc-sections": tabScSections, "sc-adddrop": tabScAddDrop, "sc-plans": tabScPlans,
+       attendance: tabAttendance, behavior: tabBehavior, support: tabSupport,
+       inventory: tabFxAssets,
+       "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
+       "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
+       sftp: tabSftp, api: tabApi }[S.tab] || platTab(S.tab) || consoleHome)(body);
 
     noFoot(); progress(null);
     show("admin");
+  }
+
+  /* ============================================================ Student console
+     The student's page: a rail, and the school's record of them. The pages are
+     in student.js and student-record.js, handed the pieces of this console
+     they draw with. An address is a place — /student/Courses/geometry — so
+     Back, a refresh and a link all land where they should. */
+  var SX = null;
+  function stu() {
+    if (SX) return SX;
+    SX = window.OPLO_STUDENT({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxSetMetric: cxSetMetric, cxPage: cxPage, cxSection: cxSection, cxSheet: cxSheet,
+      cxPrint: cxPrint, printHead: printHead, printTable: printTable, schoolName: schoolName,
+      platform: plat(),
+      open: function (tab, arg) { openStudentConsole(false, tab, arg); },
+      appearance: currentAppearance, setAppearance: applyAppearance,
+      openAccount: function () { openStudentConsole(false, "account"); },
+      signOut: function () { if (confirm("Sign out of OEdu?")) signOut(); }
+    });
+    return SX;
+  }
+  function studentSection(k) {
+    return STUDENT_SECTIONS.filter(function (t) { return t.k === k; })[0] || STUDENT_SECTIONS[0];
+  }
+  /* "Courses/geometry" → { tab: "courses", arg: "geometry" } */
+  function studentAt(rest) {
+    var seg = String(rest || "").split("/").filter(Boolean).map(function (x) { try { return decodeURIComponent(x); } catch (e) { return x; } });
+    var hit = STUDENT_SECTIONS.filter(function (t) { return sameName(STUDENT_NAMES[t.k], seg[0]) || sameName(t.k, seg[0]); })[0];
+    return { tab: hit ? hit.k : "today", arg: hit && seg[1] ? seg[1] : null };
+  }
+  function studentPath(tab, arg) { return (STUDENT_NAMES[tab] || "Overview") + (arg ? "/" + arg : ""); }
+
+  function openStudentConsole(silent, tab, arg, replace) {
+    var sec = studentSection(tab || S.tab);
+    S.tab = sec.k;
+    S.sarg = arg || null;
+    if (!silent || replace) {
+      var key = "sx:" + sec.k + (arg ? ":" + arg : "");
+      enter(key, STUDENT_NAMES[sec.k], function () { openStudentConsole(true, sec.k, arg); }, !!replace, studentPath(sec.k, arg));
+    }
+    document.body.classList.add("is-console", "is-sis");
+    document.body.classList.remove("t-console", "is-staff");
+    applyDensity(currentDensity());
+    applyAppearance(currentAppearance());
+    drawStudentRail($("#rail"));
+    closeRail();
+    var v = $("#v-admin");
+    v.innerHTML = "";
+    var body = el("div", "admin-body sx-body");
+    v.appendChild(body);
+    var page = stu()[sec.k];
+    try { page(body, arg || null); }
+    catch (e) { failed(loading(body, ""), e, function () { openStudentConsole(true, sec.k, arg); }); }
+    window.scrollTo(0, 0);
+    noFoot(); progress(null);
+    show("admin");
+    // What is waiting, beside its row: work past due or missing, and unread mail.
+    stu().counts().then(function (c) { railCount("assignments", c.late); }, function () { /* no number */ });
+    plat().watch();
+  }
+
+  function drawStudentRail(rail) {
+    if (rail.dataset.built === "sx") { markRail(); return; }
+    rail.innerHTML = "";
+    var school = el("div", "cn-school");
+    school.innerHTML = '<span class="logo">' + cxIcon("cap") + "</span><span><b>" + esc(schoolName()) + "</b><span>Student portal</span></span>";
+    rail.appendChild(school);
+    var find = el("button", "cn-find");
+    find.type = "button";
+    find.innerHTML = cxIcon("search") + "<span>Search</span><kbd>" + (/Mac|iP(hone|ad)/.test(navigator.platform) ? "⌘K" : "Ctrl K") + "</kbd>";
+    find.addEventListener("click", openFinder);
+    rail.appendChild(find);
+    var nav = el("nav", "cn-nav");
+    nav.setAttribute("aria-label", "Student portal");
+    STUDENT_TREE.forEach(function (t) {
+      if (t.head) { nav.appendChild(el("p", "cn-navhead", esc(t.head))); return; }
+      var b = el("button", "cn-item");
+      b.type = "button";
+      b.dataset.k = t.k;
+      b.innerHTML = '<span class="ic">' + cxIcon(t.icon) + "</span>";
+      b.appendChild(el("span", "nm", esc(t.name)));
+      b.appendChild(el("span", "ct"));
+      b.addEventListener("click", function () { openStudentConsole(false, t.k); });
+      nav.appendChild(b);
+    });
+    rail.appendChild(nav);
+    var foot = el("div", "cn-foot");
+    var who = el("button", "cn-org");
+    who.type = "button";
+    who.innerHTML = '<span class="av" aria-hidden="true"></span><span class="t"><b>' + esc(S.me.name) + "</b><span>Student</span></span>";
+    var av = who.querySelector(".av");
+    av.textContent = S.me.initials || "";
+    av.style.background = S.me.hue || "";
+    who.addEventListener("click", function () { openStudentConsole(false, "profile"); });
+    foot.appendChild(who);
+    var out = el("button", "cn-item quiet", "<span class='nm'>Sign out</span>");
+    out.type = "button";
+    out.addEventListener("click", function () { if (confirm("Sign out of OEdu?")) signOut(); });
+    foot.appendChild(out);
+    rail.appendChild(foot);
+    rail.dataset.built = "sx";
+    markRail();
   }
 
   /* ============================================================ Assessments
@@ -11510,14 +11670,15 @@
     wrap.hidden = false;
     wrap.innerHTML = "";
     var admin = consoleMode() === "admin";
+    var student = consoleMode() === "student";
 
     var box = el("div", "cn-finder");
     var input = el("input", "cn-finderin");
     input.type = "text";
-    input.placeholder = admin ? "Go to…" : "Search OEdu";
+    input.placeholder = admin ? "Go to a place or student — or type “failing”, “absent”" : student ? "Go to a place, a course or a piece of work" : "Search OEdu";
     input.setAttribute("aria-label", admin ? "Go to" : "Search OEdu");
     box.appendChild(input);
-    if (!admin) box.appendChild(el("p", "cn-finderhint", "Students, assignments, lessons, standards, courses, places"));
+    if (!admin && !student) box.appendChild(el("p", "cn-finderhint", "Students, assignments, lessons, standards, courses, places"));
     var list = el("div", "cn-finderlist");
     box.appendChild(list);
     wrap.appendChild(box);
@@ -11526,11 +11687,23 @@
       return { name: t.name, hint: t.group || "Console", kind: "place", go: function () { openAdmin(false, t.k); } };
     });
     places.push({ name: "Account", hint: "Sessions, password, sign out", kind: "place", go: openAccount });
+    /* The questions an administrator asks most, answered by going straight to
+       the list — type "failing", "absent" or "approve" and land on it. */
+    if (admin) {
+      [["Students below a pass", "low", "failing fail grade below pass at risk"],
+       ["Students with missing work", "missing", "missing work owed incomplete"],
+       ["Students slipping", "slip", "slipping dropping declining worse"],
+       ["Students often away", "away", "absent absence attendance chronic truant away"]].forEach(function (x) {
+        places.push({ name: x[0], hint: "Student Support", kind: "list", kw: x[2], go: function () { S.watch = x[1]; openAdmin(false, "support"); } });
+      });
+      places.push({ name: "Registers not taken", hint: "Attendance", kind: "list", kw: "attendance register roll call today", go: function () { openAdmin(false, "attendance"); } });
+      places.push({ name: "Grade changes to approve", hint: "Marking Periods", kind: "list", kw: "approve approval grade change request pending", go: function () { openAdmin(false, "periods"); } });
+    }
 
     /* A teacher's search reaches past the places: every student, every piece
        of work and every lesson in the courses they teach, read from the same
        books the pages use. Before it arrives the places still work. */
-    var actions = admin ? [] : [
+    var actions = admin || student ? [] : [
       { name: "New assignment", hint: "Quick action", kind: "action", icon: "plus", go: function () { openAssignSheet({}); } },
       { name: "Assign a lesson", hint: "Quick action", kind: "action", icon: "plus", go: function () { openAssignSheet({ where: "oedu" }); } },
       { name: "New assessment", hint: "Quick action", kind: "action", icon: "plus", go: function () { openAssignSheet({ where: "oedu" }); } },
@@ -11543,7 +11716,11 @@
       try { localStorage.setItem("oplo.teach.recent", JSON.stringify(r.slice(0, 5))); } catch (e) { /* private mode */ }
     }
 
-    if (admin) {
+    if (student) {
+      // Their own places, courses and work: nobody else's.
+      places.length = 0;
+      stu().find().then(function (list) { list.forEach(function (p) { places.push(p); }); draw(); }, function () { /* the places still work */ });
+    } else if (admin) {
       if (FOUND_PEOPLE && FOUND_PEOPLE.mode === "admin") addPeople(FOUND_PEOPLE.list);
       else loadSchool().then(function (data) {
         FOUND_PEOPLE = { mode: "admin", list: data.students };
@@ -11583,7 +11760,10 @@
     function draw() {
       var term = input.value.trim().toLowerCase();
       var rows = [];
-      if (!term && !admin) {
+      if (!term && student) {
+        rows = places.filter(function (p) { return p.kind === "place"; });
+        rows.unshift({ head: "Places" });
+      } else if (!term && !admin) {
         var rec = recentFound().map(function (r) {
           var live = places.filter(function (p) { return p.ref === r.ref; })[0];
           return live ? { name: live.name, hint: live.hint, go: live.go, ref: live.ref } : null;
@@ -11594,8 +11774,10 @@
         rows.push({ head: "Places" });
         rows = rows.concat(places.filter(function (p) { return p.kind === "place"; }));
       } else {
+        var words = term.split(/\s+/).filter(Boolean);
         rows = places.concat(actions).filter(function (p) {
-          return !term || p.name.toLowerCase().indexOf(term) > -1 || p.hint.toLowerCase().indexOf(term) > -1;
+          var hay = (p.name + " " + p.hint + " " + (p.kw || "")).toLowerCase();
+          return words.every(function (w) { return hay.indexOf(w) > -1; });
         }).slice(0, 60);
       }
       var hits = rows.filter(function (p) { return !p.head; });
@@ -13226,8 +13408,9 @@
     head.appendChild(tools);
     body.appendChild(head);
 
-    var TABS = [["overview", "Overview"], ["grades", "Grades"], ["missing", "Missing work"], ["timeline", "Timeline"],
-                ["graduation", "Graduation"], ["family", "Family"]];
+    var TABS = [["overview", "Overview"], ["grades", "Grades"], ["missing", "Missing work"], ["attendance", "Attendance"], ["timeline", "Timeline"],
+                ["graduation", "Graduation"], ["family", "Family"], ["enrollment", "Enrollment"],
+                ["behavior", "Behavior"], ["health", "Health"]];
     var seg = el("div", "cn-seg cx-360tabs");
     TABS.forEach(function (t) {
       var b = el("button", "cn-segb" + (S.s360tab === t[0] ? " on" : ""), t[1]);
@@ -13273,7 +13456,10 @@
       if (!D) return;
       pane.innerHTML = "";
       ({ overview: s360Overview, grades: s360Grades, missing: s360Missing, timeline: s360Timeline,
-         graduation: s360Graduation, family: s360Family }[S.s360tab] || s360Overview)(pane, D, s);
+         graduation: s360Graduation, family: s360Family, attendance: s360Attendance,
+         enrollment: function (p, d, st) { enr().studentPanel(p, st); },
+         behavior: function (p, d, st) { care().studentBehavior(p, st); },
+         health: function (p, d, st) { care().studentHealth(p, st); } }[S.s360tab] || s360Overview)(pane, D, s);
     }
   }
 
@@ -14010,6 +14196,14 @@
     });
     parent.appendChild(row);
     return row;
+  }
+
+  // Replace one number in a row of metrics once its answer has arrived.
+  function cxSetMetric(row, i, x) {
+    var tmp = el("div");
+    cxMetrics(tmp, [x]);
+    var fresh = tmp.firstChild.firstChild;
+    if (row.children[i] && fresh) row.replaceChild(fresh, row.children[i]);
   }
 
   function cxSection(parent, cls, title, note, more) {
@@ -15446,13 +15640,7 @@
   }
 
   /* ---------------------------------------------- Not set up yet, honestly */
-  function tabTeachAttendance(v) {
-    soonPage(v, "Students", "Attendance", "Taking attendance for each course, fast, every day.",
-      ["A register for each course, with the whole roster present by default", "Absent, late and excused, one tap each",
-       "Each student’s attendance beside their grade", "What families see, the same day"],
-      "Attendance records are being set up for the school; taking it from here arrives with them.",
-      [["Students", function () { openAdmin(false, "students"); }]]);
-  }
+  function tabTeachAttendance(v) { att().teach(v); }
   function tabTeachMessages(v) {
     soonPage(v, "Communicate", "Messages", "One place for every conversation — students, families, colleagues.",
       ["A conversation per student, with their family on it when you choose", "Messages to colleagues who teach the same students",
@@ -15523,7 +15711,9 @@
     today: consoleHome, courses: tabCourses, roster: tabTeachGradebook, tograde: tabToGrade, assignments: tabTeachAssignments,
     assessments: tabTeachAssessments, lessons: tabTeachLessons, standards: tabTeachStandards, curriculum: tabTeachCurriculum,
     resources: tabTeachResources, students: tabStudents, groups: tabTeachGroups, attendance: tabTeachAttendance,
-    analytics: tabTeachAnalytics, interventions: tabTeachInterventions, messages: tabTeachMessages, announcements: txTab("announcements"),
+    analytics: tabTeachAnalytics, interventions: tabTeachInterventions, messages: function (v) { plat().inbox(v); }, announcements: txTab("announcements"),
+    referrals: function (v) { plat().records(v, REC.referrals); }, leave: function (v) { plat().records(v, REC.leave); }, events: function (v) { plat().records(v, REC.events); },
+    facilities: tabFxStaff,
     system: tabSystem, help: tabTeachHelp, activity: tabActivity, reports: tabReports, work: tabWork, sets: tabSets
   };
 
@@ -15548,29 +15738,95 @@
       { label: "Students", value: students.length, note: cxPlural(courses.length, "course"), go: function () { openAdmin(false, "students"); } },
       { label: "School average", value: avg, unit: "%", line: avg, go: function () { openAdmin(false, "analytics"); } },
       { label: "Passing", value: pPass, unit: "%", line: pPass, note: (graded.length - passing) + " below " + CX_PASS + "%", go: function () { openAdmin(false, "support"); } },
-      { label: "Due work marked", value: pMarked, unit: "%", line: pMarked, note: toMark ? toMark + " waiting" : "nothing waiting", go: function () { openAdmin(false, "teacher-analytics"); } },
+      { label: "In class", value: null, note: "reading registers…", go: function () { openAdmin(false, "attendance"); } },
       { label: "Missing work", value: d.totals.missing, bad: true, note: cxPlural(missingStudents, "student"), go: function () { openAdmin(false, "missing"); } }
     ]);
     metrics.style.setProperty("--i", 0);
 
-    // Who needs someone to look.
-    var risk = students.filter(function (s) { return (s.standing != null && s.standing < CX_PASS) || s.missing >= 2; })
-      .sort(function (a, b) { return (a.standing == null ? 999 : a.standing) - (b.standing == null ? 999 : b.standing) || b.missing - a.missing; });
-    var na = cxSection(grid, "cx-s7", "Needs attention", risk.length ? cxPlural(risk.length, "student") : "", { label: "Student Support", go: function () { openAdmin(false, "support"); } });
-    if (!risk.length) na.appendChild(el("p", "cx-note", "Nobody is below a pass or missing more than one piece of work."));
-    var nl = el("div", "cx-list");
-    risk.slice(0, 6).forEach(function (s) {
-      var low = s.courses.filter(function (c) { return c.grade && c.grade.percent < CX_PASS; }).map(function (c) { return c.title; });
-      var b = el("button", "cx-li");
-      b.type = "button";
-      b.innerHTML = avatarHtml(s) + '<span class="t"><b>' + esc(s.name) + "</b><span>" +
-        esc(low.length ? "Below a pass in " + low.join(", ") : s.courses.map(function (c) { return c.title; }).join(", ")) + "</span></span>" +
-        '<span class="r"><b' + (s.standing != null && s.standing < CX_PASS ? ' style="color:var(--cx-red)"' : "") + ">" +
-        (s.standing == null ? "—" : s.standing + "%") + "</b>" + (s.missing ? '<span class="cx-pill orange">' + s.missing + " missing</span>" : "") + "</span>";
-      b.addEventListener("click", function () { openStudent360(s); });
-      nl.appendChild(b);
+    // Who needs someone to look: grades and missing work now, attendance the moment it has been read.
+    var na = cxSection(grid, "cx-s7", "Needs attention", "", { label: "Student Support", go: function () { openAdmin(false, "support"); } });
+    var nbody = el("div");
+    na.appendChild(nbody);
+    function drawNeeds(A) {
+      var risk = watchlist(d, A);
+      var note = na.querySelector(".cx-ch small");
+      if (note) note.textContent = risk.length ? cxPlural(risk.length, "student") : "";
+      nbody.innerHTML = "";
+      if (!risk.length) nbody.appendChild(el("p", "cx-note", "Nobody is below a pass, missing work or often away."));
+      var nl = el("div", "cx-list");
+      risk.slice(0, 6).forEach(function (x) {
+        var s = x.s;
+        var b = el("button", "cx-li");
+        b.type = "button";
+        b.innerHTML = avatarHtml(s) + '<span class="t"><b>' + esc(s.name) + "</b><span>" + esc(x.f.filter(function (f) { return f.k !== "missing"; }).map(function (f) { return f.s; }).join(" · ") || "Missing work") + "</span></span>" +
+          '<span class="r"><b' + (s.standing != null && s.standing < CX_PASS ? ' style="color:var(--cx-red)"' : "") + ">" +
+          (s.standing == null ? "—" : s.standing + "%") + "</b>" +
+          (s.missing ? '<span class="cx-pill orange">' + s.missing + " missing</span>" : "") + "</span>";
+        b.addEventListener("click", function () { openStudent360(s); });
+        nl.appendChild(b);
+      });
+      nbody.appendChild(nl);
+    }
+    drawNeeds(null);
+    loadAttendance().then(function (A) {
+      drawNeeds(A);
+      var t = attendanceToday(A);
+      cxSetMetric(metrics, 3, { label: "In class", value: t.pct, unit: "%", line: t.pct,
+        note: (A.todayIs ? "" : dayLabel(A.last) + " · ") + (!t.taken ? "none taken" : t.courses - t.taken ? (t.courses - t.taken) + " not taken" : "all taken"),
+        go: function () { openAdmin(false, "attendance"); } });
+      drawDecisions(A);
+    }, function () {
+      cxSetMetric(metrics, 3, { label: "In class", value: null, note: "attendance not readable", go: function () { openAdmin(false, "attendance"); } });
+      drawDecisions(null);
     });
-    na.appendChild(nl);
+
+    /* What needs a decision today: the things only this person can move on.
+       Shown only when there is one; a quiet day leaves no card. */
+    function drawDecisions(A) {
+      var items = [];
+      var t = A && attendanceToday(A);
+      if (t && A.todayIs && t.courses - t.taken > 0) {
+        var missed = d.courses.filter(function (c) { return A.byCourse[c.id].readable && !A.byCourse[c.id].last.n; });
+        items.push({ t: cxPlural(missed.length, "register") + " not taken yet", s: missed.slice(0, 3).map(function (c) { return c.title; }).join(", ") + (missed.length > 3 ? " and " + (missed.length - 3) + " more" : ""),
+                     tone: "orange", go: function () { openAdmin(false, "attendance"); } });
+      }
+      Promise.all([API.periods.list().catch(function () { return []; }), API.periods.changes("pending").catch(function () { return { changes: [] }; }),
+                   API.facilities.summary().catch(function () { return null; })]).then(function (r) {
+        var today = isoDay(new Date());
+        // The building: what waits for a person to accept it, what has run out, what is overdue.
+        var fxs = r[2];
+        if (fxs && fxs.orders) {
+          var fo = fxs.orders, fd = fxs.documents, fb = fxs.bookings;
+          if (fo.pending) items.push({ t: cxPlural(fo.pending, "facilities request") + " waiting", s: "Somebody has to accept or decline each one.", tone: "orange", go: function () { openAdmin(false, "fx-orders"); } });
+          if (fo.overdue) items.push({ t: cxPlural(fo.overdue, "job") + " overdue", s: "Facilities work past its due date.", tone: "orange", go: function () { openAdmin(false, "fx-orders"); } });
+          if (fd && fd.expired) items.push({ t: cxPlural(fd.expired, "paper") + " run out", s: "Certificates or contracts past the date they end.", tone: "orange", go: function () { openAdmin(false, "fx-documents"); } });
+          else if (fd && fd.soon) items.push({ t: cxPlural(fd.soon, "paper") + " run out within 30 days", s: "Renew them before they lapse.", tone: "blue", go: function () { openAdmin(false, "fx-documents"); } });
+          if (fb && fb.pending) items.push({ t: cxPlural(fb.pending, "room booking") + " to decide", s: "Held rooms waiting for approval.", tone: "blue", go: function () { openAdmin(false, "fx-bookings"); } });
+        }
+        if (r[1].canApprove && r[1].changes.length) {
+          var c0 = r[1].changes[0];
+          items.push({ t: cxPlural(r[1].changes.length, "grade change") + " to approve", s: (c0.studentName || "A student") + " · " + (c0.courseTitle || "") + " · " + (c0.fromPercent == null ? "—" : c0.fromPercent) + "% → " + c0.toPercent + "%",
+                       tone: "orange", go: function () { openAdmin(false, "periods"); } });
+        }
+        (r[0] || []).forEach(function (p) {
+          if (p.state === "open" && p.endsOn < today) items.push({ t: p.name + " has ended", s: "It is still open. Start grading so teachers can post.", tone: "orange", go: function () { S.periodId = p.id; openAdmin(false, "periods"); } });
+          else if (p.state === "grading") items.push({ t: p.name + " is in grading", s: "Courses post their grades, then the period closes.", tone: "blue", go: function () { S.periodId = p.id; openAdmin(false, "periods"); } });
+        });
+        if (!items.length) return;
+        var card = cxSection(grid, "cx-s12", "Needs a decision", cxPlural(items.length, "thing"));
+        var l = el("div", "cx-list");
+        items.forEach(function (x) {
+          var b = el("button", "cx-li plain");
+          b.type = "button";
+          b.innerHTML = '<span class="t"><b>' + esc(x.t) + "</b><span>" + esc(x.s) + '</span></span><span class="r"><span class="cx-pill ' + x.tone + '">Open ›</span></span>';
+          b.addEventListener("click", x.go);
+          l.appendChild(b);
+        });
+        card.appendChild(l);
+        grid.insertBefore(card, na);
+        card.style.setProperty("--i", 1);
+      });
+    }
 
     // Grades, as the school gives them.
     var gd = cxSection(grid, "cx-s5", "Grades", "every course grade");
@@ -15939,59 +16195,41 @@
   }
 
   /* ============================================================= Students */
-  function tabEnrollment(v) {
-    var P = cxPage(v, "Students", "Enrollment", "Who is enrolled in what, how full each course is, and who is not in a course at all.");
-    P.tools.appendChild(cnAction("Add a person", function () { openPersonEditor(null); }));
-    P.tools.appendChild(cnAction("New course", function () { openCourseEditor(null); }, true));
-    var node = loading(v, "enrollment");
-    Promise.all([loadSchool(), API.accounts.list(S.me.orgId).catch(function () { return []; })]).then(function (r) {
-      node.remove();
-      var d = r[0], people = r[1] || [], staff = {}, enrolled = {};
-      d.teachers.forEach(function (t) { staff[t.id] = 1; });
-      staff[S.me.id] = 1;
-      d.students.forEach(function (s) { enrolled[s.id] = 1; });
-      var notIn = people.filter(function (p) { return !enrolled[p.id] && !staff[p.id]; });
-      var seats = d.courses.reduce(function (a, c) { return a + c.students; }, 0);
-      cxMetrics(v, [
-        { label: "Accounts", value: people.length },
-        { label: "Enrolled students", value: d.students.length },
-        { label: "In no course", value: notIn.length, note: "accounts that are not staff", go: function () { S.enrolView = "none"; openAdmin(true, "enrollment"); } },
-        { label: "Seats filled", value: seats, note: cxPlural(d.courses.length, "course") },
-        { label: "Average class", value: d.courses.length ? Math.round(seats / d.courses.length) : null, note: "students a course" }
-      ]);
-      var bar = el("div", "cn-bar");
-      S.enrolView = S.enrolView || "course";
-      var chips = cnFilters([{ k: "course", name: "By course", n: d.courses.length }, { k: "none", name: "In no course", n: notIn.length }],
-        S.enrolView, function (k) { S.enrolView = k; draw(); });
-      bar.appendChild(chips);
-      v.appendChild(bar);
-      var slot = el("div");
-      v.appendChild(slot);
-      function draw() {
-        chips.mark(S.enrolView);
-        slot.innerHTML = "";
-        var t;
-        if (S.enrolView === "none") {
-          if (!notIn.length) { slot.appendChild(cnEmpty("Everyone is in a course.", "Every account that is not staff is enrolled in at least one course.")); return; }
-          t = cnTable([{ label: "Name", w: "minmax(170px, 1.2fr)" }, { label: "Email", w: "minmax(180px, 1.3fr)" }, { label: "Title", w: "minmax(100px, .8fr)" }]);
-          notIn.forEach(function (p) { t.row([cxWho(p), "<span class='cn-mono'>" + esc(p.email || "—") + "</span>", p.title ? esc(p.title) : cxNone()], function () { openPersonEditor(p); }, p.id); });
-        } else {
-          t = cnTable([{ label: "Course", w: "minmax(180px, 1.4fr)" }, { label: "Department", w: "minmax(110px, .8fr)" }, { label: "Teachers", w: "minmax(130px, 1fr)" },
-                       { label: "Students", w: "84px", align: "right" }, { label: "", w: "96px", align: "right" }]);
-          d.courses.slice().sort(function (a, b) { return String(a.title).localeCompare(String(b.title)); }).forEach(function (c) {
-            var go = el("button", "cn-btn small", "Enrol…");
-            go.type = "button";
-            go.addEventListener("click", function (e) { e.stopPropagation(); openEnrol(c.raw); });
-            t.row(["<b>" + esc(c.title) + "</b>" + (c.level ? "<span class='cn-sub2'>" + esc(c.level) + "</span>" : ""), esc(c.subject || "—"),
-                   c.teachers.length ? esc(c.teachers.map(function (x) { return x.name; }).join(", ")) : "<span class='cn-mk warn'>none</span>",
-                   String(c.students), go], function () { S.rosterCourse = c.id; openAdmin(false, "rosters"); }, c.id);
-          });
-        }
-        slot.appendChild(t);
-      }
-      draw();
-    }, function (e) { failed(node, e, function () { openAdmin(true, "enrollment"); }); });
+  /* Enrollment is the school's admissions office — a queue of applications,
+     a record for each, a decision that is separate from enrolling — and it
+     lives in enroll.js, built from this console's own pieces. The rosters, and
+     who is in which course, are on Rosters. */
+  var ENR = null;
+  function enr() {
+    if (ENR) return ENR;
+    ENR = window.OPLO_ENROLL({
+      el: el, esc: esc, API: API, S: S, toast: toast, trim: trim,
+      loading: loading, failed: failed, attempt: attempt,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnActions: cnActions, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, avatarFor: avatarFor,
+      consoleHead: consoleHead, printHead: printHead, printTable: printTable, csvDownload: csvDownload,
+      enter: enter, goBack: goBack, show: show, openAdmin: openAdmin, railCount: railCount
+    });
+    return ENR;
   }
+
+  function tabEnrollment(v) { enr().tab(v); }
+
+  /* The office's own reports — honor roll, deficiency lists, ages by grade,
+     birthdays, labels — are computed in office.js from what the console
+     already reads, and are handed the same pieces. */
+  var OFF = null;
+  function off() {
+    if (OFF) return OFF;
+    OFF = window.OPLO_OFFICE({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed, CX_PASS: CX_PASS,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cxPage: cxPage, cxNone: cxNone, barChart: barChart,
+      cxPrint: cxPrint, printHead: printHead, printTable: printTable, csvDownload: csvDownload,
+      loadSchool: loadSchool, readFamilies: readFamilies, openAdmin: openAdmin
+    });
+    return OFF;
+  }
+  function tabOffice(v) { off().tab(v); }
 
   function tabRosters(v) {
     var P = cxPage(v, "Students", "Rosters", "A course’s class list, or the whole school’s, with each student’s grade as it stands.");
@@ -16685,121 +16923,584 @@
   }
 
   /* ======================================================= Student Support */
+  /* ============================================================ Attendance
+     One register per course and day, taken by whoever is in the room. This is
+     where the school sees all of them: which registers are taken, how many
+     are away, and who is away more than they should be — read from the same
+     records the teachers write, so there is nothing to sync and nothing to
+     reconcile. An administrator can take or correct a register too (a
+     teacher is out; a mistake was made), and the server decides who may.
+     This section is the reading; the page that uses it is in attend.js. */
+  // How a mark counts is the kind of its code (Settings › Codes). These are the five a school starts with,
+  // used until the school's own list has been read.
+  var AT_KIND = { present: "present", late: "tardy", absent: "absent", excused: "excused", cut: "absent" };
+  function isoDay(d) {
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  // The last n weekdays, oldest first, ending today when today is one.
+  function schoolDays(n) {
+    var out = [], d = new Date();
+    while (out.length < n) {
+      var w = d.getDay();
+      if (w !== 0 && w !== 6) out.unshift(isoDay(d));
+      d.setDate(d.getDate() - 1);
+    }
+    return out;
+  }
+  function parseDay(iso) { var p = String(iso).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function dayLabel(iso) { return parseDay(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); }
+
+  var ATT = null;
+  function loadAttendance(force) {
+    if (!force && ATT && Date.now() - ATT.at < 60000) return ATT.promise;
+    var p = loadSchool().then(function (d) {
+      var days = schoolDays(20), from = days[0], to = days[days.length - 1], firstError = null;
+      return Promise.all([
+        eachSlowly(d.courses, function (c) {
+          return API.attendance.list({ courseId: c.id, from: from, to: to }).catch(function (e) { firstError = firstError || e; throw e; });
+        }),
+        API.attendance.codes().catch(function () { return null; })
+      ]).then(function (r) {
+        var by = r[0];
+        if (d.courses.length && d.courses.every(function (c) { return by[c.id] == null; })) throw firstError || new Error("Attendance could not be read.");
+        return buildAttendance(d, by, days, r[1] && r[1].codes);
+      });
+    });
+    ATT = { at: Date.now(), promise: p };
+    p.catch(function () { ATT = null; });
+    return p;
+  }
+
+  function buildAttendance(d, by, days, codes) {
+    var last = days[days.length - 1];
+    var A = { school: d, days: days, last: last, todayIs: last === isoDay(new Date()), list: [], byStudent: {}, byDay: {}, byCourse: {}, labels: {} };
+    var kind = Object.assign({}, AT_KIND);
+    (codes || []).forEach(function (c) { kind[c.key] = c.kind; A.labels[c.key] = c.label; });
+    days.forEach(function (x) { A.byDay[x] = { rows: 0, away: 0, late: 0 }; });
+    d.courses.forEach(function (c) {
+      var rows = by[c.id] || [];
+      var bc = A.byCourse[c.id] = { course: c, readable: by[c.id] != null, last: { n: 0, here: 0, late: 0, away: 0 } };
+      rows.forEach(function (r) {
+        var b = A.byDay[r.day];
+        if (!b) return;
+        var k = kind[r.status] || "absent", away = k === "absent" || k === "excused";
+        if (k === "norecord") return;   // not enrolled that day: it counts as nothing
+        A.list.push({ accountId: r.accountId, courseId: c.id, course: c.title, day: r.day, status: r.status, kind: k, note: r.note });
+        var s = A.byStudent[r.accountId] || (A.byStudent[r.accountId] = { n: 0, away: 0, late: 0, excused: 0, lastAway: null });
+        s.n++; b.rows++;
+        if (away) { s.away++; b.away++; if (!s.lastAway || r.day > s.lastAway) s.lastAway = r.day; }
+        if (k === "excused") s.excused++;
+        if (k === "tardy") { s.late++; b.late++; }
+        if (r.day === last) {
+          bc.last.n++;
+          if (away) bc.last.away++; else bc.last.here++;
+          if (k === "tardy") bc.last.late++;
+        }
+      });
+    });
+    return A;
+  }
+
+  // What the last school day looked like, summed over every register taken.
+  function attendanceToday(A) {
+    var t = { n: 0, away: 0, late: 0, taken: 0, courses: 0 };
+    Object.keys(A.byCourse).forEach(function (k) {
+      var b = A.byCourse[k];
+      if (!b.readable) return;
+      t.courses++;
+      if (b.last.n) { t.taken++; t.n += b.last.n; t.away += b.last.away; t.late += b.last.late; }
+    });
+    t.pct = t.n ? Math.round((t.n - t.away) / t.n * 100) : null;
+    return t;
+  }
+  // Away often enough to matter: a tenth of their classes or more, and at least three.
+  function awayFlag(a) { return !!a && a.n >= 5 && a.away >= 3 && a.away / a.n >= 0.1; }
+
+  /* The Attendance page — a chosen date's registers, a student's marks,
+     bulk edits, the audit log, errors and settings — is in attend.js and is
+     handed the pieces of this console it draws with. What this file keeps is
+     the reading the rest of the console shares (loadAttendance, below). */
+  var ATD = null;
+  function att() {
+    if (ATD) return ATD;
+    ATD = window.OPLO_ATTEND({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxSetMetric: cxSetMetric, cxPage: cxPage, cxSection: cxSection, cxSheet: cxSheet, cxWho: cxWho, cxNone: cxNone,
+      cxPrint: cxPrint, printHead: printHead, printTable: printTable, csvDownload: csvDownload, barChart: barChart,
+      loadSchool: loadSchool, loadAttendance: loadAttendance, awayFlag: awayFlag, readRecords: readRecords, readFamilies: readFamilies,
+      readingNote: readingNote, openAdmin: openAdmin, openStudent360: openStudent360,
+      isAdmin: function () { return consoleMode() === "admin"; }
+    });
+    return ATD;
+  }
+  function tabAttendance(v) { att().tab(v); }
+
+  /* ========================================================== The watchlist
+     One list, built from everything the platform already holds about a
+     student: their grades, the work they owe, how their marks are moving and
+     whether they are in class. No other system has to be asked, which is why
+     it can be trusted to be current. It appears in three places — Overview,
+     Student Support and the search — and means the same thing in each. */
+  function watchlist(d, A) {
+    var slip = {};
+    growthRows(d).forEach(function (r) { if (r.change <= -10) (slip[r.s.id] = slip[r.s.id] || []).push(r.course.title); });
+    return d.students.map(function (s) {
+      var f = [], score = 0;
+      var low = s.courses.filter(function (c) { return c.grade && c.grade.percent < CX_PASS; });
+      var few = function (list, n) { return list.length <= 2 ? list.join(" and ") : n; };
+      if (low.length) {
+        f.push({ k: "low", t: "Below a pass in " + low.map(function (c) { return c.title; }).join(", "),
+                 s: "Below a pass in " + few(low.map(function (c) { return c.title; }), low.length + " courses") });
+        score += 3 + low.length;
+      }
+      if (s.missing >= 2) { f.push({ k: "missing", t: s.missing + " missing", s: s.missing + " missing" }); score += Math.min(4, s.missing / 2); }
+      if (slip[s.id]) { f.push({ k: "slip", t: "Slipping in " + slip[s.id].join(", "), s: "Slipping in " + few(slip[s.id], slip[s.id].length + " courses") }); score += 2; }
+      var a = A && A.byStudent[s.id];
+      if (awayFlag(a)) {
+        var rate = a.away / a.n;
+        f.push({ k: "away", t: "Away " + a.away + " of " + a.n + " classes (" + Math.round(rate * 100) + "%)", s: "Away " + Math.round(rate * 100) + "% of classes" });
+        score += rate >= 0.2 ? 4 : 2.5;
+      }
+      return { s: s, f: f, score: score, away: a && a.n ? Math.round(a.away / a.n * 100) : null };
+    }).filter(function (x) { return x.f.length; })
+      .sort(function (a, b) { return b.score - a.score || (a.s.standing == null ? 999 : a.s.standing) - (b.s.standing == null ? 999 : b.s.standing); });
+  }
+
   function tabSupport(v) {
     cxPage(v, null, "Student Support",
-      "Students who may need someone to step in — below a pass, missing work, or slipping — and the support plans on their records.");
+      "One list of students who may need someone to step in — below a pass, missing work, slipping or often away — and the support plans on their records.");
     var node = loading(v, "students");
-    loadSchool().then(function (d) {
+    Promise.all([loadSchool(), loadAttendance().catch(function () { return null; })]).then(function (r) {
       node.remove();
-      var slip = {};
-      growthRows(d).forEach(function (r) { if (r.change <= -10) (slip[r.s.id] = slip[r.s.id] || []).push(r.course.title); });
-      var flagged = d.students.map(function (s) {
-        var f = [];
-        var low = s.courses.filter(function (c) { return c.grade && c.grade.percent < CX_PASS; });
-        if (low.length) f.push({ k: "low", t: "Below a pass in " + low.map(function (c) { return c.title; }).join(", ") });
-        if (s.missing >= 2) f.push({ k: "missing", t: s.missing + " missing" });
-        if (slip[s.id]) f.push({ k: "slip", t: "Slipping in " + slip[s.id].join(", ") });
-        return { s: s, f: f };
-      }).filter(function (x) { return x.f.length; }).sort(function (a, b) { return b.f.length - a.f.length || (a.s.standing || 0) - (b.s.standing || 0); });
+      var d = r[0], A = r[1], flagged = watchlist(d, A);
       var count = function (k) { return flagged.filter(function (x) { return x.f.some(function (f) { return f.k === k; }); }).length; };
       var metrics = cxMetrics(v, [
         { label: "Need a look", value: flagged.length, bad: true },
         { label: "Below a pass", value: count("low") },
         { label: "Two or more missing", value: count("missing") },
         { label: "Slipping", value: count("slip"), note: "10 points or more" },
+        { label: "Often away", value: A ? count("away") : null, note: A ? "a tenth of classes or more" : "attendance not readable" },
         { label: "Support plans", value: "…", note: "IEP or supports on record" }
       ]);
+      var kinds = [["all", "Everyone"], ["low", "Below a pass"], ["missing", "Missing work"], ["slip", "Slipping"]].concat(A ? [["away", "Often away"]] : []);
+      if (!kinds.some(function (k) { return k[0] === S.watch; })) S.watch = "all";
+      var bar = el("div", "cx-bar");
+      var seg = el("div", "cn-seg");
+      kinds.forEach(function (k) {
+        var b = el("button", "cn-segb" + (S.watch === k[0] ? " on" : ""), k[1]);
+        b.type = "button";
+        b.addEventListener("click", function () {
+          S.watch = k[0];
+          [].forEach.call(seg.children, function (x) { x.classList.toggle("on", x === b); });
+          draw(plans);
+        });
+        seg.appendChild(b);
+      });
+      bar.appendChild(seg);
+      v.appendChild(bar);
       var tick = readingNote(v, "student records");
       var slot = el("div");
       v.appendChild(slot);
+      var plans = null;
       function draw(F) {
         slot.innerHTML = "";
-        if (!flagged.length) { slot.appendChild(cnEmpty("Nobody is flagged.", "Nobody is below a pass, missing two or more pieces of work, or slipping.")); return; }
-        var t = cnTable([{ label: "Student", w: "minmax(160px, 1fr)" }, { label: "Standing", w: "84px", align: "right" }, { label: "Why", w: "minmax(240px, 2.2fr)" },
-                         { label: "Plan", w: "96px" }]);
-        flagged.forEach(function (x) {
-          var r = F && F[x.s.id] && F[x.s.id].records || {};
-          var plan = [r.iep ? "IEP" : "", r.supports ? "Supports" : ""].filter(Boolean).join(", ");
-          t.row([cxWho(x.s), cxPct(x.s.standing, x.s.standing != null && x.s.standing < CX_PASS), esc(x.f.map(function (f) { return f.t; }).join(" · ")),
+        var shown = S.watch === "all" ? flagged : flagged.filter(function (x) { return x.f.some(function (f) { return f.k === S.watch; }); });
+        if (!shown.length) { slot.appendChild(cnEmpty(flagged.length ? "Nobody on this list." : "Nobody is flagged.",
+          flagged.length ? "Try another filter." : "Nobody is below a pass, missing two or more pieces of work, slipping or often away.")); return; }
+        var t = cnTable([{ label: "Student", w: "minmax(160px, 1fr)" }, { label: "Standing", w: "84px", align: "right" }, { label: "Away", w: "70px", align: "right" },
+                         { label: "Why", w: "minmax(240px, 2.2fr)" }, { label: "Plan", w: "96px" }]);
+        shown.forEach(function (x) {
+          var rec = F && F[x.s.id] && F[x.s.id].records || {};
+          var plan = [rec.iep ? "IEP" : "", rec.supports ? "Supports" : ""].filter(Boolean).join(", ");
+          t.row([cxWho(x.s), cxPct(x.s.standing, x.s.standing != null && x.s.standing < CX_PASS), x.away == null ? cxNone() : x.away + "%",
+                 esc(x.f.map(function (f) { return f.s; }).join(" · ")),
                  F ? (plan ? esc(plan) : cxNone("none")) : cxNone("…")], function () { openStudent360(x.s); }, x.s.id);
         });
         slot.appendChild(t);
       }
       draw(null);
       readFamilies(d.students, tick).then(function (F) {
-        var plans = d.students.filter(function (s) { var r = F[s.id] && F[s.id].records || {}; return r.iep || r.supports; }).length;
-        var b = metrics.children[4].querySelector("b");
-        if (b) b.textContent = String(plans);
+        plans = F;
+        var n = d.students.filter(function (s) { var rec = F[s.id] && F[s.id].records || {}; return rec.iep || rec.supports; }).length;
+        var b = metrics.children[5].querySelector("b");
+        if (b) b.textContent = String(n);
         draw(F);
-        var box = el("div", "cx-soon");
-        box.style.marginTop = "40px";
-        box.innerHTML = "<h3>Interventions are not tracked yet</h3><p>Tiers, meetings, who is responsible and whether it worked need their own records. " +
-          "Today a plan can be written in the IEP or Supports section of a student’s record, and it shows here.</p>";
-        v.appendChild(box);
       });
     }, function (e) { failed(node, e, function () { openAdmin(true, "support"); }); });
   }
 
+  /* ========================================================= Marking periods
+     The school's official record. A period moves one way — open, grading,
+     posted, locked — and posting a course freezes what every student in it
+     earned, so a report card printed in June says in September what it said
+     in June. After that a grade moves only when somebody other than the
+     person who asked approves a request that says why. The server enforces
+     all of it; this screen shows where each period is and what is next. */
+  var PERIOD_STEPS = ["open", "grading", "posted", "locked"];
+  var PERIOD_STEP_NAME = { open: "Open", grading: "Grading", posted: "Posted", locked: "Locked" };
+  var PERIOD_NEXT = { open: ["grading", "Start grading"], grading: ["posted", "Close grading"], posted: ["locked", "Lock the period"] };
+  function periodDates(p) {
+    var f = function (x) { return parseDay(x).toLocaleDateString(undefined, { day: "numeric", month: "short" }); };
+    return f(p.startsOn) + " – " + f(p.endsOn);
+  }
+  function stepsHtml(state) {
+    var at = PERIOD_STEPS.indexOf(state);
+    return '<div class="cx-steps" role="img" aria-label="' + esc(PERIOD_STEP_NAME[state]) + '">' + PERIOD_STEPS.map(function (s, i) {
+      return '<span class="' + (i < at ? "done" : i === at ? "now" : "") + '">' + PERIOD_STEP_NAME[s] + "</span>";
+    }).join("") + "</div>";
+  }
+
+  function tabPeriods(v) {
+    var page = cxPage(v, "Academics", "Marking Periods",
+      "A period is open, then grading, then posted, then locked. Posting freezes each student’s grade in a course; after that a grade changes only when someone else approves a request that says why.");
+    page.tools.appendChild(cnAction("New period", function () { openPeriodSheet(redraw); }, true));
+    var slot = el("div");
+    v.appendChild(slot);
+    redraw();
+
+    function redraw() {
+      slot.innerHTML = "";
+      var node = loading(slot, "marking periods");
+      Promise.all([API.periods.list(), API.periods.changes("pending").catch(function () { return { changes: [], canApprove: false }; }), loadSchool()])
+        .then(function (r) { node.remove(); draw(r[0], r[1], r[2]); },
+              function (e) { failed(node, e, redraw); });
+    }
+
+    function draw(periods, queue, d) {
+      slot.innerHTML = "";
+      if (!periods.length) {
+        slot.appendChild(cnEmpty("No marking periods yet.", "Add the quarters or semesters of the year. Teachers post their grades into them, and the report cards come from what was posted.",
+          "New period", function () { openPeriodSheet(redraw); }));
+        return;
+      }
+      periods = periods.slice().sort(function (a, b) { return a.startsOn < b.startsOn ? 1 : -1; });
+      if (!periods.some(function (p) { return p.id === S.periodId; })) {
+        S.periodId = (periods.filter(function (p) { return p.state !== "locked"; })[0] || periods[0]).id;
+      }
+      var cur = periods.filter(function (p) { return p.id === S.periodId; })[0];
+      var grid = el("div", "cx-grid");
+      slot.appendChild(grid);
+
+      var all = cxSection(grid, "cx-s5", "Periods", cxPlural(periods.length, "period"));
+      var list = el("div", "cx-list");
+      periods.forEach(function (p) {
+        var b = el("button", "cx-li plain" + (p.id === cur.id ? " on" : ""));
+        b.type = "button";
+        b.innerHTML = '<span class="t"><b>' + esc(p.name) + "</b><span>" + esc(periodDates(p)) + " · pass at " + p.passMark + "%</span></span>" +
+          '<span class="r"><span class="cx-pill ' + (p.state === "grading" ? "orange" : p.state === "open" ? "blue" : "green") + '">' + PERIOD_STEP_NAME[p.state] + "</span></span>";
+        b.addEventListener("click", function () { S.periodId = p.id; draw(periods, queue, d); });
+        list.appendChild(b);
+      });
+      all.appendChild(list);
+
+      var det = cxSection(grid, "cx-s7", cur.name, periodDates(cur));
+      det.insertAdjacentHTML("beforeend", stepsHtml(cur.state));
+      var next = PERIOD_NEXT[cur.state];
+      var acts = cnActions();
+      if (next) {
+        acts.appendChild(cnAction(next[1], function () {
+          if (next[0] === "locked" && !confirm("Lock " + cur.name + "? A locked period is final: a grade in it can change only by an approved request.")) return;
+          API.periods.move(cur.id, next[0]).then(function () { toast(cur.name + (next[0] === "grading" ? " is now in grading" : " is now " + PERIOD_STEP_NAME[next[0]].toLowerCase())); redraw(); },
+            function (e) { toast(e.message || "That could not be done."); });
+        }, true));
+      }
+      if (cur.state === "posted") {
+        acts.appendChild(cnAction("Back to grading", function () {
+          API.periods.move(cur.id, "grading").then(function () { toast(cur.name + " is back in grading"); redraw(); }, function (e) { toast(e.message || "That could not be done."); });
+        }));
+      }
+      if (acts.children.length) det.appendChild(acts);
+      det.appendChild(el("p", "cx-note", cur.state === "open" ? "Teachers keep marking. Grades can be posted once the period is in grading."
+        : cur.state === "grading" ? "Post each course below, then close grading. Posting again before then refreshes a course."
+        : cur.state === "posted" ? "Grades are frozen. Lock the period when the changes are settled."
+        : "Locked. A grade here changes only through an approved request."));
+
+      var courseBox = el("div", "cx-list");
+      courseBox.style.marginTop = "14px";
+      det.appendChild(courseBox);
+      var courses = d.courses.filter(function (c) { return c.students; });
+      var gather = el("p", "cx-note", "Reading each course…");
+      courseBox.appendChild(gather);
+      eachSlowly(courses, function (c) { return API.periods.posted(cur.id, { courseId: c.id }); }).then(function (by) {
+        courseBox.innerHTML = "";
+        if (!courses.length) { courseBox.appendChild(el("p", "cx-note", "No course has students yet.")); return; }
+        courses.forEach(function (c) {
+          var rows = (by[c.id] || []).filter(function (x) { return x.percent != null; });
+          var posted = by[c.id] && by[c.id].length;
+          var avg = rows.length ? Math.round(cxMean(rows.map(function (x) { return x.percent; }))) : null;
+          var below = rows.filter(function (x) { return x.passing === false; }).length;
+          var row = el("div", "cx-li plain");
+          row.innerHTML = '<span class="t"><b>' + esc(c.title) + "</b><span>" +
+            esc(c.teachers.map(function (x) { return x.name; }).join(", ") || "No teacher assigned") + "</span></span>" +
+            '<span class="r">' + (posted
+              ? "<b>" + (avg == null ? "—" : avg + "%") + '</b><span class="cx-pill ' + (below ? "red" : "green") + '">' + (below ? below + " below a pass" : "posted") + "</span>"
+              : '<span class="cx-pill ' + (cur.state === "grading" ? "orange" : "green") + '">Not posted</span>') + "</span>";
+          if (cur.state === "grading") {
+            var post = el("button", "cn-btn small", posted ? "Post again" : "Post grades");
+            post.type = "button";
+            post.addEventListener("click", function () {
+              post.disabled = true;
+              API.periods.post(cur.id, c.id).then(function (r) {
+                toast(c.title + " posted — " + cxPlural(r.posted, "grade") + (r.ungraded ? ", " + r.ungraded + " with nothing to grade" : ""));
+                redraw();
+              }, function (e) { post.disabled = false; toast(e.message || "That could not be posted."); });
+            });
+            row.querySelector(".r").appendChild(post);
+          }
+          courseBox.appendChild(row);
+        });
+      });
+
+      var q = cxSection(grid, "cx-s12", "Grade changes", queue.changes.length ? cxPlural(queue.changes.length, "request") + " waiting" : "nothing waiting");
+      if (!queue.changes.length) q.appendChild(el("p", "cx-note", queue.canApprove
+        ? "No one has asked to change a posted grade."
+        : "Only a principal or registrar sees the whole queue."));
+      var ql = el("div", "cx-list");
+      queue.changes.forEach(function (c) {
+        var row = el("div", "cx-li plain");
+        row.innerHTML = '<span class="t"><b>' + esc(c.studentName || "A student") + " · " + esc(c.courseTitle || "") + "</b><span>" +
+          esc((c.fromPercent == null ? "—" : c.fromPercent + "%") + " → " + c.toPercent + "% · " + (c.requestedByName || "Someone") + ": " + (c.reason || "")) + "</span></span>" +
+          '<span class="r"></span>';
+        if (queue.canApprove) {
+          var r = row.querySelector(".r");
+          var yes = el("button", "cn-btn small strong", "Approve");
+          var no = el("button", "cn-btn small", "Deny");
+          yes.type = no.type = "button";
+          function decide(ok, note) {
+            yes.disabled = no.disabled = true;
+            API.periods.decide(c.id, ok, note).then(function () { toast(ok ? "Grade changed" : "Request denied"); redraw(); },
+              function (e) { yes.disabled = no.disabled = false; toast(e.message || "That could not be decided."); });
+          }
+          yes.addEventListener("click", function () { decide(true); });
+          no.addEventListener("click", function () { var n = prompt("Why is this denied?"); if (n != null) decide(false, n || null); });
+          r.appendChild(no); r.appendChild(yes);
+        }
+        ql.appendChild(row);
+      });
+      q.appendChild(ql);
+      [].forEach.call(grid.children, function (c, k) { c.style.setProperty("--i", k); });
+    }
+  }
+
+  function openPeriodSheet(done) {
+    var box = el("div", "as-sheet");
+    box.appendChild(el("h2", "as-h", "New marking period"));
+    var form = el("div", "admin-form as-form");
+    box.appendChild(form);
+    function field(label, input) {
+      var f = el("label", "admin-field");
+      f.appendChild(el("span", null, esc(label)));
+      f.appendChild(input);
+      form.appendChild(f);
+      return input;
+    }
+    var name = field("Name", el("input")); name.placeholder = "Quarter 2"; name.type = "text";
+    var kind = field("Kind", el("select"));
+    [["quarter", "Quarter"], ["semester", "Semester"], ["year", "Year"]].forEach(function (k) { var o = el("option"); o.value = k[0]; o.textContent = k[1]; kind.appendChild(o); });
+    var from = field("Starts", el("input")); from.type = "date";
+    var to = field("Ends", el("input")); to.type = "date";
+    var pass = field("Pass mark (%)", el("input")); pass.type = "number"; pass.value = "65"; pass.min = "0"; pass.max = "100";
+    var err = el("p", "cx-note");
+    form.appendChild(err);
+    var acts = cnActions();
+    var sheet;
+    var go = cnAction("Add period", function () {
+      err.textContent = "";
+      if (!name.value.trim() || !from.value || !to.value) { err.textContent = "Give it a name and both dates."; return; }
+      go.disabled = true;
+      API.periods.create({ name: name.value.trim(), kind: kind.value, startsOn: from.value, endsOn: to.value, passMark: Number(pass.value) }).then(function () {
+        toast("Period added");
+        sheet.close();
+        done();
+      }, function (e) { go.disabled = false; err.textContent = e.message || "That period could not be added."; });
+    }, true);
+    acts.appendChild(go);
+    box.appendChild(acts);
+    sheet = cxSheet(box);
+    name.focus();
+  }
+
+  /* A student's own attendance, from the same registers: the run of it, then
+     each course, then the days they were not in the room. */
+  function s360Attendance(pane, D, s) {
+    var node = loading(pane, "attendance");
+    loadAttendance().then(function (A) {
+      node.remove();
+      var rows = A.list.filter(function (r) { return r.accountId === s.id; });
+      var a = A.byStudent[s.id];
+      var open = el("div", "cx-bar");
+      open.appendChild(cnAction("Open the full record", function () { att().student(s); }));
+      pane.appendChild(open);
+      if (!rows.length) { pane.appendChild(cnEmpty("No attendance recorded.", "No register has been taken for " + (s.firstName || s.name) + " in the last " + A.days.length + " school days.")); return; }
+      cxMetrics(pane, [
+        { label: "Classes", value: a.n, note: "last " + A.days.length + " school days" },
+        { label: "In class", value: Math.round((a.n - a.away) / a.n * 100), unit: "%", line: Math.round((a.n - a.away) / a.n * 100) },
+        { label: "Missed", value: a.away, bad: awayFlag(a), note: a.excused ? a.excused + " excused" : "" },
+        { label: "Late", value: a.late }
+      ]);
+      var grid = el("div", "cx-grid");
+      pane.appendChild(grid);
+      var byCourse = {};
+      rows.forEach(function (r) {
+        var c = byCourse[r.courseId] || (byCourse[r.courseId] = { title: r.course, n: 0, away: 0, late: 0 });
+        c.n++; if (r.kind === "absent" || r.kind === "excused") c.away++; if (r.kind === "tardy") c.late++;
+      });
+      var cc = cxSection(grid, "cx-s6", "By course", "");
+      var cl = el("div", "cx-ilist");
+      Object.keys(byCourse).map(function (k) { return byCourse[k]; }).sort(function (p, q) { return q.away - p.away; }).forEach(function (c) {
+        var pct = Math.round((c.n - c.away) / c.n * 100), r = el("div", "cx-irow");
+        r.innerHTML = '<span class="t"><b>' + esc(c.title) + "</b><span>" + c.away + " missed · " + c.late + " late</span></span>" +
+          '<span class="bar"><i style="width:' + pct + "%;background:" + gradeTone(pct) + '"></i></span><span class="g"><b>' + pct + "%</b><span>in class</span></span>";
+        cl.appendChild(r);
+      });
+      cc.appendChild(cl);
+      var rc = cxSection(grid, "cx-s6", "Days not in class", "latest first");
+      var feed = el("div", "cx-feed");
+      rows.filter(function (r) { return r.kind !== "present"; }).sort(function (p, q) { return p.day < q.day ? 1 : -1; }).slice(0, 10).forEach(function (r) {
+        var e = el("div", "cx-ev");
+        e.innerHTML = '<span class="t"><b>' + esc(dayLabel(r.day)) + "</b><span> · " + esc(r.course) + " · " + esc(A.labels[r.status] || ({ absent: "Absent", late: "Late", excused: "Excused", cut: "Cut" })[r.status] || r.status) + "</span></span>";
+        feed.appendChild(e);
+      });
+      if (!feed.children.length) feed.appendChild(el("p", "cx-note", "Present in every class."));
+      rc.appendChild(feed);
+    }, function (e) { failed(node, e, function () { openStudent360(s, "attendance"); }); });
+  }
+
   /* ============================================ Places not set up yet */
-  function tabScheduling(v) {
-    soonPage(v, null, "Scheduling", "Periods, sections, rooms and the master schedule.",
-      ["The bell schedule and its periods", "Sections of each course, with a room and a teacher", "Each student’s timetable", "Conflicts, before they happen"],
-      "Courses exist, but they are not placed in periods or rooms yet, so there is no timetable to build from.",
-      [["Enrollment", function () { openAdmin(false, "enrollment"); }], ["Curriculum", function () { openAdmin(false, "curriculum"); }]]);
+  /* The schedule — bell schedules, the school's days, courses, sections and
+     who is in them — is in schedule.js, handed the pieces of this console it
+     draws with. "Scheduling" is the older name of its sections page. */
+  var SCH = null;
+  function sch() {
+    if (SCH) return SCH;
+    SCH = window.OPLO_SCHEDULE({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxWho: cxWho, cxNone: cxNone, openAdmin: openAdmin
+    });
+    return SCH;
   }
-  function tabAttendance(v) {
-    soonPage(v, null, "Attendance", "Taking attendance, and seeing it.",
-      ["Attendance taken by period or by day", "Absences, lateness and excuses, with who recorded them", "Chronic absence, early", "A family told the same day"],
-      "Attendance needs the timetable first — a period to be present in — which Scheduling does not have yet. A summary can already be written in the Attendance section of a student’s record.",
-      [["Records", function () { openAdmin(false, "records"); }]]);
+  function tabScheduling(v) { sch().sections(v); }
+  function tabScDays(v) { sch().days(v); }
+  function tabScBell(v) { sch().bell(v); }
+  function tabScCourses(v) { sch().courses(v); }
+  function tabScSections(v) { sch().sections(v); }
+  function tabScAddDrop(v) { sch().addDrop(v); }
+  function tabScPlans(v) { sch().plans(v); }
+
+  /* ======================================== What every console shares
+     The inbox, the school's smaller records, data in and out. platform.js is
+     handed the pieces of the console it draws with; the pages below are its
+     records drawn for a kind. */
+  var PLT = null;
+  function plat() {
+    if (PLT) return PLT;
+    PLT = window.OPLO_PLATFORM({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSection: cxSection, cxSheet: cxSheet,
+      railCount: railCount,
+      setUnread: function (n) { railCount("inbox", n); railCount("messages", n); },
+      openLink: openLink
+    });
+    return PLT;
   }
-  function tabBehavior(v) {
-    soonPage(v, null, "Behavior", "Incidents, recognition and follow-up.",
-      ["Incidents, with what happened, where and who was involved", "Recognition, not only referrals", "Consequences and follow-up, and who owns each", "Patterns over time"],
-      "The platform keeps no behaviour records yet. It will need its own permissions — who may write one, and what a family sees — before it keeps any.",
-      [["Student Support", function () { openAdmin(false, "support"); }]]);
+  /* Where a notice's link goes, in whichever console this person is in. */
+  var LINK_TAB = { referral: "referrals", detention: "detention", senplan: "senplans", leave: "leave", event: "events", form: "forms",
+    invoice: "invoices", certification: "certs" };
+  function openLink(link) {
+    var parts = String(link || "").split("/");
+    var first = parts[0];
+    if (consoleMode() === "student") {
+      var map = { event: "events", form: "forms", invoice: "fees", detention: "attendance", senplan: "profile" };
+      openStudentConsole(false, map[first] || first, parts[1] || null);
+      return;
+    }
+    openAdmin(false, LINK_TAB[first] || first);
   }
-  function tabInventory(v) {
-    soonPage(v, "School Operations", "Inventory", "The school’s things: devices, textbooks, equipment.",
-      ["Devices and textbooks, with who has each", "Checking out and returning", "What is lost, damaged or due back"],
-      "Not recorded in the platform yet.", null);
+  /* A page of records for a kind: one line each, so the tables stay readable. */
+  var REC = {
+    referrals: { kind: "referral", eyebrow: "Student Support", title: "Referrals", sub: "A concern raised about a student, who it went to, and what was done." },
+    detention: { kind: "detention", eyebrow: "Student Support", title: "Detention", sub: "Minutes assigned and served, by student.",
+      summary: function (rows) {
+        var by = {};
+        rows.forEach(function (r) {
+          if (r.status === "excused") return;
+          var k = r.subjectName || "";
+          by[k] = (by[k] || 0) + (Number(r.data.minutes || 0) - Number(r.status === "served" ? r.data.minutes || 0 : r.data.servedMinutes || 0));
+        });
+        var owed = Object.keys(by).filter(function (k) { return by[k] > 0; });
+        return owed.length ? owed.length + " students still owe minutes, " + owed.reduce(function (a, k) { return a + by[k]; }, 0) + " in all." : "";
+      } },
+    senplans: { kind: "senplan", eyebrow: "Student Support", title: "Support plans", sub: "IEPs, 504 plans and other plans: goals, services and the date of the next review." },
+    accommodations: { kind: "accommodation", eyebrow: "Student Support", title: "Accommodations", sub: "What a student is given on tests and in class." },
+    events: { kind: "event", eyebrow: "Communicate", title: "Events", sub: "What is happening in the school, and who it is for." },
+    forms: { kind: "form", eyebrow: "Communicate", title: "Forms", sub: "Forms families and students read and sign." },
+    leave: { kind: "leave", eyebrow: "Staff", title: "Leave", sub: "Requests for time away, and the office’s answer.", newLabel: "Ask for leave" },
+    cover: { kind: "substitute", eyebrow: "Staff", title: "Cover", sub: "A class that needs someone, who is covering it, and the plan." },
+    certs: { kind: "certification", eyebrow: "Staff", title: "Certifications", sub: "What each member of staff holds, and when it runs out. Reminders go out thirty days before." },
+    menus: { kind: "menu", eyebrow: "School Operations", title: "Menus", sub: "What is served, and the allergens." },
+    eligibility: { kind: "eligibility", eyebrow: "School Operations", title: "Meal eligibility", sub: "Kept by the office; no one else reads it." },
+    lockers: { kind: "locker", eyebrow: "School Operations", title: "Lockers", sub: "Who has which locker." },
+    checkouts: { kind: "checkout", eyebrow: "School Operations", title: "Equipment", sub: "What is out, with whom, and when it is due back." },
+    curmap: { kind: "curriculum", eyebrow: "Curriculum", title: "Curriculum map", sub: "Units by course and week, with the standards they meet.", course: true },
+    fees: { kind: "fee", eyebrow: "Finance", title: "Fees", sub: "What the school charges, and how often." },
+    invoices: { kind: "invoice", eyebrow: "Finance", title: "Invoices", sub: "What each family owes.",
+      summary: function (rows) {
+        var open = rows.filter(function (r) { return r.status === "issued"; });
+        return open.length ? open.length + " issued and unpaid, " + open.reduce(function (a, r) { return a + Number(r.data.total || 0); }, 0).toFixed(2) + " in all." : "";
+      } },
+    payments: { kind: "payment", eyebrow: "Finance", title: "Payments", sub: "Payments received. Card payments are recorded here; taking a card needs a payment service the school has not connected.", newLabel: "Record a payment" }
+  };
+  function platTab(k) {
+    if (REC[k]) return function (v) { plat().records(v, REC[k]); };
+    var fn = { inbox: "inbox", outbox: "outbox", imports: "exchange", state: "exchange", builder: "builder", district: "district", sis: "webhooks" }[k];
+    return fn ? function (v) { plat()[fn](v); } : null;
   }
-  function tabLockers(v) {
-    soonPage(v, "School Operations", "Lockers", "Who has which locker.",
-      ["Lockers by building and floor", "Assigning a student, and their combination kept private", "Clearing them all at the end of the year"],
-      "Not recorded in the platform yet.", null);
+  /* Facilities: work orders, rooms, assets, upkeep, bookings, vendors, papers
+     and reports. Three files, one kit (facilities*.js, qr.js). */
+  var FX = null;
+  function fx() {
+    if (FX) return FX;
+    FX = window.OPLO_FX.make({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnActions: cnActions, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, printHead: printHead, printTable: printTable,
+      csvDownload: csvDownload, openAdmin: openAdmin
+    });
+    return FX;
   }
-  function tabCafeteria(v) {
-    soonPage(v, "School Operations", "Cafeteria", "Meals, menus and eligibility.",
-      ["Menus", "Meal eligibility, kept private", "Balances and a family’s top-ups"],
-      "Not recorded in the platform yet. Meal eligibility is sensitive and would need its own access rules first.", null);
-  }
-  function tabSis(v) {
-    soonPage(v, "Data Center", "SIS Sync", "Keeping OEdu in step with another student information system.",
-      ["Students, staff, courses and sections synced from the system of record", "Clever and OneRoster", "A log of each sync: what changed, what failed"],
-      "Nothing is connected. OEdu is the system of record for everything on this console today.",
-      [["Exports", function () { openAdmin(false, "data"); }]]);
-  }
-  function tabImports(v) {
-    soonPage(v, "Data Center", "Imports", "Bringing people, rosters and records in from a file.",
-      ["People and their roles, from a spreadsheet", "Rosters: who is in which course", "Checked before anything is written, with every row that would fail named"],
-      "Bulk import is not built yet — it waits on sign-in invitations, so nobody’s password is ever typed into a spreadsheet. " +
-      "What can be brought in today: people one at a time, and a student’s previous-school transcript from their diploma record.",
-      [["Add a person", function () { openPersonEditor(null); }], ["Transcripts", function () { openAdmin(false, "transcripts"); }]]);
+  function tabFxOrders(v) { fx().orders(v); }
+  function tabFxSpaces(v) { fx().spaces(v); }
+  function tabFxAssets(v) { fx().assets(v); }
+  function tabFxUpkeep(v) { fx().upkeep(v); }
+  function tabFxBookings(v) { fx().bookings(v); }
+  function tabFxVendors(v) { fx().vendors(v); }
+  function tabFxDocuments(v) { fx().documents(v); }
+  function tabFxReports(v) { fx().reports(v); }
+  function tabFxStaff(v) { fx().staff(v); }
+  function tabBehavior(v) { care().behavior(v); }
+  function tabHealth(v) { care().health(v); }
+
+  /* Behavior and health are the office's most sensitive records and have
+     their own rules; they live in care.js and are handed the same pieces. */
+  var CARE = null;
+  function care() {
+    if (CARE) return CARE;
+    CARE = window.OPLO_CARE({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnActions: cnActions, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, csvDownload: csvDownload, openAdmin: openAdmin
+    });
+    return CARE;
   }
   function tabSftp(v) {
     soonPage(v, "Data Center", "SFTP", "Files sent to and from other systems on a schedule.",
       ["Nightly exports to a district or vendor server", "Incoming files picked up and imported", "Keys, not passwords, and a log of every transfer"],
-      "Not connected. Every export today is a file downloaded from Exports.",
-      [["Exports", function () { openAdmin(false, "data"); }]]);
+      "Not available: this platform does not hold a file-transfer session. Send records to a webhook (Integrations) or download an export.",
+      [["Integrations", function () { openAdmin(false, "sis"); }], ["Exports", function () { openAdmin(false, "data"); }]]);
   }
-  function tabStateReporting(v) {
-    soonPage(v, null, "State Reporting", "The reports a school owes its state.",
-      ["Enrollment, attendance and assessment extracts in the state’s format — for New York, SIRS", "Checked for errors before they are sent", "What was sent, when, and by whom"],
-      "Not set up. State extracts need attendance and scheduling, which are not built yet, and each state’s own format.",
-      [["Exports", function () { openAdmin(false, "data"); }]]);
-  }
-
   /* The API everything on this console is read through, and whether it is up. */
   function tabApi(v) {
     consoleHead(v, "Data Center", "API", "Everything on this console is read through the Oplo API, with your session and your permissions — nothing else.");
@@ -18841,7 +19542,9 @@
 
   function setLook(mode) {
     var html = document.documentElement;
-    var want = mode === "student" ? "obsidian" : null;
+    // The dark look is the learning app's, and the learning app is Kern. The
+    // student console takes the console's own light, dark or automatic.
+    var want = mode === "student" && KERN ? "obsidian" : null;
     if (html.getAttribute("data-look") !== want) {
       if (want) html.setAttribute("data-look", want);
       else html.removeAttribute("data-look");
@@ -18873,7 +19576,7 @@
     var H = window.OPLO_HOME;
     var dest = H.destination(KERN ? [] : who.roles, location, new URLSearchParams(location.search).get("next"));
     if (!dest.stay) {
-      if (dest.mode === "parent") { location.replace(dest.href); return; }
+      if (dest.mode === "parent" || dest.mode === "jobs") { location.replace(dest.href); return; }
       history.replaceState(null, "", dest.href);
     }
     setLook(dest.mode);
@@ -18933,13 +19636,17 @@
        the subject rail, the tutor, the experience counter. Not hidden behind
        a class that some future screen forgets to set — never drawn. */
     var staff = who.role === "admin" || who.role === "teacher";
+    // A student outside Kern is not learning here: they are reading the school's
+    // record of themselves, in a console of their own.
+    var sis = !KERN && who.role === "student";
     document.body.classList.toggle("is-admin", staff);
     document.body.classList.toggle("is-staff", staff);
+    document.body.classList.toggle("is-sis", sis);
     /* The six-section bar (index.html) has no Grades, Exams or Console tab.
        Each is set only if it is there: a tab missing from the bar must not
        stop the app from drawing, and it did — every sign-in and every reload
        died here and left the bar over an empty page. */
-    var navAdmin = $("#navAdmin"), navGrades = $("#navGrades"), navExams = $("#navExams");
+    var navAdmin = $("#navAdmin"), navGrades = $("#navGrades");
     if (navAdmin) {
       navAdmin.hidden = !allowedTabs().length;
       navAdmin.textContent = who.role === "admin" ? "Console" : "My students";
@@ -18952,6 +19659,9 @@
 
     if (staff) {
       openAdmin(true, S.tab || "today");
+    } else if (sis) {
+      var at = studentAt(appRest());
+      openStudentConsole(false, at.tab, at.arg, true);
     } else {
       drawSubjectNav();
       /* The address is where they asked to be. A course that only the
@@ -18983,7 +19693,7 @@
       }, function () { return false; }),
       loadStudySets()
     ]).then(function (out) {
-      if (staff) return;
+      if (staff || sis) return;
       var pending = S.pendingRoute;
       S.pendingRoute = null;
       if (pending && S.here && S.here.key === "my" && route(pending)) return;
@@ -19047,7 +19757,7 @@
     TRAIL = []; POS = -1;            // the next person's history starts from nothing
     S.course = null; S.unit = null; S.setId = null; S.set = null;
     document.body.classList.remove("is-admin");
-    ["#navAdmin", "#navClasses", "#navGrades", "#navExams"].forEach(function (id) {
+    ["#navAdmin", "#navGrades"].forEach(function (id) {
       var tab = $(id);
       if (tab) tab.hidden = true;
     });
@@ -19411,12 +20121,14 @@
         // address that names nothing goes home, and says so.
         S.hist = []; S.here = null;
         if (document.body.classList.contains("is-staff")) openAdmin(true, S.tab);
+        else if (document.body.classList.contains("is-sis")) { var sa = studentAt(appRest()); openStudentConsole(true, sa.tab, sa.arg); }
         else if (!route()) { home(); found = false; }
       }
     } finally { RESTORING = false; }
     if (!entry) {
       TRAIL = []; POS = -1;
-      mark(false, document.body.classList.contains("is-staff") ? undefined : found ? appRest() : "");
+      var sisHere = document.body.classList.contains("is-sis");
+      mark(false, document.body.classList.contains("is-staff") ? undefined : sisHere ? studentPath(S.tab, S.sarg) : found ? appRest() : "");
     }
   });
   $("#user").addEventListener("click", function () { openAccount(); });

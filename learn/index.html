@@ -52,6 +52,7 @@ window.OPLO_KERN = /^kern\./.test(location.hostname) ||
 if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
 <title>OEdu</title>
 <meta name="description" content="OEdu — courses you work through by solving, and study sets you drill until they stick.">
 <!-- Browser chrome. #ffffff is what every address has always had: staff,
@@ -66,7 +67,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=2d19bf6e">
+<link rel="stylesheet" href="app.css?v=6b88fcab">
 <link rel="stylesheet" href="oplo-chrome.css?v=98b29b8f">
 <link rel="stylesheet" href="landing.css?v=4ecdb339">
 <link rel="stylesheet" href="exam.css?v=3869276c">
@@ -76,7 +77,12 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link rel="stylesheet" href="lab/lab.css?v=9070bd0b">
 <link rel="stylesheet" href="obsidian.css?v=98c418da">
 <link rel="stylesheet" href="kern.css?v=c4951e56">
-<link rel="stylesheet" href="console.css?v=69ce44a2">
+<link rel="stylesheet" href="console.css?v=5fca75f7">
+<link rel="stylesheet" href="schedule.css?v=e9fb5211">
+<link rel="stylesheet" href="attend.css?v=ae8cbd24">
+<link rel="stylesheet" href="student.css?v=23614af0">
+<link rel="stylesheet" href="enroll.css?v=98de913b">
+<link rel="stylesheet" href="facilities.css?v=621cd649">
 </head>
 <body>
 
@@ -498,10 +504,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 
     <nav class="lx-top" id="topNav" aria-label="Sections">
       <button type="button" data-view="my" aria-current="true">Home</button>
-      <button type="button" data-view="classes" id="navClasses" hidden>School</button>
       <button type="button" data-view="grades" id="navGrades" hidden>Grades</button>
-      <button type="button" data-view="exams" id="navExams" hidden>Exams</button>
-      <button type="button" data-view="own" id="navOwn" hidden>Self-learning</button>
       <button type="button" data-view="explore">Explore</button>
       <button type="button" data-view="progress">Progress</button>
     </nav>
@@ -632,7 +635,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <div class="lx-badge" id="badgePop" role="status" aria-live="polite"></div>
 
 <script src="https://auth.oplocloud.com/connect.js"></script>
-<script src="api.js?v=18958dc5"></script>
+<script src="api.js?v=240e9db7"></script>
 <script src="data.js?v=492617f4"></script>
 <script src="school.js?v=89fed491"></script>
 <script src="store.js?v=25680966"></script>
@@ -659,7 +662,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="collab.js?v=45bea90d"></script>
 <script src="tutor.js?v=e36b13da"></script>
 <script src="kmap.js?v=0abacad4"></script>
-<script src="home.js?v=f44db797"></script>
+<script src="home.js?v=f5cad19a"></script>
 <script src="progress.js?v=1eb27a8b"></script>
 <script src="oplo-menu.js?v=1f5af215"></script>
 <script src="oplo-search.js?v=b2f48c6b"></script>
@@ -671,6 +674,18 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="exam.js?v=65b52660"></script>
 <script src="gradebook.js?v=014a81eb"></script>
 <script src="teach.js?v=f52e3ca3"></script>
-<script src="app.js?v=b365cd82"></script>
+<script src="enroll.js?v=e0e75fd6"></script>
+<script src="office.js?v=f12f732b"></script>
+<script src="schedule.js?v=c5fb4308"></script>
+<script src="attend.js?v=95cf16a1"></script>
+<script src="care.js?v=0aa08f08"></script>
+<script src="qr.js?v=23c1ea9b"></script>
+<script src="facilities.js?v=c36b5e2a"></script>
+<script src="facilities-places.js?v=a64a1a66"></script>
+<script src="facilities-upkeep.js?v=bea40a38"></script>
+<script src="platform.js?v=3b54503d"></script>
+<script src="student.js?v=1f27f6ca"></script>
+<script src="student-record.js?v=1a88bf0c"></script>
+<script src="app.js?v=68e0b3e3"></script>
 </body>
 </html>

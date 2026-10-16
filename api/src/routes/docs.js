@@ -17,6 +17,7 @@
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must, can } from "../core/guard.js";
+import { notify } from "../services/notify.js";
 
 const KINDS = ["seating", "plan", "bank", "standards", "override", "announce", "note"];
 const FOR_STUDENTS = ["announce"];
@@ -78,6 +79,14 @@ export async function put(ctx, { courseId, kind, docId }) {
   }
 
   const row = await ctx.repo.putCourseDoc({ courseId, kind, docId, body, actorId: actor.id });
+  // An announcement reaches the course's inboxes, once, however many times it is saved.
+  if (kind === "announce" && body.title) {
+    ctx.waitUntil((async () => {
+      const to = (await ctx.repo.listCourseMembers(courseId, "student")).map((m) => m.id);
+      await notify(ctx.repo, { orgId: course.org_id, to, kind: "announcement", from: actor.id, title: String(body.title).slice(0, 160),
+        body: body.text ? String(body.text).slice(0, 2000) : null, link: "courses", dedupe: `ann:${courseId}:${docId}` });
+    })());
+  }
   return json({ doc: shape(row) });
 }
 

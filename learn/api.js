@@ -87,8 +87,15 @@ window.OPLO_API = (function () {
         if (text) { try { data = JSON.parse(text); } catch (e) { data = null; } }
         if (!res.ok) {
           var err = (data && data.error) || {};
-          throw ApiError(res.status, err.code || "http_" + res.status,
-                         err.message || "The server refused that.", err.field);
+          var fault = ApiError(res.status, err.code || "http_" + res.status,
+                               err.message || "The server refused that.", err.field);
+          /* Whatever else the server said about the refusal — the blockers of
+             an enrollment step, the dates of a booking that cannot be made,
+             the checklist lines still open — rides along on the error. */
+          Object.keys(err).forEach(function (k) {
+            if (k !== "code" && k !== "message" && k !== "field" && !(k in fault)) fault[k] = err[k];
+          });
+          throw fault;
         }
         return data;
       });
@@ -114,6 +121,22 @@ window.OPLO_API = (function () {
       out.push(encodeURIComponent(k) + "=" + encodeURIComponent(params[k]));
     });
     return out.length ? "?" + out.join("&") : "";
+  }
+
+  /* Today, as this person's own calendar says it — what an overdue date is
+     measured against. The server's clock is in UTC, which is yesterday for a
+     school in New York until evening and tomorrow for one in Pune by lunch. */
+  function localDay() {
+    var d = new Date();
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+
+  /* The school's day and clock as this person's own: "2026-10-12T09:30". A
+     booking is judged against it — hours, notice — and the server's clock is
+     in UTC. */
+  function localNow() {
+    var d = new Date();
+    return localDay() + "T" + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
   }
 
   /* The browser's offset from UTC, sent with anything that has to know what
@@ -439,6 +462,287 @@ window.OPLO_API = (function () {
       clearRecord: function (studentId, section) {
         return del("/students/" + studentId + "/records/" + section);
       }
+    },
+
+    /* ------------------------------------------- Behavior and health
+       Conduct entries and health records. Who may read or write either is the
+       server's decision; a refusal comes back as a 403 with the rule named. */
+    conduct: {
+      list: function (o) { o = o || {}; return get("/conduct" + q(o)); },
+      forStudent: function (id) { return get("/conduct" + q({ studentId: id })); },
+      summary: function (today) { return get("/conduct/summary" + q({ today: today })); },
+      get: function (id) { return get("/conduct/" + id); },
+      create: function (data) { return post("/conduct", data); },
+      update: function (id, data) { return patch("/conduct/" + id, data); },
+      act: function (id, action, data) { return post("/conduct/" + id + "/actions/" + action, data || {}); }
+    },
+    // Not `health`: that name is the connectivity check above, and the second
+    // definition of a key in an object literal silently replaces the first.
+    healthRecords: {
+      list: function (o) { return get("/health-records" + q(o || {})); },
+      forStudent: function (id) { return get("/health-records" + q({ studentId: id })); },
+      summary: function (today) { return get("/health-records/summary" + q({ today: today })); },
+      flags: function (o) { return get("/health-records/flags" + q(o)).then(function (r) { return r.flags; }); },
+      create: function (data) { return post("/health-records", data); },
+      update: function (id, data) { return patch("/health-records/" + id, data); },
+      history: function (id) { return get("/health-records/" + id + "/history").then(function (r) { return r.events; }); }
+    },
+
+    /* ------------------------------------------------------- Facilities
+       Rooms, what is in them, what has to be done, who holds a room when.
+       Every call carries the school's own day, because "overdue" and "too
+       late to book" are questions about this person's calendar, not the
+       server's. A refusal comes back as a 409 with `unavailable` or
+       `unfinished` saying exactly which. */
+    facilities: {
+      summary: function () { return get("/facilities/summary" + q({ today: localDay() })); },
+      team: function () { return get("/facilities/team").then(function (r) { return r.team; }); },
+      templates: function () { return get("/facilities/templates").then(function (r) { return r.templates; }); },
+      reports: function (from, to) { return get("/facilities/reports" + q({ from: from, to: to, today: localDay() })).then(function (r) { return r.report; }); },
+
+      spaces: function () { return get("/facilities/spaces").then(function (r) { return r.spaces; }); },
+      space: function (id) { return get("/facilities/spaces/" + id + q({ today: localDay() })); },
+      addSpaces: function (data) { return post("/facilities/spaces", data).then(function (r) { return r.spaces; }); },
+      updateSpace: function (id, data) { return patch("/facilities/spaces/" + id, data).then(function (r) { return r.space; }); },
+      spaceRules: function (data) { return put("/facilities/spaces/rules", data); },
+      count: function (id, codes, apply) {
+        return post("/facilities/spaces/" + id + "/count", { codes: codes, apply: !!apply, today: localDay() });
+      },
+
+      assets: function (o) { return get("/facilities/assets" + q(Object.assign({ today: localDay() }, o || {}))); },
+      asset: function (id) { return get("/facilities/assets/" + id + q({ today: localDay() })); },
+      addAsset: function (data) { return post("/facilities/assets", data).then(function (r) { return r.asset; }); },
+      updateAsset: function (id, data) { return patch("/facilities/assets/" + id, data).then(function (r) { return r.asset; }); },
+
+      orders: function (o) { return get("/facilities/orders" + q(Object.assign({ today: localDay() }, o || {}))); },
+      openIn: function (spaceId) { return get("/facilities/orders" + q({ brief: 1, spaceId: spaceId })).then(function (r) { return r.open; }); },
+      order: function (id) { return get("/facilities/orders/" + id + q({ today: localDay() })); },
+      addOrder: function (data) { data.today = localDay(); return post("/facilities/orders", data); },
+      updateOrder: function (id, data) { data.today = localDay(); return patch("/facilities/orders/" + id, data).then(function (r) { return r.order; }); },
+      act: function (id, action, data) {
+        data = data || {};
+        data.today = localDay();
+        return post("/facilities/orders/" + id + "/actions/" + action, data).then(function (r) { return r.order; });
+      },
+      addPhoto: function (id, file) { return post("/facilities/orders/" + id + "/files", file, { timeout: 30000 }); },
+      photo: function (id, fileId) { return get("/facilities/orders/" + id + "/files/" + fileId, { timeout: 30000 }).then(function (r) { return r.file; }); },
+
+      schedules: function () { return get("/facilities/schedules" + q({ today: localDay() })); },
+      schedule: function (id) { return get("/facilities/schedules/" + id + q({ today: localDay() })); },
+      addSchedule: function (data) { data.today = localDay(); return post("/facilities/schedules", data).then(function (r) { return r.schedule; }); },
+      updateSchedule: function (id, data) { data.today = localDay(); return patch("/facilities/schedules/" + id, data).then(function (r) { return r.schedule; }); },
+      scheduleAct: function (id, action) { return post("/facilities/schedules/" + id + "/actions/" + action, { today: localDay() }); },
+
+      bookings: function (o) { return get("/facilities/bookings" + q(Object.assign({ today: localDay() }, o || {}))); },
+      book: function (data) { data.nowAt = localNow(); return post("/facilities/bookings", data); },
+      bookAct: function (id, action, data) {
+        data = data || {};
+        data.today = localDay();
+        return post("/facilities/bookings/" + id + "/actions/" + action, data).then(function (r) { return r.bookings; });
+      },
+
+      vendors: function () { return get("/facilities/vendors" + q({ today: localDay() })).then(function (r) { return r.vendors; }); },
+      vendor: function (id) { return get("/facilities/vendors/" + id + q({ today: localDay() })); },
+      addVendor: function (data) { data.today = localDay(); return post("/facilities/vendors", data).then(function (r) { return r.vendor; }); },
+      updateVendor: function (id, data) { data.today = localDay(); return patch("/facilities/vendors/" + id, data).then(function (r) { return r.vendor; }); },
+
+      documents: function (o) { return get("/facilities/documents" + q(Object.assign({ today: localDay() }, o || {}))).then(function (r) { return r.documents; }); },
+      addDocument: function (data) { data.today = localDay(); return post("/facilities/documents", data).then(function (r) { return r.document; }); },
+      updateDocument: function (id, data) { data.today = localDay(); return patch("/facilities/documents/" + id, data).then(function (r) { return r.document; }); },
+      putDocumentFile: function (id, file) { return post("/facilities/documents/" + id + "/file", file, { timeout: 30000 }).then(function (r) { return r.document; }); },
+      documentFile: function (id) { return get("/facilities/documents/" + id + "/file", { timeout: 30000 }).then(function (r) { return r.file; }); }
+    },
+
+    /* ------------------------------------------------------- Enrollment
+       Admitting a student, as a workflow. An application is one attempt to
+       be admitted for one school year; an enrollment is that student's year
+       once it has been approved and activated. Every step is a call to
+       `act`, and the server decides whether the step is true and who may
+       take it — a refusal comes back as a 409 carrying the `blockers`. */
+    enrollment: {
+      team: function () { return get("/enrollment/team").then(function (r) { return r.team; }); },
+      settings: function () { return get("/enrollment/settings"); },
+      putSettings: function (settings) { return put("/enrollment/settings", { settings: settings }); },
+      summary: function (year) { return get("/enrollment/summary" + q({ year: year, today: localDay() })); },
+      lookup: function (who) { return get("/enrollment/lookup" + q(who)); },
+      list: function (opts) {
+        opts = opts || {};
+        opts.today = localDay();
+        return get("/applications" + q(opts));
+      },
+      get: function (id) { return get("/applications/" + id + q({ today: localDay() })).then(function (r) { return r.application; }); },
+      create: function (data) { return post("/applications", data, { timeout: 20000 }); },
+      update: function (id, data) { return patch("/applications/" + id, data); },
+      act: function (id, action, data) {
+        return post("/applications/" + id + "/actions/" + action + q({ today: localDay() }), data || {}, { timeout: 30000 });
+      },
+      putDocument: function (id, key, data) {
+        return put("/applications/" + id + "/documents/" + encodeURIComponent(key), data);
+      },
+      /* A file is sent as base64 in JSON. The server holds a scan only up to
+         what a database row can carry and says so when it is more. */
+      uploadFile: function (id, key, file) {
+        return post("/applications/" + id + "/documents/" + encodeURIComponent(key) + "/file", file, { timeout: 60000 });
+      },
+      getFile: function (id, key) {
+        return get("/applications/" + id + "/documents/" + encodeURIComponent(key) + "/file", { timeout: 30000 })
+          .then(function (r) { return r.file; });
+      },
+      bulk: function (data) { return post("/applications/bulk", data); },
+      reenrol: function (data) { return post("/enrollment/reenrol", data, { timeout: 60000 }); },
+      enrollments: function (opts) {
+        opts = opts || {};
+        opts.today = localDay();
+        return get("/enrollments" + q(opts));
+      },
+      enrollmentAct: function (id, action, data) {
+        return post("/enrollments/" + id + "/actions/" + action + q({ today: localDay() }), data || {}, { timeout: 30000 });
+      },
+      /* What a family sees: the applications it made, or is family to. */
+      mine: function () { return get("/family/applications" + q({ today: localDay() })); }
+    },
+
+    /* ------------------------------------------------------- Attendance
+       One register per course and day. The server decides who may write one
+       (the course's teacher, a dean, a principal, a registrar) and who may
+       read the school's: this object only asks. */
+    attendance: {
+      list: function (opts) {
+        opts = opts || {};
+        return get("/attendance" + q({ courseId: opts.courseId, accountId: opts.accountId, day: opts.day, from: opts.from, to: opts.to }))
+          .then(function (r) { return r.attendance; });
+      },
+      // via: which screen the change came from — register, student, bulk or fix.
+      put: function (day, courseId, marks, via) {
+        return put("/attendance", { day: day, courseId: courseId || null, marks: marks, via: via || undefined, today: localDay() });
+      },
+      // Attendance as a mark in the gradebook: a snapshot, one piece of work named "Attendance".
+      grade: function (courseId, rules) { return post("/courses/" + courseId + "/attendance-grade", rules, { timeout: 30000 }); },
+      // What a mark can say, and what a teacher may change: { codes, lockDays, closed }.
+      codes: function () { return get("/attendance/codes"); },
+      summary: function (from, to) { return get("/attendance/summary" + q({ from: from, to: to })); },
+      // A student's marks as their family reads them: { attendance, online }.
+      // online is false when the school has not put attendance online.
+      family: function (accountId) { return get("/attendance" + q({ accountId: accountId })); },
+      // Which registers were taken on which days, and the marks that look wrong.
+      review: function (from, to) { return get("/attendance/review" + q({ from: from, to: to, today: localDay() })); },
+      // The history of a mark: one date for everybody, or one student for every date.
+      log: function (opts) {
+        opts = opts || {};
+        return get("/attendance/log" + q({ day: opts.day, accountId: opts.accountId, courseId: opts.courseId }));
+      },
+      settings: function () { return get("/attendance/settings").then(function (r) { return r.settings; }); },
+      putSettings: function (s) { return put("/attendance/settings", s).then(function (r) { return r.settings; }); },
+      ada: function (from, to) { return get("/attendance/ada" + q({ from: from, to: to })); },
+      remove: function (ids) { return post("/attendance/remove", { ids: ids }); }
+    },
+
+    /* ----------------------------------------------------------- Schedule
+       The school's courses, its sections (a section is a course with a
+       roster), its bell schedules and its calendar. Anyone signed in reads
+       the bell schedules and the calendar; the rest is the school's. */
+    schedule: {
+      subjects: function () { return get("/subjects").then(function (r) { return r.subjects; }); },
+      createSubject: function (d) { return post("/subjects", d).then(function (r) { return r.subject; }); },
+      updateSubject: function (id, d) { return patch("/subjects/" + id, d).then(function (r) { return r.subject; }); },
+      sections: function () { return get("/sections").then(function (r) { return r.sections; }); },
+      createSection: function (d) { return post("/sections", d).then(function (r) { return r.section; }); },
+      putSection: function (courseId, d) { return put("/sections/" + courseId, d).then(function (r) { return r.section; }); },
+      addStudents: function (courseId, d) { return post("/sections/" + courseId + "/students", d); },
+      dropStudents: function (courseId, d) { return post("/sections/" + courseId + "/drop", d); },
+      studentSections: function (accountId) { return get("/students/" + accountId + "/sections").then(function (r) { return r.sections; }); },
+      bell: function () { return get("/bell-schedules").then(function (r) { return r.schedules; }); },
+      createBell: function (d) { return post("/bell-schedules", d).then(function (r) { return r.schedule; }); },
+      updateBell: function (id, d) { return patch("/bell-schedules/" + id, d).then(function (r) { return r.schedule; }); },
+      deleteBell: function (id) { return del("/bell-schedules/" + id); },
+      weekdays: function (id) { return post("/bell-schedules/" + id + "/weekdays", {}); },
+      calendar: function (from, to) { return get("/calendar" + q({ from: from, to: to })); },
+      putPattern: function (d) { return put("/calendar/pattern", d); },
+      putDays: function (days) { return put("/calendar/days", { days: days }); },
+      day: function (date) { return get("/schedule/day" + q({ date: date })); },
+      mine: function (date, accountId) { return get("/schedule/mine" + q({ date: date, accountId: accountId })); },
+      /* Monday to Friday as one person has them; a weekend shows the week coming. */
+      week: function (accountId) {
+        var t = new Date(), dow = t.getDay(), back = dow === 0 ? -6 : 1 - dow;
+        if (dow === 0 || dow === 6) back += 7;
+        var days = [];
+        for (var i = 0; i < 5; i++) {
+          var x = new Date(t.getFullYear(), t.getMonth(), t.getDate() + back + i);
+          days.push(x.getFullYear() + "-" + ("0" + (x.getMonth() + 1)).slice(-2) + "-" + ("0" + x.getDate()).slice(-2));
+        }
+        return Promise.all(days.map(function (day) {
+          return get("/schedule/mine" + q({ date: day, accountId: accountId })).then(function (r) { r.date = day; return r; });
+        }));
+      },
+      archive: function (courseIds, restore) { return post("/sections/archive", { courseIds: courseIds, restore: !!restore }).then(function (r) { return r.changed; }); },
+      drafts: function () { return get("/schedule/drafts").then(function (r) { return r.drafts; }); },
+      createDraft: function (d) { return post("/schedule/drafts", d).then(function (r) { return r.draft; }); },
+      draft: function (id) { return get("/schedule/drafts/" + id); },
+      deleteDraft: function (id) { return del("/schedule/drafts/" + id); },
+      addDraftSection: function (id, d) { return post("/schedule/drafts/" + id + "/sections", d).then(function (r) { return r.section; }); },
+      putDraftSection: function (id, sid, d) { return put("/schedule/drafts/" + id + "/sections/" + sid, d).then(function (r) { return r.section; }); },
+      deleteDraftSection: function (id, sid) { return del("/schedule/drafts/" + id + "/sections/" + sid); },
+      previewPublish: function (id) { return get("/schedule/drafts/" + id + "/publish"); },
+      publish: function (id) { return post("/schedule/drafts/" + id + "/publish", {}, { timeout: 60000 }); },
+      build: function (id, dry) { return post("/schedule/drafts/" + id + "/build", { dry: !!dry }, { timeout: 30000 }); },
+      analyze: function (draft) { return get("/schedule/analyze" + q({ draft: draft || "live" })); },
+      requests: function (o) { return get("/course-requests" + q(o)).then(function (r) { return r.requests; }); },
+      putRequests: function (accountId, list) { return put("/course-requests/" + accountId, { requests: list }); }
+    },
+
+    /* --------------------------------------------------- Platform services
+       Telling people things, the school's smaller records, files, and data in
+       and out. The server decides who may do each; a refusal says why. */
+    inbox: {
+      list: function (box, archived) { return get("/inbox" + q({ box: box, archived: archived ? 1 : undefined })); },
+      unread: function () { return get("/inbox/unread").then(function (r) { return r.unread; }); },
+      read: function (ids) { return post("/inbox/read", ids ? { ids: ids } : { all: true }); },
+      archive: function (ids, undo) { return post("/inbox/archive", { ids: ids, undo: !!undo }); },
+      thread: function (id) { return get("/inbox/thread/" + encodeURIComponent(id)); },
+      send: function (d) { return post("/messages", d); },
+      prefs: function () { return get("/inbox/prefs"); },
+      putPrefs: function (prefs) { return put("/inbox/prefs", { prefs: prefs }); },
+      runReminders: function (d) { return post("/reminders/run", d || {}); },
+      outbox: function () { return get("/outbox"); },
+      flush: function () { return post("/outbox/flush", {}); }
+    },
+    items: {
+      kinds: function () { return get("/item-kinds").then(function (r) { return r.kinds; }); },
+      list: function (o) { return get("/items" + q(o || {})).then(function (r) { return r.items; }); },
+      get: function (id) { return get("/items/" + id).then(function (r) { return r.item; }); },
+      create: function (d) { return post("/items", d).then(function (r) { return r.item; }); },
+      update: function (id, d) { return patch("/items/" + id, d).then(function (r) { return r.item; }); },
+      remove: function (id) { return del("/items/" + id); }
+    },
+    files: {
+      put: function (d) { return post("/files", d, { timeout: 30000 }).then(function (r) { return r.file; }); },
+      get: function (id) { return get("/files/" + id, { timeout: 30000 }).then(function (r) { return r.file; }); },
+      remove: function (id) { return del("/files/" + id); }
+    },
+    exchange: {
+      exportRows: function (set, from, to) { return get("/exchange/export" + q({ set: set, from: from, to: to }), { timeout: 60000 }); },
+      importRows: function (d) { return post("/exchange/import", d, { timeout: 60000 }); },
+      extract: function () { return get("/exchange/extract", { timeout: 60000 }); },
+      ping: function () { return post("/exchange/webhooks/test", {}); }
+    },
+    district: { summary: function () { return get("/district/summary"); } },
+    feeds: { link: function () { return get("/feeds/link").then(function (r) { return r.url; }); } },
+
+    /* ------------------------------------------------- Marking periods
+       Open, grading, posted, locked: one way forward. Posting a course
+       freezes what each student earned in it, and a posted grade moves only
+       by a request someone else approves. */
+    periods: {
+      list: function () { return get("/periods").then(function (r) { return r.periods; }); },
+      create: function (data) { return post("/periods", data).then(function (r) { return r.period; }); },
+      move: function (id, state) { return patch("/periods/" + id, { state: state }).then(function (r) { return r.period; }); },
+      post: function (id, courseId) { return post("/periods/" + id + "/post", { courseId: courseId }, { timeout: 30000 }); },
+      posted: function (id, opts) {
+        opts = opts || {};
+        return get("/periods/" + id + "/posted" + q({ courseId: opts.courseId, accountId: opts.accountId })).then(function (r) { return r.posted; });
+      },
+      changes: function (status) { return get("/grade-changes" + q({ status: status })); },
+      decide: function (id, approve, note) { return post("/grade-changes/" + id + "/decision", { approve: !!approve, note: note || null }); }
     },
 
     /* --------------------------------------------------------- Progress

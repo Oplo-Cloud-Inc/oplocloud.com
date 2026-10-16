@@ -38,12 +38,17 @@ ENVIRONMENT = "production"
 # posts to /auth/login here directly, so the session cookie is set on this
 # host — the one every service already sends it to.
 # efm.oplocloud.com is OC EFM, which asks /me who is signed in.
+# kern.oplocloud.com is Kern, the self-learning app on the same API. A deploy from a tree
+# whose list lacks it makes Kern say "Cannot reach the Oplo account service".
 ALLOWED_ORIGINS = "https://edu.oplocloud.com,https://kern.oplocloud.com,https://oplocloud.com,https://www.oplocloud.com,https://auth.oplocloud.com,https://efm.oplocloud.com"
 
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "oplo-platform-db"
 database_id = "8b220a51-b326-46af-85c7-f18c595c684d"
+
+[env.production.triggers]
+crons = ["*/30 * * * *"]
 
 [[env.production.routes]]
 pattern = "api.oplocloud.com/*"
