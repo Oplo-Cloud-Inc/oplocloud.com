@@ -437,35 +437,64 @@ def doc_page(slug, depth, title, desc, heading, dateline, body):
 PAGES = []
 
 # ------------------------------------------------------------------- Home
-# Quiet on purpose. One picture at two thirds of the window, a sentence that
-# says what OploCloud is, and a plain list with an entry for each door in the bar.
-# It has no script of its own: nothing on it moves unless the visitor scrolls.
-# Its few rules are in assets/css/oplo-home.css; the picture is cut from the
-# design file by tools/hero.py.
+# Under the picture the front page is cards, laid out the way a newsroom is: a
+# dark band of wide cards (words beside a picture, then the same turned round,
+# then two side by side), a grey band with one wide card and three small ones,
+# a quiet band for the company, and a grey list with a small tile beside each
+# line. Nothing on it moves but the site's own fade-in as a card scrolls into
+# view; it has no script of its own. Its rules are in assets/css/oplo-home.css;
+# the opening picture is cut from the design file by tools/hero.py.
+#
+# The pictures in the cards are not made yet, so each is a soft panel with one
+# thin line drawing in it. To fill one, put an <img> inside its
+# <div class="hc-pic"> (the drawing hides itself); data-slot says which it is.
 
-def door(eyebrow, head, lead, ctas):
-    """One entry in the list: what it is, one line about it, where it goes."""
-    links = "".join(f'<a class="cta" href="{h}">{t}</a>' for t, h in ctas)
-    return f'''  <section class="door reveal">
-    <p class="eyebrow">{eyebrow}</p>
-    <h3 class="t-title balance">{head}</h3>
-    <p class="t-lead muted">{lead}</p>
-    <p class="cta-row">{links}</p>
-  </section>
-'''
+# One drawing per card, on a 28 x 28 grid, drawn as outlines.
+HOME_ART = {
+    "hardware": '<rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M11.5 5v3.5M16.5 5v3.5M11.5 19.5V23M16.5 19.5V23M5 11.5h3.5M5 16.5h3.5M19.5 11.5H23M19.5 16.5H23"/>',
+    "intelligence": '<path d="M14 5.5c.6 4.6 2.9 6.9 8.5 8.5-5.6 1.6-7.9 3.9-8.5 8.5-.6-4.6-2.9-6.9-8.5-8.5 5.6-1.6 7.9-3.9 8.5-8.5Z"/>',
+    "software": '<rect x="5.5" y="7" width="17" height="14" rx="2.6"/><path d="M5.5 11.2h17"/>',
+    "plus": '<circle cx="14" cy="14" r="8"/><path d="M14 10.2v7.6M10.2 14h7.6"/>',
+    "education": '<rect x="6" y="4" width="16" height="20" rx="3"/><path d="M10 10h8M10 14h8M10 18h5"/>',
+    "kern": '<path d="M4 22h6v-6h6v-6h8"/><path d="M4 22V6M24 10V6"/>',
+    "privacy": '<path d="M14 4.5 22 7.5v6c0 4.9-3.3 8.3-8 10.3-4.7-2-8-5.4-8-10.3v-6Z"/><path d="m10.5 14 2.5 2.5 4.5-5"/>',
+    "developers": '<path d="M11 9 6 14l5 5M17 9l5 5-5 5"/>',
+    "newsroom": '<rect x="5" y="5.5" width="18" height="17" rx="2.6"/><path d="M9 10h10M9 14h10M9 18h6"/>',
+    "investor": '<path d="M5.5 22.5h17M8 22.5v-7M14 22.5V8M20 22.5v-10"/>',
+    "support": '<path d="M6 6.5h16a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-8l-5 4v-4H6a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Z"/>',
+    "contact": '<rect x="4.5" y="7" width="19" height="14" rx="2.6"/><path d="m5.5 9 8.5 6.2L22.5 9"/>',
+    "labels": '<rect x="6.5" y="13" width="15" height="10" rx="2.6"/><path d="M10 13v-3a4 4 0 0 1 8 0v3"/>',
+    "transparency": '<path d="M3.5 14s3.6-6.5 10.5-6.5S24.5 14 24.5 14 20.9 20.5 14 20.5 3.5 14 3.5 14Z"/><circle cx="14" cy="14" r="3"/>',
+}
 
 
-def home_intro():
-    """What OploCloud is, said plainly, before anything is sold — the thing a front
-    page owes someone who has never heard of it. The sentence is the site's own
-    (its description and its company page); the one after it is in the same
-    voice: early, and saying so."""
-    return '''  <section class="intro">
-    <h2 class="t-display balance reveal">Hardware, software and intelligence, designed around one person at a time.</h2>
-    <p class="t-lead muted balance reveal d1">OploCloud is early, and would rather say so than dress it up. Here is what we are building, and how to follow along.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="company/">About OploCloud</a><a class="cta" href="contact/">Get in touch</a></p>
-  </section>
-'''
+def home_art(name):
+    return (f'<svg viewBox="0 0 28 28" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" '
+            f'stroke-linecap="round" stroke-linejoin="round">{HOME_ART[name]}</g></svg>')
+
+
+def home_card(kind, art, hue, href, kick, title, line, cta, flip=False):
+    """One card: the whole card is the link. kind: wide | half | third."""
+    cls = f"hc {kind}" + (" flip" if flip else "")
+    return f"""    <a class="{cls} reveal" href="{href}">
+      <div class="hc-pic" data-slot="home-{art}" style="--h:{hue}">{home_art(art)}</div>
+      <div class="hc-text">
+        <p class="hc-kick">{kick}</p>
+        <h3 class="hc-title">{title}</h3>
+        <p class="hc-line">{line}</p>
+        <span class="hc-link">{cta}</span>
+      </div>
+    </a>
+"""
+
+
+def home_row(art, hue, href, kick, title, line):
+    """One line of the list: a small tile, what it is, a line about it."""
+    return f"""    <li><a class="hr reveal" href="{href}">
+      <div class="hr-pic" data-slot="home-{art}" style="--h:{hue}">{home_art(art)}</div>
+      <div class="hr-text"><p class="hc-kick">{kick}</p><h3>{title}</h3><p class="hr-line">{line}</p></div>
+    </a></li>
+"""
 
 
 def home():
@@ -474,15 +503,15 @@ def home():
     p1, p2 = stamp("assets/img/hero-earth-1440.webp"), stamp("assets/img/hero-earth-2880.webp")
     src1, src2 = f"assets/img/hero-earth-1440.webp?v={p1}", f"assets/img/hero-earth-2880.webp?v={p2}"
     # The opening picture is preloaded so the dark band is not seen empty first.
-    extra = f'''<link rel="stylesheet" href="assets/css/oplo-home.css?v={css}">
+    extra = f"""<link rel="stylesheet" href="assets/css/oplo-home.css?v={css}">
 <link rel="preload" as="image" href="{src1}" imagesrcset="{src1} 1440w, {src2} 2880w" imagesizes="100vw" fetchpriority="high">
-<style>body {{ padding-top: 0; }}</style>'''
+<style>body {{ padding-top: 0; }}</style>"""
     out = head(depth, "OploCloud", "OploCloud builds hardware, software and intelligence designed around one person at a time.", "", extra)
     out += nav(depth)
     out += "<main>\n"
     # The picture spells "Hello" and says so; the heading is for screen readers
     # and search engines, which have no other way to learn the name of the page.
-    out += f'''<section class="band art hero" id="top">
+    out += f"""<section class="band art hero" id="top">
   <h1 class="sr">OploCloud — Technology for Human</h1>
   <img class="hero-img" src="{src1}" srcset="{src1} 1440w, {src2} 2880w" sizes="100vw" alt="Hello" width="2880" height="1620" fetchpriority="high" decoding="async">
   <div class="hero-foot">
@@ -492,31 +521,71 @@ def home():
     </p>
   </div>
 </section>
-'''
-    out += home_intro()
-    out += '<h2 class="sr">Explore OploCloud</h2>\n<div class="doors">\n'
-    out += door("Hardware", "The machine, made whole.",
-                "Silicon designed for the software that runs on it.", [("Learn more", "hardware/")])
-    out += door("Software", 'Built for a person, <br class="br-wide">not an org chart.',
-                "Tools that assume one user with taste, not a procurement department.", [("Learn more", "software/")])
-    out += door("Intelligence", 'Close to you, <br class="br-wide">not to a data centre.',
-                "Models that run on the device in your hand.", [("Learn more", "intelligence/")])
-    out += door("OploCloud+", 'One membership, <br class="br-wide">the whole system.',
-                "The account, the storage and the services that follow you across every OploCloud device.",
-                [("Learn more", "plus/")])
-    out += door("Education", "A classroom, not a fleet.",
+"""
+    # What OploCloud is, said plainly, before anything is sold — the thing a front
+    # page owes someone who has never heard of it. It continues the picture's night.
+    out += """<section class="hs dark" id="make" aria-labelledby="h-oplo">
+  <div class="hs-in">
+    <div class="hs-lead">
+      <h2 class="t-display balance reveal" id="h-oplo">Hardware, software and intelligence, designed around one person at a time.</h2>
+      <p class="t-lead balance reveal d1">OploCloud is early, and would rather say so than dress it up. Here is what we are building, and how to follow along.</p>
+      <p class="cta-row reveal d2"><a class="cta" href="company/">About OploCloud</a><a class="cta" href="contact/">Get in touch</a></p>
+    </div>
+    <h2 class="hs-h reveal" id="h-make">What we make</h2>
+    <div class="hs-grid">
+"""
+    out += home_card("wide", "hardware", 215, "hardware/", "Hardware", "The machine, made whole.",
+                "Silicon designed for the software that runs on it.", "Learn more")
+    out += home_card("wide", "intelligence", 262, "intelligence/", "Intelligence", "Close to you, not to a data centre.",
+                "Models that run on the device in your hand.", "Learn more", flip=True)
+    out += home_card("half", "software", 232, "software/", "Software", "Built for a person, not an org chart.",
+                "Tools that assume one user with taste, not a procurement department.", "Learn more")
+    out += home_card("half", "plus", 200, "plus/", "OploCloud+", "One membership, the whole system.",
+                "The account, the storage and the services that follow you across every OploCloud device.", "Learn more")
+    out += """    </div>
+  </div>
+</section>
+<section class="hs grey" id="for" aria-labelledby="h-for">
+  <div class="hs-in">
+    <h2 class="hs-h reveal" id="h-for">Made for you</h2>
+    <div class="hs-grid">
+"""
+    out += home_card("wide", "education", 206, OEDU, "Education", "A classroom, not a fleet.",
                 "OEdu is where a school signs in: coursework, grades, and one record that "
-                "students, teachers and families all read the same way.", [("Open OEdu", OEDU)])
-    out += door("Privacy", "Yours stays yours.",
-                "Personal computing only means something if the personal part stays private.",
-                [("Learn more", "privacy/")])
-    out += door("Developers", "Build on OploCloud.",
-                "One set of tools across the hardware, the software and the models.",
-                [("Read the docs", "developers/"), ("Developer site", DEV)])
-    out += door("Company", "Where we're going.",
-                "What we're building, who is building it, and how to join.",
-                [("About OploCloud", "company/"), ("Careers", "careers/")])
-    out += "</div>\n</main>\n"
+                "students, teachers and families all read the same way.", "Open OEdu")
+    out += home_card("third", "kern", 232, KERN, "Kern", "Learn it by doing it.",
+                "A free place to learn, one small step at a time.", "Start learning")
+    out += home_card("third", "privacy", 170, "privacy/", "Privacy", "Yours stays yours.",
+                "Personal computing only means something if the personal part stays private.", "Learn more")
+    out += home_card("third", "developers", 190, "developers/", "Developers", "Build on OploCloud.",
+                "One set of tools across the hardware, the software and the models.", "Read the docs")
+    out += """    </div>
+  </div>
+</section>
+<section class="hs centre" id="company" aria-labelledby="h-co">
+  <div class="hs-in">
+    <h2 class="t-display balance reveal" id="h-co">Where we’re going.</h2>
+    <p class="t-lead muted balance reveal d1">What we’re building, who is building it, and how to join.</p>
+    <p class="hs-pills reveal d2"><a class="hs-pill" href="company/">About OploCloud</a><a class="hs-pill" href="careers/">Careers</a></p>
+  </div>
+</section>
+<section class="hs grey tail" id="more" aria-labelledby="h-more">
+  <div class="hs-in">
+    <h2 class="hs-h reveal" id="h-more">More from OploCloud</h2>
+    <ul class="hs-list">
+"""
+    out += home_row("newsroom", 215, "newsroom/", "Company", "Newsroom", "Announcements and updates from OploCloud.")
+    out += home_row("support", 190, "support/", "Support", "Getting help", "Help with hardware, software and your account.")
+    out += home_row("investor", 232, "investor/", "Company", "Investor relations", "Leadership, governance, filings and investor contact.")
+    out += home_row("contact", 206, "contact/", "Support", "Contact OploCloud", "Products, press, careers or anything else.")
+    out += home_row("labels", 262, "privacy/labels/", "Privacy", "Privacy labels", "The disclosure every app publishes before it ships.")
+    out += home_row("transparency", 170, "privacy/transparency/", "Privacy", "Transparency report", "Requests from governments for user data. The number so far is zero.")
+    out += """    </ul>
+    <p class="hs-more reveal"><a class="hs-pill" href="resources/">All resources</a></p>
+  </div>
+</section>
+</main>
+"""
     out += footer(0)
     return ("index.html", out)
 
