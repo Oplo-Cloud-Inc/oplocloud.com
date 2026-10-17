@@ -333,7 +333,7 @@ def footer(depth, notes=None):
     </div>
     <div class="foot-rule"></div>
     <div class="foot-bar">
-      <span>Copyright &copy; 2026 Oplo, Inc. All rights reserved.</span>
+      <span>Copyright &copy; 2026 OploCloud, Inc. All rights reserved.</span>
       <span class="foot-legal">{legal}
       </span>
       <span class="foot-region">United States</span>
@@ -1909,7 +1909,7 @@ IR_NAV = [
 ]
 
 IR_DISCLAIMER = (
-    "Oplo, Inc. is a private company. These pages are published for transparency, not as disclosure "
+    "OploCloud, Inc. is a private company. These pages are published for transparency, not as disclosure "
     "required of a public issuer. Nothing here is an offer to sell or a solicitation of an offer to buy "
     "any security, and nothing here is investment advice."
 )
@@ -2278,7 +2278,7 @@ anything, create an account for you, or form an agreement between us.</p>
 <p>Pages here describe products in development. Descriptions of capability, availability and
 behaviour are statements of intent and may change.</p>
 <h2>Trademarks</h2>
-<p>The Oplo name and mark are the property of Oplo, Inc.</p>''')))
+<p>The Oplo name and mark are the property of OploCloud, Inc.</p>''')))
 
 PAGES.append(("legal/index.html", doc_page(
     "legal/", 1, "Legal — Oplo", "Legal documents and notices for Oplo.",
@@ -2291,9 +2291,9 @@ template. Each is published here when it has been reviewed.</p>
   <li><a href="terms/">Terms of Use</a> — in preparation</li>
 </ul>
 <h2>Company</h2>
-<p>Oplo, Inc. Correspondence reaches us at <a href="mailto:hello@oplocloud.com">hello@oplocloud.com</a>.</p>
+<p>OploCloud, Inc. Correspondence reaches us at <a href="mailto:hello@oplocloud.com">hello@oplocloud.com</a>.</p>
 <h2>Trademarks</h2>
-<p>The Oplo name and mark are the property of Oplo, Inc. Other names may be trademarks of their
+<p>The Oplo name and mark are the property of OploCloud, Inc. Other names may be trademarks of their
 respective owners.</p>''')))
 
 # ==================================================================== Privacy

@@ -16,6 +16,11 @@
   --blue-dark: #2997ff;
   --rule: #d2d2d7;
   --rule-dark: rgba(255,255,255,.16);
+  --glass: rgba(250,250,252,.72);
+  --glass-dark: rgba(22,22,23,.72);
+  --glass-blur: saturate(180%) blur(30px);
+  --glass-edge: rgba(0,0,0,.12);
+  --glass-edge-dark: rgba(255,255,255,.1);
   --font: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --text: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --well: 980px;
@@ -28,16 +33,16 @@
 .dv .nav {
   position: fixed; top: 0; left: 0; right: 0; height: var(--nav); z-index: 9000;
 }
-.dv .nav::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; background-color: rgba(255,255,255,.72); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); transition: background-color .45s var(--ease);
+.dv body::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--nav); z-index: 8999; pointer-events: none; background-color: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-bottom: 1px solid var(--glass-edge); transition: background-color .45s var(--ease), border-color .45s var(--ease);
 }
 .dv .bars-dark .nav {
   --paper: #161617; --ink: var(--ink-lt); --ink-2: var(--ink-lt-2); --ink-3: var(--ink-lt-2); --rule: var(--rule-dark); --blue: var(--blue-dark);
 }
-.dv .bars-dark .nav::before {
-  background-color: rgba(22,22,23,.72);
+.dv .bars-dark body::before {
+  background-color: var(--glass-dark); border-bottom-color: var(--glass-edge-dark);
 }
-.dv body:has(.chapter) .nav {
+.dv body:has(.chapter) .nav, .dv body:has(.chapter)::before {
   position: absolute;
 }
 .dv body:has(.chapter) :is(.nav-flyout, .nav-find) {
@@ -116,8 +121,11 @@
 .dv .nav-more[aria-expanded="true"] svg {
   transform: rotate(180deg);
 }
-.dv .nav.menu-open::before {
-  background-color: var(--paper);
+.dv body:has(.nav.menu-open)::before {
+  background-color: #fff;
+}
+.dv .bars-dark body:has(.nav.menu-open)::before {
+  background-color: #161617;
 }
 .dv .nav-links > li > a {
   transition: opacity .35s var(--ease);
@@ -215,7 +223,7 @@
 }
 }
 @media (prefers-reduced-motion: reduce) {
-.dv .nav::before, .dv .nav-glide, .dv .nav-flyout-bg, .dv .nav-menu-h, .dv .nav-menu li, .dv .nav-scrim.menu-fade, .dv .nav-links > li > a {
+.dv body::before, .dv .nav-glide, .dv .nav-flyout-bg, .dv .nav-menu-h, .dv .nav-menu li, .dv .nav-scrim.menu-fade, .dv .nav-links > li > a {
   transition: none !important;
 }
 .dv .nav-menu-h, .dv .nav-menu li {
@@ -231,8 +239,11 @@
 .dv .nav-search svg {
   width: 15px; height: 15px; display: block;
 }
-.dv .nav.searching::before {
-  background-color: var(--paper);
+.dv body:has(.nav.searching)::before {
+  background-color: #fff;
+}
+.dv .bars-dark body:has(.nav.searching)::before {
+  background-color: #161617;
 }
 .dv .nav.searching .nav-links {
   opacity: 0; pointer-events: none; transition: opacity .2s var(--ease);
@@ -378,10 +389,10 @@
 .dv .nav-links a[aria-current="page"] {
   color: var(--ink-3);
 }
-.dv .nav.open::before {
+.dv body:has(.nav.open)::before {
   background-color: #fff;
 }
-.dv .nav::before {
+.dv body::before {
   -webkit-backdrop-filter: saturate(180%) blur(10px); backdrop-filter: saturate(180%) blur(10px);
 }
 .dv .nav-toggle {
@@ -407,10 +418,10 @@
 }
 }
 .dv .chapter {
-  position: sticky; top: 0; z-index: 800; background: rgba(255,255,255,.72); -webkit-backdrop-filter: saturate(180%) blur(30px); backdrop-filter: saturate(180%) blur(30px); border-bottom: 1px solid var(--rule); color: var(--ink); transition: background-color .45s var(--ease), border-color .45s var(--ease), color .45s var(--ease);
+  position: sticky; top: 0; z-index: 800; background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-bottom: 1px solid var(--glass-edge); color: var(--ink); transition: background-color .45s var(--ease), border-color .45s var(--ease), color .45s var(--ease);
 }
 .dv .bars-dark .chapter {
-  --ink: var(--ink-lt); --ink-2: var(--ink-lt-2); background: rgba(22,22,23,.72); border-bottom-color: rgba(255,255,255,.1);
+  --ink: var(--ink-lt); --ink-2: var(--ink-lt-2); background: var(--glass-dark); border-bottom-color: var(--glass-edge-dark);
 }
 .dv .chapter-in {
   max-width: 1024px; margin-inline: auto; padding-left: max(var(--gutter), env(safe-area-inset-left)); padding-right: max(var(--gutter), env(safe-area-inset-right)); height: 52px; display: flex; align-items: center; gap: 20px;
