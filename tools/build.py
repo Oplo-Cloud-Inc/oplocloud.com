@@ -446,11 +446,11 @@ PAGES = []
 def door(eyebrow, head, lead, ctas):
     """One entry in the list: what it is, one line about it, where it goes."""
     links = "".join(f'<a class="cta" href="{h}">{t}</a>' for t, h in ctas)
-    return f'''  <section class="door">
-    <p class="eyebrow reveal">{eyebrow}</p>
-    <h3 class="t-title balance reveal">{head}</h3>
-    <p class="t-lead muted reveal d1">{lead}</p>
-    <p class="cta-row reveal d2">{links}</p>
+    return f'''  <section class="door reveal">
+    <p class="eyebrow">{eyebrow}</p>
+    <h3 class="t-title balance">{head}</h3>
+    <p class="t-lead muted">{lead}</p>
+    <p class="cta-row">{links}</p>
   </section>
 '''
 
