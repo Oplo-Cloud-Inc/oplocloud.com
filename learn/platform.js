@@ -529,8 +529,12 @@ window.OPLO_PLATFORM = function (K) {
       }, function (e) { toast(e && e.message ? e.message : "That could not be exported."); });
     }));
 
-    var im = K.cxSection(grid, "cx-s6", "Import", "Checked in full before anything is written");
+    var im = K.cxSection(grid, "cx-s6", "Import", "Check first: a check writes nothing");
     var iset = select([["users", "People: name, email, role"], ["enrollments", "Rosters: section, email, role"]], "users");
+    var cols = el("p", "cx-note", "Roles: student (the default), teacher, or an office role: admin, principal, registrar, admissions, counselor, dean, nurse, facilities, office, it. " +
+      "Optional columns, to link a parent to the child: guardian_email, guardian_name, relationship, primary. " +
+      "New people are invited without a password, and each sets their own. A row with a problem is skipped and listed; the rest load. Running a file again is safe.");
+    iset.addEventListener("change", function () { cols.hidden = iset.value !== "users"; });
     var area = textarea("", 8);
     area.placeholder = "Paste rows with a header line, or choose a file.";
     var pickf = el("input"); pickf.type = "file"; pickf.accept = ".csv,text/csv";
@@ -539,20 +543,70 @@ window.OPLO_PLATFORM = function (K) {
       var rd = new FileReader(); rd.onload = function () { area.value = String(rd.result); }; rd.readAsText(f);
     });
     var out = el("div");
+    var CHUNK = 200;   // what the server takes at a time
+    function num(n) { return Number(n).toLocaleString(); }
     function rowsOf() {
       var t = parseCsv(area.value.trim());
       if (t.length < 2) throw new Error("A header line and at least one row.");
       var head = t[0].map(function (h) { return h.trim().toLowerCase(); });
       return t.slice(1).map(function (r) { var o = {}; head.forEach(function (h, i) { o[h] = (r[i] || "").trim(); }); return o; });
     }
+    /* People go up CHUNK rows at a time and the answers are added together.
+       A guardian met in two chunks is one person, so people are counted by
+       address: those invited, and those who already had an account. */
+    function chunked(rows, dry, progress) {
+      var t = { rows: 0, guardiansLinked: 0, skipped: 0, problemCount: 0, problems: [], invited: {}, known: {} };
+      var chain = Promise.resolve();
+      for (var off = 0; off < rows.length; off += CHUNK) (function (off) {
+        chain = chain.then(function () {
+          progress("Reading rows " + num(off + 1) + " to " + num(Math.min(rows.length, off + CHUNK)) + " of " + num(rows.length) + "…");
+          return API.exchange.importRows({ set: "users", rows: rows.slice(off, off + CHUNK), dry: dry, offset: off }).then(function (r) {
+            ["rows", "guardiansLinked", "skipped", "problemCount"].forEach(function (k) { t[k] += r[k]; });
+            r.problems.forEach(function (p) { if (t.problems.length < 100) t.problems.push(p); });
+            r.invitedEmails.forEach(function (e) { t.invited[e.toLowerCase()] = 1; });
+            r.matchedEmails.forEach(function (e) { t.known[e.toLowerCase()] = 1; });
+          }, function (e) {
+            var m = e && e.message ? e.message : "That could not be imported.";
+            throw new Error(dry ? m : m + " Rows before " + num(off + 1) + " were loaded; run the same file again and they will be matched.");
+          });
+        });
+      })(off);
+      return chain.then(function () { return t; });
+    }
     function run(dry) {
       var rows;
       try { rows = rowsOf(); } catch (e) { toast(e.message); return; }
       out.innerHTML = "";
+      if (iset.value === "users") {
+        var prog = el("p", "cx-note"); out.appendChild(prog);
+        acts.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+        chunked(rows, dry, function (m) { prog.textContent = m; }).then(function (t) { showPeople(t, dry); }, function (e) { out.innerHTML = ""; toast(e.message); })
+          .then(function () { acts.querySelectorAll("button").forEach(function (b) { b.disabled = false; }); });
+        return;
+      }
       API.exchange.importRows({ set: iset.value, rows: rows, dry: dry }).then(function (r) { show(r, dry); }, function (e) {
         // A 422 carries the problems.
         if (e && e.body && e.body.problems) show(e.body, dry); else toast(e && e.message ? e.message : "That could not be imported.");
       });
+    }
+    function showPeople(t, dry) {
+      out.innerHTML = "";
+      var invited = Object.keys(t.invited).length, good = t.rows - t.skipped;
+      // Someone made by an earlier chunk of this very file is not "already had an account".
+      var matched = Object.keys(t.known).filter(function (e) { return !t.invited[e]; }).length;
+      out.appendChild(el("p", "cx-note", "<b>" + esc(num(good) + " of " + num(t.rows) + " rows " + (dry ? "are good" : "were loaded")) + ".</b> " +
+        esc(num(invited) + (invited === 1 ? " person" : " people") + (dry ? " would be invited" : " invited") + ", without a password") +
+        (matched ? esc(", " + num(matched) + " already had an account") : "") +
+        (t.guardiansLinked ? esc(", " + num(t.guardiansLinked) + (t.guardiansLinked === 1 ? " guardian link" : " guardian links")) : "") + "."));
+      if (!dry && invited) out.appendChild(el("p", "cx-note", "Nobody has a password yet. Each invited person sets their own, with api/scripts/set-password.sh until sign-in mail is set up."));
+      if (t.skipped) {
+        out.appendChild(el("p", "cx-note", esc(num(t.skipped) + (t.skipped === 1 ? " row has" : " rows have") + " a problem and " + (dry ? "would be" : t.skipped === 1 ? "was" : "were") + " skipped. Fix " + (t.skipped === 1 ? "it" : "them") + " in the file and run it again.")));
+        var pt = K.cnTable([{ label: "Line", w: "48px" }, { label: "Person", w: "minmax(90px, 1fr)" }, { label: "Problem", w: "minmax(140px, 2fr)" }]);
+        t.problems.forEach(function (p) { pt.row([String(p.row + 1), esc(p.email || ""), "<b>" + esc(p.field) + "</b> " + esc(p.message)]); });
+        out.appendChild(pt);
+        if (t.problemCount > t.problems.length) out.appendChild(el("p", "cx-note", esc("…and " + num(t.problemCount - t.problems.length) + " more.")));
+      }
+      if (dry && good) out.appendChild(el("p", "cx-note", "Choose Import to load the good rows."));
     }
     function show(r, dry) {
       out.innerHTML = "";
@@ -563,19 +617,11 @@ window.OPLO_PLATFORM = function (K) {
         out.appendChild(t);
         return;
       }
-      if (r.applied) {
-        out.appendChild(el("p", "cx-note", esc(plural(r.rows, "row") + " imported.")));
-        if (r.credentials && r.credentials.length) {
-          out.appendChild(el("p", "cx-note", "These sign-in details are shown once. Hand them out and then close this page."));
-          out.appendChild(button("Download sign-in details", "cn-btn", function () {
-            download("oedu-new-accounts.csv", csv([["name", "email", "password"]].concat(r.credentials.map(function (c) { return [c.name, c.email, c.password]; }))));
-          }));
-        }
-        return;
-      }
+      if (r.applied) { out.appendChild(el("p", "cx-note", esc(plural(r.rows, "row") + " imported."))); return; }
       out.appendChild(el("p", "cx-note", esc(plural(r.rows, "row") + " are good. Choose Import to write them.")));
     }
     im.appendChild(field("What", iset));
+    im.appendChild(cols);
     im.appendChild(pickf);
     im.appendChild(field("Rows (CSV)", area));
     var acts = el("div", "sx-acts");

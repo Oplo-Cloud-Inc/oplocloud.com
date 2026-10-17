@@ -3259,4 +3259,91 @@ export class D1Repository {
     ).bind(orgId, orgId).all();
     return results || [];
   }
+  /* Who, among these addresses, already has an Oplo Account — in this school or
+     not: [{ id, email_lower, status, member, roles }], roles being this school's
+     learn roles as "a,b". */
+  async peopleByEmails(orgId, emails) {
+    const out = [];
+    const list = [...new Set(emails.map((e) => String(e).trim().toLowerCase()).filter(Boolean))];
+    for (let i = 0; i < list.length; i += 80) {
+      const part = list.slice(i, i + 80);
+      const { results } = await this.db.prepare(
+        `SELECT a.id, a.email_lower, a.status,
+                EXISTS (SELECT 1 FROM organization_memberships m WHERE m.account_id = a.id AND m.org_id = ?) AS member,
+                (SELECT group_concat(r.role) FROM account_roles r WHERE r.account_id = a.id AND r.org_id = ? AND r.product = 'learn') AS roles
+           FROM accounts a WHERE a.email_lower IN (${part.map(() => "?").join(",")})`
+      ).bind(orgId, orgId, ...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* The guardian links these students already have, by email:
+     [{ student, guardian, relationship, label, is_primary }]. */
+  async guardianLinksByStudentEmails(emails) {
+    const out = [];
+    const list = [...new Set(emails.map((e) => String(e).trim().toLowerCase()).filter(Boolean))];
+    for (let i = 0; i < list.length; i += 80) {
+      const part = list.slice(i, i + 80);
+      const { results } = await this.db.prepare(
+        `SELECT s.email_lower AS student, g.email_lower AS guardian, l.relationship, l.label, l.is_primary
+           FROM learn_guardians l JOIN accounts s ON s.id = l.student_id JOIN accounts g ON g.id = l.guardian_id
+          WHERE s.email_lower IN (${part.map(() => "?").join(",")})`
+      ).bind(...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* A school's people in one transaction, written from a few JSON lists rather
+     than a statement per person. Everything is keyed by email and written
+     only if missing, so the same call twice changes nothing.
+       fresh    [{ id, email, lower, name, first, initials, hue, title }]  new accounts: `invited`, NO password
+       roles    [{ lower, role }]            learn roles in this school
+       members  [{ lower, mrole }]           membership in this school
+       links    [{ student, guardian, rel, label, primary }]   lower-cased emails
+       clear    [student email]              whose primary guardian is being reset first */
+  async importPeople(orgId, { fresh, roles, members, links, clear }, actorId) {
+    const t = now(), stmts = [];
+    const on = "FROM json_each(?) j JOIN accounts a ON a.email_lower = json_extract(j.value, '$.lower')";
+    if (fresh.length) {
+      stmts.push(this.db.prepare(
+        `INSERT OR IGNORE INTO accounts (id, email, email_lower, email_verified, status, created_at, updated_at)
+         SELECT json_extract(j.value, '$.id'), json_extract(j.value, '$.email'), json_extract(j.value, '$.lower'), 0, 'invited', ?, ?
+           FROM json_each(?) j`).bind(t, t, JSON.stringify(fresh)));
+      stmts.push(this.db.prepare(
+        `INSERT OR IGNORE INTO profiles (account_id, name, first_name, initials, avatar_hue, title, created_at, updated_at)
+         SELECT a.id, json_extract(j.value, '$.name'), json_extract(j.value, '$.first'), json_extract(j.value, '$.initials'),
+                json_extract(j.value, '$.hue'), json_extract(j.value, '$.title'), ?, ? ${on}`).bind(t, t, JSON.stringify(fresh)));
+    }
+    if (roles.length) {
+      stmts.push(this.db.prepare(
+        `INSERT OR IGNORE INTO account_roles (id, account_id, product, role, org_id, created_at)
+         SELECT 'rol_' || lower(hex(randomblob(16))), a.id, 'learn', json_extract(j.value, '$.role'), ?, ? ${on}`).bind(orgId, t, JSON.stringify(roles)));
+    }
+    if (members.length) {
+      stmts.push(this.db.prepare(
+        `INSERT OR IGNORE INTO organization_memberships (id, org_id, account_id, role, created_at)
+         SELECT 'mem_' || lower(hex(randomblob(16))), ?, a.id, json_extract(j.value, '$.mrole'), ? ${on}`).bind(orgId, t, JSON.stringify(members)));
+    }
+    if (clear.length) {
+      stmts.push(this.db.prepare(
+        `UPDATE learn_guardians SET is_primary = 0, updated_at = ?
+          WHERE is_primary = 1 AND student_id IN (SELECT a.id FROM json_each(?) j JOIN accounts a ON a.email_lower = j.value)`).bind(t, JSON.stringify(clear)));
+    }
+    if (links.length) {
+      stmts.push(this.db.prepare(
+        `INSERT INTO learn_guardians (id, guardian_id, student_id, org_id, relationship, label, is_primary, created_by, created_at, updated_at)
+         SELECT 'grd_' || lower(hex(randomblob(16))), g.id, s.id, ?, json_extract(j.value, '$.rel'), json_extract(j.value, '$.label'),
+                json_extract(j.value, '$.primary'), ?, ?, ?
+           FROM json_each(?) j
+           JOIN accounts s ON s.email_lower = json_extract(j.value, '$.student')
+           JOIN accounts g ON g.email_lower = json_extract(j.value, '$.guardian')
+          WHERE s.id <> g.id
+         ON CONFLICT (guardian_id, student_id) DO UPDATE SET relationship = excluded.relationship, label = excluded.label,
+           is_primary = excluded.is_primary, updated_at = excluded.updated_at`).bind(orgId, actorId || null, t, t, JSON.stringify(links)));
+    }
+    if (stmts.length) await this.db.batch(stmts);
+  }
+
 }
