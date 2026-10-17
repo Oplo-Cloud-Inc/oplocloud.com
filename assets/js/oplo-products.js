@@ -17,7 +17,9 @@
     function update() {
       var room = track.scrollWidth - track.clientWidth;
       prev.disabled = track.scrollLeft < 2;
-      next.disabled = room < 2 || track.scrollLeft > room - 2;
+      // A row that is only a hair too wide (a card edging into the margin)
+      // does not need an arrow.
+      next.disabled = room < 48 || track.scrollLeft > room - 2;
     }
     function go(dir) {
       track.scrollBy({ left: dir * Math.max(320, track.clientWidth * 0.8), behavior: calm.matches ? "auto" : "smooth" });
@@ -26,6 +28,12 @@
     next.addEventListener("click", function () { go(1); });
     track.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
+    // The row's size or any card's (cards in a row of four resize with the window).
+    if (window.ResizeObserver) {
+      var watch = new ResizeObserver(update);
+      watch.observe(track);
+      [].forEach.call(track.children, function (item) { watch.observe(item); });
+    }
     shelf.classList.add("st-ready");
     update();
   }

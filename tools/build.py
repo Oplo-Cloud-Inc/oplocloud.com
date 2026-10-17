@@ -623,6 +623,10 @@ _IC = {
     "chip": '<rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M11.5 5v3.5M16.5 5v3.5M11.5 19.5V23M16.5 19.5V23M5 11.5h3.5M5 16.5h3.5M19.5 11.5H23M19.5 16.5H23"/>',
     "person": '<circle cx="14" cy="9.5" r="4"/><path d="M6 23.5c.9-5 4-7.6 8-7.6s7.1 2.6 8 7.6"/>',
     "chat": '<path d="M6 6.5h16a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-8l-5 4v-4H6a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Z"/>',
+    "report": '<path d="M5.5 22.5h17M8 22.5v-7M14 22.5V8M20 22.5v-10"/>',
+    "code": '<path d="M11 9 6 14l5 5M17 9l5 5-5 5"/>',
+    "news": '<rect x="5" y="5.5" width="18" height="17" rx="2.6"/><path d="M9 10h10M9 14h10M9 18h6"/>',
+    "hand": '<circle cx="10.5" cy="10" r="3.4"/><path d="M4.5 22c.6-3.6 2.8-5.6 6-5.6s5.4 2 6 5.6M18.5 7.5a3.2 3.2 0 0 1 0 6M21.5 21.5c-.3-2.2-1.2-3.8-2.8-4.8"/>',
 }
 
 
@@ -675,9 +679,11 @@ def _tx(depth, href, icon, words, tone=""):
     return f'<a class="st-card tx {tone}" href="{rel(depth, href)}">{inner}</a>'
 
 
-def _shelf(ident, lead, rest, items, label):
-    """A heading over a row of cards, with the two arrows that move the row."""
-    return f'''<section class="st-sec" id="{ident}" aria-labelledby="{ident}-h">
+def _shelf(ident, lead, rest, items, label, fill=False):
+    """A heading over a row of cards, with the two arrows that move the row.
+    `fill` is for a row of four: on a wide window its cards grow until the four
+    span the page, instead of stopping short of the right edge."""
+    return f'''<section class="st-sec{" fill" if fill else ""}" id="{ident}" aria-labelledby="{ident}-h">
   <h2 class="st-h reveal" id="{ident}-h"><span>{lead}</span> <span class="b">{rest}</span></h2>
   <div class="st-shelf reveal d1">
     <ul class="st-track" tabindex="0" aria-label="{label}">
@@ -738,7 +744,7 @@ def products_page():
           "An assistant made to work across every Oplo app.", "Learn more", 262),
         L("developers", DEV, "For developers", "Developer site", "Build on Oplo.",
           "Documentation, platforms and tools, written as they are built.", "Open the developer site", 190),
-    ], "the latest")
+    ], "the latest", fill=True)
 
     kern = [("See one done", "Worked example"), ("Try one together", "Guided practice"),
             ("Now you", "On your own"), ("Stuck? Ask for a hint", "Hints"),
@@ -771,7 +777,7 @@ def products_page():
           "Everything about getting help, in one place.", "Visit Support", 250),
         M("help-docs", "developers/", "Developers", "Read how it is built.",
           "Documentation and design resources, as they are written.", "Developers", 190),
-    ], "help")
+    ], "help", fill=True)
 
     T = lambda *x: _tx(depth, *x)
     out += _shelf("difference", "The Oplo difference.", "Even more reasons to start here.", [
@@ -786,6 +792,10 @@ def products_page():
         + T("hardware/", "chip", "<b>One team</b>, from the silicon to the last pixel.") + '</li>',
         '<li class="st-item st-col">' + T("software/", "person", "Built for <b>a person</b>, not an org chart.")
         + T("support/", "chat", "Stuck? <b>Ask for help</b> any time.") + '</li>',
+        '<li class="st-item st-col">' + T("privacy/transparency/", "report", "We publish a <b>transparency report</b>, in plain words.")
+        + T("developers/", "code", "Read the <b>documentation</b> as it is written.") + '</li>',
+        '<li class="st-item st-col">' + T("newsroom/", "news", "Follow <b>what ships</b> in the newsroom.")
+        + T("careers/", "hand", "Want to help build it? See <b>open roles</b>.") + '</li>',
     ], "the Oplo difference")
 
     out += _shelf("next", "What’s next.", "Hardware, software and intelligence, in development.", [
@@ -797,7 +807,7 @@ def products_page():
           "Models that run on the device in your hand.", "Learn more", 262, fn=3),
         L("next-plus", "plus/", "Not available yet", "Oplo+", "One membership, the whole system.",
           "The account and the services that would follow you across every Oplo device.", "Learn more", 200, fn=3),
-    ], "what is next")
+    ], "what is next", fill=True)
 
     out += _shelf("who", "Made for you.", "Start where you are.", [
         L("who-students", KERN, "Students", "Learn by doing, at your own pace.",

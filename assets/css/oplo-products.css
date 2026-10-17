@@ -19,8 +19,13 @@
    the picture is fitted to the box. Nothing else needs to change.
    ========================================================================== */
 
+body:has(> main.st) {
+  /* The page's side margin: 140px from 1440px up and on any wider window, so
+     the title, strip, headings and cards all start there; narrower windows
+     take it in towards 24px. The footer below reads it too. */
+  --edge: clamp(24px, calc(28.125vw - 265px), 140px);
+}
 .st {
-  --edge: max(var(--gutter), calc((100% - 1160px) / 2));
   --hair: rgba(0,0,0,.08);
   background: var(--canvas); color: var(--ink);
   font-family: var(--text);
@@ -38,9 +43,7 @@
 .st-ribbon a::after { content: " \203A"; }
 
 /* ---------------------------------------------------------------- Header */
-.st-head, .st-h, .st-quick ul, .st-strip ul {
-  width: min(1160px, calc(100% - 2 * var(--gutter))); margin-inline: auto;
-}
+.st-head, .st-h, .st-quick ul, .st-strip ul { margin-inline: var(--edge); }
 .st-head {
   display: flex; justify-content: space-between; align-items: flex-start; gap: 40px;
   padding-top: clamp(56px, 5.6vw, 80px);
@@ -62,17 +65,17 @@
 /* ----------------------------------------------------------------- Strip
    Everything we make, as an icon over its name. */
 .st-strip { margin-top: clamp(28px, 3.4vw, 48px); }
-.st-strip ul { display: flex; justify-content: space-between; gap: 10px; }
+.st-strip ul { display: flex; justify-content: space-between; gap: 10px; max-width: 1160px; }
 /* Each cell is exactly as wide as its icon, so the icons sit at even
    distances and the first and last touch the page's edges; a longer name
    simply hangs out of its cell on both sides. */
-.st-strip li { flex: none; width: 64px; display: flex; justify-content: center; }
+.st-strip li { flex: none; width: 72px; display: flex; justify-content: center; }
 .st-strip a {
   display: flex; flex-direction: column; align-items: center; gap: 14px;
   padding: 20px 0 18px;
   font: 600 14px/1.43 var(--text); letter-spacing: -.016em; color: var(--ink);
 }
-.st-strip .ic { width: 64px; height: 64px; transition: transform .5s var(--ease); }
+.st-strip .ic { width: 72px; height: 72px; transition: transform .5s var(--ease); }
 .st-strip a:hover .ic { transform: translateY(-3px) scale(1.04); }
 .st-strip .ic .bg { fill: var(--paper); stroke: var(--hair); stroke-width: 1; }
 .st-strip .ic { color: var(--ink); }
@@ -95,6 +98,7 @@
   padding: 16px var(--edge) 40px var(--edge);
 }
 .st-track::-webkit-scrollbar { display: none; }
+.st-track { container-type: inline-size; } /* cqw below = the row's width inside its margins */
 .st-track:focus-visible { outline-offset: -6px; }
 .st-item { flex: none; scroll-snap-align: start; }
 .st-col { display: grid; grid-template-rows: 240px 240px; gap: 20px; }
@@ -132,6 +136,11 @@
 .st-card.md { width: 480px; }
 .st-card.sm, .st-card.tx { width: 313px; }
 .st-card.dark { background: #000; color: var(--ink-lt); }
+/* A row of four: on a wide window its cards size themselves so the four span
+   the page, from a little under their usual width upward; on a narrower one
+   they keep that floor and the row scrolls. */
+.fill .st-card.lg { width: max(360px, calc((100cqw - 60px) / 4)); }
+.fill .st-card.md { width: max(440px, calc((100cqw - 60px) / 4)); }
 
 .st-eyebrow {
   margin-bottom: 8px;
@@ -159,7 +168,12 @@
 .sm .st-pic { flex: none; width: 100%; height: 326px; margin-top: 0; }
 /* Under the words, pinned to the foot, so the pictures in a row line up. */
 .st-text { margin-bottom: 20px; }
-.lg .st-pic, .md .st-pic { flex: none; height: 204px; margin-top: auto; }
+/* On the wide cards the picture runs to the card's own edges, like a cover. */
+.lg .st-pic, .md .st-pic {
+  flex: none; height: 240px; margin: auto -28px -28px; border-radius: 0;
+  box-shadow: inset 0 1px 0 rgba(0,0,0,.05);
+}
+.lg .st-pic.dark { box-shadow: none; }
 .st-cap { margin-top: auto; }
 .st-name { font: 600 20px/1.3 var(--font); letter-spacing: -.012em; }
 .st-line { margin-top: 10px; font: 400 14px/1.286 var(--text); letter-spacing: -.016em; color: var(--ink-2); }
@@ -192,7 +206,10 @@
 
 /* The footer and its notes sit on this page's own edges, so the left edge that
    the title, the headings and the cards share runs unbroken to the bottom. */
-body:has(> main.st) :is(.foot-in, .notes ol) { max-width: calc(1160px + 2 * var(--gutter)); }
+body:has(> main.st) :is(.foot-in, .notes ol) {
+  max-width: calc(1160px + 2 * var(--gutter));
+  margin-inline: calc(var(--edge) - var(--gutter));
+}
 
 /* ----------------------------------------------------------- Quick links */
 .st-quick { margin-top: 32px; }
