@@ -7,7 +7,7 @@
      Requests      the courses asked for next year
      Account       password, where you are signed in
      Forms         forms to sign
-     Inbox, Events, Menu   the school's shared pages, in a layer
+     Inbox, Events, Menu   the school's shared pages (phone-shared.js, phone-records.js)
 
    Mounted by phone-student.js with the helpers it built (H).
    ========================================================================== */
@@ -585,17 +585,6 @@ window.OPLO_PHONE_RECORD = function (P, H) {
     } });
   }
 
-  /* ================================================== The shared pages, adapted */
-  function adapted(key, title, eyebrow, draw) {
-    P.present(key, 1, { tone: "blue", label: title, route: function (L) { L.redraw && L.redraw(); } }, function (L) {
-      L.head({ eyebrow: eyebrow, title: title });
-      var w = el("div", "ph-adapt");
-      L.add(w);
-      P.shared.adapt(w);
-      P.legacy(L, w, draw);
-    });
-  }
-
   /* ================================================================= Routing */
   H.buildAccount = function (L) { ready(); buildAccount(L); };
   H.more = function (tab, arg) {
@@ -610,8 +599,8 @@ window.OPLO_PHONE_RECORD = function (P, H) {
       case "account": H.layer("account", 2, "gray", "Account", buildAccount, H.up("Me", "profile")); return true;
       case "forms": H.layer("forms", 1, "purple", "Forms", buildForms); return true;
       case "inbox": H.layer("inbox", 1, "blue", "Inbox", P.shared.buildInbox); return true;
-      case "events": adapted("events", "Events", "School", function (w) { K.stu().events(w); }); return true;
-      case "menu": adapted("menu", "Menu", "School", function (w) { K.stu().menu(w); }); return true;
+      case "events": P.records("events", { kind: "event", eyebrow: "School", title: "Events", sub: "What is happening at school, and who it is for.", canCreate: false }, { tone: "orange" }); return true;
+      case "menu": P.records("menu", { kind: "menu", eyebrow: "School", title: "Menu", sub: "What is served, with the allergens.", canCreate: false }, { tone: "green" }); return true;
     }
     return false;
   };

@@ -57,7 +57,13 @@ window.OPLO_PHONE_STAFF = function (P) {
     sections: function () { return cached("sections", 120000, function () { return SC.sections(); }); },
     enroll: function () { return cached("enroll", 60000, function () { return API.enrollment.summary(); }); },
     facilities: function () { return cached("fx", 60000, function () { return API.facilities.summary(); }); },
+    leave: function () { return cached("leave", 60000, function () { return API.items.list({ kind: "leave" }); }); },
     members: function (id) { return cached("mem:" + id, 60000, function () { return API.courses.members(id); }); },
+    // A whole class in one call: the students, the work, every mark and each student's grade.
+    book: function (id, fresh) {
+      if (fresh) delete CACHE["book:" + id];
+      return cached("book:" + id, 45000, function () { return API.grades.book(id); });
+    },
     // A teacher may read a register only a course at a time: which of today's classes have one, and how it went.
     registers: function (items, day) {
       var key = "reg:" + day + ":" + items.map(function (x) { return x.courseId; }).join(",");
@@ -146,10 +152,10 @@ window.OPLO_PHONE_STAFF = function (P) {
       { k: "enrollment", tone: "purple", icon: "doc", label: "Applications" },
       { k: "inbox", tone: "indigo", icon: "mail", label: "Unread", open: function () { K.openInbox(); } },
       { k: "fx-orders", tone: "orange", icon: "building", label: "Open work orders" },
-      { k: "analytics", tone: "green", icon: "chart", label: "Analytics" }
+      { k: "leave", tone: "green", icon: "calendar", label: "Leave to answer" }
     ] : [
       { k: "attendance", tone: "teal", icon: "check", label: "Registers today", ring: true },
-      { k: "tograde", tone: "pink", icon: "inbox", label: "To mark" },
+      { k: "tograde", tone: "pink", icon: "inbox", label: "To grade" },
       { k: "courses", tone: "indigo", icon: "books", label: "Classes" },
       { k: "students", tone: "blue", icon: "people", label: "Students" },
       { k: "support", tone: "orange", icon: "alert", label: "Below a pass", open: function () { place("students:risk", "Below a pass", 1, { tone: "orange", label: "Students" }, function (L) { buildStudents(L, "risk"); }); } },
@@ -176,6 +182,7 @@ window.OPLO_PHONE_STAFF = function (P) {
       tiles.appendChild(b);
     });
     sc.appendChild(tiles);
+    Hm.dayHost = role === "teacher" ? sc.appendChild(el("div")) : null;
     P.rise([Hm.hero, Hm.notes].concat([].slice.call(tiles.children)), 0);
 
     var more = el("button", "ph-more", P.icon("dots") + "<span>Everything</span>");
@@ -313,7 +320,7 @@ window.OPLO_PHONE_STAFF = function (P) {
     init();
     var Hm = home, t0 = todayIso(), adm = isAdmin();
     var jobs = adm
-      ? [settle(Dt.review(t0, t0)), settle(Dt.summary(t0, t0)), settle(Dt.sections()), settle(Dt.enroll()), settle(Dt.people()), settle(Dt.facilities())]
+      ? [settle(Dt.review(t0, t0)), settle(Dt.summary(t0, t0)), settle(Dt.sections()), settle(Dt.enroll()), settle(Dt.people()), settle(Dt.facilities()), settle(Dt.leave())]
       : [settle(Dt.day(t0)), settle(Dt.teaching())];
     var work = Promise.all(jobs).then(function (r) {
       if (adm) return r;
@@ -321,7 +328,7 @@ window.OPLO_PHONE_STAFF = function (P) {
       return Dt.registers(dm && !dm.off ? dm.items : [], t0).then(function (reg) { return [r[0], r[1], reg]; });
     }).then(function (r) {
       var d;
-      if (adm) d = { t0: t0, review: r[0], summary: r[1], sections: r[2], enroll: r[3], people: r[4], fx: r[5], nxt: null };
+      if (adm) d = { t0: t0, review: r[0], summary: r[1], sections: r[2], enroll: r[3], people: r[4], fx: r[5], leave: r[6], nxt: null };
       else d = { t0: t0, day: r[0], teaching: r[1], registers: r[2], nxt: null };
       Hm.data = d; Hm.at = Date.now(); Hm.heroFn = adm ? adminHero : teacherHero;
       paintHero();
@@ -353,10 +360,33 @@ window.OPLO_PHONE_STAFF = function (P) {
     var dm = dayModel(d.day), items = dm && !dm.off ? dm.items : [], tk = d.registers || {};
     var done = items.filter(function (x) { return tk[x.courseId]; }).length;
     Hm.tiles.attendance.setTile({ value: items.length ? done : null, label: items.length ? "of " + items.length + " registers taken" : "No classes today", ring: items.length ? done / items.length * 100 : null });
-    Hm.tiles.tograde.setTile({ value: t ? t.unmarked : null, label: "To mark" });
+    Hm.tiles.tograde.setTile({ value: t ? t.unmarked : null, label: "To grade" });
     Hm.tiles.courses.setTile({ value: t ? t.courses : null, label: t && t.courses === 1 ? "Class" : "Classes" });
     Hm.tiles.students.setTile({ value: t ? t.students : null, label: "Students" });
     Hm.tiles.support.setTile({ value: t ? t.atRisk : null, label: "Below a pass" });
+    // Your day: every class in order, with its register.
+    if (Hm.dayHost) {
+      Hm.dayHost.innerHTML = "";
+      if (items.length) {
+        var byCourse = {};
+        if (d.teaching.ok) d.teaching.v.courses.forEach(function (c) { byCourse[c.id] = c; });
+        Hm.dayHost.appendChild(P.sh("Your day"));
+        var tl = el("div", "ph-tl"), n = nowMin();
+        items.forEach(function (x) {
+          var c = byCourse[x.courseId] || {}, t = tk[x.courseId], s0 = minOf(x.startsAt), e0 = minOf(x.endsAt);
+          var past = e0 != null && n >= e0, now = s0 != null && e0 != null && n >= s0 && n < e0;
+          var b = el("button", "ph-pd t-" + P.toneOf(c.subject || x.title) + (now ? " now" : past ? " past" : ""));
+          b.type = "button";
+          b.innerHTML = "<span class='tm'>" + (x.startsAt ? "<b>" + esc(clock(x.startsAt).replace(/ [AP]M$/, "")) + "</b>" + (x.endsAt ? "<small>" + esc(clock(x.endsAt).replace(/ [AP]M$/, "")) + "</small>" : "") : "<b>" + esc(periodLabel(x.periods)) + "</b>") + "</span><i class='bar'></i>" +
+            "<span class='t'><b>" + esc(x.title) + "</b><small>" + esc([periodLabel(x.periods.slice(0, 1)), x.room ? "Room " + x.room : "", c.students != null ? plural(c.students, "student") : ""].filter(Boolean).join(" · ")) + "</small></span>" +
+            (t ? "<span class='ph-pill green'>Taken</span>" : (s0 != null && n >= s0 ? "<span class='ph-pill orange'>Register</span>" : "")) +
+            (now ? "<span class='live'><i style='width:" + Math.round((n - s0) / (e0 - s0) * 100) + "%'></i></span>" : "");
+          b.addEventListener("click", function () { openRoll({ id: x.courseId, title: x.title, subject: c.subject, room: x.room }, d.t0); });
+          tl.appendChild(b);
+        });
+        Hm.dayHost.appendChild(tl);
+      }
+    }
     var gone = items.filter(function (x) { return !tk[x.courseId] && minOf(x.startsAt) != null && nowMin() > minOf(x.startsAt); }).length;
     if (gone) note(Hm.notes, "orange", plural(gone, "register") + " not taken yet today.", function () { K.openStaff("attendance"); });
     if (t && t.overdue) note(Hm.notes, "", plural(t.overdue, "piece of work is", "pieces of work are") + " waiting to be marked.", function () { K.openStaff("tograde"); });
@@ -374,11 +404,15 @@ window.OPLO_PHONE_STAFF = function (P) {
     var fx = d.fx.ok ? d.fx.v : null;
     var open = fx ? (fx.open != null ? fx.open : fx.orders && fx.orders.open != null ? fx.orders.open : fx.counts && fx.counts.open) : null;
     Hm.tiles["fx-orders"].setTile({ value: typeof open === "number" ? open : null, label: "Open work orders" });
-    Hm.tiles.analytics.setTile({ value: "Open", plain: true, label: "Analytics" });
+    var pend = d.leave && d.leave.ok ? d.leave.v.filter(function (x) { return x.status === "pending"; }).length : null;
+    Hm.tiles.leave.setTile({ value: pend, label: pend === 1 ? "Leave request to answer" : "Leave requests to answer" });
     var rev = d.review.ok ? d.review.v : null, exp = expectedSections(rev, d.t0, d.sections.ok ? d.sections.v : []), tk = registersFor(rev, d.t0);
     var miss = exp.filter(function (s) { return !tk[s.courseId]; }).length;
     if (m.total && miss) note(Hm.notes, "orange", plural(miss, "register") + " still to come today.", function () { K.openStaff("attendance"); });
     if (en && en.awaitingReview) note(Hm.notes, "", plural(en.awaitingReview, "application") + " waiting for review.", function () { K.openStaff("enrollment"); });
+    var od = fx && fx.orders ? fx.orders.overdue : 0;
+    if (od) note(Hm.notes, "red", plural(od, "work order is", "work orders are") + " overdue.", function () { K.openStaff("fx-orders"); });
+    if (pend) note(Hm.notes, "", plural(pend, "leave request") + " waiting for an answer.", function () { K.openStaff("leave"); });
   }
 
   /* ========================================================== Everything */
@@ -473,6 +507,7 @@ window.OPLO_PHONE_STAFF = function (P) {
     var host = L.add(el("div"));
     function redraw() { host.innerHTML = ""; drawWeek(); }
     L.refresh = function () { F.bust(); redraw(); };
+    L.onReveal = L.refresh;
     function drawWeek() {
       host.appendChild(weekBar(st, redraw));
       var panel = el("div");
@@ -678,7 +713,7 @@ window.OPLO_PHONE_STAFF = function (P) {
         save.disabled = true;
         AT.put(day, course.id, roster.map(function (s) { return { accountId: s.id, status: st[s.id], note: nt[s.id] || null }; }), "register").then(function () {
           F.bust(); P.toast("Register saved"); P.close();
-          setTimeout(function () { var t = P.top(); if (t && t.refresh) t.refresh(); if (P.depth() === 0 && P.home().onShow) P.home().at = 0; }, 800);
+          if (P.home()) P.home().at = 0;
         }, function (e) { save.disabled = false; P.toast(e && e.message ? e.message : "The register couldn’t be saved."); });
       });
       save.disabled = future || closed || (!dirty && !!rows);
@@ -863,60 +898,12 @@ window.OPLO_PHONE_STAFF = function (P) {
       host.appendChild(el("p", "ph-sub", esc(plural(list.length, "class", "classes") + " · " + plural(r.totals.students, "student"))));
       var g = P.group();
       list.forEach(function (c) {
-        g.appendChild(P.row({ dot: true, tone: P.toneOf(c.subject || c.title), title: c.title, sub: [plural(c.students, "student"), c.unmarked ? c.unmarked + " to mark" : "", c.atRisk ? c.atRisk + " below a pass" : ""].filter(Boolean).join(" · "),
-          valueHtml: c.average != null ? "<b>" + esc(num(c.average)) + "%</b><small>average</small>" : "", go: function () { openClass(c); } }));
+        g.appendChild(P.row({ dot: true, tone: P.toneOf(c.subject || c.title), title: c.title, sub: [plural(c.students, "student"), c.unmarked ? c.unmarked + " to grade" : "", c.atRisk ? c.atRisk + " below a pass" : ""].filter(Boolean).join(" · "),
+          valueHtml: c.average != null ? "<b>" + esc(num(c.average)) + "%</b><small>average</small>" : "", go: function () { F.openClass(c); } }));
       });
       host.appendChild(g);
     }, function (e) { P.fail(host, e, function () { L.el.remove(); K.openStaff("courses"); }); });
   }
-  function openClass(c) {
-    place("class:" + c.id, c.title, 2, { tone: P.toneOf(c.subject || c.title), label: c.title, back: up("Classes", "courses") }, function (L) {
-      var tone = P.toneOf(c.subject || c.title);
-      var lead = el("div", "ph-lead t-" + tone);
-      lead.innerHTML = '<div class="row"><div><p class="k">' + esc(c.subject || "Class") + "</p><h2>" + esc(c.title) + '</h2><p class="s">' + esc(plural(c.students, "student")) + '</p></div><span class="ringslot"></span></div><div class="chips"></div>';
-      lead.querySelector(".ringslot").replaceWith(P.ring(c.average == null ? 0 : c.average, { size: 104, stroke: 9, dark: true, center: c.average == null ? "<small>No marks</small>" : "<b>" + esc(num(c.average)) + "<span class='pc'>%</span></b><small>average</small>" }));
-      var chips = lead.querySelector(".chips");
-      if (c.unmarked) chips.appendChild(el("span", null, c.unmarked + " to mark"));
-      if (c.atRisk) chips.appendChild(el("span", null, c.atRisk + " below a pass"));
-      if (!chips.children.length) chips.remove();
-      L.titleEl = null;
-      L.barTitle.textContent = c.title;
-      L.add(lead);
-      var g = P.group();
-      g.style.marginTop = "18px";
-      g.appendChild(P.row({ icon: "check", tone: "teal", title: "Take attendance", sub: "Today’s register", go: function () { openRoll({ id: c.id, title: c.title, subject: c.subject }, todayIso()); } }));
-      g.appendChild(P.row({ icon: "table", tone: tone, title: "Gradebook", sub: "On the full console", go: function () { K.openStaff("roster"); } }));
-      L.add(g);
-      if (c.needs && c.needs.length) {
-        L.add(P.sh("Needs you"));
-        var ng = P.group();
-        c.needs.forEach(function (n) { ng.appendChild(P.row({ icon: "tray", tone: "pink", title: n.title, sub: n.count + (n.kind === "overdue" ? " not marked" : " to mark"), chev: false })); });
-        L.add(ng);
-      }
-      var host = L.add(el("div"));
-      host.appendChild(P.skel(2, 62));
-      Dt.students().then(function (r) {
-        var rows = r.students.filter(function (s) { return (s.courses || []).some(function (x) { return x.courseId === c.id; }); });
-        host.innerHTML = "";
-        if (!rows.length) return;
-        host.appendChild(P.sh("Students"));
-        var sg = P.group();
-        rows.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }).forEach(function (s) {
-          var cc = s.courses.filter(function (x) { return x.courseId === c.id; })[0], gr = cc && cc.grade, p = gr && gr.percent;
-          var row = el("button", "ph-row has-ic");
-          row.type = "button";
-          row.appendChild(P.shared.avatar(s.name, 34));
-          row.appendChild(el("span", "t", "<b>" + esc(s.name) + "</b><small>" + esc(cc && cc.missing ? cc.missing + " missing" : p == null ? "No marks yet" : "") + "</small>"));
-          row.appendChild(el("span", "v", p == null ? "" : "<span class='ph-gr " + (p >= 80 ? "ok" : p >= 70 ? "" : p >= 60 ? "orange" : "red") + "'>" + esc(gr.letter || num(p) + "%") + "</span><small>" + esc(num(p)) + "%</small>"));
-          row.insertAdjacentHTML("beforeend", P.chev);
-          row.addEventListener("click", function () { openStudent(s.id, s.name, s); });
-          sg.appendChild(row);
-        });
-        host.appendChild(sg);
-      }, function () { host.innerHTML = ""; });
-    });
-  }
-
   /* ========================================================= Everything else */
   function adapted(tab, draw) {
     var sec = K.sections().filter(function (t) { return t.k === tab; })[0];
@@ -930,6 +917,15 @@ window.OPLO_PHONE_STAFF = function (P) {
     });
   }
 
+  /* What the role modules (phone-teach.js, phone-admin.js, phone-records.js) draw
+     with. A module registers the places it owns in F.routes: a function that
+     draws the place and returns true, or false to leave it to the console's page. */
+  F.routes = {};
+  F.init = init; F.x = function () { init(); return X; }; F.Dt = Dt; F.place = place; F.layer = layer; F.up = up; F.cta = cta; F.field = field;
+  F.isAdmin = isAdmin; F.openRoll = openRoll; F.openStudent = openStudent; F.minOf = minOf; F.nowMin = nowMin; F.periodLabel = periodLabel;
+  F.whenName = whenName; F.weekdayName = weekdayName; F.dayModel = dayModel; F.registersFor = registersFor; F.cached = cached;
+  F.adapted = adapted;
+
   P.staff = function (tab, o) {
     init();
     buildHome();
@@ -940,6 +936,11 @@ window.OPLO_PHONE_STAFF = function (P) {
       case "students": layer("students", 1, "blue", "Students", function (L) { buildStudents(L, "all"); }); return;
       case "courses": if (!isAdmin()) { layer("classes", 1, "indigo", "Classes", buildClasses); return; } break;
     }
+    if (F.routes[tab] && F.routes[tab](o) !== false) return;
+    var rc = K.record(tab);                       // leave, cover, referrals, events…: the registry's own screen
+    if (rc) { P.records(tab, rc, { tone: "blue" }); return; }
     adapted(tab, o.draw);
   };
+
+  ["OPLO_PHONE_TEACH", "OPLO_PHONE_ADMIN"].forEach(function (n) { if (typeof window[n] === "function") window[n](P, F); });
 };

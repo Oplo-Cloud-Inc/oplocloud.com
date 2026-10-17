@@ -359,6 +359,14 @@ window.OPLO_PHONE = function (K) {
       n.classList.add("ph-dock");
       S.el.appendChild(n);
       S.scroll.classList.add("has-dock");
+      // With the keyboard up the dock rides above it, so Save is never underneath.
+      var vv = window.visualViewport;
+      if (vv) {
+        var fit = function () { var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop); n.style.transform = kb ? "translateY(" + (-kb) + "px)" : ""; };
+        vv.addEventListener("resize", fit); vv.addEventListener("scroll", fit);
+        var was = S.onRetire;
+        S.onRetire = function () { vv.removeEventListener("resize", fit); vv.removeEventListener("scroll", fit); if (was) was(); };
+      }
       return n;
     };
     S.tone = function (t) { S.el.className = S.el.className.replace(/\bt-\w+/g, "").trim() + " t-" + t; };
@@ -411,6 +419,7 @@ window.OPLO_PHONE = function (K) {
     relayer();
     var top = stack[stack.length - 1];
     if (top) inert(top.el, false); else inert(home.el, false);
+    if (top && top.onReveal && gone.length) top.onReveal();      // what is under a closed layer may have changed
     if (!stack.length && home.onShow) home.onShow();
   }
   P.popAll = function () { if (root) { while (sheets.length) sheets[sheets.length - 1].close(); popTo(-1); } };
@@ -622,6 +631,7 @@ window.OPLO_PHONE = function (K) {
   };
 
   if (typeof window.OPLO_PHONE_SHARED === "function") window.OPLO_PHONE_SHARED(P);
+  if (typeof window.OPLO_PHONE_RECORDS === "function") window.OPLO_PHONE_RECORDS(P);
   if (typeof window.OPLO_PHONE_STUDENT === "function") window.OPLO_PHONE_STUDENT(P);
   if (typeof window.OPLO_PHONE_STAFF === "function") window.OPLO_PHONE_STAFF(P);
   return P;

@@ -9840,6 +9840,15 @@
         return consoleMode() === "admin" ? { admin: true, items: ADMIN_TREE } : { items: TEACHER_TREE.concat([{ head: "More", items: TEACHER_FOOT }]) };
       },
       otherHomes: otherHomes,
+      // How a teacher's typed mark is read ("8", "85%", "B+", "M", "E"), and the school's letters.
+      readEntry: function (raw, outOf, policy) { return tx().readEntry(raw, outOf, policy); },
+      scaleOf: function (policy) { return tx().scaleOf(policy); },
+      // The registry-driven pages (leave, cover, referrals, events …): the config the console uses for a place, or null.
+      record: function (tab) { return REC[tab] && !/^(fee|invoice|payment)$/.test(REC[tab].kind) ? REC[tab] : null; },
+      // Every class the school has, read once: its students, its teachers, its marks.
+      school: function () { return loadSchool(); },
+      // The watchlist the console draws, as data: who needs a look and why.
+      watchlist: function () { return Promise.all([loadSchool(), loadAttendance().catch(function () { return null; })]).then(function (r) { return { school: r[0], flagged: watchlist(r[0], r[1]), attendance: r[1] }; }); },
       push: function (key, label, restore) { enter(key, label, restore, false); },
       hasBack: function () { return !!(S.hist.length && POS > 0 && TRAIL[POS - 1]); },
       back: function () { history.back(); }

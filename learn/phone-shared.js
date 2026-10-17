@@ -177,7 +177,8 @@ window.OPLO_PHONE_SHARED = function (P) {
     setTimeout(function () { try { body.focus(); } catch (e) { /* old browsers */ } }, 380);
   }
 
-  S.compose = function (to) {
+  S.compose = function (to, opts) {
+    opts = opts || {};
     var chosen = to ? [to] : [];
     var title = el("input"), body = el("textarea");
     title.type = "text"; title.placeholder = "Subject"; body.rows = 6; body.placeholder = "Write your message";
@@ -223,6 +224,7 @@ window.OPLO_PHONE_SHARED = function (P) {
     aud.addEventListener("change", function () { courseRow.hidden = aud.value !== "course"; });
     if (staff) API.courses.mine().then(function (cs) {
       cs.filter(function (c) { return c.myRole === "teacher" || c.myRole === "assistant" || me.role === "admin"; }).forEach(function (c) { var o = el("option"); o.value = c.id; o.textContent = c.title; course.appendChild(o); });
+      if (opts.courseId) { aud.value = "course"; course.value = opts.courseId; courseRow.hidden = false; }
     });
     var ctl = P.sheet({ title: "New message", sub: staff ? "To people, a course, or a whole group." : "To your teachers and the school’s staff.", tone: "blue", body: function (b) {
       var g = P.group();

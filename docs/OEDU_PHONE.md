@@ -69,6 +69,15 @@ turn transitions off in the page when you only want the end state. Width sweeps
 at 320, 375 and 430 found no sideways scroll in any student place, and none in
 the 45 console pages opened through "Everything" at 375 (teacher 25, administrator 20).
 
+## Second pass: administrators and teachers (2026-10-16, later)
+
+* `phone-teach.js` To grade queue; **marking** one piece of work a student at a time (typed marks read by the console's own `readEntry`, keyboard stays up between students, Not handed in / Excused / Late / OEdu's result); a class (work with averages, students with grades); a student's marks in a class, each editable; announcements. Teacher home gained "Your day".
+* `phone-records.js` one screen over the registry (`/item-kinds`): leave, cover, referrals, detention, support plans, accommodations, events, forms, certifications, menus, lockers, equipment. Grouped by status, status changed in one tap (approve/decline leave), edit, remove, new. Also the student's Events and Menu.
+* `phone-admin.js` applications queue and an application (stages, gates, documents viewed and verified/returned/waived, decide, corrections, notes, assign); watchlist; teachers; work orders (accept, decline, start, hold, complete, reopen).
+* Admin home: tiles now Attendance, People, Applications, Messages, Work orders, Leave to answer; notes include overdue work orders.
+
+Not yet checked by eye: records editor sheet, watchlist, teachers, work orders, application decide/corrections sheets (the data paths ran without errors). Enrolling an admitted student and the gradebook grid still open the console's page in a layer.
+
 ## Not built
 
 * Gradebook entry as a phone-native screen (the console's grid scrolls inside its layer; grading one piece of work through "To Grade" works).
