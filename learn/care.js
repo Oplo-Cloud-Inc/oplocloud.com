@@ -252,9 +252,12 @@ window.OPLO_CARE = function (K) {
         h.appendChild(el("p", "en-note", "Only people who run discipline can choose to show an entry to a family. Nothing is sent to anyone."));
       },
       onSubmit: function () {
-        var s = who.get();
-        if (!s) throw new Error("Choose the student from the list.");
-        if (!title.value()) throw new Error("Say what it was in a line.");
+        // Everything missing at once, not the first thing and then the next.
+        var s = who.get(), missing = [];
+        if (!s) missing.push("the student, chosen from the list");
+        if (!title.value()) missing.push("what it was, in a line");
+        if (!when.value()) missing.push("the date");
+        if (missing.length) throw new Error("Still needed: " + missing.join("; ") + ".");
         return CN.create({ studentId: s.id, kind: kind.value(), category: cat.value(), severity: kind.value() === "incident" ? sev.value() : undefined,
           title: title.value(), occurredOn: when.value(), location: where.value(), details: details.value(), people: people2.value(),
           actionTaken: action.value(), followUpOn: follow.value() || undefined, familySees: sc.checked }).then(function () {
@@ -449,9 +452,10 @@ window.OPLO_CARE = function (K) {
         h.appendChild(g); h.appendChild(detail.node); h.appendChild(flag.node);
       },
       onSubmit: function () {
-        var s = who.get();
-        if (!s) throw new Error("Choose the student from the list.");
-        if (!title.value()) throw new Error("Say what it is.");
+        var s = who.get(), missing = [];
+        if (!s) missing.push("the student, chosen from the list");
+        if (!title.value()) missing.push("what it is");
+        if (missing.length) throw new Error("Still needed: " + missing.join("; ") + ".");
         return HL.create({ studentId: s.id, kind: kind.value(), title: title.value(), severity: sev.value() || undefined, onDate: on.value() || undefined,
           dueOn: due.value() || undefined, detail: detail.value() || undefined, flag: flag.value() || undefined }).then(function () {
           toast("Added."); if (done) done();

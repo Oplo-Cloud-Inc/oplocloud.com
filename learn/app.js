@@ -487,8 +487,8 @@
        /student/Grades/<Class>, /Grades/<2025-26>, /Grades/Plan
                                                    a class, a past year, the plan
 
-     The console has no addresses of its own yet; its places are still
-     history entries, so Back works there, but the address bar stays put. */
+     The consoles' places have addresses too: /admin/Schedule/Bell-Schedules,
+     /teacher/Gradebook (adminPath, adminAt). */
   var TRAIL = [], POS = -1, RESTORING = false;
   // Entries this page made carry this; ones left by an earlier load of the
   // page do not, and are found by their address instead of by their index.
@@ -8832,7 +8832,7 @@
       { k: "sc-plans", name: "Plans" }] },
     { k: "attendance", name: "Attendance", icon: "check" },
     { name: "Student Support", icon: "heart", kids: [
-      { k: "support", name: "Watchlist" }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention" },
+      { k: "support", name: "Watchlist" }, { k: "behavior", name: "Behavior" }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention" },
       { k: "senplans", name: "Support Plans" }, { k: "accommodations", name: "Accommodations" }] },
     { name: "Communicate", icon: "mail", kids: [
       { k: "inbox", name: "Inbox" }, { k: "events", name: "Events" }, { k: "forms", name: "Forms" }, { k: "outbox", name: "Mail Queue" }] },
@@ -8845,8 +8845,9 @@
       { k: "certs", name: "Certifications" }] },
     { name: "School Operations", icon: "rows", kids: [
       { k: "menus", name: "Menus" }, { k: "eligibility", name: "Meal Eligibility" }, { k: "lockers", name: "Lockers" }, { k: "checkouts", name: "Equipment" }] },
-    { name: "Finance", icon: "landmark", kids: [
-      { k: "fees", name: "Fees" }, { k: "invoices", name: "Invoices" }, { k: "payments", name: "Payments" }] },
+    /* No Finance group: OEdu does not keep fees, invoices or payments. The
+       screens for them are still defined (REC) and come back by putting the
+       group here again. */
     { name: "Facilities", icon: "building", kids: [
       { k: "fx-orders", name: "Work orders" }, { k: "fx-spaces", name: "Spaces" }, { k: "fx-assets", name: "Assets" },
       { k: "fx-upkeep", name: "Routines" }, { k: "fx-bookings", name: "Bookings" }, { k: "fx-vendors", name: "Vendors" },
@@ -8855,13 +8856,13 @@
     { name: "Data Center", icon: "server", kids: [{ k: "data", name: "Exports" }, { k: "imports", name: "Imports" }, { k: "sis", name: "Integrations" },
       { k: "state", name: "State Reporting" }, { k: "district", name: "District" }, { k: "api", name: "API" }] },
     { k: "security", name: "Security", icon: "shield" },
-    { name: "Reports", icon: "table", kids: [{ k: "office", name: "Reports" }, { k: "builder", name: "Report Builder" }] },
+    { name: "Reports", icon: "table", kids: [{ k: "office", name: "Office Reports" }, { k: "builder", name: "Report Builder" }] },
     { k: "activity", name: "Audit Log", icon: "wave" },
     { k: "system", name: "Settings", icon: "gear" },
     /* Places the platform does not keep records for yet. They are still here,
        and still say so, but folded away: a rail should be what works. */
     { name: "Not set up yet", icon: "rows", kids: [
-      { k: "behavior", name: "Behavior" }, { k: "standards", name: "Standards" },
+      { k: "standards", name: "Standards" },
       { k: "an-standards", name: "Standards analytics" }, { k: "sftp", name: "SFTP" }] }
   ];
   /* The student's own console: the school's record of them, read by them.
@@ -9622,11 +9623,9 @@
           CX_ICONS.chev + "</svg>";
         var kids = el("div", "cn-kids");
         t.kids.forEach(function (c) { kids.appendChild(place(c)); });
-        g.addEventListener("click", function () {
-          var open = !g.classList.contains("open");
-          railFold(t.name, open);
-          if (open && !t.kids.some(function (c) { return c.k === S.tab; })) openAdmin(false, t.kids[0].k);
-        });
+        // A group only folds and unfolds. It used to also open its first place,
+        // so looking at what is in a group took you out of what you were doing.
+        g.addEventListener("click", function () { railFold(t.name, !g.classList.contains("open")); });
         nav.appendChild(g);
         nav.appendChild(kids);
       });
@@ -9702,13 +9701,44 @@
     slot.className = "ct" + (n ? " on" : "");
   }
 
-  function openAdmin(silent, tab) {
+  /* A place in the school's or the teacher's console has an address, like the
+     student's: /admin/Schedule/Bell-Schedules, /teacher/Gradebook. Back, a
+     refresh and a link all land on the place that was open. A place that is
+     only reached from another screen, and has no row in the rail, is named by
+     its key. */
+  function adminPath(k) {
+    var t = allowedTabs().filter(function (x) { return x.k === k; })[0];
+    if (!t) return "";
+    return t.hidden ? k : t.group ? slug(t.group) + "/" + slug(t.name) : slug(t.name);
+  }
+  /* "Schedule/Bell-Schedules" → "sc-bell"; null when the address names no place this person may open. */
+  function adminAt(rest) {
+    var seg = String(rest || "").split("/").filter(Boolean).map(function (x) { try { return decodeURIComponent(x); } catch (e) { return x; } });
+    var hit = allowedTabs().filter(function (t) {
+      if (seg.length === 1) return sameName(t.k, seg[0]) || (!t.group && !t.hidden && sameName(slug(t.name), seg[0]));
+      return seg.length === 2 && !t.hidden && t.group && sameName(slug(t.group), seg[0]) && sameName(slug(t.name), seg[1]);
+    })[0];
+    return hit ? hit.k : null;
+  }
+  /* The tab's title says where you are, so a bookmark, a history entry and a
+     screen reader's page change all say it too. */
+  function setTitle(name) {
+    document.title = name ? name + " · OEdu" : "OEdu";
+    var say = document.getElementById("routeSay");
+    if (say) say.textContent = name || "";
+  }
+
+  function openAdmin(silent, tab, replace) {
     if (S.me && consoleMode() === "student") { openStudentConsole(silent, tab); return; }
     if (!allowedTabs().length) return;
     var was = S.tab;
     S.tab = sectionNamed(tab || S.tab).k;
     if (S.tab !== was) RAIL_SHUT = {};
-    if (!silent) enter("admin:" + S.tab, "Console", function () { openAdmin(true, S.tab); });
+    // The entry keeps this place. It used to read S.tab when Back was pressed,
+    // which by then was the place Back was leaving, so Back reopened it.
+    var at = S.tab;
+    if (!silent || replace) enter("admin:" + at, "Console", function () { openAdmin(true, at); }, !!replace, adminPath(at));
+    setTitle(sectionNamed(at).name);
 
     document.body.classList.add("is-console");
     document.body.classList.toggle("t-console", consoleMode() !== "admin");
@@ -9780,6 +9810,7 @@
     var sec = studentSection(tab || S.tab);
     S.tab = sec.k;
     S.sarg = arg || null;
+    setTitle(STUDENT_NAMES[sec.k]);
     if (!silent || replace) {
       var key = "sx:" + sec.k + (arg ? ":" + arg : "");
       enter(key, STUDENT_NAMES[sec.k], function () { openStudentConsole(true, sec.k, arg); }, !!replace, studentPath(sec.k, arg));
@@ -11291,8 +11322,11 @@
     document.addEventListener("keydown", key, true);
     wrap.addEventListener("click", function (e) {
       if (e.target === wrap || e.target === x) { close(); return; }
-      // Going somewhere from inside the sheet closes it behind you.
-      if (e.target.closest && e.target.closest(".cn-tr, .cn-btn")) setTimeout(close, 0);
+      // Going somewhere from inside a sheet that only shows something closes it
+      // behind you. A sheet with fields in it is a form, and closes itself when
+      // its work is done: closing on every press threw away the message saying
+      // what was missing, and a failed save with it.
+      if (e.target.closest && e.target.closest(".cn-tr, .cn-btn") && !sheet.querySelector("input, select, textarea")) setTimeout(close, 0);
     });
     x.focus();
     return { close: close };
@@ -11675,7 +11709,7 @@
     var box = el("div", "cn-finder");
     var input = el("input", "cn-finderin");
     input.type = "text";
-    input.placeholder = admin ? "Go to a place or student — or type “failing”, “absent”" : student ? "Go to a place, a course or a piece of work" : "Search OEdu";
+    input.placeholder = admin ? "Go to a place, student, course or teacher — or type “failing”, “absent”" : student ? "Go to a place, a course or a piece of work" : "Search OEdu";
     input.setAttribute("aria-label", admin ? "Go to" : "Search OEdu");
     box.appendChild(input);
     if (!admin && !student) box.appendChild(el("p", "cn-finderhint", "Students, assignments, lessons, standards, courses, places"));
@@ -11721,10 +11755,21 @@
       places.length = 0;
       stu().find().then(function (list) { list.forEach(function (p) { places.push(p); }); draw(); }, function () { /* the places still work */ });
     } else if (admin) {
-      if (FOUND_PEOPLE && FOUND_PEOPLE.mode === "admin") addPeople(FOUND_PEOPLE.list);
+      // Students, courses and teachers: what an office looks for by name.
+      var addSchool = function (d) {
+        addPeople(d.students);
+        d.courses.forEach(function (c) {
+          places.push({ name: c.title, hint: "Course · " + (c.subject || c.code || "School") + " · " + cxPlural(c.students, "student"), kind: "course",
+            go: function () { openCoursePage(c.raw); } });
+        });
+        d.teachers.forEach(function (t) {
+          places.push({ name: t.name, hint: "Teacher", kind: "staff", go: function () { openAdmin(false, "staff"); } });
+        });
+      };
+      if (FOUND_PEOPLE && FOUND_PEOPLE.mode === "admin") addSchool(FOUND_PEOPLE.data);
       else loadSchool().then(function (data) {
-        FOUND_PEOPLE = { mode: "admin", list: data.students };
-        addPeople(data.students);
+        FOUND_PEOPLE = { mode: "admin", data: data };
+        addSchool(data);
         draw();
       }, function () { /* the places still work */ });
     } else {
@@ -11858,8 +11903,41 @@
   }
 
   /* An action whose failure is the server refusing, and which says so. */
-  function attempt(promise, done) {
+  /* Required fields, said and checked. A required field carries an asterisk;
+     a form checks every one of them at once and says what is missing beside
+     each, instead of stopping at the first with a toast that is gone before
+     it is read. `f` is what field() and areaField() return. When the server
+     refuses one field by name, attempt() puts its message beside that field. */
+  function must(f, message) {
+    f.reqMsg = message || "Required.";
+    f.input.required = true;
+    f.input.setAttribute("aria-required", "true");
+    f.querySelector("span").insertAdjacentHTML("beforeend", ' <i class="admin-req" aria-hidden="true">*</i>');
+    f.input.addEventListener("input", function () { fieldError(f, ""); });
+    return f;
+  }
+  function fieldError(f, text) {
+    var n = f.querySelector(".admin-err");
+    if (!text) { if (n) n.remove(); f.input.removeAttribute("aria-invalid"); return; }
+    if (!n) { n = el("small", "admin-err"); n.setAttribute("role", "alert"); f.appendChild(n); }
+    n.textContent = text;
+    f.input.setAttribute("aria-invalid", "true");
+  }
+  /* True when every field has something in it; otherwise each empty one says so and the first takes focus. */
+  function checkRequired(fields) {
+    var first = null;
+    fields.forEach(function (f) {
+      var empty = !String(f.input.value).trim();
+      fieldError(f, empty ? f.reqMsg : "");
+      if (empty && !first) first = f;
+    });
+    if (first) first.input.focus();
+    return !first;
+  }
+  function attempt(promise, done, fields) {
     return promise.then(function (r) { if (done) done(r); }, function (e) {
+      var f = e && e.field && fields && fields[e.field];
+      if (f) { fieldError(f, e.message); f.input.focus(); return; }
       toast(e && e.message ? e.message : "The server refused that.");
     });
   }
@@ -13084,11 +13162,17 @@
           box.type = "checkbox";
           box.checked = inCourse[p.id] === "student";
           box.addEventListener("change", function () {
+            // Unticking takes somebody out of the course, so a stray click asks first.
+            if (!box.checked && !confirm("Remove " + p.name + " from " + trim(course.title) + "?")) { box.checked = true; return; }
+            var now = box.checked, saved = false;
             box.disabled = true;
-            attempt(API.courses.enrol(course.id, p.id, "student", !box.checked), function () {
+            attempt(API.courses.enrol(course.id, p.id, "student", !now), function () {
+              saved = true;
+              toast(now ? p.name + " enrolled." : p.name + " removed from the course.");
+            }).then(function () {
               box.disabled = false;
-              toast(box.checked ? p.name + " enrolled." : p.name + " removed from the course.");
-            }).then(function () { box.disabled = false; });
+              if (!saved) box.checked = !now;       // the server said no, so the box says what is true
+            });
           });
           row.appendChild(box);
           row.appendChild(avatarFor(p));
@@ -17292,14 +17376,15 @@
       var f = el("label", "admin-field");
       f.appendChild(el("span", null, esc(label)));
       f.appendChild(input);
+      f.input = input; input.field = f;       // for must() and fieldError()
       form.appendChild(f);
       return input;
     }
-    var name = field("Name", el("input")); name.placeholder = "Quarter 2"; name.type = "text";
+    var name = field("Name", el("input")); name.placeholder = "Quarter 2"; name.type = "text"; must(name.field, "Give the period a name.");
     var kind = field("Kind", el("select"));
     [["quarter", "Quarter"], ["semester", "Semester"], ["year", "Year"]].forEach(function (k) { var o = el("option"); o.value = k[0]; o.textContent = k[1]; kind.appendChild(o); });
-    var from = field("Starts", el("input")); from.type = "date";
-    var to = field("Ends", el("input")); to.type = "date";
+    var from = field("Starts", el("input")); from.type = "date"; must(from.field, "Say when it starts.");
+    var to = field("Ends", el("input")); to.type = "date"; must(to.field, "Say when it ends.");
     var pass = field("Pass mark (%)", el("input")); pass.type = "number"; pass.value = "65"; pass.min = "0"; pass.max = "100";
     var err = el("p", "cx-note");
     form.appendChild(err);
@@ -17307,7 +17392,8 @@
     var sheet;
     var go = cnAction("Add period", function () {
       err.textContent = "";
-      if (!name.value.trim() || !from.value || !to.value) { err.textContent = "Give it a name and both dates."; return; }
+      if (!checkRequired([name.field, from.field, to.field])) return;
+      if (to.value < from.value) { fieldError(to.field, "It cannot end before it starts."); to.focus(); return; }
       go.disabled = true;
       API.periods.create({ name: name.value.trim(), kind: kind.value, startsOn: from.value, endsOn: to.value, passMark: Number(pass.value) }).then(function () {
         toast("Period added");
@@ -17316,6 +17402,7 @@
       }, function (e) { go.disabled = false; err.textContent = e.message || "That period could not be added."; });
     }, true);
     acts.appendChild(go);
+    acts.appendChild(cnAction("Cancel", function () { sheet.close(); }));
     box.appendChild(acts);
     sheet = cxSheet(box);
     name.focus();
@@ -17455,7 +17542,7 @@
   };
   function platTab(k) {
     if (REC[k]) return function (v) { plat().records(v, REC[k]); };
-    var fn = { inbox: "inbox", outbox: "outbox", imports: "exchange", state: "exchange", builder: "builder", district: "district", sis: "webhooks" }[k];
+    var fn = { inbox: "inbox", outbox: "outbox", imports: "exchange", state: "state", builder: "builder", district: "district", sis: "webhooks" }[k];
     return fn ? function (v) { plat()[fn](v); } : null;
   }
   /* Facilities: work orders, rooms, assets, upkeep, bookings, vendors, papers
@@ -18510,13 +18597,15 @@
     }
 
     var form = el("div", "admin-form");
-    var code = field("Code", c ? c.code : (isBio ? "biology-eco-1" : ""), "a short slug, e.g. biology");
-    if (!making) code.input.disabled = true;
-    var title = field("Title", c ? c.title : "Biology", "Biology");
+    // Nothing here is prefilled for a new course: a form that opens already saying
+    // "Biology" is a form that makes a second Biology when somebody hurries.
+    var code = field("Code", c ? c.code : (isBio ? "biology-eco-1" : ""), "a short slug, e.g. biology-1");
+    if (!making) code.input.disabled = true; else must(code, "Give the course a short code, such as biology-1.");
+    var title = must(field("Title", c ? c.title : "", "e.g. Biology 1"), "Give the course a title.");
     if (isBio && making) title.input.disabled = true;
-    var subject = field("Subject", c ? c.subject : "Biology", "Biology");
+    var subject = field("Subject", c ? c.subject : "", "e.g. Science");
     if (isBio && making) subject.input.disabled = true;
-    var level = field("Level", c ? c.level : "High School", "High School");
+    var level = field("Level", c ? c.level : "", "e.g. High School");
     if (isBio && making) level.input.disabled = true;
     var summary = areaField("Summary", c ? c.summary : "", "What this course is, in a sentence.");
     var standards = areaField("Standards",
@@ -18560,9 +18649,14 @@
     var misconceptions = areaField("Common Misconceptions",
       c && c.body && c.body.misconceptions ? c.body.misconceptions.join("\n") : "",
       "One misconception per line");
-    [code, title, subject, level, summary, standards, dcis, practices, cccs, units, unitPromise, bigQuestion, unitObjectives, unitMap, lessons, phenomena, handsOn, misconceptions, grading].forEach(function (f) {
-      form.appendChild(f);
-    });
+    // What a course needs comes first; the curriculum detail is folded away
+    // until it is wanted (or already filled in), not twenty fields in a column.
+    [code, title, subject, level, summary, grading].forEach(function (f) { form.appendChild(f); });
+    var optional = [standards, units, lessons, dcis, practices, cccs, unitPromise, bigQuestion, unitObjectives, unitMap, phenomena, handsOn, misconceptions];
+    var more = el("details", "tx-more", "<summary>Curriculum detail: standards, units, lessons (optional)</summary>");
+    more.open = optional.some(function (f) { return f.input.value.trim(); });
+    optional.forEach(function (f) { more.appendChild(f); });
+    form.appendChild(more);
     v.appendChild(form);
 
     var acts = el("div", "admin-acts");
@@ -18577,10 +18671,14 @@
         return [bits[0].trim(), pct];
       }).filter(Boolean);
       var total = weights.reduce(function (a, w) { return a + w[1]; }, 0);
+      // Everything wrong is said at once, each beside its own field.
+      var ok = checkRequired(making ? [code, title] : [title]);
       if (weights.length && Math.abs(total - 100) > 0.5) {
-        toast("The grading weights add to " + total + "%, not 100%.");
-        return;
-      }
+        fieldError(grading, "The grading weights add to " + total + "%, not 100%.");
+        if (ok) grading.input.focus();
+        ok = false;
+      } else fieldError(grading, "");
+      if (!ok) return;
       var payload = {
         title: title.input.value.trim(),
         subject: subject.input.value.trim(),
@@ -18598,24 +18696,27 @@
           practices: practices.input.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean)
         })
       };
-      if (!payload.title) { toast("A course needs a title."); return; }
       save.disabled = true;
       var go = making
         ? API.courses.create(Object.assign({ code: code.input.value.trim().toLowerCase(),
                                              orgId: S.me.orgId }, payload)).then(unteachIfAdmin)
         : API.courses.update(c.id, payload);
+      var saved = false;
       attempt(go, function () {
+        saved = true;
         toast(making ? "Course created." : "Saved.");
         goBack();
-      }).then(function () {
+      }, { code: code, title: title }).then(function () {
         save.disabled = false;
-        if (making) {
-          var newTitle = title.input.value.trim();
-          openEnrolByCourseName(newTitle);
-        }
+        // Only a course that was made has anybody to enrol in it.
+        if (making && saved) openEnrolByCourseName(title.input.value.trim());
       });
     });
     acts.appendChild(save);
+    var cancel = el("button", "lx-btn quiet", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", goBack);
+    acts.appendChild(cancel);
     v.appendChild(acts);
     show("admin");
   }
@@ -19143,9 +19244,9 @@
     v.appendChild(el("h1", "cn-h1", making ? "Add somebody" : esc(p.name)));
 
     var form = el("div", "admin-form");
-    var name = field("Full name", p ? p.name : "");
+    var name = must(field("Full name", p ? p.name : ""), "Give them a full name.");
     var email = field("Email", p ? p.email : "");
-    if (!making) email.input.disabled = true;
+    if (!making) email.input.disabled = true; else must(email, "Give them an email address.");
     var title = field("Title", p ? p.title : "", "High School Silver Program");
 
     var roleF = el("label", "admin-field");
@@ -19165,6 +19266,7 @@
     var pw = field("Password", "");
     pw.input.type = "password";
     pw.input.autocomplete = "new-password";
+    if (making) must(pw, "Choose a password for them.");
 
     [name, email, title, roleF].forEach(function (f) { form.appendChild(f); });
     if (making) form.appendChild(pw);
@@ -19184,7 +19286,7 @@
     var save = el("button", "lx-btn lg", making ? "Add them" : "Save");
     save.type = "button";
     save.addEventListener("click", function () {
-      if (!name.input.value.trim()) { toast("A person needs a name."); return; }
+      if (!checkRequired(making ? [name, email, pw] : [name])) return;
       save.disabled = true;
       var go;
       if (making) {
@@ -19207,9 +19309,13 @@
       attempt(go, function () {
         toast(making ? name.input.value.trim() + " added." : "Saved.");
         goBack();
-      }).then(function () { save.disabled = false; });
+      }, { name: name, email: email, password: pw }).then(function () { save.disabled = false; });
     });
     acts.appendChild(save);
+    var cancel = el("button", "lx-btn quiet", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", goBack);
+    acts.appendChild(cancel);
     v.appendChild(acts);
     if (!making) {
       /* The person's roles, read rather than assumed. The select starts at the
@@ -19381,10 +19487,11 @@
   }
 
   /* ----------------------------------------------------------------- System
-     How this console looks on this Mac, where the install stands, and what is
-     actually enforced — as System Settings lays out a pane. */
+     How this console looks on this device, whether the service is answering,
+     and who is signed in. Plain words: the people reading this run a school
+     office, not a server. */
   function tabSystem(v) {
-    consoleHead(v, null, "Settings", "How this console looks on this Mac, and where the install stands.");
+    consoleHead(v, null, "Settings", "How this console looks on this device, and whether the service behind it is answering.");
 
     function group(title) {
       if (title) v.appendChild(el("p", "cx-sethead", esc(title)));
@@ -19418,26 +19525,19 @@
     }
 
     var look = group("Appearance");
-    row(look, "moon", "var(--cx-indigo)", "Appearance", "Light, dark, or whatever this Mac is set to. Kept on this device.",
+    row(look, "moon", "var(--cx-indigo)", "Appearance", "Light, dark, or whatever this device is set to. Kept on this device.",
       segOf([["light", "Light"], ["dark", "Dark"], ["auto", "Auto"]], currentAppearance(), applyAppearance));
     row(look, "rows", "var(--cx-accent)", "Rows", "How much fits on a screen. Marking hundreds of submissions wants more; planning a lesson wants fewer.",
       segOf([["comfortable", "Comfortable"], ["standard", "Standard"], ["dense", "Dense"]], currentDensity(), applyDensity));
 
-    var plat = group("Platform");
-    var api = row(plat, "server", "var(--cx-green)", "Platform API", API.base(), '<span class="cx-dot"></span><span>Checking…</span>');
-    row(plat, "person", "var(--cx-accent)", "Identity", "One account across Oplo products. Sessions are HttpOnly cookies set by the server; this page cannot read them.", "Oplo Account");
-    row(plat, "shield", "var(--cx-orange)", "Authorization", "Every permission is decided in the API. Hidden buttons are a courtesy, not a control.", "Server-side");
+    var plat = group("Service");
+    var api = row(plat, "server", "var(--cx-green)", "OEdu service", "The service this console reads and saves to.", '<span class="cx-dot"></span><span>Checking…</span>');
+    row(plat, "person", "var(--cx-accent)", "Signing in", "One Oplo Account for every Oplo product. Your sign-in is kept by the service, not by this page.", "Oplo Account");
+    row(plat, "shield", "var(--cx-orange)", "Permissions", "What each person may see or change is decided by the service. A hidden button is a courtesy, not a control.", "Enforced by the service");
     API.health().then(function (up) {
       var s = api.querySelector(".v");
       s.innerHTML = up ? '<span class="cx-dot"></span><span>Answering</span>' : '<span class="cx-dot off"></span><span>Not answering</span>';
     });
-
-    var data = group("Where things live");
-    row(data, "table", "var(--cx-green)", "Grades", "Written by the teachers of a course, read by the student they belong to. Synchronised across devices.", "Database");
-    row(data, "wave", "var(--cx-pink)", "Progress and XP", "Written by the student, priced by the server. This browser keeps a cache so the app works offline; the database is the truth.", "Database");
-    row(data, "books", "var(--cx-indigo)", "Study sets", "Written by teachers, published to a course, and read by the students in it.", "Database");
-    row(data, "doc", "var(--cx-purple)", "Course catalogue", "The Explore tab reads published content from the site's files. Database courses carry the enrolment and grades.", "Shipped in the site");
-    row(data, "sparkle", "var(--cx-teal)", "Tutor", "Runs through Ollama on your own machine, if you have it. Nothing is sent to a server.", "Local model");
 
     var you = group("Your account");
     var r1 = el("div", "cx-setrow");
@@ -19658,7 +19758,8 @@
     Ann.reset();
 
     if (staff) {
-      openAdmin(true, S.tab || "today");
+      // The address is where they asked to be: a refresh stays on the place, and a link opens it.
+      openAdmin(false, adminAt(appRest()) || S.tab || "today", true);
     } else if (sis) {
       var at = studentAt(appRest());
       openStudentConsole(false, at.tab, at.arg, true);
@@ -19766,6 +19867,7 @@
     // Signed out, the page is the sign-in page again, at the address everybody
     // signs in at — not at the /admin/ or /student/ the last person left behind.
     history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root);
+    setTitle(null);
     setLook(null);
     // Back to the welcome page from its top, with the sign-in panel closed —
     // it was left open by the sign-in that started this session.
@@ -20120,7 +20222,7 @@
         // An entry from before a reload: the address says where it was. An
         // address that names nothing goes home, and says so.
         S.hist = []; S.here = null;
-        if (document.body.classList.contains("is-staff")) openAdmin(true, S.tab);
+        if (document.body.classList.contains("is-staff")) openAdmin(true, adminAt(appRest()) || S.tab);
         else if (document.body.classList.contains("is-sis")) { var sa = studentAt(appRest()); openStudentConsole(true, sa.tab, sa.arg); }
         else if (!route()) { home(); found = false; }
       }
@@ -20128,7 +20230,7 @@
     if (!entry) {
       TRAIL = []; POS = -1;
       var sisHere = document.body.classList.contains("is-sis");
-      mark(false, document.body.classList.contains("is-staff") ? undefined : sisHere ? studentPath(S.tab, S.sarg) : found ? appRest() : "");
+      mark(false, document.body.classList.contains("is-staff") ? adminPath(S.tab) : sisHere ? studentPath(S.tab, S.sarg) : found ? appRest() : "");
     }
   });
   $("#user").addEventListener("click", function () { openAccount(); });
@@ -20141,6 +20243,7 @@
     this.setAttribute("aria-expanded", String(open));
   });
   $("#railScrim").addEventListener("click", closeRail);
+  $("#skipLink").addEventListener("click", function (e) { e.preventDefault(); $("#wrap").focus(); });
 
   document.addEventListener("keydown", function (e) {
     /* ⌘K, from anywhere in the console. Not bound outside it: a student

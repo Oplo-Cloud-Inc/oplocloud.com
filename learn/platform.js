@@ -265,8 +265,14 @@ window.OPLO_PLATFORM = function (K) {
         }, action: "Send",
         onSubmit: function () {
           var d = { title: title.value.trim(), body: body.value.trim() };
-          if (!d.title || !d.body) throw new Error("A subject and a message.");
-          if (aud.value === "course") { if (!course.value) throw new Error("Choose the course."); d.audience = { kind: "course", courseId: course.value }; }
+          // Everything missing, said at once, not the first thing and then the next.
+          var missing = [];
+          if (!aud.value && !chosen.length) missing.push("who it is for");
+          if (aud.value === "course" && !course.value) missing.push("the course");
+          if (!d.title) missing.push("a subject");
+          if (!d.body) missing.push("a message");
+          if (missing.length) throw new Error("Still needed: " + missing.join(", ") + ".");
+          if (aud.value === "course") d.audience = { kind: "course", courseId: course.value };
           else if (aud.value) d.audience = { kind: aud.value };
           if (chosen.length) d.to = chosen.map(function (c) { return c.id; });
           return API.inbox.send(d).then(function (r) { toast("Sent to " + plural(r.reached, "person", "people")); BOX.box = "sent"; BOX.archived = false; draw(); });
@@ -504,7 +510,7 @@ window.OPLO_PLATFORM = function (K) {
   /* ============================================================== Exchange */
   var SETS = [["users", "People"], ["families", "Families: each student and their guardians"], ["sections", "Sections"], ["enrollments", "Who is in which section"], ["attendance", "Attendance (a date range)"], ["grades", "Marks"]];
   P.exchange = function (v) {
-    K.cxPage(v, "Data Center", "Imports and exports", "Records out as a spreadsheet, people and rosters in from one, and the report a district or state asks for.");
+    K.cxPage(v, "Data Center", "Imports and exports", "Records out as a spreadsheet, and people and rosters in from one.");
     var s = slot(v);
     var grid = el("div", "cx-grid");
     s.appendChild(grid);
@@ -577,23 +583,41 @@ window.OPLO_PLATFORM = function (K) {
     acts.appendChild(button("Import", "cn-btn strong", function () { run(false); }));
     im.appendChild(acts);
     im.appendChild(out);
+  };
 
-    var xt = K.cxSection(grid, "cx-s12", "Enrollment extract", "The rows a district or state asks for, and what is wrong with them");
+  /* ========================================================= State reporting */
+  /* What a district or state asks a school for. Today that is OEdu's own
+     enrollment extract, checked student by student; a state's own file layout
+     is added when its specification is, and this page says so rather than
+     implying the file can be sent. */
+  P.state = function (v) {
+    K.cxPage(v, "Data Center", "State reporting", "The enrollment rows a district or state asks for, and what is missing from each student before they are sent.");
+    var s = slot(v);
+    var grid = el("div", "cx-grid");
+    s.appendChild(grid);
+    var xt = K.cxSection(grid, "cx-s12", "Enrollment extract", "Checked now, from the school’s records");
     var xbody = el("div");
-    xt.appendChild(button("Check the school", "cn-btn", function () {
+    xt.appendChild(xbody);
+    function check() {
       xbody.innerHTML = "";
+      var n = K.loading(xbody, "the school’s records");
       API.exchange.extract().then(function (r) {
-        xbody.appendChild(el("p", "cx-note", esc(r.ready ? "Every student has what the extract needs." : plural(r.problems.length, "problem") + " to fix before this is sent.")));
+        n.remove();
+        xbody.appendChild(el("p", "cx-note", esc(!r.rows.length ? "No students are enrolled yet, so there is nothing to send."
+          : r.ready ? "Every student has what the extract needs." : plural(r.problems.length, "problem") + " to fix before this is sent.")));
         if (r.problems.length) {
           var t = K.cnTable([{ label: "Student", w: "minmax(150px, 1fr)" }, { label: "Field", w: "140px" }, { label: "Problem", w: "minmax(200px, 1.4fr)" }]);
           r.problems.slice(0, 60).forEach(function (p) { t.row(["<b>" + esc(p.student || "") + "</b>", esc(p.field), esc(p.message)]); });
           xbody.appendChild(t);
         }
-        xbody.appendChild(button("Download the rows", "cn-btn", function () { download("oedu-enrollment-extract.csv", csv([r.columns].concat(r.rows))); }));
+        var acts = el("div", "sx-acts");
+        acts.appendChild(button("Download the rows", "cn-btn strong", function () { download("oedu-enrollment-extract.csv", csv([r.columns].concat(r.rows))); }));
+        acts.appendChild(button("Check again", "cn-btn", check));
+        xbody.appendChild(acts);
         if (r.note) xbody.appendChild(el("p", "cx-note", esc(r.note)));
-      }, function (e) { toast(e && e.message ? e.message : "That could not be read."); });
-    }));
-    xt.appendChild(xbody);
+      }, function (e) { n.remove(); failedAt(xbody, e, check); });
+    }
+    check();
   };
 
   /* ================================================================ Builder */
@@ -613,20 +637,24 @@ window.OPLO_PLATFORM = function (K) {
     var cols = el("div", "sx-chips");
     var table = el("div");
     var data = null, picked = {};
-    acts.appendChild(button("Run", "cn-btn strong", run));
+    var status = el("p", "cx-note", "Choose Run to load this dataset. Its columns then appear below, and you untick the ones you do not want.");
+    function say(t) { status.textContent = t; }
+    acts.appendChild(button("Run", "cn-btn strong", function () { run(); }));
     acts.appendChild(button("Download", "cn-btn", function () {
-      if (!data) return;
+      if (!data) { say("Run the report first, then download it."); return; }
       var r = view();
       download("oedu-report.csv", csv([r.head].concat(r.rows)));
     }));
     acts.appendChild(button("Save this report", "cn-btn", function () {
-      if (!data) return;
+      if (!data) { say("Run the report first, then save it."); return; }
       var name = prompt("Name this report");
       if (!name) return;
-      API.items.create({ kind: "report", title: name, data: { dataset: set.value, columns: Object.keys(picked).filter(function (k) { return picked[k]; }).join(","), filter: needle.value } })
+      // The columns shown, not the ones that happened to be touched: a column nobody unticked is still in the report.
+      API.items.create({ kind: "report", title: name, data: { dataset: set.value, columns: view().head.join(","), filter: needle.value } })
         .then(function () { toast("Saved"); saved(); }, function (e) { toast(e.message); });
     }));
     s.appendChild(acts);
+    s.appendChild(status);
     s.appendChild(field("Contains", needle));
     s.appendChild(cols);
     s.appendChild(table);
@@ -656,10 +684,18 @@ window.OPLO_PLATFORM = function (K) {
       table.appendChild(t);
     }
     function run(saved) {
+      say("Running…");
       var p = set.value === "extract"
         ? API.exchange.extract().then(function (r) { return { columns: r.columns, rows: r.rows }; })
         : API.exchange.exportRows(set.value, from.value || undefined, to.value || undefined);
-      p.then(function (r) { data = r; if (!saved || !saved.columns) picked = {}; draw(); }, function (e) { toast(e && e.message ? e.message : "That could not be run."); });
+      p.then(function (r) {
+        data = r;
+        picked = {};
+        // A kept report shows only the columns it was saved with.
+        if (saved && saved.columns) { var keep = saved.columns.split(","); r.columns.forEach(function (c) { picked[c] = keep.indexOf(c) > -1; }); }
+        say("Untick the columns you do not want, then download or save the report.");
+        draw();
+      }, function (e) { say(e && e.message ? e.message : "That could not be run."); });
     }
     function saved() {
       keep.innerHTML = "";
@@ -670,8 +706,6 @@ window.OPLO_PLATFORM = function (K) {
           row.appendChild(el("span", "t", "<b>" + esc(r.title) + "</b> <small>" + esc(r.data.dataset) + "</small>"));
           row.appendChild(button("Run", "en-btn quiet", function () {
             set.value = r.data.dataset; needle.value = r.data.filter || "";
-            picked = {};
-            if (r.data.columns) { /* a saved column list: hide the rest once the data is here */ }
             run({ columns: r.data.columns });
           }));
           keep.appendChild(row);

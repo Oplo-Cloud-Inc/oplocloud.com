@@ -77,7 +77,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link rel="stylesheet" href="lab/lab.css?v=9070bd0b">
 <link rel="stylesheet" href="obsidian.css?v=98c418da">
 <link rel="stylesheet" href="kern.css?v=c4951e56">
-<link rel="stylesheet" href="console.css?v=5fca75f7">
+<link rel="stylesheet" href="console.css?v=29b08e76">
 <link rel="stylesheet" href="schedule.css?v=e9fb5211">
 <link rel="stylesheet" href="attend.css?v=ae8cbd24">
 <link rel="stylesheet" href="student.css?v=23614af0">
@@ -85,6 +85,12 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link rel="stylesheet" href="facilities.css?v=621cd649">
 </head>
 <body>
+
+<!-- The keyboard's first stop in a console: past the rail, to the page. It is
+     a button's job done by a link, and app.js moves the focus, because this
+     page's <base> would turn a bare #wrap into a trip to the front door. -->
+<a class="cn-skip" id="skipLink" href="#wrap">Skip to content</a>
+<div class="cn-sr" id="routeSay" role="status" aria-live="polite"></div>
 
 <!-- ================================================================ Welcome
      What edu.oplocloud.com is to somebody who is not signed in: the page that
@@ -531,7 +537,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
   </div>
 </header>
 
-<main class="lx-wrap" id="wrap">
+<main class="lx-wrap" id="wrap" tabindex="-1">
     <section class="lx-view on" id="v-my"></section>
     <section class="lx-view" id="v-explore"></section>
     <section class="lx-view" id="v-progress"></section>
@@ -675,17 +681,17 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="gradebook.js?v=014a81eb"></script>
 <script src="teach.js?v=f52e3ca3"></script>
 <script src="enroll.js?v=e0e75fd6"></script>
-<script src="office.js?v=f12f732b"></script>
+<script src="office.js?v=5afadd9e"></script>
 <script src="schedule.js?v=c5fb4308"></script>
 <script src="attend.js?v=95cf16a1"></script>
-<script src="care.js?v=0aa08f08"></script>
+<script src="care.js?v=4d3067fa"></script>
 <script src="qr.js?v=23c1ea9b"></script>
 <script src="facilities.js?v=c36b5e2a"></script>
 <script src="facilities-places.js?v=a64a1a66"></script>
 <script src="facilities-upkeep.js?v=bea40a38"></script>
-<script src="platform.js?v=3b54503d"></script>
+<script src="platform.js?v=4eeff65f"></script>
 <script src="student.js?v=1f27f6ca"></script>
 <script src="student-record.js?v=1a88bf0c"></script>
-<script src="app.js?v=68e0b3e3"></script>
+<script src="app.js?v=68534455"></script>
 </body>
 </html>

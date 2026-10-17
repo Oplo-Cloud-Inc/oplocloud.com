@@ -278,7 +278,7 @@ window.OPLO_OFFICE = function (K) {
   var CUR = "honor", PARAMS = {};
 
   function tab(v) {
-    var P = K.cxPage(v, "Reports", "Reports", "The lists the office reaches for — computed now from the gradebooks, enrollments and records, never stored. Each prints and each downloads.");
+    var P = K.cxPage(v, "Reports", "Office reports", "The lists the office reaches for — computed now from the gradebooks, enrollments and records, never stored. Each prints and each downloads.");
     var wrap = el("div", "of-wrap");
     var list = el("nav", "of-list");
     var pane = el("div", "of-pane");
