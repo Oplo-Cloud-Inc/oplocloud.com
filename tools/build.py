@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Oplo site builder.
+OploCloud site builder.
 
 The nav and footer appear on every page, so they live here once rather than in
 fifteen copies that drift. Output is plain static HTML with no runtime
@@ -58,11 +58,11 @@ KERN = "https://kern.oplocloud.com/"
 # absolutely from here. It is defined this far up because the pages below link
 # to it; the rest of what builds it is at the bottom, beside OEdu's.
 DEV = "https://dev.oplocloud.com/"
-# Roxan, Oplo's AI, is on a hostname of its own too; see the Roxan section below.
+# Roxan, OploCloud's AI, is on a hostname of its own too; see the Roxan section below.
 ROXAN = "https://roxan.oplocloud.com/"
 
 # Five doors, not eight. Hardware, Software, Intelligence, Privacy, Edu and
-# Oplo+ are still whole sections of the site — they now hang off the three hub
+# OploCloud+ are still whole sections of the site — they now hang off the three hub
 # pages below (and the footer) rather than competing for room in the bar.
 NAV = [("Products", "products/"), ("Solutions", "solutions/"), ("Resources", "resources/"),
        ("Company", "company/"), ("Support", "support/")]
@@ -72,7 +72,7 @@ NAV = [("Products", "products/"), ("Solutions", "solutions/"), ("Resources", "re
 FOOTER = [
     ("Products", [("All products", "products/"), ("Hardware", "hardware/"),
                   ("Software", "software/"), ("Intelligence", "intelligence/"),
-                  ("Oplo+", "plus/")]),
+                  ("OploCloud+", "plus/")]),
     ("Solutions", [("Who it is for", "solutions/"), ("Personal", "solutions/#personal"),
                    ("Education", OEDU),
                    ("Developers", "developers/"),
@@ -83,11 +83,11 @@ FOOTER = [
                    ("Privacy", "privacy/"), ("Privacy labels", "privacy/labels/"),
                    ("Transparency report", "privacy/transparency/"),
                    ("Legal", "legal/")]),
-    ("Company", [("About Oplo", "company/"), ("Newsroom", "newsroom/"),
+    ("Company", [("About OploCloud", "company/"), ("Newsroom", "newsroom/"),
                  ("Careers", "careers/"), ("Investor relations", "investor/"),
                  ("Contact", "contact/")]),
     ("Support", [("Getting help", "support/"), ("Developer support", "developers/#support"),
-                 ("Your Oplo account", "sign-in/"), ("Oplo+ membership", "plus/#faq"),
+                 ("Your OploCloud account", "sign-in/"), ("OploCloud+ membership", "plus/#faq"),
                  ("Write to us", "contact/")]),
 ]
 LEGAL = [("Privacy Policy", "legal/privacy-policy/"), ("Terms of Use", "legal/terms/"),
@@ -117,7 +117,7 @@ def head(depth, title, desc, canonical, extra=""):
 <meta name="theme-color" content="#ffffff">
 <link rel="canonical" href="https://oplocloud.com/{canonical}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Oplo">
+<meta property="og:site_name" content="OploCloud">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="https://oplocloud.com/{canonical}">
@@ -139,11 +139,11 @@ def head(depth, title, desc, canonical, extra=""):
 '''
 
 
-# The bar ends in search, not "Sign in". An Oplo account is reached from the
-# footer (Support → Your Oplo account), and OEdu signs people in on its own
+# The bar ends in search, not "Sign in". An OploCloud account is reached from the
+# footer (Support → Your OploCloud account), and OEdu signs people in on its own
 # page. What search shows before anything is typed:
-QUICK = [("Products", "products/"), ("OEdu", OEDU), ("Oplo+", "plus/"),
-         ("Support", "support/"), ("Contact Oplo", "contact/")]
+QUICK = [("Products", "products/"), ("OEdu", OEDU), ("OploCloud+", "plus/"),
+         ("Support", "support/"), ("Contact OploCloud", "contact/")]
 
 SEARCH_ICON = ('<svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><circle cx="6.3" cy="6.3" r="5.3" '
                'fill="none" stroke="currentColor" stroke-width="1.3"/><path d="m10.2 10.2 4 4" fill="none" '
@@ -157,11 +157,11 @@ SEARCH_ICON = ('<svg viewBox="0 0 15 15" aria-hidden="true" focusable="false"><c
 MENUS = [
     [("Explore Products", [("All Products", "products/"), ("Hardware", "hardware/"),
                            ("Software", "software/"), ("Intelligence", "intelligence/"),
-                           ("Oplo+", "plus/")]),
+                           ("OploCloud+", "plus/")]),
      ("Hardware and Software", [("Silicon", "hardware/#silicon"), ("Devices", "hardware/#devices"),
                                 ("Accessories", "hardware/#accessories"), ("Apps", "software/#apps"),
                                 ("Updates", "software/#updates"), ("Downloads", "software/#downloads")]),
-     ("Oplo+", [("Plans", "plus/#plans"), ("What’s Included", "plus/#perks"),
+     ("OploCloud+", [("Plans", "plus/#plans"), ("What’s Included", "plus/#perks"),
                 ("Compare Plans", "plus/#compare"), ("Questions", "plus/#faq")]),
      ("Education", [("Kern", KERN), ("OEdu", OEDU)])],
     [("Explore Solutions", [("Who It’s For", "solutions/"), ("Personal", "solutions/#personal"),
@@ -180,7 +180,7 @@ MENUS = [
                   ("Privacy Policy", "legal/privacy-policy/")]),
      ("Investors", [("Leadership and Governance", "investor/leadership/"), ("Filings", "investor/filings/"),
                     ("Our Values", "investor/values/"), ("FAQ", "investor/faq/")])],
-    [("Explore Oplo", [("About Oplo", "company/"), ("Newsroom", "newsroom/"),
+    [("Explore OploCloud", [("About OploCloud", "company/"), ("Newsroom", "newsroom/"),
                        ("Careers", "careers/"), ("Investor Relations", "investor/"),
                        ("Contact", "contact/")]),
      ("Quick Links", [("What We’re Building", "company/#what"), ("Where We’re Going", "company/#where"),
@@ -188,9 +188,9 @@ MENUS = [
      ("Legal", [("Legal", "legal/"), ("Terms of Use", "legal/terms/"),
                 ("Privacy Policy", "legal/privacy-policy/")])],
     [("Explore Support", [("Getting Help", "support/"), ("Developer Support", "developers/#support"),
-                          ("Contact Oplo", "contact/")]),
-     ("Quick Links", [("Your Oplo Account", "sign-in/"), ("Get Help", "support/#help"),
-                      ("Developer Help", "support/#developer-help"), ("Oplo+ Questions", "plus/#faq")]),
+                          ("Contact OploCloud", "contact/")]),
+     ("Quick Links", [("Your OploCloud Account", "sign-in/"), ("Get Help", "support/#help"),
+                      ("Developer Help", "support/#developer-help"), ("OploCloud+ Questions", "plus/#faq")]),
      ("Contact", [("General Enquiries", "contact/#general"), ("Careers Enquiries", "contact/#careers-contact"),
                   ("Investor Contact", "investor/contact/")])],
 ]
@@ -222,7 +222,7 @@ def flyout(depth, menus_spec=None, labels=None):
 
 
 def nav(depth, active="", links=None, menus_spec=None, quick_spec=None,
-        word="", home="", scope="oplocloud.com", cta=None, label="Oplo"):
+        word="", home="", scope="oplocloud.com", cta=None, label="OploCloud"):
     """The bar.
 
     Everything about it is a parameter because there are now two of them: this
@@ -322,10 +322,10 @@ def footer(depth, notes=None):
       </div>'''
     legal = "".join(f'\n        <a href="{rel(depth, h)}">{l}</a>' for l, h in LEGAL)
     return f'''{note_html}
-<footer class="foot" aria-label="Oplo footer">
+<footer class="foot" aria-label="OploCloud footer">
   <div class="foot-in">
     <div class="foot-note">
-      <p>Oplo is building its first hardware, software and intelligence products. Pages on this site describe intent and direction; availability and capability are not final.</p>
+      <p>OploCloud is building its first hardware, software and intelligence products. Pages on this site describe intent and direction; availability and capability are not final.</p>
       <p>Questions about any of it? <a href="{rel(depth, "contact/")}">Get in touch</a>.</p>
     </div>
     <div class="foot-rule"></div>
@@ -380,7 +380,7 @@ def footer(depth, notes=None):
 '''
 
 # ---------------------------------------------------------------- Content
-# Written to what Oplo has actually said it is: hardware, software and AI,
+# Written to what OploCloud has actually said it is: hardware, software and AI,
 # built around the person. It names no product that does not exist and quotes
 # no specification. Where something is not built yet, the page says so.
 
@@ -438,7 +438,7 @@ PAGES = []
 
 # ------------------------------------------------------------------- Home
 # Quiet on purpose. One picture at two thirds of the window, a sentence that
-# says what Oplo is, and a plain list with an entry for each door in the bar.
+# says what OploCloud is, and a plain list with an entry for each door in the bar.
 # It has no script of its own: nothing on it moves unless the visitor scrolls.
 # Its few rules are in assets/css/oplo-home.css; the picture is cut from the
 # design file by tools/hero.py.
@@ -456,14 +456,14 @@ def door(eyebrow, head, lead, ctas):
 
 
 def home_intro():
-    """What Oplo is, said plainly, before anything is sold — the thing a front
+    """What OploCloud is, said plainly, before anything is sold — the thing a front
     page owes someone who has never heard of it. The sentence is the site's own
     (its description and its company page); the one after it is in the same
     voice: early, and saying so."""
     return '''  <section class="intro">
     <h2 class="t-display balance reveal">Hardware, software and intelligence, designed around one person at a time.</h2>
-    <p class="t-lead muted balance reveal d1">Oplo is early, and would rather say so than dress it up. Here is what we are building, and how to follow along.</p>
-    <p class="cta-row reveal d2"><a class="cta" href="company/">About Oplo</a><a class="cta" href="contact/">Get in touch</a></p>
+    <p class="t-lead muted balance reveal d1">OploCloud is early, and would rather say so than dress it up. Here is what we are building, and how to follow along.</p>
+    <p class="cta-row reveal d2"><a class="cta" href="company/">About OploCloud</a><a class="cta" href="contact/">Get in touch</a></p>
   </section>
 '''
 
@@ -477,13 +477,13 @@ def home():
     extra = f'''<link rel="stylesheet" href="assets/css/oplo-home.css?v={css}">
 <link rel="preload" as="image" href="{src1}" imagesrcset="{src1} 1440w, {src2} 2880w" imagesizes="100vw" fetchpriority="high">
 <style>body {{ padding-top: 0; }}</style>'''
-    out = head(depth, "Oplo", "Oplo builds hardware, software and intelligence designed around one person at a time.", "", extra)
+    out = head(depth, "OploCloud", "OploCloud builds hardware, software and intelligence designed around one person at a time.", "", extra)
     out += nav(depth)
     out += "<main>\n"
     # The picture spells "Hello" and says so; the heading is for screen readers
     # and search engines, which have no other way to learn the name of the page.
     out += f'''<section class="band art hero" id="top">
-  <h1 class="sr">Oplo Cloud — Technology for Human</h1>
+  <h1 class="sr">OploCloud — Technology for Human</h1>
   <img class="hero-img" src="{src1}" srcset="{src1} 1440w, {src2} 2880w" sizes="100vw" alt="Hello" width="2880" height="1620" fetchpriority="high" decoding="async">
   <div class="hero-foot">
     <p class="hero-ctas">
@@ -494,15 +494,15 @@ def home():
 </section>
 '''
     out += home_intro()
-    out += '<h2 class="sr">Explore Oplo</h2>\n<div class="doors">\n'
+    out += '<h2 class="sr">Explore OploCloud</h2>\n<div class="doors">\n'
     out += door("Hardware", "The machine, made whole.",
                 "Silicon designed for the software that runs on it.", [("Learn more", "hardware/")])
     out += door("Software", 'Built for a person, <br class="br-wide">not an org chart.',
                 "Tools that assume one user with taste, not a procurement department.", [("Learn more", "software/")])
     out += door("Intelligence", 'Close to you, <br class="br-wide">not to a data centre.',
                 "Models that run on the device in your hand.", [("Learn more", "intelligence/")])
-    out += door("Oplo+", 'One membership, <br class="br-wide">the whole system.',
-                "The account, the storage and the services that follow you across every Oplo device.",
+    out += door("OploCloud+", 'One membership, <br class="br-wide">the whole system.',
+                "The account, the storage and the services that follow you across every OploCloud device.",
                 [("Learn more", "plus/")])
     out += door("Education", "A classroom, not a fleet.",
                 "OEdu is where a school signs in: coursework, grades, and one record that "
@@ -510,12 +510,12 @@ def home():
     out += door("Privacy", "Yours stays yours.",
                 "Personal computing only means something if the personal part stays private.",
                 [("Learn more", "privacy/")])
-    out += door("Developers", "Build on Oplo.",
+    out += door("Developers", "Build on OploCloud.",
                 "One set of tools across the hardware, the software and the models.",
                 [("Read the docs", "developers/"), ("Developer site", DEV)])
     out += door("Company", "Where we're going.",
                 "What we're building, who is building it, and how to join.",
-                [("About Oplo", "company/"), ("Careers", "careers/")])
+                [("About OploCloud", "company/"), ("Careers", "careers/")])
     out += "</div>\n</main>\n"
     out += footer(0)
     return ("index.html", out)
@@ -524,8 +524,8 @@ PAGES.append(home())
 
 # --------------------------------------------------------- Section pages
 PAGES.append(("hardware/index.html", section_page(
-    "hardware/", 1, "Hardware — Oplo",
-    "Oplo designs the machine and the software that runs on it, from the silicon up.",
+    "hardware/", 1, "Hardware — OploCloud",
+    "OploCloud designs the machine and the software that runs on it, from the silicon up.",
     "Hardware", "The machine, made whole.",
     "One team from the silicon to the last pixel, so neither side has to compromise for the other.",
     [("dark", "silicon", "Silicon", "Designed for the software that runs on it.",
@@ -537,12 +537,12 @@ PAGES.append(("hardware/index.html", section_page(
      ("", "accessories", "Accessories", "The parts around the machine.",
       "Everything that attaches to a device is part of the experience of owning it. Nothing here is finished, and we would rather ship it late than ship it thoughtless.",
       None)],
-    ["Oplo hardware is in development. Nothing on this page is an offer of sale or a commitment to a specification.",
+    ["OploCloud hardware is in development. Nothing on this page is an offer of sale or a commitment to a specification.",
      "Descriptions of silicon and device behaviour describe design intent and are subject to change."])))
 
 PAGES.append(("software/index.html", section_page(
-    "software/", 1, "Software — Oplo",
-    "Oplo software is built for one person with taste, not a procurement department.",
+    "software/", 1, "Software — OploCloud",
+    "OploCloud software is built for one person with taste, not a procurement department.",
     "Software", "Built for a person, not an org chart.",
     "Tools that assume a single user who cares how things work, and are willing to be judged on that.",
     [("dark", "apps", "Apps", "Fewer things, done properly.",
@@ -554,12 +554,12 @@ PAGES.append(("software/index.html", section_page(
      ("", "downloads", "Downloads", "Nothing to download yet.",
       "When there is software to install, it will be here, with its release notes and its checksums. Until then this page is honest about being empty.",
       [("Follow what ships", "newsroom/")])],
-    ["Oplo software is in development. Availability, capability and system requirements are not final."])))
+    ["OploCloud software is in development. Availability, capability and system requirements are not final."])))
 
 PAGES.append(("developers/index.html", section_page(
-    "developers/", 1, "Developers — Oplo",
-    "Documentation, SDKs and design resources for building on Oplo.",
-    "Developers", "Build on Oplo.",
+    "developers/", 1, "Developers — OploCloud",
+    "Documentation, SDKs and design resources for building on OploCloud.",
+    "Developers", "Build on OploCloud.",
     "One set of tools across the hardware, the software and the models.",
     [("dark", "docs", "Documentation", "Not written yet.",
       "There is no API to document until there is an API. When there is, the reference goes here, and it will be the same document our own engineers work from. The developer site is where it will appear, and where the platforms and tools are described as they are built.",
@@ -568,7 +568,7 @@ PAGES.append(("developers/index.html", section_page(
       "A developer should learn the platform once. Splitting an SDK per device is a tax on everyone who builds for us, and we would rather pay that cost internally.",
       None),
      ("", "design", "Design resources", "The system this site is built on.",
-      "The type scale, colour and layout rules used across Oplo will be published here as a working design system rather than a PDF that goes stale.",
+      "The type scale, colour and layout rules used across OploCloud will be published here as a working design system rather than a PDF that goes stale.",
       None),
      ("", "support", "Developer support", "Talk to the people who built it.",
       "Until there is a forum worth having, developer questions reach us the same way everything else does.",
@@ -706,8 +706,8 @@ def products_page():
     a = rel(depth, "assets/")
     extra = (f'<link rel="stylesheet" href="{a}css/oplo-products.css?v={css}">\n'
              f'<script src="{a}js/oplo-products.js?v={js}" defer></script>')
-    out = head(depth, "Products — Oplo",
-               "Kern, a free online platform for learning by doing, and OEdu, the school system for records, courses and grades — plus what Oplo is building next.",
+    out = head(depth, "Products — OploCloud",
+               "Kern, a free online platform for learning by doing, and OEdu, the school system for records, courses and grades — plus what OploCloud is building next.",
                slug, extra)
     out += nav(depth, slug)
     out += f'''<main class="st">
@@ -715,12 +715,12 @@ def products_page():
 <header class="st-head">
   <h1 class="reveal">Products</h1>
   <div class="st-aside reveal d1">
-    <p class="st-tag">Everything Oplo makes, in one place.</p>
+    <p class="st-tag">Everything OploCloud makes, in one place.</p>
     <p><a href="{rel(depth, "contact/")}">Talk to the team {ARROW_UP}</a></p>
     <p><a href="{rel(depth, "support/")}">Visit Support {ARROW_UP}</a></p>
   </div>
 </header>
-<nav class="st-strip reveal d1" aria-label="Oplo products">
+<nav class="st-strip reveal d1" aria-label="OploCloud products">
   <ul>
     {_strip_item(depth, KERN, KERN_ICON, "Kern")}
     {_strip_item(depth, OEDU, OEDU_ICON, "OEdu")}
@@ -729,7 +729,7 @@ def products_page():
     {_strip_item(depth, "hardware/", HARDWARE_ICON, "Hardware")}
     {_strip_item(depth, "software/", SOFTWARE_ICON, "Software")}
     {_strip_item(depth, "intelligence/", INTEL_ICON, "Intelligence")}
-    {_strip_item(depth, "plus/", PLUS_ICON, "Oplo+")}
+    {_strip_item(depth, "plus/", PLUS_ICON, "OploCloud+")}
   </ul>
 </nav>
 '''
@@ -741,8 +741,8 @@ def products_page():
           "The student information system, the learning management system and the school operating system, in one.",
           "Open OEdu", 206, dark=True, fn=2),
         L("roxan", ROXAN, "Intelligence", "Roxan", "Personal, proactive and private.",
-          "An assistant made to work across every Oplo app.", "Learn more", 262),
-        L("developers", DEV, "For developers", "Developer site", "Build on Oplo.",
+          "An assistant made to work across every OploCloud app.", "Learn more", 262),
+        L("developers", DEV, "For developers", "Developer site", "Build on OploCloud.",
           "Documentation, platforms and tools, written as they are built.", "Open the developer site", 190),
     ], "the latest", fill=True)
 
@@ -780,7 +780,7 @@ def products_page():
     ], "help", fill=True)
 
     T = lambda *x: _tx(depth, *x)
-    out += _shelf("difference", "The Oplo difference.", "Even more reasons to start here.", [
+    out += _shelf("difference", "The OploCloud difference.", "Even more reasons to start here.", [
         L("diff-lead", "solutions/", "Who it is for", "Built around who is using it.",
           "One person, one machine.", "The same products, arranged for the person on the other side of the screen.",
           "See who it is for", 220),
@@ -796,7 +796,7 @@ def products_page():
         + T("developers/", "code", "Read the <b>documentation</b> as it is written.") + '</li>',
         '<li class="st-item st-col">' + T("newsroom/", "news", "Follow <b>what ships</b> in the newsroom.")
         + T("careers/", "hand", "Want to help build it? See <b>open roles</b>.") + '</li>',
-    ], "the Oplo difference")
+    ], "the OploCloud difference")
 
     out += _shelf("next", "What’s next.", "Hardware, software and intelligence, in development.", [
         L("next-hardware", "hardware/", "In development", "Hardware", "The machine, made whole.",
@@ -805,8 +805,8 @@ def products_page():
           "Tools that assume one user with taste, not a procurement department.", "Learn more", 232, fn=3),
         L("next-intelligence", "intelligence/", "In development", "Intelligence", "Close to you, not to a data centre.",
           "Models that run on the device in your hand.", "Learn more", 262, fn=3),
-        L("next-plus", "plus/", "Not available yet", "Oplo+", "One membership, the whole system.",
-          "The account and the services that would follow you across every Oplo device.", "Learn more", 200, fn=3),
+        L("next-plus", "plus/", "Not available yet", "OploCloud+", "One membership, the whole system.",
+          "The account and the services that would follow you across every OploCloud device.", "Learn more", 200, fn=3),
     ], "what is next", fill=True)
 
     out += _shelf("who", "Made for you.", "Start where you are.", [
@@ -818,13 +818,13 @@ def products_page():
           "", "One record, read the same way by students, teachers and families.", "Open OEdu", 215),
         L("who-schools", OEDU + "#schools", "Schools", "Bring the whole school together.",
           "", "Records, courses and grades in a single system that a school runs.", "Open OEdu", 195),
-        L("who-developers", DEV, "Developers", "Build on Oplo.",
+        L("who-developers", DEV, "Developers", "Build on OploCloud.",
           "", "One set of tools across the hardware, the software and the models.", "Developer site", 190),
         L("who-institutions", "solutions/#institutions", "Business and government", "Not yet, and we will say so.",
           "", "If your organisation wants to be part of what comes next, start with a conversation.", "Talk to us", 250),
     ], "who it is for")
 
-    quick = [("Your Oplo account", "sign-in/"), ("Support", "support/"), ("Contact Oplo", "contact/"),
+    quick = [("Your OploCloud account", "sign-in/"), ("Support", "support/"), ("Contact OploCloud", "contact/"),
              ("Developer documentation", "developers/#docs"), ("Privacy", "privacy/"), ("Newsroom", "newsroom/")]
     out += f'''<section class="st-quick" aria-labelledby="quick-h">
   <h2 class="st-h reveal" id="quick-h"><span>Quick Links</span></h2>
@@ -835,33 +835,33 @@ def products_page():
     out += footer(depth, [
         "Kern is free to use. Courses and features are added over time.",
         "OEdu is set up and run by a school. To bring yours onto it, get in touch. What OEdu does changes as it is built, and nothing on this page is a commitment to a specification.",
-        "Hardware, software, intelligence and Oplo+ are in development. Nothing about them is an offer of sale, and availability and capability are not final."])
+        "Hardware, software, intelligence and OploCloud+ are in development. Nothing about them is an offer of sale, and availability and capability are not final."])
     return ("products/index.html", out)
 
 
 PAGES.append(products_page())
 
 PAGES.append(("solutions/index.html", section_page(
-    "solutions/", 1, "Solutions — Oplo",
-    "Who Oplo is built for: one person at a desk, a classroom, a developer, and the institutions that will come after them.",
+    "solutions/", 1, "Solutions — OploCloud",
+    "Who OploCloud is built for: one person at a desk, a classroom, a developer, and the institutions that will come after them.",
     "Solutions", "Built around who is using it.",
     "The same hardware, software and intelligence, arranged for the person on the other side of the screen.",
     [("dark", "personal", "Personal", "One person, one machine.",
       "Personal computing in the original sense: a device that is quiet when it should be, ready when it is needed, and not quietly working for someone else.",
-      [("What we build", "products/"), ("Oplo+", "plus/")]),
+      [("What we build", "products/"), ("OploCloud+", "plus/")]),
      ("", "education", "Education", "A classroom, not a fleet.",
       "OEdu is the thing a school actually signs in to — coursework, grades and a teacher console built for teaching rather than for asset management, with one record students, teachers and families all read the same way.",
       [("Open OEdu", OEDU)]),
-     ("", "developers", "Developers", "Build on Oplo.",
+     ("", "developers", "Developers", "Build on OploCloud.",
       "One set of tools across the hardware, the software and the models, so the platform is learned once rather than once per device.",
       [("Developer resources", "developers/")]),
      ("", "institutions", "Business and government", "Not yet, and we will say so.",
-      "Oplo is early, and an enterprise programme we have not built would be a page of promises. If your organisation wants to be part of what we build next, the fastest route is a conversation.",
+      "OploCloud is early, and an enterprise programme we have not built would be a page of promises. If your organisation wants to be part of what we build next, the fastest route is a conversation.",
       [("Talk to us", "contact/")])],
     ["Availability differs by product and region. Nothing described here is generally available today."])))
 
 PAGES.append(("resources/index.html", section_page(
-    "resources/", 1, "Resources — Oplo",
+    "resources/", 1, "Resources — OploCloud",
     "Documentation, privacy commitments, announcements, investor material and legal notices, in one place.",
     "Resources", "The written record.",
     "Documentation, policy and the public record — everything we have put in writing and intend to be held to.",
@@ -870,7 +870,7 @@ PAGES.append(("resources/index.html", section_page(
       [("Developers", "developers/")]),
      ("", "privacy", "Privacy", "Yours stays yours, in writing.",
       "What each product collects, what you can turn off, and what we have been asked to hand over — stated plainly rather than buried in a policy.",
-      [("Privacy at Oplo", "privacy/"), ("Transparency report", "privacy/transparency/")]),
+      [("Privacy at OploCloud", "privacy/"), ("Transparency report", "privacy/transparency/")]),
      ("", "newsroom", "Newsroom", "Dated and attributable.",
       "Announcements and updates, with a name on them. There is nothing to report yet, and the page says that rather than filling the space.",
       [("Newsroom", "newsroom/")]),
@@ -1038,8 +1038,8 @@ def intelligence_page():
     depth = 1
     links = [("Overview", "#top"), ("In use", "#ask"), ("Speed", "#speed"),
              ("Where it runs", "#where"), ("Privacy", "#privacy"), ("Research", "#research")]
-    out = head(depth, "Intelligence — Oplo",
-               "Oplo Intelligence: a model that runs on your device rather than in a data centre.",
+    out = head(depth, "Intelligence — OploCloud",
+               "OploCloud Intelligence: a model that runs on your device rather than in a data centre.",
                "intelligence/", INTEL_CSS)
     out += nav(depth, "intelligence/")
     out += chapter(depth, "Intelligence", links, "intelligence/")
@@ -1168,13 +1168,13 @@ def intelligence_page():
 </main>
 '''
     notes = [
-        "Oplo Intelligence is in development. Everything described on this page is an intention "
+        "OploCloud Intelligence is in development. Everything described on this page is an intention "
         "rather than a shipping feature. Availability, capability and on-device performance are "
         "not final and will vary by device.",
         "Light travels 186,282 miles per second in a vacuum, and slower through glass fibre. The "
-        "figure is the physical limit on a network round trip, not a measurement of an Oplo product.",
+        "figure is the physical limit on a network round trip, not a measurement of an OploCloud product.",
         "Example requests are illustrations of intended use, not recordings of a working system.",
-        "The privacy commitments describe how Oplo intends to build. The binding document is the "
+        "The privacy commitments describe how OploCloud intends to build. The binding document is the "
         "privacy policy, which is in preparation.",
     ]
     return ("intelligence/index.html", out + TABS_JS + footer(depth, notes))
@@ -1212,7 +1212,7 @@ PAGES.append(intelligence_page())
 # ==========================================================================
 # Sign in.
 # Composed the way an account screen should be: one column, centred, almost
-# nothing on it. Deliberately NOT a working credential form — Oplo has no
+# nothing on it. Deliberately NOT a working credential form — OploCloud has no
 # accounts, and a live public page with a functioning-looking password box
 # that authenticates nothing is the exact shape of a phishing page. People
 # type real passwords into those. So: no password field exists at all, the
@@ -1335,11 +1335,11 @@ def signin_page():
     depth = 1
     mark = (f'<svg class="mark" viewBox="{MARK_VB}" aria-hidden="true" focusable="false">'
             f'<g transform="translate({MARK_TR})"><path fill="currentColor" d="{MARK_D}"/></g></svg>')
-    out = head(depth, "Sign in — Oplo", "Sign in to your Oplo account.", "sign-in/", SIGNIN_CSS)
+    out = head(depth, "Sign in — OploCloud", "Sign in to your OploCloud account.", "sign-in/", SIGNIN_CSS)
     out += nav(depth, "sign-in/")
     out += f'''<main class="signin">
   {mark}
-  <h1 class="balance">Sign in to Oplo</h1>
+  <h1 class="balance">Sign in to OploCloud</h1>
   <p class="sub">One account for your device, your software<span class="more">,</span> and the model that runs on it.</p>
 
   <p class="status"><b>Accounts aren&rsquo;t open yet.</b><span class="more"> This is the sign-in we are building.</span> Nothing you type here is sent anywhere or stored.</p>
@@ -1349,7 +1349,7 @@ def signin_page():
       <input id="oploid" name="oploid" type="email" placeholder=" "
              autocomplete="off" autocapitalize="none" spellcheck="false"
              aria-describedby="said">
-      <label for="oploid">Email or Oplo&nbsp;ID</label>
+      <label for="oploid">Email or OploCloud&nbsp;ID</label>
       <button class="go" type="submit" aria-label="Continue">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1376,7 +1376,7 @@ def signin_page():
       // Nothing is transmitted. The page has no endpoint and never will
       // until there is a real account system behind it.
       e.preventDefault();
-      said.innerHTML = 'Oplo accounts aren\\u2019t open yet, so there is nothing to sign in to. ' +
+      said.innerHTML = 'OploCloud accounts aren\\u2019t open yet, so there is nothing to sign in to. ' +
                        'Nothing was sent. <a href="../newsroom/">Hear when they open</a>.';
     }});
   }})();
@@ -1388,18 +1388,18 @@ def signin_page():
 
 
 # ==========================================================================
-# Oplo+ — the membership page, on the iCloud+ architecture: tier cards, a
+# OploCloud+ — the membership page, on the iCloud+ architecture: tier cards, a
 # feature matrix, an FAQ, footnotes.
 #
 # Prices are deliberately not invented. This is a commerce page on a live
-# domain; a number printed here reads as a commitment, and Oplo has not set
+# domain; a number printed here reads as a commitment, and OploCloud has not set
 # one. Every price slot renders PRICE_AT_LAUNCH in the exact position and
 # weight a figure will occupy, so dropping real numbers in is a one-line
 # change to PRICING below and nothing about the layout moves.
 # ==========================================================================
 
 # ==========================================================================
-# Oplo+ — told as scenes rather than listed as features.
+# OploCloud+ — told as scenes rather than listed as features.
 #
 # The membership only makes sense at the edges: the moment work outgrows a
 # pocket, the moment a machine is lost, the moment someone wants your address
@@ -1411,12 +1411,12 @@ def signin_page():
 PRICE_AT_LAUNCH = "Priced at&nbsp;launch"
 
 PRICING = [
-    ("Oplo", "Free", "With every device",
+    ("OploCloud", "Free", "With every device",
      "The on-device model, encrypted sync for your essentials, and everything that makes the machine work.", False),
-    ("Oplo+", PRICE_AT_LAUNCH, "For one person",
+    ("OploCloud+", PRICE_AT_LAUNCH, "For one person",
      "The larger model, room for a real library, and the privacy features that need somewhere to run.", True),
-    ("Oplo+ Family", PRICE_AT_LAUNCH, "Up to six people",
-     "Everything in Oplo+, shared across a household, with each person's material kept separate.", False),
+    ("OploCloud+ Family", PRICE_AT_LAUNCH, "Up to six people",
+     "Everything in OploCloud+, shared across a household, with each person's material kept separate.", False),
 ]
 
 # (band class, anchor, moment, scene line, body, what it needs)
@@ -1451,7 +1451,7 @@ SCENES = [
      "Family"),
 ]
 
-MATRIX_HEAD = ["Oplo", "Oplo+", "Family"]
+MATRIX_HEAD = ["OploCloud", "OploCloud+", "Family"]
 MATRIX = [
     ("Discounted deals", "Restaurants, spas, activities and travel at member rates.", ["—", "yes", "yes"]),
     ("On-device model", "The model that runs on the machine in your hand.", ["Standard", "Extended", "Extended"]),
@@ -1465,12 +1465,12 @@ MATRIX = [
 ]
 
 FAQ = [
-    ("What is Oplo+?",
-     "A single membership covering the parts of Oplo that need somewhere to run or somewhere to live — the "
+    ("What is OploCloud+?",
+     "A single membership covering the parts of OploCloud that need somewhere to run or somewhere to live — the "
      "larger model, encrypted sync and backup, and the privacy features." + mo(" The device and its "
      "on-device model work without it.")),
     ("Do I need it for the AI to work?",
-     "No. The on-device model is part of the machine, not part of the membership." + mo(" Oplo+ adds the "
+     "No. The on-device model is part of the machine, not part of the membership." + mo(" OploCloud+ adds the "
      "larger model for work that will not fit on a handheld.")),
     ("What happens to my things if I stop paying?",
      "They stay yours. Anything held in sync remains downloadable, and nothing is deleted as a lever to "
@@ -1483,7 +1483,7 @@ FAQ = [
      "No. That commitment does not change between tiers, and paying more does not buy more privacy." + mo(
      " The floor is the same for everyone.")),
     ("When can I subscribe?",
-     "Not yet. Oplo has no shipping product for a membership to attach to." + mo(" This page describes "
+     "Not yet. OploCloud has no shipping product for a membership to attach to." + mo(" This page describes "
      "what is being built.")),
 ]
 
@@ -1715,19 +1715,19 @@ def plus_page():
     depth = 1
     links = [("Overview", "#top"), ("Moments", "#handoff"), ("Included", "#perks"),
              ("Plans", "#plans"), ("Compare", "#compare", "phone-hide"), ("Questions", "#faq")]
-    out = head(depth, "Oplo+ — Oplo",
-               "Oplo+ is the membership for the moments your machine outgrows its own pocket.",
+    out = head(depth, "OploCloud+ — OploCloud",
+               "OploCloud+ is the membership for the moments your machine outgrows its own pocket.",
                "plus/", PLUS_CSS)
     out += nav(depth, "plus/")
-    out += chapter(depth, "Oplo+", links, "plus/")
+    out += chapter(depth, "OploCloud+", links, "plus/")
     out += '<main id="top">\n'
 
     out += '''<section class="band">
   <div class="well">
-    <p class="eyebrow reveal">Oplo+</p>
+    <p class="eyebrow reveal">OploCloud+</p>
     <h1 class="t-hero balance reveal" style="max-width:20ch;margin-inline:auto">Most of what you do fits in your pocket.</h1>
     <p class="t-sub muted balance reveal d1" style="margin-top:18px;max-width:32ch;margin-inline:auto">This is for the rest of it.</p>
-    <p class="plus-status reveal d2"><b>Not available yet.</b> Oplo has no shipping product for a membership to attach to. Nothing here can be bought, and no price has been set.<sup>1</sup></p>
+    <p class="plus-status reveal d2"><b>Not available yet.</b> OploCloud has no shipping product for a membership to attach to. Nothing here can be bought, and no price has been set.<sup>1</sup></p>
   </div>
 </section>
 '''
@@ -1790,7 +1790,7 @@ def plus_page():
     <h2 class="t-display balance reveal">What is in each tier.</h2>
     <div class="compare-wrap reveal d1">
       <table class="compare">
-        <caption class="sr">Oplo+ tiers compared</caption>
+        <caption class="sr">OploCloud+ tiers compared</caption>
         <thead><tr><th scope="col">Feature</th>{head_cells}</tr></thead>
         <tbody>
 {body_rows}        </tbody>
@@ -1817,9 +1817,9 @@ def plus_page():
 </main>
 '''
     notes = [
-        "Oplo+ is not available. No price has been set, nothing on this page can be purchased, and the tiers "
+        "OploCloud+ is not available. No price has been set, nothing on this page can be purchased, and the tiers "
         "describe what is planned rather than what exists.",
-        "Discounted deals would be offered by third-party merchants, not by Oplo. Availability, pricing and "
+        "Discounted deals would be offered by third-party merchants, not by OploCloud. Availability, pricing and "
         "the terms of any offer would be set by the merchant and vary by region.",
         "The scenes on this page illustrate what the membership is intended to do. They are written as "
         "examples, not as recordings of a working system.",
@@ -1840,26 +1840,26 @@ def simple(slug, depth, title, desc, eyebrow, heading, lead, rows_html=""):
     out += rows_html + "</main>\n" + footer(depth)
     return (slug + "index.html", out)
 
-PAGES.append(simple("company/", 1, "About Oplo", "Oplo builds hardware, software and intelligence designed around the person using it.",
+PAGES.append(simple("company/", 1, "About OploCloud", "OploCloud builds hardware, software and intelligence designed around the person using it.",
     "Company", "We are building for the person, not the fleet.",
-    "Oplo makes hardware, software and intelligence as one system, on the view that a computer should belong to whoever is holding it.",
+    "OploCloud makes hardware, software and intelligence as one system, on the view that a computer should belong to whoever is holding it.",
     '<div class="rows">\n' +
     row("dark", "what", "What we do", "Three things, treated as one.",
         "Hardware, software and intelligence are usually made by different companies with different incentives, and the person using the result absorbs the difference. We would rather own all three and be accountable for the whole.", None, 1) +
     row("", "where", "Where we are", "Early, and saying so.",
-        "Oplo is building its first products. We would rather this site be honest about that than dressed up as a catalogue of things you cannot buy.",
+        "OploCloud is building its first products. We would rather this site be honest about that than dressed up as a catalogue of things you cannot buy.",
         [("Open roles", "careers/"), ("Contact us", "contact/")], 1) +
     '</div>\n'))
 
-PAGES.append(simple("newsroom/", 1, "Newsroom — Oplo", "Announcements and updates from Oplo.",
+PAGES.append(simple("newsroom/", 1, "Newsroom — OploCloud", "Announcements and updates from OploCloud.",
     "Newsroom", "Nothing announced yet.",
     "When there is something to say, it will be here, dated and attributable. For press enquiries, contact us directly.",
     '<div class="rows">\n' +
     row("", "press", "Press", "Talk to a person.",
         "Press and media enquiries reach us the same way everything else does, and get answered by someone who works here.",
-        [("Contact Oplo", "contact/")], 1) + '</div>\n'))
+        [("Contact OploCloud", "contact/")], 1) + '</div>\n'))
 
-PAGES.append(simple("careers/", 1, "Careers — Oplo", "Work at Oplo, building hardware, software and intelligence as one system.",
+PAGES.append(simple("careers/", 1, "Careers — OploCloud", "Work at OploCloud, building hardware, software and intelligence as one system.",
     "Careers", "Small team. Whole stack.",
     "Owning the hardware, the software and the models means the people here work across boundaries that most companies never cross.",
     '<div class="rows">\n' +
@@ -1867,7 +1867,7 @@ PAGES.append(simple("careers/", 1, "Careers — Oplo", "Work at Oplo, building h
         "We are not running a structured hiring process at this stage. If what we are building is the thing you want to work on, write to us and say what you would want to own.",
         [("Write to us", "contact/")], 1) + '</div>\n'))
 
-PAGES.append(simple("contact/", 1, "Contact Oplo", "How to reach Oplo about products, press, careers or anything else.",
+PAGES.append(simple("contact/", 1, "Contact OploCloud", "How to reach OploCloud about products, press, careers or anything else.",
     "Contact", "Get in touch.",
     "Everything reaches the same place and is read by someone who works here.",
     '<div class="rows">\n' +
@@ -1877,13 +1877,13 @@ PAGES.append(simple("contact/", 1, "Contact Oplo", "How to reach Oplo about prod
         'Rather than a form, write to us and describe the work you would want to do here: <a class="cta" href="mailto:careers@oplocloud.com">careers@oplocloud.com</a>', None, 1) +
     '</div>\n'))
 
-PAGES.append(simple("support/", 1, "Support — Oplo", "Getting help with Oplo hardware, software and accounts.",
+PAGES.append(simple("support/", 1, "Support — OploCloud", "Getting help with OploCloud hardware, software and accounts.",
     "Support", "How to get help.",
     "There are no shipping products to support yet, so support is simply a person reading your message.",
     '<div class="rows">\n' +
     row("", "help", "Getting help", "Write to us directly.",
         'Until there is a product in your hands, anything you need reaches us at <a class="cta" href="mailto:hello@oplocloud.com">hello@oplocloud.com</a>.', None, 1) +
-    row("dark", "developer-help", "Developers", "Building on Oplo.",
+    row("dark", "developer-help", "Developers", "Building on OploCloud.",
         "Developer questions are handled alongside everything else while the platform is still being built.",
         [("Developer resources", "developers/")], 1) + '</div>\n'))
 
@@ -1894,7 +1894,7 @@ PAGES.append(signin_page())
 # Investor Relations — a section of sibling pages sharing one sub-navigation,
 # the way a corporate IR site is arranged rather than one page with anchors.
 #
-# Every fact here is Oplo's. There is no board, so no board is listed; there
+# Every fact here is OploCloud's. There is no board, so no board is listed; there
 # are no filings, so none are implied; documents carry their real status. An
 # invented director is a false statement about a person and an invented filing
 # a false statement about a regulator, so neither appears.
@@ -1941,7 +1941,7 @@ def ir_page(slug, depth, title, desc, active, body, notes=None):
 
 # ------------------------------------------------------------------ Landing
 # Apple's IR landing page is two sections: News and Results, then Financial
-# Data. Oplo has neither results nor financial data, so the same two sections
+# Data. OploCloud has neither results nor financial data, so the same two sections
 # carry what it does have — the company's actual status — and then name every
 # report that would sit there, with why it does not.
 
@@ -1973,14 +1973,14 @@ _FINANCIALS = _fin([
     ]),
 ])
 
-PAGES.append(ir_page("investor/", 1, "Investor Relations — Oplo",
-    "Oplo is a privately held company. Leadership, governance, filings and investor contact.",
+PAGES.append(ir_page("investor/", 1, "Investor Relations — OploCloud",
+    "OploCloud is a privately held company. Leadership, governance, filings and investor contact.",
     "", f'''<section class="band">
   <div class="well">
     <p class="eyebrow reveal">Investor Relations</p>
-    <h1 class="t-hero balance reveal" style="max-width:16ch;margin-inline:auto">Who runs Oplo, and on what terms.</h1>
+    <h1 class="t-hero balance reveal" style="max-width:16ch;margin-inline:auto">Who runs OploCloud, and on what terms.</h1>
     <p class="notice reveal d1" style="margin-inline:auto;text-align:left">
-      <b>Oplo is privately held.</b> There is no public listing, no ticker symbol, no stock price<span
+      <b>OploCloud is privately held.</b> There is no public listing, no ticker symbol, no stock price<span
       class="more">, and no filings with the Securities and Exchange Commission</span>. Nothing on these
       pages is an offer to sell or a solicitation of an offer to buy any security.<sup>1</sup>
     </p>
@@ -1995,10 +1995,10 @@ PAGES.append(ir_page("investor/", 1, "Investor Relations — Oplo",
       <div>
         <p class="kick">Investor updates</p>
         <h3>Private, pre&#8209;launch, and building.</h3>
-        <p>Oplo is developing its first hardware, software and intelligence products. It has not shipped,
+        <p>OploCloud is developing its first hardware, software and intelligence products. It has not shipped,
            has reported no results, and has disclosed no financing.<span class="more"> There is no quarter
            to report on yet, and this page will say so until there is.</span></p>
-        <p class="cta-row"><a class="cta" href="../company/">About Oplo</a></p>
+        <p class="cta-row"><a class="cta" href="../company/">About OploCloud</a></p>
       </div>
       <div>
         <p class="kick">Newsroom</p>
@@ -2045,8 +2045,8 @@ _docs = "".join(f'      <li><span>{t}</span><em>{st}</em></li>\n' for t, st in [
     ("Insider Trading Policy", "Not applicable while private"),
 ])
 
-PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — Oplo",
-    "Oplo's leadership, the state of its board, and its governance documents.",
+PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — OploCloud",
+    "OploCloud's leadership, the state of its board, and its governance documents.",
     "leadership/", f'''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Leadership and Governance</h1>
@@ -2066,8 +2066,8 @@ PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — O
         </span>
         <b>Saswat Ji</b>
         <span>Founder</span>
-        <p>Directs Oplo&rsquo;s hardware, software and intelligence work, and everything published under
-           the Oplo name.</p>
+        <p>Directs OploCloud&rsquo;s hardware, software and intelligence work, and everything published under
+           the OploCloud name.</p>
       </div>
     </div>
     <p class="t-fine muted reveal d2" style="margin-top:30px;max-width:60ch">
@@ -2081,7 +2081,7 @@ PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — O
     <p class="eyebrow reveal">Board of Directors</p>
     <h2 class="t-display balance reveal">Not yet constituted.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      Oplo has no board of directors. When one is formed, its members, their affiliations and the charters
+      OploCloud has no board of directors. When one is formed, its members, their affiliations and the charters
       of its committees are published here before they take effect &mdash; not after.
     </p>
   </div>
@@ -2108,8 +2108,8 @@ PAGES.append(ir_page("investor/leadership/", 2, "Leadership and Governance — O
 
 
 # ------------------------------------------------------------------- Filings
-PAGES.append(ir_page("investor/filings/", 2, "Filings — Oplo",
-    "Oplo is privately held and has made no filings with the SEC.",
+PAGES.append(ir_page("investor/filings/", 2, "Filings — OploCloud",
+    "OploCloud is privately held and has made no filings with the SEC.",
     "filings/", '''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Filings</h1>
@@ -2124,8 +2124,8 @@ PAGES.append(ir_page("investor/filings/", 2, "Filings — Oplo",
     <p class="eyebrow reveal">Status</p>
     <h2 class="t-display balance reveal">Nothing has been filed.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:58ch;margin:18px auto 0">
-      Oplo has issued no securities to the public, publishes no financial statements, and has made no
-      filings with the Securities and Exchange Commission. A private company is not required to, and Oplo
+      OploCloud has issued no securities to the public, publishes no financial statements, and has made no
+      filings with the Securities and Exchange Commission. A private company is not required to, and OploCloud
       is not going to imply otherwise by leaving a search box here.
     </p>
     <p class="t-lead muted balance reveal d2" style="max-width:58ch;margin:16px auto 0">
@@ -2139,13 +2139,13 @@ PAGES.append(ir_page("investor/filings/", 2, "Filings — Oplo",
 
 
 # ---------------------------------------------------------------- Our Values
-PAGES.append(ir_page("investor/values/", 2, "Our Values — Oplo",
-    "The positions Oplo has published and can be held to.",
+PAGES.append(ir_page("investor/values/", 2, "Our Values — OploCloud",
+    "The positions OploCloud has published and can be held to.",
     "values/", '''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Our Values</h1>
     <p class="t-sub muted balance reveal d1" style="margin-top:16px;max-width:44ch;margin-inline:auto">
-      Positions Oplo has published elsewhere on this site, gathered here because an investor is entitled
+      Positions OploCloud has published elsewhere on this site, gathered here because an investor is entitled
       to see what the company has committed to.
     </p>
   </div>
@@ -2155,7 +2155,7 @@ PAGES.append(ir_page("investor/values/", 2, "Our Values — Oplo",
   <div class="well">
     <div class="pillars reveal d1" style="max-width:940px">
       <div><h3>Processing stays with the person</h3>
-        <p>Oplo builds models that run on the device rather than in a data centre. That is a design
+        <p>OploCloud builds models that run on the device rather than in a data centre. That is a design
            decision first and a privacy one second, and it constrains what the company can build.</p></div>
       <div><h3>Personal material is not training data</h3>
         <p>What someone asks is not retained to improve a model. This does not vary by what they pay;
@@ -2169,7 +2169,7 @@ PAGES.append(ir_page("investor/values/", 2, "Our Values — Oplo",
     </div>
     <p class="cta-row reveal d2" style="margin-top:34px">
       <a class="cta" href="../../privacy/">Our position on privacy</a>
-      <a class="cta" href="../../company/">About Oplo</a>
+      <a class="cta" href="../../company/">About OploCloud</a>
     </p>
   </div>
 </section>
@@ -2182,28 +2182,28 @@ _faq = "".join(f'''      <details>
         <div class="a">{a}</div>
       </details>
 ''' for q, a in [
-    ("Is Oplo publicly traded?",
-     "No. Oplo is privately held. There is no ticker symbol, no listing on any exchange, and no public "
+    ("Is OploCloud publicly traded?",
+     "No. OploCloud is privately held. There is no ticker symbol, no listing on any exchange, and no public "
      "market for its shares."),
-    ("Can I invest in Oplo?",
+    ("Can I invest in OploCloud?",
      "There is no public offering. Enquiries about investment reach us at the address on the contact "
      "page and are answered by a person rather than a form."),
     ("Who runs the company?",
      "Saswat Ji, Founder. There is no board of directors yet; the leadership page says so directly and "
      "commits to publishing one before it takes effect."),
-    ("What does Oplo make?",
+    ("What does OploCloud make?",
      "Hardware, software, and AI models designed to run on the device rather than in a data centre. "
      "Everything is in development, and every product page on this site states as much."),
     ("When do products ship?",
      "No shipping date has been announced. When one is, it appears in the newsroom first."),
-    ("Does Oplo publish financial statements?",
-     "No. A private company is not required to, and Oplo does not."),
+    ("Does OploCloud publish financial statements?",
+     "No. A private company is not required to, and OploCloud does not."),
     ("Where do governance documents live?",
      "On the leadership and governance page, each listed with its real status &mdash; in preparation, "
      "available on request, or not applicable while private."),
 ])
-PAGES.append(ir_page("investor/faq/", 2, "Investor FAQ — Oplo",
-    "Common investor questions about Oplo, answered plainly.",
+PAGES.append(ir_page("investor/faq/", 2, "Investor FAQ — OploCloud",
+    "Common investor questions about OploCloud, answered plainly.",
     "faq/", f'''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Questions</h1>
@@ -2219,8 +2219,8 @@ PAGES.append(ir_page("investor/faq/", 2, "Investor FAQ — Oplo",
 
 
 # ---------------------------------------------------------------- IR contact
-PAGES.append(ir_page("investor/contact/", 2, "Investor Contact — Oplo",
-    "How to reach Oplo about investment, governance or the company's structure.",
+PAGES.append(ir_page("investor/contact/", 2, "Investor Contact — OploCloud",
+    "How to reach OploCloud about investment, governance or the company's structure.",
     "contact/", '''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Contact</h1>
@@ -2241,27 +2241,27 @@ PAGES.append(ir_page("investor/contact/", 2, "Investor Contact — Oplo",
         <p>Product, press, partnerships and general enquiries go through the main contact page, which
            reaches the same people.</p>
         <p class="cta-row" style="justify-content:flex-start;margin-top:14px">
-          <a class="cta" href="../../contact/">Contact Oplo</a></p></div>
+          <a class="cta" href="../../contact/">Contact OploCloud</a></p></div>
     </div>
   </div>
 </section>
 '''))
 
 # ----------------------------------------------------------- Legal pages
-DRAFT = ('<p><strong>This document is being prepared.</strong> Oplo has no shipping product and '
+DRAFT = ('<p><strong>This document is being prepared.</strong> OploCloud has no shipping product and '
          'collects no personal data through this website, so there is nothing yet for a policy to '
          'govern. A reviewed document will be published here before that changes. Nothing on this '
          'page should be relied on as a legal agreement in the meantime.</p>')
 
 PAGES.append(("legal/privacy-policy/index.html", doc_page(
-    "legal/privacy-policy/", 2, "Privacy Policy — Oplo", "Oplo's privacy policy.",
+    "legal/privacy-policy/", 2, "Privacy Policy — OploCloud", "OploCloud's privacy policy.",
     "Privacy Policy", "In preparation",
     DRAFT + '''<h2>What this site collects</h2>
 <p>This website has no analytics, no advertising trackers and no cookies of its own. It loads a
 webfont from Google Fonts, which means your browser makes a request to that service in order to
 render the page. Nothing else leaves your device on our behalf.</p>
 <h2>If you write to us</h2>
-<p>Email sent to an address on this site reaches Oplo and is kept only so we can reply. We do not
+<p>Email sent to an address on this site reaches OploCloud and is kept only so we can reply. We do not
 add correspondents to a mailing list.</p>
 <h2>Our position</h2>
 <p>The reasoning behind how we intend to treat personal data is set out on our
@@ -2269,21 +2269,21 @@ add correspondents to a mailing list.</p>
 binding commitment once there is a product for it to cover.</p>''')))
 
 PAGES.append(("legal/terms/index.html", doc_page(
-    "legal/terms/", 2, "Terms of Use — Oplo", "Terms of use for oplocloud.com.",
+    "legal/terms/", 2, "Terms of Use — OploCloud", "Terms of use for oplocloud.com.",
     "Terms of Use", "In preparation",
     DRAFT + '''<h2>This website</h2>
-<p>oplocloud.com is an informational site describing what Oplo is building. It does not sell
+<p>oplocloud.com is an informational site describing what OploCloud is building. It does not sell
 anything, create an account for you, or form an agreement between us.</p>
 <h2>Forward-looking descriptions</h2>
 <p>Pages here describe products in development. Descriptions of capability, availability and
 behaviour are statements of intent and may change.</p>
 <h2>Trademarks</h2>
-<p>The Oplo name and mark are the property of OploCloud, Inc.</p>''')))
+<p>The OploCloud name and mark are the property of OploCloud, Inc.</p>''')))
 
 PAGES.append(("legal/index.html", doc_page(
-    "legal/", 1, "Legal — Oplo", "Legal documents and notices for Oplo.",
+    "legal/", 1, "Legal — OploCloud", "Legal documents and notices for OploCloud.",
     "Legal", "Documents and notices",
-    '''<p>Oplo is early, and its legal documents are being prepared rather than copied from a
+    '''<p>OploCloud is early, and its legal documents are being prepared rather than copied from a
 template. Each is published here when it has been reviewed.</p>
 <h2>Documents</h2>
 <ul>
@@ -2293,7 +2293,7 @@ template. Each is published here when it has been reviewed.</p>
 <h2>Company</h2>
 <p>OploCloud, Inc. Correspondence reaches us at <a href="mailto:hello@oplocloud.com">hello@oplocloud.com</a>.</p>
 <h2>Trademarks</h2>
-<p>The Oplo name and mark are the property of OploCloud, Inc. Other names may be trademarks of their
+<p>The OploCloud name and mark are the property of OploCloud, Inc. Other names may be trademarks of their
 respective owners.</p>''')))
 
 # ==================================================================== Privacy
@@ -2302,7 +2302,7 @@ respective owners.</p>''')))
 # and the transparency report, with the binding policy sitting in /legal/.
 #
 # Apple's page can compare its products against someone else's because it has
-# products. Oplo does not, so the comparison table is replaced by a commitment
+# products. OploCloud does not, so the comparison table is replaced by a commitment
 # beside the thing it rules out — which can be checked later, and is the only
 # honest version of the same idea.
 
@@ -2315,7 +2315,7 @@ PRIVACY_NAV = [
 ]
 
 PRIVACY_NOTE = (
-    "These pages state how Oplo intends to build and what it has committed to. They are not the binding "
+    "These pages state how OploCloud intends to build and what it has committed to. They are not the binding "
     "document; the privacy policy is, and it is in preparation. Where a protection is not built yet, it "
     "is labelled as such rather than described in the present tense."
 )
@@ -2343,7 +2343,7 @@ def pledge(rows):
     return f'''    <div class="pledge reveal d1">
       <table>
         <thead><tr>
-          <th scope="col">What Oplo has committed to</th>
+          <th scope="col">What OploCloud has committed to</th>
           <th scope="col">What that rules out</th>
         </tr></thead>
         <tbody>
@@ -2383,15 +2383,15 @@ _p_cards = "".join(
         ("Control", "control/",
          "What a setting has to do before it counts as a control, and what you can ask us for."),
         ("Labels", "labels/",
-         "The disclosure every Oplo app publishes before it ships, in one fixed format."),
+         "The disclosure every OploCloud app publishes before it ships, in one fixed format."),
         ("Transparency Report", "transparency/",
          "Requests from governments for your data. The number so far is zero."),
         ("Privacy Policy", "../legal/privacy-policy/",
          "The binding document. In preparation, and dated when it is published."),
     ])
 
-PAGES.append(privacy_page("privacy/", 1, "Privacy — Oplo",
-    "Oplo's position on personal data: personal computing only means something if the personal part stays private.",
+PAGES.append(privacy_page("privacy/", 1, "Privacy — OploCloud",
+    "OploCloud's position on personal data: personal computing only means something if the personal part stays private.",
     f'''<section class="band">
   <div class="well">
     <p class="eyebrow reveal">Privacy</p>
@@ -2400,7 +2400,7 @@ PAGES.append(privacy_page("privacy/", 1, "Privacy — Oplo",
       Personal computing only means something if the personal part stays private.
     </p>
     <p class="notice reveal d1" style="margin-inline:auto;text-align:left">
-      <b>Oplo has not shipped a product yet</b> &mdash; which is the reason to publish this now. A privacy
+      <b>OploCloud has not shipped a product yet</b> &mdash; which is the reason to publish this now. A privacy
       position written before there is anything to collect is a constraint on what gets built. Written
       afterwards, it is a press release.<sup>1</sup>
     </p>
@@ -2420,7 +2420,7 @@ PAGES.append(privacy_page("privacy/", 1, "Privacy — Oplo",
      "No copy of your files, messages and requests sitting on our servers." + mo(" Nothing to mine, "
      "nothing to subpoena, nothing to leak.")),
     ("No advertising business, ever.",
-     "The most reliable way to make money from a personal device is closed to us." + mo(" Everything Oplo "
+     "The most reliable way to make money from a personal device is closed to us." + mo(" Everything OploCloud "
      "earns has to come from selling the product.")),
     ("Your content is never training data.",
      "The cheapest source of training data on earth is off the table." + mo(" There is no opt-out to bury "
@@ -2455,7 +2455,7 @@ PAGES.append(privacy_page("privacy/", 1, "Privacy — Oplo",
      "travel." + mo(" Said plainly at the moment it happens, with the option to stop.")),
     ("Never",
      "Retained after the answer, attached to your account, sold, or used to train the next model."),
-])}    <p class="cta-row reveal d2"><a class="cta" href="../intelligence/">How Oplo intelligence works</a></p>
+])}    <p class="cta-row reveal d2"><a class="cta" href="../intelligence/">How OploCloud intelligence works</a></p>
   </div>
 </section>
 
@@ -2471,8 +2471,8 @@ PAGES.append(privacy_page("privacy/", 1, "Privacy — Oplo",
 
 
 # ----------------------------------------------------------------- Features
-PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
-    "The protections Oplo is building, each labelled with whether it exists yet.",
+PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — OploCloud",
+    "The protections OploCloud is building, each labelled with whether it exists yet.",
     f'''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Built in, not switched on.</h1>
@@ -2487,7 +2487,7 @@ PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
     <p class="eyebrow reveal">Protections</p>
     <h2 class="t-display balance reveal">What each one actually does.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      Each is marked with where it really stands.<span class="more"> Most of Oplo is in development, and a
+      Each is marked with where it really stands.<span class="more"> Most of OploCloud is in development, and a
       page that wrote all of this in the present tense would be describing a company that does not exist
       yet.</span><sup>1</sup>
     </p>
@@ -2505,7 +2505,7 @@ PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
      "can be refused without the feature pretending to be broken") + ".",
      "In development"),
     ("No advertising profile",
-     "Oplo has no ad business, so there is no profile to assemble" + mo(" and no commercial reason to keep "
+     "OploCloud has no ad business, so there is no profile to assemble" + mo(" and no commercial reason to keep "
      "what you did last week") + ".",
      "In effect now"),
     ("Ephemeral by default",
@@ -2513,7 +2513,7 @@ PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
      "it deletes it rather than hiding it."),
      "In development"),
     ("Your content is not training data",
-     "What you write, store and say to Oplo is not used to train models" + mo(" &mdash; not anonymised, "
+     "What you write, store and say to OploCloud is not used to train models" + mo(" &mdash; not anonymised, "
      "not aggregated, not sampled") + ".",
      "In effect now"),
     ("Sign in without spreading out",
@@ -2523,7 +2523,7 @@ PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
     ("Encrypted sync and backup",
      "Content encrypted on the device before it syncs, with the keys staying on your hardware." + mo(" It "
      "is the reason we would be unable to read it, not merely unwilling."),
-     "In development, an Oplo+ capability"),
+     "In development, an OploCloud+ capability"),
 ])}  </div>
 </section>
 
@@ -2540,7 +2540,7 @@ PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
      "No third party has reviewed any of this." + mo(" When one has, the report is published here whole, "
      "not summarised.")),
     ("Published threat model",
-     "What Oplo defends against, and what it does not, written down. Not written yet."),
+     "What OploCloud defends against, and what it does not, written down. Not written yet."),
     ("Security bounty",
      "No programme, so no way for a researcher to be paid for finding us wrong. In preparation."),
     ("Shipping code",
@@ -2552,8 +2552,8 @@ PAGES.append(privacy_page("privacy/features/", 2, "Privacy Features — Oplo",
 
 
 # ------------------------------------------------------------------ Control
-PAGES.append(privacy_page("privacy/control/", 2, "Privacy Control — Oplo",
-    "What a setting has to do before it counts as a control, and what you can ask Oplo for.",
+PAGES.append(privacy_page("privacy/control/", 2, "Privacy Control — OploCloud",
+    "What a setting has to do before it counts as a control, and what you can ask OploCloud for.",
     f'''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">The default should be the private one.</h1>
@@ -2611,7 +2611,7 @@ PAGES.append(privacy_page("privacy/control/", 2, "Privacy Control — Oplo",
     <p class="eyebrow reveal">Ask us</p>
     <h2 class="t-display balance reveal">A person reads it.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:52ch;margin:18px auto 0">
-      <span class="more">Oplo is small enough that privacy questions reach the people who decide these
+      <span class="more">OploCloud is small enough that privacy questions reach the people who decide these
       things. </span>Write to <a href="mailto:hello@oplocloud.com">hello@oplocloud.com</a> and say what you
       want to know.
     </p>
@@ -2625,8 +2625,8 @@ PAGES.append(privacy_page("privacy/control/", 2, "Privacy Control — Oplo",
 
 
 # ------------------------------------------------------------------- Labels
-PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — Oplo",
-    "The disclosure every Oplo app publishes before it ships, in one fixed format.",
+PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — OploCloud",
+    "The disclosure every OploCloud app publishes before it ships, in one fixed format.",
     f'''<section class="band">
   <div class="well">
     <h1 class="t-hero balance reveal">Every app says what it takes.</h1>
@@ -2642,12 +2642,12 @@ PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — Oplo",
     <h2 class="t-display balance reveal">Four categories, no prose.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
       A label is not a policy. It is a short, comparable answer to one question &mdash; what does this
-      program take from me.<span class="more"> It reads the same way on every Oplo app, so the differences
+      program take from me.<span class="more"> It reads the same way on every OploCloud app, so the differences
       between them are visible at a glance.</span>
     </p>
 {minds([
     ("Used to track you",
-     "Data shared with other companies to follow you across their apps and sites." + mo(" Oplo has "
+     "Data shared with other companies to follow you across their apps and sites." + mo(" OploCloud has "
      "committed that this category is empty on every one of its apps.")),
     ("Linked to you",
      "Data tied to your account or device." + mo(" Named individually rather than as a category, and each "
@@ -2672,10 +2672,10 @@ PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — Oplo",
     </p>
 {register([
     ("In development", [
-        ("Oplo intelligence", "Label published at ship"),
-        ("Oplo Edu", "Label published at ship"),
+        ("OploCloud intelligence", "Label published at ship"),
+        ("OploCloud Edu", "Label published at ship"),
         ("OEdu", "Label published at ship"),
-        ("Oplo account and sign-in", "Label published at ship"),
+        ("OploCloud account and sign-in", "Label published at ship"),
     ]),
     ("This site", [
         ("oplocloud.com", "No account required, no advertising, no cross-site tracking"),
@@ -2686,14 +2686,14 @@ PAGES.append(privacy_page("privacy/labels/", 2, "Privacy Labels — Oplo",
 
 
 # ------------------------------------------------------- Transparency Report
-PAGES.append(privacy_page("privacy/transparency/", 2, "Transparency Report — Oplo",
-    "Requests from governments and law enforcement for Oplo user data. The number so far is zero.",
+PAGES.append(privacy_page("privacy/transparency/", 2, "Transparency Report — OploCloud",
+    "Requests from governments and law enforcement for OploCloud user data. The number so far is zero.",
     f'''<section class="band">
   <div class="well">
     <p class="eyebrow reveal">Transparency Report</p>
     <h1 class="t-hero balance reveal" style="max-width:15ch;margin-inline:auto">Zero is a number worth publishing.</h1>
     <p class="t-sub muted balance reveal d1" style="max-width:38ch;margin-inline:auto">
-      Oplo has received no request from any government for anyone&rsquo;s data.
+      OploCloud has received no request from any government for anyone&rsquo;s data.
     </p>
   </div>
 </section>
@@ -2703,7 +2703,7 @@ PAGES.append(privacy_page("privacy/transparency/", 2, "Transparency Report — O
     <p class="eyebrow reveal">Period covered</p>
     <h2 class="t-display balance reveal">Since incorporation, to date.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:56ch;margin:18px auto 0">
-      Oplo has no users and holds no personal data, which is why every figure below is zero.<span
+      OploCloud has no users and holds no personal data, which is why every figure below is zero.<span
       class="more"> Publishing it now sets the baseline: the first report that is not zero can be read
       against this one.</span><sup>1</sup>
     </p>
@@ -2755,7 +2755,7 @@ PAGES.append(privacy_page("privacy/transparency/", 2, "Transparency Report — O
     <p class="eyebrow reveal">Cadence</p>
     <h2 class="t-display balance reveal">Twice a year, and on the day it changes.</h2>
     <p class="t-lead muted balance reveal d1" style="max-width:54ch;margin:18px auto 0">
-      This report is updated every six months once Oplo has users.<span class="more"> If a request
+      This report is updated every six months once OploCloud has users.<span class="more"> If a request
       arrives before then, this page changes when the report on it can lawfully be published, rather than
       waiting for a schedule.</span>
     </p>
@@ -2788,8 +2788,8 @@ OEDU_CSS = "learn/oplo-chrome.css"
 OEDU_SECTIONS = [("Students", "#students"), ("Teachers", "#teachers"),
                  ("Families", "#families"), ("Schools", "#schools")]
 
-# ------------------------------------------------------- Oplo Developer
-# dev.oplocloud.com — the developer's door into Oplo. A third hostname
+# ------------------------------------------------------- OploCloud Developer
+# dev.oplocloud.com — the developer's door into OploCloud. A third hostname
 # wearing this site's chrome, for the same reason OEdu does: the bar a
 # developer sees has to be the bar everybody else sees, or the company has
 # two front doors that disagree.
@@ -2813,17 +2813,17 @@ DEV_MENUS = [
                      ("Talk to an engineer", SITE + "contact/")]),
      ("Not yet", [("API reference", "#start"), ("Early access", "#start"),
                   ("App distribution", "#start")])],
-    [("Explore Platforms", [("All platforms", "#platforms"), ("Oplo OS", "#p-os"),
-                            ("OStudio", "#p-studio"), ("Oplo Silicon", "#p-silicon"),
-                            ("Oplo Intelligence", "#p-intelligence"), ("Oplo Cloud", "#p-cloud"),
+    [("Explore Platforms", [("All platforms", "#platforms"), ("OploCloud OS", "#p-os"),
+                            ("OStudio", "#p-studio"), ("OploCloud Silicon", "#p-silicon"),
+                            ("OploCloud Intelligence", "#p-intelligence"), ("OploCloud", "#p-cloud"),
                             ("OEdu", "#p-edu")]),
      ("Featured", [("What is new", "#whats-new"), ("Newsroom", SITE + "newsroom/"),
                    ("Open OEdu", OEDU)])],
     [("Explore Technologies", [("All technologies", "#technologies"), ("Interface", "#t-interface"),
                                ("Intelligence", "#t-intelligence"), ("Data", "#t-data"),
                                ("System", "#t-system")]),
-     ("Elsewhere", [("Oplo intelligence", SITE + "intelligence/"), ("Oplo hardware", SITE + "hardware/"),
-                    ("Oplo software", SITE + "software/"), ("Privacy", SITE + "privacy/")])],
+     ("Elsewhere", [("OploCloud intelligence", SITE + "intelligence/"), ("OploCloud hardware", SITE + "hardware/"),
+                    ("OploCloud software", SITE + "software/"), ("Privacy", SITE + "privacy/")])],
     [("Downloads", [("What there is", "#downloads"), ("OStudio", "#p-studio"),
                     ("Ask for early access", SITE + "contact/")]),
      ("Instead, for now", [("Design system", SITE + "developers/#design"),
@@ -2834,14 +2834,14 @@ DEV_MENUS = [
                    ("Careers", SITE + "careers/")])],
     [("Get help", [("Developer support", "#support"), ("Getting help", SITE + "support/"),
                    ("Write to us", SITE + "contact/")]),
-     ("Account", [("Your Oplo account", SITE + "sign-in/"), ("Oplo+", SITE + "plus/")])],
+     ("Account", [("Your OploCloud account", SITE + "sign-in/"), ("OploCloud+", SITE + "plus/")])],
 ]
 
 # What the magnifier offers before anything is typed.
 DEV_QUICK = [("Platforms", "#platforms"), ("Technologies", "#technologies"),
              ("Downloads", "#downloads"), ("OEdu", OEDU), ("oplocloud.com", SITE)]
 DEV_NOTES = [
-    "Oplo has not shipped a developer platform. Every section of that page describes "
+    "OploCloud has not shipped a developer platform. Every section of that page describes "
     "work in progress, and one that says a thing is not built means exactly that.",
     "Nothing on it is an offer, a commitment to a specification, or a date.",
 ]
@@ -2983,7 +2983,7 @@ def oedu_chrome():
 def dev_chrome():
     # One bar, and it is the developer site's own: the mark with "Developer"
     # beside it, its own links and menus, its own search, and a Sign in that
-    # goes to the one Oplo account. Not this site's bar with a sub-bar under
+    # goes to the one OploCloud account. Not this site's bar with a sub-bar under
     # it — somebody who typed dev.oplocloud.com came for the platform, and the
     # first thing they meet should be the platform's front door. The way back
     # to the company is the footer, which is this site's footer entire.
@@ -2992,7 +2992,7 @@ def dev_chrome():
     # habit the site's bar does not have, or miss a fix the site's bar gets.
     bar = nav(0, links=DEV_NAV, menus_spec=DEV_MENUS, quick_spec=DEV_QUICK,
               word="Developer", home=DEV, scope="the developer site",
-              cta=("Sign in", SITE + "sign-in/"), label="Oplo Developer")
+              cta=("Sign in", SITE + "sign-in/"), label="OploCloud Developer")
     regions(DEV_PAGE, (("nav", bar), ("foot", site_footer(DEV_NOTES))))
     chrome_css(DEV_CSS, ".dv")
     chrome_js("dev")
@@ -3020,19 +3020,19 @@ def dev_search_index():
     # Only the sections the bar names, in its order, so the two agree.
     blurb = {
         "#start": "Where to start: what is open today, what is on request, and what is not built yet.",
-        "#platforms": "Oplo OS, OStudio, Oplo Silicon, Oplo Intelligence, Oplo Cloud and OEdu.",
+        "#platforms": "OploCloud OS, OStudio, OploCloud Silicon, OploCloud Intelligence, OploCloud and OEdu.",
         "#technologies": "One platform learned once: interface, intelligence, data and system.",
         "#downloads": "Nothing to download yet. OStudio and the first SDK arrive together.",
         "#community": "Forums, open source and office hours — and which of them are open.",
         "#support": "A developer question reaches the people who built the thing.",
-        "#films": "Films about building on Oplo.",
+        "#films": "Films about building on OploCloud.",
     }
     pages = []
     for label, anchor in DEV_NAV + [("Latest films", "#films")]:
         h = re.search(r'id="' + anchor[1:] + r'"[^>]*>.*?<h2[^>]*>(.*?)</h2>', page, re.S)
         pages.append({"t": label, "d": blurb[anchor],
                       "k": text(h.group(1)) if h else label, "u": anchor})
-    pages.append({"t": "Oplo", "d": "The company, and everything that explains it.",
+    pages.append({"t": "OploCloud", "d": "The company, and everything that explains it.",
                   "k": "hardware software intelligence products company support", "u": SITE})
     pages.append({"t": "OEdu", "d": "Sign in to OEdu — courses, the gradebook, and the family view.",
                   "k": "education students teachers families school", "u": OEDU})
@@ -3044,7 +3044,7 @@ def dev_search_index():
 
 
 # ------------------------------------------------------------------ Roxan
-# roxan.oplocloud.com — Oplo's AI, on a hostname of its own like OEdu and the
+# roxan.oplocloud.com — OploCloud's AI, on a hostname of its own like OEdu and the
 # developer site (wrangler.roxan.toml). Its menu is the system's: this site's
 # bar, search and all, with Roxan's own chapter bar under it and this site's
 # footer below — the same arrangement as OEdu's welcome page, and the one
@@ -3063,7 +3063,7 @@ ROXAN_SECTIONS = [("For Students", "#students"), ("Features", "#assistant"),
 ROXAN_NOTES = [
     '<span id="fn1"></span>Roxan 3 is available in English at launch, with more languages rolling out '
     "through 2027. Some features are not available in all countries, regions, or languages.",
-    '<span id="fn2"></span>Comparisons are with the previous generation of Roxan models, on Oplo’s '
+    '<span id="fn2"></span>Comparisons are with the previous generation of Roxan models, on OploCloud’s '
     "internal evaluations. Roxan can make mistakes — check important information.",
     '<span id="fn3"></span>Usage limits are compute-based. They factor in the model, the features you use, '
     "and the length of your conversation, and refresh on a rolling five-hour window up to a weekly limit.",
@@ -3105,18 +3105,18 @@ def search_index():
         chap = re.search(r'class="chapter-links"[^>]*>(.*?)</nav>', content, re.S)
         h1 = re.search(r"<h1[^>]*>(.*?)</h1>", content, re.S)
         t = text(title.group(1) if title else path)
-        t = re.sub(r"\s+[—–-]\s+Oplo$", "", t)
+        t = re.sub(r"\s+[—–-]\s+OploCloud$", "", t)
         pages.append({
-            "t": "Home" if t == "Oplo" else t,
+            "t": "Home" if t == "OploCloud" else t,
             "d": text(desc.group(1) if desc else ""),
             "k": " ".join(filter(None, [text(h1.group(1)) if h1 else "", text(chap.group(1)) if chap else ""])),
             "u": re.sub(r"index\.html$", "", path),
         })
     pages.append({"t": "OEdu", "d": "Sign in to OEdu — courses, the gradebook, and the family view.",
                   "k": "students teachers families school sign in learn", "u": OEDU})
-    pages.append({"t": "Oplo Developer", "d": "Build on Oplo — the platforms, the tools and the documentation, as they are being made.",
+    pages.append({"t": "OploCloud Developer", "d": "Build on OploCloud — the platforms, the tools and the documentation, as they are being made.",
                   "k": "developer sdk api documentation downloads platforms technologies ostudio", "u": DEV})
-    pages.append({"t": "Roxan", "d": "Oplo’s personal, proactive AI — built into every Oplo app, and private at every step.",
+    pages.append({"t": "Roxan", "d": "OploCloud’s personal, proactive AI — built into every OploCloud app, and private at every step.",
                   "k": "ai assistant intelligence models plans students agents spark live", "u": ROXAN})
     io.open(os.path.join(ROOT, SEARCH_INDEX), "w", encoding="utf-8").write(
         json.dumps({"pages": pages}, ensure_ascii=False, separators=(",", ":")) + "\n")
