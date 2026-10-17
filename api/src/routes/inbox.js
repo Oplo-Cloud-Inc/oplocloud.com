@@ -13,7 +13,7 @@
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { id } from "../lib/crypto.js";
-import { notify, flushOutbox, NOTICE_KINDS } from "../services/notify.js";
+import { notify, flushOutbox, isDemoOrg, NOTICE_KINDS } from "../services/notify.js";
 import { orgOf, isOffice, isSchoolStaff, STAFF_ROLES_ALL } from "../services/who.js";
 
 const shape = (n) => ({
@@ -208,7 +208,7 @@ export async function outbox(ctx) {
   const orgId = orgOf(actor);
   if (!isOffice(actor, orgId)) throw ApiError.forbidden("The mail queue is the office’s.");
   const rows = await ctx.repo.listOutbox(orgId, null);
-  return json({ configured: !!(ctx.env.MAIL_ENDPOINT && ctx.env.MAIL_KEY),
+  return json({ configured: !!(ctx.env.MAIL_ENDPOINT && ctx.env.MAIL_KEY), demo: isDemoOrg(ctx.env, orgId),
     mail: rows.map((m) => ({ id: m.id, to: m.to_email, subject: m.subject, status: m.status, error: m.error, createdAt: m.created_at, sentAt: m.sent_at })) });
 }
 export async function flush(ctx) {

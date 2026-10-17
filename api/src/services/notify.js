@@ -34,9 +34,19 @@ export async function notify(repo, o) {
   return reached;
 }
 
+/* DEMO_ORGS (wrangler.toml, so a school's own administrator cannot change it): the schools that are made-up demos. No mail leaves one, and
+   scripts/set-demo-passwords.sh will set a shared password only for one. */
+export const isDemoOrg = (env, orgId) => !!orgId && String((env && env.DEMO_ORGS) || "").split(",").map((x) => x.trim()).includes(orgId);
+
 /* Send what is queued through the deployment's mail endpoint, if it has one.
    ponytail: a generic JSON POST; swap for a provider's SDK when one is chosen. */
 export async function flushOutbox(repo, env, orgId) {
+  // A demo school's mail never leaves, whether or not a provider is connected: it is held as "suppressed" so the queue still tells the truth.
+  if (isDemoOrg(env, orgId)) {
+    const held = await repo.listOutbox(orgId, "queued");
+    for (const m of held) await repo.markOutbox(m.id, "suppressed", "Demo school: mail is off.");
+    return { sent: 0, suppressed: held.length, queued: 0, configured: !!(env.MAIL_ENDPOINT && env.MAIL_KEY), demo: true };
+  }
   if (!env.MAIL_ENDPOINT || !env.MAIL_KEY) return { sent: 0, queued: (await repo.listOutbox(orgId, "queued")).length, configured: false };
   let sent = 0;
   for (const m of (await repo.listOutbox(orgId, "queued")).slice(0, 50)) {

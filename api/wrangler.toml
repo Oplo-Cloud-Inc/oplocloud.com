@@ -16,6 +16,8 @@ compatibility_date = "2026-05-01"
 
 [vars]
 ENVIRONMENT = "development"
+# Made-up demo schools: no mail leaves them, and scripts/set-demo-passwords.sh works only on these. Never a real school.
+DEMO_ORGS = "org_sfhs"
 # Browsers that may call this API with credentials. An allowlist rather than
 # "*", because "*" and cookies are mutually exclusive for good reasons.
 # :8788 is the sign-in page (auth/, `wrangler dev --port 8788`).
@@ -31,6 +33,7 @@ name = "oplo-api"
 
 [env.production.vars]
 ENVIRONMENT = "production"
+DEMO_ORGS = "org_sfhs"
 # OEdu is served from edu.oplocloud.com and calls this API from there, so the
 # origin has to be on the list or every request from the product is refused.
 # The apex stays because the marketing pages link into the app.

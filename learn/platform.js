@@ -787,14 +787,14 @@ window.OPLO_PLATFORM = function (K) {
       var n = K.loading(s, "the queue");
       API.inbox.outbox().then(function (r) {
         n.remove();
-        s.appendChild(el("p", "cx-note", r.configured ? "A mail service is connected." : "No mail service is connected, so these stay queued."));
+        s.appendChild(el("p", "cx-note", r.demo ? "This is a demo school: mail is off, and nothing here is ever sent." : r.configured ? "A mail service is connected." : "No mail service is connected, so these stay queued."));
         var acts = el("div", "sx-acts");
         acts.appendChild(button("Send what is queued", "cn-btn strong", function () { API.inbox.flush().then(function (x) { toast(x.configured ? plural(x.sent, "message") + " sent" : "No mail service is connected."); load(); }); }));
         acts.appendChild(button("Run reminders now", "cn-btn", function () { API.inbox.runReminders().then(function (x) { toast(plural(x.made.roll + x.made.due + x.made.documents, "reminder") + " made"); }); }));
         s.appendChild(acts);
         if (!r.mail.length) { s.appendChild(K.cnEmpty("Nothing queued.", "People who ask for email on a kind of notice appear here.")); return; }
         var t = K.cnTable([{ label: "To", w: "minmax(180px, 1fr)" }, { label: "Subject", w: "minmax(200px, 1.4fr)" }, { label: "Queued", w: "110px" }, { label: "Status", w: "90px" }]);
-        r.mail.forEach(function (m) { t.row([esc(m.to), esc(m.subject), esc(ago(m.createdAt)), pill(m.status, m.status === "failed" ? "red" : m.status === "sent" ? "ok" : "orange")]); });
+        r.mail.forEach(function (m) { t.row([esc(m.to), esc(m.subject), esc(ago(m.createdAt)), pill(m.status, m.status === "failed" ? "red" : m.status === "sent" ? "ok" : m.status === "suppressed" ? "" : "orange")]); });
         s.appendChild(t);
       }).catch(function (e) { n.remove(); failedAt(s, e, load); });
     }
