@@ -65,6 +65,7 @@ export const ACTIONS = [
   "role.grant",
   "period.read", "period.write", "grade.post", "grade.approve",
   "attendance.read", "attendance.write",
+  "india.read", "india.write",
   "efm.read", "efm.write", "efm.admin"
 ];
 
@@ -385,6 +386,14 @@ export async function can(ctx, action, resource = {}) {
     case "enrollment.settings":
       return learnAdmin;
 
+    /* ---------------------------------------------------------------- India
+       The numbers a board and the state ask for, and the consent the law asks
+       for, are the office's. A principal reads them; the registrar keeps them. */
+    case "india.read":
+      return learnAdmin || hasRole(actor, "learn", "registrar", orgId) || hasRole(actor, "learn", "principal", orgId);
+    case "india.write":
+      return learnAdmin || hasRole(actor, "learn", "registrar", orgId);
+
     /* ------------------------------------------------------- Facilities
        Anyone on the staff may ask for something to be fixed and hold a room;
        they read their own requests and the school's rooms, and nothing else.
@@ -474,6 +483,8 @@ const REASONS = {
   "enrollment.activate": "Creating an enrollment is the registrar's. Ask them, or an administrator.",
   "enrollment.sensitive": "Only administrators can see or change restricted enrollment information.",
   "enrollment.settings": "Only administrators can change what enrollment asks for.",
+  "india.read": "Classes, identity numbers and consent records are read by the school's administrators, principal and registrar.",
+  "india.write": "Classes, identity numbers and consent records are kept by the school's administrators and registrar.",
   "facility.request": "Requests and room bookings are for the school's staff.",
   "facility.read": "The facilities records are read by the people who run the building. You can see your own requests.",
   "facility.work": "Working on facilities orders is for the facilities team, the office and the principal.",

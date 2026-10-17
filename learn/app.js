@@ -8855,6 +8855,10 @@
       { k: "fx-upkeep", name: "Routines" }, { k: "fx-bookings", name: "Bookings" }, { k: "fx-vendors", name: "Vendors" },
       { k: "fx-documents", name: "Documents" }, { k: "fx-reports", name: "Reports" }] },
     { name: "Curriculum", icon: "books", kids: [{ k: "curriculum", name: "Courses" }, { k: "curmap", name: "Curriculum Map" }] },
+    /* India: the places an Indian school's office works. Shown only to a school
+       whose region is IN (organizations.region); the addresses work for any. */
+    { name: "India", icon: "flag", only: "IN", kids: [
+      { k: "in-classes", name: "Classes" }, { k: "in-compliance", name: "Compliance" }, { k: "in-certs", name: "Certificates" }] },
     { name: "Data Center", icon: "server", kids: [{ k: "data", name: "Exports" }, { k: "imports", name: "Imports" }, { k: "sis", name: "Integrations" },
       { k: "state", name: "State Reporting" }, { k: "district", name: "District" }, { k: "api", name: "API" }] },
     { k: "security", name: "Security", icon: "shield" },
@@ -8867,6 +8871,11 @@
       { k: "standards", name: "Standards" },
       { k: "an-standards", name: "Standards analytics" }, { k: "sftp", name: "SFTP" }] }
   ];
+  /* The tree this school sees: a group marked `only` is for schools in that region. */
+  function adminTree() {
+    var region = S.me && S.me.orgs && S.me.orgs[0] ? S.me.orgs[0].region : null;
+    return ADMIN_TREE.filter(function (t) { return !t.only || t.only === region; });
+  }
   /* The student's own console: the school's record of them, read by them.
      Short, flat and in the order a student's questions come — where do I go,
      what is due, how am I doing, am I marked in — then the record, then them.
@@ -9612,7 +9621,7 @@
     if (consoleMode() === "admin" && officeOnly()) {
       allowedTabs().forEach(function (t) { if (!t.hidden) nav.appendChild(place(t, t.k === "enrollment" ? "people" : null)); });
     } else if (consoleMode() === "admin") {
-      ADMIN_TREE.forEach(function (t) {
+      adminTree().forEach(function (t) {
         if (!t.kids) { nav.appendChild(place(t, t.icon)); return; }
         // A group: its row folds and unfolds; opening one you are not in
         // also goes to its first place, the way a Finder folder shows what is in it.
@@ -9747,6 +9756,7 @@
        inventory: tabFxAssets,
        "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
        "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
+       "in-classes": tabInClasses, "in-compliance": tabInCompliance,
        sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
   }
 
@@ -9837,7 +9847,7 @@
       openInbox: function () { if (S.me && S.me.role === "student") openStudentConsole(false, "inbox"); else openAdmin(false, S.me && S.me.role === "admin" ? "inbox" : "messages"); },
       sections: function () { return allowedTabs().filter(function (t) { return !t.hidden; }); },
       staffTree: function () {
-        return consoleMode() === "admin" ? { admin: true, items: ADMIN_TREE } : { items: TEACHER_TREE.concat([{ head: "More", items: TEACHER_FOOT }]) };
+        return consoleMode() === "admin" ? { admin: true, items: adminTree() } : { items: TEACHER_TREE.concat([{ head: "More", items: TEACHER_FOOT }]) };
       },
       otherHomes: otherHomes,
       // How a teacher's typed mark is read ("8", "85%", "B+", "M", "E"), and the school's letters.
@@ -17595,6 +17605,7 @@
     lockers: { kind: "locker", eyebrow: "School Operations", title: "Lockers", sub: "Who has which locker." },
     checkouts: { kind: "checkout", eyebrow: "School Operations", title: "Equipment", sub: "What is out, with whom, and when it is due back." },
     curmap: { kind: "curriculum", eyebrow: "Curriculum", title: "Curriculum map", sub: "Units by course and week, with the standards they meet.", course: true },
+    "in-certs": { kind: "certificate", eyebrow: "India", title: "Certificates", sub: "Transfer, bonafide, character and migration certificates: who asked, what for, the number it carries, and when it was issued.", newLabel: "Record a request" },
     fees: { kind: "fee", eyebrow: "Finance", title: "Fees", sub: "What the school charges, and how often." },
     invoices: { kind: "invoice", eyebrow: "Finance", title: "Invoices", sub: "What each family owes.",
       summary: function (rows) {
@@ -17645,6 +17656,19 @@
     });
     return CARE;
   }
+  /* India: classes, identity numbers and consent, and the file that loads them. */
+  var INDIA = null;
+  function india() {
+    if (INDIA) return INDIA;
+    INDIA = window.OPLO_INDIA({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, csvDownload: csvDownload, openAdmin: openAdmin
+    });
+    return INDIA;
+  }
+  function tabInClasses(v) { india().classes(v); }
+  function tabInCompliance(v) { india().compliance(v); }
   function tabSftp(v) {
     soonPage(v, "Data Center", "SFTP", "Files sent to and from other systems on a schedule.",
       ["Nightly exports to a district or vendor server", "Incoming files picked up and imported", "Keys, not passwords, and a log of every transfer"],

@@ -287,7 +287,7 @@ export class D1Repository {
 
   async membershipsFor(accountId) {
     const { results } = await this.db.prepare(
-      `SELECT m.org_id, m.role, o.slug, o.name
+      `SELECT m.org_id, m.role, o.slug, o.name, o.region
          FROM organization_memberships m JOIN organizations o ON o.id = m.org_id
         WHERE m.account_id = ?`
     ).bind(accountId).all();
@@ -3259,6 +3259,119 @@ export class D1Repository {
     ).bind(orgId, orgId).all();
     return results || [];
   }
+
+  /* ---------------------------------------------------------------- India
+     Classes and the details an Indian school's office keeps on a child.
+     Column names are written out once, below, from constants; nothing a
+     caller sends is ever part of the SQL text. */
+
+  async listIndiaClasses(orgId, year) {
+    const { results } = await this.db.prepare(
+      `SELECT c.*, t.name AS teacher_name,
+              (SELECT COUNT(*) FROM learn_student_india s WHERE s.class_id = c.id) AS strength
+         FROM learn_classes c LEFT JOIN profiles t ON t.account_id = c.class_teacher_id
+        WHERE c.org_id = ? AND c.school_year = ?`
+    ).bind(orgId, year).all();
+    return results || [];
+  }
+
+  async findIndiaClass(orgId, year, grade, section) {
+    return this.db.prepare(
+      `SELECT * FROM learn_classes WHERE org_id = ? AND school_year = ? AND grade = ? AND section = ?`
+    ).bind(orgId, year, grade, section).first();
+  }
+
+  async upsertIndiaClass(orgId, year, c) {
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_classes
+         (id, org_id, school_year, grade, section, programme, stream, class_teacher_id, room, capacity, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (org_id, school_year, grade, section) DO UPDATE SET
+         programme = excluded.programme, stream = excluded.stream, class_teacher_id = excluded.class_teacher_id,
+         room = excluded.room, capacity = excluded.capacity, updated_at = excluded.updated_at`
+    ).bind(id("cls"), orgId, year, c.grade, c.section, c.programme ?? null, c.stream ?? null,
+           c.classTeacherId ?? null, c.room ?? null, c.capacity ?? null, t, t).run();
+    return this.findIndiaClass(orgId, year, c.grade, c.section);
+  }
+
+  async listIndiaStudents(orgId, classId) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, a.email, p.name, c.grade, c.section, c.programme, c.stream, k.date_of_birth, k.mailing_address
+         FROM learn_student_india s
+         JOIN accounts a ON a.id = s.account_id LEFT JOIN profiles p ON p.account_id = s.account_id
+         LEFT JOIN learn_classes c ON c.id = s.class_id LEFT JOIN account_contacts k ON k.account_id = s.account_id
+        WHERE s.org_id = ? AND (? IS NULL OR s.class_id = ?)`
+    ).bind(orgId, classId || null, classId || null).all();
+    return results || [];
+  }
+
+  async getIndiaStudent(orgId, accountId) {
+    return this.db.prepare(
+      `SELECT s.*, a.email, p.name, c.grade, c.section, c.programme, c.stream, k.date_of_birth, k.mailing_address
+         FROM learn_student_india s
+         JOIN accounts a ON a.id = s.account_id LEFT JOIN profiles p ON p.account_id = s.account_id
+         LEFT JOIN learn_classes c ON c.id = s.class_id LEFT JOIN account_contacts k ON k.account_id = s.account_id
+        WHERE s.org_id = ? AND s.account_id = ?`
+    ).bind(orgId, accountId).first();
+  }
+
+  /* Several students' rows at once, as getIndiaStudent would give each. */
+  async getIndiaStudents(orgId, accountIds) {
+    const out = [];
+    for (let i = 0; i < accountIds.length; i += 80) {
+      const part = accountIds.slice(i, i + 80);
+      const { results } = await this.db.prepare(
+        `SELECT s.*, a.email, p.name, c.grade, c.section, c.programme, c.stream, k.date_of_birth, k.mailing_address
+           FROM learn_student_india s
+           JOIN accounts a ON a.id = s.account_id LEFT JOIN profiles p ON p.account_id = s.account_id
+           LEFT JOIN learn_classes c ON c.id = s.class_id LEFT JOIN account_contacts k ON k.account_id = s.account_id
+          WHERE s.org_id = ? AND s.account_id IN (${part.map(() => "?").join(",")})`
+      ).bind(orgId, ...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* Students and their contact card, one batch. `row` carries every column of
+     learn_student_india; `contact` the date of birth and address, where null
+     leaves what is there alone. A batch is one transaction, so a duplicate
+     number in one row stops the lot and the caller says which. */
+  async putIndiaStudents(orgId, items, actorId) {
+    const t = now();
+    const stmts = [];
+    for (const it of items) {
+      const r = it.row;
+      stmts.push(this.db.prepare(INDIA_UPSERT).bind(it.accountId, orgId, ...INDIA_COLS.map((c) => r[c] ?? null), actorId || null, t, t));
+      if (it.contact && (it.contact.dateOfBirth || it.contact.mailingAddress)) {
+        stmts.push(this.db.prepare(
+          `INSERT INTO account_contacts (account_id, mailing_address, date_of_birth, updated_by, updated_at) VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT (account_id) DO UPDATE SET
+             mailing_address = COALESCE(excluded.mailing_address, account_contacts.mailing_address),
+             date_of_birth = COALESCE(excluded.date_of_birth, account_contacts.date_of_birth),
+             updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+        ).bind(it.accountId, it.contact.mailingAddress ?? null, it.contact.dateOfBirth ?? null, actorId || null, t));
+      }
+    }
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+
+  /* Who, among these addresses, belongs to this school: [{ id, email_lower }]. */
+  async accountsByEmails(orgId, emails) {
+    const out = [];
+    const list = [...new Set(emails.map((e) => String(e).trim().toLowerCase()).filter(Boolean))];
+    for (let i = 0; i < list.length; i += 80) {
+      const part = list.slice(i, i + 80);
+      const { results } = await this.db.prepare(
+        `SELECT a.id, a.email_lower FROM accounts a
+           JOIN organization_memberships m ON m.account_id = a.id AND m.org_id = ?
+          WHERE a.email_lower IN (${part.map(() => "?").join(",")})`
+      ).bind(orgId, ...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
   /* Who, among these addresses, already has an Oplo Account — in this school or
      not: [{ id, email_lower, status, member, roles }], roles being this school's
      learn roles as "a,b". */
@@ -3346,4 +3459,23 @@ export class D1Repository {
     if (stmts.length) await this.db.batch(stmts);
   }
 
+  async countOrgStudents(orgId) {
+    const r = await this.db.prepare(
+      `SELECT COUNT(DISTINCT account_id) AS n FROM account_roles WHERE org_id = ? AND product = 'learn' AND role = 'student'`
+    ).bind(orgId).first();
+    return r ? r.n : 0;
+  }
+
+  async isOrgMember(orgId, accountId) {
+    return !!(await this.db.prepare(`SELECT 1 AS ok FROM organization_memberships WHERE org_id = ? AND account_id = ?`).bind(orgId, accountId).first());
+  }
 }
+
+const INDIA_COLS = ["class_id", "admission_no", "admitted_on", "roll_no", "gender", "house", "category", "second_language", "blood_group",
+  "apaar", "pen", "aadhaar", "consent_status", "consent_method", "consent_on", "consent_note", "transport", "pin", "district", "state",
+  "father_name", "father_phone", "mother_name", "mother_phone", "primary_contact", "whatsapp", "language", "guardian_email"];
+const INDIA_UPSERT =
+  `INSERT INTO learn_student_india (account_id, org_id, ${INDIA_COLS.join(", ")}, updated_by, created_at, updated_at)
+   VALUES (?, ?, ${INDIA_COLS.map(() => "?").join(", ")}, ?, ?, ?)
+   ON CONFLICT (account_id) DO UPDATE SET ${INDIA_COLS.map((c) => `${c} = excluded.${c}`).join(", ")},
+     updated_by = excluded.updated_by, updated_at = excluded.updated_at`;

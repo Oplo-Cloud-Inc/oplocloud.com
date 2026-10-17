@@ -133,6 +133,13 @@ export const KINDS = {
     statuses: ["active", "paused"],
     fields: [["url", "Address", "text", true], ["secret", "Signing secret", "text"], ["events", "Events", "text"]]
   },
+  certificate: {
+    label: "Certificate", plural: "Certificates", policy: "office", about: "student", dated: true,
+    statuses: ["requested", "awaiting signature", "issued", "declined"],
+    fields: [["type", "Kind", "select", true, S("Transfer certificate", "Bonafide certificate", "Character certificate", "Migration certificate", "Other")],
+             ["purpose", "What it is for", "text"], ["number", "Certificate number", "text"], ["issuedOn", "Issued on", "date"], ["note", "Note", "longtext"]],
+    notify: "none"
+  },
   fee: {
     label: "Fee", plural: "Fees", policy: "org", about: "none", dated: false,
     statuses: ["active", "retired"],

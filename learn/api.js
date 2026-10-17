@@ -476,6 +476,20 @@ window.OPLO_API = (function () {
       update: function (id, data) { return patch("/conduct/" + id, data); },
       act: function (id, action, data) { return post("/conduct/" + id + "/actions/" + action, data || {}); }
     },
+    /* ------------------------------------------------------------ India
+       Classes, the numbers a board and the state ask for, and consent. Read by
+       the office, written by the administrator and registrar; a refusal is a
+       403 with the rule named. */
+    india: {
+      classes: function (year) { return get("/india/classes" + q({ year: year })); },
+      putClass: function (data) { return put("/india/classes", data); },
+      students: function (classId) { return get("/india/students" + q({ classId: classId })); },
+      student: function (id) { return get("/students/" + id + "/india"); },
+      putStudent: function (id, data) { return put("/students/" + id + "/india", data); },
+      compliance: function () { return get("/india/compliance"); },
+      exportKind: function (kind) { return get("/india/export/" + kind); },
+      importRows: function (rows, check) { return post("/india/import", { rows: rows, check: !!check }, { timeout: 60000 }); }
+    },
     // Not `health`: that name is the connectivity check above, and the second
     // definition of a key in an object literal silently replaces the first.
     healthRecords: {

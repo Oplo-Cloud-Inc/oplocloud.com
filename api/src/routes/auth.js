@@ -28,7 +28,7 @@ export function publicAccount(actor) {
       product: r.product, role: r.role, orgId: r.org_id
     })),
     organizations: (actor.orgs || []).map((o) => ({
-      id: o.org_id, slug: o.slug, name: o.name, role: o.role
+      id: o.org_id, slug: o.slug, name: o.name, role: o.role, region: o.region || "US"
     }))
   };
 }
