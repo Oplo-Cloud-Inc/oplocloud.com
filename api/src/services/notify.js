@@ -38,6 +38,10 @@ export async function notify(repo, o) {
    scripts/set-demo-passwords.sh will set a shared password only for one. */
 export const isDemoOrg = (env, orgId) => !!orgId && String((env && env.DEMO_ORGS) || "").split(",").map((x) => x.trim()).includes(orgId);
 
+/* DEMO_MAIL_DOMAINS: addresses at these domains (a demo's made-up people, who may sit at a real-looking domain) are never mailed, in any school. */
+const demoAddress = (env, to) => String((env && env.DEMO_MAIL_DOMAINS) || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean)
+  .some((d) => String(to).toLowerCase().endsWith("@" + d));
+
 /* Send what is queued through the deployment's mail endpoint, if it has one.
    ponytail: a generic JSON POST; swap for a provider's SDK when one is chosen. */
 export async function flushOutbox(repo, env, orgId) {
@@ -48,8 +52,9 @@ export async function flushOutbox(repo, env, orgId) {
     return { sent: 0, suppressed: held.length, queued: 0, configured: !!(env.MAIL_ENDPOINT && env.MAIL_KEY), demo: true };
   }
   if (!env.MAIL_ENDPOINT || !env.MAIL_KEY) return { sent: 0, queued: (await repo.listOutbox(orgId, "queued")).length, configured: false };
-  let sent = 0;
+  let sent = 0, suppressed = 0;
   for (const m of (await repo.listOutbox(orgId, "queued")).slice(0, 50)) {
+    if (demoAddress(env, m.to_email)) { await repo.markOutbox(m.id, "suppressed", "Demo address: mail is off."); suppressed++; continue; }
     try {
       const r = await fetch(env.MAIL_ENDPOINT, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + env.MAIL_KEY },
         body: JSON.stringify({ to: m.to_email, subject: m.subject, text: m.body || "" }) });
@@ -58,5 +63,5 @@ export async function flushOutbox(repo, env, orgId) {
       sent++;
     } catch (e) { await repo.markOutbox(m.id, "failed", String(e.message || e).slice(0, 200)); }
   }
-  return { sent, queued: (await repo.listOutbox(orgId, "queued")).length, configured: true };
+  return { sent, ...(suppressed ? { suppressed } : {}), queued: (await repo.listOutbox(orgId, "queued")).length, configured: true };
 }

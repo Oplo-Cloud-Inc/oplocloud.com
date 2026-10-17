@@ -5,9 +5,9 @@ Prepared 2026-10-17. **Nothing here has been run against production.** Branch `c
 What ships: India classes / identity numbers / consent / Compliance / load-from-a-file (API + console), `organizations.region`, the demo-school switch (`DEMO_ORGS`) and `set-demo-passwords.sh`. The people import and its console are already live (API 49040b3c, edu f8093ea9).
 
 ## 0. Before anything (read-only)
-1. **Cloudflare access to D1.** On 2026-10-17 `wrangler d1 migrations list … --remote` from this machine failed with `7403 account not valid or not authorized` — the saved login deploys Workers but cannot query D1. Run `npx wrangler login` again with D1 permission, or export a `CLOUDFLARE_API_TOKEN` with D1:Edit, then:
-   `cd api && npx wrangler d1 migrations list oplo-platform-db --remote --env production` — expect 0001–0023 applied, 0024 pending. If 0024 is already applied, skip step 1.
-2. Live API is version `49040b3c`, edu `f8093ea9` (`wrangler deployments list --env production`). If either differs, someone else deployed: compare before building on it.
+1. **Restore point (D1 Time Travel).** Note the bookmark first: `cd api && npx wrangler d1 time-travel info oplo-platform-db --env production`. Taken 2026-10-17 before any of this: `00000344-00000000-00005107-c20aefd609bebf8d5fe72b0b99e9bd46` (take a fresh one right before step 1). To go back: `npx wrangler d1 time-travel restore oplo-platform-db --bookmark=<it>` — this rewinds the whole database, so it is for a bad migration, not a bad deploy (a bad deploy is a Worker rollback, below).
+2. **D1 access.** `cd api && npx wrangler d1 migrations list oplo-platform-db --remote --env production` — on 2026-10-17 this showed `0024_india.sql` as the only pending migration. (It failed once with `7403 not authorized` and worked on retry; if it keeps failing, `npx wrangler login` again.)
+3. Live API is version `49040b3c`, edu `f8093ea9` (`wrangler deployments list --env production`). If either differs, someone else deployed: compare before building on it.
 
 ## 1. Migration — before the API
 0024 only adds a column (`organizations.region`, default `'US'`) and new tables; the *old* API runs fine on it. The *new* API reads `region` on `/me`, so it must not go first.
@@ -16,7 +16,7 @@ What ships: India classes / identity numbers / consent / Compliance / load-from-
 ## 2. API
 From a clean archive: `git archive claude/india-deploy-prep api efm/js | tar -x -C <scratch>` then `cd <scratch>/api && npx wrangler deploy --env production` (api imports `../../../efm/js/books.js`, so `efm/js` must be in the archive).
 Then check CORS keeps Kern: for each of edu, kern, auth `curl -s -D- -H "origin: https://<host>.oplocloud.com" https://api.oplocloud.com/api/v1/me | grep -i allow-origin`.
-The deploy also sets `DEMO_ORGS = "org_sfhs"` (production vars): that school's mail never leaves.
+The deploy also sets two production vars: `DEMO_ORGS = "org_sfhs"` (that school's mail never leaves) and `DEMO_MAIL_DOMAINS = "sfhs.in"` (nothing is ever mailed to an @sfhs.in address, in any school). Both only matter once a mail provider is connected; today nothing is sent at all.
 
 ## 3. Console (edu)
 The copy must be **live files + this change**, never the repo tree, because a deploy replaces the whole asset set (on 2026-10-17 a copy built from an older commit dropped the 10 `phone-*` files; repaired the same hour).
@@ -25,8 +25,8 @@ The copy must be **live files + this change**, never the repo tree, because a de
 3. `npx wrangler deploy --env production` from that copy (needs `wrangler.toml` + `worker/index.js`); "N new or modified assets" should be 6.
 A staged copy of exactly this, built 2026-10-17 against the live files, is in `ship-people/stage/edu` (rebuild if live has moved).
 
-## 4. Land it on main
-`origin/main` deploys edu from git when CI has secrets, so push the branch to `main` (fast-forward) right after, or the next push replaces edu with a tree that lacks India. That push also carries main's brand wording to edu.
+## 4. Main
+The branch is merged to `main` (fast-forward) **before** deploying, at the owner's instruction, so a push to `main` can never replace edu with a tree that lacks India. If `main` deploys edu from git when CI has secrets, that push also puts main's brand wording on edu and the India console before the API has 0024: harmless (India places stay hidden until `/me` reports region IN), but do steps 1–3 promptly.
 
 ## 5. The SFHS demo school (made-up data, no passwords in the repo)
 - `cd api && node scripts/seed-demo-school.mjs --remote` — school `org_sfhs`, four invited people, made an `IN` school because 0024 is applied.

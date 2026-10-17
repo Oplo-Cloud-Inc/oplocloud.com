@@ -4,7 +4,8 @@
 //   cd api && node_modules/.bin/wrangler dev --port 8794 --var DEMO_ORGS:org_oplo \
 //        --var MAIL_ENDPOINT:http://127.0.0.1:8899/ --var MAIL_KEY:proof          # org_oplo is the demo
 //   API=http://localhost:8794/api/v1 CRED=/path/credentials.json MODE=demo node scripts/prove-demo-switch.mjs
-// and again with DEMO_ORGS left out (MODE=normal), to show the same mail does leave a school that is not a demo.
+// and again with DEMO_ORGS left out (MODE=normal), to show the same mail does leave a school that is not a demo, and a third time
+// with --var DEMO_MAIL_DOMAINS:s.test (MODE=domain): not a demo school, but the address is at a held domain, so it is held anyway.
 // It listens on 8899 as the "mail service", reads the database through the same wrangler, and passes the
 // demo password to scripts/set-demo-passwords.sh on stdin; it is made now and shown nowhere.
 import fs from "node:fs";
@@ -16,7 +17,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const API = process.env.API || "http://localhost:8794/api/v1";
-const MODE = process.env.MODE === "normal" ? "normal" : "demo";
+const MODE = ["normal", "domain"].includes(process.env.MODE) ? process.env.MODE : "demo";
 const cred = JSON.parse(fs.readFileSync(process.env.CRED));
 const HERE = path.dirname(fileURLToPath(import.meta.url)), API_DIR = path.join(HERE, "..");
 const WRANGLER = path.join(API_DIR, "node_modules/.bin/wrangler");
@@ -63,7 +64,7 @@ try {
     await admin.post("/messages", { audience: { kind: "staff" }, title: "Welcome to the school", body: "Your timetable is ready." });
     const box = await admin.get("/outbox");
     assert.equal(box.configured, true, "a mail service is connected, so only the switch can hold this back");
-    assert.equal(box.demo, MODE === "demo");
+    assert.equal(box.demo, MODE === "demo");   // (the domain hold is by address, not by school)
     assert.ok(box.mail.some((m) => m.to === ctx.teacher.email && m.status === "queued"));
   });
 
@@ -119,6 +120,15 @@ try {
       refused(await anon.try("POST", "/auth/login", { email: "ritika.sood@sfhs.in", password: DEMO_PW }), 401);
       refused(await anon.try("POST", "/auth/login", { email: ctx.teacher.email, password: DEMO_PW }), 401);
       refused(await anon.try("POST", "/auth/login", { email: "myra.malhotra@sfhs.in", password: DEMO_PW }), 401);
+    });
+  } else if (MODE === "domain") {
+    await step("an address at a held demo domain is never mailed, even from a school that is not a demo", async () => {
+      assert.equal((await admin.get("/outbox")).demo, false);
+      const f = await admin.post("/outbox/flush");
+      assert.equal(f.sent, 0); assert.equal(f.suppressed, 1);
+      assert.equal(caught.length, 0);
+      const mail = (await admin.get("/outbox")).mail.filter((m) => m.to === ctx.teacher.email);
+      assert.deepEqual(mail.map((m) => m.status), ["suppressed"]); assert.match(mail[0].error, /Demo address/);
     });
   } else {
     await step("a school that is not a demo still has its mail sent", async () => {
