@@ -58,6 +58,8 @@ KERN = "https://kern.oplocloud.com/"
 # absolutely from here. It is defined this far up because the pages below link
 # to it; the rest of what builds it is at the bottom, beside OEdu's.
 DEV = "https://dev.oplocloud.com/"
+# Roxan, Oplo's AI, is on a hostname of its own too; see the Roxan section below.
+ROXAN = "https://roxan.oplocloud.com/"
 
 # Five doors, not eight. Hardware, Software, Intelligence, Privacy, Edu and
 # Oplo+ are still whole sections of the site — they now hang off the three hub
@@ -579,138 +581,251 @@ PAGES.append(("developers/index.html", section_page(
 # that already exist: nothing here is a new claim, and every old top-level
 # page is reachable from one of them in a single click.
 # ==========================================================================
-# Products is laid out the way Apple lays out its Services page: a black
-# opening, a one-line banner, then one full-bleed stage per product with a
-# shelf of cards under it, then a closing band and numbered footnotes. The
-# pictures are not made yet, so every image box is a placeholder: to fill one,
-# put an <img> inside its <figure class="svc-media"> and delete the .ph div
-# (the stage and the shelf cards both work that way; see oplo-products.css).
-def _mark(cls=""):
-    c = f' class="{cls}"' if cls else ""
-    return (f'<svg{c} viewBox="{MARK_VB}" aria-hidden="true" focusable="false"><g transform="translate({MARK_TR})">'
-            f'<path fill="currentColor" d="{MARK_D}"/></g></svg>')
+# Products is a shop front: a light page with a large title, a strip of
+# everything we make, then a run of shelves. A shelf is a heading over a row of
+# white cards that scrolls sideways and runs off the right edge of the window,
+# so there is always more to see; arrows move it, and so does a trackpad.
+# Nothing is for sale, so a card says what a thing is and where to go next.
+#
+# The pictures are not made yet, so every image box is a placeholder. To fill
+# one, put an <img> inside its <div class="st-pic"> (the placeholder hides
+# itself); each box carries a data-slot saying which one it is.
+def _glyph(body):
+    return (f'<svg class="ic" viewBox="0 0 28 28" aria-hidden="true" focusable="false"><rect width="28" height="28" rx="6.5" class="bg"/>'
+            f'<g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">{body}</g></svg>')
 
 
 _TILE = '<svg class="ic" viewBox="0 0 28 28" aria-hidden="true" focusable="false"><rect width="28" height="28" rx="6.5" fill="{c}"/>{g}</svg>'
 KERN_ICON = _TILE.format(c="#5468ff", g='<path d="M10.4 7.6v12.8M10.6 14.3l7-6.7M12.9 12.3l5.4 8.1" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>')
 OEDU_ICON = _TILE.format(c="#0071e3", g='<path d="M14 7.2 23 11.6 14 16 5 11.6Z" fill="#fff"/><path d="M8.6 14.6v3.3c0 1.3 2.4 2.5 5.4 2.5s5.4-1.2 5.4-2.5v-3.3L14 17.3Z" fill="#fff"/><path d="M23 12v4.6" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>')
+ROXAN_ICON = _glyph('<circle cx="14" cy="14" r="6.2"/><circle cx="14" cy="14" r="1.2" fill="currentColor"/>')
+DEV_ICON = _glyph('<path d="M11.5 9.5 7 14l4.5 4.5M16.5 9.5 21 14l-4.5 4.5"/>')
+HARDWARE_ICON = _glyph('<rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M11.5 5v3.5M16.5 5v3.5M11.5 19.5V23M16.5 19.5V23M5 11.5h3.5M5 16.5h3.5M19.5 11.5H23M19.5 16.5H23"/>')
+SOFTWARE_ICON = _glyph('<rect x="5.5" y="7" width="17" height="14" rx="2.6"/><path d="M5.5 11.2h17"/>')
+INTEL_ICON = _glyph('<path d="M14 5.5c.6 4.6 2.9 6.9 8.5 8.5-5.6 1.6-7.9 3.9-8.5 8.5-.6-4.6-2.9-6.9-8.5-8.5 5.6-1.6 7.9-3.9 8.5-8.5Z"/>')
+PLUS_ICON = _glyph('<circle cx="14" cy="14" r="8"/><path d="M14 10.2v7.6M10.2 14h7.6"/>')
+
 PICTURE = ('<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="3.5" y="5.5" width="25" height="21" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/>'
            '<circle cx="11" cy="12.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/>'
            '<path d="M4 23l7.5-7 5 4.5 4-3.5 8 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>')
-PAUSE = ('<svg viewBox="0 0 34 34" aria-hidden="true" focusable="false"><circle cx="17" cy="17" r="16" fill="none" stroke="currentColor" stroke-width="1.2"/>'
-         '<path class="i-pause" d="M13 11.5h2.8v11H13zM18.2 11.5H21v11h-2.8z" fill="currentColor"/>'
-         '<path class="i-play" d="M14 11.6v10.8l8.6-5.4Z" fill="currentColor"/></svg>')
+ARROW_UP = ('<svg class="out" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2.5 1.2h6.3v6.3M8.6 1.4 1.4 8.6" fill="none" '
+            'stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+CHEV = ('<svg viewBox="0 0 9 16" aria-hidden="true" focusable="false"><path d="M1.5 1.5 7.5 8l-6 6.5" fill="none" stroke="currentColor" '
+        'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+
+# What each small text card draws beside its words, in 28px outlines.
+_IC = {
+    "steps": '<path d="M4 22h6v-6h6v-6h8"/><path d="M4 22V6M24 10V6"/>',
+    "open": '<rect x="6.5" y="13" width="15" height="10" rx="2.6"/><path d="M10 13v-3a4 4 0 0 1 7.7-1.5"/>',
+    "shield": '<path d="M14 4.5 22 7.5v6c0 4.9-3.3 8.3-8 10.3-4.7-2-8-5.4-8-10.3v-6Z"/><path d="m10.5 14 2.5 2.5 4.5-5"/>',
+    "record": '<rect x="6" y="4" width="16" height="20" rx="3"/><path d="M10 10h8M10 14h8M10 18h5"/>',
+    "free": '<rect x="5" y="11" width="18" height="12" rx="2.4"/><path d="M5 15.5h18M14 11v12M14 11c-4.2 0-5.4-5-2.4-5s2.4 3 2.4 5Zm0 0c4.2 0 5.4-5 2.4-5s-2.4 3-2.4 5Z"/>',
+    "chip": '<rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M11.5 5v3.5M16.5 5v3.5M11.5 19.5V23M16.5 19.5V23M5 11.5h3.5M5 16.5h3.5M19.5 11.5H23M19.5 16.5H23"/>',
+    "person": '<circle cx="14" cy="9.5" r="4"/><path d="M6 23.5c.9-5 4-7.6 8-7.6s7.1 2.6 8 7.6"/>',
+    "chat": '<path d="M6 6.5h16a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-8l-5 4v-4H6a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Z"/>',
+}
 
 
-def _tiles(items, hue):
-    """The cards of one shelf. Each is an empty 16:9 box with a title and a
-    line under it; --h tints the placeholder so a row of them is not one grey."""
-    out = ""
-    for i, (title, sub) in enumerate(items):
-        out += (f'<li class="svc-tile" style="--h:{hue + (i * 7) % 28}"><div class="svc-pic" role="img" aria-label="Image placeholder">{PICTURE}</div>'
-                f'<p class="svc-t">{title}</p><p class="svc-s">{sub}</p></li>')
-    return out
+def _pic(slot, hue, kind=""):
+    """An empty image box. `kind` is "dark" on a black card. The placeholder is
+    hidden from screen readers: an empty slot has nothing to say."""
+    return (f'<div class="st-pic {kind}" data-slot="{slot}" style="--h:{hue}">'
+            f'<div class="ph" aria-hidden="true">{PICTURE}</div></div>')
 
 
-def _stage(ident, name, icon, tag, head, caption, solid, ghost, items, hue, depth):
-    """One product: the image stage with its words, then its shelf. `solid` and
-    `ghost` are (label, target, footnote-or-None) for the two buttons."""
-    def btn(kind, b):
-        label, target, fn = b
-        if fn:
-            return (f'<a class="svc-btn {kind}" href="{rel(depth, target)}" aria-label="{label}, footnote {fn}">'
-                    f'{label}<sup class="fn" aria-hidden="true">{fn}</sup></a>')
-        return f'<a class="svc-btn {kind}" href="{rel(depth, target)}">{label}</a>'
-    tiles = _tiles(items, hue)
-    return f'''<section class="svc-block {ident}" id="{ident}" aria-labelledby="{ident}-h" data-name="{name}">
-  <div class="svc-stage">
-    <figure class="svc-media" data-slot="{ident}-stage"><div class="ph" role="img" aria-label="Image placeholder for {name}">{PICTURE}<span>Image placeholder</span></div></figure>
-    <div class="svc-in">
-      <p class="svc-id reveal">{icon}<span class="nm">{name}</span><span class="tag">{tag}</span></p>
-      <h2 class="svc-h reveal d1" id="{ident}-h">{head}</h2>
-      <p class="svc-cta reveal d1">{btn("solid", solid)}{btn("ghost", ghost)}</p>
-      <p class="svc-cap reveal d2">{caption}</p>
-    </div>
-    <button class="svc-pause" type="button" aria-pressed="false" aria-label="Pause the {name} shelf">{PAUSE}</button>
-  </div>
-  <div class="svc-shelf reveal">
-    <div class="svc-track">
-      <ul class="svc-list" aria-label="{name} at a glance">{tiles}</ul>
-      <ul class="svc-list svc-clone" aria-hidden="true">{tiles}</ul>
-    </div>
+def _fn(n):
+    return f'<sup class="fn" aria-hidden="true">{n}</sup>' if n else ""
+
+
+def _item(depth, href, cls, inner, label=None):
+    """One card in a shelf: the whole card is the link."""
+    lab = f' aria-label="{label}"' if label else ""
+    return f'<li class="st-item"><a class="st-card {cls}" href="{rel(depth, href)}"{lab}>{inner}</a></li>'
+
+
+def _lg(depth, slot, href, eyebrow, title, bold, body, cta, hue, dark=False, fn=None):
+    """Product card, 400 wide: words on top, the picture under them."""
+    inner = (f'<div class="st-text"><p class="st-eyebrow">{eyebrow}</p><h3 class="st-title">{title}</h3>'
+             + (f'<p class="st-bold">{bold}</p>' if bold else "")
+             + f'<p class="st-body">{body}{_fn(fn)}</p>'
+             + (f'<span class="st-link">{cta}</span>' if cta else "")
+             + '</div>' + _pic(slot, hue, "dark" if dark else ""))
+    return _item(depth, href, "lg dark" if dark else "lg", inner)
+
+
+def _md(depth, slot, href, eyebrow, title, body, cta, hue):
+    """Help card, 480 wide."""
+    inner = (f'<div class="st-text"><p class="st-eyebrow mute">{eyebrow}</p><h3 class="st-title">{title}</h3>'
+             f'<p class="st-body">{body}</p><span class="st-link">{cta}</span></div>' + _pic(slot, hue))
+    return _item(depth, href, "md", inner)
+
+
+def _sm(depth, slot, href, tag, name, line, hue):
+    """Small card, 313 wide: a square picture, then what it is."""
+    inner = (_pic(slot, hue) + f'<div class="st-cap"><p class="st-eyebrow">{tag}</p>'
+             f'<h3 class="st-name">{name}</h3><p class="st-line">{line}</p></div>')
+    return _item(depth, href, "sm", inner)
+
+
+def _tx(depth, href, icon, words, tone=""):
+    """Text card, 313 wide and half the height: an icon and one sentence whose
+    key phrase (the part in <b>) is set in colour — blue, or `tone`."""
+    inner = (f'<svg class="st-ic" viewBox="0 0 28 28" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" '
+             f'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">{_IC[icon]}</g></svg><p class="st-say">{words}</p>')
+    return f'<a class="st-card tx {tone}" href="{rel(depth, href)}">{inner}</a>'
+
+
+def _shelf(ident, lead, rest, items, label):
+    """A heading over a row of cards, with the two arrows that move the row."""
+    return f'''<section class="st-sec" id="{ident}" aria-labelledby="{ident}-h">
+  <h2 class="st-h reveal" id="{ident}-h"><span>{lead}</span> <span class="b">{rest}</span></h2>
+  <div class="st-shelf reveal d1">
+    <ul class="st-track" tabindex="0" aria-label="{label}">
+      {"".join(items)}
+    </ul>
+    <button class="st-arrow prev" type="button" aria-label="Previous in {label}" disabled>{CHEV}</button>
+    <button class="st-arrow next" type="button" aria-label="Next in {label}">{CHEV}</button>
   </div>
 </section>
 '''
+
+
+def _strip_item(depth, href, icon, name):
+    return f'<li><a href="{rel(depth, href)}">{icon}<span>{name}</span></a></li>'
 
 
 def products_page():
     depth, slug = 1, "products/"
     css, js = stamp("assets/css/oplo-products.css"), stamp("assets/js/oplo-products.js")
     a = rel(depth, "assets/")
-    # Apple sets these headlines in bold; the site loads Inter at 400-600 only, so
-    # 700 is asked for here rather than in every page's head.
-    extra = (f'<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap" rel="stylesheet">\n'
-             f'<link rel="stylesheet" href="{a}css/oplo-products.css?v={css}">\n'
+    extra = (f'<link rel="stylesheet" href="{a}css/oplo-products.css?v={css}">\n'
              f'<script src="{a}js/oplo-products.js?v={js}" defer></script>')
     out = head(depth, "Products — Oplo",
-               "Kern, a free online platform for learning by doing, and OEdu, the student information system, learning management system and school operating system.",
+               "Kern, a free online platform for learning by doing, and OEdu, the school system for records, courses and grades — plus what Oplo is building next.",
                slug, extra)
     out += nav(depth, slug)
-    out += f'''<main class="svc">
-<nav class="svc-nav" aria-label="Oplo products">
+    out += f'''<main class="st">
+<p class="st-ribbon">Kern is free to use, and OEdu is set up by your school. <a href="#latest">Learn more</a></p>
+<header class="st-head">
+  <h1 class="reveal">Products</h1>
+  <div class="st-aside reveal d1">
+    <p class="st-tag">Everything Oplo makes, in one place.</p>
+    <p><a href="{rel(depth, "contact/")}">Talk to the team {ARROW_UP}</a></p>
+    <p><a href="{rel(depth, "support/")}">Visit Support {ARROW_UP}</a></p>
+  </div>
+</header>
+<nav class="st-strip reveal d1" aria-label="Oplo products">
   <ul>
-    <li><a href="#kern">{KERN_ICON}<span>Kern</span></a></li>
-    <li><a href="#oedu">{OEDU_ICON}<span>OEdu</span></a></li>
+    {_strip_item(depth, KERN, KERN_ICON, "Kern")}
+    {_strip_item(depth, OEDU, OEDU_ICON, "OEdu")}
+    {_strip_item(depth, ROXAN, ROXAN_ICON, "Roxan")}
+    {_strip_item(depth, DEV, DEV_ICON, "Developers")}
+    {_strip_item(depth, "hardware/", HARDWARE_ICON, "Hardware")}
+    {_strip_item(depth, "software/", SOFTWARE_ICON, "Software")}
+    {_strip_item(depth, "intelligence/", INTEL_ICON, "Intelligence")}
+    {_strip_item(depth, "plus/", PLUS_ICON, "Oplo+")}
   </ul>
 </nav>
-<section class="svc-hero">
-  <h1 class="reveal">Learn by doing.<br>Run the school.</h1>
-  <p class="reveal d1">Kern is a free place to learn by doing: real practice, one small step at a time. OEdu is the system a school runs on: its students, its courses and its grades, in one place.</p>
-</section>
-<section class="svc-banner" aria-label="Oplo">
-  <div class="svc-banner-in">
-    <a class="svc-logo" href="{rel(depth, "company/")}" aria-label="About Oplo">{_mark()}</a>
-    <p>Kern to learn. OEdu to run the school.</p>
-    <a class="svc-btn line" href="{rel(depth, "company/")}">Learn more</a>
-  </div>
-</section>
 '''
-    out += _stage("kern", "Kern", KERN_ICON, "Free",
-                  'Learn it by doing it.<br class="br-wide"> Online, and free.',
-                  "A free online learn-by-doing platform",
-                  ("Start learning", KERN, 1), ("For schools", "#oedu", None),
-                  [("See one done", "Worked example"), ("Try one together", "Guided practice"),
-                   ("Now you", "On your own"), ("Stuck? Ask for a hint", "Hints"),
-                   ("See the idea", "Pictures"), ("One small step", "Short lessons"),
-                   ("Your own pace", "Self-paced"), ("Start anywhere", "Nothing is locked")],
-                  232, depth)
-    out += _stage("oedu", "OEdu", OEDU_ICON, "For schools",
-                  'Every record. Every course.<br class="br-wide"> One school system.',
-                  "Student information system &middot; Learning management system &middot; School operating system",
-                  ("Open OEdu", OEDU, 2), ("Bring your school", "contact/", None),
-                  [("Admin console", "For administrators"), ("Student records", "For administrators"),
-                   ("Courses", "For teachers"), ("Assignments", "For teachers and students"),
-                   ("Gradebook", "For teachers"), ("Attendance", "For teachers"),
-                   ("Student app", "For students"), ("Family view", "For families")],
-                  206, depth)
-    out += f'''<section class="svc-end">
-  <div class="svc-end-in">
-    <div class="svc-end-copy reveal">
-      <p class="svc-end-k">{_mark()}<span>Oplo</span></p>
-      <h2>Start with Kern. Bring OEdu to your school.</h2>
-      <p class="svc-cta"><a class="svc-btn dark" href="{KERN}">Open Kern</a><a class="svc-btn line-dark" href="{rel(depth, "contact/")}">Talk to us</a></p>
-    </div>
-    <ul class="svc-words reveal d1" aria-label="Oplo products">
-      <li class="w-kern">{_mark()}Kern</li>
-      <li class="w-oedu">{_mark()}OEdu</li>
-    </ul>
-  </div>
+    L = lambda *x, **k: _lg(depth, *x, **k)
+    out += _shelf("latest", "The latest.", "Take a look at what’s new.", [
+        L("kern", KERN, "Available now", "Kern", "Learn it by doing it.",
+          "A free online platform for learning by doing, one small step at a time.", "Start learning", 232, fn=1),
+        L("oedu", OEDU, "For schools", "OEdu", "Every record. Every course.",
+          "The student information system, the learning management system and the school operating system, in one.",
+          "Open OEdu", 206, dark=True, fn=2),
+        L("roxan", ROXAN, "Intelligence", "Roxan", "Personal, proactive and private.",
+          "An assistant made to work across every Oplo app.", "Learn more", 262),
+        L("developers", DEV, "For developers", "Developer site", "Build on Oplo.",
+          "Documentation, platforms and tools, written as they are built.", "Open the developer site", 190),
+    ], "the latest")
+
+    kern = [("See one done", "Worked example"), ("Try one together", "Guided practice"),
+            ("Now you", "On your own"), ("Stuck? Ask for a hint", "Hints"),
+            ("See the idea", "Pictures"), ("One small step", "Short lessons"),
+            ("Your own pace", "Self-paced"), ("Start anywhere", "Nothing is locked")]
+    out += _shelf("kern", "Kern.", "Learn it by doing it.",
+                  [L("kern-lead", KERN, "Free", "A free place to learn by doing.", "Real practice, one small step at a time.",
+                     "Watch one done, try one together, then do one yourself.", "Start learning", 232, fn=1)]
+                  + [_sm(depth, f"kern-{i}", KERN, "Kern", t, s, 224 + (i * 7) % 28) for i, (t, s) in enumerate(kern)],
+                  "Kern")
+
+    oedu = [("Admin console", "For administrators"), ("Student records", "For administrators"),
+            ("Courses", "For teachers"), ("Assignments", "For teachers and students"),
+            ("Gradebook", "For teachers"), ("Attendance", "For teachers"),
+            ("Student app", "For students"), ("Family view", "For families")]
+    out += _shelf("oedu", "OEdu.", "One system for the whole school.",
+                  [L("oedu-lead", OEDU, "For schools", "One record, read the same way by everyone.",
+                     "Students, teachers and families.", "Courses, grades and attendance live beside the student record.",
+                     "Open OEdu", 206, fn=2)]
+                  + [_sm(depth, f"oedu-{i}", OEDU, "OEdu", t, s, 200 + (i * 7) % 28) for i, (t, s) in enumerate(oedu)],
+                  "OEdu")
+
+    M = lambda *x: _md(depth, *x)
+    out += _shelf("help", "Help is here.", "Whenever and however you need it.", [
+        M("help-talk", "contact/", "Talk to us", "Tell us what you need, and we will point you the right way.",
+          "Questions about any of it are welcome.", "Get in touch", 220),
+        M("help-school", "contact/", "Bring your school", "OEdu is set up and run by a school.",
+          "Start the conversation, and we will help you get there.", "Talk to us", 206),
+        M("help-support", "support/", "Support", "Get help with your account or a product.",
+          "Everything about getting help, in one place.", "Visit Support", 250),
+        M("help-docs", "developers/", "Developers", "Read how it is built.",
+          "Documentation and design resources, as they are written.", "Developers", 190),
+    ], "help")
+
+    T = lambda *x: _tx(depth, *x)
+    out += _shelf("difference", "The Oplo difference.", "Even more reasons to start here.", [
+        L("diff-lead", "solutions/", "Who it is for", "Built around who is using it.",
+          "One person, one machine.", "The same products, arranged for the person on the other side of the screen.",
+          "See who it is for", 220),
+        '<li class="st-item st-col">' + T(KERN, "steps", "Learn <b>one small step</b> at a time, and watch one done before you try.", "kern")
+        + T(KERN, "open", "<b>Nothing is locked.</b> Jump to any step, lesson or unit.", "kern") + '</li>',
+        '<li class="st-item st-col">' + T("privacy/", "shield", "What you do is <b>yours</b>, and we say plainly what we keep.")
+        + T(OEDU, "record", "<b>One record</b> that students, teachers and families all read.") + '</li>',
+        '<li class="st-item st-col">' + T(KERN, "free", "Kern is <b>free to use</b>, in any browser.", "kern")
+        + T("hardware/", "chip", "<b>One team</b>, from the silicon to the last pixel.") + '</li>',
+        '<li class="st-item st-col">' + T("software/", "person", "Built for <b>a person</b>, not an org chart.")
+        + T("support/", "chat", "Stuck? <b>Ask for help</b> any time.") + '</li>',
+    ], "the Oplo difference")
+
+    out += _shelf("next", "What’s next.", "Hardware, software and intelligence, in development.", [
+        L("next-hardware", "hardware/", "In development", "Hardware", "The machine, made whole.",
+          "Silicon designed for the software that runs on it.", "Learn more", 215, fn=3),
+        L("next-software", "software/", "In development", "Software", "Built for a person, not an org chart.",
+          "Tools that assume one user with taste, not a procurement department.", "Learn more", 232, fn=3),
+        L("next-intelligence", "intelligence/", "In development", "Intelligence", "Close to you, not to a data centre.",
+          "Models that run on the device in your hand.", "Learn more", 262, fn=3),
+        L("next-plus", "plus/", "Not available yet", "Oplo+", "One membership, the whole system.",
+          "The account and the services that would follow you across every Oplo device.", "Learn more", 200, fn=3),
+    ], "what is next")
+
+    out += _shelf("who", "Made for you.", "Start where you are.", [
+        L("who-students", KERN, "Students", "Learn by doing, at your own pace.",
+          "", "Kern is free, and nothing in it is locked.", "Start learning", 232, fn=1),
+        L("who-teachers", OEDU + "#teachers", "Teachers", "A console built for teaching.",
+          "", "Courses, assignments, the gradebook and attendance, in one place.", "Open OEdu", 206),
+        L("who-families", OEDU + "#families", "Families", "Follow along from home.",
+          "", "One record, read the same way by students, teachers and families.", "Open OEdu", 215),
+        L("who-schools", OEDU + "#schools", "Schools", "Bring the whole school together.",
+          "", "Records, courses and grades in a single system that a school runs.", "Open OEdu", 195),
+        L("who-developers", DEV, "Developers", "Build on Oplo.",
+          "", "One set of tools across the hardware, the software and the models.", "Developer site", 190),
+        L("who-institutions", "solutions/#institutions", "Business and government", "Not yet, and we will say so.",
+          "", "If your organisation wants to be part of what comes next, start with a conversation.", "Talk to us", 250),
+    ], "who it is for")
+
+    quick = [("Your Oplo account", "sign-in/"), ("Support", "support/"), ("Contact Oplo", "contact/"),
+             ("Developer documentation", "developers/#docs"), ("Privacy", "privacy/"), ("Newsroom", "newsroom/")]
+    out += f'''<section class="st-quick" aria-labelledby="quick-h">
+  <h2 class="st-h reveal" id="quick-h"><span>Quick Links</span></h2>
+  <ul class="reveal d1">{"".join(f'<li><a class="cta" href="{rel(depth, h)}">{t}</a></li>' for t, h in quick)}</ul>
 </section>
 </main>
 '''
     out += footer(depth, [
         "Kern is free to use. Courses and features are added over time.",
-        "OEdu is set up and run by a school. To bring yours onto it, get in touch. What OEdu does changes as it is built, and nothing on this page is a commitment to a specification."])
+        "OEdu is set up and run by a school. To bring yours onto it, get in touch. What OEdu does changes as it is built, and nothing on this page is a commitment to a specification.",
+        "Hardware, software, intelligence and Oplo+ are in development. Nothing about them is an offer of sale, and availability and capability are not final."])
     return ("products/index.html", out)
 
 
@@ -2929,7 +3044,6 @@ def dev_search_index():
 # the bar's glass is body::before, which a scope inside <body> never reaches.
 # The page is dark the whole way down, so roxan/roxan.css holds the bars at
 # the dark material instead of leaving it to oplo-menu.js.
-ROXAN = "https://roxan.oplocloud.com/"
 ROXAN_PAGE = "roxan/index.html"
 ROXAN_CSS = "roxan/oplo-chrome.css"
 # #students is not an element: roxan.js opens the plans' Students tab for it.
