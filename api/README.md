@@ -207,6 +207,10 @@ An administrator can also assign or revoke it later with
 `"revoke": true` to take it away; it takes effect on the very next request).
 Both scripts are local unless `--remote` is given.
 
+A demo school (Strawberry Fields High School, made-up data) with one account per
+role is `node scripts/seed-demo-school.mjs [--remote] [--remove]`. It makes the
+four accounts `invited` with no password; set each one with `set-password.sh`.
+
 ## Known gaps
 
 In `LAUNCH.md`, with what each one needs and what it blocks. The short version:
