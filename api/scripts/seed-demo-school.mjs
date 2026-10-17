@@ -19,6 +19,11 @@
 
      ./scripts/set-password.sh ritika.sood@sfhs.in --remote
 
+   Where migration 0024 (India) is applied, the school is also made an IN school
+   and Tanvi gets her class X-C and her India details, so the administrator's
+   India places have something to show. Before 0024 that part is left out, so
+   this runs the same on a database that does not have it yet.
+
    Safe to run twice: every row is written only if it is missing. --remove
    takes the school and these four accounts out again (and what hangs off
    them), so a demo does not outlive its use.
@@ -47,7 +52,7 @@ const PEOPLE = {
 const q = (s) => (s == null ? "NULL" : "'" + String(s).replace(/'/g, "''") + "'");
 const who = (k) => `(SELECT id FROM accounts WHERE email_lower = ${q(PEOPLE[k].email)})`;
 
-function build() {
+function build(india) {
   if (REMOVE) {
     // The organization first: its courses, sections, subjects and enrollments
     // go with it, so deleting the accounts is not blocked by them.
@@ -114,6 +119,20 @@ function build() {
          ]
        }))}, ${who("admin")}, ${T}, ${T});`
   );
+  if (india) {
+    const classId = "cls_sfhs_xc";
+    sql.push(
+      `UPDATE organizations SET region = 'IN' WHERE id = ${q(ORG)};`,
+      `INSERT OR IGNORE INTO learn_classes (id, org_id, school_year, grade, section, programme, class_teacher_id, room, capacity, created_at, updated_at)
+         VALUES (${q(classId)}, ${q(ORG)}, '2026-2027', 'X', 'C', 'ICSE', ${who("teacher")}, 'S-322', 30, ${T}, ${T});`,
+      `INSERT OR IGNORE INTO learn_student_india (account_id, org_id, class_id, admission_no, admitted_on, roll_no, gender, house, category, second_language, blood_group,
+           apaar, pen, aadhaar, consent_status, consent_method, consent_on, transport, father_name, father_phone, mother_name, mother_phone, primary_contact, whatsapp, language,
+           guardian_email, updated_by, created_at, updated_at)
+         VALUES (${who("student")}, ${q(ORG)}, ${q(classId)}, 'SFHS/2016/1517', '2016-04-07', 21, 'F', 'Agni', 'General', 'Hindi', 'B+',
+           '534652487008', '96636761410', 'XXXX-XXXX-9028', 'verified', 'signed_form', '2026-04-10', 'Own / pickup', 'Tarun Jindal', '+91 9845398272', 'Ritu Jindal', '+91 9921891357',
+           'Father', 1, 'English', ${q(PEOPLE.guardian.email)}, ${who("admin")}, ${T}, ${T});`
+    );
+  }
   return sql.join("\n") + "\n";
 }
 
@@ -123,7 +142,9 @@ const wrangler = (...a) => execFileSync("npx", ["wrangler", "d1", "execute", DB,
 const dir = mkdtempSync(join(tmpdir(), "demo-school-"));
 try {
   const file = join(dir, "seed.sql");
-  writeFileSync(file, build());
+  const probe = wrangler("--json", "--command", "SELECT COUNT(*) AS n FROM pragma_table_info('organizations') WHERE name = 'region'");
+  const india = !REMOVE && JSON.parse(probe.slice(probe.indexOf("[")))[0].results[0].n === 1;
+  writeFileSync(file, build(india));
   try { wrangler("--file", file); }
   catch (e) { console.error(String(e.stderr || e.message).split("\n").slice(-8).join("\n")); console.error("Stopped: the statements above failed."); process.exit(1); }
 
@@ -134,6 +155,7 @@ try {
             (SELECT group_concat(r.product || '.' || r.role) FROM account_roles r WHERE r.account_id = a.id AND r.org_id = ${q(ORG)}) AS roles
        FROM accounts a LEFT JOIN profiles p ON p.account_id = a.id WHERE a.email_lower IN (${emails}) ORDER BY a.email`);
   const rows = JSON.parse(out.slice(out.indexOf("[")))[0].results;
+  if (india) console.log("India: region IN, class X-C and Tanvi's India details are in.");
   console.log(REMOVE ? `Removed. Demo accounts still present: ${rows.length}` : `Strawberry Fields High School (Demo), ${rows.length} accounts:`);
   for (const r of rows) console.log(`  ${r.email.padEnd(30)} ${String(r.roles).padEnd(14)} ${r.status}  ·  password: ${r.has_password ? "set" : "not set (cannot sign in yet)"}`);
   console.log(WHERE === "--remote" ? "(--remote: production)" : "(--local: nothing in production was touched)");
