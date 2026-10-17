@@ -730,6 +730,8 @@
 
   var toastT;
   function toast(msg) {
+    // A phone says it in its own voice, above everything else on screen.
+    if (PHX && document.body.classList.contains("is-phone")) { PHX.toast(msg); return; }
     var t = $("#toast");
     t.textContent = msg;
     t.classList.add("on");
@@ -9728,6 +9730,26 @@
     if (say) say.textContent = name || "";
   }
 
+  /* The draw function for one place in a staff console: the console's own
+     page, which a phone shows in a layer when it has none of its own. */
+  function adminPageFor(tab, admin) {
+    if (!admin) return TEACH_TABS[tab] || consoleHome;
+    return ({ today: consoleHome, assessments: tabSchoolAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
+       sets: tabSets, reports: tabReports, courses: tabCourses, curriculum: tabCourses, activity: tabActivity,
+       people: tabPeople, permissions: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
+       reportcards: tabReportCards, periods: tabPeriods, analytics: tabAnalytics, data: tabData, security: tabSecurity,
+       standards: tabStandards, gpa: tabGpa, transcripts: tabTranscripts, graduation: tabGraduation,
+       enrollment: tabEnrollment, office: tabOffice, health: tabHealth, rosters: tabRosters, records: tabRecords, documents: tabDocuments, guardians: tabGuardians,
+       "an-assessments": tabAnAssessments, "an-standards": tabAnStandards, growth: tabGrowth, groups: tabGroups, longitudinal: tabLongitudinal,
+       departments: tabDepartments, "teacher-analytics": tabTeacherAnalytics,
+       scheduling: tabScheduling, "sc-days": tabScDays, "sc-bell": tabScBell, "sc-courses": tabScCourses, "sc-sections": tabScSections, "sc-adddrop": tabScAddDrop, "sc-plans": tabScPlans,
+       attendance: tabAttendance, behavior: tabBehavior, support: tabSupport,
+       inventory: tabFxAssets,
+       "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
+       "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
+       sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
+  }
+
   function openAdmin(silent, tab, replace) {
     if (S.me && consoleMode() === "student") { openStudentConsole(silent, tab); return; }
     if (!allowedTabs().length) return;
@@ -9744,6 +9766,14 @@
     document.body.classList.toggle("t-console", consoleMode() !== "admin");
     applyDensity(currentDensity());
     applyAppearance(currentAppearance());
+    var admin = consoleMode() === "admin";
+    if (phoneOn()) {
+      phone().staff(S.tab, { admin: admin, draw: adminPageFor(S.tab, admin) });
+      noFoot(); progress(null);
+      show("admin");
+      return;
+    }
+    if (PHX && document.body.classList.contains("is-phone")) PHX.leave();
     drawRail();
     trApply();
     trPopClose();
@@ -9753,23 +9783,7 @@
     v.innerHTML = "";
     var body = el("div", "admin-body");
     v.appendChild(body);
-    var admin = consoleMode() === "admin";
-    if (!admin) { (TEACH_TABS[S.tab] || consoleHome)(body); noFoot(); progress(null); show("admin"); return; }
-    ({ today: consoleHome, assessments: admin ? tabSchoolAssessments : tabAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
-       sets: tabSets, reports: tabReports, courses: tabCourses, curriculum: tabCourses, activity: tabActivity,
-       people: tabPeople, permissions: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
-       reportcards: tabReportCards, periods: tabPeriods, analytics: tabAnalytics, data: tabData, security: tabSecurity,
-       standards: tabStandards, gpa: tabGpa, transcripts: tabTranscripts, graduation: tabGraduation,
-       enrollment: tabEnrollment, office: tabOffice, health: tabHealth, rosters: tabRosters, records: tabRecords, documents: tabDocuments, guardians: tabGuardians,
-       "an-assessments": tabAnAssessments, "an-standards": tabAnStandards, growth: tabGrowth, groups: tabGroups, longitudinal: tabLongitudinal,
-       departments: tabDepartments, "teacher-analytics": tabTeacherAnalytics,
-       scheduling: tabScheduling, "sc-days": tabScDays, "sc-bell": tabScBell, "sc-courses": tabScCourses, "sc-sections": tabScSections, "sc-adddrop": tabScAddDrop, "sc-plans": tabScPlans,
-       attendance: tabAttendance, behavior: tabBehavior, support: tabSupport,
-       inventory: tabFxAssets,
-       "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
-       "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
-       sftp: tabSftp, api: tabApi }[S.tab] || platTab(S.tab) || consoleHome)(body);
-
+    adminPageFor(S.tab, admin)(body);
     noFoot(); progress(null);
     show("admin");
   }
@@ -9806,6 +9820,38 @@
   }
   function studentPath(tab, arg) { return (STUDENT_NAMES[tab] || "Overview") + (arg ? "/" + arg : ""); }
 
+  /* A phone does not get the console squeezed: phone.js draws the same places
+     again, as layers over a home screen. It is handed the same kit the console
+     pages are, plus the few ways to move that a phone needs. */
+  var PHX = null;
+  var PHONE_MQ = "(max-width: 700px), (max-height: 520px) and (pointer: coarse)";
+  function phoneOn() { return !KERN && !!window.OPLO_PHONE && window.matchMedia(PHONE_MQ).matches; }
+  function phone() {
+    if (PHX) return PHX;
+    PHX = window.OPLO_PHONE({
+      el: el, esc: esc, API: API, S: S, toast: toast, schoolName: schoolName, icon: cxIcon, stu: stu, platform: plat(),
+      appearance: currentAppearance, setAppearance: applyAppearance,
+      signOutNow: signOut,
+      open: function (tab, arg, replace) { openStudentConsole(false, tab, arg, !!replace); },
+      openStaff: function (tab) { openAdmin(false, tab); },
+      openInbox: function () { if (S.me && S.me.role === "student") openStudentConsole(false, "inbox"); else openAdmin(false, S.me && S.me.role === "admin" ? "inbox" : "messages"); },
+      sections: function () { return allowedTabs().filter(function (t) { return !t.hidden; }); },
+      staffTree: function () {
+        return consoleMode() === "admin" ? { admin: true, items: ADMIN_TREE } : { items: TEACHER_TREE.concat([{ head: "More", items: TEACHER_FOOT }]) };
+      },
+      otherHomes: otherHomes,
+      push: function (key, label, restore) { enter(key, label, restore, false); },
+      hasBack: function () { return !!(S.hist.length && POS > 0 && TRAIL[POS - 1]); },
+      back: function () { history.back(); }
+    });
+    return PHX;
+  }
+  window.matchMedia(PHONE_MQ).addEventListener("change", function () {
+    if (!S.me || S.view !== "admin") return;
+    if (document.body.classList.contains("is-sis")) openStudentConsole(true, S.tab, S.sarg);
+    else if (document.body.classList.contains("is-staff")) openAdmin(true, S.tab);
+  });
+
   function openStudentConsole(silent, tab, arg, replace) {
     var sec = studentSection(tab || S.tab);
     S.tab = sec.k;
@@ -9819,6 +9865,13 @@
     document.body.classList.remove("t-console", "is-staff");
     applyDensity(currentDensity());
     applyAppearance(currentAppearance());
+    if (phoneOn()) {
+      phone().student(sec.k, arg || null);
+      noFoot(); progress(null);
+      show("admin");
+      return;
+    }
+    if (PHX && document.body.classList.contains("is-phone")) PHX.leave();
     drawStudentRail($("#rail"));
     closeRail();
     var v = $("#v-admin");
@@ -10789,6 +10842,7 @@
      body rather than two apps, because a teacher who is also studying should
      not have to sign in twice to be both. */
   function leaveConsole() {
+    if (PHX && document.body.classList.contains("is-phone")) PHX.leave();
     /* For staff there is nowhere to leave to. The account screen and every
        other view they can reach is drawn inside the console's shell, so the
        rail stays and the student's chrome never appears — without this guard
@@ -19853,6 +19907,7 @@
     // Everything the session learned goes with it rather than sitting in
     // memory for whoever opens the tab next.
     S.me = null; S.m = {}; S.sets = {}; S.mistakes = [];
+    if (PHX && document.body.classList.contains("is-phone")) PHX.leave();   // the phone shell must not sit over the welcome page
     S.here = null; S.hist = [];
     S.tab = null;
     TRAIL = []; POS = -1;            // the next person's history starts from nothing

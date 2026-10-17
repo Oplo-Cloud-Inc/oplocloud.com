@@ -905,5 +905,6 @@ window.OPLO_STUDENT = function (K) {
 
   Object.keys(X.pages).forEach(function (k) { X.api[k] = X.pages[k]; });
   X.api.bust = X.bust;
+  X.api.kit = X;   // phone.js reads the same data and helpers
   return X.api;
 };

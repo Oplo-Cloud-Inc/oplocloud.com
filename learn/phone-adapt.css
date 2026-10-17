@@ -1,0 +1,135 @@
+/* ==========================================================================
+   OEdu on a phone — the console's own pages, laid out for a phone.
+
+   Most places have a phone page of their own (phone-student.js,
+   phone-staff.js). The rest — a gradebook, a bell schedule, an import — are
+   the console's pages, drawn into a layer, and this is what keeps them
+   readable: a table's rows become cards and its header becomes the label on
+   each value, the metric strip becomes tiles, a card becomes a glass group,
+   dialogs rise as sheets. It does not make those pages good on a phone; it
+   makes none of them break. Everything is under .ph-adapt, or under
+   body.is-phone for the dialogs, which the console puts outside the layer.
+   ========================================================================== */
+
+body.is-phone .ph-adapt {
+  padding: 0 16px; max-width: 100%; overflow-x: auto; overflow-wrap: anywhere;
+  font-family: var(--ph-font); font-size: 16px; line-height: 1.4; color: var(--ph-label);
+}
+body.is-phone .ph-adapt *, body.is-phone .ph-adapt *::before, body.is-phone .ph-adapt *::after { min-width: 0; }
+body.is-phone .ph-adapt img, body.is-phone .ph-adapt svg, body.is-phone .ph-adapt canvas, body.is-phone .ph-adapt video { max-width: 100%; }
+body.is-phone .ph-adapt table { display: block; max-width: 100%; overflow-x: auto; }
+body.is-phone .ph-adapt pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* The page's own heading: the layer already has a large title. */
+body.is-phone .ph-adapt .cx-top { display: block; margin: 0 0 4px; padding: 0; }
+body.is-phone .ph-adapt .cn-head { margin: 0; padding: 0; border: 0; }
+body.is-phone .ph-adapt .cn-eyebrow, body.is-phone .ph-adapt .cn-h1 { display: none; }
+body.is-phone .ph-adapt .cn-sub { margin: 2px 4px 0; font-size: 15px; line-height: 1.4; color: var(--ph-label-2); }
+body.is-phone .ph-adapt .cx-tools, body.is-phone .ph-adapt .cn-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; padding: 0; }
+body.is-phone .ph-adapt .admin-body, body.is-phone .ph-adapt .sx-slot { max-width: none; padding: 0; margin: 0; }
+
+/* Buttons are pills. */
+body.is-phone .ph-adapt .cn-btn, body.is-phone .ph-adapt .en-btn, body.is-phone .ph-adapt .lx-btn, body.is-phone .cx-sheet .cn-btn, body.is-phone .cx-sheet .en-btn {
+  min-height: 42px; padding: 0 18px; border: 0; border-radius: 21px; font: inherit; font-size: 15px; font-weight: 600; letter-spacing: -.01em; box-shadow: none;
+  background: var(--ph-fill); color: var(--ph-label); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: transform .3s var(--ph-spring);
+}
+body.is-phone .ph-adapt .cn-btn:active, body.is-phone .ph-adapt .en-btn:active { transform: scale(.95); }
+body.is-phone .ph-adapt .cn-btn.strong, body.is-phone .ph-adapt .en-btn.strong, body.is-phone .cx-sheet .cn-btn.strong, body.is-phone .cx-sheet .en-btn.strong { background: var(--ph-accent); color: #fff; }
+body.is-phone .ph-adapt .cn-btn[disabled], body.is-phone .ph-adapt .en-btn[disabled] { opacity: .45; }
+body.is-phone .ph-adapt .cn-btn.small { min-height: 34px; padding: 0 14px; font-size: 14px; }
+
+/* A strip of filters wraps; nothing here slides sideways. */
+body.is-phone .ph-adapt .cn-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; padding: 0; background: none; }
+body.is-phone .ph-adapt .cn-filter { min-height: 38px; padding: 0 14px; border: 0; border-radius: 19px; font-size: 14px; font-weight: 600; background: var(--ph-fill); color: var(--ph-label-2); display: inline-flex; align-items: center; gap: 6px; }
+body.is-phone .ph-adapt .cn-filter.on { background: var(--ph-accent); color: #fff; }
+body.is-phone .ph-adapt .cn-filter em { font-style: normal; opacity: .7; font-size: 12px; }
+
+/* Numbers set large: a strip becomes tiles. */
+body.is-phone .ph-adapt .cx-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 0; border: 0; }
+body.is-phone .ph-adapt .cx-metric, body.is-phone .ph-adapt .cx-metric + .cx-metric {
+  padding: 16px; border: 0; border-radius: 24px; background: var(--ph-card); box-shadow: var(--ph-shadow), 0 0 0 .5px var(--ph-line);
+  -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); text-align: left;
+}
+body.is-phone .ph-adapt .cx-metric b { font-family: var(--ph-display); font-size: 34px; font-weight: 300; letter-spacing: -.035em; color: var(--ph-label); }
+body.is-phone .ph-adapt .cx-metric b small { font-size: 17px; color: var(--ph-label-2); }
+body.is-phone .ph-adapt .cx-metric span { margin-top: 6px; font-size: 14px; color: var(--ph-label-2); }
+body.is-phone .ph-adapt .cx-metric em { font-size: 13px; color: var(--ph-label-3); }
+body.is-phone .ph-adapt .cx-metric .line { height: 4px; border-radius: 2px; background: var(--ph-fill); }
+body.is-phone .ph-adapt .cx-metric .line i { background: var(--ph-accent); border-radius: 2px; }
+body.is-phone .ph-adapt .cx-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border: 0; }
+
+/* A card is a glass group. */
+body.is-phone .ph-adapt .cx-grid { display: block; }
+body.is-phone .ph-adapt .cx-card, body.is-phone .ph-adapt .cn-block {
+  display: block; width: auto; margin: 18px 0 0; padding: 0 0 6px; border: 0; border-radius: 24px; overflow: hidden;
+  background: var(--ph-card); box-shadow: var(--ph-shadow), 0 0 0 .5px var(--ph-line); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px);
+}
+body.is-phone .ph-adapt .cx-ch, body.is-phone .ph-adapt .cn-blockhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 16px 16px 8px; margin: 0; border: 0; }
+body.is-phone .ph-adapt .cx-ch h3, body.is-phone .ph-adapt .cn-blockhead h3 { margin: 0; font-family: var(--ph-display); font-size: 20px; font-weight: 700; letter-spacing: -.02em; color: var(--ph-label); }
+body.is-phone .ph-adapt .cx-ch small, body.is-phone .ph-adapt .cn-blockhead span { font-size: 13px; color: var(--ph-label-2); }
+body.is-phone .ph-adapt .cx-ch .more { margin-left: auto; border: 0; background: none; font-size: 15px; color: var(--ph-accent); padding: 4px 0 4px 8px; }
+body.is-phone .ph-adapt .cx-card > :not(.cx-ch):not(.cn-tbl):not(.cx-metrics) { margin-left: 16px; margin-right: 16px; }
+body.is-phone .ph-adapt .cx-card .cn-tbl { margin: 0; border-radius: 0; box-shadow: none; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.is-phone .ph-adapt .cx-note, body.is-phone .ph-adapt .sx-quiet, body.is-phone .ph-adapt .cn-none { font-size: 14px; color: var(--ph-label-2); }
+
+/* A table: a row is a card, its first cell is the title, and every other
+   value keeps the name its column gave it. */
+body.is-phone .ph-adapt .cn-tbl { display: block; margin: 14px 0 0; border-radius: 24px; overflow: hidden; background: var(--ph-card); box-shadow: var(--ph-shadow), 0 0 0 .5px var(--ph-line); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); }
+body.is-phone .ph-adapt .cn-tbl, body.is-phone .ph-adapt .cn-tbl .cn-tr { min-width: 0; overflow-x: visible; }
+body.is-phone .ph-adapt .cn-tr.head { display: none; }
+body.is-phone .ph-adapt .cn-tbody { display: block; }
+body.is-phone .ph-adapt .cn-tr { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: 13px 16px; margin: 0; text-align: left; background: none; border: 0; border-top: .5px solid var(--ph-line); border-radius: 0; box-shadow: none; grid-template-columns: none; position: relative; }
+body.is-phone .ph-adapt .cn-tbody > .cn-tr:first-child { border-top: 0; }
+body.is-phone .ph-adapt button.cn-tr:active { background: var(--ph-fill-2); }
+body.is-phone .ph-adapt .cn-td { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0; text-align: left; font-size: 15px; color: var(--ph-label-2); }
+body.is-phone .ph-adapt .cn-td.r { text-align: left; }
+body.is-phone .ph-adapt .cn-td:first-child { justify-content: flex-start; font-size: 17px; font-weight: 500; color: var(--ph-label); }
+body.is-phone .ph-adapt .cn-td:first-child b { font-weight: 600; }
+body.is-phone .ph-adapt .cn-td:not(:first-child):not([data-l=""])::before { content: attr(data-l); flex: none; font-size: 13px; color: var(--ph-label-3); }
+body.is-phone .ph-adapt .cn-td.ph-void { display: none; }
+body.is-phone .ph-adapt .cn-tbl.ph-notitles .cn-td:not(:first-child) { justify-content: flex-start; }
+body.is-phone .ph-adapt .cn-sub2 { display: block; font-size: 13px; color: var(--ph-label-2); font-weight: 400; margin-top: 1px; }
+body.is-phone .ph-adapt .cn-mk { font-weight: 600; color: var(--ph-label); }
+body.is-phone .ph-adapt .cn-mk.bad { color: var(--ph-red); }
+body.is-phone .ph-adapt .cn-who { display: inline-flex; align-items: center; gap: 10px; }
+
+/* Empty and failed, in the shell's own voice. */
+body.is-phone .ph-adapt .cn-empty { margin: 14px 0 0; padding: 30px 20px; text-align: center; border-radius: 24px; background: var(--ph-card); box-shadow: var(--ph-shadow), 0 0 0 .5px var(--ph-line); }
+body.is-phone .ph-adapt .cn-empty b { display: block; font-size: 19px; font-weight: 600; margin-bottom: 6px; color: var(--ph-label); }
+body.is-phone .ph-adapt .cn-empty p { font-size: 15px; color: var(--ph-label-2); margin-bottom: 14px; }
+body.is-phone .ph-adapt .admin-loading { padding: 36px 20px; text-align: center; font-size: 15px; color: var(--ph-label-3); }
+body.is-phone .ph-adapt .admin-failed { margin: 14px 0; padding: 20px; text-align: center; border-radius: 24px; background: var(--ph-card); box-shadow: var(--ph-shadow), 0 0 0 .5px var(--ph-line); }
+body.is-phone .ph-adapt .admin-failed b { display: block; font-size: 17px; margin-bottom: 4px; color: var(--ph-label); }
+body.is-phone .ph-adapt .admin-failed p { font-size: 14px; color: var(--ph-label-2); margin-bottom: 12px; }
+
+/* A list beside a detail is a list, then the detail. */
+body.is-phone .ph-adapt .cn-split, body.is-phone .ph-adapt .gq { display: block; }
+body.is-phone .ph-adapt .cn-splitleft, body.is-phone .ph-adapt .cn-splitright, body.is-phone .ph-adapt .gq-list { position: static; width: auto; max-height: none; border: 0; }
+body.is-phone .ph-adapt .cn-splitright { margin-top: 16px; }
+
+/* Anything you type into: sixteen pixels, so the phone does not zoom. */
+body.is-phone .ph-adapt input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), body.is-phone .ph-adapt select, body.is-phone .ph-adapt textarea,
+body.is-phone .cx-sheet input:not([type="checkbox"]):not([type="radio"]), body.is-phone .cx-sheet select, body.is-phone .cx-sheet textarea {
+  width: 100%; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 12px; font: inherit; font-size: 16px; color: inherit; background: var(--ph-fill); outline: none; -webkit-appearance: none; appearance: none;
+}
+body.is-phone .ph-adapt textarea, body.is-phone .cx-sheet textarea { min-height: 88px; }
+body.is-phone .ph-adapt input:focus, body.is-phone .ph-adapt select:focus, body.is-phone .ph-adapt textarea:focus { box-shadow: 0 0 0 2px var(--ph-accent) inset; }
+body.is-phone .ph-adapt label { display: block; }
+body.is-phone .ph-adapt .admin-field { display: block; margin: 12px 0; }
+body.is-phone .ph-adapt .admin-field > span { display: block; margin-bottom: 4px; font-size: 13px; color: var(--ph-label-2); }
+
+/* The console's dialogs rise from the bottom, like every sheet here. */
+body.is-phone .cx-sheetwrap { display: flex; align-items: flex-end; justify-content: stretch; padding: 0; background: var(--ph-scrim, rgba(0, 0, 0, .32)); animation: none; z-index: 900; }
+body.is-phone .cx-sheet {
+  width: 100% !important; max-width: none; max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; margin: 0;
+  padding: 24px 18px calc(env(safe-area-inset-bottom, 0px) + 24px); border-radius: 28px 28px 0 0; box-shadow: 0 -10px 50px rgba(0, 0, 0, .3);
+  animation: ph-sheet-up .5s cubic-bezier(.32, .72, 0, 1) both;
+}
+body.is-phone .cx-sheetx { position: sticky; top: 0; float: right; margin: -8px -4px 0 8px; width: 40px; height: 40px; border-radius: 50%; border: 0; font-size: 22px; line-height: 1; background: var(--cx-fill); color: var(--cx-label); z-index: 2; }
+body.is-phone .en-dlg-acts { flex-wrap: wrap; justify-content: stretch; }
+body.is-phone .en-dlg-acts .en-btn { flex: 1; }
+@keyframes ph-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { body.is-phone .cx-sheet { animation: none; } }
+
+/* A grid that is a grid — the gradebook — scrolls inside itself, never the page. */
+body.is-phone .ph-adapt .gb, body.is-phone .ph-adapt .sgb, body.is-phone .ph-adapt [class*="gb-wrap"], body.is-phone .ph-adapt [class*="gb-scroll"] { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
