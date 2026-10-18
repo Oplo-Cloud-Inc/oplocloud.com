@@ -374,6 +374,85 @@ window.OPLO_INDIA = function (K) {
     });
   }
 
+  /* ========================================================= Certificates
+     The document itself: a transfer certificate in the form schools use, a bonafide,
+     a character certificate. It is made from the child's record alone; nothing
+     on it, and nothing needed to issue it, is about money. */
+  var ORD = ["", "First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth", "Eleventh", "Twelfth", "Thirteenth", "Fourteenth", "Fifteenth", "Sixteenth", "Seventeenth", "Eighteenth", "Nineteenth", "Twentieth",
+    "Twenty-first", "Twenty-second", "Twenty-third", "Twenty-fourth", "Twenty-fifth", "Twenty-sixth", "Twenty-seventh", "Twenty-eighth", "Twenty-ninth", "Thirtieth", "Thirty-first"];
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  var TO19 = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  var TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  function below100(n) { return n < 20 ? TO19[n] : TENS[Math.floor(n / 10)] + (n % 10 ? "-" + TO19[n % 10] : ""); }
+  function yearWords(y) {
+    if (y >= 2000 && y < 2100) return "Two Thousand" + (y % 100 ? " " + below100(y % 100) : "");
+    if (y >= 1900 && y < 2000) return "Nineteen " + (y % 100 ? below100(y % 100) : "Hundred");
+    return String(y);
+  }
+  /* 2010-09-10 → "Tenth September Two Thousand Ten", as a transfer certificate writes a date of birth. */
+  function dateWords(ymd) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || "");
+    return m ? ORD[+m[3]] + " " + MONTHS[+m[2] - 1] + " " + yearWords(+m[1]) : "";
+  }
+
+  function printCertificate(item, draft) {
+    var d = item.data || {}, school = K.schoolName ? K.schoolName() : "";
+    IN.student(item.subjectId).then(function (r) {
+      var s = r.student, kind = d.type || "Certificate";
+      var line = function (n, label, value) { return "<tr><td style='width:34px'>" + n + "</td><td style='width:46%'>" + esc(label) + "</td><td>" + (value ? esc(value) : "&nbsp;") + "</td></tr>"; };
+      var cls = d.lastClass || s.classLabel || "", pron = s.gender === "F" ? ["daughter", "She", "her"] : s.gender === "M" ? ["son", "He", "his"] : ["child", "The child", "the child’s"];
+      var parent = s.fatherName || s.motherName || s.guardianName || "";
+      var head = "<div style='text-align:center'><h2 style='margin:0'>" + esc(school) + "</h2><p style='margin:2px 0'>" + esc(kind.toUpperCase()) + "</p>" +
+        "<p style='margin:2px 0'>" + (d.number ? "No. " + esc(d.number) : draft ? "DRAFT: not issued" : "") + "</p></div>";
+      var body;
+      if (kind === "Transfer certificate") {
+        body = "<table class='tc'><tbody>" +
+          line(1, "Name of the pupil", s.name) + line(2, "Mother’s name", s.motherName) + line(3, "Father’s / guardian’s name", s.fatherName || s.guardianName) +
+          line(4, "Date of birth (in figures)", s.dob ? dmy(s.dob) : "") + line("", "Date of birth (in words)", dateWords(s.dob)) +
+          line(5, "Admission number and date of admission", [s.admissionNo, s.admittedOn ? dmy(s.admittedOn) : ""].filter(Boolean).join(" · ")) +
+          line(6, "Class in which the pupil last studied", cls) + line(7, "Whether qualified for promotion to a higher class", d.promotion ? "Yes, to " + d.promotion : "") +
+          line(8, "Date of leaving the school", d.leftOn ? dmy(d.leftOn) : "") + line(9, "Reason for leaving", d.reason) + line(10, "General conduct", d.conduct) +
+          line(11, "Remarks", d.note) + "</tbody></table>";
+      } else if (kind === "Bonafide certificate") {
+        body = "<p style='line-height:1.9;margin-top:24px'>This is to certify that <b>" + esc(s.name) + "</b>, " + pron[0] + " of " + esc(parent) + ", is a bonafide student of this school, studying in Class " + esc(cls) +
+          (s.admissionNo ? " (admission number " + esc(s.admissionNo) + ")" : "") + (s.dob ? ". " + pron[1] + " was born on " + esc(dmy(s.dob)) : "") + ".</p>" + (d.purpose ? "<p>This certificate is issued for " + esc(d.purpose) + ".</p>" : "");
+      } else if (kind === "Character certificate") {
+        body = "<p style='line-height:1.9;margin-top:24px'>This is to certify that <b>" + esc(s.name) + "</b>, " + pron[0] + " of " + esc(parent) + ", " + (d.leftOn ? "studied" : "studies") + " in this school in Class " + esc(cls) +
+          ". To the best of our knowledge " + pron[2] + " conduct and character " + (d.leftOn ? "were" : "are") + " <b>" + esc((d.conduct || "good").toLowerCase()) + "</b>.</p>" + (d.purpose ? "<p>Issued for " + esc(d.purpose) + ".</p>" : "");
+      } else body = "<p>" + esc(d.note || "") + "</p>";
+      var foot = "<p style='margin-top:40px'>Date of issue: " + (d.issuedOn ? esc(dmy(d.issuedOn)) : "______________") + "</p><p style='margin-top:54px'>Prepared by ______________ &nbsp;&nbsp; Checked by ______________ &nbsp;&nbsp; Principal ______________</p>";
+      K.cxPrint(kind + " " + s.name, "<style>table.tc{width:100%;border-collapse:collapse;margin-top:16px}table.tc td{border:1px solid #999;padding:7px 9px;font-size:13px}</style>" + head + body + foot);
+    }, function (e) { toast(e && e.message ? e.message : "The child’s record did not load."); });
+  }
+
+  /* ========================================================= Disclosure
+     What the school says about itself in public, and whether it posts its transfer certificates. */
+  function disclosureForm(done) {
+    IN.disclosure().then(function (r) {
+      var d = r.disclosure, g = d.general, F = {};
+      [["affiliationNo", "Affiliation number"], ["schoolCode", "School code"], ["affiliatedTo", "Affiliated to"], ["established", "Established"], ["principal", "Principal"], ["principalQualification", "Principal’s qualification"],
+       ["phone", "Phone"], ["email", "Email"], ["website", "Website"], ["address", "Address"]].forEach(function (x) { F[x[0]] = fld("text", x[1], g[x[0]] || "", { max: 300 }); });
+      var facts = fld("area", "Other facts it states, one a line: Label: value", d.facts.map(function (f) { return f.label + ": " + f.value; }).join("\n"), { rows: 6 });
+      var tc = fld("select", "Transfer certificates on the public page", d.publishTc ? "1" : "0", { options: [["0", "Not posted"], ["1", "Posted (only those the office ticks)"]] });
+      var link = location.origin + (location.pathname.replace(/\/(admin|teacher|student|parent)\/.*$/, "/").replace(/\/$/, "")) + "/disclosure/?school=" + encodeURIComponent(r.slug);
+      dialog({
+        title: "Public disclosure", wide: true, action: "Save",
+        sub: "What the school publishes about itself. The enrolment and staff numbers on the page are counted from OEdu; a transfer certificate appears only if the school posts them and the office ticked it. Link: " + link,
+        body: function (h) {
+          var gd = el("div", "en-form-grid");
+          Object.keys(F).forEach(function (k) { gd.appendChild(F[k].node); });
+          h.appendChild(gd); h.appendChild(facts.node); h.appendChild(tc.node);
+        },
+        onSubmit: function () {
+          var body = { general: {}, facts: [], publishTc: tc.value() === "1" };
+          Object.keys(F).forEach(function (k) { body.general[k] = F[k].value() || null; });
+          facts.value().split(/\n+/).forEach(function (l) { var i = l.indexOf(":"); if (l.trim() && i > 0) body.facts.push({ label: l.slice(0, i).trim(), value: l.slice(i + 1).trim() }); });
+          return IN.putDisclosure(body).then(function () { toast("Saved."); if (done) done(); });
+        }
+      });
+    }, function (e) { toast(e && e.message ? e.message : "The disclosure did not load."); });
+  }
+
   /* ========================================================= Compliance */
   var LEVEL = "blocks";
   function compliance(v) {
@@ -582,6 +661,6 @@ window.OPLO_INDIA = function (K) {
     go.disabled = true;
   }
 
-  return { classes: classes, compliance: compliance,
+  return { classes: classes, compliance: compliance, printCertificate: printCertificate, disclosureForm: disclosureForm,
            ui: { dialog: dialog, btn: btn, fld: fld, chip: chip, none: none, num: num, plural: plural, dmy: dmy } };
 };

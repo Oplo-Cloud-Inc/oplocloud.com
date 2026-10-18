@@ -61,6 +61,7 @@ import * as india from "./routes/india.js";
 import * as school from "./routes/school.js";
 import * as register from "./routes/register.js";
 import * as exams from "./routes/exams.js";
+import * as certificates from "./routes/certificates.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -178,6 +179,9 @@ const ROUTES = [
   ["POST",   "/api/v1/exchange/webhooks/test",           exchange.testHooks],
   ["GET",    "/api/v1/feeds/link",                       feeds.link],
   ["GET",    "/api/v1/feeds/:accountId/:token/calendar.ics", feeds.calendar],
+  ["GET",    "/api/v1/school/disclosure",                certificates.getDisclosure],
+  ["PUT",    "/api/v1/school/disclosure",                certificates.putDisclosure],
+  ["GET",    "/api/v1/public/schools/:slug/disclosure",  certificates.publicDisclosure],
   ["GET",    "/api/v1/school/profile",                   school.getProfile],
   ["PUT",    "/api/v1/school/profile",                   school.putProfile],
   ["GET",    "/api/v1/register",                         register.getRegister],

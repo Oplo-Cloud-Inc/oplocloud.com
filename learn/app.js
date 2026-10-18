@@ -17629,7 +17629,9 @@
     checkouts: { kind: "checkout", eyebrow: "School Operations", title: "Equipment", sub: "What is out, with whom, and when it is due back." },
     curmap: { kind: "curriculum", eyebrow: "Curriculum", title: "Curriculum map", sub: "Units by course and week, with the standards they meet.", course: true },
     "in-condone": { kind: "condonation", eyebrow: "Attendance", title: "Condonation", sub: "Children under the attendance a board asks for whose absence the school asks the board to condone: why they were away, the documents held, and where the request stands.", newLabel: "Start a case" },
-    "in-certs": { kind: "certificate", eyebrow: "Students", title: "Certificates", sub: "Transfer, bonafide, character and migration certificates: who asked, what for, the number it carries, and when it was issued.", newLabel: "Record a request" },
+    "in-certs": { extras: [function (ctl, r, button) {
+        return r.status === "issued" ? button("Print or save as PDF", "en-btn quiet", function () { india().printCertificate(r); }) : button("Print a draft", "en-btn quiet", function () { india().printCertificate(r, true); });
+      }], kind: "certificate", eyebrow: "Students", title: "Certificates", sub: "Transfer, bonafide, character and migration certificates: who asked, what for, the number it carries, and when it was issued.", newLabel: "Record a request" },
     fees: { kind: "fee", eyebrow: "Finance", title: "Fees", sub: "What the school charges, and how often." },
     invoices: { kind: "invoice", eyebrow: "Finance", title: "Invoices", sub: "What each family owes.",
       summary: function (rows) {
@@ -19679,6 +19681,12 @@
       }
       row(g, "mail", "var(--cx-orange)", "Families’ languages", "The languages a family can read this school’s messages and screens in.",
         chips(o.languages, p.languages, function (list) { if (list.length) save({ languages: list }); }));
+      if (p.region === "IN") {
+        var open = el("button", "cn-btn small", "Edit");
+        open.type = "button";
+        open.addEventListener("click", function () { india().disclosureForm(); });
+        row(g, "doc", "var(--cx-indigo)", "Public disclosure", "What the school publishes about itself, and whether it posts its transfer certificates. Nothing is published until it is switched on.", open);
+      }
       var sample = W ? W.dmy(Date.now()) + " · " + W.money(1234567) + " · " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
       row(g, "table", "var(--cx-gray)", "Shown like this", p.country + " · " + p.timezone + " · the year starts in " +
         ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][p.yearStartMonth - 1], sample);

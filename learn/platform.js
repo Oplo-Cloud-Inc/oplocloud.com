@@ -445,7 +445,7 @@ window.OPLO_PLATFORM = function (K) {
             return button("Remove", "en-btn quiet", function () {
               API.items.remove(r.id).then(function () { toast("Removed"); ctl.close(); load(); }, function (e) { ctl.error(e.message); });
             });
-          }],
+          }].concat((cfg.extras || []).map(function (fn) { return function (ctl) { return fn(ctl, r, button); }; })),
           action: isNew ? "Add" : "Save",
           onSubmit: function () {
             var data = {};

@@ -13,7 +13,8 @@ import hashlib, io, os, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGES = [os.path.join(ROOT, "learn", "index.html"),
-         os.path.join(ROOT, "learn", "parent", "index.html")]
+         os.path.join(ROOT, "learn", "parent", "index.html"),
+         os.path.join(ROOT, "learn", "disclosure", "index.html")]
 
 for page in PAGES:
     if not os.path.exists(page):

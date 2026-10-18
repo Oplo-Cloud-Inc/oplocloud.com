@@ -145,7 +145,10 @@ export const KINDS = {
     label: "Certificate", plural: "Certificates", policy: "office", about: "student", dated: true,
     statuses: ["requested", "awaiting signature", "issued", "declined"],
     fields: [["type", "Kind", "select", true, S("Transfer certificate", "Bonafide certificate", "Character certificate", "Migration certificate", "Other")],
-             ["purpose", "What it is for", "text"], ["number", "Certificate number", "text"], ["issuedOn", "Issued on", "date"], ["note", "Note", "longtext"]],
+             ["purpose", "What it is for", "text"], ["number", "Certificate number", "text"], ["issuedOn", "Issued on", "date"],
+             ["leftOn", "Date of leaving", "date"], ["lastClass", "Class last studied", "text"], ["reason", "Reason for leaving", "text"],
+             ["conduct", "Conduct", "select", false, S("Excellent", "Very good", "Good", "Satisfactory")], ["promotion", "Eligible for promotion to", "text"],
+             ["web", "Show on the school's website", "check"], ["note", "Note", "longtext"]],
     notify: "none"
   },
   fee: {

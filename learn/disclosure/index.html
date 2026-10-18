@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Public disclosure</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --bg: #ffffff; --ink: #1d1d1f; --ink2: #6e6e73; --line: #d2d2d7; --fill: #f5f5f7; --accent: #0066cc; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #000000; --ink: #f5f5f7; --ink2: #a1a1a6; --line: #38383a; --fill: #1c1c1e; --accent: #2997ff; } }
+  :root[data-theme="light"] { --bg: #ffffff; --ink: #1d1d1f; --ink2: #6e6e73; --line: #d2d2d7; --fill: #f5f5f7; --accent: #0066cc; }
+  :root[data-theme="dark"] { --bg: #000000; --ink: #f5f5f7; --ink2: #a1a1a6; --line: #38383a; --fill: #1c1c1e; --accent: #2997ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 40px 16px 72px; }
+  h1 { font-size: 34px; letter-spacing: -.02em; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 10px; letter-spacing: -.01em; }
+  .sub { color: var(--ink2); margin: 0 0 8px; }
+  dl { display: grid; grid-template-columns: minmax(140px, 240px) 1fr; gap: 0; margin: 0; border-top: 1px solid var(--line); }
+  dt, dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  dt { color: var(--ink2); padding-right: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 8px 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  th { color: var(--ink2); font-weight: 500; font-size: 13px; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .note { color: var(--ink2); font-size: 14px; }
+  .err { padding: 16px; border-radius: 12px; background: var(--fill); }
+  @media (max-width: 560px) { dl { grid-template-columns: 1fr; } dt { border-bottom: 0; padding-bottom: 0; } }
+  @media print { main { padding: 0; } }
+</style>
+</head>
+<body>
+<main id="main"><p class="sub">Loading…</p></main>
+<script src="../api.js?v=ac1412ed"></script>
+<script>
+(function () {
+  "use strict";
+  var main = document.getElementById("main");
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function dmy(ymd) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; }
+  var slug = new URLSearchParams(location.search).get("school") || "";
+  function fail(msg) { main.innerHTML = ""; main.appendChild(el("h1", null, "Public disclosure")); main.appendChild(el("p", "err", msg)); }
+  if (!slug) { fail("This link needs a school: /disclosure/?school=name."); return; }
+  fetch(window.OPLO_API.base() + "/public/schools/" + encodeURIComponent(slug) + "/disclosure").then(function (r) {
+    if (r.status === 404) throw new Error("There is no school called “" + slug + "”.");
+    if (!r.ok) throw new Error("The disclosure could not be read just now. Try again in a minute.");
+    return r.json();
+  }).then(function (d) {
+    document.title = d.school.name + " — public disclosure";
+    main.innerHTML = "";
+    main.appendChild(el("h1", null, d.school.name));
+    main.appendChild(el("p", "sub", "Public disclosure · school year " + d.year.replace(/(\d{4})-\d{2}(\d{2})/, "$1–$2") + " · as of " + dmy(d.asOf)));
+
+    var G = d.general, rows = [["Affiliated to", G.affiliatedTo || (d.school.boards || []).join(", ")], ["Affiliation number", G.affiliationNo], ["School code", G.schoolCode], ["Established", G.established],
+      ["Address", G.address], ["State", d.school.state], ["Phone", G.phone], ["Email", G.email], ["Website", G.website], ["Principal", G.principal], ["Principal’s qualification", G.principalQualification]]
+      .filter(function (r) { return r[1]; });
+    if (rows.length) {
+      main.appendChild(el("h2", null, "General information"));
+      var dl = el("dl");
+      rows.forEach(function (r) { dl.appendChild(el("dt", null, r[0])); dl.appendChild(el("dd", null, r[1])); });
+      main.appendChild(dl);
+    }
+
+    main.appendChild(el("h2", null, "Students and staff"));
+    if (d.enrolment.length) {
+      var t = el("table"), hd = el("tr");
+      ["Class", "Sections", "Students"].forEach(function (h, i) { var th = el("th", i ? "num" : null, h); hd.appendChild(th); });
+      t.appendChild(hd);
+      var total = 0;
+      d.enrolment.forEach(function (e) {
+        var tr = el("tr"); total += e.students;
+        tr.appendChild(el("td", null, e.class)); tr.appendChild(el("td", "num", String(e.sections))); tr.appendChild(el("td", "num", String(e.students)));
+        t.appendChild(tr);
+      });
+      var tf = el("tr"); tf.appendChild(el("td", null, "Total")); tf.appendChild(el("td", "num", "")); tf.appendChild(el("td", "num", String(total))); t.appendChild(tf);
+      main.appendChild(t);
+    } else main.appendChild(el("p", "note", "The school has not listed its classes yet."));
+    main.appendChild(el("p", "note", "Teachers on the school’s staff: " + d.staff.teachers + "."));
+
+    if (d.facts.length) {
+      main.appendChild(el("h2", null, "Other information"));
+      var fl = el("dl");
+      d.facts.forEach(function (f) { fl.appendChild(el("dt", null, f.label)); fl.appendChild(el("dd", null, f.value)); });
+      main.appendChild(fl);
+    }
+
+    if (d.certificates.published) {
+      main.appendChild(el("h2", null, "Transfer certificates issued"));
+      if (!d.certificates.transfer.length) main.appendChild(el("p", "note", "None to list."));
+      else {
+        var ct = el("table"), ch = el("tr");
+        ["Number", "Name", "Class last studied", "Left on", "Issued on"].forEach(function (h) { ch.appendChild(el("th", null, h)); });
+        ct.appendChild(ch);
+        d.certificates.transfer.forEach(function (c) {
+          var tr = el("tr");
+          [c.number, c.name, c.lastClass || "", dmy(c.leftOn), dmy(c.issuedOn)].forEach(function (v) { tr.appendChild(el("td", null, v)); });
+          ct.appendChild(tr);
+        });
+        main.appendChild(ct);
+      }
+    }
+    main.appendChild(el("p", "note", "This page is made from the school’s own records and updates itself."));
+  }).catch(function (e) { fail(e && e.message ? e.message : "The disclosure could not be read."); });
+})();
+</script>
+</body>
+</html>

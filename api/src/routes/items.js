@@ -8,6 +8,7 @@
    the office.
    ========================================================================== */
 
+import { settleCertificate } from "./certificates.js";
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { KINDS, KIND_KEYS, publicKinds, cleanData } from "../services/items.js";
@@ -144,6 +145,7 @@ export async function create(ctx) {
   if (draft.subjectId && !(await ctx.repo.findAccountById(draft.subjectId))) throw ApiError.notFound("No such person.");
   if (kind === "leave" && !isOffice(actor, orgId)) draft.status = "pending";
   const iid = await ctx.repo.insertItem({ orgId, kind, ...draft, createdBy: actor.id });
+  if (kind === "certificate") await settleCertificate(ctx, orgId, actor, await ctx.repo.findItem(iid));
   const out = shape(await ctx.repo.findItem(iid));
   if (spec.notify) {
     const to = (await recipients(ctx, spec, orgId, out)).filter((x) => x !== actor.id);
@@ -166,6 +168,7 @@ export async function update(ctx, { itemId }) {
   // The person who asked may withdraw; only the office decides.
   if (r.kind === "leave" && !isOffice(actor, orgId) && upd.status !== r.status && upd.status !== "withdrawn") throw ApiError.forbidden("Only the office approves or declines.");
   await ctx.repo.updateItem(itemId, upd);
+  if (r.kind === "certificate") await settleCertificate(ctx, orgId, actor, await ctx.repo.findItem(itemId));
   const out = shape(await ctx.repo.findItem(itemId));
   if (upd.status !== r.status && ["leave", "referral", "senplan"].includes(r.kind) && r.subject_id && r.subject_id !== actor.id) {
     ctx.waitUntil(notify(ctx.repo, { orgId, to: [r.subject_id], kind: "alert", from: actor.id, title: `${KINDS[r.kind].label} ${upd.status}: ${out.title}`, link: r.kind,

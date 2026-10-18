@@ -3686,6 +3686,37 @@ export class D1Repository {
     return results || [];
   }
 
+  /* ------------------------------------------------ Certificates, disclosure */
+  /* The next number in a series, handed out once: the count and the row are one statement. */
+  async nextNumber(orgId, series, year) {
+    const r = await this.db.prepare(
+      `INSERT INTO learn_numbers (org_id, series, year, last) VALUES (?, ?, ?, 1)
+       ON CONFLICT (org_id, series, year) DO UPDATE SET last = last + 1 RETURNING last`
+    ).bind(orgId, series, year).first();
+    return r.last;
+  }
+  async setDisclosure(orgId, d) {
+    await this.db.prepare(`UPDATE organizations SET disclosure_json = ?, updated_at = ? WHERE id = ?`).bind(JSON.stringify(d), now(), orgId).run();
+  }
+  async issuedCertificates(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT i.id, i.data_json, i.updated_at, p.name FROM learn_items i LEFT JOIN profiles p ON p.account_id = i.subject_id
+        WHERE i.org_id = ? AND i.kind = 'certificate' AND i.status = 'issued' AND i.archived_at IS NULL ORDER BY i.updated_at DESC LIMIT 1000`
+    ).bind(orgId).all();
+    return results || [];
+  }
+  async enrolmentByGrade(orgId, year) {
+    const { results } = await this.db.prepare(
+      `SELECT c.grade, COUNT(*) AS sections, SUM((SELECT COUNT(*) FROM learn_student_india s WHERE s.class_id = c.id)) AS students
+         FROM learn_classes c WHERE c.org_id = ? AND c.school_year = ? GROUP BY c.grade`
+    ).bind(orgId, year).all();
+    return results || [];
+  }
+  async countRole(orgId, role) {
+    const r = await this.db.prepare(`SELECT COUNT(DISTINCT account_id) AS n FROM account_roles WHERE org_id = ? AND product = 'learn' AND role = ?`).bind(orgId, role).first();
+    return r ? r.n : 0;
+  }
+
   /* ------------------------------------------------------ The diary, the day */
   async addDiary(orgId, d, actorId) {
     const did = id("diary");
