@@ -39,3 +39,8 @@ API: `npx wrangler rollback 49040b3c-afb0-41d2-9a29-e76220eb2d4b --env productio
 
 ## Not covered
 Remote D1 limits for the 200-row import chunks; a sign-in link for invited people (they still need a password set by `set-password.sh` / the demo script); fees, WhatsApp/SMS, board file layouts (see OEDU_INDIA_ADMIN_READINESS.md).
+
+
+## Later migrations (0026–0032), not run
+
+The India playbook build (`OEDU_INDIA_PLAYBOOK_BUILD.md`) adds seven migrations after 0024: school profile (0026), the section as roster (0027), the class register and its lock (0028), the exam cycle (0029), the class teacher's day and diary (0030), certificates and public disclosure (0031), competencies and the progress card (0032). **0025 is the AI panel's.** All are additive and the old API runs on them. Apply them with the same command as 0024, before the API; the proofs listed in that document were run on a database built from 0001 to 0032.
