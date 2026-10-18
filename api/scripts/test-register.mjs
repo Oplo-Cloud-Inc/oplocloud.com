@@ -39,7 +39,7 @@ t("the school year spans from its first month to the day before the next", () =>
   assert.deepEqual(R.yearSpan("2026-10-18", 1), { from: "2026-01-01", to: "2026-12-31" });
 });
 t("marks are tallied by what the school's codes count them as", () => {
-  const rows = [{ account_id: "a", status: "present", n: 10 }, { account_id: "a", status: "late", n: 2 }, { account_id: "a", status: "leave", n: 3 }, { account_id: "a", status: "absent", n: 1 }, { account_id: "a", status: "mystery", n: 1 }];
+  const rows = [{ account_id: "a", status: "present", n: 10 }, { account_id: "a", status: "late", n: 2 }, { account_id: "a", status: "excused", n: 3 }, { account_id: "a", status: "absent", n: 1 }, { account_id: "a", status: "mystery", n: 1 }];
   assert.deepEqual(R.tally(rows, R.IN_CODES).get("a"), { attended: 12, excused: 3, absent: 2 });
 });
 t("a locked span is found by day", () => {

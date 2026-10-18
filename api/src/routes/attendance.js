@@ -96,17 +96,13 @@ export function settingsOf(row) {
 export async function attendanceSettings(ctx, orgId) {
   const row = await ctx.repo.getAttendanceSettings(orgId);
   const s = settingsOf(row);
-  // A school outside the US that has set none of its own starts from an Indian class register's four marks,
-  // and gives a class teacher three days to correct a register before only the office may.
+  // A school outside the US that has set no codes of its own starts from an Indian class register's four marks.
+  // How long a teacher may correct a register stays the school's own to set (lockDays); what a board has been told is locked by the principal.
   let b = {};
   try { b = row && row.body_json ? JSON.parse(row.body_json) : {}; } catch { b = {}; }
-  const ownCodes = Array.isArray(b.codes) && b.codes.length, ownLock = "lockDays" in b;
-  if (orgId && (!ownCodes || !ownLock)) {
+  if (orgId && !(Array.isArray(b.codes) && b.codes.length)) {
     const org = await ctx.repo.getOrganization(orgId);
-    if (org && org.region === "IN") {
-      if (!ownCodes) s.codes = IN_CODES;
-      if (!ownLock) s.lockDays = 3;
-    }
+    if (org && org.region === "IN") s.codes = IN_CODES;
   }
   return s;
 }

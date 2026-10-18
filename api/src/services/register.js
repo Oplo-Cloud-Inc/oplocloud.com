@@ -20,7 +20,7 @@ export const IN_CODES = [
   { key: "present", label: "Present", mark: "P", kind: "present", adminOnly: false, retired: false },
   { key: "absent", label: "Absent", mark: "A", kind: "absent", adminOnly: false, retired: false },
   { key: "late", label: "Late", mark: "Lt", kind: "tardy", adminOnly: false, retired: false },
-  { key: "leave", label: "On leave (application sent)", mark: "Lv", kind: "excused", adminOnly: false, retired: false }
+  { key: "excused", label: "On leave (application sent)", mark: "Lv", kind: "excused", adminOnly: false, retired: false }   // the key every school already has for this kind, so an old mark still reads
 ];
 
 export const THRESHOLD = 75;       // percent a board asks for

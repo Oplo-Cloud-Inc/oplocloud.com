@@ -59,7 +59,8 @@ try {
     // a bonafide is not a leaving: the child is still in the section
     const st = (await admin.get(`/students/${X.kids[5].id}/india`)).student;
     assert.equal(st.leftOn, null); assert.ok(st.classId);
-    assert.equal(+issued.data.number.slice(-4) !== X.seq0, true);
+    // its own count: on a school's first day the first bonafide and the first transfer certificate are both 0001, and that is right
+    assert.match(issued.data.number, /\/BF\/\d{4}-\d{2}\/\d{4}$/);
   });
 
   await step("a certificate is made from the child's record alone: nothing about money is on it", async () => {

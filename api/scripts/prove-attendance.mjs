@@ -182,9 +182,10 @@ try {
   const put = (codes, extra) => admin.try("PUT", "/attendance/settings", { online: true, closed: ctx.was.closed, codes, lockDays: null, ...extra });
   const codesNow = async () => (await admin.get("/attendance/settings")).settings.codes;
 
-  await step("a school starts with five codes, and anybody drawing a mark can read them", async () => {
+  await step("a school starts with its codes (five in the US, four in an Indian school), and anybody drawing a mark can read them", async () => {
     const r = await family.get("/attendance/codes");
-    assert.ok(r.codes.length >= 5);
+    assert.ok(r.codes.length >= 4);
+    assert.ok(["present", "absent", "late", "excused"].every((k) => r.codes.some((c) => c.key === k)), "the four every school has");
     assert.equal(r.codes.find((c) => c.key === "present").kind, "present");
     assert.deepEqual(r.codes.find((c) => c.key === "late").kind, "tardy");
   });

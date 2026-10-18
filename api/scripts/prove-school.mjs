@@ -186,7 +186,10 @@ try {
     const days = REG.days = await schoolDays(4);
     assert.equal(days.length, 4, "four school days to work with");
     // The oldest of the four days is mostly present; the next three each have the same child away, so the count builds.
-    const mark = (d, away) => teacher.put("/register", { classId: REG.cls.id, day: d, marks: REG.kids.map((k, i) => ({ accountId: k.id, status: away[i] === "leave" ? REG.leave : away[i] || "present",
+    // A school that never set its own gives an Indian class teacher three days to correct a register; older days are the office's to enter.
+    const codes = await teacher.get("/attendance/codes");
+    const window = codes.lockDays;
+    const mark = (d, away) => ((window == null || (Date.parse(REG.today) - Date.parse(d)) / 86400000 <= window) ? teacher : admin).put("/register", { classId: REG.cls.id, day: d, marks: REG.kids.map((k, i) => ({ accountId: k.id, status: away[i] === "leave" ? REG.leave : away[i] || "present",
       reason: away[i] === "absent" || away[i] === "leave" ? "sick" : undefined })) });
     const r1 = await mark(days[3], [null, null, null, null]);
     assert.equal(r1.taken, true); assert.equal(r1.marked, 4);
@@ -213,6 +216,13 @@ try {
     const r = await teacher.try("PUT", "/register", { classId: REG.cls.id, day: sun, marks: [{ accountId: REG.kids[0].id, status: "present" }] });
     refused(r, 400); assert.equal(r.body.error.field, "day");
     refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: REG.days[0], marks: [{ accountId: ctx.late.id, status: "present" }] }), 400);
+    // and when the school has the default window, a register older than it is refused to the class teacher and open to the office
+    const win = (await teacher.get("/attendance/codes")).lockDays;
+    if (win != null) {
+      const old = REG.days.find((d) => (Date.parse(REG.today) - Date.parse(d)) / 86400000 > win) || (await (async () => { for (let i = win + 1; i < win + 15; i++) { const d = isoDay(i); if ((await admin.get(`/register?classId=${REG.cls.id}&day=${d}`)).schoolDay.kind === "school") return d; } })());
+      const r = await teacher.try("PUT", "/register", { classId: REG.cls.id, day: old, marks: [{ accountId: REG.kids[0].id, status: "present" }] });
+      refused(r, 403); assert.match(r.body.error.message, /days after it/);
+    }
     refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: REG.days[0], marks: [{ accountId: REG.kids[0].id, status: "present", reason: "sick" }] }), 400);
     refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: REG.days[0], marks: [{ accountId: REG.kids[0].id, status: "teleported" }] }), 400);
   });
