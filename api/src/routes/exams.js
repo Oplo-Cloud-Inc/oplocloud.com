@@ -191,7 +191,7 @@ const rollSort = (a, b) => (a.rollNo || 1e9) - (b.rollNo || 1e9) || String(a.nam
 async function paperView(ctx, S, p) {
   const scale = await scaleOf(ctx, S.orgId, p.scale_id);
   const kids = (await ctx.repo.listIndiaStudents(S.orgId, p.class_id)).map(I.shapeStudent).sort(rollSort);
-  const marks = new Map((await ctx.repo.listMarks(p.id)).map((m) => [m.account_id, m]));
+  const marks = new Map((await ctx.repo.listExamMarks(p.id)).map((m) => [m.account_id, m]));
   return {
     paper: shapePaper({ ...p, strength: kids.length, entered: kids.filter((k) => { const m = marks.get(k.id); return m && (m.absent || m.theory != null || m.internal != null || m.practical != null); }).length }),
     scale: { bands: scale.bands, passPercent: scale.passPercent },

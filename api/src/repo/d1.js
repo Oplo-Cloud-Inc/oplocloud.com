@@ -3599,13 +3599,13 @@ export class D1Repository {
     await this.db.prepare(`UPDATE learn_exam_papers SET teacher_id = ? WHERE id = ?`).bind(teacherId || null, paperId).run();
   }
 
-  async listMarks(paperId) {
+  async listExamMarks(paperId) {
     const { results } = await this.db.prepare(`SELECT * FROM learn_exam_marks WHERE paper_id = ?`).bind(paperId).all();
     return results || [];
   }
   /* Write marks and, for every field that changed, its history. `rows`: [{ accountId, theory, internal, practical, absent }]. */
   async saveMarks(paperId, rows, actorId, state, afterLock, why) {
-    const t = now(), was = new Map((await this.listMarks(paperId)).map((m) => [m.account_id, m]));
+    const t = now(), was = new Map((await this.listExamMarks(paperId)).map((m) => [m.account_id, m]));
     const stmts = [];
     for (const r of rows) {
       const old = was.get(r.accountId) || {};
