@@ -3686,6 +3686,25 @@ export class D1Repository {
     return results || [];
   }
 
+  /* A child's published results, one line per exam: marks gained and what they were out of. Absent papers are left out. */
+  async examPercents(orgId, accountIds) {
+    const out = [];
+    for (let i = 0; i < Math.max(1, accountIds.length); i += 80) {
+      const part = accountIds ? accountIds.slice(i, i + 80) : [];
+      const where = part.length ? `AND m.account_id IN (${part.map(() => "?").join(",")})` : "";
+      const { results } = await this.db.prepare(
+        `SELECT m.account_id, e.id AS exam_id, e.name AS exam_name, e.created_at AS exam_at, e.scale_id,
+                SUM(COALESCE(m.theory, 0) + COALESCE(m.internal, 0) + COALESCE(m.practical, 0)) AS total,
+                SUM(p.max_theory + p.max_internal + p.max_practical) AS max
+           FROM learn_exam_marks m JOIN learn_exam_papers p ON p.id = m.paper_id AND p.state = 'published' JOIN learn_exams e ON e.id = p.exam_id
+          WHERE e.org_id = ? AND m.absent = 0 ${where} GROUP BY m.account_id, e.id`
+      ).bind(orgId, ...part).all();
+      out.push(...(results || []));
+      if (!accountIds.length) break;
+    }
+    return out;
+  }
+
   /* ------------------------------------------------ Certificates, disclosure */
   /* The next number in a series, handed out once: the count and the row are one statement. */
   async nextNumber(orgId, series, year) {

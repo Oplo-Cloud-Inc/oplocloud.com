@@ -19,6 +19,7 @@ import { daysOf } from "./schedule.js";
 import { notify } from "../services/notify.js";
 import * as I from "../services/india.js";
 import * as R from "../services/register.js";
+import * as E from "../services/early.js";
 import { profileOf, dayIn } from "../services/profile.js";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -327,4 +328,69 @@ export async function dayStats(ctx) {
   const from = q.get("from") ? day(q.get("from"), "from") : addDays(to, -29);
   const rows = await ctx.repo.teacherDays(S.orgId, from, to);
   return json({ from, to, ...R.spread(rows.map((r) => r.seconds)), offline: rows.filter((r) => r.offline).length });
+}
+
+/* --------------------------------------------------------------- Early warning */
+
+/* GET /register/early-warning?classId= — who is drifting, and the reasons. The class teacher reads their own section; the office, all. */
+export async function earlyWarning(ctx) {
+  const S = await school(ctx);
+  const q = ctx.url.searchParams, classId = q.get("classId") || null;
+  if (classId) { const c = await klass(ctx, S.orgId, classId); await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: c.class_teacher_id }); }
+  else await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: null });
+  const year = R.yearSpan(S.today, S.profile.yearStartMonth);
+  const tomorrow = addDays(S.today, 1);
+  const settings = await attendanceSettings(ctx, S.orgId);
+  const remaining = year.to >= tomorrow ? (await daysOf(ctx, S.orgId, tomorrow, year.to)).days.filter((x) => x.kind === "school").length : 0;
+  const kids = (await ctx.repo.listIndiaStudents(S.orgId, classId)).map(I.shapeStudent);
+  const ids = kids.map((k) => k.id);
+  const minDays = q.get("minDays") ? check.number(q.get("minDays"), "minDays", { min: 1, max: 100 }) : E.MIN_DAYS;
+  const [rows, marks, scales, cases] = await Promise.all([
+    ctx.repo.watchCounts(S.orgId, year.from, S.today, classId), ctx.repo.examPercents(S.orgId, ids), ctx.repo.listScales(S.orgId),
+    ctx.repo.listItems({ orgId: S.orgId, kind: "ewscase", limit: 1000 })
+  ]);
+  const counts = R.tally(rows, settings.codes);
+  const pass = new Map(scales.map((x) => [x.id, x.pass_percent]));
+  const byKid = new Map();
+  for (const m of marks.sort((a, b) => a.exam_at - b.exam_at)) {
+    if (!m.max) continue;
+    (byKid.get(m.account_id) || byKid.set(m.account_id, []).get(m.account_id)).push({ name: m.exam_name, percent: Math.round((m.total / m.max) * 1000) / 10, passLine: pass.get(m.scale_id) ?? null });
+  }
+  const caseOf = new Map();
+  for (const it of cases) if (it.subject_id && it.status !== "closed" && !caseOf.has(it.subject_id)) caseOf.set(it.subject_id, { id: it.id, status: it.status });
+  const startYear = +year.from.slice(0, 4);
+  const list = kids.map((k) => {
+    const a = E.assess({ standing: R.standing(counts.get(k.id) || {}, R.THRESHOLD, remaining), exams: byKid.get(k.id) || [], year: startYear, minDays,
+      facts: { dob: k.dob, grade: k.grade, migrant: k.migrant, cwsn: k.cwsn } });
+    return { id: k.id, name: k.name, classId: k.classId, classLabel: k.classLabel, rollNo: k.rollNo || null, level: a.level, score: a.score, transition: a.transition,
+             signals: a.signals.map((x) => ({ key: x.key, text: x.text })), case: caseOf.get(k.id) || null };
+  }).sort((x, y) => y.score - x.score || String(x.name).localeCompare(String(y.name)));
+  const summary = { high: 0, medium: 0, low: 0, none: 0 };
+  const transitions = {};
+  for (const x of list) { summary[x.level]++; if (x.transition) transitions[x.transition] = (transitions[x.transition] || 0) + 1; }
+  return json({ year, today: S.today, summary, transitions, students: list });
+}
+
+/* GET /register/eligibility?classId=&all=1 — the board list: who is at 75% or above, who is under, and where a condonation stands. The classes a board lists by default. */
+export async function eligibility(ctx) {
+  const S = await school(ctx);
+  const q = ctx.url.searchParams, classId = q.get("classId") || null;
+  if (classId) { const c = await klass(ctx, S.orgId, classId); await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: c.class_teacher_id }); }
+  else await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: null });
+  const year = R.yearSpan(S.today, S.profile.yearStartMonth);
+  const settings = await attendanceSettings(ctx, S.orgId);
+  const threshold = q.get("threshold") ? check.number(q.get("threshold"), "threshold", { min: 1, max: 100 }) : R.THRESHOLD;
+  const to = q.get("until") ? day(q.get("until"), "until") : S.today;
+  const [rows, kids, cases] = await Promise.all([ctx.repo.watchCounts(S.orgId, year.from, to, classId), ctx.repo.listIndiaStudents(S.orgId, classId), ctx.repo.listItems({ orgId: S.orgId, kind: "condonation", limit: 1000 })]);
+  const counts = R.tally(rows, settings.codes);
+  const caseOf = new Map();
+  for (const it of cases) if (it.subject_id && !caseOf.has(it.subject_id)) caseOf.set(it.subject_id, it.status);
+  const wanted = (s) => q.get("all") === "1" || !!classId || I.isBoardClass(s.grade);
+  const out = kids.map(I.shapeStudent).filter(wanted).sort((a, b) => I.gradeRank(a.grade) - I.gradeRank(b.grade) || String(a.section).localeCompare(String(b.section)) || (a.rollNo || 999) - (b.rollNo || 999)).map((s) => {
+    const st = R.standing(counts.get(s.id) || {}, threshold, 0);
+    const status = st.status === "none" ? "No attendance marked" : st.percent >= threshold ? "Eligible" : caseOf.has(s.id) ? "Under " + threshold + "%: condonation " + caseOf.get(s.id) : st.condonable ? "Under " + threshold + "%: leave may be condoned" : "Under " + threshold + "%";
+    return [s.classLabel || "", s.rollNo || "", s.name, s.admissionNo || "", s.boardRollNo || "", s.apaar || "", st.attended, st.total, st.percent == null ? "" : st.percent, st.percentWithLeave == null ? "" : st.percentWithLeave, status];
+  });
+  return json({ title: "Board eligibility list", file: `board-eligibility-${to}.csv`,
+    columns: ["Class", "Roll", "Name", "Admission no", "Board roll no", "APAAR", "Days present", "Days marked", "Attendance %", "With leave %", "Status"], rows: out, threshold, counted: { from: year.from, to } });
 }

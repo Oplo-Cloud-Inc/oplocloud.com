@@ -188,7 +188,8 @@ window.OPLO_REGISTER = function (K) {
   /* ============================================================== The watch */
   var WATCH = { classId: "", threshold: 75, filter: "risk" };
   function pctCell(s) { return s.percent == null ? none() : s.percent + "%"; }
-  function statusChip(s) { return s.status === "below" ? chip("red", "Under") : s.status === "watch" ? chip("orange", "On watch") : s.status === "ok" ? chip("green", "Fine") : chip("muted", "No marks"); }
+  var TOO_EARLY = 10;      // marked days before a percentage means anything
+  function statusChip(s) { return s.total && s.total < TOO_EARLY && s.status !== "ok" ? chip("muted", "Too early") : s.status === "below" ? chip("red", "Under") : s.status === "watch" ? chip("orange", "On watch") : s.status === "ok" ? chip("green", "Fine") : chip("muted", "No marks"); }
   /* What is left to do: a child under the line is told how many of the days left they must be there for;
      one over it, how many they can still miss. */
   function missText(s, left) {
@@ -202,6 +203,9 @@ window.OPLO_REGISTER = function (K) {
     opts = opts || {};
     var P = K.cxPage(v, "Attendance", opts.title || "75% watch",
       "Children under, or close to, the attendance a board asks for, counted over the school year to its last day. “Days to spare” is how many more days a child can miss and still finish on the line.");
+    P.tools.appendChild(K.cnAction("Board list (CSV)", function () {
+      RG.eligibility(opts.classId, false).then(function (d) { K.csvDownload(d.file, [d.columns].concat(d.rows)); toast("Counted from " + dmy(d.counted.from) + " to " + dmy(d.counted.to) + "."); }, function (e) { toast(e.message); });
+    }));
     if (!opts.classId) {
       P.tools.appendChild(K.cnAction("Locked days", function () { locksDialog(); }));
       P.tools.appendChild(K.cnAction("Lock days reported to a board", function () { lockForm(function () { K.openAdmin(true, "in-watch"); }); }, true));
@@ -213,12 +217,13 @@ window.OPLO_REGISTER = function (K) {
     if (opts.classId) q.classId = opts.classId;
     RG.watch(q).then(function (r) {
       slot.innerHTML = "";
-      var s = r.summary, total = r.students.length;
+      var s = { below: 0, watch: 0, ok: 0, none: 0, early: 0 }, total = r.students.length;
+      r.students.forEach(function (x) { if (x.total && x.total < TOO_EARLY && x.status !== "ok") s.early++; else s[x.status]++; });
       K.cxMetrics(metrics, [
         { label: "Under " + r.threshold + "%", value: s.below, bad: s.below > 0, note: s.below ? "cannot sit a board exam as things stand" : "nobody" },
         { label: "On watch", value: s.watch, note: "a few days from the line" },
         { label: "Fine", value: s.ok, note: "of " + plural(total, "child", "children") },
-        { label: "School days left", value: r.remaining, note: "to " + dmy(r.until) }
+        { label: "School days left", value: r.remaining, note: "to " + dmy(r.until) + (s.early ? " · " + s.early + " with under " + TOO_EARLY + " days marked: too early to say" : "") }
       ]);
       var chips = K.cnFilters([{ k: "risk", name: "Under and on watch", n: s.below + s.watch }, { k: "all", name: "Everyone", n: total }], WATCH.filter,
         function (k) { WATCH.filter = k; chips.mark(k); paint(); });
@@ -226,7 +231,7 @@ window.OPLO_REGISTER = function (K) {
       var box = el("div", "en-slot"); slot.appendChild(box);
       function paint() {
         box.innerHTML = "";
-        var rows = r.students.filter(function (x) { return WATCH.filter === "all" || x.status === "below" || x.status === "watch"; });
+        var rows = r.students.filter(function (x) { return WATCH.filter === "all" || ((x.status === "below" || x.status === "watch") && !(x.total < TOO_EARLY)); });
         if (!rows.length) { box.appendChild(K.cnEmpty(total ? "Nobody is under or close to the line." : "No registers have been taken yet.", total ? "" : "Take the class registers and this fills in.")); return; }
         var t = K.cnTable([{ label: "Child", w: "minmax(150px, 1.3fr)" }, { label: "Class", w: "80px" }, { label: "Present", w: "110px" }, { label: "%", w: "70px" }, { label: "With leave", w: "90px" },
           { label: "What is left", w: "150px" }, { label: "", w: "110px" }]);
@@ -309,6 +314,65 @@ window.OPLO_REGISTER = function (K) {
     });
   }
 
+  /* ================================================== Early warning
+     Children drifting out of school, with the reasons. The edges of a stage
+     (after Class V, VIII and X) are where children change school and are lost. */
+  var EW = { filter: "risk" };
+  function levelChip(l) { return l === "high" ? chip("red", "High") : l === "medium" ? chip("orange", "Medium") : l === "low" ? chip("muted", "Low") : chip("muted", "None"); }
+  function early(v, opts) {
+    opts = opts || {};
+    var P = K.cxPage(v, "Student Support", opts.title || "Early warning",
+      "Children who may be drifting out of school: attendance thinning, marks falling, older than the class, a migrant family. Each says why. Fees are not used, and nobody is flagged for what a family owes.");
+    var metrics = el("div"), filters = el("div"), slot = el("div", "en-slot");
+    v.appendChild(metrics); v.appendChild(filters); v.appendChild(slot);
+    slot.appendChild(el("div", "admin-loading", "Reading the registers and the marks…"));
+    RG.early(opts.classId).then(function (r) {
+      slot.innerHTML = "";
+      var s = r.summary, moving = Object.keys(r.transitions).reduce(function (a, k) { return a + r.transitions[k]; }, 0), cases = r.students.filter(function (x) { return x.case; }).length;
+      K.cxMetrics(metrics, [
+        { label: "High", value: s.high, bad: s.high > 0, note: "several signals together" },
+        { label: "Medium", value: s.medium, note: "worth a conversation" },
+        { label: "Moving up soon", value: moving, note: Object.keys(r.transitions).map(function (k) { return r.transitions[k] + " at " + k; }).join(" · ") || "none" },
+        { label: "Cases open", value: cases, note: "with a mentor" }
+      ]);
+      var chips = K.cnFilters([{ k: "risk", name: "High and medium", n: s.high + s.medium }, { k: "move", name: "Moving up soon", n: moving }, { k: "all", name: "Everyone", n: r.students.length }], EW.filter, function (k) { EW.filter = k; chips.mark(k); paint(); });
+      filters.appendChild(chips);
+      var box = el("div", "en-slot"); slot.appendChild(box);
+      function paint() {
+        box.innerHTML = "";
+        var rows = r.students.filter(function (x) { return EW.filter === "all" || (EW.filter === "move" ? !!x.transition : x.level === "high" || x.level === "medium"); });
+        if (!rows.length) { box.appendChild(K.cnEmpty(r.students.length ? "Nobody to look at here." : "Nobody in the class yet.", "")); return; }
+        var t = K.cnTable([{ label: "Child", w: "minmax(140px, 1.1fr)" }, { label: "Class", w: "80px" }, { label: "Level", w: "100px" }, { label: "Why", w: "minmax(240px, 2.4fr)" }]);
+        rows.slice(0, 300).forEach(function (x) {
+          t.row(["<b>" + esc(x.name) + "</b>" + (x.rollNo ? "<span class='cn-sub2'>Roll " + esc(x.rollNo) + "</span>" : ""), x.classLabel ? esc(x.classLabel) : none(), levelChip(x.level) + (x.case ? "<span class='cn-sub2'>Case: " + esc(x.case.status) + "</span>" : ""),
+                 x.signals.length ? x.signals.map(function (g) { return esc(g.text); }).join("<br>") : x.transition ? "<span class='cn-none'>Moves up (" + esc(x.transition) + "); nothing else on</span>" : none()],
+            function () { earlyDialog(x, function () { K.openAdmin(true, opts.classId ? "in-myclass" : "in-ews"); }); }, x.id);
+        });
+        box.appendChild(t);
+      }
+      paint();
+    }, function (e) { K.failed(slot, e, function () { K.openAdmin(true, opts.classId ? "in-myclass" : "in-ews"); }); });
+  }
+
+  function earlyDialog(x, done) {
+    var ctl = dialog({
+      title: x.name, sub: (x.classLabel ? "Class " + x.classLabel + ". " : "") + "Level: " + x.level + ".", wide: true,
+      body: function (h) {
+        if (!x.signals.length) h.appendChild(el("p", "en-note", "Nothing is on for this child."));
+        x.signals.forEach(function (g) { h.appendChild(el("p", "en-note", "• " + esc(g.text))); });
+        if (x.transition) h.appendChild(el("p", "en-note", "Children are most often lost at the move " + esc(x.transition) + ": a phone call or a home visit before the year ends matters most here."));
+      }
+    });
+    if (x.level === "high" || x.level === "medium" || x.case) {
+      ctl.acts.insertBefore(btn(x.case ? "Open the case" : "Start a case", "quiet", function () {
+        ctl.close();
+        if (x.case) { K.openAdmin(false, "in-cases"); return; }
+        API.items.create({ kind: "ewscase", title: x.name + ": early warning", subjectId: x.id, status: "open", data: { concern: x.signals.map(function (g) { return g.text; }).join(". ") } })
+          .then(function () { toast("Case started. Add a mentor and the home visits under Student Support, Mentoring cases."); done(); }, function (e) { toast(e.message); });
+      }), ctl.acts.firstChild);
+    }
+  }
+
   /* ============================================================ My class */
   function myClass(v) {
     var P = K.cxPage(v, "Students", "My class", "Your section's register for today, and the children close to the attendance a board asks for.");
@@ -329,9 +393,12 @@ window.OPLO_REGISTER = function (K) {
         var sub = el("div", "rg-sub");
         slot.appendChild(sub);
         watch(sub, { classId: c.id, title: c.label + " attendance" });
+        var sub2 = el("div", "rg-sub");
+        slot.appendChild(sub2);
+        early(sub2, { classId: c.id, title: c.label + " early warning" });
       });
     }, function (e) { K.failed(slot, e, function () { K.openAdmin(true, "in-myclass"); }); });
   }
 
-  return { classes: classes, watch: function (v) { watch(v); }, myClass: myClass, sheet: sheet };
+  return { classes: classes, watch: function (v) { watch(v); }, early: function (v) { early(v); }, myClass: myClass, sheet: sheet };
 };

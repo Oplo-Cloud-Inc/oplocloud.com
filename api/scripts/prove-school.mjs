@@ -334,5 +334,49 @@ try {
     assert.ok(st.count >= 1 && st.median != null && st.p90 >= st.median && st.under10 >= 0);
     refused(await teacher.try("GET", "/register/day-stats"), 403);
   });
+
+  /* ------------------------------------------------------------ Early warning and the board list */
+  await step("early warning names the children drifting and says why: attendance, age, a migrant family, the edge of a stage", async () => {
+    // Gurleen is the child with the absences (the register steps); make her older than the class and a migrant family.
+    await admin.put(`/students/${REG.kids[0].id}/india`, { dob: "2008-02-02", migrant: "yes", gender: "F" });
+    const w = await teacher.get(`/register/early-warning?classId=${REG.cls.id}&minDays=1`);
+    const by = Object.fromEntries(w.students.map((s) => [s.name, s]));
+    const g = by["Gurleen Kaur"];
+    assert.ok(["medium", "high"].includes(g.level), "level " + g.level); assert.equal(g.transition, "8→9");
+    const keys = g.signals.map((x) => x.key);
+    for (const k of ["attendance", "over-age", "migrant", "transition"]) assert.ok(keys.includes(k), "signal " + k + " in " + keys.join(","));
+    assert.match(g.signals.find((x) => x.key === "attendance").text, /under 75%/); assert.match(g.signals.find((x) => x.key === "over-age").text, /years older/);
+    assert.equal(w.students[0].name, "Gurleen Kaur", "the most at risk first"); assert.ok(w.summary.high + w.summary.medium >= 1); assert.ok(w.transitions["8→9"] >= 4);
+    assert.equal(by["Harpreet"].level, "none"); assert.deepEqual(by["Harpreet"].signals.map((x) => x.key), [], "a child with nothing wrong has no signals, not even the stage");
+    refused(await stranger.try("GET", `/register/early-warning?classId=${REG.cls.id}`), 403);
+    refused(await teacher.try("GET", "/register/early-warning"), 403);
+    assert.ok((await admin.get("/register/early-warning")).students.length >= 4);
+  });
+
+  await step("a case with a mentor and a home-visit log is a record the office keeps; closed, it leaves the list", async () => {
+    const it = (await admin.post("/items", { kind: "ewscase", title: "Gurleen Kaur: early warning", subjectId: REG.kids[0].id, status: "open",
+      data: { mentor: ctx.teacher.id, concern: "Absent three days of five", homeVisits: "18/10: spoke to her mother; the family is between jobs" } })).item;
+    assert.equal((await teacher.get(`/register/early-warning?classId=${REG.cls.id}&minDays=1`)).students.find((x) => x.id === REG.kids[0].id).case.status, "open");
+    refused(await person("kid").try("GET", "/items?kind=ewscase"), 401);
+    await admin.try("PATCH", `/items/${it.id}`, { status: "closed" }).then((r) => assert.equal(r.status, 200));
+    assert.equal((await teacher.get(`/register/early-warning?classId=${REG.cls.id}&minDays=1`)).students.find((x) => x.id === REG.kids[0].id).case, null);
+    const kidSees = person("kid"); await kidSees.login(REG.kids[0].email, PW);
+    const mine = await kidSees.try("GET", `/items?kind=ewscase`);
+    assert.ok(mine.status === 403 || ((mine.body && mine.body.items) || []).length === 0, "the child does not read their own early-warning case: " + mine.status);
+    refused(await kidSees.try("GET", `/items/${it.id}`), mine.status === 403 ? 403 : 404);
+  });
+
+  await step("the board list says who is eligible, who is under, and where a condonation stands, ready for a file", async () => {
+    const e = await teacher.get(`/register/eligibility?classId=${REG.cls.id}`);
+    assert.equal(e.columns.length, 11); assert.ok(e.rows.every((r) => r.length === 11)); assert.match(e.file, /^board-eligibility-\d{4}-\d{2}-\d{2}\.csv$/);
+    const row = (name) => e.rows.find((r) => r[2] === name);
+    assert.match(row("Gurleen Kaur")[10], /^Under 75%/); assert.equal(row("Harpreet")[10], "Eligible"); assert.equal(row("Harpreet")[8], 100);
+    assert.match(row("Jasleen Bedi")[10], /Under 75%/);
+    assert.equal(e.threshold, 75);
+    refused(await stranger.try("GET", `/register/eligibility?classId=${REG.cls.id}`), 403);
+    const all = await admin.get("/register/eligibility");           // the classes a board lists: IX to XII; VIII is not one
+    assert.equal(all.rows.some((r) => String(r[0]).startsWith("VIII-")), false);
+    assert.ok((await admin.get("/register/eligibility?all=1")).rows.some((r) => String(r[0]).startsWith("VIII-")));
+  });
 } catch { process.exitCode = 1; }
 console.log(`\n${steps()} steps passed.`);

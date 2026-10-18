@@ -488,6 +488,8 @@ window.OPLO_API = (function () {
       forStudent: function (id, days) { return get("/students/" + id + "/diary" + q({ days: days })); }
     },
     register: {
+      early: function (classId) { return get("/register/early-warning" + q({ classId: classId })); },
+      eligibility: function (classId, all) { return get("/register/eligibility" + q({ classId: classId, all: all ? "1" : undefined })); },
       message: function (b) { return post("/register/message", b); },
       dayDone: function (b) { return post("/register/day", b); },
       dayStats: function (from, to) { return get("/register/day-stats" + q({ from: from, to: to })); },

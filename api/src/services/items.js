@@ -133,6 +133,13 @@ export const KINDS = {
     statuses: ["active", "paused"],
     fields: [["url", "Address", "text", true], ["secret", "Signing secret", "text"], ["events", "Events", "text"]]
   },
+  ewscase: {
+    label: "Early-warning case", plural: "Early-warning cases", policy: "staff", about: "student", dated: true,
+    statuses: ["open", "mentoring", "closed"],
+    fields: [["mentor", "Mentor", "person"], ["concern", "What worries us", "longtext"], ["homeVisits", "Home visits: date and what was said", "longtext"],
+             ["plan", "What we will do", "longtext"], ["outcome", "How it ended", "longtext"]],
+    notify: "none"
+  },
   condonation: {
     label: "Attendance condonation", plural: "Condonation cases", policy: "office", about: "student", dated: true,
     statuses: ["requested", "recommended", "declined", "submitted"],

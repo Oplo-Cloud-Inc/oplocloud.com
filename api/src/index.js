@@ -188,6 +188,8 @@ const ROUTES = [
   ["PUT",    "/api/v1/register",                         register.putRegister],
   ["GET",    "/api/v1/register/classes",                 register.classes],
   ["GET",    "/api/v1/register/watch",                   register.watch],
+  ["GET",    "/api/v1/register/early-warning",           register.earlyWarning],
+  ["GET",    "/api/v1/register/eligibility",             register.eligibility],
   ["GET",    "/api/v1/register/locks",                   register.locks],
   ["POST",   "/api/v1/register/locks",                   register.addLock],
   ["GET",    "/api/v1/register/after-lock",              register.afterLock],

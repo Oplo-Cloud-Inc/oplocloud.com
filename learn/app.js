@@ -8839,7 +8839,7 @@
       { k: "in-register", name: "Class registers" }, { k: "in-watch", name: "75% watch" }, { k: "in-condone", name: "Condonation" },
       { k: "attendance", name: "By subject" }] },
     { name: "Student Support", icon: "heart", kids: [
-      { k: "support", name: "Watchlist" }, { k: "behavior", name: "Behavior" }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention" },
+      { k: "support", name: "Watchlist" }, { k: "in-ews", name: "Early warning", only: "IN" }, { k: "in-cases", name: "Mentoring cases", only: "IN" }, { k: "behavior", name: "Behavior" }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention" },
       { k: "senplans", name: "Support Plans" }, { k: "accommodations", name: "Accommodations" }] },
     { name: "Communicate", icon: "mail", kids: [
       { k: "inbox", name: "Inbox" }, { k: "events", name: "Events" }, { k: "forms", name: "Forms" }, { k: "outbox", name: "Mail Queue" }] },
@@ -9774,7 +9774,7 @@
        inventory: tabFxAssets,
        "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
        "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
-       "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch,
+       "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch, "in-ews": tabInEarly,
        "in-exams": tabInExams, "in-scales": tabInScales,
        sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
   }
@@ -17628,6 +17628,7 @@
     lockers: { kind: "locker", eyebrow: "School Operations", title: "Lockers", sub: "Who has which locker." },
     checkouts: { kind: "checkout", eyebrow: "School Operations", title: "Equipment", sub: "What is out, with whom, and when it is due back." },
     curmap: { kind: "curriculum", eyebrow: "Curriculum", title: "Curriculum map", sub: "Units by course and week, with the standards they meet.", course: true },
+    "in-cases": { kind: "ewscase", eyebrow: "Student Support", title: "Mentoring cases", sub: "Children on the early-warning list who have a mentor: what worries us, the home visits made and what was said, and what we will do.", newLabel: "Start a case" },
     "in-condone": { kind: "condonation", eyebrow: "Attendance", title: "Condonation", sub: "Children under the attendance a board asks for whose absence the school asks the board to condone: why they were away, the documents held, and where the request stands.", newLabel: "Start a case" },
     "in-certs": { extras: [function (ctl, r, button) {
         return r.status === "issued" ? button("Print or save as PDF", "en-btn quiet", function () { india().printCertificate(r); }) : button("Print a draft", "en-btn quiet", function () { india().printCertificate(r, true); });
@@ -17722,6 +17723,7 @@
   function tabInPapers(v) { exams().papers(v); }
   function tabInRegister(v) { register().classes(v); }
   function tabInWatch(v) { register().watch(v); }
+  function tabInEarly(v) { register().early(v); }
   function tabInMyClass(v) { register().myClass(v); }
   function tabInClasses(v) { india().classes(v); }
   function tabInCompliance(v) { india().compliance(v); }
