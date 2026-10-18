@@ -8822,8 +8822,8 @@
     { k: "today", name: "Overview", icon: "summary" },
     { name: "Academics", icon: "cap", kids: [
       { k: "gradebook", name: "Gradebook" }, { k: "assessments", name: "Assessments" }, { k: "periods", name: "Marking Periods" },
-      { k: "gpa", name: "GPA" }, { k: "transcripts", name: "Transcripts" }, { k: "reportcards", name: "Report Cards" },
-      { k: "graduation", name: "Graduation" }] },
+      { k: "gpa", name: "GPA", not: ["IN"] }, { k: "transcripts", name: "Transcripts", not: ["IN"] }, { k: "reportcards", name: "Report Cards" },
+      { k: "graduation", name: "Graduation", not: ["IN"] }] },
     { name: "Students", icon: "people", kids: [
       { k: "students", name: "Student 360" }, { k: "enrollment", name: "Enrollment" }, { k: "rosters", name: "Rosters" },
       { k: "records", name: "Records" }, { k: "documents", name: "Documents" }, { k: "guardians", name: "Guardians" },
@@ -8846,7 +8846,7 @@
       { k: "teacher-analytics", name: "Teacher Analytics" }, { k: "leave", name: "Leave" }, { k: "cover", name: "Cover" },
       { k: "certs", name: "Certifications" }] },
     { name: "School Operations", icon: "rows", kids: [
-      { k: "menus", name: "Menus" }, { k: "eligibility", name: "Meal Eligibility" }, { k: "lockers", name: "Lockers" }, { k: "checkouts", name: "Equipment" }] },
+      { k: "menus", name: "Menus" }, { k: "eligibility", name: "Meal Eligibility", not: ["IN"] }, { k: "lockers", name: "Lockers" }, { k: "checkouts", name: "Equipment" }] },
     /* No Finance group: OEdu does not keep fees, invoices or payments. The
        screens for them are still defined (REC) and come back by putting the
        group here again. */
@@ -8860,7 +8860,7 @@
     { name: "India", icon: "flag", only: "IN", kids: [
       { k: "in-classes", name: "Classes" }, { k: "in-compliance", name: "Compliance" }, { k: "in-certs", name: "Certificates" }] },
     { name: "Data Center", icon: "server", kids: [{ k: "data", name: "Exports" }, { k: "imports", name: "Imports" }, { k: "sis", name: "Integrations" },
-      { k: "state", name: "State Reporting" }, { k: "district", name: "District" }, { k: "api", name: "API" }] },
+      { k: "state", name: "State Reporting", not: ["IN"] }, { k: "district", name: "District" }, { k: "api", name: "API" }] },
     { k: "security", name: "Security", icon: "shield" },
     { name: "Reports", icon: "table", kids: [{ k: "office", name: "Office Reports" }, { k: "builder", name: "Report Builder" }] },
     { k: "activity", name: "Audit Log", icon: "wave" },
@@ -8871,10 +8871,19 @@
       { k: "standards", name: "Standards" },
       { k: "an-standards", name: "Standards analytics" }, { k: "sftp", name: "SFTP" }] }
   ];
-  /* The tree this school sees: a group marked `only` is for schools in that region. */
+  /* What a school has depends on where it is (organizations.region, US until said otherwise). A place
+     carries `only` (that region alone) or `not` (every region but those): the diploma counted in credits,
+     GPA and transcripts, the state return and meal eligibility are a US school's, and the India shelf is
+     India's. A place the school does not have is not drawn and its address is not opened. */
+  function regionOf() { return (S.me && S.me.orgs && S.me.orgs[0] && S.me.orgs[0].region) || "US"; }
+  function forRegion(t) { var r = regionOf(); return (!t.only || t.only === r) && !(t.not && t.not.indexOf(r) > -1); }
+  /* The tree this school sees, a group with no place left being no group. */
   function adminTree() {
-    var region = S.me && S.me.orgs && S.me.orgs[0] ? S.me.orgs[0].region : null;
-    return ADMIN_TREE.filter(function (t) { return !t.only || t.only === region; });
+    return ADMIN_TREE.filter(forRegion).map(function (t) {
+      if (!t.kids) return t;
+      var kids = t.kids.filter(forRegion);
+      return kids.length ? Object.assign({}, t, { kids: kids }) : null;
+    }).filter(Boolean);
   }
   /* The student's own console: the school's record of them, read by them.
      Short, flat and in the order a student's questions come — where do I go,
@@ -8890,8 +8899,8 @@
     { k: "grades", name: "Grades", icon: "chart" },
     { k: "attendance", name: "Attendance", icon: "check" },
     { head: "Record" },
-    { k: "transcript", name: "Transcript", icon: "table" },
-    { k: "graduation", name: "Graduation", icon: "cap" },
+    { k: "transcript", name: "Transcript", icon: "table", not: ["IN"] },
+    { k: "graduation", name: "Graduation", icon: "cap", not: ["IN"] },
     { head: "School" },
     { k: "events", name: "Events", icon: "flag" },
     { k: "forms", name: "Forms and fees", icon: "doc" },
@@ -8906,8 +8915,8 @@
     attendance: "Attendance", transcript: "Transcript", graduation: "Graduation", profile: "Profile", requests: "Requests", account: "Account" };
   var ADMIN_SECTIONS = [];
   ADMIN_TREE.forEach(function (t) {
-    if (!t.kids) { ADMIN_SECTIONS.push({ k: t.k, name: t.name, group: null, icon: t.icon }); return; }
-    t.kids.forEach(function (c) { ADMIN_SECTIONS.push({ k: c.k, name: c.name, group: t.name, icon: t.icon }); });
+    if (!t.kids) { ADMIN_SECTIONS.push({ k: t.k, name: t.name, group: null, icon: t.icon, only: t.only, not: t.not }); return; }
+    t.kids.forEach(function (c) { ADMIN_SECTIONS.push({ k: c.k, name: c.name, group: t.name, icon: t.icon, only: c.only || t.only, not: c.not || t.not }); });
   });
   // Reached from other screens, not places in the sidebar: one course's full
   // gradebook, missing work across the school, and the older names of places.
@@ -8941,11 +8950,11 @@
   }
 
   function allowedTabs() {
-    if (S.me && consoleMode() === "student") return STUDENT_SECTIONS;
+    if (S.me && consoleMode() === "student") return STUDENT_SECTIONS.filter(forRegion);
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
     if (consoleMode() !== "admin") return TEACHER_SECTIONS;
-    var only = officeKeys();
-    return only ? ADMIN_SECTIONS.filter(function (t) { return only.indexOf(t.k) > -1; }) : ADMIN_SECTIONS;
+    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion);
+    return only ? mine.filter(function (t) { return only.indexOf(t.k) > -1; }) : mine;
   }
 
   function sectionNamed(k) {
@@ -9820,12 +9829,13 @@
     return SX;
   }
   function studentSection(k) {
-    return STUDENT_SECTIONS.filter(function (t) { return t.k === k; })[0] || STUDENT_SECTIONS[0];
+    var mine = STUDENT_SECTIONS.filter(forRegion);
+    return mine.filter(function (t) { return t.k === k; })[0] || mine[0];
   }
   /* "Courses/geometry" → { tab: "courses", arg: "geometry" } */
   function studentAt(rest) {
     var seg = String(rest || "").split("/").filter(Boolean).map(function (x) { try { return decodeURIComponent(x); } catch (e) { return x; } });
-    var hit = STUDENT_SECTIONS.filter(function (t) { return sameName(STUDENT_NAMES[t.k], seg[0]) || sameName(t.k, seg[0]); })[0];
+    var hit = STUDENT_SECTIONS.filter(forRegion).filter(function (t) { return sameName(STUDENT_NAMES[t.k], seg[0]) || sameName(t.k, seg[0]); })[0];
     return { tab: hit ? hit.k : "today", arg: hit && seg[1] ? seg[1] : null };
   }
   function studentPath(tab, arg) { return (STUDENT_NAMES[tab] || "Overview") + (arg ? "/" + arg : ""); }
@@ -9921,8 +9931,11 @@
     rail.appendChild(find);
     var nav = el("nav", "cn-nav");
     nav.setAttribute("aria-label", "Student portal");
+    var head = null;           // a heading is drawn only when a place under it is
     STUDENT_TREE.forEach(function (t) {
-      if (t.head) { nav.appendChild(el("p", "cn-navhead", esc(t.head))); return; }
+      if (t.head) { head = t.head; return; }
+      if (!forRegion(t)) return;
+      if (head) { nav.appendChild(el("p", "cn-navhead", esc(head))); head = null; }
       var b = el("button", "cn-item");
       b.type = "button";
       b.dataset.k = t.k;

@@ -210,13 +210,13 @@
       empty: "State exams and course tests appear here as they are recorded.",
       facts: [], columns: ["Assessment", "Date", "Score", "Result"] },
 
-    { key: "graduation", name: "Graduation Tracker", group: "milestones", icon: "graduation", size: "w2 h2 big",
+    { key: "graduation", name: "Graduation Tracker", group: "milestones", icon: "graduation", size: "w2 h2 big", not: ["IN"],
       empty: "The road to a diploma appears here once there is a record to measure it against.",
       facts: [], columns: ["Requirement", "Needed", "Earned"] },
     { key: "promotion", name: "Promotion Tracker", group: "milestones", icon: "promotion", size: "w2",
       empty: "The school's promotion decision appears here once it has been made.",
       facts: ["Promotion status", "Next grade", "Decided on"], columns: ["Requirement", "Needed", "On record"] },
-    { key: "pathways", name: "College and Career Pathways", group: "milestones", icon: "pathways", size: "w2",
+    { key: "pathways", name: "College and Career Pathways", group: "milestones", icon: "pathways", size: "w2", not: ["IN"],
       empty: "Interests, a counselor's plan and college and career milestones appear here when the school adds them.",
       facts: ["Interests", "Counselor", "Plan after high school"], columns: ["Milestone", "Target date", "Status"] },
 
@@ -262,6 +262,15 @@
   ];
   var SEC = {};
   SECTIONS.forEach(function (s, i) { s.index = i; SEC[s.key] = s; });
+
+  /* A tile is for the schools whose region it was written for: a diploma counted in credits and a plan for
+     "after high school" are a US school's, and a family at an Indian school is not shown them. */
+  function trimSections(me) {
+    var org = me && me.organizations && me.organizations[0], region = (org && org.region) || "US";
+    SECTIONS = SECTIONS.filter(function (s) { return !(s.not && s.not.indexOf(region) > -1); });
+    Object.keys(SEC).forEach(function (k) { delete SEC[k]; });
+    SECTIONS.forEach(function (s, i) { s.index = i; SEC[s.key] = s; });
+  }
   function groupOf(key) { return GROUPS.filter(function (g) { return g.key === key; })[0]; }
 
   /* ============================================================== State */
@@ -354,6 +363,7 @@
     var dest = H.destination(me.roles, location, null);
     if (!dest.stay) { location.replace(dest.href); return; }
     S.me = me;
+    trimSections(me);
     $("#boot").hidden = false;
     API.family.mine().then(function (fam) {
       S.family = fam;
