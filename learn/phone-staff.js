@@ -230,7 +230,15 @@ window.OPLO_PHONE_STAFF = function (P) {
     return (secs || []).filter(function (s) { return s.status !== "archived" && (s.periods || []).some(function (p) { return run.indexOf(p) > -1; }); });
   }
 
+  /* A class teacher in an Indian school starts the day from their section, not from a period. */
+  function classHero(d, c) {
+    var off = d.mine.v.schoolDay.kind !== "school";
+    var sub = !c.strength ? "Nobody in the class yet" : c.taken ? "Register in. Diary and the families next." : c.marked ? c.marked + " of " + c.strength + " marked" : off ? "Not a school day" : "Register not taken yet";
+    return { tone: "teal", k: "Your class", title: c.label, sub: sub, go: function () { F.openClassDay(c.id, c.label); },
+      chip: { label: "Today", text: plural(c.strength, "child", "children"), time: c.taken ? "Open" : off ? "" : "Take it" } };
+  }
   function teacherHero(d) {
+    if (d.mine && d.mine.ok && d.mine.v.classes.length && window.OPLO_PHONE_CLASS) return classHero(d, d.mine.v.classes[0]);
     var dm = dayModel(d.day), t = d.teaching.ok ? d.teaching.v : null;
     var byCourse = {};
     if (t) t.courses.forEach(function (c) { byCourse[c.id] = c; });
@@ -321,15 +329,15 @@ window.OPLO_PHONE_STAFF = function (P) {
     var Hm = home, t0 = todayIso(), adm = isAdmin();
     var jobs = adm
       ? [settle(Dt.review(t0, t0)), settle(Dt.summary(t0, t0)), settle(Dt.sections()), settle(Dt.enroll()), settle(Dt.people()), settle(Dt.facilities()), settle(Dt.leave())]
-      : [settle(Dt.day(t0)), settle(Dt.teaching())];
+      : [settle(Dt.day(t0)), settle(Dt.teaching()), settle(API.register.classes(null, true))];
     var work = Promise.all(jobs).then(function (r) {
       if (adm) return r;
       var dm = dayModel(r[0]);
-      return Dt.registers(dm && !dm.off ? dm.items : [], t0).then(function (reg) { return [r[0], r[1], reg]; });
+      return Dt.registers(dm && !dm.off ? dm.items : [], t0).then(function (reg) { return [r[0], r[1], reg, r[2]]; });
     }).then(function (r) {
       var d;
       if (adm) d = { t0: t0, review: r[0], summary: r[1], sections: r[2], enroll: r[3], people: r[4], fx: r[5], leave: r[6], nxt: null };
-      else d = { t0: t0, day: r[0], teaching: r[1], registers: r[2], nxt: null };
+      else d = { t0: t0, day: r[0], teaching: r[1], registers: r[2], mine: r[3], nxt: null };
       Hm.data = d; Hm.at = Date.now(); Hm.heroFn = adm ? adminHero : teacherHero;
       paintHero();
       var needNext = adm ? (d.review.ok && (d.review.v.calendar || []).some(function (c) { return c.day === t0 && c.kind !== "school"; })) : (function () { var dm = dayModel(d.day); return !dm || dm.off || !dm.items.length || minOf(dm.items[dm.items.length - 1].endsAt) <= nowMin(); })();
@@ -942,5 +950,5 @@ window.OPLO_PHONE_STAFF = function (P) {
     adapted(tab, o.draw);
   };
 
-  ["OPLO_PHONE_TEACH", "OPLO_PHONE_ADMIN"].forEach(function (n) { if (typeof window[n] === "function") window[n](P, F); });
+  ["OPLO_PHONE_TEACH", "OPLO_PHONE_CLASS", "OPLO_PHONE_ADMIN"].forEach(function (n) { if (typeof window[n] === "function") window[n](P, F); });
 };

@@ -2,7 +2,7 @@
 //   API=http://127.0.0.1:8791/api/v1 ORIGIN=http://127.0.0.1:8130 CRED=/path/credentials.json node scripts/prove-school.mjs
 import { person, step, steps, assert, refused, cred, RUN, PW } from "./lib-prove.mjs";
 
-const admin = person("admin"), teacher = person("teacher"), anon = person("anon");
+const admin = person("admin"), teacher = person("teacher"), anon = person("anon"), stranger = person("stranger");
 const ctx = {};
 
 try {
@@ -286,6 +286,51 @@ try {
     await admin.try("PATCH", `/items/${it.item.id}`, { status: "recommended" }).then((r) => assert.equal(r.status, 200, JSON.stringify(r.body)));
     assert.equal((await admin.get(`/register/watch?classId=${REG.cls.id}`)).students.find((s) => s.id === REG.kids[0].id).case.status, "recommended");
     refused(await teacher.try("POST", "/items", { kind: "condonation", title: "no", subjectId: REG.kids[0].id, data: { reason: "Other" } }), 403);
+  });
+
+  /* ------------------------------------------------------------ The class teacher's day */
+  await step("the diary: homework goes to the section's families once, however often a phone sends it", async () => {
+    const oth = (await admin.post("/accounts", { email: `oth.dy${RUN}@s.test`, name: "Another Teacher", password: PW, role: "teacher", orgId: ctx.org })).account;
+    await stranger.login(oth.email, PW);
+    REG.par = (await admin.post("/accounts", { email: `par.dy${RUN}@s.test`, name: "Gurleen's Parent", password: PW, role: "guardian", orgId: ctx.org })).account;
+    await admin.post(`/students/${REG.kids[0].id}/guardians`, { guardianId: REG.par.id, relationship: "parent" });
+    const parent = person("parent"); await parent.login(REG.par.email, PW); REG.parent = parent;
+    const key = "k" + RUN, entry = { classId: REG.cls.id, kind: "homework", subject: "Science", body: "Read chapter 5 and answer the questions at the end.", clientKey: key };
+    const one = await teacher.try("POST", "/diary", entry); assert.equal(one.status, 201); assert.equal(one.body.again, false);
+    const two = await teacher.try("POST", "/diary", entry); assert.equal(two.status, 200); assert.equal(two.body.again, true); assert.equal(two.body.entry.id, one.body.entry.id);
+    refused(await stranger.try("POST", "/diary", { classId: REG.cls.id, body: "x" }), 403);
+    refused(await teacher.try("POST", "/diary", { classId: REG.cls.id, body: "x", kind: "gossip" }), 400);
+    refused(await teacher.try("POST", "/diary", { classId: REG.cls.id, body: "" }), 400);
+    const mine = (await parent.get(`/students/${REG.kids[0].id}/diary`)).entries;
+    assert.equal(mine.filter((e) => e.body.startsWith("Read chapter 5")).length, 1); assert.equal(mine[0].subject, "Science");
+    refused(await parent.try("GET", `/students/${REG.kids[1].id}/diary`), 403);
+    assert.equal((await teacher.get(`/diary?classId=${REG.cls.id}`)).entries.length >= 1, true);
+    await new Promise((r) => setTimeout(r, 1500));
+    assert.equal((await parent.get("/inbox")).notices.filter((n) => /^Homework: Science/.test(n.title)).length, 1, "one notice, not two");
+  });
+
+  await step("one word to the families of the section, or of the children named; sent twice it is not repeated", async () => {
+    const body = { classId: REG.cls.id, body: "Please send a signed copy of the circular tomorrow.", clientKey: "m" + RUN };
+    const a = await teacher.post("/register/message", body);
+    assert.equal(a.children, 4); assert.ok(a.reached >= 4 + 1, "the four children and the parent: " + a.reached);
+    const b = await teacher.post("/register/message", body); assert.equal(b.reached, 0); assert.equal(b.again, true);
+    const one = await teacher.post("/register/message", { classId: REG.cls.id, body: "Your child was unwell at school.", to: [REG.kids[0].id] });
+    assert.equal(one.children, 1);
+    await new Promise((r) => setTimeout(r, 300));
+    const got = (await REG.parent.get("/inbox")).notices.filter((n) => /From the class teacher/.test(n.title));
+    assert.equal(got.length, 2, "the parent has the section's word and their own child's");
+    refused(await teacher.try("POST", "/register/message", { classId: REG.cls.id, body: "hi", to: [ctx.late.id] }), 400);
+    refused(await stranger.try("POST", "/register/message", { classId: REG.cls.id, body: "hi" }), 403);
+  });
+
+  await step("how long the day took is kept, replaced if said again, and the school reads the middle and the slow end", async () => {
+    refused(await teacher.try("POST", "/register/day", { classId: REG.cls.id, seconds: 99999 }), 400);
+    refused(await stranger.try("POST", "/register/day", { classId: REG.cls.id, seconds: 100 }), 403);
+    assert.equal((await teacher.post("/register/day", { classId: REG.cls.id, seconds: 700, steps: ["register", "diary", "x"], offline: true })).saved, true);
+    await teacher.post("/register/day", { classId: REG.cls.id, seconds: 410, steps: ["register", "diary", "message"] });
+    const st = await admin.get("/register/day-stats");
+    assert.ok(st.count >= 1 && st.median != null && st.p90 >= st.median && st.under10 >= 0);
+    refused(await teacher.try("GET", "/register/day-stats"), 403);
   });
 } catch { process.exitCode = 1; }
 console.log(`\n${steps()} steps passed.`);

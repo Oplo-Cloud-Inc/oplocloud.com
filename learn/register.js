@@ -26,6 +26,7 @@ window.OPLO_REGISTER = function (K) {
   function tone(kind) { return KIND_TONE[kind] || "muted"; }
   function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   function shift(day, by) { return new Date(Date.parse(day + "T00:00:00Z") + by * 86400000).toISOString().slice(0, 10); }
+  function mmss(sec) { return Math.floor(sec / 60) + ":" + ("0" + (sec % 60)).slice(-2); }
   function clock(ms) { return ms ? new Date(Number(ms)).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""; }
 
   /* ============================================================ The sheet
@@ -115,8 +116,9 @@ window.OPLO_REGISTER = function (K) {
       var b = { classId: classId, day: data.day, marks: marks };
       if (why) b.why = why.value();
       if (force && force.querySelector("input").checked) b.force = true;
-      return RG.put(b).then(function () {
-        toast("Register saved for " + data.class.label + ", " + dmy(data.day) + ".");
+      // With no signal the register is kept on this device and sent when it is back (learn/offline.js).
+      return window.OPLO_QUEUE.shared().submit({ label: "Register " + data.class.label + " " + dmy(data.day), method: "PUT", path: "/register", body: b, merge: "reg:" + classId + ":" + data.day }).then(function (r) {
+        toast(r.queued ? "No signal: the register is saved on this device and will send when you are back online." : "Register saved for " + data.class.label + ", " + dmy(data.day) + ".");
         if (done) done();
       });
     }
@@ -158,7 +160,8 @@ window.OPLO_REGISTER = function (K) {
     var metrics = el("div"), slot = el("div", "en-slot");
     v.appendChild(metrics); v.appendChild(slot);
     slot.appendChild(el("div", "admin-loading", "Reading the registers…"));
-    RG.classes(DAY).then(function (r) {
+    Promise.all([RG.classes(DAY), RG.dayStats().catch(function () { return null; })]).then(function (res) {
+      var r = res[0], ds = res[1];
       slot.innerHTML = "";
       date.value = r.day;
       date.addEventListener("change", function () { DAY = date.value || null; K.openAdmin(true, "in-register"); });
@@ -168,7 +171,7 @@ window.OPLO_REGISTER = function (K) {
         { label: "Registers in", value: inCount, note: "of " + plural(withKids.length, "section"), line: withKids.length ? Math.round(inCount / withKids.length * 100) : null },
         { label: "Not yet taken", value: withKids.length - inCount, bad: withKids.length - inCount > 0, note: r.schoolDay.kind === "school" ? "for " + dmy(r.day) : "not a school day" },
         { label: "Children marked", value: num(withKids.reduce(function (a, c) { return a + c.marked; }, 0)), note: "of " + num(withKids.reduce(function (a, c) { return a + c.strength; }, 0)) }
-      ]);
+      ].concat(ds && ds.count ? [{ label: "A class teacher’s day", value: mmss(ds.median), note: "the middle of " + plural(ds.count, "day") + " in the last 30 · " + ds.under10 + "% under ten minutes" }] : []));
       if (r.schoolDay.kind !== "school") slot.appendChild(el("p", "en-note", esc(dmy(r.day)) + " is not a school day" + (r.schoolDay.label ? " (" + esc(r.schoolDay.label) + ")" : "") + "."));
       if (!r.classes.length) { slot.appendChild(K.cnEmpty("No sections in this school year.", "Make the school's classes first (Students, Classes).")); return; }
       var t = K.cnTable([{ label: "Class", w: "90px" }, { label: "Class teacher", w: "minmax(150px, 1.2fr)" }, { label: "Children", w: "90px" }, { label: "Marked", w: "100px" }, { label: "Register", w: "150px" }]);

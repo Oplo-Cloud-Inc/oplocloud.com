@@ -20012,6 +20012,7 @@
   /* The API returns an Oplo Account: an id, a profile, and product roles. The
      rest of this app was written against a flatter shape, so the translation
      happens once, here, rather than in forty places. */
+  window.OPLO_WHO = function () { return S.me ? S.me.id : null; };
   function normaliseAccount(a) {
     var learn = (a.roles || []).filter(function (r) { return r.product === "learn"; });
     var platform = (a.roles || []).filter(function (r) { return r.product === "platform"; });

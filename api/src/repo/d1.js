@@ -3686,6 +3686,40 @@ export class D1Repository {
     return results || [];
   }
 
+  /* ------------------------------------------------------ The diary, the day */
+  async addDiary(orgId, d, actorId) {
+    const did = id("diary");
+    try {
+      await this.db.prepare(`INSERT INTO learn_diary (id, org_id, class_id, day, kind, subject, body, client_key, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(did, orgId, d.classId, d.day, d.kind, d.subject ?? null, d.body, d.clientKey ?? null, actorId || null, now()).run();
+    } catch (e) {
+      // The same entry sent twice (a phone that did not hear back) is found, not made again.
+      if (d.clientKey && /UNIQUE/i.test(String(e && e.message))) {
+        const was = await this.db.prepare(`SELECT * FROM learn_diary WHERE class_id = ? AND client_key = ?`).bind(d.classId, d.clientKey).first();
+        return { row: was, again: true };
+      }
+      throw e;
+    }
+    return { row: await this.db.prepare(`SELECT * FROM learn_diary WHERE id = ?`).bind(did).first(), again: false };
+  }
+  async listDiary({ classId, from, to, limit }) {
+    const { results } = await this.db.prepare(
+      `SELECT d.*, p.name AS by_name FROM learn_diary d LEFT JOIN profiles p ON p.account_id = d.created_by
+        WHERE d.class_id = ? AND (? IS NULL OR d.day >= ?) AND (? IS NULL OR d.day <= ?) ORDER BY d.day DESC, d.created_at DESC LIMIT ?`
+    ).bind(classId, from || null, from || null, to || null, to || null, limit || 100).all();
+    return results || [];
+  }
+  async saveTeacherDay(orgId, classId, day, teacherId, seconds, steps, offline) {
+    await this.db.prepare(
+      `INSERT INTO learn_teacher_day (id, org_id, class_id, day, teacher_id, seconds, steps_json, offline, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (class_id, day, teacher_id) DO UPDATE SET seconds = excluded.seconds, steps_json = excluded.steps_json, offline = excluded.offline, created_at = excluded.created_at`
+    ).bind(id("tday"), orgId, classId, day, teacherId, seconds, JSON.stringify(steps), offline ? 1 : 0, now()).run();
+  }
+  async teacherDays(orgId, from, to) {
+    const { results } = await this.db.prepare(`SELECT seconds, steps_json, offline, class_id, day FROM learn_teacher_day WHERE org_id = ? AND day >= ? AND day <= ? ORDER BY seconds`).bind(orgId, from, to).all();
+    return results || [];
+  }
+
   /* ------------------------------------------------------- Parent meetings */
   async insertPtm(orgId, p, slots, actorId) {
     const pid = id("ptm");

@@ -13,7 +13,7 @@
 
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
-import { can, must, isStaff } from "../core/guard.js";
+import { can, must, isStaff, guardsStudent } from "../core/guard.js";
 import { attendanceSettings, activeKeys, kindOf } from "./attendance.js";
 import { daysOf } from "./schedule.js";
 import { notify } from "../services/notify.js";
@@ -230,4 +230,101 @@ export async function afterLock(ctx) {
   const rows = await ctx.repo.editsAfterLock(S.orgId, 200);
   return json({ edits: rows.map((r) => ({ id: r.id, student: r.student_name || "", accountId: r.account_id, day: r.day, from: r.from_status, to: r.to_status,
     fromReason: r.from_reason || null, toReason: r.to_reason || null, by: r.by_name || "", at: r.at, why: r.why || "" })) });
+}
+
+/* ------------------------------------------------------------- The class day
+   The diary, a word to the families, and how long the day took. A phone with no
+   signal sends these later, so each can carry a clientKey and be sent twice. */
+
+const DIARY_KINDS = ["homework", "note", "circular"];
+const shapeDiary = (d) => ({ id: d.id, classId: d.class_id, day: d.day, kind: d.kind, subject: d.subject || null, body: d.body, by: d.by_name || null, at: d.created_at });
+
+/* The children of a section and their families, for a notice. */
+async function familiesOf(ctx, S, classId, only) {
+  const kids = (await ctx.repo.listIndiaStudents(S.orgId, classId)).map((r) => r.account_id).filter((id) => !only || only.includes(id));
+  return { kids, to: kids.concat(await ctx.repo.guardianIdsOf(kids)) };
+}
+
+/* POST /diary { classId, day?, kind?, subject?, body, clientKey? } */
+export async function addDiary(ctx) {
+  const S = await school(ctx);
+  const b = await readJson(ctx.request);
+  const c = await klass(ctx, S.orgId, b.classId);
+  await must(ctx, "register.write", { orgId: S.orgId, classTeacherId: c.class_teacher_id });
+  const d = { classId: c.id, day: b.day ? day(b.day, "day") : S.today, kind: check.oneOf(b.kind || "homework", "kind", DIARY_KINDS),
+    subject: b.subject ? check.string(b.subject, "subject", { max: 60 }) : null, body: check.string(b.body, "body", { max: 1500 }),
+    clientKey: b.clientKey ? check.string(b.clientKey, "clientKey", { max: 64 }) : null };
+  const r = await ctx.repo.addDiary(S.orgId, d, S.actor.id);
+  if (!r.again) {
+    ctx.waitUntil((async () => {
+      const f = await familiesOf(ctx, S, c.id);
+      await notify(ctx.repo, { orgId: S.orgId, to: f.to, kind: "announcement", from: S.actor.id, title: `${d.kind === "homework" ? "Homework" : d.kind === "circular" ? "Circular" : "Note"}${d.subject ? ": " + d.subject : ""}`,
+        body: d.body.slice(0, 300), link: "diary", dedupe: `diary:${r.row.id}` });
+    })());
+  }
+  return json({ entry: shapeDiary(r.row), again: r.again }, { status: r.again ? 200 : 201 });
+}
+
+/* GET /diary?classId=&from=&to= — the class teacher and the office read what was written. */
+export async function listDiary(ctx) {
+  const S = await school(ctx);
+  const q = ctx.url.searchParams;
+  const c = await klass(ctx, S.orgId, q.get("classId"));
+  await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: c.class_teacher_id });
+  return json({ entries: (await ctx.repo.listDiary({ classId: c.id, from: q.get("from") ? day(q.get("from"), "from") : null, to: q.get("to") ? day(q.get("to"), "to") : null })).map(shapeDiary) });
+}
+
+/* GET /students/:id/diary?days=14 — the family's view: the diary of the child's section. */
+export async function familyDiary(ctx, { accountId }) {
+  const S = await school(ctx);
+  if (S.actor.id !== accountId && !isStaff(S.actor, S.orgId) && !(await guardsStudent(ctx, S.actor, accountId))) throw ApiError.forbidden("The diary is read by the child, their family and the office.");
+  const row = await ctx.repo.getIndiaStudent(S.orgId, accountId);
+  if (!row || !row.class_id) return json({ entries: [] });
+  const days = ctx.url.searchParams.get("days") ? check.number(ctx.url.searchParams.get("days"), "days", { min: 1, max: 120 }) : 14;
+  const from = new Date(Date.parse(S.today + "T00:00:00Z") - days * 86400000).toISOString().slice(0, 10);
+  return json({ entries: (await ctx.repo.listDiary({ classId: row.class_id, from, limit: 200 })).map(shapeDiary) });
+}
+
+/* POST /register/message { classId, body, title?, to?: [childIds], clientKey? } — one word to the families, in one tap. */
+export async function classMessage(ctx) {
+  const S = await school(ctx);
+  const b = await readJson(ctx.request);
+  const c = await klass(ctx, S.orgId, b.classId);
+  await must(ctx, "register.write", { orgId: S.orgId, classTeacherId: c.class_teacher_id });
+  const body = check.string(b.body, "body", { max: 800 });
+  const only = Array.isArray(b.to) && b.to.length ? b.to.map((x) => check.string(x, "to", { max: 100 })) : null;
+  const f = await familiesOf(ctx, S, c.id, only);
+  if (only && only.some((id) => !f.kids.includes(id))) throw ApiError.badRequest("Someone chosen is not in this section.", "to");
+  if (!f.kids.length) throw ApiError.conflict("Nobody is in this section yet.");
+  const title = b.title ? check.string(b.title, "title", { max: 120 }) : `From the class teacher of ${I.classLabel(c.grade, c.section)}`;
+  const key = b.clientKey ? check.string(b.clientKey, "clientKey", { max: 64 }) : null;
+  let reached = 0;
+  for (const kid of f.kids) {
+    const to = [kid].concat(await ctx.repo.guardianIdsOf([kid]));
+    reached += await notify(ctx.repo, { orgId: S.orgId, to, kind: "message", from: S.actor.id, title, body, link: "inbox", dedupe: key ? `rmsg:${key}:${kid}` : null });
+  }
+  return json({ children: f.kids.length, reached, again: !!key && reached === 0 });
+}
+
+/* POST /register/day { classId, day?, seconds, steps?, offline? } — the class teacher says the day is done. */
+export async function dayDone(ctx) {
+  const S = await school(ctx);
+  const b = await readJson(ctx.request);
+  const c = await klass(ctx, S.orgId, b.classId);
+  await must(ctx, "register.write", { orgId: S.orgId, classTeacherId: c.class_teacher_id });
+  const seconds = Math.round(check.number(b.seconds, "seconds", { min: 0, max: 4 * 3600 }));
+  const steps = Array.isArray(b.steps) ? b.steps.filter((x) => ["register", "diary", "message", "remarks"].includes(x)) : [];
+  await ctx.repo.saveTeacherDay(S.orgId, c.id, b.day ? day(b.day, "day") : S.today, S.actor.id, seconds, steps, b.offline === true);
+  return json({ saved: true, seconds });
+}
+
+/* GET /register/day-stats?from=&to= — how long a class teacher's day takes across the school. */
+export async function dayStats(ctx) {
+  const S = await school(ctx);
+  await must(ctx, "register.lock", { orgId: S.orgId });
+  const q = ctx.url.searchParams;
+  const to = q.get("to") ? day(q.get("to"), "to") : S.today;
+  const from = q.get("from") ? day(q.get("from"), "from") : addDays(to, -29);
+  const rows = await ctx.repo.teacherDays(S.orgId, from, to);
+  return json({ from, to, ...R.spread(rows.map((r) => r.seconds)), offline: rows.filter((r) => r.offline).length });
 }

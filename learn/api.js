@@ -146,6 +146,8 @@ window.OPLO_API = (function () {
 
   return {
     /* ------------------------------------------------------------ Where */
+    /* A request by method and path, for the queue that keeps what was said with no signal. */
+    send: function (method, path, body) { return request(method, path, body, { timeout: 20000 }); },
     base: function () { return base; },
     setBase: function (url) { base = String(url).replace(/\/+$/, ""); reachable = null; },
     reachable: function () { return reachable; },
@@ -480,7 +482,15 @@ window.OPLO_API = (function () {
        Classes, the numbers a board and the state ask for, and consent. Read by
        the office, written by the administrator and registrar; a refusal is a
        403 with the rule named. */
+    diary: {
+      add: function (b) { return post("/diary", b); },
+      list: function (classId, from, to) { return get("/diary" + q({ classId: classId, from: from, to: to })); },
+      forStudent: function (id, days) { return get("/students/" + id + "/diary" + q({ days: days })); }
+    },
     register: {
+      message: function (b) { return post("/register/message", b); },
+      dayDone: function (b) { return post("/register/day", b); },
+      dayStats: function (from, to) { return get("/register/day-stats" + q({ from: from, to: to })); },
       classes: function (day, mine) { return get("/register/classes" + q({ day: day, mine: mine ? "1" : undefined })); },
       get: function (classId, day) { return get("/register" + q({ classId: classId, day: day })); },
       put: function (body) { return put("/register", body); },

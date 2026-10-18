@@ -237,6 +237,8 @@
       empty: "Counseling and wellness information appears here if the school shares it.",
       facts: ["Counselor", "Last check-in"], columns: ["Date", "Note"] },
 
+    { key: "diary", name: "Diary", group: "learning", icon: "assignments", size: "w2", only: ["IN"], record: false,
+      empty: "Homework and notes from the class teacher appear here every day." },
     { key: "meetings", name: "Parent meetings", group: "school", icon: "schedule", size: "w2", only: ["IN"], record: false,
       empty: "Parent meetings appear here with your time, once the class teacher sets one." },
     { key: "schedule", name: "Schedule", group: "school", icon: "schedule", size: "w2 h2 big",
@@ -525,7 +527,7 @@
     };
     // A school in India publishes report cards and holds parent meetings; the others have neither.
     var inOrg = S.me && S.me.organizations && S.me.organizations[0];
-    if (inOrg && inOrg.region === "IN") { calls.cards = API.exams.reportCards(id); calls.meetings = API.exams.ptmFor(id); }
+    if (inOrg && inOrg.region === "IN") { calls.cards = API.exams.reportCards(id); calls.meetings = API.exams.ptmFor(id); calls.diary = API.diary.forStudent(id); }
     var keys = Object.keys(calls);
     return Promise.all(keys.map(function (k) { return settle(calls[k]); })).then(function (out) {
       if (S.student !== student) return;
@@ -1095,6 +1097,7 @@
       case "student": return "record";
       case "reportcards": return part("cards") && part("cards").reportCards.length ? "school" : "none";
       case "meetings": return part("meetings") && part("meetings").meetings.length ? "school" : "none";
+      case "diary": return part("diary") && part("diary").entries.length ? "school" : "none";
       case "guardians": return part("guardians") && part("guardians").length ? "record" : "none";
       case "emergency": return part("guardians") && part("guardians").length ? "record" : "none";
       default: return "none";
@@ -1141,6 +1144,11 @@
   function glimpse(sec, src) {
     var g = grad();
     var k = sec.key;
+    if (k === "diary") {
+      var de = part("diary") && part("diary").entries[0];
+      if (!de) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+      return { stat: esc(de.subject || (de.kind === "homework" ? "Homework" : de.kind === "circular" ? "Circular" : "Note")), sub: esc(day(de.day) + " · " + clip(de.body, 70)) };
+    }
     if (k === "reportcards" || k === "meetings") {
       var pc = part("cards"), pm = part("meetings");
       if (k === "reportcards") {
@@ -2589,6 +2597,19 @@
         ["Class teacher’s remark", c.remark ? esc(c.remark) : null, c.remark],
         ["Result", c.decision ? esc(c.decision.charAt(0).toUpperCase() + c.decision.slice(1)) : null, c.decision]]);
       p.appendChild(kv);
+    });
+  };
+
+  RENDER.diary = function (gridNode) {
+    var data = part("diary");
+    if (!data || !data.entries.length) { panel(gridNode, "s12", "Diary", esc(SEC.diary.empty)); return; }
+    var by = {};
+    data.entries.forEach(function (e) { (by[e.day] = by[e.day] || []).push(e); });
+    Object.keys(by).sort().reverse().forEach(function (d) {
+      var p = panel(gridNode, "s12", day(d), plural(by[d].length, "entry", "entries"));
+      p.appendChild(table([{ label: "" }, { label: "For" }, { label: "" }], by[d].map(function (e) {
+        return { cells: [esc(e.kind === "homework" ? "Homework" : e.kind === "circular" ? "Circular" : "Note"), esc(e.subject || ""), esc(e.body) + (e.by ? "<br><small>" + esc(e.by) + "</small>" : "")] };
+      }), { caption: "Diary" }));
     });
   };
 

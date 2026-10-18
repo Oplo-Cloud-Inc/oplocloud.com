@@ -78,3 +78,11 @@ export function tally(rows, codes) {
 export function lockedBy(locks, day) {
   return locks.find((l) => day >= l.from_day && day <= l.to_day) || null;
 }
+
+/* The middle and the slow end of a set of durations, in seconds: what a school can truthfully say about "the class teacher's day". */
+export function spread(seconds) {
+  const a = seconds.filter((n) => Number.isFinite(n) && n >= 0).sort((x, y) => x - y);
+  if (!a.length) return { count: 0, median: null, p90: null, under10: null };
+  const at = (q) => { const i = (a.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i); return Math.round(a[lo] + (a[hi] - a[lo]) * (i - lo)); };
+  return { count: a.length, median: at(0.5), p90: at(0.9), under10: Math.round((a.filter((n) => n < 600).length / a.length) * 1000) / 10 };
+}
