@@ -62,5 +62,92 @@ try {
     const r = (await admin.put("/school/profile", { boards: b.boards, stateCode: b.stateCode, languages: b.languages })).profile;
     assert.deepEqual(r.boards, b.boards); assert.equal(r.region, "IN");
   });
+
+  /* ------------------------------------------------------------ The section is the roster */
+  const kids = {}, SQ = RUN.slice(-2).toUpperCase() + "Q", SR = RUN.slice(-2).toUpperCase() + "R";   // sections of their own, so a re-run starts from nothing
+  await step("a section is made, and children are seated in it, a single name among them", async () => {
+    const mk = async (name) => (await admin.post("/accounts", { email: `${name.replace(/\W+/g, "").toLowerCase()}.${RUN}@s.test`, name, password: PW, role: "student", orgId: ctx.org })).account;
+    for (const n of ["zoya Khan", "Aarav Sharma", "bhavya", "Chandni Kaur"]) kids[n] = await mk(n);   // "bhavya" has one name, as many Indian children do
+    assert.equal(kids.bhavya.name, "bhavya"); assert.equal(kids.bhavya.initials.length, 1);
+    const c = (await admin.put("/india/classes", { grade: "IX", section: SQ, programme: "CBSE", room: "R-1", capacity: 40 })).class;
+    ctx.sec = c;
+    const un = (await admin.get("/india/unplaced")).students.map((x) => x.id);
+    for (const k of Object.values(kids)) assert.ok(un.includes(k.id), k.name + " is unplaced before being seated");
+    const r = await admin.post(`/india/classes/${c.id}/students`, { studentIds: Object.values(kids).map((k) => k.id) });
+    assert.equal(r.seated, 4); assert.equal(r.students, 4);
+    assert.equal((await admin.post(`/india/classes/${c.id}/students`, { studentIds: [kids.bhavya.id] })).seated, 0, "seating again is a no-op");
+  });
+
+  await step("roll numbers are numbered alphabetically, whatever the case, and again on demand", async () => {
+    await admin.post(`/india/classes/${ctx.sec.id}/rolls`, { order: "name" });
+    const list = (await admin.get(`/india/students?classId=${ctx.sec.id}`)).students;
+    assert.deepEqual(list.map((s) => [s.rollNo, s.name]), [[1, "Aarav Sharma"], [2, "bhavya"], [3, "Chandni Kaur"], [4, "zoya Khan"]]);
+    await admin.post(`/india/classes/${ctx.sec.id}/rolls`, { order: "name" });
+    assert.deepEqual((await admin.get(`/india/students?classId=${ctx.sec.id}`)).students.map((s) => s.rollNo), [1, 2, 3, 4]);
+  });
+
+  await step("two children cannot share a roll number; a late arrival takes the next one", async () => {
+    const r = await admin.try("PUT", `/students/${kids.bhavya.id}/india`, { rollNo: 1 });
+    refused(r, 409); assert.equal(r.body.error.field, "rollNo");
+    ctx.late = (await admin.post("/accounts", { email: `late.${RUN}@s.test`, name: "Esha Late", password: PW, role: "student", orgId: ctx.org })).account;
+    await admin.post(`/india/classes/${ctx.sec.id}/students`, { studentIds: [ctx.late.id] });
+    assert.equal((await admin.get(`/india/students?classId=${ctx.sec.id}`)).students.find((s) => s.id === ctx.late.id).rollNo, 5);
+  });
+
+  await step("the family, special needs and migrant status are kept, and gaps are named", async () => {
+    const r = await admin.put(`/students/${kids["Aarav Sharma"].id}/india`, { cwsn: "yes", migrant: "no", motherTongue: "Punjabi", guardianName: "Meera Sharma", guardianPhone: "98765 43210",
+      guardianRelation: "Aunt", primaryContact: "Guardian", boardRollNo: "B1234567", previousSchool: "Little Flower School" });
+    const s = r.student;
+    assert.equal(s.cwsn, 1); assert.equal(s.migrant, 0); assert.equal(s.guardianName, "Meera Sharma"); assert.equal(s.guardianPhone, "+91 9876543210");
+    assert.ok(r.problems.some((p) => p.field === "disability"), "special needs without a kind is a gap");
+    const r2 = await admin.put(`/students/${kids["Aarav Sharma"].id}/india`, { disability: "Low vision", udid: "UDID-0001" });
+    assert.ok(!r2.problems.some((p) => p.field === "disability")); assert.equal(r2.student.disability, "Low vision");
+    assert.equal(r2.student.guardianName, "Meera Sharma", "what was not named stays");
+  });
+
+  await step("moving a child to another section does not carry the old roll number", async () => {
+    const other = (await admin.put("/india/classes", { grade: "IX", section: SR })).class;
+    ctx.secR = other;
+    const r = await admin.put(`/students/${kids.bhavya.id}/india`, { classId: other.id });
+    assert.equal(r.student.classId, other.id); assert.equal(r.student.rollNo, null);
+    const hist = (await admin.get(`/students/${kids.bhavya.id}/classes`)).classes;
+    assert.deepEqual(hist.map((h) => [h.label, h.leftOn ? "left" : "open"]).sort(), [["IX-" + SQ, "left"], ["IX-" + SR, "open"]].sort());
+    await admin.put(`/students/${kids.bhavya.id}/india`, { classId: ctx.sec.id, rollNo: 2 });
+  });
+
+  await step("the year turns: a section is promoted, old seats are kept as history", async () => {
+    const next = (await admin.put("/india/classes", { year: "2027-2028", grade: "X", section: SQ, programme: "CBSE" })).class;
+    ctx.next = next;
+    const r = await admin.post(`/india/classes/${ctx.sec.id}/promote`, { toClassId: next.id, rolls: "name" });
+    assert.equal(r.moved, 5);
+    const there = (await admin.get(`/india/students?classId=${next.id}`)).students;
+    assert.deepEqual(there.map((s) => [s.rollNo, s.name]), [[1, "Aarav Sharma"], [2, "bhavya"], [3, "Chandni Kaur"], [4, "Esha Late"], [5, "zoya Khan"]]);
+    const hist = (await admin.get(`/students/${kids.bhavya.id}/classes`)).classes;
+    assert.ok(hist.some((h) => h.label === "IX-" + SQ && h.year === "2026-2027" && h.leftOn), "last year's section is still known");
+    assert.ok(hist.some((h) => h.label === "X-" + SQ && h.year === "2027-2028" && !h.leftOn));
+    assert.equal((await admin.get(`/india/students?classId=${ctx.sec.id}`)).students.length, 0);
+    refused(await admin.try("POST", `/india/classes/${next.id}/promote`, { toClassId: next.id }), 400);
+    refused(await admin.try("POST", `/india/classes/${ctx.sec.id}/promote`, { toClassId: ctx.secR.id }), 400);
+  });
+
+  await step("a child who leaves is out of the section and out of the unplaced list, and stays on record", async () => {
+    const r = await admin.post(`/students/${kids.bhavya.id}/leave`, { on: "15/10/2026", reason: "Moved to another city" });
+    assert.equal(r.on, "2026-10-15");
+    assert.equal((await admin.get(`/india/students?classId=${ctx.next.id}`)).students.some((s) => s.id === kids.bhavya.id), false);
+    assert.equal((await admin.get("/india/unplaced")).students.some((s) => s.id === kids.bhavya.id), false);
+    const st = (await admin.get(`/students/${kids.bhavya.id}/india`)).student;
+    assert.equal(st.leftOn, "2026-10-15"); assert.equal(st.leftReason, "Moved to another city"); assert.equal(st.classId, null);
+    assert.ok((await admin.get(`/students/${kids.bhavya.id}/classes`)).classes.every((h) => h.leftOn), "every seat is closed");
+  });
+
+  await step("only the office seats, numbers, promotes or releases children", async () => {
+    refused(await teacher.try("POST", `/india/classes/${ctx.next.id}/students`, { studentIds: [kids.bhavya.id] }), 403);
+    refused(await teacher.try("POST", `/india/classes/${ctx.next.id}/rolls`, {}), 403);
+    refused(await teacher.try("POST", `/india/classes/${ctx.next.id}/promote`, { toClassId: ctx.sec.id }), 403);
+    refused(await teacher.try("POST", `/students/${kids.bhavya.id}/leave`, {}), 403);
+    refused(await anon.try("GET", "/india/unplaced"), 401);
+    refused(await admin.try("POST", `/india/classes/${ctx.next.id}/rolls`, { order: "random" }), 400);
+    refused(await admin.try("POST", "/india/classes/cls_nope/rolls", {}), 404);
+  });
 } catch { process.exitCode = 1; }
 console.log(`\n${steps()} steps passed.`);

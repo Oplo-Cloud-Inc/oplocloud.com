@@ -129,18 +129,26 @@ window.OPLO_INDIA = function (K) {
   }
 
   /* ============================================================ Classes */
+  var YEAR = null;                       // the school year on show; null is this year
+  function shiftYear(y, by) { var a = +String(y).slice(0, 4) + by; return a + "-" + (a + 1); }
   function classes(v) {
     var P = K.cxPage(v, "Students", "Classes",
       "Each class and section of the school year (X-C is Class X, section C) with its class teacher, room and strength. Open one to see its children and what is still missing for each.");
     P.tools.appendChild(K.cnAction("Load from a file", function () { loader(function () { K.openAdmin(true, "in-classes"); }); }));
-    P.tools.appendChild(K.cnAction("New class", function () { classForm(null, function () { K.openAdmin(true, "in-classes"); }); }, true));
+    var yearBar = el("div", "en-years");
+    v.appendChild(yearBar);
     var slot = el("div", "en-slot");
     v.appendChild(slot);
     slot.appendChild(el("div", "admin-loading", "Loading classes…"));
-    IN.classes().then(function (r) {
+    IN.classes(YEAR).then(function (r) {
       slot.innerHTML = "";
+      var here = r.year;
+      P.tools.appendChild(K.cnAction("New class", function () { classForm(null, function () { K.openAdmin(true, "in-classes"); }, here); }, true));
+      var yrs = [shiftYear(here, -1), here, shiftYear(here, 1)];
+      var chips = K.cnFilters(yrs.map(function (y) { return { k: y, name: y.replace(/(\d{4})-\d{2}(\d{2})/, "$1–$2") }; }), here, function (k) { YEAR = k; K.openAdmin(true, "in-classes"); });
+      yearBar.appendChild(chips);
       if (!r.classes.length) {
-        slot.appendChild(K.cnEmpty("No classes yet.", "Make a class such as X-C, or load the school's classes and children from a file.", "New class", function () { classForm(null, function () { K.openAdmin(true, "in-classes"); }); }));
+        slot.appendChild(K.cnEmpty("No classes in this school year.", "Make a class such as X-C, or load the school's classes and children from a file.", "New class", function () { classForm(null, function () { K.openAdmin(true, "in-classes"); }, here); }));
         return;
       }
       var total = r.classes.reduce(function (a, c) { return a + c.strength; }, 0);
@@ -152,13 +160,13 @@ window.OPLO_INDIA = function (K) {
         t.row(["<b>" + esc(c.label) + "</b>", c.programme ? esc(c.programme) + (c.stream ? "<span class='cn-sub2'>" + esc(c.stream) + "</span>" : "") : none(),
                c.classTeacher ? esc(c.classTeacher.name) : "<span class='cn-none'>Not set</span>", c.room ? esc(c.room) : none(),
                "<span" + (full ? " class='en-late'" : "") + ">" + num(c.strength) + (c.capacity ? " of " + num(c.capacity) : "") + "</span>"],
-          function () { roll(c); }, c.id);
+          function () { roll(c, r); }, c.id);
       });
       slot.appendChild(t);
     }, function (e) { K.failed(slot, e, function () { K.openAdmin(true, "in-classes"); }); });
   }
 
-  function classForm(pre, done) {
+  function classForm(pre, done, year) {
     var grade = fld("text", "Class", pre ? pre.grade : "", { req: true, hint: "X, IX, KG, LKG…", max: 20 });
     var section = fld("text", "Section", pre ? pre.section : "", { req: true, hint: "A", max: 3 });
     var programme = fld("text", "Programme", pre ? pre.programme : "", { hint: "ICSE, ISC / IB Diploma…", max: 80 });
@@ -181,6 +189,7 @@ window.OPLO_INDIA = function (K) {
         if (missing.length) throw new Error("Still needed: " + missing.join(" and ") + ".");
         if (teacher.typed() && !teacher.get() && !(pre && pre.classTeacher)) throw new Error("Choose the class teacher from the list.");
         var body = { grade: grade.value(), section: section.value(), programme: programme.value() || null, stream: stream.value() || null,
+                     year: pre ? pre.year : year || undefined,
                      room: room.value() || null, capacity: cap.value() ? Number(cap.value()) : null };
         if (teacher.get()) body.classTeacherId = teacher.get().id; else if (!teacher.typed()) body.classTeacherId = null;
         return IN.putClass(body).then(function () { toast("Saved."); done(); });
@@ -188,10 +197,10 @@ window.OPLO_INDIA = function (K) {
     });
   }
 
-  /* The children of one class, and what each still lacks. */
-  function roll(c) {
+  /* The children of one section: who sits in it, their roll numbers, and what each still lacks. */
+  function roll(c, all) {
     var ctl = dialog({
-      title: "Class " + c.label,
+      title: "Class " + c.label + (c.year ? " · " + c.year.replace(/(\d{4})-\d{2}(\d{2})/, "$1–$2") : ""),
       sub: (c.classTeacher ? "Class teacher: " + c.classTeacher.name + ". " : "") + (c.room ? "Room " + c.room + ". " : "") + plural(c.strength, "child", "children") + ".",
       wide: true,
       body: function (h) {
@@ -200,21 +209,84 @@ window.OPLO_INDIA = function (K) {
         slot.appendChild(el("div", "admin-loading", "Loading the class…"));
         IN.students(c.id).then(function (r) {
           slot.innerHTML = "";
-          if (!r.students.length) { slot.appendChild(K.cnEmpty("Nobody in this class yet.", "Children come in from a file, or open a child and give them this class.")); return; }
+          if (!r.students.length) { slot.appendChild(K.cnEmpty("Nobody in this class yet.", "Add children the school has, load them from a file, or move up a class from last year.")); return; }
           var t = K.cnTable([{ label: "Roll", w: "52px" }, { label: "Name", w: "minmax(150px, 1.3fr)" }, { label: "Admission no", w: "130px" }, { label: "House", w: "80px" },
-            { label: "APAAR", w: "130px" }, { label: "Consent", w: "100px" }, { label: "Needs", w: "90px" }]);
+            { label: "Category", w: "84px" }, { label: "APAAR", w: "130px" }, { label: "Consent", w: "100px" }, { label: "Needs", w: "90px" }]);
           r.students.forEach(function (s) {
             var blocks = s.problems.filter(function (p) { return p.level === "blocks"; }).length, fixes = s.problems.length - blocks;
-            t.row([s.rollNo ? esc(s.rollNo) : none(), "<b>" + esc(s.name) + "</b>", s.admissionNo ? esc(s.admissionNo) : none(), s.house ? esc(s.house) : none(),
-                   apaarCell(s.apaar), consentCell(s.consentStatus),
+            t.row([s.rollNo ? esc(s.rollNo) : none(), "<b>" + esc(s.name) + "</b>" + (s.cwsn === 1 ? "<span class='cn-sub2'>Special needs</span>" : ""), s.admissionNo ? esc(s.admissionNo) : none(), s.house ? esc(s.house) : none(),
+                   s.category ? esc(s.category) : none(), apaarCell(s.apaar), consentCell(s.consentStatus),
                    blocks ? "<span class='en-late'>" + blocks + " to add</span>" : fixes ? esc(fixes + " to fix") : "<span class='cn-none'>Complete</span>"],
-              function () { studentForm(s.id, function () { ctl.close(); roll(c); }); }, s.id);
+              function () { studentForm(s.id, function () { ctl.close(); roll(c, all); }); }, s.id);
           });
           slot.appendChild(t);
         }, function (e) { K.failed(slot, e); });
       }
     });
-    ctl.acts.insertBefore(btn("Edit class", "quiet", function () { ctl.close(); classForm(c, function () { K.openAdmin(true, "in-classes"); }); }), ctl.acts.firstChild);
+    var again = function () { K.openAdmin(true, "in-classes"); };
+    ctl.acts.insertBefore(btn("Promote…", "quiet", function () { ctl.close(); promoteDialog(c, all, again); }), ctl.acts.firstChild);
+    ctl.acts.insertBefore(btn("Number the rolls A–Z", "quiet", function () {
+      IN.numberRolls(c.id, "name").then(function (r) { toast(plural(r.numbered, "child", "children") + " numbered, alphabetically."); ctl.close(); roll(c, all); }, function (e) { toast(e.message); });
+    }), ctl.acts.firstChild);
+    ctl.acts.insertBefore(btn("Add children", "quiet", function () { ctl.close(); seatDialog(c, again); }), ctl.acts.firstChild);
+    ctl.acts.insertBefore(btn("Edit class", "quiet", function () { ctl.close(); classForm(c, again); }), ctl.acts.firstChild);
+  }
+
+  /* Seat children the school has but has not yet put in a section. */
+  function seatDialog(c, done) {
+    var picked = {};
+    dialog({
+      title: "Add children to " + c.label, sub: "Children the school has who sit in no section yet.", wide: true, action: "Add",
+      body: function (h) {
+        var slot = el("div", "en-slot");
+        h.appendChild(slot);
+        slot.appendChild(el("div", "admin-loading", "Loading…"));
+        IN.unplaced().then(function (r) {
+          slot.innerHTML = "";
+          if (!r.students.length) { slot.appendChild(K.cnEmpty("Everyone is seated.", "Every child the school has is already in a section.")); return; }
+          var box = el("div", "en-pick");
+          r.students.forEach(function (s) {
+            var lab = el("label", "en-pickrow"), cb = el("input");
+            cb.type = "checkbox";
+            cb.addEventListener("change", function () { if (cb.checked) picked[s.id] = 1; else delete picked[s.id]; });
+            lab.appendChild(cb);
+            lab.appendChild(el("span", null, esc(s.name)));
+            box.appendChild(lab);
+          });
+          slot.appendChild(box);
+        }, function (e) { K.failed(slot, e); });
+      },
+      onSubmit: function () {
+        var ids = Object.keys(picked);
+        if (!ids.length) throw new Error("Tick at least one child.");
+        return IN.seat(c.id, ids).then(function (r) { toast(plural(r.seated, "child", "children") + " added to " + c.label + "."); done(); });
+      }
+    });
+  }
+
+  /* The year turns: move a whole section into one of the next year. */
+  function promoteDialog(c, all, done) {
+    var nextYear = shiftYear(c.year || all.year, 1);
+    var pick = fld("select", "Move them to", "", { options: [["", "Loading…"]] });
+    var order = fld("select", "Roll numbers", "name", { options: [["name", "Number them again, A–Z"], ["none", "Leave them to be numbered later"]] });
+    dialog({
+      title: "Promote " + c.label, sub: "Everyone in " + c.label + " moves to a section of " + nextYear.replace(/(\d{4})-\d{2}(\d{2})/, "$1–$2") + ". " + c.label + " stays on each child's record as last year's section.", wide: true, action: "Promote",
+      body: function (h) {
+        var g = el("div", "en-form-grid");
+        g.appendChild(pick.node); g.appendChild(order.node);
+        h.appendChild(g);
+        IN.classes(nextYear).then(function (r) {
+          pick.input.innerHTML = "";
+          if (!r.classes.length) { var op = el("option"); op.value = ""; op.textContent = "No sections in " + nextYear + " yet"; pick.input.appendChild(op); h.appendChild(el("p", "en-note", "Make next year's section first: Classes, then the next school year, then New class.")); return; }
+          var op0 = el("option"); op0.value = ""; op0.textContent = "Choose a section"; pick.input.appendChild(op0);
+          r.classes.forEach(function (x) { var op = el("option"); op.value = x.id; op.textContent = x.label + (x.programme ? " · " + x.programme : "") + " (" + plural(x.strength, "child", "children") + " now)"; pick.input.appendChild(op); });
+        }, function (e) { h.appendChild(el("p", "en-note", esc(e.message))); });
+      },
+      onSubmit: function () {
+        if (!pick.value()) throw new Error("Choose the section they move to.");
+        return IN.promote(c.id, { toClassId: pick.value(), rolls: order.value() }).then(function (r) { toast(plural(r.moved, "child", "children") + " moved to " + r.to + "."); done(); });
+      }
+    });
   }
 
   /* One child's India details. */
@@ -247,13 +319,21 @@ window.OPLO_INDIA = function (K) {
       add("primaryContact", "select", "Primary contact", { options: CONTACTS });
       F.whatsapp = fld("select", "WhatsApp", s.whatsapp == null ? "" : String(s.whatsapp), { options: YESNO });
       add("language", "text", "Family's language", { max: 60 }); add("guardianEmail", "text", "Family email", { max: 200 });
+      add("guardianName", "text", "Guardian's name", { max: 120, note: "Only when the guardian is neither parent." }); add("guardianPhone", "text", "Guardian's mobile", { hint: "+91 98765 43210" });
+      add("guardianRelation", "text", "Guardian is the child's", { hint: "Aunt, grandfather…", max: 60 });
+      F.cwsn = fld("select", "Child with special needs", s.cwsn == null ? "" : String(s.cwsn), { options: [["", "Not asked"], ["1", "Yes"], ["0", "No"]] });
+      add("disability", "text", "Kind of disability", { max: 120 }); add("udid", "text", "Disability ID (UDID)", { max: 40 });
+      F.migrant = fld("select", "Migrant family", s.migrant == null ? "" : String(s.migrant), { options: [["", "Not asked"], ["1", "Yes"], ["0", "No"]] });
+      add("motherTongue", "text", "Mother tongue", { max: 60 }); add("boardRollNo", "text", "Board roll number", { max: 30, note: "The board's number for Class X or XII, not the school's roll." });
+      add("previousSchool", "text", "Previous school", { max: 120 });
 
       var order = [["In school", ["classId", "rollNo", "admissionNo", "admittedOn", "house", "secondLanguage", "transport"]],
         ["About the child", ["gender", "dob", "category", "bloodGroup", "address", "pin", "district", "state"]],
         ["Numbers", ["apaar", "pen", "aadhaar"]], ["Parental consent", ["consentStatus", "consentMethod", "consentOn", "consentNote"]],
-        ["Family", ["fatherName", "fatherPhone", "motherName", "motherPhone", "primaryContact", "whatsapp", "language", "guardianEmail"]]];
-      dialog({
-        title: s.name, sub: (s.classLabel ? "Class " + s.classLabel + ". " : "") + "Only the office can see this page.", wide: true, action: "Save",
+        ["Family", ["fatherName", "fatherPhone", "motherName", "motherPhone", "guardianName", "guardianRelation", "guardianPhone", "primaryContact", "whatsapp", "language", "guardianEmail"]],
+        ["Needs and background", ["cwsn", "disability", "udid", "migrant", "motherTongue", "boardRollNo", "previousSchool"]]];
+      var ctl = dialog({
+        title: s.name, sub: (s.classLabel ? "Class " + s.classLabel + ". " : "") + (s.leftOn ? "Left the school on " + dmy(s.leftOn) + ". " : "") + "Only the office can see this page.", wide: true, action: "Save",
         body: function (h) {
           var pr = res[0].problems || [];
           if (pr.length) h.appendChild(el("p", "en-note", pr.map(function (p) { return esc(p.message); }).join(" ")));
@@ -275,7 +355,23 @@ window.OPLO_INDIA = function (K) {
           return IN.putStudent(id, body).then(function () { toast("Saved."); done(); });
         }
       });
+      ctl.acts.insertBefore(btn("Leaves the school", "quiet", function () { ctl.close(); leaveDialog(s, done); }), ctl.acts.firstChild);
+      IN.classHistory(id).then(function (r) {
+        if (r.classes.length > 1 || (r.classes[0] && r.classes[0].leftOn)) ctl.host.insertBefore(el("p", "en-note", "Sections so far: " + r.classes.map(function (x) { return esc(x.label) + " (" + esc(x.year.replace(/(\d{4})-\d{2}(\d{2})/, "$1–$2")) + (x.rollNo ? ", roll " + esc(x.rollNo) : "") + ")"; }).join(", ") + "."), ctl.host.firstChild);
+      }, function () { /* the history is a courtesy */ });
     }, function (e) { toast(e && e.message ? e.message : "That did not load."); });
+  }
+
+  function leaveDialog(s, done) {
+    var on = fld("date", "Left on", new Date().toISOString().slice(0, 10));
+    var why = fld("text", "Why", "", { max: 200, hint: "Moved to another city, transfer, passed out…" });
+    dialog({
+      title: s.name + " leaves the school", sub: "They come out of their section and the register. Everything the school holds about them stays on record.", action: "Record",
+      body: function (h) { var g = el("div", "en-form-grid"); g.appendChild(on.node); g.appendChild(why.node); h.appendChild(g); },
+      onSubmit: function () {
+        return IN.leave(s.id, { on: on.value() || undefined, reason: why.value() || undefined }).then(function (r) { toast("Recorded: left on " + dmy(r.on) + "."); done(); });
+      }
+    });
   }
 
   /* ========================================================= Compliance */

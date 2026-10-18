@@ -170,7 +170,11 @@ export const FIELDS = [
   ["fatherName", "Father's name", "text"], ["fatherPhone", "Father's mobile", "phone"],
   ["motherName", "Mother's name", "text"], ["motherPhone", "Mother's mobile", "phone"],
   ["primaryContact", "Primary contact", "enum", CONTACTS], ["whatsapp", "WhatsApp", "bool"],
-  ["language", "Family's language", "text"], ["guardianEmail", "Family email", "email"]
+  ["language", "Family's language", "text"], ["guardianEmail", "Family email", "email"],
+  ["guardianName", "Guardian's name", "text"], ["guardianPhone", "Guardian's mobile", "phone"], ["guardianRelation", "Guardian's relation", "text"],
+  ["cwsn", "Child with special needs", "bool"], ["disability", "Kind of disability", "text"], ["udid", "Disability ID (UDID)", "text"],
+  ["migrant", "Migrant family", "bool"], ["motherTongue", "Mother tongue", "text"],
+  ["boardRollNo", "Board roll number", "text"], ["previousSchool", "Previous school", "text"]
 ];
 
 const blank = (v) => v === undefined || v === null || /^\s*(n\/?a|-+)?\s*$/i.test(String(v));
@@ -231,6 +235,8 @@ export function problemsOf(s) {
   if (isBoardClass(s.grade) && !s.apaar) add("blocks", "apaar", "No APAAR ID — a board's candidate list for this class needs an ID, REFUSED or NOGEN.");
   if (!s.fatherName && !s.motherName) add("fix", "fatherName", "Neither parent's name is on file.");
   if (s.consentStatus === "pending" || !s.consentStatus) add("fix", "consentStatus", "Parental consent is not yet recorded.");
+  if (s.cwsn === 1 && !s.disability) add("fix", "disability", "Marked as a child with special needs, but not which kind.");
+  if (s.primaryContact === "Guardian" && !s.guardianName) add("fix", "guardianName", "The guardian is the main contact, but no guardian is named.");
   return out;
 }
 
@@ -337,7 +343,24 @@ export function shapeStudent(r) {
     classLabel: r.grade ? classLabel(r.grade, r.section) : null, dob: r.date_of_birth || null, address: r.mailing_address || null };
   for (const [k] of FIELDS) s[k] = r[snake(k)] ?? null;
   if (!s.consentStatus) s.consentStatus = "pending";
+  s.leftOn = r.left_on || null; s.leftReason = r.left_reason || null;
   return s;
+}
+
+/* ------------------------------------------------------------------- Rolls
+   A roll number is a child's place in the section's list, 1 to n. Indian
+   schools number alphabetically, and again every year. `name` and the order of
+   an admission number are the two orders schools ask for; the third keeps
+   whoever already has a number in their order and closes the gaps. */
+const byName = (a, b) => String(a.name || "").localeCompare(String(b.name || ""), "en", { sensitivity: "base" }) || String(a.id).localeCompare(String(b.id));
+export function rollOrder(students, order) {
+  const list = students.slice();
+  if (order === "admission") {
+    list.sort((a, b) => String(a.admissionNo || "\uffff").localeCompare(String(b.admissionNo || "\uffff"), "en", { numeric: true }) || byName(a, b));
+  } else if (order === "keep") {
+    list.sort((a, b) => (a.rollNo || 1e9) - (b.rollNo || 1e9) || byName(a, b));
+  } else list.sort(byName);
+  return list.map((s, i) => ({ id: s.id, rollNo: i + 1 }));
 }
 
 /* Classes in the order a school lists them: by grade, then section. */

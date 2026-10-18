@@ -541,7 +541,7 @@ window.OPLO_ENROLL = function (K) {
     var box = el("div", "en-new");
     v.appendChild(box);
     var first = fld("text", "Legal first name", preset && preset.first, { req: true, max: 80 });
-    var last = fld("text", "Legal last name", preset && preset.last, { req: true, max: 80 });
+    var last = fld("text", "Legal last name", preset && preset.last, { req: !!!(window.OPLO_LOCALE && window.OPLO_LOCALE.active()), max: 80, hint: !!(window.OPLO_LOCALE && window.OPLO_LOCALE.active()) ? "Leave empty for a single name" : "" });
     var dob = fld("date", "Date of birth", preset && preset.dob);
     var email = fld("email", "A parent or guardian's email", "", { hint: "Optional — helps find brothers and sisters" });
     var phone = fld("text", "Or their phone number", "", { hint: "Optional" });
@@ -637,7 +637,7 @@ window.OPLO_ENROLL = function (K) {
       };
       if (extra && extra.studentId) { body.studentId = extra.studentId; body.type = "returning"; delete body.grade; }
       else {
-        if (!first.value() || !last.value()) { err.hidden = false; err.textContent = "The student's legal first and last name are required."; return; }
+        if (!first.value() || (!last.value() && !!!(window.OPLO_LOCALE && window.OPLO_LOCALE.active()))) { err.hidden = false; err.textContent = "The student's legal first and last name are required."; return; }
         var guardian = email.value() || phone.value();
         if (guardian) body.form = { guardians: [{ name: "", email: email.value(), phone: phone.value() }] };
       }
@@ -928,7 +928,7 @@ window.OPLO_ENROLL = function (K) {
     var yearOpts = (SET ? SET.years.map(function (y) { return [y, yearName(y)]; }) : [[a.schoolYear, yearName(a.schoolYear)]]);
     var X = {
       first: fld("text", "Legal first name", a.student.legalFirst, { req: true, disabled: !editable, max: 80 }),
-      last: fld("text", "Legal last name", a.student.legalLast, { req: true, disabled: !editable, max: 80 }),
+      last: fld("text", "Legal last name", a.student.legalLast, { req: !!!(window.OPLO_LOCALE && window.OPLO_LOCALE.active()), disabled: !editable, max: 80 }),
       pref: fld("text", "Preferred name", a.student.preferredName, { disabled: !editable, max: 80 }),
       dob: fld("date", "Date of birth", a.student.dob, { req: true, disabled: !editable }),
       gender: fld("select", "Gender", stu.gender || "", { disabled: !editable,

@@ -3353,12 +3353,16 @@ export class D1Repository {
      learn_student_india; `contact` the date of birth and address, where null
      leaves what is there alone. A batch is one transaction, so a duplicate
      number in one row stops the lot and the caller says which. */
-  async putIndiaStudents(orgId, items, actorId) {
-    const t = now();
+  async putIndiaStudents(orgId, items, actorId, day) {
+    const t = now(), today = day || new Date(t).toISOString().slice(0, 10);
     const stmts = [];
     for (const it of items) {
       const r = it.row;
       stmts.push(this.db.prepare(INDIA_UPSERT).bind(it.accountId, orgId, ...INDIA_COLS.map((c) => r[c] ?? null), actorId || null, t, t));
+      // Where the child sits is kept year by year: the section they leave is closed, the one they are in is open.
+      stmts.push(this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL AND class_id IS NOT ?`)
+        .bind(today, it.accountId, r.class_id ?? null));
+      if (r.class_id) stmts.push(this.db.prepare(SEAT).bind(r.class_id, it.accountId, r.roll_no ?? null, today));
       if (it.contact && (it.contact.dateOfBirth || it.contact.mailingAddress)) {
         stmts.push(this.db.prepare(
           `INSERT INTO account_contacts (account_id, mailing_address, date_of_birth, updated_by, updated_at) VALUES (?, ?, ?, ?, ?)
@@ -3370,6 +3374,79 @@ export class D1Repository {
       }
     }
     for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+
+  /* Seat children in a section: [{ accountId, classId, rollNo }]. A child the office
+     has no row for yet gets one. The section they leave is closed on `day`. */
+  async seatStudents(orgId, moves, actorId, day) {
+    const t = now(), stmts = [];
+    for (const m of moves) {
+      stmts.push(this.db.prepare(
+        `INSERT INTO learn_student_india (account_id, org_id, class_id, roll_no, consent_status, updated_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)
+         ON CONFLICT (account_id) DO UPDATE SET class_id = excluded.class_id, roll_no = excluded.roll_no,
+           left_on = NULL, left_reason = NULL, updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+      ).bind(m.accountId, orgId, m.classId, m.rollNo ?? null, actorId || null, t, t));
+      stmts.push(this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL AND class_id IS NOT ?`).bind(day, m.accountId, m.classId));
+      stmts.push(this.db.prepare(SEAT).bind(m.classId, m.accountId, m.rollNo ?? null, day));
+    }
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+
+  /* Number a section's children: [{ id, rollNo }]. Every number is cleared first, so
+     a child may take another's old number in the same pass. */
+  async numberRolls(classId, rolls) {
+    await this.db.batch([
+      this.db.prepare(`UPDATE learn_student_india SET roll_no = NULL WHERE class_id = ?`).bind(classId),
+      this.db.prepare(`UPDATE learn_class_students SET roll_no = NULL WHERE class_id = ? AND left_on IS NULL`).bind(classId)
+    ]);
+    const stmts = [];
+    for (const r of rolls) {
+      stmts.push(this.db.prepare(`UPDATE learn_student_india SET roll_no = ? WHERE account_id = ? AND class_id = ?`).bind(r.rollNo, r.id, classId));
+      stmts.push(this.db.prepare(`UPDATE learn_class_students SET roll_no = ? WHERE account_id = ? AND class_id = ? AND left_on IS NULL`).bind(r.rollNo, r.id, classId));
+    }
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+
+  /* A child leaves the school: out of their section, and the day and reason kept. */
+  async leaveSchool(orgId, accountId, day, reason, actorId) {
+    const t = now();
+    await this.db.batch([
+      this.db.prepare(
+        `INSERT INTO learn_student_india (account_id, org_id, consent_status, left_on, left_reason, updated_by, created_at, updated_at)
+         VALUES (?, ?, 'pending', ?, ?, ?, ?, ?)
+         ON CONFLICT (account_id) DO UPDATE SET class_id = NULL, roll_no = NULL, left_on = excluded.left_on, left_reason = excluded.left_reason,
+           updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+      ).bind(accountId, orgId, day, reason || null, actorId || null, t, t),
+      this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL`).bind(day, accountId)
+    ]);
+  }
+
+  /* Students the school has who sit in no section and have not left. */
+  async unplacedStudents(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT DISTINCT a.id, a.email, p.name
+         FROM account_roles r JOIN accounts a ON a.id = r.account_id LEFT JOIN profiles p ON p.account_id = a.id
+         LEFT JOIN learn_student_india s ON s.account_id = a.id
+        WHERE r.org_id = ? AND r.product = 'learn' AND r.role = 'student'
+          AND (s.account_id IS NULL OR (s.class_id IS NULL AND s.left_on IS NULL))
+        ORDER BY p.name COLLATE NOCASE`
+    ).bind(orgId).all();
+    return results || [];
+  }
+
+  async getIndiaClass(orgId, classId) {
+    return this.db.prepare(`SELECT * FROM learn_classes WHERE org_id = ? AND id = ?`).bind(orgId, classId).first();
+  }
+
+  /* Every section a child has sat in, newest first. */
+  async classHistory(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT m.class_id, m.roll_no, m.joined_on, m.left_on, c.school_year, c.grade, c.section
+         FROM learn_class_students m JOIN learn_classes c ON c.id = m.class_id
+        WHERE m.account_id = ? ORDER BY m.joined_on DESC, c.school_year DESC`
+    ).bind(accountId).all();
+    return results || [];
   }
 
   /* Who, among these addresses, belongs to this school: [{ id, email_lower }]. */
@@ -3489,7 +3566,10 @@ export class D1Repository {
 
 const INDIA_COLS = ["class_id", "admission_no", "admitted_on", "roll_no", "gender", "house", "category", "second_language", "blood_group",
   "apaar", "pen", "aadhaar", "consent_status", "consent_method", "consent_on", "consent_note", "transport", "pin", "district", "state",
-  "father_name", "father_phone", "mother_name", "mother_phone", "primary_contact", "whatsapp", "language", "guardian_email"];
+  "father_name", "father_phone", "mother_name", "mother_phone", "primary_contact", "whatsapp", "language", "guardian_email",
+  "guardian_name", "guardian_phone", "guardian_relation", "cwsn", "disability", "udid", "migrant", "mother_tongue", "board_roll_no", "previous_school"];
+const SEAT = `INSERT INTO learn_class_students (class_id, account_id, roll_no, joined_on) VALUES (?, ?, ?, ?)
+  ON CONFLICT (class_id, account_id) DO UPDATE SET roll_no = excluded.roll_no, left_on = NULL`;
 const INDIA_UPSERT =
   `INSERT INTO learn_student_india (account_id, org_id, ${INDIA_COLS.join(", ")}, updated_by, created_at, updated_at)
    VALUES (?, ?, ${INDIA_COLS.map(() => "?").join(", ")}, ?, ?, ?)

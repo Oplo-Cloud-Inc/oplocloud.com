@@ -435,7 +435,7 @@ export function fieldGaps(app, settings, today) {
   const gaps = [];
   const need = (ok, key, label) => { if (!ok) gaps.push({ key, label }); };
   need(String(app.legalFirst || "").trim(), "student.legalFirst", "Legal first name");
-  need(String(app.legalLast || "").trim(), "student.legalLast", "Legal last name");
+  need(String(app.legalLast || "").trim() || (settings && settings.singleName), "student.legalLast", "Legal last name");
   need(isDate(app.dob) && app.dob <= (today || todayOf()), "student.dob", "Date of birth");
   need(app.grade && gradeRow(settings, app.grade), "grade", "Grade applied to");
   need(isDate(app.intendedStart), "intendedStart", "Intended joining date");
@@ -531,7 +531,7 @@ export function evaluate({ app, docs, settings, seats, duplicates, today }) {
   const stage = (key, label, ok, blocked, note) => ({ key, label, state: ok ? "done" : blocked ? "blocked" : "todo", note: note || "" });
   const stages = [
     stage("registration", "Registration", true, false, `${yearLabel(app.year)} · ${app.grade}`),
-    stage("identity", "Identity check", isDate(app.dob) && String(app.legalLast || "").trim() && dupOpen.length === 0,
+    stage("identity", "Identity check", isDate(app.dob) && (String(app.legalLast || "").trim() || settings.singleName) && dupOpen.length === 0,
       dupOpen.length > 0, dupOpen.length ? `${dupOpen.length} possible match${dupOpen.length > 1 ? "es" : ""} to settle` : ""),
     stage("application", "Application", gaps.length === 0 && submitted, false,
       gaps.length ? `${gaps.length} to complete` : ""),

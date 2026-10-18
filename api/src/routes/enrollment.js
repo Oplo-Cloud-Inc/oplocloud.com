@@ -23,6 +23,7 @@
    was settled and the reviewer's reasoning are the school's.
    ========================================================================== */
 
+import { profileOf } from "../services/profile.js";
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { can, must, guardsStudent } from "../core/guard.js";
@@ -46,7 +47,10 @@ function dayOf(ctx) {
 
 async function settingsFor(ctx, orgId, day) {
   const row = orgId ? await ctx.repo.getEnrollmentSettings(orgId) : null;
-  return E.normaliseSettings(row ? parse(row.body_json, {}) : {}, day);
+  const settings = E.normaliseSettings(row ? parse(row.body_json, {}) : {}, day);
+  // Many Indian children have one name. A US application still asks for a last name; an Indian school's does not.
+  settings.singleName = !!orgId && profileOf(await ctx.repo.getOrganization(orgId)).region !== "US";
+  return settings;
 }
 
 async function powers(ctx, orgId) {
@@ -746,10 +750,10 @@ export async function create(ctx) {
   }
   if (!grade) throw ApiError.badRequest("Say which grade the application is for.", "grade");
   if (body.form) form = mergeForm(form, body.form, { canSupport: p.sensitive || family });
-  if (!first || !last) {
+  if (!first || (!last && !settings.singleName)) {
     if (staff || !studentId) {
       if (!first) throw ApiError.badRequest("The student's legal first name is required.", "student.legalFirst");
-      if (!last) throw ApiError.badRequest("The student's legal last name is required.", "student.legalLast");
+      if (!last && !settings.singleName) throw ApiError.badRequest("The student's legal last name is required.", "student.legalLast");
     }
   }
   const intendedStart = body.intendedStart ? (E.isDate(body.intendedStart) ? body.intendedStart

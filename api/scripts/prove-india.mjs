@@ -47,7 +47,7 @@ try {
 
   await step("/me tells the console which region the school is in", async () => {
     const me = (await admin.get("/me")).account.organizations[0];
-    assert.equal(me.region, "US", "every school is US until it is made IN");
+    assert.ok(me.region === "US" || me.region === "IN", "a school is US until it is made IN (the demo school already is)");
   });
 
   await step("a class is made with its teacher, and made again without losing what it has", async () => {

@@ -228,7 +228,7 @@ window.OPLO_APPLY = (function () {
     var years = DATA.years.map(function (y) { return [y, yearName(y)]; });
     var f = {
       first: field("Student's legal first name", "", { req: true, max: 80 }),
-      last: field("Student's legal last name", "", { req: true, max: 80 }),
+      last: field("Student's legal last name", "", { req: !!!(window.OPLO_LOCALE && window.OPLO_LOCALE.active()), max: 80 }),
       dob: field("Date of birth", "", { type: "date", req: true }),
       year: field("School year", DATA.currentYear, { options: years }),
       grade: field("Grade applying to", DATA.grades[2] || DATA.grades[0], { options: grades, req: true }),
@@ -243,7 +243,7 @@ window.OPLO_APPLY = (function () {
     var key = "fam-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     var go = btn("Start the application", "lg", function () {
       err.hidden = true;
-      if (!f.first.value() || !f.last.value()) { err.hidden = false; err.textContent = "Please give the student's first and last name."; return; }
+      if (!f.first.value() || (!f.last.value() && !!!(window.OPLO_LOCALE && window.OPLO_LOCALE.active()))) { err.hidden = false; err.textContent = "Please give the student's first and last name."; return; }
       go.disabled = true;
       NS.create({ clientKey: key, grade: f.grade.value(), schoolYear: f.year.value(), type: f.type.value(),
                   student: { legalFirst: f.first.value(), legalLast: f.last.value(), dob: f.dob.value() || undefined } })
@@ -329,7 +329,7 @@ window.OPLO_APPLY = (function () {
     var f = a.form || {}, stu = f.student || {}, prev = f.previous || {};
     var X = {
       first: field("Legal first name", a.student.legalFirst, { req: true, max: 80 }),
-      last: field("Legal last name", a.student.legalLast, { req: true, max: 80 }),
+      last: field("Legal last name", a.student.legalLast, { req: !!!(window.OPLO_LOCALE && window.OPLO_LOCALE.active()), max: 80 }),
       pref: field("Name they go by", a.student.preferredName, { max: 80, note: "If different from the legal name" }),
       dob: field("Date of birth", a.student.dob, { type: "date", req: true }),
       gender: field("Gender", stu.gender, { options: [["", "Prefer not to say"], ["Female", "Female"], ["Male", "Male"], ["Non-binary", "Non-binary"]] }),

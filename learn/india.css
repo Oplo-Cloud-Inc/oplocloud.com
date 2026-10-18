@@ -1,0 +1,10 @@
+/* ==========================================================================
+   OEdu console — the Indian school's section as the roster (india.js).
+   Drawn from the console's own tokens, so light and dark come for free.
+   ========================================================================== */
+
+body.is-console .en-years { margin: 0 0 14px; }
+body.is-console .en-pick { display: grid; gap: 2px; max-height: 340px; overflow: auto; border: .5px solid var(--cx-sep); border-radius: 10px; padding: 6px; background: var(--cx-bg); }
+body.is-console .en-pickrow { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 7px; font-size: 13.5px; color: var(--cx-label); cursor: pointer; }
+body.is-console .en-pickrow:hover { background: var(--cx-fill); }
+body.is-console .en-pickrow input { width: 16px; height: 16px; accent-color: var(--cx-accent); margin: 0; }

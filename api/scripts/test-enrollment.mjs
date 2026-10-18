@@ -27,6 +27,14 @@ test("calendar days are real days", () => {
   assert.equal(E.addDays("2026-10-30", 3), "2026-11-02");
 });
 
+/* ---- names */
+test("a US application needs a last name; a school where one name is usual does not", () => {
+  const app = { legalFirst: "Aarav", legalLast: "", dob: "2012-01-01" };
+  assert.ok(E.fieldGaps(app, S, TODAY).some((g) => g.key === "student.legalLast"));
+  assert.ok(!E.fieldGaps(app, { ...S, singleName: true }, TODAY).some((g) => g.key === "student.legalLast"));
+  assert.ok(E.fieldGaps({ ...app, legalFirst: "" }, { ...S, singleName: true }, TODAY).some((g) => g.key === "student.legalFirst"), "a first name is still needed");
+});
+
 /* ---- settings */
 test("settings fall back to defaults and keep what a school set", () => {
   const s = E.normaliseSettings({ requireAcceptance: true, offerDays: 30 }, TODAY);

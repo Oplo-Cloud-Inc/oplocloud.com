@@ -36,6 +36,7 @@ function conflict(e) {
   const m = String((e && e.message) || "");
   if (!/UNIQUE constraint failed/i.test(m)) return null;
   const which = /admission_no/.test(m) ? ["admissionNo", "Another student already has that admission number."]
+    : /roll_no/.test(m) ? ["rollNo", "Another child in that section already has that roll number."]
     : /apaar/.test(m) ? ["apaar", "Another student already has that APAAR ID."]
     : /\.pen/.test(m) ? ["pen", "Another student already has that PEN."] : [null, "That clashes with another student's record."];
   return ApiError.conflict(which[1], which[0]);
@@ -126,12 +127,107 @@ export async function putStudent(ctx, { accountId }) {
 
   const was = await ctx.repo.getIndiaStudent(orgId, accountId);
   const merged = { ...(was ? I.shapeStudent(was) : {}), ...fields, ...(classId !== undefined ? { classId } : {}) };
+  // A new section is a new list: the old section's number is not carried into it unless the office typed one.
+  if (classId !== undefined && classId !== (was ? was.class_id || null : null) && b.rollNo === undefined) merged.rollNo = null;
   try {
-    await ctx.repo.putIndiaStudents(orgId, [{ accountId, row: I.toRow(merged), contact: { dateOfBirth: dob || null, mailingAddress: address || null } }], actor.id);
+    await ctx.repo.putIndiaStudents(orgId, [{ accountId, row: I.toRow(merged), contact: { dateOfBirth: dob || null, mailingAddress: address || null } }], actor.id, I.todayIST());
   } catch (e) { throw conflict(e) || e; }
   const row = await ctx.repo.getIndiaStudent(orgId, accountId);
   const s = I.shapeStudent(row || { account_id: accountId, name: acc.name, email: acc.email });
   return json({ student: s, saved: true, problems: I.problemsOf(s) });
+}
+
+/* --------------------------------------------------------------- The section
+   The section is the roster: who sits in it, their roll numbers, where they go
+   next year, and who has left. */
+
+async function classOf(ctx, orgId, classId) {
+  const c = await ctx.repo.getIndiaClass(orgId, classId);
+  if (!c) throw ApiError.notFound("That class is not in this school.");
+  return c;
+}
+const rosterOf = async (ctx, orgId, classId) => (await ctx.repo.listIndiaStudents(orgId, classId)).map(I.shapeStudent);
+
+/* GET /india/unplaced — students the school has who sit in no section. */
+export async function unplaced(ctx) {
+  const orgId = orgOf(ctx);
+  await must(ctx, "india.read", { orgId });
+  return json({ students: (await ctx.repo.unplacedStudents(orgId)).map((r) => ({ id: r.id, name: r.name || r.email, email: r.email })) });
+}
+
+/* POST /india/classes/:id/students { studentIds: [...] } — seat children in a section.
+   They take the next free roll numbers only if the section is already numbered. */
+export async function seat(ctx, { classId }) {
+  const orgId = orgOf(ctx), actor = requireActor(ctx);
+  await must(ctx, "india.write", { orgId });
+  const c = await classOf(ctx, orgId, classId);
+  const b = await readJson(ctx.request);
+  const ids = [...new Set(Array.isArray(b.studentIds) ? b.studentIds : [])];
+  if (!ids.length) throw ApiError.badRequest("Choose the children to seat.", "studentIds");
+  if (ids.length > 200) throw ApiError.badRequest("Seat at most 200 children at a time.", "studentIds");
+  for (const id of ids) if (!(await ctx.repo.isOrgMember(orgId, id))) throw ApiError.badRequest("Someone chosen is not part of this school.", "studentIds");
+  const now = await rosterOf(ctx, orgId, classId);
+  const numbered = now.some((s) => s.rollNo);
+  let next = now.reduce((m, s) => Math.max(m, s.rollNo || 0), 0);
+  const moves = ids.filter((id) => !now.some((s) => s.id === id)).map((id) => ({ accountId: id, classId: c.id, rollNo: numbered ? ++next : null }));
+  await ctx.repo.seatStudents(orgId, moves, actor.id, I.todayIST());
+  return json({ seated: moves.length, students: (await rosterOf(ctx, orgId, classId)).length });
+}
+
+/* POST /india/classes/:id/rolls { order: "name" | "admission" | "keep" } — number the section 1..n. */
+export async function numberRolls(ctx, { classId }) {
+  const orgId = orgOf(ctx);
+  await must(ctx, "india.write", { orgId });
+  await classOf(ctx, orgId, classId);
+  const b = await readJson(ctx.request);
+  const order = b.order === undefined ? "name" : check.oneOf(b.order, "order", ["name", "admission", "keep"]);
+  const rolls = I.rollOrder(await rosterOf(ctx, orgId, classId), order);
+  await ctx.repo.numberRolls(classId, rolls);
+  return json({ numbered: rolls.length, order });
+}
+
+/* POST /india/classes/:id/promote { toClassId, rolls?: "name" | "none", studentIds? }
+   The year turns: the section's children (or those named) move to another
+   section. Their old seat is closed, so last year's X-C is still known. */
+export async function promote(ctx, { classId }) {
+  const orgId = orgOf(ctx), actor = requireActor(ctx);
+  await must(ctx, "india.write", { orgId });
+  const from = await classOf(ctx, orgId, classId);
+  const b = await readJson(ctx.request);
+  const to = await classOf(ctx, orgId, check.string(b.toClassId, "toClassId", { max: 80 }));
+  if (to.id === from.id) throw ApiError.badRequest("Choose a different section to move them to.", "toClassId");
+  if (to.school_year === from.school_year) throw ApiError.badRequest("Promotion moves a section into another school year's. Make that year's section first.", "toClassId");
+  const rolls = b.rolls === undefined ? "name" : check.oneOf(b.rolls, "rolls", ["name", "none"]);
+  const here = await rosterOf(ctx, orgId, classId);
+  const only = Array.isArray(b.studentIds) ? new Set(b.studentIds) : null;
+  const movers = here.filter((s) => !only || only.has(s.id));
+  if (!movers.length) throw ApiError.badRequest("There is nobody to move.", "studentIds");
+  const already = await rosterOf(ctx, orgId, to.id);
+  const order = rolls === "name" ? I.rollOrder(movers.concat(already), "name") : null;
+  const rollOf = new Map((order || []).map((r) => [r.id, r.rollNo]));
+  await ctx.repo.seatStudents(orgId, movers.map((s) => ({ accountId: s.id, classId: to.id, rollNo: rollOf.get(s.id) ?? null })), actor.id, I.todayIST());
+  if (order) await ctx.repo.numberRolls(to.id, order);
+  return json({ moved: movers.length, to: I.classLabel(to.grade, to.section) });
+}
+
+/* POST /students/:id/leave { on?, reason? } — the child leaves the school; their record stays. */
+export async function leave(ctx, { accountId }) {
+  const orgId = orgOf(ctx), actor = requireActor(ctx);
+  await must(ctx, "india.write", { orgId });
+  await inSchool(ctx, orgId, accountId);
+  const b = await readJson(ctx.request);
+  const day = b.on ? (I.dayOf(b.on) || throwing("The day they left is written DD/MM/YYYY or YYYY-MM-DD.", "on")) : I.todayIST();
+  await ctx.repo.leaveSchool(orgId, accountId, day, b.reason ? check.string(b.reason, "reason", { max: 200 }) : null, actor.id);
+  return json({ left: true, on: day });
+}
+
+/* GET /students/:id/classes — every section the child has sat in. */
+export async function classHistory(ctx, { accountId }) {
+  const orgId = orgOf(ctx);
+  await must(ctx, "india.read", { orgId });
+  await inSchool(ctx, orgId, accountId);
+  const rows = await ctx.repo.classHistory(accountId);
+  return json({ classes: rows.map((r) => ({ id: r.class_id, year: r.school_year, label: I.classLabel(r.grade, r.section), rollNo: r.roll_no ?? null, joinedOn: r.joined_on, leftOn: r.left_on || null })) });
 }
 
 /* --------------------------------------------------------------- Compliance */
@@ -243,11 +339,11 @@ export async function importRows(ctx) {
 
   let written = 0;
   if (!dry && items.length) {
-    try { await ctx.repo.putIndiaStudents(orgId, items, actor.id); written = items.length; }
+    try { await ctx.repo.putIndiaStudents(orgId, items, actor.id, I.todayIST()); written = items.length; }
     catch (e) {
       // One duplicate number stops a whole batch; find which row it was.
       for (const it of items) {
-        try { await ctx.repo.putIndiaStudents(orgId, [it], actor.id); written++; }
+        try { await ctx.repo.putIndiaStudents(orgId, [it], actor.id, I.todayIST()); written++; }
         catch (e2) { const c = conflict(e2); errors.push({ row: it.i + 1, email: it.email, field: c ? c.field || null : null, message: c ? c.message : "Could not be saved." }); }
       }
     }
