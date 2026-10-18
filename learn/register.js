@@ -389,6 +389,10 @@ window.OPLO_REGISTER = function (K) {
         card.innerHTML = "<div><b>" + esc(c.label) + "</b><span class='cn-sub2'>" + plural(c.strength, "child", "children") + (c.room ? " · Room " + esc(c.room) : "") + " · " + esc(dmy(r.day)) + "</span></div>";
         card.appendChild(el("span", "rg-state", state));
         card.appendChild(btn(c.taken ? "Open the register" : "Take the register", "strong", function () { sheet(c.id, r.day, function () { K.openAdmin(true, "in-myclass"); }); }));
+        if (K.hpc) {
+          card.appendChild(btn("Rate competencies", "quiet", function () { K.hpc().rate(c.id, c.label); }));
+          card.appendChild(btn("Progress cards", "quiet", function () { K.hpc().cards(c.id, c.label); }));
+        }
         slot.appendChild(card);
         var sub = el("div", "rg-sub");
         slot.appendChild(sub);

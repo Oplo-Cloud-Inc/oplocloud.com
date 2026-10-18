@@ -237,6 +237,8 @@
       empty: "Counseling and wellness information appears here if the school shares it.",
       facts: ["Counselor", "Last check-in"], columns: ["Date", "Note"] },
 
+    { key: "hpc", name: "Holistic Progress Card", group: "learning", icon: "reading", size: "w2", only: ["IN"], record: false,
+      empty: "What your child can do in each subject, and the words of the teacher, the child and you, appear here once the teacher has rated them." },
     { key: "diary", name: "Diary", group: "learning", icon: "assignments", size: "w2", only: ["IN"], record: false,
       empty: "Homework and notes from the class teacher appear here every day." },
     { key: "meetings", name: "Parent meetings", group: "school", icon: "schedule", size: "w2", only: ["IN"], record: false,
@@ -527,7 +529,7 @@
     };
     // A school in India publishes report cards and holds parent meetings; the others have neither.
     var inOrg = S.me && S.me.organizations && S.me.organizations[0];
-    if (inOrg && inOrg.region === "IN") { calls.cards = API.exams.reportCards(id); calls.meetings = API.exams.ptmFor(id); calls.diary = API.diary.forStudent(id); }
+    if (inOrg && inOrg.region === "IN") { calls.cards = API.exams.reportCards(id); calls.meetings = API.exams.ptmFor(id); calls.diary = API.diary.forStudent(id); calls.hpc = API.competency.hpc(id); }
     var keys = Object.keys(calls);
     return Promise.all(keys.map(function (k) { return settle(calls[k]); })).then(function (out) {
       if (S.student !== student) return;
@@ -1098,6 +1100,7 @@
       case "reportcards": return part("cards") && part("cards").reportCards.length ? "school" : "none";
       case "meetings": return part("meetings") && part("meetings").meetings.length ? "school" : "none";
       case "diary": return part("diary") && part("diary").entries.length ? "school" : "none";
+      case "hpc": return part("hpc") && Object.keys(part("hpc").competencies).length ? "school" : "none";
       case "guardians": return part("guardians") && part("guardians").length ? "record" : "none";
       case "emergency": return part("guardians") && part("guardians").length ? "record" : "none";
       default: return "none";
@@ -1144,6 +1147,14 @@
   function glimpse(sec, src) {
     var g = grad();
     var k = sec.key;
+    if (k === "hpc") {
+      var hp = part("hpc"), subs = hp ? Object.keys(hp.competencies) : [];
+      if (!subs.length) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+      var all = [];
+      subs.forEach(function (sj) { hp.competencies[sj].forEach(function (c) { var ts = Object.keys(c.terms).sort(); all.push(c.terms[ts[ts.length - 1]].level); }); });
+      var atLevel = all.filter(function (l) { return l >= hp.atLevel || l >= 3; }).length;
+      return { stat: esc(atLevel) + "<small> of " + esc(all.length) + " skills</small>", sub: "at grade level · " + esc(subs.join(", ")) };
+    }
     if (k === "diary") {
       var de = part("diary") && part("diary").entries[0];
       if (!de) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
@@ -2597,6 +2608,40 @@
         ["Class teacher’s remark", c.remark ? esc(c.remark) : null, c.remark],
         ["Result", c.decision ? esc(c.decision.charAt(0).toUpperCase() + c.decision.slice(1)) : null, c.decision]]);
       p.appendChild(kv);
+    });
+  };
+
+  RENDER.hpc = function (gridNode) {
+    var data = part("hpc"), who = S.student;
+    if (!data) { panel(gridNode, "s12", "Holistic Progress Card", esc(SEC.hpc.empty)); return; }
+    var LEVEL = { 1: "Beginning", 2: "Developing", 3: "Proficient", 4: "Advanced" };
+    var subs = Object.keys(data.competencies);
+    var p = panel(gridNode, "s12", "What " + first() + " can do", "Rated by the teachers each term. “Proficient” and “Advanced” are at grade level.");
+    if (!subs.length) p.appendChild(h("p", "lede", "Nothing has been rated yet."));
+    subs.forEach(function (sj) {
+      var pp = panel(gridNode, "s12", sj, null);
+      pp.appendChild(table([{ label: "Skill" }, { label: "Term 1" }, { label: "Term 2" }], data.competencies[sj].map(function (c) {
+        var cell = function (t) { var x = c.terms[t]; return x ? chip(x.level >= 3 ? "good" : x.level === 2 ? "warn" : "serious", esc(LEVEL[x.level])) : "—"; };
+        return { cells: [esc(c.name), cell("1"), cell("2")] };
+      }), { caption: sj }));
+    });
+    var np = panel(gridNode, "s12", "In their own words, and others’", "The card carries what the teacher saw, what " + esc(first()) + " says, and what you add.");
+    var SRC = { teacher: "Teacher", peer: "A classmate", self: first(), parent: "A parent" };
+    if (!data.notes.length) np.appendChild(h("p", "lede", "Nothing written yet."));
+    data.notes.forEach(function (n) { np.appendChild(h("p", null, "<b>" + esc(SRC[n.source] || n.source) + (n.area ? " · " + esc(n.area) : "") + "</b> — " + esc(n.body))); });
+    var box = h("div", "fp-formbox");
+    var area = h("input", "fp-input"); area.placeholder = "About (for example: At home)";
+    var body = h("textarea", "fp-input"); body.rows = 3; body.placeholder = "Your words about " + first();
+    var add = h("button", "fb-btn sm", "Add to the card"); add.type = "button";
+    [area, body, add].forEach(function (n) { box.appendChild(n); });
+    np.appendChild(box);
+    add.addEventListener("click", function () {
+      if (!body.value.trim()) { toast("Write something first."); return; }
+      add.disabled = true;
+      API.competency.addNote(who.id, { term: "1", source: "parent", area: area.value.trim() || undefined, body: body.value.trim() }).then(function () {
+        toast("Added to the card.");
+        return API.competency.hpc(who.id).then(function (r) { S.data.hpc = { ok: true, v: r }; renderSheet("hpc"); });
+      }, function (e) { add.disabled = false; toast(e && e.message ? e.message : "That did not save."); });
     });
   };
 

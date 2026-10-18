@@ -36,6 +36,19 @@ body.is-console .rg-card > div { flex: 1; min-width: 160px; }
 body.is-console .rg-card b { font-size: 17px; letter-spacing: -.01em; }
 body.is-console .rg-sub { margin: 0 0 28px; }
 
+/* Competencies and the progress card (hpc.js) */
+body.is-console .hp-bar { display: inline-block; width: 90px; height: 6px; border-radius: 3px; background: var(--cx-fill); vertical-align: middle; overflow: hidden; margin-right: 6px; }
+body.is-console .hp-bar i { display: block; height: 100%; background: var(--cx-green); }
+body.is-console .hp-grid { overflow: auto; max-height: 56vh; border: .5px solid var(--cx-sep); border-radius: 10px; background: var(--cx-bg); }
+body.is-console .hp-t { border-collapse: collapse; width: 100%; font-size: 13px; }
+body.is-console .hp-t th { position: sticky; top: 0; background: var(--cx-fill); font-weight: 600; font-size: 11.5px; color: var(--cx-label-2); padding: 8px 6px; text-align: center; min-width: 110px; vertical-align: bottom; }
+body.is-console .hp-t th:first-child, body.is-console .hp-t td:first-child { text-align: left; min-width: 150px; position: sticky; left: 0; background: var(--cx-bg); }
+body.is-console .hp-t th:first-child { background: var(--cx-fill); z-index: 2; }
+body.is-console .hp-t td { padding: 5px 6px; border-top: .5px solid var(--cx-sep); text-align: center; }
+body.is-console .hp-n small { color: var(--cx-label-2); margin-right: 4px; }
+body.is-console .hp-sel { height: 28px; width: 56px; border-radius: 7px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label); font: inherit; font-size: 13px; }
+body.is-console .hp-sum td { font-weight: 600; background: var(--cx-fill); }
+
 /* The exam cycle (exams.js) */
 body.is-console .ex-bands { display: grid; gap: 6px; margin: 0 0 10px; }
 body.is-console .ex-band { display: grid; grid-template-columns: 90px 1fr 90px 34px; gap: 8px; align-items: center; }

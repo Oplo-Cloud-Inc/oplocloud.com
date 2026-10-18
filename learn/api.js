@@ -501,6 +501,18 @@ window.OPLO_API = (function () {
       addLock: function (body) { return post("/register/locks", body); },
       afterLock: function () { return get("/register/after-lock"); }
     },
+    competency: {
+      list: function () { return get("/competencies"); },
+      add: function (list) { return post("/competencies", { competencies: list }); },
+      remove: function (id) { return del("/competencies/" + id); },
+      grid: function (classId, term, subject) { return get("/competency/class" + q({ classId: classId, term: term, subject: subject })); },
+      putLevels: function (b) { return put("/competency/levels", b); },
+      analytics: function (term, subject) { return get("/competency/analytics" + q({ term: term, subject: subject })); },
+      carry: function (classId) { return get("/competency/carry" + q({ classId: classId })); },
+      hpc: function (id, term) { return get("/students/" + id + "/hpc" + q({ term: term })); },
+      addNote: function (id, b) { return post("/students/" + id + "/hpc/notes", b); },
+      removeNote: function (noteId) { return del("/hpc/notes/" + noteId); }
+    },
     exams: {
       scales: function () { return get("/grading/scales"); },
       createScale: function (b) { return post("/grading/scales", b); },

@@ -8822,7 +8822,7 @@
     { k: "today", name: "Overview", icon: "summary" },
     { name: "Academics", icon: "cap", kids: [
       { k: "gradebook", name: "Gradebook" }, { k: "assessments", name: "Assessments" }, { k: "periods", name: "Marking Periods", not: ["IN"] },
-      { k: "in-exams", name: "Exams", only: "IN" }, { k: "in-scales", name: "Grading scales", only: "IN" },
+      { k: "in-exams", name: "Exams", only: "IN" }, { k: "in-scales", name: "Grading scales", only: "IN" }, { k: "in-comp", name: "Competencies", only: "IN" },
       { k: "gpa", name: "GPA", not: ["IN"] }, { k: "transcripts", name: "Transcripts", not: ["IN"] }, { k: "reportcards", name: "Report Cards", not: ["IN"] },
       { k: "graduation", name: "Graduation", not: ["IN"] }] },
     { name: "Students", icon: "people", kids: [
@@ -9775,7 +9775,7 @@
        "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
        "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
        "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch, "in-ews": tabInEarly,
-       "in-exams": tabInExams, "in-scales": tabInScales,
+       "in-exams": tabInExams, "in-scales": tabInScales, "in-comp": tabInComp,
        sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
   }
 
@@ -17702,7 +17702,7 @@
       el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
       cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
       cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, csvDownload: csvDownload, openAdmin: openAdmin,
-      ui: india().ui
+      ui: india().ui, hpc: function () { return hpc(); }
     });
     return REGISTER;
   }
@@ -17718,6 +17718,19 @@
     });
     return EXAMS;
   }
+  /* Competencies and the Holistic Progress Card. */
+  var HPC = null;
+  function hpc() {
+    if (HPC) return HPC;
+    HPC = window.OPLO_HPC({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, printHead: printHead, schoolName: schoolName, openAdmin: openAdmin,
+      ui: india().ui
+    });
+    return HPC;
+  }
+  function tabInComp(v) { hpc().competencies(v); }
   function tabInExams(v) { exams().exams(v); }
   function tabInScales(v) { exams().scales(v); }
   function tabInPapers(v) { exams().papers(v); }
