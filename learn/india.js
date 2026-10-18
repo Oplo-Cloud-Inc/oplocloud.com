@@ -582,5 +582,6 @@ window.OPLO_INDIA = function (K) {
     go.disabled = true;
   }
 
-  return { classes: classes, compliance: compliance };
+  return { classes: classes, compliance: compliance,
+           ui: { dialog: dialog, btn: btn, fld: fld, chip: chip, none: none, num: num, plural: plural, dmy: dmy } };
 };

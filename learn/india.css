@@ -8,3 +8,30 @@ body.is-console .en-pick { display: grid; gap: 2px; max-height: 340px; overflow:
 body.is-console .en-pickrow { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 7px; font-size: 13.5px; color: var(--cx-label); cursor: pointer; }
 body.is-console .en-pickrow:hover { background: var(--cx-fill); }
 body.is-console .en-pickrow input { width: 16px; height: 16px; accent-color: var(--cx-accent); margin: 0; }
+
+/* The class register (register.js) */
+body.is-console .rg-head { margin: 0 0 10px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; color: var(--cx-label); }
+body.is-console .rg-head small { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 400; color: var(--cx-label-2); letter-spacing: 0; }
+body.is-console .rg-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+body.is-console .rg-total { margin-left: auto; font-size: 12.5px; color: var(--cx-label-2); font-variant-numeric: tabular-nums; }
+body.is-console .rg-banner { margin: 0 0 12px; padding: 9px 12px; border-radius: 9px; background: var(--cx-fill); color: var(--cx-label); font-size: 13px; line-height: 1.45; }
+body.is-console .rg-list { display: grid; border: .5px solid var(--cx-sep); border-radius: 10px; overflow: hidden; background: var(--cx-bg); }
+body.is-console .rg-row { display: grid; grid-template-columns: 34px minmax(130px, 1.2fr) auto minmax(120px, .9fr); align-items: center; gap: 10px; padding: 7px 12px; border-bottom: .5px solid var(--cx-sep); }
+body.is-console .rg-row:last-child { border-bottom: 0; }
+body.is-console .rg-roll { font-size: 12.5px; color: var(--cx-label-2); font-variant-numeric: tabular-nums; text-align: right; }
+body.is-console .rg-name { font-size: 14px; font-weight: 500; color: var(--cx-label); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.is-console .rg-marks { display: inline-flex; gap: 4px; }
+body.is-console .rg-mk { min-width: 34px; height: 30px; padding: 0 8px; border-radius: 8px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+body.is-console .rg-mk:hover { background: var(--cx-fill); }
+body.is-console .rg-mk:focus-visible { outline: 2px solid var(--cx-accent); outline-offset: 2px; }
+body.is-console .rg-mk.on.rg-green { background: var(--cx-green); border-color: var(--cx-green); color: #fff; }
+body.is-console .rg-mk.on.rg-red { background: var(--cx-red); border-color: var(--cx-red); color: #fff; }
+body.is-console .rg-mk.on.rg-orange { background: var(--cx-orange); border-color: var(--cx-orange); color: #fff; }
+body.is-console .rg-mk.on.rg-muted { background: var(--cx-label-2); border-color: var(--cx-label-2); color: #fff; }
+body.is-console .rg-reason { min-width: 0; width: 100%; height: 28px; font-size: 12.5px; }
+body.is-console .rg-force { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 13px; color: var(--cx-label); }
+body.is-console .rg-bar { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; }
+body.is-console .rg-card { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 16px; margin: 0 0 14px; border: .5px solid var(--cx-sep); border-radius: 12px; background: var(--cx-bg); }
+body.is-console .rg-card > div { flex: 1; min-width: 160px; }
+body.is-console .rg-card b { font-size: 17px; letter-spacing: -.01em; }
+body.is-console .rg-sub { margin: 0 0 28px; }

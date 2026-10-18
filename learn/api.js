@@ -480,6 +480,15 @@ window.OPLO_API = (function () {
        Classes, the numbers a board and the state ask for, and consent. Read by
        the office, written by the administrator and registrar; a refusal is a
        403 with the rule named. */
+    register: {
+      classes: function (day, mine) { return get("/register/classes" + q({ day: day, mine: mine ? "1" : undefined })); },
+      get: function (classId, day) { return get("/register" + q({ classId: classId, day: day })); },
+      put: function (body) { return put("/register", body); },
+      watch: function (o) { return get("/register/watch" + q(o || {})); },
+      locks: function () { return get("/register/locks"); },
+      addLock: function (body) { return post("/register/locks", body); },
+      afterLock: function () { return get("/register/after-lock"); }
+    },
     school: {
       profile: function () { return get("/school/profile"); },
       putProfile: function (data) { return put("/school/profile", data); }

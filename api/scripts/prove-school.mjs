@@ -149,5 +149,143 @@ try {
     refused(await admin.try("POST", `/india/classes/${ctx.next.id}/rolls`, { order: "random" }), 400);
     refused(await admin.try("POST", "/india/classes/cls_nope/rolls", {}), 404);
   });
+
+  /* ------------------------------------------------------------ The class register and the 75% rule */
+  const REG = {};
+  const isoDay = (n) => new Date(Date.parse(REG.today + "T00:00:00Z") - n * 86400000).toISOString().slice(0, 10);
+  const schoolDays = async (n) => {   // the last n school days up to today, newest first
+    const out = [];
+    for (let i = 0; out.length < n && i < 40; i++) {
+      const d = isoDay(i), r = await admin.get(`/register?classId=${REG.cls.id}&day=${d}`);
+      if (r.schoolDay.kind === "school") out.push(d);
+    }
+    return out;
+  };
+
+  await step("a class teacher with a section of children, and the codes an Indian school starts with", async () => {
+    REG.teacher = ctx.teacher;                                   // Tia, a teacher of the school
+    const sec = RUN.slice(-2).toUpperCase() + "T";
+    REG.cls = (await admin.put("/india/classes", { grade: "VIII", section: sec, classTeacherId: REG.teacher.id })).class;
+    REG.kids = [];
+    for (const n of ["Gurleen Kaur", "Harpreet", "Inder Pal", "Jasleen Bedi"]) {
+      const a = (await admin.post("/accounts", { email: `${n.replace(/\W+/g, "").toLowerCase()}.rg${RUN}@s.test`, name: n, password: PW, role: "student", orgId: ctx.org })).account;
+      REG.kids.push(a);
+    }
+    await admin.post(`/india/classes/${REG.cls.id}/students`, { studentIds: REG.kids.map((k) => k.id) });
+    await admin.post(`/india/classes/${REG.cls.id}/rolls`, { order: "name" });
+    const r = await teacher.get(`/register?classId=${REG.cls.id}`);
+    REG.today = r.today;
+    // A school that never set its own starts from present / absent / late / leave; the demo school has stored the five a US school has. Either way:
+    assert.deepEqual(r.codes.slice(0, 3).map((c) => c.key), ["present", "absent", "late"]);
+    REG.leave = r.codes.find((c) => c.kind === "excused").key;
+    assert.equal(r.students.length, 4); assert.equal(r.taken, false); assert.deepEqual(r.students.map((s) => s.rollNo), [1, 2, 3, 4]);
+    assert.ok(r.reasons.some((x) => x.key === "sick"));
+  });
+
+  await step("the class teacher takes the register; the family of an absent child is told once", async () => {
+    const days = REG.days = await schoolDays(4);
+    assert.equal(days.length, 4, "four school days to work with");
+    // The oldest of the four days is mostly present; the next three each have the same child away, so the count builds.
+    const mark = (d, away) => teacher.put("/register", { classId: REG.cls.id, day: d, marks: REG.kids.map((k, i) => ({ accountId: k.id, status: away[i] === "leave" ? REG.leave : away[i] || "present",
+      reason: away[i] === "absent" || away[i] === "leave" ? "sick" : undefined })) });
+    const r1 = await mark(days[3], [null, null, null, null]);
+    assert.equal(r1.taken, true); assert.equal(r1.marked, 4);
+    await mark(days[2], ["absent", null, null, "leave"]);
+    await mark(days[1], ["absent", null, "late", "leave"]);
+    const r = await mark(days[0], ["absent", null, null, null]);
+    assert.equal(r.students[0].status, "absent"); assert.equal(r.students[0].reason, "sick");
+    // The absent child's own inbox has one notice for the day, however often the register is saved again.
+    const gurleen = person("gurleen"); await gurleen.login(REG.kids[0].email, PW);
+    await new Promise((r) => setTimeout(r, 1500));      // the notice is written after the response
+    await mark(days[0], ["absent", null, null, null]);
+    await new Promise((r) => setTimeout(r, 1500));
+    const mine = (await gurleen.get("/inbox")).notices.filter((x) => /Marked absent/.test(x.title));
+    assert.equal(mine.length, 3, "one for each of the three days she was away, none repeated: " + mine.map((x) => x.title).join(" | "));
+  });
+
+  await step("a teacher cannot take another section's register, a future day, or a day that is not school", async () => {
+    refused(await teacher.try("GET", `/register?classId=${ctx.sec.id}`), 403);
+    refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: "2099-01-01", marks: [{ accountId: REG.kids[0].id, status: "present" }] }), 403);
+    // a Sunday
+    let sun = REG.today; while (new Date(sun + "T00:00:00Z").getUTCDay() !== 0) sun = new Date(Date.parse(sun + "T00:00:00Z") - 86400000).toISOString().slice(0, 10);
+    const r = await teacher.try("PUT", "/register", { classId: REG.cls.id, day: sun, marks: [{ accountId: REG.kids[0].id, status: "present" }] });
+    refused(r, 400); assert.equal(r.body.error.field, "day");
+    refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: REG.days[0], marks: [{ accountId: ctx.late.id, status: "present" }] }), 400);
+    refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: REG.days[0], marks: [{ accountId: REG.kids[0].id, status: "present", reason: "sick" }] }), 400);
+    refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: REG.days[0], marks: [{ accountId: REG.kids[0].id, status: "teleported" }] }), 400);
+  });
+
+  await step("the office sees which registers are in, and a teacher sees only their own section", async () => {
+    const all = await admin.get(`/register/classes?day=${REG.days[0]}`);
+    const mine = all.classes.find((c) => c.id === REG.cls.id);
+    assert.equal(mine.taken, true); assert.equal(mine.marked, 4);
+    assert.ok(all.classes.length > 1);
+    const t = await teacher.get(`/register/classes?day=${REG.days[0]}`);
+    assert.deepEqual(t.classes.map((c) => c.id), [REG.cls.id]);
+  });
+
+  await step("the 75% watch counts the days, projects what is left, and names who needs condoning", async () => {
+    const w = await admin.get(`/register/watch?classId=${REG.cls.id}&threshold=75`);
+    const by = Object.fromEntries(w.students.map((s) => [s.name, s]));
+    // Gurleen: present 1 of 4 marked days (25%), absent 3 -> below. Jasleen: present 2, leave 2 -> 50% now, 100% with leave -> condonable. Inder: present 3 late 1 (all counted attended) -> 100%.
+    assert.equal(by["Gurleen Kaur"].status, "below"); assert.equal(by["Gurleen Kaur"].attended, 1); assert.equal(by["Gurleen Kaur"].absent, 3);
+    assert.equal(by["Jasleen Bedi"].percent, 50); assert.equal(by["Jasleen Bedi"].excused, 2); assert.equal(by["Jasleen Bedi"].condonable, true);
+    assert.equal(by["Inder Pal"].percent, 100); assert.equal(by["Harpreet"].percent, 100);
+    assert.equal(w.students[0].status, "below", "those below come first");
+    assert.ok(w.remaining >= 0); assert.equal(w.threshold, 75);
+    assert.equal(w.summary.below + w.summary.watch + w.summary.ok + w.summary.none, 4);
+    const strict = await admin.get(`/register/watch?classId=${REG.cls.id}&threshold=100`);
+    assert.ok(strict.summary.below >= w.summary.below);
+    refused(await teacher.try("GET", `/register/watch?classId=${ctx.sec.id}`), 403);
+    const school = await admin.get("/register/watch");
+    assert.ok(school.students.length >= 4);
+  });
+
+  /* A lock cannot be taken back, so the proof locks a span in the past that only it uses, and any run after the first finds it already locked. */
+  const LOCKED = "2026-04-02", LOCK_LABEL = "Board eligibility list (proof)";
+  await step("a span reported to a board is locked: the teacher is stopped, the office must say why, and the change is marked", async () => {
+    const put = (who, body) => who.try("PUT", "/register", { classId: REG.cls.id, day: LOCKED, ...body });
+    // The office takes the day first (a locked day needs a reason; one that is not yet locked ignores it).
+    refused(await teacher.try("POST", "/register/locks", { from: LOCKED, to: LOCKED, label: "x" }), 403);
+    refused(await admin.try("POST", "/register/locks", { from: "2026-04-03", to: LOCKED, label: "backwards" }), 400);
+    refused(await admin.try("POST", "/register/locks", { from: LOCKED, to: "2099-01-01", label: "future" }), 400);
+    const first = await put(admin, { why: "Entered by the office for the proof", marks: [{ accountId: REG.kids[0].id, status: "absent" }, { accountId: REG.kids[1].id, status: "present" }] });
+    assert.equal(first.status, 200, JSON.stringify(first.body));
+    const lk = await admin.try("POST", "/register/locks", { from: "2026-04-01", to: "2026-04-03", label: LOCK_LABEL });
+    assert.ok(lk.status === 201 || lk.status === 409, "locked now, or already locked by an earlier run: " + lk.status);
+    refused(await put(teacher, { marks: [{ accountId: REG.kids[0].id, status: "present" }] }), 403);
+    const noWhy = await put(admin, { marks: [{ accountId: REG.kids[0].id, status: "present" }] });
+    refused(noWhy, 400); assert.equal(noWhy.body.error.field, "why");
+    const WHY = "Mother's medical certificate reached us late " + RUN;
+    const ok = await put(admin, { why: WHY, marks: [{ accountId: REG.kids[0].id, status: "present" }] });
+    assert.equal(ok.status, 200); assert.match(ok.body.locked.label, /Board eligibility list/); assert.equal(ok.body.students.find((x) => x.id === REG.kids[0].id).status, "present");
+    const edits = (await admin.get("/register/after-lock")).edits.filter((e) => e.accountId === REG.kids[0].id && e.day === LOCKED && e.why === WHY);
+    assert.equal(edits.length, 1); assert.equal(edits[0].from, "absent"); assert.equal(edits[0].to, "present"); assert.ok(edits[0].by.length > 0);
+    refused(await teacher.try("GET", "/register/after-lock"), 403);
+  });
+
+  await step("the school's own history screen shows the edit, and a removal in a locked span needs a reason too", async () => {
+    const log = (await admin.get(`/attendance/log?day=${LOCKED}`)).log.filter((l) => l.accountId === REG.kids[0].id);
+    assert.ok(log.some((l) => l.afterLock && /certificate reached us late/.test(l.why)));
+    const marks = await admin.get(`/attendance?accountId=${REG.kids[1].id}&from=${LOCKED}&to=${LOCKED}`);
+    const ids = marks.attendance.filter((m) => !m.courseId).map((m) => m.id);
+    assert.equal(ids.length, 1);
+    const r = await admin.try("POST", "/attendance/remove", { ids });
+    refused(r, 400); assert.equal(r.body.error.field, "why");
+    const RWHY = "Entered on the wrong child's row " + RUN;
+    assert.equal((await admin.post("/attendance/remove", { ids, why: RWHY })).removed, 1);
+    const again = (await admin.get("/register/after-lock")).edits.find((e) => e.accountId === REG.kids[1].id && e.day === LOCKED && e.why === RWHY);
+    assert.ok(again && again.to === null, "the removal is in the after-lock history");
+  });
+
+  await step("a condonation case is a record the office keeps, tied to the child", async () => {
+    const it = await admin.post("/items", { kind: "condonation", title: "Gurleen Kaur: attendance condonation", subjectId: REG.kids[0].id, status: "requested",
+      data: { percent: 62, days: 6, reason: "Illness (medical certificate)", documents: "Medical certificate, 6 days" } });
+    const w = await admin.get(`/register/watch?classId=${REG.cls.id}`);
+    assert.equal(w.students.find((s) => s.id === REG.kids[0].id).case.status, "requested");
+    await admin.try("PATCH", `/items/${it.item.id}`, { status: "recommended" }).then((r) => assert.equal(r.status, 200, JSON.stringify(r.body)));
+    assert.equal((await admin.get(`/register/watch?classId=${REG.cls.id}`)).students.find((s) => s.id === REG.kids[0].id).case.status, "recommended");
+    refused(await teacher.try("POST", "/items", { kind: "condonation", title: "no", subjectId: REG.kids[0].id, data: { reason: "Other" } }), 403);
+  });
 } catch { process.exitCode = 1; }
 console.log(`\n${steps()} steps passed.`);

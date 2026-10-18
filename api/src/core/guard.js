@@ -66,6 +66,7 @@ export const ACTIONS = [
   "period.read", "period.write", "grade.post", "grade.approve",
   "attendance.read", "attendance.write",
   "india.read", "india.write",
+  "register.read", "register.write", "register.lock",
   "efm.read", "efm.write", "efm.admin"
 ];
 
@@ -389,6 +390,18 @@ export async function can(ctx, action, resource = {}) {
     /* ---------------------------------------------------------------- India
        The numbers a board and the state ask for, and the consent the law asks
        for, are the office's. A principal reads them; the registrar keeps them. */
+    /* ----------------------------------------------------------- Register
+       An Indian school's morning register belongs to the class teacher of the
+       section; the office (dean, principal, registrar, administrator) reads
+       and corrects any. Locking a span for a board's list is the principal's
+       and registrar's. The route passes the section's class teacher. */
+    case "register.read":
+    case "register.write":
+      if (hasAny(actor, ["dean", "principal", "registrar"], orgId)) return true;
+      return !!resource.classTeacherId && resource.classTeacherId === actor.id;
+    case "register.lock":
+      return hasAny(actor, ["principal", "registrar"], orgId);
+
     case "india.read":
       return learnAdmin || hasRole(actor, "learn", "registrar", orgId) || hasRole(actor, "learn", "principal", orgId);
     case "india.write":
@@ -483,6 +496,9 @@ const REASONS = {
   "enrollment.activate": "Creating an enrollment is the registrar's. Ask them, or an administrator.",
   "enrollment.sensitive": "Only administrators can see or change restricted enrollment information.",
   "enrollment.settings": "Only administrators can change what enrollment asks for.",
+  "register.read": "A class register is read by the class teacher of that section and by the school's office.",
+  "register.write": "A class register is taken by the class teacher of that section, and corrected by the office.",
+  "register.lock": "Locking attendance for a board's list is for the principal, registrar or an administrator.",
   "india.read": "Classes, identity numbers and consent records are read by the school's administrators, principal and registrar.",
   "india.write": "Classes, identity numbers and consent records are kept by the school's administrators and registrar.",
   "facility.request": "Requests and room bookings are for the school's staff.",

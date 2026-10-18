@@ -15,6 +15,7 @@ import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { can, must } from "../core/guard.js";
 import { daysOf } from "./schedule.js";
+import { IN_CODES, lockedBy } from "../services/register.js";
 import { adaFor } from "../services/ada.js";
 
 /* A code is what a mark says. Its *kind* is how it counts: a school may have
@@ -93,7 +94,21 @@ export function settingsOf(row) {
 }
 
 export async function attendanceSettings(ctx, orgId) {
-  return settingsOf(await ctx.repo.getAttendanceSettings(orgId));
+  const row = await ctx.repo.getAttendanceSettings(orgId);
+  const s = settingsOf(row);
+  // A school outside the US that has set none of its own starts from an Indian class register's four marks,
+  // and gives a class teacher three days to correct a register before only the office may.
+  let b = {};
+  try { b = row && row.body_json ? JSON.parse(row.body_json) : {}; } catch { b = {}; }
+  const ownCodes = Array.isArray(b.codes) && b.codes.length, ownLock = "lockDays" in b;
+  if (orgId && (!ownCodes || !ownLock)) {
+    const org = await ctx.repo.getOrganization(orgId);
+    if (org && org.region === "IN") {
+      if (!ownCodes) s.codes = IN_CODES;
+      if (!ownLock) s.lockDays = 3;
+    }
+  }
+  return s;
 }
 
 const shapeSettings = (s, row) => ({
@@ -270,7 +285,8 @@ export async function log(ctx) {
     log: rows.map((r) => ({
       id: r.id, accountId: r.account_id, studentName: r.student_name, courseId: r.course_id, courseTitle: r.course_title,
       day: r.day, from: r.from_status, to: r.to_status, fromNote: r.from_note, toNote: r.to_note,
-      via: r.via, byId: r.by_id, byName: r.by_name, at: r.at
+      via: r.via, byId: r.by_id, byName: r.by_name, at: r.at,
+      fromReason: r.from_reason || null, toReason: r.to_reason || null, afterLock: !!r.after_lock, why: r.why || null
     })),
     capped: rows.length >= 500
   });
@@ -288,7 +304,11 @@ export async function remove(ctx) {
     throw ApiError.badRequest("ids must be a list of 1 to 200 marks.", "ids");
   }
   const ids = body.ids.map((x) => check.string(x, "ids", { max: 100 }));
-  return json({ removed: await ctx.repo.removeAttendance(ids, actor.id, orgId) });
+  const locks = await ctx.repo.listAttendanceLocks(orgId);
+  const why = typeof body.why === "string" ? body.why.trim() : "";
+  const r = await ctx.repo.removeAttendance(ids, actor.id, orgId, { locked: (d) => !!lockedBy(locks, d), why });
+  if (r.needWhy) throw ApiError.badRequest("Some of these marks are in a locked span. Say why you are removing them; the reason is kept.", "why");
+  return json({ removed: r.removed });
 }
 
 /* POST /courses/:courseId/attendance-grade

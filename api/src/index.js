@@ -59,6 +59,7 @@ import * as district from "./routes/district.js";
 import * as feeds from "./routes/feeds.js";
 import * as india from "./routes/india.js";
 import * as school from "./routes/school.js";
+import * as register from "./routes/register.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -178,6 +179,13 @@ const ROUTES = [
   ["GET",    "/api/v1/feeds/:accountId/:token/calendar.ics", feeds.calendar],
   ["GET",    "/api/v1/school/profile",                   school.getProfile],
   ["PUT",    "/api/v1/school/profile",                   school.putProfile],
+  ["GET",    "/api/v1/register",                         register.getRegister],
+  ["PUT",    "/api/v1/register",                         register.putRegister],
+  ["GET",    "/api/v1/register/classes",                 register.classes],
+  ["GET",    "/api/v1/register/watch",                   register.watch],
+  ["GET",    "/api/v1/register/locks",                   register.locks],
+  ["POST",   "/api/v1/register/locks",                   register.addLock],
+  ["GET",    "/api/v1/register/after-lock",              register.afterLock],
   ["GET",    "/api/v1/india/classes",                    india.classes],
   ["PUT",    "/api/v1/india/classes",                    india.putClass],
   ["GET",    "/api/v1/india/students",                   india.students],

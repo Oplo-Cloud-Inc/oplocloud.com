@@ -8833,7 +8833,10 @@
       { k: "sc-days", name: "School Days" }, { k: "sc-bell", name: "Bell Schedules" }, { k: "sc-courses", name: "Courses", as: { IN: "Subjects" } },
       { k: "sc-sections", name: "Sections", as: { IN: "Timetable" } }, { k: "sc-adddrop", name: "Add and Drop" },
       { k: "sc-plans", name: "Plans" }] },
-    { k: "attendance", name: "Attendance", icon: "check" },
+    { k: "attendance", name: "Attendance", icon: "check", not: ["IN"] },
+    { name: "Attendance", icon: "check", only: "IN", kids: [
+      { k: "in-register", name: "Class registers" }, { k: "in-watch", name: "75% watch" }, { k: "in-condone", name: "Condonation" },
+      { k: "attendance", name: "By subject" }] },
     { name: "Student Support", icon: "heart", kids: [
       { k: "support", name: "Watchlist" }, { k: "behavior", name: "Behavior" }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention" },
       { k: "senplans", name: "Support Plans" }, { k: "accommodations", name: "Accommodations" }] },
@@ -8955,7 +8958,7 @@
   function allowedTabs() {
     if (S.me && consoleMode() === "student") return STUDENT_SECTIONS.filter(forRegion);
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
-    if (consoleMode() !== "admin") return TEACHER_SECTIONS;
+    if (consoleMode() !== "admin") return TEACHER_SECTIONS.filter(forRegion).map(named);
     var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion).map(named);
     return only ? mine.filter(function (t) { return only.indexOf(t.k) > -1; }) : mine;
   }
@@ -9166,7 +9169,8 @@
       { k: "students", name: "Students", icon: "people" },
       { k: "groups", name: "Groups", icon: "groups" },
       { k: "seating", name: "Seating", icon: "seat" },
-      { k: "attendance", name: "Attendance", icon: "clock" },
+      { k: "in-myclass", name: "My class", icon: "people", only: "IN" },
+      { k: "attendance", name: "Attendance", icon: "clock", as: { IN: "By subject" } },
       { k: "referrals", name: "Referrals", icon: "flag" }] },
     { head: "Insights", items: [
       { k: "analytics", name: "Analytics", icon: "chart" },
@@ -9183,7 +9187,7 @@
   var TEACHER_FOOT = [{ k: "system", name: "Settings", icon: "gear" }, { k: "help", name: "Help", icon: "help" }];
   var TEACHER_SECTIONS = [];
   TEACHER_TREE.forEach(function (g) {
-    g.items.forEach(function (t) { TEACHER_SECTIONS.push({ k: t.k, name: t.name, group: g.head, icon: t.icon }); });
+    g.items.forEach(function (t) { TEACHER_SECTIONS.push({ k: t.k, name: t.name, as: t.as, only: t.only, group: g.head, icon: t.icon }); });
   });
   TEACHER_FOOT.forEach(function (t) { TEACHER_SECTIONS.push({ k: t.k, name: t.name, group: null, icon: t.icon }); });
   // Reached from inside other places rather than from the rail.
@@ -9496,7 +9500,7 @@
     TEACHER_TREE.forEach(function (g) {
       var sec = el("div", "tr-sec");
       sec.appendChild(el("p", "tr-head", esc(g.head)));
-      g.items.forEach(function (t) { sec.appendChild(place(t)); });
+      g.items.filter(forRegion).forEach(function (t) { sec.appendChild(place(named(t))); });
       nav.appendChild(sec);
     });
     rail.appendChild(nav);
@@ -9768,7 +9772,7 @@
        inventory: tabFxAssets,
        "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
        "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
-       "in-classes": tabInClasses, "in-compliance": tabInCompliance,
+       "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch,
        sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
   }
 
@@ -9860,7 +9864,7 @@
       openInbox: function () { if (S.me && S.me.role === "student") openStudentConsole(false, "inbox"); else openAdmin(false, S.me && S.me.role === "admin" ? "inbox" : "messages"); },
       sections: function () { return allowedTabs().filter(function (t) { return !t.hidden; }); },
       staffTree: function () {
-        return consoleMode() === "admin" ? { admin: true, items: adminTree() } : { items: TEACHER_TREE.concat([{ head: "More", items: TEACHER_FOOT }]) };
+        return consoleMode() === "admin" ? { admin: true, items: adminTree() } : { items: TEACHER_TREE.map(function (g) { return Object.assign({}, g, { items: g.items.filter(forRegion).map(named) }); }).concat([{ head: "More", items: TEACHER_FOOT }]) };
       },
       otherHomes: otherHomes,
       // How a teacher's typed mark is read ("8", "85%", "B+", "M", "E"), and the school's letters.
@@ -15886,7 +15890,7 @@
     resources: tabTeachResources, students: tabStudents, groups: tabTeachGroups, attendance: tabTeachAttendance,
     analytics: tabTeachAnalytics, interventions: tabTeachInterventions, messages: function (v) { plat().inbox(v); }, announcements: txTab("announcements"),
     referrals: function (v) { plat().records(v, REC.referrals); }, leave: function (v) { plat().records(v, REC.leave); }, events: function (v) { plat().records(v, REC.events); },
-    facilities: tabFxStaff,
+    facilities: tabFxStaff, "in-myclass": tabInMyClass,
     system: tabSystem, help: tabTeachHelp, activity: tabActivity, reports: tabReports, work: tabWork, sets: tabSets
   };
 
@@ -17621,6 +17625,7 @@
     lockers: { kind: "locker", eyebrow: "School Operations", title: "Lockers", sub: "Who has which locker." },
     checkouts: { kind: "checkout", eyebrow: "School Operations", title: "Equipment", sub: "What is out, with whom, and when it is due back." },
     curmap: { kind: "curriculum", eyebrow: "Curriculum", title: "Curriculum map", sub: "Units by course and week, with the standards they meet.", course: true },
+    "in-condone": { kind: "condonation", eyebrow: "Attendance", title: "Condonation", sub: "Children under the attendance a board asks for whose absence the school asks the board to condone: why they were away, the documents held, and where the request stands.", newLabel: "Start a case" },
     "in-certs": { kind: "certificate", eyebrow: "Students", title: "Certificates", sub: "Transfer, bonafide, character and migration certificates: who asked, what for, the number it carries, and when it was issued.", newLabel: "Record a request" },
     fees: { kind: "fee", eyebrow: "Finance", title: "Fees", sub: "What the school charges, and how often." },
     invoices: { kind: "invoice", eyebrow: "Finance", title: "Invoices", sub: "What each family owes.",
@@ -17683,6 +17688,21 @@
     });
     return INDIA;
   }
+  /* The class register and the 75% watch: the morning register an Indian school takes for a section. */
+  var REGISTER = null;
+  function register() {
+    if (REGISTER) return REGISTER;
+    REGISTER = window.OPLO_REGISTER({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, csvDownload: csvDownload, openAdmin: openAdmin,
+      ui: india().ui
+    });
+    return REGISTER;
+  }
+  function tabInRegister(v) { register().classes(v); }
+  function tabInWatch(v) { register().watch(v); }
+  function tabInMyClass(v) { register().myClass(v); }
   function tabInClasses(v) { india().classes(v); }
   function tabInCompliance(v) { india().compliance(v); }
   function tabSftp(v) {

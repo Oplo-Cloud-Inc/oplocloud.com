@@ -133,6 +133,14 @@ export const KINDS = {
     statuses: ["active", "paused"],
     fields: [["url", "Address", "text", true], ["secret", "Signing secret", "text"], ["events", "Events", "text"]]
   },
+  condonation: {
+    label: "Attendance condonation", plural: "Condonation cases", policy: "office", about: "student", dated: true,
+    statuses: ["requested", "recommended", "declined", "submitted"],
+    fields: [["percent", "Attendance now (%)", "number"], ["days", "Days to condone", "number"],
+             ["reason", "Why the child was away", "select", true, S("Illness (medical certificate)", "Hospitalisation", "Family bereavement", "Played for the state or the country", "Other")],
+             ["documents", "Documents held", "longtext"], ["boardRef", "Board reference", "text"], ["decision", "Decision note", "longtext"]],
+    notify: "none"
+  },
   certificate: {
     label: "Certificate", plural: "Certificates", policy: "office", about: "student", dated: true,
     statuses: ["requested", "awaiting signature", "issued", "declined"],

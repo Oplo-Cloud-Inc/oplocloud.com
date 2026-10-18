@@ -15,6 +15,7 @@ import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must, isStaff, teachesStudent } from "../core/guard.js";
 import { attendanceSettings, activeKeys, keysOfKind } from "./attendance.js";
+import { lockedBy } from "../services/register.js";
 import { notify } from "../services/notify.js";
 import { computeGrade, courseWeights, coursePolicy, letterFor } from "../services/grades.js";
 
@@ -211,6 +212,14 @@ export async function putAttendance(ctx) {
   const settings = await attendanceSettings(ctx, orgOf(actor));
   const byKey = new Map(settings.codes.map((c) => [c.key, c]));
   const staff = isStaff(actor, null);
+  // A day the school has reported to a board is locked: only the office edits it, and says why.
+  const lock = lockedBy(await ctx.repo.listAttendanceLocks(orgOf(actor)), d);
+  let why = null;
+  if (lock) {
+    if (!staff) throw ApiError.forbidden(`This day is locked (${lock.label}). Ask the office to correct it.`);
+    why = typeof body.why === "string" ? body.why.trim() : "";
+    if (why.length < 5) throw ApiError.badRequest(`This day is locked for ${lock.label}. Say why you are changing it; the reason is kept with the change.`, "why");
+  }
   // The school's people may correct any day. A teacher keeps to the window the
   // school set, and to the codes it left to them.
   let held = new Map();
@@ -249,7 +258,7 @@ export async function putAttendance(ctx) {
       }
     }
     await ctx.repo.upsertAttendance({
-      accountId, courseId, day: d, actorId: actor.id, via,
+      accountId, courseId, day: d, actorId: actor.id, via, afterLock: !!lock, why,
       status,
       note: m.note == null ? null : check.string(m.note, "note", { max: 300 })
     });

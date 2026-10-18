@@ -1555,23 +1555,24 @@ export class D1Repository {
   /* One mark, and the line of history that goes with it. A mark that is
      saved again unchanged writes nothing, so "who marked this" stays the
      person who did. `via` says by which route it moved. */
-  async upsertAttendance({ accountId, courseId, day, status, note, actorId, via }) {
+  async upsertAttendance({ accountId, courseId, day, status, note, reason, actorId, via, afterLock, why }) {
     const existing = courseId
-      ? await this.db.prepare(`SELECT id, status, note FROM learn_attendance WHERE account_id = ? AND day = ? AND course_id = ?`)
+      ? await this.db.prepare(`SELECT id, status, note, reason FROM learn_attendance WHERE account_id = ? AND day = ? AND course_id = ?`)
           .bind(accountId, day, courseId).first()
-      : await this.db.prepare(`SELECT id, status, note FROM learn_attendance WHERE account_id = ? AND day = ? AND course_id IS NULL`)
+      : await this.db.prepare(`SELECT id, status, note, reason FROM learn_attendance WHERE account_id = ? AND day = ? AND course_id IS NULL`)
           .bind(accountId, day).first();
-    const t = now(), n = note ?? null;
-    if (existing && existing.status === status && (existing.note ?? null) === n) return existing.id;
+    const t = now(), n = note ?? null, rs = reason ?? null;
+    if (existing && existing.status === status && (existing.note ?? null) === n && (existing.reason ?? null) === rs) return existing.id;
+    // Every change is a row of history: what it was, what it became, who, how, and whether it was made after the span was locked.
     const log = this.db.prepare(
-      `INSERT INTO learn_attendance_log (id, account_id, course_id, day, from_status, to_status, from_note, to_note, via, by_id, at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO learn_attendance_log (id, account_id, course_id, day, from_status, to_status, from_note, to_note, from_reason, to_reason, via, by_id, at, after_lock, why)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(id("attlog"), accountId, courseId || null, day, existing ? existing.status : null, status,
-           existing ? existing.note ?? null : null, n, via || "register", actorId || null, t);
+           existing ? existing.note ?? null : null, n, existing ? existing.reason ?? null : null, rs, via || "register", actorId || null, t, afterLock ? 1 : 0, why || null);
     if (existing) {
       await this.db.batch([
-        this.db.prepare(`UPDATE learn_attendance SET status = ?, note = ?, marked_by = ?, marked_at = ? WHERE id = ?`)
-          .bind(status, n, actorId || null, t, existing.id),
+        this.db.prepare(`UPDATE learn_attendance SET status = ?, note = ?, reason = ?, marked_by = ?, marked_at = ? WHERE id = ?`)
+          .bind(status, n, rs, actorId || null, t, existing.id),
         log
       ]);
       return existing.id;
@@ -1579,34 +1580,103 @@ export class D1Repository {
     const attId = id("att");
     await this.db.batch([
       this.db.prepare(
-        `INSERT INTO learn_attendance (id, account_id, course_id, day, status, note, marked_by, marked_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(attId, accountId, courseId || null, day, status, n, actorId || null, t),
+        `INSERT INTO learn_attendance (id, account_id, course_id, day, status, note, reason, marked_by, marked_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(attId, accountId, courseId || null, day, status, n, rs, actorId || null, t),
       log
     ]);
     return attId;
   }
 
+  /* ----------------------------------------------------------- The register
+     Whole-day marks (no course), by section, and the locks the school put on
+     spans it has reported. */
+
+  async wholeDayMarks(day, accountIds) {
+    const out = [];
+    for (let i = 0; i < accountIds.length; i += 80) {
+      const part = accountIds.slice(i, i + 80);
+      const { results } = await this.db.prepare(
+        `SELECT a.*, p.name AS marked_by_name FROM learn_attendance a LEFT JOIN profiles p ON p.account_id = a.marked_by
+          WHERE a.course_id IS NULL AND a.day = ? AND a.account_id IN (${part.map(() => "?").join(",")})`
+      ).bind(day, ...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* How many children of each section have a whole-day mark on a day. */
+  async registerTaken(orgId, day) {
+    const { results } = await this.db.prepare(
+      `SELECT s.class_id, COUNT(*) AS marked, MAX(a.marked_at) AS at
+         FROM learn_attendance a JOIN learn_student_india s ON s.account_id = a.account_id AND s.org_id = ? AND s.class_id IS NOT NULL
+        WHERE a.course_id IS NULL AND a.day = ? GROUP BY s.class_id`
+    ).bind(orgId, day).all();
+    return results || [];
+  }
+
+  /* Per child and status, the whole-day marks of a span. One section, or every section. */
+  async watchCounts(orgId, from, to, classId) {
+    const { results } = await this.db.prepare(
+      `SELECT a.account_id, a.status, COUNT(*) AS n
+         FROM learn_attendance a JOIN learn_student_india s ON s.account_id = a.account_id AND s.org_id = ? AND s.class_id IS NOT NULL
+        WHERE a.course_id IS NULL AND a.day >= ? AND a.day <= ? AND (? IS NULL OR s.class_id = ?)
+        GROUP BY a.account_id, a.status`
+    ).bind(orgId, from, to, classId || null, classId || null).all();
+    return results || [];
+  }
+
+  async listAttendanceLocks(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT l.*, p.name AS locked_by_name FROM learn_attendance_locks l LEFT JOIN profiles p ON p.account_id = l.locked_by
+        WHERE l.org_id = ? ORDER BY l.from_day DESC`
+    ).bind(orgId).all();
+    return results || [];
+  }
+
+  async addAttendanceLock(orgId, { from, to, label }, actorId) {
+    const lid = id("lock");
+    await this.db.prepare(`INSERT INTO learn_attendance_locks (id, org_id, from_day, to_day, label, locked_by, locked_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .bind(lid, orgId, from, to, label, actorId || null, now()).run();
+    return lid;
+  }
+
+  /* Marks changed inside a locked span: who, what it was, what it became, and what they said. */
+  async editsAfterLock(orgId, limit) {
+    const { results } = await this.db.prepare(
+      `SELECT l.*, sp.name AS student_name, bp.name AS by_name
+         FROM learn_attendance_log l JOIN organization_memberships m ON m.account_id = l.account_id AND m.org_id = ?
+         LEFT JOIN profiles sp ON sp.account_id = l.account_id LEFT JOIN profiles bp ON bp.account_id = l.by_id
+        WHERE l.after_lock = 1 ORDER BY l.at DESC LIMIT ?`
+    ).bind(orgId, limit || 100).all();
+    return results || [];
+  }
+
   /* Takes marks away, each as a line in the history. Returns how many went.
      Marks of another school's courses are not this school's to remove. */
-  async removeAttendance(ids, actorId, orgId) {
-    let removed = 0;
+  async removeAttendance(ids, actorId, orgId, opts = {}) {
+    const rows = [];
     for (const attId of ids) {
       const row = await this.db.prepare(
         `SELECT a.* FROM learn_attendance a LEFT JOIN learn_courses c ON c.id = a.course_id
           WHERE a.id = ? AND (? IS NULL OR c.org_id IS NULL OR c.org_id = ?)`
       ).bind(attId, orgId || null, orgId || null).first();
-      if (!row) continue;
-      await this.db.batch([
-        this.db.prepare(`DELETE FROM learn_attendance WHERE id = ?`).bind(attId),
-        this.db.prepare(
-          `INSERT INTO learn_attendance_log (id, account_id, course_id, day, from_status, to_status, from_note, to_note, via, by_id, at)
-           VALUES (?, ?, ?, ?, ?, NULL, ?, NULL, 'remove', ?, ?)`
-        ).bind(id("attlog"), row.account_id, row.course_id, row.day, row.status, row.note ?? null, actorId || null, now())
-      ]);
-      removed++;
+      if (row) rows.push(row);
     }
-    return removed;
+    // Marks in a locked span go only with a reason, and the history says they were removed after the lock.
+    const lockedRow = (r) => !!(opts.locked && opts.locked(r.day));
+    if (!opts.why && rows.some(lockedRow)) return { removed: 0, needWhy: true };
+    for (const row of rows) {
+      const lk = lockedRow(row);
+      await this.db.batch([
+        this.db.prepare(`DELETE FROM learn_attendance WHERE id = ?`).bind(row.id),
+        this.db.prepare(
+          `INSERT INTO learn_attendance_log (id, account_id, course_id, day, from_status, to_status, from_note, to_note, from_reason, via, by_id, at, after_lock, why)
+           VALUES (?, ?, ?, ?, ?, NULL, ?, NULL, ?, 'remove', ?, ?, ?, ?)`
+        ).bind(id("attlog"), row.account_id, row.course_id, row.day, row.status, row.note ?? null, row.reason ?? null, actorId || null, now(), lk ? 1 : 0, lk ? opts.why : null)
+      ]);
+    }
+    return { removed: rows.length, needWhy: false };
   }
 
   async listAttendance({ courseId, accountId, day, from, to }) {
