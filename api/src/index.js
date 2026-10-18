@@ -62,6 +62,7 @@ import * as school from "./routes/school.js";
 import * as register from "./routes/register.js";
 import * as exams from "./routes/exams.js";
 import * as certificates from "./routes/certificates.js";
+import * as competency from "./routes/competency.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -182,6 +183,16 @@ const ROUTES = [
   ["GET",    "/api/v1/school/disclosure",                certificates.getDisclosure],
   ["PUT",    "/api/v1/school/disclosure",                certificates.putDisclosure],
   ["GET",    "/api/v1/public/schools/:slug/disclosure",  certificates.publicDisclosure],
+  ["GET",    "/api/v1/competencies",                     competency.list],
+  ["POST",   "/api/v1/competencies",                     competency.add],
+  ["DELETE", "/api/v1/competencies/:compId",             competency.remove],
+  ["GET",    "/api/v1/competency/class",                 competency.classGrid],
+  ["PUT",    "/api/v1/competency/levels",                competency.putLevels],
+  ["GET",    "/api/v1/competency/analytics",             competency.analytics],
+  ["GET",    "/api/v1/competency/carry",                 competency.carry],
+  ["GET",    "/api/v1/students/:accountId/hpc",          competency.hpc],
+  ["POST",   "/api/v1/students/:accountId/hpc/notes",    competency.addNote],
+  ["DELETE", "/api/v1/hpc/notes/:noteId",                competency.removeNote],
   ["GET",    "/api/v1/school/profile",                   school.getProfile],
   ["PUT",    "/api/v1/school/profile",                   school.putProfile],
   ["GET",    "/api/v1/register",                         register.getRegister],

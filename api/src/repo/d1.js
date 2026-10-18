@@ -3705,6 +3705,80 @@ export class D1Repository {
     return out;
   }
 
+  /* --------------------------------------------- Competencies and the HPC */
+  async listCompetencies(orgId, stage) {
+    const { results } = await this.db.prepare(
+      `SELECT c.*, (SELECT COUNT(*) FROM learn_comp_levels l WHERE l.competency_id = c.id) AS rated FROM learn_competencies c
+        WHERE c.org_id = ? AND (? IS NULL OR c.stage IS NULL OR c.stage = ?) ORDER BY c.subject, c.name`
+    ).bind(orgId, stage || null, stage || null).all();
+    return results || [];
+  }
+  async addCompetencies(orgId, list, actorId) {
+    const stmts = list.map((c) => this.db.prepare(
+      `INSERT INTO learn_competencies (id, org_id, stage, subject, name, code, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (org_id, subject, name) DO UPDATE SET stage = excluded.stage, code = excluded.code`
+    ).bind(id("comp"), orgId, c.stage ?? null, c.subject, c.name, c.code ?? null, actorId || null, now()));
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+  async deleteCompetency(orgId, compId) {
+    await this.db.prepare(`DELETE FROM learn_competencies WHERE org_id = ? AND id = ?`).bind(orgId, compId).run();
+  }
+  async levelsFor(accountIds, year, term) {
+    const out = [];
+    for (let i = 0; i < accountIds.length; i += 80) {
+      const part = accountIds.slice(i, i + 80);
+      if (!part.length) continue;
+      const { results } = await this.db.prepare(
+        `SELECT * FROM learn_comp_levels WHERE school_year = ? AND (? IS NULL OR term = ?) AND account_id IN (${part.map(() => "?").join(",")})`
+      ).bind(year, term || null, term || null, ...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+  async allLevelsOf(accountId) {
+    const { results } = await this.db.prepare(`SELECT * FROM learn_comp_levels WHERE account_id = ? ORDER BY school_year, term`).bind(accountId).all();
+    return results || [];
+  }
+  async setLevels(rows, year, term, actorId) {
+    const t = now();
+    const stmts = rows.map((r) => r.level === null
+      ? this.db.prepare(`DELETE FROM learn_comp_levels WHERE account_id = ? AND competency_id = ? AND school_year = ? AND term = ?`).bind(r.accountId, r.competencyId, year, term)
+      : this.db.prepare(
+        `INSERT INTO learn_comp_levels (account_id, competency_id, school_year, term, level, note, set_by, set_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (account_id, competency_id, school_year, term) DO UPDATE SET level = excluded.level, note = excluded.note, set_by = excluded.set_by, set_at = excluded.set_at`
+      ).bind(r.accountId, r.competencyId, year, term, r.level, r.note ?? null, actorId || null, t));
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+  /* Every rating of a term, with the child's section, for the school's own analysis. */
+  async levelsOfTerm(orgId, year, term, subject) {
+    const { results } = await this.db.prepare(
+      `SELECT l.competency_id, l.level, s.class_id, c.grade, c.section, k.subject, k.name
+         FROM learn_comp_levels l JOIN learn_competencies k ON k.id = l.competency_id AND k.org_id = ?
+         JOIN learn_student_india s ON s.account_id = l.account_id LEFT JOIN learn_classes c ON c.id = s.class_id
+        WHERE l.school_year = ? AND l.term = ? AND (? IS NULL OR k.subject = ?)`
+    ).bind(orgId, year, term, subject || null, subject || null).all();
+    return results || [];
+  }
+  async addHpcNote(orgId, n) {
+    const nid = id("hpc");
+    await this.db.prepare(`INSERT INTO learn_hpc_notes (id, org_id, account_id, school_year, term, source, area, body, by_id, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(nid, orgId, n.accountId, n.year, n.term, n.source, n.area ?? null, n.body, n.byId || null, now()).run();
+    return nid;
+  }
+  async hpcNotes(accountId, year, term) {
+    const { results } = await this.db.prepare(
+      `SELECT n.*, p.name AS by_name FROM learn_hpc_notes n LEFT JOIN profiles p ON p.account_id = n.by_id
+        WHERE n.account_id = ? AND n.school_year = ? AND (? IS NULL OR n.term = ?) ORDER BY n.at`
+    ).bind(accountId, year, term || null, term || null).all();
+    return results || [];
+  }
+  async removeHpcNote(noteId, orgId) {
+    await this.db.prepare(`DELETE FROM learn_hpc_notes WHERE id = ? AND org_id = ?`).bind(noteId, orgId).run();
+  }
+  async getHpcNote(noteId, orgId) {
+    return this.db.prepare(`SELECT * FROM learn_hpc_notes WHERE id = ? AND org_id = ?`).bind(noteId, orgId).first();
+  }
+
   /* ------------------------------------------------ Certificates, disclosure */
   /* The next number in a series, handed out once: the count and the row are one statement. */
   async nextNumber(orgId, series, year) {
