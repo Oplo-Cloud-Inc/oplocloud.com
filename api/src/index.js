@@ -60,6 +60,7 @@ import * as feeds from "./routes/feeds.js";
 import * as india from "./routes/india.js";
 import * as school from "./routes/school.js";
 import * as register from "./routes/register.js";
+import * as exams from "./routes/exams.js";
 
 /* A route table rather than a chain of ifs, so the whole surface of the API
    is readable in one screen and an endpoint cannot be added without appearing
@@ -186,6 +187,29 @@ const ROUTES = [
   ["GET",    "/api/v1/register/locks",                   register.locks],
   ["POST",   "/api/v1/register/locks",                   register.addLock],
   ["GET",    "/api/v1/register/after-lock",              register.afterLock],
+  ["GET",    "/api/v1/grading/scales",                   exams.scales],
+  ["POST",   "/api/v1/grading/scales",                   exams.createScale],
+  ["PUT",    "/api/v1/grading/scales/:scaleId",          exams.updateScale],
+  ["DELETE", "/api/v1/grading/scales/:scaleId",          exams.deleteScale],
+  ["GET",    "/api/v1/exams",                            exams.listExams],
+  ["POST",   "/api/v1/exams",                            exams.createExam],
+  ["GET",    "/api/v1/exams/mark-edits",                 exams.markEdits],
+  ["PUT",    "/api/v1/exams/:examId",                    exams.updateExam],
+  ["POST",   "/api/v1/exams/:examId/papers",             exams.addPapers],
+  ["GET",    "/api/v1/exams/:examId/cards",              exams.cards],
+  ["PUT",    "/api/v1/exams/:examId/cards",              exams.putCards],
+  ["GET",    "/api/v1/papers",                           exams.listPapers],
+  ["GET",    "/api/v1/papers/:paperId",                  exams.getPaper],
+  ["PUT",    "/api/v1/papers/:paperId",                  exams.reassignPaper],
+  ["PUT",    "/api/v1/papers/:paperId/marks",            exams.putMarks],
+  ["POST",   "/api/v1/papers/:paperId/advance",          exams.advance],
+  ["GET",    "/api/v1/students/:accountId/report-cards", exams.reportCards],
+  ["GET",    "/api/v1/students/:accountId/ptm",          exams.ptmFor],
+  ["GET",    "/api/v1/ptm",                              exams.listPtm],
+  ["POST",   "/api/v1/ptm",                              exams.createPtm],
+  ["GET",    "/api/v1/ptm/:ptmId",                       exams.getPtm],
+  ["POST",   "/api/v1/ptm/:ptmId/book",                  exams.bookPtm],
+  ["POST",   "/api/v1/ptm/:ptmId/release",               exams.releasePtm],
   ["GET",    "/api/v1/india/classes",                    india.classes],
   ["PUT",    "/api/v1/india/classes",                    india.putClass],
   ["GET",    "/api/v1/india/students",                   india.students],

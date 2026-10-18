@@ -3505,6 +3505,245 @@ export class D1Repository {
     return results || [];
   }
 
+  /* ------------------------------------------------------------------ Exams
+     Scales, exams, the papers of a section, their marks and the history of
+     every change, the class teacher's words on a card, and the parent meeting. */
+
+  async listScales(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT sc.*, (SELECT COUNT(*) FROM learn_exams e WHERE e.scale_id = sc.id OR e.coscale_id = sc.id) AS used
+         FROM learn_grading_scales sc WHERE sc.org_id = ? ORDER BY sc.kind, sc.name`
+    ).bind(orgId).all();
+    return results || [];
+  }
+  async getScale(orgId, scaleId) {
+    return this.db.prepare(`SELECT * FROM learn_grading_scales WHERE org_id = ? AND id = ?`).bind(orgId, scaleId).first();
+  }
+  async putScale(orgId, scaleId, sc, actorId) {
+    const t = now(), sid = scaleId || id("scale");
+    await this.db.prepare(
+      `INSERT INTO learn_grading_scales (id, org_id, name, board, kind, bands_json, pass_percent, note, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (id) DO UPDATE SET name = excluded.name, board = excluded.board, kind = excluded.kind, bands_json = excluded.bands_json,
+         pass_percent = excluded.pass_percent, note = excluded.note, updated_at = excluded.updated_at`
+    ).bind(sid, orgId, sc.name, sc.board ?? null, sc.kind, JSON.stringify(sc.bands), sc.passPercent ?? null, sc.note ?? null, actorId || null, t, t).run();
+    return this.getScale(orgId, sid);
+  }
+  async deleteScale(orgId, scaleId) {
+    await this.db.prepare(`DELETE FROM learn_grading_scales WHERE org_id = ? AND id = ?`).bind(orgId, scaleId).run();
+  }
+
+  async listExams(orgId, year) {
+    const { results } = await this.db.prepare(
+      `SELECT e.*, (SELECT COUNT(*) FROM learn_exam_papers p WHERE p.exam_id = e.id) AS papers,
+              (SELECT COUNT(*) FROM learn_exam_papers p WHERE p.exam_id = e.id AND p.state = 'published') AS published
+         FROM learn_exams e WHERE e.org_id = ? AND (? IS NULL OR e.school_year = ?) ORDER BY e.school_year DESC, e.created_at`
+    ).bind(orgId, year || null, year || null).all();
+    return results || [];
+  }
+  async getExam(orgId, examId) {
+    return this.db.prepare(`SELECT * FROM learn_exams WHERE org_id = ? AND id = ?`).bind(orgId, examId).first();
+  }
+  async insertExam(orgId, e, actorId) {
+    const eid = id("exam");
+    await this.db.prepare(
+      `INSERT INTO learn_exams (id, org_id, school_year, name, kind, scale_id, coscale_id, starts_on, ends_on, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(eid, orgId, e.year, e.name, e.kind, e.scaleId ?? null, e.coscaleId ?? null, e.startsOn ?? null, e.endsOn ?? null, actorId || null, now()).run();
+    return this.getExam(orgId, eid);
+  }
+  async updateExam(orgId, examId, e) {
+    await this.db.prepare(`UPDATE learn_exams SET scale_id = ?, coscale_id = ?, starts_on = ?, ends_on = ? WHERE org_id = ? AND id = ?`)
+      .bind(e.scaleId ?? null, e.coscaleId ?? null, e.startsOn ?? null, e.endsOn ?? null, orgId, examId).run();
+    return this.getExam(orgId, examId);
+  }
+
+  /* Papers, with their section, teacher, and how many children have a mark. */
+  async listPapers({ orgId, examId, classId, teacherId, classTeacherId }) {
+    const { results } = await this.db.prepare(
+      `SELECT p.*, c.grade, c.section, c.class_teacher_id, c.school_year AS class_year, t.name AS teacher_name, e.name AS exam_name, e.school_year,
+              (SELECT COUNT(*) FROM learn_student_india s WHERE s.class_id = p.class_id) AS strength,
+              (SELECT COUNT(*) FROM learn_exam_marks m WHERE m.paper_id = p.id AND (m.absent = 1 OR m.theory IS NOT NULL OR m.internal IS NOT NULL OR m.practical IS NOT NULL)) AS entered
+         FROM learn_exam_papers p JOIN learn_exams e ON e.id = p.exam_id JOIN learn_classes c ON c.id = p.class_id
+         LEFT JOIN profiles t ON t.account_id = p.teacher_id
+        WHERE e.org_id = ? AND (? IS NULL OR p.exam_id = ?) AND (? IS NULL OR p.class_id = ?) AND (? IS NULL OR p.teacher_id = ?)
+          AND (? IS NULL OR c.class_teacher_id = ?)
+        ORDER BY c.grade, c.section, p.subject`
+    ).bind(orgId, examId || null, examId || null, classId || null, classId || null, teacherId || null, teacherId || null, classTeacherId || null, classTeacherId || null).all();
+    return results || [];
+  }
+  async getPaper(orgId, paperId) {
+    return this.db.prepare(
+      `SELECT p.*, c.grade, c.section, c.class_teacher_id, t.name AS teacher_name, e.name AS exam_name, e.school_year, e.scale_id, e.coscale_id, e.starts_on, e.ends_on
+         FROM learn_exam_papers p JOIN learn_exams e ON e.id = p.exam_id JOIN learn_classes c ON c.id = p.class_id LEFT JOIN profiles t ON t.account_id = p.teacher_id
+        WHERE e.org_id = ? AND p.id = ?`
+    ).bind(orgId, paperId).first();
+  }
+  async insertPapers(examId, classId, list) {
+    const stmts = list.map((p) => this.db.prepare(
+      `INSERT INTO learn_exam_papers (id, exam_id, class_id, subject, teacher_id, max_theory, max_internal, max_practical, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (exam_id, class_id, subject) DO UPDATE SET teacher_id = excluded.teacher_id`
+    ).bind(id("paper"), examId, classId, p.subject, p.teacherId ?? null, p.maxTheory, p.maxInternal, p.maxPractical, now()));
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+  async setPaperState(paperId, state, actorId, note) {
+    const t = now();
+    const col = { submitted: "submitted", checked: "checked", approved: "approved", published: "published" }[state];
+    const stamp = col ? `, ${col}_by = ?, ${col}_at = ?` : "";
+    const bind = [state, note ?? null];
+    if (col) bind.push(actorId || null, t);
+    await this.db.prepare(`UPDATE learn_exam_papers SET state = ?, returned_note = ?${stamp} WHERE id = ?`).bind(...bind, paperId).run();
+  }
+  async setPaperTeacher(paperId, teacherId) {
+    await this.db.prepare(`UPDATE learn_exam_papers SET teacher_id = ? WHERE id = ?`).bind(teacherId || null, paperId).run();
+  }
+
+  async listMarks(paperId) {
+    const { results } = await this.db.prepare(`SELECT * FROM learn_exam_marks WHERE paper_id = ?`).bind(paperId).all();
+    return results || [];
+  }
+  /* Write marks and, for every field that changed, its history. `rows`: [{ accountId, theory, internal, practical, absent }]. */
+  async saveMarks(paperId, rows, actorId, state, afterLock, why) {
+    const t = now(), was = new Map((await this.listMarks(paperId)).map((m) => [m.account_id, m]));
+    const stmts = [];
+    for (const r of rows) {
+      const old = was.get(r.accountId) || {};
+      for (const f of ["theory", "internal", "practical", "absent"]) {
+        const a = old[f] ?? null, b = r[f] ?? null;
+        if (String(a) !== String(b) && !(f === "absent" && !a && !b)) {
+          stmts.push(this.db.prepare(
+            `INSERT INTO learn_exam_mark_log (id, paper_id, account_id, field, from_value, to_value, by_id, at, state, after_lock, why) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(id("mlog"), paperId, r.accountId, f, a === null ? null : String(a), b === null ? null : String(b), actorId || null, t, state, afterLock ? 1 : 0, afterLock ? why : null));
+        }
+      }
+      stmts.push(this.db.prepare(
+        `INSERT INTO learn_exam_marks (paper_id, account_id, theory, internal, practical, absent, updated_by, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (paper_id, account_id) DO UPDATE SET theory = excluded.theory, internal = excluded.internal, practical = excluded.practical,
+           absent = excluded.absent, updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+      ).bind(paperId, r.accountId, r.theory ?? null, r.internal ?? null, r.practical ?? null, r.absent ? 1 : 0, actorId || null, t));
+    }
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+  async markEditsAfterLock(orgId, limit) {
+    const { results } = await this.db.prepare(
+      `SELECT l.*, sp.name AS student_name, bp.name AS by_name, p.subject, c.grade, c.section, e.name AS exam_name
+         FROM learn_exam_mark_log l JOIN learn_exam_papers p ON p.id = l.paper_id JOIN learn_exams e ON e.id = p.exam_id JOIN learn_classes c ON c.id = p.class_id
+         LEFT JOIN profiles sp ON sp.account_id = l.account_id LEFT JOIN profiles bp ON bp.account_id = l.by_id
+        WHERE e.org_id = ? AND l.after_lock = 1 ORDER BY l.at DESC LIMIT ?`
+    ).bind(orgId, limit || 100).all();
+    return results || [];
+  }
+
+  /* Everything a class's report cards are made of, for one exam. */
+  async cardPapers(examId, classId) {
+    const { results } = await this.db.prepare(
+      `SELECT p.* FROM learn_exam_papers p WHERE p.exam_id = ? AND p.class_id = ? ORDER BY p.subject`
+    ).bind(examId, classId).all();
+    return results || [];
+  }
+  async marksOfPapers(paperIds) {
+    const out = [];
+    for (let i = 0; i < paperIds.length; i += 80) {
+      const part = paperIds.slice(i, i + 80);
+      const { results } = await this.db.prepare(`SELECT * FROM learn_exam_marks WHERE paper_id IN (${part.map(() => "?").join(",")})`).bind(...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+  async cardExtras(examId, accountIds) {
+    const cards = [], cos = [];
+    for (let i = 0; i < accountIds.length; i += 80) {
+      const part = accountIds.slice(i, i + 80), ph = part.map(() => "?").join(",");
+      cards.push(...((await this.db.prepare(`SELECT * FROM learn_exam_cards WHERE exam_id = ? AND account_id IN (${ph})`).bind(examId, ...part).all()).results || []));
+      cos.push(...((await this.db.prepare(`SELECT * FROM learn_exam_cos WHERE exam_id = ? AND account_id IN (${ph})`).bind(examId, ...part).all()).results || []));
+    }
+    return { cards, cos };
+  }
+  async saveCards(examId, items, actorId) {
+    const t = now(), stmts = [];
+    for (const it of items) {
+      stmts.push(this.db.prepare(
+        `INSERT INTO learn_exam_cards (exam_id, account_id, remark, result, updated_by, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (exam_id, account_id) DO UPDATE SET remark = excluded.remark, result = excluded.result, updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+      ).bind(examId, it.accountId, it.remark ?? null, it.result ?? null, actorId || null, t));
+      if (it.cos) {
+        stmts.push(this.db.prepare(`DELETE FROM learn_exam_cos WHERE exam_id = ? AND account_id = ?`).bind(examId, it.accountId));
+        for (const [area, grade] of Object.entries(it.cos)) stmts.push(this.db.prepare(`INSERT INTO learn_exam_cos (exam_id, account_id, area, grade) VALUES (?, ?, ?, ?)`).bind(examId, it.accountId, area, grade));
+      }
+    }
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+  }
+  /* The exams a child has a published paper in, for the family's view. */
+  async examsWithPublished(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT DISTINCT e.*, s.class_id, c.grade, c.section
+         FROM learn_exam_marks m JOIN learn_exam_papers p ON p.id = m.paper_id AND p.state = 'published'
+         JOIN learn_exams e ON e.id = p.exam_id JOIN learn_classes c ON c.id = p.class_id
+         LEFT JOIN learn_student_india s ON s.account_id = m.account_id
+        WHERE m.account_id = ? ORDER BY e.school_year DESC, e.created_at DESC`
+    ).bind(accountId).all();
+    return results || [];
+  }
+
+  /* ------------------------------------------------------- Parent meetings */
+  async insertPtm(orgId, p, slots, actorId) {
+    const pid = id("ptm");
+    const stmts = [this.db.prepare(
+      `INSERT INTO learn_ptm (id, org_id, class_id, exam_id, title, day, start_time, slot_minutes, mode, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(pid, orgId, p.classId, p.examId ?? null, p.title, p.day, p.start, p.slotMinutes, p.mode, actorId || null, now())];
+    for (const sl of slots) stmts.push(this.db.prepare(`INSERT INTO learn_ptm_slots (ptm_id, slot_no, starts, account_id) VALUES (?, ?, ?, ?)`).bind(pid, sl.no, sl.starts, sl.accountId ?? null));
+    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+    return pid;
+  }
+  async listPtm(orgId, classId) {
+    const { results } = await this.db.prepare(
+      `SELECT m.*, c.grade, c.section, (SELECT COUNT(*) FROM learn_ptm_slots s WHERE s.ptm_id = m.id) AS slots,
+              (SELECT COUNT(*) FROM learn_ptm_slots s WHERE s.ptm_id = m.id AND s.account_id IS NOT NULL) AS booked
+         FROM learn_ptm m JOIN learn_classes c ON c.id = m.class_id WHERE m.org_id = ? AND (? IS NULL OR m.class_id = ?) ORDER BY m.day DESC`
+    ).bind(orgId, classId || null, classId || null).all();
+    return results || [];
+  }
+  async getPtm(orgId, ptmId) {
+    return this.db.prepare(`SELECT m.*, c.grade, c.section, c.class_teacher_id FROM learn_ptm m JOIN learn_classes c ON c.id = m.class_id WHERE m.org_id = ? AND m.id = ?`).bind(orgId, ptmId).first();
+  }
+  async ptmSlots(ptmId) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, p.name AS child_name FROM learn_ptm_slots s LEFT JOIN profiles p ON p.account_id = s.account_id WHERE s.ptm_id = ? ORDER BY s.slot_no`
+    ).bind(ptmId).all();
+    return results || [];
+  }
+  /* Give a child a slot (first releasing the one they had). A slot another child holds is refused by the caller. */
+  async bookSlot(ptmId, slotNo, accountId, byId) {
+    await this.db.batch([
+      this.db.prepare(`UPDATE learn_ptm_slots SET account_id = NULL, booked_by = NULL, booked_at = NULL WHERE ptm_id = ? AND account_id = ?`).bind(ptmId, accountId),
+      this.db.prepare(`UPDATE learn_ptm_slots SET account_id = ?, booked_by = ?, booked_at = ? WHERE ptm_id = ? AND slot_no = ? AND account_id IS NULL`).bind(accountId, byId || null, now(), ptmId, slotNo)
+    ]);
+  }
+  async releaseSlot(ptmId, accountId) {
+    await this.db.prepare(`UPDATE learn_ptm_slots SET account_id = NULL, booked_by = NULL, booked_at = NULL WHERE ptm_id = ? AND account_id = ?`).bind(ptmId, accountId).run();
+  }
+  async ptmFor(accountId) {
+    const { results } = await this.db.prepare(
+      `SELECT m.*, c.grade, c.section, s.slot_no, s.starts FROM learn_ptm m JOIN learn_classes c ON c.id = m.class_id
+         JOIN learn_student_india si ON si.class_id = m.class_id AND si.account_id = ?
+         LEFT JOIN learn_ptm_slots s ON s.ptm_id = m.id AND s.account_id = ?
+        ORDER BY m.day DESC`
+    ).bind(accountId, accountId).all();
+    return results || [];
+  }
+
+  async namesOf(ids) {
+    const out = new Map();
+    for (let i = 0; i < ids.length; i += 80) {
+      const part = ids.slice(i, i + 80);
+      if (!part.length) continue;
+      const { results } = await this.db.prepare(`SELECT account_id, name FROM profiles WHERE account_id IN (${part.map(() => "?").join(",")})`).bind(...part).all();
+      for (const r of results || []) out.set(r.account_id, r.name);
+    }
+    return out;
+  }
+
   async getIndiaClass(orgId, classId) {
     return this.db.prepare(`SELECT * FROM learn_classes WHERE org_id = ? AND id = ?`).bind(orgId, classId).first();
   }

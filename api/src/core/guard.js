@@ -67,6 +67,7 @@ export const ACTIONS = [
   "attendance.read", "attendance.write",
   "india.read", "india.write",
   "register.read", "register.write", "register.lock",
+  "exam.read", "exam.setup", "exam.enter", "exam.check", "exam.approve", "exam.publish",
   "efm.read", "efm.write", "efm.admin"
 ];
 
@@ -402,6 +403,25 @@ export async function can(ctx, action, resource = {}) {
     case "register.lock":
       return hasAny(actor, ["principal", "registrar"], orgId);
 
+    /* -------------------------------------------------------------- Exams
+       A paper is entered by its teacher (or the class teacher of the section),
+       checked by a dean or above, approved by the principal and published by the
+       principal or registrar. Setting the exams up is the principal's and
+       registrar's. A class's cards are read by its class teacher and the office. */
+    case "exam.setup":
+    case "exam.publish":
+      return hasAny(actor, ["principal", "registrar"], orgId);
+    case "exam.check":
+      return hasAny(actor, ["dean", "principal", "registrar"], orgId);
+    case "exam.approve":
+      return hasAny(actor, ["principal"], orgId);
+    case "exam.enter":
+      if (hasAny(actor, ["dean", "principal", "registrar"], orgId)) return true;
+      return (!!resource.teacherId && resource.teacherId === actor.id) || (!!resource.classTeacherId && resource.classTeacherId === actor.id);
+    case "exam.read":
+      if (hasAny(actor, ["dean", "principal", "registrar"], orgId)) return true;
+      return !!resource.classTeacherId && resource.classTeacherId === actor.id;
+
     case "india.read":
       return learnAdmin || hasRole(actor, "learn", "registrar", orgId) || hasRole(actor, "learn", "principal", orgId);
     case "india.write":
@@ -496,6 +516,12 @@ const REASONS = {
   "enrollment.activate": "Creating an enrollment is the registrar's. Ask them, or an administrator.",
   "enrollment.sensitive": "Only administrators can see or change restricted enrollment information.",
   "enrollment.settings": "Only administrators can change what enrollment asks for.",
+  "exam.read": "A class's marks and report cards are read by its class teacher and the school's office.",
+  "exam.setup": "Setting up exams and papers is for the principal, registrar or an administrator.",
+  "exam.enter": "Marks are entered by the paper's teacher or the class teacher, and corrected by the office.",
+  "exam.check": "Checking a paper is for a dean, the principal, registrar or an administrator.",
+  "exam.approve": "Approving a paper is for the principal or an administrator.",
+  "exam.publish": "Publishing a paper is for the principal, registrar or an administrator.",
   "register.read": "A class register is read by the class teacher of that section and by the school's office.",
   "register.write": "A class register is taken by the class teacher of that section, and corrected by the office.",
   "register.lock": "Locking attendance for a board's list is for the principal, registrar or an administrator.",
