@@ -206,8 +206,10 @@ try {
   await step("a teacher cannot take another section's register, a future day, or a day that is not school", async () => {
     refused(await teacher.try("GET", `/register?classId=${ctx.sec.id}`), 403);
     refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: "2099-01-01", marks: [{ accountId: REG.kids[0].id, status: "present" }] }), 403);
-    // a Sunday
-    let sun = REG.today; while (new Date(sun + "T00:00:00Z").getUTCDay() !== 0) sun = new Date(Date.parse(sun + "T00:00:00Z") - 86400000).toISOString().slice(0, 10);
+    // the most recent day the school's calendar says is not a school day (a weekend, unless the demo made it a working one)
+    let sun = null;
+    for (let i = 0; i < 21 && !sun; i++) { const d = isoDay(i); if ((await admin.get(`/register?classId=${REG.cls.id}&day=${d}`)).schoolDay.kind !== "school") sun = d; }
+    assert.ok(sun, "a day without school in the last three weeks");
     const r = await teacher.try("PUT", "/register", { classId: REG.cls.id, day: sun, marks: [{ accountId: REG.kids[0].id, status: "present" }] });
     refused(r, 400); assert.equal(r.body.error.field, "day");
     refused(await teacher.try("PUT", "/register", { classId: REG.cls.id, day: REG.days[0], marks: [{ accountId: ctx.late.id, status: "present" }] }), 400);
