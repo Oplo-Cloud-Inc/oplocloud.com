@@ -1031,3 +1031,7 @@ table.ftab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .fp-formbox { display: grid; gap: 10px; max-width: 520px; margin: 14px 0; }
 .fp-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; background: var(--chip); color: var(--ink); border: 1px solid var(--rule); }
 .fp-input:focus { outline: 2px solid var(--accent, #2997ff); }
+
+/* The family's language, when the school offers more than one. */
+.fm-lang { height: 36px; padding: 0 10px; border-radius: 999px; border: 0; background: var(--fill, rgba(120,120,128,.14)); color: var(--ink, inherit); font: inherit; font-size: 13.5px; cursor: pointer; }
+.fm-lang[hidden] { display: none; }

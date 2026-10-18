@@ -171,6 +171,25 @@
   var RELATIONSHIP = { parent: "Parent", guardian: "Guardian", grandparent: "Grandparent",
                        foster_parent: "Foster parent", relative: "Relative", other: "Family" };
 
+  /* The words of a page in the language this family reads (i18n.js); English where there is no translation. */
+  function T(s) { return window.OPLO_I18N ? window.OPLO_I18N.t(s) : s; }
+
+  /* The family's language: the one they chose on this device, among the languages the school offers. Shown only where the school offers more than English. */
+  function pickLanguage(profile) {
+    var I = window.OPLO_I18N, sel = $("#langSel");
+    if (!I || !sel) return;
+    var offered = (profile && profile.languages) || ["en"];
+    var all = I.names().filter(function (l) { return offered.indexOf(l[0]) > -1; });
+    var saved = store.get("fm-lang");
+    I.use(all.some(function (l) { return l[0] === saved; }) ? saved : "en");
+    if (all.length < 2) { sel.hidden = true; return; }
+    sel.innerHTML = "";
+    all.forEach(function (l) { var o = h("option"); o.value = l[0]; o.textContent = l[1]; sel.appendChild(o); });
+    sel.value = I.lang();
+    sel.hidden = false;
+    sel.onchange = function () { store.set("fm-lang", sel.value); location.reload(); };
+  }
+
   function toast(msg) {
     var t = $("#toast");
     t.textContent = msg;
@@ -372,7 +391,9 @@
     var dest = H.destination(me.roles, location, null);
     if (!dest.stay) { location.replace(dest.href); return; }
     S.me = me;
-    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(me.organizations && me.organizations[0] && me.organizations[0].profile);
+    var profile = me.organizations && me.organizations[0] && me.organizations[0].profile;
+    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(profile);
+    pickLanguage(profile);
     trimSections(me);
     $("#boot").hidden = false;
     API.family.mine().then(function (fam) {
@@ -1054,7 +1075,7 @@
     var secs = SECTIONS.filter(function (s) { return s.group === g.key; });
     var filled = secs.filter(function (s) { return sourceOf(s.key) !== "none"; }).length;
     var head = h("div", "fc-head");
-    head.innerHTML = "<h2>" + esc(g.name) + "</h2><p>" + esc(g.line) + "</p><span class='cnt'>" +
+    head.innerHTML = "<h2>" + esc(T(g.name)) + "</h2><p>" + esc(T(g.line)) + "</p><span class='cnt'>" +
       filled + " of " + secs.length + " with something on file</span>";
     band.appendChild(head);
     var grid = h("div", "fc-grid");
@@ -1113,9 +1134,9 @@
     var t = btn("ft " + (sec.size || "").replace("big", "") + (sec.size && sec.size.indexOf("big") > -1 ? " big" : "") +
                 (look.empty ? " ft-none" : ""), "", null);
     t.dataset.key = sec.key;
-    var label = src === "school" ? "From the school" : src === "record" ? "From the record" : "Not on file yet";
+    var label = T(src === "school" ? "From the school" : src === "record" ? "From the record" : "Not on file yet");
     var top = h("div", "ft-top", "<span class='ft-ic'>" + icon(sec.icon, 18) + "</span><span class='ft-name'>" +
-      esc(sec.name) + "</span><span class='ft-state " + (src === "school" ? "sch" : src === "record" ? "rec" : "") +
+      esc(T(sec.name)) + "</span><span class='ft-state " + (src === "school" ? "sch" : src === "record" ? "rec" : "") +
       "'><i></i>" + label + "</span>");
     t.appendChild(top);
     var body = h("div", "ft-body");
@@ -1136,7 +1157,7 @@
   }
   function recordGlimpse(sec) {
     var r = rec(sec.key);
-    if (!r) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+    if (!r) return { empty: true, stat: T("Nothing yet"), sub: esc(T(sec.empty)) };
     var f = firstFact(r);
     if (f) return { stat: esc(f.value), sub: esc(f.label) + (r.summary ? " · " + esc(clip(r.summary, 70)) : "") };
     if (r.rows && r.rows.items.length) return { stat: esc(r.rows.items.length), sub: esc(plural(r.rows.items.length, "entry", "entries")) + " on file" };
@@ -1149,7 +1170,7 @@
     var k = sec.key;
     if (k === "hpc") {
       var hp = part("hpc"), subs = hp ? Object.keys(hp.competencies) : [];
-      if (!subs.length) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+      if (!subs.length) return { empty: true, stat: T("Nothing yet"), sub: esc(T(sec.empty)) };
       var all = [];
       subs.forEach(function (sj) { hp.competencies[sj].forEach(function (c) { var ts = Object.keys(c.terms).sort(); all.push(c.terms[ts[ts.length - 1]].level); }); });
       var atLevel = all.filter(function (l) { return l >= hp.atLevel || l >= 3; }).length;
@@ -1157,18 +1178,18 @@
     }
     if (k === "diary") {
       var de = part("diary") && part("diary").entries[0];
-      if (!de) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+      if (!de) return { empty: true, stat: T("Nothing yet"), sub: esc(T(sec.empty)) };
       return { stat: esc(de.subject || (de.kind === "homework" ? "Homework" : de.kind === "circular" ? "Circular" : "Note")), sub: esc(day(de.day) + " · " + clip(de.body, 70)) };
     }
     if (k === "reportcards" || k === "meetings") {
       var pc = part("cards"), pm = part("meetings");
       if (k === "reportcards") {
         var rc = pc && pc.reportCards[0], c0 = rc && rc.cards[0];
-        if (!c0) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+        if (!c0) return { empty: true, stat: T("Nothing yet"), sub: esc(T(sec.empty)) };
         return { stat: c0.percent != null ? esc(c0.percent) + "<small>%</small>" : esc(rc.exam.name), sub: esc(rc.exam.name + (c0.grade ? " · grade " + c0.grade : "") + (rc.complete ? "" : " · more to come")) };
       }
       var nm = pm && pm.meetings[0];
-      if (!nm) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+      if (!nm) return { empty: true, stat: T("Nothing yet"), sub: esc(T(sec.empty)) };
       return { stat: nm.slot ? esc(nm.slot.starts) : esc(day(nm.day)), sub: esc(nm.title + " · " + day(nm.day) + (nm.slot ? "" : nm.mode === "open" ? " · choose a time" : "")) };
     }
     if (k === "attendance" && register().rows.length && !rec(k)) {
@@ -1309,7 +1330,7 @@
   function paintDock() {
     var d = $("#dock");
     d.innerHTML = "";
-    var items = [{ key: "home", name: "Overview", icon: "home" }].concat(GROUPS.map(function (g) {
+    var items = [{ key: "home", name: T("Overview"), icon: "home" }].concat(GROUPS.map(function (g) {
       return { key: g.key, name: g.name, icon: g.key };
     }));
     items.forEach(function (it) {
@@ -1470,8 +1491,8 @@
     var src = sourceOf(key);
     var headNode = h("header", "fs-head");
     headNode.innerHTML = "<span class='fs-ic'>" + icon(sec.icon, 22) + "</span><div class='fs-titles'><p class='fs-eyebrow'>" +
-      esc(groupOf(sec.group).name) + " · " + esc(S.student.name || "") + "</p><h2 class='fs-title' id='sheetTitle'>" +
-      esc(sec.name) + "</h2></div>";
+      esc(T(groupOf(sec.group).name)) + " · " + esc(S.student.name || "") + "</p><h2 class='fs-title' id='sheetTitle'>" +
+      esc(T(sec.name)) + "</h2></div>";
     var nav = h("nav", "fs-nav");
     var prev = SECTIONS[(sec.index + SECTIONS.length - 1) % SECTIONS.length];
     var next = SECTIONS[(sec.index + 1) % SECTIONS.length];
@@ -2593,53 +2614,53 @@
      exam; a meeting is the day, and the family's time in it. */
   RENDER.reportcards = function (gridNode) {
     var data = part("cards");
-    if (!data || !data.reportCards.length) { panel(gridNode, "s12", "Report cards", esc(SEC.reportcards.empty)); return; }
+    if (!data || !data.reportCards.length) { panel(gridNode, "s12", T("Report cards"), esc(T(SEC.reportcards.empty))); return; }
     data.reportCards.forEach(function (rc) {
       var c = rc.cards[0];
       var p = panel(gridNode, "s12", rc.exam.name + " · " + yearShort(rc.exam.year), rc.complete ? "Every subject has been published." : "Some subjects are not published yet; this fills in as they are.");
       var rows = c.subjects.map(function (l) {
-        return { cells: [esc(l.subject), l.absent ? "Absent" : l.missing ? "—" : esc(l.total + " of " + l.max), esc(l.grade || ""), l.pass === false ? chip("serious", "Below the pass mark") : l.pass ? "" : ""] };
+        return { cells: [esc(l.subject), l.absent ? T("Absent") : l.missing ? "—" : esc(l.total + " of " + l.max), esc(l.grade || ""), l.pass === false ? chip("serious", T("Below the pass mark")) : l.pass ? "" : ""] };
       });
-      p.appendChild(table([{ label: "Subject" }, { label: "Marks" }, { label: "Grade" }, { label: "" }], rows, { caption: "Marks" }));
+      p.appendChild(table([{ label: T("Subject") }, { label: T("Marks") }, { label: T("Grade") }, { label: "" }], rows, { caption: T("Marks") }));
       var kv = h("dl", "kv");
-      kvFill(kv, [["Total", c.percent != null ? esc(c.total + " of " + c.max + " (" + c.percent + "%)" + (c.grade ? " · grade " + c.grade : "")) : null, c.percent != null],
+      kvFill(kv, [[T("Total"), c.percent != null ? esc(c.total + " of " + c.max + " (" + c.percent + "%)" + (c.grade ? " · grade " + c.grade : "")) : null, c.percent != null],
         ["Attendance", c.attendance && c.attendance.total ? esc(c.attendance.present + " of " + c.attendance.total + " days (" + c.attendance.percent + "%)") : null, c.attendance && c.attendance.total],
-        ["Co-scholastic", Object.keys(c.cos || {}).length ? esc(Object.keys(c.cos).map(function (a) { return a + ": " + c.cos[a]; }).join(" · ")) : null, Object.keys(c.cos || {}).length],
-        ["Class teacher’s remark", c.remark ? esc(c.remark) : null, c.remark],
-        ["Result", c.decision ? esc(c.decision.charAt(0).toUpperCase() + c.decision.slice(1)) : null, c.decision]]);
+        [T("Co-scholastic"), Object.keys(c.cos || {}).length ? esc(Object.keys(c.cos).map(function (a) { return a + ": " + c.cos[a]; }).join(" · ")) : null, Object.keys(c.cos || {}).length],
+        [T("Class teacher’s remark"), c.remark ? esc(c.remark) : null, c.remark],
+        [T("Result"), c.decision ? esc(T(c.decision.charAt(0).toUpperCase() + c.decision.slice(1))) : null, c.decision]]);
       p.appendChild(kv);
     });
   };
 
   RENDER.hpc = function (gridNode) {
     var data = part("hpc"), who = S.student;
-    if (!data) { panel(gridNode, "s12", "Holistic Progress Card", esc(SEC.hpc.empty)); return; }
-    var LEVEL = { 1: "Beginning", 2: "Developing", 3: "Proficient", 4: "Advanced" };
+    if (!data) { panel(gridNode, "s12", T("Holistic Progress Card"), esc(T(SEC.hpc.empty))); return; }
+    var LEVEL = { 1: T("Beginning"), 2: T("Developing"), 3: T("Proficient"), 4: T("Advanced") };
     var subs = Object.keys(data.competencies);
     var p = panel(gridNode, "s12", "What " + first() + " can do", "Rated by the teachers each term. “Proficient” and “Advanced” are at grade level.");
     if (!subs.length) p.appendChild(h("p", "lede", "Nothing has been rated yet."));
     subs.forEach(function (sj) {
       var pp = panel(gridNode, "s12", sj, null);
-      pp.appendChild(table([{ label: "Skill" }, { label: "Term 1" }, { label: "Term 2" }], data.competencies[sj].map(function (c) {
+      pp.appendChild(table([{ label: T("Skill") }, { label: T("Term 1") }, { label: T("Term 2") }], data.competencies[sj].map(function (c) {
         var cell = function (t) { var x = c.terms[t]; return x ? chip(x.level >= 3 ? "good" : x.level === 2 ? "warn" : "serious", esc(LEVEL[x.level])) : "—"; };
         return { cells: [esc(c.name), cell("1"), cell("2")] };
       }), { caption: sj }));
     });
-    var np = panel(gridNode, "s12", "In their own words, and others’", "The card carries what the teacher saw, what " + esc(first()) + " says, and what you add.");
-    var SRC = { teacher: "Teacher", peer: "A classmate", self: first(), parent: "A parent" };
+    var np = panel(gridNode, "s12", T("In their own words, and others’"), "The card carries what the teacher saw, what " + esc(first()) + " says, and what you add.");
+    var SRC = { teacher: T("Teacher"), peer: T("A classmate"), self: first(), parent: T("A parent") };
     if (!data.notes.length) np.appendChild(h("p", "lede", "Nothing written yet."));
     data.notes.forEach(function (n) { np.appendChild(h("p", null, "<b>" + esc(SRC[n.source] || n.source) + (n.area ? " · " + esc(n.area) : "") + "</b> — " + esc(n.body))); });
     var box = h("div", "fp-formbox");
     var area = h("input", "fp-input"); area.placeholder = "About (for example: At home)";
     var body = h("textarea", "fp-input"); body.rows = 3; body.placeholder = "Your words about " + first();
-    var add = h("button", "fb-btn sm", "Add to the card"); add.type = "button";
+    var add = h("button", "fb-btn sm", T("Add to the card")); add.type = "button";
     [area, body, add].forEach(function (n) { box.appendChild(n); });
     np.appendChild(box);
     add.addEventListener("click", function () {
       if (!body.value.trim()) { toast("Write something first."); return; }
       add.disabled = true;
       API.competency.addNote(who.id, { term: "1", source: "parent", area: area.value.trim() || undefined, body: body.value.trim() }).then(function () {
-        toast("Added to the card.");
+        toast(T("Added to the card."));
         return API.competency.hpc(who.id).then(function (r) { S.data.hpc = { ok: true, v: r }; renderSheet("hpc"); });
       }, function (e) { add.disabled = false; toast(e && e.message ? e.message : "That did not save."); });
     });
@@ -2647,34 +2668,34 @@
 
   RENDER.diary = function (gridNode) {
     var data = part("diary");
-    if (!data || !data.entries.length) { panel(gridNode, "s12", "Diary", esc(SEC.diary.empty)); return; }
+    if (!data || !data.entries.length) { panel(gridNode, "s12", T("Diary"), esc(T(SEC.diary.empty))); return; }
     var by = {};
     data.entries.forEach(function (e) { (by[e.day] = by[e.day] || []).push(e); });
     Object.keys(by).sort().reverse().forEach(function (d) {
       var p = panel(gridNode, "s12", day(d), plural(by[d].length, "entry", "entries"));
-      p.appendChild(table([{ label: "" }, { label: "For" }, { label: "" }], by[d].map(function (e) {
-        return { cells: [esc(e.kind === "homework" ? "Homework" : e.kind === "circular" ? "Circular" : "Note"), esc(e.subject || ""), esc(e.body) + (e.by ? "<br><small>" + esc(e.by) + "</small>" : "")] };
+      p.appendChild(table([{ label: "" }, { label: T("For") }, { label: "" }], by[d].map(function (e) {
+        return { cells: [esc(T(e.kind === "homework" ? "Homework" : e.kind === "circular" ? "Circular" : "Note")), esc(e.subject || ""), esc(e.body) + (e.by ? "<br><small>" + esc(e.by) + "</small>" : "")] };
       }), { caption: "Diary" }));
     });
   };
 
   RENDER.meetings = function (gridNode) {
     var data = part("meetings"), who = S.student;
-    if (!data || !data.meetings.length) { panel(gridNode, "s12", "Parent meetings", esc(SEC.meetings.empty)); return; }
+    if (!data || !data.meetings.length) { panel(gridNode, "s12", T("Parent meetings"), esc(T(SEC.meetings.empty))); return; }
     data.meetings.forEach(function (m) {
       var p = panel(gridNode, "s12", m.title, esc(day(m.day)) + " · from " + esc(m.start) + " · " + esc(m.slotMinutes) + " minutes each");
       var box = h("div", "fp-formbox");
       p.appendChild(box);
       function draw() {
         box.innerHTML = "";
-        if (m.slot) box.appendChild(h("p", "lede", "<b>Your time: " + esc(m.slot.starts) + "</b>"));
-        else box.appendChild(h("p", "lede", m.mode === "open" ? "Choose a time." : "You have no time yet."));
+        if (m.slot) box.appendChild(h("p", "lede", "<b>" + esc(T("Your time")) + ": " + esc(m.slot.starts) + "</b>"));
+        else box.appendChild(h("p", "lede", T(m.mode === "open" ? "Choose a time." : "You have no time yet.")));
         var pick = m.mode === "open" ? (m.free || []) : [];
         if (m.slot && m.mode === "roll") {
-          var rel = h("button", "fb-btn sm", "Give this time back");
+          var rel = h("button", "fb-btn sm", T("Give this time back"));
           rel.type = "button";
           rel.addEventListener("click", function () {
-            API.exams.releasePtm(m.id, who.id).then(function () { m.slot = null; toast("Time given back."); draw(); }, function (e) { toast(e.message); });
+            API.exams.releasePtm(m.id, who.id).then(function () { m.slot = null; toast(T("Time given back.")); draw(); }, function (e) { toast(e.message); });
           });
           box.appendChild(rel);
         }
