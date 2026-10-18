@@ -130,8 +130,8 @@ window.OPLO_INDIA = function (K) {
 
   /* ============================================================ Classes */
   function classes(v) {
-    var P = K.cxPage(v, "India", "Classes",
-      "Each class of the school year with its class teacher, room and strength. Open one to see its children and what is still missing for each.");
+    var P = K.cxPage(v, "Students", "Classes",
+      "Each class and section of the school year (X-C is Class X, section C) with its class teacher, room and strength. Open one to see its children and what is still missing for each.");
     P.tools.appendChild(K.cnAction("Load from a file", function () { loader(function () { K.openAdmin(true, "in-classes"); }); }));
     P.tools.appendChild(K.cnAction("New class", function () { classForm(null, function () { K.openAdmin(true, "in-classes"); }); }, true));
     var slot = el("div", "en-slot");
@@ -281,7 +281,7 @@ window.OPLO_INDIA = function (K) {
   /* ========================================================= Compliance */
   var LEVEL = "blocks";
   function compliance(v) {
-    var P = K.cxPage(v, "India", "Compliance",
+    var P = K.cxPage(v, "Reports", "Compliance",
       "What the school holds for boards, the state and the data-protection law, what is missing, and the lists ready to send once it is not. Aadhaar is never kept in full.");
     P.tools.appendChild(K.cnAction("Load from a file", function () { loader(function () { K.openAdmin(true, "in-compliance"); }); }));
     var metrics = el("div"), slot = el("div", "en-slot");

@@ -8825,12 +8825,13 @@
       { k: "gpa", name: "GPA", not: ["IN"] }, { k: "transcripts", name: "Transcripts", not: ["IN"] }, { k: "reportcards", name: "Report Cards" },
       { k: "graduation", name: "Graduation", not: ["IN"] }] },
     { name: "Students", icon: "people", kids: [
-      { k: "students", name: "Student 360" }, { k: "enrollment", name: "Enrollment" }, { k: "rosters", name: "Rosters" },
-      { k: "records", name: "Records" }, { k: "documents", name: "Documents" }, { k: "guardians", name: "Guardians" },
-      { k: "health", name: "Health" }] },
+      { k: "students", name: "Student 360", as: { IN: "Student profile" } }, { k: "in-classes", name: "Classes", only: "IN" },
+      { k: "enrollment", name: "Enrollment" }, { k: "rosters", name: "Rosters" },
+      { k: "records", name: "Records" }, { k: "documents", name: "Documents" }, { k: "in-certs", name: "Certificates", only: "IN" },
+      { k: "guardians", name: "Guardians" }, { k: "health", name: "Health" }] },
     { name: "Schedule", icon: "calendar", kids: [
-      { k: "sc-days", name: "School Days" }, { k: "sc-bell", name: "Bell Schedules" }, { k: "sc-courses", name: "Courses" },
-      { k: "sc-sections", name: "Sections" }, { k: "sc-adddrop", name: "Add and Drop" },
+      { k: "sc-days", name: "School Days" }, { k: "sc-bell", name: "Bell Schedules" }, { k: "sc-courses", name: "Courses", as: { IN: "Subjects" } },
+      { k: "sc-sections", name: "Sections", as: { IN: "Timetable" } }, { k: "sc-adddrop", name: "Add and Drop" },
       { k: "sc-plans", name: "Plans" }] },
     { k: "attendance", name: "Attendance", icon: "check" },
     { name: "Student Support", icon: "heart", kids: [
@@ -8855,14 +8856,10 @@
       { k: "fx-upkeep", name: "Routines" }, { k: "fx-bookings", name: "Bookings" }, { k: "fx-vendors", name: "Vendors" },
       { k: "fx-documents", name: "Documents" }, { k: "fx-reports", name: "Reports" }] },
     { name: "Curriculum", icon: "books", kids: [{ k: "curriculum", name: "Courses" }, { k: "curmap", name: "Curriculum Map" }] },
-    /* India: the places an Indian school's office works. Shown only to a school
-       whose region is IN (organizations.region); the addresses work for any. */
-    { name: "India", icon: "flag", only: "IN", kids: [
-      { k: "in-classes", name: "Classes" }, { k: "in-compliance", name: "Compliance" }, { k: "in-certs", name: "Certificates" }] },
     { name: "Data Center", icon: "server", kids: [{ k: "data", name: "Exports" }, { k: "imports", name: "Imports" }, { k: "sis", name: "Integrations" },
       { k: "state", name: "State Reporting", not: ["IN"] }, { k: "district", name: "District" }, { k: "api", name: "API" }] },
     { k: "security", name: "Security", icon: "shield" },
-    { name: "Reports", icon: "table", kids: [{ k: "office", name: "Office Reports" }, { k: "builder", name: "Report Builder" }] },
+    { name: "Reports", icon: "table", kids: [{ k: "office", name: "Office Reports" }, { k: "builder", name: "Report Builder" }, { k: "in-compliance", name: "Compliance", only: "IN" }] },
     { k: "activity", name: "Audit Log", icon: "wave" },
     { k: "system", name: "Settings", icon: "gear" },
     /* Places the platform does not keep records for yet. They are still here,
@@ -8880,10 +8877,16 @@
   /* The tree this school sees, a group with no place left being no group. */
   function adminTree() {
     return ADMIN_TREE.filter(forRegion).map(function (t) {
-      if (!t.kids) return t;
-      var kids = t.kids.filter(forRegion);
+      if (!t.kids) return named(t);
+      var kids = t.kids.filter(forRegion).map(named);
       return kids.length ? Object.assign({}, t, { kids: kids }) : null;
     }).filter(Boolean);
+  }
+  /* A place whose name differs by country (`as`: { IN: "Timetable" }) is drawn
+     under its country's name; `was` keeps the other name's address working. */
+  function named(t) {
+    var n = t.as && t.as[regionOf()];
+    return n ? Object.assign({}, t, { name: n, was: t.name }) : t;
   }
   /* The student's own console: the school's record of them, read by them.
      Short, flat and in the order a student's questions come — where do I go,
@@ -8916,7 +8919,7 @@
   var ADMIN_SECTIONS = [];
   ADMIN_TREE.forEach(function (t) {
     if (!t.kids) { ADMIN_SECTIONS.push({ k: t.k, name: t.name, group: null, icon: t.icon, only: t.only, not: t.not }); return; }
-    t.kids.forEach(function (c) { ADMIN_SECTIONS.push({ k: c.k, name: c.name, group: t.name, icon: t.icon, only: c.only || t.only, not: c.not || t.not }); });
+    t.kids.forEach(function (c) { ADMIN_SECTIONS.push({ k: c.k, name: c.name, as: c.as, group: t.name, icon: t.icon, only: c.only || t.only, not: c.not || t.not }); });
   });
   // Reached from other screens, not places in the sidebar: one course's full
   // gradebook, missing work across the school, and the older names of places.
@@ -8953,7 +8956,7 @@
     if (S.me && consoleMode() === "student") return STUDENT_SECTIONS.filter(forRegion);
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
     if (consoleMode() !== "admin") return TEACHER_SECTIONS;
-    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion);
+    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion).map(named);
     return only ? mine.filter(function (t) { return only.indexOf(t.k) > -1; }) : mine;
   }
 
@@ -9736,7 +9739,7 @@
     var seg = String(rest || "").split("/").filter(Boolean).map(function (x) { try { return decodeURIComponent(x); } catch (e) { return x; } });
     var hit = allowedTabs().filter(function (t) {
       if (seg.length === 1) return sameName(t.k, seg[0]) || (!t.group && !t.hidden && sameName(slug(t.name), seg[0]));
-      return seg.length === 2 && !t.hidden && t.group && sameName(slug(t.group), seg[0]) && sameName(slug(t.name), seg[1]);
+      return seg.length === 2 && !t.hidden && t.group && sameName(slug(t.group), seg[0]) && (sameName(slug(t.name), seg[1]) || (t.was && sameName(slug(t.was), seg[1])));
     })[0];
     return hit ? hit.k : null;
   }
@@ -10892,9 +10895,9 @@
      about. Cloudflare puts the account above the page title; the same idea,
      fewer words. */
   function consoleHead(v, eyebrow, title, sub) {
-    var h = el("header", "cn-head");
-    if (eyebrow) h.appendChild(el("p", "cn-eyebrow", esc(eyebrow)));
-    h.appendChild(el("h1", "cn-h1", esc(title)));
+    var h = el("header", "cn-head"), W = window.OPLO_LOCALE ? window.OPLO_LOCALE.word : function (x) { return x; };
+    if (eyebrow) h.appendChild(el("p", "cn-eyebrow", esc(W(eyebrow))));
+    h.appendChild(el("h1", "cn-h1", esc(W(title))));
     if (sub) h.appendChild(el("p", "cn-sub", sub));
     v.appendChild(h);
     return h;
@@ -17618,7 +17621,7 @@
     lockers: { kind: "locker", eyebrow: "School Operations", title: "Lockers", sub: "Who has which locker." },
     checkouts: { kind: "checkout", eyebrow: "School Operations", title: "Equipment", sub: "What is out, with whom, and when it is due back." },
     curmap: { kind: "curriculum", eyebrow: "Curriculum", title: "Curriculum map", sub: "Units by course and week, with the standards they meet.", course: true },
-    "in-certs": { kind: "certificate", eyebrow: "India", title: "Certificates", sub: "Transfer, bonafide, character and migration certificates: who asked, what for, the number it carries, and when it was issued.", newLabel: "Record a request" },
+    "in-certs": { kind: "certificate", eyebrow: "Students", title: "Certificates", sub: "Transfer, bonafide, character and migration certificates: who asked, what for, the number it carries, and when it was issued.", newLabel: "Record a request" },
     fees: { kind: "fee", eyebrow: "Finance", title: "Fees", sub: "What the school charges, and how often." },
     invoices: { kind: "invoice", eyebrow: "Finance", title: "Invoices", sub: "What each family owes.",
       summary: function (rows) {
@@ -19590,6 +19593,60 @@
      How this console looks on this device, whether the service is answering,
      and who is signed in. Plain words: the people reading this run a school
      office, not a server. */
+  /* The school's country, boards and its families' languages, said once. What
+     the country decides (time zone, how a date and money are written, the month
+     the year starts) is shown, not asked: it follows from the country. */
+  function schoolSettings(group, row) {
+    var g = group("School");
+    var slot = el("div", "cx-setload", "Reading the school…");
+    g.appendChild(slot);
+    API.school.profile().then(function (r) {
+      slot.remove();
+      var p = r.profile, o = r.options, W = window.OPLO_LOCALE;
+      function save(body, reload) {
+        return API.school.putProfile(body).then(function () {
+          toast(reload ? "Saved. Reloading in the school’s country…" : "Saved.");
+          if (reload) setTimeout(function () { location.reload(); }, 700);
+        }, function (e) { toast(e && e.message ? e.message : "That did not save."); });
+      }
+      function select(options, cur, pick) {
+        var sel = el("select", "cx-select");
+        options.forEach(function (x) { var op = el("option"); op.value = x[0]; op.textContent = x[1]; sel.appendChild(op); });
+        sel.value = cur || "";
+        sel.addEventListener("change", function () { pick(sel.value); });
+        return sel;
+      }
+      function chips(items, picked, pick) {
+        var seg = el("div", "cn-seg"), on = picked.slice();
+        items.forEach(function (it) {
+          var b = el("button", "cn-segb" + (on.indexOf(it.code) > -1 ? " on" : ""), esc(it.native || it.name));
+          b.type = "button";
+          b.addEventListener("click", function () {
+            var i = on.indexOf(it.code);
+            if (i > -1) { if (on.length === 1 && it.code === picked[0] && items === o.languages) return; on.splice(i, 1); } else on.push(it.code);
+            b.classList.toggle("on", on.indexOf(it.code) > -1);
+            pick(on.slice());
+          });
+          seg.appendChild(b);
+        });
+        return seg;
+      }
+      row(g, "flag", "var(--cx-accent)", "Country", "Set once. Dates, money, the time zone, the month the year starts and a few words follow it.",
+        select(o.regions.map(function (x) { return [x.code, x.name]; }), p.region, function (v) { if (v !== p.region) save({ region: v }, true); }));
+      if (p.region === "IN") {
+        row(g, "cap", "var(--cx-indigo)", "Boards", "The exam boards this school answers to (CISCE sets ICSE and ISC; NIOS is open schooling). A campus may follow more than one.",
+          chips(o.boards, p.boards, function (list) { save({ boards: list }); }));
+        row(g, "building", "var(--cx-green)", "State", "Used for the rules a state sets (fees, records, holidays).",
+          select([["", "Not set"]].concat(o.states.map(function (x) { return [x.code, x.name]; })), p.stateCode, function (v) { save({ stateCode: v || null }); }));
+      }
+      row(g, "mail", "var(--cx-orange)", "Families’ languages", "The languages a family can read this school’s messages and screens in.",
+        chips(o.languages, p.languages, function (list) { if (list.length) save({ languages: list }); }));
+      var sample = W ? W.dmy(Date.now()) + " · " + W.money(1234567) + " · " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+      row(g, "table", "var(--cx-gray)", "Shown like this", p.country + " · " + p.timezone + " · the year starts in " +
+        ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][p.yearStartMonth - 1], sample);
+    }, function (e) { slot.textContent = e && e.message ? e.message : "The school’s profile did not load."; });
+  }
+
   function tabSystem(v) {
     consoleHead(v, null, "Settings", "How this console looks on this device, and whether the service behind it is answering.");
 
@@ -19629,6 +19686,8 @@
       segOf([["light", "Light"], ["dark", "Dark"], ["auto", "Auto"]], currentAppearance(), applyAppearance));
     row(look, "rows", "var(--cx-accent)", "Rows", "How much fits on a screen. Marking hundreds of submissions wants more; planning a lesson wants fewer.",
       segOf([["comfortable", "Comfortable"], ["standard", "Standard"], ["dense", "Dense"]], currentDensity(), applyDensity));
+
+    if (consoleMode() === "admin") schoolSettings(group, row);
 
     var plat = group("Service");
     var api = row(plat, "server", "var(--cx-green)", "OEdu service", "The service this console reads and saves to.", '<span class="cx-dot"></span><span>Checking…</span>');
@@ -19923,6 +19982,7 @@
              : learn.some(function (r) { return r.role === "teacher"; }) ? "teacher"
              : "student";
     var name = a.name || a.email || "Someone";
+    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(a.organizations && a.organizations[0] && a.organizations[0].profile);
     return {
       id: a.id, email: a.email, name: name,
       first: a.firstName || name.split(/\s+/)[0],

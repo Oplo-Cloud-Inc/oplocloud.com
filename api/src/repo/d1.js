@@ -277,6 +277,22 @@ export class D1Repository {
     return this.db.prepare(`SELECT * FROM organizations WHERE slug = ?`).bind(slug).first();
   }
 
+  async getOrganization(orgId) {
+    return this.db.prepare(`SELECT * FROM organizations WHERE id = ?`).bind(orgId).first();
+  }
+
+  /* A school's profile (migration 0026). Only the columns named are written. */
+  async setOrgProfile(orgId, p, by) {
+    const cols = { region: p.region, boards: p.boards && JSON.stringify(p.boards), state_code: p.stateCode, timezone: p.timezone,
+      locale: p.locale, year_start_month: p.yearStartMonth, languages: p.languages && JSON.stringify(p.languages) };
+    const sets = [], vals = [];
+    for (const [k, v] of Object.entries(cols)) if (v !== undefined) { sets.push(`${k} = ?`); vals.push(v); }
+    sets.push("profile_set_at = ?", "profile_set_by = ?", "updated_at = ?");
+    vals.push(now(), by || null, now(), orgId);
+    await this.db.prepare(`UPDATE organizations SET ${sets.join(", ")} WHERE id = ?`).bind(...vals).run();
+    return this.getOrganization(orgId);
+  }
+
   async addMember(orgId, accountId, role = "member") {
     await this.db.prepare(
       `INSERT OR REPLACE INTO organization_memberships
@@ -287,7 +303,7 @@ export class D1Repository {
 
   async membershipsFor(accountId) {
     const { results } = await this.db.prepare(
-      `SELECT m.org_id, m.role, o.slug, o.name, o.region
+      `SELECT m.org_id, m.role, o.*
          FROM organization_memberships m JOIN organizations o ON o.id = m.org_id
         WHERE m.account_id = ?`
     ).bind(accountId).all();

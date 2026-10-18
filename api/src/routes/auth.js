@@ -4,6 +4,7 @@
    The session is established here and nowhere else.
    ========================================================================== */
 
+import { profileOf } from "../services/profile.js";
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { sessionCookie, clearCookie } from "../lib/cookies.js";
 import { signIn, signOut, requireActor, rateLimit, rateLimitClear,
@@ -28,7 +29,8 @@ export function publicAccount(actor) {
       product: r.product, role: r.role, orgId: r.org_id
     })),
     organizations: (actor.orgs || []).map((o) => ({
-      id: o.org_id, slug: o.slug, name: o.name, role: o.role, region: o.region || "US"
+      id: o.org_id, slug: o.slug, name: o.name, role: o.role, region: o.region || "US",
+      profile: profileOf(o)
     }))
   };
 }

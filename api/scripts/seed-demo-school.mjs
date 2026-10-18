@@ -52,7 +52,7 @@ const PEOPLE = {
 const q = (s) => (s == null ? "NULL" : "'" + String(s).replace(/'/g, "''") + "'");
 const who = (k) => `(SELECT id FROM accounts WHERE email_lower = ${q(PEOPLE[k].email)})`;
 
-function build(india) {
+function build(india, profile) {
   if (REMOVE) {
     // The organization first: its courses, sections, subjects and enrollments
     // go with it, so deleting the accounts is not blocked by them.
@@ -123,6 +123,7 @@ function build(india) {
     const classId = "cls_sfhs_xc";
     sql.push(
       `UPDATE organizations SET region = 'IN' WHERE id = ${q(ORG)};`,
+      ...(profile ? [`UPDATE organizations SET boards = '["CISCE"]', state_code = 'CH', languages = '["en","hi","pa"]' WHERE id = ${q(ORG)};`] : []),
       `INSERT OR IGNORE INTO learn_classes (id, org_id, school_year, grade, section, programme, class_teacher_id, room, capacity, created_at, updated_at)
          VALUES (${q(classId)}, ${q(ORG)}, '2026-2027', 'X', 'C', 'ICSE', ${who("teacher")}, 'S-322', 30, ${T}, ${T});`,
       `INSERT OR IGNORE INTO learn_student_india (account_id, org_id, class_id, admission_no, admitted_on, roll_no, gender, house, category, second_language, blood_group,
@@ -144,7 +145,10 @@ try {
   const file = join(dir, "seed.sql");
   const probe = wrangler("--json", "--command", "SELECT COUNT(*) AS n FROM pragma_table_info('organizations') WHERE name = 'region'");
   const india = !REMOVE && JSON.parse(probe.slice(probe.indexOf("[")))[0].results[0].n === 1;
-  writeFileSync(file, build(india));
+  // Migration 0026 (the school profile): the demo school follows CISCE, in Chandigarh, with Hindi and Punjabi for families.
+  const pr = wrangler("--json", "--command", "SELECT COUNT(*) AS n FROM pragma_table_info('organizations') WHERE name = 'boards'");
+  const profile = india && JSON.parse(pr.slice(pr.indexOf("[")))[0].results[0].n === 1;
+  writeFileSync(file, build(india, profile));
   try { wrangler("--file", file); }
   catch (e) { console.error(String(e.stderr || e.message).split("\n").slice(-8).join("\n")); console.error("Stopped: the statements above failed."); process.exit(1); }
 

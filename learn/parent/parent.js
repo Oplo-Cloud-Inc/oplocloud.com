@@ -363,6 +363,7 @@
     var dest = H.destination(me.roles, location, null);
     if (!dest.stay) { location.replace(dest.href); return; }
     S.me = me;
+    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(me.organizations && me.organizations[0] && me.organizations[0].profile);
     trimSections(me);
     $("#boot").hidden = false;
     API.family.mine().then(function (fam) {

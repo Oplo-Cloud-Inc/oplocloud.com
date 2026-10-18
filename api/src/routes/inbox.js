@@ -10,6 +10,7 @@
    twice says nothing twice.
    ========================================================================== */
 
+import { profileOf, dayIn } from "../services/profile.js";
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { id } from "../lib/crypto.js";
@@ -138,16 +139,16 @@ export async function putPrefs(ctx) {
 /* ---------------------------------------------------------------- Reminders
    Run by the office, or by the Worker's schedule. Each reminder is a notice
    with a key, so the same day's run can be repeated safely.
-   The school's day is read in New York time until organisations carry a
-   timezone — ponytail: one constant, move it to the org when a second zone appears. */
-const TZ = "America/New_York";
-function localNow(at) {
-  const f = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+   The school's day is read in the school's own time zone (its profile; New
+   York for a US school that never said, Kolkata for an Indian one). */
+function localNow(at, tz) {
+  const f = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
   const p = Object.fromEntries(f.formatToParts(at).map((x) => [x.type, x.value]));
   return { day: `${p.year}-${p.month}-${p.day}`, minutes: (+p.hour % 24) * 60 + +p.minute };
 }
 export async function runReminders(repo, env, orgId, at = new Date(), opts = {}) {
-  const { day, minutes } = opts.day ? { day: opts.day, minutes: opts.minutes ?? 12 * 60 } : localNow(at);
+  const tz = profileOf(await repo.getOrganization(orgId)).timezone;
+  const { day, minutes } = opts.day ? { day: opts.day, minutes: opts.minutes ?? 12 * 60 } : localNow(at, tz);
   const made = { roll: 0, due: 0, documents: 0 };
   const org = { orgId };
   // 1. A teacher whose section meets today and has no register, after nine thirty.
@@ -171,7 +172,7 @@ export async function runReminders(repo, env, orgId, at = new Date(), opts = {})
   for (const [courseId, students] of byCourse) {
     for (const a of await repo.listAssignments(courseId)) {
       if (a.status === "draft" || !a.due_at) continue;
-      const due = new Date(a.due_at - 5 * 3600000).toISOString().slice(0, 10);   // the school's evening, not UTC midnight
+      const due = dayIn(tz, a.due_at);   // the school's evening, not UTC midnight
       if (due !== day && due !== tomorrow) continue;
       const to = [];
       for (const s of students) {
