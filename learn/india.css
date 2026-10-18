@@ -35,3 +35,29 @@ body.is-console .rg-card { display: flex; align-items: center; gap: 14px; flex-w
 body.is-console .rg-card > div { flex: 1; min-width: 160px; }
 body.is-console .rg-card b { font-size: 17px; letter-spacing: -.01em; }
 body.is-console .rg-sub { margin: 0 0 28px; }
+
+/* The exam cycle (exams.js) */
+body.is-console .ex-bands { display: grid; gap: 6px; margin: 0 0 10px; }
+body.is-console .ex-band { display: grid; grid-template-columns: 90px 1fr 90px 34px; gap: 8px; align-items: center; }
+body.is-console .ex-band input { height: 30px; padding: 0 9px; border-radius: 8px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label); font: inherit; font-size: 13px; min-width: 0; }
+body.is-console .ex-sheet { border: .5px solid var(--cx-sep); border-radius: 10px; overflow: hidden; background: var(--cx-bg); margin: 0 0 12px; }
+body.is-console .ex-row { display: grid; grid-template-columns: 34px minmax(120px, 1.4fr) repeat(var(--n, 2), minmax(64px, .7fr)) 36px 62px 56px; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: .5px solid var(--cx-sep); font-size: 13.5px; }
+body.is-console .ex-row:last-child { border-bottom: 0; }
+body.is-console .ex-head { font-size: 11.5px; font-weight: 600; letter-spacing: .02em; color: var(--cx-label-2); background: var(--cx-fill); }
+body.is-console .ex-c { text-align: center; font-variant-numeric: tabular-nums; }
+body.is-console .ex-in { width: 100%; height: 30px; padding: 0 6px; text-align: center; border-radius: 8px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label); font: inherit; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+body.is-console .ex-in:focus { outline: none; box-shadow: 0 0 0 3px var(--cx-accent-soft); }
+body.is-console .ex-in:disabled { background: var(--cx-fill); color: var(--cx-label-2); }
+body.is-console .ex-t { font-weight: 600; color: var(--cx-label); }
+body.is-console .ex-g { font-weight: 600; color: var(--cx-label); }
+body.is-console .ex-bad { color: var(--cx-red); }
+body.is-console .ex-fail { color: var(--cx-red); }
+body.is-console .ex-acts { margin: 14px 0 0; }
+body.is-console .ex-card { border: .5px solid var(--cx-sep); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; background: var(--cx-bg); }
+body.is-console .ex-card-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin: 0 0 8px; font-size: 14.5px; }
+body.is-console .ex-lines { display: grid; grid-template-columns: minmax(120px, 1.4fr) 90px 60px 90px; gap: 3px 10px; font-size: 13px; color: var(--cx-label); margin: 0 0 10px; }
+body.is-console .ex-lines span:nth-child(4n) { color: var(--cx-label-2); font-size: 12px; }
+body.is-console .ex-card-f { display: grid; grid-template-columns: 1fr 180px; gap: 8px; margin: 0 0 8px; }
+body.is-console .ex-remark { height: 30px; padding: 0 10px; border-radius: 8px; border: .5px solid var(--cx-sep); background: var(--cx-bg); color: var(--cx-label); font: inherit; font-size: 13px; min-width: 0; }
+body.is-console .ex-cos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+body.is-console .ex-cosel { min-width: 0; width: 100%; font-size: 12.5px; }

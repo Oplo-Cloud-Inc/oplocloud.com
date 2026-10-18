@@ -8821,8 +8821,9 @@
   var ADMIN_TREE = [
     { k: "today", name: "Overview", icon: "summary" },
     { name: "Academics", icon: "cap", kids: [
-      { k: "gradebook", name: "Gradebook" }, { k: "assessments", name: "Assessments" }, { k: "periods", name: "Marking Periods" },
-      { k: "gpa", name: "GPA", not: ["IN"] }, { k: "transcripts", name: "Transcripts", not: ["IN"] }, { k: "reportcards", name: "Report Cards" },
+      { k: "gradebook", name: "Gradebook" }, { k: "assessments", name: "Assessments" }, { k: "periods", name: "Marking Periods", not: ["IN"] },
+      { k: "in-exams", name: "Exams", only: "IN" }, { k: "in-scales", name: "Grading scales", only: "IN" },
+      { k: "gpa", name: "GPA", not: ["IN"] }, { k: "transcripts", name: "Transcripts", not: ["IN"] }, { k: "reportcards", name: "Report Cards", not: ["IN"] },
       { k: "graduation", name: "Graduation", not: ["IN"] }] },
     { name: "Students", icon: "people", kids: [
       { k: "students", name: "Student 360", as: { IN: "Student profile" } }, { k: "in-classes", name: "Classes", only: "IN" },
@@ -9159,6 +9160,7 @@
       { k: "tograde", name: "To Grade", icon: "inbox" },
       { k: "assignments", name: "Assignments", icon: "stack" },
       { k: "assessments", name: "Assessments", icon: "checklist" },
+      { k: "in-papers", name: "Marks entry", icon: "table", only: "IN" },
       { k: "plans", name: "Lesson Plans", icon: "calendar" }] },
     { head: "Learning", items: [
       { k: "lessons", name: "Lessons", icon: "play" },
@@ -9773,6 +9775,7 @@
        "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
        "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
        "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch,
+       "in-exams": tabInExams, "in-scales": tabInScales,
        sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
   }
 
@@ -15890,7 +15893,7 @@
     resources: tabTeachResources, students: tabStudents, groups: tabTeachGroups, attendance: tabTeachAttendance,
     analytics: tabTeachAnalytics, interventions: tabTeachInterventions, messages: function (v) { plat().inbox(v); }, announcements: txTab("announcements"),
     referrals: function (v) { plat().records(v, REC.referrals); }, leave: function (v) { plat().records(v, REC.leave); }, events: function (v) { plat().records(v, REC.events); },
-    facilities: tabFxStaff, "in-myclass": tabInMyClass,
+    facilities: tabFxStaff, "in-myclass": tabInMyClass, "in-papers": tabInPapers,
     system: tabSystem, help: tabTeachHelp, activity: tabActivity, reports: tabReports, work: tabWork, sets: tabSets
   };
 
@@ -17700,6 +17703,21 @@
     });
     return REGISTER;
   }
+  /* Exams: scales, papers, marks entry, approvals, report cards and the parent meeting. */
+  var EXAMS = null;
+  function exams() {
+    if (EXAMS) return EXAMS;
+    EXAMS = window.OPLO_EXAMS({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, printHead: printHead, schoolName: schoolName, csvDownload: csvDownload, openAdmin: openAdmin,
+      ui: india().ui
+    });
+    return EXAMS;
+  }
+  function tabInExams(v) { exams().exams(v); }
+  function tabInScales(v) { exams().scales(v); }
+  function tabInPapers(v) { exams().papers(v); }
   function tabInRegister(v) { register().classes(v); }
   function tabInWatch(v) { register().watch(v); }
   function tabInMyClass(v) { register().myClass(v); }

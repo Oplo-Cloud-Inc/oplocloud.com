@@ -130,6 +130,7 @@
     if (v == null || v === "") return "—";
     var d = typeof v === "number" ? new Date(v) : new Date(/^\d{4}-\d{2}-\d{2}$/.test(v) ? v + "T12:00:00" : v);
     if (isNaN(d.getTime())) return String(v);
+    if (window.OPLO_LOCALE && window.OPLO_LOCALE.active()) return d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear();   // 17 Oct 2026
     return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
   }
   function since(ms) {
@@ -200,6 +201,8 @@
     { key: "grades", name: "Grades", group: "learning", icon: "grades", size: "w2 h2 big",
       empty: "Marks appear here once there is a transcript or a marked course on the record.",
       facts: [], columns: ["Course", "Term", "Mark", "Credit"] },
+    { key: "reportcards", name: "Report cards", group: "learning", icon: "grades", size: "w2", only: ["IN"], record: false,
+      empty: "Report cards appear here once the school has published the marks of an exam." },
     { key: "assignments", name: "Assignments", group: "learning", icon: "assignments",
       empty: "Work a teacher sets appears here with its due date — and, once marked, the score and the comment.",
       facts: [], columns: ["Assignment", "Course", "Due", "Status"] },
@@ -234,6 +237,8 @@
       empty: "Counseling and wellness information appears here if the school shares it.",
       facts: ["Counselor", "Last check-in"], columns: ["Date", "Note"] },
 
+    { key: "meetings", name: "Parent meetings", group: "school", icon: "schedule", size: "w2", only: ["IN"], record: false,
+      empty: "Parent meetings appear here with your time, once the class teacher sets one." },
     { key: "schedule", name: "Schedule", group: "school", icon: "schedule", size: "w2 h2 big",
       empty: "Class periods, rooms and teachers appear here when the school publishes a schedule.",
       facts: [], columns: ["Period", "Course", "Teacher", "Room", "Days"] },
@@ -267,7 +272,7 @@
      "after high school" are a US school's, and a family at an Indian school is not shown them. */
   function trimSections(me) {
     var org = me && me.organizations && me.organizations[0], region = (org && org.region) || "US";
-    SECTIONS = SECTIONS.filter(function (s) { return !(s.not && s.not.indexOf(region) > -1); });
+    SECTIONS = SECTIONS.filter(function (s) { return !(s.not && s.not.indexOf(region) > -1) && !(s.only && s.only.indexOf(region) < 0); });
     Object.keys(SEC).forEach(function (k) { delete SEC[k]; });
     SECTIONS.forEach(function (s, i) { s.index = i; SEC[s.key] = s; });
   }
@@ -518,6 +523,9 @@
       register: API.attendance.family(id),
       codes: API.attendance.codes()
     };
+    // A school in India publishes report cards and holds parent meetings; the others have neither.
+    var inOrg = S.me && S.me.organizations && S.me.organizations[0];
+    if (inOrg && inOrg.region === "IN") { calls.cards = API.exams.reportCards(id); calls.meetings = API.exams.ptmFor(id); }
     var keys = Object.keys(calls);
     return Promise.all(keys.map(function (k) { return settle(calls[k]); })).then(function (out) {
       if (S.student !== student) return;
@@ -1085,6 +1093,8 @@
       case "enrollment": return g && (g.program || g.enrollment) ? "record" : "none";
       case "documents": return g && g.transfer ? "record" : "none";
       case "student": return "record";
+      case "reportcards": return part("cards") && part("cards").reportCards.length ? "school" : "none";
+      case "meetings": return part("meetings") && part("meetings").meetings.length ? "school" : "none";
       case "guardians": return part("guardians") && part("guardians").length ? "record" : "none";
       case "emergency": return part("guardians") && part("guardians").length ? "record" : "none";
       default: return "none";
@@ -1131,6 +1141,17 @@
   function glimpse(sec, src) {
     var g = grad();
     var k = sec.key;
+    if (k === "reportcards" || k === "meetings") {
+      var pc = part("cards"), pm = part("meetings");
+      if (k === "reportcards") {
+        var rc = pc && pc.reportCards[0], c0 = rc && rc.cards[0];
+        if (!c0) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+        return { stat: c0.percent != null ? esc(c0.percent) + "<small>%</small>" : esc(rc.exam.name), sub: esc(rc.exam.name + (c0.grade ? " · grade " + c0.grade : "") + (rc.complete ? "" : " · more to come")) };
+      }
+      var nm = pm && pm.meetings[0];
+      if (!nm) return { empty: true, stat: "Nothing yet", sub: esc(sec.empty) };
+      return { stat: nm.slot ? esc(nm.slot.starts) : esc(day(nm.day)), sub: esc(nm.title + " · " + day(nm.day) + (nm.slot ? "" : nm.mode === "open" ? " · choose a time" : "")) };
+    }
     if (k === "attendance" && register().rows.length && !rec(k)) {
       var rg = register();
       return { stat: rg.here + "<small>%</small>", sub: "in class · " + plural(rg.away.length, "absence") + " · " + rg.late + " late" };
@@ -2546,6 +2567,66 @@
       }
     } else problemFor(gridNode, "grad", "The enrollment record");
     recordPanel(gridNode, "enrollment", { title: rec("enrollment") ? "Enrollment details from the school" : null });
+  };
+
+  /* ------------------------------------------- Report cards, parent meetings
+     For a school in India. A report card is what the school has published of an
+     exam; a meeting is the day, and the family's time in it. */
+  RENDER.reportcards = function (gridNode) {
+    var data = part("cards");
+    if (!data || !data.reportCards.length) { panel(gridNode, "s12", "Report cards", esc(SEC.reportcards.empty)); return; }
+    data.reportCards.forEach(function (rc) {
+      var c = rc.cards[0];
+      var p = panel(gridNode, "s12", rc.exam.name + " · " + yearShort(rc.exam.year), rc.complete ? "Every subject has been published." : "Some subjects are not published yet; this fills in as they are.");
+      var rows = c.subjects.map(function (l) {
+        return { cells: [esc(l.subject), l.absent ? "Absent" : l.missing ? "—" : esc(l.total + " of " + l.max), esc(l.grade || ""), l.pass === false ? chip("serious", "Below the pass mark") : l.pass ? "" : ""] };
+      });
+      p.appendChild(table([{ label: "Subject" }, { label: "Marks" }, { label: "Grade" }, { label: "" }], rows, { caption: "Marks" }));
+      var kv = h("dl", "kv");
+      kvFill(kv, [["Total", c.percent != null ? esc(c.total + " of " + c.max + " (" + c.percent + "%)" + (c.grade ? " · grade " + c.grade : "")) : null, c.percent != null],
+        ["Attendance", c.attendance && c.attendance.total ? esc(c.attendance.present + " of " + c.attendance.total + " days (" + c.attendance.percent + "%)") : null, c.attendance && c.attendance.total],
+        ["Co-scholastic", Object.keys(c.cos || {}).length ? esc(Object.keys(c.cos).map(function (a) { return a + ": " + c.cos[a]; }).join(" · ")) : null, Object.keys(c.cos || {}).length],
+        ["Class teacher’s remark", c.remark ? esc(c.remark) : null, c.remark],
+        ["Result", c.decision ? esc(c.decision.charAt(0).toUpperCase() + c.decision.slice(1)) : null, c.decision]]);
+      p.appendChild(kv);
+    });
+  };
+
+  RENDER.meetings = function (gridNode) {
+    var data = part("meetings"), who = S.student;
+    if (!data || !data.meetings.length) { panel(gridNode, "s12", "Parent meetings", esc(SEC.meetings.empty)); return; }
+    data.meetings.forEach(function (m) {
+      var p = panel(gridNode, "s12", m.title, esc(day(m.day)) + " · from " + esc(m.start) + " · " + esc(m.slotMinutes) + " minutes each");
+      var box = h("div", "fp-formbox");
+      p.appendChild(box);
+      function draw() {
+        box.innerHTML = "";
+        if (m.slot) box.appendChild(h("p", "lede", "<b>Your time: " + esc(m.slot.starts) + "</b>"));
+        else box.appendChild(h("p", "lede", m.mode === "open" ? "Choose a time." : "You have no time yet."));
+        var pick = m.mode === "open" ? (m.free || []) : [];
+        if (m.slot && m.mode === "roll") {
+          var rel = h("button", "fb-btn sm", "Give this time back");
+          rel.type = "button";
+          rel.addEventListener("click", function () {
+            API.exams.releasePtm(m.id, who.id).then(function () { m.slot = null; toast("Time given back."); draw(); }, function (e) { toast(e.message); });
+          });
+          box.appendChild(rel);
+        }
+        if (pick.length || (m.mode === "open" && m.slot)) {
+          var wrap = h("div", "act");
+          pick.forEach(function (sl) {
+            var b = h("button", "fb-btn sm", esc(sl.starts));
+            b.type = "button";
+            b.addEventListener("click", function () {
+              API.exams.bookPtm(m.id, who.id, sl.no).then(function (r) { toast("Booked for " + r.booked.starts + "."); m.slot = r.booked; m.free = (m.free || []).filter(function (x) { return x.no !== sl.no; }); draw(); }, function (e) { toast(e.message); });
+            });
+            wrap.appendChild(b);
+          });
+          box.appendChild(wrap);
+        }
+      }
+      draw();
+    });
   };
 
   /* ----------------------------------------------------- Messages, forms */

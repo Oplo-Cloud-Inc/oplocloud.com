@@ -489,6 +489,30 @@ window.OPLO_API = (function () {
       addLock: function (body) { return post("/register/locks", body); },
       afterLock: function () { return get("/register/after-lock"); }
     },
+    exams: {
+      scales: function () { return get("/grading/scales"); },
+      createScale: function (b) { return post("/grading/scales", b); },
+      updateScale: function (id, b) { return put("/grading/scales/" + id, b); },
+      deleteScale: function (id) { return del("/grading/scales/" + id); },
+      list: function (year) { return get("/exams" + q({ year: year })); },
+      create: function (b) { return post("/exams", b); },
+      update: function (id, b) { return put("/exams/" + id, b); },
+      papers: function (o) { o = o || {}; return get("/papers" + q({ examId: o.examId, classId: o.classId, mine: o.mine ? "1" : undefined })); },
+      addPapers: function (examId, classId, papers) { return post("/exams/" + examId + "/papers", { classId: classId, papers: papers }); },
+      reassign: function (paperId, teacherId) { return put("/papers/" + paperId, { teacherId: teacherId }); },
+      paper: function (id) { return get("/papers/" + id); },
+      putMarks: function (id, b) { return put("/papers/" + id + "/marks", b); },
+      advance: function (id, to, note) { return post("/papers/" + id + "/advance", { to: to, note: note }); },
+      cards: function (examId, classId, published) { return get("/exams/" + examId + "/cards" + q({ classId: classId, published: published ? "1" : undefined })); },
+      putCards: function (examId, classId, cards) { return put("/exams/" + examId + "/cards", { classId: classId, cards: cards }); },
+      markEdits: function () { return get("/exams/mark-edits"); },
+      reportCards: function (studentId) { return get("/students/" + studentId + "/report-cards"); },
+      createPtm: function (b) { return post("/ptm", b); },
+      ptm: function (classId) { return get("/ptm" + q({ classId: classId })); },
+      ptmFor: function (studentId) { return get("/students/" + studentId + "/ptm"); },
+      bookPtm: function (ptmId, accountId, slotNo) { return post("/ptm/" + ptmId + "/book", { accountId: accountId, slotNo: slotNo }); },
+      releasePtm: function (ptmId, accountId) { return post("/ptm/" + ptmId + "/release", { accountId: accountId }); }
+    },
     school: {
       profile: function () { return get("/school/profile"); },
       putProfile: function (data) { return put("/school/profile", data); }

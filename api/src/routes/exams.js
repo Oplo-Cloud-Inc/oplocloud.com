@@ -210,11 +210,17 @@ async function paperOf(ctx, S, paperId) {
 }
 const enterRes = (S, p) => ({ orgId: S.orgId, teacherId: p.teacher_id, classTeacherId: p.class_teacher_id });
 
+/* What the person asking may do with this paper, so a screen draws only the steps that are theirs. */
+async function powers(ctx, S, p) {
+  const [check, approve, publish] = await Promise.all(["exam.check", "exam.approve", "exam.publish"].map((a) => can(ctx, a, { orgId: S.orgId })));
+  return { office: check, mayCheck: check, mayApprove: approve, mayPublish: publish, canEnter: await can(ctx, "exam.enter", enterRes(S, p)) };
+}
+
 export async function getPaper(ctx, { paperId }) {
   const S = await school(ctx);
   const p = await paperOf(ctx, S, paperId);
   await must(ctx, "exam.enter", enterRes(S, p));
-  return json(await paperView(ctx, S, p));
+  return json({ ...(await paperView(ctx, S, p)), ...(await powers(ctx, S, p)) });
 }
 
 /* PUT /papers/:id/marks { marks: [{ accountId, theory?, internal?, practical?, absent? }], why? }
@@ -245,7 +251,8 @@ export async function putMarks(ctx, { paperId }) {
     rows.push({ accountId, ...G.cleanMark(p, m, (msg, f) => { throw ApiError.badRequest(`${who}: ${msg}`, f); }) });
   }
   await ctx.repo.saveMarks(paperId, rows, S.actor.id, p.state, afterLock, why);
-  return json(await paperView(ctx, S, await paperOf(ctx, S, paperId)));
+  const fresh = await paperOf(ctx, S, paperId);
+  return json({ ...(await paperView(ctx, S, fresh)), ...(await powers(ctx, S, fresh)) });
 }
 
 /* POST /papers/:id/advance { to, note? } */
