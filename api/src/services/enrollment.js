@@ -43,6 +43,21 @@ export const REJECT_REASONS = ["ineligible", "incomplete_file", "no_seat", "fail
 export const EXIT_REASONS = ["relocated", "transferred_out", "withdrawn_by_family", "disciplinary",
   "completed_programme", "other"];
 
+// What happens between "documents verified" and "decision": an assessment, an
+// interaction or an interview is a session with a date, and it ends in a result.
+export const SESSION_STATUSES = ["scheduled", "completed", "absent", "cancelled"];
+export const SESSION_RESULTS = ["qualified", "not_qualified", "deferred"];
+
+// Before an application: a family that has asked.
+export const ENQUIRY_SOURCES = [["walk_in", "Walk-in"], ["phone", "Phone call"], ["website", "Website"], ["referral", "Referral"],
+  ["school_event", "Open day or school event"], ["advertisement", "Advertisement"], ["other", "Something else"]];
+export const ENQUIRY_STATUSES = ["new", "contacted", "visit_booked", "visited", "applied", "not_proceeding"];
+export const OPEN_ENQUIRY = ["new", "contacted", "visit_booked", "visited"];
+
+// The paper that goes to the family; which of them each step may issue is the route's.
+export const LETTER_KINDS = ["acknowledgement", "deficiency", "call", "offer", "waitlist", "regret", "confirmation"];
+export const LETTER_CHANNELS = ["printed", "handed", "inbox", "whatsapp", "email", "post"];
+
 /* ------------------------------------------------------------------ Dates
    Calendar days are 'YYYY-MM-DD' text and are compared as text. They are
    never turned into a local Date, so no time zone can move one by a day. */
@@ -136,6 +151,31 @@ export const IN_DOCUMENTS = [
   { key: "health_record", label: "Immunisation record", required: false, types: ["new", "transfer"] }
 ];
 
+/* What a school may ask of a child before deciding. None is required until the
+   school says so: a school that wants an entrance test for Class IV and an
+   interaction for Nursery turns on exactly those, per class, in Requirements. */
+export const DEFAULT_ASSESSMENTS = [
+  { key: "interaction", label: "Interaction with the child and parents", required: false, types: ["new", "transfer"],
+    hint: "A short, friendly meeting — not an examination." },
+  { key: "test", label: "Entrance assessment", required: false, types: ["new", "transfer"],
+    hint: "Written or oral, as the school sets it for the class." }
+];
+
+/* Who is heard first when seats are few. Order is rank: the first is served first. */
+export const DEFAULT_PRIORITIES = [
+  { key: "sibling", label: "Brother or sister already at the school" },
+  { key: "staff", label: "Child of a staff member" },
+  { key: "alumni", label: "Child of an alumnus" }
+];
+
+/* Particulars a school may insist on before an application can be submitted, beyond the nine it always does. */
+export const REQUIRED_FIELD_CHOICES = [
+  ["student.gender", "Gender"], ["student.nationality", "Nationality"], ["student.motherTongue", "Mother tongue"],
+  ["student.bloodGroup", "Blood group"], ["student.category", "Category"], ["contact.pin", "PIN code"],
+  ["emergency.name", "Emergency contact"], ["previous.lastGrade", "Last class completed"]
+];
+const FIELD_LABEL = Object.fromEntries(REQUIRED_FIELD_CHOICES);
+
 export function defaultSettings(today, { region, yearStartMonth } = {}) {
   const india = !!region && region !== "US";
   const year = schoolYearOf(today || todayOf(), india ? yearStartMonth || 4 : 6);
@@ -157,12 +197,24 @@ export function defaultSettings(today, { region, yearStartMonth } = {}) {
     offerDays: 14,
     dueDays: 7,
     stalledDays: 5,
+    // How long, from sending an application in to a decision, the school promises itself.
+    decisionDays: 14,
     admissionPrefix: "ADM-",
-    admissionPad: 4
+    admissionPad: 4,
+    assessments: DEFAULT_ASSESSMENTS.map((a) => ({ ...a })),
+    priorities: DEFAULT_PRIORITIES.map((p) => ({ ...p })),
+    requiredFields: india ? ["student.gender", "contact.pin"] : [],
+    // Dates the school publishes for each admission year: { "2026-2027": { opens, closes, ... } }.
+    calendar: {},
+    // Who signs the letters and how they are headed.
+    letters: { code: "", address: "", contact: "", place: "", signatory: "", designation: "" }
   };
 }
 
-const LIM = { grades: 40, documents: 40, review: 20, years: 12, label: 120, key: 40, statement: 800 };
+const LIM = { grades: 40, documents: 40, review: 20, years: 12, label: 120, key: 40, statement: 800,
+              assessments: 12, priorities: 10, line: 160, address: 400 };
+
+export const CALENDAR_KEYS = ["opens", "closes", "assessFrom", "assessTo", "resultsOn", "offersBy", "classesBegin"];
 
 function text(v, field, max, { min = 0 } = {}) {
   if (v == null) v = "";
@@ -276,7 +328,90 @@ export function normaliseSettings(raw, today, { strict = false, region, yearStar
   out.dueDays = whole(s.dueDays, "dueDays", 1, 120, base.dueDays);
   out.stalledDays = whole(s.stalledDays, "stalledDays", 1, 120, base.stalledDays);
   out.admissionPad = whole(s.admissionPad, "admissionPad", 0, 8, base.admissionPad);
+  out.decisionDays = whole(s.decisionDays, "decisionDays", 1, 180, base.decisionDays);
   if (typeof s.admissionPrefix === "string") out.admissionPrefix = s.admissionPrefix.trim().slice(0, 12);
+
+  // What may be asked of a child before a decision, per class and kind of application.
+  if (Array.isArray(s.assessments)) {
+    if (s.assessments.length > LIM.assessments) bad(`At most ${LIM.assessments} assessments.`, "assessments");
+    const seen = new Set();
+    const list = [];
+    for (const a of s.assessments.slice(0, LIM.assessments)) {
+      if (!a || typeof a !== "object") continue;
+      try {
+        const grades = Array.isArray(a.grades) ? a.grades.map(String).slice(0, LIM.grades) : [];
+        const types = Array.isArray(a.types) ? a.types.filter((t) => TYPES.includes(t)) : [];
+        list.push({
+          key: keyOf(a.key, "assessments.key", seen), label: text(a.label, "assessments.label", LIM.label, { min: 1 }),
+          required: a.required === true, ...(grades.length ? { grades } : {}), ...(types.length ? { types } : {}),
+          ...(a.hint ? { hint: text(a.hint, "assessments.hint", 240) } : {})
+        });
+      } catch (e) { if (strict) throw e; }
+    }
+    out.assessments = list;
+  }
+
+  // Who is heard first when seats are few.
+  if (Array.isArray(s.priorities)) {
+    if (s.priorities.length > LIM.priorities) bad(`At most ${LIM.priorities} priority categories.`, "priorities");
+    const seen = new Set();
+    const list = [];
+    for (const p of s.priorities.slice(0, LIM.priorities)) {
+      if (!p || typeof p !== "object") continue;
+      try { list.push({ key: keyOf(p.key, "priorities.key", seen), label: text(p.label, "priorities.label", LIM.label, { min: 1 }) }); }
+      catch (e) { if (strict) throw e; }
+    }
+    out.priorities = list;
+  }
+
+  if (Array.isArray(s.requiredFields)) {
+    const ok = s.requiredFields.filter((k) => FIELD_LABEL[k]);
+    if (ok.length !== s.requiredFields.length) bad("That is not a particular an application can be required to have.", "requiredFields");
+    out.requiredFields = [...new Set(ok)];
+  }
+
+  // The dates the school publishes, per admission year. A date that is not a date is refused on a write and dropped on a read.
+  if (s.calendar && typeof s.calendar === "object" && !Array.isArray(s.calendar)) {
+    const cal = {};
+    for (const [year, row] of Object.entries(s.calendar)) {
+      if (!isYear(year) || !row || typeof row !== "object") { bad("A calendar is kept by school year, 2026-2027.", "calendar"); continue; }
+      const one = {};
+      for (const k of CALENDAR_KEYS) {
+        if (row[k] == null || row[k] === "") continue;
+        if (isDate(row[k])) one[k] = row[k]; else bad(`${k} is a date, YYYY-MM-DD.`, "calendar");
+      }
+      if (one.opens && one.closes && one.closes < one.opens) bad("Registration cannot close before it opens.", "calendar");
+      if (Object.keys(one).length) cal[year] = one;
+    }
+    out.calendar = cal;
+  }
+
+  // How letters are headed and signed. Free text, kept short.
+  if (s.letters && typeof s.letters === "object") {
+    const L = s.letters, one = {};
+    for (const [k, max] of [["code", 12], ["address", LIM.address], ["contact", LIM.line], ["place", 60], ["signatory", 80], ["designation", 80]]) {
+      one[k] = text(L[k], "letters." + k, max);
+    }
+    if (one.code && !/^[A-Za-z0-9-]+$/.test(one.code)) { bad("The reference code is letters, numbers and dashes.", "letters.code"); one.code = ""; }
+    out.letters = one;
+  }
+  return out;
+}
+
+/* The assessments an application of this grade and kind is asked to go through. */
+export function assessmentsFor(settings, grade, type) {
+  return (settings.assessments || []).filter((a) =>
+    (!a.grades || !a.grades.length || a.grades.includes(grade)) &&
+    (!a.types || !a.types.length || a.types.includes(type)));
+}
+
+/* Where an application stands in the waiting list of its grade: priority category first, then the day it joined. */
+export function waitlistOrder(rows, settings) {
+  const rank = (p) => { const i = (settings.priorities || []).findIndex((x) => x.key === p); return i < 0 ? 999 : i; };
+  const sorted = rows.slice().sort((a, b) => rank(a.priority) - rank(b.priority) ||
+    (a.waitlistedAt || 0) - (b.waitlistedAt || 0) || String(a.id).localeCompare(String(b.id)));
+  const out = new Map();
+  sorted.forEach((r, i) => out.set(r.id, { position: i + 1, of: sorted.length }));
   return out;
 }
 
@@ -460,6 +595,11 @@ export function fieldGaps(app, settings, today) {
   need((f.guardians || []).some(guardianOk), "guardians", "A parent or guardian with a phone number or email");
   need(String((f.contact && f.contact.address) || "").trim(), "contact.address", "Residential address");
   if (app.type === "transfer") need(String((f.previous && f.previous.school) || "").trim(), "previous.school", "Previous school");
+  // What this school insists on beyond the nine: gender and a PIN code at an Indian school, say.
+  for (const k of (settings && settings.requiredFields) || []) {
+    const [a, b] = k.split(".");
+    need(String((f[a] || {})[b] || "").trim(), k, FIELD_LABEL[k] || k);
+  }
   need(hasConsent(f, settings), "consent", "Consent to the admission and data policy");
   return gaps;
 }
@@ -479,10 +619,23 @@ export function openDuplicates(duplicates, review) {
   return duplicates.filter((d) => d.strength !== "weak" && !done[d.key]);
 }
 
-export function evaluate({ app, docs, settings, seats, duplicates, today }) {
+/* What each assessment this application is asked to go through has come to. The
+   latest session that was actually taken counts; a cancelled or missed one does not. */
+export function assessmentState(defs, sessions) {
+  return defs.map((d) => {
+    const mine = (sessions || []).filter((s) => s.kind === d.key);
+    const taken = mine.filter((s) => s.status === "completed")
+      .sort((a, b) => (b.recordedAt || 0) - (a.recordedAt || 0))[0] || null;
+    const next = mine.filter((s) => s.status === "scheduled").sort((a, b) => String(a.onDate).localeCompare(String(b.onDate)))[0] || null;
+    return { key: d.key, label: d.label, required: !!d.required, outcome: taken ? taken.result : null,
+             taken: !!taken, scheduled: next ? { id: next.id, onDate: next.onDate, atTime: next.atTime || null } : null };
+  });
+}
+
+export function evaluate({ app, docs, settings, seats, duplicates, today, sessions }) {
   const review = app.review || {};
   const gaps = fieldGaps(app, settings, today);
-  const fieldsTotal = 9 - (app.type === "transfer" ? 0 : 1);
+  const fieldsTotal = 9 - (app.type === "transfer" ? 0 : 1) + ((settings.requiredFields || []).length);
 
   const required = docs.filter((d) => d.required);
   const received = required.filter((d) => ["received", "verified", "waived"].includes(d.status));
@@ -501,8 +654,18 @@ export function evaluate({ app, docs, settings, seats, duplicates, today }) {
   const age = ageCheck(app, settings);
   const overrides = review.overrides || {};
 
+  // An assessment the school requires must have been taken and have a result before a decision.
+  // Not qualifying is not a refusal: it can be set aside with a reason, as a full grade can.
+  const assess = assessmentState(assessmentsFor(settings, app.grade, app.type), sessions);
+  const assessReq = assess.filter((a) => a.required);
+  const assessPending = assessReq.filter((a) => a.outcome !== "qualified" && a.outcome !== "not_qualified");
+  const assessFailed = assessReq.filter((a) => a.outcome === "not_qualified");
+
   const G = {
     fields: gaps.map((g) => blocker("fields", "field_missing", g.label, g.key)),
+    assess: assessPending.map((a) => blocker("assess", a.outcome === "deferred" ? "assess_deferred" : "assess_pending",
+      a.outcome === "deferred" ? `${a.label}: the result was left open — settle it`
+        : a.scheduled ? `${a.label} is set for ${a.scheduled.onDate}` : `${a.label} has not been taken`, a.key)),
     received: missing.map((d) => blocker("received", d.status === "returned" ? "doc_returned" : "doc_missing",
       d.status === "returned" ? `${d.label} was returned — send it again` : `${d.label} has not been received`, d.key)),
     verified: unverified.map((d) => blocker("verified", "doc_unverified", `${d.label} is waiting to be verified`, d.key)),
@@ -511,10 +674,15 @@ export function evaluate({ app, docs, settings, seats, duplicates, today }) {
     corrections: corrections.map((c) => blocker("corrections", "correction_open", c.message, c.id)),
     seats: [],
     age: [],
+    merit: [],
     acceptance: [],
     start: [],
     identity: []
   };
+  if (assessFailed.length && !overrides.assessment) {
+    G.merit.push(blocker("assessment", "assessment_not_met",
+      `${assessFailed.map((a) => a.label).join(" and ")}: did not qualify — admit with a reason, or decline`, null, { soft: true }));
+  }
   if (seats && seats.limit != null && seats.used >= seats.limit && !overrides.seats) {
     G.seats.push(blocker("seats", "grade_full",
       `${app.grade} has no seat left (${seats.used} of ${seats.limit}) — waitlist, or admit with a reason`, null, { soft: true }));
@@ -535,8 +703,8 @@ export function evaluate({ app, docs, settings, seats, duplicates, today }) {
   const gates = {
     submit: flat("fields"),
     review: flat("fields", "received"),
-    decision: flat("fields", "received", "verified", "checks", "dups", "corrections"),
-    approve: flat("fields", "received", "verified", "checks", "dups", "corrections", "seats", "age"),
+    decision: flat("fields", "received", "verified", "assess", "checks", "dups", "corrections"),
+    approve: flat("fields", "received", "verified", "assess", "checks", "dups", "corrections", "merit", "seats", "age"),
     activate: flat("acceptance", "start", "identity", "dups")
   };
 
@@ -555,6 +723,9 @@ export function evaluate({ app, docs, settings, seats, duplicates, today }) {
       gaps.length ? `${gaps.length} to complete` : ""),
     stage("documents", "Documents", required.length === verified.length,
       missing.some((d) => d.status === "returned"), missing.length ? `${missing.length} outstanding` : unverified.length ? `${unverified.length} to verify` : ""),
+    ...(assessReq.length || (sessions || []).length ? [stage("assessment", "Assessment",
+      assessPending.length === 0 && !(sessions || []).some((x) => x.status === "scheduled"), false,
+      assessPending.length ? `${assessPending.length} to take` : (sessions || []).some((x) => x.status === "scheduled") ? "Scheduled" : "")] : []),
     stage("review", "Review", afterReview || enrolled, false, ""),
     stage("admission", "Admission", status === "admitted" && (!settings.requireAcceptance || app.acceptance === "accepted") || enrolled,
       status === "rejected" || status === "waitlisted", status === "waitlisted" ? "On the waitlist" : status === "rejected" ? "Declined" : ""),
@@ -604,6 +775,7 @@ export function evaluate({ app, docs, settings, seats, duplicates, today }) {
     checks: { required: settings.review.filter((c) => c.required).length, open: openChecks.length },
     age,
     seats: seats || null,
+    assessments: { required: assessReq.length, pending: assessPending.map((a) => a.key), items: assess },
     gates, stages, current, next
   };
 }

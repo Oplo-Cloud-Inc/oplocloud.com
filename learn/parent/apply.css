@@ -97,3 +97,25 @@
   .fa-guard { grid-template-columns: 1fr 1fr; }
   .fa-doc { grid-template-columns: 1fr; }
 }
+
+/* A letter the school sent, as a page */
+.fa-veil { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .4); }
+.fa-sheet { width: min(760px, 100%); max-height: 92vh; display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 16px; background: var(--paper, #fff); }
+.fa-paper { overflow: auto; padding: 30px 38px; background: #fff; color: #111; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .1);
+  font-family: Georgia, "Times New Roman", serif; font-size: 14px; line-height: 1.55; }
+.fa-paper .lt-head { text-align: center; border-bottom: 1.5px solid #111; padding-bottom: 10px; margin-bottom: 18px; }
+.fa-paper .lt-head h1 { margin: 0 0 4px; font: 600 21px Georgia, serif; }
+.fa-paper .lt-head p { margin: 0; font-size: 12px; color: #444; }
+.fa-paper .lt-ref { display: flex; justify-content: space-between; margin-bottom: 14px; }
+.fa-paper p { margin: 0 0 10px; }
+.fa-paper .lt-sub { margin: 16px 0 10px; }
+.fa-paper ul { margin: 0 0 10px 20px; padding: 0; }
+.fa-paper table { border-collapse: collapse; width: 100%; margin: 6px 0 12px; }
+.fa-paper th, .fa-paper td { border: 1px solid #999; padding: 5px 8px; text-align: left; font-size: 13px; }
+.fa-paper th { background: #f2f2f2; }
+.fa-paper .lt-close { margin-top: 22px; }
+.fa-paper .lt-sign { margin-top: 44px; }
+.fa-sheet { color: #111; }
+.fa-sheet .fa-acts { display: flex; gap: 10px; margin: 0; }
+.fa-sheet .fa-acts button { color: #111; background: rgba(0, 0, 0, .07); border-color: transparent; }
+.fa-sheet .fa-acts button.quiet { background: none; }

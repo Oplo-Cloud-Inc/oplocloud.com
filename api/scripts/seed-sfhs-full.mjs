@@ -25,6 +25,7 @@ let s = 20261018;
 const rnd = () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const pick = (a) => a[Math.floor(rnd() * a.length)];
 const chance = (p) => rnd() < p;
+const inDays = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
 const between = (a, b) => a + Math.floor(rnd() * (b - a + 1));
 const digits = (n) => Array.from({ length: n }, (_, i) => (i === 0 ? between(1, 9) : between(0, 9))).join("");
 const gauss = () => { let u = 0; for (let i = 0; i < 6; i++) u += rnd(); return (u - 3) / 0.7; };
@@ -361,13 +362,63 @@ await step("an admissions season: applications for Nursery to Class XI, at every
     try { made.push((await admin.post("/applications", { grade: g, type: i % 4 === 3 ? "transfer" : "new", student: { legalFirst: f, legalLast: l, dob: `${2025 - age[g]}-0${between(1, 9)}-1${between(0, 9)}` } })).application); }
     catch (e) { console.log("       skipped:", String(e.message).slice(0, 160)); }
   }
-  // Some are submitted by the family, some are being reviewed, two are still drafts.
+  // The first ten are filled in the way a family fills one: both parents, the address with its PIN code, the declaration.
+  // Some are then sent in with documents still to come, some are checked and under review, a few have been seen by the panel,
+  // one is admitted and has its offer letter; the last two stay drafts.
+  const family = (f, l, i) => ({
+    student: { gender: i % 2 ? "Female" : "Male", nationality: "Indian", motherTongue: pick(["Punjabi", "Hindi"]), bloodGroup: pick(["A+", "B+", "O+", "AB+"]) },
+    guardians: [{ name: `${pick(FATHERS)} ${l}`, relationship: "Father", phone: "9" + digits(9), email: `${f.toLowerCase()}.${l.toLowerCase()}@family.example`, primary: true,
+                  occupation: pick(["Engineer", "Doctor", "Shopkeeper", "Teacher", "Bank officer"]) }, { name: `${pick(MOTHERS)} ${l}`, relationship: "Mother", phone: "9" + digits(9) }],
+    contact: { address: `House ${between(1, 900)}, ${pick(SECTORS)}, Chandigarh`, pin: pick(PINS), district: "Chandigarh", state: "Chandigarh", whatsapp: "yes" }
+  });
   for (const [i, a] of made.entries()) {
     if (!a || i > 9) continue;
-    await admin.post(`/applications/${a.id}/actions/submit`, {}).catch(() => {});
-    if (i < 5) await admin.post(`/applications/${a.id}/actions/start_review`, {}).catch(() => {});
+    const [f, l] = names[names.findIndex(([n]) => a.student.name.startsWith(n))] || ["Child", "Family"];
+    try {
+      let cur = (await admin.patch(`/applications/${a.id}`, { ifUpdatedAt: a.updatedAt, intendedStart: "2027-04-01", consent: true, form: family(f, l, i) })).application;
+      cur = (await admin.post(`/applications/${a.id}/actions/submit`, {})).application;
+      if (i < 6) {
+        for (const d of cur.documents.filter((x) => x.required)) {
+          await admin.put(`/applications/${a.id}/documents/${d.key}`, { status: "received" });
+          if (i < 4) await admin.put(`/applications/${a.id}/documents/${d.key}`, { status: "verified", sighted: true });
+        }
+        await admin.post(`/applications/${a.id}/letters`, { kind: "acknowledgement", channel: "handed" });
+      }
+      if (i < 4) {
+        for (const c of ["identity", "eligibility"]) await admin.post(`/applications/${a.id}/actions/check`, { key: c, done: true });
+        await admin.post(`/applications/${a.id}/actions/start_review`, {});
+        const ses = (await admin.post(`/applications/${a.id}/sessions`, { kind: "interaction", onDate: inDays(i < 2 ? i - 2 : i), atTime: pick(["09:30", "10:15", "11:00", "14:00"]),
+          venue: pick(["Principal's office", "Room 4, Block A", "Library"]), panel: "Ms Gill, Mr Sandhu" })).session;
+        if (i < 2) await admin.patch(`/applications/${a.id}/sessions/${ses.id}`, { status: "completed", result: "qualified", score: 8 + i, maxScore: 10, remarks: "Confident, spoke clearly." });
+        else await admin.post(`/applications/${a.id}/letters`, { kind: "call" });
+      }
+      if (i < 2) await admin.post(`/applications/${a.id}/actions/mark_ready`, {});
+      if (i === 0) {
+        await admin.post(`/applications/${a.id}/actions/approve`, { note: "Recommended by the panel." });
+        await admin.post(`/applications/${a.id}/letters`, { kind: "offer", channel: "handed" });
+      }
+    } catch (e) { console.log("       not taken further:", f, String(e.message).slice(0, 140)); }
   }
   console.log(`       ${made.length} applications`);
+});
+
+await step("enquiries: families that have asked, and who is to ring them back", async () => {
+  const have = new Set(((await admin.get("/enquiries?view=all&size=100")).items || []).map((e) => e.name));
+  const rows = [["Ishaan", "Bedi", "Class IX", "walk_in"], ["Saanvi", "Randhawa", "Nursery", "website"], ["Reyansh", "Grewal", "Class VI", "referral"], ["Pari", "Dhaliwal", "LKG", "school_event"],
+    ["Aarna", "Tandon", "Class I", "advertisement"], ["Vivaan", "Ahluwalia", "Class V", "phone"], ["Jiya", "Khanna", "UKG", "walk_in"], ["Dhruv", "Mittal", "Class XI", "referral"],
+    ["Ira", "Bhatia", "Class VII", "website"], ["Manav", "Arora", "Class II", "walk_in"]];
+  let n = 0;
+  for (const [i, [f, l, g, src]] of rows.entries()) {
+    if (have.has(`${f} ${l}`)) continue;
+    const e = (await admin.post("/enquiries", { childFirst: f, childLast: l, grade: g, source: src, guardianName: `${pick(FATHERS)} ${l}`, phone: "9" + digits(9),
+      referredBy: src === "referral" ? pick(["Mrs Gill", "Mr Sandhu", "A parent in Class VI"]) : "", followUpOn: inDays(i - 3), assignTo: "me",
+      note: pick(["Asked about the science labs and the bus routes.", "Wants to know about admission for next April.", "Has an older child already in the school.", "Asked about the Class X results."]) })).enquiry;
+    if (i % 4 === 1) await admin.post(`/enquiries/${e.id}/actions/contacted`, { note: "Spoke to the mother; sending the prospectus.", followUpOn: inDays(i + 2) });
+    if (i % 5 === 2) await admin.post(`/enquiries/${e.id}/actions/visit_booked`, { visitOn: inDays(i + 1) });
+    if (i === 9) await admin.post(`/enquiries/${e.id}/actions/close`, { reason: "Chose a school nearer home" });
+    n++;
+  }
+  console.log(`       ${n} enquiries`);
 });
 
 await step("the school as it now reads", async () => {

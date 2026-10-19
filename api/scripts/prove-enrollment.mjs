@@ -152,8 +152,9 @@ try {
       intendedStart: "2026-11-02",
       consent: true,
       form: {
+        student: { gender: "Male" },
         guardians: [{ name: "Raj Sharma", relationship: "Father", phone: "+91 98765 43210", email: guardianEmail, primary: true }],
-        contact: { address: "12 Park Road, Pune", phone: "+91 98765 43210" },
+        contact: { address: "12 Park Road, Pune", pin: "411001", phone: "+91 98765 43210" },
         previous: { school: "St Mary's School", location: "Pune", lastGrade: "Grade 5", tcNumber: "TC/2026/118" },
         emergency: { name: "Asha Sharma", relationship: "Mother", phone: "+91 98765 11111" },
         support: { notes: "Mild dyslexia; extra reading time." }
@@ -327,7 +328,7 @@ try {
     const id = r2.application.id;
     refused(await admin.try("POST", `/applications/${id}/actions/reject`, { reason: "ineligible" }), 409, /draft/);
     await admin.patch(`/applications/${id}`, { intendedStart: "2026-11-02", consent: true, form: {
-      guardians: [{ name: "Priya Rao", phone: "9000000001", email: `priya.${RUN}@family.test` }], contact: { address: "4 Lake Rd" } } });
+      student: { gender: "Female" }, guardians: [{ name: "Priya Rao", phone: "9000000001", email: `priya.${RUN}@family.test` }], contact: { address: "4 Lake Rd", pin: "411001" } } });
     await admin.post(`/applications/${id}/actions/submit`);
     for (const key of ["birth_proof", "photo", "address_proof"]) await admin.post(`/applications/${id}/documents/${key}/file`, { name: key + ".png", type: "image/png", data: png });
     await admin.post(`/applications/${id}/actions/start_review`);
@@ -353,7 +354,7 @@ try {
     // another Grade 6 applicant, taken to awaiting_decision
     const a = (await admin.post("/applications", { grade: G(6), type: "new", student: { legalFirst: "Sana" + RUN.slice(-2), legalLast: "Khan", dob: bday(2014, 2) } })).application;
     await admin.patch(`/applications/${a.id}`, { intendedStart: "2026-11-02", consent: true, form: {
-      guardians: [{ name: "Omar Khan", phone: "9000000002" }], contact: { address: "9 Hill St" } } });
+      student: { gender: "Male" }, guardians: [{ name: "Omar Khan", phone: "9000000002" }], contact: { address: "9 Hill St", pin: "411001" } } });
     await admin.post(`/applications/${a.id}/actions/submit`);
     for (const key of ["birth_proof", "photo", "address_proof"]) {
       await admin.post(`/applications/${a.id}/documents/${key}/file`, { name: key + ".png", type: "image/png", data: png });
@@ -436,7 +437,7 @@ try {
 
   await step("a family can fill in and submit its draft, and then it is the school's", async () => {
     await family.patch(`/applications/${ctx.fam.id}`, { intendedStart: "2026-11-02", consent: true,
-      form: { guardians: [{ name: "Raj Sharma", phone: "9876543210", email: guardianEmail }], contact: { address: "12 Park Road" } } });
+      form: { student: { gender: "Male" }, guardians: [{ name: "Raj Sharma", phone: "9876543210", email: guardianEmail }], contact: { address: "12 Park Road", pin: "411001" } } });
     // The family's brother is already enrolled: a sibling for staff, not a duplicate.
     const staff = (await admin.get(`/applications/${ctx.fam.id}`)).application;
     assert.ok(staff.siblings.length >= 1, "staff are shown the brother already enrolled");
@@ -454,7 +455,7 @@ try {
     const mine = (await family.get("/family/applications")).applications.find((a) => a.id === ctx.fam.id);
     assert.equal(mine.corrections.length, 1);
     assert.ok(!JSON.stringify(mine.events).includes("difficult"), "internal notes never reach the family");
-    await family.patch(`/applications/${ctx.fam.id}`, { form: { contact: { address: "12 Park Road, Pune 411001" } } });
+    await family.patch(`/applications/${ctx.fam.id}`, { form: { contact: { address: "12 Park Road, Pune 411001", pin: "411001" } } });
     const back = await family.post(`/applications/${ctx.fam.id}/actions/resubmit`);
     assert.ok(["submitted", "incomplete"].includes(back.application.status));
   });
@@ -530,7 +531,7 @@ try {
       student: { legalFirst: "Isha" + RUN.slice(-2), legalLast: "Sharma", dob: bday(2016, 3) } });
     const id = r.application.id;
     await family.patch(`/applications/${id}`, { intendedStart: "2026-11-02", consent: true, form: {
-      guardians: [{ name: "Raj Sharma", phone: "9876543210", email: guardianEmail }], contact: { address: "12 Park Road" } } });
+      student: { gender: "Male" }, guardians: [{ name: "Raj Sharma", phone: "9876543210", email: guardianEmail }], contact: { address: "12 Park Road", pin: "411001" } } });
     await family.post(`/applications/${id}/actions/submit`);
     for (const key of ["birth_proof", "photo", "address_proof"]) {
       await admin.post(`/applications/${id}/documents/${key}/file`, { name: key + ".png", type: "image/png", data: png });

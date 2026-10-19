@@ -2471,6 +2471,191 @@ export class D1Repository {
     return results || [];
   }
 
+  /* ----------------------------------------------------------- Admissions
+     What comes before an application (an enquiry), what is asked of a child
+     before a decision (a session), and the paper that goes to the family (a
+     letter). The rules are in services/enrollment.js and services/letters.js;
+     this block reads and writes rows. */
+
+  async createEnquiry(e) {
+    const enquiryId = id("enq");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_enquiries
+         (id, org_id, seq, school_year, grade, child_first, child_last, dob, guardian_name, phone, email,
+          source, referred_by, status, follow_up_on, visit_on, note, assigned_to, client_key, created_by, created_at, updated_at)
+       SELECT ?, ?, COALESCE(MAX(seq), 0) + 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?
+         FROM learn_enquiries WHERE org_id IS ?`
+    ).bind(enquiryId, e.orgId || null, e.schoolYear, e.grade || null, e.childFirst, e.childLast || null, e.dob || null,
+           e.guardianName || null, e.phone || null, e.email || null, e.source || "walk_in", e.referredBy || null,
+           e.followUpOn || null, e.visitOn || null, e.note || null, e.assignedTo || null, e.clientKey || null,
+           e.createdBy || null, t, t, e.orgId || null).run();
+    return this.findEnquiry(enquiryId);
+  }
+
+  async findEnquiry(enquiryId) {
+    return this.db.prepare(`SELECT * FROM learn_enquiries WHERE id = ?`).bind(enquiryId).first();
+  }
+
+  async findEnquiryByKey(createdBy, clientKey) {
+    return this.db.prepare(`SELECT * FROM learn_enquiries WHERE created_by = ? AND client_key = ?`).bind(createdBy, clientKey).first();
+  }
+
+  async listEnquiries({ orgId, year = null } = {}) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_enquiries
+        WHERE (org_id IS ? OR org_id = ?) AND (? IS NULL OR school_year = ?)
+        ORDER BY updated_at DESC`
+    ).bind(orgId || null, orgId || null, year, year).all();
+    return results || [];
+  }
+
+  async updateEnquiry(enquiryId, patch) {
+    const map = { schoolYear: "school_year", grade: "grade", childFirst: "child_first", childLast: "child_last", dob: "dob",
+                  guardianName: "guardian_name", phone: "phone", email: "email", source: "source", referredBy: "referred_by",
+                  status: "status", followUpOn: "follow_up_on", visitOn: "visit_on", note: "note", lostReason: "lost_reason",
+                  assignedTo: "assigned_to", applicationId: "application_id", closedAt: "closed_at" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), enquiryId);
+    await this.db.prepare(`UPDATE learn_enquiries SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+    return this.findEnquiry(enquiryId);
+  }
+
+  async addEnquiryLog(enquiryId, e) {
+    await this.db.prepare(
+      `INSERT INTO learn_enquiry_log (id, enquiry_id, at, actor_id, actor_name, kind, from_value, to_value, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("elg"), enquiryId, now(), e.actorId || null, e.actorName || null, e.kind,
+           e.from == null ? null : String(e.from), e.to == null ? null : String(e.to), e.note || null).run();
+  }
+
+  async listEnquiryLog(enquiryId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_enquiry_log WHERE enquiry_id = ? ORDER BY at DESC, rowid DESC`
+    ).bind(enquiryId).all();
+    return results || [];
+  }
+
+  async createAssessmentSession(x) {
+    const sessionId = id("ses");
+    const t = now();
+    await this.db.prepare(
+      `INSERT INTO learn_application_sessions
+         (id, application_id, org_id, kind, label, on_date, at_time, venue, panel, status, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?)`
+    ).bind(sessionId, x.applicationId, x.orgId || null, x.kind, x.label, x.onDate, x.atTime || null,
+           x.venue || null, x.panel || null, x.createdBy || null, t, t).run();
+    return this.findAssessmentSession(sessionId);
+  }
+
+  async findAssessmentSession(sessionId) {
+    return this.db.prepare(`SELECT * FROM learn_application_sessions WHERE id = ?`).bind(sessionId).first();
+  }
+
+  async listAssessmentSessionsFor(applicationId) {
+    const { results } = await this.db.prepare(
+      `SELECT * FROM learn_application_sessions WHERE application_id = ? ORDER BY on_date, at_time, created_at`
+    ).bind(applicationId).all();
+    return results || [];
+  }
+
+  /* Sessions of many applications at once, in chunks the database will take. */
+  async listAssessmentSessionsForApplications(applicationIds) {
+    const out = [];
+    for (let i = 0; i < applicationIds.length; i += 80) {
+      const part = applicationIds.slice(i, i + 80);
+      const { results } = await this.db.prepare(
+        `SELECT * FROM learn_application_sessions WHERE application_id IN (${part.map(() => "?").join(",")})`
+      ).bind(...part).all();
+      out.push(...(results || []));
+    }
+    return out;
+  }
+
+  /* A window of days across every application: what the assessment desk works from. */
+  async listAssessmentSessionsOn({ orgId, from, to }) {
+    const { results } = await this.db.prepare(
+      `SELECT s.*, a.seq, a.legal_first, a.legal_last, a.entry_grade, a.status AS app_status, a.school_year, a.enrollment_type
+         FROM learn_application_sessions s JOIN learn_applications a ON a.id = s.application_id
+        WHERE (s.org_id IS ? OR s.org_id = ?) AND s.on_date >= ? AND s.on_date <= ?
+        ORDER BY s.on_date, s.at_time, a.legal_last, a.legal_first`
+    ).bind(orgId || null, orgId || null, from, to).all();
+    return results || [];
+  }
+
+  async updateAssessmentSession(sessionId, patch) {
+    const map = { onDate: "on_date", atTime: "at_time", venue: "venue", panel: "panel", status: "status", score: "score",
+                  maxScore: "max_score", result: "result", remarks: "remarks", recordedBy: "recorded_by", recordedAt: "recorded_at" };
+    const fields = [], values = [];
+    for (const [k, col] of Object.entries(map)) {
+      if (patch[k] !== undefined) { fields.push(`${col} = ?`); values.push(patch[k]); }
+    }
+    fields.push("updated_at = ?");
+    values.push(now(), sessionId);
+    await this.db.prepare(`UPDATE learn_application_sessions SET ${fields.join(", ")} WHERE id = ?`).bind(...values).run();
+    return this.findAssessmentSession(sessionId);
+  }
+
+  /* A letter is only ever added. The reference number is unique for the school, so two people issuing at
+     once cannot both have it: the loser's insert fails and the caller counts again. */
+  async addLetter(l) {
+    const letterId = id("ltr");
+    await this.db.prepare(
+      `INSERT INTO learn_application_letters
+         (id, application_id, org_id, kind, ref_no, subject, body_json, channel, issued_by, issued_name, issued_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(letterId, l.applicationId, l.orgId || null, l.kind, l.refNo, l.subject, JSON.stringify(l.body),
+           l.channel || "printed", l.issuedBy || null, l.issuedName || null, now()).run();
+    return this.findLetter(letterId);
+  }
+
+  async findLetter(letterId) {
+    return this.db.prepare(`SELECT * FROM learn_application_letters WHERE id = ?`).bind(letterId).first();
+  }
+
+  /* The letters of an application, newest first, without their text. */
+  async listLetters(applicationId) {
+    const { results } = await this.db.prepare(
+      `SELECT id, application_id, kind, ref_no, subject, channel, issued_by, issued_name, issued_at
+         FROM learn_application_letters WHERE application_id = ? ORDER BY issued_at DESC, rowid DESC`
+    ).bind(applicationId).all();
+    return results || [];
+  }
+
+  async countLetters(applicationId, kind) {
+    const r = await this.db.prepare(
+      `SELECT COUNT(*) AS n FROM learn_application_letters WHERE application_id = ? AND kind = ?`
+    ).bind(applicationId, kind).first();
+    return r ? r.n : 0;
+  }
+
+  /* The admission register: every student enrolled for a year, with the application they came from and
+     what the office holds about them, in the order of their admission numbers. */
+  async admissionRegister(orgId, year) {
+    const { results } = await this.db.prepare(
+      `SELECT e.id AS enrollment_id, e.student_id, e.school_year, e.grade AS admitted_to, e.starts_on, e.ends_on, e.state,
+              e.exit_reason, e.previous_school AS prev_school, e.admission_no, e.created_at AS enrolled_at,
+              p.name AS student_name, a.seq, a.legal_first, a.legal_last, a.dob, a.body_json, a.decided_at,
+              s.gender, s.category, s.father_name, s.mother_name, s.guardian_name, s.mother_tongue, s.previous_school AS roster_prev,
+              s.admitted_on, s.left_on, s.left_reason, c.grade AS class_grade, c.section AS class_section,
+              k.date_of_birth, k.mailing_address
+         FROM learn_enrollments e
+         JOIN accounts ac ON ac.id = e.student_id
+         LEFT JOIN profiles p ON p.account_id = e.student_id
+         LEFT JOIN learn_applications a ON a.id = e.application_id
+         LEFT JOIN learn_student_india s ON s.account_id = e.student_id
+         LEFT JOIN learn_classes c ON c.id = s.class_id
+         LEFT JOIN account_contacts k ON k.account_id = e.student_id
+        WHERE (e.org_id IS ? OR e.org_id = ?) AND e.school_year = ?
+        ORDER BY e.admission_no, p.name`
+    ).bind(orgId || null, orgId || null, year).all();
+    return results || [];
+  }
+
   /* Display names for a handful of accounts — who assigned, who verified. */
   async namesFor(accountIds) {
     const ids = [...new Set(accountIds.filter(Boolean))];

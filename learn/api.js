@@ -684,7 +684,24 @@ window.OPLO_API = (function () {
         return post("/enrollments/" + id + "/actions/" + action + q({ today: localDay() }), data || {}, { timeout: 30000 });
       },
       /* What a family sees: the applications it made, or is family to. */
-      mine: function () { return get("/family/applications" + q({ today: localDay() })); }
+      mine: function () { return get("/family/applications" + q({ today: localDay() })); },
+
+      /* The admissions office around the application: enquiries before it, assessments within it,
+         letters and reports after. The server decides who may do each; these only ask. */
+      enquiries: function (opts) { opts = opts || {}; opts.today = localDay(); return get("/enquiries" + q(opts)); },
+      enquiry: function (id) { return get("/enquiries/" + id + q({ today: localDay() })).then(function (r) { return r.enquiry; }); },
+      enquiryCreate: function (data) { return post("/enquiries" + q({ today: localDay() }), data); },
+      enquiryUpdate: function (id, data) { return patch("/enquiries/" + id + q({ today: localDay() }), data); },
+      enquiryAct: function (id, action, data) { return post("/enquiries/" + id + "/actions/" + action + q({ today: localDay() }), data || {}); },
+      sessionCreate: function (id, data) { return post("/applications/" + id + "/sessions" + q({ today: localDay() }), data); },
+      sessionUpdate: function (id, sessionId, data) { return patch("/applications/" + id + "/sessions/" + sessionId + q({ today: localDay() }), data); },
+      sessions: function (from, to) { return get("/enrollment/sessions" + q({ from: from, to: to, today: localDay() })); },
+      letterPreview: function (id, kind) { return get("/applications/" + id + "/letters/preview" + q({ kind: kind, today: localDay() })).then(function (r) { return r.letter; }); },
+      letterIssue: function (id, data) { return post("/applications/" + id + "/letters" + q({ today: localDay() }), data); },
+      letter: function (id, letterId) { return get("/applications/" + id + "/letters/" + letterId).then(function (r) { return r.letter; }); },
+      reports: function (year) { return get("/enrollment/reports" + q({ year: year, today: localDay() })); },
+      register: function (year) { return get("/enrollment/register" + q({ year: year, today: localDay() })); },
+      classes: function (year, grade) { return get("/enrollment/classes" + q({ year: year, grade: grade })); }
     },
 
     /* ------------------------------------------------------- Attendance

@@ -16398,7 +16398,7 @@
       loading: loading, failed: failed, attempt: attempt,
       cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnActions: cnActions, cnFilters: cnFilters,
       cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, avatarFor: avatarFor,
-      consoleHead: consoleHead, printHead: printHead, printTable: printTable, csvDownload: csvDownload,
+      consoleHead: consoleHead, printHead: printHead, printTable: printTable, csvDownload: csvDownload, schoolName: schoolName,
       enter: enter, goBack: goBack, show: show, openAdmin: openAdmin, railCount: railCount
     });
     return ENR;

@@ -44,6 +44,7 @@ import * as family from "./routes/family.js";
 import * as assessments from "./routes/assessments.js";
 import * as efm from "./routes/efm.js";
 import * as enrollment from "./routes/enrollment.js";
+import * as admissions from "./routes/admissions.js";
 import * as conduct from "./routes/conduct.js";
 import * as health from "./routes/health.js";
 import * as facilities from "./routes/facilities.js";
@@ -371,6 +372,20 @@ const ROUTES = [
   ["PUT",    "/api/v1/applications/:applicationId/documents/:key",            enrollment.putDocument],
   ["POST",   "/api/v1/applications/:applicationId/documents/:key/file",       enrollment.putFile],
   ["GET",    "/api/v1/applications/:applicationId/documents/:key/file",       enrollment.getFile],
+  ["GET",    "/api/v1/enrollment/sessions",         admissions.sessionsOn],
+  ["GET",    "/api/v1/enrollment/reports",          admissions.reports],
+  ["GET",    "/api/v1/enrollment/register",         admissions.register],
+  ["GET",    "/api/v1/enrollment/classes",          admissions.classes],
+  ["GET",    "/api/v1/enquiries",                   admissions.enquiries],
+  ["POST",   "/api/v1/enquiries",                   admissions.enquiryCreate],
+  ["GET",    "/api/v1/enquiries/:enquiryId",        admissions.enquiry],
+  ["PATCH",  "/api/v1/enquiries/:enquiryId",        admissions.enquiryUpdate],
+  ["POST",   "/api/v1/enquiries/:enquiryId/actions/:action", admissions.enquiryAct],
+  ["POST",   "/api/v1/applications/:applicationId/sessions",              admissions.sessionCreate],
+  ["PATCH",  "/api/v1/applications/:applicationId/sessions/:sessionId",   admissions.sessionUpdate],
+  ["GET",    "/api/v1/applications/:applicationId/letters/preview",       admissions.letterPreview],
+  ["POST",   "/api/v1/applications/:applicationId/letters",               admissions.letterIssue],
+  ["GET",    "/api/v1/applications/:applicationId/letters/:letterId",     admissions.letterGet],
   ["GET",    "/api/v1/family/applications",         enrollment.mine],
   ["GET",    "/api/v1/enrollments",                 enrollment.listEnrollments],
   ["POST",   "/api/v1/enrollments/:enrollmentId/actions/:action", enrollment.enrollmentAct],

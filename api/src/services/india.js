@@ -365,3 +365,56 @@ export function rollOrder(students, order) {
 
 /* Classes in the order a school lists them: by grade, then section. */
 export const byClass = (a, b) => gradeRank(a.grade) - gradeRank(b.grade) || String(a.grade).localeCompare(String(b.grade)) || String(a.section).localeCompare(String(b.section));
+
+/* ----------------------------------------------------- From an application
+   An application already says a good deal about a child: the parents, the PIN
+   code, the blood group, the category, whether the family wants WhatsApp. When
+   the child is enrolled that belongs on the office's roster row — otherwise the
+   office types it all a second time, and the record stays blank until somebody does.
+
+   `have` is the row the office already has (or null). What the office wrote is
+   never overwritten: an application only fills what is empty. The one thing it
+   does set is the class, because choosing a class is the point of admitting. */
+export function rosterFromApplication(have, { form, admissionNo, startsOn, previousSchool, classId }) {
+  const f = form || {}, st = f.student || {}, ct = f.contact || {}, ad = f.admission || {}, sup = f.support || {};
+  const gs = (f.guardians || []).filter((g) => g && (g.name || g.phone || g.email));
+  const kin = (re) => gs.find((g) => re.test(String(g.relationship || "").toLowerCase()));
+  const father = kin(/father|dad/), mother = kin(/mother|mom/);
+  const primary = gs.find((g) => g.primary) || gs[0] || null;
+  const other = gs.find((g) => g !== father && g !== mother) || null;
+  const none = () => null;
+  const row = { ...(have || {}) };
+  const fill = (k, v) => { if ((row[k] == null || row[k] === "") && v != null && v !== "") row[k] = v; };
+  const gender = ({ Female: "F", Male: "M", "Non-binary": "O" })[st.gender] || null;
+  const pin = ct.pin ? pinOf(ct.pin, none) : null;
+
+  row.class_id = classId || row.class_id || null;
+  fill("admission_no", admissionNo);
+  fill("admitted_on", startsOn);
+  fill("gender", gender);
+  fill("category", st.category);
+  fill("second_language", st.secondLanguage || ad.secondLanguage);
+  fill("blood_group", st.bloodGroup);
+  fill("mother_tongue", st.motherTongue);
+  fill("transport", ad.transport);
+  fill("pin", pin);
+  fill("district", ct.district);
+  fill("state", ct.state);
+  fill("father_name", father && father.name);
+  fill("father_phone", father && phoneOf(father.phone, none));
+  fill("mother_name", mother && mother.name);
+  fill("mother_phone", mother && phoneOf(mother.phone, none));
+  const g2 = !father && !mother ? primary : other;
+  fill("guardian_name", g2 && g2.name);
+  fill("guardian_phone", g2 && phoneOf(g2.phone, none));
+  fill("guardian_relation", g2 && g2.relationship);
+  fill("primary_contact", primary ? (father && primary === father ? "Father" : mother && primary === mother ? "Mother" : "Guardian") : null);
+  fill("guardian_email", primary && primary.email);
+  fill("language", ct.language);
+  fill("previous_school", previousSchool);
+  if (row.whatsapp == null && (ct.whatsapp === "yes" || ct.whatsapp === "no")) row.whatsapp = ct.whatsapp === "yes" ? 1 : 0;
+  if (row.cwsn == null && (sup.cwsn === true || sup.disability)) row.cwsn = 1;
+  fill("disability", sup.disability);
+  if (!row.consent_status) row.consent_status = "pending";
+  return row;
+}

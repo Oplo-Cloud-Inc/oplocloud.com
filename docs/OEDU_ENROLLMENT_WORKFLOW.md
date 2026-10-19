@@ -202,15 +202,18 @@ A refused step is a `409` carrying `blockers`. A create sent twice with the same
 
 ## 11. Not here yet — said plainly
 
-- **No notifications.** OEdu sends none today, so reminders, correction notices
-  and escalations are not sent. The queue shows *overdue* and *stalled* and the
-  record keeps who was asked what; sending belongs to a platform messaging
-  service, and the hooks (due dates, ownership, events) are already there.
+The formal procedure around this workflow (enquiries, assessments, letters,
+class allocation, reports and the register) is in `OEDU_ADMISSIONS_PROCESS.md`,
+and several things this section used to list are now built: interviews and
+entrance assessments are scheduled and recorded, letters are written and can be
+delivered in the app, and a child is seated in a class when enrolled. What
+remains:
+
+- **No WhatsApp or SMS sending.** The in-app inbox exists; sending outside the app
+  belongs to a messaging account the school has not connected. Letters can be
+  printed or copied as text.
 - **Scans are held in the database, up to 700 KB each.** A larger scan needs
   object storage, which the platform does not have yet.
 - **No clock.** Course placement that waits for a start day runs the first time
   the Enrollment page or list is opened after that day.
-- **No bulk import** of applications, and no scheduling of entrance
-  assessments or interviews (they are checklist items a reviewer ticks).
-- **Section or homeroom.** (Written before sections returned on 2026-10-12.) A student is placed in
-  courses.
+- **No bulk import** of applications or enquiries.

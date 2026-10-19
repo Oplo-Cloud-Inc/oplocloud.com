@@ -30,8 +30,10 @@ import { can, must, guardsStudent } from "../core/guard.js";
 import { hashPassword } from "../lib/crypto.js";
 import { RELATIONSHIPS } from "../services/family.js";
 import * as E from "../services/enrollment.js";
+import { lettersAvailable, LETTER_NEED, KIND_NAME } from "../services/letters.js";
+import { CATEGORIES, gradeOf, rosterFromApplication, classLabel } from "../services/india.js";
 
-const orgOf = (actor) => (actor.orgs && actor.orgs[0] ? actor.orgs[0].org_id : null);
+export const orgOf = (actor) => (actor.orgs && actor.orgs[0] ? actor.orgs[0].org_id : null);
 
 const parse = (s, dflt) => {
   try { const v = s ? JSON.parse(s) : dflt; return v == null ? dflt : v; } catch { return dflt; }
@@ -40,12 +42,12 @@ const parse = (s, dflt) => {
 /* The day the caller is on. A client may say which day it is for them (a
    school in India is a day ahead of UTC for hours at a time); anything that
    is not a real date is ignored. */
-function dayOf(ctx) {
+export function dayOf(ctx) {
   const t = ctx.url.searchParams.get("today");
   return E.isDate(t) ? t : E.todayOf();
 }
 
-async function settingsFor(ctx, orgId, day) {
+export async function settingsFor(ctx, orgId, day) {
   const row = orgId ? await ctx.repo.getEnrollmentSettings(orgId) : null;
   const profile = orgId ? profileOf(await ctx.repo.getOrganization(orgId)) : null;
   // An Indian school's classes, papers and year (from April) are its own defaults; what it has saved wins.
@@ -55,7 +57,7 @@ async function settingsFor(ctx, orgId, day) {
   return settings;
 }
 
-async function powers(ctx, orgId) {
+export async function powers(ctx, orgId) {
   const names = ["write", "verify", "decide", "activate", "sensitive", "settings"];
   const got = await Promise.all(names.map((n) => can(ctx, "enrollment." + n, { orgId })));
   const out = {};
@@ -66,7 +68,7 @@ async function powers(ctx, orgId) {
 /* Who is asking, in the terms this file cares about: staff of some kind, or a
    family that made this application. Anyone else is refused as if there were
    nothing there. */
-async function standing(ctx, row) {
+export async function standing(ctx, row) {
   const actor = ctx.actor;
   const orgId = row.org_id || orgOf(actor);
   const p = await powers(ctx, orgId);
@@ -82,7 +84,7 @@ async function standing(ctx, row) {
 
 /* ------------------------------------------------------------------ Domain */
 
-function domain(row, over) {
+export function domain(row, over) {
   return {
     id: row.id, status: row.status, type: row.enrollment_type, grade: row.entry_grade, year: row.school_year,
     studentId: row.student_id, legalFirst: row.legal_first, legalLast: row.legal_last,
@@ -134,7 +136,7 @@ function personOf(c) {
   return { id: c.id, name: c.name || c.email, first, last: rest.join(" "), dob: c.dob || null, guardians: [] };
 }
 
-function applicantOf(row) {
+export function applicantOf(row) {
   const form = parse(row.body_json, {});
   return {
     id: row.id, name: [row.legal_first, row.legal_last].filter(Boolean).join(" "),
@@ -146,7 +148,7 @@ function applicantOf(row) {
 
 /* Everything the duplicate check compares against, with the index to find a
    record's few possible matches quickly. */
-async function lookupIndex(ctx, orgId, rows) {
+export async function lookupIndex(ctx, orgId, rows) {
   const [people, apps] = await Promise.all([
     ctx.repo.listStudentIdentities(orgId),
     rows || ctx.repo.listApplications({ orgId })
@@ -187,6 +189,19 @@ const eventShape = (e) => ({
   field: e.field, note: e.note, internal: !!e.internal, meta: parse(e.meta_json, null)
 });
 
+/* A session as the evaluation reads it, and as a screen draws it. A family sees when and where, never the
+   score, the panel's remarks or how the child did. */
+const sessionDomain = (r) => ({ id: r.id, kind: r.kind, status: r.status, result: r.result, onDate: r.on_date,
+                                atTime: r.at_time, recordedAt: r.recorded_at });
+const sessionShape = (r, staff, names) => ({
+  id: r.id, kind: r.kind, label: r.label, onDate: r.on_date, atTime: r.at_time || null, venue: r.venue || null, status: r.status,
+  ...(staff ? { panel: r.panel || null, score: r.score, maxScore: r.max_score, result: r.result || null, remarks: r.remarks || null,
+                recordedBy: r.recorded_by ? { id: r.recorded_by, name: (names && names[r.recorded_by]) || null } : null,
+                recordedAt: r.recorded_at || null } : {})
+});
+const letterShape = (r) => ({ id: r.id, kind: r.kind, name: KIND_NAME[r.kind] || r.kind, refNo: r.ref_no, subject: r.subject,
+                              channel: r.channel, issuedAt: r.issued_at, issuedBy: r.issued_name || null });
+
 /* The light row a queue draws. */
 function shapeRow(row, ev, names, day, settings) {
   const dueOn = row.due_on || null;
@@ -209,7 +224,7 @@ function shapeRow(row, ev, names, day, settings) {
 
 /* The whole record. `view` is what the caller is allowed to see of it. */
 function shapeFull(row, bits) {
-  const { docs, ev, dup, names, events, view, enrollment, settings } = bits;
+  const { docs, ev, dup, names, events, view, enrollment, settings, sessions = [], letters = [], waitlist = null } = bits;
   const app = domain(row);
   const staff = view.staff;
   const form = { ...app.form };
@@ -261,6 +276,16 @@ function shapeFull(row, bits) {
     out.duplicates = dup.duplicates;
     out.siblings = dup.siblings;
   }
+  out.sessions = sessions.map((x) => sessionShape(x, staff, names));
+  out.letters = letters.map(letterShape);
+  out.waitlist = waitlist;
+  if (staff) {
+    const outstanding = docs.some((d) => d.required && ["missing", "returned"].includes(d.status)) || (review.corrections || []).some((c) => !c.resolved);
+    out.lettersAvailable = lettersAvailable({
+      status: row.status, enrolled: !!row.enrollment_id, submitted: !!row.submitted_at || row.status !== "draft",
+      outstanding, scheduled: sessions.some((x) => x.status === "scheduled")
+    }).map((k) => ({ kind: k, name: KIND_NAME[k], permitted: !!view.p[LETTER_NEED[k]] }));
+  }
   if (enrollment) out.enrollment = shapeEnrollment(enrollment, bits.day);
   out.events = (events || []).filter((e) => staff || !e.internal).map(eventShape);
   return out;
@@ -280,7 +305,7 @@ function shapeEnrollment(e, day) {
 
 /* ----------------------------------------------------------- Building one */
 
-async function build(ctx, row, view, { events = true, siblings = true } = {}) {
+export async function build(ctx, row, view, { events = true, siblings = true } = {}) {
   const day = dayOf(ctx);
   const settings = await settingsFor(ctx, view.orgId, day);
   const docs = await settleDocuments(ctx, row, settings);
@@ -306,19 +331,30 @@ async function build(ctx, row, view, { events = true, siblings = true } = {}) {
       }
     }
   }
+  const [sessionRows, letterRows] = await Promise.all([ctx.repo.listAssessmentSessionsFor(row.id), ctx.repo.listLetters(row.id)]);
   const ev = E.evaluate({
     app: domain(row, { syncState: enrollment ? enrollment.sync_state : null }),
-    docs, settings, seats: seatFn(row.entry_grade), duplicates: dup.duplicates, today: day
+    docs, settings, seats: seatFn(row.entry_grade), duplicates: dup.duplicates, today: day,
+    sessions: sessionRows.map(sessionDomain)
   });
   const eventRows = events ? await ctx.repo.listApplicationEvents(row.id) : [];
-  const ids = [row.assigned_to, row.decided_by, ...docs.map((d) => d.reviewed_by)];
+  // Where a waitlisted child stands: priority category first, then the day they joined the list.
+  let waitlist = null;
+  if (row.status === "waitlisted") {
+    const mates = (await ctx.repo.listApplications({ orgId: view.orgId, year: row.school_year }))
+      .filter((a) => a.status === "waitlisted" && a.entry_grade === row.entry_grade)
+      .map((a) => ({ id: a.id, waitlistedAt: a.waitlisted_at, priority: ((parse(a.body_json, {}).admission) || {}).priority }));
+    waitlist = E.waitlistOrder(mates, settings).get(row.id) || null;
+  }
+  const ids = [row.assigned_to, row.decided_by, ...docs.map((d) => d.reviewed_by), ...sessionRows.map((x) => x.recorded_by)];
   const names = await ctx.repo.namesFor(ids);
-  return { shape: shapeFull(row, { docs, ev, dup, names, events: eventRows, view, enrollment, settings, day }), settings, docs, ev, dup };
+  return { shape: shapeFull(row, { docs, ev, dup, names, events: eventRows, view, enrollment, settings, day, sessions: sessionRows, letters: letterRows, waitlist }),
+           settings, docs, ev, dup, sessions: sessionRows };
 }
 
 /* ---------------------------------------------------------------- Writing */
 
-function str(v, field, max) {
+export function str(v, field, max) {
   if (v == null) return "";
   if (typeof v !== "string" && typeof v !== "number") throw ApiError.badRequest(`${field} must be text.`, field);
   const s = String(v).trim();
@@ -338,7 +374,8 @@ function guardiansOf(list) {
     return {
       name: str(g.name, "name", 120), relationship: str(g.relationship, "relationship", 40),
       phone: str(g.phone, "phone", 40), email, address: str(g.address, "address", 400),
-      occupation: str(g.occupation, "occupation", 80),
+      occupation: str(g.occupation, "occupation", 80), qualification: str(g.qualification, "qualification", 80),
+      organisation: str(g.organisation, "organisation", 120),
       primary: g.primary === true, emergency: g.emergency === true, pickup: g.pickup === true
     };
   }).filter((g) => g.name || g.phone || g.email);
@@ -346,24 +383,51 @@ function guardiansOf(list) {
   return out;
 }
 
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+/* One of a fixed list, or nothing: a value a form could not have offered is refused, not kept. */
+function oneOrNone(v, field, list, formField) {
+  const s = str(v, field, 40);
+  if (s && !list.includes(s)) throw ApiError.badRequest(`${s} is not one of the choices for ${field}.`, formField || field);
+  return s;
+}
+
 const FORM_KEYS = {
   student: (v) => ({ gender: str(v.gender, "gender", 40), language: str(v.language, "language", 60),
-                     birthPlace: str(v.birthPlace, "birthPlace", 80), notes: str(v.notes, "notes", 400) }),
-  contact: (v) => ({ address: str(v.address, "address", 400), correspondence: str(v.correspondence, "correspondence", 400),
-                     phone: str(v.phone, "phone", 40), language: str(v.language, "language", 60),
-                     channel: str(v.channel, "channel", 20) }),
+                     birthPlace: str(v.birthPlace, "birthPlace", 80), notes: str(v.notes, "notes", 400),
+                     nationality: str(v.nationality, "nationality", 60), motherTongue: str(v.motherTongue, "motherTongue", 60),
+                     bloodGroup: oneOrNone(v.bloodGroup, "bloodGroup", BLOOD_GROUPS, "form.student"),
+                     category: oneOrNone(v.category, "category", CATEGORIES, "form.student"),
+                     secondLanguage: str(v.secondLanguage, "secondLanguage", 60) }),
+  // How the family came to the school, who is already here, and the priority they claim.
+  admission: (v) => ({ priority: str(v.priority, "priority", 40).toLowerCase().replace(/[^a-z0-9_]/g, ""),
+                       source: str(v.source, "source", 40).toLowerCase().replace(/[^a-z0-9_]/g, ""),
+                       referredBy: str(v.referredBy, "referredBy", 120), transport: str(v.transport, "transport", 60),
+                       siblingName: str(v.siblingName, "siblingName", 120), siblingClass: str(v.siblingClass, "siblingClass", 40),
+                       siblingAdmissionNo: str(v.siblingAdmissionNo, "siblingAdmissionNo", 40),
+                       enquiryId: str(v.enquiryId, "enquiryId", 64) }),
+  contact: (v) => {
+    const pin = str(v.pin, "pin", 10);
+    if (pin && !/^[1-9]\d{5}$/.test(pin)) throw ApiError.badRequest("A PIN code is six digits and does not begin with 0.", "form.contact");
+    return { address: str(v.address, "address", 400), correspondence: str(v.correspondence, "correspondence", 400),
+             phone: str(v.phone, "phone", 40), language: str(v.language, "language", 60),
+             channel: str(v.channel, "channel", 20), pin, district: str(v.district, "district", 80), state: str(v.state, "state", 80),
+             whatsapp: oneOrNone(v.whatsapp, "whatsapp", ["yes", "no"], "form.contact") };
+  },
   emergency: (v) => ({ name: str(v.name, "name", 120), relationship: str(v.relationship, "relationship", 40),
                        phone: str(v.phone, "phone", 40) }),
   previous: (v) => ({ school: str(v.school, "school", 160), location: str(v.location, "location", 120),
                       board: str(v.board, "board", 80), lastGrade: str(v.lastGrade, "lastGrade", 40),
                       lastYear: str(v.lastYear, "lastYear", 20), tcNumber: str(v.tcNumber, "tcNumber", 60),
-                      reason: str(v.reason, "reason", 240) }),
+                      reason: str(v.reason, "reason", 240), result: str(v.result, "result", 60), medium: str(v.medium, "medium", 60) }),
   pickup: (v) => {
     if (!Array.isArray(v)) throw ApiError.badRequest("pickup must be a list.", "form.pickup");
     return v.slice(0, 6).map((p) => ({ name: str(p && p.name, "name", 120), relationship: str(p && p.relationship, "relationship", 40),
                                          phone: str(p && p.phone, "phone", 40) })).filter((p) => p.name);
   },
-  support: (v) => ({ notes: str(v.notes, "notes", 2000) })
+  // Restricted: what the school needs to prepare a place, read by administrators and the family that wrote it.
+  support: (v) => ({ notes: str(v.notes, "notes", 2000), allergies: str(v.allergies, "allergies", 400),
+                     conditions: str(v.conditions, "conditions", 400), cwsn: v.cwsn === true, disability: str(v.disability, "disability", 200) })
 };
 
 /* Merges what a form sent into what is stored. Only the keys that were sent
@@ -377,7 +441,13 @@ function mergeForm(prev, sent, { canSupport }) {
     if (sent[k] === undefined) continue;
     if (k === "support" && !canSupport) continue;
     if (k !== "pickup" && (sent[k] == null || typeof sent[k] !== "object")) continue;
-    out[k] = fn(sent[k] || {});
+    const next = fn(sent[k] || {});
+    const given = sent[k] && typeof sent[k] === "object" && !Array.isArray(sent[k]) ? sent[k] : null;
+    if (k === "pickup" || !given) { out[k] = next; continue; }
+    // Only what the client names changes. A family's own editor knows fewer particulars than the office's form does,
+    // and saving its few must not blank the ones it never showed.
+    const was = prev[k] && typeof prev[k] === "object" ? prev[k] : {};
+    out[k] = Object.fromEntries(Object.entries(next).map(([key, val]) => [key, key in given || !(key in was) ? val : was[key]]));
   }
   return out;
 }
@@ -397,7 +467,7 @@ function validDob(v) {
 }
 
 /* Who the log says did it: the person, as they were named at the time. */
-function note(ctx, row) {
+export function note(ctx, row) {
   return (kind, o) => ctx.repo.addApplicationEvent(row.id, { actorId: ctx.actor.id, actorName: ctx.actor.name, kind, ...(o || {}) });
 }
 
@@ -479,12 +549,18 @@ export async function list(ctx) {
   const year = yearParam === "all" ? null : (E.isYear(yearParam) ? yearParam : settings.currentYear);
 
   const rows = await ctx.repo.listApplications({ orgId, year });
-  const [docRows, lookup, usage, enrollRows] = await Promise.all([
+  const [docRows, lookup, usage, enrollRows, sessionRows] = await Promise.all([
     ctx.repo.listDocumentsFor(rows.map((r) => r.id)),
     lookupIndex(ctx, orgId, ctx.repo.listApplications({ orgId })),
     ctx.repo.seatUsage(orgId, year || settings.currentYear),
-    ctx.repo.listEnrollments({ orgId, year })
+    ctx.repo.listEnrollments({ orgId, year }),
+    ctx.repo.listAssessmentSessionsForApplications(rows.map((r) => r.id))
   ]);
+  const sessionsByApp = new Map();
+  for (const x of sessionRows) {
+    if (!sessionsByApp.has(x.application_id)) sessionsByApp.set(x.application_id, []);
+    sessionsByApp.get(x.application_id).push(sessionDomain(x));
+  }
   const docsByApp = new Map();
   for (const d of docRows) {
     if (!docsByApp.has(d.application_id)) docsByApp.set(d.application_id, []);
@@ -502,7 +578,7 @@ export async function list(ctx) {
     const ev = E.evaluate({
       app: domain(row, { syncState: syncOf.get(row.enrollment_id) || null }), docs, settings,
       seats: g && g.seats != null ? { limit: g.seats, used: usage[row.entry_grade] || 0 } : null,
-      duplicates: dup.duplicates, today: day
+      duplicates: dup.duplicates, today: day, sessions: sessionsByApp.get(row.id) || []
     });
     return { row, ev, dup: dup.duplicates.filter((d) => d.strength === "exact").length };
   });
@@ -578,9 +654,11 @@ export async function summary(ctx) {
   // somebody looks after the day arrives; there is no clock to do it sooner.
   const synced = await syncDue(ctx, orgId, day);
 
-  const [apps, enrollments, usage] = await Promise.all([
-    ctx.repo.listApplications({ orgId, year }), ctx.repo.listEnrollments({ orgId, year }), ctx.repo.seatUsage(orgId, year)
+  const [apps, enrollments, usage, enquiries, week] = await Promise.all([
+    ctx.repo.listApplications({ orgId, year }), ctx.repo.listEnrollments({ orgId, year }), ctx.repo.seatUsage(orgId, year),
+    ctx.repo.listEnquiries({ orgId, year }), ctx.repo.listAssessmentSessionsOn({ orgId, from: day, to: E.addDays(day, 6) })
   ]);
+  const openEnq = enquiries.filter((e) => E.OPEN_ENQUIRY.includes(e.status));
   const by = {};
   for (const a of apps) by[a.status] = (by[a.status] || 0) + 1;
   const open = apps.filter((a) => E.OPEN_STATUSES.includes(a.status) && !a.enrollment_id);
@@ -605,6 +683,8 @@ export async function summary(ctx) {
                     offers: apps.filter((a) => a.status === "admitted" && !a.enrollment_id && a.acceptance === "pending").length,
                     waitlisted: by.waitlisted || 0,
                     overdue: open.filter((a) => a.due_on && a.due_on < day).length },
+    enquiries: { open: openEnq.length, followUps: openEnq.filter((e) => e.follow_up_on && e.follow_up_on <= day).length },
+    sessions: { today: week.filter((x) => x.status === "scheduled" && x.on_date === day).length, week: week.filter((x) => x.status === "scheduled").length },
     enrollments: { total: enrollments.length, byStatus: state,
                    exceptions: enrollments.filter((e) => e.sync_state === "exception").length },
     grades
@@ -645,7 +725,7 @@ export async function mine(ctx) {
   }
   return json({ applications: out, students: wards.map((w) => ({ id: w.id, name: w.name })),
                 years: settings.years, grades: settings.grades.map((g) => g.name), currentYear: settings.currentYear,
-                consent: settings.consent });
+                consent: settings.consent, requiredFields: settings.requiredFields, priorities: settings.priorities });
 }
 
 /* GET /api/v1/enrollment/lookup — who a prospective applicant might already
@@ -753,6 +833,16 @@ export async function create(ctx) {
   }
   if (!grade) throw ApiError.badRequest("Say which grade the application is for.", "grade");
   if (body.form) form = mergeForm(form, body.form, { canSupport: p.sensitive || family });
+  // An application that grows out of an enquiry points back at it, and keeps how the family heard of the school.
+  let enquiry = null;
+  const enquiryId = form.admission && form.admission.enquiryId;
+  if (enquiryId) {
+    enquiry = staff ? await ctx.repo.findEnquiry(enquiryId) : null;
+    if (!enquiry || (enquiry.org_id || null) !== (orgId || null) || enquiry.application_id) {
+      enquiry = null;
+      form = { ...form, admission: { ...form.admission, enquiryId: "" } };
+    } else if (!form.admission.source) form = { ...form, admission: { ...form.admission, source: enquiry.source } };
+  }
   if (!first || (!last && !settings.singleName)) {
     if (staff || !studentId) {
       if (!first) throw ApiError.badRequest("The student's legal first name is required.", "student.legalFirst");
@@ -777,6 +867,11 @@ export async function create(ctx) {
     row = again;
   }
   await ctx.repo.syncDocuments(row.id, E.documentsFor(settings, grade, type));
+  if (enquiry) {
+    await ctx.repo.updateEnquiry(enquiry.id, { status: "applied", applicationId: row.id, closedAt: Date.now(), followUpOn: null });
+    await ctx.repo.addEnquiryLog(enquiry.id, { actorId: actor.id, actorName: actor.name, kind: "application", to: E.applicationNumber(row.seq),
+                                               note: "Application started" });
+  }
   await note(ctx, row)("status", { from: null, to: "draft",
     note: studentId ? `Started for a returning student, ${E.yearLabel(schoolYear)}` : `Started for ${E.yearLabel(schoolYear)}`, internal: false });
   const view = await standing(ctx, row);
@@ -895,6 +990,9 @@ export async function update(ctx, { applicationId }) {
    One endpoint for every step of the workflow, because they are all the same
    kind of thing: "this application is X; do Y to it". The rule for each is in
    the table below and in services/enrollment.js; the rest is who may. */
+
+// What the history says when a rule is set aside, by which rule.
+const ASIDE = { age: "Age rule set aside", seats: "Seat limit set aside", assessment: "Assessment requirement set aside" };
 
 const ACTORS = {
   submit: "owner", resubmit: "owner", withdraw: "owner", accept: "decide-or-owner", decline: "decide-or-owner",
@@ -1024,11 +1122,11 @@ export async function act(ctx, { applicationId, action }) {
       return finish({ review: { ...review, duplicates } });
     }
     case "override": {
-      const kind = check.oneOf(body.kind, "kind", ["age", "seats"]);
+      const kind = check.oneOf(body.kind, "kind", ["age", "seats", "assessment"]);
       const reason = text(body.reason, "reason", 240, true);
       if (reason.length < 4) throw ApiError.badRequest("Say why, in a few words.", "reason");
       const overrides = { ...(review.overrides || {}), [kind]: { reason, by: actor.id, byName: actor.name, at: t } };
-      await log("decision", { field: "override." + kind, to: reason, note: kind === "age" ? "Age rule set aside" : "Seat limit set aside", internal: true });
+      await log("decision", { field: "override." + kind, to: reason, note: ASIDE[kind], internal: true });
       return finish({ review: { ...review, overrides } });
     }
     case "approve": {
@@ -1047,7 +1145,7 @@ export async function act(ctx, { applicationId, action }) {
           const reason = str(given[kind], kind, 240);
           if (reason.length < 4) return refuse(b.label, c.blockers);
           overrides[kind] = { reason, by: actor.id, byName: actor.name, at: t };
-          await log("decision", { field: "override." + kind, to: reason, note: kind === "age" ? "Age rule set aside" : "Seat limit set aside", internal: true });
+          await log("decision", { field: "override." + kind, to: reason, note: ASIDE[kind], internal: true });
         }
         review.overrides = overrides;
       }
@@ -1180,6 +1278,9 @@ async function activate(ctx, { row, view, built, body, day, log }) {
     throw e;
   }
 
+  // The class they will sit in, checked before anything is made, so a refusal leaves nothing behind.
+  const klass = body.classId ? await chooseClass(ctx, view.orgId, row.school_year, grade, check.string(body.classId, "classId", { max: 64 }), body.classReason) : null;
+
   // The permanent identity.
   let created = false;
   if (!studentId) {
@@ -1228,15 +1329,34 @@ async function activate(ctx, { row, view, built, body, day, log }) {
     await mergeContact(ctx, studentId, app, actor.id);
   }
 
+  if (klass) {
+    await log("enrollment", { field: "class", to: classLabel(klass.grade, klass.section),
+      note: klass.capacity != null && klass.strength >= klass.capacity ? `Over the class limit: ${String(body.classReason).trim().slice(0, 240)}` : null, internal: false });
+  }
   const result = await syncEnrollment(ctx, enrollment, row, app, {
     courseIds: Array.isArray(body.courseIds) ? body.courseIds.filter((x) => typeof x === "string").slice(0, 30) : [],
     guardians: Array.isArray(body.guardians) ? body.guardians : [],
-    day, orgId: view.orgId, log
+    day, orgId: view.orgId, log, classId: klass ? klass.id : null
   });
   const fresh = await ctx.repo.findApplication(row.id);
   const b = await build(ctx, fresh, view);
   const full = await ctx.repo.findEnrollment(enrollment.id);
   return json({ application: b.shape, enrollment: shapeEnrollment(full, day), sync: result }, { status: 201 });
+}
+
+/* The class a student is seated in at enrolment: one of this school's classes for the year, for the grade
+   they are joining, with room — or room made on purpose, for a reason that is kept. */
+export async function chooseClass(ctx, orgId, year, grade, classId, reason) {
+  const classes = await ctx.repo.listIndiaClasses(orgId, year);
+  const c = classes.find((x) => x.id === classId);
+  if (!c) throw ApiError.badRequest("That is not one of this school's classes for the year.", "classId");
+  if (gradeOf(c.grade) !== gradeOf(grade)) throw ApiError.badRequest(`${classLabel(c.grade, c.section)} is not a class for ${grade}.`, "classId");
+  if (c.capacity != null && c.strength >= c.capacity && String(reason || "").trim().length < 4) {
+    const e = ApiError.conflict(`${classLabel(c.grade, c.section)} is full (${c.strength} of ${c.capacity}). Choose another class, or say why this child goes in.`);
+    e.extra = { blockers: [{ kind: "capacity", code: "class_full", soft: true, label: `${classLabel(c.grade, c.section)} is full` }] };
+    throw e;
+  }
+  return c;
 }
 
 /* A contact card is replaced whole by the repository, so what is already
@@ -1268,7 +1388,7 @@ const facts = (pairs) => pairs.filter((p) => p[1]).map((p) => ({ label: p[0], va
 /* Everything that follows from a student being enrolled. Each step records
    what it did, and a step that cannot be done says why — it never throws the
    enrollment away. Safe to run again: it only does what is not yet done. */
-async function syncEnrollment(ctx, enrollment, appRow, app, { courseIds, guardians, day, orgId, log }) {
+async function syncEnrollment(ctx, enrollment, appRow, app, { courseIds, guardians, day, orgId, log, classId = null }) {
   const actor = ctx.actor;
   const steps = [];
   const step = (key, status, note, extra) => steps.push({ key, status, note: note || "", ...(extra || {}) });
@@ -1347,6 +1467,30 @@ async function syncEnrollment(ctx, enrollment, appRow, app, { courseIds, guardia
     step("records", "done", "Student record written");
   } catch (e) {
     step("records", "exception", e && e.message ? e.message : "The student record could not be written");
+  }
+
+  // The school's own roster: the class the child sits in, and what the application already told us —
+  // parents, PIN code, blood group, category — so the office does not type it a second time. What the
+  // office wrote is kept; the class is the one thing this sets. Run again, it keeps the class it chose.
+  try {
+    const profile = profileOf(await ctx.repo.getOrganization(orgId));
+    const before = parse(enrollment.sync_json, []).find((x) => x.key === "roster");
+    const seat = classId || (before && before.classId) || null;
+    if (seat || profile.region === "IN") {
+      const have = await ctx.repo.getIndiaStudent(orgId, studentId);
+      const row = rosterFromApplication(have, { form: app.form, admissionNo: enrollment.admission_no, startsOn: enrollment.starts_on,
+                                                previousSchool: enrollment.previous_school, classId: seat });
+      await ctx.repo.putIndiaStudents(orgId, [{ accountId: studentId, row,
+        contact: { dateOfBirth: E.isDate(app.dob) ? app.dob : null, mailingAddress: (app.form.contact || {}).address || null } }], actor.id, day);
+      if (seat) {
+        // Seating also reopens a child who had left, and starts their roll number afresh if the class changed.
+        await ctx.repo.seatStudents(orgId, [{ accountId: studentId, classId: seat, rollNo: have && have.class_id === seat ? have.roll_no : null }], actor.id, day);
+        const k = await ctx.repo.getIndiaClass(orgId, seat);
+        step("roster", "done", `Seated in ${k ? classLabel(k.grade, k.section) : "the class"}`, { classId: seat });
+      } else step("roster", "attention", "Not seated in a class yet — choose one so the child appears in a register");
+    }
+  } catch (e) {
+    step("roster", "exception", e && e.message ? e.message : "The roster could not be written");
   }
 
   // Courses. A student who starts later is not on a roster today.
@@ -1688,6 +1832,16 @@ export async function enrollmentAct(ctx, { enrollmentId, action }) {
       });
       updated = await ctx.repo.findEnrollment(e.id);
       await log("sync", { to: updated.sync_state, note: "Tried again", internal: true });
+      break;
+    }
+    // Seat (or move) a student in a class after enrolment: the registrar's, as enrolling is.
+    case "seat": {
+      needLive();
+      const k = await chooseClass(ctx, orgId, e.school_year, e.grade, check.string(body.classId, "classId", { max: 64 }), body.classReason);
+      const app = appRow ? domain(appRow) : { form: {}, preferredName: null };
+      await syncEnrollment(ctx, e, appRow, app, { courseIds: [], guardians: [], day, orgId, log: async () => {}, classId: k.id });
+      updated = await ctx.repo.findEnrollment(e.id);
+      await log("enrollment", { field: "class", to: classLabel(k.grade, k.section), note: t(body.classReason, "classReason", 240) || null });
       break;
     }
     default:

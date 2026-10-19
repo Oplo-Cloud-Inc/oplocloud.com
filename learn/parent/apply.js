@@ -326,14 +326,22 @@ window.OPLO_APPLY = (function () {
 
   /* Step 1 — the student and the place */
   function stepStudent(pane, a, again) {
-    var f = a.form || {}, stu = f.student || {}, prev = f.previous || {};
+    var f = a.form || {}, stu = f.student || {}, prev = f.previous || {}, adm = f.admission || {};
+    // What this school insists on is asked for here too, so a family is never stuck on something it cannot fill in.
+    var needs = function (k) { return (DATA.requiredFields || []).indexOf(k) > -1; };
     var X = {
       first: field("Legal first name", a.student.legalFirst, { req: true, max: 80 }),
       last: field("Legal last name", a.student.legalLast, { req: !!!(window.OPLO_LOCALE && window.OPLO_LOCALE.active()), max: 80 }),
       pref: field("Name they go by", a.student.preferredName, { max: 80, note: "If different from the legal name" }),
       dob: field("Date of birth", a.student.dob, { type: "date", req: true }),
-      gender: field("Gender", stu.gender, { options: [["", "Prefer not to say"], ["Female", "Female"], ["Male", "Male"], ["Non-binary", "Non-binary"]] }),
+      gender: field("Gender", stu.gender, { req: needs("student.gender"), options: [["", needs("student.gender") ? "Choose" : "Prefer not to say"], ["Female", "Female"], ["Male", "Male"], ["Non-binary", "Non-binary"]] }),
       lang: field("Language spoken at home", stu.language, { max: 60 }),
+      nationality: field("Nationality", stu.nationality, { max: 60, req: needs("student.nationality") }),
+      mother: field("Mother tongue", stu.motherTongue, { max: 60, req: needs("student.motherTongue") }),
+      blood: field("Blood group", stu.bloodGroup, { req: needs("student.bloodGroup"), options: [["", "—"]].concat(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(function (b) { return [b, b]; })) }),
+      category: field("Category", stu.category, { req: needs("student.category"), note: "Only if you choose to say.",
+        options: [["", "Not stated"]].concat(["General", "EWS/DG", "SC", "ST", "OBC"].map(function (c) { return [c, c]; })) }),
+      priority: field("Does a priority apply?", adm.priority, { options: [["", "No"]].concat((DATA.priorities || []).map(function (p) { return [p.key, p.label]; })) }),
       year: field("School year", a.schoolYear, { options: DATA.years.map(function (y) { return [y, yearName(y)]; }) }),
       grade: field("Grade", a.grade, { options: DATA.grades.map(function (g) { return [g, g]; }), req: true }),
       type: field("Is the student new to the school?", a.type, { options: [["new", "Yes — starting school here"], ["transfer", "Coming from another school"], ["returning", "Already here — continuing"]] }),
@@ -344,17 +352,17 @@ window.OPLO_APPLY = (function () {
       pTc: field("Transfer certificate number", prev.tcNumber, { max: 60, note: "If you have one" })
     };
     var g = h("div", "fa-grid");
-    [X.first, X.last, X.pref, X.dob, X.gender, X.lang].forEach(function (x) { g.appendChild(x.node); });
+    [X.first, X.last, X.pref, X.dob, X.gender, X.nationality, X.mother, X.lang, X.blood, X.category].forEach(function (x) { g.appendChild(x.node); });
     pane.appendChild(g);
     pane.appendChild(h("h2", "fa-h2", "Where and when"));
     var g2 = h("div", "fa-grid");
-    [X.year, X.grade, X.type, X.start].forEach(function (x) { g2.appendChild(x.node); });
+    [X.year, X.grade, X.type, X.start].concat((DATA.priorities || []).length ? [X.priority] : []).forEach(function (x) { g2.appendChild(x.node); });
     pane.appendChild(g2);
     var prevBox = h("div", "fa-prev");
     pane.appendChild(prevBox);
     function drawPrev() {
       prevBox.innerHTML = "";
-      if (X.type.value() === "transfer") {
+      if (X.type.value() === "transfer" || needs("previous.lastGrade")) {
         prevBox.appendChild(h("h2", "fa-h2", "Where they have been"));
         var g3 = h("div", "fa-grid");
         [X.pSchool, X.pLoc, X.pGrade, X.pTc].forEach(function (x) { g3.appendChild(x.node); });
@@ -367,7 +375,9 @@ window.OPLO_APPLY = (function () {
       return {
         student: { legalFirst: X.first.value(), legalLast: X.last.value(), preferredName: X.pref.value(), dob: X.dob.value() },
         grade: X.grade.value(), schoolYear: X.year.value(), type: X.type.value(), intendedStart: X.start.value(),
-        form: { student: { gender: X.gender.value(), language: X.lang.value() },
+        form: { student: { gender: X.gender.value(), language: X.lang.value(), nationality: X.nationality.value(), motherTongue: X.mother.value(),
+                           bloodGroup: X.blood.value(), category: X.category.value() },
+                admission: (DATA.priorities || []).length ? { priority: X.priority.value() } : undefined,
                 previous: { school: X.pSchool.value(), location: X.pLoc.value(), lastGrade: X.pGrade.value(), tcNumber: X.pTc.value(),
                             board: prev.board || "", lastYear: prev.lastYear || "", reason: prev.reason || "" } }
       };
@@ -377,8 +387,10 @@ window.OPLO_APPLY = (function () {
   /* Step 2 — the family */
   function stepFamily(pane, a, again) {
     var f = a.form || {}, con = f.contact || {}, em = f.emergency || {}, sup = f.support;
+    var needs = function (k) { return (DATA.requiredFields || []).indexOf(k) > -1; };
     var guardians = ((f.guardians || []).length ? f.guardians : [{ name: "", relationship: "", phone: "", email: "", primary: true }]).map(function (g) {
-      return { name: g.name || "", relationship: g.relationship || "", phone: g.phone || "", email: g.email || "", primary: !!g.primary, address: g.address || "" };
+      // Every particular the school wrote down about a parent is carried through, shown or not.
+      return Object.assign({}, g, { name: g.name || "", relationship: g.relationship || "", phone: g.phone || "", email: g.email || "", primary: !!g.primary, address: g.address || "" });
     });
     pane.appendChild(h("h2", "fa-h2", "Parents and guardians"));
     pane.appendChild(h("p", "fa-note", "At least one, with a phone number or an email. The school writes to the first one."));
@@ -408,13 +420,17 @@ window.OPLO_APPLY = (function () {
     var X = {
       addr: field("Home address", con.address, { area: true, rows: 3, req: true, max: 400 }),
       phone: field("Home phone", con.phone, { max: 40 }),
+      pin: field("PIN code", con.pin, { max: 6, req: needs("contact.pin"), hint: "6 digits" }),
+      district: field("District", con.district, { max: 80 }),
+      state: field("State", con.state, { max: 80 }),
+      whatsapp: field("May the school message you on WhatsApp?", con.whatsapp, { options: [["", "Not asked"], ["yes", "Yes"], ["no", "No"]] }),
       lang: field("Language you would like the school to write in", con.language, { max: 60 }),
-      eName: field("Somebody to call in an emergency", em.name, { max: 120 }),
+      eName: field("Somebody to call in an emergency", em.name, { max: 120, req: needs("emergency.name") }),
       eRel: field("Their relationship to the student", em.relationship, { max: 40 }),
       ePhone: field("Their phone", em.phone, { max: 40 })
     };
     var g = h("div", "fa-grid");
-    [X.addr, X.phone, X.lang, X.eName, X.eRel, X.ePhone].forEach(function (x) { g.appendChild(x.node); });
+    [X.addr, X.pin, X.district, X.state, X.phone, X.whatsapp, X.lang, X.eName, X.eRel, X.ePhone].forEach(function (x) { g.appendChild(x.node); });
     pane.appendChild(g);
     pane.appendChild(h("h2", "fa-h2", "Anything the school should know"));
     var support = field("Support or accessibility needs (optional)", sup && sup.notes, { area: true, rows: 3, max: 2000,
@@ -422,7 +438,8 @@ window.OPLO_APPLY = (function () {
     pane.appendChild(support.node);
     nav(pane, 1, saver(a, function () {
       return { form: { guardians: guardians,
-        contact: { address: X.addr.value(), phone: X.phone.value(), language: X.lang.value(), correspondence: con.correspondence || "", channel: con.channel || "" },
+        contact: { address: X.addr.value(), phone: X.phone.value(), language: X.lang.value(), pin: X.pin.value(), district: X.district.value(), state: X.state.value(),
+                   whatsapp: X.whatsapp.value() },
         emergency: { name: X.eName.value(), relationship: X.eRel.value(), phone: X.ePhone.value() },
         support: { notes: support.value() } } };
     }, again));
@@ -535,7 +552,9 @@ window.OPLO_APPLY = (function () {
           rejected: "The school was not able to offer a place", withdrawn: "Withdrawn" })[e.to] || "Updated";
       case "document": return e.to === "received" ? "A document was received" : e.to === "verified" ? "A document was accepted" : e.to === "returned" ? "A document was sent back to you" : "A document was updated";
       case "decision": return e.to === "accepted" ? "Offer accepted" : e.to === "declined" ? "Offer declined" : "A decision was made";
-      case "enrollment": return e.to === "enrolled" ? "Enrolled" : "Enrollment updated";
+      case "enrollment": return e.to === "enrolled" ? "Enrolled" : e.field === "class" ? "Placed in a class" : "Enrollment updated";
+      case "session": return e.to === "scheduled" ? "The school set a date to see your child" : e.to === "cancelled" ? "A date was called off" : e.to === "absent" ? null : e.to === "completed" ? null : "A date was changed";
+      case "letter": return "The school wrote to you";
       default: return null;
     }
   }
@@ -578,6 +597,31 @@ window.OPLO_APPLY = (function () {
       wrap.appendChild(box);
     }
 
+    // When and where the school has asked to see the child — never how it went.
+    var dates = (a.sessions || []).filter(function (x) { return x.status === "scheduled" || x.status === "completed" || x.status === "absent"; });
+    if (dates.length) {
+      var when = h("section", "fa-block");
+      when.appendChild(h("h2", null, "Dates"));
+      dates.forEach(function (x) {
+        var t = x.atTime ? " at " + clock(x.atTime) : "";
+        when.appendChild(h("div", "fa-row", "<span><b>" + esc(x.label) + "</b><small class='fa-ask-t'>" + esc(day(x.onDate) + t + (x.venue ? " · " + x.venue : "")) + "</small></span><em>" +
+          esc(x.status === "scheduled" ? "Please come" : x.status === "absent" ? "Missed — ask the school" : "Done") + "</em>"));
+      });
+      wrap.appendChild(when);
+    }
+
+    // The letters the school wrote to this family.
+    if ((a.letters || []).length) {
+      var lt = h("section", "fa-block");
+      lt.appendChild(h("h2", null, "Letters from the school"));
+      a.letters.forEach(function (l) {
+        var row = h("div", "fa-row", "<span><b>" + esc(l.name) + "</b><small class='fa-ask-t'>" + esc(l.refNo + " · " + day(new Date(l.issuedAt).toISOString().slice(0, 10))) + "</small></span>");
+        row.appendChild(btn("Read", "quiet sm", function () { readLetter(a, l); }));
+        lt.appendChild(row);
+      });
+      wrap.appendChild(lt);
+    }
+
     var ups = (a.events || []).map(function (e) { return { at: e.at, text: eventWords(e) }; }).filter(function (x) { return x.text; });
     if (ups.length) {
       var hist = h("section", "fa-block");
@@ -590,6 +634,29 @@ window.OPLO_APPLY = (function () {
     wrap.appendChild(back);
     ROOT.appendChild(wrap);
     window.scrollTo(0, 0);
+  }
+
+  function clock(t) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(t || "");
+    return m ? ((+m[1] + 11) % 12 + 1) + ":" + m[2] + (+m[1] < 12 ? " am" : " pm") : "";
+  }
+
+  /* A letter, as the page the school sent. */
+  function readLetter(a, l) {
+    NS.letter(a.id, l.id).then(function (x) {
+      var back = h("div", "fa-veil");
+      var box = h("div", "fa-sheet");
+      var paper = h("div", "fa-paper");
+      paper.innerHTML = window.OPLO_LETTER.html(x.body);
+      box.appendChild(paper);
+      var acts = h("div", "fa-acts");
+      acts.appendChild(btn("Print", "", function () { if (!window.OPLO_LETTER.print(x.body)) toast("Allow pop-ups for this site to print."); }));
+      acts.appendChild(btn("Close", "quiet", function () { back.remove(); }));
+      box.appendChild(acts);
+      back.appendChild(box);
+      back.addEventListener("click", function (e) { if (e.target === back) back.remove(); });
+      document.body.appendChild(back);
+    }, function (e) { toast(e.message); });
   }
 
   function withdraw(a) {
