@@ -95,15 +95,25 @@ export async function get(ctx, { itemId }) {
   return json({ item: shape(r, await ctx.repo.listFiles("item", r.id)) });
 }
 
+/* Every child the school has: in a course, or seated in a section (an Indian school's children are the latter). */
+async function schoolStudents(ctx, orgId) {
+  const ids = new Set((await ctx.repo.listStudentMemberships(orgId)).map((m) => m.account_id));
+  for (const r of await ctx.repo.listIndiaStudents(orgId, null)) if (!r.left_on) ids.add(r.account_id);
+  return Array.from(ids);
+}
+
 async function recipients(ctx, spec, orgId, item) {
   if (spec.notify === "subject" && item.subjectId) return [item.subjectId].concat(await ctx.repo.guardianIdsOf([item.subjectId]));
   if (spec.notify === "audience") {
     const a = item.data.audience || "everyone";
     const staff = await ctx.repo.accountsWithRole(orgId, STAFF_ROLES_ALL);
     if (a === "staff") return staff;
-    const studs = Array.from(new Set((await ctx.repo.listStudentMemberships(orgId)).map((m) => m.account_id)));
+    let studs = await schoolStudents(ctx, orgId);
+    // A circular for some classes (X-C, IX-A) goes to the children seated in them, and to their families.
+    const labels = new Set(String(item.data.classes || "").split(",").map((x) => x.trim().toUpperCase()).filter(Boolean));
+    if (labels.size) studs = (await ctx.repo.listIndiaStudents(orgId, null)).filter((r) => r.class_id && labels.has(`${r.grade}-${r.section}`.toUpperCase())).map((r) => r.account_id);
     const fam = await ctx.repo.guardianIdsOf(studs);
-    return a === "students" ? studs : a === "families" ? fam : staff.concat(studs, fam);
+    return a === "students" ? studs : a === "families" ? fam : labels.size ? studs.concat(fam) : staff.concat(studs, fam);
   }
   return [];
 }
@@ -122,6 +132,28 @@ function readBody(kind, body, existing) {
   return { title, status, data, dueOn, subjectId, courseId,
     startsAt: body.startsAt != null ? Number(body.startsAt) : existing ? existing.starts_at : null,
     endsAt: body.endsAt != null ? Number(body.endsAt) : existing ? existing.ends_at : null };
+}
+
+/* GET /items/:itemId/reach — how many people a circular's notice reached, and how many have opened it. The
+   notices are the inbox's own rows (one per person, read_at when opened), so this counts what happened. */
+export async function reach(ctx, { itemId }) {
+  const actor = requireActor(ctx);
+  const orgId = orgOf(actor);
+  const r = await ctx.repo.findItem(itemId);
+  if (!r || r.org_id !== orgId || r.archived_at) throw ApiError.notFound("No such record.");
+  if (!isSchoolStaff(actor, orgId)) throw ApiError.forbidden("Who has read a notice is for the school's staff.");
+  const rows = await ctx.repo.noticeReach(orgId, `item:${itemId}`);
+  const staff = new Set(await ctx.repo.accountsWithRole(orgId, STAFF_ROLES_ALL));
+  const studs = new Set(await schoolStudents(ctx, orgId));
+  const fam = new Set(await ctx.repo.guardianIdsOf([...studs]));
+  const g = { staff: { sent: 0, read: 0 }, students: { sent: 0, read: 0 }, families: { sent: 0, read: 0 } };
+  for (const n of rows) {
+    const k = staff.has(n.account_id) ? "staff" : fam.has(n.account_id) ? "families" : studs.has(n.account_id) ? "students" : null;
+    if (!k) continue;
+    g[k].sent++; if (n.read_at) g[k].read++;
+  }
+  const sent = rows.length, read = rows.filter((n) => n.read_at).length;
+  return json({ sent, read, unread: sent - read, percent: sent ? Math.round(read / sent * 1000) / 10 : null, groups: g });
 }
 
 /* POST /items { kind, title, status?, subjectId?, courseId?, dueOn?, data } */

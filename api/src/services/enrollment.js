@@ -71,12 +71,12 @@ export function ageOn(dob, ymd) {
   return age;
 }
 
-/* A school year runs from June to May — the northern-hemisphere shape that
-   both New York and most of India share. A school that starts in another
-   month sets its years in settings; this only names today's. */
-export function schoolYearOf(ymd) {
+/* A school year runs from June to May unless the school says otherwise: an
+   Indian school's runs from April (its profile's yearStartMonth). This only
+   names today's; a school that wants other years sets them in settings. */
+export function schoolYearOf(ymd, startMonth = 6) {
   const y = +ymd.slice(0, 4), m = +ymd.slice(5, 7);
-  const start = m >= 6 ? y : y - 1;
+  const start = m >= startMonth ? y : y - 1;
   return `${start}-${start + 1}`;
 }
 
@@ -120,15 +120,33 @@ export const DEFAULT_REVIEW = [
   { key: "assessment", label: "Entrance assessment or interview", required: false }
 ];
 
-export function defaultSettings(today) {
-  const year = schoolYearOf(today || todayOf());
+/* An Indian school admits to Nursery, LKG, UKG and Class I to XII, by the age a child is on 1 April, and asks
+   for the papers a school here asks for. No identity number is asked for by default, Aadhaar least of all: a school that
+   needs one adds it, marked sensitive (the same rule as everywhere), and only its last four digits are ever kept. */
+export const IN_GRADES = ["Nursery", "LKG", "UKG", "Class I", "Class II", "Class III", "Class IV", "Class V", "Class VI", "Class VII", "Class VIII",
+  "Class IX", "Class X", "Class XI", "Class XII"];
+export const IN_DOCUMENTS = [
+  { key: "birth_proof", label: "Proof of date of birth (birth certificate)", required: true, types: ["new", "transfer"] },
+  { key: "photo", label: "Passport-size photograph", required: true, types: ["new", "transfer"] },
+  { key: "address_proof", label: "Proof of address", required: true, types: ["new", "transfer"] },
+  { key: "previous_report", label: "Report card of the last class", required: true, types: ["transfer"] },
+  { key: "transfer_cert", label: "Transfer certificate (TC) from the last school", required: true, types: ["transfer"], hint: "Not needed for Nursery to Class I." },
+  { key: "category_cert", label: "Caste or category certificate (SC, ST, OBC)", required: false, types: ["new", "transfer"], hint: "Only if the family claims a category." },
+  { key: "ews_cert", label: "EWS / disadvantaged-group certificate", required: false, types: ["new"], hint: "Needed for the free-quota seats." },
+  { key: "health_record", label: "Immunisation record", required: false, types: ["new", "transfer"] }
+];
+
+export function defaultSettings(today, { region, yearStartMonth } = {}) {
+  const india = !!region && region !== "US";
+  const year = schoolYearOf(today || todayOf(), india ? yearStartMonth || 4 : 6);
   return {
     currentYear: year,
     years: [year, nextYear(year)],
-    grades: DEFAULT_GRADES.map((name) => ({ name, seats: null, minAge: null })),
+    // The youngest a child may be on 1 April for each class: three for Nursery, six for Class I, and a year more for each after.
+    grades: india ? IN_GRADES.map((name, i) => ({ name, seats: null, minAge: i < 3 ? 3 + i : i + 3 })) : DEFAULT_GRADES.map((name) => ({ name, seats: null, minAge: null })),
     // Age is counted on this day of the school year's first calendar year.
     ageCutoff: "04-01",
-    documents: DEFAULT_DOCUMENTS.map((d) => ({ ...d })),
+    documents: (india ? IN_DOCUMENTS : DEFAULT_DOCUMENTS).map((d) => ({ ...d })),
     review: DEFAULT_REVIEW.map((r) => ({ ...r })),
     consent: {
       version: "1",
@@ -169,8 +187,8 @@ function keyOf(v, field, seen) {
    every read goes through here and gets a complete, valid object back. A bad
    value on a write is refused; a bad value on a read falls back to the
    default rather than taking the queue down with it. */
-export function normaliseSettings(raw, today, { strict = false } = {}) {
-  const base = defaultSettings(today);
+export function normaliseSettings(raw, today, { strict = false, region, yearStartMonth } = {}) {
+  const base = defaultSettings(today, { region, yearStartMonth });
   const s = raw && typeof raw === "object" ? raw : {};
   const bad = (msg, field) => { if (strict) throw ApiError.badRequest(msg, field); };
   const out = { ...base };

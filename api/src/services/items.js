@@ -77,6 +77,17 @@ export const KINDS = {
     statuses: ["needed", "covered"],
     fields: [["periods", "Periods", "text"], ["coveredBy", "Covered by", "person"], ["plan", "Plan for the class", "longtext"], ["reason", "Reason", "text"]]
   },
+  route: {
+    label: "Bus route", plural: "Bus routes", policy: "staff", about: "none", dated: false,
+    statuses: ["running", "paused"],
+    fields: [["bus", "Bus number", "text", true], ["driver", "Driver", "text"], ["driverPhone", "Driver's mobile", "text"], ["attendant", "Attendant", "text"], ["seats", "Seats", "number"],
+             ["stops", "Stops, in order", "longtext"], ["morning", "Leaves for school", "time"], ["evening", "Leaves school", "time"]]
+  },
+  loan: {
+    label: "Library loan", plural: "Library loans", policy: "staff", about: "student", dated: true,
+    statuses: ["issued", "returned", "lost"],
+    fields: [["book", "Book", "text", true], ["accession", "Accession number", "text"], ["issuedOn", "Issued on", "date"], ["returnedOn", "Returned on", "date"]]
+  },
   certification: {
     label: "Certification", plural: "Certifications", policy: "office", about: "staff", dated: true,
     statuses: ["valid", "expired"],
@@ -110,7 +121,9 @@ export const KINDS = {
   form: {
     label: "Form", plural: "Forms", policy: "org", about: "none", dated: true,
     statuses: ["open", "closed"],
-    fields: [["body", "Text", "longtext", true], ["audience", "For", "select", false, S("families", "students", "staff")]],
+    fields: [["body", "Text", "longtext", true], ["audience", "For", "select", false, S("everyone", "families", "students", "staff")],
+             ["category", "Category", "select", false, S("General", "Academic", "Exam", "Holiday", "Event", "Transport", "Safety")],
+             ["classes", "Classes (blank: the whole school)", "text"], ["channels", "Also sent by", "text"], ["file", "Attachment", "text"]],
     notify: "audience"
   },
   signature: {

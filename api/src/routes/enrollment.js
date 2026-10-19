@@ -47,9 +47,11 @@ function dayOf(ctx) {
 
 async function settingsFor(ctx, orgId, day) {
   const row = orgId ? await ctx.repo.getEnrollmentSettings(orgId) : null;
-  const settings = E.normaliseSettings(row ? parse(row.body_json, {}) : {}, day);
+  const profile = orgId ? profileOf(await ctx.repo.getOrganization(orgId)) : null;
+  // An Indian school's classes, papers and year (from April) are its own defaults; what it has saved wins.
+  const settings = E.normaliseSettings(row ? parse(row.body_json, {}) : {}, day, { region: profile && profile.region, yearStartMonth: profile && profile.yearStartMonth });
   // Many Indian children have one name. A US application still asks for a last name; an Indian school's does not.
-  settings.singleName = !!orgId && profileOf(await ctx.repo.getOrganization(orgId)).region !== "US";
+  settings.singleName = !!profile && profile.region !== "US";
   return settings;
 }
 
@@ -439,7 +441,8 @@ export async function putSettings(ctx) {
   await must(ctx, "enrollment.settings", { orgId });
   if (!orgId) throw ApiError.badRequest("Enrollment settings belong to a school.");
   const body = await readJson(ctx.request, { limit: 128 * 1024 });
-  const settings = E.normaliseSettings(body.settings || body, dayOf(ctx), { strict: true });
+  const profile = profileOf(await ctx.repo.getOrganization(orgId));
+  const settings = E.normaliseSettings(body.settings || body, dayOf(ctx), { strict: true, region: profile.region, yearStartMonth: profile.yearStartMonth });
   await ctx.repo.putEnrollmentSettings(orgId, settings, actor.id);
   return json({ settings, custom: true });
 }

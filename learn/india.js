@@ -661,6 +661,6 @@ window.OPLO_INDIA = function (K) {
     go.disabled = true;
   }
 
-  return { classes: classes, compliance: compliance, printCertificate: printCertificate, disclosureForm: disclosureForm,
+  return { classes: classes, compliance: compliance, printCertificate: printCertificate, disclosureForm: disclosureForm, studentForm: studentForm,
            ui: { dialog: dialog, btn: btn, fld: fld, chip: chip, none: none, num: num, plural: plural, dmy: dmy } };
 };

@@ -108,11 +108,11 @@ function build(india, profile) {
               (${who("student")}, ${q(home)}, NULL, NULL, '2010-09-10', ${who("admin")}, ${T});`,
     `INSERT OR IGNORE INTO learn_student_records (id, account_id, org_id, section, body_json, updated_by, created_at, updated_at)
        VALUES ('rec_sfhs_student', ${who("student")}, ${q(ORG)}, 'student', ${q(JSON.stringify({
-         summary: "Class X-C, ICSE. Demo data: every detail on this page is made up.",
+         summary: "Class X-C, CBSE. Demo data: every detail on this page is made up.",
          facts: [
            { label: "Admission number", value: "SFHS/2016/1517" },
            { label: "Class and section", value: "X-C" },
-           { label: "Programme", value: "ICSE" },
+           { label: "Programme", value: "CBSE" },
            { label: "House", value: "Agni" },
            { label: "Roll number", value: "21" },
            { label: "Second language", value: "Hindi" }
@@ -125,7 +125,7 @@ function build(india, profile) {
       `UPDATE organizations SET region = 'IN' WHERE id = ${q(ORG)};`,
       ...(profile ? [`UPDATE organizations SET boards = '["CISCE"]', state_code = 'CH', languages = '["en","hi","pa"]' WHERE id = ${q(ORG)};`] : []),
       `INSERT OR IGNORE INTO learn_classes (id, org_id, school_year, grade, section, programme, class_teacher_id, room, capacity, created_at, updated_at)
-         VALUES (${q(classId)}, ${q(ORG)}, '2026-2027', 'X', 'C', 'ICSE', ${who("teacher")}, 'S-322', 30, ${T}, ${T});`,
+         VALUES (${q(classId)}, ${q(ORG)}, '2026-2027', 'X', 'C', 'CBSE', ${who("teacher")}, 'S-322', 30, ${T}, ${T});`,
       `INSERT OR IGNORE INTO learn_student_india (account_id, org_id, class_id, admission_no, admitted_on, roll_no, gender, house, category, second_language, blood_group,
            apaar, pen, aadhaar, consent_status, consent_method, consent_on, transport, father_name, father_phone, mother_name, mother_phone, primary_contact, whatsapp, language,
            guardian_email, updated_by, created_at, updated_at)

@@ -170,6 +170,29 @@ export async function classes(ctx) {
   });
 }
 
+/* GET /register/pulse?days=30 — the school's attendance, a day at a time, and today's count for each section.
+   Present is every mark whose code counts as attending (present or tardy); away is the rest. */
+export async function pulse(ctx) {
+  const S = await school(ctx);
+  await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: null });
+  const n = ctx.url.searchParams.get("days") ? check.number(ctx.url.searchParams.get("days"), "days", { min: 1, max: 120 }) : 30;
+  const settings = await attendanceSettings(ctx, S.orgId);
+  const kind = new Map(settings.codes.map((c) => [c.key, c.kind]));
+  const rows = await ctx.repo.registerPulse(S.orgId, addDays(S.today, -n), S.today);
+  const days = new Map(), classes = new Map();
+  for (const r of rows) {
+    const k = kind.get(r.status) || "absent", here = k === "present" || k === "tardy";
+    const d = days.get(r.day) || { day: r.day, present: 0, away: 0, marked: 0 };
+    d[here ? "present" : "away"] += r.n; d.marked += r.n; days.set(r.day, d);
+    const c = classes.get(r.day) || new Map(), x = c.get(r.class_id) || { id: r.class_id, present: 0, away: 0, marked: 0 };
+    x[here ? "present" : "away"] += r.n; x.marked += r.n; c.set(r.class_id, x); classes.set(r.day, c);
+  }
+  const list = [...days.values()].sort((a, b) => (a.day < b.day ? -1 : 1));
+  // The section counts are for today, or the latest day any register was taken.
+  const latest = days.has(S.today) ? S.today : list.length ? list[list.length - 1].day : null;
+  return json({ today: S.today, days: list, latest: latest && { day: latest, classes: [...(classes.get(latest) || new Map()).values()] } });
+}
+
 /* GET /register/watch?classId=&until=&threshold= — the 75% watch. */
 export async function watch(ctx) {
   const S = await school(ctx);

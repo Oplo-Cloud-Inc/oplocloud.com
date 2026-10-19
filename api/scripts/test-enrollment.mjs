@@ -207,4 +207,22 @@ test("an enrollment's status is read from its dates, not only its label", () => 
   assert.equal(E.enrollmentStatus({ ...e, state: "suspended" }, "2026-11-05"), "suspended");
 });
 
+/* ---- an Indian school's admissions */
+test("an Indian school's year runs from April, its classes are Nursery to Class XII, and a US school's are unchanged", () => {
+  assert.equal(E.schoolYearOf("2026-10-11", 4), "2026-2027");
+  assert.equal(E.schoolYearOf("2027-03-31", 4), "2026-2027");
+  assert.equal(E.schoolYearOf("2027-04-01", 4), "2027-2028");
+  const IN = E.defaultSettings("2027-04-02", { region: "IN", yearStartMonth: 4 });
+  assert.equal(IN.currentYear, "2027-2028");
+  assert.deepEqual(IN.grades.slice(0, 4).map((g) => [g.name, g.minAge]), [["Nursery", 3], ["LKG", 4], ["UKG", 5], ["Class I", 6]]);
+  assert.equal(IN.grades[IN.grades.length - 1].name, "Class XII"); assert.equal(IN.grades[IN.grades.length - 1].minAge, 17);
+  assert.ok(!IN.documents.some((d) => d.sensitive || /aadhaar/i.test(d.key + d.label)), "no identity number is asked for until the school adds one");
+  const US = E.defaultSettings("2026-10-11");
+  assert.equal(US.grades[0].name, "Pre-K"); assert.equal(US.currentYear, "2026-2027");
+});
+test("what a school saved still wins over the Indian defaults", () => {
+  const kept = E.normaliseSettings({ grades: [{ name: "Class 9", seats: 40 }] }, "2026-10-11", { region: "IN", yearStartMonth: 4 });
+  assert.deepEqual(kept.grades.map((g) => g.name), ["Class 9"]);
+});
+
 console.log(`\n${n} passed`);

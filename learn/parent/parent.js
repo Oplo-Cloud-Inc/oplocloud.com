@@ -217,7 +217,7 @@
      what an administrator is offered when they first write a section — a
      starting shape, not a rule; the school can rename or remove any of it. */
   var SECTIONS = [
-    { key: "grades", name: "Grades", group: "learning", icon: "grades", size: "w2 h2 big",
+    { key: "grades", name: "Grades", group: "learning", icon: "grades", size: "w2 h2 big", not: ["IN"],
       empty: "Marks appear here once there is a transcript or a marked course on the record.",
       facts: [], columns: ["Course", "Term", "Mark", "Credit"] },
     { key: "reportcards", name: "Report cards", group: "learning", icon: "grades", size: "w2", only: ["IN"], record: false,
@@ -225,10 +225,10 @@
     { key: "assignments", name: "Assignments", group: "learning", icon: "assignments",
       empty: "Work a teacher sets appears here with its due date — and, once marked, the score and the comment.",
       facts: [], columns: ["Assignment", "Course", "Due", "Status"] },
-    { key: "reading_math", name: "Reading and Math Progress", group: "learning", icon: "reading",
+    { key: "reading_math", name: "Reading and Math Progress", group: "learning", icon: "reading", not: ["IN"],
       empty: "Reading and math benchmarks appear here when the school records them.",
       facts: ["Reading level", "Math level", "Last benchmark"], columns: ["Benchmark", "Date", "Reading", "Math"] },
-    { key: "assessments", name: "Assessments", group: "learning", icon: "assessments", size: "w2",
+    { key: "assessments", name: "Assessments", group: "learning", icon: "assessments", size: "w2", not: ["IN"],
       empty: "State exams and course tests appear here as they are recorded.",
       facts: [], columns: ["Assessment", "Date", "Score", "Result"] },
 
@@ -295,6 +295,13 @@
      "after high school" are a US school's, and a family at an Indian school is not shown them. */
   function trimSections(me) {
     var org = me && me.organizations && me.organizations[0], region = (org && org.region) || "US";
+    // The page names the school it is for: this was once Excel High School's alone.
+    if (org && org.name) SCHOOL = org.name;
+    if (region === "IN") SECTIONS.forEach(function (s) {
+      // What an Indian school's family reads: report cards, the diary and meetings, not course grades, state benchmarks or fees.
+      if (s.key === "forms") { s.name = "Forms"; s.empty = "Forms to read and sign."; }
+      if (s.key === "iep") { s.name = "Learning support"; s.empty = "If your child has a support plan (extra help, an accommodation in exams), it is recorded here with its review date."; }
+    });
     SECTIONS = SECTIONS.filter(function (s) { return !(s.not && s.not.indexOf(region) > -1) && !(s.only && s.only.indexOf(region) < 0); });
     Object.keys(SEC).forEach(function (k) { delete SEC[k]; });
     SECTIONS.forEach(function (s, i) { s.index = i; SEC[s.key] = s; });
@@ -317,7 +324,10 @@
 
   function part(k) { return S.data && S.data[k] && S.data[k].ok ? S.data[k].v : null; }
   function partError(k) { return S.data && S.data[k] && !S.data[k].ok ? S.data[k].e : null; }
-  function grad() { return part("grad"); }
+  /* A school in India counts no diploma in credits (the graduation record is an American school's), so its family
+     page never reads one: the hero and the first steps are the child's day instead. */
+  function isIN() { var o = S.me && S.me.organizations && S.me.organizations[0]; return !!o && o.region === "IN"; }
+  function grad() { return isIN() ? null : part("grad"); }
   function records() {
     if (!S.data) return {};
     if (!S.data.records.ok) return {};
@@ -766,7 +776,61 @@
     S.dirty = false;
   }
 
+  /* The Indian family's front: how often the child is in, what class and roll, the latest result, and the three
+     things a parent acts on (homework, a meeting, a published report card). Every figure is read, none made up. */
+  function heroIN() {
+    var s = S.student, H = part("hpc") || {}, child = H.child || {}, reg = register();
+    var att = reg.here != null ? reg.here : (H.attendance && H.attendance.percent != null ? Math.round(H.attendance.percent) : null);
+    var cards = (part("cards") && part("cards").reportCards) || [], last = cards.length ? cards[cards.length - 1] : null, card = last && last.cards && last.cards[0];
+    var diary = (part("diary") && part("diary").entries) || [], meets = (part("meetings") && part("meetings").meetings) || [];
+    var wrap = h("section", "fh" + rise());
+    wrap.id = "g-home";
+    var p = h("div", "fh-portrait"), orb = h("div", "fh-orb");
+    orb.style.setProperty("--hue", s.hue || "#2a78d6");
+    orb.appendChild(h("div", "halo"));
+    if (att != null) {
+      orb.appendChild(V.ring({ size: 240, stroke: 9, total: 100, title: "Attendance this year", label: att + " percent attendance this year",
+        segments: [{ value: att, cls: "s-ehs", label: "Present", text: att + "%" }], rest: { label: "Away", text: (100 - att) + "%" } }));
+    }
+    orb.appendChild(h("div", "face", esc(s.initials || (s.name || "?").slice(0, 1))));
+    p.appendChild(orb);
+    var txt = h("div");
+    txt.appendChild(h("p", "fh-eyebrow", esc(S.admin && !isLinked() ? "Family view · preview" : "Your family view")));
+    txt.appendChild(h("h1", "fh-name", esc(s.name || "")));
+    var chips = h("div", "fh-chips");
+    if (child.class) chips.appendChild(h("span", "fchip", "<b>Class " + esc(child.class) + "</b>"));
+    chips.appendChild(h("span", "fchip", esc(SCHOOL)));
+    txt.appendChild(chips);
+    txt.appendChild(h("p", "fh-meta", esc([child.class ? "Class " + child.class : null, SCHOOL].filter(Boolean).join(" · "))));
+    var figs = h("div", "fh-figs");
+    figs.innerHTML =
+      (att != null ? "<div class='fh-fig'><div class='v'>" + att + "<small>%</small></div><div class='l'><span class='long'>attendance this year</span><span class='short'>attendance</span></div></div>" : "") +
+      (card ? "<div class='fh-fig'><div class='v'>" + esc(card.percent) + "<small>%</small></div><div class='l'><span class='long'>" + esc(last.exam.name) + " · " + esc(card.grade || "") + "</span><span class='short'>" + esc(card.grade || "result") + "</span></div></div>" : "");
+    txt.appendChild(figs);
+    p.appendChild(txt);
+    wrap.appendChild(p);
+
+    var now = h("aside", "fh-now");
+    now.appendChild(h("h2", null, "What matters now"));
+    var steps = [];
+    if (att != null && att < 75) steps.push({ t: "Attendance is " + att + "%", e: "75% is the line a board asks for. Talk to the class teacher.", to: "attendance" });
+    if (diary[0]) steps.push({ t: "Homework: " + (diary[0].subject || "from the class teacher"), e: String(diary[0].body || "").slice(0, 70), to: "diary" });
+    var next = meets.filter(function (m) { return !m.day || m.day >= new Date().toISOString().slice(0, 10); })[0];
+    if (next) steps.push({ t: "Parent meeting: " + (next.title || "with the class teacher"), e: (next.day ? day(next.day) : "") + (next.mine && next.mine.start ? " · " + next.mine.start : ""), to: "meetings" });
+    if (card) steps.push({ t: last.exam.name + " result is out", e: card.percent + "% · " + (card.grade || "") + (card.result === "pass" ? " · pass" : ""), to: "reportcards" });
+    if (steps.length) {
+      var row = h("div", "fh-steps");
+      steps.slice(0, 3).forEach(function (st, i) {
+        row.appendChild(btn("fh-step", "<span class='n'>" + (i + 1) + "</span><span><span class='t'>" + esc(st.t) + "</span><span class='e'>" + esc(st.e) + "</span></span>", function () { go(st.to, null); }));
+      });
+      now.appendChild(row);
+    } else now.appendChild(h("p", "why", "Nothing needs you right now. Homework, meetings and results appear here when the school sends them."));
+    wrap.appendChild(now);
+    return wrap;
+  }
+
   function hero() {
+    if (isIN()) return heroIN();
     var g = grad();
     var s = S.student;
     var wrap = h("section", "fh" + rise());

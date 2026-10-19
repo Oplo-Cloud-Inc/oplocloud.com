@@ -1615,6 +1615,16 @@ export class D1Repository {
     return results || [];
   }
 
+  /* Per day, section and status, the whole-day marks of a span: what the school's pulse is counted from. */
+  async registerPulse(orgId, from, to) {
+    const { results } = await this.db.prepare(
+      `SELECT a.day, s.class_id, a.status, COUNT(*) AS n
+         FROM learn_attendance a JOIN learn_student_india s ON s.account_id = a.account_id AND s.org_id = ? AND s.class_id IS NOT NULL
+        WHERE a.course_id IS NULL AND a.day >= ? AND a.day <= ? GROUP BY a.day, s.class_id, a.status`
+    ).bind(orgId, from, to).all();
+    return results || [];
+  }
+
   /* Per child and status, the whole-day marks of a span. One section, or every section. */
   async watchCounts(orgId, from, to, classId) {
     const { results } = await this.db.prepare(
@@ -3148,6 +3158,11 @@ export class D1Repository {
             n.link || null, n.dedupe || null, n.box || "inbox", now(), n.read ? now() : null).run();
     return (r.meta && r.meta.changes) ? nid : null;
   }
+  /* Who a notice (by its dedupe key) went to, and whether they have opened it. */
+  async noticeReach(orgId, dedupe) {
+    const { results } = await this.db.prepare("SELECT account_id, read_at FROM learn_notices WHERE org_id = ? AND dedupe = ?").bind(orgId, dedupe).all();
+    return results || [];
+  }
   async listNotices({ accountId, box, archived, limit }) {
     const { results } = await this.db.prepare(
       `SELECT n.*, p.name AS from_name FROM learn_notices n
@@ -3220,10 +3235,14 @@ export class D1Repository {
     return (results || []).map((r) => r.id);
   }
   async guardianIdsOf(studentIds) {
-    if (!studentIds.length) return [];
-    const marks = studentIds.map(() => "?").join(",");
-    const { results } = await this.db.prepare(`SELECT DISTINCT guardian_id FROM learn_guardians WHERE student_id IN (${marks})`).bind(...studentIds).all();
-    return (results || []).map((r) => r.guardian_id);
+    // D1 allows about a hundred bound values to a statement; a school's children are more than that.
+    const out = new Set();
+    for (let i = 0; i < studentIds.length; i += 80) {
+      const part = studentIds.slice(i, i + 80);
+      const { results } = await this.db.prepare(`SELECT DISTINCT guardian_id FROM learn_guardians WHERE student_id IN (${part.map(() => "?").join(",")})`).bind(...part).all();
+      (results || []).forEach((r) => out.add(r.guardian_id));
+    }
+    return Array.from(out);
   }
   async emailOf(accountId) {
     const r = await this.db.prepare(`SELECT email FROM accounts WHERE id = ?`).bind(accountId).first();

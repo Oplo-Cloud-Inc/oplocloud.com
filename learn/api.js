@@ -496,6 +496,7 @@ window.OPLO_API = (function () {
       classes: function (day, mine) { return get("/register/classes" + q({ day: day, mine: mine ? "1" : undefined })); },
       get: function (classId, day) { return get("/register" + q({ classId: classId, day: day })); },
       put: function (body) { return put("/register", body); },
+      pulse: function (days) { return get("/register/pulse" + q({ days: days })); },
       watch: function (o) { return get("/register/watch" + q(o || {})); },
       locks: function () { return get("/register/locks"); },
       addLock: function (body) { return post("/register/locks", body); },
@@ -794,6 +795,7 @@ window.OPLO_API = (function () {
       kinds: function () { return get("/item-kinds").then(function (r) { return r.kinds; }); },
       list: function (o) { return get("/items" + q(o || {})).then(function (r) { return r.items; }); },
       get: function (id) { return get("/items/" + id).then(function (r) { return r.item; }); },
+      reach: function (id) { return get("/items/" + id + "/reach"); },
       create: function (d) { return post("/items", d).then(function (r) { return r.item; }); },
       update: function (id, d) { return patch("/items/" + id, d).then(function (r) { return r.item; }); },
       remove: function (id) { return del("/items/" + id); }

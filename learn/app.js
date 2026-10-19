@@ -8819,56 +8819,57 @@
      not keep yet is still here, and says so, rather than being left out —
      a map with holes drawn in is more use than one that hides them. */
   var ADMIN_TREE = [
-    { k: "today", name: "Overview", icon: "summary" },
-    { name: "Academics", icon: "cap", kids: [
-      { k: "gradebook", name: "Gradebook" }, { k: "assessments", name: "Assessments" }, { k: "periods", name: "Marking Periods", not: ["IN"] },
+    { k: "today", name: "Overview", icon: "summary", hue: "indigo" },
+    { name: "Academics", icon: "cap", hue: "violet", kids: [
+      { k: "gradebook", name: "Gradebook", as: { IN: "Course marks" } }, { k: "assessments", name: "Assessments" }, { k: "periods", name: "Marking Periods", not: ["IN"] },
       { k: "in-exams", name: "Exams", only: "IN" }, { k: "in-scales", name: "Grading scales", only: "IN" }, { k: "in-comp", name: "Competencies", only: "IN" },
       { k: "gpa", name: "GPA", not: ["IN"] }, { k: "transcripts", name: "Transcripts", not: ["IN"] }, { k: "reportcards", name: "Report Cards", not: ["IN"] },
       { k: "graduation", name: "Graduation", not: ["IN"] }] },
-    { name: "Students", icon: "people", kids: [
+    { name: "Students", icon: "people", hue: "blue", kids: [
       { k: "students", name: "Student 360", as: { IN: "Student profile" } }, { k: "in-classes", name: "Classes", only: "IN" },
-      { k: "enrollment", name: "Enrollment" }, { k: "rosters", name: "Rosters" },
+      { k: "enrollment", name: "Enrollment", as: { IN: "Admissions" } }, { k: "rosters", name: "Rosters", as: { IN: "Class lists" } },
       { k: "records", name: "Records" }, { k: "documents", name: "Documents" }, { k: "in-certs", name: "Certificates", only: "IN" },
-      { k: "guardians", name: "Guardians" }, { k: "health", name: "Health" }] },
-    { name: "Schedule", icon: "calendar", kids: [
-      { k: "sc-days", name: "School Days" }, { k: "sc-bell", name: "Bell Schedules" }, { k: "sc-courses", name: "Courses", as: { IN: "Subjects" } },
-      { k: "sc-sections", name: "Sections", as: { IN: "Timetable" } }, { k: "sc-adddrop", name: "Add and Drop" },
+      { k: "guardians", name: "Guardians", as: { IN: "Parents and guardians" } }, { k: "health", name: "Health" }] },
+    { name: "Schedule", icon: "calendar", hue: "sky", kids: [
+      { k: "sc-days", name: "School Days", as: { IN: "Academic calendar" } }, { k: "sc-bell", name: "Bell Schedules", as: { IN: "Period timings" } }, { k: "sc-courses", name: "Courses", as: { IN: "Subjects" } },
+      { k: "sc-sections", name: "Sections", as: { IN: "Timetable" } }, { k: "sc-adddrop", name: "Add and Drop", not: ["IN"] },
       { k: "sc-plans", name: "Plans" }] },
-    { k: "attendance", name: "Attendance", icon: "check", not: ["IN"] },
-    { name: "Attendance", icon: "check", only: "IN", kids: [
+    { k: "attendance", name: "Attendance", icon: "check", hue: "emerald", not: ["IN"] },
+    { name: "Attendance", icon: "check", hue: "emerald", only: "IN", kids: [
       { k: "in-register", name: "Class registers" }, { k: "in-watch", name: "75% watch" }, { k: "in-condone", name: "Condonation" },
       { k: "attendance", name: "By subject" }] },
-    { name: "Student Support", icon: "heart", kids: [
-      { k: "support", name: "Watchlist" }, { k: "in-ews", name: "Early warning", only: "IN" }, { k: "in-cases", name: "Mentoring cases", only: "IN" }, { k: "behavior", name: "Behavior" }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention" },
-      { k: "senplans", name: "Support Plans" }, { k: "accommodations", name: "Accommodations" }] },
-    { name: "Communicate", icon: "mail", kids: [
-      { k: "inbox", name: "Inbox" }, { k: "events", name: "Events" }, { k: "forms", name: "Forms" }, { k: "outbox", name: "Mail Queue" }] },
-    { name: "Analytics", icon: "chart", kids: [
+    { name: "Student Support", icon: "heart", hue: "rose", kids: [
+      { k: "support", name: "Watchlist", as: { IN: "Needs attention" } }, { k: "in-ews", name: "Early warning", only: "IN" }, { k: "in-cases", name: "Mentoring cases", only: "IN" }, { k: "behavior", name: "Behavior", as: { IN: "Discipline" } }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention", not: ["IN"] },
+      { k: "senplans", name: "Support Plans", as: { IN: "Learning support" } }, { k: "accommodations", name: "Accommodations", as: { IN: "Exam accommodations" } }] },
+    { name: "Communicate", icon: "mail", hue: "amber", kids: [
+      { k: "inbox", name: "Inbox" }, { k: "events", name: "Events" }, { k: "forms", name: "Forms", as: { IN: "Circulars" } }, { k: "outbox", name: "Mail Queue", as: { IN: "Outbox" } }] },
+    { name: "Analytics", icon: "chart", hue: "cyan", kids: [
       { k: "analytics", name: "Academic" }, { k: "an-assessments", name: "Assessments" },
       { k: "growth", name: "Growth" }, { k: "groups", name: "Groups" }, { k: "longitudinal", name: "Longitudinal" }] },
-    { name: "Staff", icon: "badge", kids: [
+    { name: "Staff", icon: "badge", hue: "fuchsia", kids: [
       { k: "staff", name: "Teachers" }, { k: "departments", name: "Departments" }, { k: "permissions", name: "Permissions" },
       { k: "teacher-analytics", name: "Teacher Analytics" }, { k: "leave", name: "Leave" }, { k: "cover", name: "Cover" },
-      { k: "certs", name: "Certifications" }] },
-    { name: "School Operations", icon: "rows", kids: [
-      { k: "menus", name: "Menus" }, { k: "eligibility", name: "Meal Eligibility", not: ["IN"] }, { k: "lockers", name: "Lockers" }, { k: "checkouts", name: "Equipment" }] },
+      { k: "certs", name: "Certifications", as: { IN: "Qualifications" } }] },
+    { name: "School Operations", icon: "rows", hue: "slate", kids: [
+      { k: "routes", name: "Transport", only: "IN" }, { k: "loans", name: "Library", only: "IN" },
+      { k: "menus", name: "Menus", not: ["IN"] }, { k: "eligibility", name: "Meal Eligibility", not: ["IN"] }, { k: "lockers", name: "Lockers", not: ["IN"] }, { k: "checkouts", name: "Equipment" }] },
     /* No Finance group: OEdu does not keep fees, invoices or payments. The
        screens for them are still defined (REC) and come back by putting the
        group here again. */
-    { name: "Facilities", icon: "building", kids: [
+    { name: "Facilities", icon: "building", hue: "orange", kids: [
       { k: "fx-orders", name: "Work orders" }, { k: "fx-spaces", name: "Spaces" }, { k: "fx-assets", name: "Assets" },
       { k: "fx-upkeep", name: "Routines" }, { k: "fx-bookings", name: "Bookings" }, { k: "fx-vendors", name: "Vendors" },
       { k: "fx-documents", name: "Documents" }, { k: "fx-reports", name: "Reports" }] },
-    { name: "Curriculum", icon: "books", kids: [{ k: "curriculum", name: "Courses" }, { k: "curmap", name: "Curriculum Map" }] },
-    { name: "Data Center", icon: "server", kids: [{ k: "data", name: "Exports" }, { k: "imports", name: "Imports" }, { k: "sis", name: "Integrations" },
+    { name: "Curriculum", icon: "books", hue: "lime", kids: [{ k: "curriculum", name: "Courses" }, { k: "curmap", name: "Curriculum Map" }] },
+    { name: "Data Center", icon: "server", hue: "teal", kids: [{ k: "data", name: "Exports" }, { k: "imports", name: "Imports" }, { k: "sis", name: "Integrations" },
       { k: "state", name: "State Reporting", not: ["IN"] }, { k: "district", name: "District" }, { k: "api", name: "API" }] },
-    { k: "security", name: "Security", icon: "shield" },
-    { name: "Reports", icon: "table", kids: [{ k: "office", name: "Office Reports" }, { k: "builder", name: "Report Builder" }, { k: "in-compliance", name: "Compliance", only: "IN" }] },
-    { k: "activity", name: "Audit Log", icon: "wave" },
-    { k: "system", name: "Settings", icon: "gear" },
+    { k: "security", name: "Security", icon: "shield", hue: "red" },
+    { name: "Reports", icon: "table", hue: "indigo", kids: [{ k: "office", name: "Office Reports" }, { k: "builder", name: "Report Builder" }, { k: "in-analysis", name: "Results analysis", only: "IN" }, { k: "in-compliance", name: "Compliance", only: "IN" }] },
+    { k: "activity", name: "Audit Log", icon: "wave", hue: "slate" },
+    { k: "system", name: "Settings", icon: "gear", hue: "slate" },
     /* Places the platform does not keep records for yet. They are still here,
        and still say so, but folded away: a rail should be what works. */
-    { name: "Not set up yet", icon: "rows", kids: [
+    { name: "Not set up yet", icon: "rows", hue: "slate", kids: [
       { k: "standards", name: "Standards" },
       { k: "an-standards", name: "Standards analytics" }, { k: "sftp", name: "SFTP" }] }
   ];
@@ -8922,8 +8923,8 @@
     attendance: "Attendance", transcript: "Transcript", graduation: "Graduation", profile: "Profile", requests: "Requests", account: "Account" };
   var ADMIN_SECTIONS = [];
   ADMIN_TREE.forEach(function (t) {
-    if (!t.kids) { ADMIN_SECTIONS.push({ k: t.k, name: t.name, group: null, icon: t.icon, only: t.only, not: t.not }); return; }
-    t.kids.forEach(function (c) { ADMIN_SECTIONS.push({ k: c.k, name: c.name, as: c.as, group: t.name, icon: t.icon, only: c.only || t.only, not: c.not || t.not }); });
+    if (!t.kids) { ADMIN_SECTIONS.push({ k: t.k, name: t.name, group: null, icon: t.icon, hue: t.hue, only: t.only, not: t.not }); return; }
+    t.kids.forEach(function (c) { ADMIN_SECTIONS.push({ k: c.k, name: c.name, as: c.as, group: t.name, icon: t.icon, hue: t.hue, only: c.only || t.only, not: c.not || t.not }); });
   });
   // Reached from other screens, not places in the sidebar: one course's full
   // gradebook, missing work across the school, and the older names of places.
@@ -9631,6 +9632,7 @@
       b.type = "button";
       b.dataset.k = t.k;
       if (icon) b.innerHTML = '<span class="ic">' + cxIcon(icon) + "</span>";
+      if (t.hue) b.dataset.hue = t.hue;
       b.appendChild(el("span", "nm", esc(t.name)));
       b.appendChild(el("span", "ct"));
       b.addEventListener("click", function () { openAdmin(false, t.k); });
@@ -9646,6 +9648,7 @@
         var g = el("button", "cn-item grp");
         g.type = "button";
         g.dataset.group = t.name;
+        if (t.hue) g.dataset.hue = t.hue;
         g.setAttribute("aria-expanded", "false");
         g.innerHTML = '<span class="ic">' + cxIcon(t.icon) + '</span><span class="nm">' + esc(t.name) +
           '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -9672,7 +9675,7 @@
     who.type = "button";
     who.innerHTML = '<span class="av" aria-hidden="true"></span>' +
       '<span class="t"><b>' + esc(S.me.name) + "</b><span>" +
-      esc(S.me.role === "admin" ? (officeOnly() ? officeLabel() : "Administrator") : "Teacher") + "</span></span>";
+      esc(S.me.role === "admin" ? (officeOnly() ? officeLabel() : S.me.title || "Administrator") : "Teacher") + "</span></span>";
     var av = who.querySelector(".av");
     av.textContent = S.me.initials || "";
     av.style.background = S.me.hue || "";
@@ -9699,7 +9702,9 @@
       else b.removeAttribute("aria-current");
     });
     // The group you are in is always open; the others stay as you left them.
-    var here = (ADMIN_SECTIONS.filter(function (t) { return t.k === S.tab; })[0] || {}).group;
+    var sec = ADMIN_SECTIONS.filter(function (t) { return t.k === S.tab; })[0] || {};
+    document.body.dataset.hue = sec.hue || "indigo";
+    var here = sec.group;
     [].forEach.call(rail.querySelectorAll(".cn-item.grp"), function (g) {
       var mine = g.dataset.group === here;
       g.classList.toggle("has-on", mine);
@@ -9775,7 +9780,7 @@
        "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
        "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
        "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch, "in-ews": tabInEarly,
-       "in-exams": tabInExams, "in-scales": tabInScales, "in-comp": tabInComp,
+       "in-exams": tabInExams, "in-scales": tabInScales, "in-comp": tabInComp, "in-analysis": tabInAnalysis,
        sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
   }
 
@@ -9796,6 +9801,8 @@
     applyDensity(currentDensity());
     applyAppearance(currentAppearance());
     var admin = consoleMode() === "admin";
+    // The premium look is the desktop console's; a phone has its own pages (phone.js) and keeps them.
+    document.body.classList.toggle("a-console", admin && !phoneOn());
     if (phoneOn()) {
       phone().staff(S.tab, { admin: admin, draw: adminPageFor(S.tab, admin) });
       noFoot(); progress(null);
@@ -9901,7 +9908,7 @@
       enter(key, STUDENT_NAMES[sec.k], function () { openStudentConsole(true, sec.k, arg); }, !!replace, studentPath(sec.k, arg));
     }
     document.body.classList.add("is-console", "is-sis");
-    document.body.classList.remove("t-console", "is-staff");
+    document.body.classList.remove("t-console", "is-staff", "a-console");
     applyDensity(currentDensity());
     applyAppearance(currentAppearance());
     if (phoneOn()) {
@@ -10890,7 +10897,7 @@
        rail stays and the student's chrome never appears — without this guard
        opening Account would strand them on a page with no navigation at all. */
     if (document.body.classList.contains("is-staff")) { closeRail(); trPopClose(); return; }
-    document.body.classList.remove("is-console", "t-console");
+    document.body.classList.remove("is-console", "t-console", "a-console");
     trApply();
     document.body.classList.remove("focus-mode");
     closeRail();
@@ -10923,6 +10930,8 @@
   var CX_PASS = 70;          // the server's pass line: "below a pass" is under 70%
   function consoleHome(v) {
     var admin = consoleMode() === "admin";
+    // An Indian school's day is sections, registers and papers, not courses and letter grades: it has its own desk.
+    if (admin && regionOf() === "IN" && window.OPLO_INDIA_HOME) { indiaHome().home(v); return; }
     var when = new Date();
     var top = el("div", "cx-top");
     var head = consoleHead(top, when.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }),
@@ -13568,6 +13577,8 @@
      graduation record, the family record — so this page adds no new source of
      truth; it puts the ones there are side by side. */
   function openStudent360(s, tab) {
+    // An Indian school's child opens on the India profile, from wherever they were picked.
+    if (consoleMode() === "admin" && regionOf() === "IN" && window.OPLO_INDIA_STUDENTS) { indiaStudents().profile(s.id); return; }
     enter("student360:" + s.id, trim(s.name || "Student", 18), function () { openStudent360(s, S.s360tab); });
     S.s360tab = tab || S.s360tab || "overview";
     var v = $("#v-admin");
@@ -13896,7 +13907,7 @@
   function tabSchoolGradebook(v) {
     var P = S.gbPath || (S.gbPath = {});
     var top = el("div", "cx-top");
-    var head = consoleHead(top, "Academics", "Gradebook", "Every grade in the school, from the whole school down to one student. Marks are entered by each course’s teachers.");
+    var head = consoleHead(top, "Academics", regionOf() === "IN" ? "Course marks" : "Gradebook", "Every grade in the school, from the whole school down to one student. Marks are entered by each course’s teachers.");
     v.appendChild(top);
     var node = loading(v, "the school’s grades");
     loadSchool().then(function (d) {
@@ -17568,7 +17579,11 @@
   function tabScDays(v) { sch().days(v); }
   function tabScBell(v) { sch().bell(v); }
   function tabScCourses(v) { sch().courses(v); }
-  function tabScSections(v) { sch().sections(v); }
+  function tabScSections(v) {
+    // An Indian school reads its sections as a timetable; the list of sections is one tab of it.
+    if (regionOf() === "IN" && window.OPLO_INDIA_TT) { indiaTT().timetable(v, function (host) { host.classList.add("tmt-legacy"); sch().sections(host); }); return; }
+    sch().sections(v);
+  }
   function tabScAddDrop(v) { sch().addDrop(v); }
   function tabScPlans(v) { sch().plans(v); }
 
@@ -17616,13 +17631,19 @@
         var owed = Object.keys(by).filter(function (k) { return by[k] > 0; });
         return owed.length ? owed.length + " students still owe minutes, " + owed.reduce(function (a, k) { return a + by[k]; }, 0) + " in all." : "";
       } },
-    senplans: { kind: "senplan", eyebrow: "Student Support", title: "Support plans", sub: "IEPs, 504 plans and other plans: goals, services and the date of the next review." },
-    accommodations: { kind: "accommodation", eyebrow: "Student Support", title: "Accommodations", sub: "What a student is given on tests and in class." },
+    senplans: { kind: "senplan", eyebrow: "Student Support", title: "Support plans", sub: "IEPs, 504 plans and other plans: goals, services and the date of the next review.",
+      in: { title: "Learning support", sub: "A child's plan: what help they get, from whom, and when it is next looked at. For children with special needs, and for those who need extra help to keep up." } },
+    accommodations: { kind: "accommodation", eyebrow: "Student Support", title: "Accommodations", sub: "What a student is given on tests and in class.",
+      in: { title: "Exam accommodations", sub: "What a child is given in an exam and in class: extra time, a scribe, a separate room." } },
     events: { kind: "event", eyebrow: "Communicate", title: "Events", sub: "What is happening in the school, and who it is for." },
-    forms: { kind: "form", eyebrow: "Communicate", title: "Forms", sub: "Forms families and students read and sign." },
+    forms: { kind: "form", eyebrow: "Communicate", title: "Forms", sub: "Forms families and students read and sign.",
+      in: { title: "Circulars", sub: "What the school tells families, students and staff: a circular, its date, and who it is for." } },
     leave: { kind: "leave", eyebrow: "Staff", title: "Leave", sub: "Requests for time away, and the office’s answer.", newLabel: "Ask for leave" },
     cover: { kind: "substitute", eyebrow: "Staff", title: "Cover", sub: "A class that needs someone, who is covering it, and the plan." },
-    certs: { kind: "certification", eyebrow: "Staff", title: "Certifications", sub: "What each member of staff holds, and when it runs out. Reminders go out thirty days before." },
+    certs: { kind: "certification", eyebrow: "Staff", title: "Certifications", sub: "What each member of staff holds, and when it runs out. Reminders go out thirty days before.",
+      in: { title: "Qualifications", sub: "What each teacher holds (B.Ed., CTET, subject degrees), who issued it, and when it runs out." } },
+    routes: { kind: "route", eyebrow: "School Operations", title: "Transport", sub: "Each bus route: its bus, driver and attendant, where it stops and when it leaves. A child's route is on their record.", newLabel: "Add a route" },
+    loans: { kind: "loan", eyebrow: "School Operations", title: "Library", sub: "Books out, who has them, and when they are due back.", newLabel: "Issue a book" },
     menus: { kind: "menu", eyebrow: "School Operations", title: "Menus", sub: "What is served, and the allergens." },
     eligibility: { kind: "eligibility", eyebrow: "School Operations", title: "Meal eligibility", sub: "Kept by the office; no one else reads it." },
     lockers: { kind: "locker", eyebrow: "School Operations", title: "Lockers", sub: "Who has which locker." },
@@ -17642,7 +17663,11 @@
     payments: { kind: "payment", eyebrow: "Finance", title: "Payments", sub: "Payments received. Card payments are recorded here; taking a card needs a payment service the school has not connected.", newLabel: "Record a payment" }
   };
   function platTab(k) {
-    if (REC[k]) return function (v) { plat().records(v, REC[k]); };
+    if (k === "cover" && regionOf() === "IN" && window.OPLO_INDIA_TT) return function (v) { indiaTT().cover(v); };
+    if (k === "forms" && regionOf() === "IN" && window.OPLO_INDIA_CIRCULARS) return function (v) { indiaCirculars().circulars(v); };
+    if (k === "in-certs" && window.OPLO_INDIA_CERTS) return function (v) { indiaCerts().board(v); };
+    // A country may retitle a page of records (Forms are Circulars in India).
+    if (REC[k]) return function (v) { plat().records(v, regionOf() !== "US" && REC[k].in ? Object.assign({}, REC[k], REC[k].in) : REC[k]); };
     var fn = { inbox: "inbox", outbox: "outbox", imports: "exchange", state: "state", builder: "builder", district: "district", sis: "webhooks" }[k];
     return fn ? function (v) { plat()[fn](v); } : null;
   }
@@ -17694,6 +17719,80 @@
     });
     return INDIA;
   }
+  /* The principal's desk: an Indian school's Overview. */
+  var INHOME = null;
+  function indiaHome() {
+    if (INHOME) return INHOME;
+    INHOME = window.OPLO_INDIA_HOME({
+      el: el, esc: esc, API: API, openAdmin: openAdmin, icon: cxIcon, greeting: greeting, me: function () { return S.me; },
+      addPerson: function () { openPersonEditor(null); },
+      register: function (classId, day) { register().sheet(classId, day, function () { openAdmin(true, "today"); }); },
+      student: function (s) { S.studentPick = s.id; openAdmin(false, "students"); }
+    });
+    return INHOME;
+  }
+  /* Certificates as a board: requested, awaiting signature, issued. */
+  var INCERT = null;
+  function indiaCerts() {
+    if (INCERT) return INCERT;
+    INCERT = window.OPLO_INDIA_CERTS({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, openAdmin: openAdmin,
+      printCertificate: function (r, draft) { india().printCertificate(r, draft); },
+      ui: india().ui
+    });
+    return INCERT;
+  }
+  /* An Indian school's results analysis: toppers, sections, subjects, who needs help. */
+  var INRES = null;
+  function indiaResults() {
+    if (INRES) return INRES;
+    INRES = window.OPLO_INDIA_RESULTS({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, printHead: printHead, printTable: printTable, csvDownload: csvDownload, openAdmin: openAdmin,
+      student: function (s) { indiaStudents().profile(s.id); },
+      ui: india().ui
+    });
+    return INRES;
+  }
+  /* An Indian school's circulars: written once, read by each family, counted. */
+  var INCIR = null;
+  function indiaCirculars() {
+    if (INCIR) return INCIR;
+    INCIR = window.OPLO_INDIA_CIRCULARS({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, openAdmin: openAdmin, schoolName: schoolName,
+      ui: india().ui
+    });
+    return INCIR;
+  }
+  /* An Indian school's timetable grid, and the cover desk that reads it. */
+  var INTT = null;
+  function indiaTT() {
+    if (INTT) return INTT;
+    INTT = window.OPLO_INDIA_TT({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, openAdmin: openAdmin, icon: cxIcon,
+      ui: india().ui
+    });
+    return INTT;
+  }
+  /* An Indian school's students: the directory of every child, and one child's profile. */
+  var INSTU = null;
+  function indiaStudents() {
+    if (INSTU) return INSTU;
+    INSTU = window.OPLO_INDIA_STUDENTS({
+      el: el, esc: esc, API: API, S: S, toast: toast, loading: loading, failed: failed,
+      cnTable: cnTable, cnEmpty: cnEmpty, cnAction: cnAction, cnFilters: cnFilters,
+      cxMetrics: cxMetrics, cxPage: cxPage, cxSheet: cxSheet, cxPrint: cxPrint, printHead: printHead, printTable: printTable, openAdmin: openAdmin,
+      ui: india().ui, studentForm: india().studentForm
+    });
+    return INSTU;
+  }
   /* The class register and the 75% watch: the morning register an Indian school takes for a section. */
   var REGISTER = null;
   function register() {
@@ -17731,6 +17830,7 @@
     return HPC;
   }
   function tabInComp(v) { hpc().competencies(v); }
+  function tabInAnalysis(v) { indiaResults().analysis(v); }
   function tabInExams(v) { exams().exams(v); }
   function tabInScales(v) { exams().scales(v); }
   function tabInPapers(v) { exams().papers(v); }
@@ -17944,6 +18044,7 @@
      making visible in one screen. Selecting somebody fills the inspector; it
      does not take the list away. */
   function tabStudents(v) {
+    if (consoleMode() === "admin" && regionOf() === "IN" && window.OPLO_INDIA_STUDENTS) { indiaStudents().directory(v); return; }
     if (consoleMode() === "admin") consoleHead(v, "Students", "Student 360",
       "Every student in the school, once. Open one to see all of them — grades and why, " +
       "missing work, what changed, their diploma and their family.");

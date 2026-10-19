@@ -162,15 +162,7 @@ window.OPLO_EXAMS = function (K) {
           var ids = Object.keys(by);
           var classes = res[1].classes;
           if (!ids.length) slot.appendChild(el("p", "en-note", "No papers yet. Set them up for a section: a line for each subject."));
-          else {
-            var t = K.cnTable([{ label: "Section", w: "90px" }, { label: "Papers", w: "80px" }, { label: "With the teacher", w: "130px" }, { label: "Handed in / checked", w: "150px" }, { label: "Approved", w: "100px" }, { label: "Published", w: "100px" }]);
-            ids.sort().forEach(function (id) {
-              var ps = by[id].papers, c = function (st) { return ps.filter(function (p) { return p.state === st; }).length; };
-              t.row(["<b>" + esc(by[id].label) + "</b>", num(ps.length), num(c("entry")), num(c("submitted") + c("checked")), num(c("approved")), num(c("published"))],
-                function () { ctl.close(); classPapers(e, id, by[id].label, sc); }, id);
-            });
-            slot.appendChild(t);
-          }
+          else slot.appendChild(matrix(by, e, ctl, sc));
           var acts = el("div", "cn-acts");
           acts.appendChild(K.cnAction("Set up papers for a section", function () { ctl.close(); paperSetup(e, classes, again("in-exams")); }, true));
           acts.appendChild(K.cnAction("Exam settings", function () { ctl.close(); examForm(sc, again("in-exams"), e); }));
@@ -178,6 +170,72 @@ window.OPLO_EXAMS = function (K) {
         }, function (er) { K.failed(slot, er); });
       }
     });
+  }
+
+  /* The exam as one board: a row for each section, a column for each subject, and in each cell
+     where that paper is on its way from the teacher to the family. The office sees at a glance
+     what is late and where, and moves a whole stage on in one press (each paper still goes
+     one step at a time, by the same rules as one at a time). */
+  var STAGES = [["entry", "With teachers"], ["submitted", "Handed in"], ["checked", "Checked"], ["approved", "Approved"], ["published", "Published"]];
+  var NEXT = { submitted: ["checked", "Check"], checked: ["approved", "Approve"], approved: ["published", "Publish"] };
+  function matrix(by, e, ctl, sc) {
+    var ids = Object.keys(by).sort(function (a, b) { return by[a].label.localeCompare(by[b].label, undefined, { numeric: true }); });
+    var freq = {}, flat = [];
+    ids.forEach(function (id) { by[id].papers.forEach(function (p) { freq[p.subject] = (freq[p.subject] || 0) + 1; flat.push(p); }); });
+    var subjects = Object.keys(freq).sort(function (a, b) { return freq[b] - freq[a] || a.localeCompare(b); });
+    var box = el("div", "exm");
+
+    var strip = el("div", "exm-strip");
+    STAGES.forEach(function (st) {
+      var n = flat.filter(function (p) { return p.state === st[0]; }).length;
+      var d = el("div", "exm-stage st-" + st[0] + (n ? "" : " zero"));
+      d.innerHTML = "<b>" + n + "</b><span>" + esc(st[1]) + "</span><i style='width:" + (flat.length ? Math.round(n / flat.length * 100) : 0) + "%'></i>";
+      strip.appendChild(d);
+    });
+    box.appendChild(strip);
+
+    var bulk = el("div", "exm-bulk");
+    Object.keys(NEXT).forEach(function (from) {
+      var ps = flat.filter(function (p) { return p.state === from; });
+      if (!ps.length) return;
+      var go = btn(NEXT[from][1] + " all " + (from === "submitted" ? "handed in" : from) + " (" + ps.length + ")", from === "checked" ? "strong" : "", function () {
+        if (!confirm(NEXT[from][1] + " " + ps.length + " paper" + (ps.length === 1 ? "" : "s") + " across " + new Set(ps.map(function (p) { return p.classId; })).size + " sections? Each moves one step.")) return;
+        go.disabled = true; var ok = 0, fail = 0, last = "";
+        ps.reduce(function (chain, p) { return chain.then(function () { return EX.advance(p.id, NEXT[from][0]).then(function () { ok++; }, function (er) { fail++; last = er && er.message || ""; }); }); }, Promise.resolve())
+          .then(function () { toast(ok + " moved on" + (fail ? ", " + fail + " could not be: " + last : ".")); ctl.close(); examView(e, sc); });
+      });
+      bulk.appendChild(go);
+    });
+    if (bulk.children.length) box.appendChild(bulk);
+
+    var grid = el("div", "exm-grid");
+    grid.style.setProperty("--n", subjects.length);
+    var head = el("div", "exm-row exm-head");
+    head.appendChild(el("span", "exm-sec", "Section"));
+    subjects.forEach(function (sj) { head.appendChild(el("span", "exm-sub", esc(sj))); });
+    head.appendChild(el("span", "exm-prog", "Out"));
+    grid.appendChild(head);
+    ids.forEach(function (id) {
+      var ps = by[id].papers, row = el("div", "exm-row");
+      var lab = el("button", "exm-sec", "<b>" + esc(by[id].label) + "</b>");
+      lab.type = "button"; lab.title = "Report cards, teachers and the parent meeting";
+      lab.addEventListener("click", function () { ctl.close(); classPapers(e, id, by[id].label, sc); });
+      row.appendChild(lab);
+      subjects.forEach(function (sj) {
+        var p = ps.filter(function (x) { return x.subject === sj; })[0];
+        if (!p) { row.appendChild(el("span", "exm-cell none", "–")); return; }
+        var back = p.returnedNote && p.state === "entry";
+        var c = el("button", "exm-cell st-" + p.state + (back ? " back" : ""), esc(back ? "Sent back" : (STATE[p.state] || [0, p.state])[1]) + (p.state === "entry" && p.strength ? "<small>" + p.entered + "/" + p.strength + "</small>" : ""));
+        c.type = "button"; c.title = p.subject + (p.teacher ? " · " + p.teacher.name : "") + " · " + p.entered + " of " + p.strength + " have marks";
+        c.addEventListener("click", function () { ctl.close(); sheet(p.id, function () { examView(e, sc); }); });
+        row.appendChild(c);
+      });
+      var pub = ps.filter(function (p) { return p.state === "published"; }).length;
+      row.appendChild(el("span", "exm-prog", "<i><u style='width:" + (ps.length ? Math.round(pub / ps.length * 100) : 0) + "%'></u></i><b>" + pub + "/" + ps.length + "</b>"));
+      grid.appendChild(row);
+    });
+    box.appendChild(grid);
+    return box;
   }
 
   function paperSetup(e, classes, done) {

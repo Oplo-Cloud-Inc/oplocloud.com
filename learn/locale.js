@@ -60,7 +60,11 @@ window.OPLO_LOCALE = (function () {
     IN: {
       "Grade": "Class", "Grades": "Classes", "grade": "class", "grades": "classes",
       "Courses": "Subjects", "Course": "Subject", "courses": "subjects", "course": "subject",
-      "Sections": "Timetable", "Student 360": "Student profile"
+      "Sections": "Timetable", "Student 360": "Student profile",
+      // What an Indian office calls its places: one word each, the one it already says.
+      "Enrollment": "Admissions", "Rosters": "Class lists", "Guardians": "Parents and guardians", "Behavior": "Discipline", "Watchlist": "Needs attention",
+      "Mail Queue": "Outbox", "School Days": "Academic calendar", "Bell Schedules": "Period timings", "Forms": "Circulars", "Certifications": "Qualifications",
+      "Accommodations": "Exam accommodations", "Support plans": "Learning support"
     }
   };
 

@@ -61,6 +61,9 @@ const family = person("family");
 const student = person("student");
 
 const ctx = {};
+// The classes a school admits to are its own: an Indian school's are Nursery to Class XII, an American one's Pre-K to Grade 12.
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+const G = (n) => (ctx.IN ? "Class " + ROMAN[n - 1] : "Grade " + n);
 const first = "Aarav" + RUN.slice(-3).toUpperCase(), last = "Sharma";
 // A birthday that differs from run to run, so what an earlier run left behind
 // is not mistaken for the same child.
@@ -73,6 +76,7 @@ try {
     await admin.login(cred.email, cred.password);
     const me = await admin.get("/me");
     ctx.org = me.account.organizations[0].id;
+    ctx.IN = me.account.organizations[0].region === "IN";
   });
 
   await step("staff accounts: a registrar, an admissions reviewer, a teacher, a family", async () => {
@@ -95,7 +99,7 @@ try {
 
   await step("settings come with sensible defaults, no identity number required", async () => {
     const s = (await admin.get("/enrollment/settings")).settings;
-    assert.equal(s.grades.length, 14);
+    assert.equal(s.grades.length, ctx.IN ? 15 : 14);
     assert.ok(s.documents.length >= 5);
     assert.ok(!s.documents.some((d) => d.sensitive), "nothing restricted is asked for until the school adds it");
     // A re-run starts from open seats, whatever the last run left behind.
@@ -117,7 +121,7 @@ try {
 
   await step("start an application: a draft that says exactly what is missing", async () => {
     const r = await admin.post("/applications", {
-      clientKey: "k1-" + RUN, grade: "Grade 6", type: "transfer", student: { legalFirst: first, legalLast: last }
+      clientKey: "k1-" + RUN, grade: G(6), type: "transfer", student: { legalFirst: first, legalLast: last }
     });
     ctx.app = r.application;
     assert.equal(ctx.app.status, "draft");
@@ -129,7 +133,7 @@ try {
 
   await step("the same create, sent again, is the same application", async () => {
     const r = await admin.post("/applications", {
-      clientKey: "k1-" + RUN, grade: "Grade 6", type: "transfer", student: { legalFirst: first, legalLast: last }
+      clientKey: "k1-" + RUN, grade: G(6), type: "transfer", student: { legalFirst: first, legalLast: last }
     });
     assert.equal(r.application.id, ctx.app.id);
     assert.equal(r.existing, true);
@@ -280,7 +284,7 @@ try {
     assert.ok(members.some((m) => m.name.startsWith(first) && m.role === "student"));
     const sid = ctx.enrollment.studentId;
     const recs = (await admin.get(`/students/${sid}/records`)).sections;
-    assert.equal(recs.enrollment.facts.find((f) => f.label === "Grade").value, "Grade 6");
+    assert.equal(recs.enrollment.facts.find((f) => f.label === "Grade").value, G(6));
     const card = (await admin.get(`/accounts/${sid}/contact`)).contact;
     assert.equal(card.dateOfBirth, ctx.aDob);
   });
@@ -304,7 +308,7 @@ try {
   });
 
   await step("a second application for the same person is flagged, and settling it links them", async () => {
-    const r = await admin.post("/applications", { grade: "Grade 7", type: "new", student: { legalFirst: first, legalLast: last, dob: ctx.aDob } });
+    const r = await admin.post("/applications", { grade: G(7), type: "new", student: { legalFirst: first, legalLast: last, dob: ctx.aDob } });
     ctx.dup = r.application;
     const exact = ctx.dup.duplicates.filter((d) => d.strength === "exact");
     assert.ok(exact.length >= 1, "an exact match is shown");
@@ -319,7 +323,7 @@ try {
   });
 
   await step("a rejection needs a reason and leaves no student behind", async () => {
-    const r2 = await admin.post("/applications", { grade: "Grade 4", type: "new", student: { legalFirst: "Nia" + RUN.slice(-2), legalLast: "Rao", dob: bday(2017, 1) } });
+    const r2 = await admin.post("/applications", { grade: G(4), type: "new", student: { legalFirst: "Nia" + RUN.slice(-2), legalLast: "Rao", dob: bday(2017, 1) } });
     const id = r2.application.id;
     refused(await admin.try("POST", `/applications/${id}/actions/reject`, { reason: "ineligible" }), 409, /draft/);
     await admin.patch(`/applications/${id}`, { intendedStart: "2026-11-02", consent: true, form: {
@@ -342,12 +346,12 @@ try {
 
   await step("seats: a full grade is a soft stop that needs a reason", async () => {
     const s = ctx.settings;
-    const used = (await admin.get(`/enrollment/summary?year=${ctx.year}`)).grades.find((g) => g.name === "Grade 6").used;
+    const used = (await admin.get(`/enrollment/summary?year=${ctx.year}`)).grades.find((g) => g.name === G(6)).used;
     ctx.limit = used;                       // every seat is taken
-    const grades = s.grades.map((g) => (g.name === "Grade 6" ? { ...g, seats: used } : g));
+    const grades = s.grades.map((g) => (g.name === G(6) ? { ...g, seats: used } : g));
     await admin.put("/enrollment/settings", { settings: { ...s, grades } });
     // another Grade 6 applicant, taken to awaiting_decision
-    const a = (await admin.post("/applications", { grade: "Grade 6", type: "new", student: { legalFirst: "Sana" + RUN.slice(-2), legalLast: "Khan", dob: bday(2014, 2) } })).application;
+    const a = (await admin.post("/applications", { grade: G(6), type: "new", student: { legalFirst: "Sana" + RUN.slice(-2), legalLast: "Khan", dob: bday(2014, 2) } })).application;
     await admin.patch(`/applications/${a.id}`, { intendedStart: "2026-11-02", consent: true, form: {
       guardians: [{ name: "Omar Khan", phone: "9000000002" }], contact: { address: "9 Hill St" } } });
     await admin.post(`/applications/${a.id}/actions/submit`);
@@ -391,7 +395,7 @@ try {
   });
 
   await step("a withdrawn student can come back: the unique rule only covers live enrollments", async () => {
-    const r = await admin.post("/applications", { studentId: ctx.futureEnrollment.studentId, grade: "Grade 6" });
+    const r = await admin.post("/applications", { studentId: ctx.futureEnrollment.studentId, grade: G(6) });
     assert.equal(r.application.type, "returning");
     assert.equal(r.application.student.legalFirst.startsWith("Sana"), true);
   });
@@ -399,15 +403,15 @@ try {
   await step("re-enrolment: next year's applications, for the right grade, once", async () => {
     const next = ctx.settings.years.find((y) => y > ctx.year);
     const r = await admin.post("/enrollment/reenrol", { toYear: next });
-    assert.ok(r.created.some((c) => c.grade === "Grade 7"), JSON.stringify(r));
+    assert.ok(r.created.some((c) => c.grade === G(7)), JSON.stringify(r));
     const again = await admin.post("/enrollment/reenrol", { toYear: next });
     assert.equal(again.created.length, 0, "run twice, made once");
     assert.ok(again.skipped.every((s) => s.why));
   });
 
   await step("a family applies for its own child, sees status and corrections, never review notes", async () => {
-    const r = await family.post("/applications", { clientKey: "fam-" + RUN, grade: "Grade 2", type: "new",
-      student: { legalFirst: "Rohan" + RUN.slice(-2), legalLast: "Sharma", dob: bday(2019, 4) } });
+    const r = await family.post("/applications", { clientKey: "fam-" + RUN, grade: G(2), type: "new",
+      student: { legalFirst: "Rohan" + RUN.slice(-2), legalLast: "Sharma", dob: bday(ctx.IN ? 2018 : 2019, 4) } });
     ctx.fam = r.application;
     assert.equal(ctx.fam.source, "family");
     assert.equal(ctx.fam.review, undefined);
@@ -483,7 +487,7 @@ try {
     const s = await admin.get(`/enrollment/summary?year=${ctx.year}`);
     assert.equal(s.applications.total, Object.values(s.applications.byStatus).reduce((a, b) => a + b, 0));
     assert.ok(s.enrollments.total >= 2);
-    const g6 = s.grades.find((g) => g.name === "Grade 6");
+    const g6 = s.grades.find((g) => g.name === G(6));
     assert.equal(g6.seats, ctx.limit);
     // The student admitted past the limit was withdrawn above, so the seat is back.
     assert.equal(g6.used, ctx.limit);
@@ -522,7 +526,7 @@ try {
   await step("declining an offer withdraws the application and leaves no student behind", async () => {
     const st = (await admin.get("/enrollment/settings")).settings;
     await admin.put("/enrollment/settings", { settings: { ...st, requireAcceptance: true } });
-    const r = await family.post("/applications", { clientKey: "dec-" + RUN, grade: "Grade 3", type: "new",
+    const r = await family.post("/applications", { clientKey: "dec-" + RUN, grade: G(3), type: "new",
       student: { legalFirst: "Isha" + RUN.slice(-2), legalLast: "Sharma", dob: bday(2016, 3) } });
     const id = r.application.id;
     await family.patch(`/applications/${id}`, { intendedStart: "2026-11-02", consent: true, form: {
