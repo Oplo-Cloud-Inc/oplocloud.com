@@ -14,7 +14,7 @@
   position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
   min-height: var(--ctl-h); min-width: 24px; padding: 0 var(--s-4); border: 1px solid transparent; border-radius: var(--r-md);
   font: var(--t-body-strong); text-decoration: none; white-space: nowrap; cursor: pointer;
-  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease-ui), border-color var(--dur-fast) var(--ease-ui);
 }
 .ol-btn--primary { background: var(--c-accent); color: var(--c-on-accent); }
 .ol-btn--primary:hover { background: var(--c-accent-hover); }
@@ -74,8 +74,8 @@ textarea.ol-input__ctl { height: auto; padding: var(--s-2) var(--s-3); resize: v
 .ol-checkfield__label { font: var(--t-body); color: var(--c-text); cursor: pointer; padding: 3px 0; }
 .ol-radios { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
 .ol-radios.is-inline { flex-direction: row; flex-wrap: wrap; column-gap: var(--s-6); }
-.ol-sw { appearance: none; position: relative; width: 36px; height: 20px; margin: 2px; border-radius: var(--r-full); background: var(--c-line-input); cursor: pointer; transition: background-color var(--dur-fast) var(--ease); }
-.ol-sw::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: var(--r-full); background: var(--c-surface); transition: transform var(--dur-fast) var(--ease); }
+.ol-sw { appearance: none; position: relative; width: 36px; height: 20px; margin: 2px; border-radius: var(--r-full); background: var(--c-line-input); cursor: pointer; transition: background-color var(--dur-fast) var(--ease-ui); }
+.ol-sw::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: var(--r-full); background: var(--c-surface); transition: transform var(--dur-fast) var(--ease-ui); }
 .ol-sw:checked { background: var(--c-accent); }
 .ol-sw:checked::before { transform: translateX(16px); }
 .ol-sw:disabled { opacity: .5; cursor: not-allowed; }
@@ -302,7 +302,7 @@ textarea.ol-input__ctl { height: auto; padding: var(--s-2) var(--s-3); resize: v
 .ol-card__body { padding: var(--s-4) var(--s-5); }
 .ol-card__foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--c-line); }
 .ol-card__toggle { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--c-text-2); }
-.ol-card__toggle .ol-icon { transition: transform var(--dur-fast) var(--ease); }
+.ol-card__toggle .ol-icon { transition: transform var(--dur-fast) var(--ease-ui); }
 .ol-card.is-collapsed .ol-card__body, .ol-card.is-collapsed .ol-card__foot { display: none; }
 .ol-card.is-collapsed .ol-card__toggle .ol-icon { transform: rotate(-90deg); }
 .ol-banner { display: flex; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid var(--c-line); border-radius: var(--r-md); font: var(--t-body); }
@@ -364,7 +364,7 @@ textarea.ol-input__ctl { height: auto; padding: var(--s-2) var(--s-3); resize: v
 .ol-drawer {
   position: fixed; top: 0; bottom: 0; inset-inline-end: 0; z-index: var(--z-drawer); width: min(var(--dw, 560px), 100vw);
   display: flex; flex-direction: column; background: var(--c-surface-raised); color: var(--c-text); font: var(--t-body);
-  border-inline-start: 1px solid var(--c-line-strong); box-shadow: var(--e-2); transform: translateX(100%); transition: transform var(--dur-drawer) var(--ease);
+  border-inline-start: 1px solid var(--c-line-strong); box-shadow: var(--e-2); transform: translateX(100%); transition: transform var(--dur-drawer) var(--ease-ui);
 }
 .ol-drawer--560 { --dw: 560px; }
 .ol-drawer--720 { --dw: 720px; }
@@ -383,7 +383,7 @@ textarea.ol-input__ctl { height: auto; padding: var(--s-2) var(--s-3); resize: v
 .ol-modal {
   position: fixed; left: 50%; top: 50%; z-index: var(--z-modal); width: min(var(--mw, 520px), calc(100vw - var(--s-8))); max-height: calc(100vh - var(--s-8)); overflow: auto;
   background: var(--c-surface-raised); color: var(--c-text); font: var(--t-body); border: 1px solid var(--c-line-strong); border-radius: var(--r-lg); box-shadow: var(--e-2);
-  padding: var(--s-6); display: flex; flex-direction: column; gap: var(--s-4); opacity: 0; transform: translate(-50%, -48%); transition: opacity var(--dur-modal) var(--ease), transform var(--dur-modal) var(--ease);
+  padding: var(--s-6); display: flex; flex-direction: column; gap: var(--s-4); opacity: 0; transform: translate(-50%, -48%); transition: opacity var(--dur-modal) var(--ease-ui), transform var(--dur-modal) var(--ease-ui);
 }
 .ol-modal--440 { --mw: 440px; }
 .ol-modal--520 { --mw: 520px; }
@@ -395,7 +395,7 @@ textarea.ol-input__ctl { height: auto; padding: var(--s-2) var(--s-3); resize: v
 
 /* ================================================================ C-17 Toast */
 .ol-toasts { position: fixed; inset-inline-start: var(--s-4); bottom: var(--s-4); z-index: var(--z-toast); display: flex; flex-direction: column; gap: var(--s-2); max-width: min(420px, calc(100vw - var(--s-8))); }
-.ol-toast { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); background: var(--c-surface-raised); color: var(--c-text); font: var(--t-body); border: 1px solid var(--c-line-strong); border-radius: var(--r-md); box-shadow: var(--e-1); opacity: 0; transform: translateY(8px); transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.ol-toast { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); background: var(--c-surface-raised); color: var(--c-text); font: var(--t-body); border: 1px solid var(--c-line-strong); border-radius: var(--r-md); box-shadow: var(--e-1); opacity: 0; transform: translateY(8px); transition: opacity var(--dur-fast) var(--ease-ui), transform var(--dur-fast) var(--ease-ui); }
 .ol-toast.is-on { opacity: 1; transform: none; }
 .ol-toast--success > .ol-icon { color: var(--c-success); }
 .ol-toast--info > .ol-icon { color: var(--c-info); }

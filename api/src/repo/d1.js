@@ -4233,6 +4233,50 @@ export class D1Repository {
   async isOrgMember(orgId, accountId) {
     return !!(await this.db.prepare(`SELECT 1 AS ok FROM organization_memberships WHERE org_id = ? AND account_id = ?`).bind(orgId, accountId).first());
   }
+
+  /* ------------------------------------------------------------- Search
+     learn_search_docs is kept by triggers (migration 0060); this only reads it. `match` is an FTS5
+     expression the service built from letters and digits, never raw input. `onlyOf` narrows students
+     to the sections one teacher is class teacher of. */
+  async searchDocs(orgId, kinds, match, limit, onlyOf) {
+    const scope = onlyOf
+      ? ` AND (d.kind <> 'student' OR d.ref IN (SELECT account_id FROM learn_student_india WHERE class_id IN (SELECT id FROM learn_classes WHERE class_teacher_id = ?)))`
+      : "";
+    const stmts = kinds.map((kind) => this.db.prepare(
+      `SELECT d.kind, d.ref, d.title, d.meta, bm25(learn_search, 8.0, 1.0) AS rank
+         FROM learn_search JOIN learn_search_docs d ON d.id = learn_search.rowid
+        WHERE learn_search MATCH ? AND d.org_id = ? AND d.kind = ?${scope}
+        ORDER BY rank, d.title LIMIT ?`
+    ).bind(...[match, orgId, kind].concat(onlyOf ? [onlyOf] : [], [limit])));
+    const out = await this.db.batch(stmts);
+    return out.flatMap((r) => r.results || []);
+  }
+
+  /* The class a code like "X-C" names, in the newest year the school has it. */
+  async classByCode(orgId, grade, section) {
+    return this.db.prepare(
+      `SELECT c.id, c.grade, c.section, c.school_year, p.name AS teacher
+         FROM learn_classes c LEFT JOIN profiles p ON p.account_id = c.class_teacher_id
+        WHERE c.org_id = ? AND UPPER(c.grade) = ? AND UPPER(c.section) = ?
+        ORDER BY c.school_year DESC LIMIT 1`
+    ).bind(orgId, grade, section).first();
+  }
+
+  async classSeatCounts(classIds) {
+    if (!classIds.length) return {};
+    const rows = (await this.db.prepare(
+      `SELECT class_id, COUNT(*) AS n FROM learn_student_india WHERE class_id IN (${classIds.map(() => "?").join(",")}) GROUP BY class_id`
+    ).bind(...classIds).all()).results || [];
+    return Object.fromEntries(rows.map((r) => [r.class_id, r.n]));
+  }
+
+  async studentsSeatedIn(classId, limit) {
+    return (await this.db.prepare(
+      `SELECT d.kind, d.ref, d.title, d.meta FROM learn_search_docs d
+        WHERE d.kind = 'student' AND d.ref IN (SELECT account_id FROM learn_student_india WHERE class_id = ?)
+        ORDER BY d.title LIMIT ?`
+    ).bind(classId, limit).all()).results || [];
+  }
 }
 
 const INDIA_COLS = ["class_id", "admission_no", "admitted_on", "roll_no", "gender", "house", "category", "second_language", "blood_group",

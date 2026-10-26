@@ -77,6 +77,59 @@
       discard: "बदलाव छोड़ें", discard_text: "आपके बदलाव सहेजे नहीं गए हैं। अभी बंद करने पर वे खो जाएँगे।", discard_title: "बदलाव छोड़ें?",
       next: "अगला रिकॉर्ड", open_full: "पूरा पृष्ठ खोलें", previous: "पिछला रिकॉर्ड"
     },
-    modal: { type_to_confirm: "पुष्टि के लिए {word} लिखें", type_to_enable: "इस बटन को चालू करने के लिए {word} लिखें" }
+    modal: { type_to_confirm: "पुष्टि के लिए {word} लिखें", type_to_enable: "इस बटन को चालू करने के लिए {word} लिखें" },
+    nav: {
+      today: "आज", students: "विद्यार्थी", attendance: "उपस्थिति", academics: "शैक्षणिक", exams: "परीक्षाएँ", fees: "शुल्क",
+      wellbeing: "कल्याण", communicate: "संवाद", staff: "कर्मचारी", campus: "परिसर", insights: "विश्लेषण", admin: "प्रशासन"
+    },
+    tab: {
+      today: { overview: "आज" },
+      students: {
+        directory: "निर्देशिका", admissions: "प्रवेश", classes: "कक्षाएँ", guardians: "अभिभावक", health: "स्वास्थ्य",
+        documents: "दस्तावेज़", certificates: "प्रमाणपत्र", records: "अभिलेख", graduation: "उत्तीर्णता"
+      },
+      attendance: { registers: "रजिस्टर", watch: "निगरानी सूची", condonation: "उपस्थिति में छूट", "by-subject": "विषयवार", staff: "कर्मचारी उपस्थिति" },
+      academics: {
+        timetable: "समय-सारणी", subjects: "विषय", timings: "घंटी का समय", calendar: "कैलेंडर", "lesson-plans": "पाठ योजनाएँ",
+        homework: "गृहकार्य", competencies: "दक्षताएँ", curriculum: "पाठ्यक्रम", "add-drop": "जोड़ें और हटाएँ"
+      },
+      exams: { plan: "परीक्षा योजना", mark: "अंक प्रविष्टि", results: "परिणाम", "report-cards": "रिपोर्ट कार्ड", scales: "ग्रेडिंग पैमाने", periods: "अंकन अवधियाँ" },
+      wellbeing: {
+        "needs-attention": "ध्यान चाहिए", "early-warning": "पूर्व चेतावनी", mentoring: "मार्गदर्शन", discipline: "अनुशासन",
+        referrals: "संदर्भ", "learning-support": "सीखने में सहायता", accommodations: "सुविधाएँ", detention: "रोक"
+      },
+      communicate: { inbox: "इनबॉक्स", circulars: "परिपत्र", events: "कार्यक्रम", messages: "संदेश", outbox: "भेजे गए" },
+      staff: { directory: "निर्देशिका", departments: "विभाग", leave: "अवकाश", cover: "स्थानापन्न", qualifications: "योग्यताएँ", access: "पहुँच", analytics: "विश्लेषण" },
+      campus: { transport: "परिवहन", library: "पुस्तकालय", equipment: "उपकरण", facilities: "सुविधाएँ", menus: "भोजन", eligibility: "भोजन पात्रता", lockers: "लॉकर" },
+      insights: { dashboards: "डैशबोर्ड", analytics: "विश्लेषण", reports: "रिपोर्ट", builder: "रिपोर्ट निर्माता" },
+      admin: { settings: "सेटिंग", compliance: "अनुपालन", data: "डेटा", security: "सुरक्षा", "audit-log": "ऑडिट लॉग", "year-end": "वर्षांत" }
+    },
+    shell: {
+      menu: "मुख्य मेनू", console: "विद्यालय कंसोल", collapse_menu: "मेनू छोटा करें", expand_menu: "मेनू बड़ा करें", top: "ऊपरी पट्टी",
+      year_label: "शैक्षणिक वर्ष {year}", year_changed: "शैक्षणिक वर्ष {year}",
+      notifications: "सूचनाएँ", notifications_n: "{n, plural, one {# अपठित सूचना} other {# अपठित सूचनाएँ}}",
+      help: "सहायता और शॉर्टकट", help_title: "कीबोर्ड शॉर्टकट",
+      account_menu: "{name} का खाता मेनू", my_account: "मेरा खाता",
+      appearance: "रूप", theme: { light: "हल्का", dark: "गहरा", auto: "उपकरण के अनुसार", hc: "उच्च कंट्रास्ट" },
+      language: "भाषा", language_changed: "भाषा बदली गई",
+      sign_out: "साइन आउट", signing_out: "साइन आउट हो रहा है…",
+      k: { search: "खोज खोलें", move: "परिणामों के बीच जाएँ", open: "चुना हुआ परिणाम खोलें", group: "अगले समूह पर जाएँ", close: "बंद करें" }
+    },
+    search: {
+      label: "खोज", placeholder: "विद्यार्थी, कर्मचारी, कक्षाएँ, पृष्ठ और कार्य खोजें", placeholder_short: "विद्यार्थी, कर्मचारी, कक्षाएँ खोजें",
+      results: "खोज परिणाम", recent: "हाल के", start: "नाम, प्रवेश क्रमांक, X-C जैसी कक्षा या कोई पृष्ठ लिखें।",
+      searching: "खोज रहे हैं…", error: "खोज अभी काम नहीं कर रही।", forbidden: "लोगों को खोजना केवल विद्यालय कर्मचारियों के लिए है। पृष्ठ और कार्य अब भी काम करते हैं।",
+      no_results: "“{q}” के लिए कोई परिणाम नहीं", no_results_hint: "वर्तनी जाँचें, या प्रवेश क्रमांक अथवा फ़ोन नंबर के अंतिम अंक आज़माएँ।",
+      n_results: "{n, plural, =0 {कोई परिणाम नहीं} one {# परिणाम} other {# परिणाम}}",
+      hint_move: "चलने के लिए", hint_open: "खोलने के लिए", hint_group: "अगला समूह",
+      group: { student: "विद्यार्थी", staff: "कर्मचारी", class: "कक्षाएँ", subject: "विषय", circular: "परिपत्र", page: "पृष्ठ", action: "कार्य" },
+      roll: "अनुक्रमांक {n}", due: "देय {date}", class_teacher: "कक्षा शिक्षक {name}",
+      n_students: "{n, plural, =0 {कोई विद्यार्थी नहीं} one {# विद्यार्थी} other {# विद्यार्थी}}",
+      role: { admin: "प्रशासक", teacher: "शिक्षक", principal: "प्रधानाचार्य", registrar: "पंजीयक", admissions: "प्रवेश", facilities: "सुविधाएँ", office: "कार्यालय" }
+    },
+    action: {
+      take_register: "रजिस्टर भरें", new_circular: "परिपत्र भेजें", issue_certificate: "प्रमाणपत्र जारी करें",
+      arrange_cover: "स्थानापन्न तय करें", admit_student: "विद्यार्थी का प्रवेश करें", raise_work_order: "कार्य आदेश बनाएँ"
+    }
   });
 })();

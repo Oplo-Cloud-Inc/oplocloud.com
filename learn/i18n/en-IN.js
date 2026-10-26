@@ -102,6 +102,73 @@
       discard_title: "Discard changes?", next: "Next record", open_full: "Open full page", previous: "Previous record"
     },
 
-    modal: { type_to_confirm: "Type {word} to confirm", type_to_enable: "Type {word} to enable this button" }
+    modal: { type_to_confirm: "Type {word} to confirm", type_to_enable: "Type {word} to enable this button" },
+
+    /* The menu: eleven modules and Admin (Volume 01 §2.1), each with its tabs, a tab with at most one more row. */
+    nav: {
+      today: "Today", students: "Students", attendance: "Attendance", academics: "Academics", exams: "Exams", fees: "Fees",
+      wellbeing: "Wellbeing", communicate: "Communicate", staff: "Staff", campus: "Campus", insights: "Insights", admin: "Admin"
+    },
+    tab: {
+      today: { overview: "Today" },
+      students: {
+        directory: "Directory", admissions: "Admissions", classes: "Classes", guardians: "Guardians", health: "Health",
+        documents: "Documents", certificates: "Certificates", records: "Records", graduation: "Graduation"
+      },
+      attendance: { registers: "Registers", watch: "Watchlist", condonation: "Condonation", "by-subject": "By subject", staff: "Staff attendance" },
+      academics: {
+        timetable: "Timetable", subjects: "Subjects", timings: "Bell timings", calendar: "Calendar", "lesson-plans": "Lesson plans",
+        homework: "Homework", competencies: "Competencies", curriculum: "Curriculum", "add-drop": "Add and drop"
+      },
+      exams: { plan: "Exam plan", mark: "Mark entry", results: "Results", "report-cards": "Report cards", scales: "Grading scales", periods: "Marking periods" },
+      wellbeing: {
+        "needs-attention": "Needs attention", "early-warning": "Early warning", mentoring: "Mentoring", discipline: "Discipline",
+        referrals: "Referrals", "learning-support": "Learning support", accommodations: "Accommodations", detention: "Detention"
+      },
+      communicate: { inbox: "Inbox", circulars: "Circulars", events: "Events", messages: "Messages", outbox: "Outbox" },
+      staff: { directory: "Directory", departments: "Departments", leave: "Leave", cover: "Cover", qualifications: "Qualifications", access: "Access", analytics: "Analytics" },
+      campus: { transport: "Transport", library: "Library", equipment: "Equipment", facilities: "Facilities", menus: "Meals", eligibility: "Meal eligibility", lockers: "Lockers" },
+      insights: { dashboards: "Dashboards", analytics: "Analytics", reports: "Reports", builder: "Report builder" },
+      admin: { settings: "Settings", compliance: "Compliance", data: "Data", security: "Security", "audit-log": "Audit log", "year-end": "Year-end" }
+    },
+    sub: {
+      students: { classes: { sections: "Sections", lists: "Class lists" } },
+      academics: { timetable: { published: "Published", draft: "Draft" }, curriculum: { courses: "Courses", map: "Curriculum map" } },
+      exams: { mark: { "course-marks": "Course marks", assessments: "Assessments" }, results: { analysis: "Analysis", gpa: "GPA", transcripts: "Transcripts" } },
+      campus: { facilities: { orders: "Work orders", spaces: "Spaces", assets: "Assets", routines: "Routines", bookings: "Bookings", vendors: "Vendors", documents: "Documents", reports: "Reports" } },
+      insights: { analytics: { academic: "Academic", assessments: "Assessments", growth: "Growth", groups: "Groups", longitudinal: "Longitudinal", standards: "Standards" } },
+      admin: { data: { exports: "Exports", imports: "Imports", integrations: "Integrations", api: "API", state: "State reporting", district: "District" } }
+    },
+
+    /* The frame around every page: rail, top bar, account menu. */
+    shell: {
+      menu: "Main menu", console: "School console", collapse_menu: "Collapse the menu", expand_menu: "Expand the menu", top: "Top bar",
+      year_label: "Academic year {year}", year_changed: "Academic year {year}",
+      notifications: "Notifications", notifications_n: "{n, plural, one {# unread notification} other {# unread notifications}}",
+      help: "Help and shortcuts", help_title: "Keyboard shortcuts",
+      account_menu: "Account menu for {name}", my_account: "My account",
+      appearance: "Appearance", theme: { light: "Light", dark: "Dark", auto: "Match this device", hc: "High contrast" },
+      language: "Language", language_changed: "Language changed",
+      sign_out: "Sign out", signing_out: "Signing out…",
+      k: { search: "Open search", move: "Move between results", open: "Open the selected result", group: "Jump to the next group", close: "Close" }
+    },
+
+    /* Search — records first, then pages and actions. */
+    search: {
+      label: "Search", placeholder: "Search students, staff, classes, pages and actions", placeholder_short: "Search students, staff, classes",
+      results: "Search results", recent: "Recent", start: "Type a name, an admission number, a class like X-C or a page.",
+      searching: "Searching…", error: "Search is not working right now.", forbidden: "Searching people is for school staff. Pages and actions still work.",
+      no_results: "No results for “{q}”", no_results_hint: "Check the spelling, or try an admission number or the end of a phone number.",
+      n_results: "{n, plural, =0 {No results} one {# result} other {# results}}",
+      hint_move: "to move", hint_open: "to open", hint_group: "next group",
+      group: { student: "Students", staff: "Staff", class: "Classes", subject: "Subjects", circular: "Circulars", page: "Pages", action: "Actions" },
+      roll: "Roll {n}", apaar: "APAAR …{n}", due: "Due {date}", class_teacher: "Class teacher {name}",
+      n_students: "{n, plural, =0 {No students} one {# student} other {# students}}",
+      role: { admin: "Administrator", teacher: "Teacher", principal: "Principal", registrar: "Registrar", admissions: "Admissions", facilities: "Facilities", office: "Office" }
+    },
+    action: {
+      take_register: "Take a register", new_circular: "Send a circular", issue_certificate: "Issue a certificate",
+      arrange_cover: "Arrange cover", admit_student: "Admit a student", raise_work_order: "Raise a work order"
+    }
   });
 })();

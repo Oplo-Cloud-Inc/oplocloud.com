@@ -25,7 +25,7 @@ for page in PAGES:
     # browser may keep serving from yesterday after it changes — which is how
     # a deploy ends up half old and half new, and why the list is derived from
     # the page rather than remembered by hand.
-    assets = re.findall(r'(?:src|href)="((?:\.\./)?[A-Za-z0-9_.-]+\.(?:js|css))(?:\?v=[0-9a-f]+)?"', html)
+    assets = re.findall(r'(?:src|href)="((?:\.\./)?(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_.-]+\.(?:js|css))(?:\?v=[0-9a-f]+)?"', html)
     for name in assets:
         path = os.path.normpath(os.path.join(here, name))
         if not os.path.exists(path):

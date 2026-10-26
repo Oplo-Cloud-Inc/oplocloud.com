@@ -487,6 +487,10 @@ window.OPLO_API = (function () {
       list: function (classId, from, to) { return get("/diary" + q({ classId: classId, from: from, to: to })); },
       forStudent: function (id, days) { return get("/students/" + id + "/diary" + q({ days: days })); }
     },
+    /* The top bar's field: students, staff, classes, subjects and circulars of this school. */
+    search: {
+      query: function (text, kinds, o) { return get("/search" + q({ q: text, kinds: kinds && kinds.length ? kinds.join(",") : undefined }), o); }
+    },
     register: {
       early: function (classId) { return get("/register/early-warning" + q({ classId: classId })); },
       eligibility: function (classId, all) { return get("/register/eligibility" + q({ classId: classId, all: all ? "1" : undefined })); },

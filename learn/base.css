@@ -34,7 +34,7 @@ html { scroll-padding-top: calc(var(--topbar-h) + var(--s-4)); }
 .ol-link { color: var(--c-accent); background: none; border: 0; padding: 0; font: inherit; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; gap: var(--s-1); }
 .ol-link:hover { color: var(--c-accent-hover); text-decoration: underline; }
 
-kbd { font: var(--t-caption); font-family: var(--font-mono); background: var(--c-bg-subtle); border: 1px solid var(--c-line-strong); border-bottom-width: 2px; border-radius: var(--r-sm); padding: 1px var(--s-2); }
+.ol-app kbd, .ol-modal kbd, .ol-pop kbd, .ol-drawer kbd { font: var(--t-caption); font-family: var(--font-mono); background: var(--c-bg-subtle); border: 1px solid var(--c-line-strong); border-bottom-width: 2px; border-radius: var(--r-sm); padding: 1px var(--s-2); }
 
 .ol-spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--c-line-strong); border-top-color: var(--c-accent); border-radius: var(--r-full); animation: ol-spin 700ms linear infinite; }
 @keyframes ol-spin { to { transform: rotate(360deg); } }
@@ -48,12 +48,12 @@ kbd { font: var(--t-caption); font-family: var(--font-mono); background: var(--c
 /* Tooltip */
 .ol-tooltip {
   position: fixed; left: var(--x, 0); top: var(--y, 0); z-index: var(--z-toast); max-width: 280px; padding: var(--s-1) var(--s-2);
-  background: var(--c-text); color: var(--c-bg); font: var(--t-caption); border-radius: var(--r-sm); pointer-events: none; opacity: 0; transition: opacity var(--dur-fast) var(--ease);
+  background: var(--c-text); color: var(--c-bg); font: var(--t-caption); border-radius: var(--r-sm); pointer-events: none; opacity: 0; transition: opacity var(--dur-fast) var(--ease-ui);
 }
 .ol-tooltip.is-on { opacity: 1; }
 
 /* Scrims sit under a drawer or a modal and over everything else */
-.ol-scrim { position: fixed; inset: 0; background: var(--c-scrim); opacity: 0; transition: opacity var(--dur-drawer) var(--ease); }
+.ol-scrim { position: fixed; inset: 0; background: var(--c-scrim); opacity: 0; transition: opacity var(--dur-drawer) var(--ease-ui); }
 .ol-scrim--drawer { z-index: calc(var(--z-drawer) - 1); }
 .ol-scrim--modal { z-index: calc(var(--z-modal) - 1); }
 .ol-scrim.is-open { opacity: 1; }

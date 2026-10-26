@@ -61,6 +61,7 @@ import * as feeds from "./routes/feeds.js";
 import * as india from "./routes/india.js";
 import * as school from "./routes/school.js";
 import * as register from "./routes/register.js";
+import * as search from "./routes/search.js";
 import * as exams from "./routes/exams.js";
 import * as certificates from "./routes/certificates.js";
 import * as competency from "./routes/competency.js";
@@ -197,6 +198,7 @@ const ROUTES = [
   ["DELETE", "/api/v1/hpc/notes/:noteId",                competency.removeNote],
   ["GET",    "/api/v1/school/profile",                   school.getProfile],
   ["PUT",    "/api/v1/school/profile",                   school.putProfile],
+  ["GET",    "/api/v1/search",                           search.query],
   ["GET",    "/api/v1/register",                         register.getRegister],
   ["PUT",    "/api/v1/register",                         register.putRegister],
   ["GET",    "/api/v1/register/classes",                 register.classes],

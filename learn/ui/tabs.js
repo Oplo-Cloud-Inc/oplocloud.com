@@ -15,8 +15,9 @@
    row is one tab stop; the selected tab owns it.
 
    OL.ui.tabs.render({ items: [{ key, label, count, href, disabled }], active,
-     size, label, onSelect, panelPrefix }) → the tablist, with .set(key) and
+     size, label, onSelect, panelPrefix, controls }) → the tablist, with .set(key) and
    .panelId(key) (the id the panel should carry, aria-labelledby points back).
+   controls: false leaves out aria-controls, for a row whose panel is shared with another row.
    ========================================================================== */
 (function () {
   "use strict";
@@ -38,7 +39,7 @@
       var on = it.key === cur;
       var node = h(it.href && !it.disabled ? "a" : "button", {
         class: OL.cx("ol-tab", on && "is-on"), role: "tab", id: tabId(it.key), href: it.href && !it.disabled ? it.href : null,
-        type: it.href ? null : "button", "aria-selected": on ? "true" : "false", "aria-controls": panelId(it.key),
+        type: it.href ? null : "button", "aria-selected": on ? "true" : "false", "aria-controls": p.controls === false ? null : panelId(it.key),
         tabindex: on ? "0" : "-1", "aria-disabled": it.disabled ? "true" : null, "data-key": it.key,
         on: { click: function (e) { if (it.disabled) { e.preventDefault(); return; } if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); choose(it.key); } }
       }, h("span", { text: it.label }), it.count != null ? h("span", { class: "ol-tab__count", text: OL.fmt.num(it.count) }) : null);

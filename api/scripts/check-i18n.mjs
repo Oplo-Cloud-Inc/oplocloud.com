@@ -23,7 +23,7 @@ for (const loc of ["en-US", "hi-IN"]) {
     if (base[k] == null) { bad(`${loc} has "${k}", which en-IN does not`); continue; }
     if (loc === "hi-IN") {
       if (params(v) !== params(base[k])) bad(`hi-IN "${k}" takes {${params(v)}}, en-IN takes {${params(base[k])}}`);
-      const words = v.replace(/\{[^}]*\}|[#\d\s.,;:·/()+\-–—…'"?!%₹&]/g, "");
+      const words = v.replace(/\{\s*\w+\s*\}/g, "").replace(/\{\s*\w+\s*,\s*(?:plural|select)\s*,/g, "").replace(/\b(?:zero|one|two|few|many|other)\b|=\d+/g, "").replace(/[{}#\d\s.,;:·/()+\-–—…'"?!%₹&]/g, "");
       if (words && !/[ऀ-ॿ]/.test(words) && !/^[A-Z0-9]+$/.test(words)) bad(`hi-IN "${k}" is not in Devanagari: ${v}`);
       if (v === base[k]) bad(`hi-IN "${k}" is a copy of the English`);
     }
@@ -31,7 +31,7 @@ for (const loc of ["en-US", "hi-IN"]) {
 }
 
 /* Keys the components ask for. A key built with "+" is checked by its prefix. */
-const files = fs.readdirSync(path.join(LEARN, "ui")).filter((f) => f.endsWith(".js") && f !== "gallery.js").map((f) => "ui/" + f).concat(["i18n/format.js"]);
+const files = fs.readdirSync(path.join(LEARN, "ui")).filter((f) => f.endsWith(".js") && f !== "gallery.js").map((f) => "ui/" + f).concat(["i18n/format.js"]).concat(fs.readdirSync(path.join(LEARN, "shell")).filter((f) => f.endsWith(".js")).map((f) => "shell/" + f));
 const asked = new Set();
 for (const f of files) {
   const src = read(f);
@@ -45,8 +45,8 @@ for (const f of files) {
 
 /* A sentence of its own: text a person reads, written straight into a component. */
 const SENTENCE = /(?:\btext:|\.textContent\s*=|createTextNode\(|\bplaceholder:|"aria-label":|\btitle:|\blabel:)\s*"([^"]*[A-Za-z]{3,}[^"]*)"/g;
-const ALLOW = new Set(["ol-", "svg", "button", "text", "tree", "grid", "dialog", "listbox", "menu"]);
-for (const f of files.filter((x) => x.startsWith("ui/") && !["ui/icons.js", "ui/index.js"].includes(x))) {
+const ALLOW = new Set(["ol-", "Esc", "Enter", "Tab", "svg", "button", "text", "tree", "grid", "dialog", "listbox", "menu"]);
+for (const f of files.filter((x) => (x.startsWith("ui/") || x.startsWith("shell/")) && !["ui/icons.js", "ui/index.js"].includes(x))) {
   const lines = read(f).replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " ")).split("\n");   // block comments blanked, lines kept
   lines.forEach((ln, i) => {
     if (/^\s*(\/\/|\*|\/\*)/.test(ln)) return;

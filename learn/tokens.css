@@ -68,16 +68,16 @@
   --c-chart-8: #AD8200;
 
   /* ---- Type ---- */
-  --font: Inter, "Noto Sans", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui: Inter, "Noto Sans", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --t-display: 650 28px/36px var(--font);
-  --t-h1: 650 22px/30px var(--font);
-  --t-h2: 600 17px/24px var(--font);
-  --t-h3: 600 15px/22px var(--font);
-  --t-body: 400 14px/20px var(--font);
-  --t-body-strong: 600 14px/20px var(--font);
-  --t-small: 400 13px/18px var(--font);
-  --t-caption: 500 12px/16px var(--font);
+  --t-display: 650 28px/36px var(--font-ui);
+  --t-h1: 650 22px/30px var(--font-ui);
+  --t-h2: 600 17px/24px var(--font-ui);
+  --t-h3: 600 15px/22px var(--font-ui);
+  --t-body: 400 14px/20px var(--font-ui);
+  --t-body-strong: 600 14px/20px var(--font-ui);
+  --t-small: 400 13px/18px var(--font-ui);
+  --t-caption: 500 12px/16px var(--font-ui);
   --t-caption-track: .04em;
   --w-regular: 400;
   --w-medium: 500;
@@ -117,7 +117,7 @@
   --dur-fast: 120ms;
   --dur-modal: 160ms;
   --dur-drawer: 200ms;
-  --ease: ease-out;
+  --ease-ui: ease-out;
 
   /* ---- Layers ---- */
   --z-rail: 10;

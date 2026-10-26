@@ -1,0 +1,180 @@
+/* ==========================================================================
+   The shell — rail, top bar, module tabs, command palette.
+
+   Tokens only (check-ui.mjs lints this file like ui.css). It is loaded after the
+   old console's stylesheets and wins by being more specific, never by
+   !important: while old pages are still drawn inside the frame, `body.ol-shell`
+   is what says "the new frame is on", and everything the old console did to
+   the page edge (`.lx-wrap` padding, a fixed back control, sticky heads that
+   stuck to the top of the window) is told where the frame now ends.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ Frame */
+body.ol-shell { --ol-rail: var(--rail-w); }
+body.ol-shell.ol-rail-min { --ol-rail: var(--rail-w-collapsed); }
+
+/* The old console put the page 232–312px from the left and 56–64px from the top. The page now starts under the bar, beside the rail. */
+body.ol-shell.is-console .lx-wrap {
+  max-width: none; margin: 0;
+  padding: var(--topbar-h) var(--page-pad) var(--s-8) calc(var(--ol-rail) + var(--page-pad));
+}
+body.ol-shell.is-console #v-admin { padding-top: var(--s-4); }
+body.ol-shell.is-console .admin-body { max-width: var(--max-list); }
+/* The old chrome that the new frame replaces: its fixed "open the rail" control and the rail's scrim. */
+body.ol-shell .cn-open, body.ol-shell .cn-scrim, body.ol-shell .cn-skip:not(:focus) { display: none; }
+/* The old "Back to …" pill sat fixed at the page edge; it is now the first thing in the page. */
+body.ol-shell.is-console .cn-back {
+  position: static; display: inline-flex; align-items: center; gap: var(--s-1); margin: 0 0 var(--s-3);
+  min-height: var(--ctl-h); padding: 0 var(--s-3) 0 var(--s-2); border-radius: var(--r-full);
+  font: var(--t-small); color: var(--c-text-2); background: var(--c-bg); box-shadow: inset 0 0 0 1px var(--c-line);
+}
+body.ol-shell.is-console .cn-back:hover { color: var(--c-text); box-shadow: inset 0 0 0 1px var(--c-line-strong); }
+
+/* Old sticky heads stuck to the top of the window; the top bar is now there. */
+body.ol-shell.is-console .cn-tr.head, body.ol-shell.is-console .hp-t th, body.ol-shell.is-console .isp-tabs,
+body.ol-shell.is-console .exm-head { top: var(--topbar-h); }
+body.ol-shell.is-console .at-legend, body.ol-shell.is-console .gq-list, body.ol-shell.is-console .of-list,
+body.ol-shell.is-console .en-rail, body.ol-shell.is-console .en-index { top: calc(var(--topbar-h) + var(--s-4)); }
+
+/* On a window too narrow for an open rail the rail covers the page rather than squeezing it. */
+@media (max-width: 1023px) {
+  body.ol-shell:not(.ol-rail-min).is-console .lx-wrap { padding-left: calc(var(--rail-w-collapsed) + var(--page-pad)); }
+  body.ol-shell:not(.ol-rail-min) .ol-top { left: var(--rail-w-collapsed); }
+  body.ol-shell .ol-rail:not(.is-min) { box-shadow: var(--e-2); z-index: calc(var(--z-topbar) + 1); }
+}
+
+/* -------------------------------------------------------------------- Rail */
+.ol-rail {
+  position: fixed; inset: 0 auto 0 0; width: var(--rail-w); z-index: var(--z-rail);
+  display: flex; flex-direction: column;
+  background: var(--c-bg); color: var(--c-text); border-inline-end: 1px solid var(--c-line);
+  transition: width var(--dur-drawer) var(--ease-ui);
+}
+.ol-rail.is-min { width: var(--rail-w-collapsed); }
+
+.ol-rail__head { display: flex; align-items: center; gap: var(--s-2); flex: none; height: var(--topbar-h); padding: 0 var(--s-3); border-block-end: 1px solid var(--c-line); }
+.ol-rail__mark { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--r-md); background: var(--c-text); color: var(--c-bg); }
+.ol-rail__school { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ol-rail__school b { font: var(--t-body-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-rail__school span { font: var(--t-caption); color: var(--c-text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-rail.is-min .ol-rail__head { justify-content: center; padding: 0; }
+.ol-rail.is-min .ol-rail__mark, .ol-rail.is-min .ol-rail__school { display: none; }
+
+.ol-rail__nav { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: var(--s-2); scrollbar-width: thin; }
+.ol-rail__list, .ol-rail__tabs { list-style: none; margin: 0; padding: 0; }
+.ol-rail__list { display: flex; flex-direction: column; gap: var(--s-1); }
+
+.ol-rail__item {
+  display: flex; align-items: center; gap: var(--s-3); min-height: var(--ctl-h); padding: 0 var(--s-3);
+  border-radius: var(--r-md); color: var(--c-text-2); font: var(--t-body); text-decoration: none; cursor: pointer;
+}
+.ol-rail__item svg { flex: none; }
+.ol-rail__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-rail__item:hover { background: var(--c-bg-subtle); color: var(--c-text); }
+.ol-rail__item.is-on { color: var(--c-text); font-weight: var(--w-strong); background: var(--c-accent-soft); }
+.ol-rail__item.is-on > svg:first-child { color: var(--c-accent); }
+
+.ol-rail__tabs { margin: var(--s-1) 0 var(--s-2) var(--s-5); padding-inline-start: var(--s-3); border-inline-start: 1px solid var(--c-line); display: flex; flex-direction: column; gap: 1px; }
+.ol-rail__tab { display: flex; align-items: center; min-height: 32px; padding: 0 var(--s-2); border-radius: var(--r-sm); color: var(--c-text-2); font: var(--t-small); text-decoration: none; cursor: pointer; }
+.ol-rail__tab:hover { background: var(--c-bg-subtle); color: var(--c-text); }
+.ol-rail__tab.is-on { color: var(--c-accent); font-weight: var(--w-strong); }
+
+.ol-rail__foot { flex: none; padding: var(--s-2); border-block-start: 1px solid var(--c-line); }
+
+.ol-rail.is-min .ol-rail__item { justify-content: center; padding: 0; }
+.ol-rail.is-min .ol-rail__label, .ol-rail.is-min .ol-rail__item > svg:last-child:not(:first-child) { display: none; }
+
+/* --------------------------------------------------------------------- Top bar */
+.ol-top {
+  position: fixed; top: 0; left: var(--ol-rail); right: 0; z-index: var(--z-topbar); height: var(--topbar-h);
+  display: grid; grid-template-columns: minmax(200px, 1fr) minmax(160px, 480px) minmax(max-content, 1fr); align-items: center; gap: var(--s-4);
+  padding: 0 var(--page-pad);
+  background: var(--c-bg); border-block-end: 1px solid var(--c-line);
+  transition: left var(--dur-drawer) var(--ease-ui);
+}
+.ol-top__crumbs { min-width: 0; overflow: hidden; white-space: nowrap; }
+.ol-top__crumbs .ol-crumb { flex: none; white-space: nowrap; }
+.ol-top__crumbs .ol-crumb:last-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ol-top__search { min-width: 0; }
+.ol-top__tools { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-1); min-width: 0; }
+
+.ol-search {
+  display: flex; align-items: center; gap: var(--s-2); width: 100%; height: var(--ctl-h); padding: 0 var(--s-3);
+  border: 1px solid var(--c-line-input); border-radius: var(--r-md); background: var(--c-bg-subtle); color: var(--c-text-3); font: var(--t-body); text-align: start;
+}
+.ol-search:hover { border-color: var(--c-line-strong); color: var(--c-text-2); }
+.ol-search__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-search__kbd { flex: none; }
+
+.ol-top__year, .ol-top__icon, .ol-top__me {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--s-1);
+  height: var(--ctl-h); min-width: var(--ctl-h); border: 0; border-radius: var(--r-md); background: transparent; color: var(--c-text-2); text-decoration: none; cursor: pointer;
+}
+.ol-top__year { padding: 0 var(--s-2); font: var(--t-small); font-weight: var(--w-medium); white-space: nowrap; }
+.ol-top__year:hover, .ol-top__icon:hover, .ol-top__me:hover { background: var(--c-bg-subtle); color: var(--c-text); }
+.ol-top__me { padding: 0 var(--s-1); }
+.ol-top__badge {
+  position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 var(--s-1); border-radius: var(--r-full);
+  background: var(--c-danger); color: var(--c-on-accent); font: var(--t-caption); line-height: 16px; text-align: center;
+}
+
+/* The breadcrumb in the bar never wraps: the last crumb is the page, so the ones before it give way. */
+.ol-top .ol-crumbs { flex-wrap: nowrap; }
+
+/* ------------------------------------------------------------------ Page head */
+.ol-pagehead { display: flex; flex-direction: column; gap: 0; margin: 0 0 var(--s-2); max-width: var(--max-list); }
+.ol-pagehead:empty { display: none; }
+
+/* -------------------------------------------------------------------- Palette */
+.ol-palette-back { position: fixed; inset: 0; z-index: calc(var(--z-palette) - 1); background: var(--c-scrim); opacity: 0; transition: opacity var(--dur-modal) var(--ease-ui); }
+.ol-palette-back.is-open { opacity: 1; }
+.ol-palette {
+  position: fixed; top: var(--s-12); left: 50%; z-index: var(--z-palette);
+  display: flex; flex-direction: column; width: min(640px, calc(100vw - var(--s-8))); max-height: min(560px, calc(100vh - var(--s-12) * 2));
+  background: var(--c-surface-raised); color: var(--c-text); border: 1px solid var(--c-line-strong); border-radius: var(--r-lg); box-shadow: var(--e-2);
+  opacity: 0; transform: translate(-50%, calc(-1 * var(--s-2))); transition: opacity var(--dur-modal) var(--ease-ui), transform var(--dur-modal) var(--ease-ui);
+}
+.ol-palette.is-open { opacity: 1; transform: translate(-50%, 0); }
+.ol-palette__bar { display: flex; align-items: center; gap: var(--s-3); flex: none; padding: 0 var(--s-4); height: var(--row-h); border-block-end: 1px solid var(--c-line); color: var(--c-text-3); }
+.ol-palette__input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--c-text); font: var(--t-body); }
+.ol-palette__input::placeholder { color: var(--c-text-3); }
+/* The ring is drawn round the whole row, so an old stylesheet's input outline cannot also draw one round the field. */
+body .ol-palette .ol-palette__input:focus, body .ol-palette .ol-palette__input:focus-visible { outline: none; }
+.ol-palette__bar:focus-within { box-shadow: inset 0 0 0 2px var(--c-focus-solid); border-radius: var(--r-lg) var(--r-lg) 0 0; }
+.ol-palette__esc { flex: none; }
+.ol-palette__note { display: flex; align-items: center; gap: var(--s-2); flex: none; padding: var(--s-2) var(--s-4); font: var(--t-small); color: var(--c-text-2); border-block-end: 1px solid var(--c-line); }
+.ol-palette__list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--s-2); }
+.ol-palette__gh { padding: var(--s-2) var(--s-3) var(--s-1); font: var(--t-caption); letter-spacing: var(--t-caption-track); text-transform: uppercase; color: var(--c-text-3); }
+.ol-palette__opt { display: flex; align-items: center; gap: var(--s-3); min-height: var(--row-h); padding: var(--s-1) var(--s-3); border-radius: var(--r-md); cursor: pointer; }
+.ol-palette__opt.is-on { background: var(--c-accent-soft); }
+.ol-palette__ico { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--r-full); background: var(--c-bg-subtle); color: var(--c-text-2); }
+.ol-palette__txt { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ol-palette__title { font: var(--t-body-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-palette__meta { font: var(--t-small); color: var(--c-text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-palette__meta:empty { display: none; }
+.ol-palette__opt.is-on .ol-palette__meta { color: var(--c-text-2); }      /* text-3 is for the plain surface; the soft blue needs the darker grey to stay 4.5:1 */
+.ol-palette__go { color: var(--c-text-3); opacity: 0; }
+.ol-palette__opt.is-on .ol-palette__go { opacity: 1; }
+.ol-palette__none { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-6) var(--s-4); text-align: center; color: var(--c-text-2); }
+.ol-palette__foot { display: flex; gap: var(--s-4); flex: none; padding: var(--s-2) var(--s-4); border-block-start: 1px solid var(--c-line); font: var(--t-caption); color: var(--c-text-3); }
+.ol-palette__foot kbd { margin-inline-end: var(--s-1); }
+
+/* ------------------------------------------------------------------ Help sheet */
+.ol-keys { display: flex; flex-direction: column; gap: var(--s-2); margin: 0; }
+.ol-keys > div { display: flex; align-items: center; gap: var(--s-3); }
+.ol-keys dt { flex: none; min-width: 72px; }
+.ol-keys dd { margin: 0; color: var(--c-text-2); }
+
+/* A radio row in the account menu: the tick takes the icon's place. */
+.ol-menu__head { padding: var(--s-2) var(--s-2) var(--s-1); font: var(--t-caption); letter-spacing: var(--t-caption-track); text-transform: uppercase; color: var(--c-text-3); }
+.ol-menu__tick { display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; color: var(--c-accent); }
+.ol-menu__item.is-checked { font-weight: var(--w-strong); }
+
+@media (max-width: 1023px) {
+  .ol-top { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .ol-search__text, .ol-search__kbd { display: none; }
+  .ol-search { width: var(--ctl-h); padding: 0; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ol-rail, .ol-top, .ol-palette, .ol-palette-back { transition: none; }
+}

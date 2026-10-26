@@ -7,7 +7,9 @@
    item and comes back to the anchor.
 
    OL.ui.menu.open({ anchor, items: [{ label, icon, href, onClick, count,
-     danger, disabled, sep }], align }) → handle { close() }
+     danger, disabled, sep, head, radio, checked }], align }) → handle { close() }
+   `head` is a small non-interactive heading above a group; `radio` + `checked`
+   make a menuitemradio (appearance, language) with a tick in the icon's place.
    ========================================================================== */
 (function () {
   "use strict";
@@ -17,14 +19,16 @@
     var pop = h("div", { class: "ol-pop ol-menu", role: "menu" }), ov;
     p.items.forEach(function (it) {
       if (it.sep) { pop.appendChild(h("div", { class: "ol-menu__sep", role: "separator" })); return; }
+      if (it.head) { pop.appendChild(h("div", { class: "ol-menu__head", role: "presentation", text: it.head })); return; }
       var node = h(it.href && !it.disabled ? "a" : "button", {
-        class: OL.cx("ol-menu__item", it.danger && "is-danger"), role: "menuitem", href: it.href && !it.disabled ? it.href : null, type: it.href ? null : "button",
+        class: OL.cx("ol-menu__item", it.danger && "is-danger", it.checked && "is-checked"), role: it.radio ? "menuitemradio" : "menuitem", href: it.href && !it.disabled ? it.href : null, type: it.href ? null : "button",
+        "aria-checked": it.radio ? (it.checked ? "true" : "false") : null,
         "aria-disabled": it.disabled ? "true" : null, tabindex: "-1",
         on: { click: function (e) {
           if (it.disabled) { e.preventDefault(); return; }
           if (it.onClick) { e.preventDefault(); ov.close(); it.onClick(e); } else if (!it.href) ov.close(); else ov.close("no-focus");
         } }
-      }, it.icon ? OL.icon(it.icon, 16) : null, h("span", { class: "ol-menu__label", text: it.label }), it.count != null ? h("span", { class: "ol-menu__count", text: OL.fmt.num(it.count) }) : null);
+      }, it.radio ? h("span", { class: "ol-menu__tick", "aria-hidden": "true" }, it.checked ? OL.icon("check", 16) : null) : it.icon ? OL.icon(it.icon, 16) : null, h("span", { class: "ol-menu__label", text: it.label }), it.count != null ? h("span", { class: "ol-menu__count", text: OL.fmt.num(it.count) }) : null);
       pop.appendChild(node);
     });
     document.body.appendChild(pop);
