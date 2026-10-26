@@ -1,0 +1,72 @@
+/* ==========================================================================
+   Oplo Learn — base. The reset, the page type, the focus ring and the handful
+   of utilities every component leans on. It reads tokens.css and nothing else;
+   there is no raw colour or font size in here.
+
+   Scope: everything below is either an `.ol-` class or applies inside
+   `.ol-app` (the rebuilt shell), so loading this file next to the legacy
+   stylesheet changes nothing on a page that has not been migrated.
+   ========================================================================== */
+
+.ol-app, .ol-app *, .ol-app *::before, .ol-app *::after { box-sizing: border-box; }
+.ol-app { font: var(--t-body); color: var(--c-text); background: var(--c-bg); -webkit-font-smoothing: antialiased; text-size-adjust: 100%; }
+.ol-app h1 { font: var(--t-h1); margin: 0; }
+.ol-app h2 { font: var(--t-h2); margin: 0; }
+.ol-app h3 { font: var(--t-h3); margin: 0; }
+.ol-app p { margin: 0; }
+.ol-app :where(button, input, select, textarea) { font: inherit; color: inherit; }
+.ol-app button { cursor: pointer; }
+
+/* hidden means hidden, whatever display a component gave the element */
+[hidden] { display: none !important; }
+
+/* Focus: a solid 2 px ring with a 2 px gap, on every interactive thing, in every theme.
+   (WCAG 2.4.11/2.4.13: it is never hidden behind a sticky bar — scroll-padding below.) */
+.ol-app :focus { outline: none; }
+.ol-app :focus-visible, .ol-pop :focus-visible, .ol-drawer :focus-visible, .ol-modal :focus-visible, .ol-toasts :focus-visible {
+  outline: 2px solid var(--c-focus-solid); outline-offset: 2px; border-radius: var(--r-sm);
+}
+html { scroll-padding-top: calc(var(--topbar-h) + var(--s-4)); }
+
+/* Screen-reader only */
+.ol-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.ol-link { color: var(--c-accent); background: none; border: 0; padding: 0; font: inherit; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; gap: var(--s-1); }
+.ol-link:hover { color: var(--c-accent-hover); text-decoration: underline; }
+
+kbd { font: var(--t-caption); font-family: var(--font-mono); background: var(--c-bg-subtle); border: 1px solid var(--c-line-strong); border-bottom-width: 2px; border-radius: var(--r-sm); padding: 1px var(--s-2); }
+
+.ol-spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--c-line-strong); border-top-color: var(--c-accent); border-radius: var(--r-full); animation: ol-spin 700ms linear infinite; }
+@keyframes ol-spin { to { transform: rotate(360deg); } }
+
+/* Floating things: popover, menu, select list, calendar. Placed by OL.place() through --x / --y / --w. */
+.ol-pop {
+  position: fixed; left: var(--x, 0); top: var(--y, 0); min-width: var(--w, 0); z-index: calc(var(--z-modal) + 1);
+  background: var(--c-surface-raised); border: 1px solid var(--c-line-strong); border-radius: var(--r-md); box-shadow: var(--e-1); color: var(--c-text);
+}
+
+/* Tooltip */
+.ol-tooltip {
+  position: fixed; left: var(--x, 0); top: var(--y, 0); z-index: var(--z-toast); max-width: 280px; padding: var(--s-1) var(--s-2);
+  background: var(--c-text); color: var(--c-bg); font: var(--t-caption); border-radius: var(--r-sm); pointer-events: none; opacity: 0; transition: opacity var(--dur-fast) var(--ease);
+}
+.ol-tooltip.is-on { opacity: 1; }
+
+/* Scrims sit under a drawer or a modal and over everything else */
+.ol-scrim { position: fixed; inset: 0; background: var(--c-scrim); opacity: 0; transition: opacity var(--dur-drawer) var(--ease); }
+.ol-scrim--drawer { z-index: calc(var(--z-drawer) - 1); }
+.ol-scrim--modal { z-index: calc(var(--z-modal) - 1); }
+.ol-scrim.is-open { opacity: 1; }
+
+.ol-iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--c-text-2); }
+.ol-iconbtn:hover { background: var(--c-bg-subtle); color: var(--c-text); }
+
+/* Icons: outline, 1.5 px stroke, in the colour of the text beside them. The symbols carry paths only,
+   so the stroke is set here and inherited through <use>. */
+.ol-icon { flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ol-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ol-app *, .ol-pop, .ol-drawer, .ol-modal, .ol-toast, .ol-scrim { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+  .ol-spin { animation: none; border-top-color: var(--c-accent); border-right-color: var(--c-accent); }
+}
