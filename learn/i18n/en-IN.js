@@ -259,6 +259,53 @@
       },
       overview: { why: "Why the early warning", about: "About" },
       peek: { about: "About", contacts: "Family" },
+      cls: {
+        subtitle: "{n, plural, one {# section} other {# sections}} in {year}", announce: "{n, plural, =0 {No sections} one {# section} other {# sections}}",
+        add: "Add class", import: "Import from a file", edit: "Edit section", open: "Open", see_students: "See students in the Directory",
+        search_label: "Search sections", search: "Search class, section or teacher", stage_label: "Stage", year_label: "School year",
+        first_title: "No sections in {year} yet", first_text: "Add a class such as X-C, or import your school's classes and children from a file.",
+        none_match: "No sections match these filters.", none_match_text: "Try another search, or clear the filters.",
+        denied: "You can't open Classes", denied_text: "Classes are kept by the school's administrators, principal and registrar. Ask your school admin.",
+        caption: "Sections", no_teacher: "No class teacher", strength_of: "{n} of {cap}", loading: "Loading section…",
+        sub: "Class {grade} · Section {section}", room_n: "Room {room}", not_found: "Section not found",
+        not_found_text: "This section is not in your school, or the link is old.", tabs_label: "Sections of this class",
+        kpi: {
+          label: "Section numbers", sections: "Sections", students: "Students", of_seats: "of {n} seats", no_seats: "no capacity set",
+          no_teacher: "No class teacher", no_teacher_ctx: "sections without one", over: "Over capacity", over_ctx: "more children than seats",
+          under75_ctx: "attendance this year", gaps_ctx: "a board list would refuse them", consent_ctx: "parental consent not recorded"
+        },
+        token: { "no-teacher": "Without a class teacher", "over-capacity": "Over capacity" },
+        col: { section: "Section", programme: "Programme", teacher: "Class teacher", room: "Room", strength: "Strength" },
+        tab: { overview: "Overview", roster: "Roster", activity: "Activity" },
+        tile: { label: "Key numbers", strength: "Strength", seats: "seats in the section", under75: "Under 75%", gaps: "Records to fix", consent: "Consent pending" },
+        facts: { title: "About this section", class: "Class", section: "Section", programme: "Programme", stream: "Stream", teacher: "Class teacher", room: "Room", capacity: "Capacity", year: "School year" },
+        roster_caption: "Students of {label}", roster_none: "Nobody in this section yet",
+        roster_none_text: "Add children the school has, import them from a file, or promote a class from last year.",
+        activity: { none: "Nothing has changed yet", none_text: "Changes to this section are listed here with who made them." },
+        number_rolls: "Number the rolls A–Z",
+        number: { title: "Number the rolls of {label}?", text: "Every child gets a roll number again from 1, in alphabetical order of name.", go: "Number the rolls",
+          done: "{n, plural, one {# child numbered, alphabetically} other {# children numbered, alphabetically}}" },
+        saved: "Section saved", added: "{n, plural, one {Added # section: {list}} other {Added # sections: {list}}}",
+        form: {
+          add_title: "Add class", edit_title: "Edit {label}", grade: "Class", section: "Section", sections: "Section", sections_help: "One section, or several: A, B, C",
+          programme: "Programme", programme_help: "CBSE, ICSE, ISC, State board…", stream: "Stream", stream_help: "For XI and XII: Science (PCM), Commerce…",
+          room: "Room", capacity: "Capacity", teacher: "Class teacher", save_add: "Add class",
+          error_grade: "Choose the class.", error_section: "Write the section, for example A.", error_capacity: "Capacity is a number from 1 to 200.",
+          partial: "Added {done}. {failed} was not added: {message}"
+        },
+        seat: {
+          add: "Add children", title: "Add children to {label}", sub: "Children the school has who sit in no section yet.", search: "Search by name",
+          none: "Everyone is seated", no_match: "No child matches that name", pick_one: "Tick at least one child.",
+          go: "{n, plural, =0 {Add children} one {Add # child} other {Add # children}}",
+          done: "{n, plural, one {# child added to {label}} other {# children added to {label}}}"
+        },
+        promote: {
+          menu: "Promote to next year…", title: "Promote {label}", sub: "Everyone in {label} moves to a section of {year}. {label} stays on each child's record as last year's section.",
+          to: "Move them to", choose: "Choose a section", now: "{n} children now", none: "No sections in {year} yet. Add next year's section first.",
+          rolls: "Roll numbers", rolls_name: "Number them again, A–Z", rolls_none: "Leave them to be numbered later", go: "Promote",
+          need_target: "Choose the section they move to.", done: "{n, plural, one {# child moved to {to}} other {# children moved to {to}}}"
+        }
+      },
       att: {
         none: "No attendance marked yet", none_text: "Attendance appears here once a register is taken for this class.", open: "Open registers",
         marked: "Days marked", present: "Present", leave: "On leave", absent: "Absent", with_leave: "Attendance counting leave",
@@ -279,7 +326,8 @@
           created: "added this student", changed: "changed this record", deleted: "removed this record", published: "published this record",
           exported: "exported the list", revealed: "showed a number", signed_in: "signed in", sign_in_failed: "failed to sign in",
           role_changed: "changed a role", restored: "restored this record"
-        }
+        },
+        event_class: { created: "added this section", changed: "changed this section", deleted: "removed this section", restored: "restored this section" }
       },
       bulk: {
         message: "Message families", house: "Set house", house_help: "Leave blank to clear the house.",
@@ -299,7 +347,8 @@
         primaryContact: "Main contact", language: "Family's language", guardianName: "Guardian's name", guardianRelation: "Guardian's relation",
         guardianPhone: "Guardian's mobile", guardianEmail: "Family email", whatsapp: "Use WhatsApp", cwsn: "Child with special needs",
         disability: "Kind of disability", udid: "Disability ID (UDID)", migrant: "Migrant family", consentStatus: "Parental consent",
-        consentMethod: "Consent given by", consentOn: "Consent date", consentNote: "Consent note", pin: "PIN code", district: "District", state: "State"
+        consentMethod: "Consent given by", consentOn: "Consent date", consentNote: "Consent note", pin: "PIN code", district: "District", state: "State",
+        programme: "Programme", stream: "Stream", room: "Room", capacity: "Capacity", classTeacher: "Class teacher"
       },
       help: {
         apaar: "12 digits, or write REFUSED or NOGEN.", pen: "11 digits.", aadhaar: "12 digits. Only the last four are kept.",

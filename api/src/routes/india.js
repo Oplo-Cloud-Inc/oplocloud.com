@@ -9,7 +9,8 @@
 
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
-import { must } from "../core/guard.js";
+import { can, must } from "../core/guard.js";
+import { id as newId } from "../lib/crypto.js";
 import * as I from "../services/india.js";
 import * as A from "../services/audit.js";
 
@@ -49,13 +50,13 @@ export async function classes(ctx) {
   await must(ctx, "india.read", { orgId });
   const year = yearOf(ctx);
   const rows = (await ctx.repo.listIndiaClasses(orgId, year)).sort(I.byClass);
-  return json({ year, classes: rows.map(shapeClass) });
+  return json({ year, classes: rows.map(shapeClass), can: { write: await can(ctx, "india.write", { orgId }) } });
 }
 
 /* PUT /india/classes { year?, grade, section, programme?, stream?, room?, capacity?, classTeacherId? }
    What is named replaces what is there; what is left out stays. */
 export async function putClass(ctx) {
-  const orgId = orgOf(ctx);
+  const orgId = orgOf(ctx), actor = requireActor(ctx);
   await must(ctx, "india.write", { orgId });
   const b = await readJson(ctx.request);
   const year = b.year ? (I.isYear(b.year) ? b.year : throwing("A school year is written 2026-2027.", "year")) : yearOf(ctx);
@@ -68,14 +69,23 @@ export async function putClass(ctx) {
     teacher = b.classTeacherId || null;
     if (teacher && !(await ctx.repo.isOrgMember(orgId, teacher))) throw ApiError.badRequest("That teacher is not part of this school.", "classTeacherId");
   }
-  const row = await ctx.repo.upsertIndiaClass(orgId, year, {
-    grade, section,
+  const next = {
+    id: was.id || newId("cls"), grade, section,
     programme: pick("programme", "programme", (v) => check.string(v, "programme", { max: 80 })),
     stream: pick("stream", "stream", (v) => check.string(v, "stream", { max: 80 })),
     room: pick("room", "room", (v) => check.string(v, "room", { max: 40 })),
     capacity: pick("capacity", "capacity", (v) => check.number(v, "capacity", { min: 1, max: 200 })),
     classTeacherId: teacher
-  });
+  };
+  // What the section was and what it will be, written down in the same batch as the change (E2): one row per field that differs, with the teacher by name.
+  const who = async (id) => (id ? ((await ctx.repo.findAccountById(id)) || {}).name || null : null);
+  const label = I.classLabel(grade, section), base = { module: "students", recordKind: "class", recordId: next.id, recordLabel: label };
+  const audit = A.rows(orgId, actor, was.id
+    ? A.changes({ programme: was.programme, stream: was.stream, room: was.room, capacity: was.capacity, classTeacher: await who(was.class_teacher_id) },
+        { programme: next.programme, stream: next.stream, room: next.room, capacity: next.capacity, classTeacher: await who(next.classTeacherId) }, ["programme", "stream", "room", "capacity", "classTeacher"])
+        .map((c) => ({ ...base, action: "students.class.changed", verb: "changed", ...c }))
+    : [{ ...base, action: "students.class.created", verb: "created", detail: { year } }]);
+  const row = await ctx.repo.upsertIndiaClass(orgId, year, next, audit);
   const all = await ctx.repo.listIndiaClasses(orgId, year);
   return json({ class: shapeClass(all.find((c) => c.id === row.id) || row) }, { status: 201 });
 }

@@ -140,17 +140,7 @@
         if (tab !== "activity") return;
         OL.clear(panel);
         if (!r.events.length) { panel.appendChild(OL.ui.empty.render({ kind: "first", icon: "clock", title: t("students.activity.none"), text: t("students.activity.none_text") })); return; }
-        var list = h("ol", { class: "st-timeline" });
-        r.events.forEach(function (e) {
-          // a change to a field says what it was and what it is; a number shown, an export or a creation says only what was done
-          var did = e.field ? t("students.activity.verb." + e.verb, { field: t("students.field." + e.field) }) : t("students.activity.event." + e.verb);
-          var change = e.field && e.verb === "changed" ? h("span", { class: "st-timeline__chg" }, h("s", { text: e.before || t("common.none") }), " → ", h("b", { text: e.after || t("common.none") })) : null;
-          list.appendChild(h("li", { class: "st-timeline__i" },
-            h("span", { class: "st-timeline__dot", "aria-hidden": "true" }),
-            h("div", null, h("p", { class: "st-timeline__t" }, h("strong", { text: e.actor.name || t("students.activity.system") }), " ", did, " ", change),
-              h("time", { class: "st-timeline__when", datetime: new Date(e.at).toISOString(), text: OL.fmt.dateTime(new Date(e.at)) }))));
-        });
-        panel.appendChild(card(t("students.tab.activity"), list));
+        panel.appendChild(card(t("students.tab.activity"), St.timeline(r.events, "student")));
       }, function (e) {
         if (tab !== "activity") return;
         OL.clear(panel);

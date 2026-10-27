@@ -169,8 +169,7 @@ await t("the name is a link to the whole record: a page with an address, its tab
   await nameOn(page, known.name);
   await page.locator(`tr[data-k="${known.id}"] a.st-name`).click();
   await at("the record opens", page.waitForURL(new RegExp("/students/directory/" + known.id + "$")));
-  await page.locator(".st-rec h1").waitFor();
-  assert.equal(await page.locator(".st-rec h1").innerText(), known.name);
+  await page.waitForFunction((n) => { const h = document.querySelector(".st-rec h1"); return h && h.textContent === n; }, known.name);
   assert.deepEqual(await page.locator(".st-rec [role=tab]").allInnerTexts(), ["Overview", "Attendance", "Marks", "Family", "Government records", "Activity"]);
   assert.equal(await page.title(), known.name + " · OEdu");
   await page.getByRole("tab", { name: "Attendance" }).click();
@@ -266,6 +265,125 @@ await t("leaving the form with unsaved changes asks first, and Keep editing stay
   await page.waitForURL(new RegExp("/students/directory/" + made.id + "$"));
 });
 
+/* ---------------------------------------------------------------------------------------------- Classes */
+const sections = async () => (await call("GET", "/india/classes")).body.classes;
+const cls = { grade: "XI", a: "K" + RUN.slice(-2).toUpperCase(), b: "L" + RUN.slice(-2).toUpperCase() };
+const rowsOf = (page) => page.locator(".st-cls tr.ol-tr");
+const inClasses = { at: "students/classes/sections", ready: ".st-cls tr.ol-tr" };
+
+await t("Classes: one list of every section: its own heading, one primary button, four numbers, a search, a year switch, stage chips and a row for each section", async (page) => {
+  const all = await sections();
+  assert.match(page.url(), /\/learn\/admin\/students\/classes\/sections$/);
+  assert.equal(await page.locator(".st-cls h1").innerText(), "Classes");
+  assert.equal(await page.locator(".st-cls .ol-ph__actions .ol-btn--primary").innerText(), "Add class");
+  assert.equal(await page.locator(".st-cls .ol-kpis > *").count(), 4);
+  assert.equal(await rowsOf(page).count(), Math.min(all.length, 50), "a row for each section");
+  assert.equal(await page.getByRole("radiogroup", { name: "School year" }).getByRole("radio").count(), 3);
+  assert.ok((await page.locator(".st-cls .st-chips button").count()) >= 2, "All and at least one stage");
+  assert.equal(await page.title(), "Classes · OEdu");
+  await settle(page); await shot(page, "classes-1440-light");
+}, inClasses);
+
+await t("Classes: search and a number write the address, a reload restores them, Clear filters resets, and the year switch changes the year", async (page) => {
+  const all = await sections(), withTeacher = all.find((c) => c.classTeacher);
+  const stem = withTeacher.classTeacher.name.split(" ")[0];
+  await page.getByRole("searchbox", { name: "Search sections" }).fill(stem);
+  await page.waitForURL((u) => u.searchParams.get("q") === stem);
+  const found = all.filter((c) => [c.label, c.programme, c.stream, c.room, c.classTeacher && c.classTeacher.name].filter(Boolean).join(" ").toLowerCase().includes(stem.toLowerCase()));
+  await page.waitForFunction((n) => document.querySelectorAll(".st-cls tr.ol-tr").length === n, found.length);
+  await page.reload(); await page.waitForSelector(".st-cls tr.ol-tr");
+  assert.equal(await page.getByRole("searchbox", { name: "Search sections" }).inputValue(), stem, "survives a reload");
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await page.waitForURL((u) => !u.searchParams.has("q"));
+  await page.waitForFunction((n) => document.querySelectorAll(".st-cls tr.ol-tr").length === n, Math.min(all.length, 50));
+  const none = all.filter((c) => !c.classTeacher).length;
+  if (none) {
+    await page.locator(".st-cls .ol-kpi", { hasText: "No class teacher" }).click();
+    await page.waitForURL((u) => u.searchParams.get("filter") === "no-teacher");
+    await page.waitForFunction((n) => document.querySelectorAll(".st-cls tr.ol-tr").length === n, none);
+  }
+  await page.getByRole("radio", { name: /2027/ }).click();
+  await page.waitForURL((u) => /^2027-2028$/.test(u.searchParams.get("year") || ""));
+  await page.waitForFunction(() => document.querySelector(".st-cls .ol-subtitle, .st-cls .ol-ph__sub").textContent.includes("2027"));
+}, inClasses);
+
+await t("Classes: Add class takes several sections at once, refuses a bad capacity beside its field, and each new section is written down", async (page) => {
+  await page.getByRole("button", { name: "Add class" }).first().click();
+  const drawer = page.locator(".ol-drawer.is-open");
+  await drawer.waitFor();
+  await drawer.getByRole("combobox", { name: "Class", exact: true }).click();
+  await page.getByRole("option", { name: cls.grade, exact: true }).click();
+  await drawer.getByLabel("Section").fill(`${cls.a}, ${cls.b}`);
+  await drawer.getByLabel("Capacity").fill("abc");
+  await drawer.getByRole("button", { name: "Add class" }).click();
+  await drawer.getByText("Capacity is a number from 1 to 200.").waitFor();
+  await drawer.getByLabel("Capacity").fill("30");
+  await drawer.getByLabel("Programme").fill("CBSE");
+  await drawer.getByRole("button", { name: "Add class" }).click();
+  await drawer.waitFor({ state: "hidden" });
+  await page.getByText(`Added 2 sections: ${cls.grade}-${cls.a}, ${cls.grade}-${cls.b}`).waitFor();
+  await page.waitForFunction((l) => [...document.querySelectorAll(".st-cls .st-name__n")].some((e) => e.textContent === l), `${cls.grade}-${cls.a}`);
+  const made = (await sections()).find((c) => c.label === `${cls.grade}-${cls.a}`);
+  assert.equal(made.capacity, 30); assert.equal(made.programme, "CBSE");
+  cls.id = made.id; cls.idB = (await sections()).find((c) => c.label === `${cls.grade}-${cls.b}`).id;
+  const log = (await call("GET", `/audit?record=${cls.id}&action=students.class.created`)).body;
+  assert.equal(log.total, 1);
+}, inClasses);
+
+await t("Classes: a section opens as a page; Edit changes the room in a drawer, and the Activity tab says what it was and what it is", async (page) => {
+  await page.locator(`tr[data-k="${cls.id}"] a.st-name`).click();
+  await at("the section opens", page.waitForURL(new RegExp("/students/classes/sections/" + cls.id + "$")));
+  await page.waitForFunction((l) => document.querySelector(".st-rec h1") && document.querySelector(".st-rec h1").textContent === l, `${cls.grade}-${cls.a}`);
+  assert.deepEqual(await page.locator(".st-rec [role=tab]").allInnerTexts(), ["Overview", "Roster", "Activity"]);
+  await page.getByRole("button", { name: "Edit section" }).click();
+  const drawer = page.locator(".ol-drawer.is-open");
+  await drawer.waitFor();
+  assert.equal(await drawer.getByLabel("Section").isDisabled(), true, "the class and section cannot be changed, only what is kept about them");
+  await drawer.getByLabel("Room").fill("R-NEW-" + RUN.slice(-3));
+  await drawer.getByRole("button", { name: "Save" }).click();
+  await drawer.waitFor({ state: "hidden" });
+  await page.getByText("Section saved").waitFor();
+  await page.getByRole("tab", { name: "Activity" }).click();
+  await page.locator(".st-timeline__i").first().waitFor();
+  const text = await page.locator(".st-timeline").innerText();
+  assert.match(text, /changed Room/); assert.match(text, /Not set\s*→\s*R-NEW-/); assert.match(text, /added this section/);
+  await page.locator(".st-rec .ol-ph__back").click();
+  await at("Back returns to the list: " + page.url(), page.waitForURL((u) => u.pathname.endsWith("/students/classes/sections")));
+}, { at: "students/classes/sections", ready: ".st-cls tr.ol-tr" });
+
+await t("Classes: Add children seats a child the school has no section for, and the roster shows them; Number the rolls asks first", async (page) => {
+  await page.goto(ORIGIN + "/learn/admin/students/classes/sections/" + cls.id + "/roster");
+  await page.waitForFunction(() => document.querySelector(".st-rec h1"));
+  await page.getByRole("button", { name: "Add children" }).first().click();
+  const drawer = page.locator(".ol-drawer.is-open");
+  await drawer.getByLabel("Search by name").fill("Zq");
+  const box = drawer.locator(".st-seat input[type=checkbox]").first();
+  await box.waitFor();
+  await box.check();
+  await drawer.getByRole("button", { name: "Add 1 child" }).click();
+  await drawer.waitFor({ state: "hidden" });
+  await page.getByText(new RegExp("1 child added to " + cls.grade + "-" + cls.a)).waitFor();
+  await page.waitForFunction(() => document.querySelectorAll(".st-rec tr.ol-tr").length === 1);
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("menuitem", { name: "Number the rolls A–Z" }).click();
+  const ask = page.getByRole("dialog");
+  await ask.waitFor();
+  assert.match(await ask.innerText(), /Number the rolls of XI-/);
+  await ask.getByRole("button", { name: "Number the rolls" }).click();
+  await page.getByText(/1 child numbered, alphabetically/).waitFor();
+  const seated = (await call("GET", "/directory/students?class=" + cls.grade + "-" + cls.a)).body;
+  assert.equal(seated.total, 1); assert.equal(seated.rows[0].rollNo, 1);
+}, { at: "students/classes/sections", ready: ".st-cls tr.ol-tr" });
+
+await t("Classes: when the server says the person may not read the classes, the page says so and draws nothing else", async (page) => {
+  await page.route(/\/india\/classes/, (r) => r.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ error: { code: "forbidden", message: "no" } }) }));
+  await page.goto(ORIGIN + "/learn/admin/students/classes/sections");
+  await page.locator(".st-cls .ol-empty--denied").waitFor();
+  assert.equal(await page.locator(".st-cls .ol-empty h3").innerText(), "You can't open Classes");
+  assert.equal(await page.locator(".st-cls .ol-ph__actions .ol-btn--primary").count(), 0, "no Add class for someone who cannot write");
+  assert.equal(await page.locator(".st-cls .ol-kpis").count(), 0);
+}, { at: "students/classes/sections", ready: ".st-cls" });
+
 for (const mode of ["Light", "Dark"]) {
   await t(`axe: the Directory, the quick look, the record and the form have no WCAG 2.2 AA violations (${mode.toLowerCase()})`, async (page) => {
     if (mode === "Dark") await theme(page, "Dark");
@@ -290,6 +408,22 @@ for (const mode of ["Light", "Dark"]) {
     await page.locator(".st-formpage form").waitFor(); await settle(page);
     assert.deepEqual(await axe(page, [".st-formpage"]), [], "the form");
     await shot(page, "form-1440-" + mode.toLowerCase());
+    await page.goto(ORIGIN + "/learn/admin/students/classes/sections");
+    await page.waitForSelector(".st-cls tr.ol-tr"); await page.waitForTimeout(700);
+    assert.deepEqual(await axe(page, [".st-cls"]), [], "the sections");
+    await shot(page, "classes-1440-" + mode.toLowerCase());
+    await page.getByRole("button", { name: "Add class" }).first().click();
+    await page.locator(".ol-drawer.is-open form").waitFor(); await page.waitForTimeout(700);
+    assert.deepEqual(await axe(page, [".ol-drawer"]), [], "the Add class drawer");
+    await page.keyboard.press("Escape");
+    await page.goto(ORIGIN + "/learn/admin/students/classes/sections/" + cls.id);
+    await page.locator(".st-rec h1").waitFor(); await page.waitForTimeout(700);
+    assert.deepEqual(await axe(page, [".st-rec"]), [], "a section, overview");
+    for (const tab of ["Roster", "Activity"]) {
+      await page.getByRole("tab", { name: tab }).click(); await page.waitForTimeout(500);
+      assert.deepEqual(await axe(page, [".st-rec"]), [], "a section, " + tab);
+    }
+    await shot(page, "class-record-1440-" + mode.toLowerCase());
   });
 }
 
@@ -312,6 +446,14 @@ for (const mode of ["Light", "Dark"]) {
     await page.waitForTimeout(700);
     assert.deepEqual(await axe(page, [".st-formpage"]), [], "the form at 360");
     await shot(page, "form-360-" + mode.toLowerCase());
+    await page.goto(ORIGIN + "/learn/admin/students/classes/sections"); await page.waitForSelector(".st-cls tr.ol-tr"); await page.waitForTimeout(700);
+    assert.ok((await wide()).page <= 1, "the sections do not scroll sideways: " + JSON.stringify(await wide()));
+    assert.equal(await page.locator(".st-cls tr.ol-tr").first().evaluate((tr) => getComputedStyle(tr).display), "grid", "a section is a card");
+    assert.deepEqual(await axe(page, [".st-cls"]), [], "the sections at 360");
+    await shot(page, "classes-360-" + mode.toLowerCase());
+    await page.goto(ORIGIN + "/learn/admin/students/classes/sections/" + cls.id + "/roster"); await page.waitForSelector(".st-rec h1"); await page.waitForTimeout(700);
+    assert.ok((await wide()).page <= 1, "a section does not scroll sideways: " + JSON.stringify(await wide()));
+    assert.deepEqual(await axe(page, [".st-rec"]), [], "a section at 360");
   }, { viewport: { width: 360, height: 800 }, noPhone: true });
 }
 

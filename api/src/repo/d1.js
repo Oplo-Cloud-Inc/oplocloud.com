@@ -3571,17 +3571,19 @@ export class D1Repository {
     ).bind(orgId, year, grade, section).first();
   }
 
-  async upsertIndiaClass(orgId, year, c) {
+  /* A section, made or changed. `c.id` is the id a new section takes (an existing one keeps its own); `audit` is the rows
+     that describe the change, in the same batch as the change itself (E2). */
+  async upsertIndiaClass(orgId, year, c, audit = []) {
     const t = now();
-    await this.db.prepare(
+    await this.db.batch([this.db.prepare(
       `INSERT INTO learn_classes
          (id, org_id, school_year, grade, section, programme, stream, class_teacher_id, room, capacity, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (org_id, school_year, grade, section) DO UPDATE SET
          programme = excluded.programme, stream = excluded.stream, class_teacher_id = excluded.class_teacher_id,
          room = excluded.room, capacity = excluded.capacity, updated_at = excluded.updated_at`
-    ).bind(id("cls"), orgId, year, c.grade, c.section, c.programme ?? null, c.stream ?? null,
-           c.classTeacherId ?? null, c.room ?? null, c.capacity ?? null, t, t).run();
+    ).bind(c.id || id("cls"), orgId, year, c.grade, c.section, c.programme ?? null, c.stream ?? null,
+           c.classTeacherId ?? null, c.room ?? null, c.capacity ?? null, t, t), ...audit.map((a) => this.auditStatement(a))]);
     return this.findIndiaClass(orgId, year, c.grade, c.section);
   }
 

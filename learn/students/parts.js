@@ -101,6 +101,23 @@
     return wrap;
   };
 
+  /* The audit log of one record as a timeline: who did what and, for a changed field, what it was and what it is. A number shown,
+     an export or a creation has no field and says only what was done. `kind` is the noun a bare event is about ("student", "class"). */
+  St.timeline = function (events, kind) {
+    var list = h("ol", { class: "st-timeline" });
+    events.forEach(function (e) {
+      var bare = "students.activity.event_" + kind + "." + e.verb, did;
+      if (e.field) did = t("students.activity.verb." + e.verb, { field: t("students.field." + e.field) });
+      else did = t(OL.i18n.has(bare) ? bare : "students.activity.event." + e.verb);
+      var change = e.field && e.verb === "changed" ? h("span", { class: "st-timeline__chg" }, h("s", { text: e.before || t("common.none") }), " → ", h("b", { text: e.after || t("common.none") })) : null;
+      list.appendChild(h("li", { class: "st-timeline__i" },
+        h("span", { class: "st-timeline__dot", "aria-hidden": "true" }),
+        h("div", null, h("p", { class: "st-timeline__t" }, h("strong", { text: e.actor.name || t("students.activity.system") }), " ", did, " ", change),
+          h("time", { class: "st-timeline__when", datetime: new Date(e.at).toISOString(), text: OL.fmt.dateTime(new Date(e.at)) }))));
+    });
+    return list;
+  };
+
   /* What the record still lacks, each a link to the field that fixes it. */
   St.gaps = function (rec, env) {
     var gaps = rec.student.gaps;
