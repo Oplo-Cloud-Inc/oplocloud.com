@@ -11,6 +11,7 @@
      students/directory/{id}/edit          the edit form
      students/classes/sections             the sections
      students/classes/sections/{id}[/{tab}]  one section
+     students/guardians                    the families; ?peek={id} is one guardian beside the list
    ========================================================================== */
 (function () {
   "use strict";
@@ -25,6 +26,11 @@
       else if (r.record) St.record.draw(host, env);
       else St.directory.draw(host, env);
     }
+  });
+  OL.pages.register("guardians", {
+    template: "T2",
+    when: St.when,
+    draw: function (host, env) { St.guardians.drawList(host, env); }
   });
   OL.pages.register("in-classes", {
     template: ["T2", "T3"],

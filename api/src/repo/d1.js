@@ -334,6 +334,57 @@ export class D1Repository {
     return results || [];
   }
 
+  /* Every guardian link of a school (guardian × student) with the guardian's own details and the student's section: the Guardians list
+     is drawn from this. `guardianId` narrows it to one guardian (the quick look). */
+  async listGuardianLinks(orgId, guardianId) {
+    const { results } = await this.db.prepare(
+      `SELECT l.guardian_id, l.student_id, l.relationship, l.label, l.is_primary,
+              g.email AS g_email, g.status AS g_status, gp.name AS g_name, gc.cell_phone, gc.alt_phone,
+              sp.name AS s_name, si.class_id, si.admission_no, si.language, si.whatsapp, c.grade, c.section
+         FROM learn_guardians l
+         JOIN accounts g ON g.id = l.guardian_id
+         LEFT JOIN profiles gp ON gp.account_id = g.id
+         LEFT JOIN account_contacts gc ON gc.account_id = g.id
+         JOIN accounts s ON s.id = l.student_id
+         LEFT JOIN profiles sp ON sp.account_id = s.id
+         LEFT JOIN learn_student_india si ON si.account_id = s.id AND si.org_id = l.org_id
+         LEFT JOIN learn_classes c ON c.id = si.class_id
+        WHERE l.org_id = ? AND (? IS NULL OR l.guardian_id = ?) AND (si.left_on IS NULL OR si.account_id IS NULL)`
+    ).bind(orgId, guardianId || null, guardianId || null).all();
+    return results || [];
+  }
+
+  /* The enrolled students nobody is linked to. */
+  async listStudentsWithoutGuardian(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT si.account_id, si.class_id, si.admission_no, si.admitted_on, a.email, p.name, c.grade, c.section
+         FROM learn_student_india si
+         JOIN accounts a ON a.id = si.account_id
+         LEFT JOIN profiles p ON p.account_id = si.account_id
+         LEFT JOIN learn_classes c ON c.id = si.class_id
+        WHERE si.org_id = ? AND si.left_on IS NULL
+          AND NOT EXISTS (SELECT 1 FROM learn_guardians l WHERE l.student_id = si.account_id)`
+    ).bind(orgId).all();
+    return results || [];
+  }
+
+  /* A guardian linked to students, in one batch: their account if they have none (invited, no password), the guardian role and
+     membership, a link to each student, the mobile when there is none yet, and the audit rows (E1, E2). `fresh` is the new
+     account's row (people-statement shape) or null for one that exists; `students` carry their emails, which the link is made by. */
+  async linkGuardianToStudents(orgId, { fresh, guardianId, lower, students, rel, label, cell, audit }, actorId) {
+    const t = now();
+    const stmts = this.peopleStatements(orgId, {
+      fresh: fresh ? [fresh] : [], roles: [{ lower, role: "guardian" }], members: [{ lower, mrole: "member" }],
+      links: students.map((s) => ({ student: s.lower, guardian: lower, rel, label, primary: 0 })), clear: []
+    }, actorId, t);
+    if (cell) stmts.push(this.db.prepare(
+      `INSERT INTO account_contacts (account_id, cell_phone, updated_by, updated_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT (account_id) DO UPDATE SET cell_phone = COALESCE(account_contacts.cell_phone, excluded.cell_phone), updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+    ).bind(guardianId, cell, actorId || null, t));
+    for (const a of audit || []) stmts.push(this.auditStatement(a));
+    await this.db.batch(stmts);
+  }
+
   async listWards(guardianId) {
     const { results } = await this.db.prepare(
       `SELECT g.relationship, g.label, g.is_primary,

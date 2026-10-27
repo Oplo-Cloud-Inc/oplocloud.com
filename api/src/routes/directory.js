@@ -35,7 +35,7 @@ const WHO = { father: "fatherName", mother: "motherName", guardian: "guardianNam
 
 /* Whom this person may read: the whole school (the office) or only the sections they are class teacher of; refused if
    neither. The list, the record and the number all ask here, so they cannot disagree about it. */
-async function scopeOf(ctx, S) {
+export async function scopeOf(ctx, S) {
   const mine = (await ctx.repo.sectionsOfTeacher(S.orgId, S.actor.id)).map((r) => r.id);
   await must(ctx, "directory.read", { orgId: S.orgId, classTeacher: mine.length > 0 });
   const office = await can(ctx, "directory.read", { orgId: S.orgId });

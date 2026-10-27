@@ -375,6 +375,88 @@ await t("Classes: Add children seats a child the school has no section for, and 
   assert.equal(seated.total, 1); assert.equal(seated.rows[0].rollNo, 1);
 }, { at: "students/classes/sections", ready: ".st-cls tr.ol-tr" });
 
+/* ------------------------------------------------------------------------------------------ Guardians */
+const gd = { email: `gd.${RUN}@students.test`, phone: "9" + String(Math.floor(Math.random() * 1e9)).padStart(9, "0"), name: `Gd${RUN} Parent` };
+const inGuardians = { at: "students/guardians", ready: ".st-gd tr.ol-tr" };
+const askG = (page, has) => page.waitForResponse((r) => r.request().method() === "GET" && /\/directory\/guardians(\?|$)/.test(r.url()) && has.every((x) => r.url().includes(x)));
+
+await t("Guardians: one list: its own heading, one primary button, five numbers, a view switch, filters and a page of families with every email masked", async (page) => {
+  const api = (await call("GET", "/directory/guardians?size=1")).body;
+  assert.equal(await page.locator(".st-gd h1").innerText(), "Guardians");
+  assert.equal(await page.locator(".st-gd .ol-ph__actions .ol-btn--primary").innerText(), "Add guardian");
+  assert.equal(await page.locator(".st-gd .ol-kpis > *").count(), 5);
+  assert.ok((await page.locator(".st-gd .ol-kpi").first().innerText()).replace(/,/g, "").includes(String(api.kpis.guardians)), "the first number is the school's");
+  assert.equal(await page.getByRole("radiogroup", { name: "View" }).getByRole("radio").count(), 2);
+  const emails = await page.locator('.st-gd tr.ol-tr td[data-label="Email"]').allInnerTexts();
+  assert.ok(emails.length > 0 && emails.every((e) => /^.•••@\S+$/.test(e.trim()) || e.trim() === "—"), "emails are masked: " + JSON.stringify(emails.slice(0, 3)));
+  assert.equal(await page.title(), "Guardians · OEdu");
+  await settle(page); await shot(page, "guardians-1440-light");
+}, inGuardians);
+
+await t("Guardians: search, a chip and the view switch write the address, and the other view lists the students nobody is linked to", async (page) => {
+  const sample = (await call("GET", "/directory/guardians?size=1&sort=name")).body.rows[0], stem = sample.name.split(" ")[0];
+  await Promise.all([askG(page, ["q=" + stem]), page.getByRole("searchbox", { name: "Search guardians" }).fill(stem)]);
+  await page.waitForURL((u) => u.searchParams.get("q") === stem);
+  const found = (await call("GET", "/directory/guardians?q=" + stem)).body.total;
+  assert.match(await page.locator(".st-gd .ol-pager").innerText(), new RegExp("of " + found + "\\b"));
+  await Promise.all([askG(page, ["app=invited"]), page.locator(".st-gd .st-chips").getByRole("button", { name: /^Invited/ }).click()]);
+  await page.waitForURL((u) => u.searchParams.get("app") === "invited");
+  await page.reload(); await page.waitForSelector(".st-gd tr.ol-tr");
+  assert.equal(await page.getByRole("searchbox", { name: "Search guardians" }).inputValue(), stem, "a reload keeps the search");
+  assert.equal(await page.locator(".st-gd .st-chips").getByRole("button", { name: /^Invited/ }).getAttribute("aria-pressed"), "true", "and the chip");
+  await Promise.all([askG(page, ["view=no-guardian"]), page.getByRole("radio", { name: "Students without a guardian" }).click()]);
+  await page.waitForURL((u) => u.searchParams.get("view") === "no-guardian" && !u.searchParams.has("app"));
+  await page.getByRole("button", { name: "Clear filters" }).first().click();
+  const lonely = (await call("GET", "/directory/guardians?view=no-guardian")).body;
+  await page.waitForFunction((n) => document.querySelectorAll(".st-gd tr.ol-tr").length === n, Math.min(lonely.total, 50));
+  assert.ok(lonely.total >= 1, "the Zq students are alone");
+  assert.equal(await page.locator(".st-gd th", { hasText: "Admitted on" }).count(), 1, "this is the other table");
+}, inGuardians);
+
+await t("Guardians: Add guardian beside a student nobody is linked to: the student is already chosen, a bad email is refused beside its field, a good one links and says so", async (page) => {
+  await Promise.all([askG(page, ["view=no-guardian"]), page.getByRole("radio", { name: "Students without a guardian" }).click()]);
+  await page.getByRole("searchbox", { name: "Search guardians" }).fill(made.name);
+  const row = page.locator(`tr[data-k="${made.id}"]`);
+  await row.waitFor();
+  await row.getByRole("button", { name: "Add guardian" }).click();
+  const drawer = page.locator(".ol-drawer.is-open");
+  await drawer.waitFor();
+  assert.ok((await drawer.innerText()).includes(made.name), "the student is chosen already");
+  await drawer.getByLabel("Email", { exact: true }).fill("not-an-email");
+  await drawer.getByRole("button", { name: "Add guardian" }).click();
+  await drawer.getByText("Enter a valid email address.").waitFor();
+  await drawer.getByLabel("Email", { exact: true }).fill(gd.email);
+  await drawer.getByRole("button", { name: "Add guardian" }).click();
+  await drawer.getByText("Choose the relation.").waitFor();
+  await drawer.getByRole("combobox", { name: "Relation", exact: true }).click();
+  await page.getByRole("option", { name: "Father", exact: true }).click();
+  await drawer.getByLabel("Full name").fill(gd.name);
+  await drawer.getByLabel("Mobile number").fill(gd.phone);
+  await drawer.getByRole("button", { name: "Add guardian" }).click();
+  await drawer.waitFor({ state: "hidden" });
+  await page.getByText(new RegExp(gd.name + " was added and linked to 1 student")).waitFor();
+  const g = (await call("GET", "/directory/guardians?q=" + encodeURIComponent(made.name))).body;
+  assert.equal(g.total, 1); assert.equal(g.rows[0].app, "invited"); assert.match(g.rows[0].phone, /^•+\d{4}$/);
+  gd.id = g.rows[0].id;
+  assert.equal((await call("GET", `/audit?record=${made.id}&action=students.guardian.linked`)).body.total, 1, "the link is on the student's Activity tab");
+}, inGuardians);
+
+await t("Guardians: the quick look lists the students they are linked to and shows the number only when asked; asking is written down", async (page) => {
+  await page.goto(ORIGIN + "/learn/admin/students/guardians?peek=" + gd.id);
+  await page.locator(".ol-drawer.is-open .st-peek").waitFor();
+  assert.equal(await page.locator(".ol-drawer__title").innerText(), gd.name);
+  assert.ok((await page.locator(".ol-drawer .st-gd__list").innerText()).includes(made.name), "the child is listed");
+  const num = page.locator(".ol-drawer .st-contact__num").first();
+  assert.match(await num.innerText(), /^•+\d{4}$/, "masked on arrival");
+  const before = (await call("GET", `/audit?record=${gd.id}&action=students.guardian.phone_revealed`)).body.total;
+  await page.locator(".ol-drawer").getByRole("button", { name: "Show number" }).first().click();
+  await page.waitForFunction(() => !/•/.test(document.querySelector(".ol-drawer .st-contact__num").textContent));
+  assert.ok((await num.innerText()).replace(/\D/g, "").endsWith(gd.phone.slice(-10)));
+  assert.equal((await call("GET", `/audit?record=${gd.id}&action=students.guardian.phone_revealed`)).body.total, before + 1);
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(() => !new URL(location.href).searchParams.has("peek"));
+}, { at: "students/guardians", ready: ".st-gd tr.ol-tr" });
+
 await t("Classes: when the server says the person may not read the classes, the page says so and draws nothing else", async (page) => {
   await page.route(/\/india\/classes/, (r) => r.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ error: { code: "forbidden", message: "no" } }) }));
   await page.goto(ORIGIN + "/learn/admin/students/classes/sections");
@@ -424,6 +506,20 @@ for (const mode of ["Light", "Dark"]) {
       assert.deepEqual(await axe(page, [".st-rec"]), [], "a section, " + tab);
     }
     await shot(page, "class-record-1440-" + mode.toLowerCase());
+    await page.goto(ORIGIN + "/learn/admin/students/guardians");
+    await page.waitForSelector(".st-gd tr.ol-tr"); await page.waitForTimeout(700);
+    assert.deepEqual(await axe(page, [".st-gd"]), [], "the guardians");
+    await shot(page, "guardians-1440-" + mode.toLowerCase());
+    await page.getByRole("radio", { name: "Students without a guardian" }).click(); await page.waitForTimeout(900);
+    assert.deepEqual(await axe(page, [".st-gd"]), [], "the students without a guardian");
+    await page.goto(ORIGIN + "/learn/admin/students/guardians?peek=" + gd.id);
+    await page.locator(".ol-drawer.is-open .st-peek").waitFor(); await page.waitForTimeout(900);
+    assert.deepEqual(await axe(page, [".ol-drawer"]), [], "a guardian's quick look");
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Add guardian" }).first().click();
+    await page.locator(".ol-drawer.is-open form").waitFor(); await page.waitForTimeout(900);
+    assert.deepEqual(await axe(page, [".ol-drawer"]), [], "the Add guardian drawer");
+    await page.keyboard.press("Escape");
   });
 }
 
@@ -451,6 +547,11 @@ for (const mode of ["Light", "Dark"]) {
     assert.equal(await page.locator(".st-cls tr.ol-tr").first().evaluate((tr) => getComputedStyle(tr).display), "grid", "a section is a card");
     assert.deepEqual(await axe(page, [".st-cls"]), [], "the sections at 360");
     await shot(page, "classes-360-" + mode.toLowerCase());
+    await page.goto(ORIGIN + "/learn/admin/students/guardians"); await page.waitForSelector(".st-gd tr.ol-tr"); await page.waitForTimeout(700);
+    assert.ok((await wide()).page <= 1, "the guardians do not scroll sideways: " + JSON.stringify(await wide()));
+    assert.equal(await page.locator(".st-gd tr.ol-tr").first().evaluate((tr) => getComputedStyle(tr).display), "grid", "a family is a card");
+    assert.deepEqual(await axe(page, [".st-gd"]), [], "the guardians at 360");
+    await shot(page, "guardians-360-" + mode.toLowerCase());
     await page.goto(ORIGIN + "/learn/admin/students/classes/sections/" + cls.id + "/roster"); await page.waitForSelector(".st-rec h1"); await page.waitForTimeout(700);
     assert.ok((await wide()).page <= 1, "a section does not scroll sideways: " + JSON.stringify(await wide()));
     assert.deepEqual(await axe(page, [".st-rec"]), [], "a section at 360");

@@ -259,6 +259,38 @@
       },
       overview: { why: "Why the early warning", about: "About" },
       peek: { about: "About", contacts: "Family" },
+      gd: {
+        subtitle: "Every parent and guardian, the students they are linked to, and who has signed in.",
+        announce: "{n, plural, =0 {No results} one {# result} other {# results}}",
+        add: "Add guardian", view_label: "View", view: { guardians: "Guardians", no_guardian: "Students without a guardian" },
+        search_label: "Search guardians", search: "Search guardian or student", search_lonely: "Search student name or admission number",
+        chips_label: "Family app", chip: { invited: "Invited", active: "Active" },
+        filter: { class: "Class of a linked student", relation: "Relation" },
+        kpi: {
+          label: "Family numbers", guardians: "Guardians", guardians_ctx: "linked to current students", lonely: "Students without a guardian", lonely_ctx: "nobody linked yet",
+          no_mobile: "No mobile number", no_mobile_ctx: "guardians without a number", invited: "Invited, not joined", invited_ctx: "no password set yet",
+          active: "Active in the family app", active_ctx: "have signed in"
+        },
+        col: { guardian: "Guardian", students: "Students", mobile: "Mobile", email: "Email", app: "Family app", student: "Student", admitted: "Admitted on", action: "Action" },
+        more: "+{n} more", caption: "Guardians", caption_lonely: "Students without a guardian",
+        denied: "You can't open Guardians", denied_text: "Only office staff and class teachers can see guardians. Ask your school admin.",
+        none_match: "No guardians match these filters.", none_match_text: "Try another search, or clear the filters.",
+        first_title: "No guardians yet", first_text: "Add a guardian to a student, or import them together with the students.",
+        lonely_title: "Every student has a guardian", lonely_text: "Nobody is waiting to be linked.",
+        not_found: "Guardian not found", not_found_text: "This guardian is not linked to a student you can see, or the link is old.",
+        peek_title: "Guardian",
+        peek: {
+          relation: "Relation", email: "Email", language: "Family's language", whatsapp: "WhatsApp", not_asked: "Not asked", mobile: "Mobile numbers",
+          no_number: "No number on file", show: "Show number", phone_cell: "Mobile", phone_alt: "Other mobile", students: "{n, plural, one {# linked student} other {# linked students}}"
+        },
+        relation: { father: "Father", mother: "Mother", guardian: "Guardian", grandparent: "Grandparent", relative: "Relative", other: "Other" },
+        add_form: {
+          students: "Students", students_help: "Choose the children this guardian is family to.", name: "Full name", name_help: "Needed only if this email has no account yet.",
+          email: "Email", relation: "Relation", mobile: "Mobile number", error_students: "Choose at least one student.", error_relation: "Choose the relation."
+        },
+        added: "{name} is now linked to {n, plural, one {# student} other {# students}}",
+        added_new: "{name} was added and linked to {n, plural, one {# student} other {# students}}. The family sets a password from the invitation."
+      },
       cls: {
         subtitle: "{n, plural, one {# section} other {# sections}} in {year}", announce: "{n, plural, =0 {No sections} one {# section} other {# sections}}",
         add: "Add class", import: "Import from a file", edit: "Edit section", open: "Open", see_students: "See students in the Directory",

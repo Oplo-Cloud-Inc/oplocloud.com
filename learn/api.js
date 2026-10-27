@@ -573,7 +573,11 @@ window.OPLO_API = (function () {
       phone: function (id, which) { return post("/directory/students/" + id + "/phone", { which: which }); },
       create: function (body) { return post("/directory/students", body); },
       bulkHouse: function (body) { return post("/directory/students/bulk/house", body, { timeout: 60000 }); },
-      bulkMessage: function (body) { return post("/directory/students/bulk/message", body, { timeout: 60000 }); }
+      bulkMessage: function (body) { return post("/directory/students/bulk/message", body, { timeout: 60000 }); },
+      guardians: function (params, o) { return get("/directory/guardians" + q(params), o); },
+      guardian: function (id) { return get("/directory/guardians/" + id); },
+      guardianPhone: function (id, which) { return post("/directory/guardians/" + id + "/phone", { which: which }); },
+      addGuardian: function (body) { return post("/directory/guardians", body, { timeout: 20000 }); }
     },
     /* Who changed what, when. */
     audit: {

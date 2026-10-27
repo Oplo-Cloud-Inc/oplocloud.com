@@ -73,6 +73,17 @@
 .st-seat__none { margin: 0; color: var(--c-text-3); }
 .st-seat__n { min-height: var(--s-4); font: var(--t-small); color: var(--c-text-2); }
 
+/* ---- Guardians */
+.st-gd__rel { font: var(--t-small); color: var(--c-text-3); }
+.st-gd__kids { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
+.st-chip { display: inline-flex; align-items: center; max-width: 170px; min-height: 24px; padding: 0 var(--s-2); overflow: hidden; border: 1px solid var(--c-line); border-radius: var(--r-full); color: var(--c-text); font: var(--t-small); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.st-chip:hover { border-color: var(--c-accent); }
+.st-gd__more { font: var(--t-small); color: var(--c-text-3); }
+.st-gd__h { margin: 0; font: var(--t-body-strong); }
+.st-gd__list { display: flex; flex-direction: column; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.st-gd__list li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-2); }
+.st-gd__none { margin: 0; color: var(--c-text-3); }
+
 /* ---- Add and edit */
 .st-formpage { max-width: var(--max-form); }
 .st-formpage__form { display: flex; flex-direction: column; gap: var(--s-4); }
@@ -88,6 +99,6 @@
   .st-f { width: 100%; }
   .st-tb .ol-sf { max-width: none; flex-basis: 100%; }
   .st-att { justify-content: flex-start; }
-  .st-dir .ol-td, .st-cls .ol-td, .st-rec .ol-td { min-width: 0; }
+  .st-dir .ol-td, .st-cls .ol-td, .st-rec .ol-td, .st-gd .ol-td { min-width: 0; }
   .st-grid { grid-template-columns: minmax(0, 1fr); }
 }
