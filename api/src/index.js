@@ -59,6 +59,8 @@ import * as exchange from "./routes/exchange.js";
 import * as district from "./routes/district.js";
 import * as feeds from "./routes/feeds.js";
 import * as india from "./routes/india.js";
+import * as directory from "./routes/directory.js";
+import * as auditLog from "./routes/audit.js";
 import * as school from "./routes/school.js";
 import * as register from "./routes/register.js";
 import * as search from "./routes/search.js";
@@ -238,6 +240,14 @@ const ROUTES = [
   ["GET",    "/api/v1/ptm/:ptmId",                       exams.getPtm],
   ["POST",   "/api/v1/ptm/:ptmId/book",                  exams.bookPtm],
   ["POST",   "/api/v1/ptm/:ptmId/release",               exams.releasePtm],
+  ["GET",    "/api/v1/audit",                            auditLog.list],
+  ["GET",    "/api/v1/directory/students",               directory.students],
+  ["GET",    "/api/v1/directory/students/export",        directory.exportRows],
+  ["POST",   "/api/v1/directory/students",               directory.create],
+  ["POST",   "/api/v1/directory/students/bulk/house",    directory.bulkHouse],
+  ["POST",   "/api/v1/directory/students/bulk/message",  directory.bulkMessage],
+  ["GET",    "/api/v1/directory/students/:accountId",    directory.record],
+  ["POST",   "/api/v1/directory/students/:accountId/phone", directory.phone],
   ["GET",    "/api/v1/india/classes",                    india.classes],
   ["PUT",    "/api/v1/india/classes",                    india.putClass],
   ["GET",    "/api/v1/india/students",                   india.students],

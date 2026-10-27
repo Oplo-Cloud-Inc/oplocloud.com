@@ -11,6 +11,7 @@ import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
 import { must } from "../core/guard.js";
 import * as I from "../services/india.js";
+import * as A from "../services/audit.js";
 
 function orgOf(ctx) {
   const actor = requireActor(ctx);
@@ -32,14 +33,13 @@ function shapeClass(c) {
 }
 
 /* A duplicate number is the office's most likely mistake, so say which one. */
-function conflict(e) {
+const CLASH = { admissionNo: "Another student already has that admission number.", rollNo: "Another child in that section already has that roll number.",
+  apaar: "Another student already has that APAAR ID.", pen: "Another student already has that PEN." };
+export const clash = (field) => ApiError.conflict(CLASH[field] || "That clashes with another student's record.", field || undefined);
+export function conflict(e) {
   const m = String((e && e.message) || "");
   if (!/UNIQUE constraint failed/i.test(m)) return null;
-  const which = /admission_no/.test(m) ? ["admissionNo", "Another student already has that admission number."]
-    : /roll_no/.test(m) ? ["rollNo", "Another child in that section already has that roll number."]
-    : /apaar/.test(m) ? ["apaar", "Another student already has that APAAR ID."]
-    : /\.pen/.test(m) ? ["pen", "Another student already has that PEN."] : [null, "That clashes with another student's record."];
-  return ApiError.conflict(which[1], which[0]);
+  return clash(/admission_no/.test(m) ? "admissionNo" : /roll_no/.test(m) ? "rollNo" : /apaar/.test(m) ? "apaar" : /\.pen/.test(m) ? "pen" : null);
 }
 
 /* ------------------------------------------------------------------ Classes */
@@ -113,12 +113,12 @@ export async function putStudent(ctx, { accountId }) {
   const acc = await inSchool(ctx, orgId, accountId);
   const b = await readJson(ctx.request);
   const fields = I.cleanStudent(b, throwing);
-  let classId = undefined;
+  let classId = undefined, cls = null;
   if (b.classId !== undefined) {
     classId = b.classId || null;
     if (classId) {
-      const all = await ctx.repo.listIndiaClasses(orgId, yearOf(ctx));
-      if (!all.some((c) => c.id === classId)) throw ApiError.badRequest("That class is not in this school year. Make it under Classes first.", "classId");
+      cls = (await ctx.repo.listIndiaClasses(orgId, yearOf(ctx))).find((c) => c.id === classId);
+      if (!cls) throw ApiError.badRequest("That class is not in this school year. Make it under Classes first.", "classId");
     }
   }
   let dob, address;
@@ -129,8 +129,16 @@ export async function putStudent(ctx, { accountId }) {
   const merged = { ...(was ? I.shapeStudent(was) : {}), ...fields, ...(classId !== undefined ? { classId } : {}) };
   // A new section is a new list: the old section's number is not carried into it unless the office typed one.
   if (classId !== undefined && classId !== (was ? was.class_id || null : null) && b.rollNo === undefined) merged.rollNo = null;
+  const next = I.toRow(merged);
+  // What the row will say once written (the old row with the new columns over it): the audit rows are made from it now and
+  // travel in the same batch as the change, so the record never changes without its row (E2). A blank date or address keeps what is there.
+  const after = I.shapeStudent({ ...(was || { account_id: accountId, name: acc.name, email: acc.email }), ...next,
+    date_of_birth: dob || (was && was.date_of_birth) || null, mailing_address: address || (was && was.mailing_address) || null,
+    ...(classId === undefined ? {} : { grade: cls ? cls.grade : null, section: cls ? cls.section : null, programme: cls ? cls.programme : null, stream: cls ? cls.stream : null }) });
+  const audit = A.rows(orgId, actor, A.changes(was ? I.shapeStudent(was) : {}, after, I.FIELDS.map((f) => f[0]).concat(["classId", "dob", "address"]))
+    .map((c) => ({ module: "students", action: "students.record.changed", verb: "changed", recordKind: "student", recordId: accountId, recordLabel: `${after.name}${after.classLabel ? " · " + after.classLabel : ""}`, ...c })));
   try {
-    await ctx.repo.putIndiaStudents(orgId, [{ accountId, row: I.toRow(merged), contact: { dateOfBirth: dob || null, mailingAddress: address || null } }], actor.id, I.todayIST());
+    await ctx.repo.putIndiaStudents(orgId, [{ accountId, row: next, contact: { dateOfBirth: dob || null, mailingAddress: address || null }, audit }], actor.id, I.todayIST());
   } catch (e) { throw conflict(e) || e; }
   const row = await ctx.repo.getIndiaStudent(orgId, accountId);
   const s = I.shapeStudent(row || { account_id: accountId, name: acc.name, email: acc.email });

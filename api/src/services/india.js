@@ -153,6 +153,20 @@ export function consentOf(text) {
   return { consentStatus: status, consentMethod: method, consentNote: note };
 }
 
+/* ------------------------------------------------------------- Sensitive
+   The values that are never shown whole and never written to a log: a phone
+   number, an Aadhaar number, a disability ID, and the bank, UPI and card
+   last-four fields the fees module will add. This is the one list (E8). The
+   audit writer and the Directory ask it, and so does every later module, so a
+   field named like one of these is masked without anyone having to remember. */
+const SENSITIVE_WORDS = ["phone", "aadhaar", "udid", "bank", "upi"];
+const SENSITIVE_FIELDS = new Set(["cardLast4", "cardNumber"]);
+/* The field's own words, camelCase or snake_case: "emergencyPhone" is "emergency" and "phone". */
+export const isSensitive = (field) => SENSITIVE_FIELDS.has(field)
+  || String(field).split(/(?<=[a-z0-9])(?=[A-Z])|[_\s.-]+/).some((w) => SENSITIVE_WORDS.some((s) => w.toLowerCase().startsWith(s)));
+/* "••••6789": the last four digits behind dots; nothing for a value that is not there. */
+export const maskValue = (v, dots = 4) => (v == null || v === "" ? null : "•".repeat(dots) + String(v).replace(/\D/g, "").slice(-4));
+
 /* ------------------------------------------------------------------ Fields
    [key, label, type, options]. One table drives cleaning, the import's column
    names and the console's form, so they cannot disagree about a field. A key
