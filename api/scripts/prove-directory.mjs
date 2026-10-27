@@ -12,6 +12,7 @@ const ctx = {};
 const STEM = "Dq" + RUN.slice(-5);
 const rnd = (n) => String(Math.floor(Math.random() * 10 ** n)).padStart(n, "0");
 const PHONE = "9" + rnd(9);
+const ROLL = 100 + Math.floor(Math.random() * 800);                           // a section keeps the students of earlier runs, and a roll is one per section: take this run's own
 const [S1, S2] = ["W", "X", "Y", "Z"].sort(() => Math.random() - 0.5);       // sections no demo school uses; students of earlier runs stay, so counts are taken on this run's own stem
 const L1 = "XII-" + S1, L2 = "XII-" + S2;
 const list = (who, q) => who.get("/directory/students?" + (q || ""));
@@ -239,15 +240,15 @@ try {
   await step("a number already taken is refused before anything is written, with the field named; the same email works once it is corrected", async () => {
     const apaar = rnd(12), pen = rnd(11), email = `clash.${RUN}@s.test`;
     await admin.put(`/students/${ctx.a.id}/india`, { apaar, pen });                // Alpha holds these
-    await admin.put(`/students/${ctx.b.id}/india`, { rollNo: 7 });                  // Beta holds roll 7 in the section
+    await admin.put(`/students/${ctx.b.id}/india`, { rollNo: ROLL });              // Beta holds this roll in the section
     const before = await accounts();
-    for (const [field, extra] of [["admissionNo", { admissionNo: ctx.adm + "-A" }], ["rollNo", { classId: ctx.cls.id, rollNo: 7 }], ["apaar", { apaar }], ["pen", { pen }]]) {
+    for (const [field, extra] of [["admissionNo", { admissionNo: ctx.adm + "-A" }], ["rollNo", { classId: ctx.cls.id, rollNo: ROLL }], ["apaar", { apaar }], ["pen", { pen }]]) {
       const r = await admin.try("POST", "/directory/students", { name: `${STEM}k Kept`, email, ...extra });
       refused(r, 409);
       assert.equal(r.body.error.field, field, "the refusal names " + field);
       assert.equal(await accounts(), before, "nothing was left behind after the " + field + " clash");
     }
-    const ok = await admin.post("/directory/students", { name: `${STEM}k Kept`, email, admissionNo: ctx.adm + "-K", classId: ctx.cls.id, rollNo: 8 });
+    const ok = await admin.post("/directory/students", { name: `${STEM}k Kept`, email, admissionNo: ctx.adm + "-K", classId: ctx.cls.id, rollNo: ROLL + 1 });
     assert.equal(ok.student.admissionNo, ctx.adm + "-K");
     assert.equal(await accounts(), before + 1, "the corrected try made exactly one account");
   });

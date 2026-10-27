@@ -69,6 +69,7 @@ try {
     assert.ok(!JSON.stringify(byName).includes(PHONE) && !JSON.stringify(byName).includes(ctx.email), "the page carries neither");
     assert.equal((await list(admin, `q=${STEM}b`)).total, 1, "by a child");
     assert.equal((await list(admin, "q=" + PHONE.slice(-4))).rows.some((x) => x.id === ctx.g.id), true, "by the end of the number");
+    assert.equal((await list(admin, "q=zz" + PHONE.slice(-4))).total, 0, "letters with digits are a name, never read as the digits alone");
     assert.equal((await list(admin, `q=${STEM}&app=active`)).total, 0, "nobody here has signed in");
     const inv = await list(admin, `q=${STEM}&app=invited`);
     assert.equal(inv.total, 1); assert.equal(inv.counts.invited, 1); assert.equal(inv.counts.active, 0);

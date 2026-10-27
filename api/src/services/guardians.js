@@ -77,7 +77,8 @@ export function parse(sp) {
 function matches(g, f, extra) {
   if (f.q) {
     const hay = norm([g.name, g.email, ...g.students.map((s) => s.name)].join(" ")) + " " + digits(g.cell) + " " + digits(g.alt);
-    if (!f.q.split(/\s+/).every((w) => hay.includes(w) || (digits(w) && hay.includes(digits(w))))) return false;
+    // only a word that is a number (spaces, dashes and a plus allowed) is also read as digits; "gq9z1a" is a name, not "91"
+    if (!f.q.split(/\s+/).every((w) => hay.includes(w) || (/^[+\d().-]+$/.test(w) && digits(w) && hay.includes(digits(w))))) return false;
   }
   if (extra.app && (g.status === "active" ? "active" : "invited") !== extra.app) return false;
   if (f.classes.length && !g.students.some((s) => f.classes.includes(s.classLabel))) return false;
