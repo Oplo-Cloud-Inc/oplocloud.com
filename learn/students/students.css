@@ -10,6 +10,7 @@
 .st-tb__fields { flex: 1; align-items: flex-end; }
 .st-tb .ol-sf { flex: 1 1 200px; max-width: 300px; }
 .st-f { width: 152px; min-width: 140px; }
+.st-f--wide { width: 200px; }
 .st-chips { margin: 0 0 var(--s-3); }
 .st-tokens:empty { display: none; }
 .st-tokens { margin: 0 0 var(--s-3); }
@@ -84,6 +85,10 @@
 .st-gd__list li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-2); }
 .st-gd__none { margin: 0; color: var(--c-text-3); }
 
+/* ---- Admissions */
+.st-adm__late { color: var(--c-danger); font-weight: var(--w-strong); }
+.st-adm__next { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+
 /* ---- Add and edit */
 .st-formpage { max-width: var(--max-form); }
 .st-formpage__form { display: flex; flex-direction: column; gap: var(--s-4); }
@@ -99,6 +104,6 @@
   .st-f { width: 100%; }
   .st-tb .ol-sf { max-width: none; flex-basis: 100%; }
   .st-att { justify-content: flex-start; }
-  .st-dir .ol-td, .st-cls .ol-td, .st-rec .ol-td, .st-gd .ol-td { min-width: 0; }
+  .st-dir .ol-td, .st-cls .ol-td, .st-rec .ol-td, .st-gd .ol-td, .st-adm .ol-td { min-width: 0; }
   .st-grid { grid-template-columns: minmax(0, 1fr); }
 }

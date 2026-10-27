@@ -336,6 +336,7 @@
         API.gamification.standing().catch(function () { return null; }),
         Progress ? Progress.pull().catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (out) {
+        if (!R) return false;   // signed out while the answer was on its way
         var standing = out[0], moved = out[1] || [], changed = moved.length > 0;
 
         if (standing) {
@@ -9824,7 +9825,7 @@
     // A screen that has been rebuilt (shell/pages.js) is drawn in place of the old page; the rest stay as they were.
     if (shellOn() && OL.pages && OL.pages.find) {
       var pick = tab === "students" ? S.studentPick : null;
-      var rebuilt = OL.pages.find(tab, { region: regionOf(), route: OL.shell.route(), me: S.me, base: appBase(), pick: pick,
+      var rebuilt = OL.pages.find(tab, { region: regionOf(), route: OL.shell.route(), me: S.me, base: appBase(), pick: pick, legacy: { enr: enr },
         go: function (path) { return OL.shell.go(path); }, setRecord: function (r) { OL.shell.setRecord(r); }, title: OL.shell.title() });
       if (rebuilt) { if (pick) S.studentPick = null; return rebuilt; }
     }
@@ -20181,6 +20182,7 @@
        and again when the server says what this person is actually taking. */
     Promise.all([
       API.courses.mine().then(function (courses) {
+        if (!S.me) return false;   // signed out while the answer was on its way
         S.me.assigned = courses.filter(function (c) {
           return !c.myRole || c.myRole === "student";
         });

@@ -12,6 +12,8 @@
      students/classes/sections             the sections
      students/classes/sections/{id}[/{tab}]  one section
      students/guardians                    the families; ?peek={id} is one guardian beside the list
+     students/admissions                   the applications; ?peek={id} is one beside the list
+     students/admissions/workspace         the old admissions workspace
    ========================================================================== */
 (function () {
   "use strict";
@@ -26,6 +28,12 @@
       else if (r.record) St.record.draw(host, env);
       else St.directory.draw(host, env);
     }
+  });
+  // the applications are the list; students/admissions/workspace is the old admissions workspace, which still does the rest (enquiries, assessments, the application itself)
+  OL.pages.register("enrollment", {
+    template: "T2",
+    when: function (env) { return St.when(env) && !St.admissionsWorkspace(env); },
+    draw: function (host, env) { St.admissions.drawList(host, env); }
   });
   OL.pages.register("guardians", {
     template: "T2",

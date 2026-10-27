@@ -457,6 +457,69 @@ await t("Guardians: the quick look lists the students they are linked to and sho
   await page.waitForFunction(() => !new URL(location.href).searchParams.has("peek"));
 }, { at: "students/guardians", ready: ".st-gd tr.ol-tr" });
 
+/* ----------------------------------------------------------------------------------------- Admissions */
+const apps = async (q) => (await call("GET", "/applications?" + q)).body;
+const inAdmissions = { at: "students/admissions", ready: ".st-adm tr.ol-tr" };
+const askA = (page, has) => page.waitForResponse((r) => r.request().method() === "GET" && /\/applications(\?|$)/.test(r.url()) && has.every((x) => r.url().includes(x)));
+
+await t("Admissions: the applications as one list: its own heading, one primary button, five numbers that are views, a view menu, filters, the year, and a row for each application of the view", async (page) => {
+  const open = await apps("view=open&size=25");
+  assert.equal(await page.locator(".st-adm h1").innerText(), "Admissions");
+  assert.equal(await page.locator(".st-adm .ol-ph__actions .ol-btn--primary").innerText(), "New application");
+  assert.equal(await page.locator(".st-adm .ol-kpis > *").count(), 5);
+  assert.ok((await page.locator(".st-adm .ol-kpi").first().innerText()).includes(String(open.counts.open)), "the first number is the view's");
+  assert.equal(await page.locator(".st-adm tr.ol-tr").count(), Math.min(open.total, 25));
+  assert.equal(await page.title(), "Admissions · OEdu");
+  await settle(page); await shot(page, "admissions-1440-light");
+}, inAdmissions);
+
+await t("Admissions: a number that is a view, a search and a sort write the address; a reload keeps them, and the table is the server's order", async (page) => {
+  const verify = await apps("view=verify&size=25");
+  await Promise.all([askA(page, ["view=verify"]), page.locator(".st-adm .ol-kpi", { hasText: "To verify" }).click()]);
+  await page.waitForURL((u) => u.searchParams.get("view") === "verify");
+  await page.waitForFunction((n) => document.querySelectorAll(".st-adm tr.ol-tr").length === n, Math.min(verify.total, 25));
+  await page.reload(); await page.waitForSelector(".st-adm tr.ol-tr");
+  assert.equal(new URL(page.url()).searchParams.get("view"), "verify", "a reload keeps the view");
+  assert.equal(await page.locator(".st-adm .ol-kpi", { hasText: "To verify" }).getAttribute("aria-pressed"), "true");
+  const stem = verify.items[0].name.split(" ")[0].slice(0, 4);
+  await Promise.all([askA(page, ["q=" + stem]), page.getByRole("searchbox", { name: "Search applications" }).fill(stem)]);
+  await page.waitForURL((u) => u.searchParams.get("q") === stem);
+  const found = await apps("view=verify&q=" + stem);
+  await page.waitForFunction((n) => document.querySelectorAll(".st-adm tr.ol-tr").length === n, Math.min(found.total, 25));
+  await page.getByRole("button", { name: "Clear filters" }).first().click();
+  await Promise.all([askA(page, ["sort=number"]), page.locator(".st-adm th", { hasText: "Number" }).getByRole("button").click()]);
+  await page.waitForURL((u) => u.searchParams.get("sort") === "number");
+  const order = (await apps("view=verify&sort=number&dir=asc&size=25")).items.map((x) => x.number);
+  await page.waitForFunction((n) => [...document.querySelectorAll('.st-adm tr.ol-tr td[data-label="Number"]')].map((e) => e.textContent.trim())[0] === n, order[0]);
+  assert.deepEqual(await page.locator('.st-adm tr.ol-tr td[data-label="Number"]').allInnerTexts(), order, "the server's order");
+}, inAdmissions);
+
+await t("Admissions: a row opens the application beside the list; Open application goes to the workspace's own page for it", async (page) => {
+  const first = (await apps("view=open&size=25")).items[0];
+  await page.locator(`tr[data-k="${first.id}"]`).click();
+  const drawer = page.locator(".ol-drawer.is-open");
+  await drawer.waitFor();
+  await page.waitForURL((u) => u.searchParams.get("peek") === first.id);
+  assert.equal(await drawer.locator(".ol-drawer__title").innerText(), first.name);
+  assert.ok((await drawer.innerText()).includes(first.number));
+  assert.ok((await drawer.innerText()).includes(first.next.label), "the next step is in it");
+  await settle(page); await shot(page, "admissions-quicklook-1440-light");
+  await drawer.getByRole("button", { name: "Open application" }).click();
+  await page.waitForFunction(() => !document.querySelector(".st-adm"));
+  await page.getByText(first.name).first().waitFor();
+}, inAdmissions);
+
+await t("Admissions: the workspace button opens the old workspace at an address of its own, a reload keeps it, and the Admissions tab brings the list back", async (page) => {
+  await page.getByRole("button", { name: "Admissions workspace" }).click();
+  await page.waitForURL(/\/students\/admissions\/workspace$/);
+  await page.waitForFunction(() => !document.querySelector(".st-adm") && document.querySelector("#v-admin") && document.querySelector("#v-admin").innerText.includes("Enquiries"));
+  await page.reload(); await page.waitForFunction(() => document.querySelector("#v-admin") && document.querySelector("#v-admin").innerText.includes("Enquiries"));
+  assert.equal(await page.locator(".st-adm").count(), 0, "a reload keeps the workspace");
+  await page.locator(".ol-pagehead").getByRole("tab", { name: "Admissions" }).click();
+  await page.waitForSelector(".st-adm tr.ol-tr");
+  assert.match(page.url(), /\/students\/admissions$/);
+}, inAdmissions);
+
 await t("Classes: when the server says the person may not read the classes, the page says so and draws nothing else", async (page) => {
   await page.route(/\/india\/classes/, (r) => r.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ error: { code: "forbidden", message: "no" } }) }));
   await page.goto(ORIGIN + "/learn/admin/students/classes/sections");
@@ -510,6 +573,14 @@ for (const mode of ["Light", "Dark"]) {
     await page.waitForSelector(".st-gd tr.ol-tr"); await page.waitForTimeout(700);
     assert.deepEqual(await axe(page, [".st-gd"]), [], "the guardians");
     await shot(page, "guardians-1440-" + mode.toLowerCase());
+    await page.goto(ORIGIN + "/learn/admin/students/admissions"); await page.waitForSelector(".st-adm tr.ol-tr"); await page.waitForTimeout(700);
+    assert.deepEqual(await axe(page, [".st-adm"]), [], "the applications");
+    await shot(page, "admissions-1440-" + mode.toLowerCase());
+    await page.locator(".st-adm tr.ol-tr").first().click();
+    await page.locator(".ol-drawer.is-open .st-peek").waitFor(); await page.waitForTimeout(900);
+    assert.deepEqual(await axe(page, [".ol-drawer"]), [], "an application's quick look");
+    await page.keyboard.press("Escape");
+    await page.goto(ORIGIN + "/learn/admin/students/guardians"); await page.waitForSelector(".st-gd tr.ol-tr");
     await page.getByRole("radio", { name: "Students without a guardian" }).click(); await page.waitForTimeout(900);
     assert.deepEqual(await axe(page, [".st-gd"]), [], "the students without a guardian");
     await page.goto(ORIGIN + "/learn/admin/students/guardians?peek=" + gd.id);
@@ -552,6 +623,11 @@ for (const mode of ["Light", "Dark"]) {
     assert.equal(await page.locator(".st-gd tr.ol-tr").first().evaluate((tr) => getComputedStyle(tr).display), "grid", "a family is a card");
     assert.deepEqual(await axe(page, [".st-gd"]), [], "the guardians at 360");
     await shot(page, "guardians-360-" + mode.toLowerCase());
+    await page.goto(ORIGIN + "/learn/admin/students/admissions"); await page.waitForSelector(".st-adm tr.ol-tr"); await page.waitForTimeout(700);
+    assert.ok((await wide()).page <= 1, "the applications do not scroll sideways: " + JSON.stringify(await wide()));
+    assert.equal(await page.locator(".st-adm tr.ol-tr").first().evaluate((tr) => getComputedStyle(tr).display), "grid", "an application is a card");
+    assert.deepEqual(await axe(page, [".st-adm"]), [], "the applications at 360");
+    await shot(page, "admissions-360-" + mode.toLowerCase());
     await page.goto(ORIGIN + "/learn/admin/students/classes/sections/" + cls.id + "/roster"); await page.waitForSelector(".st-rec h1"); await page.waitForTimeout(700);
     assert.ok((await wide()).page <= 1, "a section does not scroll sideways: " + JSON.stringify(await wide()));
     assert.deepEqual(await axe(page, [".st-rec"]), [], "a section at 360");

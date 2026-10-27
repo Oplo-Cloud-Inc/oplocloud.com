@@ -326,7 +326,9 @@
       var path = OL.routes.pathOf({ module: m.key, tab: tb.key, sub: tb.subs.length ? tb.subs[0].key : null }, allowed);
       return { key: tb.key, label: label.tab(m.key, tb.key), href: href(path) };
     });
-    var tabs = OL.ui.tabs.render({ items: items, active: r.tab, size: "page", label: label.module(m.key), panelPrefix: "olpage", onSelect: function (k) {
+    // a click on the tab you are in, from a record of that tab (a student, a section, the old admissions workspace), goes back to the tab's own page
+    var tabs = OL.ui.tabs.render({ items: items, active: r.tab, size: "page", label: label.module(m.key), panelPrefix: "olpage", reselect: true, onSelect: function (k) {
+      if (k === r.tab && !r.record) return;
       var tb = m.tabs.filter(function (x) { return x.key === k; })[0];
       go(OL.routes.pathOf({ module: m.key, tab: k, sub: tb.subs.length ? tb.subs[0].key : null }, allowed));
     } });

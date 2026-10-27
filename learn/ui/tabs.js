@@ -15,9 +15,10 @@
    row is one tab stop; the selected tab owns it.
 
    OL.ui.tabs.render({ items: [{ key, label, count, href, disabled }], active,
-     size, label, onSelect, panelPrefix, controls }) → the tablist, with .set(key) and
+     size, label, onSelect, panelPrefix, controls, reselect }) → the tablist, with .set(key) and
    .panelId(key) (the id the panel should carry, aria-labelledby points back).
    controls: false leaves out aria-controls, for a row whose panel is shared with another row.
+   reselect: true calls onSelect when the selected tab is clicked again.
    ========================================================================== */
 (function () {
   "use strict";
@@ -47,7 +48,8 @@
     }
 
     function choose(k, focus) {
-      if (k === cur && !focus) return;
+      // the tab that is already selected is not a change, unless the caller says a click on it still means something (a record's page goes back to its list)
+      if (k === cur && !focus) { if (p.reselect && p.onSelect) p.onSelect(k); return; }
       cur = k;
       draw();
       if (focus) { var n = list.querySelector('[data-key="' + k + '"]'); if (n) n.focus(); }
