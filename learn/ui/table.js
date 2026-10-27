@@ -377,7 +377,7 @@
       if (u.sort !== undefined) s.sort = u.sort;
       if (u.page) s.page = u.page;
       if (u.total != null) { s.total = u.total; table.setAttribute("aria-rowcount", s.total); }
-      if (u.selected) { s.sel = {}; u.selected.forEach(function (k) { s.sel[k] = true; }); }
+      if (u.selected) { s.sel = {}; s.allMatching = false; u.selected.forEach(function (k) { s.sel[k] = true; }); }
       if (u.loading != null) { s.loading = !!u.loading; loadingState(); }
       if (u.empty) p.empty = u.empty;
       drawCols(); drawHead(); drawBody(); drawSelbar();

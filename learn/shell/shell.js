@@ -92,6 +92,8 @@
   function routeFor(k) {
     var p = st.pending && st.pending.legacy === k ? st.pending : null;
     if (p) return p;
+    // Back, Forward and a refresh arrive with the address already set: it names the record and the filters
+    if (st.ctx.rest) { var a = OL.routes.parse(st.ctx.rest() + location.search, allowed); if (a.legacy === k) return a; }
     var at = OL.routes.locate(k);
     return at ? { module: at.module, tab: at.tab, sub: at.sub, record: null, recordTab: null, query: "", legacy: k } : null;
   }
@@ -437,7 +439,7 @@
     var m = OL.routes.module(r.module);
     return m.solo ? label.module(r.module) : label.tab(r.module, r.tab);
   };
-  S.setRecord = function (r) { st.record = r; if (st.top) drawTop(); };
+  S.setRecord = function (r) { st.record = r; if (st.top) drawTop(); if (r && st.ctx && st.ctx.setTitle) st.ctx.setTitle(r.label); };
   S.year = function () { return store("year") || (st.years[0] || null); };
   S.onYear = function (fn) { st.yearListeners.push(fn); };
   S.openPalette = openPalette;

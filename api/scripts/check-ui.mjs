@@ -1,13 +1,17 @@
 // The boundaries of the component library: node scripts/check-ui.mjs
 //  - tokens.css is the only file with a raw colour; the rest read var(--c-…)
 //  - type size, weight, stacking and radius come from tokens too
-//  - nothing in learn/ui, learn/i18n or learn/shell touches the network (api.js is the one place that may)
+//  - nothing in learn/ui, learn/i18n, learn/shell or a rebuilt module (learn/students) touches the network (api.js is the one place that may)
 //  - nothing builds markup from a string (names are text, never HTML), except the icon sprite
+//  - a registered page names its template (T1 to T9)
 //  - the dev-only gallery is never published
+// OL_LEARN_ROOT points the lint at another copy of learn/ (the fixtures of test-lint.mjs).
 import fs from "node:fs";
 import path from "node:path";
 
-const LEARN = path.resolve(new URL("../../learn", import.meta.url).pathname);
+const LEARN = process.env.OL_LEARN_ROOT ? path.resolve(process.env.OL_LEARN_ROOT) : path.resolve(new URL("../../learn", import.meta.url).pathname);
+/* The folders of rebuilt modules: each holds scripts and one stylesheet that obey the same rules as the library. */
+const MODULES = ["students"];
 const rd = (f) => fs.readFileSync(path.join(LEARN, f), "utf8");
 const problems = [];
 const bad = (m) => problems.push(m);
@@ -15,7 +19,8 @@ const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, "
 const lineOf = (s, i) => s.slice(0, i).split("\n").length;
 
 /* CSS ------------------------------------------------------------------- */
-for (const f of ["base.css", "ui/ui.css", "ui/gallery.css", "shell/shell.css"]) {
+const SHEETS = ["base.css", "ui/ui.css", "ui/gallery.css", "shell/shell.css"].concat(MODULES.map((m) => `${m}/${m}.css`));
+for (const f of SHEETS) {
   const css = strip(rd(f));
   const hit = (re, why) => { for (const m of css.matchAll(re)) bad(`${f}:${lineOf(css, m.index)} ${why}: ${m[0].trim()}`); };
   const prop = (name, ok, why) => { for (const m of css.matchAll(new RegExp("(?<![\\w-])" + name + ":\\s*([^;}]+)", "g"))) if (!ok(m[1].trim())) bad(`${f}:${lineOf(css, m.index)} ${why}: ${m[0].trim()}`); };
@@ -36,14 +41,20 @@ for (const f of ["base.css", "ui/ui.css", "ui/gallery.css", "shell/shell.css"]) 
 /* Scripts --------------------------------------------------------------- */
 const scripts = fs.readdirSync(path.join(LEARN, "ui")).filter((f) => f.endsWith(".js")).map((f) => "ui/" + f)
   .concat(fs.readdirSync(path.join(LEARN, "i18n")).filter((f) => f.endsWith(".js")).map((f) => "i18n/" + f))
-  .concat(fs.readdirSync(path.join(LEARN, "shell")).filter((f) => f.endsWith(".js")).map((f) => "shell/" + f));
+  .concat(fs.readdirSync(path.join(LEARN, "shell")).filter((f) => f.endsWith(".js")).map((f) => "shell/" + f))
+  .concat(MODULES.flatMap((m) => fs.readdirSync(path.join(LEARN, m)).filter((f) => f.endsWith(".js")).map((f) => `${m}/${f}`)));
 for (const f of scripts) {
   const src = strip(rd(f)).split("\n").map((l) => l.replace(/^\s*\/\/.*$/, "")).join("\n");
   for (const m of src.matchAll(/\b(fetch|XMLHttpRequest|EventSource|WebSocket|sendBeacon|importScripts)\b\s*[(.]/g)) bad(`${f}:${lineOf(src, m.index)} uses the network (${m[1]}); only api.js may`);
   if (f !== "ui/icons.js") for (const m of src.matchAll(/\b(innerHTML|outerHTML|insertAdjacentHTML|document\.write)\b/g)) bad(`${f}:${lineOf(src, m.index)} builds markup from a string (${m[1]})`);
   for (const m of src.matchAll(/\b(eval|new Function)\s*\(/g)) bad(`${f}:${lineOf(src, m.index)} runs a string as code`);
   for (const m of src.matchAll(/(?<![\w.])console\.(log|debug)\(/g)) bad(`${f}:${lineOf(src, m.index)} leaves a console.${m[1]}`);
-  if (/\bimport\s|\brequire\(/.test(src)) bad(`${f}: modules are not used; scripts share window.OL`);
+  // the words inside quotes are what a person reads ("import your list"), not code
+  if (/\bimport\s|\brequire\(/.test(src.replace(/"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/g, '""'))) bad(`${f}: modules are not used; scripts share window.OL`);
+  // a page that is registered says which template it is built on, so the frame and the reviewer know what to expect
+  for (const m of src.matchAll(/OL\.pages\.register\(\s*"([^"]+)"\s*,\s*\{([\s\S]*?)\n  \}\);/g)) {
+    if (!/\btemplate:\s*(?:"T[1-9]"|\[\s*"T[1-9]"(?:\s*,\s*"T[1-9]")*\s*\])/.test(m[2])) bad(`${f}:${lineOf(src, m.index)} page "${m[1]}" is registered without a template: "T1" to "T9", or a list of them`);
+  }
 }
 
 /* The gallery is a developer's page ------------------------------------- */
@@ -51,4 +62,4 @@ const ignore = rd(".assetsignore").split("\n").map((l) => l.trim());
 for (const f of ["_ui.html", "ui/gallery.js", "ui/gallery.css"]) if (!ignore.includes(f)) bad(`.assetsignore does not list ${f}: the gallery would be published`);
 
 if (problems.length) { console.log(problems.map((p) => "  FAIL " + p).join("\n")); console.log(`${problems.length} problem(s)`); process.exit(1); }
-console.log(`  ok  ${scripts.length} scripts and 4 stylesheets keep to the tokens, the network rule and the no-markup-strings rule`);
+console.log(`  ok  ${scripts.length} scripts and ${SHEETS.length} stylesheets keep to the tokens, the network rule, the no-markup-strings rule and the template declaration`);

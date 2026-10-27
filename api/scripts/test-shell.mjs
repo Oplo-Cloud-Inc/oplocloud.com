@@ -243,6 +243,73 @@ await t("a narrow window folds the rail by itself and the search becomes an icon
   await page.getByRole("combobox", { name: "Search" }).waitFor();
 }, { viewport: { width: 900, height: 700 } });
 
+/* The page registry (E6): a mistake in a registration is loud, and a page that fails to draw is never a blank page. */
+await t("the registry refuses a key that is taken, a page without draw, and a page that does not name its template", async (page) => {
+  const said = await page.evaluate(() => {
+    const tryIt = (key, def) => { try { OL.pages.register(key, def); return "registered"; } catch (e) { return e.message; } };
+    const ok = { template: "T2", draw() {} };
+    return {
+      first: tryIt("fx-one", ok),
+      again: tryIt("fx-one", ok),
+      noDraw: tryIt("fx-two", { template: "T2" }),
+      noTemplate: tryIt("fx-three", { draw() {} }),
+      badTemplate: tryIt("fx-four", { template: "T10", draw() {} }),
+      oneBad: tryIt("fx-five", { template: ["T2", "T3x"], draw() {} }),
+      several: tryIt("fx-six", { template: ["T2", "T3", "T5"], draw() {} }),
+      noKey: tryIt("", ok),
+      students: tryIt("students", ok)
+    };
+  });
+  assert.equal(said.first, "registered");
+  assert.match(said.again, /already registered/);
+  assert.match(said.noDraw, /draw\(host, env\)/);
+  assert.match(said.noTemplate, /template, T1 to T9/);
+  assert.match(said.badTemplate, /template, T1 to T9/);
+  assert.match(said.oneBad, /template, T1 to T9/);
+  assert.equal(said.several, "registered", "a page that draws a list, a record and a form names all three");
+  assert.match(said.noKey, /key of the old page/);
+  assert.match(said.students, /already registered/, "the real Students page holds its key, so a second one cannot take it");
+});
+
+await t("a page that fails to draw shows an error with a reference and Retry, logs once, and draws when Retry is pressed after it recovers", async (page) => {
+  const logged = [];
+  await page.exposeFunction("__logged", (s) => logged.push(s));
+  await page.evaluate(() => {
+    window.__tries = 0; window.__broken = true;
+    console.error = (...a) => window.__logged(a.map(String).join(" "));
+    OL.pages.register("fx-broken", { template: "T2", draw(host) { window.__tries++; if (window.__broken) throw new Error("boom"); host.textContent = "drawn"; } });
+    window.__host = document.createElement("div"); document.body.appendChild(window.__host);
+    OL.pages.find("fx-broken", {})(window.__host);
+  });
+  const box = page.locator(".ol-empty--error");
+  await box.waitFor();
+  assert.match(await box.innerText(), /did not load/i);
+  assert.match(await box.innerText(), /Reference [A-Z0-9]{6}/, "the person has a number to quote");
+  assert.equal(logged.length, 1, "logged once");
+  assert.match(logged[0], /\[([A-Z0-9]{6})\].*fx-broken/, "the log carries the same reference");
+  const ref = (await box.innerText()).match(/Reference ([A-Z0-9]{6})/)[1];
+  assert.ok(logged[0].includes("[" + ref + "]"), "the reference on screen is the one in the log");
+  await page.evaluate(() => { window.__broken = false; });
+  await box.getByRole("button", { name: "Try again" }).click();
+  await page.waitForFunction(() => window.__host.textContent === "drawn");
+  assert.equal(await page.evaluate(() => window.__tries), 2, "Retry drew the page again");
+  assert.equal(logged.length, 1, "a draw that works logs nothing");
+  assert.equal(await page.locator(".ol-empty--error").count(), 0);
+});
+
+await t("a page whose `when` throws is passed over and logged, and a page that does not apply is passed over quietly", async (page) => {
+  const logged = [];
+  await page.exposeFunction("__logged", (s) => logged.push(s));
+  const r = await page.evaluate(() => {
+    console.error = (...a) => window.__logged(a.map(String).join(" "));
+    OL.pages.register("fx-when-throws", { template: "T3", when() { throw new Error("no env"); }, draw() {} });
+    OL.pages.register("fx-other-country", { template: "T3", when: (env) => env.region === "US", draw() {} });
+    return [OL.pages.find("fx-when-throws", {}), OL.pages.find("fx-other-country", { region: "IN" }), OL.pages.find("fx-nobody", {}), typeof OL.pages.find("fx-other-country", { region: "US" })];
+  });
+  assert.deepEqual(r, [null, null, null, "function"]);
+  assert.equal(logged.length, 1, "only the page whose when() broke is logged");
+});
+
 await browser.close();
 console.log(`\n${n} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

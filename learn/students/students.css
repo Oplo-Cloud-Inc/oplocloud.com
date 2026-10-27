@@ -1,0 +1,80 @@
+/* ==========================================================================
+   Students — the module's own layout. Tokens only (check-ui.mjs lints this
+   file like ui.css); the parts are the library's, this file only places them.
+   ========================================================================== */
+
+.st-banner { margin: 0 0 var(--s-3); }
+
+/* ---- Directory */
+.st-tb { align-items: flex-end; }
+.st-tb__fields { flex: 1; align-items: flex-end; }
+.st-tb .ol-sf { flex: 1 1 200px; max-width: 300px; }
+.st-f { width: 152px; min-width: 140px; }
+.st-chips { margin: 0 0 var(--s-3); }
+.st-tokens:empty { display: none; }
+.st-tokens { margin: 0 0 var(--s-3); }
+.st-token--fixed { padding-inline-end: var(--s-3); background: var(--c-accent-soft); border-color: var(--c-accent); }
+.st-name { display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; color: var(--c-text); font-weight: var(--w-strong); text-decoration: none; }
+.st-name:hover .st-name__n { text-decoration: underline; }
+.st-name__n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-namecell { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); min-width: 0; }
+.st-att { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--s-2); }
+.st-att__n { font-variant-numeric: tabular-nums; }
+.st-form { display: flex; flex-direction: column; gap: var(--s-4); }
+
+/* ---- Quick look and the parts the record shares */
+.st-peek { display: flex; flex-direction: column; gap: var(--s-4); }
+.st-peek__sub { margin: 0; font: var(--t-small); color: var(--c-text-3); }
+.st-peek__pills { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.st-peek__pills:empty { display: none; }
+.st-alerts { display: flex; flex-direction: column; gap: var(--s-2); }
+.st-gaps { display: flex; flex-direction: column; gap: var(--s-2); }
+.st-gaps__t { margin: 0; font: var(--t-small); font-weight: var(--w-strong); }
+.st-gaps__list { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.st-gap { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 28px; padding: 0 var(--s-3) 0 var(--s-2); border: 1px solid transparent; border-radius: var(--r-full); background: var(--c-warning-soft); color: var(--c-warning); font: var(--t-small); font-weight: var(--w-strong); cursor: pointer; }
+.st-gap.is-blocks { background: var(--c-danger-soft); color: var(--c-danger); }
+.st-gap:hover { border-color: currentColor; }
+.st-contacts { display: flex; flex-direction: column; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.st-contact { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border: 1px solid var(--c-line); border-radius: var(--r-md); }
+.st-contact__who { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
+.st-contact__rel { font: var(--t-small); color: var(--c-text-3); }
+.st-contact__line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); }
+.st-contact__num { font-variant-numeric: tabular-nums; }
+.st-contact__act { display: inline-flex; align-items: center; gap: var(--s-2); }
+.st-list { margin: 0; padding-inline-start: var(--s-5); display: flex; flex-direction: column; gap: var(--s-1); }
+
+/* ---- The record */
+.st-rec__cols { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s-6); align-items: start; }
+.st-rec__main { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.st-rec__panel { display: flex; flex-direction: column; gap: var(--s-4); }
+.st-rec__side { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.st-rec__card .ol-card__body { padding: var(--s-4) var(--s-5) var(--s-5); }
+.st-side__family { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+.st-side__family p { margin: 0; font: var(--t-small); color: var(--c-text-2); }
+.st-timeline { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.st-timeline__i { display: grid; grid-template-columns: 16px 1fr; gap: var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
+.st-timeline__i:last-child { border-bottom: 0; }
+.st-timeline__dot { width: 8px; height: 8px; margin-top: 6px; border-radius: var(--r-full); background: var(--c-line-input); }
+.st-timeline__t { margin: 0; font: var(--t-body); }
+.st-timeline__when { font: var(--t-small); color: var(--c-text-3); }
+.st-timeline__chg s { color: var(--c-text-3); }
+.st-timeline__chg b { font-weight: var(--w-strong); }
+
+/* ---- Add and edit */
+.st-formpage { max-width: var(--max-form); }
+.st-formpage__form { display: flex; flex-direction: column; gap: var(--s-4); }
+.st-formcard .ol-card__body { padding: var(--s-4) var(--s-5) var(--s-5); }
+.st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4) var(--s-5); align-items: start; }
+.st-grid__wide { grid-column: 1 / -1; }
+.st-formbar { position: sticky; bottom: 0; z-index: var(--z-sticky); display: flex; justify-content: flex-end; gap: var(--s-2); padding: var(--s-3) 0; background: var(--c-bg); border-top: 1px solid var(--c-line); }
+
+@media (max-width: 1023px) {
+  .st-rec__cols { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 639px) {
+  .st-f { width: 100%; }
+  .st-tb .ol-sf { max-width: none; flex-basis: 100%; }
+  .st-att { justify-content: flex-start; }
+  .st-dir .ol-td { min-width: 0; }
+  .st-grid { grid-template-columns: minmax(0, 1fr); }
+}

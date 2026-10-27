@@ -9770,7 +9770,7 @@
   function shellFor() { OL.shell.bind(shellCtx(S.tab)); return OL.shell; }
   function shellCtx(at) {
     return {
-      container: $("#v-admin"), current: at, base: appBase(),
+      container: $("#v-admin"), current: at, base: appBase(), rest: appRest,
       allowed: function (k) { return allowedTabs().some(function (t) { return t.k === k; }); },
       schoolName: schoolName(), sectionName: function () { return sectionNamed(S.tab).name; },
       me: { id: S.me.id, name: S.me.name },
@@ -9795,6 +9795,7 @@
   function openFound(it) {
     if (it.kind === "student") {
       // An Indian school's profile is a sheet over the directory, so the directory is drawn first; the other is a page of its own.
+      if (regionOf() === "IN" && OL.pages && OL.pages.find("students", { region: "IN" })) { OL.shell.go("students/directory/" + it.id); return; }
       var india = regionOf() === "IN" && window.OPLO_INDIA_STUDENTS;
       if (india) openAdmin(false, "students");
       else { S.tab = "students"; OL.shell.open(shellCtx("students")); }
@@ -9820,6 +9821,13 @@
      page, which a phone shows in a layer when it has none of its own. */
   function adminPageFor(tab, admin) {
     if (!admin) return TEACH_TABS[tab] || consoleHome;
+    // A screen that has been rebuilt (shell/pages.js) is drawn in place of the old page; the rest stay as they were.
+    if (shellOn() && OL.pages && OL.pages.find) {
+      var pick = tab === "students" ? S.studentPick : null;
+      var rebuilt = OL.pages.find(tab, { region: regionOf(), route: OL.shell.route(), me: S.me, base: appBase(), pick: pick,
+        go: function (path) { return OL.shell.go(path); }, setRecord: function (r) { OL.shell.setRecord(r); }, title: OL.shell.title() });
+      if (rebuilt) { if (pick) S.studentPick = null; return rebuilt; }
+    }
     return ({ today: consoleHome, assessments: tabSchoolAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, curriculum: tabCourses, activity: tabActivity,
        people: tabPeople, permissions: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
@@ -9847,7 +9855,9 @@
     // The entry keeps this place. It used to read S.tab when Back was pressed,
     // which by then was the place Back was leaving, so Back reopened it.
     var at = S.tab;
-    if (!silent || replace) enter("admin:" + at, "Console", function () { openAdmin(true, at); }, !!replace, adminPath(at));
+    // A record open in the frame is a place of its own, so going from the list to a record (the same old page) is a step Back can undo.
+    var rec = shellOn() && OL.shell.pending() && OL.shell.pending().record;
+    if (!silent || replace) enter("admin:" + at + (rec ? ":" + rec + ":" + (OL.shell.pending().recordTab || "") : ""), "Console", function () { openAdmin(true, at); }, !!replace, adminPath(at));
     setTitle(sectionNamed(at).name);
 
     document.body.classList.add("is-console");

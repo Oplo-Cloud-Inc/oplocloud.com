@@ -1,12 +1,17 @@
-// The words lint for learn/ui and learn/i18n: node scripts/check-i18n.mjs
+// The words lint for learn/ui, learn/i18n, learn/shell and the rebuilt modules (learn/students): node scripts/check-i18n.mjs
 //  - every key a component asks for exists in the en-IN base pack
 //  - en-US and hi-IN only hold keys the base has, and take the same {values}
 //  - a Hindi message is in Devanagari, not a copy of the English
 //  - a component holds no sentence of its own: a word a person reads comes from a pack
+//  - a rebuilt module's words are all in Hindi too (HINDI_COMPLETE): a screen is not half translated
+// OL_LEARN_ROOT points the lint at another copy of learn/ (the fixtures of test-lint.mjs).
 import fs from "node:fs";
 import path from "node:path";
 
-const LEARN = path.resolve(new URL("../../learn", import.meta.url).pathname);
+const LEARN = process.env.OL_LEARN_ROOT ? path.resolve(process.env.OL_LEARN_ROOT) : path.resolve(new URL("../../learn", import.meta.url).pathname);
+/* The folders of rebuilt modules, and the key families whose Hindi must be complete. */
+const MODULES = ["students"];
+const HINDI_COMPLETE = ["students.", "pages."];
 const read = (f) => fs.readFileSync(path.join(LEARN, f), "utf8");
 const win = {};
 for (const f of ["i18n/i18n.js", "i18n/en-IN.js", "i18n/en-US.js", "i18n/hi-IN.js"]) new Function("window", "OL", read(f))(win, win.OL);
@@ -18,6 +23,7 @@ const bad = (m) => problems.push(m);
 /* The {names} a message takes, including the ones inside plural and select cases. */
 const params = (msg) => [...new Set([...msg.matchAll(/\{\s*([a-zA-Z_]\w*)\s*[,}]/g)].map((m) => m[1]))].sort().join(",");
 
+for (const k of Object.keys(base)) if (HINDI_COMPLETE.some((p) => k.startsWith(p)) && packs["hi-IN"][k] == null) bad(`hi-IN has no "${k}": a rebuilt module's words are translated whole`);
 for (const loc of ["en-US", "hi-IN"]) {
   for (const [k, v] of Object.entries(packs[loc] || {})) {
     if (base[k] == null) { bad(`${loc} has "${k}", which en-IN does not`); continue; }
@@ -31,7 +37,8 @@ for (const loc of ["en-US", "hi-IN"]) {
 }
 
 /* Keys the components ask for. A key built with "+" is checked by its prefix. */
-const files = fs.readdirSync(path.join(LEARN, "ui")).filter((f) => f.endsWith(".js") && f !== "gallery.js").map((f) => "ui/" + f).concat(["i18n/format.js"]).concat(fs.readdirSync(path.join(LEARN, "shell")).filter((f) => f.endsWith(".js")).map((f) => "shell/" + f));
+const files = fs.readdirSync(path.join(LEARN, "ui")).filter((f) => f.endsWith(".js") && f !== "gallery.js").map((f) => "ui/" + f).concat(["i18n/format.js"]).concat(fs.readdirSync(path.join(LEARN, "shell")).filter((f) => f.endsWith(".js")).map((f) => "shell/" + f))
+  .concat(MODULES.flatMap((m) => fs.readdirSync(path.join(LEARN, m)).filter((f) => f.endsWith(".js")).map((f) => `${m}/${f}`)));
 const asked = new Set();
 for (const f of files) {
   const src = read(f);
@@ -41,12 +48,14 @@ for (const f of files) {
     if (m[3]) { if (!Object.keys(base).some((k) => k.startsWith(full))) bad(`${f}: no key starts with "${full}"`); }
     else if (base[full] == null) bad(`${f}: key "${full}" is not in the en-IN pack`);
   }
+  // a list of choices whose words are looked up as prefix + value (opt("students.gender.", […])): the prefix must lead somewhere
+  for (const m of src.matchAll(/\bopt\(\s*"([a-z_.0-9]+\.)"/g)) { asked.add(m[1]); if (!Object.keys(base).some((k) => k.startsWith(m[1]))) bad(`${f}: no key starts with "${m[1]}"`); }
 }
 
 /* A sentence of its own: text a person reads, written straight into a component. */
 const SENTENCE = /(?:\btext:|\.textContent\s*=|createTextNode\(|\bplaceholder:|"aria-label":|\btitle:|\blabel:)\s*"([^"]*[A-Za-z]{3,}[^"]*)"/g;
 const ALLOW = new Set(["ol-", "Esc", "Enter", "Tab", "svg", "button", "text", "tree", "grid", "dialog", "listbox", "menu"]);
-for (const f of files.filter((x) => (x.startsWith("ui/") || x.startsWith("shell/")) && !["ui/icons.js", "ui/index.js"].includes(x))) {
+for (const f of files.filter((x) => (x.startsWith("ui/") || x.startsWith("shell/") || MODULES.some((m) => x.startsWith(m + "/"))) && !["ui/icons.js", "ui/index.js"].includes(x))) {
   const lines = read(f).replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " ")).split("\n");   // block comments blanked, lines kept
   lines.forEach((ln, i) => {
     if (/^\s*(\/\/|\*|\/\*)/.test(ln)) return;

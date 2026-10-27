@@ -10,6 +10,9 @@
    ========================================================================== */
 
 /* ------------------------------------------------------------------ Frame */
+/* The frame owns the canvas behind its pages. The old console's grey (#f5f5f7) is not a token, and the token text colours are
+   proven against the token surfaces (tools/check_tokens.py), not against it: a subtitle on that grey was 4.4:1. */
+body.ol-shell.a-console { background: var(--c-bg-subtle); }
 body.ol-shell { --ol-rail: var(--rail-w); }
 body.ol-shell.ol-rail-min { --ol-rail: var(--rail-w-collapsed); }
 

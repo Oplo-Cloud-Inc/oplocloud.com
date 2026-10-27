@@ -169,6 +169,145 @@
     action: {
       take_register: "Take a register", new_circular: "Send a circular", issue_certificate: "Issue a certificate",
       arrange_cover: "Arrange cover", admit_student: "Admit a student", raise_work_order: "Raise a work order"
+    },
+
+    /* The parts every page shares (ui/page.js). */
+    page: { bulk: "Actions for the selected rows" },
+
+    /* A page that could not be drawn (shell/pages.js). */
+    pages: {
+      error_title: "This page did not load",
+      error_text: "Something went wrong on our side. Try again, and if it keeps happening, quote the reference.",
+      error_ref: "Reference {ref}"
+    },
+
+    /* Students — the Directory, the quick look, the record and the add and edit form (learn/students). */
+    students: {
+      add: "Add student", import: "Import from a file", export: "Export list", exporting: "Preparing the file…",
+      exported: "{n, plural, one {# student exported} other {# students exported}}", export_failed: "The list could not be exported. Try again.",
+      edit: "Edit", quick_look: "Quick look", open_record: "Open record", peek_title: "Student", more_filters: "More filters", chips_label: "Quick filters",
+      any: "Any", choose: "Choose", required: "This is required.", save_failed: "Could not save. Try again.", loading: "Loading student…",
+      offline: "You are offline. Reconnect and try again.", caption: "Students",
+      announce: "{n, plural, =0 {No students match} one {# student} other {# students}}",
+      subtitle: "{n, plural, one {# student} other {# students}} in {sections, plural, one {# section} other {# sections}}",
+      search: "Search by name, admission number, class or phone", search_label: "Search students",
+      class_n: "Class {name}", roll: "Roll {n}", adm: "Adm. {no}", n_to_fix: "{n} to fix",
+      denied: "You can't open the Directory",
+      denied_text: "Only office staff, class teachers and school leaders can see the Directory. Ask your school admin.",
+      none_match: "No students match these filters.", none_match_text: "Try fewer filters, or search for a different name or number.",
+      first_title: "No students yet", first_text: "Add the first student, or import your list from a file.",
+      not_found: "Student not found", not_found_text: "This student is not in your school, or the link is old.",
+      message_family: "Message family", message_sent: "Message sent", issue_certificate: "Issue certificate",
+      side_label: "About this student", tabs_label: "Sections of the student record", back_to_record: "Back to record",
+      new_title: "Add student", edit_title: "Edit {name}", save_new: "Add student", created: "{name} was added", saved: "Changes saved", no_changes: "Nothing was changed.",
+      kpi: {
+        label: "Student numbers", students: "Students", in_sections: "{n, plural, one {in # section} other {in # sections}}",
+        under75: "Under 75%", under75_ctx: "attendance this year", warning: "Early warning", warning_ctx: "{n} at high risk",
+        consent: "Consent pending", consent_ctx: "parental consent not recorded", gaps: "Records to fix", gaps_ctx: "a board list would refuse them"
+      },
+      chip: { under75: "Under 75%", warning: "Early warning", consent: "Consent pending", gaps: "Records to fix", new: "New this year" },
+      status: { enrolled: "Enrolled", left: "Left", all: "All" },
+      filter: {
+        gender: "Gender", category: "Category", stream: "Stream", transport: "Transport", blood: "Blood group", language: "Family language",
+        status: "Status", apaar: "APAAR ID", pen: "PEN", admitted: "Admitted between", cwsn: "Child with special needs"
+      },
+      token: {
+        scope: "Your sections: {sections}", from: "Admitted from {date}", to: "Admitted until {date}", cwsn: "Special needs",
+        stream: "Stream: {value}", transport: "Transport: {value}", blood: "Blood group: {value}", language: "Language: {value}",
+        status: "Status: {value}", apaar: "APAAR: {value}", pen: "PEN: {value}"
+      },
+      gender: { M: "Male", F: "Female", O: "Other" },
+      apaar: { generated: "Generated", pending: "Pending", refused: "Refused", not_generated: "Not generated" },
+      pen: { on_file: "On file", missing: "Missing" },
+      col: { name: "Name", attendance: "Attendance", contact: "Main contact", admitted: "Admitted", record: "Record" },
+      warn: { high: "High risk", medium: "Watch" },
+      level: { high: "High", medium: "Medium", low: "Low", none: "None" },
+      consent: { verified: "Verified", pending: "Pending", withdrawn: "Withdrawn" },
+      consent_method: { signed_form: "Signed form", digilocker: "DigiLocker", other: "Other" },
+      tab: { overview: "Overview", attendance: "Attendance", marks: "Marks", family: "Family", record: "Government records", activity: "Activity" },
+      tile: {
+        label: "Key numbers", attendance: "Attendance", days_marked: "{n, plural, one {# day marked} other {# days marked}}", not_marked: "No days marked yet",
+        warning: "Early warning", warning_ctx: "{n, plural, one {# signal} other {# signals}}", no_reading: "Not enough data yet",
+        result: "Latest result", no_result: "No result published yet"
+      },
+      alert: {
+        attendance: "Attendance is {percent}, below the 75% a board asks for.",
+        attendance_watch: "Attendance is {percent}. They can miss {n, plural, one {# more day} other {# more days}} before it falls under 75%.",
+        consent: "Parental consent is not recorded.", early_high: "The early-warning signals are high.", early_medium: "The early-warning signals need watching.",
+        cwsn: "Child with special needs. Check that support is in place."
+      },
+      fact: {
+        dob: "Date of birth", admitted: "Admitted on", class_teacher: "Class teacher", mother_tongue: "Mother tongue", address: "Address",
+        apaar: "APAAR ID", pen: "PEN", aadhaar: "Aadhaar", board_roll: "Board roll number", previous_school: "Previous school",
+        consent: "Parental consent", cwsn: "Special needs", disability: "Kind of disability", udid: "Disability ID (UDID)", migrant: "Migrant family"
+      },
+      contact: {
+        none: "No family contact on file", none_text: "Add a parent's or guardian's name and mobile number so the school can reach the family.",
+        unnamed: "Name not recorded", no_number: "No number on file", primary: "Main contact", show: "Show number",
+        show_failed: "Could not show the number. Try again.", call: "Call", whatsapp: "WhatsApp",
+        rel: { Father: "Father", Mother: "Mother", Guardian: "Guardian" }
+      },
+      gaps: { title: "{n, plural, one {# thing to fix} other {# things to fix}}" },
+      gap: {
+        pen: "Add PEN", dob: "Add date of birth", gender: "Add gender", category: "Add category", apaar: "Add APAAR ID", fatherName: "Add a parent's name",
+        consentStatus: "Record parental consent", disability: "Add kind of disability", guardianName: "Add guardian's name"
+      },
+      side: {
+        alerts: "Needs attention", fix: "To fix", guardians: "Guardian accounts", team: "Class", family_open: "Open Guardians",
+        family_linked: "{n, plural, one {# guardian account is linked} other {# guardian accounts are linked}}, {active} active.",
+        family_none: "No guardian account is linked yet."
+      },
+      overview: { why: "Why the early warning", about: "About" },
+      peek: { about: "About", contacts: "Family" },
+      att: {
+        none: "No attendance marked yet", none_text: "Attendance appears here once a register is taken for this class.", open: "Open registers",
+        marked: "Days marked", present: "Present", leave: "On leave", absent: "Absent", with_leave: "Attendance counting leave",
+        can_miss: "Days they can still miss", must_attend: "Days they must attend"
+      },
+      marks: {
+        none: "No result yet", none_text: "Marks appear here once an exam is published.", open: "Open results", exam: "Latest exam",
+        pass_line: "Pass mark", state: "Result", pass: "Pass", below: "Below pass mark"
+      },
+      activity: {
+        none: "Nothing has changed yet", none_text: "Changes, exports and numbers shown are listed here with who did them.",
+        denied: "You can't see this log", denied_text: "The activity log is for school administrators and the principal.", system: "System",
+        verb: {
+          created: "added {field}", changed: "changed {field}", deleted: "removed {field}", published: "published {field}", exported: "exported {field}",
+          revealed: "showed {field}", signed_in: "signed in", sign_in_failed: "failed to sign in", role_changed: "changed the role of {field}", restored: "restored {field}"
+        },
+        event: {
+          created: "added this student", changed: "changed this record", deleted: "removed this record", published: "published this record",
+          exported: "exported the list", revealed: "showed a number", signed_in: "signed in", sign_in_failed: "failed to sign in",
+          role_changed: "changed a role", restored: "restored this record"
+        }
+      },
+      bulk: {
+        message: "Message families", house: "Set house", house_help: "Leave blank to clear the house.",
+        house_go: "{n, plural, one {Set house for # student} other {Set house for # students}}",
+        house_done: "{n, plural, =0 {No house changed: they already had it} one {House set for # student} other {House set for # students}}",
+        message_title: "{n, plural, one {Message the family of # student} other {Message the families of # students}}",
+        subject: "Subject", text: "Message", send: "Send message", word: "SEND",
+        sent: "Sent to {students, plural, one {# student} other {# students}} and {families, plural, one {# guardian} other {# guardians}}"
+      },
+      section: { student: "Student", records: "Government records", family: "Family", care: "Care and support", consent: "Parental consent" },
+      field: {
+        name: "Full name", email: "Email", dob: "Date of birth", gender: "Gender", classId: "Class and section", rollNo: "Roll number",
+        admissionNo: "Admission number", admittedOn: "Admitted on", category: "Category", house: "House", bloodGroup: "Blood group",
+        motherTongue: "Mother tongue", secondLanguage: "Second language", transport: "Transport", address: "Address",
+        apaar: "APAAR ID", pen: "PEN", aadhaar: "Aadhaar", boardRollNo: "Board roll number", previousSchool: "Previous school",
+        fatherName: "Father's name", fatherPhone: "Father's mobile", motherName: "Mother's name", motherPhone: "Mother's mobile",
+        primaryContact: "Main contact", language: "Family's language", guardianName: "Guardian's name", guardianRelation: "Guardian's relation",
+        guardianPhone: "Guardian's mobile", guardianEmail: "Family email", whatsapp: "Use WhatsApp", cwsn: "Child with special needs",
+        disability: "Kind of disability", udid: "Disability ID (UDID)", migrant: "Migrant family", consentStatus: "Parental consent",
+        consentMethod: "Consent given by", consentOn: "Consent date", consentNote: "Consent note", pin: "PIN code", district: "District", state: "State"
+      },
+      help: {
+        apaar: "12 digits, or write REFUSED or NOGEN.", pen: "11 digits.", aadhaar: "12 digits. Only the last four are kept.",
+        aadhaar_set: "On file, ending {last4}. Type a new number to replace it.",
+        fatherPhone: "A 10-digit mobile number, with or without +91.", motherPhone: "A 10-digit mobile number, with or without +91.",
+        guardianPhone: "A 10-digit mobile number, with or without +91."
+      },
+      error: { name: "Enter the student's full name.", email: "Enter a valid email address." }
     }
   });
 })();

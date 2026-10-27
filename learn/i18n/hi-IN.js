@@ -130,6 +130,145 @@
     action: {
       take_register: "रजिस्टर भरें", new_circular: "परिपत्र भेजें", issue_certificate: "प्रमाणपत्र जारी करें",
       arrange_cover: "स्थानापन्न तय करें", admit_student: "विद्यार्थी का प्रवेश करें", raise_work_order: "कार्य आदेश बनाएँ"
+    },
+
+    /* हर पृष्ठ के साझा हिस्से (ui/page.js)। */
+    page: { bulk: "चुनी गई पंक्तियों के लिए कार्य" },
+
+    /* जो पृष्ठ बन नहीं सका (shell/pages.js)। */
+    pages: {
+      error_title: "यह पृष्ठ लोड नहीं हुआ",
+      error_text: "हमारी ओर से कुछ गड़बड़ हो गई। फिर कोशिश करें, और बार-बार हो तो संदर्भ नंबर बताएँ।",
+      error_ref: "संदर्भ {ref}"
+    },
+
+    /* विद्यार्थी — निर्देशिका, झलक, रिकॉर्ड और जोड़ने-संपादित करने का फ़ॉर्म (learn/students)। */
+    students: {
+      add: "विद्यार्थी जोड़ें", import: "फ़ाइल से आयात करें", export: "सूची निर्यात करें", exporting: "फ़ाइल तैयार हो रही है…",
+      exported: "{n, plural, one {# विद्यार्थी निर्यात हुआ} other {# विद्यार्थी निर्यात हुए}}", export_failed: "सूची निर्यात नहीं हो सकी। फिर कोशिश करें।",
+      edit: "संपादित करें", quick_look: "झलक", open_record: "पूरा रिकॉर्ड खोलें", peek_title: "विद्यार्थी", more_filters: "और फ़िल्टर", chips_label: "त्वरित फ़िल्टर",
+      any: "कोई भी", choose: "चुनें", required: "यह ज़रूरी है।", save_failed: "सहेजा नहीं जा सका। फिर कोशिश करें।", loading: "विद्यार्थी लोड हो रहा है…",
+      offline: "आप ऑफ़लाइन हैं। फिर से जुड़कर कोशिश करें।", caption: "विद्यार्थी",
+      announce: "{n, plural, =0 {कोई विद्यार्थी नहीं मिला} one {# विद्यार्थी} other {# विद्यार्थी}}",
+      subtitle: "{sections, plural, one {# अनुभाग} other {# अनुभागों}} में {n, plural, one {# विद्यार्थी} other {# विद्यार्थी}}",
+      search: "नाम, प्रवेश क्रमांक, कक्षा या फ़ोन से खोजें", search_label: "विद्यार्थी खोजें",
+      class_n: "कक्षा {name}", roll: "अनुक्रमांक {n}", adm: "प्रवेश क्र. {no}", n_to_fix: "{n} सुधारने हैं",
+      denied: "आप निर्देशिका नहीं खोल सकते",
+      denied_text: "निर्देशिका केवल कार्यालय के कर्मचारी, कक्षा शिक्षक और विद्यालय के प्रमुख देख सकते हैं। अपने विद्यालय के प्रशासक से पूछें।",
+      none_match: "इन फ़िल्टरों से कोई विद्यार्थी नहीं मिला।", none_match_text: "फ़िल्टर कम करें, या कोई और नाम या नंबर खोजें।",
+      first_title: "अभी कोई विद्यार्थी नहीं", first_text: "पहला विद्यार्थी जोड़ें, या फ़ाइल से अपनी सूची आयात करें।",
+      not_found: "विद्यार्थी नहीं मिला", not_found_text: "यह विद्यार्थी आपके विद्यालय में नहीं है, या लिंक पुराना है।",
+      message_family: "परिवार को संदेश भेजें", message_sent: "संदेश भेज दिया गया", issue_certificate: "प्रमाणपत्र जारी करें",
+      side_label: "इस विद्यार्थी के बारे में", tabs_label: "विद्यार्थी रिकॉर्ड के भाग", back_to_record: "रिकॉर्ड पर वापस",
+      new_title: "विद्यार्थी जोड़ें", edit_title: "{name} को संपादित करें", save_new: "विद्यार्थी जोड़ें", created: "{name} को जोड़ा गया", saved: "बदलाव सहेजे गए", no_changes: "कुछ बदला नहीं गया।",
+      kpi: {
+        label: "विद्यार्थी संख्याएँ", students: "विद्यार्थी", in_sections: "{n, plural, one {# अनुभाग में} other {# अनुभागों में}}",
+        under75: "75% से कम", under75_ctx: "इस वर्ष की उपस्थिति", warning: "पूर्व चेतावनी", warning_ctx: "{n} अधिक जोखिम में",
+        consent: "सहमति लंबित", consent_ctx: "अभिभावक की सहमति दर्ज नहीं", gaps: "सुधारने योग्य रिकॉर्ड", gaps_ctx: "बोर्ड की सूची इन्हें स्वीकार नहीं करेगी"
+      },
+      chip: { under75: "75% से कम", warning: "पूर्व चेतावनी", consent: "सहमति लंबित", gaps: "सुधारने योग्य रिकॉर्ड", new: "इस वर्ष के नए" },
+      status: { enrolled: "नामांकित", left: "छोड़ चुके", all: "सभी" },
+      filter: {
+        gender: "लिंग", category: "श्रेणी", stream: "संकाय", transport: "परिवहन", blood: "रक्त समूह", language: "परिवार की भाषा",
+        status: "स्थिति", apaar: "APAAR आईडी", pen: "PEN संख्या", admitted: "प्रवेश की अवधि", cwsn: "विशेष आवश्यकता वाला बच्चा"
+      },
+      token: {
+        scope: "आपके अनुभाग: {sections}", from: "प्रवेश {date} से", to: "प्रवेश {date} तक", cwsn: "विशेष आवश्यकता",
+        stream: "संकाय: {value}", transport: "परिवहन: {value}", blood: "रक्त समूह: {value}", language: "भाषा: {value}",
+        status: "स्थिति: {value}", apaar: "APAAR आईडी: {value}", pen: "PEN संख्या: {value}"
+      },
+      gender: { M: "लड़का", F: "लड़की", O: "अन्य" },
+      apaar: { generated: "बन चुकी", pending: "लंबित", refused: "अस्वीकृत", not_generated: "नहीं बनी" },
+      pen: { on_file: "दर्ज है", missing: "दर्ज नहीं" },
+      col: { name: "नाम", attendance: "उपस्थिति", contact: "मुख्य संपर्क", admitted: "प्रवेश", record: "रिकॉर्ड" },
+      warn: { high: "अधिक जोखिम", medium: "ध्यान दें" },
+      level: { high: "अधिक", medium: "मध्यम", low: "कम", none: "कोई नहीं" },
+      consent: { verified: "सत्यापित", pending: "लंबित", withdrawn: "वापस ली गई" },
+      consent_method: { signed_form: "हस्ताक्षरित फ़ॉर्म", digilocker: "डिजिलॉकर", other: "अन्य" },
+      tab: { overview: "अवलोकन", attendance: "उपस्थिति", marks: "अंक", family: "परिवार", record: "सरकारी रिकॉर्ड", activity: "गतिविधि" },
+      tile: {
+        label: "मुख्य संख्याएँ", attendance: "उपस्थिति", days_marked: "{n, plural, one {# दिन दर्ज} other {# दिन दर्ज}}", not_marked: "अभी कोई दिन दर्ज नहीं",
+        warning: "पूर्व चेतावनी", warning_ctx: "{n, plural, one {# संकेत} other {# संकेत}}", no_reading: "अभी पर्याप्त आँकड़े नहीं",
+        result: "नवीनतम परिणाम", no_result: "अभी कोई परिणाम प्रकाशित नहीं"
+      },
+      alert: {
+        attendance: "उपस्थिति {percent} है, जो बोर्ड की 75% की सीमा से कम है।",
+        attendance_watch: "उपस्थिति {percent} है। 75% से नीचे जाने से पहले वे {n, plural, one {# दिन और} other {# दिन और}} अनुपस्थित रह सकते हैं।",
+        consent: "अभिभावक की सहमति दर्ज नहीं है।", early_high: "पूर्व चेतावनी के संकेत अधिक हैं।", early_medium: "पूर्व चेतावनी के संकेतों पर नज़र रखें।",
+        cwsn: "विशेष आवश्यकता वाला बच्चा। जाँचें कि सहायता की व्यवस्था है।"
+      },
+      fact: {
+        dob: "जन्म तिथि", admitted: "प्रवेश की तिथि", class_teacher: "कक्षा शिक्षक", mother_tongue: "मातृभाषा", address: "पता",
+        apaar: "APAAR आईडी", pen: "PEN संख्या", aadhaar: "आधार", board_roll: "बोर्ड अनुक्रमांक", previous_school: "पिछला विद्यालय",
+        consent: "अभिभावक की सहमति", cwsn: "विशेष आवश्यकता", disability: "दिव्यांगता का प्रकार", udid: "दिव्यांगता आईडी (UDID)", migrant: "प्रवासी परिवार"
+      },
+      contact: {
+        none: "परिवार का कोई संपर्क दर्ज नहीं", none_text: "अभिभावक का नाम और मोबाइल नंबर जोड़ें, ताकि विद्यालय परिवार से संपर्क कर सके।",
+        unnamed: "नाम दर्ज नहीं", no_number: "कोई नंबर दर्ज नहीं", primary: "मुख्य संपर्क", show: "नंबर दिखाएँ",
+        show_failed: "नंबर नहीं दिखाया जा सका। फिर कोशिश करें।", call: "कॉल करें", whatsapp: "व्हाट्सऐप",
+        rel: { Father: "पिता", Mother: "माता", Guardian: "अभिभावक" }
+      },
+      gaps: { title: "{n, plural, one {# बात सुधारनी है} other {# बातें सुधारनी हैं}}" },
+      gap: {
+        pen: "PEN जोड़ें", dob: "जन्म तिथि जोड़ें", gender: "लिंग जोड़ें", category: "श्रेणी जोड़ें", apaar: "APAAR आईडी जोड़ें", fatherName: "माता या पिता का नाम जोड़ें",
+        consentStatus: "अभिभावक की सहमति दर्ज करें", disability: "दिव्यांगता का प्रकार जोड़ें", guardianName: "अभिभावक का नाम जोड़ें"
+      },
+      side: {
+        alerts: "ध्यान देने योग्य", fix: "सुधारने योग्य", guardians: "अभिभावक खाते", team: "कक्षा", family_open: "अभिभावक खोलें",
+        family_linked: "{n, plural, one {# अभिभावक खाता जुड़ा है} other {# अभिभावक खाते जुड़े हैं}}, {active} सक्रिय।",
+        family_none: "अभी कोई अभिभावक खाता नहीं जुड़ा।"
+      },
+      overview: { why: "पूर्व चेतावनी का कारण", about: "परिचय" },
+      peek: { about: "परिचय", contacts: "परिवार" },
+      att: {
+        none: "अभी उपस्थिति दर्ज नहीं", none_text: "इस कक्षा का रजिस्टर भरने के बाद उपस्थिति यहाँ दिखेगी।", open: "रजिस्टर खोलें",
+        marked: "दर्ज दिन", present: "उपस्थित", leave: "अवकाश पर", absent: "अनुपस्थित", with_leave: "अवकाश गिनकर उपस्थिति",
+        can_miss: "और कितने दिन अनुपस्थित रह सकते हैं", must_attend: "कितने दिन आना ज़रूरी है"
+      },
+      marks: {
+        none: "अभी कोई परिणाम नहीं", none_text: "परीक्षा प्रकाशित होने पर अंक यहाँ दिखेंगे।", open: "परिणाम खोलें", exam: "नवीनतम परीक्षा",
+        pass_line: "उत्तीर्ण अंक", state: "परिणाम", pass: "उत्तीर्ण", below: "उत्तीर्ण अंक से कम"
+      },
+      activity: {
+        none: "अभी कुछ नहीं बदला", none_text: "बदलाव, निर्यात और दिखाए गए नंबर, करने वाले के नाम के साथ, यहाँ दिखते हैं।",
+        denied: "आप यह लॉग नहीं देख सकते", denied_text: "गतिविधि लॉग विद्यालय के प्रशासकों और प्रधानाचार्य के लिए है।", system: "सिस्टम",
+        verb: {
+          created: "{field} जोड़ा", changed: "{field} बदला", deleted: "{field} हटाया", published: "{field} प्रकाशित किया", exported: "{field} निर्यात किया",
+          revealed: "{field} दिखाया", signed_in: "साइन इन किया", sign_in_failed: "साइन इन विफल रहा", role_changed: "{field} की भूमिका बदली", restored: "{field} पुनर्स्थापित किया"
+        },
+        event: {
+          created: "इस विद्यार्थी को जोड़ा", changed: "इस रिकॉर्ड में बदलाव किया", deleted: "इस रिकॉर्ड को हटाया", published: "इस रिकॉर्ड को प्रकाशित किया",
+          exported: "सूची निर्यात की", revealed: "एक नंबर दिखाया", signed_in: "साइन इन किया", sign_in_failed: "साइन इन विफल रहा",
+          role_changed: "एक भूमिका बदली", restored: "इस रिकॉर्ड को पुनर्स्थापित किया"
+        }
+      },
+      bulk: {
+        message: "परिवारों को संदेश", house: "हाउस तय करें", house_help: "हाउस हटाने के लिए खाली छोड़ें।",
+        house_go: "{n, plural, one {# विद्यार्थी का हाउस तय करें} other {# विद्यार्थियों का हाउस तय करें}}",
+        house_done: "{n, plural, =0 {किसी का हाउस नहीं बदला: उनका यही था} one {# विद्यार्थी का हाउस तय हुआ} other {# विद्यार्थियों का हाउस तय हुआ}}",
+        message_title: "{n, plural, one {# विद्यार्थी के परिवार को संदेश} other {# विद्यार्थियों के परिवारों को संदेश}}",
+        subject: "विषय", text: "संदेश", send: "संदेश भेजें", word: "भेजें",
+        sent: "{students, plural, one {# विद्यार्थी} other {# विद्यार्थियों}} और {families, plural, one {# अभिभावक} other {# अभिभावकों}} को भेजा गया"
+      },
+      section: { student: "विद्यार्थी", records: "सरकारी रिकॉर्ड", family: "परिवार", care: "देखभाल और सहायता", consent: "अभिभावक की सहमति" },
+      field: {
+        name: "पूरा नाम", email: "ईमेल", dob: "जन्म तिथि", gender: "लिंग", classId: "कक्षा और अनुभाग", rollNo: "अनुक्रमांक",
+        admissionNo: "प्रवेश क्रमांक", admittedOn: "प्रवेश की तिथि", category: "श्रेणी", house: "हाउस", bloodGroup: "रक्त समूह",
+        motherTongue: "मातृभाषा", secondLanguage: "द्वितीय भाषा", transport: "परिवहन", address: "पता",
+        apaar: "APAAR आईडी", pen: "PEN संख्या", aadhaar: "आधार", boardRollNo: "बोर्ड अनुक्रमांक", previousSchool: "पिछला विद्यालय",
+        fatherName: "पिता का नाम", fatherPhone: "पिता का मोबाइल", motherName: "माता का नाम", motherPhone: "माता का मोबाइल",
+        primaryContact: "मुख्य संपर्क", language: "परिवार की भाषा", guardianName: "अभिभावक का नाम", guardianRelation: "अभिभावक से संबंध",
+        guardianPhone: "अभिभावक का मोबाइल", guardianEmail: "परिवार का ईमेल", whatsapp: "व्हाट्सऐप का उपयोग करें", cwsn: "विशेष आवश्यकता वाला बच्चा",
+        disability: "दिव्यांगता का प्रकार", udid: "दिव्यांगता आईडी (UDID)", migrant: "प्रवासी परिवार", consentStatus: "अभिभावक की सहमति",
+        consentMethod: "सहमति किस रूप में दी", consentOn: "सहमति की तिथि", consentNote: "सहमति पर टिप्पणी", pin: "पिन कोड", district: "ज़िला", state: "राज्य"
+      },
+      help: {
+        apaar: "12 अंक, या REFUSED या NOGEN लिखें।", pen: "11 अंक।", aadhaar: "12 अंक। केवल अंतिम चार अंक रखे जाते हैं।",
+        aadhaar_set: "दर्ज है, अंत में {last4}। बदलने के लिए नया नंबर लिखें।",
+        fatherPhone: "10 अंकों का मोबाइल नंबर, +91 के साथ या उसके बिना।", motherPhone: "10 अंकों का मोबाइल नंबर, +91 के साथ या उसके बिना।",
+        guardianPhone: "10 अंकों का मोबाइल नंबर, +91 के साथ या उसके बिना।"
+      },
+      error: { name: "विद्यार्थी का पूरा नाम लिखें।", email: "सही ईमेल पता लिखें।" }
     }
   });
 })();

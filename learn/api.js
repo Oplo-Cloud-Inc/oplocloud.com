@@ -565,6 +565,20 @@ window.OPLO_API = (function () {
       exportKind: function (kind) { return get("/india/export/" + kind); },
       importRows: function (rows, check) { return post("/india/import", { rows: rows, check: !!check }, { timeout: 60000 }); }
     },
+    /* The student directory the list, the quick look and the record page are drawn from. `params` is the address's own words. */
+    directory: {
+      students: function (params, o) { return get("/directory/students" + q(params), o); },
+      exportRows: function (params) { return get("/directory/students/export" + q(params), { timeout: 60000 }); },
+      record: function (id) { return get("/directory/students/" + id); },
+      phone: function (id, which) { return post("/directory/students/" + id + "/phone", { which: which }); },
+      create: function (body) { return post("/directory/students", body); },
+      bulkHouse: function (body) { return post("/directory/students/bulk/house", body, { timeout: 60000 }); },
+      bulkMessage: function (body) { return post("/directory/students/bulk/message", body, { timeout: 60000 }); }
+    },
+    /* Who changed what, when. */
+    audit: {
+      list: function (params) { return get("/audit" + q(params)); }
+    },
     // Not `health`: that name is the connectivity check above, and the second
     // definition of a key in an object literal silently replaces the first.
     healthRecords: {
