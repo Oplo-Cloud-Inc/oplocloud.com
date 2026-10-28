@@ -10,13 +10,13 @@
 //  - the dev-only gallery and the README are never published                                       UI014
 //  - a rebuilt module's class names start with ol- (ol-students-…); is- and has- name a state      UI015
 // Each code is explained in learn/README.md. OL_LEARN_ROOT points the lint at another copy of learn/ (the fixtures of test-lint.mjs).
-import { MODULES, rd, lineOf, jsIn, lint } from "./lib-lint.mjs";
+import { MODULES, sheetsOf, rd, lineOf, jsIn, lint } from "./lib-lint.mjs";
 
 const L = lint();
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
 
 /* CSS ------------------------------------------------------------------- */
-const SHEETS = ["base.css", "ui/ui.css", "ui/gallery.css", "shell/shell.css"].concat(MODULES.map((m) => `${m}/${m}.css`));
+const SHEETS = ["base.css", "ui/ui.css", "ui/gallery.css", "shell/shell.css"].concat(MODULES.flatMap(sheetsOf));
 for (const f of SHEETS) {
   const css = strip(rd(f));
   const at = (m) => lineOf(css, m.index);
@@ -69,8 +69,8 @@ function scriptClasses(src) {
   for (const m of src.matchAll(/\b(?:querySelector(?:All)?|closest|matches)\(\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g)) for (const c of m[1].replace(/\[[^\]]*\]/g, "").matchAll(/\.([A-Za-z_][\w-]*)/g)) out.push({ name: c[1], index: m.index });
   return out;
 }
-for (const m of MODULES) {
-  const f = `${m}/${m}.css`, css = strip(rd(f));
+for (const f of MODULES.flatMap(sheetsOf)) {
+  const m = f.split("/")[0], css = strip(rd(f));
   for (const c of selectorClasses(css)) if (!OK_CLASS.test(c.name)) L.bad("UI015", f, lineOf(css, c.index), `class .${c.name} does not start with ol-`, `rename .${c.name} to .${suggest(m, c.name)} here and wherever a script uses it; a state may be is-… or has-…`);
 }
 

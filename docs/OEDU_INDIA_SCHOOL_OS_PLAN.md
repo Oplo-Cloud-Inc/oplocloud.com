@@ -85,7 +85,9 @@ Performance budgets: JS per route ≤ 120 KB gzip (shell ≤ 60 KB); CSS ≤ 40 
 | 9 | Exams UI on the templates (per the Exams coder brief) | none stated | Not started |
 | 10 | Hindi pass, high-contrast theme, performance hardening | Budgets met | Not started |
 
-Wave 1 (E9) is done on the branch, 2026-10-27, not pushed and not deployed: O5, E1, E2, E6 and E8 with Step 3; O6 (the shared T2 and T3 in `learn/ui/templates.js`, the Students pages on them), O7 and X6 (`tools/verify.sh`, the verify step of `deploy.yml`, `ci.yml`, `tools/ci-browser.sh`), X3 and X5 (the lint contract and the stamp check, with `learn/README.md` as the reference), D4, D6, D7 and D9 after it (`9cb439c` D4 D6 D7, `61e8fd7` O6 and D9, `fa07f35` O7 X3 X5 X6). Open owner action: mark "CI / The gates" and "CI / The browser suites" as required checks for main in the repository's branch protection; no workflow has run on GitHub yet. Wave 2 is next and gates the family build.
+Wave 1 (E9) is done on the branch, 2026-10-27, not pushed and not deployed: O5, E1, E2, E6 and E8 with Step 3; O6 (the shared T2 and T3 in `learn/ui/templates.js`, the Students pages on them), O7 and X6 (`tools/verify.sh`, the verify step of `deploy.yml`, `ci.yml`, `tools/ci-browser.sh`), X3 and X5 (the lint contract and the stamp check, with `learn/README.md` as the reference), D4, D6, D7 and D9 after it (`9cb439c` D4 D6 D7, `61e8fd7` O6 and D9, `fa07f35` O7 X3 X5 X6). Open owner action: mark "CI / The gates" and "CI / The browser suites" as required checks for main in the repository's branch protection; no workflow has run on GitHub yet. D3's storyboards are in section 12.
+
+Wave 2 (E9) is done on the branch, 2026-10-27, not pushed and not deployed: O13, X4, D1, D2, D3, D5, D10, D11, O8, O17, E7, X1 and X2 (`3c19144` X4 O8 O17 in the API, `922525d` X1 O17 E7, `c013d16` D1 D2 D3 D5 D10 D11 O8 in the front end, and the gates and the README with this note after them). What each leaves to do: D2's second half (each state exercised by its screen's smoke test) and D10's `prove-family-auth.mjs` wait for the family screens; D3's storyboards 2 and 3 are marked pending in `test-journeys.mjs`; O17's registry lists 3 write routes as not yet audited (13 are); E7 was measured on a local database (a page of the list p95 418 ms against 600, the export 0.41 s against 5 s), so its summary table and cache are not built, and the same bench against the deployed API has still to be attached to the PR that calls the Directory school-ready; X1's timings (`docs/dx/tthw.md`: the gallery 2 s, the demo 28 s, warm cache, one run) were taken by hand and X8 scripts them later; X2's check, an agent given only the README adding a page that passes every lint, was not run, and the golden path was followed by hand. The brief PDF is not stored under `docs/design/` until the owner agrees (D1). The family build (section 6, item 3) is next.
 
 ### 5. Workstream B: capability gaps
 
@@ -213,6 +215,46 @@ A payment-provider account; a WhatsApp Business account; a registered SMS sender
 - E8 One list of sensitive fields. The fields that are masked (Aadhaar, phones, UDID, and fees' bank, UPI and card last four) are listed once in `api/src/services/india.js` and imported by `services/audit.js` (`MASK`, line 13), `routes/directory.js` (`masked`, line 87) and every new module. Verify: a test fails when a field whose name contains `phone`, `aadhaar`, `udid`, `bank` or `upi` is written to the audit log unmasked.
 - E9 Obligation waves. The accepted obligations are worked in this order and each PR lists the obligations it satisfies; a wave that exceeds its size budget by half moves its last item to the next wave instead of growing the PR. Wave 0, now, plan text and owner actions with no code: O1, O2, O3, O4, O16. Wave 1, before Step 3 merges (budget about 4 working days human, 1 day CC): O5, O6 (the field and the lint), O7, D4, D6, D7, D9, X3, X5, X6, E1, E2, E6, E8. Wave 2, after Step 3 merges and before the family build starts (about 7 days human, 2 days CC; the owner's order change of 2026-10-27 moved this gate from Step 4 to the family build and pulled in D2, D3, D5 and D10, which are inputs to that build): O8, O13, O17, D1, D2, D3, D5, D10, D11, X1, X2, X4, E7. Wave 3, built beside the family and fee work and complete before either ships and before any real school's data is loaded: O9, O10, O11, O12, O15, D8, D12, E3, E4, E5. Wave 4, later: O14 (before Step 9), X7, X8, X9. Verify: this list is in the plan, every obligation appears exactly once, and each PR description names the obligations it closes.
 <!-- /autoplan-accepted:eng -->
+### 12. Journey storyboards (D3)
+
+Three journeys the product is judged by, with what the person feels and what the screen says at each step.
+The copy is exact (en-IN); the Hindi is written with the screen. `api/scripts/test-journeys.mjs` walks the
+journeys that exist, at 360 px in light and dark; the rest are marked and wait for their screens.
+
+**Storyboard 1. The class teacher's 7:45 register, on a phone** (Myra Malhotra, class teacher of X-C; walks
+a corridor with one bar of signal; walked by `test-journeys.mjs` today).
+
+| Step | She does | She feels | The screen says |
+|---|---|---|---|
+| 1 | Opens the app at the school gate, where there is a signal; the page is now on the phone | Rushed. Two minutes, not ten | Home with one tile: "Your class" · "X-C" · "Register not taken yet" |
+| 2 | Taps the tile in the corridor; the signal is gone | A little tense | The class day, "Today": everyone is present, the tally reads "45 present · 0 late · 0 absent". She is working from the last roll on this phone |
+| 3 | Taps **A** for two children and picks a reason | In control; nothing is slow | The tally follows each tap: "43 present · 0 late · 2 absent" |
+| 4 | Taps **Save the register** with no signal | One worry: did it go? | A toast, "Saved on this phone, will send when the signal returns." The bar reads "1 waiting to send" and the button reads "Waiting to send" |
+| 5 | Walks into class; the signal comes back by itself | Relief. Nothing left to do | A toast, "Sent". The bar goes; the button reads "Register in ✓" |
+| 6 | (If the school refused it, for example a locked day) | Told the truth, not left guessing | The bar reads "1 thing did not go", with the reason, and the register stays editable |
+
+**Storyboard 2. A parent's first sign-in** (Tarun Jindal, father of Tanvi in X-C; his own phone, a cheap
+Android, English with Hindi preferred; not walked yet, waits for the family bundle, O9).
+
+| Step | He does | He feels | The screen says |
+|---|---|---|---|
+| 1 | Opens the link on the invite sheet his daughter brought home | Curious, slightly wary of a new app | "Sign in" · "Use the mobile number the school has for you." |
+| 2 | Types his number, taps **Send code** | Waiting; will it work? | "If the school has this number, a code is on its way." The code boxes, "Send again in 30 seconds" |
+| 3 | Types the six digits (or taps the one the phone suggests) | Quick, familiar | The boxes fill; a spinner on the button |
+| 4 | One screen, three jobs, with Home faintly behind it | Reassured that it is his daughter; asked for little | "Is this you?" · "Tanvi Jindal, Class X-C at Strawberry Fields High School." · language, **English** or **हिन्दी** · the consent line, "The school may keep Tanvi's records on this app." with "What we keep and why" · **Agree and continue** |
+| 5 | Taps **Agree and continue** | Glad to be in; the screen is already in Hindi if he chose it | Home: Tanvi's attendance today and the latest circular |
+
+**Storyboard 3. A parent paying a fee** (the same father; two taps from Home to the payment page and back;
+not walked yet, waits for the fees slice).
+
+| Step | He does | He feels | The screen says |
+|---|---|---|---|
+| 1 | Taps the fee reminder on Home | A small chore he wants done | Fees: "Term 2 · ₹12,500 · due 15/11/2026" · **Pay now** |
+| 2 | Pays on the payment page and is sent back | Anxious: did it take? | "Confirming your payment" · "This takes a few seconds. Please keep this page open." The page asks the server every two seconds |
+| 3a | The payment lands | Relief | "Payment received" · "₹12,500 for Tanvi, Term 2 fees. Receipt no. {number}." · **View receipt** |
+| 3b | The bank has not answered | Worried about paying twice | "We are checking your payment" · "…Do not pay again until we tell you." · "Reference {reference}" |
+| 3c | The payment fails | Annoyed, but not out of pocket | "The payment did not go through" · "You have not been charged. Your fees are as they were." · **Try again** |
+
 ## Review record
 
 Gate outcome, 2026-10-27. Status: APPROVED by the owner. The owner replied `rec` to gate revision 1 (`rec_hash` 316a19611487): challenge uc1 option b (family slice and fee link before the remaining rebuild steps, section 6), taste decisions d1 to d12 option a as recommended, plan p1 approved. The skill asks for an Eng re-run after an accepted challenge; its guard refused it (`competing_root`: after a compaction this session's journal has more than one conversation root), so the new order was checked by hand instead. Result: E9 wave 2 now gates the family build, not Step 4, and four design obligations (D2, D3, D5, D10) moved from wave 3 to wave 2 because the family build starts right after it and D2 requires its state tables before a screen is built; no obligation was added or removed, and one open question was added (section 11, item 6, `/parent` against `/family`). That check is one voice and not a phase run; a fresh `/plan-eng-review` of the amended plan would replace it. Count correction: the plan carries 46 numbered obligations (O1 to O17, D1 to D12, X1 to X9, E1 to E8) plus the ordering rule E9; the gate brief said 38, which counted only the CEO, design and DX items.

@@ -14,14 +14,20 @@ import { MODULES } from "./lib-lint.mjs";
 const ROOT = path.resolve(new URL("../..", import.meta.url).pathname);
 const LEARN = path.join(ROOT, "learn");
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "oplo-gates-"));
+const migDir = fs.mkdtempSync(path.join(os.tmpdir(), "oplo-gates-mig-"));
+fs.cpSync(path.join(ROOT, "api", "migrations"), migDir, { recursive: true });
 for (const d of ["ui", "i18n", "shell", ...MODULES]) fs.cpSync(path.join(LEARN, d), path.join(tmp, d), { recursive: true });
-for (const f of ["base.css", ".assetsignore", "_ui.html"]) fs.copyFileSync(path.join(LEARN, f), path.join(tmp, f));
+for (const f of ["base.css", "tokens.css", ".assetsignore", "_ui.html", "README.md"]) fs.copyFileSync(path.join(LEARN, f), path.join(tmp, f));
+const designMd = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "oplo-gates-design-")), "DESIGN.md");
+fs.copyFileSync(path.join(ROOT, "DESIGN.md"), designMd);
+const auditRoutes = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "oplo-gates-audit-")), "audit-routes.mjs");
+fs.copyFileSync(path.join(ROOT, "api", "scripts", "audit-routes.mjs"), auditRoutes);
 fs.writeFileSync(path.join(tmp, "a.js"), "var a = 1;\n");
 const PAGE = path.join(tmp, "index.html");
 fs.writeFileSync(PAGE, '<script src="a.js"></script>\n');
 
 const verify = (...gates) => {
-  try { const out = execFileSync("bash", [path.join(ROOT, "tools", "verify.sh"), ...gates], { env: { ...process.env, OL_LEARN_ROOT: tmp }, encoding: "utf8", stdio: "pipe" }); return { code: 0, out, stdout: out }; }
+  try { const out = execFileSync("bash", [path.join(ROOT, "tools", "verify.sh"), ...gates], { env: { ...process.env, OL_LEARN_ROOT: tmp, OL_MIGRATIONS_DIR: migDir, OL_DESIGN_MD: designMd, OL_AUDIT_ROUTES: auditRoutes }, encoding: "utf8", stdio: "pipe" }); return { code: 0, out, stdout: out }; }
   catch (e) { return { code: e.status, out: String(e.stdout || "") + String(e.stderr || ""), stdout: String(e.stdout || "") }; }
 };
 const last = (r) => r.stdout.trim().split("\n").pop();
@@ -62,6 +68,44 @@ try {
   broken("students/students.css", (s) => s + "\n.ol-students-fx { color: #ff0000; }\n", ["lints"], /UI001 learn\/students\/students\.css:\d+ raw colour #ff0000/, "a lint broken in the code fails the lints gate", "check-ui");
   broken("i18n/hi-IN.js", (s) => s.replace(/ add: "विद्यार्थी जोड़ें",/, ""), ["lints"], /I18N003 learn\/i18n\/hi-IN\.js hi-IN has no "students\.add"/, "a missing Hindi word fails the lints gate", "check-i18n");
 
+  /* two parallel branches took the same migration number (the next one after the highest in the copy, so a real migration never meets them) */
+  const next = String(Math.max(...fs.readdirSync(migDir).map((f) => Number(f.slice(0, 4))).filter(Number.isFinite)) + 1).padStart(4, "0");
+  fs.writeFileSync(path.join(migDir, next + "_a.sql"), "ALTER TABLE x ADD COLUMN a TEXT;\n");
+  fs.writeFileSync(path.join(migDir, next + "_b.sql"), "ALTER TABLE x ADD COLUMN b TEXT;\n");
+  try {
+    r = verify("migrations");
+    assert.equal(r.code, 1, "a duplicate migration number fails the run\n" + r.out);
+    assert.match(r.out, new RegExp(`MIG001 api/migrations/${next}_b\\.sql:1 shares the number ${next} with ${next}_a\\.sql`));
+    assert.match(r.out, /FAILED: migration numbers/);
+    assert.match(last(r), /^RESULT: fail 1 gates$/);
+  } finally { fs.rmSync(path.join(migDir, next + "_a.sql")); fs.rmSync(path.join(migDir, next + "_b.sql")); }
+  assert.equal(verify("migrations").code, 0, "and the real folder passes");
+  ok("two migrations with one number fail the migrations gate");
+
+  /* DESIGN.md fell behind the code: a token family nobody wrote down */
+  const was = fs.readFileSync(designMd, "utf8");
+  fs.writeFileSync(designMd, was.replaceAll("--z-", "--zz-"));
+  try {
+    r = verify("design");
+    assert.equal(r.code, 1, "a token family missing from DESIGN.md fails the run\n" + r.out);
+    assert.match(r.out, /DES001 learn\/tokens\.css:\d+ token family --z-\* is not in DESIGN\.md/);
+    assert.match(r.out, /FAILED: design law/);
+  } finally { fs.writeFileSync(designMd, was); }
+  assert.equal(verify("design").code, 0, "and the real DESIGN.md passes");
+  ok("a token family missing from DESIGN.md fails the design gate");
+
+  /* a write route of a migrated module dropped from the audit registry */
+  const registry = fs.readFileSync(auditRoutes, "utf8");
+  fs.writeFileSync(auditRoutes, registry.replace(/^\s*"POST \/india\/classes\/:classId\/promote".*\n/m, ""));
+  try {
+    r = verify("audit");
+    assert.equal(r.code, 1, "a write route with no audit decision fails the run\n" + r.out);
+    assert.match(r.out, /AUD001 api\/src\/index\.js:\d+ POST \/india\/classes\/:classId\/promote writes data for a migrated module/);
+    assert.match(r.out, /FAILED: audit coverage/);
+  } finally { fs.writeFileSync(auditRoutes, registry); }
+  assert.equal(verify("audit").code, 0, "and the real registry passes");
+  ok("a write route dropped from the audit registry fails the audit gate");
+
   /* every gate runs, so one run shows everything that is wrong */
   const css = fs.readFileSync(at("students/students.css"), "utf8"), ui = fs.readFileSync(at("ui/core.js"), "utf8");
   fs.writeFileSync(at("students/students.css"), css + "\n.ol-students-fx { color: #ff0000; }\n");
@@ -100,4 +144,7 @@ try {
   process.exitCode = 1;
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
+  fs.rmSync(migDir, { recursive: true, force: true });
+  fs.rmSync(path.dirname(designMd), { recursive: true, force: true });
+  fs.rmSync(path.dirname(auditRoutes), { recursive: true, force: true });
 }

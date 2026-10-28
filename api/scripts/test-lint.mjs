@@ -1,6 +1,7 @@
 // The lints catch what they say they catch: node api/scripts/test-lint.mjs
 //
-// check-ui.mjs, check-i18n.mjs and tools/stamp.py --check are run on a copy of learn/ with one thing wrong at a time.
+// check-ui.mjs, check-i18n.mjs, check-migrations.mjs, check-design.mjs, check-audit.mjs and tools/stamp.py --check are run on a copy of
+// learn/ (or of api/migrations, DESIGN.md, or api/src with its proofs) with one thing wrong at a time.
 // Every code has a fixture: the run must exit 1, print the problem line, a fix: line and a docs: line, and end with
 // RESULT: fail. The untouched copy must pass. A code with no fixture, or none in learn/README.md, fails this test:
 // a lint that nobody has seen fail is a lint nobody can trust.
@@ -16,15 +17,27 @@ const LEARN = path.join(ROOT, "learn");
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "oplo-lint-"));
 const stampDir = fs.mkdtempSync(path.join(os.tmpdir(), "oplo-stamp-"));
+const migDir = fs.mkdtempSync(path.join(os.tmpdir(), "oplo-mig-"));
+const designDir = fs.mkdtempSync(path.join(os.tmpdir(), "oplo-design-"));
+fs.copyFileSync(path.join(ROOT, "DESIGN.md"), path.join(designDir, "DESIGN.md"));
+const auditDir = fs.mkdtempSync(path.join(os.tmpdir(), "oplo-audit-"));
+fs.cpSync(path.join(ROOT, "api", "src"), path.join(auditDir, "src"), { recursive: true });
+fs.mkdirSync(path.join(auditDir, "proofs"));
+for (const f of fs.readdirSync(path.dirname(new URL(import.meta.url).pathname)).filter((x) => /^prove-.*\.mjs$/.test(x))) fs.copyFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), f), path.join(auditDir, "proofs", f));
+fs.copyFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "audit-routes.mjs"), path.join(auditDir, "audit-routes.mjs"));
+fs.cpSync(path.join(ROOT, "api", "migrations"), migDir, { recursive: true });
 for (const d of ["ui", "i18n", "shell", ...MODULES]) fs.cpSync(path.join(LEARN, d), path.join(tmp, d), { recursive: true });
-for (const f of ["base.css", ".assetsignore", "_ui.html"]) fs.copyFileSync(path.join(LEARN, f), path.join(tmp, f));
+for (const f of ["base.css", "tokens.css", ".assetsignore", "_ui.html", "README.md"]) fs.copyFileSync(path.join(LEARN, f), path.join(tmp, f));
 
-const run = (cmd, args, root) => {
-  try { return { code: 0, out: execFileSync(cmd, args, { env: { ...process.env, OL_LEARN_ROOT: root }, encoding: "utf8", stdio: "pipe" }) }; }
+const run = (cmd, args, root, env = {}) => {
+  try { return { code: 0, out: execFileSync(cmd, args, { env: { ...process.env, OL_LEARN_ROOT: root, ...env }, encoding: "utf8", stdio: "pipe" }) }; }
   catch (e) { return { code: e.status, out: String(e.stdout || "") + String(e.stderr || "") }; }
 };
 const lint = (script, ...flags) => run("node", [path.join(HERE, script), ...flags], tmp);
 const stamp = (...flags) => run("python3", [path.join(ROOT, "tools", "stamp.py"), ...flags], stampDir);
+const mig = () => run("node", [path.join(HERE, "check-migrations.mjs")], tmp, { OL_MIGRATIONS_DIR: migDir });
+const design = () => run("node", [path.join(HERE, "check-design.mjs")], tmp, { OL_DESIGN_MD: path.join(designDir, "DESIGN.md") });
+const audit = () => run("node", [path.join(HERE, "check-audit.mjs")], tmp, { OL_AUDIT_ROUTES: path.join(auditDir, "audit-routes.mjs"), OL_AUDIT_INDEX: path.join(auditDir, "src", "index.js"), OL_AUDIT_SRC: path.join(auditDir, "src"), OL_AUDIT_PROOFS: path.join(auditDir, "proofs") });
 const at = (f) => path.join(tmp, f);
 const seen = new Set();
 let n = 0;
@@ -49,6 +62,32 @@ async function fixture(code, name, { script, file, add, edit, line, fix }) {
   fs.writeFileSync(at(file), next);
   try { expectProblem(name, code, lint(script), { line, fix }); }
   finally { if (was === null) fs.rmSync(at(file)); else fs.writeFileSync(at(file), was); }
+  ok(code + " " + name);
+}
+/* check-migrations.mjs on a folder of migrations with these files added */
+async function migration(code, name, files, line, fix) {
+  for (const [f, body] of Object.entries(files)) fs.writeFileSync(path.join(migDir, f), body);
+  try { expectProblem(name, code, mig(), { line, fix }); }
+  finally { for (const f of Object.keys(files)) fs.rmSync(path.join(migDir, f)); }
+  ok(code + " " + name);
+}
+/* check-design.mjs with DESIGN.md (or a file of the learn/ copy) changed: `edit` takes the text and returns the new text */
+async function designed(code, name, { file, edit, line, fix }) {
+  const target = file ? at(file) : path.join(designDir, "DESIGN.md");
+  const was = fs.readFileSync(target, "utf8"), next = edit(was);
+  assert.notEqual(next, was, name + ": the fixture changes nothing");
+  fs.writeFileSync(target, next);
+  try { expectProblem(name, code, design(), { line, fix }); }
+  finally { fs.writeFileSync(target, was); }
+  ok(code + " " + name);
+}
+/* check-audit.mjs with a file of the api copy changed (a path inside it): `edit` takes the text and returns the new text */
+async function auditing(code, name, { file, edit, line, fix }) {
+  const target = path.join(auditDir, file), was = fs.readFileSync(target, "utf8"), next = edit(was);
+  assert.notEqual(next, was, name + ": the fixture changes nothing");
+  fs.writeFileSync(target, next);
+  try { expectProblem(name, code, audit(), { line, fix }); }
+  finally { fs.writeFileSync(target, was); }
   ok(code + " " + name);
 }
 const CSS = "students/students.css", JS = "students/fixture.js";
@@ -95,6 +134,54 @@ try {
   await pack("I18N007", "a Hindi word that takes different values from the English fails", "i18n/hi-IN.js", (s) => s.replace("{name} को संपादित करें", "{naam} को संपादित करें"), 'hi-IN "students\\.edit_title" takes \\{naam\\}, en-IN takes \\{name\\}', 'make the value of "students\\.edit_title" in learn/i18n/hi-IN\\.js take \\{name\\}');
   await script("I18N008", "a sentence written into a module instead of the pack fails", 'var x = { label: "Save the student" };\n', '1 writes its own words: "Save the student"', 'move "Save the student" into learn/i18n/en-IN\\.js', "check-i18n.mjs");
 
+  /* check-migrations.mjs. The fixtures are numbered from the highest migration in the copy, so a real migration that arrives never collides with them. */
+  assert.equal(mig().code, 0, "check-migrations.mjs passes on an untouched copy of api/migrations\n" + mig().out);
+  const top = Math.max(...fs.readdirSync(migDir).map((f) => Number(f.slice(0, 4))).filter(Number.isFinite)), nn = (k) => String(top + k).padStart(4, "0");
+  await migration("MIG001", "two migrations with one number fail", { [nn(1) + "_a.sql"]: "ALTER TABLE x ADD COLUMN a TEXT;\n", [nn(1) + "_b.sql"]: "ALTER TABLE x ADD COLUMN b TEXT;\n" },
+    new RegExp(`^MIG001 api/migrations/${nn(1)}_b\\.sql:1 shares the number ${nn(1)} with ${nn(1)}_a\\.sql$`), new RegExp(`^fix: rename it to ${nn(2)}_b\\.sql \\(the next free number\\)`));
+  await migration("MIG002", "a dropped column after 0070 fails", { [nn(1) + "_drop.sql"]: "-- takes a column away\nALTER TABLE x DROP COLUMN a;\n" },
+    new RegExp(`^MIG002 api/migrations/${nn(1)}_drop\\.sql:2 DROP COLUMN is not additive`), /^fix: add the new column or table here/);
+  await migration("MIG002", "a renamed table after 0070 fails", { [nn(1) + "_rename.sql"]: "ALTER TABLE x\n  RENAME TO y;\n" },
+    new RegExp(`^MIG002 api/migrations/${nn(1)}_rename\\.sql:2 RENAME TO is not additive`), /^fix: add the new column or table here/);
+  await migration("MIG003", "a file without a number fails", { "add_nickname.sql": "ALTER TABLE x ADD COLUMN a TEXT;\n" },
+    /^MIG003 api\/migrations\/add_nickname\.sql:1 is not named NNNN_name\.sql$/, new RegExp(`^fix: rename it to ${nn(1)}_add_nickname\\.sql$`));
+  fs.writeFileSync(path.join(migDir, nn(1) + "_allowed.sql"), "-- allow-destructive: the column was never read\nALTER TABLE x DROP COLUMN a;\n");
+  fs.writeFileSync(path.join(migDir, nn(2) + "_words.sql"), "-- nothing here may DROP TABLE anything\n/* RENAME TO is only a word in this comment */\nALTER TABLE x ADD COLUMN a TEXT;\n");
+  try { const r = mig(); assert.equal(r.code, 0, "a drop that was allowed on purpose, and the words in a comment, pass\n" + r.out); }
+  finally { fs.rmSync(path.join(migDir, nn(1) + "_allowed.sql")); fs.rmSync(path.join(migDir, nn(2) + "_words.sql")); }
+  ok("a drop marked '-- allow-destructive:' and the words DROP TABLE in a comment pass");
+
+  /* check-audit.mjs. Each fixture changes one file of the copy of api/src, its proofs or the registry. */
+  assert.equal(audit().code, 0, "check-audit.mjs passes on an untouched copy of api/src\n" + audit().out);
+  await auditing("AUD001", "a write route of a migrated module that nobody decided about fails", { file: "src/index.js",
+    edit: (s) => s.replace(/^(\s*)(\["POST",\s*"\/api\/v1\/india\/classes\/:classId\/promote".*)$/m, '$1$2\n$1["POST", "/api/v1/india/classes/:classId/archive", india.promote],'),
+    line: /^AUD001 api\/src\/index\.js:\d+ POST \/india\/classes\/:classId\/archive writes data for a migrated module and is in neither AUDITED nor NOT_YET$/, fix: /^fix: add it to AUDITED in api\/scripts\/audit-routes\.mjs/ });
+  await auditing("AUD002", "a registry entry for a route that is gone fails", { file: "audit-routes.mjs", edit: (s) => s.replace('"POST /india/classes/:classId/rolls"', '"POST /india/classes/:classId/renumber"'),
+    line: /^AUD002 api\/scripts\/audit-routes\.mjs:\d+ AUDITED names POST \/india\/classes\/:classId\/renumber, which is not a route in src\/index\.js$/, fix: /^fix: correct the route, or remove the entry/ });
+  await auditing("AUD002", "an audit action no code writes fails", { file: "src/routes/india.js", edit: (s) => s.replaceAll('"students.class.promoted"', '"students.class.moved"'),
+    line: /^AUD002 api\/scripts\/audit-routes\.mjs:\d+ POST \/india\/classes\/:classId\/promote should write students\.class\.promoted, and no code in src\/ does$/, fix: /^fix: correct the action, or make the route write it/ });
+  await auditing("AUD003", "an audited route that no proof asserts fails", { file: "proofs/prove-school.mjs", edit: (s) => s.replace('audited(admin, "POST /india/classes/:classId/promote"', 'wrote(admin, "POST /india/classes/:classId/promote"'),
+    line: /^AUD003 api\/scripts\/audit-routes\.mjs:\d+ no proof asserts the audit row of POST \/india\/classes\/:classId\/promote$/, fix: /^fix: wrap the call in audited\(admin, "POST \/india\/classes\/:classId\/promote"/ });
+  await auditing("AUD003", "a proof that asserts another action than the registry fails", { file: "proofs/prove-school.mjs", edit: (s) => s.replace('{ action: "students.class.promoted", rows: 5 }', '{ action: "students.class.moved", rows: 5 }'),
+    line: /^AUD003 api\/scripts\/audit-routes\.mjs:\d+ the proofs assert students\.class\.moved for POST \/india\/classes\/:classId\/promote, and the registry says students\.class\.promoted$/, fix: /^fix: make the two agree/ });
+
+  /* check-design.mjs */
+  assert.equal(design().code, 0, "check-design.mjs passes on an untouched DESIGN.md\n" + design().out);
+  await designed("DES001", "a token family DESIGN.md does not name fails", { edit: (d) => d.replaceAll("--z-", "--zz-"),
+    line: /^DES001 learn\/tokens\.css:\d+ token family --z-\* is not in DESIGN\.md$/, fix: /^fix: add a row to the token table in DESIGN\.md that names --z-\*/ });
+  await designed("DES002", "a template with no row fails", { edit: (d) => d.replace(/^\| T7 \|.*$/m, ""),
+    line: /^DES002 DESIGN\.md:1 template T7 has no row in DESIGN\.md$/, fix: /^fix: add "\| T7 \| name \| use it for \| built \|"/ });
+  await designed("DES003", "a component file DESIGN.md does not name fails", { edit: (d) => d.replaceAll("menu.js", "mnu.js"),
+    line: /^DES003 DESIGN\.md:1 learn\/ui\/menu\.js is not named in DESIGN\.md$/, fix: /^fix: add learn\/ui\/menu\.js to the component table/ });
+  await designed("DES003", "a catalogue C-number DESIGN.md does not have fails", { file: "ui/index.js", edit: (c) => c.replace('{ id: "C-01"', '{ id: "C-99", name: "Fixture", key: "fixture" },\n    { id: "C-01"'),
+    line: /^DES003 learn\/ui\/index\.js:\d+ C-99 is in the catalogue and not in DESIGN\.md$/, fix: /^fix: add a row for C-99 to the component table/ });
+  await designed("DES004", "a browser surface base.css leaves to the browser fails", { file: "base.css", edit: (c) => c.replaceAll("scrollbar-color", "scrollbar-colour"),
+    line: /^DES004 learn\/base\.css:1 no scrollbar-color rule/, fix: /^fix: add a scrollbar-color rule to base\.css from the tokens/ });
+  await designed("DES006", "a component with no example in the README fails", { file: "README.md", edit: (c) => c.replaceAll("OL.ui.menu.", "OL.ui.mnu."),
+    line: /^DES006 learn\/ui\/index\.js:\d+ component menu has no example in learn\/README\.md$/, fix: /^fix: add its options and one example, OL\.ui\.menu\.render\(/ });
+  await designed("DES005", "a phone answer that differs from the route table fails", { file: "shell/routes.js", edit: (c) => c.replace('foot: true, phone: "cards"', 'foot: true, phone: "page"'),
+    line: /^DES005 learn\/shell\/routes\.js:\d+ module admin is "page" in routes\.js and "cards" in DESIGN\.md$/, fix: /^fix: make the two agree/ });
+
   /* --json: the same problem as one object */
   fs.writeFileSync(at(JS), 'console.log("x");\n');
   try {
@@ -128,7 +215,7 @@ try {
 
   /* a code that no fixture has seen, or that learn/README.md does not explain, fails here */
   const codes = new Set();
-  for (const f of [path.join(HERE, "check-ui.mjs"), path.join(HERE, "check-i18n.mjs"), path.join(ROOT, "tools", "stamp.py")]) for (const m of fs.readFileSync(f, "utf8").matchAll(/"((?:UI|I18N|STAMP)\d{3})"/g)) codes.add(m[1]);
+  for (const f of [path.join(HERE, "check-ui.mjs"), path.join(HERE, "check-i18n.mjs"), path.join(HERE, "check-migrations.mjs"), path.join(HERE, "check-design.mjs"), path.join(HERE, "check-audit.mjs"), path.join(ROOT, "tools", "stamp.py")]) for (const m of fs.readFileSync(f, "utf8").matchAll(/"((?:UI|I18N|STAMP|MIG|DES|AUD)\d{3})"/g)) codes.add(m[1]);
   const anchors = new Set([...fs.readFileSync(path.join(LEARN, "README.md"), "utf8").matchAll(/<a id="([A-Z0-9]+)"><\/a>/g)].map((m) => m[1]));
   assert.deepEqual([...codes].filter((c) => !seen.has(c)), [], "every code has a fixture");
   assert.deepEqual([...codes].filter((c) => !anchors.has(c)), [], "every code has an anchor in learn/README.md");
@@ -142,4 +229,7 @@ try {
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
   fs.rmSync(stampDir, { recursive: true, force: true });
+  fs.rmSync(auditDir, { recursive: true, force: true });
+  fs.rmSync(migDir, { recursive: true, force: true });
+  fs.rmSync(designDir, { recursive: true, force: true });
 }

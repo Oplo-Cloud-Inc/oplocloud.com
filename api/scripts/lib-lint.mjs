@@ -10,19 +10,20 @@ import path from "node:path";
 
 /* The learn/ folder to lint. OL_LEARN_ROOT points at another copy of it (the fixtures of test-lint.mjs). */
 export const LEARN = process.env.OL_LEARN_ROOT ? path.resolve(process.env.OL_LEARN_ROOT) : path.resolve(new URL("../../learn", import.meta.url).pathname);
-/* The folders of rebuilt modules: each holds scripts and one stylesheet, <folder>/<folder>.css, that obey the same rules as the library. */
-export const MODULES = ["students"];
+/* The folders of rebuilt modules: each holds scripts, and a stylesheet <folder>/<folder>.css if it needs one, that obey the same rules as the library. */
+export const MODULES = ["students", "settings"];
+export const sheetsOf = (m) => (fs.existsSync(path.join(LEARN, m, m + ".css")) ? [`${m}/${m}.css`] : []);
 
 export const rd = (f) => fs.readFileSync(path.join(LEARN, f), "utf8");
 export const lineOf = (s, i) => s.slice(0, i).split("\n").length;
 export const jsIn = (dir) => fs.readdirSync(path.join(LEARN, dir)).filter((f) => f.endsWith(".js")).map((f) => `${dir}/${f}`);
 
-export function lint() {
+export function lint(base = "learn/") {
   const json = process.argv.includes("--json");
   const found = [];
   return {
-    /* file is relative to learn/; line is optional */
-    bad(code, file, line, what, fix) { found.push({ code, file: "learn/" + file, line: line || null, what, fix, docs: "learn/README.md#" + code }); },
+    /* file is relative to `base` (learn/ unless the lint reads another folder); line is optional */
+    bad(code, file, line, what, fix) { found.push({ code, file: base + file, line: line || null, what, fix, docs: "learn/README.md#" + code }); },
     /* summary is the human line a clean run prints before RESULT */
     finish(summary) {
       if (json) console.log(JSON.stringify({ result: found.length ? "fail" : "ok", problems: found }, null, 2));

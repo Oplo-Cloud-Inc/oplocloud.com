@@ -8,7 +8,7 @@
 import { MODULES, rd, lineOf, jsIn, lint } from "./lib-lint.mjs";
 
 /* The key families whose Hindi must be complete. */
-const HINDI_COMPLETE = ["students.", "pages."];
+const HINDI_COMPLETE = ["students.", "pages.", "admin.modules."];
 const L = lint();
 const win = {};
 for (const f of ["i18n/i18n.js", "i18n/en-IN.js", "i18n/en-US.js", "i18n/hi-IN.js"]) new Function("window", "OL", rd(f))(win, win.OL);
