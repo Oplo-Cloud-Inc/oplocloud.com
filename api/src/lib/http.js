@@ -43,28 +43,41 @@ export class ApiError extends Error {
   }
 }
 
-export function errorResponse(err, env) {
+/* A short id for one request. It comes back on every error (in the body and in the
+   x-request-id header) and starts the log line of an unexpected one, so a person who
+   quotes "req_3f9a1c20b7d4" can be matched to what the server wrote down. */
+export function newRequestId() { return "req_" + crypto.randomUUID().replace(/-/g, "").slice(0, 12); }
+
+/* `req` is { id, method, path } of the request that failed; it is only for the log line and the id. */
+export function errorResponse(err, env, req = {}) {
   const known = err instanceof ApiError;
   const status = known ? err.status : 500;
+  const requestId = req.id || newRequestId();
   const body = {
     error: {
       code: known ? err.code : "internal",
-      message: known ? err.message : "Something went wrong at our end."
+      message: known ? err.message : "Something went wrong at our end.",
+      requestId
     }
   };
   if (known && err.field) body.error.field = err.field;
   if (known && err.extra) Object.assign(body.error, err.extra);
   // The response says nothing about an unexpected error, so the log is the
-  // only record of it. The error alone — never the request, which may carry a
-  // password.
-  if (!known) console.error(String(err && err.stack || err));
+  // only record of it. The id, the method and the path (no query string, which
+  // can carry a token) and the error alone — never the request, which may carry
+  // a password.
+  if (!known || status >= 500) {
+    console.error(`[${requestId}] ${status} ${req.method || ""} ${req.path || ""} ${known ? err.code : String(err && err.stack || err)}`);
+  }
   // A stack trace is a gift to an attacker in production and a necessity in
   // development, so it is gated on the environment rather than on a guess.
   if (!known && env && env.ENVIRONMENT !== "production") {
     body.error.detail = String(err && err.stack || err);
   }
-  const headers = { ...JSON_HEADERS };
-  if (known && err.retryAfter) headers["retry-after"] = String(err.retryAfter);
+  const headers = { ...JSON_HEADERS, "x-request-id": requestId };
+  // A 429 always says when to come back: 60 s when the limiter did not work it out.
+  const retry = known && err.retryAfter ? err.retryAfter : status === 429 ? 60 : 0;
+  if (retry) headers["retry-after"] = String(retry);
   return new Response(JSON.stringify(body), { status, headers });
 }
 
@@ -84,6 +97,8 @@ export function corsHeaders(request, env) {
     "access-control-allow-credentials": "true",
     "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
     "access-control-allow-headers": "content-type,authorization",
+    // Another origin can read only the headers it is told it may: the app needs these two.
+    "access-control-expose-headers": "retry-after,x-request-id",
     "access-control-max-age": "86400",
     "vary": "origin"
   };

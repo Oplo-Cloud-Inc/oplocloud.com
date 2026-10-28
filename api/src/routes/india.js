@@ -188,20 +188,34 @@ export async function seat(ctx, { classId }) {
   const numbered = now.some((s) => s.rollNo);
   let next = now.reduce((m, s) => Math.max(m, s.rollNo || 0), 0);
   const moves = ids.filter((id) => !now.some((s) => s.id === id)).map((id) => ({ accountId: id, classId: c.id, rollNo: numbered ? ++next : null }));
-  await ctx.repo.seatStudents(orgId, moves, actor.id, I.todayIST());
+  // One row on each child, written in the batch that seats them (E2).
+  const label = I.classLabel(c.grade, c.section), names = await ctx.repo.namesOf(moves.map((m) => m.accountId));
+  const audit = A.rows(orgId, actor, moves.map((m) => ({ module: "students", action: "students.class.seated", verb: "seated", recordKind: "student", recordId: m.accountId,
+    recordLabel: `${names.get(m.accountId) || ""} · ${label}`, field: "class", after: label, detail: { rollNo: m.rollNo } })));
+  await ctx.repo.seatStudents(orgId, moves, actor.id, I.todayIST(), audit);
   return json({ seated: moves.length, students: (await rosterOf(ctx, orgId, classId)).length });
 }
 
 /* POST /india/classes/:id/rolls { order: "name" | "admission" | "keep" } — number the section 1..n. */
 export async function numberRolls(ctx, { classId }) {
-  const orgId = orgOf(ctx);
+  const orgId = orgOf(ctx), actor = requireActor(ctx);
   await must(ctx, "india.write", { orgId });
   await classOf(ctx, orgId, classId);
   const b = await readJson(ctx.request);
   const order = b.order === undefined ? "name" : check.oneOf(b.order, "order", ["name", "admission", "keep"]);
-  const rolls = I.rollOrder(await rosterOf(ctx, orgId, classId), order);
-  await ctx.repo.numberRolls(classId, rolls);
+  const roster = await rosterOf(ctx, orgId, classId), rolls = I.rollOrder(roster, order);
+  await ctx.repo.numberRolls(classId, rolls, rollAudit(orgId, actor, roster, rolls));
   return json({ numbered: rolls.length, order });
+}
+
+/* The audit row for each child whose roll number changes, in the order of `rolls` (a hole where nothing changes); the
+   repo writes each with the child's change (E2). `roster` is the children as they were. */
+function rollAudit(orgId, actor, roster, rolls) {
+  const was = new Map(roster.map((s) => [s.id, s]));
+  const changed = rolls.filter((r) => was.has(r.id) && (was.get(r.id).rollNo || null) !== r.rollNo);
+  const rows = new Map(A.rows(orgId, actor, changed.map((r) => ({ module: "students", action: "students.record.changed", verb: "changed", recordKind: "student", recordId: r.id,
+    recordLabel: `${was.get(r.id).name}${was.get(r.id).classLabel ? " · " + was.get(r.id).classLabel : ""}`, field: "rollNo", before: was.get(r.id).rollNo, after: r.rollNo }))).map((a, i) => [changed[i].id, a]));
+  return rolls.map((r) => rows.get(r.id));
 }
 
 /* POST /india/classes/:id/promote { toClassId, rolls?: "name" | "none", studentIds? }
@@ -223,9 +237,13 @@ export async function promote(ctx, { classId }) {
   const already = await rosterOf(ctx, orgId, to.id);
   const order = rolls === "name" ? I.rollOrder(movers.concat(already), "name") : null;
   const rollOf = new Map((order || []).map((r) => [r.id, r.rollNo]));
-  await ctx.repo.seatStudents(orgId, movers.map((s) => ({ accountId: s.id, classId: to.id, rollNo: rollOf.get(s.id) ?? null })), actor.id, I.todayIST());
-  if (order) await ctx.repo.numberRolls(to.id, order);
-  return json({ moved: movers.length, to: I.classLabel(to.grade, to.section) });
+  // One row on each child who moves, and one on each child already in the new section whose roll number shifts (E2).
+  const fromLabel = I.classLabel(from.grade, from.section), toLabel = I.classLabel(to.grade, to.section);
+  const audit = A.rows(orgId, actor, movers.map((s) => ({ module: "students", action: "students.class.promoted", verb: "moved", recordKind: "student", recordId: s.id,
+    recordLabel: `${s.name} · ${toLabel}`, field: "class", before: fromLabel, after: toLabel, detail: { rollNo: rollOf.get(s.id) ?? null } })));
+  await ctx.repo.seatStudents(orgId, movers.map((s) => ({ accountId: s.id, classId: to.id, rollNo: rollOf.get(s.id) ?? null })), actor.id, I.todayIST(), audit);
+  if (order) await ctx.repo.numberRolls(to.id, order, rollAudit(orgId, actor, already, order));
+  return json({ moved: movers.length, to: toLabel });
 }
 
 /* POST /students/:id/leave { on?, reason? } — the child leaves the school; their record stays. */

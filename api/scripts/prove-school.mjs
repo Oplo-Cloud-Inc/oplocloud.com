@@ -1,6 +1,6 @@
 // The India playbook's school profile over HTTP, as the people who use it. Local only; needs the demo school's administrator.
 //   API=http://127.0.0.1:8791/api/v1 ORIGIN=http://127.0.0.1:8130 CRED=/path/credentials.json node scripts/prove-school.mjs
-import { person, step, steps, assert, refused, cred, RUN, PW } from "./lib-prove.mjs";
+import { person, step, steps, assert, refused, cred, RUN, PW, audited } from "./lib-prove.mjs";
 
 const admin = person("admin"), teacher = person("teacher"), anon = person("anon"), stranger = person("stranger");
 const ctx = {};
@@ -57,10 +57,50 @@ try {
     assert.equal(cleared.timezone, "Asia/Kolkata");
   });
 
+  /* ------------------------------------------------------------ The school's own switches (O8) */
+  await step("the five modules are switches the whole school can read and only an administrator changes", async () => {
+    const r = await teacher.get("/school/profile");
+    assert.deepEqual(Object.keys(r.profile.modules), ["family", "fees", "homework", "lessonPlans", "messages"]); assert.equal(typeof r.profile.frame, "boolean");
+    assert.equal(r.can.manage, false); assert.equal((await admin.get("/school/profile")).can.manage, true);
+    refused(await teacher.try("PUT", "/school/modules", { family: true }), 403);
+    refused(await anon.try("PUT", "/school/modules", { family: true }), 401);
+    assert.deepEqual((await admin.get("/me")).account.organizations[0].profile.modules, (await admin.get("/school/profile")).profile.modules, "/me carries them, so the console knows on sign-in");
+  });
+
+  await step("a switch that changes is one audit row, written with it; saying the same again writes nothing", async () => {
+    const was = (await admin.get("/school/profile")).profile; ctx.switches = { ...was.modules, frame: was.frame };
+    await admin.put("/school/modules", { family: false, frame: true });          // from a known place, whatever an earlier run left
+    const log = async () => (await admin.get("/audit?module=admin&action=admin.modules.changed&size=100")).events;
+    const n0 = (await log()).length;
+    const on = (await audited(admin, "PUT /school/modules", { action: "admin.modules.changed", rows: 1 }, () => admin.put("/school/modules", { family: true }))).profile;
+    assert.equal(on.modules.family, true); assert.equal(on.modules.fees, false, "what is not named stays");
+    const rows = await log();
+    assert.equal(rows.length, n0 + 1, "one change, one row");
+    assert.deepEqual([rows[0].record.id, rows[0].field, rows[0].before, rows[0].after, rows[0].verb], ["family", "enabled", "off", "on", "changed"]);
+    assert.equal(rows[0].actor.id, (await admin.get("/me")).account.id, "the row names who did it");
+    await admin.put("/school/modules", { family: true });
+    assert.equal((await log()).length, n0 + 1, "the same again changes nothing and writes nothing");
+    const off = (await admin.put("/school/modules", { family: false, frame: false })).profile;
+    assert.equal(off.modules.family, false); assert.equal(off.frame, false);
+    assert.equal((await log()).length, n0 + 3, "two switches, two rows");
+  });
+
+  await step("a mistake in the switches is named and changes nothing", async () => {
+    const was = (await admin.get("/school/profile")).profile;
+    for (const [bad, field] of [[{ payroll: true }, "payroll"], [{ family: "yes" }, "family"], [{}, "modules"], [[true], "modules"]]) {
+      const r = await admin.try("PUT", "/school/modules", bad);
+      refused(r, 400); assert.equal(r.body.error.field, field);
+    }
+    const now = (await admin.get("/school/profile")).profile;
+    assert.deepEqual([now.modules, now.frame], [was.modules, was.frame]);
+  });
+
   await step("restored: the demo school is left as it was found", async () => {
     const b = ctx.before;
     const r = (await admin.put("/school/profile", { boards: b.boards, stateCode: b.stateCode, languages: b.languages })).profile;
     assert.deepEqual(r.boards, b.boards); assert.equal(r.region, "IN");
+    const { frame, ...mods } = ctx.switches, s = (await admin.put("/school/modules", ctx.switches)).profile;
+    assert.deepEqual([s.modules, s.frame], [mods, frame]);
   });
 
   /* ------------------------------------------------------------ The section is the roster */
@@ -73,13 +113,13 @@ try {
     ctx.sec = c;
     const un = (await admin.get("/india/unplaced")).students.map((x) => x.id);
     for (const k of Object.values(kids)) assert.ok(un.includes(k.id), k.name + " is unplaced before being seated");
-    const r = await admin.post(`/india/classes/${c.id}/students`, { studentIds: Object.values(kids).map((k) => k.id) });
+    const r = await audited(admin, "POST /india/classes/:classId/students", { action: "students.class.seated", rows: 4 }, () => admin.post(`/india/classes/${c.id}/students`, { studentIds: Object.values(kids).map((k) => k.id) }));
     assert.equal(r.seated, 4); assert.equal(r.students, 4);
     assert.equal((await admin.post(`/india/classes/${c.id}/students`, { studentIds: [kids.bhavya.id] })).seated, 0, "seating again is a no-op");
   });
 
   await step("roll numbers are numbered alphabetically, whatever the case, and again on demand", async () => {
-    await admin.post(`/india/classes/${ctx.sec.id}/rolls`, { order: "name" });
+    await audited(admin, "POST /india/classes/:classId/rolls", { action: "students.record.changed", rows: 4 }, () => admin.post(`/india/classes/${ctx.sec.id}/rolls`, { order: "name" }));
     const list = (await admin.get(`/india/students?classId=${ctx.sec.id}`)).students;
     assert.deepEqual(list.map((s) => [s.rollNo, s.name]), [[1, "Aarav Sharma"], [2, "bhavya"], [3, "Chandni Kaur"], [4, "zoya Khan"]]);
     await admin.post(`/india/classes/${ctx.sec.id}/rolls`, { order: "name" });
@@ -118,7 +158,7 @@ try {
   await step("the year turns: a section is promoted, old seats are kept as history", async () => {
     const next = (await admin.put("/india/classes", { year: "2027-2028", grade: "X", section: SQ, programme: "CBSE" })).class;
     ctx.next = next;
-    const r = await admin.post(`/india/classes/${ctx.sec.id}/promote`, { toClassId: next.id, rolls: "name" });
+    const r = await audited(admin, "POST /india/classes/:classId/promote", { action: "students.class.promoted", rows: 5 }, () => admin.post(`/india/classes/${ctx.sec.id}/promote`, { toClassId: next.id, rolls: "name" }));
     assert.equal(r.moved, 5);
     const there = (await admin.get(`/india/students?classId=${next.id}`)).students;
     assert.deepEqual(there.map((s) => [s.rollNo, s.name]), [[1, "Aarav Sharma"], [2, "bhavya"], [3, "Chandni Kaur"], [4, "Esha Late"], [5, "zoya Khan"]]);

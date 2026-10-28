@@ -293,6 +293,15 @@ export class D1Repository {
     return this.getOrganization(orgId);
   }
 
+  /* A school's module switches (migration 0071) as the JSON the caller built, with the audit rows of the change in the same batch (E2). */
+  async setOrgSwitches(orgId, json, audit = []) {
+    await this.db.batch([
+      this.db.prepare(`UPDATE organizations SET modules = ?, updated_at = ? WHERE id = ?`).bind(json, now(), orgId),
+      ...audit.map((a) => this.auditStatement(a))
+    ]);
+    return this.getOrganization(orgId);
+  }
+
   async addMember(orgId, accountId, role = "member") {
     await this.db.prepare(
       `INSERT OR REPLACE INTO organization_memberships
@@ -3720,36 +3729,47 @@ export class D1Repository {
     await this.db.batch([...this.peopleStatements(orgId, people, actorId, t), ...this.studentStatements(orgId, item, actorId, t, today)]);
   }
 
+  /* A write that changes one child at a time, in batches of at most 80 statements: `groups` is one list of statements per
+     child, so a child's change and audit row (E2) are never split between two batches. */
+  async batchGroups(groups) {
+    let batch = [];
+    for (const g of groups) {
+      if (batch.length && batch.length + g.length > 80) { await this.db.batch(batch); batch = []; }
+      batch.push(...g);
+    }
+    if (batch.length) await this.db.batch(batch);
+  }
+
   /* Seat children in a section: [{ accountId, classId, rollNo }]. A child the office
-     has no row for yet gets one. The section they leave is closed on `day`. */
-  async seatStudents(orgId, moves, actorId, day) {
-    const t = now(), stmts = [];
-    for (const m of moves) {
-      stmts.push(this.db.prepare(
+     has no row for yet gets one. The section they leave is closed on `day`.
+     audit[i] is the row that describes moves[i], written with it. */
+  async seatStudents(orgId, moves, actorId, day, audit = []) {
+    const t = now();
+    await this.batchGroups(moves.map((m, i) => [
+      this.db.prepare(
         `INSERT INTO learn_student_india (account_id, org_id, class_id, roll_no, consent_status, updated_by, created_at, updated_at)
          VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)
          ON CONFLICT (account_id) DO UPDATE SET class_id = excluded.class_id, roll_no = excluded.roll_no,
            left_on = NULL, left_reason = NULL, updated_by = excluded.updated_by, updated_at = excluded.updated_at`
-      ).bind(m.accountId, orgId, m.classId, m.rollNo ?? null, actorId || null, t, t));
-      stmts.push(this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL AND class_id IS NOT ?`).bind(day, m.accountId, m.classId));
-      stmts.push(this.db.prepare(SEAT).bind(m.classId, m.accountId, m.rollNo ?? null, day));
-    }
-    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+      ).bind(m.accountId, orgId, m.classId, m.rollNo ?? null, actorId || null, t, t),
+      this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL AND class_id IS NOT ?`).bind(day, m.accountId, m.classId),
+      this.db.prepare(SEAT).bind(m.classId, m.accountId, m.rollNo ?? null, day),
+      ...(audit[i] ? [this.auditStatement(audit[i])] : [])
+    ]));
   }
 
   /* Number a section's children: [{ id, rollNo }]. Every number is cleared first, so
-     a child may take another's old number in the same pass. */
-  async numberRolls(classId, rolls) {
+     a child may take another's old number in the same pass. audit[i] describes rolls[i]. */
+  async numberRolls(classId, rolls, audit = []) {
     await this.db.batch([
       this.db.prepare(`UPDATE learn_student_india SET roll_no = NULL WHERE class_id = ?`).bind(classId),
       this.db.prepare(`UPDATE learn_class_students SET roll_no = NULL WHERE class_id = ? AND left_on IS NULL`).bind(classId)
     ]);
-    const stmts = [];
-    for (const r of rolls) {
-      stmts.push(this.db.prepare(`UPDATE learn_student_india SET roll_no = ? WHERE account_id = ? AND class_id = ?`).bind(r.rollNo, r.id, classId));
-      stmts.push(this.db.prepare(`UPDATE learn_class_students SET roll_no = ? WHERE account_id = ? AND class_id = ? AND left_on IS NULL`).bind(r.rollNo, r.id, classId));
-    }
-    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+    await this.batchGroups(rolls.map((r, i) => [
+      this.db.prepare(`UPDATE learn_student_india SET roll_no = ? WHERE account_id = ? AND class_id = ?`).bind(r.rollNo, r.id, classId),
+      this.db.prepare(`UPDATE learn_class_students SET roll_no = ? WHERE account_id = ? AND class_id = ? AND left_on IS NULL`).bind(r.rollNo, r.id, classId),
+      ...(audit[i] ? [this.auditStatement(audit[i])] : [])
+    ]));
   }
 
   /* A child leaves the school: out of their section, and the day and reason kept. */

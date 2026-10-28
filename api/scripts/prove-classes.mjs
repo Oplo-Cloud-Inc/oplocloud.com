@@ -3,7 +3,7 @@
 // and a teacher, who may not read the classes, is refused.
 // Local only; needs an existing school administrator.
 //   API=http://localhost:8817/api/v1 CRED=/path/credentials.json node scripts/prove-classes.mjs
-import { cred, RUN, PW, person, step, steps, refused, assert } from "./lib-prove.mjs";
+import { cred, RUN, PW, person, step, steps, refused, assert, audited } from "./lib-prove.mjs";
 
 const admin = person("admin"), teacher = person("teacher");
 const ctx = {};
@@ -27,7 +27,7 @@ try {
   });
 
   await step("a new section is made, and written down with who made it and which section", async () => {
-    const r = await admin.put("/india/classes", { grade: GRADE, section: SECTION, programme: "CBSE", room: "R-" + SECTION, capacity: 40, classTeacherId: ctx.t.id });
+    const r = await audited(admin, "PUT /india/classes", { action: "students.class.created", rows: 1 }, () => admin.put("/india/classes", { grade: GRADE, section: SECTION, programme: "CBSE", room: "R-" + SECTION, capacity: 40, classTeacherId: ctx.t.id }));
     ctx.cls = r.class;
     assert.equal(ctx.cls.label, `${GRADE}-${SECTION}`); assert.equal(ctx.cls.classTeacher.id, ctx.t.id);
     const events = await log(ctx.cls.id);

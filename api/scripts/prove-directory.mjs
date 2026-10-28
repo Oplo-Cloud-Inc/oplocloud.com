@@ -5,7 +5,7 @@
 // student added; and the refusals.
 // Local only; needs an existing school administrator.
 //   API=http://localhost:8817/api/v1 CRED=/path/credentials.json node scripts/prove-directory.mjs
-import { API, cred, RUN, PW, person, step, steps, refused, assert } from "./lib-prove.mjs";
+import { API, cred, RUN, PW, person, step, steps, refused, assert, audited } from "./lib-prove.mjs";
 
 const admin = person("admin"), teacher = person("teacher"), kid = person("student"), nobody = person("nobody");
 const ctx = {};
@@ -120,7 +120,7 @@ try {
   });
 
   await step("showing a number is a request: it comes back once asked for, and is written down with who asked", async () => {
-    const shown = await admin.post(`/directory/students/${ctx.a.id}/phone`, { which: "father" });
+    const shown = await audited(admin, "POST /directory/students/:accountId/phone", { action: "students.guardian.phone_revealed", record: ctx.a.id, rows: 1 }, () => admin.post(`/directory/students/${ctx.a.id}/phone`, { which: "father" }));
     assert.ok(String(shown.phone).replace(/\D/g, "").endsWith(PHONE.slice(-10)));
     refused(await admin.try("POST", `/directory/students/${ctx.a.id}/phone`, { which: "mother" }), 404);
     refused(await admin.try("POST", `/directory/students/${ctx.a.id}/phone`, { which: "uncle" }), 400);
@@ -152,7 +152,7 @@ try {
   });
 
   await step("export: every row the filter matches, in the list's order, and the export is written down with the filter and the count", async () => {
-    const x = await admin.get(`/directory/students/export?class=${L1},${L2}&q=${STEM}&sort=name`);
+    const x = await audited(admin, "GET /directory/students/export", { action: "students.directory.exported", rows: 1 }, () => admin.get(`/directory/students/export?class=${L1},${L2}&q=${STEM}&sort=name`));
     assert.equal(x.count, 3); assert.equal(x.rows.length, 3);
     assert.equal(x.columns[2], "Name");
     assert.deepEqual(x.rows.map((r) => r[2]), [`${STEM}a Alpha`, `${STEM}b Beta`, `${STEM}c Gamma`]);
@@ -163,7 +163,7 @@ try {
   });
 
   await step("a bulk house change: the students named, by id or by filter, each with an audit row of what it was", async () => {
-    const r = await admin.post("/directory/students/bulk/house", { ids: [ctx.b.id, ctx.c.id], house: "Jal" });
+    const r = await audited(admin, "POST /directory/students/bulk/house", { action: "students.record.changed" }, () => admin.post("/directory/students/bulk/house", { ids: [ctx.b.id, ctx.c.id], house: "Jal" }));
     assert.equal(r.changed, 2);
     assert.equal((await list(admin, "house=Jal&q=" + STEM)).total, 2);
     const viaFilter = await admin.post("/directory/students/bulk/house", { filter: `class=${L1}&q=${STEM}`, house: "Vayu" });
@@ -191,7 +191,7 @@ try {
 
   await step("editing a student through the existing save writes one audit row per field that changed, and none for what did not", async () => {
     const was = (await admin.get(`/audit?record=${ctx.b.id}&action=students.record.changed&size=100`)).total;
-    await admin.put(`/students/${ctx.b.id}/india`, { category: "SC", bloodGroup: "O+", gender: "M" });
+    await audited(admin, "PUT /students/:accountId/india", { action: "students.record.changed", record: ctx.b.id }, () => admin.put(`/students/${ctx.b.id}/india`, { category: "SC", bloodGroup: "O+", gender: "M" }));
     const log = await admin.get(`/audit?record=${ctx.b.id}&action=students.record.changed&size=100`);
     assert.equal(log.total, was + 2, "two fields changed (category, blood group); gender was saved as it was");
     const fresh = log.events.slice(0, 2);
@@ -212,7 +212,7 @@ try {
   });
 
   await step("a message to the families of a filter reaches the students and their guardians, and is written down", async () => {
-    const r = await admin.post("/directory/students/bulk/message", { filter: `class=${L1}&q=${STEM}`, title: "Hello " + STEM, body: "A word to the family." });
+    const r = await audited(admin, "POST /directory/students/bulk/message", { action: "communicate.message.sent", rows: 1 }, () => admin.post("/directory/students/bulk/message", { filter: `class=${L1}&q=${STEM}`, title: "Hello " + STEM, body: "A word to the family." }));
     assert.equal(r.students, 2); assert.ok(r.reached >= 2);
     const log = await admin.get("/audit?action=communicate.message.sent&size=3");
     assert.equal(log.events[0].detail.students, 2);
@@ -221,7 +221,7 @@ try {
 
   await step("add a student: an invited account, the student's row, found in the list, and written down; a taken email or a bad date is refused", async () => {
     const email = `new.${RUN}@s.test`;
-    const made = await admin.post("/directory/students", { name: `${STEM}n Newcomer`, email, classId: ctx.cls.id, dob: "14/03/2011", gender: "F", category: "General", admissionNo: ctx.adm + "-N", fatherName: "Naresh Newcomer", fatherPhone: "9" + rnd(9) });
+    const made = await audited(admin, "POST /directory/students", { action: "students.record.created", rows: 1 }, () => admin.post("/directory/students", { name: `${STEM}n Newcomer`, email, classId: ctx.cls.id, dob: "14/03/2011", gender: "F", category: "General", admissionNo: ctx.adm + "-N", fatherName: "Naresh Newcomer", fatherPhone: "9" + rnd(9) }));
     assert.equal(made.student.name, `${STEM}n Newcomer`); assert.equal(made.student.dob, "2011-03-14"); assert.equal(made.student.classLabel, L1);
     const found = await list(admin, "q=" + STEM + "n");
     assert.equal(found.total, 1); assert.equal(found.rows[0].classLabel, L1);

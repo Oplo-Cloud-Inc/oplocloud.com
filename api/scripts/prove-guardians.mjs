@@ -4,7 +4,7 @@
 // teacher seeing the families of their own section and nobody else's; and the refusals.
 // Local only; needs an existing school administrator.
 //   API=http://localhost:8817/api/v1 CRED=/path/credentials.json node scripts/prove-guardians.mjs
-import { cred, RUN, PW, person, step, steps, refused, assert } from "./lib-prove.mjs";
+import { cred, RUN, PW, person, step, steps, refused, assert, audited } from "./lib-prove.mjs";
 
 const admin = person("admin"), teacher = person("teacher"), kid = person("student"), nobody = person("nobody");
 const ctx = {};
@@ -40,7 +40,7 @@ try {
   await step("a guardian is added to two students at once: an invited account, a link to each, the mobile kept, and each link written down", async () => {
     const before = await accounts();
     ctx.email = `parent.${RUN}@s.test`;
-    const r = await admin.post("/directory/guardians", { studentIds: [ctx.a.id, ctx.b.id], name: `${STEM} Parent`, email: ctx.email, relation: "parent", label: "Father", cellPhone: PHONE });
+    const r = await audited(admin, "POST /directory/guardians", { action: "students.guardian.created", rows: 1 }, () => admin.post("/directory/guardians", { studentIds: [ctx.a.id, ctx.b.id], name: `${STEM} Parent`, email: ctx.email, relation: "parent", label: "Father", cellPhone: PHONE }));
     ctx.g = r.guardian;
     assert.equal(r.created, true); assert.equal(ctx.g.studentCount, 2); assert.equal(ctx.g.app, "invited"); assert.deepEqual(ctx.g.relations, ["Father"]);
     assert.equal(ctx.g.hasPhone, true); assert.match(ctx.g.phone, /^•+\d{4}$/); assert.ok(!JSON.stringify(r).includes(PHONE), "the number is not in the answer");
@@ -83,7 +83,7 @@ try {
     assert.equal(r.guardian.students.length, 3); assert.equal(r.can.write, true);
     assert.equal(r.guardian.phones[0].which, "cell"); assert.match(r.guardian.phones[0].phone, /^•+\d{4}$/);
     assert.ok(!JSON.stringify(r).includes(PHONE));
-    const shown = await admin.post(`/directory/guardians/${ctx.g.id}/phone`, { which: "cell" });
+    const shown = await audited(admin, "POST /directory/guardians/:guardianId/phone", { action: "students.guardian.phone_revealed", record: ctx.g.id, rows: 1 }, () => admin.post(`/directory/guardians/${ctx.g.id}/phone`, { which: "cell" }));
     assert.ok(String(shown.phone).replace(/\D/g, "").endsWith(PHONE.slice(-10)));
     const log = await admin.get(`/audit?record=${ctx.g.id}&action=students.guardian.phone_revealed`);
     assert.equal(log.total, 1); assert.equal(log.events[0].verb, "revealed"); assert.equal(log.events[0].actor.id, (await admin.get("/me")).account.id);

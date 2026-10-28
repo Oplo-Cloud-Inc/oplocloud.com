@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import * as A from "../src/services/audit.js";
 import * as I from "../src/services/india.js";
+import { audited } from "./lib-prove.mjs";
 
 let n = 0;
 const ok = (name, fn) => { fn(); n++; console.log("  ok  " + name); };
@@ -54,5 +55,13 @@ ok("no other file keeps a list of its own: the audit writer and the Directory ta
   assert.ok(/I\.maskValue/.test(read("routes/directory.js")), "the Directory masks through the shared function");
   assert.ok(!/replace\(\/\\D\/g, ""\);\s*return d \? "••••/.test(read("routes/directory.js")), "the Directory keeps its own masking");
 });
+
+/* O17: a proof fails when a route skips the audit. `who` here answers the audit count from a list, as the API would before and after. */
+const log = (...totals) => ({ get: async () => ({ total: totals.shift() }) });
+await assert.rejects(audited(log(5, 5), "POST /x", { action: "a.b.c" }, async () => "wrote nothing"), /POST \/x wrote no a\.b\.c row to the audit log/);
+assert.equal(await audited(log(5, 6), "POST /x", { action: "a.b.c" }, async () => "done"), "done", "a write that logged a row passes and returns what it returned");
+await assert.rejects(audited(log(5, 7), "POST /x", { action: "a.b.c", rows: 1 }, async () => 1), /wrote 2 a\.b\.c rows to the audit log, expected 1/);
+await assert.rejects(audited(log(5), "POST /x", { action: "a.b.c" }, async () => { throw new Error("refused"); }), /refused/);
+n++; console.log("  ok  a proof fails when a route writes no audit row, too few rows or too many (audited)");
 
 console.log(`\n${n} checks passed`);

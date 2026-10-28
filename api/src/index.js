@@ -21,7 +21,7 @@
    is not.
    ========================================================================== */
 
-import { json, errorResponse, withCors, corsHeaders, ApiError } from "./lib/http.js";
+import { json, errorResponse, newRequestId, withCors, corsHeaders, ApiError } from "./lib/http.js";
 import { D1Repository } from "./repo/d1.js";
 import { currentActor, rotateSession, SESSION_LIFETIME } from "./core/auth.js";
 import { sessionCookie } from "./lib/cookies.js";
@@ -201,6 +201,7 @@ const ROUTES = [
   ["DELETE", "/api/v1/hpc/notes/:noteId",                competency.removeNote],
   ["GET",    "/api/v1/school/profile",                   school.getProfile],
   ["PUT",    "/api/v1/school/profile",                   school.putProfile],
+  ["PUT",    "/api/v1/school/modules",                   school.putModules],
   ["GET",    "/api/v1/search",                           search.query],
   ["GET",    "/api/v1/register",                         register.getRegister],
   ["PUT",    "/api/v1/register",                         register.putRegister],
@@ -507,7 +508,7 @@ export default {
       }
       return withCors(response, request, env);
     } catch (err) {
-      return withCors(errorResponse(err, env), request, env);
+      return withCors(errorResponse(err, env, { id: newRequestId(), method: request.method, path: url.pathname }), request, env);
     }
   }
 };
