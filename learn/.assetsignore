@@ -25,3 +25,6 @@ alg2-mp4-qam-assignment.json
 _ui.html
 ui/gallery.js
 ui/gallery.css
+
+# This folder's README explains the lint codes to a developer; it is nothing a student should reach.
+README.md

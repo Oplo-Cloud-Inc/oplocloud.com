@@ -1,0 +1,66 @@
+# ===========================================================================
+# CI — what a pull request has to pass before it can reach main.
+#
+# Deploy (deploy.yml) publishes whatever lands on main, after its own verify
+# job. This runs the same gates earlier, and adds the browser suites that are
+# too slow to hold up every deploy:
+#
+#   gates     tools/verify.sh: every script of learn/ui, shell, i18n and
+#             students parses, the ?v= stamps are current, check-ui and
+#             check-i18n pass, the route table holds, each lint code and each
+#             gate is seen to fail on a fixture
+#   browser   tools/ci-browser.sh: a throwaway local database and API, the
+#             Learn app's static server, then test-ui, test-shell and
+#             test-students in a real Chromium (axe WCAG 2.2 AA in light and
+#             dark, at 1440 and 360 px)
+#
+# To make a failing run stop a merge, mark "CI / The gates" and "CI / The
+# browser suites" as required checks in the repository's branch protection
+# for main (Settings → Branches). There is no path filter on purpose: a required
+# check that does not run on a pull request leaves that pull request waiting
+# for it for ever. Nothing here publishes anything.
+# ===========================================================================
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: The gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax, stamps, lints, route table, lint and gate fixtures
+        run: bash tools/verify.sh
+
+  browser:
+    name: The browser suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - name: Install the API's tools (wrangler, playwright-core, axe-core)
+        run: npm ci
+        working-directory: api
+      - name: Install Chromium
+        run: npx playwright-core install --with-deps chromium
+        working-directory: api
+      - name: A local stack, then test-ui, test-shell and test-students
+        run: bash tools/ci-browser.sh
