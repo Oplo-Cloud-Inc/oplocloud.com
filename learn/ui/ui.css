@@ -495,6 +495,31 @@ textarea.ol-input__ctl { height: auto; padding: var(--s-2) var(--s-3); resize: v
   .ol-tb__end { margin-inline-start: 0; }
 }
 
+/* ========================================================= Templates (templates.js) */
+/* T2 Index: the toolbar sits on the baseline of its labelled fields, and a search takes the room that is left */
+.ol-t2__alert:not(:empty) { margin: 0 0 var(--s-3); }
+.ol-t2 .ol-tb { align-items: flex-end; }
+.ol-t2 .ol-tb__group { flex: 1; align-items: flex-end; }
+.ol-t2 .ol-tb .ol-sf { flex: 1 1 200px; max-width: 300px; }
+.ol-t2__f { width: 152px; min-width: 140px; }
+.ol-t2__f--wide { width: 200px; }
+.ol-t2__chips { margin: 0 0 var(--s-3); }
+.ol-t2__tokens:empty { display: none; }
+.ol-t2__tokens { margin: 0 0 var(--s-3); }
+/* T3 Record: tabs and panel, with a column beside them when the page has one */
+.ol-t3__cols { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s-6); align-items: start; }
+.ol-t3__cols--one { grid-template-columns: minmax(0, 1fr); }
+.ol-t3__main { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.ol-t3__panel { display: flex; flex-direction: column; gap: var(--s-4); }
+.ol-t3__side { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.ol-t3__card .ol-card__body { padding: var(--s-4) var(--s-5) var(--s-5); }
+@media (max-width: 1023px) { .ol-t3__cols { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 639px) {
+  .ol-t2__f { width: 100%; }
+  .ol-t2 .ol-tb .ol-sf { max-width: none; flex-basis: 100%; }
+  .ol-t2 .ol-td, .ol-t3 .ol-td { min-width: 0; }
+}
+
 /* ======================================================= Controls on a phone */
 /* A field that takes the cursor is 16 px under 640 px, or iOS Safari zooms the page in on it and leaves it zoomed. This block comes last so it wins. */
 @media (max-width: 639px) {

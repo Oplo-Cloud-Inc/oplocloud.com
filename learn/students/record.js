@@ -19,52 +19,43 @@
 
   function draw(host, env) {
     var API = St.api(), id = env.route.record;
-    var tab = TABS.indexOf(env.route.recordTab) > -1 ? env.route.recordTab : "overview";
-    OL.clear(host);
-    var root = h("div", { class: "st-rec" });
-    var headEl = h("div"), alertEl = h("div"), cols = h("div", { class: "st-rec__cols" });
-    var main = h("div", { class: "st-rec__main" }), side = h("aside", { class: "st-rec__side", "aria-label": t("students.side_label") });
-    var tabsEl = h("div"), panel = h("div", { class: "st-rec__panel" });
-    main.appendChild(tabsEl); main.appendChild(panel);
-    cols.appendChild(main); cols.appendChild(side);
-    OL.append(root, [headEl, alertEl, cols]);
-    host.appendChild(root);
-
-    var S = { rec: null, err: null, tabs: null, activity: null };
     var back = { label: t("tab.students.directory"), href: env.base + St.listPath(), onClick: function () { env.go(St.listPath()); } };
+    var R = OL.templates.T3(host, {
+      "class": "ol-students-rec", loading: t("students.loading"), back: back, side: { label: t("students.side_label") },
+      tabs: TABS, tab: TABS.indexOf(env.route.recordTab) > -1 ? env.route.recordTab : "overview",
+      tabLabel: function (k) { return t("students.tab." + k); }, tabHref: function (k) { return St.href(env, id, k); },
+      label: t("students.tabs_label"), panelPrefix: "strec",
+      onTab: function (k) { St.setTab(env, id, k); },
+      paint: paintTab
+    });
+    var panel = R.panel, side = R.side, card = R.card, S = { rec: null, err: null };
 
     function head() {
-      OL.clear(headEl);
       var r = S.rec, s = r && r.student;
-      if (!s) { headEl.appendChild(OL.ui.page.header({ title: t("students.loading"), back: back })); return; }
-      var pills = h("div", { class: "st-peek__pills" }, OL.ui.pill.render({ status: s.status === "left" ? "left" : "enrolled" }), St.attendancePill(s.attendance), St.warnPill(s.warning));
-      headEl.appendChild(OL.ui.page.header({
-        title: s.name, subtitle: St.sub(s), back: back, meta: pills,
+      if (!s) { R.head(); return; }
+      var pills = h("div", { class: "ol-students-peek__pills" }, OL.ui.pill.render({ status: s.status === "left" ? "left" : "enrolled" }), St.attendancePill(s.attendance), St.warnPill(s.warning));
+      R.head({
+        title: s.name, subtitle: St.sub(s), meta: pills,
         primary: r.can.write ? { label: t("students.edit"), icon: "pencil", onClick: function () { env.go(St.path(id, "edit")); } } : null,
         secondary: [{ label: t("students.message_family"), icon: "send", onClick: messageFamily }],
         more: [{ label: t("students.issue_certificate"), icon: "file-text", onClick: function () { env.go("students/certificates"); } }]
-      }));
+      });
       env.setRecord({ label: s.name });
     }
 
     function load() {
       S.err = null;
-      OL.clear(panel); panel.appendChild(OL.ui.skeleton.render({ type: "lines", n: 8 }));
+      R.busy();
       API.directory.record(id).then(function (r) {
-        S.rec = r; head(); paintAlert(); paintSide(); paintTabs(); paintPanel();
+        S.rec = r; head(); paintSide(); R.tabs(); R.show();
       }, function (e) {
-        S.err = e; head(); OL.clear(panel); OL.clear(side);
-        if (e && e.status === 404) { panel.appendChild(OL.ui.empty.render({ kind: "first", icon: "user", title: t("students.not_found"), text: t("students.not_found_text"), primary: { label: t("tab.students.directory"), onClick: back.onClick } })); return; }
-        if (e && e.status === 403) { panel.appendChild(OL.ui.empty.render({ kind: "denied", title: t("students.denied"), text: t("students.denied_text") })); return; }
-        var retry = OL.ui.button.render({ label: t("common.retry"), variant: "secondary", size: "sm", onClick: load });
-        panel.appendChild(OL.ui.banner.render({ tone: e && e.code === "offline" ? "offline" : "danger", text: St.message(e), actions: retry }));
+        S.err = e; head();
+        R.fail(e && e.status === 404 ? OL.ui.empty.render({ kind: "first", icon: "user", title: t("students.not_found"), text: t("students.not_found_text"), primary: { label: t("tab.students.directory"), onClick: back.onClick } })
+          : OL.templates.failure(e, { retry: load, denied: { title: t("students.denied"), text: t("students.denied_text") }, message: St.message }));
       });
     }
 
-    function paintAlert() { OL.clear(alertEl); }
-
     /* ---------------------------------------------------------------- the side */
-    function card(title, body, why) { return OL.ui.card.render({ title: title, why: why, level: 2, body: body, class: "st-rec__card" }); }
     function paintSide() {
       OL.clear(side);
       var r = S.rec, s = r.student;
@@ -72,7 +63,7 @@
       if (al) side.appendChild(card(t("students.side.alerts"), al));
       var gaps = St.gaps(r, env);
       if (gaps) side.appendChild(card(t("students.side.fix"), gaps));
-      var fam = h("div", { class: "st-side__family" },
+      var fam = h("div", { class: "ol-students-side__family" },
         h("p", { text: r.family.linked ? t("students.side.family_linked", { n: r.family.linked, active: OL.fmt.num(r.family.active) }) : t("students.side.family_none") }),
         OL.ui.button.render({ label: t("students.side.family_open"), variant: "link", onClick: function () { env.go("students/guardians"); } }));
       side.appendChild(card(t("students.side.guardians"), fam));
@@ -83,20 +74,11 @@
     }
 
     /* ------------------------------------------------------------------- tabs */
-    function paintTabs() {
-      OL.clear(tabsEl);
-      S.tabs = OL.ui.tabs.render({ items: TABS.map(function (k) { return { key: k, label: t("students.tab." + k), href: St.href(env, id, k) }; }), active: tab, size: "page",
-        label: t("students.tabs_label"), panelPrefix: "strec", onSelect: function (k) { tab = k; St.setTab(env, id, k); paintPanel(); } });
-      tabsEl.appendChild(S.tabs);
-    }
-
-    function paintPanel() {
+    function paintTab(tab) {
       var r = S.rec;
-      OL.clear(panel);
-      panel.id = S.tabs.panelId(tab); panel.setAttribute("role", "tabpanel"); panel.setAttribute("aria-labelledby", S.tabs.tabId(tab));
       if (tab === "overview") {
         panel.appendChild(St.tiles(r));
-        if (r.early && r.early.signals.length) panel.appendChild(card(t("students.overview.why"), h("ul", { class: "st-list" }, r.early.signals.map(function (g) { return h("li", { text: g.text }); }))));
+        if (r.early && r.early.signals.length) panel.appendChild(card(t("students.overview.why"), h("ul", { class: "ol-students-list" }, r.early.signals.map(function (g) { return h("li", { text: g.text }); }))));
         panel.appendChild(card(t("students.overview.about"), St.about(r)));
       } else if (tab === "attendance") panel.appendChild(attendance(r));
       else if (tab === "marks") panel.appendChild(marks(r));
@@ -137,12 +119,12 @@
     function activity() {
       panel.appendChild(OL.ui.skeleton.render({ type: "lines", n: 5 }));
       API.audit.list({ record: id, size: 50 }).then(function (r) {
-        if (tab !== "activity") return;
+        if (R.tab !== "activity") return;
         OL.clear(panel);
         if (!r.events.length) { panel.appendChild(OL.ui.empty.render({ kind: "first", icon: "clock", title: t("students.activity.none"), text: t("students.activity.none_text") })); return; }
         panel.appendChild(card(t("students.tab.activity"), St.timeline(r.events, "student")));
       }, function (e) {
-        if (tab !== "activity") return;
+        if (R.tab !== "activity") return;
         OL.clear(panel);
         panel.appendChild(e && e.status === 403 ? OL.ui.empty.render({ kind: "denied", title: t("students.activity.denied"), text: t("students.activity.denied_text") })
           : OL.ui.banner.render({ tone: "danger", text: St.message(e), actions: OL.ui.button.render({ label: t("common.retry"), variant: "secondary", size: "sm", onClick: function () { OL.clear(panel); activity(); } }) }));
@@ -162,7 +144,7 @@
           dlg.close(); OL.ui.toast.show({ text: t("students.message_sent") });
         }, function (e) { go.setLoading(false); body.setError(St.message(e, t("students.save_failed"))); });
       } });
-      dlg = OL.ui.modal.open({ title: t("students.message_family"), width: 520, body: h("div", { class: "st-form" }, title, body),
+      dlg = OL.ui.modal.open({ title: t("students.message_family"), width: 520, body: h("div", { class: "ol-students-form" }, title, body),
         actions: [OL.ui.button.render({ label: t("common.cancel"), variant: "secondary", onClick: function () { dlg.close(); } }), go] });
     }
 

@@ -55,7 +55,7 @@
   St.attendanceCell = function (a) {
     if (!a) return null;
     var pill = St.attendancePill(a);
-    return h("span", { class: "st-att" }, h("span", { class: "st-att__n", text: OL.fmt.pct(a.percent, 1) }), pill);
+    return h("span", { class: "ol-students-att" }, h("span", { class: "ol-students-att__n", text: OL.fmt.pct(a.percent, 1) }), pill);
   };
   St.recordPill = function (r) {
     if (!r.gapCount) return OL.ui.pill.render({ status: "complete" });

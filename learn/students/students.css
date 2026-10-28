@@ -3,107 +3,87 @@
    file like ui.css); the parts are the library's, this file only places them.
    ========================================================================== */
 
-.st-banner { margin: 0 0 var(--s-3); }
+.ol-students-banner { margin: 0 0 var(--s-3); }
 
-/* ---- Directory */
-.st-tb { align-items: flex-end; }
-.st-tb__fields { flex: 1; align-items: flex-end; }
-.st-tb .ol-sf { flex: 1 1 200px; max-width: 300px; }
-.st-f { width: 152px; min-width: 140px; }
-.st-f--wide { width: 200px; }
-.st-chips { margin: 0 0 var(--s-3); }
-.st-tokens:empty { display: none; }
-.st-tokens { margin: 0 0 var(--s-3); }
-.st-token--fixed { padding-inline-end: var(--s-3); background: var(--c-accent-soft); border-color: var(--c-accent); }
-.st-name { display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; color: var(--c-text); font-weight: var(--w-strong); text-decoration: none; }
-.st-name:hover .st-name__n { text-decoration: underline; }
-.st-name__n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.st-namecell { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); min-width: 0; }
-.st-att { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--s-2); }
-.st-att__n { font-variant-numeric: tabular-nums; }
-.st-form { display: flex; flex-direction: column; gap: var(--s-4); }
+/* ---- Directory (the toolbar, the record's columns and the phone rules are the templates', in ui/ui.css) */
+.ol-students-token--fixed { padding-inline-end: var(--s-3); background: var(--c-accent-soft); border-color: var(--c-accent); }
+.ol-students-name { display: inline-flex; align-items: center; gap: var(--s-2); min-width: 0; color: var(--c-text); font-weight: var(--w-strong); text-decoration: none; }
+.ol-students-name:hover .ol-students-name__n { text-decoration: underline; }
+.ol-students-name__n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-students-namecell { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); min-width: 0; }
+.ol-students-att { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--s-2); }
+.ol-students-att__n { font-variant-numeric: tabular-nums; }
+.ol-students-form { display: flex; flex-direction: column; gap: var(--s-4); }
 
 /* ---- Quick look and the parts the record shares */
-.st-peek { display: flex; flex-direction: column; gap: var(--s-4); }
-.st-peek__sub { margin: 0; font: var(--t-small); color: var(--c-text-3); }
-.st-peek__pills { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.st-peek__pills:empty { display: none; }
-.st-alerts { display: flex; flex-direction: column; gap: var(--s-2); }
-.st-gaps { display: flex; flex-direction: column; gap: var(--s-2); }
-.st-gaps__t { margin: 0; font: var(--t-small); font-weight: var(--w-strong); }
-.st-gaps__list { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.st-gap { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 28px; padding: 0 var(--s-3) 0 var(--s-2); border: 1px solid transparent; border-radius: var(--r-full); background: var(--c-warning-soft); color: var(--c-warning); font: var(--t-small); font-weight: var(--w-strong); cursor: pointer; }
-.st-gap.is-blocks { background: var(--c-danger-soft); color: var(--c-danger); }
-.st-gap:hover { border-color: currentColor; }
-.st-contacts { display: flex; flex-direction: column; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
-.st-contact { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border: 1px solid var(--c-line); border-radius: var(--r-md); }
-.st-contact__who { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
-.st-contact__rel { font: var(--t-small); color: var(--c-text-3); }
-.st-contact__line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); }
-.st-contact__num { font-variant-numeric: tabular-nums; }
-.st-contact__act { display: inline-flex; align-items: center; gap: var(--s-2); }
-.st-list { margin: 0; padding-inline-start: var(--s-5); display: flex; flex-direction: column; gap: var(--s-1); }
+.ol-students-peek { display: flex; flex-direction: column; gap: var(--s-4); }
+.ol-students-peek__sub { margin: 0; font: var(--t-small); color: var(--c-text-3); }
+.ol-students-peek__pills { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.ol-students-peek__pills:empty { display: none; }
+.ol-students-alerts { display: flex; flex-direction: column; gap: var(--s-2); }
+.ol-students-gaps { display: flex; flex-direction: column; gap: var(--s-2); }
+.ol-students-gaps__t { margin: 0; font: var(--t-small); font-weight: var(--w-strong); }
+.ol-students-gaps__list { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.ol-students-gap { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 28px; padding: 0 var(--s-3) 0 var(--s-2); border: 1px solid transparent; border-radius: var(--r-full); background: var(--c-warning-soft); color: var(--c-warning); font: var(--t-small); font-weight: var(--w-strong); cursor: pointer; }
+.ol-students-gap.is-blocks { background: var(--c-danger-soft); color: var(--c-danger); }
+.ol-students-gap:hover { border-color: currentColor; }
+.ol-students-contacts { display: flex; flex-direction: column; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.ol-students-contact { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border: 1px solid var(--c-line); border-radius: var(--r-md); }
+.ol-students-contact__who { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
+.ol-students-contact__rel { font: var(--t-small); color: var(--c-text-3); }
+.ol-students-contact__line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); }
+.ol-students-contact__num { font-variant-numeric: tabular-nums; }
+.ol-students-contact__act { display: inline-flex; align-items: center; gap: var(--s-2); }
+.ol-students-list { margin: 0; padding-inline-start: var(--s-5); display: flex; flex-direction: column; gap: var(--s-1); }
 
 /* ---- The record */
-.st-rec__cols { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s-6); align-items: start; }
-.st-rec__main { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
-.st-rec__panel { display: flex; flex-direction: column; gap: var(--s-4); }
-.st-rec__side { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
-.st-rec__card .ol-card__body { padding: var(--s-4) var(--s-5) var(--s-5); }
-.st-side__family { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
-.st-side__family p { margin: 0; font: var(--t-small); color: var(--c-text-2); }
-.st-timeline { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
-.st-timeline__i { display: grid; grid-template-columns: 16px 1fr; gap: var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
-.st-timeline__i:last-child { border-bottom: 0; }
-.st-timeline__dot { width: 8px; height: 8px; margin-top: 6px; border-radius: var(--r-full); background: var(--c-line-input); }
-.st-timeline__t { margin: 0; font: var(--t-body); }
-.st-timeline__when { font: var(--t-small); color: var(--c-text-3); }
-.st-timeline__chg s { color: var(--c-text-3); }
-.st-timeline__chg b { font-weight: var(--w-strong); }
+.ol-students-side__family { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+.ol-students-side__family p { margin: 0; font: var(--t-small); color: var(--c-text-2); }
+.ol-students-timeline { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ol-students-timeline__i { display: grid; grid-template-columns: 16px 1fr; gap: var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
+.ol-students-timeline__i:last-child { border-bottom: 0; }
+.ol-students-timeline__dot { width: 8px; height: 8px; margin-top: 6px; border-radius: var(--r-full); background: var(--c-line-input); }
+.ol-students-timeline__t { margin: 0; font: var(--t-body); }
+.ol-students-timeline__when { font: var(--t-small); color: var(--c-text-3); }
+.ol-students-timeline__chg s { color: var(--c-text-3); }
+.ol-students-timeline__chg b { font-weight: var(--w-strong); }
 
 /* ---- Classes */
-.st-strength { display: inline-flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--s-2); }
-.st-strength__n { font-variant-numeric: tabular-nums; }
-.st-bar { position: relative; width: 64px; height: 6px; overflow: hidden; border-radius: var(--r-full); background: var(--c-line); }
-.st-bar i { position: absolute; inset: 0 auto 0 0; width: var(--w, 0%); border-radius: var(--r-full); background: var(--c-accent); }
-.st-bar.is-over i { background: var(--c-danger); }
-.st-rec__cols--one { grid-template-columns: minmax(0, 1fr); }
-.st-rec__tools { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.st-seat { display: flex; flex-direction: column; gap: var(--s-1); max-height: 50vh; overflow: auto; }
-.st-seat__sub { margin: 0; color: var(--c-text-2); }
-.st-seat__none { margin: 0; color: var(--c-text-3); }
-.st-seat__n { min-height: var(--s-4); font: var(--t-small); color: var(--c-text-2); }
+.ol-students-strength { display: inline-flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--s-2); }
+.ol-students-strength__n { font-variant-numeric: tabular-nums; }
+.ol-students-bar { position: relative; width: 64px; height: 6px; overflow: hidden; border-radius: var(--r-full); background: var(--c-line); }
+.ol-students-bar i { position: absolute; inset: 0 auto 0 0; width: var(--w, 0%); border-radius: var(--r-full); background: var(--c-accent); }
+.ol-students-bar.is-over i { background: var(--c-danger); }
+.ol-students-rec__tools { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.ol-students-seat { display: flex; flex-direction: column; gap: var(--s-1); max-height: 50vh; overflow: auto; }
+.ol-students-seat__sub { margin: 0; color: var(--c-text-2); }
+.ol-students-seat__none { margin: 0; color: var(--c-text-3); }
+.ol-students-seat__n { min-height: var(--s-4); font: var(--t-small); color: var(--c-text-2); }
 
 /* ---- Guardians */
-.st-gd__rel { font: var(--t-small); color: var(--c-text-3); }
-.st-gd__kids { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
-.st-chip { display: inline-flex; align-items: center; max-width: 170px; min-height: 24px; padding: 0 var(--s-2); overflow: hidden; border: 1px solid var(--c-line); border-radius: var(--r-full); color: var(--c-text); font: var(--t-small); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
-.st-chip:hover { border-color: var(--c-accent); }
-.st-gd__more { font: var(--t-small); color: var(--c-text-3); }
-.st-gd__h { margin: 0; font: var(--t-body-strong); }
-.st-gd__list { display: flex; flex-direction: column; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
-.st-gd__list li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-2); }
-.st-gd__none { margin: 0; color: var(--c-text-3); }
+.ol-students-gd__rel { font: var(--t-small); color: var(--c-text-3); }
+.ol-students-gd__kids { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
+.ol-students-chip { display: inline-flex; align-items: center; max-width: 170px; min-height: 24px; padding: 0 var(--s-2); overflow: hidden; border: 1px solid var(--c-line); border-radius: var(--r-full); color: var(--c-text); font: var(--t-small); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.ol-students-chip:hover { border-color: var(--c-accent); }
+.ol-students-gd__more { font: var(--t-small); color: var(--c-text-3); }
+.ol-students-gd__h { margin: 0; font: var(--t-body-strong); }
+.ol-students-gd__list { display: flex; flex-direction: column; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.ol-students-gd__list li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-2); }
+.ol-students-gd__none { margin: 0; color: var(--c-text-3); }
 
 /* ---- Admissions */
-.st-adm__late { color: var(--c-danger); font-weight: var(--w-strong); }
-.st-adm__next { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+.ol-students-adm__late { color: var(--c-danger); font-weight: var(--w-strong); }
+.ol-students-adm__next { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 
 /* ---- Add and edit */
-.st-formpage { max-width: var(--max-form); }
-.st-formpage__form { display: flex; flex-direction: column; gap: var(--s-4); }
-.st-formcard .ol-card__body { padding: var(--s-4) var(--s-5) var(--s-5); }
-.st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4) var(--s-5); align-items: start; }
-.st-grid__wide { grid-column: 1 / -1; }
-.st-formbar { position: sticky; bottom: 0; z-index: var(--z-sticky); display: flex; justify-content: flex-end; gap: var(--s-2); padding: var(--s-3) 0; background: var(--c-bg); border-top: 1px solid var(--c-line); }
+.ol-students-formpage { max-width: var(--max-form); }
+.ol-students-formpage__form { display: flex; flex-direction: column; gap: var(--s-4); }
+.ol-students-formcard .ol-card__body { padding: var(--s-4) var(--s-5) var(--s-5); }
+.ol-students-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4) var(--s-5); align-items: start; }
+.ol-students-grid__wide { grid-column: 1 / -1; }
+.ol-students-formbar { position: sticky; bottom: 0; z-index: var(--z-sticky); display: flex; justify-content: flex-end; gap: var(--s-2); padding: var(--s-3) 0; background: var(--c-bg); border-top: 1px solid var(--c-line); }
 
-@media (max-width: 1023px) {
-  .st-rec__cols { grid-template-columns: minmax(0, 1fr); }
-}
 @media (max-width: 639px) {
-  .st-f { width: 100%; }
-  .st-tb .ol-sf { max-width: none; flex-basis: 100%; }
-  .st-att { justify-content: flex-start; }
-  .st-dir .ol-td, .st-cls .ol-td, .st-rec .ol-td, .st-gd .ol-td, .st-adm .ol-td { min-width: 0; }
-  .st-grid { grid-template-columns: minmax(0, 1fr); }
+  .ol-students-att { justify-content: flex-start; }
+  .ol-students-grid { grid-template-columns: minmax(0, 1fr); }
 }

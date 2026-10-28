@@ -404,7 +404,7 @@
         guardianPhone: "Guardian's mobile", guardianEmail: "Family email", whatsapp: "Use WhatsApp", cwsn: "Child with special needs",
         disability: "Kind of disability", udid: "Disability ID (UDID)", migrant: "Migrant family", consentStatus: "Parental consent",
         consentMethod: "Consent given by", consentOn: "Consent date", consentNote: "Consent note", pin: "PIN code", district: "District", state: "State",
-        programme: "Programme", stream: "Stream", room: "Room", capacity: "Capacity", classTeacher: "Class teacher"
+        programme: "Programme", stream: "Stream", room: "Room", capacity: "Capacity", classTeacher: "Class teacher", guardian: "Guardian"
       },
       help: {
         apaar: "12 digits, or write REFUSED or NOGEN.", pen: "11 digits.", aadhaar: "12 digits. Only the last four are kept.",

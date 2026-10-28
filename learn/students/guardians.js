@@ -21,85 +21,53 @@
   /* what the office says → the relation the server keeps, and the word the family used */
   var RELATIONS = [["father", "parent", "Father"], ["mother", "parent", "Mother"], ["guardian", "guardian", null], ["grandparent", "grandparent", null], ["relative", "relative", null], ["other", "other", null]];
 
-  function failure(e, retry) {
-    if (e && e.status === 403) return OL.ui.empty.render({ kind: "denied", title: t("students.gd.denied"), text: t("students.gd.denied_text") });
-    return OL.ui.banner.render({ tone: e && e.code === "offline" ? "offline" : "danger", text: St.message(e), actions: OL.ui.button.render({ label: t("common.retry"), variant: "secondary", size: "sm", onClick: retry }) });
-  }
+  var denied = function () { return { title: t("students.gd.denied"), text: t("students.gd.denied_text") }; };
+  function failure(e, retry) { return OL.templates.failure(e, { retry: retry, denied: denied(), message: St.message }); }
 
   /* ============================================================= the list */
   function drawList(host, env) {
     var API = St.api();
-    OL.clear(host);
-    var root = h("div", { class: "st-gd" });
-    var headEl = h("div"), alertEl = h("div"), kpiEl = h("div"), toolEl = h("div"), tableEl = h("div");
-    OL.append(root, [headEl, alertEl, kpiEl, toolEl, tableEl]);
-    host.appendChild(root);
-
-    var u = OL.url.all(), q = {};
-    KEYS.forEach(function (k) { if (u[k]) q[k] = u[k]; });
-    var S = { q: q, data: null, err: null, seq: 0, table: null, search: null, tableView: null, peek: null };
+    // the toolbar is drawn once more when the first answer brings the facets; the template does the rest
+    var S = OL.templates.T2(host, {
+      "class": "ol-students-gd", keys: KEYS,
+      answer: function (q) { return API.directory.guardians(q); },
+      announce: function (r) { return t("students.gd.announce", { n: r.total }); },
+      onFirst: function () { var id = OL.url.get("peek"); if (id && !lonely()) openPeek(id); },
+      message: St.message, denied: denied,
+      head: head, kpis: kpis, kpiLabel: t("students.gd.kpi.label"), kpiN: 5, tools: paintTools, tokens: paintTokens, table: tableOf
+    });
+    Object.assign(S, { search: null, peek: null });
+    var setQ = S.set, load = S.load;
     var lonely = function () { return S.q.view === "no-guardian"; };
-
-    function writeUrl() { var patch = {}; KEYS.forEach(function (k) { patch[k] = S.q[k] || null; }); OL.url.setMany(patch, { replace: true }); }
-    function setQ(patch, tools) {
-      var next = Object.assign({}, S.q);
-      Object.keys(patch).forEach(function (k) { if (patch[k] == null || patch[k] === "") delete next[k]; else next[k] = patch[k]; });
-      if (!("page" in patch)) delete next.page;
-      S.q = next; writeUrl();
-      if (tools) paintTools(); else paintTokens();
-      paintKpis(); load();
-    }
     var hasFilters = function () { return !!(S.q.q || S.q.app || S.q["class"] || S.q.relation); };
     function clearAll() { if (S.search) S.search.set(""); setQ({ q: null, app: null, "class": null, relation: null }, true); }
-
-    function load() {
-      var n = ++S.seq;
-      if (S.table) S.table.update({ loading: true });
-      API.directory.guardians(S.q).then(function (r) {
-        if (n !== S.seq) return;
-        S.data = r; S.err = null;
-        if (r.page && String(r.page) !== String(S.q.page || 1) && S.q.page) { S.q.page = String(r.page); writeUrl(); }
-        paint();
-        OL.announce(t("students.gd.announce", { n: r.total }));
-        if (S.first) { S.first = false; var id = OL.url.get("peek"); if (id && !lonely()) openPeek(id); }
-      }, function (e) { if (n !== S.seq) return; S.err = e; if (S.table) S.table.update({ loading: false }); paint(); });
-    }
-    S.first = true;
     var can = function () { return !!(S.data && S.data.can && S.data.can.write); };
-    function paint() { paintHead(); paintAlert(); paintKpis(); if (S.data && !S.toolsHaveData) { S.toolsHaveData = true; paintTools(); } else paintTokens(); paintTable(); }
 
-    function paintHead() {
-      OL.clear(headEl);
-      headEl.appendChild(OL.ui.page.header({
+    function head() {
+      return {
         title: env.title || t("tab.students.guardians"), subtitle: t("students.gd.subtitle"),
         primary: can() ? { label: t("students.gd.add"), icon: "plus", onClick: function () { openAdd(env, null, load); } } : null
-      }));
+      };
     }
-    function paintAlert() { OL.clear(alertEl); if (S.err && S.err.status !== 403) alertEl.appendChild(failure(S.err, load)); }
 
-    function paintKpis() {
-      OL.clear(kpiEl);
-      var d = S.data;
-      if (S.err && !d) return;
-      if (!d) { kpiEl.appendChild(OL.ui.skeleton.render({ type: "kpi", n: 5 })); return; }
-      var k = d.kpis, num = OL.fmt.num;
+    function kpis() {
+      var k = S.data.kpis, num = OL.fmt.num;
       var toggle = function (key, v) { return function () { setQ((function (o) { o.view = null; o[key] = S.q[key] === v ? null : v; return o; })({}), true); }; };
-      kpiEl.appendChild(OL.ui.page.kpis([
+      return [
         { label: t("students.gd.kpi.guardians"), value: num(k.guardians), context: t("students.gd.kpi.guardians_ctx"), onClick: clearAll, selected: !lonely() && !hasFilters() },
         { label: t("students.gd.kpi.lonely"), value: num(k.withoutGuardian), context: t("students.gd.kpi.lonely_ctx"), onClick: function () { setQ({ view: lonely() ? null : "no-guardian", app: null }, true); }, selected: lonely() },
         { label: t("students.gd.kpi.no_mobile"), value: num(k.noMobile), context: t("students.gd.kpi.no_mobile_ctx") },
         { label: t("students.gd.kpi.invited"), value: num(k.invited), context: t("students.gd.kpi.invited_ctx"), onClick: toggle("app", "invited"), selected: S.q.app === "invited" },
         { label: t("students.gd.kpi.active"), value: num(k.active), context: t("students.gd.kpi.active_ctx"), onClick: toggle("app", "active"), selected: S.q.app === "active" }
-      ], t("students.gd.kpi.label")));
+      ];
     }
 
     /* ---------------------------------------------------------- toolbar */
     function multi(key, label, list) {
       return OL.ui.select.render({ label: label, options: (list || []).map(function (v) { return { value: v, label: v }; }), values: csv(S.q[key]), multiple: true, clearable: true, searchable: true,
-        placeholder: t("students.any"), class: "st-f", onChange: function (vals) { setQ((function (o) { o[key] = vals.join(","); return o; })({}), false); } });
+        placeholder: t("students.any"), class: "ol-t2__f", onChange: function (vals) { setQ((function (o) { o[key] = vals.join(","); return o; })({}), false); } });
     }
     function paintTools() {
-      OL.clear(toolEl);
       var d = S.data, fac = d ? d.facets : { classes: [], relations: [] };
       S.search = OL.ui.page.search({ label: t("students.gd.search_label"), placeholder: t(lonely() ? "students.gd.search_lonely" : "students.gd.search"), value: S.q.q || "", onInput: function (v) { if (v !== (S.q.q || "")) setQ({ q: v }, false); } });
       var fields = [S.search];
@@ -110,10 +78,9 @@
       var view = OL.ui.segmented.render({ label: t("students.gd.view_label"), value: lonely() ? "no-guardian" : "guardians",
         items: [{ value: "guardians", label: t("students.gd.view.guardians") }, { value: "no-guardian", label: t("students.gd.view.no_guardian") }],
         onChange: function (v) { setQ({ view: v === "no-guardian" ? "no-guardian" : null, app: null, relation: null, sort: null, dir: null }, true); } });
-      OL.append(toolEl, [h("div", { class: "ol-tb st-tb" }, h("div", { class: "ol-tb__group st-tb__fields" }, fields), h("div", { class: "ol-tb__end" }, view)),
-        h("div", { class: "st-chips" }), h("div", { class: "ol-tb__tokens st-tokens" })]);
-      S.chipsEl = toolEl.querySelector(".st-chips"); S.tokensEl = toolEl.querySelector(".st-tokens");
-      paintChips(); paintTokens();
+      var bits = S.toolbar({ fields: fields, end: view, chips: true });
+      S.chipsEl = bits.chips; S.tokensEl = bits.tokens;
+      paintTokens();
     }
     function paintChips() {
       if (!S.chipsEl) return;
@@ -133,16 +100,16 @@
 
     /* ------------------------------------------------------------- table */
     var student = function (s) {
-      return h("a", { class: "st-chip", href: St.href(env, s.id), title: s.name, on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); e.stopPropagation(); env.go(St.path(s.id)); } } },
+      return h("a", { class: "ol-students-chip", href: St.href(env, s.id), title: s.name, on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); e.stopPropagation(); env.go(St.path(s.id)); } } },
         s.name + (s.classLabel ? " · " + s.classLabel : ""));
     };
     var gCols = [
       { key: "name", label: t("students.gd.col.guardian"), sort: true, width: 260, mobile: "title", value: function (g) { return g.name; }, render: function (g) {
-        return h("span", { class: "st-namecell" }, OL.ui.avatar.render({ name: g.name, id: g.id, size: 24 }), h("span", { class: "st-name__n", text: g.name }), h("span", { class: "st-gd__rel", text: g.relations.join(", ") }));
+        return h("span", { class: "ol-students-namecell" }, OL.ui.avatar.render({ name: g.name, id: g.id, size: 24 }), h("span", { class: "ol-students-name__n", text: g.name }), h("span", { class: "ol-students-gd__rel", text: g.relations.join(", ") }));
       } },
       { key: "students", label: t("students.gd.col.students"), sort: true, width: 340, mobile: "sub", value: function (g) { return g.students.map(function (s) { return s.name; }).join(", "); }, render: function (g) {
         var shown = g.students.slice(0, 2), more = g.studentCount - shown.length;
-        return h("span", { class: "st-gd__kids" }, shown.map(student), more > 0 ? h("span", { class: "st-gd__more", text: t("students.gd.more", { n: more }) }) : null);
+        return h("span", { class: "ol-students-gd__kids" }, shown.map(student), more > 0 ? h("span", { class: "ol-students-gd__more", text: t("students.gd.more", { n: more }) }) : null);
       } },
       { key: "phone", label: t("students.gd.col.mobile"), width: 150, mobile: "sub", value: function (g) { return g.phone; } },
       { key: "email", label: t("students.gd.col.email"), width: 200, mobile: "hide", value: function (g) { return g.email; } },
@@ -150,8 +117,8 @@
     ];
     var lCols = [
       { key: "name", label: t("students.gd.col.student"), sort: true, width: 280, mobile: "title", value: function (r) { return r.name; }, render: function (r) {
-        return h("a", { class: "st-name", href: St.href(env, r.id), on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); e.stopPropagation(); env.go(St.path(r.id)); } } },
-          OL.ui.avatar.render({ name: r.name, id: r.id, size: 24 }), h("span", { class: "st-name__n", text: r.name }));
+        return h("a", { class: "ol-students-name", href: St.href(env, r.id), on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); e.stopPropagation(); env.go(St.path(r.id)); } } },
+          OL.ui.avatar.render({ name: r.name, id: r.id, size: 24 }), h("span", { class: "ol-students-name__n", text: r.name }));
       } },
       { key: "class", label: t("term.class"), width: 110, mobile: "sub", value: function (r) { return r.classLabel; } },
       { key: "adm", label: t("term.admission_no"), width: 160, mobile: "sub", value: function (r) { return r.admissionNo; } },
@@ -161,30 +128,23 @@
       } }
     ];
     function emptyState() {
-      if (S.err && S.err.status === 403) return { kind: "denied", title: t("students.gd.denied"), text: t("students.gd.denied_text") };
       if (!S.data) return { kind: "first", title: t("table.empty") };
       if (hasFilters()) return { kind: "filtered", title: t("students.gd.none_match"), text: t("students.gd.none_match_text"), onClear: clearAll };
       if (lonely()) return { kind: "first", icon: "users", title: t("students.gd.lonely_title"), text: t("students.gd.lonely_text") };
       return { kind: "first", icon: "users", title: t("students.gd.first_title"), text: t("students.gd.first_text"),
         primary: can() ? { label: t("students.gd.add"), icon: "plus", onClick: function () { openAdd(env, null, load); } } : null };
     }
-    function paintTable() {
+    // the two views are two different tables: the template makes the other one when the key changes
+    function tableOf() {
       var d = S.data;
-      if (S.err && !d) { OL.clear(tableEl); S.table = null; if (S.err.status === 403) tableEl.appendChild(OL.ui.empty.render(emptyState())); return; }
-      var sort = { key: S.q.sort || "name", dir: S.q.dir === "desc" ? "desc" : "asc" };
-      var state = { rows: d ? d.rows : [], total: d ? d.total : 0, page: d ? d.page : 1, sort: sort, loading: !d, empty: emptyState() };
-      // the two views are two different tables: a view change builds the other one
-      if (S.table && S.tableView !== (lonely() ? "lonely" : "guardians")) { S.table = null; }
-      if (!S.table) {
-        S.tableView = lonely() ? "lonely" : "guardians";
-        S.table = OL.ui.table.render({
-          caption: t(lonely() ? "students.gd.caption_lonely" : "students.gd.caption"), columns: lonely() ? lCols : gCols, rows: state.rows, rowKey: "id", sort: sort, page: state.page, pageSize: 50, total: state.total, loading: state.loading, empty: state.empty,
+      return { key: lonely() ? "lonely" : "guardians",
+        config: {
+          caption: t(lonely() ? "students.gd.caption_lonely" : "students.gd.caption"), columns: lonely() ? lCols : gCols, rowKey: "id", pageSize: 50,
           onSort: function (key, dir) { setQ({ sort: key, dir: dir }, false); },
           onPage: function (n) { setQ({ page: String(n) }, false); },
           onOpen: function (r) { if (lonely()) env.go(St.path(r.id)); else openPeek(r.id); }
-        });
-        OL.clear(tableEl); tableEl.appendChild(S.table);
-      } else S.table.update({ rows: state.rows, total: state.total, page: state.page, sort: sort, loading: false, empty: state.empty });
+        },
+        state: { rows: d ? d.rows : [], total: d ? d.total : 0, page: d ? d.page : 1, sort: { key: S.q.sort || "name", dir: S.q.dir === "desc" ? "desc" : "asc" }, empty: emptyState() } };
     }
 
     /* --------------------------------------------------------- quick look */
@@ -193,8 +153,7 @@
       S.peek = peek(env, id, can, load, function () { S.peek = null; });
     }
 
-    paintHead(); paintKpis(); paintTools(); paintTable();
-    load();
+    S.start();
   }
 
   /* ========================================================== the quick look */
@@ -208,20 +167,20 @@
         if (n !== seq || !hd) return;
         var g = r.guardian;
         hd.setTitle(g.name);
-        var body = h("div", { class: "st-peek" });
-        body.appendChild(h("div", { class: "st-peek__pills" }, OL.ui.pill.render({ status: g.app === "active" ? "active" : "invited" })));
+        var body = h("div", { class: "ol-students-peek" });
+        body.appendChild(h("div", { class: "ol-students-peek__pills" }, OL.ui.pill.render({ status: g.app === "active" ? "active" : "invited" })));
         body.appendChild(OL.ui.page.facts([
           { label: t("students.gd.peek.relation"), value: g.relations.join(", ") },
           { label: t("students.gd.peek.email"), value: g.email },
           { label: t("students.gd.peek.language"), value: g.language },
           { label: t("students.gd.peek.whatsapp"), value: g.whatsapp === 1 ? t("common.yes") : g.whatsapp === 0 ? t("common.no") : t("students.gd.peek.not_asked") }
         ]));
-        body.appendChild(h("h3", { class: "st-gd__h", text: t("students.gd.peek.mobile") }));
+        body.appendChild(h("h3", { class: "ol-students-gd__h", text: t("students.gd.peek.mobile") }));
         body.appendChild(numbers(g));
-        body.appendChild(h("h3", { class: "st-gd__h", text: t("students.gd.peek.students", { n: g.students.length }) }));
-        body.appendChild(h("ul", { class: "st-gd__list" }, g.students.map(function (s) {
+        body.appendChild(h("h3", { class: "ol-students-gd__h", text: t("students.gd.peek.students", { n: g.students.length }) }));
+        body.appendChild(h("ul", { class: "ol-students-gd__list" }, g.students.map(function (s) {
           return h("li", null, h("a", { class: "ol-link", href: St.href(env, s.id), on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); if (hd) hd.close(); env.go(St.path(s.id)); } } }, s.name),
-            h("span", { class: "st-gd__rel", text: [s.classLabel, s.relation].filter(Boolean).join(" · ") }));
+            h("span", { class: "ol-students-gd__rel", text: [s.classLabel, s.relation].filter(Boolean).join(" · ") }));
         })));
         hd.setBody(body);
       }, function (e) {
@@ -232,10 +191,10 @@
 
     /* the number is masked until asked for; asking is written down */
     function numbers(g) {
-      if (!g.phones.length) return h("p", { class: "st-gd__none", text: t("students.gd.peek.no_number") });
-      var wrap = h("ul", { class: "st-contacts" });
+      if (!g.phones.length) return h("p", { class: "ol-students-gd__none", text: t("students.gd.peek.no_number") });
+      var wrap = h("ul", { class: "ol-students-contacts" });
       g.phones.forEach(function (p) {
-        var num = h("span", { class: "st-contact__num", text: p.phone }), acts = h("span", { class: "st-contact__act" }), timer = null;
+        var num = h("span", { class: "ol-students-contact__num", text: p.phone }), acts = h("span", { class: "ol-students-contact__act" }), timer = null;
         var show = OL.ui.button.render({ label: t("students.gd.peek.show"), icon: "eye", variant: "secondary", size: "sm", onClick: function () {
           show.setLoading(true);
           API.directory.guardianPhone(g.id, p.which).then(function (r) {
@@ -246,7 +205,7 @@
           }, function (e) { show.setLoading(false); OL.ui.toast.show({ text: St.message(e, t("students.contact.show_failed")), tone: "error" }); });
         } });
         acts.appendChild(show);
-        wrap.appendChild(h("li", { class: "st-contact" }, h("div", { class: "st-contact__who" }, h("strong", { text: t("students.gd.peek.phone_" + p.which) })), h("div", { class: "st-contact__line" }, num, acts)));
+        wrap.appendChild(h("li", { class: "ol-students-contact" }, h("div", { class: "ol-students-contact__who" }, h("strong", { text: t("students.gd.peek.phone_" + p.which) })), h("div", { class: "ol-students-contact__line" }, num, acts)));
       });
       return wrap;
     }
@@ -267,7 +226,7 @@
     var relation = null;
     var rel = OL.ui.select.render({ label: t("students.gd.add_form.relation"), options: RELATIONS.map(function (r) { return { value: r[0], label: t("students.gd.relation." + r[0]) }; }), placeholder: t("students.choose"), onChange: function (v) { relation = v; mark(); } });
     var mobile = OL.ui.input.render({ label: t("students.gd.add_form.mobile"), name: "cellPhone", inputMode: "tel", maxLength: 20, optional: true, helper: t("students.help.fatherPhone"), onInput: mark });
-    var form = h("form", { class: "st-form", novalidate: true }, students, h("div", { class: "st-grid" }, name, email, rel, mobile));
+    var form = h("form", { class: "ol-students-form", novalidate: true }, students, h("div", { class: "ol-students-grid" }, name, email, rel, mobile));
     var save = OL.ui.button.render({ label: t("students.gd.add"), variant: "primary", onClick: function () { submit(); } });
     form.addEventListener("submit", function (e) { e.preventDefault(); submit(); });
     form.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target && e.target.tagName === "INPUT" && !e.target.closest(".ol-select, .ol-people")) { e.preventDefault(); submit(); } });

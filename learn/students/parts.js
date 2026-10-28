@@ -11,7 +11,7 @@
   var St = OL.students = OL.students || {};
 
   St.alerts = function (rec) {
-    var wrap = h("div", { class: "st-alerts" });
+    var wrap = h("div", { class: "ol-students-alerts" });
     rec.alerts.forEach(function (a) {
       var tone = a.level === "danger" ? "danger" : a.level === "warning" ? "warning" : "info", text;
       if (a.key === "attendance") text = t("students.alert.attendance", { percent: OL.fmt.pct(a.percent, 1) });
@@ -19,7 +19,7 @@
       else if (a.key === "consent") text = t("students.alert.consent");
       else if (a.key === "early_warning") text = t(a.level === "danger" ? "students.alert.early_high" : "students.alert.early_medium");
       else text = t("students.alert.cwsn");
-      wrap.appendChild(OL.ui.banner.render({ tone: tone, text: text, class: "st-alert" }));
+      wrap.appendChild(OL.ui.banner.render({ tone: tone, text: text, class: "ol-students-alert" }));
     });
     return wrap.childNodes.length ? wrap : null;
   };
@@ -72,12 +72,12 @@
 
   /* Who to call. The number is masked until someone asks; asking is written to the audit log. */
   St.contacts = function (rec, env) {
-    var API = St.api(), wrap = h("ul", { class: "st-contacts" });
+    var API = St.api(), wrap = h("ul", { class: "ol-students-contacts" });
     if (!rec.contacts.length) return OL.ui.empty.render({ kind: "first", icon: "phone", title: t("students.contact.none"), text: t("students.contact.none_text"),
       primary: rec.can.write ? { label: t("students.edit"), icon: "pencil", onClick: function () { env.go(St.path(rec.student.id, "edit")); } } : null });
     rec.contacts.forEach(function (c) {
-      var number = h("span", { class: "st-contact__num", text: c.hasPhone ? c.phone : t("students.contact.no_number") });
-      var actions = h("span", { class: "st-contact__act" });
+      var number = h("span", { class: "ol-students-contact__num", text: c.hasPhone ? c.phone : t("students.contact.no_number") });
+      var actions = h("span", { class: "ol-students-contact__act" });
       var timer = null;
       function mask() { number.textContent = c.phone; OL.clear(actions); actions.appendChild(showBtn); }
       var showBtn = OL.ui.button.render({ label: t("students.contact.show"), icon: "eye", variant: "secondary", size: "sm", onClick: function () {
@@ -92,11 +92,11 @@
         }, function (e) { showBtn.setLoading(false); OL.ui.toast.show({ text: St.message(e, t("students.contact.show_failed")), tone: "error" }); });
       } });
       if (c.hasPhone) actions.appendChild(showBtn);
-      wrap.appendChild(h("li", { class: "st-contact" },
-        h("div", { class: "st-contact__who" },
-          h("strong", { text: c.name || t("students.contact.unnamed") }), h("span", { class: "st-contact__rel", text: c.relation }),
+      wrap.appendChild(h("li", { class: "ol-students-contact" },
+        h("div", { class: "ol-students-contact__who" },
+          h("strong", { text: c.name || t("students.contact.unnamed") }), h("span", { class: "ol-students-contact__rel", text: c.relation }),
           c.primary ? OL.ui.pill.render({ label: t("students.contact.primary"), tone: "info" }) : null),
-        h("div", { class: "st-contact__line" }, number, actions)));
+        h("div", { class: "ol-students-contact__line" }, number, actions)));
     });
     return wrap;
   };
@@ -104,16 +104,16 @@
   /* The audit log of one record as a timeline: who did what and, for a changed field, what it was and what it is. A number shown,
      an export or a creation has no field and says only what was done. `kind` is the noun a bare event is about ("student", "class"). */
   St.timeline = function (events, kind) {
-    var list = h("ol", { class: "st-timeline" });
+    var list = h("ol", { class: "ol-students-timeline" });
     events.forEach(function (e) {
       var bare = "students.activity.event_" + kind + "." + e.verb, did;
       if (e.field) did = t("students.activity.verb." + e.verb, { field: t("students.field." + e.field) });
       else did = t(OL.i18n.has(bare) ? bare : "students.activity.event." + e.verb);
-      var change = e.field && e.verb === "changed" ? h("span", { class: "st-timeline__chg" }, h("s", { text: e.before || t("common.none") }), " → ", h("b", { text: e.after || t("common.none") })) : null;
-      list.appendChild(h("li", { class: "st-timeline__i" },
-        h("span", { class: "st-timeline__dot", "aria-hidden": "true" }),
-        h("div", null, h("p", { class: "st-timeline__t" }, h("strong", { text: e.actor.name || t("students.activity.system") }), " ", did, " ", change),
-          h("time", { class: "st-timeline__when", datetime: new Date(e.at).toISOString(), text: OL.fmt.dateTime(new Date(e.at)) }))));
+      var change = e.field && e.verb === "changed" ? h("span", { class: "ol-students-timeline__chg" }, h("s", { text: e.before || t("common.none") }), " → ", h("b", { text: e.after || t("common.none") })) : null;
+      list.appendChild(h("li", { class: "ol-students-timeline__i" },
+        h("span", { class: "ol-students-timeline__dot", "aria-hidden": "true" }),
+        h("div", null, h("p", { class: "ol-students-timeline__t" }, h("strong", { text: e.actor.name || t("students.activity.system") }), " ", did, " ", change),
+          h("time", { class: "ol-students-timeline__when", datetime: new Date(e.at).toISOString(), text: OL.fmt.dateTime(new Date(e.at)) }))));
     });
     return list;
   };
@@ -122,12 +122,12 @@
   St.gaps = function (rec, env) {
     var gaps = rec.student.gaps;
     if (!gaps.length) return null;
-    var wrap = h("div", { class: "st-gaps" }, h("p", { class: "st-gaps__t", text: t("students.gaps.title", { n: gaps.length }) }));
-    var list = h("div", { class: "st-gaps__list" });
+    var wrap = h("div", { class: "ol-students-gaps" }, h("p", { class: "ol-students-gaps__t", text: t("students.gaps.title", { n: gaps.length }) }));
+    var list = h("div", { class: "ol-students-gaps__list" });
     gaps.forEach(function (g) {
       var go = function () { env.go(St.path(rec.student.id, "edit") + "?focus=" + encodeURIComponent(g.field)); };
       var label = t("students.gap." + g.field);
-      list.appendChild(h("button", { type: "button", class: OL.cx("st-gap", g.level === "blocks" && "is-blocks"), on: { click: go } }, OL.icon(g.level === "blocks" ? "alert-circle" : "alert-triangle", 16), h("span", { text: label })));
+      list.appendChild(h("button", { type: "button", class: OL.cx("ol-students-gap", g.level === "blocks" && "is-blocks"), on: { click: go } }, OL.icon(g.level === "blocks" ? "alert-circle" : "alert-triangle", 16), h("span", { text: label })));
     });
     wrap.appendChild(list);
     return rec.can.write ? wrap : null;

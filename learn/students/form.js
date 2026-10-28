@@ -67,8 +67,8 @@
   function draw(host, env, id) {
     var API = St.api(), fresh = !id;
     OL.clear(host);
-    var root = h("div", { class: "st-formpage" });
-    var headEl = h("div"), alertEl = h("div"), formEl = h("form", { class: "st-formpage__form", novalidate: true });
+    var root = h("div", { class: "ol-students-formpage" });
+    var headEl = h("div"), alertEl = h("div"), formEl = h("form", { class: "ol-students-formpage__form", novalidate: true });
     OL.append(root, [headEl, alertEl, formEl]);
     host.appendChild(root);
 
@@ -141,13 +141,13 @@
       head(S.was ? S.was.name : "");
       SECTIONS.forEach(function (sec) {
         var fields = sec.fields.filter(function (f) { return fresh || !f.fresh; });
-        var grid = h("div", { class: "st-grid" });
-        fields.forEach(function (f) { var el = control(f); grid.appendChild(f.wide ? h("div", { class: "st-grid__wide" }, el) : el); });
-        formEl.appendChild(OL.ui.card.render({ title: t("students.section." + sec.key), level: 2, body: grid, class: "st-formcard" }));
+        var grid = h("div", { class: "ol-students-grid" });
+        fields.forEach(function (f) { var el = control(f); grid.appendChild(f.wide ? h("div", { class: "ol-students-grid__wide" }, el) : el); });
+        formEl.appendChild(OL.ui.card.render({ title: t("students.section." + sec.key), level: 2, body: grid, class: "ol-students-formcard" }));
       });
       var cancel = OL.ui.button.render({ label: t("common.cancel"), variant: "secondary", onClick: leave });
       S.save = OL.ui.button.render({ label: fresh ? t("students.save_new") : t("common.save"), variant: "primary", type: "submit" });
-      formEl.appendChild(h("div", { class: "st-formbar" }, cancel, S.save));
+      formEl.appendChild(h("div", { class: "ol-students-formbar" }, cancel, S.save));
       formEl.addEventListener("submit", function (e) { e.preventDefault(); save(); });
       window.addEventListener("beforeunload", guard);
       var focus = OL.url.get("focus");
@@ -172,7 +172,7 @@
       var c = field && S.ctl[field];
       if (c && c.el.setError) { c.el.setError(message); if (c.el.scrollIntoView) c.el.scrollIntoView({ block: "center" }); if (c.el.focus) c.el.focus(); return; }
       OL.clear(alertEl);
-      alertEl.appendChild(OL.ui.banner.render({ tone: "danger", text: message, class: "st-banner" }));
+      alertEl.appendChild(OL.ui.banner.render({ tone: "danger", text: message, class: "ol-students-banner" }));
       if (alertEl.scrollIntoView) alertEl.scrollIntoView({ block: "center" });
     }
 

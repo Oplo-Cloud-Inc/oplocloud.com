@@ -24,24 +24,25 @@
   var DRAWER_ONLY = ["stream", "transport", "blood", "language", "status", "apaar", "pen", "from", "to", "cwsn"];
   var CATEGORIES = ["General", "EWS/DG", "SC", "ST", "OBC"];
 
-  function readQuery() {
-    var u = OL.url.all(), out = {};
-    KEYS.forEach(function (k) { if (u[k]) out[k] = u[k]; });
-    return out;
-  }
   var csv = function (v) { return v ? String(v).split(",").filter(Boolean) : []; };
 
   function draw(host, env) {
     var API = St.api();
-    OL.clear(host);
-    var root = h("div", { class: "st-dir" });
-    var headEl = h("div"), alertEl = h("div"), kpiEl = h("div"), toolEl = h("div"), tableEl = h("div"), bulkEl = h("div");
-    OL.append(root, [headEl, alertEl, kpiEl, toolEl, tableEl, bulkEl]);
-    host.appendChild(root);
+    if (env.pick) { OL.clear(host); env.go(St.path(env.pick)); return; }
 
-    if (env.pick) { env.go(St.path(env.pick)); return; }
-
-    var S = { selAll: { total: 0 }, q: readQuery(), data: null, err: null, seq: 0, table: null, classes: [], sel: { keys: [], allMatching: false }, peek: null, bulk: null, search: null, chips: null, firstLoad: true };
+    // the toolbar is drawn once more when the first answer brings the facets and the person's sections; the template does the rest
+    var S = OL.templates.T2(host, {
+      "class": "ol-students-dir", keys: KEYS,
+      answer: function (q) { return API.directory.students(q); },
+      announce: function (r) { return t("students.announce", { n: r.total }); },
+      onAddress: function () { St.setList(filterString()); },
+      onQuery: function () { S.sel = { keys: [], allMatching: false }; if (S.table) S.table.update({ selected: [] }); syncBulk(); },
+      onFirst: function () { var id = OL.url.get("peek"); if (id) openPeek(id); },
+      message: St.message, denied: function () { return { title: t("students.denied"), text: t("students.denied_text") }; },
+      head: head, kpis: kpis, kpiLabel: t("students.kpi.label"), kpiN: 5, tools: paintTools, tokens: paintChips, table: tableOf, bulk: bulkActions
+    });
+    Object.assign(S, { selAll: { total: 0 }, classes: [], sel: { keys: [], allMatching: false }, peek: null, search: null, chips: null });
+    var setQ = S.set, load = S.load;
 
     /* ----------------------------------------------------------- the address */
     function filterString() {
@@ -49,28 +50,7 @@
       FILTERS.forEach(function (k) { if (S.q[k]) p.set(k, S.q[k]); });
       return p.toString();
     }
-    function writeUrl() {
-      var patch = {};
-      KEYS.forEach(function (k) { patch[k] = S.q[k] || null; });
-      OL.url.setMany(patch, { replace: true });
-      St.setList(filterString());
-    }
     function hasFilters() { return FILTERS.some(function (k) { return !!S.q[k]; }); }
-
-    /* patch: { key: value|null }. tools: the toolbar's controls must be redrawn to show it (the change did not come from them). */
-    function setQ(patch, tools) {
-      var q = Object.assign({}, S.q);
-      Object.keys(patch).forEach(function (k) { if (patch[k] == null || patch[k] === "") delete q[k]; else q[k] = patch[k]; });
-      if (!("page" in patch)) delete q.page;
-      S.q = q;
-      writeUrl();
-      S.sel = { keys: [], allMatching: false };
-      if (S.table) S.table.update({ selected: [] });
-      syncBulk();
-      if (tools) paintTools(); else paintTokens();
-      paintKpis();
-      load();
-    }
     function clearAll() {
       var patch = {};
       FILTERS.forEach(function (k) { patch[k] = null; });
@@ -78,40 +58,18 @@
       setQ(patch, true);
     }
 
-    /* ---------------------------------------------------------------- loading */
-    function load() {
-      var n = ++S.seq;
-      if (S.table) S.table.update({ loading: true });
-      API.directory.students(S.q).then(function (r) {
-        if (n !== S.seq) return;
-        S.data = r; S.err = null;
-        if (r.page && String(r.page) !== String(S.q.page || 1) && S.q.page) { S.q.page = String(r.page); writeUrl(); }
-        paint();
-        OL.announce(t("students.announce", { n: r.total }));
-        if (S.firstLoad) { S.firstLoad = false; var id = OL.url.get("peek"); if (id) openPeek(id); }
-      }, function (e) {
-        if (n !== S.seq) return;
-        S.err = e; if (S.table) S.table.update({ loading: false });
-        paint();
-      });
-    }
-
-    // the toolbar is drawn once more when the first answer brings the facets and the person's sections
-    function paint() { paintHead(); paintAlert(); paintKpis(); if (S.data && !S.toolsHaveData) { S.toolsHaveData = true; paintTools(); } else paintChips(); paintTable(); }
-
     /* ----------------------------------------------------------------- header */
-    function paintHead() {
+    function head() {
       var d = S.data, can = d ? d.can : {};
       var more = [];
       if (can.export) more.push({ label: t("students.export"), icon: "download", onClick: doExport });
-      OL.clear(headEl);
-      headEl.appendChild(OL.ui.page.header({
+      return {
         title: env.title || t("tab.students.directory"),
         subtitle: d ? t("students.subtitle", { n: d.kpis.students, sections: d.kpis.sections }) : null,
         primary: can.write ? { label: t("students.add"), icon: "plus", onClick: function () { env.go("students/directory/new"); } } : null,
         secondary: can.write ? [{ label: t("students.import"), icon: "upload", onClick: function () { env.go("admin/data/imports"); } }] : [],
         more: more
-      }));
+      };
     }
 
     function doExport() {
@@ -122,28 +80,17 @@
       }, function (e) { OL.ui.toast.show({ text: St.message(e, t("students.export_failed")), tone: "error" }); });
     }
 
-    function paintAlert() {
-      OL.clear(alertEl);
-      if (!S.err) return;
-      var retry = OL.ui.button.render({ label: t("common.retry"), variant: "secondary", size: "sm", onClick: load });
-      alertEl.appendChild(OL.ui.banner.render({ tone: S.err.code === "offline" ? "offline" : "danger", text: St.message(S.err), actions: retry, class: "st-banner" }));
-    }
-
     /* ------------------------------------------------------------------- KPIs */
     function toggleOne(key, value) { return function () { setQ((function (o) { o[key] = S.q[key] === value ? null : value; return o; })({}), true); }; }
-    function paintKpis() {
-      OL.clear(kpiEl);
-      var d = S.data;
-      if (S.err && !d) return;
-      if (!d) { kpiEl.appendChild(OL.ui.skeleton.render({ type: "kpi", n: 5 })); return; }
-      var k = d.kpis, on = S.q, num = OL.fmt.num;
-      kpiEl.appendChild(OL.ui.page.kpis([
+    function kpis() {
+      var k = S.data.kpis, on = S.q, num = OL.fmt.num;
+      return [
         { label: t("students.kpi.students"), value: num(k.students), context: t("students.kpi.in_sections", { n: k.sections }), onClick: clearAll, selected: !hasFilters() },
         { label: t("students.kpi.under75"), value: num(k.under75), context: t("students.kpi.under75_ctx"), onClick: toggleOne("attendance", "under-75"), selected: on.attendance === "under-75" },
         { label: t("students.kpi.warning"), value: num(k.warning), context: t("students.kpi.warning_ctx", { n: num(k.warningHigh) }), onClick: toggleOne("warning", "high,medium"), selected: on.warning === "high,medium" },
         { label: t("students.kpi.consent"), value: num(k.consent), context: t("students.kpi.consent_ctx"), onClick: toggleOne("consent", "pending"), selected: on.consent === "pending" },
         { label: t("students.kpi.gaps"), value: num(k.gaps), context: t("students.kpi.gaps_ctx"), onClick: toggleOne("filter", "record-gaps"), selected: on.filter === "record-gaps" }
-      ], t("students.kpi.label")));
+      ];
     }
 
     /* ---------------------------------------------------------------- toolbar */
@@ -152,7 +99,7 @@
     }
     function multi(key, label, list, lab) {
       return OL.ui.select.render({ label: label, options: options(list, lab), values: csv(S.q[key]), multiple: true, clearable: true, placeholder: t("students.any"),
-        class: "st-f", onChange: function (vals) { setQ((function (o) { o[key] = vals.join(","); return o; })({}), false); } });
+        class: "ol-t2__f", onChange: function (vals) { setQ((function (o) { o[key] = vals.join(","); return o; })({}), false); } });
     }
     function buildClasses(list, scope) {
       var by = {}, order = [];
@@ -165,12 +112,11 @@
     }
 
     function paintTools() {
-      OL.clear(toolEl);
       var d = S.data, scope = d && d.scope ? d.scope.sections : null, fac = d ? d.facets : {};
       S.search = OL.ui.page.search({ label: t("students.search_label"), placeholder: t("students.search"), value: S.q.q || "", onInput: function (v) { if (v !== (S.q.q || "")) setQ({ q: v }, false); } });
       var groups = [S.search];
       if (!scope || scope.length > 1) {
-        S.classPicker = OL.ui.classpicker.render({ label: t("term.class"), classes: buildClasses(S.classes, scope), values: csv(S.q["class"]), multiple: true, class: "st-f", placeholder: t("students.any"),
+        S.classPicker = OL.ui.classpicker.render({ label: t("term.class"), classes: buildClasses(S.classes, scope), values: csv(S.q["class"]), multiple: true, class: "ol-t2__f", placeholder: t("students.any"),
           onChange: function (ids) { setQ({ "class": ids.join(",") }, false); } });
         groups.push(S.classPicker);
       }
@@ -180,12 +126,9 @@
         groups.push(multi("gender", t("students.filter.gender"), fac.genders, function (g) { return t("students.gender." + g); }));
       }
       var more = OL.ui.button.render({ label: t("students.more_filters"), icon: "sliders", variant: "secondary", onClick: function () { openFilters(more); } });
-      var end = h("div", { class: "ol-tb__end" }, more);
-      var chipsWrap = h("div", { class: "st-chips" });
-      S.chipsEl = chipsWrap;
-      OL.append(toolEl, [h("div", { class: "ol-tb st-tb" }, h("div", { class: "ol-tb__group st-tb__fields" }, groups), end), chipsWrap, h("div", { class: "ol-tb__tokens st-tokens" })]);
-      S.tokensEl = toolEl.querySelector(".st-tokens");
-      paintChips(); paintTokens();
+      var bits = S.toolbar({ fields: groups, end: more, chips: true });
+      S.chipsEl = bits.chips; S.tokensEl = bits.tokens;
+      paintChips();
     }
 
     function paintChips() {
@@ -217,7 +160,7 @@
       if (!S.tokensEl) return;
       OL.clear(S.tokensEl);
       var d = S.data, scope = d && d.scope ? d.scope.sections : null;
-      if (scope) S.tokensEl.appendChild(h("span", { class: "ol-token st-token--fixed" }, h("span", { text: t("students.token.scope", { sections: scope.join(", ") }) })));
+      if (scope) S.tokensEl.appendChild(h("span", { class: "ol-token ol-students-token--fixed" }, h("span", { text: t("students.token.scope", { sections: scope.join(", ") }) })));
       var shown = DRAWER_ONLY.filter(function (k) { return !!S.q[k]; });
       shown.forEach(function (k) {
         S.tokensEl.appendChild(OL.ui.chips.token({ label: tokenText(k), onRemove: function () { setQ((function (o) { o[k] = null; return o; })({}), false); paintTokens(); } }));
@@ -229,7 +172,7 @@
     function openFilters(anchor) {
       var d = S.data, fac = d ? d.facets : {}, draft = {};
       DRAWER_ONLY.forEach(function (k) { draft[k] = S.q[k] || ""; });
-      var fields = h("div", { class: "st-form" });
+      var fields = h("div", { class: "ol-students-form" });
       function ms(key, label, list, lab) {
         fields.appendChild(OL.ui.select.render({ label: label, options: options(list, lab), values: csv(draft[key]), multiple: true, clearable: true, placeholder: t("students.any"),
           onChange: function (v) { draft[key] = v.join(","); } }));
@@ -258,12 +201,12 @@
     function genderCell(r) { return St.genderLabel(r.gender); }
     var columns = [
       { key: "name", label: t("students.col.name"), sort: true, width: 260, mobile: "title", value: function (r) { return r.name; }, render: function (r) {
-        var a = h("a", { class: "st-name", href: St.href(env, r.id), on: { click: function (e) {
+        var a = h("a", { class: "ol-students-name", href: St.href(env, r.id), on: { click: function (e) {
           if (e.metaKey || e.ctrlKey || e.shiftKey) return;
           e.preventDefault(); e.stopPropagation(); env.go(St.path(r.id));
-        } } }, OL.ui.avatar.render({ name: r.name, id: r.id, size: 24 }), h("span", { class: "st-name__n", text: r.name }));
+        } } }, OL.ui.avatar.render({ name: r.name, id: r.id, size: 24 }), h("span", { class: "ol-students-name__n", text: r.name }));
         var w = St.warnPill(r.warning);
-        return w ? h("span", { class: "st-namecell" }, a, w) : a;
+        return w ? h("span", { class: "ol-students-namecell" }, a, w) : a;
       } },
       { key: "class", label: t("term.class"), sort: true, width: 96, mobile: "sub", value: function (r) { return r.classLabel; } },
       { key: "roll", label: t("term.roll_no"), sort: true, num: true, width: 80, mobile: "hide", value: function (r) { return r.rollNo; } },
@@ -279,7 +222,6 @@
 
     function emptyState() {
       var d = S.data;
-      if (S.err && S.err.status === 403) return { kind: "denied", title: t("students.denied"), text: t("students.denied_text") };
       if (!d) return { kind: "first", title: t("table.empty") };
       if (hasFilters()) return { kind: "filtered", title: t("students.none_match"), text: t("students.none_match_text"), onClear: clearAll };
       var can = d.can || {};
@@ -299,36 +241,28 @@
       return items;
     }
 
-    function paintTable() {
+    var tableConfig = {
+      caption: t("students.caption"), columns: columns, rowKey: "id", selectable: true, pageSize: 50, columnChooser: true, prefsKey: "students.directory",
+      onSort: function (key, dir) { setQ({ sort: key, dir: dir }, false); },
+      onPage: function (n) { setQ({ page: String(n) }, false); },
+      onOpen: function (r) { openPeek(r.id); },
+      onSelect: function (keys, o) { S.sel = { keys: keys, allMatching: !!(o && o.allMatching) }; syncBulk(); },
+      selectAllMatching: S.selAll,
+      rowActions: rowActions
+    };
+    function tableOf() {
       var d = S.data;
-      if (S.err && !d) { OL.clear(tableEl); S.table = null; if (S.err.status === 403) tableEl.appendChild(OL.ui.empty.render(emptyState())); return; }
       S.selAll.total = d ? d.total : 0;
-      var state = { rows: d ? d.rows : [], total: d ? d.total : 0, page: d ? d.page : 1, sort: sortOf(), loading: !d, empty: emptyState() };
-      if (!S.table) {
-        S.table = OL.ui.table.render({
-          caption: t("students.caption"), columns: columns, rows: state.rows, rowKey: "id", selectable: true, sort: state.sort, page: state.page, pageSize: 50, total: state.total, loading: state.loading,
-          empty: state.empty, columnChooser: true, prefsKey: "students.directory",
-          onSort: function (key, dir) { setQ({ sort: key, dir: dir }, false); },
-          onPage: function (n) { setQ({ page: String(n) }, false); },
-          onOpen: function (r) { openPeek(r.id); },
-          onSelect: function (keys, o) { S.sel = { keys: keys, allMatching: !!(o && o.allMatching) }; syncBulk(); },
-          selectAllMatching: S.selAll,
-          rowActions: rowActions
-        });
-        OL.clear(tableEl); tableEl.appendChild(S.table);
-        buildBulk();
-      } else {
-        S.table.update({ rows: state.rows, total: state.total, page: state.page, sort: state.sort, loading: false, empty: state.empty });
-      }
+      return { key: "students", config: tableConfig, state: { rows: d ? d.rows : [], total: d ? d.total : 0, page: d ? d.page : 1, sort: sortOf(), empty: emptyState() } };
     }
 
     /* ---------------------------------------------------------------- bulk bar */
-    function buildBulk() {
+    // the template builds the bar when the first answer says whether this person may write
+    function bulkActions() {
       var can = S.data && S.data.can, actions = [];
       actions.push({ label: t("students.bulk.message"), icon: "send", onClick: bulkMessage });
       if (can && can.write) actions.push({ label: t("students.bulk.house"), icon: "flag", onClick: bulkHouse });
-      S.bulk = OL.ui.page.bulk({ actions: actions });
-      OL.clear(bulkEl); bulkEl.appendChild(S.bulk);
+      return actions;
     }
     function selectionCount() { return S.sel.allMatching ? (S.data ? S.data.total : 0) : S.sel.keys.length; }
     function syncBulk() {
@@ -366,7 +300,7 @@
         }, function (e) { go.setLoading(false); body.setError(St.message(e, t("students.save_failed"))); });
       } });
       var confirm = OL.ui.input.render({ label: t("modal.type_to_confirm", { word: word }), name: "confirm", onInput: function (v) { go.setDisabled(v.trim() !== word, t("modal.type_to_enable", { word: word })); } });
-      dlg = OL.ui.modal.open({ title: t("students.bulk.message_title", { n: n }), width: 520, body: h("div", { class: "st-form" }, title, body, confirm),
+      dlg = OL.ui.modal.open({ title: t("students.bulk.message_title", { n: n }), width: 520, body: h("div", { class: "ol-students-form" }, title, body, confirm),
         actions: [OL.ui.button.render({ label: t("common.cancel"), variant: "secondary", onClick: function () { dlg.close(); } }), go] });
     }
 
@@ -377,14 +311,12 @@
     }
 
     /* ------------------------------------------------------------------ start */
-    St.setList(filterString());
-    paintHead(); paintKpis(); paintTools(); paintTable();
+    S.start();
     // the classes for the picker, once; the list does not wait for them
     API.india.classes().then(function (r) {
       S.classes = r.classes || [];
       if (S.classPicker) { var d = S.data; S.classPicker.setClasses(buildClasses(S.classes, d && d.scope ? d.scope.sections : null)); }
     }, function () { /* the picker stays empty; the search still finds a class by name */ });
-    load();
   }
 
   St.directory = { draw: draw };

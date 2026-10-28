@@ -365,7 +365,7 @@
         guardianPhone: "अभिभावक का मोबाइल", guardianEmail: "परिवार का ईमेल", whatsapp: "व्हाट्सऐप का उपयोग करें", cwsn: "विशेष आवश्यकता वाला बच्चा",
         disability: "दिव्यांगता का प्रकार", udid: "दिव्यांगता आईडी (UDID)", migrant: "प्रवासी परिवार", consentStatus: "अभिभावक की सहमति",
         consentMethod: "सहमति किस रूप में दी", consentOn: "सहमति की तिथि", consentNote: "सहमति पर टिप्पणी", pin: "पिन कोड", district: "ज़िला", state: "राज्य",
-        programme: "कार्यक्रम", stream: "संकाय", room: "कमरा", capacity: "क्षमता", classTeacher: "कक्षा शिक्षक"
+        programme: "कार्यक्रम", stream: "संकाय", room: "कमरा", capacity: "क्षमता", classTeacher: "कक्षा शिक्षक", guardian: "अभिभावक"
       },
       help: {
         apaar: "12 अंक, या REFUSED या NOGEN लिखें।", pen: "11 अंक।", aadhaar: "12 अंक। केवल अंतिम चार अंक रखे जाते हैं।",

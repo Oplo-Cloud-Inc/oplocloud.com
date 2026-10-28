@@ -47,55 +47,31 @@
   St.classListPath = function () { return "students/classes/sections" + (lastList ? "?" + lastList : ""); };
 
   /* The word for a person who may not do a thing, and for a failure: the same everywhere on these pages. */
-  function failure(e, retry) {
-    if (e && e.status === 403) return OL.ui.empty.render({ kind: "denied", title: t("students.cls.denied"), text: t("students.cls.denied_text") });
-    return OL.ui.banner.render({ tone: e && e.code === "offline" ? "offline" : "danger", text: St.message(e), actions: OL.ui.button.render({ label: t("common.retry"), variant: "secondary", size: "sm", onClick: retry }) });
-  }
+  var denied = function () { return { title: t("students.cls.denied"), text: t("students.cls.denied_text") }; };
+  function failure(e, retry) { return OL.templates.failure(e, { retry: retry, denied: denied(), message: St.message }); }
 
   /* ============================================================= the list */
   function drawList(host, env) {
     var API = St.api();
-    OL.clear(host);
-    var root = h("div", { class: "st-cls" });
-    var headEl = h("div"), alertEl = h("div"), kpiEl = h("div"), toolEl = h("div"), tableEl = h("div");
-    OL.append(root, [headEl, alertEl, kpiEl, toolEl, tableEl]);
-    host.appendChild(root);
-
-    var u = OL.url.all(), q = {};
-    KEYS.forEach(function (k) { if (u[k]) q[k] = u[k]; });
-    var S = { q: q, data: null, err: null, seq: 0, table: null, search: null };
-
-    function writeUrl() {
-      var patch = {};
-      KEYS.forEach(function (k) { patch[k] = S.q[k] || null; });
-      OL.url.setMany(patch, { replace: true });
-      var p = new URLSearchParams();
-      ["q", "stage", "filter", "year"].forEach(function (k) { if (S.q[k]) p.set(k, S.q[k]); });
-      setList(p.toString());
-    }
-    function setQ(patch, redraw) {
-      var next = Object.assign({}, S.q);
-      Object.keys(patch).forEach(function (k) { if (patch[k] == null || patch[k] === "") delete next[k]; else next[k] = patch[k]; });
-      if (!("page" in patch)) delete next.page;
-      S.q = next; writeUrl();
-      if (patch.year !== undefined) { load(); return; }
-      if (redraw) paintTools();
-      paintKpis(); paintTable();
-    }
+    // one answer from the server, filtered, sorted and paged here: only the year asks again, and the toolbar is drawn with every answer
+    var S = OL.templates.T2(host, {
+      "class": "ol-students-cls", keys: KEYS, again: ["year"], toolsEachTime: true,
+      answer: function (q) { return API.india.classes(q.year); },
+      announce: function (r) { return t("students.cls.announce", { n: r.classes.length }); },
+      onAddress: function () {
+        var p = new URLSearchParams();
+        ["q", "stage", "filter", "year"].forEach(function (k) { if (S.q[k]) p.set(k, S.q[k]); });
+        setList(p.toString());
+      },
+      message: St.message, denied: denied,
+      head: head, kpis: kpis, kpiLabel: t("students.cls.kpi.label"), kpiN: 4, tools: paintTools, table: tableOf
+    });
+    S.search = null;
+    var setQ = S.set, load = S.load;
     var filtered = function () { return !!(S.q.q || S.q.stage || S.q.filter); };
     function clearAll() { if (S.search) S.search.set(""); setQ({ q: null, stage: null, filter: null }, true); }
-
-    function load() {
-      var n = ++S.seq;
-      API.india.classes(S.q.year).then(function (r) {
-        if (n !== S.seq) return;
-        S.data = r; S.err = null; paintAll();
-        OL.announce(t("students.cls.announce", { n: r.classes.length }));
-      }, function (e) { if (n !== S.seq) return; S.err = e; paintAll(); });
-    }
     var can = function () { return !!(S.data && S.data.can && S.data.can.write); };
     var here = function () { return S.data ? S.data.year : S.q.year; };
-    function paintAll() { paintHead(); paintAlert(); paintKpis(); paintTools(); paintTable(); }
 
     /* what the filters leave, before the stage is applied (for the chips' counts) and after */
     function matching(withStage) {
@@ -108,74 +84,62 @@
       });
     }
 
-    function paintHead() {
-      OL.clear(headEl);
+    function head() {
       var d = S.data;
-      headEl.appendChild(OL.ui.page.header({
+      return {
         title: env.title || t("tab.students.classes"),
         subtitle: d ? t("students.cls.subtitle", { n: d.classes.length, year: yearName(d.year) }) : null,
         primary: can() ? { label: t("students.cls.add"), icon: "plus", onClick: function () { openForm(env, null, here(), load); } } : null,
         secondary: can() ? [{ label: t("students.cls.import"), icon: "upload", onClick: function () { env.go("admin/data/imports"); } }] : []
-      }));
-    }
-    function paintAlert() {
-      OL.clear(alertEl);
-      if (S.err && S.err.status !== 403) alertEl.appendChild(failure(S.err, load));
+      };
     }
 
-    function paintKpis() {
-      OL.clear(kpiEl);
-      var d = S.data;
-      if (S.err && !d) return;
-      if (!d) { kpiEl.appendChild(OL.ui.skeleton.render({ type: "kpi", n: 4 })); return; }
-      var all = d.classes, num = OL.fmt.num;
+    function kpis() {
+      var all = S.data.classes, num = OL.fmt.num;
       var seats = all.reduce(function (a, c) { return a + (c.capacity || 0); }, 0), kids = all.reduce(function (a, c) { return a + c.strength; }, 0);
       var noTeacher = all.filter(function (c) { return !c.classTeacher; }).length, full = all.filter(over).length;
       var toggle = function (v) { return function () { setQ({ filter: S.q.filter === v ? null : v }, true); }; };
-      kpiEl.appendChild(OL.ui.page.kpis([
-        { label: t("students.cls.kpi.sections"), value: num(all.length), context: yearName(d.year), onClick: clearAll, selected: !filtered() },
+      return [
+        { label: t("students.cls.kpi.sections"), value: num(all.length), context: yearName(S.data.year), onClick: clearAll, selected: !filtered() },
         { label: t("students.cls.kpi.students"), value: num(kids), context: seats ? t("students.cls.kpi.of_seats", { n: seats }) : t("students.cls.kpi.no_seats") },
         { label: t("students.cls.kpi.no_teacher"), value: num(noTeacher), context: t("students.cls.kpi.no_teacher_ctx"), onClick: toggle("no-teacher"), selected: S.q.filter === "no-teacher" },
         { label: t("students.cls.kpi.over"), value: num(full), context: t("students.cls.kpi.over_ctx"), onClick: toggle("over-capacity"), selected: S.q.filter === "over-capacity" }
-      ], t("students.cls.kpi.label")));
+      ];
     }
 
     /* ------------------------------------------------------------ toolbar */
     function paintTools() {
-      OL.clear(toolEl);
       var d = S.data;
-      if (S.err && !d) return;
+      if (S.err && !d) { S.toolbar(); return; }
       S.search = OL.ui.page.search({ label: t("students.cls.search_label"), placeholder: t("students.cls.search"), value: S.q.q || "", onInput: function (v) { if (v !== (S.q.q || "")) setQ({ q: v }, false); } });
-      var wrap = h("div", { class: "ol-tb st-tb" }, h("div", { class: "ol-tb__group st-tb__fields" }, S.search));
+      var end = null;
       if (d) {
         var years = [shiftYear(d.year, -1), d.year, shiftYear(d.year, 1)];
-        wrap.appendChild(h("div", { class: "ol-tb__end" }, OL.ui.segmented.render({ label: t("students.cls.year_label"), value: d.year, items: years.map(function (y) { return { value: y, label: yearName(y) }; }),
-          onChange: function (y) { setQ({ year: y }, false); } })));
+        end = OL.ui.segmented.render({ label: t("students.cls.year_label"), value: d.year, items: years.map(function (y) { return { value: y, label: yearName(y) }; }),
+          onChange: function (y) { setQ({ year: y }, false); } });
       }
-      toolEl.appendChild(wrap);
+      var bits = S.toolbar({ fields: S.search, end: end, chips: !!d });
       if (d) {
         var base = matching(false), count = function (s) { return base.filter(function (c) { return stageOf(c) === s; }).length; };
         var items = [{ value: "all", label: t("common.all"), count: base.length }].concat(STAGES.map(function (s) { return { value: s, label: t("classpicker.stage." + s), count: count(s) }; }).filter(function (i) { return i.count || S.q.stage === i.value; }));
-        toolEl.appendChild(h("div", { class: "st-chips" }, OL.ui.chips.render({ items: items, value: S.q.stage || "all", label: t("students.cls.stage_label"),
-          onChange: function (v) { setQ({ stage: v === "all" ? null : v }, true); } })));
+        bits.chips.appendChild(OL.ui.chips.render({ items: items, value: S.q.stage || "all", label: t("students.cls.stage_label"),
+          onChange: function (v) { setQ({ stage: v === "all" ? null : v }, true); } }));
       }
-      var tokens = h("div", { class: "ol-tb__tokens st-tokens" });
-      if (S.q.filter) tokens.appendChild(OL.ui.chips.token({ label: t("students.cls.token." + S.q.filter), onRemove: function () { setQ({ filter: null }, true); } }));
-      if (filtered()) tokens.appendChild(OL.ui.button.render({ label: t("common.clear_filters"), variant: "link", onClick: clearAll }));
-      toolEl.appendChild(tokens);
+      if (S.q.filter) bits.tokens.appendChild(OL.ui.chips.token({ label: t("students.cls.token." + S.q.filter), onRemove: function () { setQ({ filter: null }, true); } }));
+      if (filtered()) bits.tokens.appendChild(OL.ui.button.render({ label: t("common.clear_filters"), variant: "link", onClick: clearAll }));
     }
 
     /* -------------------------------------------------------------- table */
     var columns = [
       { key: "section", label: t("students.cls.col.section"), sort: true, width: 130, mobile: "title", value: function (c) { return c.label; }, render: function (c) {
-        return h("a", { class: "st-name", href: env.base + St.classPath(c.id, null, yearOf(c)), on: { click: function (e) {
+        return h("a", { class: "ol-students-name", href: env.base + St.classPath(c.id, null, yearOf(c)), on: { click: function (e) {
           if (e.metaKey || e.ctrlKey || e.shiftKey) return;
           e.preventDefault(); e.stopPropagation(); env.go(St.classPath(c.id, null, yearOf(c)));
-        } } }, h("span", { class: "st-name__n", text: c.label }));
+        } } }, h("span", { class: "ol-students-name__n", text: c.label }));
       } },
       { key: "programme", label: t("students.cls.col.programme"), sort: true, width: 200, mobile: "sub", value: function (c) { return [c.programme, c.stream].filter(Boolean).join(" · ") || null; } },
       { key: "teacher", label: t("students.cls.col.teacher"), sort: true, width: 240, mobile: "sub", value: function (c) { return c.classTeacher ? c.classTeacher.name : null; }, render: function (c) {
-        return c.classTeacher ? h("span", { class: "st-namecell" }, OL.ui.avatar.render({ name: c.classTeacher.name, id: c.classTeacher.id, size: 24 }), h("span", { text: c.classTeacher.name }))
+        return c.classTeacher ? h("span", { class: "ol-students-namecell" }, OL.ui.avatar.render({ name: c.classTeacher.name, id: c.classTeacher.id, size: 24 }), h("span", { text: c.classTeacher.name }))
           : OL.ui.pill.render({ label: t("students.cls.no_teacher"), tone: "warning" });
       } },
       { key: "room", label: t("students.cls.col.room"), sort: true, width: 110, mobile: "hide", value: function (c) { return c.room; } },
@@ -185,9 +149,9 @@
     function yearOf(c) { return S.q.year && S.q.year !== c.year ? null : S.q.year || null; }
     function strengthCell(c) {
       var cap = c.capacity, pct = cap ? Math.min(100, Math.round(c.strength / cap * 100)) : 0, full = over(c);
-      return h("span", { class: "st-strength" },
-        h("span", { class: "st-strength__n", text: cap ? t("students.cls.strength_of", { n: OL.fmt.num(c.strength), cap: OL.fmt.num(cap) }) : OL.fmt.num(c.strength) }),
-        cap ? h("span", { class: OL.cx("st-bar", full && "is-over"), "aria-hidden": "true" }, h("i", { style: { "--w": pct + "%" } })) : null,
+      return h("span", { class: "ol-students-strength" },
+        h("span", { class: "ol-students-strength__n", text: cap ? t("students.cls.strength_of", { n: OL.fmt.num(c.strength), cap: OL.fmt.num(cap) }) : OL.fmt.num(c.strength) }),
+        cap ? h("span", { class: OL.cx("ol-students-bar", full && "is-over"), "aria-hidden": "true" }, h("i", { style: { "--w": pct + "%" } })) : null,
         full ? OL.ui.pill.render({ label: t("students.cls.kpi.over"), tone: "danger" }) : null);
     }
     function rowActions(c) {
@@ -197,35 +161,27 @@
       return items;
     }
     function emptyState() {
-      if (S.err && S.err.status === 403) return { kind: "denied", title: t("students.cls.denied"), text: t("students.cls.denied_text") };
       if (filtered()) return { kind: "filtered", title: t("students.cls.none_match"), text: t("students.cls.none_match_text"), onClear: clearAll };
       return { kind: "first", title: t("students.cls.first_title", { year: yearName(here()) }), text: t("students.cls.first_text"),
         primary: can() ? { label: t("students.cls.add"), icon: "plus", onClick: function () { openForm(env, null, here(), load); } } : null,
         secondary: can() ? { label: t("students.cls.import"), onClick: function () { env.go("admin/data/imports"); } } : null };
     }
-    function paintTable() {
-      var d = S.data;
-      if (S.err && !d) { OL.clear(tableEl); S.table = null; if (S.err.status === 403) tableEl.appendChild(OL.ui.empty.render(emptyState())); return; }
+    var tableConfig = {
+      caption: t("students.cls.caption"), columns: columns, rowKey: "id", pageSize: PAGE,
+      onSort: function (key, dir) { setQ({ sort: key, dir: dir }, false); },
+      onPage: function (n) { setQ({ page: String(n) }, false); },
+      onOpen: function (c) { env.go(St.classPath(c.id, null, yearOf(c))); },
+      rowActions: rowActions
+    };
+    function tableOf() {
       var sort = { key: S.q.sort || "section", dir: S.q.dir === "desc" ? "desc" : "asc" };
       var list = matching(true).slice().sort(CMP[sort.key] || CMP.section);
       if (sort.dir === "desc") list.reverse();
       var pages = Math.max(1, Math.ceil(list.length / PAGE)), page = Math.min(Math.max(parseInt(S.q.page, 10) || 1, 1), pages);
-      var state = { rows: list.slice((page - 1) * PAGE, page * PAGE), total: list.length, page: page, sort: sort, loading: !d, empty: emptyState() };
-      if (!S.table) {
-        S.table = OL.ui.table.render({
-          caption: t("students.cls.caption"), columns: columns, rows: state.rows, rowKey: "id", sort: sort, page: page, pageSize: PAGE, total: state.total, loading: state.loading, empty: state.empty,
-          onSort: function (key, dir) { setQ({ sort: key, dir: dir }, false); },
-          onPage: function (n) { setQ({ page: String(n) }, false); },
-          onOpen: function (c) { env.go(St.classPath(c.id, null, yearOf(c))); },
-          rowActions: rowActions
-        });
-        OL.clear(tableEl); tableEl.appendChild(S.table);
-      } else S.table.update({ rows: state.rows, total: state.total, page: state.page, sort: sort, loading: false, empty: state.empty });
+      return { key: "classes", config: tableConfig, state: { rows: list.slice((page - 1) * PAGE, page * PAGE), total: list.length, page: page, sort: sort, empty: emptyState() } };
     }
 
-    setList(["q", "stage", "filter", "year"].filter(function (k) { return S.q[k]; }).map(function (k) { return k + "=" + encodeURIComponent(S.q[k]); }).join("&"));
-    paintHead(); paintKpis(); paintTools(); paintTable();
-    load();
+    S.start();
   }
 
   /* ========================================================= add and edit */
@@ -246,7 +202,7 @@
     teacher = OL.ui.people.render({ label: t("students.cls.form.teacher"), kind: "staff", optional: true, values: pre && pre.classTeacher ? [{ id: pre.classTeacher.id, name: pre.classTeacher.name }] : [],
       search: function (text) { return API.search.query(text, ["staff"]).then(function (r) { var g = (r.groups || [])[0]; return g ? g.items.map(function (x) { return { id: x.id, name: x.title, sub: x.meta && x.meta.roles || "" }; }) : []; }); },
       onChange: function (people) { teacherTouched = true; teacherId = people[0] ? people[0].id : null; mark(); } });
-    var form = h("form", { class: "st-form", novalidate: true }, grade, section, h("div", { class: "st-grid" }, programme, stream, room, cap), teacher);
+    var form = h("form", { class: "ol-students-form", novalidate: true }, grade, section, h("div", { class: "ol-students-grid" }, programme, stream, room, cap), teacher);
     // the buttons live in the drawer's foot, outside the form, so Save is not a submit button: it calls submit(), and so does Enter in a field
     var save = OL.ui.button.render({ label: pre ? t("common.save") : t("students.cls.form.save_add"), variant: "primary", onClick: function () { submit(); } });
     var cancel = OL.ui.button.render({ label: t("common.cancel"), variant: "secondary", onClick: function () { hd.close(); } });
@@ -282,64 +238,47 @@
   /* ========================================================== the record */
   function drawRecord(host, env) {
     var API = St.api(), id = env.route.record, year = OL.url.get("year");
-    var tab = TABS.indexOf(env.route.recordTab) > -1 ? env.route.recordTab : "overview";
-    OL.clear(host);
-    var root = h("div", { class: "st-rec" });
-    var headEl = h("div"), cols = h("div", { class: "st-rec__cols st-rec__cols--one" });
-    var main = h("div", { class: "st-rec__main" }), tabsEl = h("div"), panel = h("div", { class: "st-rec__panel" });
-    main.appendChild(tabsEl); main.appendChild(panel); cols.appendChild(main);
-    OL.append(root, [headEl, cols]);
-    host.appendChild(root);
-
-    var S = { c: null, can: false, rows: null, err: null, tabs: null };
-    var back = { label: t("tab.students.classes"), href: env.base + St.classListPath(), onClick: function () { env.go(St.classListPath()); } };
-    var self = function () { return St.classPath(id, tab, year); };
+    var R = OL.templates.T3(host, {
+      "class": "ol-students-rec", loading: t("students.cls.loading"),
+      back: { label: t("tab.students.classes"), href: env.base + St.classListPath(), onClick: function () { env.go(St.classListPath()); } },
+      tabs: TABS, tab: TABS.indexOf(env.route.recordTab) > -1 ? env.route.recordTab : "overview",
+      tabLabel: function (k) { return t("students.cls.tab." + k); }, tabHref: function (k) { return env.base + St.classPath(id, k, year); },
+      label: t("students.cls.tabs_label"), panelPrefix: "stcls",
+      onTab: function (k) { try { history.replaceState(history.state, "", env.base + St.classPath(id, k, year) + location.hash); } catch (e) { /* no history */ } },
+      paint: function (tab) { if (tab === "overview") overview(); else if (tab === "roster") roster(); else activity(); }
+    });
+    var panel = R.panel, card = R.card, S = { c: null, can: false, rows: null, err: null };
 
     function head() {
-      OL.clear(headEl);
       var c = S.c;
-      if (!c) { headEl.appendChild(OL.ui.page.header({ title: t("students.cls.loading"), back: back })); return; }
+      if (!c) { R.head(); return; }
       var more = [];
       if (S.can && c.strength) more.push({ label: t("students.cls.number_rolls"), icon: "list", onClick: function () { numberRolls(c); } });
       if (S.can) more.push({ label: t("students.cls.seat.add"), icon: "plus", onClick: function () { seat(c); } });
       if (S.can && c.strength) more.push({ label: t("students.cls.promote.menu"), icon: "arrow-right", onClick: function () { promote(c); } });
       more.push({ label: t("students.cls.see_students"), icon: "users", onClick: function () { env.go("students/directory?class=" + encodeURIComponent(c.label)); } });
-      var pills = h("div", { class: "st-peek__pills" }, over(c) ? OL.ui.pill.render({ label: t("students.cls.kpi.over"), tone: "danger" }) : null,
+      var pills = h("div", { class: "ol-students-peek__pills" }, over(c) ? OL.ui.pill.render({ label: t("students.cls.kpi.over"), tone: "danger" }) : null,
         !c.classTeacher ? OL.ui.pill.render({ label: t("students.cls.no_teacher"), tone: "warning" }) : null);
-      headEl.appendChild(OL.ui.page.header({
+      R.head({
         title: c.label, subtitle: [t("students.cls.sub", { grade: c.grade, section: c.section }), c.programme, c.room ? t("students.cls.room_n", { room: c.room }) : null, yearName(c.year)].filter(Boolean).join(" · "),
-        back: back, meta: pills,
+        meta: pills,
         primary: S.can ? { label: t("students.cls.edit"), icon: "pencil", onClick: function () { openForm(env, c, c.year, load); } } : null, more: more
-      }));
+      });
       env.setRecord({ label: c.label });
     }
 
     function load() {
       S.err = null;
-      OL.clear(panel); panel.appendChild(OL.ui.skeleton.render({ type: "lines", n: 8 }));
+      R.busy();
       API.india.classes(year || undefined).then(function (r) {
         S.can = !!(r.can && r.can.write);
         S.c = r.classes.filter(function (x) { return x.id === id; })[0] || null;
-        if (!S.c) { head(); OL.clear(tabsEl); OL.clear(panel); panel.appendChild(OL.ui.empty.render({ kind: "first", icon: "users", title: t("students.cls.not_found"), text: t("students.cls.not_found_text"), primary: { label: t("tab.students.classes"), onClick: back.onClick } })); return; }
-        head(); paintTabs();
-        return API.directory.students({ "class": S.c.label, sort: "roll", size: "100", status: "enrolled" }).then(function (d) { S.rows = d.rows; }, function (e) { S.rows = []; S.rosterErr = e; }).then(paintPanel);
-      }, function (e) { S.err = e; head(); OL.clear(tabsEl); OL.clear(panel); panel.appendChild(failure(e, load)); });
+        if (!S.c) { head(); R.fail(OL.ui.empty.render({ kind: "first", icon: "users", title: t("students.cls.not_found"), text: t("students.cls.not_found_text"), primary: { label: t("tab.students.classes"), onClick: function () { env.go(St.classListPath()); } } })); return; }
+        head(); R.tabs();
+        return API.directory.students({ "class": S.c.label, sort: "roll", size: "100", status: "enrolled" }).then(function (d) { S.rows = d.rows; }, function (e) { S.rows = []; S.rosterErr = e; }).then(function () { R.show(); });
+      }, function (e) { S.err = e; head(); R.fail(failure(e, load)); });
     }
 
-    function paintTabs() {
-      OL.clear(tabsEl);
-      S.tabs = OL.ui.tabs.render({ items: TABS.map(function (k) { return { key: k, label: t("students.cls.tab." + k), href: env.base + St.classPath(id, k, year) }; }), active: tab, size: "page",
-        label: t("students.cls.tabs_label"), panelPrefix: "stcls", onSelect: function (k) { tab = k; try { history.replaceState(history.state, "", env.base + self() + location.hash); } catch (e) { /* no history */ } paintPanel(); } });
-      tabsEl.appendChild(S.tabs);
-    }
-    function paintPanel() {
-      OL.clear(panel);
-      if (!S.c || !S.tabs) return;
-      panel.id = S.tabs.panelId(tab); panel.setAttribute("role", "tabpanel"); panel.setAttribute("aria-labelledby", S.tabs.tabId(tab));
-      if (tab === "overview") overview(); else if (tab === "roster") roster(); else activity();
-    }
-
-    var card = function (title, body) { return OL.ui.card.render({ title: title, level: 2, body: body, class: "st-rec__card" }); };
     function overview() {
       var c = S.c, rows = S.rows || [], num = OL.fmt.num;
       var gaps = rows.filter(function (r) { return r.blocked; }).length, consent = rows.filter(function (r) { return r.consent !== "verified" && r.consent !== "withdrawn"; }).length;
@@ -364,10 +303,10 @@
       var cols2 = [
         { key: "roll", label: t("term.roll_no"), num: true, width: 90, mobile: "sub", value: function (r) { return r.rollNo; } },
         { key: "name", label: t("students.col.name"), width: 260, mobile: "title", value: function (r) { return r.name; }, render: function (r) {
-          var a = h("a", { class: "st-name", href: St.href(env, r.id), on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); e.stopPropagation(); env.go(St.path(r.id)); } } },
-            OL.ui.avatar.render({ name: r.name, id: r.id, size: 24 }), h("span", { class: "st-name__n", text: r.name }));
+          var a = h("a", { class: "ol-students-name", href: St.href(env, r.id), on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); e.stopPropagation(); env.go(St.path(r.id)); } } },
+            OL.ui.avatar.render({ name: r.name, id: r.id, size: 24 }), h("span", { class: "ol-students-name__n", text: r.name }));
           var w = St.warnPill(r.warning);
-          return w ? h("span", { class: "st-namecell" }, a, w) : a;
+          return w ? h("span", { class: "ol-students-namecell" }, a, w) : a;
         } },
         { key: "adm", label: t("term.admission_no"), width: 150, mobile: "sub", value: function (r) { return r.admissionNo; } },
         { key: "gender", label: t("students.filter.gender"), width: 110, mobile: "hide", value: function (r) { return St.genderLabel(r.gender); } },
@@ -375,7 +314,7 @@
         { key: "attendance", label: t("students.col.attendance"), num: true, width: 170, mobile: "sub", value: function (r) { return r.attendance ? r.attendance.percent : null; }, render: function (r) { return St.attendanceCell(r.attendance); } },
         { key: "record", label: t("students.col.record"), width: 150, mobile: "status", value: function (r) { return r.gapCount; }, render: function (r) { return St.recordPill(r); } }
       ];
-      panel.appendChild(h("div", { class: "st-rec__tools" }, S.can ? OL.ui.button.render({ label: t("students.cls.seat.add"), icon: "plus", variant: "secondary", onClick: function () { seat(c); } }) : null,
+      panel.appendChild(h("div", { class: "ol-students-rec__tools" }, S.can ? OL.ui.button.render({ label: t("students.cls.seat.add"), icon: "plus", variant: "secondary", onClick: function () { seat(c); } }) : null,
         c.strength ? OL.ui.button.render({ label: t("students.cls.see_students"), icon: "users", variant: "secondary", onClick: function () { env.go("students/directory?class=" + encodeURIComponent(c.label)); } }) : null));
       panel.appendChild(OL.ui.table.render({ caption: t("students.cls.roster_caption", { label: c.label }), columns: cols2, rows: S.rows, rowKey: "id", sort: null, page: 1, pageSize: 100, total: S.rows.length,
         empty: { kind: "first", icon: "users", title: t("students.cls.roster_none"), text: t("students.cls.roster_none_text"), primary: S.can ? { label: t("students.cls.seat.add"), icon: "plus", onClick: function () { seat(c); } } : null },
@@ -385,12 +324,12 @@
     function activity() {
       panel.appendChild(OL.ui.skeleton.render({ type: "lines", n: 5 }));
       API.audit.list({ record: id, size: 50 }).then(function (r) {
-        if (tab !== "activity") return;
+        if (R.tab !== "activity") return;
         OL.clear(panel);
         if (!r.events.length) { panel.appendChild(OL.ui.empty.render({ kind: "first", icon: "clock", title: t("students.cls.activity.none"), text: t("students.cls.activity.none_text") })); return; }
         panel.appendChild(card(t("students.cls.tab.activity"), St.timeline(r.events, "class")));
       }, function (e) {
-        if (tab !== "activity") return;
+        if (R.tab !== "activity") return;
         OL.clear(panel);
         panel.appendChild(e && e.status === 403 ? OL.ui.empty.render({ kind: "denied", title: t("students.activity.denied"), text: t("students.activity.denied_text") }) : failure(e, function () { OL.clear(panel); activity(); }));
       });
@@ -406,8 +345,8 @@
     }
 
     function seat(c) {
-      var hd, picked = {}, all = [], count = h("span", { class: "st-seat__n", "aria-live": "polite" });
-      var list = h("div", { class: "st-seat" }), body = h("div", { class: "st-form" });
+      var hd, picked = {}, all = [], count = h("span", { class: "ol-students-seat__n", "aria-live": "polite" });
+      var list = h("div", { class: "ol-students-seat" }), body = h("div", { class: "ol-students-form" });
       var go = OL.ui.button.render({ label: t("students.cls.seat.go", { n: 0 }), variant: "primary", disabled: true, disabledReason: t("students.cls.seat.pick_one"), onClick: function () {
         var ids = Object.keys(picked);
         go.setLoading(true);
@@ -417,7 +356,7 @@
       function paintList(text) {
         OL.clear(list);
         var shown = all.filter(function (s) { return !text || s.name.toLowerCase().indexOf(text.toLowerCase()) > -1; });
-        if (!shown.length) { list.appendChild(h("p", { class: "st-seat__none", text: all.length ? t("students.cls.seat.no_match") : t("students.cls.seat.none") })); return; }
+        if (!shown.length) { list.appendChild(h("p", { class: "ol-students-seat__none", text: all.length ? t("students.cls.seat.no_match") : t("students.cls.seat.none") })); return; }
         shown.slice(0, 200).forEach(function (s) {
           list.appendChild(OL.ui.check.box({ label: s.name, checked: !!picked[s.id], onChange: function (on) {
             if (on) picked[s.id] = 1; else delete picked[s.id];
@@ -428,7 +367,7 @@
         });
       }
       var search = OL.ui.input.render({ label: t("students.cls.seat.search"), name: "q", onInput: function (v) { paintList(v.trim()); } });
-      OL.append(body, [h("p", { class: "st-seat__sub", text: t("students.cls.seat.sub") }), search, count, list]);
+      OL.append(body, [h("p", { class: "ol-students-seat__sub", text: t("students.cls.seat.sub") }), search, count, list]);
       list.appendChild(OL.ui.skeleton.render({ type: "lines", n: 6 }));
       API.india.unplaced().then(function (r) { all = r.students || []; paintList(""); }, function (e) { OL.clear(list); list.appendChild(failure(e, function () { hd.close(); seat(c); })); });
       hd = OL.ui.drawer.open({ title: t("students.cls.seat.title", { label: c.label }), width: 560, body: body, footer: [OL.ui.button.render({ label: t("common.cancel"), variant: "secondary", onClick: function () { hd.close(); } }), go] });
@@ -436,13 +375,13 @@
 
     function promote(c) {
       var hd, next = shiftYear(c.year, 1), target = null, rolls = "name";
-      var body = h("div", { class: "st-form" }), slot = h("div");
+      var body = h("div", { class: "ol-students-form" }), slot = h("div");
       var go = OL.ui.button.render({ label: t("students.cls.promote.go"), variant: "primary", disabled: true, disabledReason: t("students.cls.promote.need_target"), onClick: function () {
         go.setLoading(true);
         API.india.promote(c.id, { toClassId: target, rolls: rolls }).then(function (r) { hd.close(); OL.ui.toast.show({ text: t("students.cls.promote.done", { n: r.moved, to: r.to }) }); load(); },
           function (e) { go.setLoading(false); OL.ui.toast.show({ text: St.message(e, t("students.save_failed")), tone: "error" }); });
       } });
-      body.appendChild(h("p", { class: "st-seat__sub", text: t("students.cls.promote.sub", { label: c.label, year: yearName(next) }) }));
+      body.appendChild(h("p", { class: "ol-students-seat__sub", text: t("students.cls.promote.sub", { label: c.label, year: yearName(next) }) }));
       body.appendChild(slot);
       API.india.classes(next).then(function (r) {
         if (!r.classes.length) { slot.appendChild(OL.ui.banner.render({ tone: "info", text: t("students.cls.promote.none", { year: yearName(next) }) })); return; }

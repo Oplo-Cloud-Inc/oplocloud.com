@@ -33,12 +33,12 @@
     function paint() {
       if (!hd) return;
       if (!rec) return;
-      var s = rec.student, body = h("div", { class: "st-peek" });
-      var pills = h("div", { class: "st-peek__pills" });
+      var s = rec.student, body = h("div", { class: "ol-students-peek" });
+      var pills = h("div", { class: "ol-students-peek__pills" });
       pills.appendChild(OL.ui.pill.render({ status: s.status === "left" ? "left" : "enrolled" }));
       var ap = St.attendancePill(s.attendance); if (ap) pills.appendChild(ap);
       var wp = St.warnPill(s.warning); if (wp) pills.appendChild(wp);
-      body.appendChild(h("p", { class: "st-peek__sub", text: St.sub(s) }));
+      body.appendChild(h("p", { class: "ol-students-peek__sub", text: St.sub(s) }));
       body.appendChild(pills);
       var al = St.alerts(rec); if (al) body.appendChild(al);
       body.appendChild(St.tiles(rec));
