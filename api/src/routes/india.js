@@ -9,8 +9,10 @@
 
 import { json, readJson, check, ApiError } from "../lib/http.js";
 import { requireActor } from "../core/auth.js";
-import { must } from "../core/guard.js";
+import { can, must } from "../core/guard.js";
+import { id as newId } from "../lib/crypto.js";
 import * as I from "../services/india.js";
+import * as A from "../services/audit.js";
 
 function orgOf(ctx) {
   const actor = requireActor(ctx);
@@ -32,14 +34,13 @@ function shapeClass(c) {
 }
 
 /* A duplicate number is the office's most likely mistake, so say which one. */
-function conflict(e) {
+const CLASH = { admissionNo: "Another student already has that admission number.", rollNo: "Another child in that section already has that roll number.",
+  apaar: "Another student already has that APAAR ID.", pen: "Another student already has that PEN." };
+export const clash = (field) => ApiError.conflict(CLASH[field] || "That clashes with another student's record.", field || undefined);
+export function conflict(e) {
   const m = String((e && e.message) || "");
   if (!/UNIQUE constraint failed/i.test(m)) return null;
-  const which = /admission_no/.test(m) ? ["admissionNo", "Another student already has that admission number."]
-    : /roll_no/.test(m) ? ["rollNo", "Another child in that section already has that roll number."]
-    : /apaar/.test(m) ? ["apaar", "Another student already has that APAAR ID."]
-    : /\.pen/.test(m) ? ["pen", "Another student already has that PEN."] : [null, "That clashes with another student's record."];
-  return ApiError.conflict(which[1], which[0]);
+  return clash(/admission_no/.test(m) ? "admissionNo" : /roll_no/.test(m) ? "rollNo" : /apaar/.test(m) ? "apaar" : /\.pen/.test(m) ? "pen" : null);
 }
 
 /* ------------------------------------------------------------------ Classes */
@@ -49,13 +50,13 @@ export async function classes(ctx) {
   await must(ctx, "india.read", { orgId });
   const year = yearOf(ctx);
   const rows = (await ctx.repo.listIndiaClasses(orgId, year)).sort(I.byClass);
-  return json({ year, classes: rows.map(shapeClass) });
+  return json({ year, classes: rows.map(shapeClass), can: { write: await can(ctx, "india.write", { orgId }) } });
 }
 
 /* PUT /india/classes { year?, grade, section, programme?, stream?, room?, capacity?, classTeacherId? }
    What is named replaces what is there; what is left out stays. */
 export async function putClass(ctx) {
-  const orgId = orgOf(ctx);
+  const orgId = orgOf(ctx), actor = requireActor(ctx);
   await must(ctx, "india.write", { orgId });
   const b = await readJson(ctx.request);
   const year = b.year ? (I.isYear(b.year) ? b.year : throwing("A school year is written 2026-2027.", "year")) : yearOf(ctx);
@@ -68,14 +69,23 @@ export async function putClass(ctx) {
     teacher = b.classTeacherId || null;
     if (teacher && !(await ctx.repo.isOrgMember(orgId, teacher))) throw ApiError.badRequest("That teacher is not part of this school.", "classTeacherId");
   }
-  const row = await ctx.repo.upsertIndiaClass(orgId, year, {
-    grade, section,
+  const next = {
+    id: was.id || newId("cls"), grade, section,
     programme: pick("programme", "programme", (v) => check.string(v, "programme", { max: 80 })),
     stream: pick("stream", "stream", (v) => check.string(v, "stream", { max: 80 })),
     room: pick("room", "room", (v) => check.string(v, "room", { max: 40 })),
     capacity: pick("capacity", "capacity", (v) => check.number(v, "capacity", { min: 1, max: 200 })),
     classTeacherId: teacher
-  });
+  };
+  // What the section was and what it will be, written down in the same batch as the change (E2): one row per field that differs, with the teacher by name.
+  const who = async (id) => (id ? ((await ctx.repo.findAccountById(id)) || {}).name || null : null);
+  const label = I.classLabel(grade, section), base = { module: "students", recordKind: "class", recordId: next.id, recordLabel: label };
+  const audit = A.rows(orgId, actor, was.id
+    ? A.changes({ programme: was.programme, stream: was.stream, room: was.room, capacity: was.capacity, classTeacher: await who(was.class_teacher_id) },
+        { programme: next.programme, stream: next.stream, room: next.room, capacity: next.capacity, classTeacher: await who(next.classTeacherId) }, ["programme", "stream", "room", "capacity", "classTeacher"])
+        .map((c) => ({ ...base, action: "students.class.changed", verb: "changed", ...c }))
+    : [{ ...base, action: "students.class.created", verb: "created", detail: { year } }]);
+  const row = await ctx.repo.upsertIndiaClass(orgId, year, next, audit);
   const all = await ctx.repo.listIndiaClasses(orgId, year);
   return json({ class: shapeClass(all.find((c) => c.id === row.id) || row) }, { status: 201 });
 }
@@ -113,12 +123,12 @@ export async function putStudent(ctx, { accountId }) {
   const acc = await inSchool(ctx, orgId, accountId);
   const b = await readJson(ctx.request);
   const fields = I.cleanStudent(b, throwing);
-  let classId = undefined;
+  let classId = undefined, cls = null;
   if (b.classId !== undefined) {
     classId = b.classId || null;
     if (classId) {
-      const all = await ctx.repo.listIndiaClasses(orgId, yearOf(ctx));
-      if (!all.some((c) => c.id === classId)) throw ApiError.badRequest("That class is not in this school year. Make it under Classes first.", "classId");
+      cls = (await ctx.repo.listIndiaClasses(orgId, yearOf(ctx))).find((c) => c.id === classId);
+      if (!cls) throw ApiError.badRequest("That class is not in this school year. Make it under Classes first.", "classId");
     }
   }
   let dob, address;
@@ -129,8 +139,16 @@ export async function putStudent(ctx, { accountId }) {
   const merged = { ...(was ? I.shapeStudent(was) : {}), ...fields, ...(classId !== undefined ? { classId } : {}) };
   // A new section is a new list: the old section's number is not carried into it unless the office typed one.
   if (classId !== undefined && classId !== (was ? was.class_id || null : null) && b.rollNo === undefined) merged.rollNo = null;
+  const next = I.toRow(merged);
+  // What the row will say once written (the old row with the new columns over it): the audit rows are made from it now and
+  // travel in the same batch as the change, so the record never changes without its row (E2). A blank date or address keeps what is there.
+  const after = I.shapeStudent({ ...(was || { account_id: accountId, name: acc.name, email: acc.email }), ...next,
+    date_of_birth: dob || (was && was.date_of_birth) || null, mailing_address: address || (was && was.mailing_address) || null,
+    ...(classId === undefined ? {} : { grade: cls ? cls.grade : null, section: cls ? cls.section : null, programme: cls ? cls.programme : null, stream: cls ? cls.stream : null }) });
+  const audit = A.rows(orgId, actor, A.changes(was ? I.shapeStudent(was) : {}, after, I.FIELDS.map((f) => f[0]).concat(["classId", "dob", "address"]))
+    .map((c) => ({ module: "students", action: "students.record.changed", verb: "changed", recordKind: "student", recordId: accountId, recordLabel: `${after.name}${after.classLabel ? " · " + after.classLabel : ""}`, ...c })));
   try {
-    await ctx.repo.putIndiaStudents(orgId, [{ accountId, row: I.toRow(merged), contact: { dateOfBirth: dob || null, mailingAddress: address || null } }], actor.id, I.todayIST());
+    await ctx.repo.putIndiaStudents(orgId, [{ accountId, row: next, contact: { dateOfBirth: dob || null, mailingAddress: address || null }, audit }], actor.id, I.todayIST());
   } catch (e) { throw conflict(e) || e; }
   const row = await ctx.repo.getIndiaStudent(orgId, accountId);
   const s = I.shapeStudent(row || { account_id: accountId, name: acc.name, email: acc.email });
@@ -170,20 +188,34 @@ export async function seat(ctx, { classId }) {
   const numbered = now.some((s) => s.rollNo);
   let next = now.reduce((m, s) => Math.max(m, s.rollNo || 0), 0);
   const moves = ids.filter((id) => !now.some((s) => s.id === id)).map((id) => ({ accountId: id, classId: c.id, rollNo: numbered ? ++next : null }));
-  await ctx.repo.seatStudents(orgId, moves, actor.id, I.todayIST());
+  // One row on each child, written in the batch that seats them (E2).
+  const label = I.classLabel(c.grade, c.section), names = await ctx.repo.namesOf(moves.map((m) => m.accountId));
+  const audit = A.rows(orgId, actor, moves.map((m) => ({ module: "students", action: "students.class.seated", verb: "seated", recordKind: "student", recordId: m.accountId,
+    recordLabel: `${names.get(m.accountId) || ""} · ${label}`, field: "class", after: label, detail: { rollNo: m.rollNo } })));
+  await ctx.repo.seatStudents(orgId, moves, actor.id, I.todayIST(), audit);
   return json({ seated: moves.length, students: (await rosterOf(ctx, orgId, classId)).length });
 }
 
 /* POST /india/classes/:id/rolls { order: "name" | "admission" | "keep" } — number the section 1..n. */
 export async function numberRolls(ctx, { classId }) {
-  const orgId = orgOf(ctx);
+  const orgId = orgOf(ctx), actor = requireActor(ctx);
   await must(ctx, "india.write", { orgId });
   await classOf(ctx, orgId, classId);
   const b = await readJson(ctx.request);
   const order = b.order === undefined ? "name" : check.oneOf(b.order, "order", ["name", "admission", "keep"]);
-  const rolls = I.rollOrder(await rosterOf(ctx, orgId, classId), order);
-  await ctx.repo.numberRolls(classId, rolls);
+  const roster = await rosterOf(ctx, orgId, classId), rolls = I.rollOrder(roster, order);
+  await ctx.repo.numberRolls(classId, rolls, rollAudit(orgId, actor, roster, rolls));
   return json({ numbered: rolls.length, order });
+}
+
+/* The audit row for each child whose roll number changes, in the order of `rolls` (a hole where nothing changes); the
+   repo writes each with the child's change (E2). `roster` is the children as they were. */
+function rollAudit(orgId, actor, roster, rolls) {
+  const was = new Map(roster.map((s) => [s.id, s]));
+  const changed = rolls.filter((r) => was.has(r.id) && (was.get(r.id).rollNo || null) !== r.rollNo);
+  const rows = new Map(A.rows(orgId, actor, changed.map((r) => ({ module: "students", action: "students.record.changed", verb: "changed", recordKind: "student", recordId: r.id,
+    recordLabel: `${was.get(r.id).name}${was.get(r.id).classLabel ? " · " + was.get(r.id).classLabel : ""}`, field: "rollNo", before: was.get(r.id).rollNo, after: r.rollNo }))).map((a, i) => [changed[i].id, a]));
+  return rolls.map((r) => rows.get(r.id));
 }
 
 /* POST /india/classes/:id/promote { toClassId, rolls?: "name" | "none", studentIds? }
@@ -205,9 +237,13 @@ export async function promote(ctx, { classId }) {
   const already = await rosterOf(ctx, orgId, to.id);
   const order = rolls === "name" ? I.rollOrder(movers.concat(already), "name") : null;
   const rollOf = new Map((order || []).map((r) => [r.id, r.rollNo]));
-  await ctx.repo.seatStudents(orgId, movers.map((s) => ({ accountId: s.id, classId: to.id, rollNo: rollOf.get(s.id) ?? null })), actor.id, I.todayIST());
-  if (order) await ctx.repo.numberRolls(to.id, order);
-  return json({ moved: movers.length, to: I.classLabel(to.grade, to.section) });
+  // One row on each child who moves, and one on each child already in the new section whose roll number shifts (E2).
+  const fromLabel = I.classLabel(from.grade, from.section), toLabel = I.classLabel(to.grade, to.section);
+  const audit = A.rows(orgId, actor, movers.map((s) => ({ module: "students", action: "students.class.promoted", verb: "moved", recordKind: "student", recordId: s.id,
+    recordLabel: `${s.name} · ${toLabel}`, field: "class", before: fromLabel, after: toLabel, detail: { rollNo: rollOf.get(s.id) ?? null } })));
+  await ctx.repo.seatStudents(orgId, movers.map((s) => ({ accountId: s.id, classId: to.id, rollNo: rollOf.get(s.id) ?? null })), actor.id, I.todayIST(), audit);
+  if (order) await ctx.repo.numberRolls(to.id, order, rollAudit(orgId, actor, already, order));
+  return json({ moved: movers.length, to: toLabel });
 }
 
 /* POST /students/:id/leave { on?, reason? } — the child leaves the school; their record stays. */

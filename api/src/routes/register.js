@@ -32,7 +32,7 @@ const day = (v, field) => {
 const addDays = (ymd, n) => new Date(Date.parse(ymd + "T00:00:00Z") + n * 86400000).toISOString().slice(0, 10);
 const dmy = (ymd) => ymd.slice(8, 10) + "/" + ymd.slice(5, 7) + "/" + ymd.slice(0, 4);
 
-async function school(ctx) {
+export async function school(ctx) {
   const actor = requireActor(ctx);
   const orgId = orgOf(actor);
   if (!orgId) throw ApiError.badRequest("This account is not part of a school.");
@@ -193,38 +193,45 @@ export async function pulse(ctx) {
   return json({ today: S.today, days: list, latest: latest && { day: latest, classes: [...(classes.get(latest) || new Map()).values()] } });
 }
 
-/* GET /register/watch?classId=&until=&threshold= — the 75% watch. */
-export async function watch(ctx) {
-  const S = await school(ctx);
-  const q = ctx.url.searchParams;
-  const classId = q.get("classId") || null;
-  let c = null;
-  if (classId) { c = await klass(ctx, S.orgId, classId); await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: c.class_teacher_id }); }
-  else await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: null });
-  const threshold = q.get("threshold") ? check.number(q.get("threshold"), "threshold", { min: 1, max: 100 }) : R.THRESHOLD;
+/* The 75% standing of every child, or of one section: what the watch page, the early-warning list and the directory are all read from.
+   `kids` are the school's students already shaped, when the caller has them. */
+export async function watchOf(ctx, S, classId, { until = null, threshold = R.THRESHOLD, kids = null } = {}) {
   const year = R.yearSpan(S.today, S.profile.yearStartMonth);
-  const until = q.get("until") ? day(q.get("until"), "until") : year.to;
+  until = until || year.to;
   const settings = await attendanceSettings(ctx, S.orgId);
   const tomorrow = addDays(S.today, 1);
   let remaining = 0;
   if (until >= tomorrow) remaining = (await daysOf(ctx, S.orgId, tomorrow, until)).days.filter((x) => x.kind === "school").length;
-  const [rows, kids, cases] = await Promise.all([
+  const [rows, have, cases] = await Promise.all([
     ctx.repo.watchCounts(S.orgId, year.from, S.today, classId),
-    ctx.repo.listIndiaStudents(S.orgId, classId),
+    kids || ctx.repo.listIndiaStudents(S.orgId, classId).then((l) => l.map(I.shapeStudent)),
     ctx.repo.listItems({ orgId: S.orgId, kind: "condonation", limit: 500 })
   ]);
   const counts = R.tally(rows, settings.codes);
   const caseOf = new Map();
   for (const it of cases) if (it.subject_id && !caseOf.has(it.subject_id)) caseOf.set(it.subject_id, { id: it.id, status: it.status });
-  const students = kids.map(I.shapeStudent).map((s) => ({
+  const students = have.map((s) => ({
     id: s.id, name: s.name, classId: s.classId, classLabel: s.classLabel, rollNo: s.rollNo || null,
     ...R.standing(counts.get(s.id) || {}, threshold, remaining), case: caseOf.get(s.id) || null
   }));
+  return { year: { from: year.from, to: year.to }, until, threshold, remaining, students };
+}
+
+/* GET /register/watch?classId=&until=&threshold= — the 75% watch. */
+export async function watch(ctx) {
+  const S = await school(ctx);
+  const q = ctx.url.searchParams;
+  const classId = q.get("classId") || null;
+  if (classId) { const c = await klass(ctx, S.orgId, classId); await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: c.class_teacher_id }); }
+  else await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: null });
+  const threshold = q.get("threshold") ? check.number(q.get("threshold"), "threshold", { min: 1, max: 100 }) : R.THRESHOLD;
+  const w = await watchOf(ctx, S, classId, { until: q.get("until") ? day(q.get("until"), "until") : null, threshold });
+  const students = w.students;
   const rank = { below: 0, watch: 1, ok: 2, none: 3 };
   students.sort((a, b) => rank[a.status] - rank[b.status] || (a.status === "watch" ? a.canMiss - b.canMiss : (a.percent ?? 0) - (b.percent ?? 0)) || String(a.name).localeCompare(String(b.name)));
   const summary = { below: 0, watch: 0, ok: 0, none: 0 };
   for (const s of students) summary[s.status]++;
-  return json({ year: { from: year.from, to: year.to }, today: S.today, until, threshold, remaining, summary, students });
+  return json({ year: w.year, today: S.today, until: w.until, threshold: w.threshold, remaining: w.remaining, summary, students });
 }
 
 /* GET /register/locks · POST /register/locks { from, to, label } */
@@ -355,19 +362,14 @@ export async function dayStats(ctx) {
 
 /* --------------------------------------------------------------- Early warning */
 
-/* GET /register/early-warning?classId= — who is drifting, and the reasons. The class teacher reads their own section; the office, all. */
-export async function earlyWarning(ctx) {
-  const S = await school(ctx);
-  const q = ctx.url.searchParams, classId = q.get("classId") || null;
-  if (classId) { const c = await klass(ctx, S.orgId, classId); await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: c.class_teacher_id }); }
-  else await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: null });
+/* Every child's early-warning reading, worst first. `kids` are the students already shaped, when the caller has them. */
+export async function earlyOf(ctx, S, classId, { minDays = E.MIN_DAYS, kids = null } = {}) {
   const year = R.yearSpan(S.today, S.profile.yearStartMonth);
   const tomorrow = addDays(S.today, 1);
   const settings = await attendanceSettings(ctx, S.orgId);
   const remaining = year.to >= tomorrow ? (await daysOf(ctx, S.orgId, tomorrow, year.to)).days.filter((x) => x.kind === "school").length : 0;
-  const kids = (await ctx.repo.listIndiaStudents(S.orgId, classId)).map(I.shapeStudent);
-  const ids = kids.map((k) => k.id);
-  const minDays = q.get("minDays") ? check.number(q.get("minDays"), "minDays", { min: 1, max: 100 }) : E.MIN_DAYS;
+  const have = kids || (await ctx.repo.listIndiaStudents(S.orgId, classId)).map(I.shapeStudent);
+  const ids = have.map((k) => k.id);
   const [rows, marks, scales, cases] = await Promise.all([
     ctx.repo.watchCounts(S.orgId, year.from, S.today, classId), ctx.repo.examPercents(S.orgId, ids), ctx.repo.listScales(S.orgId),
     ctx.repo.listItems({ orgId: S.orgId, kind: "ewscase", limit: 1000 })
@@ -382,12 +384,22 @@ export async function earlyWarning(ctx) {
   const caseOf = new Map();
   for (const it of cases) if (it.subject_id && it.status !== "closed" && !caseOf.has(it.subject_id)) caseOf.set(it.subject_id, { id: it.id, status: it.status });
   const startYear = +year.from.slice(0, 4);
-  const list = kids.map((k) => {
+  const list = have.map((k) => {
     const a = E.assess({ standing: R.standing(counts.get(k.id) || {}, R.THRESHOLD, remaining), exams: byKid.get(k.id) || [], year: startYear, minDays,
       facts: { dob: k.dob, grade: k.grade, migrant: k.migrant, cwsn: k.cwsn } });
     return { id: k.id, name: k.name, classId: k.classId, classLabel: k.classLabel, rollNo: k.rollNo || null, level: a.level, score: a.score, transition: a.transition,
-             signals: a.signals.map((x) => ({ key: x.key, text: x.text })), case: caseOf.get(k.id) || null };
+             signals: a.signals.map((x) => ({ key: x.key, text: x.text })), case: caseOf.get(k.id) || null, latest: (byKid.get(k.id) || []).slice(-1)[0] || null };
   }).sort((x, y) => y.score - x.score || String(x.name).localeCompare(String(y.name)));
+  return { year, list };
+}
+
+/* GET /register/early-warning?classId= — who is drifting, and the reasons. The class teacher reads their own section; the office, all. */
+export async function earlyWarning(ctx) {
+  const S = await school(ctx);
+  const q = ctx.url.searchParams, classId = q.get("classId") || null;
+  if (classId) { const c = await klass(ctx, S.orgId, classId); await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: c.class_teacher_id }); }
+  else await must(ctx, "register.read", { orgId: S.orgId, classTeacherId: null });
+  const { year, list } = await earlyOf(ctx, S, classId, { minDays: q.get("minDays") ? check.number(q.get("minDays"), "minDays", { min: 1, max: 100 }) : E.MIN_DAYS });
   const summary = { high: 0, medium: 0, low: 0, none: 0 };
   const transitions = {};
   for (const x of list) { summary[x.level]++; if (x.transition) transitions[x.transition] = (transitions[x.transition] || 0) + 1; }

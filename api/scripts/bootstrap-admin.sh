@@ -16,6 +16,8 @@ DB="oplo-platform-db"
 # production by accident.
 WHERE="--local"
 [ "${4:-}" = "--remote" ] && WHERE="--remote"
+# OPLO_D1_STATE names another folder for the local database (api/scripts/dev.sh keeps it outside synced folders); a path without spaces.
+if [ "$WHERE" = "--local" ] && [ -n "${OPLO_D1_STATE:-}" ]; then WHERE="--local --persist-to $OPLO_D1_STATE"; fi
 # A statement that fails shows wrangler's reason rather than ending in silence.
 run() {
   local out

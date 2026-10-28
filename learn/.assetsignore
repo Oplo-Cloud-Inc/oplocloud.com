@@ -19,3 +19,12 @@ bio1/list.json
 # Who an assessment is assigned to is the database's business, not the app's.
 # The app never reads this file, and it names a student and their school email.
 alg2-mp4-qam-assignment.json
+
+# The component gallery is a developer's page: every component in every state,
+# theme, density and language. Useful beside the code; nothing a student should reach.
+_ui.html
+ui/gallery.js
+ui/gallery.css
+
+# This folder's README explains the lint codes to a developer; it is nothing a student should reach.
+README.md

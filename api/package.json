@@ -13,6 +13,8 @@
     "db:console": "wrangler d1 execute oplo-platform-db --local --command"
   },
   "devDependencies": {
+    "axe-core": "^4.10.2",
+    "playwright-core": "^1.63.0",
     "wrangler": "^4.86.0"
   }
 }

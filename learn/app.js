@@ -336,6 +336,7 @@
         API.gamification.standing().catch(function () { return null; }),
         Progress ? Progress.pull().catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (out) {
+        if (!R) return false;   // signed out while the answer was on its way
         var standing = out[0], moved = out[1] || [], changed = moved.length > 0;
 
         if (standing) {
@@ -503,8 +504,10 @@
     return p.mode ? p.root + p.mode + "/" : p.root;
   }
   function appRest() { return (here().rest || "").replace(/^\/+/, ""); }
+  /* A path may carry its filters ("students/directory?class=X-C"): the "?…" is kept as it is, the segments are encoded. */
   function addressOf(path) {
-    return appBase() + String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+    var s = String(path), q = s.indexOf("?");
+    return appBase() + (q > -1 ? s.slice(0, q) : s).split("/").filter(Boolean).map(encodeURIComponent).join("/") + (q > -1 ? s.slice(q) : "");
   }
   function coursePath(c) { return slug(c.subject || "Other") + "/" + slug(c.t || c.title || c.id); }
   function courseById(id) {
@@ -8932,7 +8935,9 @@
     { k: "roster", name: "Gradebook", group: "Academics", icon: "table", hidden: true },
     { k: "missing", name: "Missing work", group: "Students", icon: "tray", hidden: true },
     { k: "courses", name: "Courses", group: "Curriculum", icon: "books", hidden: true },
-    { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true });
+    { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true },
+    // Admin › Settings › Modules (O8) has no page in the old console: it exists only in the frame.
+    { k: "modules", name: "Modules", group: "Settings", icon: "gear", hidden: true, frame: true });
 
   /* Somebody who holds an office role and is not an administrator gets the
      school console with the places that role works in, and nothing else.
@@ -8961,7 +8966,7 @@
     if (S.me && consoleMode() === "student") return STUDENT_SECTIONS.filter(forRegion);
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
     if (consoleMode() !== "admin") return TEACHER_SECTIONS.filter(forRegion).map(named);
-    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion).map(named);
+    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion).filter(function (t) { return !t.frame || shellOn(); }).map(named);
     return only ? mine.filter(function (t) { return only.indexOf(t.k) > -1; }) : mine;
   }
 
@@ -9743,10 +9748,13 @@
   function adminPath(k) {
     var t = allowedTabs().filter(function (x) { return x.k === k; })[0];
     if (!t) return "";
+    if (shellOn()) { var np = shellFor().path(k); if (np) return np; }
     return t.hidden ? k : t.group ? slug(t.group) + "/" + slug(t.name) : slug(t.name);
   }
   /* "Schedule/Bell-Schedules" → "sc-bell"; null when the address names no place this person may open. */
   function adminAt(rest) {
+    // The new scheme first (/admin/academics/timings); the old names still open, and the address is rewritten to the new one.
+    if (shellOn()) { var nk = shellFor().keyFor(String(rest || "") + location.search); if (nk) return nk; }
     var seg = String(rest || "").split("/").filter(Boolean).map(function (x) { try { return decodeURIComponent(x); } catch (e) { return x; } });
     var hit = allowedTabs().filter(function (t) {
       if (seg.length === 1) return sameName(t.k, seg[0]) || (!t.group && !t.hidden && sameName(slug(t.name), seg[0]));
@@ -9754,6 +9762,68 @@
     })[0];
     return hit ? hit.k : null;
   }
+  /* ------------------------------------------------------------ The new frame
+     The school's console is drawn inside the rebuilt frame (shell/): a rail of
+     eleven modules, a top bar with search, the module's tabs. The pages
+     themselves are the ones above until each is rebuilt, so the frame is told
+     what this person may open and how to open it, and knows nothing else. A
+     teacher's console and the phone keep what they have until their turn. */
+  function shellOn() { return !!(window.OL && OL.shell && OL.shell.open) && consoleMode() === "admin" && !phoneOn() && frameOn(); }
+  /* The new frame can be turned off without a deploy (O8): for one browser with ?frame=off, remembered until ?frame=on (or
+     ?frame=default) says otherwise; or for a whole school with its "frame" switch (PUT /school/modules, on the profile). The browser
+     wins, so a school that has the frame off can still be looked at. Read once, from the address the page was opened with. */
+  var frameChoice = (function () {
+    var m = /[?&]frame=(on|off|default)\b/.exec(location.search), v = m ? m[1] : null;
+    try {
+      if (v === "default") localStorage.removeItem("oplo.frame"); else if (v) localStorage.setItem("oplo.frame", v);
+      if (!v) v = localStorage.getItem("oplo.frame");
+    } catch (e) { /* private mode: the address alone */ }
+    return v === "on" || v === "off" ? v : null;
+  })();
+  function frameOn() { return frameChoice ? frameChoice === "on" : !(window.OL && OL.routes) || OL.routes.frame(); }
+  function shellMounted() { return !!(window.OL && OL.shell && OL.shell.mounted && OL.shell.mounted()); }
+  function shellFor() { OL.shell.bind(shellCtx(S.tab)); return OL.shell; }
+  function shellCtx(at) {
+    return {
+      container: $("#v-admin"), current: at, base: appBase(), rest: appRest,
+      allowed: function (k) { return allowedTabs().some(function (t) { return t.k === k; }); },
+      schoolName: schoolName(), sectionName: function () { return sectionNamed(S.tab).name; },
+      me: { id: S.me.id, name: S.me.name },
+      open: function (k) { openAdmin(false, k); },
+      openAccount: function () { openAccount(); },
+      openRecord: openFound,
+      search: function (q) { return API.search.query(q); },
+      unread: function () { return API.inbox.unread(); },
+      years: shellYears,
+      appearance: currentAppearance, setAppearance: applyAppearance, setTitle: setTitle,
+      signOut: signOut
+    };
+  }
+  /* The last three academic years, newest first, from the month the school's year starts. */
+  function shellYears() {
+    return API.school.profile().then(function (r) {
+      var p = (r && r.profile) || {}, t = new Date(), m = Number(p.yearStartMonth) || (regionOf() === "IN" ? 4 : 8), y = t.getFullYear() - (t.getMonth() + 1 < m ? 1 : 0);
+      return [0, 1, 2].map(function (i) { return OL.fmt.yearLabel((y - i) + "-" + (m < 10 ? "0" : "") + m + "-01"); });
+    });
+  }
+  /* A search result opened. Students open their profile, with the frame's tabs behind it; the rest open the page that lists them. */
+  function openFound(it) {
+    if (it.kind === "student") {
+      // An Indian school's profile is a sheet over the directory, so the directory is drawn first; the other is a page of its own.
+      if (regionOf() === "IN" && OL.pages && OL.pages.find("students", { region: "IN" })) { OL.shell.go("students/directory/" + it.id); return; }
+      var india = regionOf() === "IN" && window.OPLO_INDIA_STUDENTS;
+      if (india) openAdmin(false, "students");
+      else { S.tab = "students"; OL.shell.open(shellCtx("students")); }
+      OL.shell.setRecord({ label: it.title });
+      setTitle(it.title);
+      if (india) indiaStudents().profile(it.id);
+      else openStudent360({ id: it.id, name: it.title, email: "" });
+      return;
+    }
+    var to = { staff: "staff/directory", class: "students/classes/sections", subject: "academics/subjects", circular: "communicate/circulars" }[it.kind];
+    if (to) OL.shell.go(to);
+  }
+
   /* The tab's title says where you are, so a bookmark, a history entry and a
      screen reader's page change all say it too. */
   function setTitle(name) {
@@ -9766,6 +9836,13 @@
      page, which a phone shows in a layer when it has none of its own. */
   function adminPageFor(tab, admin) {
     if (!admin) return TEACH_TABS[tab] || consoleHome;
+    // A screen that has been rebuilt (shell/pages.js) is drawn in place of the old page; the rest stay as they were.
+    if (shellOn() && OL.pages && OL.pages.find) {
+      var pick = tab === "students" ? S.studentPick : null;
+      var rebuilt = OL.pages.find(tab, { region: regionOf(), route: OL.shell.route(), me: S.me, base: appBase(), pick: pick, legacy: { enr: enr },
+        go: function (path) { return OL.shell.go(path); }, setRecord: function (r) { OL.shell.setRecord(r); }, title: OL.shell.title() });
+      if (rebuilt) { if (pick) S.studentPick = null; return rebuilt; }
+    }
     return ({ today: consoleHome, assessments: tabSchoolAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, curriculum: tabCourses, activity: tabActivity,
        people: tabPeople, permissions: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
@@ -9793,7 +9870,9 @@
     // The entry keeps this place. It used to read S.tab when Back was pressed,
     // which by then was the place Back was leaving, so Back reopened it.
     var at = S.tab;
-    if (!silent || replace) enter("admin:" + at, "Console", function () { openAdmin(true, at); }, !!replace, adminPath(at));
+    // A record open in the frame is a place of its own, so going from the list to a record (the same old page) is a step Back can undo.
+    var rec = shellOn() && OL.shell.pending() && OL.shell.pending().record;
+    if (!silent || replace) enter("admin:" + at + (rec ? ":" + rec + ":" + (OL.shell.pending().recordTab || "") : ""), "Console", function () { openAdmin(true, at); }, !!replace, adminPath(at));
     setTitle(sectionNamed(at).name);
 
     document.body.classList.add("is-console");
@@ -9804,21 +9883,33 @@
     // The premium look is the desktop console's; a phone has its own pages (phone.js) and keeps them.
     document.body.classList.toggle("a-console", admin && !phoneOn());
     if (phoneOn()) {
+      if (shellMounted()) OL.shell.unmount();   // a phone has its own pages, not the desktop frame
       phone().staff(S.tab, { admin: admin, draw: adminPageFor(S.tab, admin) });
       noFoot(); progress(null);
       show("admin");
       return;
     }
     if (PHX && document.body.classList.contains("is-phone")) PHX.leave();
-    drawRail();
+    var framed = shellOn();
+    if (!framed) {
+      // The old rail comes back when the new frame is not what this console is drawn in.
+      if (shellMounted()) OL.shell.unmount();
+      drawRail();
+    }
     trApply();
     trPopClose();
     closeRail();
 
-    var v = $("#v-admin");
-    v.innerHTML = "";
-    var body = el("div", "admin-body");
-    v.appendChild(body);
+    var v = $("#v-admin"), body;
+    if (framed) {
+      body = OL.shell.open(shellCtx(at));
+      // H1 and the tab's title are the menu's own word for the page (Volume 01 §9.4).
+      if (OL.shell.title()) setTitle(OL.shell.title());
+    } else {
+      v.innerHTML = "";
+      body = el("div", "admin-body");
+      v.appendChild(body);
+    }
     adminPageFor(S.tab, admin)(body);
     noFoot(); progress(null);
     show("admin");
@@ -20105,6 +20196,7 @@
        and again when the server says what this person is actually taking. */
     Promise.all([
       API.courses.mine().then(function (courses) {
+        if (!S.me) return false;   // signed out while the answer was on its way
         S.me.assigned = courses.filter(function (c) {
           return !c.myRole || c.myRole === "student";
         });
@@ -20145,7 +20237,9 @@
              : learn.some(function (r) { return r.role === "teacher"; }) ? "teacher"
              : "student";
     var name = a.name || a.email || "Someone";
-    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(a.organizations && a.organizations[0] && a.organizations[0].profile);
+    var school = a.organizations && a.organizations[0] && a.organizations[0].profile;
+    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(school);
+    if (window.OL && OL.routes) OL.routes.setSchool(school);
     return {
       id: a.id, email: a.email, name: name,
       first: a.firstName || name.split(/\s+/)[0],
@@ -20177,6 +20271,7 @@
     // memory for whoever opens the tab next.
     S.me = null; S.m = {}; S.sets = {}; S.mistakes = [];
     if (PHX && document.body.classList.contains("is-phone")) PHX.leave();   // the phone shell must not sit over the welcome page
+    if (shellMounted()) OL.shell.unmount();   // nor the desktop frame
     S.here = null; S.hist = [];
     S.tab = null;
     TRAIL = []; POS = -1;            // the next person's history starts from nothing

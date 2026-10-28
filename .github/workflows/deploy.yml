@@ -9,7 +9,13 @@
 # tools/ship.sh does by hand, stopping at the first step that fails:
 #
 #   verify   what ship.sh checks — the scripts parse, every site link
-#            resolves — and that the math lab's file stamps are current
+#            resolves — and that the math lab's file stamps are current;
+#            then tools/verify.sh: every script of the rebuilt front end
+#            (learn/ui, shell, i18n, students) parses, the ?v= stamps of the
+#            three pages are current, check-ui, check-i18n and the route
+#            table pass. A push that breaks one stops here and nothing is
+#            published. The browser suites (test-ui, test-shell, test-students)
+#            run on pull requests (ci.yml), before a change reaches main.
 #   api      only when the push changed api/: remote D1 migrations, then the
 #            API (ship.sh --api's order), so the app never goes live ahead
 #            of the API it calls
@@ -76,6 +82,8 @@ jobs:
                    learn/challenge.js learn/lab/core.js learn/lab/widgets.js learn/prealg/u*.js learn/alg/u*.js learn/alg2/u*.js learn/g8/u*.js learn/geo/u*.js; do
             node --check "$f"
           done
+      - name: The gates — syntax of the rebuilt front end, stamps, lints, route table
+        run: bash tools/verify.sh
       - name: Every site link resolves
         run: python3 tools/checklinks.py
       - name: The math lab's file stamps are current

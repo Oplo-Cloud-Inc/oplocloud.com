@@ -52,9 +52,10 @@ window.OPLO_API = (function () {
 
   /* An error a screen can act on. `code` is the server's, so a client can
      branch on `invalid_credentials` without matching on English. */
-  function ApiError(status, code, message, field) {
+  function ApiError(status, code, message, field, requestId) {
     var e = new Error(message || "That did not work.");
     e.status = status; e.code = code; e.field = field;
+    if (requestId) e.requestId = requestId;   // the server's reference for this request, to quote to the school's office
     return e;
   }
 
@@ -88,7 +89,8 @@ window.OPLO_API = (function () {
         if (!res.ok) {
           var err = (data && data.error) || {};
           var fault = ApiError(res.status, err.code || "http_" + res.status,
-                               err.message || "The server refused that.", err.field);
+                               err.message || "The server refused that.", err.field, err.requestId || res.headers.get("x-request-id"));
+          if (res.status === 429) { var wait = Number(res.headers.get("retry-after")); if (wait > 0) fault.retryAfter = wait; }
           /* Whatever else the server said about the refusal — the blockers of
              an enrollment step, the dates of a booking that cannot be made,
              the checklist lines still open — rides along on the error. */
@@ -487,6 +489,10 @@ window.OPLO_API = (function () {
       list: function (classId, from, to) { return get("/diary" + q({ classId: classId, from: from, to: to })); },
       forStudent: function (id, days) { return get("/students/" + id + "/diary" + q({ days: days })); }
     },
+    /* The top bar's field: students, staff, classes, subjects and circulars of this school. */
+    search: {
+      query: function (text, kinds, o) { return get("/search" + q({ q: text, kinds: kinds && kinds.length ? kinds.join(",") : undefined }), o); }
+    },
     register: {
       early: function (classId) { return get("/register/early-warning" + q({ classId: classId })); },
       eligibility: function (classId, all) { return get("/register/eligibility" + q({ classId: classId, all: all ? "1" : undefined })); },
@@ -540,7 +546,8 @@ window.OPLO_API = (function () {
     },
     school: {
       profile: function () { return get("/school/profile"); },
-      putProfile: function (data) { return put("/school/profile", data); }
+      putProfile: function (data) { return put("/school/profile", data); },
+      putModules: function (data) { return put("/school/modules", data); }
     },
     india: {
       classes: function (year) { return get("/india/classes" + q({ year: year })); },
@@ -560,6 +567,24 @@ window.OPLO_API = (function () {
       compliance: function () { return get("/india/compliance"); },
       exportKind: function (kind) { return get("/india/export/" + kind); },
       importRows: function (rows, check) { return post("/india/import", { rows: rows, check: !!check }, { timeout: 60000 }); }
+    },
+    /* The student directory the list, the quick look and the record page are drawn from. `params` is the address's own words. */
+    directory: {
+      students: function (params, o) { return get("/directory/students" + q(params), o); },
+      exportRows: function (params) { return get("/directory/students/export" + q(params), { timeout: 60000 }); },
+      record: function (id) { return get("/directory/students/" + id); },
+      phone: function (id, which) { return post("/directory/students/" + id + "/phone", { which: which }); },
+      create: function (body) { return post("/directory/students", body); },
+      bulkHouse: function (body) { return post("/directory/students/bulk/house", body, { timeout: 60000 }); },
+      bulkMessage: function (body) { return post("/directory/students/bulk/message", body, { timeout: 60000 }); },
+      guardians: function (params, o) { return get("/directory/guardians" + q(params), o); },
+      guardian: function (id) { return get("/directory/guardians/" + id); },
+      guardianPhone: function (id, which) { return post("/directory/guardians/" + id + "/phone", { which: which }); },
+      addGuardian: function (body) { return post("/directory/guardians", body, { timeout: 20000 }); }
+    },
+    /* Who changed what, when. */
+    audit: {
+      list: function (params) { return get("/audit" + q(params)); }
     },
     // Not `health`: that name is the connectivity check above, and the second
     // definition of a key in an object literal silently replaces the first.
