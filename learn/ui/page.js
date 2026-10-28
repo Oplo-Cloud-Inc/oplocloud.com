@@ -56,10 +56,10 @@
     function set(v) { input.value = v || ""; clear.hidden = !input.value; }
     input.addEventListener("input", function () { clear.hidden = !input.value; fire(250); });
     input.addEventListener("keydown", function (e) { if (e.key === "Enter") fire(0); else if (e.key === "Escape" && input.value) { e.stopPropagation(); set(""); fire(0); } });
-    // "/" from anywhere on the page, unless a field already has the keyboard; the listener ends with the page
+    // "/" from anywhere on the page, unless a field already has the keyboard or the person turned one-key shortcuts off; the listener ends with the page
     function slash(e) {
       if (!el.isConnected) { document.removeEventListener("keydown", slash); return; }
-      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || !OL.shortcuts.single()) return;
       var a = document.activeElement, tag = a && a.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (a && a.isContentEditable) || document.querySelector(".ol-drawer.is-open, .ol-modal.is-open, .ol-palette")) return;
       e.preventDefault(); input.focus(); input.select();

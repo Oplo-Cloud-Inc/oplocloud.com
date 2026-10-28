@@ -148,9 +148,10 @@
       help: "Help and shortcuts", help_title: "Keyboard shortcuts",
       account_menu: "Account menu for {name}", my_account: "My account",
       appearance: "Appearance", theme: { light: "Light", dark: "Dark", auto: "Match this device", hc: "High contrast" },
+      shortcuts: "One-key shortcuts (/ to search)", shortcuts_on: "One-key shortcuts are on", shortcuts_off: "One-key shortcuts are off",
       language: "Language", language_changed: "Language changed",
       sign_out: "Sign out", signing_out: "Signing out…",
-      k: { search: "Open search", move: "Move between results", open: "Open the selected result", group: "Jump to the next group", close: "Close" }
+      k: { search: "Open search", move: "Move between results", open: "Open the selected result", group: "Jump to the next group", close: "Close", slash: "Go to the search box on a list (turn it off in your account menu)" }
     },
 
     /* Search — records first, then pages and actions. */

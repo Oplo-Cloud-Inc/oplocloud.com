@@ -262,6 +262,30 @@ await t("a phone (360 px) has no sideways page scroll and a table becomes cards"
   assert.equal(await f.locator("table").evaluate((el) => getComputedStyle(el.querySelector("thead")).display), "none");
 }, { viewport: { width: 360, height: 740 }, touch: true });
 
+await t("a phone (375 px): every field that takes the cursor is 16 px so iOS Safari does not zoom; on a desktop they stay 14 px", async (page) => {
+  const px = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).fontSize : "missing"; }, sel);
+  const sizes = async (extra) => {
+    const out = {};
+    for (const sel of [".ol-input__ctl", "textarea.ol-input__ctl", ".ol-select__ctl", "#fx-search"].concat(extra)) out[sel] = await px(sel);
+    return out;
+  };
+  // the page search field is not in the gallery: give it the class page.js gives it
+  await page.evaluate(() => { const i = document.createElement("input"); i.type = "search"; i.id = "fx-search"; i.className = "ol-sf__ctl"; document.body.appendChild(i); });
+  const phone = await sizes([]);
+  await page.getByRole("combobox", { name: "State" }).click();
+  phone[".ol-select__search"] = await px(".ol-select__search");
+  await page.keyboard.press("Escape");
+  const cell = demo(page, "marks entry").locator('[role=gridcell][data-r="1"][data-c="1"]');
+  await cell.click(); await page.keyboard.press("8");
+  phone[".ol-cell__in"] = await px(".ol-cell__in");
+  await page.keyboard.press("Escape");
+  assert.equal(Object.keys(phone).length, 6, "six kinds of field were measured");
+  assert.deepEqual(Object.values(phone), Array(6).fill("16px"), "at 375 px: " + JSON.stringify(phone));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const desktop = await sizes([]);
+  assert.deepEqual(Object.values(desktop), Array(4).fill("14px"), "at 1280 px: " + JSON.stringify(desktop));
+}, { viewport: { width: 375, height: 812 }, touch: true });
+
 await t("every control has a name: buttons, inputs and comboboxes", async (page) => {
   const bad = await page.evaluate(() => {
     const out = [];

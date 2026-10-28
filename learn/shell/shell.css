@@ -181,3 +181,12 @@ body .ol-palette .ol-palette__input:focus, body .ol-palette .ol-palette__input:f
 @media (prefers-reduced-motion: reduce) {
   .ol-rail, .ol-top, .ol-palette, .ol-palette-back { transition: none; }
 }
+
+@media (max-width: 639px) {
+  .ol-palette__input { font: var(--t-control-phone); }
+}
+
+/* A page of the old console in the new frame has the new title, the breadcrumb and the module tabs, and nothing else changes in it. The frame already
+   names where the person is, so the small label above the old title goes; the title is the rebuilt pages' own. */
+body.ol-shell .ol-host .cn-h1 { font: var(--t-h1); letter-spacing: normal; color: var(--c-text); }
+body.ol-shell .ol-host .cn-eyebrow { display: none; }

@@ -208,6 +208,69 @@ await t("Help lists the keyboard shortcuts in a dialog that Esc closes", async (
   await dlg.waitFor({ state: "detached" });
 });
 
+await t("one-key shortcuts: \"/\" goes to the search box; Account › Appearance turns it off and then \"/\" does nothing; Ctrl+K stays; the choice is kept", async (page) => {
+  const inSearch = () => page.evaluate(() => !!document.activeElement && document.activeElement.classList.contains("ol-sf__ctl"));
+  const search = page.locator(".ol-sf__ctl");
+  const menu = async () => { await page.getByRole("button", { name: /Account menu for/ }).click(); return page.getByRole("menuitemcheckbox", { name: /One-key shortcuts/ }); };
+  const blur = () => page.evaluate(() => document.activeElement && document.activeElement.blur());
+  assert.equal(await inSearch(), false);
+  await page.keyboard.press("/");
+  assert.equal(await inSearch(), true, "on: / jumps to the search box");
+  await blur();
+  assert.equal(await search.getAttribute("aria-keyshortcuts"), "/");
+  assert.equal(await page.locator(".ol-sf__kbd").isVisible(), true, "the key hint is shown while it works");
+
+  const item = await menu();
+  assert.equal(await item.getAttribute("aria-checked"), "true");
+  assert.deepEqual(await axe(page, [".ol-menu"]), [], "the account menu with the new item");
+  await item.click();
+  await page.waitForFunction(() => document.documentElement.getAttribute("data-shortcuts") === "off");
+  await blur();
+  await page.keyboard.press("/");
+  assert.equal(await inSearch(), false, "off: / does nothing");
+  assert.equal(await search.getAttribute("aria-keyshortcuts"), "/", "the attribute stays");
+  assert.equal(await page.locator(".ol-sf__kbd").isVisible(), false, "the key hint goes with it");
+  await openSearch(page);
+  await page.keyboard.press("Escape");
+  await page.locator(".ol-palette").waitFor({ state: "detached" });
+
+  await page.reload(); await page.waitForSelector(".ol-sf__ctl");
+  await page.keyboard.press("/");
+  assert.equal(await inSearch(), false, "kept across a reload");
+  const again = await menu();
+  assert.equal(await again.getAttribute("aria-checked"), "false");
+  await again.click();
+  await page.waitForFunction(() => document.documentElement.getAttribute("data-shortcuts") === "on");
+  await blur();
+  await page.keyboard.press("/");
+  assert.equal(await inSearch(), true, "on again: / works");
+}, { at: "students/directory" });
+
+await t("a page of the old console in the new frame has the new title, the breadcrumb and the module tabs, and none of the new components inside it", async (page) => {
+  for (const [at, title, crumbs] of [["attendance/registers", "Class registers", "Attendance Registers"], ["academics/timetable", "Timetable", "Academics Timetable"], ["staff/directory", "Teachers", "Staff Directory"]]) {
+    await page.goto(ORIGIN + "/learn/admin/" + at);
+    await page.waitForSelector(".ol-host .cn-h1");
+    const r = await page.evaluate(() => {
+      const vis = (e) => { const b = e.getBoundingClientRect(), s = getComputedStyle(e); return b.width > 0 && b.height > 0 && s.visibility !== "hidden" && s.display !== "none"; };
+      const font = (e) => { const s = getComputedStyle(e); return [s.fontSize, s.fontWeight, s.fontFamily].join(" | "); };
+      const ref = document.createElement("span"); ref.style.font = "var(--t-h1)"; document.body.appendChild(ref);
+      const want = font(ref); ref.remove();
+      const h1s = [...document.querySelectorAll("h1")].filter(vis);
+      return { n: h1s.length, text: h1s[0] && h1s[0].textContent.trim(), font: h1s[0] && font(h1s[0]), want,
+        eyebrows: [...document.querySelectorAll(".ol-host .cn-eyebrow")].filter(vis).length,
+        mixed: [...document.querySelectorAll(".ol-host *")].filter((e) => [...e.classList].some((c) => c.startsWith("ol-"))).length,
+        crumbs: document.querySelector(".ol-top__crumbs").innerText.replace(/\s+/g, " ").trim(), tabs: document.querySelectorAll(".ol-pagehead [role=tab]").length };
+    });
+    assert.equal(r.n, 1, at + ": one title on the page");
+    assert.equal(r.text, title, at);
+    assert.equal(r.font, r.want, at + ": the title is the rebuilt pages' title");
+    assert.equal(r.eyebrows, 0, at + ": the old small label above the title is gone");
+    assert.equal(r.mixed, 0, at + ": no rebuilt component is mixed into the old markup");
+    assert.equal(r.crumbs, crumbs, at);
+    assert.ok(r.tabs >= 2, at + ": the module tabs are there");
+  }
+});
+
 await t("sign out goes to the welcome page at once, with no confirm box and nothing left of the frame", async (page) => {
   page.on("dialog", () => assert.fail("a browser dialog opened"));
   await page.getByRole("button", { name: /Account menu for/ }).click();
@@ -238,7 +301,9 @@ for (const theme of ["light", "dark"]) {
 
 await t("a narrow window folds the rail by itself and the search becomes an icon", async (page) => {
   assert.equal(await page.evaluate(() => document.body.classList.contains("ol-rail-min")), true);
-  assert.ok((await page.locator(".ol-search").boundingBox()).width <= 48);
+  // the top bar is drawn again when the unread count and the years arrive, so wait for the button the way a person would
+  await page.locator(".ol-search").waitFor();
+  await page.waitForFunction(() => { const s = document.querySelector(".ol-search"); return s && s.getBoundingClientRect().width > 0 && s.getBoundingClientRect().width <= 48; });
   await page.getByRole("button", { name: "Search" }).first().click();
   await page.getByRole("combobox", { name: "Search" }).waitFor();
 }, { viewport: { width: 900, height: 700 } });

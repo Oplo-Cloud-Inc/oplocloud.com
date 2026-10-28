@@ -20,6 +20,8 @@
                  the same thing to this.
      OL.tip      a tooltip that is also read: it is the accessible name of an
                  icon-only button and the reason on a disabled one.
+     OL.shortcuts  whether the one-character shortcuts ("/") are on; the person
+                 turns them off in Account, Appearance.
    ========================================================================== */
 (function () {
   "use strict";
@@ -215,6 +217,22 @@
     run.cancel = function () { clearTimeout(t); };
     return run;
   };
+
+  /* A shortcut of one character ("/" for the search field) can be turned off (WCAG 2.2 SC 2.1.4). The choice is the person's and is kept
+     on this device. Ctrl or Cmd + K is not one of them and stays. <html data-shortcuts="off"> lets a stylesheet hide the key hint. */
+  var SC_KEY = "oplo.shell.shortcuts", scMemory = null;
+  OL.shortcuts = {
+    single: function () {
+      try { var v = localStorage.getItem(SC_KEY); if (v !== null) return v !== "off"; } catch (e) { /* private mode: the choice lasts until the page closes */ }
+      return scMemory !== "off";
+    },
+    setSingle: function (on) {
+      scMemory = on ? "on" : "off";
+      try { if (on) localStorage.removeItem(SC_KEY); else localStorage.setItem(SC_KEY, "off"); } catch (e) { /* private mode */ }
+      document.documentElement.setAttribute("data-shortcuts", scMemory);
+    }
+  };
+  document.documentElement.setAttribute("data-shortcuts", OL.shortcuts.single() ? "on" : "off");
 
   /* Place a floating element under (or over) an anchor, kept on screen. */
   OL.place = function (pop, anchor, opts) {

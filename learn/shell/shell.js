@@ -222,11 +222,17 @@
       return pick("shell.theme", v, th, function () { store("theme", v); applyTheme(v); redraw(); });
     });
     var langs = OL.i18n.languages.map(function (l) { return { label: l.name, radio: true, checked: l.code === lang, onClick: function () { setLang(l.code); } }; });
+    // a shortcut of one key ("/") must be possible to turn off (WCAG 2.2 SC 2.1.4); Ctrl or Cmd + K is not one of them
+    var oneKey = { label: t("shell.shortcuts"), check: true, checked: OL.shortcuts.single(), onClick: function () {
+      var on = !OL.shortcuts.single();
+      OL.shortcuts.setSingle(on);
+      OL.announce(on ? t("shell.shortcuts_on") : t("shell.shortcuts_off"));
+    } };
     OL.ui.menu.open({ anchor: anchor, align: "end", items: [
       { label: t("shell.my_account"), icon: "user", onClick: function () { st.ctx.openAccount(); } },
       { sep: true },
       { head: t("shell.appearance") }
-    ].concat(themes, [{ sep: true }, { head: t("shell.language") }], langs, [
+    ].concat(themes, [{ sep: true }, oneKey, { sep: true }, { head: t("shell.language") }], langs, [
       { sep: true },
       { label: t("shell.sign_out"), icon: "log-out", onClick: signOut }
     ]) });
@@ -255,7 +261,7 @@
 
   function openHelp(e) {
     var mac = /Mac|iP(hone|ad)/.test(navigator.platform), mod = mac ? "⌘" : "Ctrl";
-    var rows = [[mod + " K", "shell.k.search"], ["↑ ↓", "shell.k.move"], ["Enter", "shell.k.open"], ["Tab", "shell.k.group"], ["Esc", "shell.k.close"]];
+    var rows = [[mod + " K", "shell.k.search"], ["/", "shell.k.slash"], ["↑ ↓", "shell.k.move"], ["Enter", "shell.k.open"], ["Tab", "shell.k.group"], ["Esc", "shell.k.close"]];
     var dl = h("dl", { class: "ol-keys" });
     rows.forEach(function (r) { dl.appendChild(h("div", null, h("dt", null, h("kbd", { text: r[0] })), h("dd", { text: t(r[1]) }))); });
     var m = OL.ui.modal.open({ title: t("shell.help_title"), body: dl, width: 520, actions: [OL.ui.button.render({ label: t("common.close"), variant: "secondary", onClick: function () { m.close(); } })] });
