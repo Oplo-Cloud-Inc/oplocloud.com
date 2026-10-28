@@ -42,7 +42,7 @@ process.stdout.write(c.pbkdf2Sync(process.env.PW, salt, Number(process.argv[1]),
 ' "$ITER")"
 unset P1 P2
 NOW=$(node -e 'process.stdout.write(String(Date.now()))')
-SQL=$(mktemp -t setpw).sql; trap 'rm -f "$SQL"' EXIT
+SQL=$(mktemp "${TMPDIR:-/tmp}/setpw.XXXXXX").sql; trap 'rm -f "$SQL"' EXIT
 cat > "$SQL" <<SQLEOF
 UPDATE accounts SET pw_hash='$HASH', pw_salt='$SALT', pw_iterations=$ITER, status='active', email_verified=1, updated_at=$NOW WHERE email_lower='$LOWER';
 UPDATE sessions SET revoked_at=$NOW WHERE revoked_at IS NULL AND account_id=(SELECT id FROM accounts WHERE email_lower='$LOWER');

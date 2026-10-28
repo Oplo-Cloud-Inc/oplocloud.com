@@ -43,7 +43,7 @@ PW="Ci-$(openssl rand -hex 8)-Zq"
 ./scripts/bootstrap-admin.sh "$PW" root@oplo.test "Root Admin" 2>&1 | tail -1
 node scripts/seed-demo-school.mjs 2>&1 | tail -1
 for e in ritika.sood@sfhs.in myra.malhotra@sfhs.in tanvi.jindal@sfhs.in tarun.jindal2@gmail.example; do
-  printf '%s\n%s\n' "$PW" "$PW" | ./scripts/set-password.sh "$e" >/dev/null 2>&1 || { echo "could not set a password for $e" >&2; exit 1; }
+  err=$(printf '%s\n%s\n' "$PW" "$PW" | ./scripts/set-password.sh "$e" 2>&1 >/dev/null) || { echo "could not set a password for $e: $err" >&2; exit 1; }
 done
 printf '{"email":"ritika.sood@sfhs.in","password":"%s"}' "$PW" > "$STATE/cred-ritika.json"
 
