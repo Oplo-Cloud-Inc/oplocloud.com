@@ -17,6 +17,17 @@
 .ol-app :where(button, input, select, textarea) { font: inherit; color: inherit; }
 .ol-app button { cursor: pointer; }
 
+/* Browser surfaces (D1): what the browser paints itself — the selection, the caret, ticks and toggles, scrollbars — in the
+   theme's own colours, so a dark page does not get a light scrollbar and a selection is always readable (the accent with
+   its own text colour is already a checked pair in every theme). The page's own scrollbar belongs to <html>. */
+.ol-app, .ol-pop, .ol-drawer, .ol-modal, .ol-toasts { accent-color: var(--c-accent); caret-color: var(--c-accent); scrollbar-color: var(--c-line-strong) transparent; }
+:root:has(.ol-app) { scrollbar-color: var(--c-line-strong) transparent; }
+.ol-app ::selection, .ol-pop ::selection, .ol-drawer ::selection, .ol-modal ::selection { background: var(--c-accent); color: var(--c-on-accent); }
+
+/* Family shell (D5): tokens.css sets the scale; these let plain text and the small icon buttons follow it */
+[data-shell="family"] { font: var(--t-body); color: var(--c-text); }
+[data-shell="family"] .ol-iconbtn { width: var(--ctl-h); height: var(--ctl-h); }
+
 /* hidden means hidden, whatever display a component gave the element */
 [hidden] { display: none !important; }
 

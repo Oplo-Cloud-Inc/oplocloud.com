@@ -432,6 +432,8 @@
     return host;
   }
 
+  /* The rail and tabs again, for a change in what this person may open (a module switched on or off from Admin › Settings › Modules). */
+  S.refresh = function () { if (st.mounted) { st.visible = OL.routes.visible(allowed); redraw(); } };
   S.bind = function (ctx) { st.ctx = ctx; };
   S.open = open;
   S.unmount = unmount;

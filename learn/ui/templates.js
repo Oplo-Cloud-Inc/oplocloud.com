@@ -7,9 +7,10 @@
 
    T2 Index    header · alert · numbers · toolbar · table [· bulk bar]
    T3 Record   header with Back · tabs · panel [· side column]
+   T7 Settings header · notes · cards that each save on their own
 
    Each returns the page's state, S. The page adds what is its own to it (the
-   search field it drew, the quick look it opened). The other seven templates are
+   search field it drew, the quick look it opened). The other six templates are
    written when a screen needs them.
 
    var S = OL.templates.T2(host, {
@@ -53,6 +54,16 @@
    S.tabs()       draws the tabs;  S.show() draws the open tab into the panel
    S.fail(node)   the record cannot be shown: node stands where the tabs and the panel were
    S.card(title, body, why)  a card of the panel's kind;  S.panel · S.side  where the page puts its content
+
+   var S = OL.templates.T7(host, {
+     class      the page's own class on the root
+     load()     → a promise of the answer;  message(e) → words for an error;  denied() → { title, text } for someone who may not read it
+     head(data) → { title, subtitle, ... } for OL.ui.page.header (data is null until the answer comes)
+     note(data) → a node, a list of nodes or null: the banners above the cards (read-only, offline)
+     cards(data)→ the cards, each a node that saves on its own
+     skeleton   how many cards the skeleton shows while the answer comes
+   })
+   S.start() · S.load()   ask;  S.paint()  draw the cards again from S.data;  S.note()  only the banners again, so a card in the middle of an edit is left alone
    ========================================================================== */
 (function () {
   "use strict";
@@ -196,6 +207,34 @@
       slot.panel.appendChild(node);
     };
     S.card = function (title, body, why) { return OL.ui.card.render({ title: title, why: why, level: 2, body: body, class: "ol-t3__card" }); };
+    return S;
+  };
+
+  /* ---------------------------------------------------------------- T7 */
+  T.T7 = function (host, p) {
+    var slot = { head: h("div"), alert: h("div", { class: "ol-t7__alert" }), body: h("div", { class: "ol-t7__body" }) };
+    OL.clear(host);
+    host.appendChild(OL.append(h("div", { class: OL.cx("ol-t7", p["class"]) }), [slot.head, slot.alert, slot.body]));
+
+    var S = { data: null, err: null, seq: 0 };
+    S.note = function () {
+      OL.clear(slot.alert);
+      if (S.err) slot.alert.appendChild(T.failure(S.err, { retry: S.load, message: p.message, denied: p.denied && p.denied() }));
+      else if (S.data && p.note) OL.append(slot.alert, p.note(S.data));
+    };
+    S.paint = function () {
+      OL.clear(slot.head); slot.head.appendChild(OL.ui.page.header(p.head(S.data)));
+      OL.clear(slot.body); S.note();
+      if (S.err) return;
+      if (!S.data) { slot.body.appendChild(OL.ui.skeleton.render({ type: "card", n: p.skeleton || 3 })); return; }
+      OL.append(slot.body, p.cards(S.data));
+    };
+    S.load = function () {
+      var n = ++S.seq;
+      S.data = null; S.err = null; S.paint();
+      p.load().then(function (r) { if (n === S.seq) { S.data = r; S.paint(); } }, function (e) { if (n === S.seq) { S.err = e; S.paint(); } });
+    };
+    S.start = S.load;
     return S;
   };
 })();

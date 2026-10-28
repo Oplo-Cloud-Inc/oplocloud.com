@@ -166,6 +166,10 @@ textarea.ol-input__ctl { height: auto; padding: var(--s-2) var(--s-3); resize: v
 .ol-seg { display: inline-flex; padding: 2px; border: 1px solid var(--c-line-strong); border-radius: var(--r-md); background: var(--c-bg-subtle); }
 .ol-seg__opt { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 28px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-sm); background: transparent; color: var(--c-text-2); font: var(--t-small); font-weight: var(--w-strong); }
 .ol-seg__opt.is-on { background: var(--c-surface); color: var(--c-text); box-shadow: 0 0 0 1px var(--c-line-strong); }
+/* Family shell (D5): a target is at least 44 px high, whatever the component (the sizes above are the admin's) */
+[data-shell="family"] .ol-chip, [data-shell="family"] .ol-seg__opt, [data-shell="family"] .ol-token { min-height: var(--ctl-h); }
+[data-shell="family"] .ol-tabs--sub .ol-tab, [data-shell="family"] .ol-tabs--card .ol-tab { min-height: var(--ctl-h); }
+[data-shell="family"] .ol-checkfield__label { padding-block: var(--s-3); }
 .ol-token { display: inline-flex; align-items: center; gap: var(--s-1); padding: 0 var(--s-1) 0 var(--s-3); min-height: 28px; border: 1px solid var(--c-line-strong); border-radius: var(--r-full); background: var(--c-bg-subtle); font: var(--t-small); }
 .ol-token__x { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 0; border-radius: var(--r-full); background: transparent; color: var(--c-text-2); }
 .ol-token__x:hover { background: var(--c-line); color: var(--c-text); }
@@ -513,6 +517,15 @@ textarea.ol-input__ctl { height: auto; padding: var(--s-2) var(--s-3); resize: v
 .ol-t3__panel { display: flex; flex-direction: column; gap: var(--s-4); }
 .ol-t3__side { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
 .ol-t3__card .ol-card__body { padding: var(--s-4) var(--s-5) var(--s-5); }
+
+/* T7 Settings: cards that each save on their own. A row is the control on the left and what it does on the right. */
+.ol-t7__alert:not(:empty) { margin: 0 0 var(--s-3); }
+.ol-t7__body { display: flex; flex-direction: column; gap: var(--s-4); max-width: 720px; }
+.ol-t7 .ol-card__body { padding: var(--s-4) var(--s-5) var(--s-5); }
+.ol-t7__row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3) var(--s-5); }
+.ol-t7__actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
+.ol-t7__msg:not(:empty) { margin-top: var(--s-3); }
+.ol-t7__note { margin: 0; color: var(--c-text-2); font: var(--t-small); }
 @media (max-width: 1023px) { .ol-t3__cols { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 639px) {
   .ol-t2__f { width: 100%; }

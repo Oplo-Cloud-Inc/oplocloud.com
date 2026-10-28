@@ -23,8 +23,17 @@
 
   /* A flag is false until the thing behind it ships. Documents wait for file storage (the brief), Fees,
      Messages, Dashboards and Year-end for their modules, the homework diary and lesson plans for theirs. */
-  var FLAGS = { fees: false, documents: false, homework: false, lessonPlans: false, messages: false, dashboards: false,
+  var FLAGS = { family: false, fees: false, documents: false, homework: false, lessonPlans: false, messages: false, dashboards: false,
                 yearEnd: false, staffAttendance: false, standards: false };
+
+  /* A school's own say (O8): the modules it may turn on, off until it does (Admin › Settings › Modules), and the new frame, on until it
+     is turned off. A tab that names a flag is shown when the flag above AND the school's switch are on, so the flag stays the hard
+     off-switch and a module that is not built cannot be turned on from a school's settings; a flag that is not a school switch
+     (documents, dashboards…) is the flag alone. setSchool() is given the school's profile when someone signs in and again when
+     the Modules page saves. The same five names are api/src/services/profile.js MODULES (test-routes.mjs checks they agree). */
+  var SWITCHES = ["family", "fees", "homework", "lessonPlans", "messages"];
+  var school = { modules: {}, frame: true };
+  function setSchool(p) { school = { modules: (p && p.modules) || {}, frame: !p || p.frame !== false }; }
 
   function tab(key, legacy, more) {
     var t = { key: key, legacy: legacy ? [].concat(legacy) : [] };
@@ -34,14 +43,17 @@
   function sub(key, legacy, more) { return tab(key, legacy, more); }
   function withSubs(key, subs, more) { var t = tab(key, null, more); t.subs = subs; return t; }
 
+  /* `phone` is the module's answer to "and on a phone?" (D11). "page": the jobs done away from a desk have a phone page of their
+     own, named in `phonePages` (tabs of this module); the rest of the module is cards. "cards": desktop-first, every table becomes
+     a card list. The new frame stays desktop-only until a module's phone pages are built, and DESIGN.md says where each one is. */
   var MODULES = [
-    { key: "today", icon: "home", solo: true, tabs: [tab("overview", "today")] },
+    { key: "today", icon: "home", solo: true, phone: "page", phonePages: ["overview"], tabs: [tab("overview", "today")] },
 
-    { key: "students", icon: "users", tabs: [
+    { key: "students", icon: "users", phone: "page", phonePages: ["admissions"], tabs: [
       tab("directory", "students"),
       tab("admissions", "enrollment"),
       withSubs("classes", [sub("sections", "in-classes"), sub("lists", "rosters")]),
-      tab("guardians", "guardians"),
+      withSubs("guardians", [sub("list", "guardians"), sub("invites", "invite-sheets", { flag: "family" })]),
       tab("health", "health"),
       tab("documents", "documents", { flag: "documents" }),
       tab("certificates", "in-certs"),
@@ -49,7 +61,7 @@
       tab("graduation", "graduation")
     ] },
 
-    { key: "attendance", icon: "calendar-check", tabs: [
+    { key: "attendance", icon: "calendar-check", phone: "page", phonePages: ["registers"], tabs: [
       tab("registers", "in-register"),
       tab("watch", "in-watch"),
       tab("condonation", "in-condone"),
@@ -57,7 +69,7 @@
       tab("staff", null, { flag: "staffAttendance" })
     ] },
 
-    { key: "academics", icon: "book", tabs: [
+    { key: "academics", icon: "book", phone: "page", phonePages: ["timetable", "homework"], tabs: [
       withSubs("timetable", [sub("published", "sc-sections"), sub("draft", "sc-plans")]),
       tab("subjects", "sc-courses"),
       tab("timings", "sc-bell"),
@@ -69,7 +81,7 @@
       tab("add-drop", "sc-adddrop")
     ] },
 
-    { key: "exams", icon: "clipboard-check", tabs: [
+    { key: "exams", icon: "clipboard-check", phone: "page", phonePages: ["mark"], tabs: [
       tab("plan", "in-exams"),
       withSubs("mark", [sub("course-marks", "gradebook"), sub("assessments", "assessments")]),
       withSubs("results", [sub("analysis", "in-analysis"), sub("gpa", "gpa"), sub("transcripts", "transcripts")]),
@@ -78,9 +90,9 @@
       tab("periods", "periods")
     ] },
 
-    { key: "fees", icon: "wallet", flag: "fees", tabs: [] },
+    { key: "fees", icon: "wallet", flag: "fees", phone: "cards", tabs: [] },
 
-    { key: "wellbeing", icon: "heart-pulse", tabs: [
+    { key: "wellbeing", icon: "heart-pulse", phone: "cards", tabs: [
       tab("needs-attention", "support"),
       tab("early-warning", "in-ews"),
       tab("mentoring", "in-cases"),
@@ -91,7 +103,7 @@
       tab("detention", "detention")
     ] },
 
-    { key: "communicate", icon: "megaphone", tabs: [
+    { key: "communicate", icon: "megaphone", phone: "page", phonePages: ["circulars"], tabs: [
       tab("inbox", "inbox"),
       tab("circulars", "forms"),
       tab("events", "events"),
@@ -99,7 +111,7 @@
       tab("outbox", "outbox")
     ] },
 
-    { key: "staff", icon: "school", tabs: [
+    { key: "staff", icon: "school", phone: "cards", tabs: [
       tab("directory", "staff"),
       tab("departments", "departments"),
       tab("leave", "leave"),
@@ -109,7 +121,7 @@
       tab("analytics", "teacher-analytics")
     ] },
 
-    { key: "campus", icon: "building", tabs: [
+    { key: "campus", icon: "building", phone: "cards", tabs: [
       tab("transport", "routes"),
       tab("library", "loans"),
       tab("equipment", "checkouts"),
@@ -120,7 +132,7 @@
       tab("lockers", "lockers")
     ] },
 
-    { key: "insights", icon: "bar-chart", tabs: [
+    { key: "insights", icon: "bar-chart", phone: "cards", tabs: [
       tab("dashboards", null, { flag: "dashboards" }),
       withSubs("analytics", [sub("academic", "analytics"), sub("assessments", "an-assessments"), sub("growth", "growth"), sub("groups", "groups"),
         sub("longitudinal", "longitudinal"), sub("standards", "an-standards", { flag: "standards" })]),
@@ -129,8 +141,8 @@
     ] },
 
     /* Admin sits at the foot of the rail with a gear. Its URLs are flat (D-07). */
-    { key: "admin", icon: "settings", flat: true, foot: true, tabs: [
-      tab("settings", "system"),
+    { key: "admin", icon: "settings", flat: true, foot: true, phone: "cards", tabs: [
+      withSubs("settings", [sub("general", "system"), sub("modules", "modules")]),
       tab("compliance", "in-compliance"),
       withSubs("data", [sub("exports", "data"), sub("imports", "imports"), sub("integrations", "sis"), sub("api", "api"), sub("state", "state"), sub("district", "district")]),
       tab("security", "security"),
@@ -146,7 +158,7 @@
   var byKey = {};
   MODULES.forEach(function (m) { byKey[m.key] = m; });
 
-  var on = function (o) { return !o.flag || FLAGS[o.flag] === true; };
+  var on = function (o) { return !o.flag || (FLAGS[o.flag] === true && (SWITCHES.indexOf(o.flag) < 0 || school.modules[o.flag] === true)); };
 
   /* The sub-tabs or legacy keys of a tab that this person can open. `allowed` is a function: legacy key → bool. */
   function open(t, allowed) {
@@ -256,6 +268,6 @@
     return { module: v.key, tab: t.key, sub: t.subs.length ? t.subs[0].key : null };
   }
 
-  OL.routes = { MODULES: MODULES, FLAGS: FLAGS, ALIASES: ALIASES, visible: visible, legacyOf: legacyOf, locate: locate, parse: parse, pathOf: pathOf,
+  OL.routes = { MODULES: MODULES, FLAGS: FLAGS, SWITCHES: SWITCHES, setSchool: setSchool, frame: function () { return school.frame; }, ALIASES: ALIASES, visible: visible, legacyOf: legacyOf, locate: locate, parse: parse, pathOf: pathOf,
                 pathForLegacy: pathForLegacy, front: front, module: function (k) { return byKey[k] || null; } };
 })();

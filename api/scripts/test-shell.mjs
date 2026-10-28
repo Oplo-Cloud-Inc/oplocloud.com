@@ -40,6 +40,7 @@ const browser = await chromium.launch({ executablePath: process.env.PW_CHROME ||
 
 let n = 0, failed = 0;
 async function t(name, fn, opts = {}) {
+  if (process.env.ONLY && !name.includes(process.env.ONLY)) return;     // ONLY=Modules runs the tests with that word in their name
   const ctx = await browser.newContext({ viewport: opts.viewport || { width: 1280, height: 860 } });
   const login = await ctx.request.post(API + "/auth/login", { data: { email: cred.email, password: cred.password }, headers: { origin: ORIGIN } });
   assert.ok(login.ok(), "the administrator signs in: " + login.status());
@@ -50,6 +51,7 @@ async function t(name, fn, opts = {}) {
   page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource|fonts\.g/.test(m.text() + (m.location().url || ""))) errors.push(m.text()); });
   await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   try {
+    if (opts.before) await opts.before(page, ctx);
     await page.goto(ORIGIN + "/learn/admin/" + (opts.at || ""));
     await page.waitForSelector(".ol-top", { timeout: 15000 });
     await fn(page, ctx);
@@ -67,6 +69,8 @@ const openSearch = async (page) => {
 // the server's answer is in when the list is no longer busy
 const answered = (page) => page.waitForFunction(() => document.querySelector(".ol-palette__list") && !document.querySelector(".ol-palette__list[aria-busy]") && !document.querySelector(".ol-palette__note:not([hidden])"));
 const axe = async (page, include) => {
+  // the admin view fades in for 340 ms (lx-in); axe reads the colours of a half-faded page as low contrast
+  await page.evaluate(() => Promise.all(document.getAnimations().filter((a) => a.effect.getComputedTiming().endTime !== Infinity).map((a) => a.finished.catch(() => {}))));
   await page.evaluate(AXE);
   return page.evaluate(async (inc) => (await window.axe.run({ include: inc }, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } })).violations
     .map((v) => v.id + ": " + v.nodes.map((x) => x.target.join(" ")).slice(0, 3).join(" | ")), include);
@@ -373,6 +377,137 @@ await t("a page whose `when` throws is passed over and logged, and a page that d
   });
   assert.deepEqual(r, [null, null, null, "function"]);
   assert.equal(logged.length, 1, "only the page whose when() broke is logged");
+});
+
+/* ------------------------------------------------------------------ Modules and the frame's off-switch (O8) */
+const cardOf = (page, name) => page.locator(".ol-admin-modules .ol-card", { has: page.getByRole("heading", { name, exact: true }) });
+const REQ_FAIL = (status, error) => (r) => r.fulfill({ status, contentType: "application/json", body: JSON.stringify({ error }) });
+
+await t("Admin › Settings › Modules: five cards, all off, none switchable until its module is built; General and Modules are the sub-tabs", async (page) => {
+  await page.waitForSelector(".ol-admin-modules .ol-card");
+  assert.equal(await page.title(), "Settings · OEdu");
+  assert.equal(await page.locator(".ol-ph__title").innerText(), "Settings");
+  assert.equal(await page.locator(".ol-ph__sub").innerText(), "Turn on only what your school is ready to use.");
+  assert.equal(await page.locator(".ol-pagehead").getByRole("tab", { name: "Modules" }).getAttribute("aria-selected"), "true");
+  assert.equal(await page.locator(".ol-pagehead").getByRole("tab", { name: "General" }).count(), 1);
+  assert.deepEqual(await page.locator(".ol-admin-modules .ol-card__title").allInnerTexts(), ["Family", "Fees", "Homework", "Lesson plans", "Messages"]);
+  assert.equal(await cardOf(page, "Family").locator(".ol-card__why").innerText(), "Parents and guardians sign in to see attendance, circulars and results.");
+  const sw = page.locator(".ol-admin-modules input[role=switch]");
+  assert.equal(await sw.count(), 5);
+  for (let i = 0; i < 5; i++) assert.deepEqual([await sw.nth(i).isChecked(), await sw.nth(i).isDisabled()], [false, true], "switch " + i);
+  assert.equal(await page.getByText("This is not available for your school yet.").count(), 5, "every card says why its switch is off");
+  assert.equal(await page.getByRole("button", { name: "Preview as family" }).getAttribute("aria-disabled"), "true");
+  assert.equal(await page.locator(".ol-t7__note").innerText(), "Changes are recorded in the audit log.");
+  assert.deepEqual(await axe(page, [".ol-admin-modules"]), []);
+}, { at: "settings/modules" });
+
+await t("a module that is built is switched on and off by an administrator: a toast, one audit row each time, and a failure leaves the card as it was", async (page, ctx) => {
+  // the day Family ships: its flag is on from the first paint; the school's switch is still its own
+  await page.waitForSelector(".ol-admin-modules .ol-card");
+  const fam = cardOf(page, "Family"), sw = fam.locator("input[role=switch]"), save = fam.getByRole("button", { name: "Save" });
+  assert.equal(await sw.isEnabled(), true);
+  assert.equal(await cardOf(page, "Fees").locator("input[role=switch]").isDisabled(), true, "Fees is not built, so it stays off");
+  assert.equal(await save.getAttribute("aria-disabled"), "true", "Save waits for a change");
+  const profile = async () => (await (await ctx.request.get(API + "/school/profile")).json()).profile;
+  const audit = async () => (await ctx.request.get(API + "/audit?module=admin&action=admin.modules.changed&size=1")).json();   // total counts every row, the page shows the newest
+  const was = await profile(), rows0 = (await audit()).total;
+  assert.equal(was.modules.family, false);
+
+  await sw.check();
+  assert.equal(await save.getAttribute("aria-disabled"), null, "Save is ready once the switch has changed");
+  await save.click();
+  await page.getByText("Family is on for your school.").waitFor();
+  assert.deepEqual([await sw.isChecked(), await save.getAttribute("aria-disabled")], [true, "true"]);
+  assert.equal((await profile()).modules.family, true, "the school keeps it");
+  const log = await audit(), last = log.events[0];
+  assert.deepEqual([log.total - rows0, last.record.id, last.before, last.after], [1, "family", "off", "on"], "one audit row, naming the module");
+
+  await sw.uncheck(); await save.click();
+  await page.getByText("Family is off for your school.").waitFor();
+  assert.equal((await profile()).modules.family, false);
+
+  // a failure on the server's side: the card keeps what it had, and says so with the request id to quote
+  await page.route("**/school/modules", REQ_FAIL(500, { code: "server_error", message: "boom", requestId: "req_test01" }));
+  await sw.check(); await save.click();
+  await page.getByText("Something went wrong at our end. Quote request id req_test01.").waitFor();
+  assert.equal(await sw.isChecked(), false, "nothing was changed, and the switch shows it");
+  assert.equal((await profile()).modules.family, false);
+  await page.unroute("**/school/modules");
+
+  // no signal: the banner says so, Save waits, and the switch the person set is left alone; with the signal back the banner goes
+  await sw.check();
+  await ctx.setOffline(true);
+  await page.locator(".ol-banner--offline").waitFor();
+  assert.equal(await page.locator(".ol-banner--offline").innerText(), "You are offline. Changes cannot be saved until you are back.");
+  assert.deepEqual([await save.getAttribute("aria-disabled"), await sw.isChecked()], ["true", true]);
+  await ctx.setOffline(false);
+  await page.waitForFunction(() => !document.querySelector(".ol-banner--offline"));
+  assert.equal(await save.getAttribute("aria-disabled"), null, "Save is back");
+}, { at: "settings/modules", before: (page) => page.route(/\/shell\/routes\.js/, async (route) => {
+  const r = await route.fetch();
+  await route.fulfill({ response: r, body: (await r.text()).replace("var FLAGS = { family: false", "var FLAGS = { family: true") });
+}) });
+
+await t("the Modules page for someone who may not change it is read-only, and a load that fails says so and tries again", async (page) => {
+  await page.waitForSelector(".ol-admin-modules .ol-card");
+  // read-only: every switch disabled, no Save, one line under the heading
+  await page.route("**/school/profile", async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const r = await route.fetch(), j = await r.json();
+    j.can = { manage: false };
+    await route.fulfill({ response: r, json: j });
+  });
+  await page.reload();
+  await page.waitForSelector(".ol-admin-modules .ol-card");
+  assert.equal(await page.locator(".ol-t7__alert .ol-banner").innerText(), "Only a school administrator can change this. Ask your school administrator.");
+  assert.equal(await page.getByRole("button", { name: "Save" }).count(), 0);
+  assert.equal(await cardOf(page, "Family").locator("input[role=switch]").isDisabled(), true);
+  await page.unroute("**/school/profile");
+
+  // a load that fails: a banner with Try again, and the cards when it works
+  let broken = true;
+  await page.route("**/school/profile", (route) => broken ? REQ_FAIL(404, { code: "not_found", message: "no" })(route) : route.continue());
+  await page.reload();
+  await page.locator(".ol-t7__alert .ol-banner").waitFor();
+  assert.equal((await page.locator(".ol-t7__alert .ol-banner").innerText()).replace(/\s+/g, " "), "Could not load the module switches. Try again. Try again");
+  assert.equal(await page.locator(".ol-admin-modules .ol-card").count(), 0, "no half-drawn cards");
+  broken = false;
+  await page.locator(".ol-t7__alert").getByRole("button", { name: "Try again" }).click();
+  await page.waitForSelector(".ol-admin-modules .ol-card");
+  assert.equal(await page.locator(".ol-admin-modules .ol-card").count(), 5);
+  assert.equal(await page.locator(".ol-t7__alert").innerText(), "", "the banner is gone");
+}, { at: "settings/modules" });
+
+await t("the new frame is turned off and on again without a deploy: for one browser with ?frame=, and for a whole school by its switch", async (page, ctx) => {
+  const framed = () => page.evaluate(() => document.body.classList.contains("ol-shell"));
+  const oldRail = () => page.evaluate(() => !!document.querySelector("#rail .cn-item") && !document.querySelector(".ol-top"));
+  const stored = () => page.evaluate(() => localStorage.getItem("oplo.frame"));
+  const open = async (q) => { await page.goto(ORIGIN + "/learn/admin/today" + q); await page.waitForSelector("body.ol-shell, #rail .cn-item", { timeout: 15000 }); };
+  const school = (frame) => ctx.request.put(API + "/school/modules", { data: { frame }, headers: { origin: ORIGIN } }).then((r) => assert.ok(r.ok(), "PUT /school/modules " + r.status()));
+  try {
+    assert.equal(await framed(), true, "the frame is on to begin with");
+    await open("?frame=off");
+    assert.deepEqual([await framed(), await oldRail(), await stored()], [false, true, "off"], "?frame=off: the old console, remembered");
+    await open("");
+    assert.equal(await framed(), false, "and it stays off on the next visit without the address saying so");
+    await open("?frame=on");
+    assert.deepEqual([await framed(), await stored()], [true, "on"], "?frame=on: the frame is back");
+    await open("?frame=default");
+    assert.deepEqual([await framed(), await stored()], [true, null], "?frame=default forgets the browser's choice");
+
+    await school(false);                                          // the school turns it off
+    await open("");
+    assert.equal(await oldRail(), true, "the school's switch is off: its people get the old console");
+    await open("?frame=on");
+    assert.equal(await framed(), true, "the browser's choice wins, so the school can still be looked at");
+    await open("?frame=default");
+    assert.equal(await oldRail(), true, "back to what the school says");
+  } finally {
+    await school(true);
+    await page.goto(ORIGIN + "/learn/admin/today?frame=default");
+  }
+  await page.waitForSelector("body.ol-shell");
+  assert.deepEqual([await framed(), await stored()], [true, null], "restored: the frame is on for the school and the browser has no say");
 });
 
 await browser.close();

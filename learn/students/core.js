@@ -43,6 +43,8 @@
     if (!e) return fallback || t("common.load_failed");
     if (e.status === 403) return t("students.denied_text");
     if (e.code === "offline") return t("students.offline");
+    // an unexpected failure says nothing useful in the server's words; the id is what the office can look up
+    if (e.status >= 500 && e.requestId) return t("common.server_error", { id: e.requestId });
     return e.message || fallback || t("common.load_failed");
   };
 

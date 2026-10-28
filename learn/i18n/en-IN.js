@@ -20,7 +20,7 @@
       close: "Close", confirm: "Confirm", delete: "Delete", dismiss: "Dismiss", done: "Done", edit: "Edit",
       load_failed: "Could not load this. Try again.", loading: "Loading…", more: "More", next: "Next", no: "No",
       none: "Not set", optional: "(optional)", previous: "Previous", remove_filter: "Remove filter {name}", reset: "Reset",
-      retry: "Try again", save: "Save", search: "Search", undo: "Undo", yes: "Yes"
+      retry: "Try again", save: "Save", search: "Search", server_error: "Something went wrong at our end. Quote request id {id}.", undo: "Undo", yes: "Yes"
     },
 
     status: {
@@ -132,12 +132,12 @@
       admin: { settings: "Settings", compliance: "Compliance", data: "Data", security: "Security", "audit-log": "Audit log", "year-end": "Year-end" }
     },
     sub: {
-      students: { classes: { sections: "Sections", lists: "Class lists" } },
+      students: { classes: { sections: "Sections", lists: "Class lists" }, guardians: { list: "Guardians", invites: "Invite sheets" } },
       academics: { timetable: { published: "Published", draft: "Draft" }, curriculum: { courses: "Courses", map: "Curriculum map" } },
       exams: { mark: { "course-marks": "Course marks", assessments: "Assessments" }, results: { analysis: "Analysis", gpa: "GPA", transcripts: "Transcripts" } },
       campus: { facilities: { orders: "Work orders", spaces: "Spaces", assets: "Assets", routines: "Routines", bookings: "Bookings", vendors: "Vendors", documents: "Documents", reports: "Reports" } },
       insights: { analytics: { academic: "Academic", assessments: "Assessments", growth: "Growth", groups: "Groups", longitudinal: "Longitudinal", standards: "Standards" } },
-      admin: { data: { exports: "Exports", imports: "Imports", integrations: "Integrations", api: "API", state: "State reporting", district: "District" } }
+      admin: { settings: { general: "General", modules: "Modules" }, data: { exports: "Exports", imports: "Imports", integrations: "Integrations", api: "API", state: "State reporting", district: "District" } }
     },
 
     /* The frame around every page: rail, top bar, account menu. */
@@ -180,6 +180,23 @@
       error_title: "This page did not load",
       error_text: "Something went wrong on our side. Try again, and if it keeps happening, quote the reference.",
       error_ref: "Reference {ref}"
+    },
+
+    /* Admin › Settings › Modules (learn/settings/modules.js): the switches a school turns its modules on with. The wording is in docs/design/state-tables.md §1. */
+    admin: {
+      modules: {
+        subtitle: "Turn on only what your school is ready to use.", on_label: "On for this school", footer: "Changes are recorded in the audit log.",
+        family: { name: "Family", text: "Parents and guardians sign in to see attendance, circulars and results." },
+        fees: { name: "Fees", text: "Fee heads, instalments, receipts and payments." },
+        homework: { name: "Homework", text: "Teachers set homework and families see it." },
+        lessonPlans: { name: "Lesson plans", text: "Teachers plan their lessons by class and week." },
+        messages: { name: "Messages", text: "Staff and families talk in one place." },
+        saved_on: "{name} is on for your school.", saved_off: "{name} is off for your school.",
+        unavailable: "This is not available for your school yet.", preview: "Preview as family", preview_unavailable: "The family app is not ready to preview.",
+        load_failed: "Could not load the module switches. Try again.", save_failed: "Could not save. Nothing was changed. Try again.",
+        offline: "You are offline. Changes cannot be saved until you are back.",
+        denied: "You can't open Modules", read_only: "Only a school administrator can change this. Ask your school administrator."
+      }
     },
 
     /* Students — the Directory, the quick look, the record and the add and edit form (learn/students). */

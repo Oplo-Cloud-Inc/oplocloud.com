@@ -10,7 +10,7 @@
    deleted · Undo"): the action happens at once and the toast carries the way
    back. The caller's `undo` runs once, and the toast closes.
 
-   OL.ui.toast.show({ text, tone: success|info|error, undo, onUndo label, ms })
+   OL.ui.toast.show({ text, tone: success|info|error, undo (a function: its presence draws the Undo button), ms })
    → { close() }
    ========================================================================== */
 (function () {

@@ -65,7 +65,7 @@ async function t(name, fn, opts = {}) {
 const demo = (page, caption) => page.locator("figure.gl-demo", { has: page.locator("figcaption", { hasText: caption }) });
 
 await t("the gallery draws every section and the first screen has no errors", async (page) => {
-  assert.equal(await page.locator(".gl-sec").count(), 11);
+  assert.equal(await page.locator(".gl-sec").count(), 12);
   assert.ok((await page.locator(".gl-demo").count()) >= 60);
 });
 
@@ -285,6 +285,30 @@ await t("a phone (375 px): every field that takes the cursor is 16 px so iOS Saf
   const desktop = await sizes([]);
   assert.deepEqual(Object.values(desktop), Array(4).fill("14px"), "at 1280 px: " + JSON.stringify(desktop));
 }, { viewport: { width: 375, height: 812 }, touch: true });
+
+/* D5: the family shell's scale, measured on the sign-in scene the gallery draws twice (data-shell="family" and the admin default) */
+const famProbe = (page, shell) => page.evaluate((sh) => {
+  const root = document.querySelector(sh === "family" ? '#family [data-shell="family"]' : '#family [data-gl="admin"]');
+  const box = (el) => { const r = el.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; };
+  const css = (el) => getComputedStyle(el);
+  const targets = [...root.querySelectorAll("button, .ol-input__box, label.ol-checkfield__label")].filter((el) => el.getBoundingClientRect().height > 0).map(box);
+  return { body: css(root.querySelector("p")).fontSize, line: parseFloat(css(root.querySelector("p")).lineHeight), h2: css(root.querySelector("h2")).fontSize,
+           field: css(root.querySelector(".ol-input__ctl")).fontSize, targets };
+}, shell);
+await t("family shell (D5) at 360 px: body 16 px, h2 19 px, fields 16 px, every target 44 px high; the admin beside it keeps 14 px", async (page) => {
+  const fam = await famProbe(page, "family"), adm = await famProbe(page, "admin");
+  assert.deepEqual([fam.body, fam.h2, fam.field], ["16px", "19px", "16px"], JSON.stringify(fam));
+  assert.ok(fam.targets.length >= 10, "the buttons, the field and the check rows were measured: " + fam.targets.length);
+  assert.deepEqual(fam.targets.filter((x) => x.h < 44), [], "targets under 44 px: " + JSON.stringify(fam.targets));
+  assert.deepEqual(fam.targets.filter((x) => x.w < 44), [], "targets under 44 px wide");
+  assert.deepEqual([adm.body, adm.h2], ["14px", "17px"], "the admin scale did not move: " + JSON.stringify(adm));
+}, { viewport: { width: 360, height: 740 }, touch: true });
+await t("family shell (D5) in Hindi: body 17 px with a line of at least 1.6, headings one step up, targets still 44 px", async (page) => {
+  const fam = await famProbe(page, "family");
+  assert.deepEqual([fam.body, fam.h2, fam.field], ["17px", "20px", "16px"], JSON.stringify(fam));
+  assert.ok(fam.line >= 17 * 1.6, "line height " + fam.line);
+  assert.deepEqual(fam.targets.filter((x) => x.h < 44), [], "targets under 44 px: " + JSON.stringify(fam.targets));
+}, { query: "?lang=hi-IN", viewport: { width: 360, height: 740 }, touch: true });
 
 await t("every control has a name: buttons, inputs and comboboxes", async (page) => {
   const bad = await page.evaluate(() => {

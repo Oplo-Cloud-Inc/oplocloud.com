@@ -255,10 +255,34 @@
     return section("overlays", "Drawer, modal, toast, menu, breadcrumb", "C-15 · C-16 · C-17 · C-22", "Esc closes the top layer only; focus is trapped and handed back; the page behind is inert. No centred popups for records or forms.", out);
   }
 
+  /* D5: the family shell's scale beside the admin's. The same sign-in screen twice; the only difference is data-shell="family",
+     which tokens.css turns into a 16 px body (17 px in Hindi), 16 px fields and 44 px targets. */
+  function family() {
+    var B = OL.ui.button.render, I = OL.ui.input.render, S = OL.ui.select.render, C = OL.ui.check;
+    function scene(shell) {
+      var box = h("div", { class: "gl-stack", "data-gl": shell || "admin" },
+        h("h2", { text: "Is this you?" }),
+        h("p", { text: "Aarav Verma, Class VI-B. We sent a code to +91 98••• ••210." }),
+        I({ label: "Code from the message", name: "otp-" + (shell || "admin"), inputMode: "numeric", maxLength: 6, helper: "Six digits" }),
+        S({ label: "Language", options: [{ value: "en-IN", label: "English" }, { value: "hi-IN", label: "हिन्दी" }], value: "en-IN" }),
+        C.radios({ label: "Who is asking", options: [{ value: "m", label: "Mother" }, { value: "f", label: "Father" }, { value: "g", label: "Guardian" }], value: "m" }),
+        C.toggle({ label: "Remind me about fees", checked: true }),
+        C.field({ label: "The school may keep my child's records on this app", checked: false }),
+        OL.ui.segmented.render({ label: "Send the code by", items: [{ value: "sms", label: "SMS" }, { value: "wa", label: "WhatsApp" }], value: "sms" }),
+        row(B({ label: "Continue", variant: "primary" }), B({ label: "Send the code again", variant: "secondary" }), B({ iconOnly: true, icon: "settings", ariaLabel: "Settings", variant: "ghost" })));
+      if (shell) box.setAttribute("data-shell", shell);
+      return box;
+    }
+    return section("family", "Family shell scale", "D5", "A parent's phone: 16 px body (17 px in Hindi), 16 px fields, 44 px targets. The admin keeps 14 px. Switch the language above to see the Hindi step.", [
+      demo("family shell — data-shell=\"family\"", scene("family")),
+      demo("admin — the default", scene(null))
+    ]);
+  }
+
   /* ----------------------------------------------------------------- the page */
   function render(host) {
     SECTIONS_DEF.length = 0;
-    var main = h("main", { class: "gl-main", id: "main" }, foundations(), buttons(), inputs(), selects(), pickers(), dates(), chipsSection(), tables(), grids(), surfaces(), overlays());
+    var main = h("main", { class: "gl-main", id: "main" }, foundations(), buttons(), inputs(), selects(), pickers(), dates(), chipsSection(), tables(), grids(), surfaces(), overlays(), family());
     var nav = h("nav", { class: "gl-nav", "aria-label": "Components" }, SECTIONS_DEF.map(function (s) { return h("a", { href: "#" + s.id, text: s.title }); }));
     OL.clear(host);
     host.appendChild(h("a", { class: "gl-skip", href: "#main", text: "Skip to components" }));

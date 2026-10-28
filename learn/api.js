@@ -52,9 +52,10 @@ window.OPLO_API = (function () {
 
   /* An error a screen can act on. `code` is the server's, so a client can
      branch on `invalid_credentials` without matching on English. */
-  function ApiError(status, code, message, field) {
+  function ApiError(status, code, message, field, requestId) {
     var e = new Error(message || "That did not work.");
     e.status = status; e.code = code; e.field = field;
+    if (requestId) e.requestId = requestId;   // the server's reference for this request, to quote to the school's office
     return e;
   }
 
@@ -88,7 +89,8 @@ window.OPLO_API = (function () {
         if (!res.ok) {
           var err = (data && data.error) || {};
           var fault = ApiError(res.status, err.code || "http_" + res.status,
-                               err.message || "The server refused that.", err.field);
+                               err.message || "The server refused that.", err.field, err.requestId || res.headers.get("x-request-id"));
+          if (res.status === 429) { var wait = Number(res.headers.get("retry-after")); if (wait > 0) fault.retryAfter = wait; }
           /* Whatever else the server said about the refusal — the blockers of
              an enrollment step, the dates of a booking that cannot be made,
              the checklist lines still open — rides along on the error. */
@@ -544,7 +546,8 @@ window.OPLO_API = (function () {
     },
     school: {
       profile: function () { return get("/school/profile"); },
-      putProfile: function (data) { return put("/school/profile", data); }
+      putProfile: function (data) { return put("/school/profile", data); },
+      putModules: function (data) { return put("/school/modules", data); }
     },
     india: {
       classes: function (year) { return get("/india/classes" + q({ year: year })); },

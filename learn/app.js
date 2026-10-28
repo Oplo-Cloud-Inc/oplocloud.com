@@ -8935,7 +8935,9 @@
     { k: "roster", name: "Gradebook", group: "Academics", icon: "table", hidden: true },
     { k: "missing", name: "Missing work", group: "Students", icon: "tray", hidden: true },
     { k: "courses", name: "Courses", group: "Curriculum", icon: "books", hidden: true },
-    { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true });
+    { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true },
+    // Admin › Settings › Modules (O8) has no page in the old console: it exists only in the frame.
+    { k: "modules", name: "Modules", group: "Settings", icon: "gear", hidden: true, frame: true });
 
   /* Somebody who holds an office role and is not an administrator gets the
      school console with the places that role works in, and nothing else.
@@ -8964,7 +8966,7 @@
     if (S.me && consoleMode() === "student") return STUDENT_SECTIONS.filter(forRegion);
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
     if (consoleMode() !== "admin") return TEACHER_SECTIONS.filter(forRegion).map(named);
-    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion).map(named);
+    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion).filter(function (t) { return !t.frame || shellOn(); }).map(named);
     return only ? mine.filter(function (t) { return only.indexOf(t.k) > -1; }) : mine;
   }
 
@@ -9766,7 +9768,19 @@
      themselves are the ones above until each is rebuilt, so the frame is told
      what this person may open and how to open it, and knows nothing else. A
      teacher's console and the phone keep what they have until their turn. */
-  function shellOn() { return !!(window.OL && OL.shell && OL.shell.open) && consoleMode() === "admin" && !phoneOn(); }
+  function shellOn() { return !!(window.OL && OL.shell && OL.shell.open) && consoleMode() === "admin" && !phoneOn() && frameOn(); }
+  /* The new frame can be turned off without a deploy (O8): for one browser with ?frame=off, remembered until ?frame=on (or
+     ?frame=default) says otherwise; or for a whole school with its "frame" switch (PUT /school/modules, on the profile). The browser
+     wins, so a school that has the frame off can still be looked at. Read once, from the address the page was opened with. */
+  var frameChoice = (function () {
+    var m = /[?&]frame=(on|off|default)\b/.exec(location.search), v = m ? m[1] : null;
+    try {
+      if (v === "default") localStorage.removeItem("oplo.frame"); else if (v) localStorage.setItem("oplo.frame", v);
+      if (!v) v = localStorage.getItem("oplo.frame");
+    } catch (e) { /* private mode: the address alone */ }
+    return v === "on" || v === "off" ? v : null;
+  })();
+  function frameOn() { return frameChoice ? frameChoice === "on" : !(window.OL && OL.routes) || OL.routes.frame(); }
   function shellMounted() { return !!(window.OL && OL.shell && OL.shell.mounted && OL.shell.mounted()); }
   function shellFor() { OL.shell.bind(shellCtx(S.tab)); return OL.shell; }
   function shellCtx(at) {
@@ -20223,7 +20237,9 @@
              : learn.some(function (r) { return r.role === "teacher"; }) ? "teacher"
              : "student";
     var name = a.name || a.email || "Someone";
-    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(a.organizations && a.organizations[0] && a.organizations[0].profile);
+    var school = a.organizations && a.organizations[0] && a.organizations[0].profile;
+    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(school);
+    if (window.OL && OL.routes) OL.routes.setSchool(school);
     return {
       id: a.id, email: a.email, name: name,
       first: a.firstName || name.split(/\s+/)[0],

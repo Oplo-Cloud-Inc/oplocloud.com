@@ -590,6 +590,14 @@ for (const [name, at, root, ask] of [
   }, { at, ready: root });
 }
 
+await t("a failure the server did not expect says so with its request id to quote (X4)", async (page) => {
+  await page.route(/\/directory\/students(\?|$)/, (r) => r.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: { code: "internal", message: "Something went wrong at our end.", requestId: "req_3f9a1c20b7d4" } }) }));
+  await page.goto(ORIGIN + "/learn/admin/students/directory");
+  const alert = page.locator(".ol-students-dir .ol-t2__alert .ol-banner");
+  await alert.waitFor();
+  assert.match(await alert.innerText(), /Something went wrong at our end\. Quote request id req_3f9a1c20b7d4\./);
+}, { at: "students/directory", ready: ".ol-students-dir" });
+
 for (const mode of ["Light", "Dark"]) {
   await t(`axe: the Directory, the quick look, the record and the form have no WCAG 2.2 AA violations (${mode.toLowerCase()})`, async (page) => {
     if (mode === "Dark") await theme(page, "Dark");

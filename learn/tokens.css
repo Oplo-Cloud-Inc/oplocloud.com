@@ -140,6 +140,35 @@
 :root[data-density="comfortable"] { --ctl-h: 40px; --row-h: 52px; --cell-py: 14px; }
 :root[data-density="dense"] { --ctl-h: 32px; --row-h: 36px; --cell-py: 6px; }
 
+/* ---- Family shell (D5): a parent's phone, read at arm's length, often in Hindi ----
+   Body 16 px (17 px in Hindi), headings scaled to match, a text field 16 px at every width, and every control at least
+   44 px high. Put data-shell="family" on <html> (the family bundle) or on one container (the gallery's side-by-side view);
+   the admin keeps the 14 px body above. A family page does not offer a density, so the 44 px floor is not a preference. */
+[data-shell="family"] {
+  --t-display: 650 30px/38px var(--font-ui);
+  --t-h1: 650 24px/32px var(--font-ui);
+  --t-h2: 600 19px/26px var(--font-ui);
+  --t-h3: 600 17px/24px var(--font-ui);
+  --t-body: 400 16px/24px var(--font-ui);
+  --t-body-strong: 600 16px/24px var(--font-ui);
+  --t-small: 400 14px/20px var(--font-ui);
+  --t-caption: 500 13px/18px var(--font-ui);
+  --ctl-h: 44px;
+  --row-h: 56px;
+  --cell-py: 14px;
+}
+/* Devanagari sits taller than Latin and a line under 1.6 clips its marks: one step larger and a looser line */
+[data-shell="family"]:lang(hi) {
+  --t-display: 650 31px/44px var(--font-ui);
+  --t-h1: 650 25px/38px var(--font-ui);
+  --t-h2: 600 20px/32px var(--font-ui);
+  --t-h3: 600 18px/30px var(--font-ui);
+  --t-body: 400 17px/28px var(--font-ui);
+  --t-body-strong: 600 17px/28px var(--font-ui);
+  --t-small: 400 15px/24px var(--font-ui);
+  --t-caption: 500 14px/24px var(--font-ui);
+}
+
 /* ---- Dark ---- */
 :root[data-theme="dark"] {
   color-scheme: dark;

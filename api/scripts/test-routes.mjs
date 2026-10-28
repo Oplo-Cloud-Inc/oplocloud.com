@@ -3,9 +3,11 @@
 //  - what a role cannot open is not in the menu; a module behind a flag is not in the menu
 //  - an address parses to the screen it names and a screen's address parses back to it
 //  - every module, tab and sub-tab has its words in the English pack, and the menu is the eleven modules and Admin
+//  - a school's own switches (Family, Fees, Homework, Lesson plans, Messages) and the global flags both have to be on (O8)
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import * as P from "../src/services/profile.js";
 
 const LEARN = path.resolve(new URL("../../learn", import.meta.url).pathname);
 const win = {};
@@ -26,6 +28,17 @@ t("the menu is the eleven modules and Admin, in the brief's order, with Admin la
   assert.equal(R.visible(everything).filter((m) => m.foot).map((m) => m.key).join(), "admin");
 });
 
+t("every module states its phone answer (D11): phone pages for the jobs done away from a desk, or cards", () => {
+  for (const m of R.MODULES) {
+    assert.ok(m.phone === "page" || m.phone === "cards", `${m.key} has no phone answer`);
+    if (m.phone === "cards") assert.ok(!m.phonePages, `${m.key} is cards, so it names no phone pages`);
+    else {
+      assert.ok(m.phonePages && m.phonePages.length, `${m.key} is "page" and names no tab with one`);
+      for (const k of m.phonePages) assert.ok(m.tabs.some((x) => x.key === k), `${m.key}.phonePages names ${k}, which is no tab of ${m.key}`);
+    }
+  }
+});
+
 t("a module behind a flag (Fees, Documents, Messages…) is not drawn, and not reachable by its address", () => {
   assert.ok(!R.visible(everything).some((m) => m.key === "fees"));
   assert.ok(!R.visible(everything).find((m) => m.key === "students").tabs.some((x) => x.key === "documents"));
@@ -34,6 +47,53 @@ t("a module behind a flag (Fees, Documents, Messages…) is not drawn, and not r
   R.FLAGS.documents = true;
   assert.ok(R.visible(everything).find((m) => m.key === "students").tabs.some((x) => x.key === "documents"));
   R.FLAGS.documents = false;
+});
+
+/* Students › Guardians › Invite sheets belongs to the Family module. Homework has no page yet, so the day its page ships is played
+   by giving its tab one, for as long as a test needs it. */
+const invites = (v) => { const g = v.find((m) => m.key === "students").tabs.find((x) => x.key === "guardians"); return g.subs.some((s) => s.key === "invites"); };
+const homework = () => R.visible(everything).find((m) => m.key === "academics").tabs.some((x) => x.key === "homework");
+const hwTab = R.module("academics").tabs.find((x) => x.key === "homework");
+const reset = () => { R.FLAGS.family = false; R.FLAGS.homework = false; hwTab.legacy = []; R.setSchool(null); };
+
+t("a school with Family and a school without it (O8): the flag is the hard off-switch and the school's switch is its own say", () => {
+  reset(); hwTab.legacy = ["homework-diary"];
+  assert.ok(!invites(R.visible(everything)) && !homework(), "nothing is on before the school has said anything");
+  R.setSchool({ modules: { family: true, homework: true }, frame: true });
+  assert.ok(!invites(R.visible(everything)) && !homework(), "a module that is not built cannot be turned on from a school's settings");
+  R.FLAGS.family = true; R.FLAGS.homework = true;
+  assert.ok(invites(R.visible(everything)) && homework(), "built and switched on: the school has it");
+  assert.equal(R.legacyOf("students", "guardians", "invites", everything), "invite-sheets");
+  assert.equal(R.pathOf({ module: "students", tab: "guardians", sub: "invites" }, everything), "students/guardians/invites");
+  R.setSchool({ modules: { family: false, homework: false }, frame: true });
+  assert.ok(!invites(R.visible(everything)) && !homework(), "built and not switched on: the school does not have it");
+  assert.equal(R.legacyOf("students", "guardians", "invites", everything), "guardians", "its address falls back to the tab's first page");
+  assert.equal(R.pathOf({ module: "students", tab: "guardians", sub: "list" }, everything), "students/guardians", "one page left, so no sub-tab segment");
+  R.setSchool({ modules: { family: true }, frame: true });
+  assert.ok(invites(R.visible(everything)) && !homework(), "one module on does not turn on another");
+  reset();
+});
+
+t("a flag that is not a school switch (Documents) is the flag alone, whatever the school says", () => {
+  R.setSchool({ modules: {}, frame: true });
+  R.FLAGS.documents = true;
+  assert.ok(R.visible(everything).find((m) => m.key === "students").tabs.some((x) => x.key === "documents"));
+  R.FLAGS.documents = false; reset();
+});
+
+t("the school's switches are the server's, and each one gates something in the table", () => {
+  assert.deepEqual(R.SWITCHES, P.MODULES, "routes.js SWITCHES and services/profile.js MODULES are the same five names in the same order");
+  const flagged = new Set(), walk = (o) => { if (o.flag) flagged.add(o.flag); (o.tabs || o.subs || []).forEach(walk); };
+  R.MODULES.forEach(walk);
+  for (const k of R.SWITCHES) assert.ok(k in R.FLAGS && flagged.has(k), `${k} is a school switch and nothing in the table is behind it`);
+});
+
+t("the new frame is on until a school turns it off, and the school's answer is the profile's", () => {
+  assert.equal(R.frame(), true);
+  R.setSchool({ modules: {}, frame: false }); assert.equal(R.frame(), false);
+  R.setSchool(P.profileOf({ region: "IN", modules: '{"frame":false,"family":true}' })); assert.deepEqual([R.frame(), R.visible(everything).length > 0], [false, true]);
+  R.setSchool(P.profileOf({ region: "IN" })); assert.equal(R.frame(), true);
+  reset();
 });
 
 t("no old page is claimed by two tabs", () => {
@@ -88,6 +148,9 @@ t("Admin is flat: /admin/security, not /admin/admin/security", () => {
   assert.equal(R.pathOf({ module: "admin", tab: "security" }, everything), "security");
   assert.equal(R.pathOf({ module: "admin", tab: "data", sub: "imports" }, everything), "data/imports");
   assert.equal(R.parse("data/imports", everything).legacy, "imports");
+  assert.equal(R.pathOf({ module: "admin", tab: "settings", sub: "modules" }, everything), "settings/modules");
+  assert.equal(R.parse("settings/modules", everything).legacy, "modules");
+  assert.equal(R.pathOf({ module: "admin", tab: "settings", sub: "general" }, (k) => k === "system"), "settings", "a person who may open only General has no sub-tab segment");
 });
 
 t("Today is one page: its address is just today", () => {
