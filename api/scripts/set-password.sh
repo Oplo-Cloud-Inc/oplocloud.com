@@ -18,6 +18,8 @@ set -e
 cd "$(dirname "$0")/.."
 DB="oplo-platform-db"
 EMAIL="$1"; WHERE="--local"; [ "${2:-}" = "--remote" ] && WHERE="--remote"
+# OPLO_D1_STATE names another folder for the local database (api/scripts/dev.sh); a path without spaces.
+if [ "$WHERE" = "--local" ] && [ -n "${OPLO_D1_STATE:-}" ]; then WHERE="--local --persist-to $OPLO_D1_STATE"; fi
 [ -n "$EMAIL" ] || { echo "usage: $0 <email> [--remote]" >&2; exit 2; }
 [[ "$EMAIL" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] || { echo "That doesn't look like an email address: $EMAIL" >&2; exit 2; }
 LOWER=$(echo "$EMAIL" | tr 'A-Z' 'a-z')

@@ -12,13 +12,15 @@ const PORT = Number(process.argv[2] || process.env.PORT || 8153);
 const API_PORT = process.env.API_PORT || "8787";
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon", ".webp": "image/webp", ".webmanifest": "application/manifest+json" };
 
+const isFile = (f) => { try { return fs.statSync(f).isFile(); } catch { return false; } };
+
 http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split("?")[0]);
   if (/^\/learn\/(admin|teacher|student)$/.test(p)) { res.writeHead(308, { Location: p + "/" + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "") }).end(); return; }
   const place = /^\/learn\/(admin|teacher|student)\//.test(p);
   p = p.replace(/^\/learn\/(admin|teacher|student)(?=\/)/, "/learn");
   if (p.endsWith("/")) p += "index.html";
-  if (place && !/\.[A-Za-z0-9]{1,8}$/.test(p) && !fs.existsSync(path.join(ROOT, p))) p = "/learn/index.html";
+  if (place && !/\.[A-Za-z0-9]{1,8}$/.test(p) && !isFile(path.join(ROOT, p))) p = "/learn/index.html";   // a folder (learn/settings/) is not a page
   const file = path.join(ROOT, p);
   if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
   fs.readFile(file, (err, buf) => {
