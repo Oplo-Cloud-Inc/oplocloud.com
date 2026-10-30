@@ -108,7 +108,7 @@ async function drawTree() {
           h("li", null, h("button", { class: "tree-new", type: "button", text: "New conversation", onclick: () => fresh(p.id) }))));
     }),
     h("li", null, h("a", { class: "tree-new", href: "#/projects/new", text: "New project" })));
-  treeRoot.replaceChildren(row(projectsLink, "projects", "Project list"), list);
+  treeRoot.replaceChildren(...[row(projectsLink, "projects", "Project list"), list].filter(Boolean));       // a folded list is null, and replaceChildren would write it out as the word "null"
   markCurrent();
 }
 
