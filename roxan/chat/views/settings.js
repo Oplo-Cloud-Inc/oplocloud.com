@@ -78,9 +78,10 @@ export async function mount(root, { app }) {
   async function paintCounts() {
     const [events, notes, reminders, rooms] = await Promise.all([db.all("events"), db.all("memories"), db.all("reminders"), db.all("rooms")]);
     const n = events.filter(e => e.kind === "user" || e.kind === "assistant").length;
-    const kept = notes.filter(m => !m.deleted).length, set = reminders.filter(r => r.state === "scheduled").length, projects = rooms.filter(r => r.kind === "project").length;
+    const kept = notes.filter(m => !m.deleted).length, set = reminders.filter(r => r.state === "scheduled").length;
+    const projects = rooms.filter(r => r.kind === "project").length, chats = rooms.filter(r => r.kind === "session").length;
     const s = k => (k === 1 ? "" : "s");
-    counts.textContent = `${n} message${s(n)}, ${kept} note${s(kept)}, ${set} reminder${s(set)} set, ${projects} project${s(projects)}.`;
+    counts.textContent = `${n} message${s(n)}, ${kept} note${s(kept)}, ${set} reminder${s(set)} set, ${projects} project${s(projects)} holding ${chats} conversation${s(chats)}.`;
   }
 
   root.append(h("section", { class: "page" },

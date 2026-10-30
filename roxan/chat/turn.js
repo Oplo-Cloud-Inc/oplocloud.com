@@ -11,14 +11,15 @@ import * as api from "./api.js";
 import * as memory from "./memory.js";
 import * as proposals from "./proposals.js";
 import { blobToBase64 } from "./files.js";
-import { touch, log } from "./store.js";
+import { touch, log, NEW_TITLE } from "./store.js";
 import { emit } from "./dom.js";
 
 const WINDOW = 60;               // events looked at
 const CHARS = 60_000;            // of history text sent
 const RECENT = 2;                // user messages whose text attachments still go along
 const clean = s => String(s).replace(/["\r\n]+/g, "'");
-const where = r => (r.kind === "main" ? "the conversation" : `the project “${r.name}”`);
+const where = r => (r.kind === "main" ? "the conversation" : `the conversation “${r.name}”`);
+const clip = (s, n = 48) => { const t = s.replace(/\s+/g, " ").trim(); return t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…"; };
 
 const nowText = () => new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
 const zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -60,13 +61,14 @@ export async function buildBody(room) {
   const last = events.filter(e => e.kind === "user").at(-1)?.text || "";
   const near = events.slice(-6).map(e => e.text || "").join(" ");
   const notes = memory.pick(memories, last + " " + near);
+  const project = room.kind === "session" ? await db.get("rooms", room.projectId) : null;
   return {
     messages,
     context: {
       now: nowText(),
       tz: zone(),
       memories: notes.map(m => ({ id: m.id, text: m.text })),
-      project: room.kind === "project" ? { name: room.name, instructions: room.instructions } : undefined,
+      project: project ? { name: project.name, instructions: project.instructions } : undefined,
     },
   };
 }
@@ -126,6 +128,7 @@ export async function send(room, invite, text, prepared, signal, hooks) {
     ev.files.push({ id: rec.id, name: f.name, kind: f.kind, size: f.size });
   }
   await db.put("events", ev);
+  if (room.kind === "session" && room.auto && room.name === NEW_TITLE) room.name = clip(text) || ev.files[0]?.name || NEW_TITLE;       // the first message names the conversation until you rename it
   await touch(room);
   await log("message", `You wrote in ${where(room)}${ev.files.length ? `, with ${ev.files.length} attachment${ev.files.length > 1 ? "s" : ""}` : ""}.`, room.id);
   hooks.onUser(ev);

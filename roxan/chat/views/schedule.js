@@ -19,9 +19,9 @@ export async function mount(root) {
   const earlier = section("Earlier", clear, past);
   const form = h("form", { class: "sched" }, field("What", title), field("When", at), h("button", { class: "btn", type: "submit", text: "Set reminder" }));
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Schedule" }),
+    h("p", { class: "label", text: "Scheduled Tasks" }),
     h("h1", { class: "page-title", text: "Reminders, when you want them." }),
-    h("p", { class: "page-lead", text: "Roxan can propose a reminder, and you approve it. Reminders are kept on this device and appear only while Roxan is open in a browser tab. If one comes due while it is closed, it is marked missed when you next open it." }),
+    h("p", { class: "page-lead", text: "For now, a scheduled task is a reminder. Roxan can propose one, and you approve it. Reminders are kept on this device and appear only while Roxan is open in a browser tab. If one comes due while it is closed, it is marked missed when you next open it." }),
     form, err, alerts,
     section("Coming up", null, upcoming), earlier));
 
