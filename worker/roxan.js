@@ -2,8 +2,8 @@
    Roxan's Worker — roxan.oplocloud.com.
 
    The site is the `roxan/` directory, served as static assets. This code only
-   runs for requests no file answered, and it has one job: send the old
-   address home.
+   runs for requests no file answered. It has two jobs: answer /api/* (the
+   gateway, worker/gateway.js) and send the old address home.
 
    Roxan used to live at oplocloud.com/roxan/, and GitHub Pages still
    publishes that directory there, because Pages publishes the whole
@@ -16,6 +16,8 @@
    root-relative link inside the site would ask for.
    ========================================================================== */
 
+import { chat, health, notFound, wrongMethod } from "./gateway.js";
+
 const HOST = "roxan.oplocloud.com";
 
 export default {
@@ -27,6 +29,10 @@ export default {
       // 301: the move is permanent, so bookmarks and search results learn it once.
       return Response.redirect("https://" + HOST + (p.slice(6) || "/") + url.search, 301);
     }
+
+    if (p === "/api/health") return request.method === "GET" ? health(request, env) : wrongMethod();
+    if (p === "/api/chat") return request.method === "POST" ? chat(request, env) : wrongMethod();
+    if (p.startsWith("/api/")) return notFound();
 
     // Anything else matched no file; the asset server's 404 page answers it.
     return env.ASSETS.fetch(request);

@@ -1,0 +1,126 @@
+/* ==========================================================================
+   Roxan — tokens, type and the parts the site and the app share.
+   Black, white and a hairline: no gradients, no glow, no colour. Status is
+   carried by words and shape, never by colour alone.
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+  --bg: #000;
+  --panel: #080808;
+  --raise: #101010;
+  --line: rgba(255, 255, 255, .1);
+  --line-2: rgba(255, 255, 255, .22);
+  --line-3: rgba(255, 255, 255, .45);
+  --text: #f5f5f5;
+  --muted: #a6a6a6;
+  --dim: #7d7d7d;      /* 5:1 on black: the smallest text */
+  --faint: #5e5e5e;    /* 3.2:1: large display lines only */
+  --fd: "Unbounded", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --fb: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fm: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --out: cubic-bezier(.16, 1, .3, 1);
+  --io: cubic-bezier(.65, 0, .35, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+body { font: 300 17px/1.6 var(--fb); color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+img, svg, canvas { display: block; }
+a { color: inherit; text-decoration: none; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: pointer; }
+ul, ol { list-style: none; }
+b, strong { font-weight: 500; }
+:focus-visible { outline: 1px solid #fff; outline-offset: 3px; border-radius: 6px; }
+::selection { background: #fff; color: #000; }
+[hidden] { display: none !important; }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: -9999px; top: 10px; z-index: 9999; padding: 8px 14px; border-radius: 8px; background: #fff; color: #000; font-weight: 500; }
+.skip:focus { left: 14px; }
+
+/* ------------------------------------------------------------ Type */
+.label { font: 400 11px/1.3 var(--fm); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+.display { font: 300 clamp(44px, 7.2vw, 112px)/1 var(--fd); letter-spacing: -.055em; }
+.h2 { font: 300 clamp(30px, 4.2vw, 60px)/1.06 var(--fd); letter-spacing: -.05em; text-wrap: balance; }
+.h3 { font: 300 clamp(20px, 1.9vw, 26px)/1.2 var(--fd); letter-spacing: -.03em; }
+.lead { font-size: clamp(17px, 1.4vw, 20px); line-height: 1.65; color: var(--muted); max-width: 52ch; }
+.dim { color: var(--faint); }
+.fine { font-size: 13px; color: var(--dim); }
+
+/* ------------------------------------------------------------ Buttons and tags */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 28px; border-radius: 999px; background: #fff; color: #000; font: 500 15px/1 var(--fb); white-space: nowrap; transition: opacity .3s, transform .5s var(--out), border-color .3s; }
+.btn:hover { opacity: .86; }
+.btn:active { transform: scale(.97); transition-duration: .1s; }
+.btn.ghost { background: none; color: var(--text); border: 1px solid var(--line-2); }
+.btn.ghost:hover { opacity: 1; border-color: #fff; }
+.btn.sm { height: 34px; padding: 0 16px; font-size: 13.5px; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .35; pointer-events: none; }
+.go { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 400; }
+.go i { font-style: normal; transition: transform .6s var(--out); }
+.go:hover i { transform: translateX(5px); }
+.tag { display: inline-flex; align-items: center; height: 20px; padding: 0 9px; border: 1px solid var(--line-2); border-radius: 999px; font: 400 10.5px/1 var(--fm); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.tag.live { background: #fff; border-color: #fff; color: #000; }
+
+/* ------------------------------------------------------------ The mark: a ring and a point of attention */
+.mark { --s: 18px; position: relative; display: inline-block; flex: none; width: var(--s); height: var(--s); border: 1.5px solid currentColor; border-radius: 50%; }
+.mark::after { content: ""; position: absolute; left: 50%; top: 50%; width: calc(var(--s) * .26); height: calc(var(--s) * .26); margin: calc(var(--s) * -.13) 0 0 calc(var(--s) * -.13); border-radius: 50%; background: currentColor; transform: translate(calc(var(--s) * .12), calc(var(--s) * -.12)); }
+.mark.think { animation: breathe 1.6s var(--io) infinite; }
+@keyframes breathe { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+/* ------------------------------------------------------------ Conversation: a message is text, an action is a card */
+.msg { display: flex; gap: 14px; margin: 0 0 22px; }
+.msg.user { justify-content: flex-end; }
+.msg .bubble { max-width: min(82%, 560px); padding: 10px 16px; border: 1px solid var(--line-2); border-radius: 20px 20px 6px 20px; background: var(--raise); font: 400 15.5px/1.55 var(--fb); white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.bot > .mark { --s: 16px; margin-top: 6px; color: var(--muted); }
+.msg.bot .body { flex: 1; min-width: 0; font-weight: 380; font-size: 16px; line-height: 1.7; }
+.msg .meta { margin-top: 6px; font: 400 11px/1.3 var(--fm); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+
+.md > * + * { margin-top: .9em; }
+.md p { overflow-wrap: anywhere; }
+.md h1, .md h2, .md h3, .md h4 { font: 450 1.05em/1.35 var(--fb); letter-spacing: -.01em; margin-top: 1.4em; }
+.md h1 { font-size: 1.25em; }
+.md h2 { font-size: 1.14em; }
+.md ul, .md ol { padding-left: 1.45em; }
+.md ul li { position: relative; }
+.md ul li::before { content: ""; position: absolute; left: -1.1em; top: .85em; width: 6px; height: 1px; background: var(--dim); }
+.md ol { list-style: decimal; }
+.md ol li::marker { color: var(--dim); font: 400 .85em var(--fm); }
+.md li + li { margin-top: .35em; }
+.md li > ul, .md li > ol { margin-top: .35em; }
+.md a { text-decoration: underline; text-decoration-color: var(--line-3); text-underline-offset: 3px; }
+.md a:hover { text-decoration-color: #fff; }
+.md code { font: 400 .86em var(--fm); padding: .12em .4em; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.md pre { position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: auto; }
+.md pre code { display: block; padding: 14px 16px; border: 0; border-radius: 0; background: none; font-size: 13px; line-height: 1.6; white-space: pre; }
+.md pre .copy { position: absolute; top: 8px; right: 8px; height: 26px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--bg); font: 400 10.5px/1 var(--fm); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.md pre .copy:hover { color: #fff; border-color: #fff; }
+.md blockquote { padding-left: 16px; border-left: 1px solid var(--line-3); color: var(--muted); }
+.md hr { border: 0; border-top: 1px solid var(--line); }
+.md table { display: block; overflow: auto; border-collapse: collapse; font-size: .92em; }
+.md th, .md td { padding: 8px 14px; border-bottom: 1px solid var(--line); text-align: left; }
+.md th { font: 400 11px/1.3 var(--fm); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+
+/* An action Roxan proposes or has taken. It is never drawn like a message. */
+.act { margin: 2px 0 22px 30px; padding: 16px 18px 14px; border: 1px solid var(--line-2); border-radius: 16px; background: var(--panel); }
+.act[data-state="awaiting"] { border-color: var(--line-3); }
+.act > header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.act .state { font: 400 11px/1 var(--fm); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.act[data-state="done"] .state { color: #fff; }
+.act .title { margin-bottom: 10px; font: 400 16px/1.4 var(--fb); }
+.act dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; font-size: 14.5px; font-weight: 380; }
+.act dt { font: 400 11px/2 var(--fm); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.act dd { overflow-wrap: anywhere; }
+.act dd input { width: 100%; height: 30px; padding: 0 10px; border: 1px solid var(--line-3); border-radius: 8px; background: var(--bg); }
+.act .why { margin-top: 12px; font-size: 13px; color: var(--dim); }
+.act .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* Something Roxan would like to keep: dashed until you say yes. */
+.mem { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 2px 0 22px 30px; padding: 10px 14px; border: 1px dashed var(--line-3); border-radius: 14px; }
+.mem[data-state="kept"] { border-style: solid; border-color: var(--line-2); }
+.mem[data-state="dismissed"] { border-color: var(--line); color: var(--dim); }
+.mem .what { flex: 1 1 200px; min-width: 0; font: 380 14.5px/1.45 var(--fb); overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

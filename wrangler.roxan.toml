@@ -13,11 +13,23 @@
 #     npx wrangler deploy -c wrangler.roxan.toml                  → workers.dev
 #     npx wrangler deploy -c wrangler.roxan.toml --env production → roxan.oplocloud.com
 #
-# The menu is the system's: oplocloud.com's bar, Roxan's chapter bar and the
-# site's footer are written into roxan/index.html by tools/build.py
-# (roxan_chrome), with every link absolute, along with oplo-chrome.css,
-# oplo-menu.js and oplo-search.js beside it. Run the builder before deploying,
-# or the chrome here is whatever it was the last time somebody did.
+# The bar and footer of every page are written by tools/roxan_chrome.py, with
+# every link absolute. Run `python3 tools/roxan_chrome.py` before deploying, or
+# the chrome here is whatever it was the last time somebody did.
+#
+# The gateway (worker/gateway.js) answers /api/health and /api/chat. It uses the
+# model service's SDK, so install it before deploying:
+#
+#     npm ci --prefix worker
+#
+# and it needs two secrets, which never go in this file:
+#
+#     npx wrangler secret put ROXAN_INVITE    -c wrangler.roxan.toml --env production   (invite codes, comma-separated)
+#     npx wrangler secret put ROXAN_MODEL_KEY -c wrangler.roxan.toml --env production   (the model service's API key)
+#
+# Until both are set the gateway answers "closed" and /chat says so. Locally,
+# put them in .dev.vars beside this file (git-ignored); worker/test/fake-provider.js
+# stands in for the model service so nothing is spent.
 # ===========================================================================
 name = "oplo-roxan"
 main = "worker/roxan.js"
@@ -30,6 +42,10 @@ binding = "ASSETS"
 # roxan/404.html answers any path that is not a file, with a real 404 status.
 not_found_handling = "404-page"
 
+# Not secret: which model answers. Change it here and redeploy.
+[vars]
+ROXAN_MODEL = "claude-opus-5-5"
+
 # --------------------------------------------------------------- Production
 [env.production]
 name = "oplo-roxan"
@@ -39,6 +55,9 @@ main = "worker/roxan.js"
 directory = "./roxan"
 binding = "ASSETS"
 not_found_handling = "404-page"
+
+[env.production.vars]
+ROXAN_MODEL = "claude-opus-5-5"
 
 [[env.production.routes]]
 pattern = "roxan.oplocloud.com"

@@ -30,6 +30,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["wrangler", "dev", "-c", "api/wrangler.toml", "--port", "8787", "--persist-to", "api/.wrangler/state"],
       "port": 8787
+    },
+    {
+      "name": "roxan",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "wrangler", "dev", "-c", "wrangler.roxan.toml", "--port", "8130", "--ip", "127.0.0.1"],
+      "port": 8130
     }
   ]
 }
