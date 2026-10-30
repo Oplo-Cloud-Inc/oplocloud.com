@@ -1,0 +1,5 @@
+Typefaces served from this site.
+
+Each family here is distributed under the SIL Open Font License, Version 1.1
+(https://openfontlicense.org/open-font-license-official-text/). The copyright
+notice and licence of each are carried in the font file itself.

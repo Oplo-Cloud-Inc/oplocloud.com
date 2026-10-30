@@ -1,0 +1,75 @@
+# ===========================================================================
+# Roxan — Oplo's AI, on its own hostname.
+#
+# `roxan.oplocloud.com` serves `roxan/` and nothing else: the Roxan site at
+# the root and the Ministry of Finance cockpit at /mof/. Cloudflare serves the
+# directory as static assets; worker/roxan.js only sees requests no file
+# answered, and redirects the old oplocloud.com/roxan/ address here.
+#
+# This file sits at the repository root, beside wrangler.dev.toml, for the
+# same reason: the assets directory is published verbatim, so a wrangler.toml
+# inside `roxan/` would be served at roxan.oplocloud.com/wrangler.toml.
+#
+#     npx wrangler deploy -c wrangler.roxan.toml                  → workers.dev
+#     npx wrangler deploy -c wrangler.roxan.toml --env production → roxan.oplocloud.com
+#
+# The bar and footer of every page are written by tools/roxan_chrome.py, with
+# every link absolute. Run `python3 tools/roxan_chrome.py` before deploying, or
+# the chrome here is whatever it was the last time somebody did.
+#
+# The gateway (worker/gateway.js) answers /api/health and /api/chat. It uses the
+# model service's SDK, so install it before deploying:
+#
+#     npm ci --prefix worker
+#
+# and it needs two secrets, which never go in this file:
+#
+#     npx wrangler secret put ROXAN_INVITE    -c wrangler.roxan.toml --env production   (invite codes, comma-separated)
+#     npx wrangler secret put ROXAN_MODEL_KEY -c wrangler.roxan.toml --env production   (the model service's API key)
+#
+# Until both are set the gateway answers "closed" and /chat says so. Locally,
+# put them in .dev.vars beside this file (git-ignored); worker/test/fake-provider.js
+# stands in for the model service so nothing is spent.
+# ===========================================================================
+name = "oplo-roxan"
+main = "worker/roxan.js"
+compatibility_date = "2026-05-01"
+workers_dev = true
+
+[assets]
+directory = "./roxan"
+binding = "ASSETS"
+# roxan/404.html answers any path that is not a file, with a real 404 status.
+not_found_handling = "404-page"
+
+# Not secret: which model answers. Change it here and redeploy.
+[vars]
+ROXAN_MODEL = "claude-opus-5-5"
+
+# --------------------------------------------------------------- Production
+[env.production]
+name = "oplo-roxan"
+main = "worker/roxan.js"
+
+[env.production.assets]
+directory = "./roxan"
+binding = "ASSETS"
+not_found_handling = "404-page"
+
+[env.production.vars]
+ROXAN_MODEL = "claude-opus-5-5"
+
+[[env.production.routes]]
+pattern = "roxan.oplocloud.com"
+custom_domain = true
+
+# The old address on the apex, which GitHub Pages would otherwise keep serving
+# as a second, stale copy. Two patterns rather than `/roxan*`, which would
+# also catch any future page whose name merely starts with "roxan".
+[[env.production.routes]]
+pattern = "oplocloud.com/roxan"
+zone_name = "oplocloud.com"
+
+[[env.production.routes]]
+pattern = "oplocloud.com/roxan/*"
+zone_name = "oplocloud.com"

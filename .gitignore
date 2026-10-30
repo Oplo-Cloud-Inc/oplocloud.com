@@ -8,10 +8,13 @@
 
 # Dependencies, builds, logs
 node_modules/
+.wrangler/
+**/.wrangler/
 **/node_modules/
 *.log
 
 # Secrets — never commit real credentials
 .env
+.dev.vars
 **/.env
 oplo-accounts/.env

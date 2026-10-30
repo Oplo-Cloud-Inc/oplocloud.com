@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Security — Roxan</title>
+<meta name="description" content="How Roxan handles your data and controls its actions: what stays on your device, what is sent, how approvals work, and what is not claimed.">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://roxan.oplocloud.com/security/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Roxan">
+<meta property="og:url" content="https://roxan.oplocloud.com/security/">
+<meta property="og:title" content="Security — Roxan">
+<meta property="og:description" content="How Roxan handles your data and controls its actions: what stays on your device, what is sent, how approvals work, and what is not claimed.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/unbounded-normal-10e743c6.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/geist-normal-edc7ad59.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts.css?v=3d2b31f4">
+<link rel="stylesheet" href="/ui.css?v=38a6dc92">
+<link rel="stylesheet" href="/site.css?v=37f2fbf3">
+<script src="/site.js?v=162212cb" defer></script>
+</head>
+<body data-page="security">
+<a class="skip" href="#main">Skip to content</a>
+<!-- rx:bar -->
+<div class="gbar"><div class="wrap gbar-in">
+  <a class="gbar-brand" href="https://oplocloud.com/" aria-label="Oplo"><svg class="oplo-mark" viewBox="84.13 107.80 206.73 194.91" aria-hidden="true" focusable="false"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></svg></a>
+  <nav aria-label="Oplo"><ul><li><a href="https://oplocloud.com/products/">Products</a></li><li><a href="https://oplocloud.com/solutions/">Solutions</a></li><li><a href="https://oplocloud.com/resources/">Resources</a></li><li><a href="https://oplocloud.com/company/">Company</a></li><li><a href="https://oplocloud.com/support/">Support</a></li></ul></nav>
+</div></div>
+<header class="lbar" id="lbar"><div class="wrap lbar-in">
+  <a class="lbar-brand" href="/" aria-label="Roxan home"><span class="mark"></span><span>Roxan</span></a>
+  <nav class="lbar-nav" id="lnav" aria-label="Roxan"><ul><li><a href="/product/">Product</a></li><li><a href="/security/" aria-current="page">Security</a></li><li><a href="/pricing/">Pricing</a></li><li><a href="/help/">Help</a></li><li><a href="/status/">Status</a></li></ul></nav>
+  <a class="btn sm" href="/chat/">Open Roxan</a>
+  <button class="lbar-toggle" id="ltoggle" type="button" aria-expanded="false" aria-controls="lnav"><span class="sr">Menu</span><i></i><i></i></button>
+</div></header>
+<!-- /rx:bar -->
+
+<main id="main">
+  <section class="page-hero">
+    <div class="wrap">
+      <p class="label rv">Security</p>
+      <h1><span class="ln"><span>Built to be</span></span><span class="ln"><span class="dim">checked.</span></span></h1>
+      <p class="lead rv d1">Plain statements about what Roxan stores, what it sends, how it is stopped from acting on its own, and what we are not claiming.</p>
+    </div>
+  </section>
+  <section><div class="wrap"><div class="rows">
+    <article class="row rv"><h2>What stays on your device</h2><div class="body"><p>Your conversation, memory, projects, reminders and the files you attach are stored in this browser. They are not stored on Oplo’s servers. If you clear this browser’s site data, they are gone; export first to keep a copy.</p></div></article>
+    <article class="row rv"><h2>What leaves it</h2><div class="body"><p>To write a reply, Roxan sends the recent conversation, the few memories chosen for that message, the project’s instructions, and any attachments in recent messages to a language-model provider through Roxan’s gateway.</p><p>The gateway checks your invite code, applies limits, and passes the request on. It does not store or log the content of messages. The provider’s own handling of that content is governed by its terms, which Roxan cannot change.</p></div></article>
+    <article class="row rv"><h2>How actions are controlled</h2><div class="body"><p>Roxan can only use the actions it has been given, and each action has a fixed shape that is checked before anything happens. Text written by the model never counts as permission.</p><ul class="plain"><li>Actions that change something wait for your approval, showing exactly what will happen.</li><li>You can change a detail on a card before you approve it; what runs is exactly what the card showed when you pressed Approve. An unanswered approval expires after a day, and one approval allows one action.</li><li>If anything is missing, unclear or expired, the action does not run.</li><li>Roxan says an action is done only after it has been confirmed.</li></ul></div></article>
+    <article class="row rv"><h2>Untrusted content</h2><div class="body"><p>Files you attach, pages and other content Roxan reads are treated as data. They cannot change Roxan’s rules or grant it permission. Roxan can propose a memory, but it is only kept if you keep it. Replies are shown as text and links; nothing in a reply is executed.</p></div></article>
+    <article class="row rv"><h2>Your controls</h2><div class="body"><p>Read, edit or delete any memory. Delete a project with its conversation and attachments. Export your data (images and PDFs are listed, not included), or delete everything in one step. Deleting removes the data from this device immediately.</p></div></article>
+    <article class="row rv"><h2>What is not claimed</h2><div class="body"><ul class="plain"><li>Roxan has no security certifications or independent audits yet.</li><li>Messages are not end-to-end encrypted: the provider has to read the text to answer it.</li><li>Reminders fire only while Roxan is open in a tab.</li><li>There are no accounts yet, so access is by invite code, and history is not shared between devices.</li></ul></div></article>
+    <article class="row rv"><h2>Tell us about a problem</h2><div class="body"><p>If something looks wrong, or you think you have found a weakness, write to us at <a class="u" href="https://oplocloud.com/contact/">oplocloud.com/contact</a>.</p></div></article>
+  </div></div></section>
+  <section class="band">
+    <div class="wrap">
+      <h2 class="h2 rv">Read it, then try it.</h2>
+      <p class="cta rv d1"><a class="btn" href="/chat/">Open Roxan</a><a class="go" href="/help/">Help <i>→</i></a></p>
+    </div>
+  </section>
+</main>
+
+<!-- rx:foot -->
+<footer class="foot"><div class="wrap">
+  <p class="foot-note">Roxan is in invited beta. What this site describes is marked Live or Next; availability and capability are not final.</p>
+  <div class="foot-cols"><div><h2 class="label">Roxan</h2><ul><li><a href="/chat/">Open Roxan</a></li><li><a href="/product/">Product</a></li><li><a href="/security/">Security</a></li><li><a href="/pricing/">Pricing</a></li><li><a href="/help/">Help</a></li><li><a href="/status/">Status</a></li></ul></div><div><h2 class="label">Oplo</h2><ul><li><a href="https://oplocloud.com/company/">Company</a></li><li><a href="https://oplocloud.com/contact/">Contact</a></li><li><a href="https://oplocloud.com/careers/">Careers</a></li><li><a href="https://oplocloud.com/support/">Support</a></li></ul></div><div><h2 class="label">Legal</h2><ul><li><a href="https://oplocloud.com/legal/privacy-policy/">Privacy policy</a></li><li><a href="https://oplocloud.com/legal/terms/">Terms of use</a></li><li><a href="https://oplocloud.com/legal/">Legal</a></li></ul></div></div>
+  <p class="foot-bar">Copyright &copy; 2026 OploCloud, Inc. All rights reserved.</p>
+</div></footer>
+<!-- /rx:foot -->
+</body>
+</html>

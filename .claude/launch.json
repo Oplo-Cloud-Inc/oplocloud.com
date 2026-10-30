@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4173"],
       "port": 4173
+    },
+    {
+      "name": "roxan",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "wrangler", "dev", "-c", "wrangler.roxan.toml", "--port", "8130", "--ip", "127.0.0.1"],
+      "port": 8130
     }
   ]
 }
