@@ -1,6 +1,6 @@
 /* The conversation: one continuing thread per room (the main one, or a
-   project). Messages stream in as they are written, proposals appear as cards,
-   and what is older loads as you scroll back. */
+   conversation inside a project). Messages stream in as they are written,
+   proposals appear as cards, and what is older loads as you scroll back. */
 import { h, on, emit, clock, when, bytes } from "../dom.js";
 import * as db from "../db.js";
 import * as store from "../store.js";
@@ -9,7 +9,7 @@ import { render, codeText } from "../md.js";
 import { card } from "../cards.js";
 import * as files from "../files.js";
 import { gate } from "../gate.js";
-import { projectForm } from "./projects.js";
+import { sessionForm } from "./project.js";
 
 const PAGE = 40;
 const IDEAS = [
@@ -24,11 +24,13 @@ const settle = (ms, ok) => new Promise(r => { const t = setInterval(() => { if (
 
 export async function mount(root, { app, params }) {
   const room = await store.getRoom(params[0] || store.MAIN);
+  if (room?.kind === "project") { app.go("/p/" + room.id); return; }          // a project holds conversations; it is not one
   if (!room) {
-    root.append(h("section", { class: "page" }, h("p", { class: "label", text: "Not found" }), h("h1", { class: "page-title", text: "That project is not here." }), h("a", { class: "go", href: "#/projects" }, "Projects ", h("i", { text: "→" }))));
+    root.append(h("section", { class: "page" }, h("p", { class: "label", text: "Not found" }), h("h1", { class: "page-title", text: "That conversation is not here." }), h("a", { class: "go", href: "#/projects" }, "Projects ", h("i", { text: "→" }))));
     return;
   }
-  if (room.kind === "project") document.title = `${room.name} — Roxan`;
+  const project = room.kind === "session" ? await store.getRoom(room.projectId) : null;
+  if (room.kind === "session") document.title = `${room.name} — Roxan`;
   let notes = await db.all("memories");
   const byId = new Map();
   let oldest = Infinity, stick = true, ctl = null, busy = false, raf = 0, dirty = null, shown = 0;
@@ -39,15 +41,15 @@ export async function mount(root, { app, params }) {
   const list = h("div", { class: "list" });
   const more = h("div", { class: "more", hidden: true }, h("button", { class: "go", type: "button", text: "Earlier messages" }));
   const empty = h("div", { class: "empty" },
-    h("p", { class: "label", text: room.kind === "project" ? room.name : "Roxan" }),
-    h("p", { class: "empty-title", text: room.kind === "project" ? "A new thread for this project." : "Say what is on your mind." }),
-    h("p", { class: "fine", text: "Roxan keeps this conversation on your device. Try one of these, or just write." }),
+    h("p", { class: "label", text: project ? project.name : "Roxan" }),
+    h("p", { class: "empty-title", text: project ? "A new conversation." : "Say what is on your mind." }),
+    h("p", { class: "fine", text: project?.instructions ? "Roxan keeps this conversation on your device, and reads this project's notes with every message. Try one of these, or just write." : "Roxan keeps this conversation on your device. Try one of these, or just write." }),
     h("div", { class: "ideas" }, IDEAS.map(([label, text]) => h("button", { class: "btn sm ghost", type: "button", text: label, onclick: () => { input.value = text; autosize(); input.focus(); input.setSelectionRange(text.length, text.length); } }))));
   const tl = h("div", { class: "tl", role: "log", "aria-label": "Conversation", "aria-live": "off", tabindex: "0" }, h("div", { class: "tl-in" }, more, list, empty));
   const jump = h("button", { class: "jump", type: "button", hidden: true, text: "Latest ↓", onclick: () => { stick = true; toBottom(); } });
   const live = h("p", { class: "sr", role: "status", "aria-live": "polite" });
   const chips = h("div", { class: "chips" });
-  const input = h("textarea", { id: "composer-input", rows: "1", maxlength: "20000", "aria-label": "Message", placeholder: room.kind === "project" ? `Message in ${room.name}` : "Message Roxan" });
+  const input = h("textarea", { id: "composer-input", rows: "1", maxlength: "20000", "aria-label": "Message", placeholder: project ? `Message in ${project.name}` : "Message Roxan" });
   const attach = h("button", { class: "icon", type: "button", "aria-label": "Attach a file or image", title: "Attach a file or image", text: "+" });
   const picker = h("input", { type: "file", multiple: true, accept: files.ACCEPT, hidden: true, "aria-hidden": "true", tabindex: "-1" });
   const send = h("button", { class: "btn sm", type: "submit", text: "Send" });
@@ -60,11 +62,14 @@ export async function mount(root, { app, params }) {
   const dock = h("div", { class: "dock" }, gateSlot, form);
 
   const title = h("h1", { class: "chat-title", text: room.name });
-  const head = h("header", { class: "chat-head" }, h("div", null, h("p", { class: "label", text: room.kind === "project" ? "Project" : "Conversation" }), title));
-  if (room.kind === "project") {
-    const settings = h("details", { class: "proj-settings" }, h("summary", { text: "Project settings" }),
-      projectForm(room, { onSave: r => { title.textContent = r.name; input.placeholder = `Message in ${r.name}`; }, onDelete: () => app.go("/projects") }));
-    head.append(settings);
+  const crumb = project ? h("p", { class: "label crumb" }, h("a", { href: "#/projects", text: "Projects" }), " / ", h("a", { href: "#/p/" + project.id, text: project.name })) : h("p", { class: "label", text: "Conversation" });
+  const head = h("header", { class: "chat-head" }, h("div", null, crumb, title));
+  let nameInput = null;                                          // the rename field, kept in step when the first message names the conversation
+  if (project) {
+    const settingsForm = sessionForm(room, { onSave: r => { title.textContent = r.name; document.title = `${r.name} — Roxan`; }, onDelete: () => app.go("/p/" + project.id) });
+    nameInput = settingsForm.querySelector("input");
+    settingsForm.append(h("a", { class: "go sm", href: "#/p/" + project.id }, "Project settings ", h("i", { text: "→" })));
+    head.append(h("details", { class: "proj-settings" }, h("summary", { text: "Conversation settings" }), settingsForm));
   }
   root.append(h("section", { class: "chat" }, head, tl, jump, dock, live));
 
@@ -279,6 +284,12 @@ export async function mount(root, { app, params }) {
       if (held && !form.hidden) input.focus({ preventScroll: true });          // the button that was pressed is gone; carry on in the composer
     }),
     on("memories", async () => { notes = await db.all("memories"); }),
+    on("rooms", () => {                                          // the first message gives a new conversation its title
+      if (title.textContent === room.name) return;
+      title.textContent = room.name;
+      document.title = `${room.name} — Roxan`;
+      if (nameInput) nameInput.value = room.name;
+    }),
   ];
   const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) loadEarlier(); }, { root: tl });
   io.observe(more);

@@ -12,15 +12,43 @@ body { overflow: hidden; }
 .boot { grid-column: 1 / -1; display: grid; place-content: center; gap: 14px; text-align: center; }
 
 /* ------------------------------------------------------------ Rail */
-.rail { display: flex; flex-direction: column; gap: 30px; padding: 22px 14px 18px; border-right: 1px solid var(--line); overflow-y: auto; }
+.rail { display: flex; flex-direction: column; gap: 26px; padding: 22px 14px 18px; border-right: 1px solid var(--line); overflow: hidden; }
 .rail-brand { display: flex; align-items: center; gap: 10px; padding: 4px 12px; font: 300 18px/1 var(--fd); letter-spacing: -.04em; }
-.rail ul { display: grid; gap: 2px; }
+/* minmax(0, 1fr): a long project name must shrink to an ellipsis, not widen the rail. Only the navigation scrolls; the account block stays put. */
+.rail ul { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.rail nav { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 24px; flex: 1 1 auto; min-height: 0; margin: 0 -14px; padding: 0 14px; overflow-y: auto; }
+.rail-sec { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.rail-label { padding: 0 12px; font: 400 10.5px/1 var(--fm); letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
 .rail nav a { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-radius: 10px; font: 400 14px/1.2 var(--fb); color: var(--muted); transition: color .3s, background .3s; }
 .rail nav a:hover { color: #fff; background: rgba(255, 255, 255, .04); }
 .rail nav a[aria-current="page"] { color: #fff; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line); }
 .count { min-width: 20px; padding: 3px 6px; border: 1px solid var(--line-2); border-radius: 999px; font: 400 10.5px/1 var(--fm); text-align: center; color: var(--muted); }
 .count:empty { display: none; }
-.rail-foot { display: grid; gap: 10px; margin-top: auto; padding: 0 12px; }
+/* Not built yet: named, so the whole shape is visible, but it is not a link and goes nowhere. */
+.soon { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; font: 400 14px/1.2 var(--fb); color: var(--dim); cursor: default; }
+.soon small { padding: 3px 7px; border: 1px dashed var(--line-2); border-radius: 999px; font: 400 9.5px/1 var(--fm); letter-spacing: .14em; text-transform: uppercase; }
+
+/* Projects unfold into projects, and each project into its conversations. */
+.tree-row { position: relative; }
+.tree-row > a { padding-right: 40px; }
+.twisty { position: absolute; top: 50%; right: 6px; display: grid; place-items: center; width: 28px; height: 28px; margin-top: -14px; border-radius: 8px; color: var(--dim); transition: color .3s, background .3s; }
+.twisty:hover { color: #fff; background: rgba(255, 255, 255, .06); }
+.twisty::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .35s var(--out); }
+.twisty[aria-expanded="true"]::before { transform: rotate(45deg); }
+.tree-item > ul { margin: 4px 0 2px 20px; padding-left: 6px; border-left: 1px solid var(--line); }
+.tree-item ul ul { margin: 2px 0 8px 14px; }
+.rail .tree-item ul a, .rail .tree-new { padding: 7px 10px; font-size: 13px; }
+.t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail .tree-new { display: flex; width: 100%; border-radius: 10px; color: var(--dim); text-align: left; transition: color .3s, background .3s; }
+.rail .tree-new:hover { color: #fff; background: rgba(255, 255, 255, .04); }
+.rail .tree-more { color: var(--dim); }
+
+.rail-foot { display: grid; gap: 14px; margin-top: auto; padding: 0 12px; }
+.rail-who { display: grid; gap: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
+.who-name { font: 400 14px/1.3 var(--fb); color: var(--text); }
+.rail-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sep { font-size: 13px; color: var(--dim); }
+.rail-link[data-armed] { color: #fff; }
 .rail-status { font: 400 10.5px/1.3 var(--fm); letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
 .rail-status::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 9px; border: 1px solid currentColor; border-radius: 50%; vertical-align: 1px; }
 .rail-status[data-state="ok"] { color: var(--text); }
@@ -106,6 +134,8 @@ summary::-webkit-details-marker { display: none; }
 .chat { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; flex: 1 1 0; min-height: 0; }
 .chat-head { position: relative; z-index: 4; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 20px 40px 16px; border-bottom: 1px solid var(--line); animation: none; }
 .chat-title { margin-top: 6px; font: 300 22px/1.2 var(--fd); letter-spacing: -.04em; }
+.label a { transition: color .3s; }
+.label a:hover { color: #fff; }
 .proj-settings { position: relative; }
 .proj-settings > summary { padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 999px; font: 400 11px/1 var(--fm); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); transition: color .3s, border-color .3s; }
 .proj-settings > summary:hover, .proj-settings[open] > summary { color: #fff; border-color: #fff; }
@@ -178,9 +208,13 @@ summary::-webkit-details-marker { display: none; }
   body { overflow: auto; }
   .shell { display: block; height: auto; }
   .rail { position: sticky; top: 0; z-index: 20; flex-direction: row; align-items: center; gap: 8px; padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--line); background: var(--bg); overflow-x: auto; }
-  .rail nav ul { display: flex; }
+  .rail nav, .rail nav ul { display: flex; flex: none; gap: 8px; margin: 0; padding: 0; overflow: visible; }
+  .rail-sec { display: contents; }
+  .rail-label, .soon, .twisty, .rail .tree-item > ul, .rail-status, .rail-who { display: none; }
   .rail nav a { white-space: nowrap; }
-  .rail-foot { display: none; }
+  .tree-row > a { padding-right: 12px; }
+  .rail-foot { display: flex; flex: none; margin: 0; padding: 0; }
+  .rail-links { flex-wrap: nowrap; white-space: nowrap; }
   #main { height: auto; min-height: calc(100dvh - 60px); }
   .view { overflow: visible; }
   .chat { height: calc(100dvh - 60px); }

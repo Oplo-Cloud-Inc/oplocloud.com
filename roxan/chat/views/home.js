@@ -2,10 +2,10 @@
 import { h, on, section, ago, when } from "../dom.js";
 import * as db from "../db.js";
 import * as proposals from "../proposals.js";
+import * as store from "../store.js";
 import { card } from "../cards.js";
 
 const hello = () => { const n = new Date().getHours(); return n < 5 ? "Still up." : n < 12 ? "Good morning." : n < 18 ? "Good afternoon." : "Good evening."; };
-const roomName = r => (r.kind === "main" ? "Conversation" : r.name);
 
 export async function mount(root, { app }) {
   const input = h("input", { type: "text", maxlength: "20000", autocomplete: "off", "aria-label": "Ask Roxan", placeholder: "What is on your mind?" });
@@ -16,18 +16,19 @@ export async function mount(root, { app }) {
 
   async function draw() {
     const [waiting, notes, reminders, rooms] = await Promise.all([proposals.pending(), db.all("memories"), db.all("reminders"), db.all("rooms")]);
-    const name = new Map(rooms.map(r => [r.id, roomName(r)]));
+    const name = new Map(rooms.map(r => [r.id, store.roomLabel(r, rooms)]));
     const soon = reminders.filter(r => r.state === "scheduled").sort((a, b) => a.at - b.at).slice(0, 3);
-    const recent = rooms.filter(r => r.kind === "main" || r.updatedAt > r.createdAt).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4);
+    const recent = rooms.filter(r => r.kind === "main" || (r.kind === "session" && r.updatedAt > r.createdAt)).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4);
+    const project = r => rooms.find(x => x.id === r.projectId)?.name;
     body.replaceChildren(
-      section("Waiting for you", waiting.length ? h("span", { class: "label", text: String(waiting.length) }) : null,
+      section("Waiting for you", h("a", { class: "go sm", href: "#/actions" }, waiting.length ? `${waiting.length} waiting · ` : "", "Action Center ", h("i", { text: "→" })),
         ...(waiting.length ? waiting.map(ev => h("div", { class: "wait" }, h("p", { class: "fine", text: `In ${name.get(ev.roomId) ?? "a conversation"} · ${ago(ev.at)}` }), card(ev, notes)))
           : [h("p", { class: "none", text: "Nothing needs your approval. Roxan proposes; you decide." })])),
-      section("Coming up", h("a", { class: "go sm", href: "#/schedule" }, "Schedule ", h("i", { text: "→" })),
+      section("Coming up", h("a", { class: "go sm", href: "#/schedule" }, "Scheduled Tasks ", h("i", { text: "→" })),
         ...(soon.length ? [h("ul", { class: "rows" }, soon.map(r => h("li", { class: "row" }, h("span", { class: "row-main" }, h("span", { class: "row-title", text: r.title })), h("span", { class: "row-when", text: when(r.at) }))))]
           : [h("p", { class: "none", text: "No reminders set." })])),
       section("Pick up", null, h("ul", { class: "rows" }, recent.map(r => h("li", { class: "row" },
-        h("a", { class: "row-main", href: r.kind === "main" ? "#/chat" : "#/p/" + r.id }, h("span", { class: "row-title", text: roomName(r) }), h("span", { class: "row-sub", text: r.kind === "main" ? "Your main conversation" : "Project" })),
+        h("a", { class: "row-main", href: store.roomHref(r) }, h("span", { class: "row-title", text: r.kind === "main" ? "Conversation" : r.name }), h("span", { class: "row-sub", text: r.kind === "main" ? "Your main conversation" : project(r) ?? "Project" })),
         h("span", { class: "row-when", text: r.updatedAt > r.createdAt ? ago(r.updatedAt) : "" }))))));
   }
   await draw();
