@@ -102,7 +102,6 @@ export async function mount(root, { app }) {
   }
 
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Settings" }),
     h("h1", { class: "page-title", text: "Yours to see and to take away." }),
     section("Access", null, access, accessForm, codeErr, h("div", { class: "btns" }, forget)),
     section("Storage", null, where, quota, h("div", { class: "btns" }, keep)),
@@ -110,7 +109,7 @@ export async function mount(root, { app }) {
     section("Alerts", null, alerts, h("div", { class: "btns" }, allow)),
     section("Your data", null,
       h("p", { text: "Your conversation is kept on this device. Each message you send travels to Roxan's service to be answered; Roxan's service does not store it or write it to logs. The Security page says exactly what is sent, and to whom." }),
-      counts, h("div", { class: "btns" }, exp, h("a", { class: "go", href: "/security/" }, "Security ", h("i", { text: "→" }))),
+      counts, h("div", { class: "btns" }, exp, h("a", { class: "go", href: "/security/" }, "Security ", h("i", { "aria-hidden": "true" }))),
       h("details", { class: "danger" }, h("summary", { class: "go", text: "Delete everything on this device" }),
         h("p", { class: "fine", text: "This removes every conversation, project, note, specialty, Handoff, reminder, attachment, the vault and your saved invite code from this browser. It cannot be undone. Download a copy first if you want one; it does not include the vault." }),
         h("div", { class: "inline" }, sure, wipe)))));

@@ -19,7 +19,6 @@ export async function mount(root) {
   const earlier = section("Earlier", clear, past);
   const form = h("form", { class: "sched" }, field("What", title), field("When", at), h("button", { class: "btn", type: "submit", text: "Set reminder" }));
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Scheduled Tasks" }),
     h("h1", { class: "page-title", text: "Reminders, when you want them." }),
     h("p", { class: "page-lead", text: "For now, a scheduled task is a reminder. Roxan can propose one, and you approve it. Reminders are kept on this device and appear only while Roxan is open in a browser tab. If one comes due while it is closed, it is marked missed when you next open it." }),
     form, err, alerts,
@@ -34,7 +33,7 @@ export async function mount(root) {
 
   const row = (r, open) => {
     const li = h("li", { class: "row", data: { id: r.id } },
-      h("span", { class: "row-main" }, h("span", { class: "row-title", text: r.title }), h("span", { class: "row-sub", text: `${when(r.at)} · ${r.eventId ? "Proposed by Roxan, approved by you" : "Set by you"}` })),
+      h("span", { class: "row-main" }, h("span", { class: "row-title", text: r.title }), h("span", { class: "row-sub", text: `${when(r.at)}. ${r.eventId ? "Proposed by Roxan, approved by you" : "Set by you"}` })),
       open ? h("span", { class: "row-acts" }, h("button", { class: "act-btn", type: "button", text: "Cancel", onclick: async () => {
         await db.put("reminders", { ...r, state: "cancelled", resolvedAt: Date.now() });
         await store.log("reminder", `Cancelled the reminder “${r.title}”.`);

@@ -99,7 +99,7 @@ const BODY = {
     }
     el.append(h("p", { class: "title", text: ev.state === "done" ? (ev.auto ? "Learned a specialty" : "Specialty saved") : ev.state === "undone" ? "Specialty taken back" : "Specialty not saved" }),
       h("dl", null, row("Name", i.name), row("Use when", i.when), row("Steps", steps(i.steps))));
-    if (ev.state === "done") el.append(h("div", { class: "btns" }, h("a", { class: "go sm", href: "#/specialties" }, "Review in Specialties ", h("i", { text: "→" })), ev.auto ? undoButton(ev) : null));
+    if (ev.state === "done") el.append(h("div", { class: "btns" }, h("a", { class: "go sm", href: "#/specialties" }, "Review in Specialties ", h("i", { "aria-hidden": "true" })), ev.auto ? undoButton(ev) : null));
   },
   start_handoff(el, ev, notes, err) {
     const awaiting = ev.state === "awaiting", i = ev.input;
@@ -114,7 +114,7 @@ const BODY = {
       return;
     }
     el.append(h("p", { class: "title", text: ev.state === "done" ? "Saved to Handoff" : "Handoff not saved" }), h("dl", null, row("What", i.title), row("Task", i.task), i.site ? row("Website", i.site) : null));
-    if (ev.state === "done") el.append(h("div", { class: "btns" }, h("a", { class: "go sm", href: "#/handoff/" + ev.result?.handoffId }, "Open it in Handoff ", h("i", { text: "→" }))));
+    if (ev.state === "done") el.append(h("div", { class: "btns" }, h("a", { class: "go sm", href: "#/handoff/" + ev.result?.handoffId }, "Open it in Handoff ", h("i", { "aria-hidden": "true" }))));
   },
 };
 

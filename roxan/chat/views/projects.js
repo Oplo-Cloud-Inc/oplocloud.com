@@ -51,7 +51,6 @@ export async function mount(root, { app, params }) {
   const list = h("ul", { class: "rows" });
   const make = h("details", { class: "create" }, h("summary", { class: "btn sm", text: "New project" }), projectForm(null, { onSave: r => app.go("/p/" + r.id) }));
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Projects" }),
     h("h1", { class: "page-title", text: "A place for each thing you work on." }),
     h("p", { class: "page-lead", text: "A project holds as many conversations as you like, with notes to Roxan that apply to all of them. What you say in one project stays out of the others. Notes you ask Roxan to keep are shared by every project." }),
     h("div", { class: "page-act" }, make),
@@ -63,7 +62,7 @@ export async function mount(root, { app, params }) {
   const projects = rooms.filter(r => r.kind === "project").sort((a, b) => b.updatedAt - a.updatedAt);
   const count = id => { const n = many.get(id) || 0; return n === 1 ? "1 conversation" : `${n} conversations`; };
   list.append(...(projects.length ? projects.map(r => h("li", { class: "row" },
-    h("a", { class: "row-main", href: "#/p/" + r.id }, h("span", { class: "row-title", text: r.name }), h("span", { class: "row-sub", text: count(r.id) + (r.instructions ? " · " + r.instructions : "") })),
+    h("a", { class: "row-main", href: "#/p/" + r.id }, h("span", { class: "row-title", text: r.name }), h("span", { class: "row-sub", text: count(r.id) + (r.instructions ? ". " + r.instructions : "") })),
     h("span", { class: "row-when", text: r.updatedAt > r.createdAt ? ago(r.updatedAt) : "" }))) : [h("li", { class: "row none", text: "No projects yet. Create one to give a piece of work its own conversations." })]));
   if (!projects.length || params[0] === "new") make.open = true;
 }

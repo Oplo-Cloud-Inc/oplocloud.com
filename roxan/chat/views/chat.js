@@ -20,7 +20,7 @@ const IDEAS = [
   ["Specialty", "Make a specialty for "],
   ["Think it through", "Help me think through "],
 ];
-const PREFIX = { stopped: "Stopped · ", cutoff: "Cut off · ", error: "Not finished · " };
+const PREFIX = { stopped: "Stopped, ", cutoff: "Cut off, ", error: "Not finished, " };
 const sameDay =(a, b) => new Date(a).toDateString() === new Date(b).toDateString();
 const stamp = ms => (sameDay(ms, Date.now()) ? clock(ms) : when(ms));
 const settle = (ms, ok) => new Promise(r => { const t = setInterval(() => { if (ok()) { clearInterval(t); r(true); } }, 50); setTimeout(() => { clearInterval(t); r(false); }, ms); });
@@ -29,7 +29,7 @@ export async function mount(root, { app, params }) {
   const room = await store.getRoom(params[0] || store.MAIN);
   if (room?.kind === "project") { app.go("/p/" + room.id); return; }          // a project holds conversations; it is not one
   if (!room) {
-    root.append(h("section", { class: "page" }, h("p", { class: "label", text: "Not found" }), h("h1", { class: "page-title", text: "That conversation is not here." }), h("a", { class: "go", href: "#/projects" }, "Projects ", h("i", { text: "→" }))));
+    root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That conversation is not here." }), h("a", { class: "go", href: "#/projects" }, "Projects ", h("i", { "aria-hidden": "true" }))));
     return;
   }
   const project = room.kind === "session" ? await store.getRoom(room.projectId) : null;
@@ -44,12 +44,11 @@ export async function mount(root, { app, params }) {
   const list = h("div", { class: "list" });
   const more = h("div", { class: "more", hidden: true }, h("button", { class: "go", type: "button", text: "Earlier messages" }));
   const empty = h("div", { class: "empty" },
-    h("p", { class: "label", text: project ? project.name : "Roxan" }),
     h("p", { class: "empty-title", text: project ? "A new conversation." : "Say what is on your mind." }),
     h("p", { class: "fine", text: project?.instructions ? "Roxan keeps this conversation on your device, and reads this project's notes with every message. Try one of these, or just write." : "Roxan keeps this conversation on your device. Try one of these, or just write." }),
     h("div", { class: "ideas" }, IDEAS.map(([label, text]) => h("button", { class: "btn sm ghost", type: "button", text: label, onclick: () => { input.value = text; autosize(); input.focus(); input.setSelectionRange(text.length, text.length); } }))));
   const tl = h("div", { class: "tl", role: "log", "aria-label": "Conversation", "aria-live": "off", tabindex: "0" }, h("div", { class: "tl-in" }, more, list, empty));
-  const jump = h("button", { class: "jump", type: "button", hidden: true, text: "Latest ↓", onclick: () => { stick = true; toBottom(); } });
+  const jump = h("button", { class: "jump", type: "button", hidden: true, text: "Jump to latest", onclick: () => { stick = true; toBottom(); } });
   const live = h("p", { class: "sr", role: "status", "aria-live": "polite" });
   const chips = h("div", { class: "chips" });
   const input = h("textarea", { id: "composer-input", rows: "1", maxlength: "20000", "aria-label": "Message", placeholder: project ? `Message in ${project.name}` : "Message Roxan" });
@@ -60,18 +59,18 @@ export async function mount(root, { app, params }) {
   const err = h("p", { class: "err", role: "alert" });
   const form = h("form", { class: "composer", "aria-label": "Message Roxan" }, chips,
     h("div", { class: "composer-row" }, attach, input, stop, send),
-    h("p", { class: "hint", text: "Enter to send · Shift+Enter for a new line · Esc to stop" }), err, picker);
+    h("p", { class: "hint", text: "Enter sends, Shift+Enter adds a line, Esc stops a reply." }), err, picker);
   const gateSlot = h("div", { class: "gate-slot" });
   const dock = h("div", { class: "dock" }, gateSlot, form);
 
   const title = h("h1", { class: "chat-title", text: room.name });
-  const crumb = project ? h("p", { class: "label crumb" }, h("a", { href: "#/projects", text: "Projects" }), " / ", h("a", { href: "#/p/" + project.id, text: project.name })) : h("p", { class: "label", text: "Conversation" });
+  const crumb = project ? h("p", { class: "label crumb" }, h("a", { href: "#/projects", text: "Projects" }), " / ", h("a", { href: "#/p/" + project.id, text: project.name })) : null;
   const head = h("header", { class: "chat-head" }, h("div", null, crumb, title));
   let nameInput = null;                                          // the rename field, kept in step when the first message names the conversation
   if (project) {
     const settingsForm = sessionForm(room, { onSave: r => { title.textContent = r.name; document.title = `${r.name} — Roxan`; }, onDelete: () => app.go("/p/" + project.id) });
     nameInput = settingsForm.querySelector("input");
-    settingsForm.append(h("a", { class: "go sm", href: "#/p/" + project.id }, "Project settings ", h("i", { text: "→" })));
+    settingsForm.append(h("a", { class: "go sm", href: "#/p/" + project.id }, "Project settings ", h("i", { "aria-hidden": "true" })));
     head.append(h("details", { class: "proj-settings" }, h("summary", { text: "Conversation settings" }), settingsForm));
   }
   root.append(h("section", { class: "chat" }, head, tl, jump, dock, live));
@@ -84,7 +83,7 @@ export async function mount(root, { app, params }) {
   /* ------------------------------------------------------------ messages */
   const userEl = ev => h("div", { class: "msg user", data: { id: ev.id } }, h("div", { class: "col" },
     ev.text ? h("div", { class: "bubble", text: ev.text }) : null,
-    ev.files?.length ? h("div", { class: "chips" }, ev.files.map(f => h("span", { class: "chip static" }, h("span", { text: f.name }), h("span", { class: "dim", text: ` · ${f.kind === "image" ? "image" : f.kind === "pdf" ? "PDF" : bytes(f.size)}` })))) : null,
+    ev.files?.length ? h("div", { class: "chips" }, ev.files.map(f => h("span", { class: "chip static" }, h("span", { text: f.name }), h("span", { class: "dim", text: `${f.kind === "image" ? "image" : f.kind === "pdf" ? "PDF" : bytes(f.size)}` })))) : null,
     h("div", { class: "meta", text: stamp(ev.at) })));
 
   // "3 notes shown": which of your notes went along with the message this reply answers. Shown is all we can say; Roxan decides what to use.
@@ -166,7 +165,7 @@ export async function mount(root, { app, params }) {
   }
 
   /* ---------------------------------------------------------- composer */
-  const autosize = () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 200) + "px"; };
+  const autosize = () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 200) + "px"; input.style.overflowY = input.scrollHeight > 200 ? "auto" : "hidden"; };
   let saveTimer = 0;
   input.addEventListener("input", () => {
     autosize();
@@ -180,7 +179,7 @@ export async function mount(root, { app, params }) {
     urls.splice(0).forEach(u => URL.revokeObjectURL(u));
     chips.replaceChildren(...attachments.map((a, i) => {
       const thumb = a.kind === "image" ? (() => { const u = URL.createObjectURL(a.blob); urls.push(u); return h("img", { class: "thumb", src: u, alt: "" }); })() : null;
-      return h("span", { class: "chip" }, thumb, h("span", { text: a.name }), h("span", { class: "dim", text: ` · ${a.kind === "image" ? "image" : a.kind === "pdf" ? "PDF" : bytes(a.size)}${a.truncated ? " (start only)" : ""}` }),
+      return h("span", { class: "chip" }, thumb, h("span", { text: a.name }), h("span", { class: "dim", text: `${a.kind === "image" ? "image" : a.kind === "pdf" ? "PDF" : bytes(a.size)}${a.truncated ? " (start only)" : ""}` }),
         h("button", { type: "button", "aria-label": `Remove ${a.name}`, text: "×", onclick: () => { attachments.splice(i, 1); drawChips(); } }));
     }));
   }

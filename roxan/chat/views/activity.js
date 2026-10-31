@@ -12,7 +12,6 @@ export async function mount(root) {
   const list = h("div");
   const more = h("button", { class: "btn sm ghost", type: "button", text: "Show more", onclick: () => { shown += PAGE; draw(); } });
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Activity" }),
     h("h1", { class: "page-title", text: "What has happened." }),
     h("p", { class: "page-lead", text: "A plain record of what you and Roxan did, so nothing happens out of sight. It lists events, not the words in them, and it lives on this device." }),
     list, h("div", { class: "page-act" }, more)));

@@ -12,7 +12,6 @@ const SHOWN = 30;
 export async function mount(root) {
   const body = h("div");
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Action Center" }),
     h("h1", { class: "page-title", text: "What needs a decision." }),
     h("p", { class: "page-lead", text: "Roxan proposes; you decide. Nothing waiting here happens until you approve it, and what you decided stays below as a record." }),
     body));
@@ -25,7 +24,7 @@ export async function mount(root) {
     const where = id => { const r = rooms.find(x => x.id === id); return r ? { text: store.roomLabel(r, rooms), href: store.roomHref(r) } : { text: "a conversation that is gone", href: null }; };
     body.replaceChildren(
       section("Waiting for you", waiting.length ? h("span", { class: "label", text: String(waiting.length) }) : null,
-        ...(waiting.length ? waiting.map(ev => h("div", { class: "wait" }, h("p", { class: "fine", text: `In ${where(ev.roomId).text} · ${ago(ev.at)}` }), card(ev, notes)))
+        ...(waiting.length ? waiting.map(ev => h("div", { class: "wait" }, h("p", { class: "fine", text: `In ${where(ev.roomId).text}, ${ago(ev.at)}` }), card(ev, notes)))
           : [h("p", { class: "none", text: "Nothing needs your approval." })])),
       section("Decided", null, h("ul", { class: "rows" }, decided.length ? decided.map(ev => {
         const w = where(ev.roomId);

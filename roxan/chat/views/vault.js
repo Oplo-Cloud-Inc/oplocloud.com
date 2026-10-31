@@ -175,7 +175,7 @@ export async function mount(root, { app }) {
   /* ---------------------------------------------------------------- open */
   function open() {
     const mine = editing && items.find(i => i.id === editing);
-    const add = h("details", { class: "create", open: adding, ontoggle: e => { adding = e.target.open; } }, h("summary", { class: "go", text: "Add an item" }), itemForm({ onSave: v => saveItem(null, v) }));
+    const add = h("details", { class: "create", open: adding, ontoggle: e => { adding = e.target.open; } }, h("summary", { class: "btn sm", text: "Add an item" }), itemForm({ onSave: v => saveItem(null, v) }));
     return h("div", null,
       h("div", { class: "btns" }, h("button", { class: "btn sm ghost", type: "button", text: "Lock now", onclick: () => lock("Locked the vault.") }), h("span", { class: "fine", text: "It also locks after five idle minutes, and when you leave this page." })),
       section(`Sealed items (${items.length})`, null, add,
@@ -208,7 +208,6 @@ export async function mount(root, { app }) {
     const body = !app.persistent ? section("Not available here", null, h("p", { text: "This browser is not letting Roxan keep anything on this device, so a vault made here would be lost when you close the tab. Open Roxan in a normal window to use the vault." }))
       : !header ? setup() : !key ? locked(count) : open();
     page.replaceChildren(
-      h("p", { class: "label", text: "Vault" }),
       h("h1", { class: "page-title", text: "Secured by OploCloud." }),
       h("p", { class: "page-lead", text: "Logins, cards and notes you would not want anyone to read. Each item is sealed in this browser, with a key made from your passphrase, before it is saved. The passphrase and the key never leave this browser, so neither Roxan, its model nor OploCloud can open the vault, and nothing in it is sent with a message." }),
       h("ul", { class: "facts-list" },
