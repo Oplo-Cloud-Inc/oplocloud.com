@@ -38,7 +38,7 @@ const lead = p => p.instructions || "No notes yet. Open Project settings to tell
 export async function mount(root, { app, params }) {
   const project = await store.getRoom(params[0]);
   if (!project || project.kind !== "project") {
-    root.append(h("section", { class: "page" }, h("p", { class: "label", text: "Not found" }), h("h1", { class: "page-title", text: "That project is not here." }), h("a", { class: "go", href: "#/projects" }, "Projects ", h("i", { text: "→" }))));
+    root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That project is not here." }), h("a", { class: "go", href: "#/projects" }, "Projects ", h("i", { "aria-hidden": "true" }))));
     return;
   }
   document.title = `${project.name} — Roxan`;
@@ -50,7 +50,7 @@ export async function mount(root, { app, params }) {
     projectForm(project, { onSave: r => { title.textContent = r.name; notes.textContent = lead(r); document.title = `${r.name} — Roxan`; }, onDelete: () => app.go("/projects") }));
   const total = h("span", { class: "label" });
   root.append(h("section", { class: "page" },
-    h("p", { class: "label" }, h("a", { href: "#/projects", text: "Projects" }), " / Project"),
+    h("p", { class: "label crumb" }, h("a", { href: "#/projects", text: "Projects" })),
     title, notes,
     h("div", { class: "page-act" }, h("div", { class: "btns act-row" }, fresh), settings),
     section("Conversations", total, list)));

@@ -44,7 +44,7 @@ export async function mount(root) {
     return form;
   }
 
-  const create = h("details", { class: "create" }, h("summary", { class: "go", text: "New specialty" }),
+  const create = h("details", { class: "create" }, h("summary", { class: "btn sm", text: "New specialty" }),
     specForm({ label: "Save specialty", submit: async v => {
       const now = Date.now();
       await db.put("specialties", { id: db.uid("sp"), ...v, on: true, createdAt: now, updatedAt: now });
@@ -54,7 +54,6 @@ export async function mount(root) {
       create.open = false;
     } }));
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Specialties" }),
     h("h1", { class: "page-title", text: "The way you want it done." }),
     h("p", { class: "page-lead", text: "A specialty is a procedure Roxan follows the same way each time a request fits it: how a return is negotiated, how a weekly report is put together. Write one here, or ask Roxan to make one. If learning is on, Roxan also sets one up when it sees you do the same task the same way, and shows you with an Undo." }),
     h("p", { class: "fine", text: "A specialty is only instructions in words. It does not act on its own, it is shown to Roxan with your message when it fits, and nothing from the Vault is ever part of one. One you delete is not suggested again." }),

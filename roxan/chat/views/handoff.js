@@ -62,12 +62,11 @@ async function list(root, opening) {
     label: "Save Handoff",
     submit: async v => { const x = await store.addHandoff(v); made.textContent = `Saved “${x.title}”. Nothing has run.`; create.open = false; },
   });
-  const create = h("details", { class: "create", open: opening }, h("summary", { class: "go", text: "New Handoff" }), form);
+  const create = h("details", { class: "create", open: opening }, h("summary", { class: "btn sm", text: "New Handoff" }), form);
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Handoff" }),
     h("h1", { class: "page-title", text: "Tasks that need a computer." }),
     h("p", { class: "page-lead", text: "A Handoff is a task that needs a web browser: buying something, booking, filling in a form. Roxan cannot use a browser yet, so a Handoff is saved here as a written task. None has run, and none will until a computer is connected." }),
-    h("p", { class: "fine" }, "Logins and cards belong in the ", h("a", { class: "go sm", href: "#/vault" }, "Vault ", h("i", { text: "→" })), ", never in a Handoff or a message."),
+    h("p", { class: "fine" }, "Logins and cards belong in the ", h("a", { class: "link", href: "#/vault", text: "Vault" }), ", never in a Handoff or a message."),
     h("div", { class: "page-act" }, create, made),
     body));
   if (opening) focus();
@@ -78,7 +77,7 @@ async function list(root, opening) {
       const acts = x.state === "waiting" ? [act("I did it", () => setState(x, "done", `Marked the Handoff “${x.title}” as done by you.`)), act("Drop", () => setState(x, "dropped", `Dropped the Handoff “${x.title}”.`))]
         : x.state === "done" ? [act("Reopen", () => setState(x, "waiting", `Reopened the Handoff “${x.title}”.`))] : [act("Restore", () => setState(x, "waiting", `Restored the Handoff “${x.title}”.`))];
       return h("li", { class: "row", data: { id: x.id, state: x.state } },
-        h("a", { class: "row-main", href: "#/handoff/" + x.id }, h("span", { class: "row-title", text: x.title }), h("span", { class: "row-sub", text: [x.site, x.task].filter(Boolean).join(" · ") })),
+        h("a", { class: "row-main", href: "#/handoff/" + x.id }, h("span", { class: "row-title", text: x.title }), h("span", { class: "row-sub", text: [x.site, x.task].filter(Boolean).join(", ") })),
         h("span", { class: "row-when", text: ago(x.updatedAt) }), h("span", { class: "row-acts" }, acts));
     };
     const waiting = all.filter(x => x.state === "waiting"), done = all.filter(x => x.state === "done"), dropped = all.filter(x => x.state === "dropped");
@@ -101,7 +100,7 @@ async function one(root, id) {
   async function draw() {
     const x = await db.get("handoffs", id);
     if (!x) {
-      page.replaceChildren(h("p", { class: "label", text: "Not found" }), h("h1", { class: "page-title", text: "That Handoff is not here." }), h("a", { class: "go", href: "#/handoff" }, "Handoff ", h("i", { text: "→" })));
+      page.replaceChildren(h("h1", { class: "page-title", text: "That Handoff is not here." }), h("a", { class: "go", href: "#/handoff" }, "Handoff ", h("i", { "aria-hidden": "true" })));
       return;
     }
     const room = x.roomId ? await store.getRoom(x.roomId) : null;
@@ -119,7 +118,7 @@ async function one(root, id) {
       h("h1", { class: "page-title", text: x.title }),
       x.state === "waiting" ? h("p", { class: "page-lead", text: "No computer is connected, so nothing has been done for this. Do it yourself and mark it done, or leave it here." }) : null,
       h("dl", { class: "facts" }, row("Task", x.task), x.site ? row("Website", siteEl(x.site)) : null, row("Saved", when(x.createdAt)),
-        room ? row("From", h("a", { class: "go sm", href: store.roomHref(room) }, room.kind === "main" ? "The main conversation" : room.name, " ", h("i", { text: "→" }))) : x.roomId ? row("From", "A conversation that is gone") : null),
+        room ? row("From", h("a", { class: "go sm", href: store.roomHref(room) }, room.kind === "main" ? "The main conversation" : room.name, " ", h("i", { "aria-hidden": "true" }))) : x.roomId ? row("From", "A conversation that is gone") : null),
       h("div", { class: "btns" }, act("Edit", () => { editing = true; draw(); }), acts)].filter(Boolean));
   }
   await draw();

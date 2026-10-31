@@ -30,7 +30,6 @@ export async function mount(root) {
   const gone = h("ul", { class: "rows" });
   const goneBox = h("details", { class: "removed" }, h("summary", { class: "go" }), gone);
   root.append(h("section", { class: "page" },
-    h("p", { class: "label", text: "Memory" }),
     h("h1", { class: "page-title", text: "What Roxan knows about you." }),
     h("p", { class: "page-lead", text: "Short notes about you and the people, places and projects in your life. Roxan adds one when you tell it something lasting, and shows you each, with an Undo. With every message it is shown up to 20: pinned first, then notes about the names you mention and what those are linked to. Your notes are kept on this device, and only the ones it is shown leave it." }),
     form, err,
@@ -113,10 +112,10 @@ export async function mount(root) {
     body.replaceChildren(tab === "web" ? webPane(live) : listPane(live));
     const out = notes.filter(m => m.deleted).sort((a, b) => b.deletedAt - a.deletedAt);
     goneBox.hidden = !out.length;
-    goneBox.querySelector("summary").replaceChildren(`Removed (${out.length}) `, h("i", { text: "→" }));
+    goneBox.querySelector("summary").textContent = `Removed (${out.length})`;
     const why = { dismissed: "Suggested, and you said no", undone: "Learned, then you undid it", forgotten: "Forgotten" };
     gone.replaceChildren(...out.map(m => h("li", { class: "row" },
-      h("span", { class: "row-main" }, h("span", { class: "row-title", text: m.text }), h("span", { class: "row-sub", text: `${why[m.reason] || "Forgotten"} · ${ago(m.deletedAt)}. Roxan is not shown this and will not suggest it again.` })),
+      h("span", { class: "row-main" }, h("span", { class: "row-title", text: m.text }), h("span", { class: "row-sub", text: `${why[m.reason] || "Forgotten"}, ${ago(m.deletedAt)}. Roxan is not shown this and will not suggest it again.` })),
       h("span", { class: "row-acts" }, h("button", { class: "act-btn", type: "button", text: "Restore", onclick: () => change(m, { deleted: false, deletedAt: null, reason: null }, x => `Restored “${x.text}”.`) })))));
   }
 

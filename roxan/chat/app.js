@@ -7,6 +7,7 @@ import * as api from "./api.js";
 import * as proposals from "./proposals.js";
 import * as remind from "./remind.js";
 import * as memory from "./memory.js";
+import { icon } from "./icons.js";
 
 export const app = {
   invite: null,
@@ -43,7 +44,7 @@ const ROUTES = [
   { re: /^\/activity$/, name: "activity", title: "Activity", load: () => import("./views/activity.js") },
   { re: /^\/settings$/, name: "settings", title: "Settings", load: () => import("./views/settings.js") },
 ];
-const MISSING = { name: "", title: "Not found", re: /(?:)/, load: async () => ({ mount: root => { root.append(h("section", { class: "page" }, h("p", { class: "label", text: "Not found" }), h("h1", { class: "page-title", text: "That page is not here." }), h("a", { class: "go", href: "#/" }, "Go home ", h("i", { text: "→" })))); } }) };
+const MISSING = { name: "", title: "Not found", re: /(?:)/, load: async () => ({ mount: root => { root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That page is not here." }), h("a", { class: "go", href: "#/" }, "Go home ", h("i", { "aria-hidden": "true" })))); } }) };
 
 const GATEWAY_WORDS = { checking: "Checking", offline: "Offline", busy: "Busy", closed: "Not open yet" };
 const SHOWN = 8;                                   // conversations listed under a project in the rail; the project page has the rest
@@ -57,10 +58,10 @@ function shell() {
   const root = $("#shell");
   counts = {};
   const entry = ([name, label, path]) => {
-    if (!path) return h("li", null, h("span", { class: "soon", title: "Not built yet" }, h("span", { text: label }), h("small", { text: "Soon" })));
+    if (!path) return h("li", null, h("span", { class: "soon", title: "Not built yet" }, icon(name), h("span", { class: "t", text: label }), h("small", { text: "Soon" })));
     const count = h("span", { class: "count", "aria-hidden": "true" });
     counts[name] = count;
-    const link = h("a", { href: "#" + path, data: { nav: name } }, h("span", { text: label }), count);
+    const link = h("a", { href: "#" + path, data: { nav: name } }, icon(name), h("span", { class: "t", text: label }), count);
     if (!FOLDS.has(name)) return h("li", null, link);
     heads[name] = link;
     return (trees[name] = h("li", { class: "tree-item" }));
@@ -71,13 +72,12 @@ function shell() {
   status = h("p", { class: "rail-status" });
   who = h("p", { class: "fine" });
   signBtn = h("button", { class: "rail-link", type: "button" });
-  const dot = () => h("span", { class: "sep", "aria-hidden": "true", text: "·" });
   const rail = h("aside", { class: "rail" },
     h("a", { class: "rail-brand", href: "/", "aria-label": "Roxan, back to the site" }, h("span", { class: "mark" }), h("span", { text: "Roxan" })),
     h("nav", { "aria-label": "Roxan" }, sections),
     h("div", { class: "rail-foot" }, status,
-      h("div", { class: "rail-who" }, h("p", { class: "label", text: "Account" }), h("p", { class: "who-name", text: "Personal workspace" }), who),
-      h("p", { class: "rail-links" }, h("a", { class: "rail-link", href: "#/settings", data: { nav: "settings" }, text: "Settings" }), dot(), h("a", { class: "rail-link", href: "/help/", text: "Help" }), dot(), signBtn)));
+      h("div", { class: "rail-who" }, h("p", { class: "who-name", text: "Personal workspace" }), who),
+      h("p", { class: "rail-links" }, h("a", { class: "rail-link", href: "#/settings", data: { nav: "settings" }, text: "Settings" }), h("a", { class: "rail-link", href: "/help/", text: "Help" }), signBtn)));
   banner = h("p", { class: "banner", role: "status", hidden: true });
   main = h("main", { id: "main", tabindex: "-1" }, banner);
   root.replaceChildren(rail, main);

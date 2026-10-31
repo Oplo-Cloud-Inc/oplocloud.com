@@ -1,4 +1,4 @@
-/* Roxan site: the menu on narrow screens, entrances, the thread, and the example on the front page. */
+/* Roxan site: the menu on narrow screens, the heading entrance, and the example on the front page. */
 (() => {
   'use strict';
   const $ = (s, r = document) => r.querySelector(s);
@@ -14,27 +14,11 @@
     addEventListener('keydown', e => { if (e.key === 'Escape' && nav.classList.contains('open')) { set(false); toggle.focus(); } });
   }
 
-  /* Entrances: a section announces itself once, when it comes on screen. */
+  /* The one entrance: a page heading rises into place when it comes on screen. */
   const io = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
   }), { rootMargin: '0px 0px -10% 0px', threshold: 0.01 });
-  const group = '.hero, .sec, .band, .page-hero';
-  $$(group).forEach(el => io.observe(el));
-  $$('.rv').filter(el => !el.closest(group)).forEach(el => io.observe(el));
-
-  /* The thread down the page fills as you read. */
-  const main = $('main');
-  if (main) {
-    let queued = false;
-    const draw = () => {
-      queued = false;
-      const r = main.getBoundingClientRect();
-      main.style.setProperty('--p', Math.min(1, Math.max(0, (innerHeight * .55 - r.top) / r.height)).toFixed(4));
-    };
-    addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(draw); } }, { passive: true });
-    addEventListener('resize', draw);
-    draw();
-  }
+  $$('.hero, .page-hero').forEach(el => io.observe(el));
 
   /* The example conversation. The markup holds its final state; this plays it
      from the start. Without script, or with reduced motion, that is what you see. */
