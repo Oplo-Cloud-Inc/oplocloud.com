@@ -6,7 +6,7 @@ import * as proposals from "../proposals.js";
 import * as store from "../store.js";
 import { card } from "../cards.js";
 
-const WORD = { done: "Approved", declined: "Declined", superseded: "Not approved", expired: "Expired", failed: "Did not work" };
+const WORD = { done: "Approved", declined: "Declined", superseded: "Not approved", expired: "Expired", failed: "Did not work", undone: "Undone" };
 const SHOWN = 30;
 
 export async function mount(root) {
@@ -29,7 +29,7 @@ export async function mount(root) {
           : [h("p", { class: "none", text: "Nothing needs your approval." })])),
       section("Decided", null, h("ul", { class: "rows" }, decided.length ? decided.map(ev => {
         const w = where(ev.roomId);
-        const main = [h("span", { class: "row-title", text: `${WORD[ev.state]}: ${proposals.describe(ev, notes)}` }), h("span", { class: "row-sub", text: w.text })];
+        const main = [h("span", { class: "row-title", text: `${ev.state === "done" && ev.auto ? "Kept straight away" : WORD[ev.state]}: ${proposals.describe(ev, notes)}` }), h("span", { class: "row-sub", text: w.text })];
         return h("li", { class: "row" }, w.href ? h("a", { class: "row-main", href: w.href }, main) : h("span", { class: "row-main" }, main), h("span", { class: "row-when", text: ago(ev.resolvedAt || ev.at) }));
       }) : [h("li", { class: "row none", text: "Nothing decided yet." })])));
   }

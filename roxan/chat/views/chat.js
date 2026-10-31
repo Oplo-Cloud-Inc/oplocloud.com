@@ -9,12 +9,15 @@ import { render, codeText } from "../md.js";
 import { card } from "../cards.js";
 import * as files from "../files.js";
 import { gate } from "../gate.js";
+import { cardish } from "../sensitive.js";
 import { sessionForm } from "./project.js";
 
 const PAGE = 40;
 const IDEAS = [
   ["Remind me", "Remind me tomorrow morning to "],
   ["Remember", "Remember that I "],
+  ["Handoff", "I need this done on a website: "],
+  ["Specialty", "Make a specialty for "],
   ["Think it through", "Help me think through "],
 ];
 const PREFIX = { stopped: "Stopped · ", cutoff: "Cut off · ", error: "Not finished · " };
@@ -84,10 +87,24 @@ export async function mount(root, { app, params }) {
     ev.files?.length ? h("div", { class: "chips" }, ev.files.map(f => h("span", { class: "chip static" }, h("span", { text: f.name }), h("span", { class: "dim", text: ` · ${f.kind === "image" ? "image" : f.kind === "pdf" ? "PDF" : bytes(f.size)}` })))) : null,
     h("div", { class: "meta", text: stamp(ev.at) })));
 
+  // "3 notes shown": which of your notes went along with the message this reply answers. Shown is all we can say; Roxan decides what to use.
+  const usedEl = ev => {
+    if (!ev.used?.length) return null;
+    const list = h("ul", { class: "used-list" });
+    const box = h("details", { class: "used" }, h("summary", { text: `${ev.used.length} note${ev.used.length === 1 ? "" : "s"} shown` }), list);
+    box.addEventListener("toggle", () => {
+      if (!box.open) return;
+      const kept = ev.used.map(id => notes.find(m => m.id === id)).filter(m => m && !m.deleted);
+      const gone = ev.used.length - kept.length;
+      list.replaceChildren(...[...kept.map(m => h("li", { text: m.text })), gone ? h("li", { class: "fine", text: `${gone} since removed` }) : null].filter(Boolean));
+    });
+    return box;
+  };
+
   const botEl = ev => {
     const copy = h("button", { class: "act-btn", type: "button", "data-copy-msg": "", text: "Copy" });
     return h("div", { class: "msg bot", data: { id: ev.id } }, h("span", { class: "mark", "aria-hidden": "true" }),
-      h("div", { class: "col" }, h("div", { class: "body md" }), h("div", { class: "meta" }), h("div", { class: "row-actions" }, copy)));
+      h("div", { class: "col" }, h("div", { class: "body md" }), h("div", { class: "meta" }), usedEl(ev), h("div", { class: "row-actions" }, copy)));
   };
 
   const noteEl = ev => {
@@ -154,7 +171,7 @@ export async function mount(root, { app, params }) {
   input.addEventListener("input", () => {
     autosize();
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => (input.value ? store.setMeta("draft:" + room.id, input.value) : store.delMeta("draft:" + room.id)), 500);
+    saveTimer = setTimeout(() => (input.value && !cardish(input.value) ? store.setMeta("draft:" + room.id, input.value) : store.delMeta("draft:" + room.id)), 500);   // a draft that holds a card number is not kept on the device
   });
 
   const shake = text => { err.textContent = text; if (text) setTimeout(() => { if (err.textContent === text) err.textContent = ""; }, 7000); };
@@ -221,10 +238,17 @@ export async function mount(root, { app, params }) {
     begin(signal => turn.retry(room, app.invite, signal, hooks));
   }
 
+  let warned = "";                                               // the text we already warned about; a second press with it unchanged sends it
   async function submit() {
     const text = input.value.trim();
     if ((!text && !attachments.length) || busy) return;
     if (!app.canChat()) { drawGate(); return; }
+    if (cardish(text) && warned !== text) {
+      warned = text;
+      shake("That looks like a card number. Everything you send here goes to Roxan's model, so keep cards in the Vault. Press Send again to send it anyway.");
+      return;
+    }
+    warned = "";
     const prepared = attachments.splice(0);
     input.value = "";
     autosize();

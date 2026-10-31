@@ -1,7 +1,7 @@
 /* Everything Roxan keeps lives in this browser: IndexedDB when the browser will
    give it, and plain memory (lost on close) when it will not. `persistent` says
    which, so the app can tell the person instead of pretending. */
-const NAME = "roxan", VERSION = 1;
+const NAME = "roxan", VERSION = 2;
 const STORES = {
   meta: { keyPath: "key" },
   rooms: { keyPath: "id" },
@@ -10,7 +10,11 @@ const STORES = {
   reminders: { keyPath: "id" },
   files: { keyPath: "id", indexes: { room: "roomId" } },
   activity: { keyPath: "id" },
+  specialties: { keyPath: "id" },      // added in version 2
+  handoffs: { keyPath: "id" },         // added in version 2
+  vault: { keyPath: "id" },            // added in version 2: only ever ciphertext, see vaultcrypto.js
 };
+const NOT_EXPORTED = new Set(["vault"]);       // a copy of everything leaves the vault out, even sealed
 
 let idb = null;
 const mem = Object.fromEntries(Object.keys(STORES).map(k => [k, new Map()]));
@@ -26,6 +30,7 @@ export function open() {
     try { req = indexedDB.open(NAME, VERSION); } catch { return resolve(false); }
     req.onupgradeneeded = () => {
       for (const [name, s] of Object.entries(STORES)) {
+        if (req.result.objectStoreNames.contains(name)) continue;          // an upgrade from version 1 only adds what is new
         const store = req.result.createObjectStore(name, { keyPath: s.keyPath });
         for (const [ix, kp] of Object.entries(s.indexes || {})) store.createIndex(ix, kp);
       }
@@ -101,6 +106,9 @@ export async function clearAll() {
 
 export async function dump() {
   const out = {};
-  for (const s of Object.keys(STORES)) out[s] = (await all(s)).map(r => (s === "files" ? { ...r, blob: undefined, data: undefined, hasContent: Boolean(r.blob || r.text) } : r));
+  for (const s of Object.keys(STORES)) {
+    if (NOT_EXPORTED.has(s)) continue;
+    out[s] = (await all(s)).map(r => (s === "files" ? { ...r, blob: undefined, data: undefined, hasContent: Boolean(r.blob || r.text) } : r));
+  }
   return out;
 }

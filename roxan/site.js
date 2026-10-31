@@ -60,7 +60,7 @@
     p.classList.remove('caret');
     return true;
   };
-  /* An action or a memory starts out waiting, is pressed, and settles. */
+  /* An action starts out waiting, is pressed, and settles. A learned note is just there, so it needs no press. */
   const settle = async (s, id, pressSel, waitingLabel, waitingState) => {
     const state = $('.state', s), label = $('.label', s), btns = $('.btns', s);
     const finalState = state && state.textContent, finalLabel = label.textContent;
@@ -71,7 +71,7 @@
     $(pressSel, s).classList.add('pressed');
     if (!(await wait(450, id))) return false;
     $(pressSel, s).classList.remove('pressed');
-    btns.hidden = true; s.dataset.state = s.matches('.mem') ? 'kept' : 'done';
+    btns.hidden = true; s.dataset.state = 'done';
     if (state) state.textContent = finalState;
     label.textContent = finalLabel;
     return wait(1000, id);
@@ -90,7 +90,6 @@
         let ok = true;
         if (s.matches('.msg.bot')) ok = (await type($('p', s), id)) && (await wait(700, id));
         else if (s.matches('.act')) ok = await settle(s, id, '[data-approve]', null, 'awaiting');
-        else if (s.matches('.mem')) ok = await settle(s, id, '[data-keep]', 'Remember this?', 'proposed');
         else ok = await wait(1200, id);
         if (!ok) return;
       }

@@ -24,8 +24,8 @@ export const app = {
 // The rail, in the order it is drawn. A null path is something not built yet: it is named, marked Soon, and goes nowhere.
 const SECTIONS = [
   ["Personal", [["home", "Home", "/"], ["chat", "Chat", "/chat"], ["projects", "Projects", "/projects"]]],
-  ["Workspace", [["handoff", "Handoff", null], ["panels", "Panels", null], ["actions", "Action Center", "/actions"], ["specialties", "Specialties", null], ["schedule", "Scheduled Tasks", "/schedule"]]],
-  ["Manage", [["integrations", "Integrations", null], ["memory", "Memory", "/memory"], ["activity", "Activity", "/activity"]]],
+  ["Workspace", [["handoff", "Handoff", "/handoff"], ["actions", "Action Center", "/actions"], ["specialties", "Specialties", "/specialties"], ["schedule", "Scheduled Tasks", "/schedule"], ["panels", "Panels", null]]],
+  ["Manage", [["memory", "Memory", "/memory"], ["vault", "Vault", "/vault"], ["integrations", "Integrations", null], ["activity", "Activity", "/activity"]]],
 ];
 const ROUTES = [
   { re: /^\/?$/, name: "home", title: "Home", load: () => import("./views/home.js") },
@@ -34,6 +34,10 @@ const ROUTES = [
   { re: /^\/p\/([\w-]+)$/, name: "project", title: "Project", load: () => import("./views/project.js") },
   { re: /^\/projects(?:\/(new))?$/, name: "projects", title: "Projects", load: () => import("./views/projects.js") },
   { re: /^\/actions$/, name: "actions", title: "Action Center", load: () => import("./views/actions.js") },
+  { re: /^\/handoff$/, name: "handoff", title: "Handoff", load: () => import("./views/handoff.js") },
+  { re: /^\/handoff\/([\w-]+)$/, name: "handoff-item", title: "Handoff", load: () => import("./views/handoff.js") },       // /handoff/new opens the list with the form
+  { re: /^\/specialties$/, name: "specialties", title: "Specialties", load: () => import("./views/specialties.js") },
+  { re: /^\/vault$/, name: "vault", title: "Vault", load: () => import("./views/vault.js") },
   { re: /^\/memory$/, name: "memory", title: "Memory", load: () => import("./views/memory.js") },
   { re: /^\/schedule$/, name: "schedule", title: "Scheduled Tasks", load: () => import("./views/schedule.js") },
   { re: /^\/activity$/, name: "activity", title: "Activity", load: () => import("./views/activity.js") },
@@ -43,8 +47,11 @@ const MISSING = { name: "", title: "Not found", re: /(?:)/, load: async () => ({
 
 const GATEWAY_WORDS = { checking: "Checking", offline: "Offline", busy: "Busy", closed: "Not open yet" };
 const SHOWN = 8;                                   // conversations listed under a project in the rail; the project page has the rest
-let main, banner, status, who, signBtn, treeRoot, projectsLink, counts = {};
-const open = new Set(["projects"]);                // what is unfolded in the rail: "projects", and project ids
+const SHOWN_HANDOFFS = 6;                          // recent Handoffs listed in the rail; the Handoff page has the rest
+const FOLDS = new Set(["projects", "handoff"]);    // the rail entries that unfold into a list
+let main, banner, status, who, signBtn, counts = {};
+const trees = {}, heads = {};                      // for each unfoldable entry: the <li> it lives in, and its link
+const open = new Set(["projects", "handoff"]);     // what is unfolded in the rail: "projects", "handoff", and project ids
 
 function shell() {
   const root = $("#shell");
@@ -54,10 +61,9 @@ function shell() {
     const count = h("span", { class: "count", "aria-hidden": "true" });
     counts[name] = count;
     const link = h("a", { href: "#" + path, data: { nav: name } }, h("span", { text: label }), count);
-    if (name !== "projects") return h("li", null, link);
-    projectsLink = link;
-    treeRoot = h("li", { class: "tree-item" });
-    return treeRoot;
+    if (!FOLDS.has(name)) return h("li", null, link);
+    heads[name] = link;
+    return (trees[name] = h("li", { class: "tree-item" }));
   };
   const sections = SECTIONS.map(([title, items], i) => h("section", { class: "rail-sec", "aria-labelledby": "rail-h" + i },
     h("h2", { class: "rail-label", id: "rail-h" + i, text: title }), h("ul", null, items.map(entry))));
@@ -78,11 +84,11 @@ function shell() {
   signBtn.addEventListener("click", signOut);
 }
 
-/* ------------------------------------------------------------ Projects in the rail */
+/* ------------------------------------------------------------ Projects and Handoffs in the rail */
 let treeToken = 0;
 async function drawTree() {
   const mine = ++treeToken;
-  const rooms = await db.all("rooms");
+  const [rooms, handoffs] = await Promise.all([db.all("rooms"), db.all("handoffs")]);
   if (mine !== treeToken) return;                  // a newer draw is already on its way
   const projects = rooms.filter(r => r.kind === "project").sort((a, b) => b.updatedAt - a.updatedAt);
   const by = new Map();
@@ -92,7 +98,7 @@ async function drawTree() {
     if (!open.delete(id)) open.add(id);
     store.setMeta("rail:open", [...open]);
     await drawTree();
-    treeRoot.querySelector(`.twisty[data-fold="${id}"]`)?.focus();          // the button was rebuilt; keep a keyboard user where they were
+    document.querySelector(`.twisty[data-fold="${id}"]`)?.focus();          // the button was rebuilt; keep a keyboard user where they were
   };
   const row = (link, id, what) => h("div", { class: "tree-row" }, link, h("button", { class: "twisty", type: "button", data: { fold: id }, "aria-expanded": String(open.has(id)), "aria-label": what, onclick: () => fold(id) }));       // the name stays put; aria-expanded says which way it is
   const fresh = async id => { const s = await store.newSession(id); open.add(id); app.go("/c/" + s.id); };
@@ -108,19 +114,31 @@ async function drawTree() {
           h("li", null, h("button", { class: "tree-new", type: "button", text: "New conversation", onclick: () => fresh(p.id) }))));
     }),
     h("li", null, h("a", { class: "tree-new", href: "#/projects/new", text: "New project" })));
-  treeRoot.replaceChildren(...[row(projectsLink, "projects", "Project list"), list].filter(Boolean));       // a folded list is null, and replaceChildren would write it out as the word "null"
+  trees.projects.replaceChildren(...[row(heads.projects, "projects", "Project list"), list].filter(Boolean));       // a folded list is null, and replaceChildren would write it out as the word "null"
+
+  const recent = handoffs.filter(x => x.state !== "dropped").sort((a, b) => b.updatedAt - a.updatedAt);
+  const saved = !open.has("handoff") ? null : h("ul", { id: "tree-handoff" },
+    recent.slice(0, SHOWN_HANDOFFS).map(x => h("li", null, h("a", { href: "#/handoff/" + x.id, data: { handoff: x.id }, title: x.title }, h("span", { class: "t", text: x.title })))),
+    recent.length > SHOWN_HANDOFFS ? h("li", null, h("a", { class: "tree-more", href: "#/handoff", text: `All ${recent.length} Handoffs` })) : null,
+    h("li", null, h("a", { class: "tree-new", href: "#/handoff/new", text: "New Handoff" })));
+  trees.handoff.replaceChildren(...[row(heads.handoff, "handoff", "Recent Handoffs"), saved].filter(Boolean));
   markCurrent();
 }
 
 // The conversation or project you are looking at is marked in the rail, and unfolded if it was folded.
 function markCurrent() {
-  const m = /^#\/([pc])\/([\w-]+)$/.exec(location.hash);
+  const m = /^#\/([pc])\/([\w-]+)$/.exec(location.hash), x = /^#\/handoff\/([\w-]+)$/.exec(location.hash);
   document.querySelectorAll("[data-room], [data-proj]").forEach(a => {
     const here = m && (m[1] === "c" ? a.dataset.room === m[2] : a.dataset.proj === m[2]);
     if (here) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
+  document.querySelectorAll("[data-handoff]").forEach(a => {
+    if (x && a.dataset.handoff === x[1]) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
 }
 async function reveal() {
+  const x = /^#\/handoff\/([\w-]+)$/.exec(location.hash);
+  if (x && x[1] !== "new" && !open.has("handoff")) { open.add("handoff"); await drawTree(); return; }
   const m = /^#\/([pc])\/([\w-]+)$/.exec(location.hash);
   if (!m) return;
   const room = await store.getRoom(m[2]);
@@ -148,8 +166,11 @@ async function signOut() {
 }
 
 async function updateCounts() {
-  const [pending, notes, reminders] = await Promise.all([proposals.pending(), db.all("memories"), db.all("reminders")]);
-  const n = { actions: pending.length, memory: memory.live(notes).length, schedule: reminders.filter(r => r.state === "scheduled").length };
+  const [pending, notes, reminders, handoffs, specialties] = await Promise.all([proposals.pending(), db.all("memories"), db.all("reminders"), db.all("handoffs"), db.all("specialties")]);
+  const n = {
+    actions: pending.length, memory: memory.live(notes).length, schedule: reminders.filter(r => r.state === "scheduled").length,
+    handoff: handoffs.filter(x => x.state === "waiting").length, specialties: specialties.filter(s => !s.deleted && s.on !== false).length,
+  };
   for (const [k, el] of Object.entries(counts)) el.textContent = n[k] ? String(n[k]) : "";
 }
 
@@ -214,7 +235,8 @@ async function boot() {
   on("gateway", paintStatus);
   on("toast", e => toast(e.detail));
   on("rooms", drawTree);
-  for (const ev of ["proposal", "memories", "reminders"]) on(ev, updateCounts);
+  on("handoffs", drawTree);
+  for (const ev of ["proposal", "memories", "reminders", "handoffs", "specialties"]) on(ev, updateCounts);
   paintStatus();
   updateCounts();
   await drawTree();
