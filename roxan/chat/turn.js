@@ -11,12 +11,14 @@ import * as api from "./api.js";
 import * as memory from "./memory.js";
 import * as proposals from "./proposals.js";
 import { blobToBase64 } from "./files.js";
-import { touch, log, NEW_TITLE } from "./store.js";
+import { touch, log, learning, NEW_TITLE } from "./store.js";
 import { emit } from "./dom.js";
 
 const WINDOW = 60;               // events looked at
 const CHARS = 60_000;            // of history text sent
 const RECENT = 2;                // user messages whose text attachments still go along
+const SPECIALTIES = 30;          // named to Roxan with each message; the few that fit it also carry their steps
+const WITH_STEPS = 3;
 const clean = s => String(s).replace(/["\r\n]+/g, "'");
 const where = r => (r.kind === "main" ? "the conversation" : `the conversation “${r.name}”`);
 const clip = (s, n = 48) => { const t = s.replace(/\s+/g, " ").trim(); return t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…"; };
@@ -40,6 +42,16 @@ async function userContent(e, recent, newest) {
   return parts;
 }
 
+// The specialties that are on, best fit to what was said first. Steps go only with the few that fit.
+async function specialtiesFor(query) {
+  const q = new Set(memory.words(query));
+  const fit = s => memory.words(`${s.name} ${s.when}`).filter(w => q.has(w)).length;
+  return (await db.all("specialties")).filter(s => !s.deleted && s.on !== false)
+    .map(s => ({ s, n: fit(s) })).sort((a, b) => b.n - a.n || b.s.updatedAt - a.s.updatedAt).slice(0, SPECIALTIES)
+    .map(({ s, n }, i) => ({ id: s.id, name: s.name, when: s.when, steps: n > 0 && i < WITH_STEPS ? s.steps : [] }));
+}
+
+// { messages, context } is the body that is sent. `local` stays here: which notes went, and what learning may rest on.
 export async function buildBody(room) {
   const events = await db.eventsIn(room.id, { limit: WINDOW });
   const memories = await db.all("memories");
@@ -58,25 +70,33 @@ export async function buildBody(room) {
   let total = messages.reduce((n, m) => n + size(m), 0);
   while (messages.length > 1 && (total > CHARS || messages[0].role !== "user")) total -= size(messages.shift());
 
-  const last = events.filter(e => e.kind === "user").at(-1)?.text || "";
+  const lastUser = events.filter(e => e.kind === "user").at(-1);
+  const last = lastUser?.text || "";
   const near = events.slice(-6).map(e => e.text || "").join(" ");
   const notes = memory.pick(memories, last + " " + near);
   const project = room.kind === "session" ? await db.get("rooms", room.projectId) : null;
+  const on = await learning();
   return {
     messages,
     context: {
       now: nowText(),
       tz: zone(),
-      memories: notes.map(m => ({ id: m.id, text: m.text })),
+      memories: notes.map(m => ({ id: m.id, text: m.text, about: m.about })),
+      specialties: await specialtiesFor(last + " " + near),
+      learning: on,
       project: project ? { name: project.name, instructions: project.instructions } : undefined,
+    },
+    local: {
+      used: notes.map(m => m.id),
+      ctx: { learning: on, said: last, recent: events.filter(e => e.kind === "user").slice(-6).map(e => e.text || "").join(" "), files: Boolean(lastUser?.files?.length), kept: 0 },
     },
   };
 }
 
 // Streams a reply to the newest user message. Hooks: onAssistant(ev), onDelta(ev), onProposal(ev), onNote(ev).
 export async function run(room, invite, signal, hooks) {
-  const body = await buildBody(room);
-  const a = { id: db.uid("e"), roomId: room.id, at: db.tick(), kind: "assistant", text: "", status: "streaming" };
+  const { local, ...body } = await buildBody(room);
+  const a = { id: db.uid("e"), roomId: room.id, at: db.tick(), kind: "assistant", text: "", status: "streaming", used: local.used };
   hooks.onAssistant(a);
   const tools = [], notices = [];
   let failure = null;
@@ -100,7 +120,7 @@ export async function run(room, invite, signal, hooks) {
 
   if (a.status === "done" || a.status === "cutoff") {
     for (const t of tools) {
-      const ev = await proposals.create(room.id, t.name, t.input);
+      const ev = await proposals.create(room.id, t.name, t.input, local.ctx);
       if (ev) hooks.onProposal(ev);
     }
     for (const text of notices) await note(room, hooks, { text, tone: "notice" });

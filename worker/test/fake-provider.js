@@ -2,12 +2,17 @@
    no key and no cost. It answers POST /v1/messages in the same event stream the
    real service uses, and does what the last thing the user said asks for:
 
-     "remember …"      a reply and a save_memory proposal
+     "remember …"      a reply and a save_memory proposal, with the names it is
+                       about ("Priya is my manager" is about You and Priya)
      "forget …"        a reply and a forget_memory proposal for a listed note
      "remind me …"     a reply and a set_reminder proposal for tomorrow 9:00
+     "specialty …"     a reply and a save_specialty proposal with three steps
+     "handoff …", or buy / order / book / reserve / pay
+                       a reply and a start_handoff proposal
      "long-test"       Markdown: a list, a code block, a table
      "slow-test"       a reply that takes ten seconds, for the Stop button
-     "ghost-test"      proposals that cannot be used (an unknown note, a bad time)
+     "ghost-test"      proposals that cannot be used (an unknown note, a bad
+                       time, a card number, a one-step specialty, a task-less Handoff)
      "decline-test"    a declined request
      "error-test"      a failing service
      anything else     a short reply
@@ -44,6 +49,16 @@ console.log(sum(2, 3));
 > Small steps count.
 `;
 
+// Names a fact is about: "You" when it speaks of the user, then each capitalised word.
+const NOT_NAMES = new Set(["The", "This", "That", "These", "Those", "And", "But", "Not", "Her", "His", "Its"]);
+function aboutOf(fact) {
+  const about = /\b(i|i'm|my|me|mine)\b/i.test(fact) ? ["You"] : [];
+  for (const m of fact.matchAll(/\b[A-Z][a-z]{2,}\b/g)) if (!NOT_NAMES.has(m[0]) && !about.includes(m[0])) about.push(m[0]);
+  return about.slice(0, 4);
+}
+const kindOf = (fact, about) => (/\b(likes?|prefers?|loves?|hates?|favou?rites?)\b/i.test(fact) ? "preference" : about.length > 1 ? "person" : "other");
+const sentence = s => s.charAt(0).toUpperCase() + s.slice(1);
+
 function script(body) {
   const last = body.messages[body.messages.length - 1];
   const parts = typeof last.content === "string" ? [{ type: "text", text: last.content }] : last.content;
@@ -51,11 +66,24 @@ function script(body) {
   const lower = said.toLowerCase();
   // The notes are listed in the second system block ("- id: text"); the first is the fixed prompt.
   const notes = [...((body.system || [])[1]?.text || "").matchAll(/^- ([A-Za-z0-9_-]+): (.+)$/gm)].map(m => ({ id: m[1], text: m[2] }));
+  // The real model is told the same thing: with learning on, the app keeps a note at once, so the reply must not talk about approving it.
+  const learning = /switched on learning/.test((body.system || [])[0]?.text || "");
 
   if (lower.includes("error-test")) return { status: 500 };
   if (lower.includes("decline-test")) return { refuse: true };
   if (lower.includes("long-test")) return { text: LONG };
-  if (lower.includes("ghost-test")) return { text: "Done.", tools: [{ name: "forget_memory", input: { id: "ghost" } }, { name: "set_reminder", input: { title: "x", when: "tomorrow morning" } }] };
+  if (lower.includes("ghost-test")) {
+    return {
+      text: "Done.",
+      tools: [
+        { name: "forget_memory", input: { id: "ghost" } },
+        { name: "set_reminder", input: { title: "x", when: "tomorrow morning" } },
+        { name: "save_memory", input: { text: "My card is 4242 4242 4242 4242" } },
+        { name: "save_specialty", input: { name: "Too short", when: "Never", steps: ["Only one step"] } },
+        { name: "start_handoff", input: { title: "No task" } },
+      ],
+    };
+  }
   if (lower.includes("slow-test")) return { text: "This reply is slow on purpose. ".repeat(12), gap: 800 };
   if (lower.includes("remind me")) {
     const what = said.replace(/^.*remind me( to)?/i, "").trim().replace(/[.!]+$/, "") || "Reminder";
@@ -69,7 +97,25 @@ function script(body) {
   }
   if (lower.includes("remember")) {
     const fact = said.replace(/^.*remember( that)?/i, "").trim().replace(/[.!]+$/, "") || said.trim();
-    return { text: "Got it. I've suggested remembering that, and you decide whether to keep it.", tools: [{ name: "save_memory", input: { text: fact.slice(0, 200) } }] };
+    const about = aboutOf(fact);
+    const input = { text: fact.slice(0, 200) };
+    if (about.length) { input.about = about; input.kind = kindOf(fact, about); }
+    return { text: learning ? "Got it." : "Got it. I've suggested remembering that, and you decide whether to keep it.", tools: [{ name: "save_memory", input }] };
+  }
+  if (lower.includes("specialty")) {
+    const what = said.replace(/^.*specialty( for| to| about)?/i, "").trim().replace(/[.!]+$/, "") || "weekly report";
+    return {
+      text: learning ? "Here is how I would do that, in order." : "Here is a specialty for that. Check the steps, then keep it.",
+      tools: [{ name: "save_specialty", input: { name: sentence(what).slice(0, 40), when: `When you ask for ${what.toLowerCase()}`.slice(0, 120), steps: ["Ask which details are missing", `Gather what is needed for ${what.toLowerCase()}`, "Write the result and list what is still open"] } }],
+    };
+  }
+  if (lower.includes("handoff") || /\b(buy|order|book|reserve|pay)\b/.test(lower)) {
+    const task = said.replace(/^.*?handoff:?\s*/i, "").trim().replace(/[.!]+$/, "") || said.trim();
+    const site = said.match(/\b[a-z0-9-]+\.(?:com|org|net|io)\b/i)?.[0];
+    return {
+      text: "That needs a web browser, which I can't use myself. I've written it up as a Handoff you can save for when a computer is connected.",
+      tools: [{ name: "start_handoff", input: { title: sentence(task).slice(0, 50), task: task.slice(0, 300), ...(site ? { site } : {}) } }],
+    };
   }
   return { text: `You said: "${said.trim().slice(0, 120)}". This is a test reply, so I am not really thinking about it.` };
 }

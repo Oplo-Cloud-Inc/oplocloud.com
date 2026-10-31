@@ -17,6 +17,19 @@ export function h(tag, props, ...kids) {
   return el;
 }
 
+// The same for SVG: s("circle", { cx: 10, cy: 10, r: 4, class: "dot" }). Colour comes from the stylesheet, never from a style attribute.
+export function s(tag, props, ...kids) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === "text") el.textContent = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  el.append(...kids.flat(Infinity).filter(k => k != null && k !== false));
+  return el;
+}
+
 // A titled block of a page: a hairline, a small label (and something on its right), then the content.
 export const section = (label, aside, ...kids) => h("section", { class: "sec" }, h("div", { class: "sec-head" }, h("h2", { class: "label", text: label }), aside), ...kids);
 

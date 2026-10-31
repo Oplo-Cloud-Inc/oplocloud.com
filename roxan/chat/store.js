@@ -35,6 +35,31 @@ export async function log(kind, text, roomId = null) {
   emit("activity");
 }
 
+/* ------------------------------------------------------------ Learning */
+// On unless the person turned it off: Roxan keeps short notes of what it is told, shows what it kept, and lets them undo it.
+export const learning = () => getMeta("learning", true);
+export async function setLearning(on) {
+  await setMeta("learning", on);
+  await log("settings", on ? "Turned learning on." : "Turned learning off.");
+  emit("learning");
+}
+
+/* ------------------------------------------------------------ Handoffs */
+// A Handoff is a written task for a computer that uses a web browser. None has ever run: no computer is connected.
+export async function addHandoff({ title, task, site = "", roomId = null, eventId = null }) {
+  const now = Date.now();
+  const x = await db.put("handoffs", { id: db.uid("h"), title, task, site, state: "waiting", roomId, eventId, createdAt: now, updatedAt: now });
+  await log("handoff", `Saved the Handoff “${title}”. Nothing has run.`, roomId);
+  emit("handoffs");
+  return x;
+}
+export async function setHandoff(x, patch, text) {
+  const next = await db.put("handoffs", { ...x, ...patch, updatedAt: Date.now() });
+  if (text) await log("handoff", text, x.roomId);
+  emit("handoffs");
+  return next;
+}
+
 /* ------------------------------------------------------------ Sessions */
 export const sessionsOf = async projectId =>
   (await db.all("rooms")).filter(r => r.kind === "session" && r.projectId === projectId).sort((a, b) => b.updatedAt - a.updatedAt);

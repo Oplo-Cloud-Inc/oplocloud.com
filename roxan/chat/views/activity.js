@@ -5,7 +5,7 @@ import { h, on, section, day, clock } from "../dom.js";
 import * as db from "../db.js";
 
 const PAGE = 100;
-const KIND = { message: "You", reply: "Roxan", memory: "Memory", proposal: "Proposed", decision: "Decision", reminder: "Reminder", project: "Project" };
+const KIND = { message: "You", reply: "Roxan", memory: "Memory", proposal: "Proposed", decision: "Decision", reminder: "Reminder", project: "Project", specialty: "Specialty", handoff: "Handoff", vault: "Vault", settings: "Settings" };
 
 export async function mount(root) {
   let shown = PAGE;
