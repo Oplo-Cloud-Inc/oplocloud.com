@@ -6,7 +6,7 @@
 
    Two views of the same notes. The web shows who and what they are about and
    which names share a note; the list is the plain version of it. */
-import { h, fill, section } from "../dom.js";
+import { h, fill, section, crumb } from "../dom.js";
 import * as local from "../local.js";
 import * as memory from "../memory.js";
 import { draw as drawWeb } from "../webgraph.js";
@@ -32,6 +32,7 @@ export async function mount(root) {
   const gone = h("ul", { class: "rows" });
   const goneBox = h("details", { class: "removed" }, h("summary", { class: "go" }), gone);
   fill(root, h("section", { class: "page" },
+    crumb("Settings", "#/settings"),
     h("h1", { class: "page-title", text: "What Roxan knows about you." }),
     h("p", { class: "page-lead", text: "Short notes about you and the people, places and projects in your life. Roxan adds one when you tell it something lasting, and shows you each, with an Undo. With every message it is shown up to 40: pinned first, then notes about the names you mention and what those are linked to." }),
     h("p", { class: "fine", text: "Notes are kept in your account on Roxan's servers. The ones it is shown go to its model with your message; the rest stay put." }),

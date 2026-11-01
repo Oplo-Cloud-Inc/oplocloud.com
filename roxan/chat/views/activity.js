@@ -3,7 +3,7 @@
    you, and, so it is never a mystery, what it held back and the reason. It lists
    events, not the words in them. Entries about the vault are the exception to
    "kept by Roxan": they stay on this device, beside the vault. */
-import { h, fill, section, day, on } from "../dom.js";
+import { h, fill, section, day, on, crumb } from "../dom.js";
 import * as local from "../local.js";
 import { S, watch, events } from "../state.js";
 import { soon, busy, logRow, empty } from "../ui.js";
@@ -17,6 +17,7 @@ export async function mount(root) {
   const more = h("button", { class: "btn sm ghost", type: "button", text: "Show more" });
   const note = h("p", { class: "fine", hidden: true, text: "Entries about the vault are kept on this device only." });
   fill(root, h("section", { class: "page" },
+    crumb("Settings", "#/settings"),
     h("h1", { class: "page-title", text: "What has happened." }),
     h("p", { class: "page-lead", text: "A plain record of what Roxan did and why, so nothing happens out of sight. It lists what happened, never the words in it. When Roxan holds a message back, the reason is here." }),
     note, list, h("div", { class: "page-act" }, more)));

@@ -21,6 +21,10 @@ const radios = (label, attr, rows, choose) => {
   return el;
 };
 const sync = (el, attr, value) => el.querySelectorAll("button").forEach(b => b.setAttribute("aria-checked", String(b.dataset[attr] === value)));
+// The pages that are not in the rail, one link row each with what it holds. Their routes are in app.js.
+const hub = (label, rows) => section(label, null, rows.map(([path, name, hint]) => h("a", { class: "row", href: "#" + path },
+  h("div", { class: "row-main" }, h("span", { class: "row-title", text: name }), h("span", { class: "row-sub", text: hint })),
+  h("span", { class: "go sm" }, h("i", { "aria-hidden": "true" })))));
 
 export async function mount(root, { app }) {
   /* ------------------------------------------------ who Roxan is to you */
@@ -109,6 +113,8 @@ export async function mount(root, { app }) {
 
   fill(root, h("section", { class: "page" },
     h("h1", { class: "page-title", text: "Yours to shape and to take away." }),
+    hub("Know", [["/memory", "Memory", "What Roxan has learned about you, as a web or a list."], ["/specialties", "Specialties", "Steps for a task you want done the same way every time."], ["/handoff", "Handoff", "Tasks that need a web browser, written up for you."], ["/vault", "Vault", "Logins, cards and notes, sealed on this device."]]),
+    hub("Control", [["/access", "Access", "What Roxan may do on its own, and what it asks first."], ["/activity", "Activity", "What Roxan did and why, and what it held back."]]),
     section("Name, mark and tone", null, h("div", { class: "fld" }, h("span", { class: "label", text: "Name" }), nameForm), nameErr, h("div", { class: "fld" }, h("span", { class: "label", text: "Mark" }), marks), h("div", { class: "fld" }, h("span", { class: "label", text: "Tone" }), tones)),
     section("Speaking first", null,
       h("p", { text: "Roxan may message you on its own when work finishes or a page changes. It holds back what is not new or not worth your attention, and the Activity page says why." }), levels,

@@ -18,11 +18,11 @@ export const app = {
 };
 
 // The rail, in the order it is drawn. Chats are drawn under Chat, from what Roxan has.
+// Memory, Specialties, Handoff, the Vault, Access and Activity are not here: Settings lists them (views/settings.js).
 const NAV = [
-  [null, [["home", "Today", "/"], ["chat", "Chat", "/chat"]]],
+  [null, [["home", "Today", "/"], ["chat", "Chat", "/chat"], ["projects", "Projects", "/projects"]]],
   ["Work", [["goals", "Goals", "/goals"], ["schedule", "Routines", "/routines"], ["panels", "Panels", "/panels"], ["needs", "Needs you", "/needs"]]],
-  ["Know", [["memory", "Memory", "/memory"], ["specialties", "Specialties", "/specialties"], ["projects", "Projects", "/projects"], ["handoff", "Handoff", "/handoff"], ["vault", "Vault", "/vault"]]],
-  ["Control", [["access", "Access", "/access"], ["activity", "Activity", "/activity"], ["settings", "Settings", "/settings"]]],
+  [null, [["settings", "Settings", "/settings"]]],
 ];
 const ROUTES = [
   { re: /^\/?$/, nav: "home", title: "Today", load: () => import("./views/today.js") },
@@ -32,14 +32,14 @@ const ROUTES = [
   { re: /^\/routines$/, nav: "schedule", title: "Routines", load: () => import("./views/routines.js") },
   { re: /^\/panels(?:\/([\w-]+))?$/, nav: "panels", title: "Panels", load: () => import("./views/panels.js") },
   { re: /^\/needs$/, nav: "needs", title: "Needs you", load: () => import("./views/needs.js") },
-  { re: /^\/memory$/, nav: "memory", title: "Memory", load: () => import("./views/memory.js") },
-  { re: /^\/specialties$/, nav: "specialties", title: "Specialties", load: () => import("./views/specialties.js") },
+  { re: /^\/memory$/, nav: "settings", title: "Memory", load: () => import("./views/memory.js") },
+  { re: /^\/specialties$/, nav: "settings", title: "Specialties", load: () => import("./views/specialties.js") },
   { re: /^\/projects$/, nav: "projects", title: "Projects", load: () => import("./views/projects.js") },
   { re: /^\/p\/([\w-]+)$/, nav: "projects", title: "Project", load: () => import("./views/projects.js") },
-  { re: /^\/handoff$/, nav: "handoff", title: "Handoff", load: () => import("./views/handoff.js") },
-  { re: /^\/vault$/, nav: "vault", title: "Vault", load: () => import("./views/vault.js") },
-  { re: /^\/access$/, nav: "access", title: "Access", load: () => import("./views/access.js") },
-  { re: /^\/activity$/, nav: "activity", title: "Activity", load: () => import("./views/activity.js") },
+  { re: /^\/handoff$/, nav: "settings", title: "Handoff", load: () => import("./views/handoff.js") },
+  { re: /^\/vault$/, nav: "settings", title: "Vault", load: () => import("./views/vault.js") },
+  { re: /^\/access$/, nav: "settings", title: "Access", load: () => import("./views/access.js") },
+  { re: /^\/activity$/, nav: "settings", title: "Activity", load: () => import("./views/activity.js") },
   { re: /^\/settings$/, nav: "settings", title: "Settings", load: () => import("./views/settings.js") },
 ];
 const MISSING = { nav: "", title: "Not found", re: /(?:)/, load: async () => ({ mount: root => { root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That page is not here." }), h("a", { class: "go", href: "#/" }, "Go to Today ", h("i", { "aria-hidden": "true" })))); } }) };
@@ -60,7 +60,7 @@ function shell() {
     return key === "chat" ? h("li", null, link, chatList = h("ul", { class: "chat-list" })) : h("li", null, link);
   };
   const sections = NAV.map(([title, items], i) => h("section", { class: "rail-sec", "aria-labelledby": "rail-h" + i },
-    h("h2", { class: title ? "rail-label" : "sr", id: "rail-h" + i, text: title || "Roxan" }), h("ul", null, items.map(entry))));
+    h("h2", { class: title ? "rail-label" : "sr", id: "rail-h" + i, text: title || (i ? "Settings" : "Roxan") }), h("ul", null, items.map(entry))));
 
   brandMark = h("span", { class: "rail-glyph" });
   brandName = h("span", { class: "rail-name" });
@@ -94,10 +94,7 @@ function paintCounts() {
     schedule: S.routines.filter(r => r.state === "active").length,
     panels: S.panels.length,
     needs: waiting().length,
-    memory: S.memories.filter(m => m.state === "active").length,
-    specialties: S.specialties.length,
     projects: S.projects.filter(p => p.state === "open").length,
-    handoff: S.handoffs.filter(x => x.state === "queued").length,
   };
   for (const [k, el] of Object.entries(counts)) el.textContent = n[k] ? String(n[k]) : "";
   document.querySelector('[data-nav="needs"]')?.toggleAttribute("data-alert", n.needs > 0);
@@ -228,7 +225,7 @@ async function enter() {
     watch("status", soon(paintStatus));
     watch("threads", soon(paintChats));
     watch("live", paintBanner);
-    watch(["seen", "goals", "routines", "panels", "approvals", "questions", "memories", "specialties", "projects", "handoffs"], soon(paintCounts));
+    watch(["seen", "goals", "routines", "panels", "approvals", "questions", "projects"], soon(paintCounts));
   }
   // Routines run in the person's time zone, and a new account starts in UTC: take this device's, once.
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;

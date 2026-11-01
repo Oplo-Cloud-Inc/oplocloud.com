@@ -5,7 +5,7 @@
    you: "done" means you did it yourself and said so. The page says this plainly
    and never shows progress it does not have. Roxan can queue one when you ask
    (it asks you first, unless you changed that in Access). */
-import { h, fill, section, field } from "../dom.js";
+import { h, fill, section, field, crumb } from "../dom.js";
 import { S, watch } from "../state.js";
 import { cardish } from "../sensitive.js";
 import { soon, busy, sure, soonTag, make, edit, drop, ago } from "../ui.js";
@@ -55,6 +55,7 @@ export async function mount(root) {
   const create = h("details", { class: "create" }, h("summary", { class: "btn sm", text: "New Handoff" }),
     handoffForm({ label: "Save Handoff", submit: async v => { const x = await make("handoff", v); made.textContent = `Saved “${x.title}”. Nothing has run.`; create.open = false; } }).form);
   fill(root, h("section", { class: "page" },
+    crumb("Settings", "#/settings"),
     h("h1", { class: "page-title", text: "Tasks that need a computer." }),
     h("p", { class: "page-lead", text: "A Handoff is a task that needs a web browser: buying something, booking, filling in a form. Roxan cannot use a browser yet, so a Handoff is saved here as a written task. None has run, and none will until a computer is connected." }),
     h("p", { class: "fine" }, soonTag(), " A computer of its own for Roxan to work on these is not built yet."),

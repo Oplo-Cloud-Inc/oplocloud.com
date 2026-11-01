@@ -36,6 +36,9 @@ export const fill = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity).f
 // A titled block of a page: a hairline, a small label (and something on its right), then the content.
 export const section = (label, aside, ...kids) => h("section", { class: "sec" }, h("div", { class: "sec-head" }, h("h2", { class: "label", text: label }), aside), ...kids);
 
+// A small link above a page's title, back to where the page is kept.
+export const crumb = (label, href) => h("p", { class: "label crumb" }, h("a", { href, text: label }));
+
 // A label above a form control.
 export const field = (label, control, hint) => h("label", { class: "fld" }, h("span", { class: "label", text: label }), control, hint ? h("span", { class: "fine", text: hint }) : null);
 

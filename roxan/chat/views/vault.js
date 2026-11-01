@@ -9,7 +9,7 @@
    What it does not do yet: nothing fills a login or a card into a website, because
    no computer is connected. Changing a passphrase is not built; deleting the vault
    and making a new one is. */
-import { h, section, field, ago } from "../dom.js";
+import { h, section, field, ago, crumb } from "../dom.js";
 import * as db from "../db.js";
 import * as local from "../local.js";
 import * as vc from "../vaultcrypto.js";
@@ -208,6 +208,7 @@ export async function mount(root, { app }) {
     const body = !app.persistent ? section("Not available here", null, h("p", { text: "This browser is not letting Roxan keep anything on this device, so a vault made here would be lost when you close the tab. Open Roxan in a normal window to use the vault." }))
       : !header ? setup() : !key ? locked(count) : open();
     page.replaceChildren(
+      crumb("Settings", "#/settings"),
       h("h1", { class: "page-title", text: "Secured by OploCloud." }),
       h("p", { class: "page-lead", text: "Logins, cards and notes you would not want anyone to read. Each item is sealed in this browser, with a key made from your passphrase, before it is saved. The passphrase and the key never leave this browser, so neither Roxan, its model nor OploCloud can open the vault, and nothing in it is sent with a message." }),
       h("ul", { class: "facts-list" },

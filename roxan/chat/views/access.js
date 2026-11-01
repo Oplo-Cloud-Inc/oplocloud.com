@@ -7,7 +7,7 @@
    reads a page or a file you attached it asks before it starts anything that
    lasts or keeps a note, because text in a page is data and must not be able to
    talk it into an action. */
-import { h, fill, section } from "../dom.js";
+import { h, fill, section, crumb } from "../dom.js";
 import { S, watch } from "../state.js";
 import { soon, busy, sure, pick, make, edit, drop, usageLine } from "../ui.js";
 
@@ -53,6 +53,7 @@ export async function mount(root) {
   });
 
   fill(root, h("section", { class: "page" },
+    crumb("Settings", "#/settings"),
     h("h1", { class: "page-title", text: "What Roxan may do on its own." }),
     h("p", { class: "page-lead", text: "Every tool Roxan has is in this list. None of them buys, sends email, signs in or runs a browser. For each one you decide: allow it, have Roxan ask you first, or turn it off." }),
     h("p", { class: "fine", text: "After Roxan reads a web page or a file you attached, it asks before it starts or changes a routine, keeps a note, saves a specialty or a Handoff, whatever you choose here. Text in a page is data; it cannot talk Roxan into an action." }),

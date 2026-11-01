@@ -5,7 +5,7 @@
    its reply; a specialty cannot act on its own. You write them here, or Roxan
    sets one up when it sees you do the same task the same way (learning is on),
    and tells you in the chat. */
-import { h, fill, section, field } from "../dom.js";
+import { h, fill, section, field, crumb } from "../dom.js";
 import { S, watch } from "../state.js";
 import * as memory from "../memory.js";
 import { cardish } from "../sensitive.js";
@@ -48,6 +48,7 @@ export async function mount(root) {
   const create = h("details", { class: "create" }, h("summary", { class: "btn sm", text: "New specialty" }),
     specForm({ label: "Save specialty", submit: async v => { await make("specialty", v); made.textContent = `Saved “${v.name}”.`; create.open = false; } }));
   fill(root, h("section", { class: "page" },
+    crumb("Settings", "#/settings"),
     h("h1", { class: "page-title", text: "The way you want it done." }),
     h("p", { class: "page-lead", text: "A specialty is a procedure Roxan follows the same way each time a request fits it: how a return is negotiated, how a weekly report is put together. Write one here, or ask Roxan to make one. With learning on, one you ask Roxan to make is saved at once; with it off, Roxan asks you first." }),
     h("p", { class: "fine", text: "A specialty is only instructions in words. It does not act on its own, it is shown to Roxan with your message when it fits, and nothing from the vault is ever part of one." }),
