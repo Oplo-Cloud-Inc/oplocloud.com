@@ -1,194 +1,192 @@
-/* Roxan's app: the rail, the router, and what every view shares. Each view is a
-   module with mount(root, { app, params }) that returns a cleanup function. */
+/* Roxan's app: the rail, the router, signing in, and what every page shares.
+   Each page is a module with mount(root, { app, params }) that returns a
+   cleanup function. What Roxan knows lives in state.js; pages read it there. */
 import * as db from "./db.js";
-import { h, $, on, emit } from "./dom.js";
-import * as store from "./store.js";
+import { h, fill, $, on, emit } from "./dom.js";
 import * as api from "./api.js";
-import * as proposals from "./proposals.js";
-import * as remind from "./remind.js";
-import * as memory from "./memory.js";
+import * as local from "./local.js";
+import { S, MAIN, start, stop, watch, chats, waiting, name as who } from "./state.js";
 import { icon } from "./icons.js";
+import { mark } from "./mark.js";
+import { soon, sure } from "./ui.js";
 
 export const app = {
-  invite: null,
-  gateway: { state: "checking" },
   persistent: false,
-  canChat() { return this.gateway.state === "open" && this.gateway.access === true && Boolean(this.invite); },
+  prefill: null,                                       // text a page leaves for the composer to open with
+  notify: false,                                       // whether this device may pop up a notice while the tab is in the background
   go(path) { location.hash = "#" + path; },
-  async refresh() {
-    const r = await api.health(this.invite);
-    this.gateway = r.state === "open" ? { state: "open", access: Boolean(this.invite) && r.access === true } : { state: r.state };
-    emit("gateway");
-  },
 };
 
-// The rail, in the order it is drawn. A null path is something not built yet: it is named, marked Soon, and goes nowhere.
-const SECTIONS = [
-  ["Personal", [["home", "Home", "/"], ["chat", "Chat", "/chat"], ["projects", "Projects", "/projects"]]],
-  ["Workspace", [["handoff", "Handoff", "/handoff"], ["actions", "Action Center", "/actions"], ["specialties", "Specialties", "/specialties"], ["schedule", "Scheduled Tasks", "/schedule"], ["panels", "Panels", null]]],
-  ["Manage", [["memory", "Memory", "/memory"], ["vault", "Vault", "/vault"], ["integrations", "Integrations", null], ["activity", "Activity", "/activity"]]],
+// The rail, in the order it is drawn. Chats are drawn under Chat, from what Roxan has.
+const NAV = [
+  [null, [["home", "Today", "/"], ["chat", "Chat", "/chat"]]],
+  ["Work", [["goals", "Goals", "/goals"], ["schedule", "Routines", "/routines"], ["panels", "Panels", "/panels"], ["needs", "Needs you", "/needs"]]],
+  ["Know", [["memory", "Memory", "/memory"], ["specialties", "Specialties", "/specialties"], ["projects", "Projects", "/projects"], ["handoff", "Handoff", "/handoff"], ["vault", "Vault", "/vault"]]],
+  ["Control", [["access", "Access", "/access"], ["activity", "Activity", "/activity"], ["settings", "Settings", "/settings"]]],
 ];
 const ROUTES = [
-  { re: /^\/?$/, name: "home", title: "Home", load: () => import("./views/home.js") },
-  { re: /^\/chat$/, name: "chat", title: "Chat", load: () => import("./views/chat.js") },
-  { re: /^\/c\/([\w-]+)$/, name: "conversation", title: "Conversation", load: () => import("./views/chat.js") },
-  { re: /^\/p\/([\w-]+)$/, name: "project", title: "Project", load: () => import("./views/project.js") },
-  { re: /^\/projects(?:\/(new))?$/, name: "projects", title: "Projects", load: () => import("./views/projects.js") },
-  { re: /^\/actions$/, name: "actions", title: "Action Center", load: () => import("./views/actions.js") },
-  { re: /^\/handoff$/, name: "handoff", title: "Handoff", load: () => import("./views/handoff.js") },
-  { re: /^\/handoff\/([\w-]+)$/, name: "handoff-item", title: "Handoff", load: () => import("./views/handoff.js") },       // /handoff/new opens the list with the form
-  { re: /^\/specialties$/, name: "specialties", title: "Specialties", load: () => import("./views/specialties.js") },
-  { re: /^\/vault$/, name: "vault", title: "Vault", load: () => import("./views/vault.js") },
-  { re: /^\/memory$/, name: "memory", title: "Memory", load: () => import("./views/memory.js") },
-  { re: /^\/schedule$/, name: "schedule", title: "Scheduled Tasks", load: () => import("./views/schedule.js") },
-  { re: /^\/activity$/, name: "activity", title: "Activity", load: () => import("./views/activity.js") },
-  { re: /^\/settings$/, name: "settings", title: "Settings", load: () => import("./views/settings.js") },
+  { re: /^\/?$/, nav: "home", title: "Today", load: () => import("./views/today.js") },
+  { re: /^\/chat$/, nav: "chat", title: "Chat", load: () => import("./views/chat.js") },
+  { re: /^\/c\/([\w-]+)$/, nav: "chat", title: "Chat", load: () => import("./views/chat.js") },
+  { re: /^\/goals(?:\/([\w-]+))?$/, nav: "goals", title: "Goals", load: () => import("./views/goals.js") },
+  { re: /^\/routines$/, nav: "schedule", title: "Routines", load: () => import("./views/routines.js") },
+  { re: /^\/panels(?:\/([\w-]+))?$/, nav: "panels", title: "Panels", load: () => import("./views/panels.js") },
+  { re: /^\/needs$/, nav: "needs", title: "Needs you", load: () => import("./views/needs.js") },
+  { re: /^\/memory$/, nav: "memory", title: "Memory", load: () => import("./views/memory.js") },
+  { re: /^\/specialties$/, nav: "specialties", title: "Specialties", load: () => import("./views/specialties.js") },
+  { re: /^\/projects$/, nav: "projects", title: "Projects", load: () => import("./views/projects.js") },
+  { re: /^\/p\/([\w-]+)$/, nav: "projects", title: "Project", load: () => import("./views/projects.js") },
+  { re: /^\/handoff$/, nav: "handoff", title: "Handoff", load: () => import("./views/handoff.js") },
+  { re: /^\/vault$/, nav: "vault", title: "Vault", load: () => import("./views/vault.js") },
+  { re: /^\/access$/, nav: "access", title: "Access", load: () => import("./views/access.js") },
+  { re: /^\/activity$/, nav: "activity", title: "Activity", load: () => import("./views/activity.js") },
+  { re: /^\/settings$/, nav: "settings", title: "Settings", load: () => import("./views/settings.js") },
 ];
-const MISSING = { name: "", title: "Not found", re: /(?:)/, load: async () => ({ mount: root => { root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That page is not here." }), h("a", { class: "go", href: "#/" }, "Go home ", h("i", { "aria-hidden": "true" })))); } }) };
+const MISSING = { nav: "", title: "Not found", re: /(?:)/, load: async () => ({ mount: root => { root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That page is not here." }), h("a", { class: "go", href: "#/" }, "Go to Today ", h("i", { "aria-hidden": "true" })))); } }) };
+const SHOWN = 6;                                       // chats listed under Chat in the rail; Projects has the rest
 
-const GATEWAY_WORDS = { checking: "Checking", offline: "Offline", busy: "Busy", closed: "Not open yet" };
-const SHOWN = 8;                                   // conversations listed under a project in the rail; the project page has the rest
-const SHOWN_HANDOFFS = 6;                          // recent Handoffs listed in the rail; the Handoff page has the rest
-const FOLDS = new Set(["projects", "handoff"]);    // the rail entries that unfold into a list
-let main, banner, status, who, signBtn, counts = {};
-const trees = {}, heads = {};                      // for each unfoldable entry: the <li> it lives in, and its link
-const open = new Set(["projects", "handoff"]);     // what is unfolded in the rail: "projects", "handoff", and project ids
+let main, banner, brandMark, brandName, status, counts, chatList;
+let wired = false;
+
+/* ------------------------------------------------------------ the rail */
 
 function shell() {
   const root = $("#shell");
   counts = {};
-  const entry = ([name, label, path]) => {
-    if (!path) return h("li", null, h("span", { class: "soon", title: "Not built yet" }, icon(name), h("span", { class: "t", text: label }), h("small", { text: "Soon" })));
-    const count = h("span", { class: "count", "aria-hidden": "true" });
-    counts[name] = count;
-    const link = h("a", { href: "#" + path, data: { nav: name } }, icon(name), h("span", { class: "t", text: label }), count);
-    if (!FOLDS.has(name)) return h("li", null, link);
-    heads[name] = link;
-    return (trees[name] = h("li", { class: "tree-item" }));
+  const entry = ([key, label, path]) => {
+    const n = h("span", { class: "count", "aria-hidden": "true" });
+    counts[key] = n;
+    const link = h("a", { href: "#" + path, data: { nav: key } }, icon(key), h("span", { class: "t", text: label }), n);
+    return key === "chat" ? h("li", null, link, chatList = h("ul", { class: "chat-list" })) : h("li", null, link);
   };
-  const sections = SECTIONS.map(([title, items], i) => h("section", { class: "rail-sec", "aria-labelledby": "rail-h" + i },
-    h("h2", { class: "rail-label", id: "rail-h" + i, text: title }), h("ul", null, items.map(entry))));
+  const sections = NAV.map(([title, items], i) => h("section", { class: "rail-sec", "aria-labelledby": "rail-h" + i },
+    h("h2", { class: title ? "rail-label" : "sr", id: "rail-h" + i, text: title || "Roxan" }), h("ul", null, items.map(entry))));
 
-  status = h("p", { class: "rail-status" });
-  who = h("p", { class: "fine" });
-  signBtn = h("button", { class: "rail-link", type: "button" });
+  brandMark = h("span", { class: "rail-glyph" });
+  brandName = h("span", { class: "rail-name" });
+  status = h("p", { class: "rail-status", role: "status" });
+  const out = sure("Sign out", signOut, { confirm: "Confirm sign out", cls: "rail-link" });
   const rail = h("aside", { class: "rail" },
-    h("a", { class: "rail-brand", href: "/", "aria-label": "Roxan, back to the site" }, h("span", { class: "mark" }), h("span", { text: "Roxan" })),
+    h("a", { class: "rail-brand", href: "#/", "aria-label": "Today" }, brandMark, brandName),
+    status,
     h("nav", { "aria-label": "Roxan" }, sections),
-    h("div", { class: "rail-foot" }, status,
-      h("div", { class: "rail-who" }, h("p", { class: "who-name", text: "Personal workspace" }), who),
-      h("p", { class: "rail-links" }, h("a", { class: "rail-link", href: "#/settings", data: { nav: "settings" }, text: "Settings" }), h("a", { class: "rail-link", href: "/help/", text: "Help" }), signBtn)));
+    h("div", { class: "rail-foot" }, h("p", { class: "rail-links" }, h("a", { class: "rail-link", href: "/help/", text: "Help" }), h("a", { class: "rail-link", href: "/", text: "roxan.oplocloud.com" }), out)));
   banner = h("p", { class: "banner", role: "status", hidden: true });
   main = h("main", { id: "main", tabindex: "-1" }, banner);
-  root.replaceChildren(rail, main);
-  signBtn.addEventListener("click", signOut);
+  fill(root, rail, main);
 }
 
-/* ------------------------------------------------------------ Projects and Handoffs in the rail */
-let treeToken = 0;
-async function drawTree() {
-  const mine = ++treeToken;
-  const [rooms, handoffs] = await Promise.all([db.all("rooms"), db.all("handoffs")]);
-  if (mine !== treeToken) return;                  // a newer draw is already on its way
-  const projects = rooms.filter(r => r.kind === "project").sort((a, b) => b.updatedAt - a.updatedAt);
-  const by = new Map();
-  for (const s of rooms.filter(r => r.kind === "session").sort((a, b) => b.updatedAt - a.updatedAt)) by.set(s.projectId, [...(by.get(s.projectId) || []), s]);
-
-  const fold = async id => {
-    if (!open.delete(id)) open.add(id);
-    store.setMeta("rail:open", [...open]);
-    await drawTree();
-    document.querySelector(`.twisty[data-fold="${id}"]`)?.focus();          // the button was rebuilt; keep a keyboard user where they were
-  };
-  const row = (link, id, what) => h("div", { class: "tree-row" }, link, h("button", { class: "twisty", type: "button", data: { fold: id }, "aria-expanded": String(open.has(id)), "aria-label": what, onclick: () => fold(id) }));       // the name stays put; aria-expanded says which way it is
-  const fresh = async id => { const s = await store.newSession(id); open.add(id); app.go("/c/" + s.id); };
-  const leaf = (s, href, key) => h("li", null, h("a", { href, data: { [key]: s.id }, title: s.name }, h("span", { class: "t", text: s.name })));
-
-  const list = !open.has("projects") ? null : h("ul", { id: "tree-projects" },
-    projects.map(p => {
-      const kids = by.get(p.id) || [];
-      return h("li", null, row(h("a", { href: "#/p/" + p.id, data: { proj: p.id }, title: p.name }, h("span", { class: "t", text: p.name })), p.id, `Conversations in ${p.name}`),
-        !open.has(p.id) ? null : h("ul", null,
-          kids.slice(0, SHOWN).map(s => leaf(s, "#/c/" + s.id, "room")),
-          kids.length > SHOWN ? h("li", null, h("a", { class: "tree-more", href: "#/p/" + p.id, text: `All ${kids.length} conversations` })) : null,
-          h("li", null, h("button", { class: "tree-new", type: "button", text: "New conversation", onclick: () => fresh(p.id) }))));
-    }),
-    h("li", null, h("a", { class: "tree-new", href: "#/projects/new", text: "New project" })));
-  trees.projects.replaceChildren(...[row(heads.projects, "projects", "Project list"), list].filter(Boolean));       // a folded list is null, and replaceChildren would write it out as the word "null"
-
-  const recent = handoffs.filter(x => x.state !== "dropped").sort((a, b) => b.updatedAt - a.updatedAt);
-  const saved = !open.has("handoff") ? null : h("ul", { id: "tree-handoff" },
-    recent.slice(0, SHOWN_HANDOFFS).map(x => h("li", null, h("a", { href: "#/handoff/" + x.id, data: { handoff: x.id }, title: x.title }, h("span", { class: "t", text: x.title })))),
-    recent.length > SHOWN_HANDOFFS ? h("li", null, h("a", { class: "tree-more", href: "#/handoff", text: `All ${recent.length} Handoffs` })) : null,
-    h("li", null, h("a", { class: "tree-new", href: "#/handoff/new", text: "New Handoff" })));
-  trees.handoff.replaceChildren(...[row(heads.handoff, "handoff", "Recent Handoffs"), saved].filter(Boolean));
-  markCurrent();
-}
-
-// The conversation or project you are looking at is marked in the rail, and unfolded if it was folded.
-function markCurrent() {
-  const m = /^#\/([pc])\/([\w-]+)$/.exec(location.hash), x = /^#\/handoff\/([\w-]+)$/.exec(location.hash);
-  document.querySelectorAll("[data-room], [data-proj]").forEach(a => {
-    const here = m && (m[1] === "c" ? a.dataset.room === m[2] : a.dataset.proj === m[2]);
-    if (here) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-  });
-  document.querySelectorAll("[data-handoff]").forEach(a => {
-    if (x && a.dataset.handoff === x[1]) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-  });
-}
-async function reveal() {
-  const x = /^#\/handoff\/([\w-]+)$/.exec(location.hash);
-  if (x && x[1] !== "new" && !open.has("handoff")) { open.add("handoff"); await drawTree(); return; }
-  const m = /^#\/([pc])\/([\w-]+)$/.exec(location.hash);
-  if (!m) return;
-  const room = await store.getRoom(m[2]);
-  const id = room?.kind === "session" ? room.projectId : room?.id;
-  if (id && !(open.has(id) && open.has("projects"))) { open.add(id); open.add("projects"); await drawTree(); }
-}
-
-/* ------------------------------------------------------------ Account */
-let armed = 0;
-function paintAccount() {
-  who.textContent = app.invite ? "Invite code kept on this device" : "No invite code on this device";
-  signBtn.textContent = app.invite ? "Sign out" : "Sign in";
-  delete signBtn.dataset.armed;
-}
-async function signOut() {
-  if (!app.invite) { app.go("/settings"); return; }
-  if (!armed) { signBtn.textContent = "Confirm sign out"; signBtn.dataset.armed = "1"; armed = setTimeout(() => { armed = 0; paintAccount(); }, 5000); return; }       // a second press within five seconds
-  clearTimeout(armed);
-  armed = 0;
-  await store.delMeta("invite");
-  app.invite = null;
-  await app.refresh();
-  paintAccount();
-  toast({ text: "Signed out. Your conversations stay on this device.", sub: "Sign out" });
-}
-
-async function updateCounts() {
-  const [pending, notes, reminders, handoffs, specialties] = await Promise.all([proposals.pending(), db.all("memories"), db.all("reminders"), db.all("handoffs"), db.all("specialties")]);
-  const n = {
-    actions: pending.length, memory: memory.live(notes).length, schedule: reminders.filter(r => r.state === "scheduled").length,
-    handoff: handoffs.filter(x => x.state === "waiting").length, specialties: specialties.filter(s => !s.deleted && s.on !== false).length,
-  };
-  for (const [k, el] of Object.entries(counts)) el.textContent = n[k] ? String(n[k]) : "";
+function paintBrand() {
+  fill(brandMark, mark(S.settings.mark));
+  brandName.textContent = who();
 }
 
 function paintStatus() {
-  const g = app.gateway;
-  status.textContent = g.state === "open" ? (g.access ? "Connected" : "Invite needed") : GATEWAY_WORDS[g.state] || "";
-  status.dataset.state = g.state === "open" && g.access ? "ok" : "off";
-  paintAccount();
+  const s = S.status;
+  status.dataset.state = s.state;
+  status.textContent = status.title = s.text || "Ready";
 }
 
-function toast({ text, sub, tone = "info" }) {
+function paintCounts() {
+  const n = {
+    chat: S.unread,
+    goals: S.goals.filter(g => g.state === "active").length,
+    schedule: S.routines.filter(r => r.state === "active").length,
+    panels: S.panels.length,
+    needs: waiting().length,
+    memory: S.memories.filter(m => m.state === "active").length,
+    specialties: S.specialties.length,
+    projects: S.projects.filter(p => p.state === "open").length,
+    handoff: S.handoffs.filter(x => x.state === "queued").length,
+  };
+  for (const [k, el] of Object.entries(counts)) el.textContent = n[k] ? String(n[k]) : "";
+  document.querySelector('[data-nav="needs"]')?.toggleAttribute("data-alert", n.needs > 0);
+}
+
+function paintChats() {
+  const list = chats();
+  fill(chatList, list.slice(0, SHOWN).map(t => h("li", null, h("a", { href: "#/c/" + t.id, data: { chat: t.id }, title: t.title || "New chat" }, h("span", { class: "t", text: t.title || "New chat" })))),
+    h("li", null, h("button", { class: "tree-new", type: "button", text: "New chat", onclick: newChat })),
+    list.length > SHOWN ? h("li", null, h("a", { class: "tree-more", href: "#/projects", text: `All ${list.length} chats` })) : null);
+  markCurrent();
+}
+
+async function newChat() {
+  try {
+    const { item } = await api.post("/items", { kind: "thread" });
+    app.go("/c/" + item.id);
+  } catch (e) { toast({ text: e.message, tone: "error" }); }
+}
+
+const nav = name => document.querySelectorAll("[data-nav]").forEach(a => (a.dataset.nav === name ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+function markCurrent() {
+  const m = /^#\/c\/([\w-]+)$/.exec(location.hash);
+  document.querySelectorAll("[data-chat]").forEach(a => (m && a.dataset.chat === m[1] ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+}
+
+function paintBanner() {
+  const words = S.live === "live" ? "" : S.live === "polling" ? "Live updates are not reaching this page, so it checks every few seconds instead." : "Reconnecting…";
+  banner.hidden = !words;
+  banner.textContent = words;
+}
+
+/* ------------------------------------------------------------ toasts */
+
+function toast({ text, sub, tone = "info", href }) {
   const box = $("#toasts");
   const el = h("div", { class: "toast", data: { tone } },
-    h("div", null, sub ? h("p", { class: "label", text: sub }) : null, h("p", { class: "toast-text", text })),
+    h("div", null, sub ? h("p", { class: "label", text: sub }) : null, h("p", { class: "toast-text", text }), href ? h("a", { class: "go sm", href }, "Open ", h("i", { "aria-hidden": "true" })) : null),
     h("button", { class: "x", type: "button", "aria-label": "Dismiss", text: "×", onclick: () => el.remove() }));
   box.append(el);
-  if (tone === "info") setTimeout(() => el.remove(), 7000);
+  if (tone !== "error") setTimeout(() => el.remove(), 8000);
+  else setTimeout(() => el.remove(), 14000);
 }
+
+// Roxan spoke first. The notice is skipped when that conversation is already in front of the person.
+function said(m) {
+  const here = location.hash === (m.thread === MAIN ? "#/chat" : "#/c/" + m.thread);
+  if (document.hidden && app.notify && globalThis.Notification?.permission === "granted") {
+    const n = new Notification(who(), { body: m.text, tag: "roxan" });
+    n.onclick = () => { window.focus(); app.go(m.thread === MAIN ? "/chat" : "/c/" + m.thread); n.close(); };
+  }
+  if (!here || document.hidden) toast({ sub: who(), text: m.text, tone: "said", href: m.thread === MAIN ? "#/chat" : "#/c/" + m.thread });
+}
+
+/* ------------------------------------------------------------ signing in and out */
+
+function gate(why, note = "") {
+  stop();
+  const body = {
+    offline: [h("h1", { class: "page-title", text: "Roxan cannot be reached." }), h("p", { class: "page-lead", text: note || "Check your connection. Nothing is lost: what Roxan keeps is kept on its side." }), h("div", { class: "btns" }, h("button", { class: "btn", type: "button", text: "Try again", onclick: boot }))],
+    closed: [h("h1", { class: "page-title", text: "Roxan is not open yet." }), h("p", { class: "page-lead", text: "Roxan is in a closed beta and the doors have not been opened. The status page says when they are." }), h("div", { class: "btns" }, h("a", { class: "btn ghost", href: "/status/", text: "Status" }))],
+  }[why];
+  if (body) return fill($("#shell"), h("main", { id: "main", class: "boot signin" }, h("section", { class: "gatebox" }, h("span", { class: "label", text: "Roxan" }), body)));
+
+  const input = h("input", { id: "code", name: "code", type: "password", autocomplete: "current-password", autocapitalize: "off", spellcheck: "false", "aria-label": "Invite code", placeholder: "Invite code", required: true });
+  const err = h("p", { class: "err", role: "alert" });
+  const go = h("button", { class: "btn", type: "submit", text: "Sign in" });
+  const form = h("form", { class: "gate-form" }, input, go);
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!input.value.trim()) return;
+    go.disabled = true;
+    err.textContent = "";
+    try { await api.signIn(input.value.trim()); input.value = ""; await boot(); }
+    catch (x) { err.textContent = x.message; go.disabled = false; input.select(); }
+  });
+  fill($("#shell"), h("main", { id: "main", class: "boot signin" }, h("section", { class: "gatebox" },
+    h("span", { class: "label", text: "Roxan" }), h("h1", { class: "page-title", text: "Sign in." }),
+    h("p", { class: "page-lead", text: "Roxan is in a closed beta. Type the invite code you were given. It is traded for a sign-in that lasts four weeks on this browser, and the code itself is not kept." }),
+    form, err, h("p", { class: "fine" }, "No code? ", h("a", { class: "link", href: "/pricing/", text: "See how to ask for one" }), "."))));
+  input.focus();
+}
+
+async function signOut() {
+  try { await api.signOut(); } catch { /* the cookie is cleared by the server; a failure here leaves nothing worse than staying signed in */ }
+  gate("signin");
+}
+
+/* ------------------------------------------------------------ routing */
 
 let token = 0, current = null;
 async function route() {
@@ -198,55 +196,59 @@ async function route() {
   const mine = ++token;
   if (typeof current === "function") current();
   current = null;
-  $$nav(r.name);
+  nav(r.nav);
   markCurrent();
-  reveal();
-  document.title = `${r.title} — Roxan`;
-  main.replaceChildren(banner);
+  document.title = `${r.title} — ${who()}`;
+  fill(main, banner);
   let mod;
   try { mod = await r.load(); } catch { mod = await MISSING.load(); }
   if (mine !== token) return;
-  const view = h("div", { class: `view view-${r.name || "none"}` });
+  const view = h("div", { class: `view view-${r.nav || "none"}` });
   main.append(view);
   current = await mod.mount(view, { app, params });
   if (mine !== token && typeof current === "function") { current(); current = null; }
   if (!document.activeElement || document.activeElement === document.body) main.focus({ preventScroll: true });
 }
-function $$nav(name) {
-  document.querySelectorAll("[data-nav]").forEach(a => {
-    if (a.dataset.nav === name) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-  });
+
+/* ------------------------------------------------------------ start */
+
+async function enter() {
+  shell();
+  paintBrand(); paintStatus(); paintCounts(); paintChats(); paintBanner();
+  document.documentElement.dataset.signedin = "";
+  if (!wired) {
+    wired = true;
+    on("toast", e => toast(e.detail));
+    on("said", e => said(e.detail));
+    on("signedout", () => { stop(); gate("signin"); });
+    addEventListener("hashchange", route);
+    $(".skip").addEventListener("click", e => { e.preventDefault(); main.focus(); });          // a #hash here would be taken for a route
+    // a change called "all" (the first load, or a fresh one after a lost connection) reaches every watcher
+    watch("settings", () => { paintBrand(); document.title = `${document.title.split(" — ")[0]} — ${who()}`; });
+    watch("status", soon(paintStatus));
+    watch("threads", soon(paintChats));
+    watch("live", paintBanner);
+    watch(["seen", "goals", "routines", "panels", "approvals", "questions", "memories", "specialties", "projects", "handoffs"], soon(paintCounts));
+  }
+  // Routines run in the person's time zone, and a new account starts in UTC: take this device's, once.
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (S.settings.tz === "UTC" && zone && zone !== "UTC" && !(await local.getMeta("tz:auto"))) {
+    await local.setMeta("tz:auto", true);
+    api.put("/settings", { tz: zone }).catch(() => {});
+  }
+  await route();
 }
 
 async function boot() {
   app.persistent = await db.open();
-  await store.ensureMain();
-  try { await store.migrateLegacy(); } catch { /* it only copies, so a failed move is simply tried again next time */ }
-  app.invite = await store.getMeta("invite");
-  const saved = await store.getMeta("rail:open");
-  if (Array.isArray(saved)) { open.clear(); saved.forEach(id => open.add(id)); }
-  await proposals.expireStale();
-  shell();
-  if (!app.persistent) {
-    banner.hidden = false;
-    banner.textContent = "This browser is not letting Roxan keep anything on this device, so what you write here is lost when you close the tab. A private window can cause this.";
-  }
-  $(".skip").addEventListener("click", e => { e.preventDefault(); main.focus(); });          // a #hash here would be taken for a route
-  on("gateway", paintStatus);
-  on("toast", e => toast(e.detail));
-  on("rooms", drawTree);
-  on("handoffs", drawTree);
-  for (const ev of ["proposal", "memories", "reminders", "handoffs", "specialties"]) on(ev, updateCounts);
-  paintStatus();
-  updateCounts();
-  await drawTree();
-  remind.start();
-  addEventListener("hashchange", route);
-  addEventListener("online", () => app.refresh());
-  addEventListener("focus", () => app.refresh());
-  setInterval(() => app.refresh(), 60_000);
-  app.refresh();
-  await route();
+  app.notify = Boolean(await local.getMeta("notify"));
+  const hl = await api.health();
+  if (!hl.ok) return gate("offline", hl.offline ? "" : "Roxan is busy. Try again in a minute.");
+  if (hl.gateway !== "open") return gate("closed");
+  if (hl.access !== true) return gate("signin");
+  try { await start(); }
+  catch (e) { return e.status === 401 ? gate("signin") : gate("offline", e.message); }
+  await enter();
 }
 
 boot();

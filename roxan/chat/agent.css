@@ -1,0 +1,128 @@
+/* ==========================================================================
+   Roxan, the always-on assistant: what the pages add on top of chat.css. The
+   mark, the status line, the first meeting, the parts of a reply, goals and
+   checklists, and the pickers in Settings. Same rules as the rest: black,
+   white and a hairline. A state is a word and a shape (a hollow or a filled
+   dot, a dashed or a solid edge), never a colour alone.
+   ========================================================================== */
+
+/* ------------------------------------------------------------ The mark: line only, drawn in the colour of the text beside it */
+.glyph { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.glyph .solid { fill: currentColor; stroke: none; }
+.glyph.big { width: 40px; height: 40px; stroke-width: 1.1; }
+.glyph.think { animation: breathe 1.6s var(--io) infinite; }
+
+/* ------------------------------------------------------------ Rail */
+.rail-glyph { display: grid; place-items: center; flex: none; width: 22px; height: 22px; }
+.rail-glyph .glyph { width: 22px; height: 22px; }
+.rail-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-list { margin: 2px 0 6px 17px; padding-left: 8px; border-left: 1px solid var(--line); }
+.rail .chat-list a, .rail .tree-new { height: 28px; padding: 0 10px; font-size: 13px; }
+/* What waits for you is the one number that gets a dot, so it is seen without colour. */
+.rail nav a[data-alert] .count { color: #fff; }
+.rail nav a[data-alert] .count:not(:empty)::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+
+/* What Roxan is doing: a hollow dot when idle, a filled one that breathes while it works, a dashed one when paused. */
+.rail-status[data-state="working"], .today-status[data-state="working"] { color: var(--text); }
+.rail-status[data-state="working"]::before, .today-status[data-state="working"]::before { background: currentColor; animation: breathe 1.6s var(--io) infinite; }
+.rail-status[data-state="paused"]::before, .today-status[data-state="paused"]::before { border-style: dashed; }
+
+/* ------------------------------------------------------------ Signing in */
+#main.boot { display: grid; place-content: center; gap: 14px; height: 100dvh; text-align: center; }
+.gatebox { display: grid; justify-items: center; gap: 14px; max-width: 460px; padding: 0 24px; }
+.gatebox .page-title { margin: 0; }
+.gatebox .page-lead { margin-inline: auto; }
+.gatebox .gate-form { margin-top: 6px; max-width: 360px; }
+.gatebox .btns { justify-content: center; }
+
+/* ------------------------------------------------------------ Today */
+.today .page-title { margin-bottom: 0; font-size: clamp(40px, 4.6vw, 64px); letter-spacing: -.055em; line-height: 1.04; }
+.today .page-title + .page-lead { margin-top: 14px; }
+.today-status { margin-top: 12px; font: 400 14px/1.4 var(--fb); color: var(--dim); }
+.today-status::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 9px; border: 1px solid currentColor; border-radius: 50%; }
+.today .ask { margin-top: 28px; }
+.today-body { margin-top: 4px; }
+.none-box { padding: 28px 0 8px; }
+.none-title { margin-bottom: 8px; font: 300 22px/1.2 var(--fd); letter-spacing: -.04em; }
+.none-box .ideas { margin-top: 18px; }
+.none-box .btn { margin-top: 14px; }
+
+/* The first time: a name, a mark, a tone. */
+.meet { display: grid; gap: 28px; max-width: 640px; margin-top: 28px; }
+.meet-id { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end; gap: 20px; }
+.meet-glyph { display: grid; place-items: center; width: 76px; height: 76px; border: 1px solid var(--line-2); border-radius: 50%; }
+.marks { display: flex; flex-wrap: wrap; gap: 8px; }
+.mark-opt { display: grid; place-items: center; width: 52px; height: 52px; border: 1px solid var(--line-2); border-radius: var(--r3); color: var(--muted); transition: color var(--t), border-color var(--t), background var(--t); }
+.mark-opt .glyph { width: 26px; height: 26px; }
+.mark-opt:hover { color: #fff; border-color: var(--line-3); background: var(--wash); }
+.mark-opt[aria-pressed="true"] { border-color: #fff; background: var(--raise); color: #fff; }
+.tones { display: grid; gap: 8px; max-width: 640px; }
+.tone-opt { display: grid; gap: 2px; padding: 12px 16px; border: 1px solid var(--line-2); border-radius: var(--r2); text-align: left; transition: border-color var(--t), background var(--t); }
+.tone-opt:hover { border-color: var(--line-3); background: var(--wash); }
+.tone-opt[aria-checked="true"] { border-color: #fff; background: var(--raise); }
+.tone-name { font: 500 14.5px/1.3 var(--fb); }
+.tone-name::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 10px; border: 1px solid currentColor; border-radius: 50%; vertical-align: 1px; }
+.tone-opt[aria-checked="true"] .tone-name::before { background: currentColor; }
+
+/* ------------------------------------------------------------ The conversation */
+.msg { align-items: flex-start; }
+.gl { flex: none; margin-top: 4px; color: var(--dim); }
+.msg.bot .col { display: block; flex: 1; min-width: 0; }
+.msg.bot .col > * + * { margin-top: 10px; }
+.from { font: 500 12.5px/1.3 var(--fb); color: var(--dim); }
+.from[hidden], .issue[hidden] { display: none; }
+/* What it did on the way: a hollow dot while it waits for you, a filled one when it is done, a dashed one when it did not work. */
+.trace { display: grid; gap: 5px; font-size: 13.5px; color: var(--muted); }
+.trace:empty, .learned:empty, .cards:empty { display: none; }
+.trace li { display: flex; align-items: baseline; gap: 10px; }
+.trace li::before { content: ""; flex: none; width: 6px; height: 6px; border: 1px solid currentColor; border-radius: 50%; transform: translateY(-1px); }
+.trace li[data-state="ok"]::before { background: currentColor; }
+.trace li[data-state="no"]::before { border-style: dashed; }
+.trace small { font-size: 12px; color: var(--dim); }
+.learned, .cards { display: grid; gap: 10px; }
+.learned .mem, .cards .act { margin: 0; }
+.issue { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--line-3); border-radius: var(--r2); font-size: 14px; line-height: 1.5; }
+.issue > span { flex: 1; }
+.foot { display: flex; align-items: center; gap: 14px; }
+.foot .meta { margin: 0; }
+.foot .act-btn { height: 24px; padding: 0 10px; opacity: 0; transition: opacity var(--t), color var(--t), border-color var(--t), background var(--t); }
+.msg:hover .foot .act-btn, .msg:focus-within .foot .act-btn { opacity: 1; }
+.msg[data-status="streaming"] .foot .act-btn { display: none; }
+.note { margin-left: 0; }
+.list > .note { margin-left: 30px; }
+
+.toast[data-tone="said"], .toast[data-tone="error"] { border-color: #fff; }
+.tag.next { border-style: dashed; color: var(--dim); }
+
+/* A question Roxan cannot go on without: the answer box sits inside the card. */
+.act .ask-row { max-width: none; margin-top: 12px; }
+.shell .act .ask-row input { height: 36px; border-radius: var(--r1); background: var(--bg); font-size: 14px; }
+.act .ask-row .btn { height: 36px; }
+
+/* ------------------------------------------------------------ Goals, checklists, documents */
+progress { appearance: none; flex: none; width: 120px; max-width: 100%; height: 4px; border: 0; border-radius: 999px; background: var(--line-2); overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--line-2); }
+progress::-webkit-progress-value { background: #fff; border-radius: 999px; }
+progress::-moz-progress-bar { background: #fff; border-radius: 999px; }
+.page > progress { display: block; width: 100%; max-width: 360px; margin: 14px 0 0; }
+.checks { display: grid; margin-top: 6px; }
+.step { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.step .check { flex: 1; align-items: center; min-width: 0; }
+.step .check span { overflow-wrap: anywhere; }
+.step[data-done="true"] .check span { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--line-3); }
+.x { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font-size: 18px; line-height: 1; color: var(--muted); transition: color var(--t), background var(--t); }
+.x:hover { color: #fff; background: var(--wash); }
+.panel-body { margin-top: 26px; }
+.panel-body .btns { margin-top: 16px; }
+.doc { padding: 22px 26px; border: 1px solid var(--line); border-radius: var(--r3); background: var(--panel); }
+.panel-body textarea.field { font-family: var(--fb); }
+
+/* ------------------------------------------------------------ Routines, access, handoff */
+.row.routine { align-items: flex-start; }
+.weekdays { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.cap .row-sub { white-space: normal; }
+.row-acts select { min-width: 176px; }
+.row.editing { display: block; }
+.row.editing .pform { max-width: none; margin-top: 0; }
+.rows { display: grid; }
+.rows > .none { border-bottom: 0; }

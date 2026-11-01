@@ -1,21 +1,107 @@
-/* Tests for the parts of the chat app that need no page: the notes and their web,
-   what learning may keep, specialties and Handoffs, the body sent to the gateway,
-   and the vault's cryptography. db.js falls back to plain memory when there is no
-   IndexedDB, so the real code runs here as it does in a private window. */
+/* Tests for the parts of the chat app that need no page: how the page keeps
+   what the server says true, the notes and their web, the vault's cryptography,
+   and three things that must stay true of the code itself: every import
+   resolves (a browser only finds out when a person opens the page), pages are
+   built from elements and not HTML strings, and nothing that can talk to
+   Roxan can read the vault. */
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import * as db from "../../roxan/chat/db.js";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import * as memory from "../../roxan/chat/memory.js";
-import * as proposals from "../../roxan/chat/proposals.js";
-import * as store from "../../roxan/chat/store.js";
-import * as turn from "../../roxan/chat/turn.js";
 import * as vc from "../../roxan/chat/vaultcrypto.js";
+import { S, MAIN, apply, clear, watch, waiting, chats, find } from "../../roxan/chat/state.js";
 import { cardish, SENSITIVE } from "../../roxan/chat/sensitive.js";
 
-beforeEach(async () => { await db.clearAll(); });
+const CHAT = resolve(dirname(fileURLToPath(import.meta.url)), "../../roxan/chat");
+const WORKER = resolve(CHAT, "../../worker");
+const walk = (dir, out = []) => { for (const f of readdirSync(dir, { withFileTypes: true })) { const p = join(dir, f.name); f.isDirectory() ? walk(p, out) : p.endsWith(".js") && out.push(p); } return out; };
+const read = f => readFileSync(f, "utf8");
+
+beforeEach(() => clear());
 
 const note = (id, text, about, extra = {}) => ({ id, text, about, updatedAt: 1, createdAt: 1, ...extra });
+
+/* ------------------------------------------------------------------ keeping true */
+
+test("state: an item that arrives is kept newest first, replaced by id, and removed when it is gone", () => {
+  const heard = [];
+  const off = watch("goals", d => heard.push(d.id));
+  apply({ t: "item", item: { id: "g1", kind: "goal", title: "A", updated: 1 } });
+  apply({ t: "item", item: { id: "g2", kind: "goal", title: "B", updated: 2 } });
+  assert.deepEqual(S.goals.map(g => g.id), ["g2", "g1"]);
+  apply({ t: "item", item: { id: "g1", kind: "goal", title: "A again", updated: 3 } });
+  assert.deepEqual(S.goals.map(g => [g.id, g.title]), [["g1", "A again"], ["g2", "B"]]);
+  apply({ t: "gone", id: "g2" });
+  assert.deepEqual(S.goals.map(g => g.id), ["g1"]);
+  assert.deepEqual(heard, ["g1", "g2", "g1", "g2"], "every change was announced to whoever watches goals");
+  off();
+  assert.equal(find("g1").title, "A again");
+  assert.equal(find("nope"), null);
+});
+
+test("state: a conversation remembers its last line, and a rename does not forget it", () => {
+  apply({ t: "item", item: { id: "t1", kind: "thread", title: "Trip", updated: 1 } });
+  apply({ t: "msg", message: { id: 1, thread: "t1", role: "user", text: "hello   there", at: 5 } });
+  assert.deepEqual(S.threads[0].last, { role: "user", text: "hello there", at: 5 });
+  apply({ t: "item", item: { id: "t1", kind: "thread", title: "Renamed", updated: 2 } });
+  assert.deepEqual([S.threads[0].title, S.threads[0].last.text], ["Renamed", "hello there"]);
+  assert.deepEqual(chats().map(t => t.id), ["t1"]);
+  apply({ t: "item", item: { id: MAIN, kind: "thread", title: "Main", updated: 3 } });
+  apply({ t: "item", item: { id: "t2", kind: "thread", title: "Old", state: "archived", updated: 4 } });
+  assert.deepEqual(chats().map(t => t.id), ["t1"], "Main and archived chats are not side chats");
+});
+
+test("state: Roxan speaking first in Main is unread once, until it is seen", () => {
+  apply({ t: "item", item: { id: MAIN, kind: "thread", title: "Main", updated: 1 } });
+  const first = { id: 7, thread: MAIN, role: "assistant", text: "Your page changed.", from: "roxan", at: 100 };
+  apply({ t: "msg", message: first });
+  apply({ t: "msg", message: { ...first } });
+  assert.equal(S.unread, 1, "the same message again (a refetch) is not a second one");
+  apply({ t: "msg", message: { id: 8, thread: MAIN, role: "assistant", text: "A reply", at: 101 } });
+  assert.equal(S.unread, 1, "an answer to a message is not Roxan speaking first");
+  apply({ t: "seen", seen: 200 });
+  assert.equal(S.unread, 0);
+  apply({ t: "msg", message: { id: 9, thread: MAIN, role: "assistant", text: "old", from: "roxan", at: 150 } });
+  assert.equal(S.unread, 0, "older than the last time it was seen");
+});
+
+test("state: a reply grows by the pieces that arrive, however they repeat or overlap, and never across a gap", () => {
+  S.msgs.set("t", { list: [{ id: 1, thread: "t", role: "assistant", text: "Hel", streaming: true, at: 1 }], more: false, loaded: true });
+  const text = () => S.msgs.get("t").list[0].text;
+  apply({ t: "delta", id: 1, thread: "t", text: "lo ", at: 3 });
+  assert.equal(text(), "Hello ");
+  apply({ t: "delta", id: 1, thread: "t", text: "lo ", at: 3 });
+  assert.equal(text(), "Hello ", "the same piece twice");
+  apply({ t: "delta", id: 1, thread: "t", text: "lo world", at: 3 });
+  assert.equal(text(), "Hello world", "a piece that overlaps what is there adds only its new end");
+  apply({ t: "delta", id: 1, thread: "t", text: "!!", at: 99 });
+  assert.equal(text(), "Hello world", "a piece after a gap is not guessed at; the page asks for the whole reply again");
+});
+
+test("state: steps, status, settings, the log and a cleared conversation follow what the server says", () => {
+  S.msgs.set("t", { list: [{ id: 1, thread: "t", role: "assistant", text: "Working", at: 1 }], more: false, loaded: true });
+  apply({ t: "steps", id: 1, thread: "t", steps: [{ label: "Read a page", ok: true }] });
+  assert.equal(S.msgs.get("t").list[0].steps[0].label, "Read a page");
+  apply({ t: "status", status: { state: "working", text: "Reading a page" } });
+  assert.deepEqual([S.status.state, S.status.text], ["working", "Reading a page"]);
+  apply({ t: "settings", settings: { ...S.settings, name: "Juno" } });
+  assert.equal(S.settings.name, "Juno");
+  apply({ t: "event", event: { id: 2, at: 2, kind: "run", text: "second" } });
+  apply({ t: "event", event: { id: 3, at: 3, kind: "run", text: "third" } });
+  apply({ t: "event", event: { id: 2, at: 2, kind: "run", text: "second, again" } });
+  assert.deepEqual(S.events.map(e => e.id), [2, 3], "a repeat replaces the earlier line and the newest delivery comes first");
+  apply({ t: "cleared", thread: "t" });
+  assert.deepEqual(S.msgs.get("t").list, []);
+});
+
+test("state: what waits for a yes is what is still awaiting, newest first", () => {
+  apply({ t: "item", item: { id: "a1", kind: "approval", state: "awaiting", created: 1, updated: 1 } });
+  apply({ t: "item", item: { id: "a2", kind: "approval", state: "approved", created: 2, updated: 2 } });
+  apply({ t: "item", item: { id: "q1", kind: "question", state: "awaiting", created: 3, updated: 3 } });
+  assert.deepEqual(waiting().map(x => x.id), ["q1", "a1"]);
+});
 
 /* ------------------------------------------------------------------ the web */
 
@@ -68,6 +154,13 @@ test("memory: a new note must rest on what the user wrote", () => {
   assert.ok(!memory.grounded(note("x", "Likes jazz", ["You"]), "What time is it?"));
 });
 
+test("memory: a note Roxan has is known, and one the person removed is refused", () => {
+  const notes = [note("1", "Priya is my manager", ["You", "Priya"]), note("2", "Likes jazz", [], { deleted: true })];
+  assert.equal(memory.status("priya is my manager", notes), "known");
+  assert.equal(memory.status("Likes jazz", notes), "refused");
+  assert.equal(memory.status("Allergic to nuts", notes), null);
+});
+
 test("sensitive: card numbers are found by their check digit, and sensitive words are flagged", () => {
   assert.ok(cardish("pay with 4242 4242 4242 4242 please"));
   assert.ok(cardish("4242-4242-4242-4242"));
@@ -77,144 +170,37 @@ test("sensitive: card numbers are found by their check digit, and sensitive word
   assert.ok(!SENSITIVE.test("I like green tea"));
 });
 
-/* ------------------------------------------------------------------ learning */
+/* ------------------------------------------------------------------ the code itself */
 
-const said = "Alpha Bravo Charlie Delta live nearby";
-const ctx = (over = {}) => ({ learning: true, said, recent: said, files: false, kept: 0, ...over });
-
-test("learning: a note that rests on what was said is kept at once, shown as learned, and can be undone for good", async () => {
-  const ev = await proposals.create("main", "save_memory", { text: "Priya is my manager", about: ["me", "Priya"], kind: "person" }, ctx({ said: "Priya is my manager at Acme" }));
-  assert.equal(ev.state, "done");
-  assert.equal(ev.auto, true);
-  const [m] = await db.all("memories");
-  assert.deepEqual([m.text, m.about, m.kind, m.auto], ["Priya is my manager", ["You", "Priya"], "person", true]);
-  assert.match(proposals.note(ev, []), /kept straight away because learning is on/);
-
-  const undone = await proposals.undo(ev.id);
-  assert.ok(undone.ok);
-  const [gone] = await db.all("memories");
-  assert.deepEqual([gone.deleted, gone.reason], [true, "undone"]);
-  assert.equal((await db.get("events", ev.id)).state, "undone");
-  assert.match(proposals.note(await db.get("events", ev.id), []), /the user undid it/);
-  assert.equal(await proposals.create("main", "save_memory", { text: "Priya is my manager", about: ["You"] }, ctx({ said: "Priya is my manager" })), null, "an undone note is not suggested again");
-  assert.equal((await proposals.undo(ev.id)).ok, false, "and undoing twice does nothing");
+test("client: every import points at a file that exists and exports the name", () => {
+  const exportsOf = src => {
+    const out = new Set();
+    for (const m of src.matchAll(/export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([\w$]+)/g)) out.add(m[1]);
+    for (const m of src.matchAll(/export\s*\{([^}]*)\}/g)) for (const n of m[1].split(",")) { const x = n.trim().split(/\s+as\s+/).pop(); if (x) out.add(x); }
+    if (/export\s+\*/.test(src)) out.add("*");
+    return out;
+  };
+  const bad = [];
+  for (const f of walk(CHAT)) {
+    const src = read(f), at = relative(CHAT, f);
+    for (const m of src.matchAll(/import\s+(?:\*\s+as\s+\w+|\{([^}]*)\}|\w+)\s+from\s+["'](\.[^"']+)["']/g)) {
+      const target = resolve(dirname(f), m[2]);
+      if (!existsSync(target)) { bad.push(`${at}: ${m[2]} is not there`); continue; }
+      const have = exportsOf(read(target));
+      for (const n of (m[1] || "").split(",")) { const name = n.trim().split(/\s+as\s+/)[0]; if (name && !have.has(name) && !have.has("*")) bad.push(`${at}: ${m[2]} does not export ${name}`); }
+    }
+    for (const m of src.matchAll(/import\(\s*["'](\.[^"']+)["']\s*\)/g)) if (!existsSync(resolve(dirname(f), m[1]))) bad.push(`${at}: ${m[1]} is not there`);
+  }
+  assert.deepEqual(bad, []);
 });
 
-test("learning: it waits for a yes when learning is off, a file came along, the note is not grounded, or it is sensitive", async () => {
-  const wait = async (input, c) => (await proposals.create("main", "save_memory", input, c)).state;
-  assert.equal(await wait({ text: "Alpha is tall", about: ["Alpha"] }, ctx({ learning: false })), "awaiting");
-  assert.equal(await wait({ text: "Bravo is short", about: ["Bravo"] }, ctx({ files: true })), "awaiting");
-  assert.equal(await wait({ text: "Likes jazz music", about: ["You"] }, ctx({ said: "What time is it?" })), "awaiting");
-  assert.equal(await wait({ text: "Charlie has the password hunter2", about: ["Charlie"] }, ctx()), "awaiting");
-  assert.equal(await wait({ text: "Delta is slow", about: ["Delta"] }, ctx()), "done");
-});
-
-test("learning: at most three are kept straight away from one reply", async () => {
-  const c = ctx();
-  const states = [];
-  for (const [text, who] of [["Alpha is tall", "Alpha"], ["Bravo is short", "Bravo"], ["Charlie is quick", "Charlie"], ["Delta is slow", "Delta"]]) states.push((await proposals.create("main", "save_memory", { text, about: [who] }, c)).state);
-  assert.deepEqual(states, ["done", "done", "done", "awaiting"]);
-});
-
-test("learning: a note Roxan already has, or one that was dismissed, is not shown again", async () => {
-  await db.put("memories", note("m_1", "Alpha is tall", ["Alpha"]));
-  assert.equal(await proposals.create("main", "save_memory", { text: "Alpha is tall" }, ctx()), null);
-  const card = await proposals.create("main", "save_memory", { text: "Bravo is short", about: ["Bravo"] }, ctx({ learning: false }));
-  await proposals.resolve(card.id, card.nonce, "decline");
-  assert.equal(await proposals.create("main", "save_memory", { text: "Bravo is short" }, ctx()), null);
-});
-
-/* ------------------------------------------------------------------ specialties and Handoffs */
-
-const report = { name: "Weekly report", when: "When asked for the weekly report", steps: ["Collect the numbers", "Draft the summary", "Send it to the team lead"] };
-
-test("specialty: learning sets one up when the user's own words lead to it, and Undo deletes it for good", async () => {
-  const ev = await proposals.create("main", "save_specialty", report, ctx({ recent: "please do the weekly report like last time" }));
-  assert.deepEqual([ev.state, ev.auto], ["done", true]);
-  const [s] = await db.all("specialties");
-  assert.deepEqual([s.name, s.steps.length, s.on, s.auto], ["Weekly report", 3, true, true]);
-  assert.ok((await proposals.undo(ev.id)).ok);
-  assert.equal((await db.all("specialties"))[0].deleted, true);
-  assert.equal(await proposals.create("main", "save_specialty", report, ctx({ recent: "weekly report" })), null, "a removed specialty is not suggested again");
-});
-
-test("specialty: a card is the default, edits are what gets saved, and steps need two lines", async () => {
-  const ev = await proposals.create("main", "save_specialty", report, ctx({ learning: false }));
-  assert.equal(ev.state, "awaiting");
-  const bad = await proposals.resolve(ev.id, ev.nonce, "approve", { steps: "1. Only one step" });
-  assert.equal(bad.ok, false);
-  assert.match(bad.message, /at least two steps/);
-  const ok = await proposals.resolve(ev.id, ev.nonce, "approve", { name: "Friday report", steps: "1. Collect\n- Draft\n\nSend" });
-  assert.ok(ok.ok);
-  const [s] = await db.all("specialties");
-  assert.deepEqual([s.name, s.steps, s.auto], ["Friday report", ["Collect", "Draft", "Send"], undefined]);
-  const dup = await proposals.create("main", "save_specialty", { ...report, name: "Friday report" }, ctx({ learning: false }));
-  assert.equal(dup, null, "a specialty with the same name is not proposed twice");
-});
-
-test("specialty: dismissing one is remembered", async () => {
-  const ev = await proposals.create("main", "save_specialty", report, ctx({ learning: false }));
-  await proposals.resolve(ev.id, ev.nonce, "decline");
-  assert.equal(await proposals.create("main", "save_specialty", report, ctx({ learning: false })), null);
-});
-
-test("handoff: never saved without a yes, saved as waiting, and nothing is claimed to have run", async () => {
-  const ev = await proposals.create("main", "start_handoff", { title: "Book a table", task: "Book a table for two on Friday at 7", site: "blueplate.com" }, ctx());
-  assert.equal(ev.state, "awaiting", "even with learning on");
-  assert.equal((await db.all("handoffs")).length, 0);
-  const res = await proposals.resolve(ev.id, ev.nonce, "approve", { task: "Book a table for two on Saturday at 7" });
-  assert.ok(res.ok);
-  assert.match(res.ev.result.message, /Nothing has run/);
-  const [x] = await db.all("handoffs");
-  assert.deepEqual([x.title, x.task, x.site, x.state, x.roomId], ["Book a table", "Book a table for two on Saturday at 7", "blueplate.com", "waiting", "main"]);
-  assert.equal(res.ev.result.handoffId, x.id);
-});
-
-test("handoff: a card number is turned away, and the card stays open to fix", async () => {
-  const ev = await proposals.create("main", "start_handoff", { title: "Pay it", task: "Pay the bill" }, ctx());
-  const res = await proposals.resolve(ev.id, ev.nonce, "approve", { task: "Pay the bill with 4242 4242 4242 4242" });
-  assert.equal(res.ok, false);
-  assert.match(res.message, /Vault/);
-  assert.equal((await db.get("events", ev.id)).state, "awaiting");
-  assert.equal((await db.all("handoffs")).length, 0);
-});
-
-test("handoff: written by hand, then marked done by the user", async () => {
-  const x = await store.addHandoff({ title: "Renew passport", task: "Fill in the renewal form" });
-  assert.equal(x.state, "waiting");
-  const done = await store.setHandoff(x, { state: "done" }, "Marked done.");
-  assert.deepEqual([done.state, done.updatedAt >= x.updatedAt], ["done", true]);
-});
-
-/* ------------------------------------------------------------------ what is sent */
-
-test("turn: the body carries notes with their names, the specialties that fit, and the learning switch", async () => {
-  await store.ensureMain();
-  await db.put("memories", note("m_1", "Priya is my manager", ["You", "Priya"]));
-  await db.put("specialties", { id: "sp_1", ...report, on: true, createdAt: 1, updatedAt: 2 });
-  await db.put("specialties", { id: "sp_2", name: "Returns", when: "When something must go back", steps: ["Find the receipt", "Ask for a refund"], on: true, createdAt: 1, updatedAt: 1 });
-  await db.put("specialties", { id: "sp_3", name: "Switched off", when: "never", steps: ["a", "b"], on: false, createdAt: 1, updatedAt: 1 });
-  await db.put("specialties", { id: "sp_4", name: "Removed", deleted: true, createdAt: 1, updatedAt: 1 });
-  await db.put("vault", { id: "v_1", iv: "x", data: "SEALED-SECRET-DATA", createdAt: 1, updatedAt: 1 });
-  await db.put("events", { id: "e1", roomId: "main", at: 1, kind: "user", text: "do the weekly report", files: [] });
-  const { local, ...body } = await turn.buildBody(await store.getRoom("main"));
-  assert.deepEqual(body.context.memories, [{ id: "m_1", text: "Priya is my manager", about: ["You", "Priya"] }]);
-  assert.deepEqual(body.context.specialties.map(s => [s.id, s.steps.length]), [["sp_1", 3], ["sp_2", 0]], "only the one that fits carries its steps; off and removed ones are not sent");
-  assert.equal(body.context.learning, true);
-  assert.deepEqual(local.used, ["m_1"]);
-  assert.deepEqual([local.ctx.said, local.ctx.files, local.ctx.learning], ["do the weekly report", false, true]);
-  assert.doesNotMatch(JSON.stringify(body), /SEALED-SECRET-DATA|vault/i);
-
-  await store.setLearning(false);
-  assert.equal((await turn.buildBody(await store.getRoom("main"))).context.learning, false);
-});
-
-test("export: a copy of everything leaves the vault out", async () => {
-  await db.put("vault", { id: "v_1", iv: "x", data: "SEALED", createdAt: 1, updatedAt: 1 });
-  await db.put("memories", note("m_1", "x", []));
-  const copy = await db.dump();
-  assert.equal("vault" in copy, false);
-  assert.equal(copy.memories.length, 1);
+test("client: pages are built from elements, never from HTML strings or inline styles", () => {
+  const bad = [];
+  for (const f of walk(CHAT)) {
+    const found = read(f).match(/innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|\bstyle:\s|setAttribute\(["']style["']|\.cssText/);
+    if (found) bad.push(`${relative(CHAT, f)}: ${found[0]}`);
+  }
+  assert.deepEqual(bad, [], "the page's policy allows no inline script or style, and a string of HTML is how those get in");
 });
 
 /* ------------------------------------------------------------------ the vault */
@@ -243,11 +229,11 @@ test("vault: a passphrase opens it, a wrong one does not, and a sealed item is b
   await assert.rejects(vc.create("too short", 1000), RangeError);
 });
 
-test("vault: nothing on the way to Roxan's model can reach it", () => {
-  const read = rel => readFileSync(new URL(rel, import.meta.url), "utf8");
-  for (const f of ["api.js", "turn.js", "proposals.js", "memory.js", "md.js", "cards.js", "sensitive.js", "gate.js"]) {
-    assert.doesNotMatch(read(`../../roxan/chat/${f}`), /vaultcrypto|views\/vault|["'`]vault["'`]/, f);
-  }
-  assert.doesNotMatch(read("../gateway.js"), /vaultcrypto|["'`]vault["'`]/);
-  assert.doesNotMatch(read("../../roxan/chat/vaultcrypto.js"), /fetch\(|XMLHttpRequest|localStorage|indexedDB|import /, "the crypto file touches no network and no storage");
+test("vault: nothing that can talk to Roxan can read it, and nothing on the server knows it exists", () => {
+  const opens = /from\s+["'][^"']*vaultcrypto\.js["']|\w+\.\w+\(\s*["'`]vault["'`]/;       // imports the cipher, or reads or writes the vault's store
+  const readers = walk(CHAT).filter(f => opens.test(read(f))).map(f => relative(CHAT, f)).sort();
+  assert.deepEqual(readers, ["local.js", "views/vault.js"], "the only code that can open the vault: a count, and the vault's own page");
+  for (const f of readers) assert.doesNotMatch(read(join(CHAT, f)), /from\s+["'][^"']*\b(?:api|state|ui|files)\.js["']/, `${f} imports nothing that reaches the network`);
+  for (const f of [...walk(join(WORKER, "agent")), join(WORKER, "roxan.js")]) assert.doesNotMatch(read(f), /vaultcrypto|["'`]vault["'`]/, relative(WORKER, f));
+  assert.doesNotMatch(read(join(CHAT, "vaultcrypto.js")), /fetch\(|XMLHttpRequest|localStorage|indexedDB|import /, "the crypto file touches no network and no storage");
 });

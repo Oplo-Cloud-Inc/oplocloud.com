@@ -11,7 +11,7 @@
    and making a new one is. */
 import { h, section, field, ago } from "../dom.js";
 import * as db from "../db.js";
-import * as store from "../store.js";
+import * as local from "../local.js";
 import * as vc from "../vaultcrypto.js";
 
 const IDLE = 5 * 60 * 1000;
@@ -25,14 +25,14 @@ const KINDS = {
 export async function mount(root, { app }) {
   const page = h("section", { class: "page vault" });
   root.append(page);
-  let key = null, items = [], unreadable = 0, timer = 0, header = await store.getMeta("vault:header");
+  let key = null, items = [], unreadable = 0, timer = 0, header = await local.getMeta("vault:header");
   let editing = null, adding = false;                          // the item being changed, and whether the add form is open
   const sealed = () => db.all("vault");
 
   const lock = why => {
     key = null; items = []; unreadable = 0;
     clearTimeout(timer); timer = 0;
-    if (why) store.log("vault", why);
+    if (why) local.log("vault", why);
     draw();
   };
   const touch = () => { if (!key) return; clearTimeout(timer); timer = setTimeout(() => lock("Locked the vault after five idle minutes."), IDLE); };
@@ -67,8 +67,8 @@ export async function mount(root, { app }) {
       go.disabled = true; go.textContent = "Making the vault…"; err.textContent = "";
       const made = await vc.create(pass.value);
       key = made.key; header = made.header;
-      await store.setMeta("vault:header", header);
-      await store.log("vault", "Made the vault.");
+      await local.setMeta("vault:header", header);
+      await local.log("vault", "Made the vault.");
       await load(); touch(); draw();
     });
     return section("Make your vault", null, h("p", { text: "Choose a passphrase. It is turned into the key that seals everything you put here." }), form);
@@ -93,7 +93,7 @@ export async function mount(root, { app }) {
       }
       pass.value = "";
       await load();
-      await store.log("vault", "Unlocked the vault.");
+      await local.log("vault", "Unlocked the vault.");
       touch(); draw();
     });
     return h("div", null, section("Locked", null, h("p", { text: `${count} item${count === 1 ? "" : "s"} sealed on this device.` }), form, err), danger());
@@ -135,7 +135,7 @@ export async function mount(root, { app }) {
     const id = prev?.id || db.uid("v"), now = Date.now();
     const box = await vc.seal(key, id, v);
     await db.put("vault", { id, ...box, createdAt: prev?.createdAt || now, updatedAt: now });
-    await store.log("vault", prev ? "Changed an item in the vault." : "Sealed a new item in the vault.");
+    await local.log("vault", prev ? "Changed an item in the vault." : "Sealed a new item in the vault.");
     await load();
     editing = null; adding = false;
     draw();
@@ -163,7 +163,7 @@ export async function mount(root, { app }) {
       if (!armed) { del.textContent = "Confirm delete"; armed = setTimeout(() => { armed = 0; del.textContent = "Delete"; }, 4000); return; }
       clearTimeout(armed);
       await db.del("vault", it.id);
-      await store.log("vault", "Removed an item from the vault.");
+      await local.log("vault", "Removed an item from the vault.");
       await load(); draw();
     });
     return h("article", { class: "act", "aria-label": it.label, data: { id: it.id } },
@@ -192,9 +192,9 @@ export async function mount(root, { app }) {
     wipe.addEventListener("click", async () => {
       wipe.disabled = true;
       for (const r of await sealed()) await db.del("vault", r.id);
-      await store.delMeta("vault:header");
+      await local.delMeta("vault:header");
       header = null; key = null; items = []; unreadable = 0;
-      await store.log("vault", "Deleted the vault and everything sealed in it.");
+      await local.log("vault", "Deleted the vault and everything sealed in it.");
       draw();
     });
     return h("details", { class: "danger" }, h("summary", { class: "go", text: "Forgot the passphrase, or done with the vault?" }),
@@ -211,7 +211,7 @@ export async function mount(root, { app }) {
       h("h1", { class: "page-title", text: "Secured by OploCloud." }),
       h("p", { class: "page-lead", text: "Logins, cards and notes you would not want anyone to read. Each item is sealed in this browser, with a key made from your passphrase, before it is saved. The passphrase and the key never leave this browser, so neither Roxan, its model nor OploCloud can open the vault, and nothing in it is sent with a message." }),
       h("ul", { class: "facts-list" },
-        h("li", { text: "A card number you type into a message is not in the vault, and it does go to Roxan's model. Keep cards here instead." }),
+        h("li", { text: "Roxan refuses a message that looks like a card number. Anything else you type goes to its model and is kept in your chats, so keep logins and cards here." }),
         h("li", { text: "There is no reset. If you forget the passphrase, the items cannot be recovered." }),
         h("li", null, h("span", { class: "tag", text: "Next" }), " When a computer is connected, it will fill a login or card into the page that needs it without the model seeing the value. No computer is connected, so nothing is filled anywhere today.")),
       body);

@@ -27,35 +27,16 @@ body { overflow: hidden; font-size: 15px; }
 .count { margin-left: auto; font: 500 12px/1 var(--fb); font-variant-numeric: tabular-nums; color: var(--dim); }
 .count:empty { display: none; }
 .rail nav a:hover .count, .rail nav a[aria-current="page"] .count { color: var(--muted); }
-/* Not built yet: named, so the whole shape is visible, but it is not a link and goes nowhere. */
-.soon { color: var(--dim); cursor: default; }
-.soon small { margin-left: auto; padding: 3px 7px; border: 1px dashed var(--line-2); border-radius: 999px; font: 500 11px/1 var(--fb); }
 
-/* Projects unfold into projects, and each project into its conversations. */
-.tree-row { position: relative; }
-.tree-row > a { padding-right: 38px; }
-.twisty { position: absolute; top: 50%; right: 4px; display: grid; place-items: center; width: 28px; height: 28px; margin-top: -14px; border-radius: var(--r1); color: var(--dim); transition: color var(--t), background var(--t); }
-.twisty:hover { color: #fff; background: var(--wash); }
-.twisty::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .35s var(--out); }
-.twisty[aria-expanded="true"]::before { transform: rotate(45deg); }
-.tree-item > ul { margin: 2px 0 6px 17px; padding-left: 8px; border-left: 1px solid var(--line); }
-.tree-item ul ul { margin: 2px 0 6px 10px; }
-.rail .tree-item ul a, .rail .tree-new { height: 28px; padding: 0 10px; font-size: 13px; }
 .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail .tree-new { display: flex; align-items: center; width: 100%; border-radius: var(--r1); color: var(--dim); text-align: left; transition: color var(--t), background var(--t); }
 .rail .tree-new:hover { color: #fff; background: var(--wash); }
 .rail .tree-more { color: var(--dim); }
 
 .rail-foot { display: grid; gap: 12px; margin-top: auto; }
-.rail-status { padding: 0 10px; font: 500 12px/1.3 var(--fb); color: var(--dim); }
+.rail-status { padding: 0 10px; font: 500 12px/1.3 var(--fb); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rail-status::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 9px; border: 1px solid currentColor; border-radius: 50%; vertical-align: 0; }
-.rail-status[data-state="ok"] { color: var(--muted); }
-.rail-status[data-state="ok"]::before { background: currentColor; }
-.rail-who { display: grid; gap: 2px; padding: 14px 10px 0; border-top: 1px solid var(--line); }
-.who-name { font: 500 13px/1.3 var(--fb); color: var(--text); }
-.rail-who .fine { font-size: 12px; }
 .rail-links { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 14px; padding: 0 10px; }
-.sep { display: none; }
 .rail-link { font-size: 12.5px; color: var(--dim); transition: color var(--t); }
 .rail-link:hover, .rail-link[data-armed] { color: #fff; }
 
@@ -75,12 +56,12 @@ body { overflow: hidden; font-size: 15px; }
 .crumb { margin-bottom: 14px; }
 .crumb a { transition: color var(--t); }
 .crumb a:hover { color: #fff; }
-.home .page-title { margin-bottom: 0; font-size: clamp(40px, 4.6vw, 64px); letter-spacing: -.055em; line-height: 1.04; }
 
 .sec { margin-top: 44px; }
 .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 36px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 .sec-head > h2.label { font-size: 14px; color: var(--text); }
 .sec > p, .sec > .btns, .sec > .inline, .sec > form { margin-top: 14px; }
+.sec > .fld, .sec > .tones { margin-top: 20px; }
 .none { padding: 18px 0; font-size: 14px; color: var(--dim); }
 .go.sm { font-size: 13.5px; color: var(--muted); }
 .go.sm:hover { color: #fff; }
@@ -118,14 +99,10 @@ a.row-main:hover { opacity: .72; }
 .inline .fld, .inline > input { flex: 1; }
 .inline .btn, .gate-form .btn { height: 40px; }
 .pform { display: grid; gap: 18px; max-width: 640px; margin-top: 20px; }
-.sched { display: grid; grid-template-columns: minmax(0, 1fr) 250px auto; align-items: end; gap: 12px; margin-top: 28px; }
-.sched .btn { height: 40px; }
-.sched + .err + .fine, .sched + .err { margin-top: 12px; }
 .danger { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
 .danger summary { color: var(--muted); }
 .danger > p { margin: 14px 0; max-width: 56ch; }
 .danger .btns, .danger .inline { margin-top: 14px; }
-.sure { display: grid; gap: 10px; margin-top: 4px; }
 summary { list-style: none; cursor: pointer; }
 summary::-webkit-details-marker { display: none; }
 /* A disclosure that reads as a link: a small chevron that turns over when it opens. */
@@ -142,10 +119,6 @@ details[open] > summary.go::after { transform: translateY(2px) rotate(225deg); }
 .act-btn:hover { color: #fff; border-color: var(--line-3); background: var(--wash); }
 .act-btn:disabled { opacity: .4; pointer-events: none; }
 .act-btn[aria-pressed="true"] { border-color: #fff; background: #fff; color: #000; }
-
-/* ------------------------------------------------------------ Home */
-.wait + .wait { margin-top: 22px; }
-.wait .act, .wait .mem { margin: 8px 0 0; }
 
 /* ------------------------------------------------------------ Conversation */
 .chat { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; flex: 1 1 0; min-height: 0; }
@@ -168,18 +141,10 @@ details[open] > summary.go::after { transform: translateY(2px) rotate(225deg); }
 .jump:hover { background: var(--raise); }
 
 .msg .col { min-width: 0; }
-/* The footer of a reply is one quiet line: the time, the notes it was shown, and Copy on hover. */
-.msg.bot .col { flex: 1; display: grid; grid-template-columns: auto auto 1fr; align-items: center; column-gap: 14px; align-content: start; }
-.msg.bot .col > .body { grid-column: 1 / -1; }
-.msg.bot .col > .used[open] { grid-column: 1 / -1; }
 .msg.user .col { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: min(82%, 600px); }
 .msg.user .bubble { max-width: 100%; }
 .msg.user .meta { text-align: right; }
 .msg .meta:empty { display: none; }
-.row-actions { margin-top: 6px; opacity: 0; transition: opacity var(--t); }
-.row-actions .act-btn { height: 24px; padding: 0 10px; }
-.msg:hover .row-actions, .msg:focus-within .row-actions { opacity: 1; }
-.msg[data-status="streaming"] .row-actions { display: none; }
 
 /* A line from Roxan's own machinery, not from Roxan: a hollow dot for a notice, a filled one for a problem. */
 .note { display: flex; align-items: center; gap: 12px; margin: 0 0 24px 28px; padding: 10px 14px; border: 1px solid var(--line-2); border-radius: var(--r2); font-size: 14px; line-height: 1.5; color: var(--muted); }
@@ -189,9 +154,6 @@ details[open] > summary.go::after { transform: translateY(2px) rotate(225deg); }
 .note[data-tone="error"]::before { background: currentColor; }
 
 .dock { grid-row: 3; padding: 0 32px 20px; }
-.gate-slot:empty { display: none; }
-.gate { display: grid; justify-items: start; gap: 10px; max-width: 720px; margin: 0 auto 14px; padding: 22px 26px; border: 1px solid var(--line-2); border-radius: var(--r4); }
-.gate-title { font: 300 22px/1.2 var(--fd); letter-spacing: -.04em; }
 .gate-form { display: flex; gap: 8px; width: 100%; max-width: 420px; }
 .gate-form input { flex: 1; }
 
@@ -219,19 +181,10 @@ details[open] > summary.go::after { transform: translateY(2px) rotate(225deg); }
 /* ------------------------------------------------------------ Toasts */
 #toasts { position: fixed; top: 20px; right: 24px; z-index: 100; display: grid; gap: 10px; width: min(380px, calc(100vw - 48px)); pointer-events: none; }
 .toast { display: flex; justify-content: space-between; gap: 14px; padding: 14px 14px 14px 18px; border: 1px solid var(--line-3); border-radius: var(--r3); background: var(--raise); pointer-events: auto; animation: rise .5s var(--out) both; }
-.toast[data-tone="reminder"] { border-color: #fff; }
 .toast-text { margin-top: 2px; font: 400 14.5px/1.45 var(--fb); }
 .toast .x { flex: none; width: 28px; height: 28px; border-radius: 50%; font-size: 18px; line-height: 1; color: var(--muted); transition: color var(--t); }
 .toast .x:hover { color: #fff; }
 @keyframes rise { from { opacity: 0; transform: translateY(-8px); } }
-
-/* ------------------------------------------------------------ Notes shown with a reply */
-.used { margin-top: 6px; font: 400 12px/1.3 var(--fb); }
-.used > summary { display: inline-flex; font: 400 12px/1.3 var(--fb); color: var(--dim); transition: color var(--t); }
-.used > summary:hover, .used[open] > summary { color: #fff; }
-.used-list { margin: 8px 0 4px; padding-left: 14px; border-left: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; color: var(--muted); }
-.used-list li + li { margin-top: 4px; }
-.msg[data-status="streaming"] .used { display: none; }
 
 /* ------------------------------------------------------------ Memory: the web and the list */
 .tabs { display: flex; gap: 6px; }
@@ -275,9 +228,6 @@ details[open] > summary.go::after { transform: translateY(2px) rotate(225deg); }
 .spec[data-on="false"] > :not(header) { opacity: .55; }
 .spec > .fine { margin: 6px 0 12px; }
 .spec .btns { margin-top: 14px; }
-.facts { display: grid; grid-template-columns: auto 1fr; gap: 10px 22px; margin: 28px 0 6px; font-size: 15px; }
-.facts dt { font: 400 13px/1.7 var(--fb); color: var(--dim); }
-.facts dd { overflow-wrap: anywhere; }
 .facts-list { display: grid; gap: 8px; max-width: 62ch; margin-top: 18px; font-size: 14px; color: var(--dim); }
 .facts-list li { position: relative; padding-left: 16px; }
 .facts-list li::before { content: ""; position: absolute; left: 0; top: .8em; width: 6px; height: 1px; background: var(--dim); }
@@ -307,5 +257,4 @@ details[open] > summary.go::after { transform: translateY(2px) rotate(225deg); }
   .chat { height: calc(100dvh - 60px); }
   .page { padding: 40px 22px 100px; }
   .tl, .dock, .chat-head, .banner { padding-left: 18px; padding-right: 18px; }
-  .sched { grid-template-columns: 1fr; }
 }

@@ -1,196 +1,217 @@
-/* The conversation: one continuing thread per room (the main one, or a
-   conversation inside a project). Messages stream in as they are written,
-   proposals appear as cards, and what is older loads as you scroll back. */
-import { h, on, emit, clock, when, bytes } from "../dom.js";
-import * as db from "../db.js";
-import * as store from "../store.js";
-import * as turn from "../turn.js";
-import { render, codeText } from "../md.js";
-import { card } from "../cards.js";
+/* The conversation. Main is the one that keeps going; side chats are for a
+   subject of their own. A reply is written on Roxan's side, so it keeps being
+   written if this page closes: the page draws what the server says as it says
+   it. Under a reply you can see what Roxan did to write it, what it kept, and
+   anything it is waiting on you for. */
+import { h, fill, field, bytes } from "../dom.js";
+import * as api from "../api.js";
+import * as local from "../local.js";
 import * as files from "../files.js";
-import { gate } from "../gate.js";
+import { S, MAIN, watch, ensure, older, find, apply, name as who } from "../state.js";
+import { mark } from "../mark.js";
+import { render, codeText } from "../md.js";
 import { cardish } from "../sensitive.js";
-import { sessionForm } from "./project.js";
+import { soon, busy, sure, copy, stamp, approvalCard, questionCard, markSeen, edit, drop, pick } from "../ui.js";
 
-const PAGE = 40;
 const IDEAS = [
   ["Remind me", "Remind me tomorrow morning to "],
+  ["Watch a page", "Check this page every morning and tell me if anything changes: "],
+  ["Start a goal", "I want to "],
   ["Remember", "Remember that I "],
-  ["Handoff", "I need this done on a website: "],
-  ["Specialty", "Make a specialty for "],
   ["Think it through", "Help me think through "],
 ];
-const PREFIX = { stopped: "Stopped, ", cutoff: "Cut off, ", error: "Not finished, " };
-const sameDay =(a, b) => new Date(a).toDateString() === new Date(b).toDateString();
-const stamp = ms => (sameDay(ms, Date.now()) ? clock(ms) : when(ms));
-const settle = (ms, ok) => new Promise(r => { const t = setInterval(() => { if (ok()) { clearInterval(t); r(true); } }, 50); setTimeout(() => { clearInterval(t); r(false); }, ms); });
+const ENDED = { approved: "You approved this", declined: "You declined this", expired: "It expired, so it did not happen" };
 
 export async function mount(root, { app, params }) {
-  const room = await store.getRoom(params[0] || store.MAIN);
-  if (room?.kind === "project") { app.go("/p/" + room.id); return; }          // a project holds conversations; it is not one
-  if (!room) {
-    root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That conversation is not here." }), h("a", { class: "go", href: "#/projects" }, "Projects ", h("i", { "aria-hidden": "true" }))));
+  const id = params[0] || MAIN;
+  const thread = S.threads.find(t => t.id === id);
+  if (!thread) {
+    root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That chat is not here." }), h("a", { class: "go", href: "#/projects" }, "Chats and projects ", h("i", { "aria-hidden": "true" }))));
     return;
   }
-  const project = room.kind === "session" ? await store.getRoom(room.projectId) : null;
-  if (room.kind === "session") document.title = `${room.name} — Roxan`;
-  let notes = await db.all("memories");
-  const byId = new Map();
-  let oldest = Infinity, stick = true, ctl = null, busy = false, raf = 0, dirty = null, shown = 0;
-  const attachments = [];
-  const urls = [];
+  const isMain = id === MAIN;
+  const byId = new Map(), attachments = [], urls = [], off = [];
+  let stick = true, raf = 0, sending = false, warned = "", saveTimer = 0;
+  const dirty = new Set();
+  const box = () => S.msgs.get(id);
+  const list_ = () => box()?.list || [];
+  const msg = n => list_().find(m => m.id === n);
+  const running = () => { const m = list_().at(-1); return m?.role === "assistant" && m.streaming ? m : null; };
+  const title = () => (isMain ? "Main" : S.threads.find(t => t.id === id)?.title || "New chat");
+  document.title = `${title()} — ${who()}`;
 
   /* ---------------------------------------------------------- the page */
   const list = h("div", { class: "list" });
   const more = h("div", { class: "more", hidden: true }, h("button", { class: "go", type: "button", text: "Earlier messages" }));
-  const empty = h("div", { class: "empty" },
-    h("p", { class: "empty-title", text: project ? "A new conversation." : "Say what is on your mind." }),
-    h("p", { class: "fine", text: project?.instructions ? "Roxan keeps this conversation on your device, and reads this project's notes with every message. Try one of these, or just write." : "Roxan keeps this conversation on your device. Try one of these, or just write." }),
+  const empty = h("div", { class: "empty", hidden: true },
+    h("p", { class: "empty-title", text: isMain ? "Say what is on your mind." : "A new chat." }),
+    h("p", { class: "fine", text: isMain ? `${who()} keeps this one conversation going, and carries on with your routines and goals between your messages. Try one of these, or just write.` : `A side chat is for one subject. ${who()} still knows your notes, goals and routines.` }),
     h("div", { class: "ideas" }, IDEAS.map(([label, text]) => h("button", { class: "btn sm ghost", type: "button", text: label, onclick: () => { input.value = text; autosize(); input.focus(); input.setSelectionRange(text.length, text.length); } }))));
   const tl = h("div", { class: "tl", role: "log", "aria-label": "Conversation", "aria-live": "off", tabindex: "0" }, h("div", { class: "tl-in" }, more, list, empty));
   const jump = h("button", { class: "jump", type: "button", hidden: true, text: "Jump to latest", onclick: () => { stick = true; toBottom(); } });
   const live = h("p", { class: "sr", role: "status", "aria-live": "polite" });
   const chips = h("div", { class: "chips" });
-  const input = h("textarea", { id: "composer-input", rows: "1", maxlength: "20000", "aria-label": "Message", placeholder: project ? `Message in ${project.name}` : "Message Roxan" });
+  const input = h("textarea", { id: "composer-input", rows: "1", maxlength: "20000", "aria-label": "Message", placeholder: `Message ${who()}` });
   const attach = h("button", { class: "icon", type: "button", "aria-label": "Attach a file or image", title: "Attach a file or image", text: "+" });
   const picker = h("input", { type: "file", multiple: true, accept: files.ACCEPT, hidden: true, "aria-hidden": "true", tabindex: "-1" });
   const send = h("button", { class: "btn sm", type: "submit", text: "Send" });
   const stop = h("button", { class: "btn sm ghost", type: "button", hidden: true, text: "Stop" });
   const err = h("p", { class: "err", role: "alert" });
-  const form = h("form", { class: "composer", "aria-label": "Message Roxan" }, chips,
+  const form = h("form", { class: "composer", "aria-label": `Message ${who()}` }, chips,
     h("div", { class: "composer-row" }, attach, input, stop, send),
     h("p", { class: "hint", text: "Enter sends, Shift+Enter adds a line, Esc stops a reply." }), err, picker);
-  const gateSlot = h("div", { class: "gate-slot" });
-  const dock = h("div", { class: "dock" }, gateSlot, form);
+  const closed = h("p", { class: "note", role: "status", "data-tone": "error", hidden: true }, h("span", { text: `${who()} cannot answer yet: the service behind it is not switched on.` }));
+  const dock = h("div", { class: "dock" }, closed, form);
 
-  const title = h("h1", { class: "chat-title", text: room.name });
-  const crumb = project ? h("p", { class: "label crumb" }, h("a", { href: "#/projects", text: "Projects" }), " / ", h("a", { href: "#/p/" + project.id, text: project.name })) : null;
-  const head = h("header", { class: "chat-head" }, h("div", null, crumb, title));
-  let nameInput = null;                                          // the rename field, kept in step when the first message names the conversation
-  if (project) {
-    const settingsForm = sessionForm(room, { onSave: r => { title.textContent = r.name; document.title = `${r.name} — Roxan`; }, onDelete: () => app.go("/p/" + project.id) });
-    nameInput = settingsForm.querySelector("input");
-    settingsForm.append(h("a", { class: "go sm", href: "#/p/" + project.id }, "Project settings ", h("i", { "aria-hidden": "true" })));
-    head.append(h("details", { class: "proj-settings" }, h("summary", { text: "Conversation settings" }), settingsForm));
-  }
+  const heading = h("h1", { class: "chat-title", text: title() });
+  const head = h("header", { class: "chat-head" }, h("div", null, isMain ? h("p", { class: "label crumb" }, "One conversation, kept going") : h("p", { class: "label crumb" }, h("a", { href: "#/projects", text: "Chats" })), heading), settingsPanel());
   root.append(h("section", { class: "chat" }, head, tl, jump, dock, live));
 
-  /* ----------------------------------------------------------- scrolling */
+  /* ----------------------------------------------- header: rename, move, clear */
+  function settingsPanel() {
+    if (isMain) {
+      const box = h("details", { class: "proj-settings" }, h("summary", { text: "Conversation" }), h("div", { class: "pform" },
+        h("p", { class: "fine", text: "Clearing removes the messages here. What Roxan has kept (notes, goals, routines) stays." }),
+        h("div", { class: "btns" }, sure("Clear this conversation", async b => { await busy(b, async () => { await api.del(`/threads/${MAIN}/messages`); apply({ t: "cleared", thread: MAIN }); box.open = false; }); }, { cls: "btn sm ghost", confirm: "Press again to clear" }))));
+      return box;
+    }
+    const name = h("input", { type: "text", maxlength: "80", value: S.threads.find(t => t.id === id)?.title || "", "aria-label": "Name" });
+    const where = pick([["", "No project"], ...S.projects.filter(p => p.state === "open").map(p => [p.id, p.title])], thread.parent || "", { "aria-label": "Project" });
+    const save = h("button", { class: "btn sm", type: "submit", text: "Save" });
+    const form = h("form", { class: "pform" }, field("Name", name), field("Project", where), h("div", { class: "btns" }, save,
+      sure("Archive", async b => { await busy(b, async () => { await edit(id, { state: "archived" }); app.go("/projects"); }); }, { cls: "btn sm ghost", confirm: "Press again to archive" }),
+      sure("Delete", async b => { await busy(b, async () => { await drop(id); app.go("/projects"); }); }, { cls: "btn sm ghost", confirm: "Press again to delete" })));
+    form.addEventListener("submit", e => { e.preventDefault(); busy(save, () => edit(id, { title: name.value.trim(), parent: where.value || null })); });
+    return h("details", { class: "proj-settings" }, h("summary", { text: "Chat settings" }), form);
+  }
+
+  /* ---------------------------------------------------------- scrolling */
   const gap = () => tl.scrollHeight - tl.scrollTop - tl.clientHeight;
   const toBottom = () => { tl.scrollTop = tl.scrollHeight; };
   tl.addEventListener("scroll", () => { stick = gap() < 140; jump.hidden = gap() < 400; });
 
-  /* ------------------------------------------------------------ messages */
-  const userEl = ev => h("div", { class: "msg user", data: { id: ev.id } }, h("div", { class: "col" },
-    ev.text ? h("div", { class: "bubble", text: ev.text }) : null,
-    ev.files?.length ? h("div", { class: "chips" }, ev.files.map(f => h("span", { class: "chip static" }, h("span", { text: f.name }), h("span", { class: "dim", text: `${f.kind === "image" ? "image" : f.kind === "pdf" ? "PDF" : bytes(f.size)}` })))) : null,
-    h("div", { class: "meta", text: stamp(ev.at) })));
+  /* ---------------------------------------------------------- messages */
+  const userEl = m => h("div", { class: "msg user", data: { id: m.id } }, h("div", { class: "col" },
+    m.text ? h("div", { class: "bubble", text: m.text }) : null,
+    m.files?.length ? h("div", { class: "chips" }, m.files.map(f => h("span", { class: "chip static" }, h("span", { text: f.name }), h("span", { class: "dim", text: f.kind === "image" ? "image" : f.kind === "pdf" ? "PDF" : "text" })))) : null,
+    h("div", { class: "meta", text: stamp(m.at) })));
 
-  // "3 notes shown": which of your notes went along with the message this reply answers. Shown is all we can say; Roxan decides what to use.
-  const usedEl = ev => {
-    if (!ev.used?.length) return null;
-    const list = h("ul", { class: "used-list" });
-    const box = h("details", { class: "used" }, h("summary", { text: `${ev.used.length} note${ev.used.length === 1 ? "" : "s"} shown` }), list);
-    box.addEventListener("toggle", () => {
-      if (!box.open) return;
-      const kept = ev.used.map(id => notes.find(m => m.id === id)).filter(m => m && !m.deleted);
-      const gone = ev.used.length - kept.length;
-      list.replaceChildren(...[...kept.map(m => h("li", { text: m.text })), gone ? h("li", { class: "fine", text: `${gone} since removed` }) : null].filter(Boolean));
-    });
-    return box;
+  const noteEl = m => {
+    const ap = m.approval && find(m.approval);
+    return h("p", { class: "note", data: { id: m.id } }, h("span", { text: ap ? `${ap.title}. ${ENDED[ap.state] || "Answered"}.` : m.text }));
   };
 
-  const botEl = ev => {
-    const copy = h("button", { class: "act-btn", type: "button", "data-copy-msg": "", text: "Copy" });
-    return h("div", { class: "msg bot", data: { id: ev.id } }, h("span", { class: "mark", "aria-hidden": "true" }),
-      h("div", { class: "col" }, h("div", { class: "body md" }), h("div", { class: "meta" }), usedEl(ev), h("div", { class: "row-actions" }, copy)));
-  };
+  const botEl = m => h("div", { class: "msg bot", data: { id: m.id } }, h("span", { class: "gl" }, mark(S.settings.mark)),
+    h("div", { class: "col" },
+      h("p", { class: "from" }), h("div", { class: "body md" }), h("ul", { class: "trace" }), h("div", { class: "learned" }), h("div", { class: "issue", role: "alert" }), h("div", { class: "cards" }),
+      h("div", { class: "foot" }, h("span", { class: "meta" }), h("button", { class: "act-btn", type: "button", "data-copy-msg": "", text: "Copy" }))));
 
-  const noteEl = ev => {
-    const el = h("p", { class: "note", role: ev.tone === "error" ? "alert" : null, data: { tone: ev.tone || "notice", id: ev.id } }, h("span", { text: ev.text }));
-    if (ev.retry) el.append(h("button", { class: "act-btn", type: "button", "data-retry": "", text: "Try again", onclick: retry }));
+  const label = m => {
+    if (m.reminder) return "Reminder";
+    if (m.question) return "A question";
+    if (m.from === "roxan") return "On its own";
+    return m.from ? `From the routine “${find(m.from)?.title || "a routine"}”` : "";
+  };
+  const wait = () => (S.status.state === "working" && S.status.thread === id && S.status.text) || "Thinking";
+
+  function paintBody(el, m) {
+    const body = el.querySelector(".body");
+    fill(body, !m.text && m.streaming ? h("span", { class: "label", text: wait() }) : render(m.text));
+    el.querySelector(".gl").firstChild?.classList.toggle("think", Boolean(m.streaming));
+    el._text = m.text;
+  }
+
+  function paintCards(el, m) {
+    const mine = new Set((m.steps || []).map(s => s.approval).filter(Boolean));
+    fill(el.querySelector(".cards"), [...S.approvals.filter(a => a.msg === m.id || mine.has(a.id)).map(approvalCard), ...S.questions.filter(q => q.msg === m.id).map(questionCard)]);
+  }
+
+  function paintLearned(el, m) {
+    fill(el.querySelector(".learned"), (m.learned || []).map(n => find(n)).filter(Boolean).map(n => h("div", { class: "mem", data: { state: n.state === "removed" ? "dismissed" : "kept" } },
+      h("span", { class: "label", text: n.state === "removed" ? "Forgotten" : "Kept a note" }), h("span", { class: "what", text: n.body }),
+      n.state === "removed" ? null : h("button", { class: "act-btn", type: "button", text: "Undo", onclick: e => busy(e.currentTarget, () => edit(n.id, { state: "removed" })) }))));
+  }
+
+  function paint(el, m) {
+    const last = list_().at(-1) === m;
+    paintBody(el, m);
+    const from = label(m), f = el.querySelector(".from");
+    f.textContent = from;
+    f.hidden = !from;
+    fill(el.querySelector(".trace"), (m.steps || []).map(s => h("li", { data: { state: s.approval ? "wait" : s.ok ? "ok" : "no" } }, h("span", { text: s.label }), h("small", { text: s.approval ? "waiting for you" : s.ok ? "done" : s.held ? "not allowed" : "did not work" }))));
+    paintLearned(el, m);
+    const issue = el.querySelector(".issue");
+    const said = m.error ? m.error.message : m.stopped ? "Stopped." : m.cut ? "This reply was cut short." : "";
+    fill(issue, said ? [h("span", { text: said }), last && (m.error || m.stopped) ? h("button", { class: "act-btn", type: "button", text: "Try again", onclick: e => busy(e.currentTarget, retry) }) : null] : null);
+    issue.hidden = !said;
+    paintCards(el, m);
+    el.querySelector(".meta").textContent = m.streaming ? "" : stamp(m.at);
+    el.dataset.status = m.streaming ? "streaming" : m.error ? "error" : "done";
+  }
+
+  const make = m => (m.role === "user" ? userEl(m) : m.role === "assistant" ? botEl(m) : noteEl(m));
+  function put(m, before) {
+    const old = byId.get(m.id);
+    const el = old && m.role === "assistant" ? old : make(m);
+    if (old && el !== old) old.replaceWith(el);
+    if (!old) (before ? list.prepend(el) : list.append(el));
+    byId.set(m.id, el);
+    if (m.role === "assistant") paint(el, m);
     return el;
-  };
-
-  const elFor = ev => (ev.kind === "user" ? userEl(ev) : ev.kind === "assistant" ? botEl(ev) : ev.kind === "proposal" ? card(ev, notes) : noteEl(ev));
-
-  function paint(ev) {
-    const el = byId.get(ev.id);
-    if (!el) return;
-    const body = el.querySelector(".body"), mark = el.querySelector(".mark"), meta = el.querySelector(".meta");
-    const waiting = !ev.text && ev.status === "streaming";
-    body.replaceChildren(waiting ? h("span", { class: "label", text: "Thinking" }) : render(ev.text));
-    mark.classList.toggle("think", ev.status === "streaming");
-    meta.textContent = ev.status === "streaming" ? "" : (PREFIX[ev.status] || "") + stamp(ev.at);
-    el.dataset.status = ev.status;
-    el._text = ev.text;
-    if (stick) toBottom();
-  }
-  const schedule = ev => { dirty = ev; if (!raf) raf = requestAnimationFrame(() => { raf = 0; paint(dirty); }); };
-
-  function add(ev) {
-    const el = elFor(ev);
-    byId.set(ev.id, el);
-    list.append(el);
-    shown++;
-    empty.hidden = true;
-    if (ev.kind === "assistant") paint(ev);
-    if (stick) toBottom();
   }
 
-  const hooks = {
-    onUser: ev => { stick = true; add(ev); },
-    onAssistant: ev => add(ev),
-    onDelta: ev => schedule(ev),
-    onSettled: ev => {
-      if (raf) { cancelAnimationFrame(raf); raf = 0; }
-      if (!ev.text.trim()) { byId.get(ev.id)?.remove(); byId.delete(ev.id); } else paint(ev);
-    },
-    onProposal: ev => add(ev),
-    onNote: ev => add(ev),
+  function rebuild() {
+    const top = tl.scrollTop;
+    byId.clear();
+    fill(list);
+    for (const m of list_()) put(m);
+    empty.hidden = list_().length > 0;
+    more.hidden = !box()?.more;
+    if (stick) toBottom(); else tl.scrollTop = top;
+    ui();
+  }
+
+  const flushDeltas = () => {
+    raf = 0;
+    for (const n of dirty) { const m = msg(n), el = byId.get(n); if (m && el) paintBody(el, m); }
+    dirty.clear();
+    if (stick) toBottom();
   };
 
-  async function loadEarlier() {
-    if (more.hidden) return;
-    const rows = await db.eventsIn(room.id, { before: oldest, limit: PAGE });
-    if (!rows.length) { more.hidden = true; return; }
-    const before = tl.scrollHeight;
-    const frag = document.createDocumentFragment();
-    for (const ev of rows) { const el = elFor(ev); byId.set(ev.id, el); frag.append(el); if (ev.kind === "assistant") queueMicrotask(() => paint(ev)); }
-    list.prepend(frag);
-    tl.scrollTop += tl.scrollHeight - before;
-    oldest = rows[0].at;
-    shown += rows.length;
-    more.hidden = rows.length < PAGE;
+  function ui() {
+    const r = running();
+    stop.hidden = !r;
+    attach.disabled = sending;
+    send.disabled = sending || !S.open;
+    closed.hidden = S.open;
+    form.hidden = !S.open;
+    input.placeholder = `Message ${who()}`;
   }
 
   /* ---------------------------------------------------------- composer */
   const autosize = () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 200) + "px"; input.style.overflowY = input.scrollHeight > 200 ? "auto" : "hidden"; };
-  let saveTimer = 0;
   input.addEventListener("input", () => {
     autosize();
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => (input.value && !cardish(input.value) ? store.setMeta("draft:" + room.id, input.value) : store.delMeta("draft:" + room.id)), 500);   // a draft that holds a card number is not kept on the device
+    saveTimer = setTimeout(() => (input.value && !cardish(input.value) ? local.setMeta("draft:" + id, input.value) : local.delMeta("draft:" + id)), 500);      // a draft that holds a card number is not kept
   });
-
-  const shake = text => { err.textContent = text; if (text) setTimeout(() => { if (err.textContent === text) err.textContent = ""; }, 7000); };
+  const shake = text => { err.textContent = text; if (text) setTimeout(() => { if (err.textContent === text) err.textContent = ""; }, 8000); };
 
   function drawChips() {
     urls.splice(0).forEach(u => URL.revokeObjectURL(u));
-    chips.replaceChildren(...attachments.map((a, i) => {
+    fill(chips, attachments.map((a, i) => {
       const thumb = a.kind === "image" ? (() => { const u = URL.createObjectURL(a.blob); urls.push(u); return h("img", { class: "thumb", src: u, alt: "" }); })() : null;
       return h("span", { class: "chip" }, thumb, h("span", { text: a.name }), h("span", { class: "dim", text: `${a.kind === "image" ? "image" : a.kind === "pdf" ? "PDF" : bytes(a.size)}${a.truncated ? " (start only)" : ""}` }),
         h("button", { type: "button", "aria-label": `Remove ${a.name}`, text: "×", onclick: () => { attachments.splice(i, 1); drawChips(); } }));
     }));
   }
-
-  async function addFiles(list_) {
+  async function addFiles(fs) {
     shake("");
-    for (const f of list_) {
-      if (attachments.length >= files.MAX_FILES) { shake(`Roxan reads up to ${files.MAX_FILES} attachments at a time.`); break; }
+    for (const f of fs) {
+      if (attachments.length >= files.MAX_FILES) { shake(`${who()} reads up to ${files.MAX_FILES} attachments at a time.`); break; }
       try {
         const p = await files.prepare(f);
-        if (p.kind === "pdf" && attachments.some(a => a.kind === "pdf")) throw new files.FileError("Roxan reads one PDF at a time.");
+        if (p.kind === "pdf" && attachments.some(a => a.kind === "pdf")) throw new files.FileError(`${who()} reads one PDF at a time.`);
         attachments.push(p);
       } catch (e) { shake(e.message); }
     }
@@ -201,153 +222,107 @@ export async function mount(root, { app, params }) {
   input.addEventListener("paste", e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); addFiles(fs); } });
   for (const t of ["dragover", "drop"]) dock.addEventListener(t, e => { if (!e.dataTransfer?.types?.includes("Files")) return; e.preventDefault(); if (t === "drop") addFiles([...e.dataTransfer.files]); });
 
-  function ui() {
-    stop.hidden = !busy;
-    send.hidden = busy;
-    attach.disabled = busy;
-  }
-
-  async function begin(run) {
-    busy = true;
-    ctl = new AbortController();
-    ui();
-    shake("");
-    live.textContent = "Roxan is replying.";
-    try {
-      const out = await run(ctl.signal);
-      if (out?.failure?.code === "invite") { app.gateway.access = false; emit("gateway"); }
-      live.textContent = out?.failure ? "The reply did not finish." : out?.assistant?.status === "stopped" ? "Stopped." : "Roxan replied.";
-    } catch (e) {
-      shake(e.message || "Something went wrong.");
-    } finally {
-      busy = false;
-      ctl = null;
-      ui();
-      if (!form.hidden) input.focus({ preventScroll: true });
-    }
-  }
-
-  function dropFailedTurn() {
-    while (list.lastElementChild && !list.lastElementChild.classList.contains("user")) { byId.delete(list.lastElementChild.dataset.id); list.lastElementChild.remove(); }
-  }
-  function retry() {
-    if (busy) return;
-    if (!app.canChat()) { drawGate(); return; }
-    dropFailedTurn();
-    begin(signal => turn.retry(room, app.invite, signal, hooks));
-  }
-
-  let warned = "";                                               // the text we already warned about; a second press with it unchanged sends it
   async function submit() {
     const text = input.value.trim();
-    if ((!text && !attachments.length) || busy) return;
-    if (!app.canChat()) { drawGate(); return; }
-    if (cardish(text) && warned !== text) {
-      warned = text;
-      shake("That looks like a card number. Everything you send here goes to Roxan's model, so keep cards in the Vault. Press Send again to send it anyway.");
-      return;
-    }
-    warned = "";
-    const prepared = attachments.splice(0);
-    input.value = "";
-    autosize();
-    drawChips();
-    clearTimeout(saveTimer);
-    store.delMeta("draft:" + room.id);
-    await begin(signal => turn.send(room, app.invite, text, prepared, signal, hooks));
+    if ((!text && !attachments.length) || sending) return;
+    if (!S.open) return shake(`${who()} cannot answer yet.`);
+    if (!text) return shake("Say something about what you attached.");
+    if (cardish(text)) return shake("That looks like a card number. Keep those in the vault; Roxan never needs them.");
+    sending = true;
+    ui();
+    shake("");
+    try {
+      const wire = await files.wire(attachments);
+      const r = await api.post(`/threads/${id}/messages`, { text, files: wire });
+      attachments.splice(0);
+      input.value = "";
+      autosize(); drawChips();
+      clearTimeout(saveTimer);
+      local.delMeta("draft:" + id);
+      stick = true;
+      apply({ t: "msg", message: r.message });
+      apply({ t: "msg", message: r.reply });
+      live.textContent = `${who()} is replying.`;
+    } catch (e) { shake(e.message || "Something went wrong."); }
+    finally { sending = false; ui(); if (!form.hidden) input.focus({ preventScroll: true }); }
   }
+  async function retry() {
+    const r = await api.post(`/threads/${id}/retry`);
+    stick = true;
+    apply({ t: "msg", message: r.reply });
+  }
+  const halt = () => { const m = running(); if (m?.runId) api.post(`/runs/${m.runId}/stop`).catch(e => shake(e.message)); };
 
   form.addEventListener("submit", e => { e.preventDefault(); submit(); });
-  stop.addEventListener("click", () => ctl?.abort());
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
-  });
+  stop.addEventListener("click", halt);
+  input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); } });
   const onKey = e => {
-    if (e.key === "Escape" && busy) { ctl?.abort(); return; }
-    const panel = head.querySelector(".proj-settings[open]");
-    if (e.key === "Escape" && panel) { panel.open = false; panel.querySelector("summary").focus(); return; }
+    if (e.key === "Escape" && running()) { halt(); return; }
+    const open = head.querySelector(".proj-settings[open]");
+    if (e.key === "Escape" && open) { open.open = false; open.querySelector("summary").focus(); return; }
     if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) && !document.activeElement?.isContentEditable && !form.hidden) { e.preventDefault(); input.focus(); }
   };
   document.addEventListener("keydown", onKey);
 
   list.addEventListener("click", async e => {
-    const code = e.target.closest("[data-copy]");
-    const msg = e.target.closest("[data-copy-msg]");
-    const el = code || msg;
-    if (!el) return;
-    const text = code ? codeText(code.closest("pre")) : msg.closest(".msg")._text || "";
-    try { await navigator.clipboard.writeText(text); el.textContent = "Copied"; } catch { el.textContent = "Not copied"; }
-    setTimeout(() => { el.textContent = "Copy"; }, 1600);
+    const code = e.target.closest("[data-copy]"), whole = e.target.closest("[data-copy-msg]"), btn = code || whole;
+    if (btn) copy(btn, code ? codeText(code.closest("pre")) : whole.closest(".msg")._text || "");
   });
 
-  /* ---------------------------------------------------- gate and updates */
-  let shownGate = null;                                          // redraw only when the answer changes, so a half-typed code survives the status checks
-  function drawGate() {
-    const g = app.gateway;
-    const ok = g.state === "checking" || app.canChat();
-    const key = ok ? "ok" : `${g.state}:${g.access}`;
-    send.disabled = g.state === "checking";
-    if (key === shownGate) return;
-    const hadGate = shownGate && shownGate !== "ok";
-    shownGate = key;
-    form.hidden = !ok;
-    gateSlot.replaceChildren(...(ok ? [] : [gate(app)]));
-    if (ok && hadGate) input.focus({ preventScroll: true });
-  }
-  const off = [
-    on("gateway", drawGate),
-    on("proposal", e => {
-      const ev = e.detail;
-      const old = byId.get(ev.id);
-      if (ev.roomId !== room.id || !old) return;
-      const fresh = card(ev, notes), held = old.contains(document.activeElement);
-      old.replaceWith(fresh);
-      byId.set(ev.id, fresh);
-      if (ev.state !== "awaiting") live.textContent = ev.state === "done" ? ev.result?.message || "Done." : ev.state === "declined" ? "Declined." : "";
-      if (held && !form.hidden) input.focus({ preventScroll: true });          // the button that was pressed is gone; carry on in the composer
-    }),
-    on("memories", async () => { notes = await db.all("memories"); }),
-    on("rooms", () => {                                          // the first message gives a new conversation its title
-      if (title.textContent === room.name) return;
-      title.textContent = room.name;
-      document.title = `${room.name} — Roxan`;
-      if (nameInput) nameInput.value = room.name;
-    }),
-  ];
-  const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) loadEarlier(); }, { root: tl });
+  /* ---------------------------------------------------------- staying current */
+  const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting) && !more.hidden) loadEarlier(); }, { root: tl });
   io.observe(more);
-  more.querySelector("button").addEventListener("click", loadEarlier);
+  more.querySelector("button").addEventListener("click", () => loadEarlier());
+  async function loadEarlier() {
+    const b = box();
+    if (!b?.more) return;
+    const before = tl.scrollHeight, first = b.list[0]?.id;
+    try { await older(id); } catch (e) { shake(e.message); return; }
+    for (const m of b.list.filter(x => x.id < first).reverse()) put(m, true);
+    tl.scrollTop += tl.scrollHeight - before;
+    more.hidden = !b.more;
+  }
 
-  /* -------------------------------------------------------------- first paint */
-  const first = await db.eventsIn(room.id, { limit: PAGE });
-  for (const ev of first) { const el = elFor(ev); byId.set(ev.id, el); list.append(el); if (ev.kind === "assistant") paint(ev); }
-  shown = first.length;
-  oldest = first[0]?.at ?? Infinity;
-  more.hidden = first.length < PAGE;
-  empty.hidden = shown > 0;
+  off.push(
+    watch("messages", d => {
+      if (d.thread !== id) return;
+      if (d.id == null) return rebuild();
+      if (d.removed) { byId.get(d.id)?.remove(); byId.delete(d.id); empty.hidden = list_().length > 0; return ui(); }
+      const m = msg(d.id);
+      if (!m) return;
+      const fresh = !byId.has(m.id);
+      const el = put(m);
+      if (fresh) {
+        empty.hidden = true;
+        if (m.role === "user") stick = true;
+        const before = el.previousElementSibling, prior = before?.classList.contains("bot") && msg(Number(before.dataset.id));
+        if (prior) paint(before, prior);                          // "Try again" belongs to the newest reply only
+      }
+      if (stick) toBottom();
+      ui();
+    }),
+    watch("delta", d => { if (d.thread === id) { dirty.add(d.id); if (!raf) raf = requestAnimationFrame(flushDeltas); } }),
+    watch(["approvals", "questions"], soon(() => { for (const [n, el] of byId) { const m = el.classList.contains("bot") && msg(n); if (m) paintCards(el, m); } })),
+    watch("memories", soon(() => { for (const [n, el] of byId) { const m = el.classList.contains("bot") && msg(n); if (m?.learned?.length) paintLearned(el, m); } })),
+    watch("status", () => { const m = running(), el = m && byId.get(m.id); if (el && !m.text) paintBody(el, m); ui(); }),
+    watch("settings", ui),
+    watch("threads", () => { heading.textContent = title(); document.title = `${title()} — ${who()}`; }),
+  );
+
+  /* ---------------------------------------------------------- first paint */
+  try { await ensure(id); } catch (e) { empty.hidden = false; shake(e.message); }
+  rebuild();
   toBottom();
-  const draft = await store.getMeta("draft:" + room.id);
-  if (draft) { input.value = draft; autosize(); }
-  drawGate();
-  ui();
-
-  // A question typed on Home arrives here to be sent.
-  if (app.pendingSend && room.kind === "main") {
-    const text = app.pendingSend;
-    app.pendingSend = null;
-    input.value = text;
-    autosize();
-    await settle(3000, () => app.gateway.state !== "checking");
-    drawGate();
-    if (app.canChat()) submit(); else input.focus({ preventScroll: true });
-  } else if (!form.hidden) input.focus({ preventScroll: true });
+  const draft = await local.getMeta("draft:" + id);
+  if (app.prefill) { input.value = app.prefill; app.prefill = null; autosize(); } else if (draft) { input.value = draft; autosize(); }
+  if (isMain && S.unread) markSeen().catch(() => {});
+  if (!form.hidden) input.focus({ preventScroll: true });
 
   return () => {
     off.forEach(f => f());
     document.removeEventListener("keydown", onKey);
     io.disconnect();
     if (raf) cancelAnimationFrame(raf);
-    ctl?.abort();
     urls.forEach(u => URL.revokeObjectURL(u));
     clearTimeout(saveTimer);
   };

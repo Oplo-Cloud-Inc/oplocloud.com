@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Status — Roxan</title>
-<meta name="description" content="Live checks of Roxan from your browser: the site, the gateway, storage on this device and notifications.">
+<meta name="description" content="Live checks of Roxan from your browser: the site, Roxan’s servers, storage for the Vault on this device and notifications.">
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <link rel="canonical" href="https://roxan.oplocloud.com/status/">
@@ -12,7 +12,7 @@
 <meta property="og:site_name" content="Roxan">
 <meta property="og:url" content="https://roxan.oplocloud.com/status/">
 <meta property="og:title" content="Status — Roxan">
-<meta property="og:description" content="Live checks of Roxan from your browser: the site, the gateway, storage on this device and notifications.">
+<meta property="og:description" content="Live checks of Roxan from your browser: the site, Roxan’s servers, storage for the Vault on this device and notifications.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/fonts/unbounded-normal-10e743c6.woff2" as="font" type="font/woff2" crossorigin>
@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="/ui.css?v=4c5bf095">
 <link rel="stylesheet" href="/site.css?v=25af0f96">
 <script src="/site.js?v=abcd1f80" defer></script>
-<script src="/status.js?v=b5ee93af" defer></script>
+<script src="/status.js?v=164b2ed1" defer></script>
 </head>
 <body data-page="status">
 <a class="skip" href="#main">Skip to content</a>
@@ -48,8 +48,8 @@
   <section><div class="wrap">
     <ul class="checks" id="checks" aria-live="polite">
       <li><span class="name">This site</span><span class="note">The page you are reading loaded.</span><span class="st"><b>Working</b></span></li>
-      <li><span class="name">Roxan gateway</span><span class="note" id="n-gateway">Checking…</span><span class="st" id="s-gateway"><b>…</b></span></li>
-      <li><span class="name">Storage on this device</span><span class="note" id="n-storage">Checking…</span><span class="st" id="s-storage"><b>…</b></span></li>
+      <li><span class="name">Roxan’s servers</span><span class="note" id="n-gateway">Checking…</span><span class="st" id="s-gateway"><b>…</b></span></li>
+      <li><span class="name">Vault storage on this device</span><span class="note" id="n-storage">Checking…</span><span class="st" id="s-storage"><b>…</b></span></li>
       <li><span class="name">Notifications</span><span class="note" id="n-notify">Checking…</span><span class="st" id="s-notify"><b>…</b></span></li>
     </ul>
     <p class="cta"><button class="btn ghost sm" id="recheck" type="button">Check again</button><span class="fine" id="when"></span></p>

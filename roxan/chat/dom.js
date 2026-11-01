@@ -30,6 +30,9 @@ export function s(tag, props, ...kids) {
   return el;
 }
 
+// replaceChildren, minus the trap: the browser writes a null child out as the word "null".
+export const fill = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity).filter(k => k != null && k !== false));
+
 // A titled block of a page: a hairline, a small label (and something on its right), then the content.
 export const section = (label, aside, ...kids) => h("section", { class: "sec" }, h("div", { class: "sec-head" }, h("h2", { class: "label", text: label }), aside), ...kids);
 

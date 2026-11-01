@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Roxan — Keep talking. Roxan remembers.</title>
-<meta name="description" content="Roxan is a personal assistant built to save you time: one continuing conversation, a memory that learns as you talk, specialties, a private vault, and a Handoff list for tasks that need a browser. Invited beta.">
+<title>Roxan — Ask once. Roxan keeps going.</title>
+<meta name="description" content="Roxan is a personal agent that keeps working while you are away: goals with plans, routines that run on a schedule, pages it watches for changes, a memory that learns, and approval before anything that matters. Invited beta.">
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <link rel="canonical" href="https://roxan.oplocloud.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Roxan">
 <meta property="og:url" content="https://roxan.oplocloud.com/">
-<meta property="og:title" content="Roxan — Keep talking. Roxan remembers.">
-<meta property="og:description" content="One continuing conversation, a memory that learns in the background, and an assistant that asks before it acts.">
+<meta property="og:title" content="Roxan — Ask once. Roxan keeps going.">
+<meta property="og:description" content="A personal agent that follows a goal, runs a routine or watches a page while you are away, and asks before it acts.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/fonts/unbounded-normal-10e743c6.woff2" as="font" type="font/woff2" crossorigin>
@@ -41,31 +41,34 @@
 
   <section class="hero" aria-labelledby="h-hero">
     <div class="wrap">
-      <h1 id="h-hero"><span class="ln"><span>Keep talking.</span></span><span class="ln"><span>Roxan remembers.</span></span></h1>
-      <p class="lead">One continuing conversation, a memory that learns in the background, and an assistant that asks before it acts.</p>
+      <h1 id="h-hero"><span class="ln"><span>Ask once.</span></span><span class="ln"><span>Roxan keeps going.</span></span></h1>
+      <p class="lead">A personal agent that works on its own servers, so it can follow a goal, run a routine or watch a page while you are away. It asks before anything that matters, and keeps a plain record of everything it did.</p>
       <p class="cta"><a class="btn" href="/chat/">Open Roxan</a><a class="go" href="/product/">How it works <i aria-hidden="true"></i></a></p>
-      <p class="fine">Invited beta. Your history stays on this device.</p>
+      <p class="fine">Invited beta. It works with the tab closed. The Vault never leaves your device.</p>
 
       <div class="hero-demo">
-        <div class="demo" role="img" aria-label="Example: you ask Roxan to remind you to call the dentist tomorrow morning. Roxan shows the exact reminder and waits for your approval. Later you mention you are vegetarian, and Roxan keeps a note of it straight away, with an Undo.">
+        <div class="demo" role="img" aria-label="Example: you ask Roxan to watch a page and tell you if the price drops. Roxan shows the exact routine, a daily check, and waits for your approval. Later you mention you are vegetarian, and Roxan keeps a note of it straight away, with an Undo. The next morning, while you are away, Roxan tells you the price has dropped.">
           <div class="demo-bar"><span class="t"><span class="mark"></span>Roxan</span><span class="tag">Example</span></div>
           <div class="demo-body" id="demoBody" aria-hidden="true">
             <div class="scene">
-              <div class="msg user"><div class="bubble">Remind me to call the dentist tomorrow morning.</div></div>
-              <div class="msg bot"><span class="mark"></span><div class="body md"><p>I can set that for tomorrow at 9:00. Nothing happens until you approve it.</p></div></div>
+              <div class="msg user"><div class="bubble">Watch this lamp page and tell me if the price drops below $40.</div></div>
+              <div class="msg bot"><span class="mark"></span><div class="body md"><p>I can check it every morning at 9:00 and tell you if it changes. That runs on its own, so it waits for your yes.</p></div></div>
               <section class="act" data-state="done">
-                <header><span class="label">Reminder</span><span class="state">Done</span></header>
-                <div class="title">Call the dentist</div>
-                <dl><dt>When</dt><dd data-when>Tomorrow, 9:00 AM</dd></dl>
-                <p class="why">Roxan will notify you then, if it is open in a tab.</p>
+                <header><span class="label">Routine</span><span class="state">Done</span></header>
+                <div class="title">Watch a page</div>
+                <dl><dt>Page</dt><dd>shop.example/lamp</dd><dt>Checks</dt><dd>Every day, 9:00</dd></dl>
+                <p class="why">Roxan checks the page on its own servers, so this keeps going with the tab closed. Pause or stop it any time.</p>
                 <div class="btns" hidden><span class="btn sm" data-approve>Approve</span><span class="btn sm ghost">Decline</span></div>
               </section>
-              <div class="msg bot"><span class="mark"></span><div class="body md"><p>Done. It is on your schedule.</p></div></div>
+              <div class="msg bot"><span class="mark"></span><div class="body md"><p>Started. I will tell you here if the price changes.</p></div></div>
             </div>
             <div class="scene">
               <div class="msg user"><div class="bubble">I’m vegetarian, by the way.</div></div>
               <div class="msg bot"><span class="mark"></span><div class="body md"><p>Noted. I will keep that in mind.</p></div></div>
-              <div class="mem" data-state="kept" data-auto><span class="label">Learned</span><span class="what">Vegetarian</span><span class="btn sm ghost">Undo</span></div>
+              <div class="mem" data-state="kept" data-auto><span class="label">Kept a note</span><span class="what">Vegetarian</span><span class="btn sm ghost">Undo</span></div>
+            </div>
+            <div class="scene">
+              <div class="msg bot"><span class="mark"></span><div class="body md"><p>While you were away: the lamp is now $36, down from $48. I checked it at 9:00.</p></div></div>
             </div>
           </div>
         </div>
@@ -75,63 +78,101 @@
 
   <section class="sec" id="intro" aria-labelledby="h-intro">
     <div class="wrap">
-      <h2 class="h2" id="h-intro">Built to save you time.</h2>
-      <p class="lead">Roxan thinks with you, and sometimes a step ahead of you. Mostly it is built to move a task along instead of only talking about it, and to ask as little of you as it can while it does. Each feature below is marked Live, which you can use today, or Next, which is still being built.</p>
+      <h2 class="h2" id="h-intro">Built to take work off you.</h2>
+      <p class="lead">Roxan thinks with you, and keeps going after you stop. It holds your goals and their plans, runs routines on a schedule, watches pages for changes, and tells you only what is new. Each feature below is marked Live, which you can use today, or Next, which is still being built.</p>
     </div>
   </section>
 
-  <section class="sec" id="conversation" aria-labelledby="h-conv">
+  <section class="sec" id="always-on" aria-labelledby="h-on">
     <div class="wrap split">
       <div>
-        <p class="sec-head"><span class="label">Conversation</span><span class="tag live">Live</span></p>
-        <h2 class="h2" id="h-conv">A conversation that doesn’t end.</h2>
-        <p class="lead">There is no “new chat” to start. Roxan keeps one continuing thread with you, the way a colleague would: scroll back through anything you said, pick up tomorrow where you stopped, and attach a file or an image whenever it helps.</p>
+        <p class="sec-head"><span class="label">Always on</span><span class="tag live">Live</span></p>
+        <h2 class="h2" id="h-on">It keeps working when you leave.</h2>
+        <p class="lead">Roxan runs on its own servers, not in your browser tab. Ask for a routine once and it happens at the time you chose, whether or not the page is open. What it found is waiting in your chat and on Today when you come back.</p>
+        <ul class="points">
+          <li><b>Three kinds.</b> A reminder tells you something at a set time. A routine does what you wrote, on a schedule. A watch checks a page and acts when it changes. Run them once, daily on the days you pick, or every few hours.</li>
+          <li><b>It speaks first only when it is worth it.</b> A message Roxan starts must be new and worth your attention. You choose how often it may, set quiet hours, and read why anything was held back in Activity.</li>
+          <li><b>It stops when something is wrong.</b> A routine that fails three times in a row pauses itself and tells you. Run one now, pause it or remove it, and one button pauses everything Roxan does on its own. At most 30 background runs a day.</li>
+        </ul>
       </div>
-      <ul class="points">
-        <li><b>Streaming replies.</b> Words appear as they are written. Stop whenever you like.</li>
-        <li><b>Full history.</b> Every message stays on your device, and you can export it.</li>
-        <li><b>Files and images.</b> Text, code, images and PDFs can go along with a message.</li>
-        <li><b>Plain about itself.</b> Text from the model and actions Roxan takes are never drawn the same way.</li>
-      </ul>
+      <div class="ex">
+        <span class="label">Example</span>
+        <div class="ledger" aria-hidden="true">
+          <div class="ledger-h"><span class="label">Routines</span><span class="label">3 active</span></div>
+          <ul>
+            <li><span class="t">Check the lamp page</span><span class="src">Watch · every day, 9:00</span><span class="ops"><span>Run now</span><span>Pause</span></span></li>
+            <li><span class="t">Weekly summary</span><span class="src">Routine · Fridays, 16:00</span><span class="ops"><span>Run now</span><span>Pause</span></span></li>
+            <li><span class="t">Call the dentist</span><span class="src">Reminder · tomorrow, 9:00</span><span class="ops"><span>Pause</span></span></li>
+          </ul>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="sec" id="handoff" aria-labelledby="h-hand">
+  <section class="sec" id="goals" aria-labelledby="h-goal">
     <div class="wrap split flip">
       <div>
-        <p class="sec-head"><span class="label">Handoff</span><span class="tag live">Live</span></p>
-        <h2 class="h2" id="h-hand">Hand off what needs a browser.</h2>
-        <p class="lead">Some things can only be done on a website: paying a bill, booking a table, filling in a form. Ask Roxan for one and it writes the task up as a Handoff. Handoff has its own place in the sidebar, with every task listed until it is done.</p>
+        <p class="sec-head"><span class="label">Goals</span><span class="tag live">Live</span></p>
+        <h2 class="h2" id="h-goal">A goal, and a plan toward it.</h2>
+        <p class="lead">Say what you want done and Roxan keeps it as a goal with a short plan. It ticks steps off as they happen and shows what is next, on Today and on the goal itself.</p>
         <ul class="points">
-          <li><b>Started by asking.</b> Say what you need. Roxan proposes the Handoff, you read it, change anything, and save it.</li>
-          <li><b>Honest about where it is.</b> Roxan cannot use a browser yet, so a saved Handoff only waits. Nothing runs, and it is marked done only when you say you did it yourself.</li>
-          <li><b>Nothing secret inside.</b> Logins and cards belong in the Vault. A Handoff never holds them.</li>
-          <li><span class="tag">Next</span> <b>A computer of its own.</b> A cloud computer, operated by Roxan, that signs in and takes the step while you watch, with a stop button. Anything that spends money will still wait for your approval.</li>
+          <li><b>Plan it together.</b> Ask Roxan to break a goal into steps, or write them yourself. Add, remove or tick a step by hand at any time.</li>
+          <li><b>Ideas wait for you.</b> Roxan can put an idea in a list for you. Taking one on turns it into a goal. It never acts on an idea by itself.</li>
+          <li><b>Yours to stop.</b> Pause a goal, mark it done or drop it.</li>
+        </ul>
+      </div>
+      <div class="ex">
+        <span class="label">Example</span>
+        <div class="ledger" aria-hidden="true">
+          <div class="ledger-h"><span class="label">Goal</span><span class="label">2 of 4 steps</span></div>
+          <ul>
+            <li><span class="t">Learn to swim by summer</span></li>
+            <li><span class="t">1. Book a first lesson</span><span class="src">Done</span></li>
+            <li><span class="t">2. Buy goggles</span><span class="src">Done</span></li>
+            <li><span class="t">3. Practise twice a week</span></li>
+            <li><span class="t">4. Swim 200 metres without stopping</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="approvals" aria-labelledby="h-app">
+    <div class="wrap split">
+      <div>
+        <p class="sec-head"><span class="label">Approvals</span><span class="tag live">Live</span></p>
+        <h2 class="h2" id="h-app">It asks before it acts.</h2>
+        <p class="lead">Roxan shows the exact action and waits for you whenever it would start something that lasts, keep something or remove something. You approve it or decline it. Silence is never consent. None of Roxan’s tools buys anything, sends email, signs in or runs a browser.</p>
+        <ul class="points">
+          <li><b>What you approve is what runs.</b> The card shows the action; that action, and nothing else, happens.</li>
+          <li><b>Small things go through; bigger ones ask.</b> Out of the box Roxan keeps goals, panels, ideas and reminders on its own, and asks before it starts a routine, forgets a note or saves a Handoff. In Access you set each one to allow, ask or off, and reading web pages can have a rule for a single website.</li>
+          <li><b>A page cannot give it orders.</b> After Roxan reads a web page or a file you attached, it asks before it starts or changes a routine, keeps a note, saves a specialty or saves a Handoff, whatever your rules say.</li>
+          <li><b>It lapses, and works once.</b> An unanswered approval expires after 7 days, and one approval allows one action.</li>
         </ul>
       </div>
       <div class="ex">
         <span class="label">Example</span>
         <section class="act flush" data-state="awaiting" aria-hidden="true">
-          <header><span class="label">Handoff</span><span class="state">Waiting for you</span></header>
-          <div class="title">Save this Handoff?</div>
-          <dl><dt>What</dt><dd>Pay the October electric bill</dd><dt>Website</dt><dd>power-company.example</dd></dl>
-          <p class="why">Roxan cannot use a web browser, so this is a written task. Saving it does not run it: no computer is connected yet, so it waits in Handoff.</p>
-          <div class="btns"><span class="btn sm">Save Handoff</span><span class="btn sm ghost">Dismiss</span></div>
+          <header><span class="label">Needs your OK</span><span class="state">Waiting for you</span></header>
+          <div class="title">Start a routine?</div>
+          <dl><dt>What</dt><dd>Check the lamp page and tell me if the price drops below $40</dd><dt>When</dt><dd>Every day, 9:00</dd></dl>
+          <p class="why">Roxan proposed this. Nothing has happened yet, and it expires in 7 days.</p>
+          <div class="btns"><span class="btn sm">Approve</span><span class="btn sm ghost">Decline</span></div>
         </section>
       </div>
     </div>
   </section>
 
   <section class="sec" id="memory" aria-labelledby="h-mem">
-    <div class="wrap split">
+    <div class="wrap split flip">
       <div>
         <p class="sec-head"><span class="label">Memory</span><span class="tag live">Live</span></p>
         <h2 class="h2" id="h-mem">It learns while you talk.</h2>
-        <p class="lead">The longer you use Roxan, the better it knows you. When you tell it something lasting, it keeps a short note in the background, with nothing to set up or file. Notes about people, places and projects join up into a web you can look at, and each reply is helped by the notes that matter to it.</p>
+        <p class="lead">When you tell Roxan something lasting, it keeps a short note and shows you, with nothing to file. Notes about people, places and projects join up into a web you can look at, and each reply is helped by the notes that matter to it.</p>
         <ul class="points">
-          <li><b>Shown, with an Undo.</b> Each note appears in the conversation as it is kept, and one press takes it back for good.</li>
-          <li><b>Only what is relevant.</b> Up to twenty notes join each reply: the pinned ones first, then notes about the names you mention and what they are linked to. The reply says how many it saw.</li>
-          <li><b>Careful by default.</b> Nothing is kept straight away from a file or image you attach, or from anything that looks like a password, a card or a medical detail. Those wait for your yes.</li>
+          <li><b>Shown, with an Undo.</b> Each note appears in the conversation as it is kept, and one press takes it back. A note you took back is not suggested again.</li>
+          <li><b>Only what is relevant.</b> Up to forty notes go with each message: the pinned ones first, then notes about the names you mention and what those are linked to.</li>
+          <li><b>Careful by default.</b> A note is kept straight away only if it rests on what you wrote yourself. One that comes from a web page or a file, or looks like a password, an ID number, or a medical or money detail, waits for your yes. A card number is never kept.</li>
           <li><b>Yours to switch off.</b> Turn learning off and Roxan only suggests. Read, correct, pin or forget any note.</li>
         </ul>
       </div>
@@ -150,8 +191,34 @@
             <text x="180" y="220" text-anchor="middle">Dr. Lee</text>
           </svg>
           <ul>
-            <li><span class="t">Priya is my manager, and works at Acme</span><span class="src">Learned, kept at once</span><span class="ops"><span class="on">Undo</span><span>Edit</span><span>Forget</span></span></li>
-            <li><span class="t">Dr. Lee is my dentist</span><span class="src">Learned, kept at once</span><span class="ops"><span>Pin</span><span>Edit</span><span>Forget</span></span></li>
+            <li><span class="t">Priya is my manager, and works at Acme</span><span class="src">Kept a note, at once</span><span class="ops"><span class="on">Undo</span><span>Edit</span><span>Forget</span></span></li>
+            <li><span class="t">Dr. Lee is my dentist</span><span class="src">Kept a note, at once</span><span class="ops"><span>Pin</span><span>Edit</span><span>Forget</span></span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="panels" aria-labelledby="h-pan">
+    <div class="wrap split">
+      <div>
+        <p class="sec-head"><span class="label">Panels</span><span class="tag live">Live</span></p>
+        <h2 class="h2" id="h-pan">A place for what it makes.</h2>
+        <p class="lead">When Roxan writes something worth keeping, such as a packing list, a plan for the week or a comparison, it goes in a panel instead of scrolling away in the chat. Open one to read it, tick it off or change it.</p>
+        <ul class="points">
+          <li><b>Three shapes.</b> A document, a checklist or a table. A panel holds words and lists, and never runs anything.</li>
+          <li><b>Yours to edit.</b> Change a panel by hand, tick items off, or delete it.</li>
+          <li><span class="tag">Next</span> <b>Small apps.</b> Panels with a little behaviour of their own, built from a fixed set of safe parts, are not available yet.</li>
+        </ul>
+      </div>
+      <div class="ex">
+        <span class="label">Example</span>
+        <div class="ledger" aria-hidden="true">
+          <div class="ledger-h"><span class="label">Packing list</span><span class="label">Checklist</span></div>
+          <ul>
+            <li><span class="t">Passport</span><span class="src">Done</span></li>
+            <li><span class="t">Phone charger</span></li>
+            <li><span class="t">Train tickets</span></li>
           </ul>
         </div>
       </div>
@@ -163,11 +230,11 @@
       <div>
         <p class="sec-head"><span class="label">Specialties</span><span class="tag live">Live</span></p>
         <h2 class="h2" id="h-spec">Done your way, every time.</h2>
-        <p class="lead">Some tasks you do the same way again and again: how a return is negotiated, how a weekly report is put together. A specialty is that way, written down as steps. Roxan follows the ones that fit what you ask.</p>
+        <p class="lead">Some tasks you want done the same way again and again: how a return is negotiated, how a weekly report is put together. A specialty is that way, written down as steps. Roxan follows the ones that fit what you ask.</p>
         <ul class="points">
-          <li><b>Set up for you, or on request.</b> Ask Roxan to make one, or write it yourself. With learning on, Roxan also sets one up when it sees you do the same task the same way, and shows you with an Undo.</li>
+          <li><b>Made on request.</b> Ask Roxan to make one, or write it yourself. With learning on it is saved at once; with learning off, Roxan asks first.</li>
           <li><b>Only words.</b> A specialty is instructions. It never acts on its own, and nothing from the Vault is part of one.</li>
-          <li><b>Yours to edit.</b> Rename it, change a step, switch it off or delete it. A deleted one is not suggested again.</li>
+          <li><b>Yours to edit.</b> Rename it, change a step or delete it.</li>
         </ul>
       </div>
       <div class="ex">
@@ -185,16 +252,42 @@
     </div>
   </section>
 
-  <section class="sec" id="vault" aria-labelledby="h-vault">
+  <section class="sec" id="handoff" aria-labelledby="h-hand">
     <div class="wrap split">
+      <div>
+        <p class="sec-head"><span class="label">Handoff</span><span class="tag live">Live</span></p>
+        <h2 class="h2" id="h-hand">Hand off what needs a browser.</h2>
+        <p class="lead">Some things can only be done on a website: paying a bill, booking a table, filling in a form. Ask Roxan for one and it writes the task up as a Handoff. Handoff has its own place in the sidebar, with every task listed until it is done.</p>
+        <ul class="points">
+          <li><b>Started by asking.</b> Say what you need. Roxan proposes the Handoff, you read it, and approving it saves it to the list.</li>
+          <li><b>Honest about where it is.</b> Roxan cannot use a browser yet, so a saved Handoff only waits. Nothing runs, and it is marked done only when you say you did it yourself.</li>
+          <li><b>Nothing secret inside.</b> Logins and cards belong in the Vault. A Handoff never holds them.</li>
+          <li><span class="tag">Next</span> <b>A computer of its own.</b> A cloud computer, operated by Roxan, that signs in and takes the step while you watch, with a stop button. Anything that spends money will still wait for your approval.</li>
+        </ul>
+      </div>
+      <div class="ex">
+        <span class="label">Example</span>
+        <section class="act flush" data-state="awaiting" aria-hidden="true">
+          <header><span class="label">Handoff</span><span class="state">Waiting for you</span></header>
+          <div class="title">Save this Handoff?</div>
+          <dl><dt>What</dt><dd>Pay the October electric bill</dd><dt>Website</dt><dd>power-company.example</dd></dl>
+          <p class="why">Roxan cannot use a web browser, so this is a written task. Approving it only saves it: no computer is connected yet, so it waits in Handoff.</p>
+          <div class="btns"><span class="btn sm">Approve</span><span class="btn sm ghost">Decline</span></div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="vault" aria-labelledby="h-vault">
+    <div class="wrap split flip">
       <div>
         <p class="sec-head"><span class="label">Vault</span><span class="tag live">Live</span></p>
         <h2 class="h2" id="h-vault">Secured by OploCloud.</h2>
-        <p class="lead">Your most sensitive things, such as a card number or a website login, go in a vault only you can open. Each item is sealed in your browser, with a key made from your passphrase, before it is saved. The passphrase and the key never leave your browser, so Roxan, its model and OploCloud cannot read what is inside, and nothing in it is sent with a message.</p>
+        <p class="lead">Your most sensitive things, such as a card number or a website login, go in a vault only you can open. Each item is sealed in your browser, with a key made from your passphrase, before it is saved. The passphrase and the key never leave your browser, so Roxan, its model and OploCloud cannot read what is inside, and nothing in it is sent with a message. The rest of what Roxan keeps is in your account on its servers; the Vault is the one part that is not.</p>
         <ul class="points">
           <li><b>Encrypted before it is saved.</b> Each item is sealed on its own and tied to its place, so it cannot be swapped or altered without opening failing.</li>
           <li><b>No back door, so no reset.</b> Forget the passphrase and the items cannot be recovered. The vault locks after five idle minutes and when you leave its page.</li>
-          <li><b>Plain about the limits.</b> A card number typed into a message is not in the vault, and it does go to Roxan’s model, so Roxan warns you first. <a class="u" href="/security/">The Security page</a> lists what this does not cover.</li>
+          <li><b>Plain about the limits.</b> Roxan refuses a message that looks like a card number, but anything else you type goes to its model and is kept in your chats, so put logins and cards here. <a class="u" href="/security/">The Security page</a> lists what this does not cover.</li>
           <li><span class="tag">Next</span> <b>Filled in only where it is needed.</b> When a computer is connected, it will put a login or card into the page that asks for it without the model seeing the value. Nothing is filled anywhere today.</li>
         </ul>
       </div>
@@ -212,67 +305,41 @@
     </div>
   </section>
 
-  <section class="sec" id="approvals" aria-labelledby="h-app">
-    <div class="wrap split flip">
-      <div>
-        <p class="sec-head"><span class="label">Approvals</span><span class="tag live">Live</span></p>
-        <h2 class="h2" id="h-app">It asks before it acts.</h2>
-        <p class="lead">Anything with consequences waits for you. Roxan shows the exact action and the details that matter. You approve it or decline it, and you can change a detail first. Silence is never consent.</p>
-        <ul class="points">
-          <li><b>What you approve is what runs.</b> The details on the card when you press Approve, and nothing else.</li>
-          <li><b>Approvals expire</b> if you don’t answer, and can’t be used twice.</li>
-          <li><b>Done means done.</b> Roxan reports success only after the change is confirmed.</li>
-          <li><b>The one exception is a note.</b> With learning on, a short note or specialty is kept at once and shown with an Undo. It only writes words down. Anything that acts, sets a reminder or forgets still waits for you.</li>
-        </ul>
-      </div>
-      <div class="ex">
-        <span class="label">Example</span>
-        <section class="act flush" data-state="awaiting" aria-hidden="true">
-          <header><span class="label">Forget a note</span><span class="state">Waiting for you</span></header>
-          <div class="title">Forget this note?</div>
-          <dl><dt>Note</dt><dd>Vegetarian</dd></dl>
-          <p class="why">Roxan proposed this. Nothing happens until you approve it.</p>
-          <div class="btns"><span class="btn sm">Forget it</span><span class="btn sm ghost">Keep it</span></div>
-        </section>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec" id="projects" aria-labelledby="h-proj">
+  <section class="sec" id="chats" aria-labelledby="h-chats">
     <div class="wrap split">
       <div>
-        <p class="sec-head"><span class="label">Projects</span><span class="tag live">Live</span></p>
-        <h2 class="h2" id="h-proj">Every project, its own room.</h2>
-        <p class="lead">Longer work gets instructions of its own and as many conversations as it needs. What you say in one project stays out of the others; the notes you keep are shared.</p>
+        <p class="sec-head"><span class="label">Chats and projects</span><span class="tag live">Live</span></p>
+        <h2 class="h2" id="h-chats">One conversation, and rooms for the rest.</h2>
+        <p class="lead">Main is the one conversation you always come back to. Open a side chat when a subject deserves its own, and file chats in a project that carries notes of its own for Roxan to read in every one. Your notes, goals and routines are shared by all of them.</p>
       </div>
       <div class="ex">
         <span class="label">Example</span>
         <div class="rooms" aria-hidden="true">
-          <div class="room"><h3>Thesis</h3><p>Formal tone. Cite a source for every claim.</p><span class="label">Instructions</span></div>
-          <div class="room"><h3>Move to Boston</h3><p>Keep a running list of every landlord I have written to.</p><span class="label">Instructions</span></div>
-          <div class="room"><h3>Tax 2026</h3><p>Ask before assuming a figure. Show the arithmetic.</p><span class="label">Instructions</span></div>
+          <div class="room"><h3>Thesis</h3><p>Formal tone. Cite a source for every claim.</p><span class="label">Notes</span></div>
+          <div class="room"><h3>Move to Boston</h3><p>Keep a running list of every landlord I have written to.</p><span class="label">Notes</span></div>
+          <div class="room"><h3>Tax 2026</h3><p>Ask before assuming a figure. Show the arithmetic.</p><span class="label">Notes</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="sec" id="follow-through" aria-labelledby="h-fol">
+  <section class="sec" id="today" aria-labelledby="h-today">
     <div class="wrap">
-      <h2 class="h2" id="h-fol">It follows through.</h2>
-      <p class="lead gap-l">Ask for a reminder in plain words. Roxan sets it once you approve, and alerts you when it is due.</p>
+      <h2 class="h2" id="h-today">It tells you what matters.</h2>
+      <p class="lead gap-l">Roxan opens on Today, a short page and not a feed. The first time, you give your Roxan a name, a mark and a tone, and a first goal if you have one.</p>
       <div class="pair">
         <div class="card">
-          <header><h3>Reminders</h3><span class="tag live">Live</span></header>
-          <p>Set by asking. Listed, cancellable, and kept after a restart.</p>
+          <header><h3>Today</h3><span class="tag live">Live</span></header>
+          <p>What needs your OK, your goals and the next thing on your schedule, and a record of what Roxan did while you were away.</p>
           <ul class="sched" aria-hidden="true">
-            <li><span>Call the dentist</span><span>Tomorrow, 9:00</span></li>
-            <li><span>Send the draft to Priya</span><span>Friday, 2:00 PM</span></li>
-            <li><span>Renew passport</span><span>12 Nov</span></li>
+            <li><span>Check the lamp page</span><span>Tomorrow, 9:00</span></li>
+            <li><span>Weekly summary</span><span>Friday, 16:00</span></li>
+            <li><span>Call the dentist</span><span>12 Nov</span></li>
           </ul>
         </div>
         <div class="card later">
-          <header><h3>Reminders when Roxan is closed</h3><span class="tag">Next</span></header>
-          <p>Today a reminder fires while Roxan is open in a browser tab. Delivery in the background needs an account, which comes next. Not available yet.</p>
+          <header><h3>Alerts when the tab is closed</h3><span class="tag">Next</span></header>
+          <p>When Roxan has something for you while the tab is closed, the message waits in the chat. A pop-up on your device is not available yet.</p>
         </div>
       </div>
     </div>
@@ -282,14 +349,14 @@
     <div class="wrap split flip">
       <div>
         <h2 class="h2" id="h-priv">Yours to inspect, export and delete.</h2>
-        <p class="lead gap-m">Roxan keeps what it knows where you can see it.</p>
+        <p class="lead gap-m">Roxan keeps what it knows where you can see it, and a record of what it did.</p>
         <p><a class="go" href="/security/">How Roxan handles your data <i aria-hidden="true"></i></a></p>
       </div>
       <ul class="points">
-        <li><b>On your device.</b> Your conversation, notes, specialties, Handoffs, projects and reminders live in this browser, not on our servers. The Vault does too, sealed.</li>
-        <li><b>Sent only to answer you.</b> The text of a message, the notes and specialties chosen for it and any attachments go to a language-model provider to write the reply. We don’t store or log message content. Nothing from the Vault is ever sent.</li>
-        <li><b>Treated as data.</b> Files and pages Roxan reads cannot give it orders or grant it permission.</li>
-        <li><b>Your controls.</b> Undo what Roxan learns, turn learning off, export your data (the Vault stays sealed and is left out), or delete everything in one step.</li>
+        <li><b>In your account, so it can work while you are away.</b> Your chats, notes, goals, routines, panels, specialties, Handoffs, rules and the log are kept on Roxan’s servers. The Vault stays on your device, sealed.</li>
+        <li><b>Sent to the model to answer you.</b> Each message, the notes and specialties chosen for it and any attachments go to a language-model provider to write the reply, and a background run sends what it needs, such as a routine’s instruction or a page’s text. Roxan does not write message text to its logs. Nothing from the Vault is ever sent.</li>
+        <li><b>Treated as data.</b> Pages and files Roxan reads cannot give it orders or grant it permission.</li>
+        <li><b>Your controls.</b> Undo what Roxan learns, turn learning off, set rules for what it may do, download everything, or delete everything in one step.</li>
       </ul>
     </div>
   </section>

@@ -72,13 +72,12 @@ export function web(memories) {
   return { nodes: [...nodes.values()], edges: [...edges].map(([k, w]) => { const [a, b] = k.split("\u0000"); return { a, b, w }; }), loose };
 }
 
-// Where each dot goes: the best-connected name (You, if there is one) in the middle, what it is joined to around it, and so on outward.
-// Fixed arithmetic, no physics, so the same notes always draw the same picture.
+// Where each dot goes: the best-connected name (You, on a tie) in the middle, what it is joined to around it, and so on outward.// Fixed arithmetic, no physics, so the same notes always draw the same picture.
 export function layout(w, width = 720, height = 520) {
   const at = new Map();
   if (!w.nodes.length) return at;
   const byKey = new Map(w.nodes.map(n => [n.key, n]));
-  const first = [...w.nodes].sort((a, b) => (b.key === keyOf(YOU)) - (a.key === keyOf(YOU)) || b.links.size - a.links.size || b.notes.length - a.notes.length || a.name.localeCompare(b.name))[0];
+  const first = [...w.nodes].sort((a, b) => b.links.size - a.links.size || (b.key === keyOf(YOU)) - (a.key === keyOf(YOU)) || b.notes.length - a.notes.length || a.name.localeCompare(b.name))[0];
   const cx = width / 2, cy = height / 2, TAU = Math.PI * 2;
   const depth = new Map([[first.key, 0]]);
   for (const queue = [first.key]; queue.length;) {

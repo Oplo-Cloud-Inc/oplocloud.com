@@ -12,9 +12,9 @@
       if (!r.ok) throw new Error(String(r.status));
       const j = await r.json();
       if (j.gateway === 'open') set('gateway', 'Working', `Answered in ${ms} ms, with a model connected.`);
-      else set('gateway', 'Not connected', `Answered in ${ms} ms, but no model is connected yet, so Roxan cannot reply.`);
+      else set('gateway', 'Not connected', `Answered in ${ms} ms, but no model is connected yet, so Roxan cannot reply or run your routines.`);
     } catch (e) {
-      set('gateway', 'Unreachable', navigator.onLine ? 'The gateway did not answer.' : 'This device appears to be offline.');
+      set('gateway', 'Unreachable', navigator.onLine ? 'Roxan’s servers did not answer.' : 'This device appears to be offline.');
     }
   }
 
@@ -22,18 +22,18 @@
     return new Promise(done => {
       let q;
       try { q = indexedDB.open('roxan-status-probe'); } catch (e) { q = null; }
-      if (!q) return done(set('storage', 'Blocked', 'This browser will not keep data for this site, so Roxan would forget everything on close.'));
-      q.onsuccess = () => { q.result.close(); indexedDB.deleteDatabase('roxan-status-probe'); done(set('storage', 'Working', 'This browser can keep your history on this device.')); };
-      q.onerror = () => done(set('storage', 'Blocked', 'This browser will not keep data for this site (private browsing?), so Roxan would forget everything on close.'));
+      if (!q) return done(set('storage', 'Blocked', 'This browser will not keep data for this site, so a Vault made here would be lost when you close the tab.'));
+      q.onsuccess = () => { q.result.close(); indexedDB.deleteDatabase('roxan-status-probe'); done(set('storage', 'Working', 'This browser can keep the Vault on this device. Everything else Roxan keeps is in your account.')); };
+      q.onerror = () => done(set('storage', 'Blocked', 'This browser will not keep data for this site (private browsing?), so a Vault made here would be lost when you close the tab.'));
     });
   }
 
   function notifications() {
-    if (!('Notification' in window)) return set('notify', 'Unsupported', 'This browser cannot show notifications. Reminders will appear inside Roxan.');
+    if (!('Notification' in window)) return set('notify', 'Unsupported', 'This browser cannot show notifications. Messages from Roxan will appear inside Roxan.');
     const p = Notification.permission;
-    if (p === 'granted') set('notify', 'Allowed', 'Reminders can notify you while Roxan is open.');
-    else if (p === 'denied') set('notify', 'Blocked', 'Notifications are blocked for this site. Reminders will appear inside Roxan.');
-    else set('notify', 'Not asked', 'Roxan asks the first time you approve a reminder.');
+    if (p === 'granted') set('notify', 'Allowed', 'Roxan can show an alert while it is open in a background tab.');
+    else if (p === 'denied') set('notify', 'Blocked', 'Notifications are blocked for this site. Messages from Roxan will appear inside Roxan.');
+    else set('notify', 'Not asked', 'You can turn alerts on in Settings.');
   }
 
   async function run() {

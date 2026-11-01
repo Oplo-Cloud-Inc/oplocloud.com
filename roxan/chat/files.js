@@ -42,3 +42,8 @@ export async function prepare(file) {
   }
   throw new FileError(`${name} is not a kind of file Roxan reads. It reads images (PNG, JPEG, GIF, WebP), PDFs up to 4 MB, and text files.`);
 }
+
+// What the server takes: images and PDFs as base64, text as text. It reads them for the message and keeps only their names.
+export const wire = list => Promise.all(list.map(async f => (f.kind === "text"
+  ? { type: "text", name: f.name, text: f.text }
+  : { type: f.kind, name: f.name, data: await base64(f.blob), ...(f.kind === "image" ? { media_type: f.type } : {}) })));

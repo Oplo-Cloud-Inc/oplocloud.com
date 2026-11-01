@@ -17,18 +17,22 @@
 # every link absolute. Run `python3 tools/roxan_chrome.py` before deploying, or
 # the chrome here is whatever it was the last time somebody did.
 #
-# The gateway (worker/gateway.js) answers /api/health and /api/chat. It uses the
-# model service's SDK, so install it before deploying:
+# Each person's Roxan lives in a Durable Object (worker/agent/, class Agent) with
+# its own SQLite database. The object keeps their data, runs their work while
+# the browser is closed, and wakes itself with an alarm for routines. The first
+# deploy creates the class: the [[migrations]] block below must stay as it is,
+# and a later change to the class's storage needs a new tag, never an edit.
+# It uses the model service's SDK, so install it before deploying:
 #
 #     npm ci --prefix worker
 #
 # and it needs two secrets, which never go in this file:
 #
-#     npx wrangler secret put ROXAN_INVITE    -c wrangler.roxan.toml --env production   (invite codes, comma-separated)
+#     npx wrangler secret put ROXAN_INVITE    -c wrangler.roxan.toml --env production   (invite codes, comma-separated; one code is one person's account)
 #     npx wrangler secret put ROXAN_MODEL_KEY -c wrangler.roxan.toml --env production   (the model service's API key)
 #
-# Until both are set the gateway answers "closed" and /chat says so. Locally,
-# put them in .dev.vars beside this file (git-ignored); worker/test/fake-provider.js
+# Until both are set /api/health says "closed" and /chat says so. Locally, put
+# them in .dev.vars beside this file (git-ignored); worker/test/fake-provider.js
 # stands in for the model service so nothing is spent.
 # ===========================================================================
 name = "oplo-roxan"
@@ -46,6 +50,14 @@ not_found_handling = "404-page"
 [vars]
 ROXAN_MODEL = "claude-opus-5-5"
 
+[[durable_objects.bindings]]
+name = "AGENT"
+class_name = "Agent"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Agent"]
+
 # --------------------------------------------------------------- Production
 [env.production]
 name = "oplo-roxan"
@@ -58,6 +70,14 @@ not_found_handling = "404-page"
 
 [env.production.vars]
 ROXAN_MODEL = "claude-opus-5-5"
+
+[[env.production.durable_objects.bindings]]
+name = "AGENT"
+class_name = "Agent"
+
+[[env.production.migrations]]
+tag = "v1"
+new_sqlite_classes = ["Agent"]
 
 [[env.production.routes]]
 pattern = "roxan.oplocloud.com"
