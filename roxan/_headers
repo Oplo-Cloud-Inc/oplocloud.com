@@ -7,3 +7,10 @@
 
 /mof/*
   ! Content-Security-Policy
+
+# The app signs people in with the script every Oplo service shares (auth.oplocloud.com/connect.js, loaded only on
+# the sign-in screen), which draws its progress bar with a <style> of its own, and asks api.oplocloud.com for a ticket.
+# The rest of the policy is the one above. Rules are merged, so the first line removes the one it replaces.
+/chat/*
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://auth.oplocloud.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' wss://roxan.oplocloud.com https://api.oplocloud.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'

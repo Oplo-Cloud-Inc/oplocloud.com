@@ -42,6 +42,18 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["--yes", "wrangler", "dev", "-c", "wrangler.roxan.toml", "--port", "8130", "--ip", "127.0.0.1"],
       "port": 8130
+    },
+    {
+      "name": "roxan-accounts",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["worker/test/fake-accounts.js", "8787"],
+      "port": 8787
+    },
+    {
+      "name": "roxan-auth",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "wrangler", "dev", "-c", "auth/wrangler.toml", "--port", "8788", "--ip", "127.0.0.1"],
+      "port": 8788
     }
   ]
 }

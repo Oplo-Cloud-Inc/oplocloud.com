@@ -1,6 +1,6 @@
 /* Roxan's server, as the page sees it. Every call goes to this address with the
-   signed cookie that signing in sets. The page holds no secret: the invite code
-   is typed once, traded for the cookie, and forgotten. */
+   signed cookie that signing in sets. The page holds no secret: an Oplo sign-in
+   (oplo.js) or an invite code is traded once for the cookie, and forgotten. */
 import { emit } from "./dom.js";
 
 export class ApiError extends Error {
@@ -33,4 +33,5 @@ export const del = path => send("DELETE", "/api" + path);
 // Is Roxan open, and is this browser signed in? A failure to ask is an answer too.
 export const health = () => send("GET", "/api/health").catch(e => ({ ok: false, offline: e.code === "offline" }));
 export const signIn = code => send("POST", "/api/session", { code });
+export const exchange = (ticket, nonce) => send("POST", "/api/session", { ticket, nonce });
 export const signOut = () => send("DELETE", "/api/session");

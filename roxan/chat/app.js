@@ -4,6 +4,7 @@
 import * as db from "./db.js";
 import { h, fill, $, on, emit } from "./dom.js";
 import * as api from "./api.js";
+import * as oplo from "./oplo.js";
 import * as local from "./local.js";
 import { S, MAIN, start, stop, watch, chats, waiting, name as who } from "./state.js";
 import { icon } from "./icons.js";
@@ -151,14 +152,8 @@ function said(m) {
 
 /* ------------------------------------------------------------ signing in and out */
 
-function gate(why, note = "") {
-  stop();
-  const body = {
-    offline: [h("h1", { class: "page-title", text: "Roxan cannot be reached." }), h("p", { class: "page-lead", text: note || "Check your connection. Nothing is lost: what Roxan keeps is kept on its side." }), h("div", { class: "btns" }, h("button", { class: "btn", type: "button", text: "Try again", onclick: boot }))],
-    closed: [h("h1", { class: "page-title", text: "Roxan is not open yet." }), h("p", { class: "page-lead", text: "Roxan is in a closed beta and the doors have not been opened. The status page says when they are." }), h("div", { class: "btns" }, h("a", { class: "btn ghost", href: "/status/", text: "Status" }))],
-  }[why];
-  if (body) return fill($("#shell"), h("main", { id: "main", class: "boot signin" }, h("section", { class: "gatebox" }, h("span", { class: "label", text: "Roxan" }), body)));
-
+// The owner's way in, for the codes still in ROXAN_INVITE: /chat/?invite. It is not offered to anyone else.
+function invite() {
   const input = h("input", { id: "code", name: "code", type: "password", autocomplete: "current-password", autocapitalize: "off", spellcheck: "false", "aria-label": "Invite code", placeholder: "Invite code", required: true });
   const err = h("p", { class: "err", role: "alert" });
   const go = h("button", { class: "btn", type: "submit", text: "Sign in" });
@@ -171,11 +166,44 @@ function gate(why, note = "") {
     try { await api.signIn(input.value.trim()); input.value = ""; await boot(); }
     catch (x) { err.textContent = x.message; go.disabled = false; input.select(); }
   });
+  return h("div", { class: "invite" }, form, err);
+}
+
+function gate(why, note = "") {
+  stop();
+  const body = {
+    offline: [h("h1", { class: "page-title", text: "Roxan cannot be reached." }), h("p", { class: "page-lead", text: note || "Check your connection. Nothing is lost: what Roxan keeps is kept on its side." }), h("div", { class: "btns" }, h("button", { class: "btn", type: "button", text: "Try again", onclick: boot }))],
+    closed: [h("h1", { class: "page-title", text: "Roxan is not open right now." }), h("p", { class: "page-lead", text: "The status page says when it is." }), h("div", { class: "btns" }, h("a", { class: "btn ghost", href: "/status/", text: "Status" }))],
+  }[why];
+  if (body) return fill($("#shell"), h("main", { id: "main", class: "boot signin" }, h("section", { class: "gatebox" }, h("span", { class: "label", text: "Roxan" }), body)));
+
+  const LEAD = "Roxan opens with your Oplo Account. You sign in on the Oplo Account page, in a tab of its own, so Roxan never sees your password.";
+  const lead = h("p", { class: "page-lead", text: LEAD });
+  const err = h("p", { class: "err", role: "alert" });
+  const go = h("button", { class: "btn", type: "button", text: "Sign in with your Oplo Account", disabled: true });
+  // The tab is opened from the click itself, because a browser only opens one for a click; if the shared script has not arrived yet, it is fetched first.
+  go.addEventListener("click", () => {
+    err.textContent = "";
+    const open = connect => connect.open({ verify: oplo.signedIn });
+    if (window.OploSignIn) open(window.OploSignIn);
+    else oplo.load().then(open, x => { err.textContent = x.message; });
+  });
   fill($("#shell"), h("main", { id: "main", class: "boot signin" }, h("section", { class: "gatebox" },
-    h("span", { class: "label", text: "Roxan" }), h("h1", { class: "page-title", text: "Sign in." }),
-    h("p", { class: "page-lead", text: "Roxan is in a closed beta. Type the invite code you were given. It is traded for a sign-in that lasts four weeks on this browser, and the code itself is not kept." }),
-    form, err, h("p", { class: "fine" }, "No code? ", h("a", { class: "link", href: "/pricing/", text: "See how to ask for one" }), "."))));
-  input.focus();
+    h("span", { class: "label", text: "Roxan" }), h("h1", { class: "page-title", text: "Sign in." }), lead,
+    h("div", { class: "btns" }, go), err,
+    h("p", { class: "fine", text: "No Oplo Account? Schools and organizations that use Oplo make them for their people." }),
+    new URLSearchParams(location.search).has("invite") ? invite() : null)));
+  $("#code")?.focus();
+
+  oplo.load().then(async connect => {
+    go.disabled = false;
+    if (!connect.pending) return;
+    // The Oplo tab has finished and connect.js has refreshed this page: what is left is to trade that sign-in for Roxan's own.
+    go.disabled = true;
+    lead.textContent = "Finishing your sign-in…";
+    try { await oplo.signIn(); connect.done(); await boot(); }
+    catch (x) { connect.done(); lead.textContent = LEAD; err.textContent = x.message; go.disabled = false; }
+  }, x => { err.textContent = x.message; go.disabled = false; });
 }
 
 async function signOut() {

@@ -12,7 +12,7 @@
       if (!r.ok) throw new Error(String(r.status));
       const j = await r.json();
       if (j.gateway === 'open') set('gateway', 'Working', `Answered in ${ms} ms, with a model connected.`);
-      else set('gateway', 'Not connected', `Answered in ${ms} ms, but no model is connected yet, so Roxan cannot reply or run your routines.`);
+      else set('gateway', 'Not connected', `Answered in ${ms} ms, but Roxan is not open right now, so it cannot reply or run your routines.`);
     } catch (e) {
       set('gateway', 'Unreachable', navigator.onLine ? 'Roxan’s servers did not answer.' : 'This device appears to be offline.');
     }

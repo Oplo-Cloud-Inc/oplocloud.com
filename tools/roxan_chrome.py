@@ -58,7 +58,7 @@ def foot():
         for name, links in FOOT)
     return f"""<!-- rx:foot -->
 <footer class="foot"><div class="wrap">
-  <p class="foot-note">Roxan is in invited beta. What this site describes is marked Live or Next; availability and capability are not final.</p>
+  <p class="foot-note">Roxan is in beta. What this site describes is marked Live or Next; availability and capability are not final.</p>
   <div class="foot-cols">{cols}</div>
   <p class="foot-bar">Copyright &copy; 2026 OploCloud, Inc. All rights reserved.</p>
 </div></footer>

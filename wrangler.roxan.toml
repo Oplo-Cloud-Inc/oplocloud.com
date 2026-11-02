@@ -25,8 +25,16 @@
 # It calls the model service over plain HTTP (chat completions, worker/agent/model.js), so
 # nothing needs installing, and it needs two secrets, which never go in this file:
 #
-#     npx wrangler secret put ROXAN_INVITE    -c wrangler.roxan.toml --env production   (invite codes, comma-separated; one code is one person's account)
+#     npx wrangler secret put ROXAN_SECRET    -c wrangler.roxan.toml --env production   (32+ random characters; signs the cookies and tickets of Oplo sign-in, and changing it signs everybody out)
 #     npx wrangler secret put ROXAN_MODEL_KEY -c wrangler.roxan.toml --env production   (the model service's API key)
+#
+# Anyone with an Oplo Account can sign in (worker/agent/connect.js, auth.js). Optional, and also secrets:
+#
+#     ROXAN_DENY    Oplo account ids, comma-separated, that are shut out at once
+#     ROXAN_INVITE  invite codes, comma-separated; one code is one person's account. Not offered on the page: it is the owner's
+#                   own way in, at /chat/?invite, and it keeps the accounts made before Oplo sign-in
+#
+# For trying it locally only: OPLO_API_URL (where the accounts service is) and ROXAN_CONNECT_ORIGINS (the page's origin).
 #
 # One more secret is optional. With it Roxan can use a cloud computer (worker/agent/box.js: a
 # throwaway Linux machine with internet access, rented from a code-sandbox service, one per task,
@@ -34,10 +42,11 @@
 #
 #     npx wrangler secret put E2B_API_KEY     -c wrangler.roxan.toml --env production   (the sandbox service's API key)
 #
-# Until both are set /api/health says "closed" and /chat says so. Locally, put
-# them in .dev.vars beside this file (git-ignored); worker/test/fake-provider.js
+# Until ROXAN_SECRET (or an invite code) and ROXAN_MODEL_KEY are set /api/health says "closed" and /chat says so.
+# Locally, put them in .dev.vars beside this file (git-ignored); worker/test/fake-provider.js
 # stands in for the model service so nothing is spent. It also stands in for the sandbox
-# service when E2B_URL points at it; nothing is ever run.
+# service when E2B_URL points at it; nothing is ever run. worker/test/fake-accounts.js stands in
+# for Oplo Accounts, beside the real sign-in page (cd auth && npx wrangler dev --port 8788).
 # ===========================================================================
 name = "oplo-roxan"
 main = "worker/roxan.js"
@@ -97,3 +106,16 @@ zone_name = "oplocloud.com"
 [[env.production.routes]]
 pattern = "oplocloud.com/roxan/*"
 zone_name = "oplocloud.com"
+
+# The bridge to Oplo Accounts. An Oplo session is a cookie on api.oplocloud.com that no other host is sent, so one
+# address on that host is Roxan's (worker/agent/connect.js): it trades the session for a one-minute ticket. The accounts
+# service's own route there is api.oplocloud.com/*; the longer pattern wins, and every other address stays the accounts
+# service's. Taking this route out (or rolling the Worker back) does not take it off the zone: delete it in the dashboard.
+[[env.production.routes]]
+pattern = "api.oplocloud.com/connect/roxan"
+zone_name = "oplocloud.com"
+
+# The ticket needs to know who the session belongs to; the accounts service says so through this binding, not the internet.
+[[env.production.services]]
+binding = "ACCOUNTS"
+service = "oplo-api"
