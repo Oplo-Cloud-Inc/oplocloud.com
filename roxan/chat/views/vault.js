@@ -9,10 +9,13 @@
    What it does not do yet: nothing fills a login or a card into a website, because
    no computer is connected. Changing a passphrase is not built; deleting the vault
    and making a new one is. */
-import { h, section, field, ago, crumb } from "../dom.js";
+import { h, section, ago } from "../dom.js";
 import * as db from "../db.js";
 import * as local from "../local.js";
 import * as vc from "../vaultcrypto.js";
+import { Button, Field, Select, Checkbox, Accordion, Breadcrumb, confirm } from "../kit/index.js";
+
+const label_ = (btn, text) => { (btn.querySelector(".k-lab") || btn).textContent = text; };
 
 const IDLE = 5 * 60 * 1000;
 const DOTS = "••••••••";                                     // always the same length, so the mask does not give the length away
@@ -51,20 +54,20 @@ export async function mount(root, { app }) {
   function setup() {
     const pass = h("input", { type: "password", autocomplete: "new-password", "aria-label": "Passphrase" });
     const again = h("input", { type: "password", autocomplete: "new-password", "aria-label": "Passphrase again" });
-    const ack = h("input", { type: "checkbox", "aria-label": "I understand" });
+    const ack = Checkbox({ label: "I understand that if I forget this passphrase, nothing can recover what is in the vault. OploCloud does not have it and cannot reset it." });
     const err = h("p", { class: "err", role: "alert" });
-    const go = h("button", { class: "btn sm", type: "submit", text: "Make the vault" });
+    const go = Button({ size: "sm", type: "submit" }, "Make the vault");
     const form = h("form", { class: "pform" },
-      field("Passphrase", pass, `At least ${vc.MIN_PASSPHRASE} characters; four or more random words is best. Anyone who gets a copy of this browser's data can try guesses offline, so a short one falls quickly.`),
-      field("Passphrase again", again),
-      h("label", { class: "check" }, ack, h("span", { text: "I understand that if I forget this passphrase, nothing can recover what is in the vault. OploCloud does not have it and cannot reset it." })),
+      Field({ label: "Passphrase", hint: `At least ${vc.MIN_PASSPHRASE} characters; four or more random words is best. Anyone who gets a copy of this browser's data can try guesses offline, so a short one falls quickly.` }, pass),
+      Field({ label: "Passphrase again" }, again),
+      ack,
       err, h("div", { class: "btns" }, go));
     form.addEventListener("submit", async e => {
       e.preventDefault();
       if (pass.value.length < vc.MIN_PASSPHRASE) { err.textContent = `Use at least ${vc.MIN_PASSPHRASE} characters.`; return; }
       if (pass.value !== again.value) { err.textContent = "The two passphrases are different."; return; }
-      if (!ack.checked) { err.textContent = "Tick the box to say you understand."; return; }
-      go.disabled = true; go.textContent = "Making the vault…"; err.textContent = "";
+      if (!ack.value) { err.textContent = "Tick the box to say you understand."; return; }
+      go.disabled = true; label_(go, "Making the vault…"); err.textContent = "";
       const made = await vc.create(pass.value);
       key = made.key; header = made.header;
       await local.setMeta("vault:header", header);
@@ -78,16 +81,16 @@ export async function mount(root, { app }) {
   function locked(count) {
     const pass = h("input", { type: "password", autocomplete: "current-password", "aria-label": "Passphrase", placeholder: "Passphrase" });
     const err = h("p", { class: "err", role: "alert" });
-    const go = h("button", { class: "btn sm", type: "submit", text: "Unlock" });
-    const form = h("form", { class: "inline" }, field("Passphrase", pass), go);
+    const go = Button({ size: "sm", type: "submit" }, "Unlock");
+    const form = h("form", { class: "inline" }, Field({ label: "Passphrase" }, pass), go);
     form.addEventListener("submit", async e => {
       e.preventDefault();
       if (!pass.value) { err.textContent = "Enter your passphrase."; return; }
-      go.disabled = true; go.textContent = "Unlocking…"; err.textContent = "";
+      go.disabled = true; label_(go, "Unlocking…"); err.textContent = "";
       try {
         key = await vc.unlock(pass.value, header);
       } catch (x) {
-        go.disabled = false; go.textContent = "Unlock";
+        go.disabled = false; label_(go, "Unlock");
         err.textContent = x instanceof vc.WrongPassphrase ? x.message : "The vault could not be opened.";
         return;
       }
@@ -112,14 +115,14 @@ export async function mount(root, { app }) {
         el.value = item?.fields?.[f.key] ?? "";
         el.setAttribute("aria-label", f.label);
         inputs[f.key] = el;
-        return field(f.label, el);
+        return Field({ label: f.label }, el);
       }));
     };
-    const pick = item ? null : h("select", { "aria-label": "Kind", onchange: e => { kind = e.target.value; draw_(); } }, Object.entries(KINDS).map(([k, v]) => h("option", { value: k, text: v.label })));
+    const pick = item ? null : Select({ label: "Kind", value: kind, options: Object.entries(KINDS).map(([value, v]) => ({ value, label: v.label })), onchange: v => { kind = v; draw_(); } });
     draw_();
     const err = h("p", { class: "err", role: "alert" });
-    const form = h("form", { class: "pform" }, pick ? field("Kind", pick) : null, field("Name", label, "Only you see this. It is sealed with the rest."), fields, err,
-      h("div", { class: "btns" }, h("button", { class: "btn sm", type: "submit", text: item ? "Save changes" : "Seal it in the vault" }), onCancel ? h("button", { class: "btn sm ghost", type: "button", text: "Cancel", onclick: onCancel }) : null));
+    const form = h("form", { class: "pform" }, pick ? Field({ label: "Kind" }, pick) : null, Field({ label: "Name", hint: "Only you see this. It is sealed with the rest." }, label), fields, err,
+      h("div", { class: "btns" }, Button({ size: "sm", type: "submit" }, item ? "Save changes" : "Seal it in the vault"), onCancel ? Button({ variant: "secondary", size: "sm", type: "button", onclick: onCancel }, "Cancel") : null));
     form.addEventListener("submit", async e => {
       e.preventDefault();
       const values = Object.fromEntries(Object.entries(inputs).map(([k, el]) => [k, el.value.trim()]));
@@ -148,20 +151,18 @@ export async function mount(root, { app }) {
       const v = it.fields?.[f.key];
       if (!v) return [];
       const masked = f.mask && !shown.has(f.key);
-      const copy = h("button", { class: "act-btn", type: "button", text: "Copy" });
+      const copy = Button({ variant: "ghost", size: "sm", icon: "copy" }, "Copy");
       copy.addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(v); copy.textContent = "Copied"; } catch { copy.textContent = "Not copied"; }
-        setTimeout(() => { copy.textContent = "Copy"; }, 1600);
+        try { await navigator.clipboard.writeText(v); label_(copy, "Copied"); } catch { label_(copy, "Not copied"); }
+        setTimeout(() => { label_(copy, "Copy"); }, 1600);
       });
-      const reveal = f.mask ? h("button", { class: "act-btn", type: "button", "aria-pressed": String(!masked), text: masked ? "Show" : "Hide", onclick: () => { if (!shown.delete(f.key)) shown.add(f.key); paint(); } }) : null;
+      const reveal = f.mask ? Button({ variant: "ghost", size: "sm", icon: masked ? "eye" : "eyeoff", "aria-pressed": String(!masked), onclick: () => { if (!shown.delete(f.key)) shown.add(f.key); paint(); } }, masked ? "Show" : "Hide") : null;
       return [h("dt", { text: f.label }), h("dd", null, h("span", { class: f.area ? "secret block" : "secret", text: masked ? DOTS : v }), h("span", { class: "row-acts" }, reveal, copy))];
     }));
     paint();
-    let armed = 0;
-    const del = h("button", { class: "act-btn", type: "button", text: "Delete" });
+    const del = Button({ variant: "ghost", size: "sm", icon: "trash" }, "Delete");
     del.addEventListener("click", async () => {
-      if (!armed) { del.textContent = "Confirm delete"; armed = setTimeout(() => { armed = 0; del.textContent = "Delete"; }, 4000); return; }
-      clearTimeout(armed);
+      if (!(await confirm({ title: "Delete this item?", description: "It is removed from this device for good. Nothing else holds a copy.", yes: "Delete", danger: true }))) return;
       await db.del("vault", it.id);
       await local.log("vault", "Removed an item from the vault.");
       await load(); draw();
@@ -169,15 +170,15 @@ export async function mount(root, { app }) {
     return h("article", { class: "act", "aria-label": it.label, data: { id: it.id } },
       h("header", null, h("span", { class: "label", text: KINDS[it.kind].label }), h("span", { class: "state", text: `Changed ${ago(it.updatedAt)}` })),
       h("p", { class: "title", text: it.label }), dl,
-      h("div", { class: "btns" }, h("button", { class: "act-btn", type: "button", text: "Edit", onclick: () => { editing = it.id; draw(); } }), del));
+      h("div", { class: "btns" }, Button({ variant: "secondary", size: "sm", icon: "edit", onclick: () => { editing = it.id; draw(); } }, "Edit"), del));
   }
 
   /* ---------------------------------------------------------------- open */
   function open() {
     const mine = editing && items.find(i => i.id === editing);
-    const add = h("details", { class: "create", open: adding, ontoggle: e => { adding = e.target.open; } }, h("summary", { class: "btn sm", text: "Add an item" }), itemForm({ onSave: v => saveItem(null, v) }));
+    const add = adding ? itemForm({ onSave: v => saveItem(null, v), onCancel: () => { adding = false; draw(); } }) : Button({ icon: "plus", onclick: () => { adding = true; draw(); } }, "Add an item");
     return h("div", null,
-      h("div", { class: "btns" }, h("button", { class: "btn sm ghost", type: "button", text: "Lock now", onclick: () => lock("Locked the vault.") }), h("span", { class: "fine", text: "It also locks after five idle minutes, and when you leave this page." })),
+      h("div", { class: "btns" }, Button({ variant: "secondary", size: "sm", onclick: () => lock("Locked the vault.") }, "Lock now"), h("span", { class: "fine", text: "It also locks after five idle minutes, and when you leave this page." })),
       section(`Sealed items (${items.length})`, null, add,
         ...(items.length ? items.map(it => (mine && it.id === mine.id ? h("div", { class: "act" }, itemForm({ item: mine, onSave: v => saveItem(mine, v), onCancel: () => { editing = null; draw(); } })) : itemCard(it)))
           : [h("p", { class: "none", text: "Nothing in the vault yet." })]),
@@ -187,7 +188,7 @@ export async function mount(root, { app }) {
 
   function danger() {
     const sure = h("input", { type: "text", autocomplete: "off", spellcheck: "false", "aria-label": "Type DELETE to confirm" });
-    const wipe = h("button", { class: "btn sm", type: "button", text: "Delete the vault", disabled: true });
+    const wipe = Button({ variant: "danger", size: "sm", disabled: true }, "Delete the vault");
     sure.addEventListener("input", () => { wipe.disabled = sure.value.trim().toUpperCase() !== "DELETE"; });
     wipe.addEventListener("click", async () => {
       wipe.disabled = true;
@@ -197,9 +198,9 @@ export async function mount(root, { app }) {
       await local.log("vault", "Deleted the vault and everything sealed in it.");
       draw();
     });
-    return h("details", { class: "danger" }, h("summary", { class: "go", text: "Forgot the passphrase, or done with the vault?" }),
+    return h("div", { class: "danger" }, Accordion({ items: [{ id: "wipe", title: "Forgot the passphrase, or done with the vault?", body: h("div", null,
       h("p", { class: "fine", text: "A passphrase cannot be reset, because nobody but you ever has it. Deleting the vault removes every sealed item for good, so you can make a new one." }),
-      h("div", { class: "inline" }, sure, wipe));
+      h("div", { class: "inline" }, sure, wipe)) }] }));
   }
 
   /* ---------------------------------------------------------------- page */
@@ -208,7 +209,7 @@ export async function mount(root, { app }) {
     const body = !app.persistent ? section("Not available here", null, h("p", { text: "This browser is not letting Roxan keep anything on this device, so a vault made here would be lost when you close the tab. Open Roxan in a normal window to use the vault." }))
       : !header ? setup() : !key ? locked(count) : open();
     page.replaceChildren(
-      crumb("Settings", "#/settings"),
+      Breadcrumb([{ label: "Settings", href: "#/settings" }, { label: "Vault" }]),
       h("h1", { class: "page-title", text: "Secured by OploCloud." }),
       h("p", { class: "page-lead", text: "Logins, cards and notes you would not want anyone to read. Each item is sealed in this browser, with a key made from your passphrase, before it is saved. The passphrase and the key never leave this browser, so neither Roxan, its model nor OploCloud can open the vault, and nothing in it is sent with a message." }),
       h("ul", { class: "facts-list" },

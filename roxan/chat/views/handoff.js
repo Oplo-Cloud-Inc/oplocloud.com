@@ -5,10 +5,11 @@
    you: "done" means you did it yourself and said so. The page says this plainly
    and never shows progress it does not have. Roxan can queue one when you ask
    (it asks you first, unless you changed that in Access). */
-import { h, fill, section, field, crumb } from "../dom.js";
+import { h, fill, section } from "../dom.js";
 import { S, watch } from "../state.js";
 import { cardish } from "../sensitive.js";
 import { soon, busy, sure, soonTag, make, edit, drop, ago } from "../ui.js";
+import { Button, Drawer, Field, Accordion, Breadcrumb } from "../kit/index.js";
 
 const clean = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 
@@ -34,10 +35,10 @@ export async function mount(root) {
     task.value = x.body || "";
     const site = h("input", { type: "text", maxlength: 120, value: x.site || "", autocomplete: "off", placeholder: "Optional", "aria-label": "Website" });
     const err = h("p", { class: "err", role: "alert" });
-    const go = h("button", { class: "btn sm", type: "submit", text: label });
+    const go = Button({ size: "sm", type: "submit" }, label);
     const form = h("form", { class: "pform" },
-      field("What it is", title), field("What needs doing", task, "Write it so that someone else could do it. Leave out passwords and card numbers; keep those in the Vault."), field("Website", site), err,
-      h("div", { class: "btns" }, go, cancel ? h("button", { class: "btn sm ghost", type: "button", text: "Cancel", onclick: cancel }) : null));
+      Field({ label: "What it is" }, title), Field({ label: "What needs doing", hint: "Write it so that someone else could do it. Leave out passwords and card numbers; keep those in the Vault." }, task), Field({ label: "Website" }, site), err,
+      h("div", { class: "btns" }, go, cancel ? Button({ variant: "secondary", size: "sm", type: "button", onclick: cancel }, "Cancel") : null));
     form.addEventListener("submit", e => {
       e.preventDefault();
       const v = { title: clean(title.value, 140), task: clean(task.value, 600), site: clean(site.value, 120) };
@@ -52,10 +53,13 @@ export async function mount(root) {
     return { form, focus: () => title.focus() };
   }
 
-  const create = h("details", { class: "create" }, h("summary", { class: "btn sm", text: "New Handoff" }),
-    handoffForm({ label: "Save Handoff", submit: async v => { const x = await make("handoff", v); made.textContent = `Saved “${x.title}”. Nothing has run.`; create.open = false; } }).form);
+  const create = Button({ icon: "plus", onclick: () => {
+    let drawer;
+    const { form, focus } = handoffForm({ label: "Save Handoff", cancel: () => drawer.close(), submit: async v => { const x = await make("handoff", v); made.textContent = `Saved “${x.title}”. Nothing has run.`; drawer.close(); } });
+    drawer = Drawer({ title: "New Handoff", description: "A task that needs a web browser, written down.", body: form, focus: () => form.querySelector("input") });
+  } }, "New Handoff");
   fill(root, h("section", { class: "page" },
-    crumb("Settings", "#/settings"),
+    Breadcrumb([{ label: "Settings", href: "#/settings" }, { label: "Handoff" }]),
     h("h1", { class: "page-title", text: "Tasks that need a computer." }),
     h("p", { class: "page-lead", text: "A Handoff is a task that needs a web browser: buying something, booking, filling in a form. Roxan cannot use a browser yet, so a Handoff is saved here as a written task. None has run, and none will until a computer is connected." }),
     h("p", { class: "fine" }, soonTag(), " A computer of its own for Roxan to work on these is not built yet."),
@@ -63,7 +67,7 @@ export async function mount(root) {
     h("div", { class: "page-act" }, create, made),
     body));
 
-  const btn = (text, fn) => h("button", { class: "act-btn", type: "button", text, onclick: e => busy(e.currentTarget, fn) });
+  const btn = (text, fn, variant = "secondary") => Button({ variant, size: "sm", onclick: e => busy(e.currentTarget, fn) }, text);
 
   function item(x) {
     const move = state => () => edit(x.id, { state });
@@ -71,7 +75,7 @@ export async function mount(root) {
     const li = h("li", { class: "row", data: { id: x.id, state: x.state } },
       h("span", { class: "row-main" }, h("span", { class: "row-title", text: x.title }), h("span", { class: "row-sub" }, x.site ? [siteEl(x.site), ". "] : null, x.body)),
       h("span", { class: "row-when", text: ago(x.updated) }));
-    const change = h("button", { class: "act-btn", type: "button", text: "Edit" });
+    const change = Button({ variant: "secondary", size: "sm", icon: "edit" }, "Edit");
     change.addEventListener("click", () => {
       const { form, focus } = handoffForm({ x, label: "Save changes", cancel: draw, submit: v => edit(x.id, v) });
       li.classList.add("editing");
@@ -89,7 +93,7 @@ export async function mount(root) {
       section("Waiting for a computer", waiting.length ? h("span", { class: "label", text: String(waiting.length) }) : null,
         waiting.length ? h("ul", { class: "rows" }, waiting.map(item)) : h("p", { class: "none", text: "Nothing is waiting. Ask Roxan for something that needs a website, or write a Handoff above." })),
       done.length ? section("Done by you", null, h("ul", { class: "rows" }, done.map(item))) : null,
-      dropped.length ? h("details", { class: "removed" }, h("summary", { class: "go", text: `Dropped (${dropped.length})` }), h("ul", { class: "rows" }, dropped.map(item))) : null);
+      dropped.length ? Accordion({ class: "k-removed", items: [{ id: "dropped", title: `Dropped (${dropped.length})`, body: h("ul", { class: "rows" }, dropped.map(item)) }] }) : null);
   }
   draw();
   return watch("handoffs", soon(draw));

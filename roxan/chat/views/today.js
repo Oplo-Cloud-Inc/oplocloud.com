@@ -3,13 +3,14 @@
 
    Nothing here is a feed to scroll. It is the few things that matter now, and
    a box to say something to Roxan. */
-import { h, fill, section, field } from "../dom.js";
+import { h, fill, section } from "../dom.js";
 import * as api from "../api.js";
 import { S, MAIN, watch, waiting, name as who } from "../state.js";
 import { mark, MARKS } from "../mark.js";
 import { describe } from "../when.js";
 import { cardish } from "../sensitive.js";
 import { soon, busy, needCard, progress, stepsLine, tag, logRow, toast, when, make, edit, take, saveSettings, markSeen, TONES } from "../ui.js";
+import { Button, Input, Field, RadioGroup, StatusDot } from "../kit/index.js";
 
 const AWAY = new Set(["run", "notify", "held", "error", "approval", "question"]);
 const TRY = [["Remind me", "Remind me tomorrow morning to "], ["Watch a page", "Watch this page and tell me when it changes: "], ["Start a goal", "I want to "], ["Remember", "Remember that "]];
@@ -24,7 +25,7 @@ export async function mount(root, { app }) {
   let met = S.settings.onboarded;
 
   const status = h("p", { class: "today-status", role: "status" });
-  const paintStatus = () => { status.textContent = S.status.text || "Ready"; status.dataset.state = S.status.state; };
+  const paintStatus = () => { fill(status, StatusDot({ state: S.status.state }), S.status.text || "Ready"); status.dataset.state = S.status.state; };
   paintStatus();
   off.push(watch("status", paintStatus));
 
@@ -39,18 +40,14 @@ export async function mount(root, { app }) {
       b.addEventListener("click", () => { chosen = id; marks.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.mark === id))); fill(preview, mark(id, "glyph big")); });
       return b;
     }));
-    const tones = h("div", { class: "tones", role: "radiogroup", "aria-label": "Tone" }, TONES.map(([id, label, hint]) => {
-      const b = h("button", { class: "tone-opt", type: "button", role: "radio", "aria-checked": String(id === tone), data: { tone: id } }, h("span", { class: "tone-name", text: label }), h("span", { class: "fine", text: hint }));
-      b.addEventListener("click", () => { tone = id; tones.querySelectorAll("button").forEach(x => x.setAttribute("aria-checked", String(x.dataset.tone === id))); });
-      return b;
-    }));
+    const tones = RadioGroup({ label: "Tone", card: true, value: tone, options: TONES.map(([value, label, hint]) => ({ value, label, hint })), onchange: v => { tone = v; } });
     const err = h("p", { class: "err", role: "alert" });
-    const go = h("button", { class: "btn", type: "submit", text: "Start" });
+    const go = Button({ type: "submit" }, "Start");
     const form = h("form", { class: "meet", "aria-label": "Meet your Roxan" },
-      h("div", { class: "meet-id" }, preview, field("Name", nameIn)),
+      h("div", { class: "meet-id" }, preview, Field({ label: "Name" }, nameIn)),
       h("div", { class: "fld" }, h("span", { class: "label", text: "Mark" }), marks),
       h("div", { class: "fld" }, h("span", { class: "label", text: "Tone" }), tones),
-      field("One thing you want to get done (optional)", goal, "It becomes your first goal. Roxan helps you plan it."),
+      Field({ label: "One thing you want to get done (optional)", hint: "It becomes your first goal. Roxan helps you plan it." }, goal),
       h("div", { class: "btns" }, go), err);
     form.addEventListener("submit", e => {
       e.preventDefault();
@@ -72,10 +69,11 @@ export async function mount(root, { app }) {
 
   /* ------------------------------------------------ every day after */
   function home() {
-    const input = h("input", { id: "say", type: "text", maxlength: "20000", "aria-label": `Tell ${who()} something`, placeholder: `Tell ${who()} something, or ask for something` });
-    const go = h("button", { class: "btn", type: "submit", text: "Send" });
+    const go = Button({ type: "submit", size: "sm", icon: "send" }, "Send");
+    const box = Input({ id: "say", type: "text", maxlength: "20000", "aria-label": `Tell ${who()} something`, placeholder: `Tell ${who()} something, or ask for something`, trailing: go });
+    const input = box.input;
     const err = h("p", { class: "err", role: "alert" });
-    const ask = h("form", { class: "ask" }, input, go);
+    const ask = h("form", { class: "ask" }, box);
     ask.addEventListener("submit", e => {
       e.preventDefault();
       const text = input.value.trim();
@@ -97,14 +95,14 @@ export async function mount(root, { app }) {
       if (goals.length || next.length) parts.push(section("In progress", more("#/goals", "Goals"),
         goals.slice(0, 4).map(g => h("a", { class: "row", href: "#/goals/" + g.id }, h("div", { class: "row-main" }, h("span", { class: "row-title", text: g.title }), h("span", { class: "row-sub", text: stepsLine(g) })), g.steps?.length ? progress(g.steps.filter(s => s.done).length, g.steps.length, `${g.title}: ${stepsLine(g)}`) : null)),
         next.slice(0, 3).map(r => h("a", { class: "row", href: "#/routines" }, h("div", { class: "row-main" }, h("span", { class: "row-title", text: r.title }), h("span", { class: "row-sub", text: `${describe(r.schedule, S.settings.tz)}. Next: ${when(r.due)}` })), tag(r.mode === "remind" ? "Reminder" : r.mode === "watch" ? "Watching" : "Routine")))));
-      if (away.length) parts.push(section("While you were away", h("button", { class: "act-btn", type: "button", text: "Mark as seen", onclick: e => busy(e.currentTarget, markSeen) }), away.map(logRow)));
+      if (away.length) parts.push(section("While you were away", Button({ variant: "secondary", size: "sm", icon: "check", onclick: e => busy(e.currentTarget, markSeen) }, "Mark as seen"), away.map(logRow)));
       if (ideas.length) parts.push(section("Ideas", null, ideas.slice(0, 4).map(i => h("div", { class: "row" }, h("div", { class: "row-main" }, h("span", { class: "row-title", text: i.title }), i.body ? h("span", { class: "row-sub about", text: i.body }) : null),
         h("div", { class: "row-acts" },
-          h("button", { class: "act-btn", type: "button", text: "Take it on", onclick: e => busy(e.currentTarget, async () => { await take(i.id); toast("Added to your goals."); }) }),
-          h("button", { class: "act-btn", type: "button", text: "Not now", onclick: e => busy(e.currentTarget, () => edit(i.id, { state: "dismissed" })) }))))));
+          Button({ variant: "secondary", size: "sm", icon: "plus", onclick: e => busy(e.currentTarget, async () => { await take(i.id); toast("Added to your goals."); }) }, "Take it on"),
+          Button({ variant: "ghost", size: "sm", onclick: e => busy(e.currentTarget, () => edit(i.id, { state: "dismissed" })) }, "Not now"))))));
       if (!parts.length) parts.push(h("div", { class: "none-box" }, h("p", { class: "none-title", text: "Nothing is waiting." }),
         h("p", { class: "fine", text: `Tell ${who()} what you are working on, or ask it to look after something for you. Anything it does on its own shows up here.` }),
-        h("div", { class: "ideas" }, TRY.map(([label, text]) => h("button", { class: "btn sm ghost", type: "button", text: label, onclick: () => { input.value = text; input.focus(); input.setSelectionRange(text.length, text.length); } })))));
+        h("div", { class: "ideas" }, TRY.map(([label, text]) => Button({ variant: "secondary", size: "sm", onclick: () => { input.value = text; input.focus(); input.setSelectionRange(text.length, text.length); } }, label)))));
       fill(body, parts);
     };
     draw();

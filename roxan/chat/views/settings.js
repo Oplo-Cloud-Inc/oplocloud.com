@@ -3,34 +3,29 @@
    Every choice here applies the moment you make it and is kept with Roxan, not
    in this browser, so it is the same on every device. The exception is alerts:
    whether this device may pop one up is this device's choice. */
-import { h, fill, section, field } from "../dom.js";
+import { h, fill, section } from "../dom.js";
 import * as api from "../api.js";
 import * as local from "../local.js";
 import { S, load, watch } from "../state.js";
 import { mark, MARKS } from "../mark.js";
-import { soon, busy, check, pick, soonTag, toast, saveSettings, TONES } from "../ui.js";
+import { soon, busy, soonTag, toast, saveSettings, TONES } from "../ui.js";
+import { Button, Tabs, RadioGroup, Switch, SwitchCard, Combobox, Accordion } from "../kit/index.js";
 
 const count = (n, one, many = one + "s") => `${n} ${n === 1 ? one : many}`;
 const zones = (() => { try { return Intl.supportedValuesOf("timeZone"); } catch { return []; } })();
-const radios = (label, attr, rows, choose) => {
-  const el = h("div", { class: "tones", role: "radiogroup", "aria-label": label }, rows.map(([id, name, hint]) => {
-    const b = h("button", { class: "tone-opt", type: "button", role: "radio", data: { [attr]: id } }, h("span", { class: "tone-name", text: name }), h("span", { class: "fine", text: hint }));
-    b.addEventListener("click", () => busy(null, () => choose(id)));
-    return b;
-  }));
-  return el;
-};
-const sync = (el, attr, value) => el.querySelectorAll("button").forEach(b => b.setAttribute("aria-checked", String(b.dataset[attr] === value)));
 // The pages that are not in the rail, one link row each with what it holds. Their routes are in app.js.
 const hub = (label, rows) => section(label, null, rows.map(([path, name, hint]) => h("a", { class: "row", href: "#" + path },
   h("div", { class: "row-main" }, h("span", { class: "row-title", text: name }), h("span", { class: "row-sub", text: hint })),
   h("span", { class: "go sm" }, h("i", { "aria-hidden": "true" })))));
 
 export async function mount(root, { app }) {
+  // Every choice applies at once. If Roxan's side turns one down, the control goes back to what is kept.
+  const save = patch => busy(null, async () => { try { await saveSettings(patch); } catch (e) { paint(); throw e; } });
+
   /* ------------------------------------------------ who Roxan is to you */
   const nameIn = h("input", { type: "text", maxlength: "24", autocomplete: "off", "aria-label": "Name" });
   const nameErr = h("p", { class: "err", role: "alert" });
-  const nameGo = h("button", { class: "btn sm", type: "submit", text: "Save name" });
+  const nameGo = Button({ size: "sm", type: "submit" }, "Save name");
   const nameForm = h("form", { class: "inline" }, nameIn, nameGo);
   nameForm.addEventListener("submit", e => {
     e.preventDefault();
@@ -39,47 +34,43 @@ export async function mount(root, { app }) {
     busy(nameGo, async () => { nameErr.textContent = ""; try { await saveSettings({ name: v }); } catch (x) { nameErr.textContent = x.message; } });
   });
   const marks = h("div", { class: "marks", role: "group", "aria-label": "Mark" }, MARKS.map(([id, label]) => {
-    const b = h("button", { class: "mark-opt", type: "button", "aria-label": label, title: label, data: { mark: id } }, mark(id, "glyph"));
-    b.addEventListener("click", () => busy(null, () => saveSettings({ mark: id })));
+    const b = h("button", { class: "mark-opt", type: "button", "aria-label": label, "data-tip": label, data: { mark: id } }, mark(id, "glyph"));
+    b.addEventListener("click", () => save({ mark: id }));
     return b;
   }));
-  const tones = radios("Tone", "tone", TONES, tone => saveSettings({ tone }));
+  const tones = RadioGroup({ label: "Tone", card: true, value: S.settings.tone, options: TONES.map(([value, label, hint]) => ({ value, label, hint })), onchange: tone => save({ tone }) });
 
   /* ------------------------------------------------ how often it speaks first */
-  const levels = radios("How often Roxan speaks first", "level", Object.entries(S.levels).map(([id, l]) => [id, l.label, `${l.hint} Up to ${l.perDay} a day.`]), level => saveSettings({ level }));
-  const quietBox = h("input", { type: "checkbox" });
+  const levels = RadioGroup({ label: "How often Roxan speaks first", card: true, value: S.settings.level, options: Object.entries(S.levels).map(([value, l]) => ({ value, label: l.label, hint: `${l.hint} Up to ${l.perDay} a day.` })), onchange: level => save({ level }) });
+  const quietBox = Switch({ label: "On", onchange: () => saveQuiet() });
   const from = h("input", { type: "time", "aria-label": "Quiet from" }), to = h("input", { type: "time", "aria-label": "Quiet until" });
-  const saveQuiet = () => busy(null, async () => {
-    try { await saveSettings({ quiet: quietBox.checked ? { from: from.value, to: to.value } : null }); }
-    catch (e) { paint(); throw e; }
-  });
-  for (const el of [quietBox, from, to]) el.addEventListener("change", saveQuiet);
-  const zone = pick([...new Set(["UTC", ...zones, S.settings.tz])].map(z => [z, z]), S.settings.tz, { "aria-label": "Time zone" });
-  zone.addEventListener("change", () => busy(zone, async () => { try { await saveSettings({ tz: zone.value }); } catch (e) { zone.value = S.settings.tz; throw e; } }));
+  const saveQuiet = () => save({ quiet: quietBox.value ? { from: from.value, to: to.value } : null });
+  for (const el of [from, to]) el.addEventListener("change", saveQuiet);
+  const zone = Combobox({ options: [...new Set(["UTC", ...zones, S.settings.tz])].map(z => ({ value: z, label: z })), value: S.settings.tz, label: "Time zone", placeholder: "Search time zones",
+    onchange: tz => busy(null, async () => { try { await saveSettings({ tz }); } catch (e) { zone.value = S.settings.tz; throw e; } }) });
 
   /* ------------------------------------------------ learning and pause */
-  const learn = check("Learn from what I tell it", S.settings.learning, (on, box) => busy(null, async () => { try { await saveSettings({ learning: on }); } catch (e) { box.checked = !on; throw e; } }));
+  const learn = SwitchCard({ label: "Learn from what I tell it", checked: S.settings.learning, onchange: (on, box) => busy(null, async () => { try { await saveSettings({ learning: on }); } catch (e) { box.checked = !on; throw e; } }) });
   const learnNote = h("p", { class: "fine" });
-  const pause = h("button", { class: "btn sm ghost", type: "button" });
-  pause.addEventListener("click", () => busy(pause, () => saveSettings({ paused: !S.settings.paused })));
+  const pause = SwitchCard({ label: "Pause everything Roxan does on its own", checked: S.settings.paused, onchange: (on, box) => busy(null, async () => { try { await saveSettings({ paused: on }); } catch (e) { box.checked = !on; throw e; } }) });
   const pauseNote = h("p");
 
   /* ------------------------------------------------ alerts on this device */
-  const alerts = h("p"), alertBtn = h("button", { class: "btn sm ghost", type: "button" });
   const perm = () => (globalThis.Notification ? Notification.permission : "unsupported");
-  function paintAlerts() {
-    const p = perm(), on = p === "granted" && app.notify;
-    alerts.textContent = { unsupported: "This browser cannot show alerts. Roxan's messages appear inside Roxan only.", denied: "Blocked for this site in your browser settings. Roxan's messages appear inside Roxan only.", default: "Off. Turning them on makes the browser ask once.", granted: on ? "On. When Roxan messages you while this tab is in the background, the browser also shows a notification." : "Off on this device." }[p];
-    alertBtn.hidden = p === "unsupported" || p === "denied";
-    alertBtn.textContent = on ? "Turn off alerts" : "Turn on alerts";
-  }
-  alertBtn.addEventListener("click", () => busy(alertBtn, async () => {
-    const want = !(perm() === "granted" && app.notify);
+  const alerts = h("p");
+  const alertSw = SwitchCard({ label: "Show alerts on this device", onchange: (want, box) => busy(null, async () => {
     const p = want && perm() === "default" ? await Notification.requestPermission() : perm();
     app.notify = want && p === "granted";
     await local.setMeta("notify", app.notify);
     paintAlerts();
-  }));
+  }) });
+  function paintAlerts() {
+    const p = perm(), on = p === "granted" && app.notify, blocked = p === "unsupported" || p === "denied";
+    alerts.textContent = { unsupported: "This browser cannot show alerts. Roxan's messages appear inside Roxan only.", denied: "Blocked for this site in your browser settings. Roxan's messages appear inside Roxan only.", default: "Off. Turning them on makes the browser ask once.", granted: on ? "On. When Roxan messages you while this tab is in the background, the browser also shows a notification." : "Off on this device." }[p];
+    alertSw.value = on;
+    alertSw.input.disabled = blocked;
+    alertSw.setAttribute("aria-disabled", String(blocked));
+  }
 
   /* ------------------------------------------------ your data */
   const counts = h("p", { class: "fine" }), device = h("p", { class: "fine" });
@@ -89,8 +80,7 @@ export async function mount(root, { app }) {
     const sealed = await local.vaultCount();
     device.textContent = `This device holds ${count(sealed, "sealed vault item")} and a log of what was done to the vault. They never leave this device, and deleting your data on Roxan does not touch them.`;
   }
-  const exp = h("button", { class: "btn sm", type: "button", text: "Download a copy" });
-  exp.addEventListener("click", () => busy(exp, async () => {
+  const exp = Button({ variant: "secondary", size: "sm", icon: "download", onclick: () => busy(exp, async () => {
     const data = await api.get("/export");
     const blob = new Blob([JSON.stringify({ app: "roxan", note: "Everything Roxan keeps for you. The vault is not included: it stays sealed on your device.", ...data }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -99,57 +89,66 @@ export async function mount(root, { app }) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  }));
+  }) }, "Download a copy");
   const word = h("input", { type: "text", autocomplete: "off", spellcheck: "false", "aria-label": "Type DELETE to confirm" });
-  const wipe = h("button", { class: "btn sm", type: "button", text: "Delete everything", disabled: true });
-  word.addEventListener("input", () => { wipe.disabled = word.value.trim().toUpperCase() !== "DELETE"; });
-  wipe.addEventListener("click", () => busy(wipe, async () => {
+  const wipe = Button({ variant: "danger", size: "sm", disabled: true, onclick: () => busy(wipe, async () => {
     await api.post("/wipe", { confirm: "delete everything" });
     word.value = "";
     await load();
     app.go("/");
     toast("Everything Roxan kept for you is deleted.");
-  }));
+  }) }, "Delete everything");
+  word.addEventListener("input", () => { wipe.disabled = word.value.trim().toUpperCase() !== "DELETE"; });
 
-  fill(root, h("section", { class: "page" },
-    h("h1", { class: "page-title", text: "Yours to shape and to take away." }),
-    hub("Know", [["/memory", "Memory", "What Roxan has learned about you, as a web or a list."], ["/specialties", "Specialties", "Steps for a task you want done the same way every time."], ["/handoff", "Handoff", "Tasks that need a web browser, written up for you."], ["/vault", "Vault", "Logins, cards and notes, sealed on this device."]]),
-    hub("Control", [["/access", "Access", "What Roxan may do on its own, and what it asks first."], ["/activity", "Activity", "What Roxan did and why, and what it held back."]]),
-    section("Name, mark and tone", null, h("div", { class: "fld" }, h("span", { class: "label", text: "Name" }), nameForm), nameErr, h("div", { class: "fld" }, h("span", { class: "label", text: "Mark" }), marks), h("div", { class: "fld" }, h("span", { class: "label", text: "Tone" }), tones)),
-    section("Speaking first", null,
-      h("p", { text: "Roxan may message you on its own when work finishes or a page changes. It holds back what is not new or not worth your attention, and the Activity page says why." }), levels,
-      h("div", { class: "fld" }, h("span", { class: "label", text: "Quiet hours" }), h("div", { class: "inline" }, h("label", { class: "check" }, quietBox, h("span", { text: "On" })), from, h("span", { class: "fine", text: "to" }), to),
-        h("span", { class: "fine", text: "Messages still arrive in the chat, but with no pop-up, unless they need you." })),
-      field("Time zone", zone, "Routines and quiet hours follow it. A new account takes this device's the first time.")),
-    section("Learning", null, learn, learnNote),
-    section("Pause", null, pauseNote, h("div", { class: "btns" }, pause)),
-    section("Alerts on this device", null, alerts, h("div", { class: "btns" }, alertBtn), h("p", { class: "fine" }, soonTag(), " Alerts that reach you when the tab is closed are not built yet.")),
-    section("Your data", null,
-      h("p", { text: "Roxan keeps your chats, notes, goals and routines in your account on its servers, so it can work while this tab is closed. Each message you send, with the notes it is shown, goes to the AI model that answers it. The Security page says exactly what is sent, and to whom." }),
-      counts, device,
-      h("div", { class: "btns" }, exp, h("a", { class: "go", href: "/security/" }, "Security ", h("i", { "aria-hidden": "true" }))),
-      h("details", { class: "danger" }, h("summary", { class: "go", text: "Delete everything Roxan keeps for you" }),
-        h("p", { class: "fine", text: "This removes every chat, project, goal, routine, note, specialty, panel, Handoff, rule and the log, and starts Roxan over. It cannot be undone. Download a copy first if you want one." }),
-        h("div", { class: "inline" }, word, wipe)))));
+  /* ------------------------------------------------ the page: one tab for each kind of thing */
+  const tabs = Tabs({ label: "Settings", tabs: [
+    { id: "pages", label: "Know and control", panel: h("div", null,
+      hub("Know", [["/memory", "Memory", "What Roxan has learned about you, as a web or a list."], ["/specialties", "Specialties", "Steps for a task you want done the same way every time."], ["/handoff", "Handoff", "Tasks that need a web browser, written up for you."], ["/vault", "Vault", "Logins, cards and notes, sealed on this device."]]),
+      hub("Control", [["/access", "Access", "What Roxan may do on its own, and what it asks first."], ["/activity", "Activity", "What Roxan did and why, and what it held back."]])) },
+    { id: "you", label: "You", panel: h("div", null,
+      section("Name", null, nameForm, nameErr),
+      section("Mark", null, marks),
+      section("Tone", null, tones)) },
+    { id: "speaking", label: "Speaking first", panel: h("div", null,
+      section("How often", null,
+        h("p", { text: "Roxan may message you on its own when work finishes or a page changes. It holds back what is not new or not worth your attention, and the Activity page says why." }), levels),
+      section("Quiet hours", null, h("div", { class: "inline" }, quietBox, from, h("span", { class: "fine", text: "to" }), to),
+        h("p", { class: "fine", text: "Messages still arrive in the chat, but with no pop-up, unless they need you." })),
+      section("Time zone", null, zone, h("p", { class: "fine", text: "Routines and quiet hours follow it. A new account takes this device's the first time." })),
+      section("Learning", null, learn, learnNote),
+      section("Pause", null, pause, pauseNote)) },
+    { id: "device", label: "This device", panel: h("div", null,
+      section("Alerts on this device", null, alertSw, alerts, h("p", { class: "fine" }, soonTag(), " Alerts that reach you when the tab is closed are not built yet."))) },
+    { id: "data", label: "Your data", panel: h("div", null,
+      section("What Roxan keeps", null,
+        h("p", { text: "Roxan keeps your chats, notes, goals and routines in your account on its servers, so it can work while this tab is closed. Each message you send, with the notes it is shown, goes to the AI model that answers it. The Security page says exactly what is sent, and to whom." }),
+        counts, device,
+        h("div", { class: "btns" }, exp, h("a", { class: "go", href: "/security/" }, "Security ", h("i", { "aria-hidden": "true" }))),
+        h("div", { class: "danger" }, Accordion({ items: [{ id: "wipe", title: "Delete everything Roxan keeps for you", body: h("div", null,
+          h("p", { class: "fine", text: "This removes every chat, project, goal, routine, note, specialty, panel, Handoff, rule and the log, and starts Roxan over. It cannot be undone. Download a copy first if you want one." }),
+          h("div", { class: "inline" }, word, wipe)) }] })))) },
+  ] });
+
+  fill(root, h("section", { class: "page" }, h("h1", { class: "page-title", text: "Yours to shape and to take away." }), tabs));
 
   function paint() {
     const s = S.settings;
     if (document.activeElement !== nameIn) nameIn.value = s.name;
     marks.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mark === s.mark)));
-    sync(tones, "tone", s.tone);
-    sync(levels, "level", s.level);
-    quietBox.checked = Boolean(s.quiet);
+    tones.value = s.tone;
+    levels.value = s.level;
+    quietBox.value = Boolean(s.quiet);
     from.value = s.quiet?.from || "22:00";
     to.value = s.quiet?.to || "07:00";
-    zone.value = s.tz;
-    learn.querySelector("input").checked = s.learning;
+    if (document.activeElement !== zone.input) zone.value = s.tz;
+    learn.value = s.learning;
+    pause.value = s.paused;
     learnNote.textContent = s.learning
       ? "On. When you tell Roxan something lasting it keeps a short note and tells you what it kept, with an Undo, and a specialty you ask for is saved at once. A note that comes from a web page or a file, or that looks like a password, an ID or a medical or money detail, waits for your yes. A card number is never kept."
       : "Off. Roxan asks before it keeps a note or a specialty, and keeps one only when you approve it.";
     pauseNote.textContent = s.paused
       ? "Paused. Routines and watches do not run and Roxan starts nothing on its own. Chat still works. A routine that came due while paused runs once when you resume."
       : "Roxan is running. Pausing stops routines and watches and anything Roxan would start on its own; chat keeps working.";
-    pause.textContent = s.paused ? "Resume" : "Pause everything it does on its own";
   }
   paint(); paintAlerts();
   await paintData();

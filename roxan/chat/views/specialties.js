@@ -5,11 +5,12 @@
    its reply; a specialty cannot act on its own. You write them here, or Roxan
    sets one up when it sees you do the same task the same way (learning is on),
    and tells you in the chat. */
-import { h, fill, section, field, crumb } from "../dom.js";
+import { h, fill, section } from "../dom.js";
 import { S, watch } from "../state.js";
 import * as memory from "../memory.js";
 import { cardish } from "../sensitive.js";
 import { soon, busy, sure, empty, make, edit, drop, ago } from "../ui.js";
+import { Button, Drawer, Field, Breadcrumb } from "../kit/index.js";
 
 const clean = (s, n) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 const stepsOf = text => String(text).split("\n").map(s => clean(s.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, ""), 200)).filter(Boolean);
@@ -25,10 +26,10 @@ export async function mount(root) {
     const lines = h("textarea", { class: "field", rows: "6", maxlength: "2400", "aria-label": "Steps, one to a line" });
     lines.value = (s.steps || []).join("\n");
     const err = h("p", { class: "err", role: "alert" });
-    const go = h("button", { class: "btn sm", type: "submit", text: label });
+    const go = Button({ size: "sm", type: "submit" }, label);
     const form = h("form", { class: "pform" },
-      field("Name", name), field("Use when", use, "One sentence: what you would say to ask for it."), field("Steps", lines, "One to a line, in order. Write each as an instruction. Leave out passwords and card numbers."), err,
-      h("div", { class: "btns" }, go, cancel ? h("button", { class: "btn sm ghost", type: "button", text: "Cancel", onclick: cancel }) : null));
+      Field({ label: "Name" }, name), Field({ label: "Use when", hint: "One sentence: what you would say to ask for it." }, use), Field({ label: "Steps", hint: "One to a line, in order. Write each as an instruction. Leave out passwords and card numbers." }, lines), err,
+      h("div", { class: "btns" }, go, cancel ? Button({ variant: "secondary", size: "sm", type: "button", onclick: cancel }, "Cancel") : null));
     form.addEventListener("submit", e => {
       e.preventDefault();
       const v = { name: clean(name.value, 60), when: clean(use.value, 200), steps: stepsOf(lines.value) };
@@ -45,17 +46,20 @@ export async function mount(root) {
     return form;
   }
 
-  const create = h("details", { class: "create" }, h("summary", { class: "btn sm", text: "New specialty" }),
-    specForm({ label: "Save specialty", submit: async v => { await make("specialty", v); made.textContent = `Saved “${v.name}”.`; create.open = false; } }));
+  const create = Button({ icon: "plus", onclick: () => {
+    let drawer;
+    const form = specForm({ label: "Save specialty", cancel: () => drawer.close(), submit: async v => { await make("specialty", v); made.textContent = `Saved “${v.name}”.`; drawer.close(); } });
+    drawer = Drawer({ title: "New specialty", description: "A procedure Roxan follows the same way each time.", body: form, focus: () => form.querySelector("input") });
+  } }, "New specialty");
   fill(root, h("section", { class: "page" },
-    crumb("Settings", "#/settings"),
+    Breadcrumb([{ label: "Settings", href: "#/settings" }, { label: "Specialties" }]),
     h("h1", { class: "page-title", text: "The way you want it done." }),
     h("p", { class: "page-lead", text: "A specialty is a procedure Roxan follows the same way each time a request fits it: how a return is negotiated, how a weekly report is put together. Write one here, or ask Roxan to make one. With learning on, one you ask Roxan to make is saved at once; with it off, Roxan asks you first." }),
     h("p", { class: "fine", text: "A specialty is only instructions in words. It does not act on its own, it is shown to Roxan with your message when it fits, and nothing from the vault is ever part of one." }),
     h("div", { class: "page-act" }, create, made), list));
 
   function card(s) {
-    const editBtn = h("button", { class: "act-btn", type: "button", text: "Edit" });
+    const editBtn = Button({ variant: "secondary", size: "sm", icon: "edit" }, "Edit");
     const el = h("article", { class: "spec", "aria-label": s.title, data: { id: s.id } },
       h("header", null, h("h2", { class: "spec-name", text: s.title })),
       h("p", { class: "fine", text: `Use when: ${s.when}` }),

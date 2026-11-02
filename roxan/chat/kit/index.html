@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Roxan components</title>
+<meta name="description" content="Every part of Roxan's interface, on one page, with sample content.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts.css?v=3d2b31f4">
+<link rel="stylesheet" href="/ui.css?v=4c5bf095">
+<link rel="stylesheet" href="/chat/chat.css?v=6b97b156">
+<link rel="stylesheet" href="/chat/agent.css?v=89436c72">
+<link rel="stylesheet" href="/chat/kit.css?v=26c7def7">
+<style>
+  body { overflow: auto; }
+  #shell { min-height: 100dvh; }
+  .g { max-width: 980px; margin: 0 auto; padding: 56px 32px 160px; }
+  .g > header { margin-bottom: 8px; }
+  .g h1 { font: 300 clamp(30px, 3.4vw, 44px)/1.1 var(--fd); letter-spacing: -.05em; }
+  .g h2 { margin: 56px 0 4px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 600 15px/20px var(--fb); }
+  .g .cap { margin: 14px 0 6px; font: 500 12px/16px var(--fb); color: var(--dim); }
+  .g .row-w { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+  .g .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px 28px; align-items: start; }
+  .g .box { padding: 16px; border: 1px solid var(--line); border-radius: 16px; }
+  .g .ctx { display: grid; place-items: center; height: 90px; border: 1px dashed var(--line-3); border-radius: 16px; color: var(--dim); font-size: 14px; }
+</style>
+<script type="module" src="/chat/kit/gallery.js"></script>
+</head>
+<body data-page="chat">
+<div id="shell"><main class="g" id="main"><noscript><p>The component page needs JavaScript.</p></noscript></main></div>
+<div id="toasts" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -2,14 +2,15 @@
    Each page is a module with mount(root, { app, params }) that returns a
    cleanup function. What Roxan knows lives in state.js; pages read it there. */
 import * as db from "./db.js";
-import { h, fill, $, on, emit } from "./dom.js";
+import { h, fill, $, on, emit, ago } from "./dom.js";
 import * as api from "./api.js";
 import * as oplo from "./oplo.js";
 import * as local from "./local.js";
 import { S, MAIN, start, stop, watch, chats, waiting, name as who } from "./state.js";
 import { icon } from "./icons.js";
 import { mark } from "./mark.js";
-import { soon, sure } from "./ui.js";
+import { soon, saveSettings } from "./ui.js";
+import { Button, LinkButton, Input, Avatar, Kbd, Menu, TreeView, Announcement, Notice, NotificationCenter, StatusDot, openPalette, initTips, leave, mod } from "./kit/index.js";
 
 export const app = {
   persistent: false,
@@ -46,7 +47,8 @@ const ROUTES = [
 const MISSING = { nav: "", title: "Not found", re: /(?:)/, load: async () => ({ mount: root => { root.append(h("section", { class: "page" }, h("h1", { class: "page-title", text: "That page is not here." }), h("a", { class: "go", href: "#/" }, "Go to Today ", h("i", { "aria-hidden": "true" })))); } }) };
 const SHOWN = 6;                                       // chats listed under Chat in the rail; Projects has the rest
 
-let main, banner, brandMark, brandName, status, counts, chatList;
+let main, banner, brandMark, brandName, status, counts, chatList, projList, bell;
+const treeOpen = new Set();                            // the projects open in the rail, kept across redraws
 let wired = false;
 
 /* ------------------------------------------------------------ the rail */
@@ -58,7 +60,9 @@ function shell() {
     const n = h("span", { class: "count", "aria-hidden": "true" });
     counts[key] = n;
     const link = h("a", { href: "#" + path, data: { nav: key } }, icon(key), h("span", { class: "t", text: label }), n);
-    return key === "chat" ? h("li", null, link, chatList = h("ul", { class: "chat-list" })) : h("li", null, link);
+    if (key === "chat") return h("li", null, link, chatList = h("div", { class: "chat-list" }));
+    if (key === "projects") return h("li", null, link, projList = h("div", { class: "chat-list" }));
+    return h("li", null, link);
   };
   const sections = NAV.map(([title, items], i) => h("section", { class: "rail-sec", "aria-labelledby": "rail-h" + i },
     h("h2", { class: title ? "rail-label" : "sr", id: "rail-h" + i, text: title || (i ? "Settings" : "Roxan") }), h("ul", null, items.map(entry))));
@@ -66,13 +70,24 @@ function shell() {
   brandMark = h("span", { class: "rail-glyph" });
   brandName = h("span", { class: "rail-name" });
   status = h("p", { class: "rail-status", role: "status" });
-  const out = sure("Sign out", signOut, { confirm: "Confirm sign out", cls: "rail-link" });
+  bell = NotificationCenter({ title: "Notifications", empty: "Nothing needs you.", side: "right", align: "start", footer: Button({ variant: "ghost", size: "sm", trailing: "right", onclick: () => app.go("/activity") }, "All activity") });
+  const search = h("button", { class: "rail-search", type: "button", "aria-label": "Search and commands", onclick: openCommands }, icon("search"), h("span", { class: "t", text: "Search" }), Kbd(mod(), "K"));
+  const account = h("button", { class: "rail-acct", type: "button" }, Avatar({ size: "sm", glyph: icon("user") }), h("span", { class: "t", text: "Your account" }), icon("updown", "sm"));
+  Menu(account, () => [
+    { label: "Settings", icon: "settings", onselect: () => app.go("/settings") },
+    { label: "Activity", icon: "activity", onselect: () => app.go("/activity") },
+    { label: "Help", icon: "info", href: "/help/" },
+    { label: "roxan.oplocloud.com", icon: "globe", href: "/" },
+    { divider: true },
+    { label: "Sign out", icon: "logout", onselect: signOut },
+  ], { side: "top", align: "start", width: 232, label: "Account" });
   const rail = h("aside", { class: "rail" },
-    h("a", { class: "rail-brand", href: "#/", "aria-label": "Today" }, brandMark, brandName),
+    h("div", { class: "rail-top" }, h("a", { class: "rail-brand", href: "#/", "aria-label": "Today" }, brandMark, brandName), bell),
+    search,
     status,
     h("nav", { "aria-label": "Roxan" }, sections),
-    h("div", { class: "rail-foot" }, h("p", { class: "rail-links" }, h("a", { class: "rail-link", href: "/help/", text: "Help" }), h("a", { class: "rail-link", href: "/", text: "roxan.oplocloud.com" }), out)));
-  banner = h("p", { class: "banner", role: "status", hidden: true });
+    h("div", { class: "rail-foot" }, account));
+  banner = h("div", { class: "banner-slot", role: "status" });
   main = h("main", { id: "main", tabindex: "-1" }, banner);
   fill(root, rail, main);
 }
@@ -85,7 +100,8 @@ function paintBrand() {
 function paintStatus() {
   const s = S.status;
   status.dataset.state = s.state;
-  status.textContent = status.title = s.text || "Ready";
+  fill(status, StatusDot({ state: s.state }), s.text || "Ready");
+  status.title = s.text || "Ready";
 }
 
 function paintCounts() {
@@ -103,10 +119,23 @@ function paintCounts() {
 
 function paintChats() {
   const list = chats();
-  fill(chatList, list.slice(0, SHOWN).map(t => h("li", null, h("a", { href: "#/c/" + t.id, data: { chat: t.id }, title: t.title || "New chat" }, h("span", { class: "t", text: t.title || "New chat" })))),
-    h("li", null, h("button", { class: "tree-new", type: "button", text: "New chat", onclick: newChat })),
-    list.length > SHOWN ? h("li", null, h("a", { class: "tree-more", href: "#/projects", text: `All ${list.length} chats` })) : null);
+  // a title that is cut off says the rest on hover; one that fits has nothing to add
+  const row = n => h("span", { class: "t", text: n.label, "data-tip": n.label.length > 21 ? n.label : null, "data-tip-side": "right" });
+  fill(chatList,
+    list.length ? TreeView({ label: "Recent chats", class: "k-bare", nodes: list.slice(0, SHOWN).map(t => ({ id: "c:" + t.id, label: t.title || "New chat", href: "#/c/" + t.id })), render: row }) : null,
+    h("button", { class: "tree-new", type: "button", onclick: newChat }, icon("plus", "sm"), h("span", { class: "t", text: "New chat" })),
+    list.length > SHOWN ? h("a", { class: "tree-more", href: "#/projects", text: `All ${list.length} chats` }) : null);
+  const projects = S.projects.filter(p => p.state === "open").slice(0, SHOWN);
+  fill(projList, projects.length ? TreeView({ label: "Projects", open: treeOpen, render: row, nodes: projects.map(p => ({ id: "p:" + p.id, label: p.title, href: "#/p/" + p.id, children: list.filter(t => t.parent === p.id).map(t => ({ id: "c:" + t.id, label: t.title || "New chat", href: "#/c/" + t.id })) })) }) : null);
   markCurrent();
+}
+
+// What waits for you, in the bell: questions and approvals, and that Roxan wrote while you were away.
+function paintBell() {
+  const needs = waiting();
+  const items = needs.slice(0, 5).map(it => ({ title: it.title, text: it.kind === "question" ? "A question for you" : "Needs your OK", time: ago(it.created), href: "#/needs", tone: "warn" }));
+  if (S.unread) items.unshift({ title: `${who()} wrote to you`, text: S.unread === 1 ? "1 new message" : `${S.unread} new messages`, href: "#/chat", tone: "info" });
+  bell.set(items, needs.length + (S.unread ? 1 : 0));
 }
 
 async function newChat() {
@@ -118,26 +147,38 @@ async function newChat() {
 
 const nav = name => document.querySelectorAll("[data-nav]").forEach(a => (a.dataset.nav === name ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
 function markCurrent() {
-  const m = /^#\/c\/([\w-]+)$/.exec(location.hash);
-  document.querySelectorAll("[data-chat]").forEach(a => (m && a.dataset.chat === m[1] ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+  const chat = (/^#\/c\/([\w-]+)$/.exec(location.hash) || [])[1], proj = (/^#\/p\/([\w-]+)$/.exec(location.hash) || [])[1];
+  document.querySelectorAll(".rail .k-tr-row[data-id]").forEach(a => {
+    const on = (chat && a.dataset.id === "c:" + chat) || (proj && a.dataset.id === "p:" + proj);
+    if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
 }
 
 function paintBanner() {
   const words = S.live === "live" ? "" : S.live === "polling" ? "Live updates are not reaching this page, so it checks every few seconds instead." : "Reconnecting…";
-  banner.hidden = !words;
-  banner.textContent = words;
+  fill(banner, words ? Announcement({ text: words }) : null);
 }
 
 /* ------------------------------------------------------------ toasts */
 
+// A toast is a notice that drains: it goes after 8 seconds (14 for a problem), but not while you are reading it.
 function toast({ text, sub, tone = "info", href }) {
-  const box = $("#toasts");
-  const el = h("div", { class: "toast", data: { tone } },
-    h("div", null, sub ? h("p", { class: "label", text: sub }) : null, h("p", { class: "toast-text", text }), href ? h("a", { class: "go sm", href }, "Open ", h("i", { "aria-hidden": "true" })) : null),
-    h("button", { class: "x", type: "button", "aria-label": "Dismiss", text: "×", onclick: () => el.remove() }));
+  const box = $("#toasts"), ms = tone === "error" ? 14000 : 8000;
+  let left = ms, t0 = 0, timer = 0;
+  const gone = () => { clearTimeout(timer); leave(el, 220); };
+  const run = () => { t0 = Date.now(); timer = setTimeout(gone, left); };
+  const hold = () => { clearTimeout(timer); left -= Date.now() - t0; };
+  const el = Notice({ title: sub, text, tone: tone === "error" ? "error" : tone === "said" ? "ok" : "info", href, onclose: gone, class: "toast-in" });
+  const bar = h("span", { class: "k-bar-t" });
+  bar.style.animationDuration = `${ms}ms`;
+  el.append(bar);
+  el.addEventListener("pointerenter", hold);
+  el.addEventListener("pointerleave", run);
+  el.addEventListener("focusin", hold);
+  el.addEventListener("focusout", run);
   box.append(el);
-  if (tone !== "error") setTimeout(() => el.remove(), 8000);
-  else setTimeout(() => el.remove(), 14000);
+  while (box.children.length > 4) box.firstChild.remove();
+  run();
 }
 
 // Roxan spoke first. The notice is skipped when that conversation is already in front of the person.
@@ -150,14 +191,36 @@ function said(m) {
   if (!here || document.hidden) toast({ sub: who(), text: m.text, tone: "said", href: m.thread === MAIN ? "#/chat" : "#/c/" + m.thread });
 }
 
+/* ------------------------------------------------------------ the command palette */
+
+const GOTO = [["Today", "/", "home"], ["Chat", "/chat", "chat", "main conversation"], ["Chats and projects", "/projects", "projects"], ["Goals", "/goals", "goals"], ["Routines", "/routines", "schedule", "schedule"], ["Panels", "/panels", "panels"], ["Needs you", "/needs", "needs", "approvals questions"],
+  ["Memory", "/memory", "memory", "remember"], ["Specialties", "/specialties", "specialties"], ["Handoff", "/handoff", "handoff"], ["Vault", "/vault", "vault", "secrets passwords"], ["Access", "/access", "access", "websites rules"], ["Activity", "/activity", "activity", "log history"], ["Settings", "/settings", "settings"]];
+
+function commands() {
+  const paused = S.settings.paused;
+  const find = (title, items) => (items.length ? [{ title, items }] : []);
+  return [
+    { title: "Do", items: [
+      { label: "New chat", icon: "plus", onselect: newChat },
+      { label: paused ? `Resume ${who()}` : `Pause ${who()}`, icon: paused ? "play" : "pause", keywords: "stop start", onselect: () => saveSettings({ paused: !paused }).catch(e => toast({ text: e.message, tone: "error" })) },
+      { label: "Sign out", icon: "logout", onselect: signOut }] },
+    ...find("Chats", chats().slice(0, 8).map(t => ({ label: t.title || "New chat", icon: "chat", href: "#/c/" + t.id, sub: t.last?.text }))),
+    ...find("Projects", S.projects.filter(p => p.state === "open").slice(0, 8).map(p => ({ label: p.title, icon: "projects", href: "#/p/" + p.id }))),
+    ...find("Goals", S.goals.filter(g => g.state === "active").slice(0, 8).map(g => ({ label: g.title, icon: "goals", href: "#/goals/" + g.id }))),
+    { title: "Go to", items: GOTO.map(([label, path, ic, keywords]) => ({ label, icon: ic, href: "#" + path, keywords })) },
+  ];
+}
+const openCommands = () => openPalette(commands);
+
 /* ------------------------------------------------------------ signing in and out */
 
 // The owner's way in, for the codes still in ROXAN_INVITE: /chat/?invite. It is not offered to anyone else.
 function invite() {
-  const input = h("input", { id: "code", name: "code", type: "password", autocomplete: "current-password", autocapitalize: "off", spellcheck: "false", "aria-label": "Invite code", placeholder: "Invite code", required: true });
+  const field_ = Input({ id: "code", name: "code", type: "password", autocomplete: "current-password", autocapitalize: "off", spellcheck: "false", "aria-label": "Invite code", placeholder: "Invite code", required: true });
+  const input = field_.input;
   const err = h("p", { class: "err", role: "alert" });
-  const go = h("button", { class: "btn", type: "submit", text: "Sign in" });
-  const form = h("form", { class: "gate-form" }, input, go);
+  const go = Button({ type: "submit" }, "Sign in");
+  const form = h("form", { class: "gate-form" }, field_, go);
   form.addEventListener("submit", async e => {
     e.preventDefault();
     if (!input.value.trim()) return;
@@ -172,15 +235,15 @@ function invite() {
 function gate(why, note = "") {
   stop();
   const body = {
-    offline: [h("h1", { class: "page-title", text: "Roxan cannot be reached." }), h("p", { class: "page-lead", text: note || "Check your connection. Nothing is lost: what Roxan keeps is kept on its side." }), h("div", { class: "btns" }, h("button", { class: "btn", type: "button", text: "Try again", onclick: boot }))],
-    closed: [h("h1", { class: "page-title", text: "Roxan is not open right now." }), h("p", { class: "page-lead", text: "The status page says when it is." }), h("div", { class: "btns" }, h("a", { class: "btn ghost", href: "/status/", text: "Status" }))],
+    offline: [h("h1", { class: "page-title", text: "Roxan cannot be reached." }), h("p", { class: "page-lead", text: note || "Check your connection. Nothing is lost: what Roxan keeps is kept on its side." }), h("div", { class: "btns" }, Button({ onclick: boot }, "Try again"))],
+    closed: [h("h1", { class: "page-title", text: "Roxan is not open right now." }), h("p", { class: "page-lead", text: "The status page says when it is." }), h("div", { class: "btns" }, LinkButton({ variant: "secondary", href: "/status/" }, "Status"))],
   }[why];
   if (body) return fill($("#shell"), h("main", { id: "main", class: "boot signin" }, h("section", { class: "gatebox" }, h("span", { class: "label", text: "Roxan" }), body)));
 
   const LEAD = "Roxan opens with your Oplo Account. You sign in on the Oplo Account page, in a tab of its own, so Roxan never sees your password.";
   const lead = h("p", { class: "page-lead", text: LEAD });
   const err = h("p", { class: "err", role: "alert" });
-  const go = h("button", { class: "btn", type: "button", text: "Sign in with your Oplo Account", disabled: true });
+  const go = Button({ disabled: true }, "Sign in with your Oplo Account");
   // The tab is opened from the click itself, because a browser only opens one for a click; if the shared script has not arrived yet, it is fetched first.
   go.addEventListener("click", () => {
     err.textContent = "";
@@ -239,10 +302,12 @@ async function route() {
 
 async function enter() {
   shell();
-  paintBrand(); paintStatus(); paintCounts(); paintChats(); paintBanner();
+  paintBrand(); paintStatus(); paintCounts(); paintChats(); paintBanner(); paintBell();
   document.documentElement.dataset.signedin = "";
   if (!wired) {
     wired = true;
+    initTips();
+    addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "k" && document.documentElement.dataset.signedin != null) { e.preventDefault(); openCommands(); } });
     on("toast", e => toast(e.detail));
     on("said", e => said(e.detail));
     on("signedout", () => { stop(); gate("signin"); });
@@ -251,7 +316,8 @@ async function enter() {
     // a change called "all" (the first load, or a fresh one after a lost connection) reaches every watcher
     watch("settings", () => { paintBrand(); document.title = `${document.title.split(" — ")[0]} — ${who()}`; });
     watch("status", soon(paintStatus));
-    watch("threads", soon(paintChats));
+    watch(["threads", "projects"], soon(paintChats));
+    watch(["seen", "approvals", "questions"], soon(paintBell));
     watch("live", paintBanner);
     watch(["seen", "goals", "routines", "panels", "approvals", "questions", "projects"], soon(paintCounts));
   }

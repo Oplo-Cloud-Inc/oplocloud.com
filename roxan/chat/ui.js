@@ -4,6 +4,7 @@
 import { h, emit, clock, when, ago } from "./dom.js";
 import * as api from "./api.js";
 import { apply, S } from "./state.js";
+import { Button, Checkbox, Select, Progress, confirm } from "./kit/index.js";
 
 // Redraw once however many changes arrive in a row.
 export function soon(fn) {
@@ -30,41 +31,36 @@ export async function busy(btn, fn) {
   try { return await fn(); } catch (e) { fail(e); } finally { if (btn) btn.disabled = false; }
 }
 
-// A button that does nothing the first time: it asks, for a few seconds, and the second press goes ahead.
-export function sure(label, onconfirm, { confirm = "Press again to confirm", cls = "act-btn" } = {}) {
-  let t = 0;
-  const b = h("button", { class: cls, type: "button", text: label });
-  const reset = () => { clearTimeout(t); t = 0; b.textContent = label; delete b.dataset.armed; };
-  b.addEventListener("click", () => {
-    if (!t) { b.textContent = confirm; b.dataset.armed = "1"; t = setTimeout(reset, 4500); return; }
-    reset();
-    onconfirm(b);
+// A button that asks first: a dialog names what will happen, and the safe answer has focus. Used for what cannot be taken back.
+export function sure(label, onconfirm, { what } = {}) {
+  const hard = /^(delete|remove|clear)/i.test(label);
+  const b = Button({ variant: "secondary", size: "sm", icon: hard ? "trash" : null }, label);
+  b.addEventListener("click", async () => {
+    if (await confirm({ title: `${label}?`, description: what || (hard ? "This cannot be undone." : "It leaves your list."), yes: label.split(" ")[0], no: "Cancel", danger: hard })) onconfirm(b);
   });
   return b;
 }
 
 export const tag = (text, cls = "") => h("span", { class: `tag ${cls}`.trim(), text });
 export const soonTag = () => h("span", { class: "tag next", text: "Next", title: "Not built yet" });
-export const progress = (done, total, label) => h("progress", { value: done, max: Math.max(1, total), "aria-label": label });
+export const progress = (done, total, label) => Progress({ value: done, max: Math.max(1, total), label, quiet: true });
 export const stamp = ms => (new Date(ms).toDateString() === new Date().toDateString() ? clock(ms) : when(ms));
 export const empty = (title, text, ...kids) => h("div", { class: "none-box" }, h("p", { class: "none-title", text: title }), text ? h("p", { class: "fine", text }) : null, ...kids);
 
-export const check = (label, checked, onchange) => {
-  const box = h("input", { type: "checkbox", checked });
-  box.addEventListener("change", () => onchange(box.checked, box));
-  return h("label", { class: "check" }, box, h("span", { text: label }));
-};
+export const check = (label, checked, onchange) => Checkbox({ label, checked, onchange });
 
+// A choice of one: the kit's select, which reads and fires "change" like the native one it replaces.
 export const pick = (options, value, props = {}) => {
-  const el = h("select", props, options.map(([v, label]) => h("option", { value: v, text: label })));
-  el.value = value;
+  const { "aria-label": label, onchange, ...rest } = props;
+  const el = Select({ options: options.map(([v, text]) => ({ value: v, label: text })), value, label, ...rest });
+  if (onchange) el.addEventListener("change", onchange);
   return el;
 };
 
 export async function copy(btn, text) {
-  const was = btn.textContent;
-  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; } catch { btn.textContent = "Not copied"; }
-  setTimeout(() => { btn.textContent = was; }, 1600);
+  const lab = btn.querySelector(".k-lab") || btn, was = lab.textContent;
+  try { await navigator.clipboard.writeText(text); lab.textContent = "Copied"; } catch { lab.textContent = "Not copied"; }
+  setTimeout(() => { lab.textContent = was; }, 1600);
 }
 
 /* ------------------------------------------------------------ what waits for a yes */
@@ -80,9 +76,7 @@ export function approvalCard(ap) {
     apply({ t: "item", item: approval });
     if (decision === "approve") toast(approval.result || "Done.");
   });
-  const yes = h("button", { class: "btn sm", type: "button", text: "Approve" }), no = h("button", { class: "btn sm ghost", type: "button", text: "Decline" });
-  yes.addEventListener("click", () => decide("approve", yes));
-  no.addEventListener("click", () => decide("decline", no));
+  const yes = Button({ size: "sm", icon: "check", onclick: () => decide("approve", yes) }, "Approve"), no = Button({ size: "sm", variant: "secondary", onclick: () => decide("decline", no) }, "Decline");
   return h("article", { class: "act", data: { state: open ? "awaiting" : ap.state === "approved" ? "done" : ap.state, id: ap.id } },
     h("header", null, h("span", { class: "label", text: open ? "Needs your OK" : "Asked you" }), h("span", { class: "state", text: WORDS[ap.state] || ap.state })),
     h("p", { class: "title", text: ap.title }),
@@ -101,13 +95,13 @@ export function questionCard(q) {
     apply({ t: "msg", message: r.reply });
   });
   const input = h("input", { type: "text", maxlength: "2000", "aria-label": "Your answer", placeholder: "Or write your own answer" });
-  const send = h("button", { class: "btn sm", type: "submit", text: "Answer" });
+  const send = Button({ size: "sm", type: "submit" }, "Answer");
   const form = h("form", { class: "inline ask-row" }, input, send);
   form.addEventListener("submit", e => { e.preventDefault(); if (input.value.trim()) answer(input.value.trim(), send); });
   return h("article", { class: "act", data: { state: open ? "awaiting" : "done", id: q.id } },
     h("header", null, h("span", { class: "label", text: "A question" }), h("span", { class: "state", text: WORDS[q.state] || q.state })),
     h("p", { class: "title", text: q.title }),
-    open && q.options?.length ? h("div", { class: "btns" }, q.options.map(o => { const b = h("button", { class: "btn sm ghost", type: "button", text: o }); b.addEventListener("click", () => answer(o, b)); return b; })) : null,
+    open && q.options?.length ? h("div", { class: "btns" }, q.options.map(o => { const b = Button({ size: "sm", variant: "secondary", onclick: () => answer(o, b) }, o); return b; })) : null,
     open ? form : h("p", { class: "why", text: `You said: ${q.answer || "…"}` }));
 }
 
