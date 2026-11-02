@@ -90,12 +90,11 @@ test("chat: a refusal is shown as one, and a closed Roxan or a spent day cannot 
 
 test("chat: files are read for the message they come with, and are not kept", async () => {
   const h = make({ model: scripted([text("Read it.")]) });
-  await said(h, "what does this say?", [{ kind: "text", name: "a.txt", text: "hello" }, { kind: "image", name: "p.png", media_type: "image/png", data: "AAAA" }]);
+  await said(h, "what does this say?", [{ kind: "text", name: "a.txt", text: "hello secret-body" }]);
   const last = h.model.calls[0].messages.at(-1).content;
-  assert.equal(last[0].type, "image");
-  assert.match(last.at(-1).text, /<attachment name="a.txt">\nhello\n<\/attachment>\n\nwhat does this say\?/);
-  assert.deepEqual(thread(h)[0].files, [{ name: "a.txt", kind: "text" }, { name: "p.png", kind: "image" }]);
-  assert.ok(!JSON.stringify(h.store.dump()).includes("AAAA"), "the image itself is nowhere in what is stored");
+  assert.match(last.at(-1).text, /<attachment name="a.txt">\nhello secret-body\n<\/attachment>\n\nwhat does this say\?/);
+  assert.deepEqual(thread(h)[0].files, [{ name: "a.txt", kind: "text" }]);
+  assert.ok(!JSON.stringify(h.store.dump()).includes("secret-body"), "the file itself is nowhere in what is stored");
 });
 
 /* -------------------------------------------------------------------- notes */

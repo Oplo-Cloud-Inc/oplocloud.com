@@ -13,7 +13,7 @@ test("api: a message needs words, is not a card number, and attachments are chec
   await fails(call(h, "POST", "threads/main/messages", { text: "  " }), 400, /Write a message/);
   await fails(call(h, "POST", "threads/main/messages", { text: "pay with 4242 4242 4242 4242" }), 400, /card number/);
   await fails(call(h, "POST", "threads/main/messages", { text: "", files: [{ type: "text", name: "a", text: "x" }] }), 400, /something about what you attached/);
-  await fails(call(h, "POST", "threads/main/messages", { text: "hi", files: [{ type: "image", media_type: "image/svg+xml", data: "AAAA" }] }), 400, /not an image/);
+  await fails(call(h, "POST", "threads/main/messages", { text: "hi", files: [{ type: "image", name: "a.png", media_type: "image/png", data: "AAAA" }] }), 400, /not text/);
   await fails(call(h, "POST", "threads/main/messages", { text: "hi", files: [{ type: "text", name: "n", text: "card 4242424242424242" }] }), 400, /card number/);
   await fails(call(h, "POST", "threads/nope/messages", { text: "hi" }), 404, /not there/);
   const r = await call(h, "POST", "threads/main/messages", { text: "hi" });
@@ -24,11 +24,12 @@ test("api: a message needs words, is not a card number, and attachments are chec
   assert.deepEqual(m.body.messages.map(x => x.text), ["hi", "Hi."]);
 });
 
-test("api: images, one PDF, and a few text files are the most that can come with a message", () => {
-  const img = { type: "image", media_type: "image/png", data: "AAAA", name: "a.png" };
-  assert.equal(files([img, { type: "pdf", data: "AAAA", name: "x.pdf" }]).length, 2);
-  assert.throws(() => files(Array(7).fill(img)), /at most 6 images/);
-  assert.throws(() => files([{ type: "pdf", data: "AAAA" }, { type: "pdf", data: "AAAA" }]), /one PDF/);
+test("api: a few text files are the most that can come with a message, and a picture or PDF is turned away", () => {
+  const txt = { type: "text", name: "a.txt", text: "hello" };
+  assert.equal(files([txt, txt]).length, 2);
+  assert.throws(() => files(Array(7).fill(txt)), /at most 6 text files/);
+  assert.throws(() => files([{ type: "image", media_type: "image/png", data: "AAAA", name: "a.png" }]), /a\.png is not text/);
+  assert.throws(() => files([{ type: "pdf", data: "AAAA", name: "x.pdf" }]), /x\.pdf is not text/);
   assert.throws(() => files([{ type: "movie" }]), /not valid/);
   assert.throws(() => files("nope"), /too many/);
   assert.deepEqual(files(undefined), []);

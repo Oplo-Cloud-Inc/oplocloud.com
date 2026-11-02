@@ -30,7 +30,7 @@ export async function mount(root, { app, params }) {
     return;
   }
   const isMain = id === MAIN;
-  const byId = new Map(), attachments = [], urls = [], off = [];
+  const byId = new Map(), attachments = [], off = [];
   let stick = true, raf = 0, sending = false, warned = "", saveTimer = 0;
   const dirty = new Set();
   const box = () => S.msgs.get(id);
@@ -52,7 +52,7 @@ export async function mount(root, { app, params }) {
   const live = h("p", { class: "sr", role: "status", "aria-live": "polite" });
   const chips = h("div", { class: "chips" });
   const input = h("textarea", { id: "composer-input", rows: "1", maxlength: "20000", "aria-label": "Message", placeholder: `Message ${who()}` });
-  const attach = h("button", { class: "icon", type: "button", "aria-label": "Attach a file or image", title: "Attach a file or image", text: "+" });
+  const attach = h("button", { class: "icon", type: "button", "aria-label": "Attach a text file", title: "Attach a text file", text: "+" });
   const picker = h("input", { type: "file", multiple: true, accept: files.ACCEPT, hidden: true, "aria-hidden": "true", tabindex: "-1" });
   const send = h("button", { class: "btn sm", type: "submit", text: "Send" });
   const stop = h("button", { class: "btn sm ghost", type: "button", hidden: true, text: "Stop" });
@@ -93,7 +93,7 @@ export async function mount(root, { app, params }) {
   /* ---------------------------------------------------------- messages */
   const userEl = m => h("div", { class: "msg user", data: { id: m.id } }, h("div", { class: "col" },
     m.text ? h("div", { class: "bubble", text: m.text }) : null,
-    m.files?.length ? h("div", { class: "chips" }, m.files.map(f => h("span", { class: "chip static" }, h("span", { text: f.name }), h("span", { class: "dim", text: f.kind === "image" ? "image" : f.kind === "pdf" ? "PDF" : "text" })))) : null,
+    m.files?.length ? h("div", { class: "chips" }, m.files.map(f => h("span", { class: "chip static" }, h("span", { text: f.name }), h("span", { class: "dim", text: "text" })))) : null,
     h("div", { class: "meta", text: stamp(m.at) })));
 
   const noteEl = m => {
@@ -198,10 +198,8 @@ export async function mount(root, { app, params }) {
   const shake = text => { err.textContent = text; if (text) setTimeout(() => { if (err.textContent === text) err.textContent = ""; }, 8000); };
 
   function drawChips() {
-    urls.splice(0).forEach(u => URL.revokeObjectURL(u));
     fill(chips, attachments.map((a, i) => {
-      const thumb = a.kind === "image" ? (() => { const u = URL.createObjectURL(a.blob); urls.push(u); return h("img", { class: "thumb", src: u, alt: "" }); })() : null;
-      return h("span", { class: "chip" }, thumb, h("span", { text: a.name }), h("span", { class: "dim", text: `${a.kind === "image" ? "image" : a.kind === "pdf" ? "PDF" : bytes(a.size)}${a.truncated ? " (start only)" : ""}` }),
+      return h("span", { class: "chip" }, h("span", { text: a.name }), h("span", { class: "dim", text: `${bytes(a.size)}${a.truncated ? " (start only)" : ""}` }),
         h("button", { type: "button", "aria-label": `Remove ${a.name}`, text: "×", onclick: () => { attachments.splice(i, 1); drawChips(); } }));
     }));
   }
@@ -211,7 +209,6 @@ export async function mount(root, { app, params }) {
       if (attachments.length >= files.MAX_FILES) { shake(`${who()} reads up to ${files.MAX_FILES} attachments at a time.`); break; }
       try {
         const p = await files.prepare(f);
-        if (p.kind === "pdf" && attachments.some(a => a.kind === "pdf")) throw new files.FileError(`${who()} reads one PDF at a time.`);
         attachments.push(p);
       } catch (e) { shake(e.message); }
     }
@@ -323,7 +320,6 @@ export async function mount(root, { app, params }) {
     document.removeEventListener("keydown", onKey);
     io.disconnect();
     if (raf) cancelAnimationFrame(raf);
-    urls.forEach(u => URL.revokeObjectURL(u));
     clearTimeout(saveTimer);
   };
 }

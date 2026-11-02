@@ -6,30 +6,19 @@
 import { Invalid, line, cardish } from "./util.js";
 import { EDITABLE, slim } from "./kinds.js";
 
-const LIMIT = { text: 100_000, files: 12, images: 6, image: 5_000_000, pdf: 6_000_000, textFiles: 6, name: 120 };
-const IMAGES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
-const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+const LIMIT = { text: 100_000, files: 12, textFiles: 6, name: 120 };
 
 // Attachments are read for the message they come with and not kept: only their names are.
 export function files(list) {
   if (list === undefined) return [];
   if (!Array.isArray(list) || list.length > LIMIT.files) throw new Invalid("That is too many attachments.");
-  const n = { image: 0, pdf: 0, text: 0 };
+  let texts = 0;
   return list.map(f => {
     const name = line(f?.name, LIMIT.name) || "file";
-    if (f?.type === "image") {
-      if (!IMAGES.has(f.media_type) || typeof f.data !== "string" || !BASE64.test(f.data) || f.data.length > LIMIT.image) throw new Invalid(`${name} is not an image Roxan can read, or is too large.`);
-      if (++n.image > LIMIT.images) throw new Invalid(`Send at most ${LIMIT.images} images at once.`);
-      return { kind: "image", name, media_type: f.media_type, data: f.data };
-    }
-    if (f?.type === "pdf") {
-      if (typeof f.data !== "string" || !BASE64.test(f.data) || f.data.length > LIMIT.pdf) throw new Invalid(`${name} is not a PDF Roxan can read, or is too large.`);
-      if (++n.pdf > 1) throw new Invalid("Send one PDF at a time.");
-      return { kind: "pdf", name, data: f.data };
-    }
+    if (f?.type === "image" || f?.type === "pdf") throw new Invalid(`${name} is not text. Roxan's model reads text only for now, so paste the part that matters.`);
     if (f?.type === "text") {
       if (typeof f.text !== "string" || !f.text.trim() || f.text.length > LIMIT.text) throw new Invalid(`${name} is empty or too long.`);
-      if (++n.text > LIMIT.textFiles) throw new Invalid(`Send at most ${LIMIT.textFiles} text files at once.`);
+      if (++texts > LIMIT.textFiles) throw new Invalid(`Send at most ${LIMIT.textFiles} text files at once.`);
       if (cardish(f.text)) throw new Invalid(`${name} seems to hold a card number. Roxan never needs one.`);
       return { kind: "text", name, text: f.text };
     }

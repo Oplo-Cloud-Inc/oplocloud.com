@@ -212,11 +212,8 @@ export class Core {
   }
 
   blocks(files, said) {
-    const media = files.filter(f => f.kind !== "text").map(f => f.kind === "image"
-      ? { type: "image", source: { type: "base64", media_type: f.media_type, data: f.data } }
-      : { type: "document", title: f.name || undefined, source: { type: "base64", media_type: "application/pdf", data: f.data } });
-    const docs = files.filter(f => f.kind === "text").map(f => `<attachment name="${f.name.replace(/"/g, "'")}">\n${f.text}\n</attachment>`).join("\n\n");
-    return [...media, { type: "text", text: (docs ? docs + "\n\n" : "") + said }];
+    const docs = files.map(f => `<attachment name="${f.name.replace(/"/g, "'")}">\n${f.text}\n</attachment>`).join("\n\n");
+    return [{ type: "text", text: (docs ? docs + "\n\n" : "") + said }];
   }
 
   context(cfg, query, project, extra) {

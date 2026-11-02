@@ -176,7 +176,6 @@ details[open] > summary.go::after { transform: translateY(2px) rotate(225deg); }
 .chip .dim { color: var(--dim); }
 .chip button { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 15px; line-height: 1; color: var(--muted); transition: color var(--t); }
 .chip button:hover { color: #fff; }
-.thumb { width: 20px; height: 20px; margin-left: -4px; border-radius: 4px; object-fit: cover; }
 
 /* ------------------------------------------------------------ Toasts */
 #toasts { position: fixed; top: 20px; right: 24px; z-index: 100; display: grid; gap: 10px; width: min(380px, calc(100vw - 48px)); pointer-events: none; }

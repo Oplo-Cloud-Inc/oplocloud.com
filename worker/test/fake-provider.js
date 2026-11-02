@@ -1,5 +1,5 @@
 /* A stand-in for the model service, for tests and for trying Roxan locally with
-   no key and no cost. It answers POST /v1/messages in the same event stream the
+   no key and no cost. It answers POST /v1/chat/completions in the same event stream the
    real service uses. It reads the last thing in the conversation:
 
      a user message  decides what to do from the words, and calls a tool or answers
@@ -70,16 +70,18 @@ const rest = (said, word) => said.replace(new RegExp(`^.*?${word}:?\\s*`, "i"), 
 
 function script(body) {
   const messages = body.messages;
-  const last = messages[messages.length - 1];
-  const parts = typeof last.content === "string" ? [{ type: "text", text: last.content }] : last.content;
-  const sys = (body.system || []).map(b => b.text).join("\n");
+  const sys = messages[0].content;
+  // The tool messages at the end, if the last turn was the tools answering; else the user's words.
+  let n = messages.length;
+  while (messages[n - 1].role === "tool") n--;
+  const results = messages.slice(n).map(m => ({ content: m.content }));
+  const parts = results.length ? [] : [{ type: "text", text: typeof messages[n - 1].content === "string" ? messages[n - 1].content : messages[n - 1].content.map(p => p.text).join("\n") }];
   const background = /running on your own/.test(sys);
   const learning = /switched on learning/.test(sys);
 
   // Round two: the results of the tools it just called.
-  const results = parts.filter(p => p.type === "tool_result");
   if (results.length) {
-    const all = results.map(r => (typeof r.content === "string" ? r.content : JSON.stringify(r.content))).join("\n");
+    const all = results.map(r => r.content).join("\n");
     if (/needs the person's approval/.test(all)) return { text: "I've asked for your OK. It hasn't happened yet." };
     if (/rules do not allow/.test(all)) return { text: "Your rules do not allow that, so I did not do it." };
     const page = /<page url="([^"]*)" title="([^"]*)"/.exec(all);
@@ -91,7 +93,7 @@ function script(body) {
   const said = parts.filter(p => p.type === "text").map(p => p.text).join("\n");
   const lower = said.toLowerCase();
   // The notes are listed in the second system block ("- id: text"); the first is the fixed prompt.
-  const notes = [...((body.system || [])[1]?.text || "").matchAll(/^- (m_[A-Za-z0-9_-]+): (.+)$/gm)].map(m => ({ id: m[1], text: m[2] }));
+  const notes = [...sys.matchAll(/^- (m_[A-Za-z0-9_-]+): (.+)$/gm)].map(m => ({ id: m[1], text: m[2] }));
 
   if (background) {
     if (lower.includes("notify-test")) return { text: "Telling you.", tools: [{ name: "notify", input: { text: "Something changed that you wanted to know about.", importance: 3 } }] };
@@ -145,7 +147,7 @@ function script(body) {
   return { text: `You said: "${said.trim().slice(0, 120)}". This is a test reply, so I am not really thinking about it.` };
 }
 
-const sse = (name, data) => `event: ${name}\ndata: ${JSON.stringify({ type: name, ...data })}\n\n`;
+const sse = (delta, finish = null, extra = {}) => `data: ${JSON.stringify({ id: "cmpl_fake", object: "chat.completion.chunk", model: "fake", choices: [{ index: 0, delta, finish_reason: finish }], ...extra })}\n\n`;
 const chunks = (text, n = 6) => text.match(new RegExp(`[\\s\\S]{1,${n}}`, "g")) || [];
 
 export function startFake({ gap = 0, port = 0 } = {}) {
@@ -154,7 +156,7 @@ export function startFake({ gap = 0, port = 0 } = {}) {
     let raw = "";
     req.on("data", c => (raw += c));
     req.on("end", async () => {
-      if (req.method !== "POST" || !req.url.startsWith("/v1/messages")) { res.writeHead(404).end(); return; }
+      if (req.method !== "POST" || !req.url.startsWith("/v1/chat/completions")) { res.writeHead(404).end(); return; }
       const body = JSON.parse(raw);
       const record = { headers: req.headers, body, url: req.url, closed: false };
       requests.push(record);
@@ -162,7 +164,7 @@ export function startFake({ gap = 0, port = 0 } = {}) {
       const plan = script(body);
       if (plan.status) {
         res.writeHead(plan.status, { "content-type": "application/json" });
-        res.end(JSON.stringify({ type: "error", error: { type: "api_error", message: "the fake service was asked to fail" } }));
+        res.end(JSON.stringify({ error: { message: "the fake service was asked to fail", type: "api_error" } }));
         return;
       }
       res.writeHead(200, { "content-type": "text/event-stream" });
@@ -170,37 +172,26 @@ export function startFake({ gap = 0, port = 0 } = {}) {
       res.on("close", () => { closed = true; });
       const write = s => { if (!closed) res.write(s); };
       const pause = ms => new Promise(r => setTimeout(r, ms));
-      write(sse("message_start", { message: { id: "msg_fake", type: "message", role: "assistant", model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 321, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }));
+      write(sse({ role: "assistant", content: "" }));
       if (plan.refuse) {
-        write(sse("message_delta", { delta: { stop_reason: "refusal", stop_sequence: null, stop_details: { type: "refusal", category: "general_harms", explanation: null } }, usage: { output_tokens: 0 } }));
-        write(sse("message_stop", {}));
+        write(sse({}, "content_filter"));
+        write("data: [DONE]\n\n");
         res.end();
         return;
       }
-      // The real model may start with a thinking block whose text is omitted.
-      write(sse("content_block_start", { index: 0, content_block: { type: "thinking", thinking: "", signature: "" } }));
-      write(sse("content_block_delta", { index: 0, delta: { type: "signature_delta", signature: "ZmFrZQ==" } }));
-      write(sse("content_block_stop", { index: 0 }));
-      let index = 1;
-      if (plan.text) {
-        write(sse("content_block_start", { index, content_block: { type: "text", text: "" } }));
-        for (const part of chunks(plan.text, plan.gap ? 30 : 7)) {
-          if (closed) return;
-          write(sse("content_block_delta", { index, delta: { type: "text_delta", text: part } }));
-          const ms = plan.gap || gap;
-          if (ms) await pause(ms);
-        }
-        write(sse("content_block_stop", { index }));
-        index++;
+      for (const part of chunks(plan.text || "", plan.gap ? 30 : 7)) {
+        if (closed) return;
+        write(sse({ content: part }));
+        const ms = plan.gap || gap;
+        if (ms) await pause(ms);
       }
-      for (const t of plan.tools || []) {
-        write(sse("content_block_start", { index, content_block: { type: "tool_use", id: `toolu_${requests.length}_${index}`, name: t.name, input: {} } }));
-        for (const part of chunks(JSON.stringify(t.input), 12)) write(sse("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: part } }));
-        write(sse("content_block_stop", { index }));
-        index++;
-      }
-      write(sse("message_delta", { delta: { stop_reason: plan.tools ? "tool_use" : "end_turn", stop_sequence: null }, usage: { output_tokens: 48 } }));
-      write(sse("message_stop", {}));
+      (plan.tools || []).forEach((t, i) => {
+        write(sse({ tool_calls: [{ index: i, id: `call_${requests.length}_${i}`, type: "function", function: { name: t.name, arguments: "" } }] }));
+        for (const part of chunks(JSON.stringify(t.input), 12)) write(sse({ tool_calls: [{ index: i, function: { arguments: part } }] }));
+      });
+      write(sse({}, plan.tools ? "tool_calls" : "stop"));
+      write(sse({}, null, { choices: [], usage: { prompt_tokens: 321, completion_tokens: 48, total_tokens: 369 } }));
+      write("data: [DONE]\n\n");
       res.end();
     });
   });
