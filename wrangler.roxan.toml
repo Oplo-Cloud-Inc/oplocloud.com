@@ -30,7 +30,10 @@
 #
 # Anyone with an Oplo Account can sign in (worker/agent/connect.js, auth.js). Optional, and also secrets:
 #
-#     ROXAN_DENY    Oplo account ids, comma-separated, that are shut out at once
+#     ROXAN_ONLY    Oplo account ids, comma-separated. While it holds anything, Roxan is private: only those accounts
+#                   come in (by ticket or by cookie), and the invite codes are off. Anything but blank counts, even a
+#                   list that names nobody, so a typo shuts the door. Delete the secret to open it to every Oplo Account
+#     ROXAN_DENY    Oplo account ids, comma-separated, that are shut out at once (wins over ROXAN_ONLY)
 #     ROXAN_INVITE  invite codes, comma-separated; one code is one person's account. Not offered on the page: it is the owner's
 #                   own way in, at /chat/?invite, and it keeps the accounts made before Oplo sign-in
 #

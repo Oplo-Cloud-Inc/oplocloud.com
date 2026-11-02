@@ -170,3 +170,43 @@ test("gateway: the bridge is reached at its own address, and the old address sti
   assert.equal(old.status, 301);
   assert.equal(old.headers.get("location"), "https://roxan.oplocloud.com/mof/?a=1");
 });
+
+// ROXAN_ONLY: while it holds anything, Roxan answers the Oplo accounts it lists and nobody else, and the invite codes are off.
+test("private: only the listed Oplo accounts are let in by cookie, and the invite codes stop", async () => {
+  const mine = await oploAccount("acc_root"), other = await oploAccount("acc_2");
+  const open = env({ ROXAN_INVITE: "rx-aaaa" }), priv = env({ ROXAN_ONLY: "acc_root", ROXAN_INVITE: "rx-aaaa" });
+  const through = async (acct, e) => who(cookieOf(await token(acct, e)), e);
+  assert.equal(await through(other, open), other, "not private: any Oplo account");
+  assert.equal(await through(other, priv), null, "private: a cookie made before the list, for an account that is not on it");
+  assert.equal(await through(mine, priv), mine, "private: the listed account");
+  const two = env({ ROXAN_ONLY: " acc_9 ,acc_root" });
+  assert.equal(await through(mine, two), mine, "a list with spaces and more than one id");
+  const both = env({ ROXAN_ONLY: "acc_root", ROXAN_DENY: "acc_root" });
+  assert.equal(await through(mine, both), null, "denied still wins over listed");
+  const code = await accountFor("rx-aaaa", open);
+  assert.equal(await through(code, open), code, "not private: the invite account");
+  assert.equal(await accountFor("rx-aaaa", priv), null, "private: the code is no longer taken");
+  assert.equal(await through(code, priv), null, "private: nor a cookie made from it");
+  assert.equal(await through(mine, env({ ROXAN_ONLY: " , " })), null, "a list that holds nobody lets nobody in: a typo shuts the door, it does not open it");
+  assert.equal(await through(mine, env({ ROXAN_ONLY: "   " })), mine, "blank is the same as not set");
+});
+
+test("gateway: a private Roxan trades a ticket only for a listed account, says why to the others, and shuts the invite form", async () => {
+  const e = env({ AGENT: agent, ROXAN_ONLY: "acc_root", ROXAN_INVITE: "rx-aaaa" });
+  const ok = await post(e, { ticket: await ticket("acc_root", NONCE, e), nonce: NONCE }, { ip: "9.9.9.8" });
+  assert.equal(ok.status, 200);
+  assert.match(ok.headers.get("set-cookie"), /^rx_s=u/);
+  const no = await post(e, { ticket: await ticket("acc_2", NONCE, e), nonce: NONCE }, { ip: "9.9.9.8" });
+  assert.equal(no.status, 403);
+  assert.equal(no.headers.get("set-cookie"), null);
+  const err = (await no.json()).error;
+  assert.equal(err.code, "blocked");
+  assert.match(err.message, /private/);
+  assert.equal((await post(e, { code: "rx-aaaa" }, { ip: "9.9.9.8" })).status, 503, "the invite form is shut");
+  const jar = { cookie: ok.headers.get("set-cookie").split(";")[0] };
+  assert.equal((await gate(e, "/api/threads", { headers: jar }, "9.9.9.9")).status, 200, "the listed account's cookie reaches its object");
+  assert.equal((await gate(env({ AGENT: agent, ROXAN_ONLY: "acc_9" }), "/api/threads", { headers: jar }, "9.9.9.9")).status, 401, "the same cookie once the list no longer holds it");
+  const state = async x => (await (await gate(x, "/api/health", {}, "9.9.9.10")).json()).gateway;
+  assert.equal(await state(e), "open");
+  assert.equal(await state({ ROXAN_MODEL_KEY: "key", ROXAN_INVITE: "rx-aaaa", ROXAN_ONLY: "acc_root" }), "closed", "private with Oplo sign-in off: the invite codes do not count");
+});

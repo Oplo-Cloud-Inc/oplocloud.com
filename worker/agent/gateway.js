@@ -16,7 +16,7 @@
    lands on roxan.oplocloud.com/mof/ rather than on the front door.
 
    The same rule covers /roxan/… on this hostname, which is what an old root-relative link inside the site would ask for. */
-import { accountFor, blocked, codes, cookie, maxAge, oploAccount, oploOn, redeem, token, who } from "./auth.js";
+import { accountFor, blocked, codes, cookie, isPrivate, maxAge, oploAccount, oploOn, redeem, token, who } from "./auth.js";
 import { connect } from "./connect.js";
 
 const HOST = "roxan.oplocloud.com";
@@ -38,7 +38,7 @@ function limited(who, kind) {
 const ip = request => request.headers.get("cf-connecting-ip") || "local";
 const sameOrigin = (request, url) => request.headers.get("origin") === url.origin;
 
-// Open means it can answer (a model key) and somebody can come in: an Oplo Account, or the owner's invite.
+// Open means it can answer (a model key) and somebody can come in: an Oplo Account, or the owner's invite (not while it is private).
 const isOpen = env => Boolean(env.ROXAN_MODEL_KEY && (oploOn(env) || codes(env).length));
 
 async function health(request, env) {
@@ -64,7 +64,7 @@ async function session(request, env, url) {
     const sub = await redeem(body.ticket, body.nonce, env);
     acct = sub ? await oploAccount(sub) : null;
     if (!acct) return fail(401, "oplo", "That sign-in did not check out. Try signing in again.");
-    if (await blocked(acct, env)) return fail(403, "blocked", "This account cannot use Roxan.");
+    if (await blocked(acct, env)) return fail(403, "blocked", isPrivate(env) ? "Roxan is private for now, and this account is not on its list." : "This account cannot use Roxan.");
   } else {
     if (!codes(env).length) return fail(503, "closed", "Roxan is not open yet.");
     acct = typeof body?.code === "string" ? await accountFor(body.code, env) : null;

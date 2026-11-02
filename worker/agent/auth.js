@@ -4,6 +4,8 @@
    session for a ticket that is good for a minute, and /api/session trades the ticket for a cookie of Roxan's own.
    Roxan keeps a hash of the account's id: not the name, the email or the session. ROXAN_SECRET signs the tickets and
    these cookies (without it this way in is off), and ROXAN_DENY, a list of Oplo account ids, shuts an account out at once.
+   ROXAN_ONLY, a list of Oplo account ids too, turns that round: while it holds anything, Roxan answers those accounts and
+   nobody else, every other cookie is refused the next time it is shown, and the invite codes below are off.
 
    An invite code is one person's key, kept for the owner. Its account is a hash of the code, so removing a code from
    ROXAN_INVITE locks that account out at once (its data stays until deleted), and its cookies are signed with a key made
@@ -18,7 +20,9 @@ const TICKET_SECONDS = 60;
 const enc = new TextEncoder();
 
 const split = raw => String(raw || "").split(",").map(c => c.trim()).filter(Boolean);
-export const codes = env => split(env.ROXAN_INVITE);
+// Anything but blank makes Roxan private, even a list that names nobody: a typo must shut the door, never open it.
+export const isPrivate = env => String(env.ROXAN_ONLY ?? "").trim() !== "";
+export const codes = env => (isPrivate(env) ? [] : split(env.ROXAN_INVITE));
 export const account = code => sha256("roxan-account|" + String(code).trim()).then(h => h.slice(0, 32));
 // An Oplo account here starts with "u", which no invite code's account can: those are hex.
 export const oploAccount = id => sha256("roxan-oplo|" + String(id)).then(h => "u" + h.slice(0, 31));
@@ -43,8 +47,10 @@ async function accountsIn(kind, raw, hash) {
   if (!lists.has(key)) { if (lists.size > 8) lists.clear(); lists.set(key, new Set(await Promise.all(split(raw).map(hash)))); }
   return lists.get(key);
 }
-const allowed = env => accountsIn("invite", env.ROXAN_INVITE, account);
-export const blocked = async (acct, env) => (await accountsIn("deny", env.ROXAN_DENY, oploAccount)).has(acct);
+const allowed = env => accountsIn("invite", isPrivate(env) ? "" : env.ROXAN_INVITE, account);
+export const blocked = async (acct, env) =>
+  (await accountsIn("deny", env.ROXAN_DENY, oploAccount)).has(acct) ||
+  (isPrivate(env) && !(await accountsIn("only", env.ROXAN_ONLY, oploAccount)).has(acct));
 
 const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64 = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
