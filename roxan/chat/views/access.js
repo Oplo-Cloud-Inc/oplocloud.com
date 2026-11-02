@@ -56,7 +56,7 @@ export async function mount(root) {
     crumb("Settings", "#/settings"),
     h("h1", { class: "page-title", text: "What Roxan may do on its own." }),
     h("p", { class: "page-lead", text: "Every tool Roxan has is in this list. None of them buys, sends email, signs in or runs a browser. For each one you decide: allow it, have Roxan ask you first, or turn it off." }),
-    h("p", { class: "fine", text: "After Roxan reads a web page or a file you attached, it asks before it starts or changes a routine, keeps a note, saves a specialty or a Handoff, whatever you choose here. Text in a page is data; it cannot talk Roxan into an action." }),
+    h("p", { class: "fine", text: "After Roxan reads a web page, uses its cloud computer or reads a file you attached, it asks before it starts or changes a routine, keeps a note, saves a specialty or a Handoff, whatever you choose here. Text in a page is data; it cannot talk Roxan into an action." }),
     section("What it may do", null, list),
     section("Websites", null, h("p", { class: "fine", text: "Where more than one rule applies to a page, the strictest wins. A rule for a website covers its subdomains too." }), sites, form, err),
     section("Limits", null, h("p", { text: `Today: ${usageLine()}.` }), h("p", { class: "fine", text: "The limits start again at midnight. They stop a mistake, or a page that tries to keep Roxan busy, from running up a cost." }))));

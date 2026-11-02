@@ -12,6 +12,7 @@
      "remind me …"           a reminder for tomorrow 09:00
      "routine …"             a daily routine; "watch <url>" watches a page
      "read <url>"            read_page, then a reply about what it found
+     "shell-test <command>"  the shell tool (the cloud computer), then a reply about what it printed
      "goal …" "panel …" "idea …" "specialty …" "handoff …"   the matching tool
      "ask-test"              ask a question and stop
      "inject-test <url>"     read a page, then try to start a routine (as if the page told it to)
@@ -24,6 +25,10 @@
    When the system prompt says the run is a routine firing on its own, it checks
    in: "notify-test" in the instruction sends a notification, anything else
    stays quiet and says so.
+
+   It also stands in for the sandbox service behind the cloud computer (E2B_URL
+   pointed here): it starts and kills "machines" and answers every command with
+   a line saying it did not run it. Nothing is ever executed.
 
    node worker/test/fake-provider.js 8131   starts one by hand. */
 import http from "node:http";
@@ -86,6 +91,8 @@ function script(body) {
     if (/rules do not allow/.test(all)) return { text: "Your rules do not allow that, so I did not do it." };
     const page = /<page url="([^"]*)" title="([^"]*)"/.exec(all);
     if (page) return { text: `I read ${page[1]}. It is titled "${page[2]}".` };
+    const ran = /<output exit="([^"]*)">\n([\s\S]*?)\n<\/output>/.exec(all);
+    if (ran) return { text: `The cloud computer answered (exit ${ran[1]}): ${ran[2].split("\n")[0]}` };
     if (/Held back/.test(all)) return { text: "Nothing worth telling you." };
     return { text: background ? "Checked. Nothing new to report." : "Done." };
   }
@@ -104,6 +111,7 @@ function script(body) {
   if (lower.includes("error-test")) return { status: 500 };
   if (lower.includes("decline-test")) return { refuse: true };
   if (lower.includes("long-test")) return { text: LONG };
+  if (lower.includes("shell-test")) return { text: "Let me look that up.", tools: [{ name: "shell", input: { command: rest(said, "shell-test") || "curl -s https://example.com | head -5" } }] };
   if (lower.includes("slow-test")) return { text: "This reply is slow on purpose. ".repeat(12), gap: 800 };
   if (lower.includes("ask-test")) return { text: "One question first.", tools: [{ name: "ask", input: { question: "Which day suits you?", options: ["Monday", "Friday"] } }] };
   if (lower.includes("inject-test")) {
@@ -148,16 +156,34 @@ function script(body) {
 }
 
 const sse = (delta, finish = null, extra = {}) => `data: ${JSON.stringify({ id: "cmpl_fake", object: "chat.completion.chunk", model: "fake", choices: [{ index: 0, delta, finish_reason: finish }], ...extra })}\n\n`;
+const frame = (obj, flags = 0) => {
+  const b = Buffer.from(JSON.stringify(obj)), head = Buffer.alloc(5);
+  head[0] = flags;
+  head.writeUInt32BE(b.length, 1);
+  return Buffer.concat([head, b]);
+};
 const chunks = (text, n = 6) => text.match(new RegExp(`[\\s\\S]{1,${n}}`, "g")) || [];
 
 export function startFake({ gap = 0, port = 0 } = {}) {
-  const requests = [];
+  const requests = [], e2b = [];
   const server = http.createServer((req, res) => {
-    let raw = "";
-    req.on("data", c => (raw += c));
+    const parts = [];
+    req.on("data", c => parts.push(c));
     req.on("end", async () => {
-      if (req.method !== "POST" || !req.url.startsWith("/v1/chat/completions")) { res.writeHead(404).end(); return; }
-      const body = JSON.parse(raw);
+      const buf = Buffer.concat(parts);
+      const path = req.url.split("?")[0];
+      if (path === "/v2/sandboxes" || path.startsWith("/sandboxes/") || path === "/process.Process/Start") {
+        e2b.push(`${req.method} ${path}`);
+        if (req.method === "POST" && path === "/v2/sandboxes") { res.writeHead(201, { "content-type": "application/json" }).end(JSON.stringify({ sandboxID: `fake_${e2b.length}`, templateID: "base", clientID: "fake", envdVersion: "0.0", envdAccessToken: "fake" })); return; }
+        if (req.method === "DELETE") { res.writeHead(204).end(); return; }
+        const command = JSON.parse(buf.subarray(5).toString()).process.args.at(-1);
+        const out = Buffer.from(`Stand-in cloud computer: this did not run: ${command}\n`).toString("base64");
+        res.writeHead(200, { "content-type": "application/connect+json" });
+        res.end(Buffer.concat([frame({ event: { start: { pid: 1 } } }), frame({ event: { data: { stdout: out } } }), frame({ event: { end: { exited: true, status: "exit status 0" } } }), frame({}, 2)]));
+        return;
+      }
+      if (req.method !== "POST" || !path.startsWith("/v1/chat/completions")) { res.writeHead(404).end(); return; }
+      const body = JSON.parse(buf.toString());
       const record = { headers: req.headers, body, url: req.url, closed: false };
       requests.push(record);
       res.on("close", () => { record.closed = true; });
@@ -197,7 +223,7 @@ export function startFake({ gap = 0, port = 0 } = {}) {
   });
   return new Promise(resolve => server.listen(port, "127.0.0.1", () => resolve({
     url: `http://127.0.0.1:${server.address().port}`,
-    requests,
+    requests, e2b,
     close: () => new Promise(r => { server.closeAllConnections?.(); server.close(r); }),
   })));
 }

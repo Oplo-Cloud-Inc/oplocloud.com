@@ -28,9 +28,16 @@
 #     npx wrangler secret put ROXAN_INVITE    -c wrangler.roxan.toml --env production   (invite codes, comma-separated; one code is one person's account)
 #     npx wrangler secret put ROXAN_MODEL_KEY -c wrangler.roxan.toml --env production   (the model service's API key)
 #
+# One more secret is optional. With it Roxan can use a cloud computer (worker/agent/box.js: a
+# throwaway Linux machine with internet access, rented from a code-sandbox service, one per task,
+# killed when the task ends). Without it the tool is simply not offered, and Access hides its row:
+#
+#     npx wrangler secret put E2B_API_KEY     -c wrangler.roxan.toml --env production   (the sandbox service's API key)
+#
 # Until both are set /api/health says "closed" and /chat says so. Locally, put
 # them in .dev.vars beside this file (git-ignored); worker/test/fake-provider.js
-# stands in for the model service so nothing is spent.
+# stands in for the model service so nothing is spent. It also stands in for the sandbox
+# service when E2B_URL points at it; nothing is ever run.
 # ===========================================================================
 name = "oplo-roxan"
 main = "worker/roxan.js"
