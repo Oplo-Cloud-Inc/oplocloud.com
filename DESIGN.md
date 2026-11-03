@@ -130,7 +130,7 @@ bundle's C-31 bottom tab bar, C-32 one-time-code input and C-33 child switcher.
 
 The rest of `learn/ui/` is plumbing: `core.js` (the `OL` namespace, `OL.h`, overlays, shortcuts),
 `icons.js` (one outline set, 1.5 px, a sprite), `page.js` and `templates.js` (above), `index.js` (the
-catalogue), `gallery.js` (the gallery page). The shell is `learn/shell/shell.js` (rail, top bar, module
+catalogue), `gallery.js` (the gallery page). The shell is `learn/shell/shell.js` (rail, top bar, page
 tabs), `routes.js` (the menu), `pages.js` (which screens are rebuilt) and `url.js` (the address as state).
 
 Rules the lints enforce, so a page cannot forget them: no network call outside `learn/api.js` (UI008), no
@@ -184,13 +184,53 @@ The folder of a page is never `learn/admin/`, `learn/teacher/` or `learn/student
 addresses (`/admin/…`), the server strips them, and a script there is a 404 that looks like a missing page.
 Modules lives in `learn/settings/`.
 
+## The menu
+
+Seven sections and one Admin tools entry at the foot of the rail, two levels deep: a section, then its
+pages. A page may have a row of views (never more than seven, never a third level). In the code a
+section is a "module" and a page is a "tab" (`MODULES` in `learn/shell/routes.js`, the one place that says
+what the menu is). This table is the staff-navigation proposal (seven sections and Admin tools) as built.
+
+| Section | Pages |
+|---|---|
+| Today | Today |
+| Students | Directory, Classes, Admissions, Families, Health, Documents, Certificates, Records, Graduation, Student support (needs attention, early warning, mentoring, discipline, referrals, learning support, accommodations, detention) |
+| Attendance | Registers, Low attendance, Condonation, By subject, Change log |
+| Exams and marks | Exams, Assessments, Marks, Results, Grading scales, Competencies, Report cards, Marking periods, Standards (Coming soon) |
+| Timetable | School days, Bell schedule, Subjects, Timetable, Future plans, Add and drop, Curriculum |
+| People and messages | Teachers, Leave, Cover, Departments, Qualifications, Access, Teacher analytics, Inbox, Circulars, Events, Outbox, Messages (Coming soon) |
+| School office | Transport, Library, Facilities, Equipment, Meals, Meal eligibility, Lockers, Fees (Coming soon) |
+| Admin tools | Analytics, Reports, Data center, Compliance, Security, Audit log, Settings, SFTP (Coming soon) |
+
+Where the old groups went: Academics split into Exams and marks (competencies) and Timetable (the
+schedule and the curriculum); Wellbeing became Student support under Students (the proposal had no home for
+it); Communicate and Staff joined as People and messages; Campus became School office; Insights, Data Center,
+Security, Audit Log, Settings and Compliance went behind Admin tools. Every page of the old console is still
+reachable (`test-routes.mjs` reads the old tree and checks it).
+
+Rules, each one tested:
+
+- **A menu word is the page's title, word for word.** The old pages write their own headings in English
+  ("Class registers", "75% watch", "Mail queue"); once a page has drawn, the shell writes the menu word over
+  its first heading, in whichever language is on (`heading()` in `shell.js`). Three kinds of page keep
+  the heading they have: Today (a greeting), a page that shows one record (a student's name), and a page that
+  is only a way in from another screen (one course's gradebook).
+- **No word twice.** A section and its own page may share a name (Timetable); nothing else may.
+- **The path back up** is above the heading: Students › Classes. Every step but the last is a link. A page
+  named like its section is one step (Timetable), and has no path.
+- **The section you are in stays open** in the rail after a reload, and the current page is marked.
+- **Coming soon.** A page that is promised and not built (`soon: true` behind its flag) is drawn at the end
+  of its section as a row that says so, to an administrator only. It is not a link. When its flag goes true
+  the page takes the row's place. There is no "Not set up yet" group.
+
 ## Addresses
 
 The address is the state: filters, tab, page and a drawer's record are in the query string.
 
-- Modules: `/admin/{module}/{tab}/{sub-or-record}/{record-tab}?filters` (`learn/shell/routes.js`).
-- Admin is flat (decision D-07): `/admin/settings/{group}`, `/admin/compliance/{view}`,
-  `/admin/data/{tab}`, `/admin/security`, `/admin/audit-log`, `/admin/year-end`.
+- Sections: `/admin/{section}/{page}/{view-or-record}/{record-tab}?filters` (`learn/shell/routes.js`).
+- Admin tools is flat (decision D-07): `/admin/analytics/{view}`, `/admin/reports/{view}`,
+  `/admin/data/{view}`, `/admin/compliance`, `/admin/security`, `/admin/audit-log`, `/admin/settings/{view}`,
+  `/admin/year-end`. A page key in Admin tools is never the key of a section.
 - Student: `/me/{tab}`.
 - **Family** (decision D-08, amended by D10): `/family/{school}/{tab}/{record?}?child=stu_123`, where
   `{school}` is the school's `slug` in `organizations` (for example `sfhs`), or the school's own subdomain.
@@ -200,9 +240,9 @@ The address is the state: filters, tab, page and a drawer's record are in the qu
 
 ## And on a phone?
 
-Every module states its phone answer in the route table (`phone` in `learn/shell/routes.js`, D11,
-checked against this table by DES005). **page**: the jobs done away from a desk have a phone page of
-their own, named in `phonePages`; the rest of the module is cards. **cards**: desktop-first, every table
+Every section (a "module" in the code) states its phone answer in the route table (`phone` in
+`learn/shell/routes.js`, D11, checked against this table by DES005). **page**: the jobs done away from a
+desk have a phone page of their own, named in `phonePages`; the rest of the section is cards. **cards**: desktop-first, every table
 becomes a card list. The new frame stays desktop-only (`shellOn()` is false on a phone) until a module's
 phone pages are built in it; the phone pages that exist today are in `learn/phone-*.js`.
 
@@ -211,14 +251,10 @@ phone pages are built in it; the phone pages that exist today are in `learn/phon
 | `today` | page | overview | `learn/phone-staff.js` (the teacher's and the administrator's home) |
 | `students` | page | admissions | `learn/phone-admin.js` (the application queue); the rest is cards |
 | `attendance` | page | registers | `learn/phone-class.js` (register, diary, a word to the families, offline) |
-| `academics` | page | timetable, homework | homework is the diary in `learn/phone-class.js`; the teacher's own timetable is not built |
-| `exams` | page | mark | `learn/phone-teach.js` (marking one student at a time); the marks grid in card mode is not built |
-| `fees` | cards | | behind a flag; a parent pays in the family bundle, not here |
-| `wellbeing` | cards | | |
-| `communicate` | page | circulars | a note or circular to one class goes from the diary in `learn/phone-class.js`; the inbox is `learn/phone-shared.js`; a school-wide circular with approval is not built for a phone |
-| `staff` | cards | | |
-| `campus` | cards | | the work-order list for maintenance is `learn/jobs/` |
-| `insights` | cards | | |
+| `exams` | page | marks | `learn/phone-teach.js` (marking one student at a time); the marks grid in card mode is not built |
+| `timetable` | page | timetable, homework | homework is the diary in `learn/phone-class.js`; the teacher's own timetable is not built |
+| `people` | page | circulars | a note or circular to one class goes from the diary in `learn/phone-class.js`; the inbox is `learn/phone-shared.js`; a school-wide circular with approval is not built for a phone |
+| `office` | cards | | the work-order list for maintenance is `learn/jobs/`; fees are behind a flag, and a parent pays in the family bundle, not here |
 | `admin` | cards | | |
 
 The family portal is not a module of this table: it is a separate phone-first bundle (D5, D10).

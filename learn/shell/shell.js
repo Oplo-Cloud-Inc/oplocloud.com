@@ -37,7 +37,7 @@
   var S = OL.shell = OL.shell || {};
 
   var st = { mounted: false, barOnly: false, ctx: null, rail: null, top: null, head: null, host: null, pending: null, route: null, record: null,
-             visible: [], timer: null, unread: null, years: [], yearListeners: [], bound: false };
+             visible: [], timer: null, unread: null, years: [], yearListeners: [], bound: false, titleWatch: null, titleDue: false };
   var KEYS = { rail: "oplo.shell.rail", year: "oplo.shell.year", theme: "oplo.shell.theme", lang: "oplo.shell.lang", recent: "oplo.shell.recent" };
 
   function store(k, v) {
@@ -100,7 +100,7 @@
     // Back, Forward and a refresh arrive with the address already set: it names the record and the filters
     if (st.ctx.rest) { var a = OL.routes.parse(st.ctx.rest() + location.search, allowed); if (a.legacy === k) return a; }
     var at = OL.routes.locate(k);
-    return at ? { module: at.module, tab: at.tab, sub: at.sub, record: null, recordTab: null, query: "", legacy: k } : null;
+    return at ? { module: at.module, tab: at.tab, sub: at.sub, record: null, recordTab: null, query: "", legacy: k, alias: !!at.alias } : null;
   }
 
   /* ---------------------------------------------------------- Appearance */
@@ -140,6 +140,10 @@
           ul.appendChild(h("li", null, h("a", { class: OL.cx("ol-rail__tab", here2 && "is-on"), href: href(path2), "aria-current": here2 ? "page" : null,
             on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); go(path2); } } }, label.tab(m.key, tb.key))));
         });
+        // a page that is promised and not built is a row that says so, not a link
+        (m.soon || []).forEach(function (tb) {
+          ul.appendChild(h("li", null, h("span", { class: "ol-rail__tab is-soon" }, h("span", { class: "ol-rail__tablabel", text: label.tab(m.key, tb.key) }), " ", h("span", { class: "ol-rail__soon", text: t("shell.soon") }))));
+        });
         li.appendChild(ul);
       }
       return li;
@@ -160,15 +164,19 @@
     if (!r) return [{ label: c.sectionName() }];
     var m = OL.routes.module(r.module), out = [], solo = m.solo;
     var mod = OL.routes.front(r.module, allowed, c.prefer ? c.prefer(r.module) : null);
-    out.push({ label: label.module(r.module), href: href(OL.routes.pathOf(mod || { module: r.module }, allowed)), onClick: function () { go(OL.routes.pathOf(mod || { module: r.module }, allowed)); } });
-    if (!solo && !m.flat) {
+    function step(text, path) { return { label: text, href: href(path), onClick: function () { go(path); } }; }
+    out.push(step(label.module(r.module), OL.routes.pathOf(mod || { module: r.module }, allowed)));
+    if (!solo) {
       var tp = OL.routes.pathOf({ module: r.module, tab: r.tab }, allowed);
-      out.push({ label: label.tab(r.module, r.tab), href: href(tp), onClick: function () { go(tp); } });
-    } else if (m.flat) { out.length = 0; out.push({ label: label.module(r.module), href: href(OL.routes.pathOf({ module: r.module, tab: r.tab }, allowed)), onClick: function () { go(OL.routes.pathOf({ module: r.module, tab: r.tab }, allowed)); } }, { label: label.tab(r.module, r.tab) }); }
+      // Timetable > Timetable says it twice: the section's own step is then the page
+      if (label.tab(r.module, r.tab) !== label.module(r.module)) out.push(step(label.tab(r.module, r.tab), tp));
+      else out[0] = step(label.module(r.module), tp);
+    }
     var tabDef = m.tabs.filter(function (x) { return x.key === r.tab; })[0];
     if (r.sub && tabDef && tabDef.subs) {
       var live = tabDef.subs.filter(function (s) { return allowed(s.legacy[0]) || s.legacy.some(allowed); });
-      if (live.length > 1) out.push({ label: label.sub(r.module, r.tab, r.sub) });
+      // the view is a step back up only when a record is open under it
+      if (live.length > 1) out.push(st.record || r.record ? step(label.sub(r.module, r.tab, r.sub), OL.routes.pathOf({ module: r.module, tab: r.tab, sub: r.sub }, allowed)) : { label: label.sub(r.module, r.tab, r.sub) });
     }
     if (st.record) out.push({ label: st.record.label });
     return out;
@@ -314,6 +322,29 @@
     var m = OL.ui.modal.open({ title: t("shell.help_title"), body: h("div", { class: "ol-help" }, dl, one), width: 520, actions: [OL.ui.button.render({ label: t("common.close"), variant: "secondary", onClick: function () { m.close(); } })] });
   }
 
+  /* ------------------------------------------------------------- The title */
+  /* A menu word is the page's title, word for word. An old page writes its own heading, in English and in its own words ("Mail queue"
+     under "Outbox"); once it has drawn, the shell writes the menu word over it, in whichever language is on. Three kinds of page keep the
+     heading they have: Today (a greeting), a page that shows one record (a student's name), and a page that is only a way into a tab from
+     another screen (one course's own gradebook). */
+  function heading() {
+    var r = st.route;
+    if (!r || r.alias || r.record || st.record) return null;
+    return OL.routes.module(r.module).solo ? null : label.tab(r.module, r.tab);
+  }
+  function syncTitle() {
+    st.titleDue = false;
+    var want = heading(), h1 = want && st.host ? st.host.querySelector("h1") : null;
+    if (h1 && !h1.firstElementChild && h1.textContent !== want) h1.textContent = want;
+  }
+  function watchTitle() {
+    if (st.titleWatch) st.titleWatch.disconnect();
+    st.titleWatch = null;
+    if (!window.MutationObserver || !st.host) return;
+    st.titleWatch = new MutationObserver(function () { if (!st.titleDue) { st.titleDue = true; Promise.resolve().then(syncTitle); } });
+    st.titleWatch.observe(st.host, { childList: true, subtree: true });
+  }
+
   /* ------------------------------------------------------------- Palette */
   var recent = {
     list: function () { try { return (JSON.parse(store("recent") || "[]") || []).slice(0, 5); } catch (e) { return []; } },
@@ -341,11 +372,11 @@
   }
   var ACTIONS = [
     { key: "take_register", path: "attendance/registers", words: "attendance roll call mark absent present" },
-    { key: "new_circular", path: "communicate/circulars", words: "notice announcement send" },
+    { key: "new_circular", path: "people/circulars", words: "notice announcement send" },
     { key: "issue_certificate", path: "students/certificates", words: "tc transfer bonafide character" },
-    { key: "arrange_cover", path: "staff/cover", words: "substitution absent teacher" },
+    { key: "arrange_cover", path: "people/cover", words: "substitution absent teacher" },
     { key: "admit_student", path: "students/admissions", words: "admission enrol application enquiry" },
-    { key: "raise_work_order", path: "campus/facilities/orders", words: "repair maintenance fix" }
+    { key: "raise_work_order", path: "office/facilities/orders", words: "repair maintenance fix" }
   ];
   function actionsList() {
     return ACTIONS.map(function (a) {
@@ -459,6 +490,7 @@
     if (st.top) st.top.remove();
     if (st.head) { st.head.remove(); st.head = null; }
     if (st.watch) { st.watch.disconnect(); st.watch = null; }
+    if (st.titleWatch) { st.titleWatch.disconnect(); st.titleWatch = null; }
     if (st.rail) { st.rail.className = "cn-rail"; OL.clear(st.rail); delete st.rail.dataset.built; st.rail = null; }
     st.barOnly = false;
     st.record = null; st.route = null; st.pending = null;
@@ -468,6 +500,7 @@
     if (!st.mounted) return;
     if (st.barOnly) { drawTop(); return; }
     drawRail(); drawTop(); drawHead();
+    syncTitle();                                                                      // so does the page's heading
     if (st.ctx.setTitle && S.title() && !st.record) st.ctx.setTitle(S.title());      // the tab's title follows the language
   }
 
@@ -494,6 +527,7 @@
     var host = h("div", { class: "admin-body ol-host" });
     wrap.appendChild(host);
     st.host = host;
+    watchTitle();
     drawRail(); drawTop(); drawHead();
     return host;
   }
@@ -524,6 +558,7 @@
     return m.solo ? label.module(r.module) : label.tab(r.module, r.tab);
   };
   S.setRecord = function (r) { st.record = r; drawCrumbs(); if (r && st.ctx && st.ctx.setTitle) st.ctx.setTitle(r.label); };
+  S.heading = heading;
   S.year = function () { return store("year") || (st.years[0] || null); };
   S.onYear = function (fn) { st.yearListeners.push(fn); };
   S.openPalette = openPalette;

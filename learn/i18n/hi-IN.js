@@ -79,34 +79,51 @@
     },
     modal: { type_to_confirm: "पुष्टि के लिए {word} लिखें", type_to_enable: "इस बटन को चालू करने के लिए {word} लिखें" },
     nav: {
-      today: "आज", students: "विद्यार्थी", attendance: "उपस्थिति", academics: "शैक्षणिक", exams: "परीक्षाएँ", fees: "शुल्क",
-      wellbeing: "कल्याण", communicate: "संवाद", staff: "कर्मचारी", campus: "परिसर", insights: "विश्लेषण", admin: "प्रशासन"
+      today: "आज", students: "विद्यार्थी", attendance: "उपस्थिति", exams: "परीक्षा और अंक", timetable: "समय-सारणी",
+      people: "लोग और संदेश", office: "विद्यालय कार्यालय", admin: "प्रशासनिक उपकरण"
     },
     tab: {
       today: { overview: "आज" },
       students: {
-        directory: "निर्देशिका", admissions: "प्रवेश", classes: "कक्षाएँ", guardians: "अभिभावक", health: "स्वास्थ्य",
-        documents: "दस्तावेज़", certificates: "प्रमाणपत्र", records: "अभिलेख", graduation: "उत्तीर्णता"
+        directory: "निर्देशिका", classes: "कक्षाएँ", admissions: "प्रवेश", families: "परिवार", health: "स्वास्थ्य", documents: "दस्तावेज़",
+        certificates: "प्रमाणपत्र", records: "अभिलेख", graduation: "उत्तीर्णता", support: "विद्यार्थी सहायता"
       },
-      attendance: { registers: "रजिस्टर", watch: "निगरानी सूची", condonation: "उपस्थिति में छूट", "by-subject": "विषयवार", staff: "कर्मचारी उपस्थिति" },
-      academics: {
-        timetable: "समय-सारणी", subjects: "विषय", timings: "घंटी का समय", calendar: "कैलेंडर", "lesson-plans": "पाठ योजनाएँ",
-        homework: "गृहकार्य", competencies: "दक्षताएँ", curriculum: "पाठ्यक्रम", "add-drop": "जोड़ें और हटाएँ"
+      attendance: { registers: "रजिस्टर", "low-attendance": "कम उपस्थिति", condonation: "उपस्थिति में छूट", "by-subject": "विषयवार", "change-log": "बदलाव लॉग", staff: "कर्मचारी उपस्थिति" },
+      exams: {
+        plan: "परीक्षाएँ", assessments: "आकलन", marks: "अंक", results: "परिणाम", scales: "ग्रेडिंग पैमाने", competencies: "दक्षताएँ",
+        "report-cards": "रिपोर्ट कार्ड", periods: "अंकन अवधियाँ", standards: "मानक"
       },
-      exams: { plan: "परीक्षा योजना", mark: "अंक प्रविष्टि", results: "परिणाम", "report-cards": "रिपोर्ट कार्ड", scales: "ग्रेडिंग पैमाने", periods: "अंकन अवधियाँ" },
-      wellbeing: {
-        "needs-attention": "ध्यान चाहिए", "early-warning": "पूर्व चेतावनी", mentoring: "मार्गदर्शन", discipline: "अनुशासन",
-        referrals: "संदर्भ", "learning-support": "सीखने में सहायता", accommodations: "सुविधाएँ", detention: "रोक"
+      timetable: {
+        "school-days": "विद्यालय के दिन", "bell-schedule": "घंटी की समय-सारणी", subjects: "विषय", timetable: "समय-सारणी", "future-plans": "आगामी योजनाएँ",
+        "add-drop": "जोड़ें और हटाएँ", curriculum: "पाठ्यक्रम", "lesson-plans": "पाठ योजनाएँ", homework: "गृहकार्य"
       },
-      communicate: { inbox: "इनबॉक्स", circulars: "परिपत्र", events: "कार्यक्रम", messages: "संदेश", outbox: "भेजे गए" },
-      staff: { directory: "निर्देशिका", departments: "विभाग", leave: "अवकाश", cover: "स्थानापन्न", qualifications: "योग्यताएँ", access: "पहुँच", analytics: "विश्लेषण" },
-      campus: { transport: "परिवहन", library: "पुस्तकालय", equipment: "उपकरण", facilities: "सुविधाएँ", menus: "भोजन", eligibility: "भोजन पात्रता", lockers: "लॉकर" },
-      insights: { dashboards: "डैशबोर्ड", analytics: "विश्लेषण", reports: "रिपोर्ट", builder: "रिपोर्ट निर्माता" },
-      admin: { settings: "सेटिंग", compliance: "अनुपालन", data: "डेटा", security: "सुरक्षा", "audit-log": "ऑडिट लॉग", "year-end": "वर्षांत" }
+      people: {
+        teachers: "शिक्षक", leave: "अवकाश", cover: "स्थानापन्न", departments: "विभाग", qualifications: "योग्यताएँ", access: "पहुँच",
+        "teacher-analytics": "शिक्षक विश्लेषण", inbox: "इनबॉक्स", circulars: "परिपत्र", events: "कार्यक्रम", outbox: "भेजे गए", messages: "संदेश"
+      },
+      office: { transport: "परिवहन", library: "पुस्तकालय", facilities: "सुविधाएँ", equipment: "उपकरण", menus: "भोजन", eligibility: "भोजन पात्रता", lockers: "लॉकर", fees: "शुल्क" },
+      admin: {
+        analytics: "विश्लेषण", reports: "रिपोर्ट", dashboards: "डैशबोर्ड", data: "डेटा केंद्र", compliance: "अनुपालन", security: "सुरक्षा",
+        "audit-log": "ऑडिट लॉग", settings: "सेटिंग", "year-end": "वर्षांत"
+      }
     },
     sub: {
-      students: { guardians: { list: "अभिभावक", invites: "आमंत्रण पत्रक" } },
-      admin: { settings: { general: "सामान्य", modules: "मॉड्यूल" } }
+      students: {
+        classes: { sections: "अनुभाग", lists: "कक्षा सूचियाँ" }, families: { list: "अभिभावक", invites: "आमंत्रण पत्रक" },
+        support: {
+          "needs-attention": "ध्यान चाहिए", "early-warning": "पूर्व चेतावनी", mentoring: "मार्गदर्शन", discipline: "अनुशासन", referrals: "संदर्भ",
+          "learning-support": "सीखने में सहायता", accommodations: "विशेष रियायतें", detention: "रोक"
+        }
+      },
+      exams: { results: { analysis: "विश्लेषण", gpa: "जीपीए", transcripts: "अंक-पत्र" } },
+      timetable: { curriculum: { courses: "पाठ्यक्रम", map: "पाठ्यक्रम मानचित्र" } },
+      office: { facilities: { orders: "कार्य आदेश", spaces: "स्थान", assets: "संपत्ति", routines: "नियमित कार्य", bookings: "बुकिंग", vendors: "विक्रेता", documents: "सुविधा दस्तावेज़", reports: "सुविधा रिपोर्ट" } },
+      admin: {
+        analytics: { academic: "शैक्षणिक", assessments: "आकलन के अनुसार", growth: "वृद्धि", groups: "समूह", longitudinal: "दीर्घकालिक", standards: "मानक के अनुसार" },
+        reports: { office: "कार्यालय रिपोर्ट", builder: "रिपोर्ट निर्माता" },
+        settings: { general: "सामान्य", modules: "मॉड्यूल" },
+        data: { exports: "निर्यात", imports: "आयात", integrations: "एकीकरण", state: "राज्य रिपोर्टिंग", district: "ज़िला" }
+      }
     },
     shell: {
       menu: "मुख्य मेनू", console: "विद्यालय कंसोल", collapse_menu: "मेनू छोटा करें", expand_menu: "मेनू बड़ा करें", top: "ऊपरी पट्टी",
@@ -119,6 +136,7 @@
       language: "भाषा", language_changed: "भाषा बदली गई",
       views: "दृश्य", view_switch: "दृश्य बदलें", view: { admin: "व्यवस्थापक", teacher: "शिक्षक", parent: "परिवार", student: "विद्यार्थी" },
       sessions: "मैं कहाँ साइन इन हूँ",
+      soon: "जल्द आ रहा है",
       sign_out: "साइन आउट", signing_out: "साइन आउट हो रहा है…",
       k: { search: "खोज खोलें", move: "परिणामों के बीच जाएँ", open: "चुना हुआ परिणाम खोलें", group: "अगले समूह पर जाएँ", close: "बंद करें", slash: "सूची में खोज बॉक्स पर जाएँ (अपने खाता मेनू में बंद किया जा सकता है)" }
     },

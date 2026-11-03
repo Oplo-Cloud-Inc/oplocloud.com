@@ -104,40 +104,54 @@
 
     modal: { type_to_confirm: "Type {word} to confirm", type_to_enable: "Type {word} to enable this button" },
 
-    /* The menu: eleven modules and Admin (Volume 01 §2.1), each with its tabs, a tab with at most one more row. */
+    /* The menu: seven sections and Admin tools, each with its pages, a page with at most one more row of views. A menu word is the title of its
+       page, word for word: shell/shell.js writes it over the old page's own heading. */
     nav: {
-      today: "Today", students: "Students", attendance: "Attendance", academics: "Academics", exams: "Exams", fees: "Fees",
-      wellbeing: "Wellbeing", communicate: "Communicate", staff: "Staff", campus: "Campus", insights: "Insights", admin: "Admin"
+      today: "Today", students: "Students", attendance: "Attendance", exams: "Exams and marks", timetable: "Timetable",
+      people: "People and messages", office: "School office", admin: "Admin tools"
     },
     tab: {
       today: { overview: "Today" },
       students: {
-        directory: "Directory", admissions: "Admissions", classes: "Classes", guardians: "Guardians", health: "Health",
-        documents: "Documents", certificates: "Certificates", records: "Records", graduation: "Graduation"
+        directory: "Directory", classes: "Classes", admissions: "Admissions", families: "Families", health: "Health", documents: "Documents",
+        certificates: "Certificates", records: "Records", graduation: "Graduation", support: "Student support"
       },
-      attendance: { registers: "Registers", watch: "Watchlist", condonation: "Condonation", "by-subject": "By subject", staff: "Staff attendance" },
-      academics: {
-        timetable: "Timetable", subjects: "Subjects", timings: "Bell timings", calendar: "Calendar", "lesson-plans": "Lesson plans",
-        homework: "Homework", competencies: "Competencies", curriculum: "Curriculum", "add-drop": "Add and drop"
+      attendance: { registers: "Registers", "low-attendance": "Low attendance", condonation: "Condonation", "by-subject": "By subject", "change-log": "Change log", staff: "Staff attendance" },
+      exams: {
+        plan: "Exams", assessments: "Assessments", marks: "Marks", results: "Results", scales: "Grading scales", competencies: "Competencies",
+        "report-cards": "Report cards", periods: "Marking periods", standards: "Standards"
       },
-      exams: { plan: "Exam plan", mark: "Mark entry", results: "Results", "report-cards": "Report cards", scales: "Grading scales", periods: "Marking periods" },
-      wellbeing: {
-        "needs-attention": "Needs attention", "early-warning": "Early warning", mentoring: "Mentoring", discipline: "Discipline",
-        referrals: "Referrals", "learning-support": "Learning support", accommodations: "Accommodations", detention: "Detention"
+      timetable: {
+        "school-days": "School days", "bell-schedule": "Bell schedule", subjects: "Subjects", timetable: "Timetable", "future-plans": "Future plans",
+        "add-drop": "Add and drop", curriculum: "Curriculum", "lesson-plans": "Lesson plans", homework: "Homework"
       },
-      communicate: { inbox: "Inbox", circulars: "Circulars", events: "Events", messages: "Messages", outbox: "Outbox" },
-      staff: { directory: "Directory", departments: "Departments", leave: "Leave", cover: "Cover", qualifications: "Qualifications", access: "Access", analytics: "Analytics" },
-      campus: { transport: "Transport", library: "Library", equipment: "Equipment", facilities: "Facilities", menus: "Meals", eligibility: "Meal eligibility", lockers: "Lockers" },
-      insights: { dashboards: "Dashboards", analytics: "Analytics", reports: "Reports", builder: "Report builder" },
-      admin: { settings: "Settings", compliance: "Compliance", data: "Data", security: "Security", "audit-log": "Audit log", "year-end": "Year-end" }
+      people: {
+        teachers: "Teachers", leave: "Leave", cover: "Cover", departments: "Departments", qualifications: "Qualifications", access: "Access",
+        "teacher-analytics": "Teacher analytics", inbox: "Inbox", circulars: "Circulars", events: "Events", outbox: "Outbox", messages: "Messages"
+      },
+      office: { transport: "Transport", library: "Library", facilities: "Facilities", equipment: "Equipment", menus: "Meals", eligibility: "Meal eligibility", lockers: "Lockers", fees: "Fees" },
+      admin: {
+        analytics: "Analytics", reports: "Reports", dashboards: "Dashboards", data: "Data center", compliance: "Compliance", security: "Security",
+        "audit-log": "Audit log", settings: "Settings", "year-end": "Year-end", sftp: "SFTP"
+      }
     },
     sub: {
-      students: { classes: { sections: "Sections", lists: "Class lists" }, guardians: { list: "Guardians", invites: "Invite sheets" } },
-      academics: { timetable: { published: "Published", draft: "Draft" }, curriculum: { courses: "Courses", map: "Curriculum map" } },
-      exams: { mark: { "course-marks": "Course marks", assessments: "Assessments" }, results: { analysis: "Analysis", gpa: "GPA", transcripts: "Transcripts" } },
-      campus: { facilities: { orders: "Work orders", spaces: "Spaces", assets: "Assets", routines: "Routines", bookings: "Bookings", vendors: "Vendors", documents: "Documents", reports: "Reports" } },
-      insights: { analytics: { academic: "Academic", assessments: "Assessments", growth: "Growth", groups: "Groups", longitudinal: "Longitudinal", standards: "Standards" } },
-      admin: { settings: { general: "General", modules: "Modules" }, data: { exports: "Exports", imports: "Imports", integrations: "Integrations", api: "API", state: "State reporting", district: "District" } }
+      students: {
+        classes: { sections: "Sections", lists: "Class lists" }, families: { list: "Guardians", invites: "Invite sheets" },
+        support: {
+          "needs-attention": "Needs attention", "early-warning": "Early warning", mentoring: "Mentoring", discipline: "Discipline", referrals: "Referrals",
+          "learning-support": "Learning support", accommodations: "Accommodations", detention: "Detention"
+        }
+      },
+      exams: { results: { analysis: "Analysis", gpa: "GPA", transcripts: "Transcripts" } },
+      timetable: { curriculum: { courses: "Courses", map: "Curriculum map" } },
+      office: { facilities: { orders: "Work orders", spaces: "Spaces", assets: "Assets", routines: "Routines", bookings: "Bookings", vendors: "Vendors", documents: "Facility documents", reports: "Facility reports" } },
+      admin: {
+        analytics: { academic: "Academic", assessments: "By assessment", growth: "Growth", groups: "Groups", longitudinal: "Longitudinal", standards: "By standard" },
+        reports: { office: "Office reports", builder: "Report builder" },
+        settings: { general: "General", modules: "Modules" },
+        data: { exports: "Exports", imports: "Imports", integrations: "Integrations", api: "API", state: "State reporting", district: "District" }
+      }
     },
 
     /* The frame around every page: rail, top bar, account menu. */
@@ -152,6 +166,7 @@
       language: "Language", language_changed: "Language changed",
       views: "View", view_switch: "Switch view", view: { admin: "Admin", teacher: "Teacher", parent: "Family", student: "Student" },
       sessions: "Where I'm signed in",
+      soon: "Coming soon",
       sign_out: "Sign out", signing_out: "Signing out…",
       k: { search: "Open search", move: "Move between results", open: "Open the selected result", group: "Jump to the next group", close: "Close", slash: "Go to the search box on a list (turn it off in your account menu)" }
     },

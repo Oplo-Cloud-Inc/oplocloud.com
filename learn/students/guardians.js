@@ -45,7 +45,7 @@
 
     function head() {
       return {
-        title: env.title || t("tab.students.guardians"), subtitle: t("students.gd.subtitle"),
+        title: env.title || t("tab.students.families"), subtitle: t("students.gd.subtitle"),
         primary: can() ? { label: t("students.gd.add"), icon: "plus", onClick: function () { openAdd(env, null, load); } } : null
       };
     }

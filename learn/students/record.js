@@ -65,7 +65,7 @@
       if (gaps) side.appendChild(card(t("students.side.fix"), gaps));
       var fam = h("div", { class: "ol-students-side__family" },
         h("p", { text: r.family.linked ? t("students.side.family_linked", { n: r.family.linked, active: OL.fmt.num(r.family.active) }) : t("students.side.family_none") }),
-        OL.ui.button.render({ label: t("students.side.family_open"), variant: "link", onClick: function () { env.go("students/guardians"); } }));
+        OL.ui.button.render({ label: t("students.side.family_open"), variant: "link", onClick: function () { env.go("students/families"); } }));
       side.appendChild(card(t("students.side.guardians"), fam));
       side.appendChild(card(t("students.side.team"), OL.ui.page.facts([
         { label: t("students.fact.class_teacher"), value: r.classTeacher ? r.classTeacher.name : null },

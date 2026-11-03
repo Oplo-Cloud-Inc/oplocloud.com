@@ -80,12 +80,13 @@ await t("a bare /admin opens Today inside the frame, and the address says so", a
   assert.match(page.url(), /\/learn\/admin\/today$/);
   assert.equal(await page.evaluate(() => document.body.classList.contains("ol-shell")), true);
   const labels = await page.locator(".ol-rail__label").allInnerTexts();
-  assert.deepEqual(labels, ["Today", "Students", "Attendance", "Academics", "Exams", "Wellbeing", "Communicate", "Staff", "Campus", "Insights", "Admin"]);
+  assert.deepEqual(labels, ["Today", "Students", "Attendance", "Exams and marks", "Timetable", "People and messages", "School office", "Admin tools"]);
+  assert.equal(await page.locator(".ol-rail__foot .ol-rail__label").innerText(), "Admin tools", "Admin tools is the one entry at the foot");
   assert.equal(await page.title(), "Today · OEdu");
   assert.equal(await page.locator(".ol-rail__item[aria-current=page]").innerText(), "Today");
 });
 
-await t("the rail opens a module on its front tab; the breadcrumb, the tabs, the title and Back follow", async (page) => {
+await t("the rail opens a section on its front page; the breadcrumb, the tabs, the title and Back follow", async (page) => {
   await page.getByRole("link", { name: "Students" }).first().click();
   await page.waitForURL(/\/admin\/students\/directory$/);
   assert.equal(await page.title(), "Directory · OEdu");
@@ -100,14 +101,14 @@ await t("the rail opens a module on its front tab; the breadcrumb, the tabs, the
   assert.equal(await page.locator(".ol-rail__tab.is-on").innerText(), "Directory");
 });
 
-await t("a deep link opens the sub-tab it names; an old address opens, and is rewritten to the new one", async (page) => {
-  await page.goto(ORIGIN + "/learn/admin/academics/timetable/draft");
+await t("a deep link opens the view it names; an old address opens, and is rewritten to the new one", async (page) => {
+  await page.goto(ORIGIN + "/learn/admin/students/classes/lists");
   await page.waitForSelector(".ol-pagehead [role=tab]");
-  assert.equal(await page.locator(".ol-pagehead .ol-tabs--sub [aria-selected=true]").innerText(), "Draft");
-  assert.equal((await page.locator(".ol-pagehead .ol-breadcrumb").innerText()).replace(/\s+/g, " ").trim(), "Academics Timetable Draft");
+  assert.equal(await page.locator(".ol-pagehead .ol-tabs--sub [aria-selected=true]").innerText(), "Class lists");
+  assert.equal((await page.locator(".ol-pagehead .ol-breadcrumb").innerText()).replace(/\s+/g, " ").trim(), "Students Classes Class lists");
   await page.goto(ORIGIN + "/learn/admin/Schedule/Bell-Schedules");
-  await page.waitForURL(/\/admin\/academics\/timings$/, { timeout: 10000 });
-  assert.equal(await page.title(), "Bell timings · OEdu");
+  await page.waitForURL(/\/admin\/timetable\/bell-schedule$/, { timeout: 10000 });
+  assert.equal(await page.title(), "Bell schedule · OEdu");
 });
 
 await t("the rail folds to icons and remembers it; a folded row still has its name for a screen reader and a tip", async (page) => {
@@ -156,13 +157,13 @@ await t("search: a class code puts the class first; arrow keys and Tab move thro
   assert.notEqual(next, groups[0], "Tab jumps to the next group: " + next);
   await page.keyboard.press("Shift+Tab");
   assert.equal(await page.locator(".ol-palette [role=option][aria-selected=true]").getAttribute("data-i"), "0", "Shift+Tab goes back to the group before");
-  await page.locator(".ol-palette__input").fill("bell timings");
+  await page.locator(".ol-palette__input").fill("bell schedule");
   await page.waitForFunction(() => [...document.querySelectorAll(".ol-palette__gh")].some((g) => g.textContent.trim() === "Pages"));
   // no waiting for the server: the rows left from "X-C" must not be offered for this text, or Enter would open one of them
   const first = await page.locator(".ol-palette [role=option][aria-selected=true] .ol-palette__title").innerText();
-  assert.equal(first, "Bell timings", "the page that was typed is the first row");
+  assert.equal(first, "Bell schedule", "the page that was typed is the first row");
   await page.keyboard.press("Enter");
-  await page.waitForURL(/\/admin\/academics\/timings$/);
+  await page.waitForURL(/\/admin\/timetable\/bell-schedule$/);
 });
 
 await t("search: nothing found says so, and names what to try", async (page) => {
@@ -321,7 +322,9 @@ await t("one-key shortcuts: \"/\" goes to the search box; Help and shortcuts tur
 }, { at: "students/directory" });
 
 await t("a page of the old console in the new frame has the new title, the breadcrumb and the module tabs, and none of the new components inside it", async (page) => {
-  for (const [at, title, crumbs] of [["attendance/registers", "Class registers", "Attendance Registers"], ["academics/timetable", "Timetable", "Academics Timetable"], ["staff/directory", "Teachers", "Staff Directory"]]) {
+  // the old pages' own headings were "Class registers", "75% watch" and "Mail queue": the title is the menu word, whatever the old page says
+  for (const [at, title, crumbs] of [["attendance/registers", "Registers", "Attendance Registers"], ["timetable/bell-schedule", "Bell schedule", "Timetable Bell schedule"], ["people/teachers", "Teachers", "People and messages Teachers"],
+    ["attendance/low-attendance", "Low attendance", "Attendance Low attendance"], ["people/outbox", "Outbox", "People and messages Outbox"]]) {
     await page.goto(ORIGIN + "/learn/admin/" + at);
     await page.waitForSelector(".ol-host .cn-h1");
     const r = await page.evaluate(() => {
@@ -343,6 +346,44 @@ await t("a page of the old console in the new frame has the new title, the bread
     assert.equal(r.crumbs, crumbs, at);
     assert.ok(r.tabs >= 2, at + ": the module tabs are there");
   }
+});
+
+await t("a page that is promised and not built is a row that says Coming soon in its section; it is not a link, and the page tabs hold only pages that open", async (page) => {
+  await page.getByRole("link", { name: "School office" }).first().click();
+  await page.waitForURL(/\/admin\/office\/transport$/);
+  const soon = page.locator(".ol-rail__tab.is-soon");
+  assert.equal(await soon.count(), 1);
+  assert.equal((await soon.innerText()).replace(/\s+/g, " ").trim(), "Fees Coming soon");
+  assert.equal(await soon.evaluate((e) => e.tagName.toLowerCase()), "span", "a row, not a link");
+  assert.equal(await page.locator(".ol-rail__tabs li").last().innerText().then((x) => x.replace(/\s+/g, " ").trim()), "Fees Coming soon", "at the end of its section");
+  const url = page.url();
+  await soon.click(); await settle(page);
+  assert.equal(page.url(), url, "a click goes nowhere");
+  assert.equal(await page.locator(".ol-pagehead [role=tab]", { hasText: "Fees" }).count(), 0);
+  // Messages, Standards and SFTP are promised in their own sections
+  for (const [section, row] of [["People and messages", "Messages"], ["Exams and marks", "Standards"]]) {
+    await page.getByRole("link", { name: section }).first().click();
+    await page.waitForFunction((w) => [...document.querySelectorAll(".ol-rail__tab.is-soon")].some((e) => e.innerText.includes(w)), row);
+  }
+  await page.getByRole("link", { name: "Admin tools" }).first().click();
+  await page.waitForFunction(() => [...document.querySelectorAll(".ol-rail__tab.is-soon")].some((e) => e.innerText.includes("SFTP")));
+  assert.equal(await page.locator(".ol-rail__tabs .ol-rail__tab:not(.is-soon)").count() >= 5, true, "Admin tools opens on its pages: " + await page.locator(".ol-rail__tabs").innerText());
+});
+
+await t("the page heading is its menu word, in English and in Hindi, wherever the old page says something else; a drill-in keeps its own heading", async (page) => {
+  await page.goto(ORIGIN + "/learn/admin/attendance/low-attendance");
+  await page.waitForSelector(".ol-host h1");
+  assert.equal(await page.locator(".ol-host h1").first().innerText(), "Low attendance");
+  assert.equal(await page.locator(".ol-rail__tab.is-on").innerText(), "Low attendance", "the menu says the same");
+  await page.getByRole("button", { name: "हिन्दी", exact: true }).click();
+  await page.waitForFunction(() => /कम उपस्थिति/.test((document.querySelector(".ol-host h1") || {}).textContent || ""));
+  assert.equal(await page.locator(".ol-rail__tab.is-on").innerText(), "कम उपस्थिति");
+  await page.getByRole("button", { name: "English", exact: true }).click();
+  await page.waitForFunction(() => (document.querySelector(".ol-host h1") || {}).textContent === "Low attendance");
+  // Today keeps the greeting it opens with
+  await page.goto(ORIGIN + "/learn/admin/today");
+  await page.waitForSelector(".ol-host h1");
+  assert.notEqual(await page.locator(".ol-host h1").first().innerText(), "Today");
 });
 
 await t("sign out says \"You're signed out\" at once, with no confirm box, nothing left of the frame and not the welcome page", async (page) => {
@@ -376,6 +417,16 @@ for (const theme of ["light", "dark"]) {
     if (theme === "dark") { await page.getByRole("button", { name: /Account menu for/ }).click(); await page.getByRole("menuitemradio", { name: "Light" }).click(); }
   }, { at: "students/directory" });
 }
+
+await t("a session the server has ended is said once, in words, with the way back in, not as errors on whichever screen asks next", async (page, ctx) => {
+  await ctx.clearCookies();
+  await page.getByRole("link", { name: "Attendance" }).first().click();       // the next call finds no session
+  await page.locator("#olSignedOut").waitFor({ state: "visible", timeout: 8000 });
+  assert.equal(await page.locator("#olSignedOut h1").innerText(), "You're signed out");
+  assert.match(await page.locator("#olSignedOut .ol-signedout__text").innerText(), /session has ended/);
+  assert.equal(await page.locator(".ol-top").count(), 0, "nothing of the frame is left");
+  assert.equal(await page.getByRole("button", { name: "Sign in again" }).count(), 1);
+});
 
 await t("a narrow window folds the rail by itself and the search becomes an icon", async (page) => {
   assert.equal(await page.evaluate(() => document.body.classList.contains("ol-rail-min")), true);

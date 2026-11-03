@@ -50,6 +50,7 @@ window.OPLO_API = (function () {
   var base = defaultBase();
   var reachable = null;        // null = not yet asked, true/false once known
   var early = null;            // the answer to an early /me, until the first me() takes it
+  var ended = null;            // told when the server no longer knows the person this page believes is signed in
 
   /* An error a screen can act on. `code` is the server's, so a client can
      branch on `invalid_credentials` without matching on English. */
@@ -92,6 +93,8 @@ window.OPLO_API = (function () {
           var fault = ApiError(res.status, err.code || "http_" + res.status,
                                err.message || "The server refused that.", err.field, err.requestId || res.headers.get("x-request-id"));
           if (res.status === 429) { var wait = Number(res.headers.get("retry-after")); if (wait > 0) fault.retryAfter = wait; }
+          // 401 is "no session" and nothing else (the account calls are the ones that ask whether there is one, so they are not a sign that one ended)
+          if (res.status === 401 && ended && path.indexOf("/auth/") !== 0) { try { ended(fault); } catch (e) { /* the screen still gets the error below */ } }
           /* Whatever else the server said about the refusal — the blockers of
              an enrollment step, the dates of a booking that cannot be made,
              the checklist lines still open — rides along on the error. */
@@ -154,6 +157,8 @@ window.OPLO_API = (function () {
     base: function () { return base; },
     setBase: function (url) { base = String(url).replace(/\/+$/, ""); reachable = null; },
     reachable: function () { return reachable; },
+    /* One function, told when a call other than an account call is answered 401: the session this page was using is gone. */
+    onSessionEnded: function (fn) { ended = typeof fn === "function" ? fn : null; },
     health: function () {
       return get("/health", { timeout: 5000 })
         .then(function () { return true; })

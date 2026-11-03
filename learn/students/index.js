@@ -11,7 +11,7 @@
      students/directory/{id}/edit          the edit form
      students/classes/sections             the sections
      students/classes/sections/{id}[/{tab}]  one section
-     students/guardians                    the families; ?peek={id} is one guardian beside the list
+     students/families                     the families; ?peek={id} is one guardian beside the list
      students/admissions                   the applications; ?peek={id} is one beside the list
      students/admissions/workspace         the old admissions workspace
    ========================================================================== */

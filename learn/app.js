@@ -8845,7 +8845,7 @@
     { k: "attendance", name: "Attendance", icon: "check", hue: "emerald", not: ["IN"] },
     { name: "Attendance", icon: "check", hue: "emerald", only: "IN", kids: [
       { k: "in-register", name: "Class registers" }, { k: "in-watch", name: "75% watch" }, { k: "in-condone", name: "Condonation" },
-      { k: "attendance", name: "By subject" }] },
+      { k: "attendance", name: "By subject" }, { k: "in-changes", name: "Change log" }] },
     { name: "Student Support", icon: "heart", hue: "rose", kids: [
       { k: "support", name: "Watchlist", as: { IN: "Needs attention" } }, { k: "in-ews", name: "Early warning", only: "IN" }, { k: "in-cases", name: "Mentoring cases", only: "IN" }, { k: "behavior", name: "Behavior", as: { IN: "Discipline" } }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention", not: ["IN"] },
       { k: "senplans", name: "Support Plans", as: { IN: "Learning support" } }, { k: "accommodations", name: "Accommodations", as: { IN: "Exam accommodations" } }] },
@@ -9809,7 +9809,7 @@
   }
   /* ------------------------------------------------------------ The new frame
      The school's console is drawn inside the rebuilt frame (shell/): a rail of
-     eleven modules, a top bar with search, the module's tabs. The pages
+     seven sections and Admin tools, a top bar with search, the section's pages. The pages
      themselves are the ones above until each is rebuilt, so the frame is told
      what this person may open and how to open it, and knows nothing else. A
      teacher's console and the phone keep what they have until their turn. */
@@ -9831,10 +9831,11 @@
   function shellCtx(at) {
     return {
       container: $("#v-admin"), current: at, base: appBase(), rest: appRest,
-      allowed: function (k) { return allowedTabs().some(function (t) { return t.k === k; }); },
+      // "@soon": the menu may show an administrator the pages that are promised and not built; a clerk with one job is not shown a list of promises
+      allowed: function (k) { return k === "@soon" ? !officeOnly() : allowedTabs().some(function (t) { return t.k === k; }); },
       schoolName: schoolName(), sectionName: function () { return sectionNamed(S.tab).name; },
       me: { id: S.me.id, name: S.me.name },
-      views: staffViews, view: consoleMode, openView: openStaffView, inboxPath: "communicate/inbox",
+      views: staffViews, view: consoleMode, openView: openStaffView, inboxPath: "people/inbox",
       open: function (k) { openAdmin(false, k); },
       openAccount: function () { openAccount(); }, openSessions: openSessions,
       openRecord: openFound,
@@ -9866,7 +9867,7 @@
       else openStudent360({ id: it.id, name: it.title, email: "" });
       return;
     }
-    var to = { staff: "staff/directory", class: "students/classes/sections", subject: "academics/subjects", circular: "communicate/circulars" }[it.kind];
+    var to = { staff: "people/teachers", class: "students/classes/sections", subject: "timetable/subjects", circular: "people/circulars" }[it.kind];
     if (to) OL.shell.go(to);
   }
 
@@ -9902,7 +9903,7 @@
        inventory: tabFxAssets,
        "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
        "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
-       "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch, "in-ews": tabInEarly,
+       "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch, "in-changes": tabInChanges, "in-ews": tabInEarly,
        "in-exams": tabInExams, "in-scales": tabInScales, "in-comp": tabInComp, "in-analysis": tabInAnalysis,
        sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
   }
@@ -17975,6 +17976,7 @@
   function tabInPapers(v) { exams().papers(v); }
   function tabInRegister(v) { register().classes(v); }
   function tabInWatch(v) { register().watch(v); }
+  function tabInChanges(v) { register().changeLog(v); }
   function tabInEarly(v) { register().early(v); }
   function tabInMyClass(v) { register().myClass(v); }
   function tabInClasses(v) { india().classes(v); }
@@ -20352,6 +20354,16 @@
     else gate.hidden = false;
     noFoot(); progress(null);
   }
+
+  /* A session the server no longer knows (signed out from another device, or run out) is said once, in words, with the way back in,
+     instead of as "Sign in to continue" under whichever screen made the next call. The calls signOut itself makes while it saves
+     cannot start it again. */
+  var ending = false;
+  API.onSessionEnded(function () {
+    if (ending || !S.me) return;
+    ending = true;
+    try { signOut("ended"); } finally { ending = false; }
+  });
 
   (function gate() {
     var err = $("#gErr"), go = $("#gateGo");
