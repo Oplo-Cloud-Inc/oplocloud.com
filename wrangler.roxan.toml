@@ -45,10 +45,18 @@
 #
 #     npx wrangler secret put E2B_API_KEY     -c wrangler.roxan.toml --env production   (the sandbox service's API key)
 #
+# Another is optional too. With it Roxan has a cloud browser (worker/agent/browser.js): a web search and
+# pages opened in a real browser and read as text, by the call, with nothing to start or stop. It only reads.
+# Without it search and browse are not offered. Add it, and any of the keys above, with the tool that
+# takes the key at a prompt that shows nothing and never puts it on a command line or in a file:
+#
+#     node tools/roxan-key.mjs                 (BROWSERBASE_API_KEY; or name E2B_API_KEY or ROXAN_MODEL_KEY)
+#
 # Until ROXAN_SECRET (or an invite code) and ROXAN_MODEL_KEY are set /api/health says "closed" and /chat says so.
 # Locally, put them in .dev.vars beside this file (git-ignored); worker/test/fake-provider.js
 # stands in for the model service so nothing is spent. It also stands in for the sandbox
-# service when E2B_URL points at it; nothing is ever run. worker/test/fake-accounts.js stands in
+# service when E2B_URL points at it; nothing is ever run. (BROWSERBASE_URL does the same for the cloud
+# browser; the tests in worker/test/browser.test.js bring their own stand-in.) worker/test/fake-accounts.js stands in
 # for Oplo Accounts, beside the real sign-in page (cd auth && npx wrangler dev --port 8788).
 # ===========================================================================
 name = "oplo-roxan"

@@ -16,6 +16,7 @@
 // effect: what happens when no rule applies. `learning` means "allow if learning is on, otherwise ask".
 export const CAPS = [
   { id: "web.read", label: "Read web pages", hint: "Fetch a public page you point it at, the way a browser would.", effect: "allow", site: true },
+  { id: "web.search", label: "Search the web", hint: "Look something up with a web search. It gets back titles and addresses; reading a page is its own permission.", effect: "allow" },
   { id: "shell.run", label: "Use a cloud computer", hint: "Run commands on a private cloud computer with internet access, to look things up and work them out. Nothing of yours is on it.", effect: "allow" },
   { id: "goal.write", label: "Keep goals", hint: "Create goals and update their plans.", effect: "allow" },
   { id: "panel.write", label: "Write panels", hint: "Documents, checklists and tables it keeps for you.", effect: "allow" },
@@ -37,7 +38,8 @@ const RANK = { allow: 0, ask: 1, block: 2 };
 // The capability a tool call falls under.
 export function capOf(tool, input = {}) {
   switch (tool) {
-    case "read_page": return "web.read";
+    case "read_page": case "browse": return "web.read";
+    case "search": return "web.search";
     case "shell": return "shell.run";
     case "goal": return "goal.write";
     case "panel": return "panel.write";
