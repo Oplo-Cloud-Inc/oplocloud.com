@@ -252,6 +252,16 @@ kbd { font: 500 11px var(--sans); }
 .fm-find kbd { padding: 3px 7px; border-radius: 7px; background: var(--chip); color: var(--ink-3); }
 .fm-me { padding: 0 5px; }
 .fm-sp { flex: 1; }
+/* The views this person may open (Admin, Teacher, Family): one link each, the one they are in raised. Desktop only for now. */
+.fm-views {
+  display: flex; align-items: center; gap: 2px; height: 42px; margin-left: 8px; padding: 4px; border-radius: 999px;
+  background: var(--glass); border: 1px solid var(--hair); box-shadow: var(--lift-s);
+  -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%);
+}
+.fm-views[hidden] { display: none; }
+.fm-views a { display: inline-flex; align-items: center; height: 32px; padding: 0 13px; border-radius: 999px; font-size: 13.5px; font-weight: 500; color: var(--ink-2); text-decoration: none; }
+.fm-views a:hover { color: var(--ink); }
+.fm-views a[aria-current="page"] { background: var(--chip); color: var(--ink); font-weight: 600; }
 .av {
   width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center;
   color: #fff; font: 600 12px/1 var(--sans); letter-spacing: 0;
@@ -261,6 +271,7 @@ kbd { font: 500 11px var(--sans); }
 @media (max-width: 760px) {
   .fm-top { padding: 0 12px; height: 60px; gap: 8px; }
   .fm-brand span, .fm-brand em { display: none; }
+  .fm-views { display: none; }
   .fm-who { margin-left: 4px; min-width: 0; }
   .fm-who .gr { display: none; }
   .fm-who .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 44vw; }

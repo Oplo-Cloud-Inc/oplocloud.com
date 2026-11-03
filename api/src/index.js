@@ -21,7 +21,7 @@
    is not.
    ========================================================================== */
 
-import { json, errorResponse, withCors, corsHeaders, ApiError } from "./lib/http.js";
+import { json, errorResponse, newRequestId, withCors, corsHeaders, ApiError } from "./lib/http.js";
 import { D1Repository } from "./repo/d1.js";
 import { currentActor, rotateSession, SESSION_LIFETIME } from "./core/auth.js";
 import { sessionCookie } from "./lib/cookies.js";
@@ -59,8 +59,12 @@ import * as exchange from "./routes/exchange.js";
 import * as district from "./routes/district.js";
 import * as feeds from "./routes/feeds.js";
 import * as india from "./routes/india.js";
+import * as directory from "./routes/directory.js";
+import * as guardians from "./routes/guardians.js";
+import * as auditLog from "./routes/audit.js";
 import * as school from "./routes/school.js";
 import * as register from "./routes/register.js";
+import * as search from "./routes/search.js";
 import * as exams from "./routes/exams.js";
 import * as certificates from "./routes/certificates.js";
 import * as competency from "./routes/competency.js";
@@ -197,6 +201,8 @@ const ROUTES = [
   ["DELETE", "/api/v1/hpc/notes/:noteId",                competency.removeNote],
   ["GET",    "/api/v1/school/profile",                   school.getProfile],
   ["PUT",    "/api/v1/school/profile",                   school.putProfile],
+  ["PUT",    "/api/v1/school/modules",                   school.putModules],
+  ["GET",    "/api/v1/search",                           search.query],
   ["GET",    "/api/v1/register",                         register.getRegister],
   ["PUT",    "/api/v1/register",                         register.putRegister],
   ["GET",    "/api/v1/register/classes",                 register.classes],
@@ -236,6 +242,18 @@ const ROUTES = [
   ["GET",    "/api/v1/ptm/:ptmId",                       exams.getPtm],
   ["POST",   "/api/v1/ptm/:ptmId/book",                  exams.bookPtm],
   ["POST",   "/api/v1/ptm/:ptmId/release",               exams.releasePtm],
+  ["GET",    "/api/v1/audit",                            auditLog.list],
+  ["GET",    "/api/v1/directory/students",               directory.students],
+  ["GET",    "/api/v1/directory/students/export",        directory.exportRows],
+  ["POST",   "/api/v1/directory/students",               directory.create],
+  ["POST",   "/api/v1/directory/students/bulk/house",    directory.bulkHouse],
+  ["POST",   "/api/v1/directory/students/bulk/message",  directory.bulkMessage],
+  ["GET",    "/api/v1/directory/students/:accountId",    directory.record],
+  ["POST",   "/api/v1/directory/students/:accountId/phone", directory.phone],
+  ["GET",    "/api/v1/directory/guardians",              guardians.list],
+  ["POST",   "/api/v1/directory/guardians",              guardians.create],
+  ["GET",    "/api/v1/directory/guardians/:guardianId",  guardians.record],
+  ["POST",   "/api/v1/directory/guardians/:guardianId/phone", guardians.phone],
   ["GET",    "/api/v1/india/classes",                    india.classes],
   ["PUT",    "/api/v1/india/classes",                    india.putClass],
   ["GET",    "/api/v1/india/students",                   india.students],
@@ -490,7 +508,7 @@ export default {
       }
       return withCors(response, request, env);
     } catch (err) {
-      return withCors(errorResponse(err, env), request, env);
+      return withCors(errorResponse(err, env, { id: newRequestId(), method: request.method, path: url.pathname }), request, env);
     }
   }
 };

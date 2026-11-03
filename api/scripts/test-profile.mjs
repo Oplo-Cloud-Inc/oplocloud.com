@@ -46,4 +46,19 @@ t("the school's day is the school's, not the server's", () => {
   assert.equal(P.dayIn("Asia/Kolkata", at), "2026-01-02"); assert.equal(P.dayIn("America/New_York", at), "2026-01-01");
 });
 t("every state has a name and the list is the full 36", () => { assert.equal(Object.keys(P.STATES_IN).length, 36); });
+t("a school's switches: five modules off and the frame on until it says otherwise (O8)", () => {
+  const none = { modules: { family: false, fees: false, homework: false, lessonPlans: false, messages: false }, frame: true };
+  for (const org of [null, {}, { modules: null }, { modules: "" }, { modules: "not json" }, { modules: "[]" }, { modules: '"family"' }]) assert.deepEqual(P.switchesOf(org), none, JSON.stringify(org));
+  assert.deepEqual(P.switchesOf({ modules: '{"family":true,"frame":false,"payroll":true,"fees":"yes"}' }),
+    { modules: { ...none.modules, family: true }, frame: false }, "only a true is on, an unknown name is ignored, and a frame that is not false is on");
+  assert.deepEqual(P.profileOf({ region: "IN", modules: '{"homework":true}' }).modules.homework, true, "the profile the console reads carries them");
+  assert.equal(P.profileOf({ region: "IN" }).frame, true);
+});
+t("switches are cleaned: a known name, true or false, and at least one", () => {
+  assert.deepEqual(P.cleanSwitches({ family: true, frame: false }, fail), { family: true, frame: false });
+  for (const [bad, field] of [[{ payroll: true }, "payroll"], [{ family: "yes" }, "family"], [{ family: 1 }, "family"], [{ frame: null }, "frame"], [{}, "modules"], [null, "modules"], [[true], "modules"], ["family", "modules"]]) {
+    assert.throws(() => P.cleanSwitches(bad, fail), (e) => e.field === field, JSON.stringify(bad));
+  }
+  assert.ok(Object.keys(P.SWITCH_NAMES).every((k) => k === "frame" || P.MODULES.includes(k)) && P.MODULES.every((k) => P.SWITCH_NAMES[k]), "every switch has the name the audit log shows");
+});
 console.log(n + " checks");

@@ -1,0 +1,289 @@
+/* ==========================================================================
+   Oplo Learn — design tokens.
+
+   The only file in the front end that is allowed a raw colour, a raw font
+   size or a raw shadow. Every component, template and page reads these
+   custom properties and nothing else; api/scripts/check-boundaries.sh fails
+   the build if a hex colour or a `font-size: 14px` turns up anywhere else
+   under learn/ui, learn/shell, learn/templates, learn/pages or base.css.
+
+   What a theme is: a block of the same names with different values, chosen by
+   <html data-theme="light|dark|auto|hc">. What a density is: <html
+   data-density="comfortable|standard|dense">. Density changes padding and
+   control height, never the type size (body stays 14 px at every density).
+
+   Where this differs from the brief's table, and why: the brief says to check
+   contrast, and the checking (tools/check_tokens.py, which reads this file)
+   found pairs under 4.5:1 for text. They are moved as little as it takes:
+   --c-text-3, --c-success, --c-warning and --c-info for small text on their
+   own soft fill (and --c-text-3 lighter in dark, for raised surfaces), and
+   --c-chart-8 (the gold) to reach 3:1 as a graphic. --c-line-input is new —
+   the border of an input must be 3:1 against the page (WCAG 1.4.11), which the
+   brief's --c-line-strong (1.5:1) is not. --c-line-strong stays, for dividers
+   that want weight. tools/check_tokens.py is the proof; run it after editing.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---- Colour: surfaces and lines ---- */
+  --c-bg: #FFFFFF;
+  --c-bg-subtle: #F7F8FA;
+  --c-surface: #FFFFFF;
+  --c-surface-raised: #FFFFFF;
+  --c-line: #E6E8EC;
+  --c-line-strong: #CDD2DA;
+  --c-line-input: #818B9B;
+  --c-scrim: rgba(15, 17, 21, .45);
+
+  /* ---- Colour: text ---- */
+  --c-text: #14171C;
+  --c-text-2: #4A5260;
+  --c-text-3: #6A7381;
+
+  /* ---- Colour: accent and meaning ---- */
+  --c-accent: #2F5BEA;
+  --c-accent-hover: #2449C4;
+  --c-accent-soft: #EAF0FF;
+  --c-on-accent: #FFFFFF;
+  --c-success: #1A7D4F;
+  --c-success-soft: #E6F5EE;
+  --c-warning: #A26000;
+  --c-warning-soft: #FFF4E0;
+  --c-danger: #C62F3B;
+  --c-danger-soft: #FDECEE;
+  --c-info: #0B7699;
+  --c-info-soft: #E3F5FA;
+  --c-focus: rgba(47, 91, 234, .4);
+  --c-focus-solid: #2F5BEA;
+
+  /* Eight colours that stay apart for a reader who cannot tell red from green. */
+  --c-chart-1: #2F5BEA;
+  --c-chart-2: #1E8E5A;
+  --c-chart-3: #B26A00;
+  --c-chart-4: #8E44AD;
+  --c-chart-5: #0B7A9E;
+  --c-chart-6: #C62F3B;
+  --c-chart-7: #5D6B82;
+  --c-chart-8: #AD8200;
+
+  /* ---- Type ---- */
+  --font-ui: Inter, "Noto Sans", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --t-display: 650 28px/36px var(--font-ui);
+  --t-h1: 650 22px/30px var(--font-ui);
+  --t-h2: 600 17px/24px var(--font-ui);
+  --t-h3: 600 15px/22px var(--font-ui);
+  --t-body: 400 14px/20px var(--font-ui);
+  --t-body-strong: 600 14px/20px var(--font-ui);
+  --t-small: 400 13px/18px var(--font-ui);
+  --t-caption: 500 12px/16px var(--font-ui);
+  --t-caption-track: .04em;
+  /* a text field under 640 px is 16 px: iOS Safari zooms the page when a smaller one takes the cursor */
+  --t-control-phone: 400 16px/24px var(--font-ui);
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-strong: 600;
+  --w-display: 650;
+
+  /* ---- Spacing: a 4 px base ---- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+
+  /* ---- Layout ---- */
+  --page-pad: 24px;
+  --max-list: 1440px;
+  --max-form: 960px;
+  --rail-w: 240px;
+  --rail-w-collapsed: 64px;
+  --topbar-h: 56px;
+
+  /* ---- Radius ---- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-full: 999px;
+
+  /* ---- Elevation: flat, hairlines; only what floats casts a shadow ---- */
+  --e-1: 0 4px 16px rgba(0, 0, 0, .08);
+  --e-2: 0 12px 40px rgba(0, 0, 0, .16);
+
+  /* ---- Motion ---- */
+  --dur-fast: 120ms;
+  --dur-modal: 160ms;
+  --dur-drawer: 200ms;
+  --ease-ui: ease-out;
+
+  /* ---- Layers ---- */
+  --z-rail: 10;
+  --z-topbar: 20;
+  --z-sticky: 30;
+  --z-drawer: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-palette: 70;
+
+  /* ---- Density: Standard is the default ---- */
+  --ctl-h: 36px;
+  --row-h: 44px;
+  --cell-py: 10px;
+}
+
+/* ---- Density ---- */
+:root[data-density="comfortable"] { --ctl-h: 40px; --row-h: 52px; --cell-py: 14px; }
+:root[data-density="dense"] { --ctl-h: 32px; --row-h: 36px; --cell-py: 6px; }
+
+/* ---- Family shell (D5): a parent's phone, read at arm's length, often in Hindi ----
+   Body 16 px (17 px in Hindi), headings scaled to match, a text field 16 px at every width, and every control at least
+   44 px high. Put data-shell="family" on <html> (the family bundle) or on one container (the gallery's side-by-side view);
+   the admin keeps the 14 px body above. A family page does not offer a density, so the 44 px floor is not a preference. */
+[data-shell="family"] {
+  --t-display: 650 30px/38px var(--font-ui);
+  --t-h1: 650 24px/32px var(--font-ui);
+  --t-h2: 600 19px/26px var(--font-ui);
+  --t-h3: 600 17px/24px var(--font-ui);
+  --t-body: 400 16px/24px var(--font-ui);
+  --t-body-strong: 600 16px/24px var(--font-ui);
+  --t-small: 400 14px/20px var(--font-ui);
+  --t-caption: 500 13px/18px var(--font-ui);
+  --ctl-h: 44px;
+  --row-h: 56px;
+  --cell-py: 14px;
+}
+/* Devanagari sits taller than Latin and a line under 1.6 clips its marks: one step larger and a looser line */
+[data-shell="family"]:lang(hi) {
+  --t-display: 650 31px/44px var(--font-ui);
+  --t-h1: 650 25px/38px var(--font-ui);
+  --t-h2: 600 20px/32px var(--font-ui);
+  --t-h3: 600 18px/30px var(--font-ui);
+  --t-body: 400 17px/28px var(--font-ui);
+  --t-body-strong: 600 17px/28px var(--font-ui);
+  --t-small: 400 15px/24px var(--font-ui);
+  --t-caption: 500 14px/24px var(--font-ui);
+}
+
+/* ---- Dark ---- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bg: #0F1115;
+  --c-bg-subtle: #161A20;
+  --c-surface: #1B2028;
+  --c-surface-raised: #222833;
+  --c-line: #2A303B;
+  --c-line-strong: #3A4250;
+  --c-line-input: #6F7782;
+  --c-scrim: rgba(0, 0, 0, .6);
+  --c-text: #E9ECF1;
+  --c-text-2: #AEB6C3;
+  --c-text-3: #8A93A3;
+  --c-accent: #6E8FFF;
+  --c-accent-hover: #8BA6FF;
+  --c-accent-soft: #1E2A4D;
+  --c-on-accent: #0F1115;
+  --c-success: #3FC98A;
+  --c-success-soft: #12301F;
+  --c-warning: #F2B04B;
+  --c-warning-soft: #3A2A10;
+  --c-danger: #FF6B76;
+  --c-danger-soft: #3D161A;
+  --c-info: #49C1E6;
+  --c-info-soft: #10313B;
+  --c-focus: rgba(110, 143, 255, .5);
+  --c-focus-solid: #6E8FFF;
+  --c-chart-1: #6E8FFF;
+  --c-chart-2: #3FC98A;
+  --c-chart-3: #F2B04B;
+  --c-chart-4: #C084E0;
+  --c-chart-5: #49C1E6;
+  --c-chart-6: #FF6B76;
+  --c-chart-7: #94A3BC;
+  --c-chart-8: #E8C14F;
+  --e-1: 0 4px 16px rgba(0, 0, 0, .4);
+  --e-2: 0 12px 40px rgba(0, 0, 0, .6);
+}
+
+/* "Auto" is dark when the device is. The same block as above, under a query. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    color-scheme: dark;
+    --c-bg: #0F1115;
+    --c-bg-subtle: #161A20;
+    --c-surface: #1B2028;
+    --c-surface-raised: #222833;
+    --c-line: #2A303B;
+    --c-line-strong: #3A4250;
+    --c-line-input: #6F7782;
+    --c-scrim: rgba(0, 0, 0, .6);
+    --c-text: #E9ECF1;
+    --c-text-2: #AEB6C3;
+    --c-text-3: #8A93A3;
+    --c-accent: #6E8FFF;
+    --c-accent-hover: #8BA6FF;
+    --c-accent-soft: #1E2A4D;
+    --c-on-accent: #0F1115;
+    --c-success: #3FC98A;
+    --c-success-soft: #12301F;
+    --c-warning: #F2B04B;
+    --c-warning-soft: #3A2A10;
+    --c-danger: #FF6B76;
+    --c-danger-soft: #3D161A;
+    --c-info: #49C1E6;
+    --c-info-soft: #10313B;
+    --c-focus: rgba(110, 143, 255, .5);
+    --c-focus-solid: #6E8FFF;
+    --c-chart-1: #6E8FFF;
+    --c-chart-2: #3FC98A;
+    --c-chart-3: #F2B04B;
+    --c-chart-4: #C084E0;
+    --c-chart-5: #49C1E6;
+    --c-chart-6: #FF6B76;
+    --c-chart-7: #94A3BC;
+    --c-chart-8: #E8C14F;
+    --e-1: 0 4px 16px rgba(0, 0, 0, .4);
+    --e-2: 0 12px 40px rgba(0, 0, 0, .6);
+  }
+}
+
+/* ---- High contrast: black on white, hairlines that are not hairlines ---- */
+:root[data-theme="hc"] {
+  color-scheme: light;
+  --c-bg: #FFFFFF;
+  --c-bg-subtle: #F2F2F2;
+  --c-surface: #FFFFFF;
+  --c-surface-raised: #FFFFFF;
+  --c-line: #4D4D4D;
+  --c-line-strong: #000000;
+  --c-line-input: #000000;
+  --c-scrim: rgba(0, 0, 0, .7);
+  --c-text: #000000;
+  --c-text-2: #1A1A1A;
+  --c-text-3: #333333;
+  --c-accent: #0033CC;
+  --c-accent-hover: #00248F;
+  --c-accent-soft: #DCE6FF;
+  --c-on-accent: #FFFFFF;
+  --c-success: #005C33;
+  --c-success-soft: #DFF5E8;
+  --c-warning: #6B3F00;
+  --c-warning-soft: #FFF0CC;
+  --c-danger: #A8001A;
+  --c-danger-soft: #FFE0E4;
+  --c-info: #00506F;
+  --c-info-soft: #D8F1F9;
+  --c-focus: #000000;
+  --c-focus-solid: #000000;
+  --e-1: 0 0 0 2px #000000;
+  --e-2: 0 0 0 2px #000000;
+}
+
+/* ---- Page padding by width ---- */
+@media (max-width: 1023px) { :root { --page-pad: 16px; } }
+@media (max-width: 639px) { :root { --page-pad: 12px; } }
+

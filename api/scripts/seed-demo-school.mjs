@@ -35,7 +35,8 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
-const WHERE = args.includes("--remote") ? "--remote" : "--local";
+// OPLO_D1_STATE names another folder for the local database (api/scripts/dev.sh keeps it outside synced folders).
+const WHERE = args.includes("--remote") ? ["--remote"] : ["--local", ...(process.env.OPLO_D1_STATE ? ["--persist-to", process.env.OPLO_D1_STATE] : [])];
 const REMOVE = args.includes("--remove");
 const DB = "oplo-platform-db";
 const ORG = "org_sfhs";
@@ -138,7 +139,7 @@ function build(india, profile) {
 }
 
 const apiDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-const wrangler = (...a) => execFileSync("npx", ["wrangler", "d1", "execute", DB, WHERE, ...a], { cwd: apiDir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+const wrangler = (...a) => execFileSync("npx", ["wrangler", "d1", "execute", DB, ...WHERE, ...a], { cwd: apiDir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 
 const dir = mkdtempSync(join(tmpdir(), "demo-school-"));
 try {
@@ -162,5 +163,5 @@ try {
   if (india) console.log("India: region IN, class X-C and Tanvi's India details are in.");
   console.log(REMOVE ? `Removed. Demo accounts still present: ${rows.length}` : `Strawberry Fields High School (Demo), ${rows.length} accounts:`);
   for (const r of rows) console.log(`  ${r.email.padEnd(30)} ${String(r.roles).padEnd(14)} ${r.status}  ·  password: ${r.has_password ? "set" : "not set (cannot sign in yet)"}`);
-  console.log(WHERE === "--remote" ? "(--remote: production)" : "(--local: nothing in production was touched)");
+  console.log(WHERE[0] === "--remote" ? "(--remote: production)" : "(--local: nothing in production was touched)");
 } finally { rmSync(dir, { recursive: true, force: true }); }

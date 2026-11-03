@@ -1,8 +1,9 @@
 /* ==========================================================================
    Oplo Account — the sign-in page.
 
-   A service sends somebody here in a tab of its own (connect.js), with
-   ?return=<the address they were on>. This page:
+   A service sends somebody here with ?return=<the address they were on>:
+   OEdu in the same tab, which this page sends straight back; the others in a
+   tab of their own (connect.js), which this page closes. This page:
 
      1. asks the API who is signed in in this browser;
      2. if nobody, asks for the email, then the password, and signs in;
@@ -335,8 +336,10 @@
     try { opener = window.opener && !window.opener.closed ? window.opener : null; } catch (e) { opener = null; }
 
     if (!opener) {
-      /* Nobody is waiting for this tab: it goes back to the service itself. */
-      setTimeout(function () { location.replace(RET.href); }, 700);
+      /* Nobody is waiting for this tab — the service sent this very tab here —
+         so it goes back at once. The message above is what the person reads if
+         the service takes a moment to load. */
+      location.replace(RET.href);
       return;
     }
 

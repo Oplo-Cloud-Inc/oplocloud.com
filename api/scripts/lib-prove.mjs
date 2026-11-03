@@ -30,3 +30,14 @@ export async function step(name, fn) {
   catch (e) { console.log("  FAIL " + name + "\n       " + (e && e.message)); process.exitCode = 1; throw e; }
 }
 export const refused = (r, s) => assert.equal(r.status, s, `expected ${s}, got ${r.status}: ${JSON.stringify(r.body).slice(0, 200)}`);
+
+/* The audit row a write route makes (O17). Runs `write` and fails, naming the route, unless the audit log grew for `action`
+   while it ran: by `rows` rows when that is given, by at least one when it is not. `who` is a person who may read the log;
+   `record` narrows the count to one record when its id is known before the write. check-audit.mjs reads the route text. */
+export async function audited(who, route, { action, record = "", rows = null }, write) {
+  const count = async () => (await who.get(`/audit?action=${encodeURIComponent(action)}&size=1${record ? "&record=" + encodeURIComponent(record) : ""}`)).total;
+  const before = await count(), out = await write(), grew = (await count()) - before;
+  if (rows === null) assert.ok(grew > 0, `${route} wrote no ${action} row to the audit log`);
+  else assert.equal(grew, rows, `${route} wrote ${grew} ${action} rows to the audit log, expected ${rows}`);
+  return out;
+}

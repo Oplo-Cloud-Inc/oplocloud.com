@@ -18,6 +18,8 @@ set -e
 cd "$(dirname "$0")/.."
 DB="oplo-platform-db"
 EMAIL="$1"; WHERE="--local"; [ "${2:-}" = "--remote" ] && WHERE="--remote"
+# OPLO_D1_STATE names another folder for the local database (api/scripts/dev.sh); a path without spaces.
+if [ "$WHERE" = "--local" ] && [ -n "${OPLO_D1_STATE:-}" ]; then WHERE="--local --persist-to $OPLO_D1_STATE"; fi
 [ -n "$EMAIL" ] || { echo "usage: $0 <email> [--remote]" >&2; exit 2; }
 [[ "$EMAIL" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] || { echo "That doesn't look like an email address: $EMAIL" >&2; exit 2; }
 LOWER=$(echo "$EMAIL" | tr 'A-Z' 'a-z')
@@ -40,7 +42,7 @@ process.stdout.write(c.pbkdf2Sync(process.env.PW, salt, Number(process.argv[1]),
 ' "$ITER")"
 unset P1 P2
 NOW=$(node -e 'process.stdout.write(String(Date.now()))')
-SQL=$(mktemp -t setpw).sql; trap 'rm -f "$SQL"' EXIT
+SQL=$(mktemp "${TMPDIR:-/tmp}/setpw.XXXXXX").sql; trap 'rm -f "$SQL"' EXIT
 cat > "$SQL" <<SQLEOF
 UPDATE accounts SET pw_hash='$HASH', pw_salt='$SALT', pw_iterations=$ITER, status='active', email_verified=1, updated_at=$NOW WHERE email_lower='$LOWER';
 UPDATE sessions SET revoked_at=$NOW WHERE revoked_at IS NULL AND account_id=(SELECT id FROM accounts WHERE email_lower='$LOWER');

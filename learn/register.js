@@ -314,6 +314,29 @@ window.OPLO_REGISTER = function (K) {
     });
   }
 
+  /* ================================================================ Change log
+     Every change made to a register after its days were reported to a board, with who made it and why: the list the Locked days
+     dialog ends with, as a page of its own. It is the changes inside a lock that are kept apart on purpose; the register's own
+     history of every mark is not listed here. */
+  function changeLog(v) {
+    K.cxPage(v, "Attendance", "Change log",
+      "Changes made to a register after its days were reported to a board: what the mark was, what it became, who changed it and why. The office can change a locked register, but must say why, and the change is listed here.");
+    var slot = el("div", "en-slot");
+    v.appendChild(slot);
+    slot.appendChild(el("div", "admin-loading", "Loading…"));
+    RG.afterLock().then(function (r) {
+      slot.innerHTML = "";
+      if (!r.edits.length) { slot.appendChild(K.cnEmpty("No register has been changed after a lock.", "When the office changes a day that was reported, the change is listed here with who made it and why.")); return; }
+      var t = K.cnTable([{ label: "Day", w: "100px" }, { label: "Child", w: "minmax(130px, 1fr)" }, { label: "Was", w: "90px" }, { label: "Became", w: "90px" },
+        { label: "By", w: "130px" }, { label: "When", w: "130px" }, { label: "Why", w: "minmax(180px, 2fr)" }]);
+      r.edits.forEach(function (x) {
+        t.row([esc(dmy(x.day)), esc(x.student), x.from ? esc(x.from) : none(), x.to ? esc(x.to) : "<span class='en-late'>removed</span>", esc(x.by),
+          x.at ? esc(new Date(Number(x.at)).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })) : none(), esc(x.why)]);
+      });
+      slot.appendChild(t);
+    }, function (e) { K.failed(slot, e, function () { K.openAdmin(true, "in-changes"); }); });
+  }
+
   /* ================================================== Early warning
      Children drifting out of school, with the reasons. The edges of a stage
      (after Class V, VIII and X) are where children change school and are lost. */
@@ -404,5 +427,5 @@ window.OPLO_REGISTER = function (K) {
     }, function (e) { K.failed(slot, e, function () { K.openAdmin(true, "in-myclass"); }); });
   }
 
-  return { classes: classes, watch: function (v) { watch(v); }, early: function (v) { early(v); }, myClass: myClass, sheet: sheet };
+  return { classes: classes, watch: function (v) { watch(v); }, changeLog: function (v) { changeLog(v); }, early: function (v) { early(v); }, myClass: myClass, sheet: sheet };
 };

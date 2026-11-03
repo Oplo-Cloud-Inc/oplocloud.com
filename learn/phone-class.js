@@ -25,6 +25,8 @@ window.OPLO_PHONE_CLASS = function (P, F) {
   function plural(n, a, b) { return n + " " + (n === 1 ? a : b || a + "s"); }
   function key() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function localDay() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  /* What the teacher is told when there is no signal (D3): where it is, and that it will go by itself. */
+  var SAVED = "Saved on this phone, will send when the signal returns.";
   function mmss(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
   function cta(text, cls, go) { var b = el("button", "ph-cta" + (cls ? " " + cls : ""), esc(text)); b.type = "button"; b.addEventListener("click", go); return b; }
   function chipBtn(text, on, go) { var b = el("button", "ph-chk pc-chip" + (on ? " on" : ""), esc(text)); b.type = "button"; b.addEventListener("click", go); return b; }
@@ -48,8 +50,10 @@ window.OPLO_PHONE_CLASS = function (P, F) {
     var timer = el("span", "pc-timer", "0:00");
     var wait = el("span", "pc-wait");
     bar.appendChild(timer); bar.appendChild(wait);
+    var hadWaiting = false;
     function paintWait() {
       var n = q().pending().length, f = q().failed();
+      if (n) hadWaiting = true; else if (hadWaiting && !f.length) { hadWaiting = false; P.toast("Sent"); }
       wait.innerHTML = (n ? "<b>" + n + "</b> waiting to send" : "") + (f.length ? (n ? " · " : "") + "<span class='pc-bad'>" + plural(f.length, "thing") + " did not go</span>" : "");
       wait.hidden = !n && !f.length;
     }
@@ -74,7 +78,7 @@ window.OPLO_PHONE_CLASS = function (P, F) {
 
     function draw() {
       host.innerHTML = "";
-      L.titleEl.innerHTML = "<p class='eb'>" + esc(data.class.label) + " · " + esc(dmy(day)) + "</p><h1>Today</h1><p>" + esc(data.cached ? "Working from the last roll on this phone. It will send when you are online." : plural(data.strength, "child", "children")) + "</p>";
+      L.titleEl.innerHTML = "<p class='eb'>" + esc(data.class.label) + " · " + esc(dmy(day)) + "</p><h1>Today</h1><p>" + esc(data.cached ? "Working from the last roll on this phone. It will send when the signal returns." : plural(data.strength, "child", "children")) + "</p>";
       if (data.schoolDay.kind !== "school") host.appendChild(P.note("Not a school day" + (data.schoolDay.label ? " (" + data.schoolDay.label + ")" : "") + ". The register can’t be taken."));
       host.appendChild(P.sh("Register"));
       register();
@@ -133,8 +137,14 @@ window.OPLO_PHONE_CLASS = function (P, F) {
         var body = { classId: classId, day: day, marks: data.students.map(function (s) { return { accountId: s.id, status: st[s.id], reason: why[s.id] || undefined }; }) };
         q().submit({ label: "Register " + data.class.label + " " + dmy(day), method: "PUT", path: "/register", body: body, merge: "reg:" + classId + ":" + day }).then(function (r) {
           steps.register = true; dirty = false;
-          if (r.queued) { offlineUsed = true; P.toast("Saved on this phone. It will send when you are online."); } else P.toast("Register saved");
+          if (r.queued) { offlineUsed = true; P.toast(SAVED); } else P.toast("Register saved");
           save.textContent = r.queued ? "Waiting to send" : "Register in ✓";
+          if (r.queued) {
+            var mine = "reg:" + classId + ":" + day, stop = q().onChange(function () {
+              if (q().pending().some(function (x) { return x.merge === mine; }) || q().failed().some(function (x) { return x.merge === mine; })) return;
+              save.textContent = "Register in ✓"; stop();
+            });
+          }
         }, function (e) { save.disabled = false; P.toast(e && e.message ? e.message : "The register couldn’t be saved."); });
       });
       save.disabled = !!data.taken || data.schoolDay.kind !== "school" || !data.canEdit;
@@ -158,7 +168,7 @@ window.OPLO_PHONE_CLASS = function (P, F) {
         send.disabled = true;
         q().submit({ label: "Diary " + data.class.label, method: "POST", path: "/diary", body: { classId: classId, day: day, kind: kindSel.value, subject: subject.value.trim() || undefined, body: text.value.trim(), clientKey: key() } }).then(function (r) {
           steps.diary = true; text.value = ""; send.disabled = false;
-          if (r.queued) { offlineUsed = true; P.toast("Saved on this phone. It will send when you are online."); } else P.toast("In the diary");
+          if (r.queued) { offlineUsed = true; P.toast(SAVED); } else P.toast("In the diary");
         }, function (e) { send.disabled = false; P.toast(e && e.message ? e.message : "That didn’t send."); });
       });
       host.appendChild(el("div", "ph-btnrow")).appendChild(send);
@@ -182,7 +192,7 @@ window.OPLO_PHONE_CLASS = function (P, F) {
             sh.close(); send.disabled = true;
             q().submit({ label: "Message to " + data.class.label, method: "POST", path: "/register/message", body: { classId: classId, body: body, clientKey: key() } }).then(function (res) {
               steps.message = true; text.value = ""; send.disabled = false;
-              if (res.queued) { offlineUsed = true; P.toast("Saved on this phone. It will send when you are online."); } else P.toast("Sent");
+              if (res.queued) { offlineUsed = true; P.toast(SAVED); } else P.toast("Sent");
             }, function (e) { send.disabled = false; P.toast(e && e.message ? e.message : "That didn’t send."); });
           }));
           r.appendChild(cta("Not yet", "quiet", function () { sh.close(); }));
@@ -211,7 +221,7 @@ window.OPLO_PHONE_CLASS = function (P, F) {
           var body = text.value.trim(); sh.close();
           q().submit({ label: "Remark on " + s.name, method: "POST", path: "/register/message", body: { classId: classId, to: [s.id], body: body, clientKey: key() } }).then(function (res) {
             steps.remarks = true;
-            if (res.queued) { offlineUsed = true; P.toast("Saved on this phone. It will send when you are online."); } else P.toast("Sent");
+            if (res.queued) { offlineUsed = true; P.toast(SAVED); } else P.toast("Sent");
           }, function (e) { P.toast(e && e.message ? e.message : "That didn’t send."); });
         }));
         b.appendChild(r);

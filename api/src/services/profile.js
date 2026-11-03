@@ -48,6 +48,30 @@ export const STATES_IN = {
 
 const list = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : []; } catch { return []; } };
 
+/* The modules a school may turn on (O8), all off until it does, and the new console frame, on until it is turned off
+   (migration 0071). The route flags in learn/shell/routes.js stay the hard off-switch; these are the school's own say. */
+export const MODULES = ["family", "fees", "homework", "lessonPlans", "messages"];
+export const SWITCH_NAMES = { family: "Family", fees: "Fees", homework: "Homework", lessonPlans: "Lesson plans", messages: "Messages", frame: "New navigation" };
+
+export function switchesOf(org) {
+  let o = {};
+  try { const v = JSON.parse(org && org.modules); if (v && typeof v === "object" && !Array.isArray(v)) o = v; } catch { /* not JSON, or null: every module off */ }
+  return { modules: Object.fromEntries(MODULES.map((k) => [k, o[k] === true])), frame: o.frame !== false };
+}
+
+/* The switches a person sent, checked: a name this school knows, true or false. Only what is named is returned. */
+export function cleanSwitches(src, fail) {
+  if (!src || typeof src !== "object" || Array.isArray(src)) fail("Send the switches as an object.", "modules");
+  const out = {};
+  for (const [k, v] of Object.entries(src)) {
+    if (k !== "frame" && !MODULES.includes(k)) fail("That is not a module OEdu knows: " + String(k).slice(0, 20) + ".", k);
+    if (typeof v !== "boolean") fail("Each switch is on or off.", k);
+    out[k] = v;
+  }
+  if (!Object.keys(out).length) fail("Name at least one switch.", "modules");
+  return out;
+}
+
 /* What a school's screens and rules read. `org` is the organizations row. */
 export function profileOf(org) {
   const region = org && REGIONS[org.region] ? org.region : "US";
@@ -61,7 +85,8 @@ export function profileOf(org) {
     yearStartMonth: (org && org.year_start_month) || d.yearStartMonth,
     boards, stateCode: (org && org.state_code) || null,
     languages: languages.length ? languages : ["en"],
-    set: !!(org && org.profile_set_at)
+    set: !!(org && org.profile_set_at),
+    ...switchesOf(org)
   };
 }
 
