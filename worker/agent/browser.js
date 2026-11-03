@@ -1,7 +1,9 @@
-/* Roxan's cloud browser: a real browser in the cloud, used one lookup at a time. Two calls to the service, both plain
-   HTTPS with the API key in a header and no session to start or stop: a web search (titles and addresses) and a page opened
-   and read as text (its JavaScript run, so it works where a plain fetch gets an empty shell). Nothing of the person's goes
-   out, only a query or a public address. Both go through the Core's fetcher, so tests need no network. */
+/* Roxan's cloud browser: web search and page reading from a cloud service, used one lookup at a time. Two calls to the
+   service, both plain HTTPS with the API key in a header and no session to start or stop: a web search (titles and
+   addresses) and a page fetched and read as text. The fetch is the service's lightweight one: it never runs the page's
+   scripts (its docs say so), so a page that only draws itself with scripts can come back empty; that would need a browser
+   session. Nothing of the person's goes out, only a query or a public address. Both go through the Core's fetcher, so
+   tests need no network. */
 import { Invalid } from "./util.js";
 import { readable } from "./web.js";
 
@@ -42,7 +44,7 @@ export async function search(env, query, opts) {
     .filter(r => /^https?:\/\/[^\s<>"]+$/i.test(r.url)).slice(0, RESULTS);
 }
 
-// { url, text, truncated }: a page, opened in the cloud browser and read as text.
+// { url, text, truncated }: a page, fetched through the cloud browser and read as text.
 export async function page(env, url, opts) {
   const ask = format => post(env, "/v1/fetch", { url, format, allowRedirects: true }, 40_000, opts);
   let format = "markdown", res = await ask(format);

@@ -46,7 +46,7 @@
 #     npx wrangler secret put E2B_API_KEY     -c wrangler.roxan.toml --env production   (the sandbox service's API key)
 #
 # Another is optional too. With it Roxan has a cloud browser (worker/agent/browser.js): a web search and
-# pages opened in a real browser and read as text, by the call, with nothing to start or stop. It only reads.
+# pages fetched through a cloud service and read as text (the page's scripts are not run), by the call, with nothing to start or stop. It only reads.
 # Without it search and browse are not offered. Add it, and any of the keys above, with the tool that
 # takes the key at a prompt that shows nothing and never puts it on a command line or in a file:
 #

@@ -1,6 +1,6 @@
 /* Handoff: tasks that need a web browser (buying, booking, filling in a form).
 
-   Roxan cannot use a browser and no computer is connected yet, so a Handoff is a
+   Roxan's cloud browser only reads and no computer is connected yet, so a Handoff is a
    written task that waits here. Nothing on this page has been done by anyone but
    you: "done" means you did it yourself and said so. The page says this plainly
    and never shows progress it does not have. Roxan can queue one when you ask
@@ -61,7 +61,7 @@ export async function mount(root) {
   fill(root, h("section", { class: "page" },
     Breadcrumb([{ label: "Settings", href: "#/settings" }, { label: "Handoff" }]),
     h("h1", { class: "page-title", text: "Tasks that need a computer." }),
-    h("p", { class: "page-lead", text: "A Handoff is a task that needs a web browser: buying something, booking, filling in a form. Roxan cannot use a browser yet, so a Handoff is saved here as a written task. None has run, and none will until a computer is connected." }),
+    h("p", { class: "page-lead", text: "A Handoff is a task that needs a web browser: buying something, booking, filling in a form. The cloud browser only reads, so a Handoff is saved here as a written task. None has run, and none will until a computer is connected." }),
     h("p", { class: "fine" }, soonTag(), " A computer of its own for Roxan to work on these is not built yet."),
     h("p", { class: "fine" }, "Logins and cards belong in the ", h("a", { class: "link", href: "#/vault", text: "Vault" }), ", never in a Handoff or a message."),
     h("div", { class: "page-act" }, create, made),

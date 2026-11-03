@@ -87,7 +87,7 @@ test("cloud browser: what a search or a page brings back is untrusted, so a run 
   }
 });
 
-test("cloud browser: a page is opened in the browser and read as text, cut to a size the model can use", async () => {
+test("cloud browser: a page is fetched through the cloud browser and read as text, cut to a size the model can use", async () => {
   const fetcher = service();
   const h = make({ model: scripted([tools([["browse", { url: "https://news.example.com/story?id=7" }]]), text("Read it.")]), env: ENV, fetcher });
   await said(h, "read it");
