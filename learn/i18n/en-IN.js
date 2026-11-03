@@ -150,6 +150,8 @@
       appearance: "Appearance", theme: { light: "Light", dark: "Dark", auto: "Match this device", hc: "High contrast" },
       shortcuts: "One-key shortcuts (/ to search)", shortcuts_on: "One-key shortcuts are on", shortcuts_off: "One-key shortcuts are off",
       language: "Language", language_changed: "Language changed",
+      views: "View", view_switch: "Switch view", view: { admin: "Admin", teacher: "Teacher", parent: "Family", student: "Student" },
+      sessions: "Where I'm signed in",
       sign_out: "Sign out", signing_out: "Signing out…",
       k: { search: "Open search", move: "Move between results", open: "Open the selected result", group: "Jump to the next group", close: "Close", slash: "Go to the search box on a list (turn it off in your account menu)" }
     },
@@ -161,7 +163,7 @@
       signed_out_idle: "You were signed out because OEdu sat idle for a while.",
       signed_out_ended: "Your session has ended. Sign in again to carry on.",
       sign_in_again: "Sign in again", about_oedu: "About OEdu",
-      going: "Taking you to sign in…"
+      going: "Taking you to sign in…", opening: "Opening…"
     },
 
     /* Search — records first, then pages and actions. */

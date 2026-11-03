@@ -6809,7 +6809,9 @@
      and one button to sign out of all the others. The label is read from the
      browser's own user-agent; the whole string is kept in the tooltip. */
   function accountDevices(v) {
-    v.appendChild(el("h2", "lx-h2", "Where you’re signed in"));
+    var title = el("h2", "lx-h2", "Where you’re signed in");
+    title.id = "acctDevices";            // the top bar's account menu opens the page at this heading
+    v.appendChild(title);
     var box = el("div", "cx-set");
     box.appendChild(el("div", "cx-setrow", '<span class="t"><span>Reading it from the server…</span></span>'));
     v.appendChild(box);
@@ -6978,6 +6980,9 @@
     syncLine.id = "acSync";
     v.appendChild(syncLine);
     paintSync();
+    /* ---- Where you are signed in --------------------------------------- */
+    // A teacher or administrator who is also learning has this list too: the top bar's account menu opens the page at it.
+    if (S.me.role === "admin" || S.me.role === "teacher") accountDevices(v);
     }
 
     /* ---- Password ----------------------------------------------------- */
@@ -9415,6 +9420,46 @@
       .map(function (m) { return { mode: m, name: names[m], href: H.pathFor(at.root, m) }; });
   }
 
+  /* The views this person may open, for the top bar's switch: every one their roles allow (Admin, Teacher, Family), so there is
+     always a way back from the one they are in. Each is a real address, so a middle click or a bookmark works. */
+  function staffViews() {
+    var H = window.OPLO_HOME;
+    if (!H || !S.me) return [];
+    var at = H.parse(location.pathname);
+    return H.allowed(S.me.roles || []).map(function (m) { return { mode: m, href: H.pathFor(at.root, m) }; });
+  }
+  function openStaffView(mode) {
+    var to = staffViews().filter(function (v) { return v.mode === mode; })[0];
+    if (!to) return;
+    if (window.OL && OL.session) OL.session.leaving(OL.i18n.t("session.opening"));
+    location.assign(to.href);
+  }
+  /* "Where I'm signed in": the account page, opened at its list of sessions. */
+  function openSessions() {
+    openAccount();
+    var title = document.getElementById("acctDevices");
+    if (!title) return;
+    title.tabIndex = -1;
+    title.scrollIntoView({ block: "start" });
+    title.focus({ preventScroll: true });
+  }
+  /* The top bar over a console that has no frame of its own (the teacher's). It brings its own people and places to the bar and leaves
+     the console's rail and pages as they were. The frame's off-switch (O8) is the bar's too: a school, or a browser, that has the new
+     frame off gets the old console exactly as it was. */
+  function barOn() { return !!(window.OL && OL.shell && OL.shell.openBar) && !phoneOn() && frameOn(); }
+  function barCtx() {
+    return {
+      schoolName: schoolName(), me: { id: S.me.id, name: S.me.name },
+      views: staffViews, view: consoleMode, openView: openStaffView,
+      openInbox: function () { openAdmin(false, consoleMode() === "admin" ? "inbox" : "messages"); },
+      openAccount: function () { openAccount(); }, openSessions: openSessions,
+      openSearch: function () { if ($("#finder").hidden) openFinder(); else closeFinder(); },   // the console's own finder keeps working
+      unread: function () { return API.inbox.unread(); },
+      appearance: currentAppearance, setAppearance: applyAppearance,
+      signOut: signOut
+    };
+  }
+
   function profileMenu(anchor) {
     var box = el("div", "tr-profile");
     var head = el("div", "tr-phero");
@@ -9789,8 +9834,9 @@
       allowed: function (k) { return allowedTabs().some(function (t) { return t.k === k; }); },
       schoolName: schoolName(), sectionName: function () { return sectionNamed(S.tab).name; },
       me: { id: S.me.id, name: S.me.name },
+      views: staffViews, view: consoleMode, openView: openStaffView, inboxPath: "communicate/inbox",
       open: function (k) { openAdmin(false, k); },
-      openAccount: function () { openAccount(); },
+      openAccount: function () { openAccount(); }, openSessions: openSessions,
       openRecord: openFound,
       search: function (q) { return API.search.query(q); },
       unread: function () { return API.inbox.unread(); },
@@ -9892,9 +9938,11 @@
     if (PHX && document.body.classList.contains("is-phone")) PHX.leave();
     var framed = shellOn();
     if (!framed) {
-      // The old rail comes back when the new frame is not what this console is drawn in.
-      if (shellMounted()) OL.shell.unmount();
+      // The old rail comes back when the new frame is not what this console is drawn in, and the top bar runs across it.
+      if (shellMounted() && !OL.shell.barOnly()) OL.shell.unmount();
       drawRail();
+      if (barOn()) OL.shell.openBar(barCtx());
+      else if (shellMounted()) OL.shell.unmount();
     }
     trApply();
     trPopClose();

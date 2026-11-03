@@ -13,6 +13,7 @@
              not the welcome page: somebody who has just chosen Sign out, or whose
              session ended, is not a visitor being told what OEdu is.
 
+   OL.session.leaving(what)         the thin bar along the top, while the browser goes elsewhere
    OL.session.signIn()              leave for the Oplo Account page, in this tab
    OL.session.signInUrl(back)       the address it leaves for
    OL.session.showSignedOut(why)    why: "manual" (chose to), "idle" (left alone too
@@ -37,8 +38,12 @@
   S.signInUrl = function (back) { return S.authBase() + "/?return=" + encodeURIComponent(back || here()); };
 
   /* A thin bar runs along the top while the browser makes the trip, so a click is never met with nothing. */
+  S.leaving = function (what) {
+    if (!document.querySelector(".ol-leaving")) document.body.appendChild(h("div", { class: "ol-leaving", role: "progressbar", aria: { label: what || t("session.going") } }));
+  };
+
   S.signIn = function () {
-    if (!document.querySelector(".ol-leaving")) document.body.appendChild(h("div", { class: "ol-leaving", role: "progressbar", aria: { label: t("session.going") } }));
+    S.leaving();
     location.assign(S.signInUrl());
   };
 

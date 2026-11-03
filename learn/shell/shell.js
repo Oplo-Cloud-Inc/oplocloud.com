@@ -1,14 +1,19 @@
 /* ==========================================================================
    The shell — rail, top bar and module tabs around whatever page is open.
 
-       ┌────────┬──────────────────────────────────────────────┐
-       │ rail   │ top bar: breadcrumb · search · year · bell ·  │
-       │ 240 /  │          help · avatar                         │
-       │ 64 px  ├──────────────────────────────────────────────┤
-       │ eleven │ module tabs (and a sub-tab row, never a third) │
-       │ items  │ the page                                       │
-       │ + gear │                                                │
-       └────────┴──────────────────────────────────────────────┘
+       ┌───────────────────────────────────────────────────────────┐
+       │ top bar: school · view  ·  search  ·  year · bell · language · you │
+       ├────────┬──────────────────────────────────────────────────┤
+       │ rail   │ the page's path back up, then its tabs             │
+       │ 240 /  │ the page                                           │
+       │ 64 px  │                                                    │
+       │ items  │                                                    │
+       └────────┴──────────────────────────────────────────────────┘
+
+   The top bar is fixed across the whole window on every staff screen: who the school is and
+   which view this is (Admin, Teacher, Family — one click each, so there is always a way back),
+   the search, and the bell, the language and the account. It also runs on its own over an old
+   console that has no frame (the teacher's), with OL.shell.openBar.
 
    It does not know what a student or a register is. It is told, by the console
    that hosts it (app.js hands it a context), who is signed in, which old pages
@@ -24,14 +29,14 @@
 
    OL.shell.open(ctx) → the element the page is drawn into
    OL.shell.go(path) · .path(k) · .keyFor(rest) · .route() · .setRecord({ label, … })
-   OL.shell.unmount() · .mounted() · .year() · .onYear(fn)
+   OL.shell.openBar(ctx) · .unmount() · .mounted() · .barOnly() · .year() · .onYear(fn)
    ========================================================================== */
 (function () {
   "use strict";
   var OL = window.OL, h = OL.h, t = function (k, p) { return OL.i18n.t(k, p); };
   var S = OL.shell = OL.shell || {};
 
-  var st = { mounted: false, ctx: null, rail: null, top: null, head: null, host: null, pending: null, route: null, record: null,
+  var st = { mounted: false, barOnly: false, ctx: null, rail: null, top: null, head: null, host: null, pending: null, route: null, record: null,
              visible: [], timer: null, unread: null, years: [], yearListeners: [], bound: false };
   var KEYS = { rail: "oplo.shell.rail", year: "oplo.shell.year", theme: "oplo.shell.theme", lang: "oplo.shell.lang", recent: "oplo.shell.recent" };
 
@@ -109,20 +114,15 @@
   function narrow() { return window.matchMedia && window.matchMedia("(max-width: 1023px)").matches; }
   function isMin() { return store("rail") === "min" || (narrow() && store("rail") !== "open"); }
 
+  /* The rail folds to icons and back. The button that does it is in the top bar, at its left end. */
+  function toggleRail() { store("rail", isMin() ? "open" : "min"); drawRail(); drawTop(); }
+
   function drawRail() {
     var rail = st.rail, min = isMin(), c = st.ctx, here = st.route;
     document.body.classList.toggle("ol-rail-min", min);
     rail.className = OL.cx("ol-rail ol-app", min && "is-min");
     rail.setAttribute("aria-label", t("shell.menu"));
     OL.clear(rail);
-
-    var toggle = OL.ui.button.render({ iconOnly: true, icon: "panel-left", variant: "ghost", size: "sm", ariaLabel: min ? t("shell.expand_menu") : t("shell.collapse_menu"),
-      onClick: function () { store("rail", min ? "open" : "min"); drawRail(); } });
-    toggle.setAttribute("aria-expanded", min ? "false" : "true");
-    rail.appendChild(h("div", { class: "ol-rail__head" },
-      h("span", { class: "ol-rail__mark", "aria-hidden": "true" }, OL.icon("school", 20)),
-      h("span", { class: "ol-rail__school" }, h("b", { text: c.schoolName }), h("span", { text: t("shell.console") })),
-      toggle));
 
     function item(m) {
       var on = !!here && here.module === m.key, front = OL.routes.front(m.key, allowed, c.prefer ? c.prefer(m.key) : null);
@@ -176,14 +176,59 @@
 
   function yearText(v) { var m = /^(\d{4})\D+(\d{2,4})$/.exec(String(v || "")); return m ? m[1] + "–" + m[2].slice(-2) : String(v || ""); }
 
+  /* The left end: the button that folds the rail, who the school is, and which view this is. */
+  function drawLeft() {
+    var c = st.ctx, left = h("div", { class: "ol-top__left" });
+    if (!st.barOnly) {
+      var min = isMin();
+      var tg = OL.ui.button.render({ iconOnly: true, icon: "panel-left", variant: "ghost", ariaLabel: min ? t("shell.expand_menu") : t("shell.collapse_menu"), onClick: toggleRail });
+      tg.setAttribute("aria-expanded", min ? "false" : "true");
+      left.appendChild(tg);
+    }
+    left.appendChild(h("span", { class: "ol-top__school", title: c.schoolName },
+      h("span", { class: "ol-top__mark", "aria-hidden": "true" }, OL.icon("school", 18)), h("b", { text: c.schoolName })));
+    var vs = viewSwitch();
+    if (vs) left.appendChild(vs);
+    return left;
+  }
+
+  /* Admin, Teacher, Family: one click each, on every staff screen, so there is always a way back. A person who has only one view
+     is not shown a switch. Beside the open rail it is three buttons; where there is no room it is one that opens the list. */
+  function viewSwitch() {
+    var c = st.ctx, views = c.views ? c.views() : [], cur = c.view ? c.view() : null;
+    if (views.length < 2) return null;
+    var wide = h("nav", { class: "ol-views", "aria-label": t("shell.views") }, views.map(function (v) {
+      var on = v.mode === cur;
+      return h("a", { class: OL.cx("ol-views__item", on && "is-on"), href: v.href, "aria-current": on ? "page" : null,
+        on: { click: function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); if (!on) c.openView(v.mode); } } }, t("shell.view." + v.mode));
+    }));
+    var now = views.filter(function (v) { return v.mode === cur; })[0];
+    var narrow = h("button", { type: "button", class: "ol-views-menu", "aria-haspopup": "menu", "aria-expanded": "false", "aria-label": t("shell.view_switch") },
+      h("span", { text: t("shell.view." + (now ? now.mode : views[0].mode)) }), OL.icon("chevron-down", 16));
+    narrow.addEventListener("click", function () {
+      OL.ui.menu.open({ anchor: narrow, items: views.map(function (v) {
+        return { label: t("shell.view." + v.mode), radio: true, checked: v.mode === cur, onClick: function () { if (v.mode !== cur) c.openView(v.mode); } };
+      }) });
+    });
+    return h("div", { class: "ol-top__views" }, wide, narrow);
+  }
+
+  /* English and Hindi, both always on show: choosing is one click and nothing is in a menu. */
+  function langToggle() {
+    var cur = OL.i18n.locale();
+    return h("div", { class: "ol-lang", role: "group", "aria-label": t("shell.language") }, OL.i18n.languages.map(function (l) {
+      var on = l.code === cur;
+      return h("button", { type: "button", class: OL.cx("ol-lang__item", on && "is-on"), "aria-pressed": on ? "true" : "false", lang: l.code.slice(0, 2),
+        on: { click: function () { if (!on) setLang(l.code); } } }, l.short || l.name);
+    }));
+  }
+
   function drawTop() {
     var c = st.ctx, bar = st.top;
     bar.setAttribute("aria-label", t("shell.top"));
     OL.clear(bar);
 
-    var cr = crumbs();
-    cr.forEach(function (x, i) { if (i === cr.length - 1) { delete x.href; delete x.onClick; } });
-    bar.appendChild(h("div", { class: "ol-top__crumbs" }, OL.ui.breadcrumb.render({ items: cr })));
+    bar.appendChild(drawLeft());
 
     var mac = /Mac|iP(hone|ad)/.test(navigator.platform);
     var search = h("button", { type: "button", class: "ol-search", "aria-haspopup": "dialog", "aria-keyshortcuts": "Control+K Meta+K", "aria-label": t("search.label"), on: { click: function (e) { openPalette(e.currentTarget); } } },
@@ -202,11 +247,13 @@
       });
       tools.appendChild(yb);
     }
-    var bell = h("a", { class: "ol-top__icon", href: href("communicate/inbox"), "aria-label": t(st.unread ? "shell.notifications_n" : "shell.notifications", { n: st.unread || 0 }), "data-tip": t("shell.notifications", {}),
-      on: { click: function (e) { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); go("communicate/inbox"); } } },
-      OL.icon("bell", 20), st.unread ? h("span", { class: "ol-top__badge", "aria-hidden": "true", text: st.unread > 99 ? "99+" : String(st.unread) }) : null);
+    var label = t(st.unread ? "shell.notifications_n" : "shell.notifications", { n: st.unread || 0 }), badge = st.unread ? h("span", { class: "ol-top__badge", "aria-hidden": "true", text: st.unread > 99 ? "99+" : String(st.unread) }) : null;
+    var bell = c.inboxPath
+      ? h("a", { class: "ol-top__icon", href: href(c.inboxPath), "aria-label": label, "data-tip": t("shell.notifications", {}),
+          on: { click: function (e) { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); go(c.inboxPath); } } }, OL.icon("bell", 20), badge)
+      : h("button", { type: "button", class: "ol-top__icon", "aria-label": label, "data-tip": t("shell.notifications", {}), on: { click: function () { if (c.openInbox) c.openInbox(); } } }, OL.icon("bell", 20), badge);
     tools.appendChild(bell);
-    tools.appendChild(OL.ui.button.render({ iconOnly: true, icon: "help", variant: "ghost", ariaLabel: t("shell.help"), onClick: openHelp }));
+    tools.appendChild(langToggle());
 
     var me = c.me, ab = h("button", { type: "button", class: "ol-top__me", "aria-haspopup": "menu", "aria-expanded": "false", "aria-label": t("shell.account_menu", { name: me.name }) },
       OL.ui.avatar.render({ name: me.name, id: me.id, size: 32 }));
@@ -215,24 +262,19 @@
     bar.appendChild(tools);
   }
 
+  /* My account, where you are signed in, help, sign out — and how the page looks, which is how a person likes it and not the school's. */
   function openAccountMenu(anchor) {
-    var th = theme(), lang = OL.i18n.locale();
-    function pick(group, value, cur, run) { return { label: t(group + "." + value), radio: true, checked: value === cur, onClick: run }; }
+    var th = theme(), c = st.ctx;
     var themes = ["light", "dark", "auto", "hc"].map(function (v) {
-      return pick("shell.theme", v, th, function () { store("theme", v); applyTheme(v); redraw(); });
+      return { label: t("shell.theme." + v), radio: true, checked: v === th, onClick: function () { store("theme", v); applyTheme(v); redraw(); } };
     });
-    var langs = OL.i18n.languages.map(function (l) { return { label: l.name, radio: true, checked: l.code === lang, onClick: function () { setLang(l.code); } }; });
-    // a shortcut of one key ("/") must be possible to turn off (WCAG 2.2 SC 2.1.4); Ctrl or Cmd + K is not one of them
-    var oneKey = { label: t("shell.shortcuts"), check: true, checked: OL.shortcuts.single(), onClick: function () {
-      var on = !OL.shortcuts.single();
-      OL.shortcuts.setSingle(on);
-      OL.announce(on ? t("shell.shortcuts_on") : t("shell.shortcuts_off"));
-    } };
     OL.ui.menu.open({ anchor: anchor, align: "end", items: [
-      { label: t("shell.my_account"), icon: "user", onClick: function () { st.ctx.openAccount(); } },
+      { label: t("shell.my_account"), icon: "user", onClick: function () { c.openAccount(); } },
+      { label: t("shell.sessions"), icon: "shield", onClick: function () { if (c.openSessions) c.openSessions(); else c.openAccount(); } },
+      { label: t("shell.help"), icon: "help", onClick: openHelp },
       { sep: true },
       { head: t("shell.appearance") }
-    ].concat(themes, [{ sep: true }, oneKey, { sep: true }, { head: t("shell.language") }], langs, [
+    ].concat(themes, [
       { sep: true },
       { label: t("shell.sign_out"), icon: "log-out", onClick: signOut }
     ]) });
@@ -259,12 +301,17 @@
     st.ctx.signOut();
   }
 
-  function openHelp(e) {
+  /* Help and shortcuts. A shortcut of one key ("/") has to be possible to turn off (WCAG 2.2 SC 2.1.4); Ctrl or Cmd + K is not one of them. */
+  function openHelp() {
     var mac = /Mac|iP(hone|ad)/.test(navigator.platform), mod = mac ? "⌘" : "Ctrl";
     var rows = [[mod + " K", "shell.k.search"], ["/", "shell.k.slash"], ["↑ ↓", "shell.k.move"], ["Enter", "shell.k.open"], ["Tab", "shell.k.group"], ["Esc", "shell.k.close"]];
     var dl = h("dl", { class: "ol-keys" });
     rows.forEach(function (r) { dl.appendChild(h("div", null, h("dt", null, h("kbd", { text: r[0] })), h("dd", { text: t(r[1]) }))); });
-    var m = OL.ui.modal.open({ title: t("shell.help_title"), body: dl, width: 520, actions: [OL.ui.button.render({ label: t("common.close"), variant: "secondary", onClick: function () { m.close(); } })] });
+    var one = OL.ui.check.toggle({ label: t("shell.shortcuts"), checked: OL.shortcuts.single(), onChange: function (on) {
+      OL.shortcuts.setSingle(on);
+      OL.announce(on ? t("shell.shortcuts_on") : t("shell.shortcuts_off"));
+    } });
+    var m = OL.ui.modal.open({ title: t("shell.help_title"), body: h("div", { class: "ol-help" }, dl, one), width: 520, actions: [OL.ui.button.render({ label: t("common.close"), variant: "secondary", onClick: function () { m.close(); } })] });
   }
 
   /* ------------------------------------------------------------- Palette */
@@ -310,6 +357,7 @@
   }
 
   function openPalette(trigger) {
+    if (st.ctx.openSearch) { st.ctx.openSearch(trigger || document.activeElement); return; }   // an old console's own search keeps working
     OL.shell.palette.open({
       trigger: trigger || document.activeElement,
       search: function (q) { return st.ctx.search(q); },
@@ -322,10 +370,21 @@
   }
 
   /* ----------------------------------------------------------- Tab rows */
+  /* The path back up, above the page's tabs: Students › Classes › Sections. Every step but the last is a link to that place. */
+  function drawCrumbs() {
+    if (!st.head) return;
+    var old = st.head.querySelector(".ol-breadcrumb"), items = st.route ? crumbs() : [];
+    var node = items.length > 1 ? OL.ui.breadcrumb.render({ items: items }) : null;
+    if (old && node) old.replaceWith(node);
+    else if (old) old.remove();
+    else if (node) st.head.insertBefore(node, st.head.firstChild);
+  }
+
   function drawHead() {
     var r = st.route, head = st.head;
     OL.clear(head);
     if (!r) return;
+    drawCrumbs();
     var m = st.visible.filter(function (x) { return x.key === r.module; })[0];
     if (!m || m.solo || m.tabs.length < 2) return;
     var items = m.tabs.map(function (tb) {
@@ -362,16 +421,20 @@
     st.ctx.unread().then(function (n) { if (n !== st.unread) { st.unread = n || 0; if (st.top) drawTop(); } }, function () { /* the bell simply has no number */ });
   }
 
-  function mount() {
+  /* barOnly: the bar over an old console, with no rail of the frame's, no tab rows, and the old console's own page and rail as they were. */
+  function mount(barOnly) {
     if (st.mounted) return;
     var body = document.body;
-    body.classList.add("ol-shell");
-    st.rail = document.getElementById("rail");
-    st.rail.dataset.built = "ol";            // the old rail's builder rebuilds it if the old console comes back
+    st.barOnly = !!barOnly;
+    body.classList.add(barOnly ? "ol-bar" : "ol-shell");
+    if (!barOnly) {
+      st.rail = document.getElementById("rail");
+      st.rail.dataset.built = "ol";          // the old rail's builder rebuilds it if the old console comes back
+    }
     st.top = h("header", { class: "ol-top ol-app", id: "olTop" });
     body.appendChild(st.top);
     document.addEventListener("keydown", onKey, true);
-    if (!st.bound && window.matchMedia) { st.bound = true; window.matchMedia("(max-width: 1023px)").addEventListener("change", function () { if (st.mounted) drawRail(); }); }
+    if (!st.bound && window.matchMedia) { st.bound = true; window.matchMedia("(max-width: 1023px)").addEventListener("change", function () { if (st.mounted && !st.barOnly) { drawRail(); drawTop(); } }); }
     OL.i18n.onChange(function () { if (st.mounted) redraw(); });
     st.mounted = true;
     var saved = store("lang");
@@ -392,16 +455,18 @@
     st.mounted = false;
     clearInterval(st.timer);
     document.removeEventListener("keydown", onKey, true);
-    document.body.classList.remove("ol-shell", "ol-rail-min");
+    document.body.classList.remove("ol-shell", "ol-bar", "ol-rail-min");
     if (st.top) st.top.remove();
     if (st.head) { st.head.remove(); st.head = null; }
     if (st.watch) { st.watch.disconnect(); st.watch = null; }
-    if (st.rail) { st.rail.className = "cn-rail"; OL.clear(st.rail); delete st.rail.dataset.built; }
+    if (st.rail) { st.rail.className = "cn-rail"; OL.clear(st.rail); delete st.rail.dataset.built; st.rail = null; }
+    st.barOnly = false;
     st.record = null; st.route = null; st.pending = null;
   }
 
   function redraw() {
     if (!st.mounted) return;
+    if (st.barOnly) { drawTop(); return; }
     drawRail(); drawTop(); drawHead();
     if (st.ctx.setTitle && S.title() && !st.record) st.ctx.setTitle(S.title());      // the tab's title follows the language
   }
@@ -409,7 +474,8 @@
   /* Called by the console at every navigation. Returns the element the page is drawn into. */
   function open(ctx) {
     st.ctx = ctx;
-    if (!st.mounted) mount();
+    if (st.mounted && st.barOnly) unmount();
+    if (!st.mounted) mount(false);
     st.visible = OL.routes.visible(allowed);
     st.route = routeFor(ctx.current);
     st.record = null;
@@ -436,8 +502,16 @@
   S.refresh = function () { if (st.mounted) { st.visible = OL.routes.visible(allowed); redraw(); } };
   S.bind = function (ctx) { st.ctx = ctx; };
   S.open = open;
+  /* The bar alone, over an old console. Called at every navigation, like open(), and draws the bar again. */
+  S.openBar = function (ctx) {
+    st.ctx = ctx;
+    if (st.mounted && !st.barOnly) return;
+    if (!st.mounted) mount(true);
+    drawTop();
+  };
   S.unmount = unmount;
   S.mounted = function () { return st.mounted; };
+  S.barOnly = function () { return st.mounted && st.barOnly; };
   S.go = go;
   S.path = pathFor;
   S.keyFor = keyFor;
@@ -449,7 +523,7 @@
     var m = OL.routes.module(r.module);
     return m.solo ? label.module(r.module) : label.tab(r.module, r.tab);
   };
-  S.setRecord = function (r) { st.record = r; if (st.top) drawTop(); if (r && st.ctx && st.ctx.setTitle) st.ctx.setTitle(r.label); };
+  S.setRecord = function (r) { st.record = r; drawCrumbs(); if (r && st.ctx && st.ctx.setTitle) st.ctx.setTitle(r.label); };
   S.year = function () { return store("year") || (st.years[0] || null); };
   S.onYear = function (fn) { st.yearListeners.push(fn); };
   S.openPalette = openPalette;

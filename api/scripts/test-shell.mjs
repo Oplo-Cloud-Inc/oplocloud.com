@@ -1,6 +1,6 @@
 // The new frame, driven like a person drives it: node scripts/test-shell.mjs
 // Signs a school administrator in on the local stack and uses the real app in Chromium: the rail, the
-// breadcrumb, the module tabs, the address, the search palette, the account menu, the language, the theme.
+// top bar, the rail, the path back up, the module tabs, the address, the search palette, the account menu, the language, the theme.
 // Local only. Needs the static server and the API running, and an existing administrator:
 //   ORIGIN=http://localhost:8153 API=http://localhost:8817/api/v1 CRED=/path/cred.json node scripts/test-shell.mjs
 // (CRED is {"email": …, "password": …}.) axe-core and playwright-core come from devDependencies.
@@ -89,7 +89,7 @@ await t("the rail opens a module on its front tab; the breadcrumb, the tabs, the
   await page.getByRole("link", { name: "Students" }).first().click();
   await page.waitForURL(/\/admin\/students\/directory$/);
   assert.equal(await page.title(), "Directory · OEdu");
-  assert.equal((await page.locator(".ol-top__crumbs").innerText()).replace(/\s+/g, " ").trim(), "Students Directory");
+  assert.equal((await page.locator(".ol-pagehead .ol-breadcrumb").innerText()).replace(/\s+/g, " ").trim(), "Students Directory");
   assert.equal(await page.locator(".ol-pagehead [role=tab][aria-selected=true]").innerText(), "Directory");
   await page.locator(".ol-pagehead").getByRole("tab", { name: "Admissions" }).click();
   await page.waitForURL(/\/admin\/students\/admissions$/);
@@ -104,7 +104,7 @@ await t("a deep link opens the sub-tab it names; an old address opens, and is re
   await page.goto(ORIGIN + "/learn/admin/academics/timetable/draft");
   await page.waitForSelector(".ol-pagehead [role=tab]");
   assert.equal(await page.locator(".ol-pagehead .ol-tabs--sub [aria-selected=true]").innerText(), "Draft");
-  assert.equal((await page.locator(".ol-top__crumbs").innerText()).replace(/\s+/g, " ").trim(), "Academics Timetable Draft");
+  assert.equal((await page.locator(".ol-pagehead .ol-breadcrumb").innerText()).replace(/\s+/g, " ").trim(), "Academics Timetable Draft");
   await page.goto(ORIGIN + "/learn/admin/Schedule/Bell-Schedules");
   await page.waitForURL(/\/admin\/academics\/timings$/, { timeout: 10000 });
   assert.equal(await page.title(), "Bell timings · OEdu");
@@ -179,12 +179,12 @@ await t("search: a student opens from the palette with the frame behind it, and 
   assert.equal(await page.locator(".ol-palette [role=option][aria-selected=true] .ol-palette__title").innerText(), "Riya Arora");
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => document.title === "Riya Arora · OEdu", null, { timeout: 10000 });
-  assert.equal((await page.locator(".ol-top__crumbs").innerText()).replace(/\s+/g, " ").trim(), "Students Directory Riya Arora");
+  assert.equal((await page.locator(".ol-pagehead .ol-breadcrumb").innerText()).replace(/\s+/g, " ").trim(), "Students Directory Riya Arora");
   assert.match(page.url(), /\/admin\/students\/directory/);
   assert.equal(await page.locator(".ol-pagehead [role=tab][aria-selected=true]").innerText(), "Directory", "the tabs stay behind the profile");
 });
 
-await t("the account menu: appearance, language and sign out are one click, and the choice is kept", async (page) => {
+await t("the account menu: appearance is one click and kept; the language is the bar's own toggle and is kept too", async (page) => {
   await page.getByRole("button", { name: /Account menu for/ }).click();
   assert.equal(await page.getByRole("menuitemradio", { name: "Light" }).getAttribute("aria-checked"), "true");
   await page.getByRole("menuitemradio", { name: "Dark" }).click();
@@ -192,19 +192,82 @@ await t("the account menu: appearance, language and sign out are one click, and 
   assert.equal(await page.evaluate(() => document.body.dataset.appearance), "dark", "the old pages follow");
   await page.reload(); await page.waitForSelector(".ol-top");
   assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark", "kept across a reload");
-  await page.getByRole("button", { name: /Account menu for/ }).click();
-  await page.getByRole("menuitemradio", { name: "हिन्दी" }).click();
+  assert.equal(await page.getByRole("button", { name: "English", exact: true }).getAttribute("aria-pressed"), "true", "English is the one pressed");
+  await page.getByRole("button", { name: "हिन्दी", exact: true }).click();
   await page.waitForFunction(() => document.documentElement.lang === "hi-IN");
   assert.equal((await page.locator(".ol-rail__label").first().innerText()), "आज");
   assert.equal(await page.title(), "आज · OEdu");
-  await page.getByRole("button", { name: /का खाता मेनू/ }).click();
-  await page.getByRole("menuitemradio", { name: "English (India)" }).click();
+  assert.equal(await page.getByRole("button", { name: "हिन्दी", exact: true }).getAttribute("aria-pressed"), "true");
+  await page.reload(); await page.waitForSelector(".ol-top");
+  assert.equal(await page.evaluate(() => document.documentElement.lang), "hi-IN", "kept across a reload");
+  await page.getByRole("button", { name: "English", exact: true }).click();
+  await page.waitForFunction(() => document.documentElement.lang !== "hi-IN");
   await page.getByRole("button", { name: /Account menu for/ }).click();
   await page.getByRole("menuitemradio", { name: "Light" }).click();
 });
 
+await t("the top bar is across the whole window on every page: the school, the view switch, search, the bell, the language and the person", async (page) => {
+  const r = await page.evaluate(() => {
+    const top = document.querySelector(".ol-top"), b = top.getBoundingClientRect(), rail = document.getElementById("rail").getBoundingClientRect();
+    return { left: b.left, width: b.width, vw: innerWidth, railTop: rail.top, bar: b.height, pos: getComputedStyle(top).position };
+  });
+  assert.equal(r.pos, "fixed");
+  assert.equal(r.left, 0);
+  assert.equal(r.width, r.vw, "the bar runs the full width, over the rail");
+  assert.ok(r.railTop >= r.bar - 1, "the rail starts under the bar");
+  assert.match(await page.locator(".ol-top__school").innerText(), /\S/, "the school's name");
+  assert.deepEqual(await page.locator(".ol-views__item").allInnerTexts(), ["Admin", "Teacher", "Family"], "every view this person may open");
+  assert.equal(await page.locator(".ol-views__item[aria-current=page]").innerText(), "Admin", "the one they are in is marked");
+  assert.equal(await page.getByRole("button", { name: "Search" }).first().isVisible(), true);
+  assert.equal(await page.getByRole("link", { name: /Notifications/ }).isVisible(), true);
+  assert.deepEqual(await page.locator(".ol-lang__item").allInnerTexts(), ["English", "हिन्दी"]);
+  assert.equal(await page.getByRole("button", { name: /Account menu for/ }).isVisible(), true);
+  // it stays put while the page scrolls
+  await page.goto(ORIGIN + "/learn/admin/students/directory");
+  await page.waitForSelector(".ol-pagehead [role=tab]");
+  await page.evaluate(() => window.scrollTo(0, 600));
+  assert.equal(await page.evaluate(() => document.querySelector(".ol-top").getBoundingClientRect().top), 0);
+});
+
+await t("the view switch is one click, in the same tab: Teacher opens the teacher console with the same bar, and the way back is there", async (page, ctx) => {
+  const tabs = ctx.pages().length;
+  await page.locator(".ol-views").getByRole("link", { name: "Teacher" }).click();
+  await page.waitForURL(/\/learn\/teacher\/?/, { timeout: 15000 });
+  await page.waitForSelector(".ol-top", { state: "visible", timeout: 15000 });
+  assert.equal(ctx.pages().length, tabs, "no new tab");
+  assert.equal(await page.evaluate(() => document.body.classList.contains("ol-bar")), true, "the bar over a console that has no frame of its own");
+  assert.equal(await page.evaluate(() => document.body.classList.contains("ol-shell")), false);
+  assert.equal(await page.locator(".ol-views__item[aria-current=page]").innerText(), "Teacher");
+  assert.equal(await page.evaluate(() => document.querySelector("#rail").getBoundingClientRect().top >= document.querySelector(".ol-top").getBoundingClientRect().height - 1), true, "the console's own rail starts under the bar");
+  // ⌘K opens that console's own finder, and again closes it
+  await page.keyboard.press("Control+k");
+  await page.waitForFunction(() => !document.getElementById("finder").hidden);
+  await page.keyboard.press("Control+k");
+  await page.waitForFunction(() => document.getElementById("finder").hidden);
+  // Family is a real page, not a dead address, and it has the way back
+  await page.locator(".ol-views").getByRole("link", { name: "Family" }).click();
+  await page.waitForURL(/\/learn\/parent\/?/, { timeout: 15000 });
+  await page.waitForSelector("#views:not([hidden])", { timeout: 15000 });
+  assert.deepEqual(await page.locator("#views a").allInnerTexts(), ["Admin", "Teacher", "Family"]);
+  await page.locator("#views").getByRole("link", { name: "Admin" }).click();
+  await page.waitForURL(/\/learn\/admin\/?/, { timeout: 15000 });
+  await page.waitForSelector(".ol-top", { state: "visible", timeout: 15000 });
+  assert.equal(await page.locator(".ol-views__item[aria-current=page]").innerText(), "Admin");
+});
+
+await t("account menu: My account, Where I'm signed in (the account page at its list of sessions), Help and shortcuts, Sign out", async (page) => {
+  await page.getByRole("button", { name: /Account menu for/ }).click();
+  assert.deepEqual(await page.locator(".ol-menu__item").allInnerTexts(), ["My account", "Where I'm signed in", "Help and shortcuts", "Light", "Dark", "Match this device", "High contrast", "Sign out"]);
+  await page.getByRole("menuitem", { name: "Where I'm signed in" }).click();
+  await page.locator("#acctDevices").waitFor({ state: "visible" });
+  assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), "acctDevices", "the page opens at the list of sessions");
+  await page.getByRole("button", { name: "Sign out everywhere else" }).waitFor({ timeout: 10000 });   // the list is read from the server
+  assert.equal(await page.locator(".ol-top").isVisible(), true, "the bar is still there");
+});
+
 await t("Help lists the keyboard shortcuts in a dialog that Esc closes", async (page) => {
-  await page.getByRole("button", { name: "Help and shortcuts" }).click();
+  await page.getByRole("button", { name: /Account menu for/ }).click();
+  await page.getByRole("menuitem", { name: "Help and shortcuts" }).click();
   const dlg = page.getByRole("dialog", { name: "Keyboard shortcuts" });
   await dlg.waitFor();
   assert.match(await dlg.innerText(), /Open search/);
@@ -212,10 +275,15 @@ await t("Help lists the keyboard shortcuts in a dialog that Esc closes", async (
   await dlg.waitFor({ state: "detached" });
 });
 
-await t("one-key shortcuts: \"/\" goes to the search box; Account › Appearance turns it off and then \"/\" does nothing; Ctrl+K stays; the choice is kept", async (page) => {
+await t("one-key shortcuts: \"/\" goes to the search box; Help and shortcuts turns it off and then \"/\" does nothing; Ctrl+K stays; the choice is kept", async (page) => {
   const inSearch = () => page.evaluate(() => !!document.activeElement && document.activeElement.classList.contains("ol-sf__ctl"));
   const search = page.locator(".ol-sf__ctl");
-  const menu = async () => { await page.getByRole("button", { name: /Account menu for/ }).click(); return page.getByRole("menuitemcheckbox", { name: /One-key shortcuts/ }); };
+  const menu = async () => {
+    await page.getByRole("button", { name: /Account menu for/ }).click();
+    await page.getByRole("menuitem", { name: "Help and shortcuts" }).click();
+    return page.getByRole("switch", { name: /One-key shortcuts/ });
+  };
+  const closeHelp = async () => { await page.keyboard.press("Escape"); await page.getByRole("dialog").waitFor({ state: "detached" }); };
   const blur = () => page.evaluate(() => document.activeElement && document.activeElement.blur());
   assert.equal(await inSearch(), false);
   await page.keyboard.press("/");
@@ -225,10 +293,11 @@ await t("one-key shortcuts: \"/\" goes to the search box; Account › Appearance
   assert.equal(await page.locator(".ol-sf__kbd").isVisible(), true, "the key hint is shown while it works");
 
   const item = await menu();
-  assert.equal(await item.getAttribute("aria-checked"), "true");
-  assert.deepEqual(await axe(page, [".ol-menu"]), [], "the account menu with the new item");
+  assert.equal(await item.isChecked(), true);
+  assert.deepEqual(await axe(page, [".ol-modal"]), [], "the help dialog with the switch");
   await item.click();
   await page.waitForFunction(() => document.documentElement.getAttribute("data-shortcuts") === "off");
+  await closeHelp();
   await blur();
   await page.keyboard.press("/");
   assert.equal(await inSearch(), false, "off: / does nothing");
@@ -242,9 +311,10 @@ await t("one-key shortcuts: \"/\" goes to the search box; Account › Appearance
   await page.keyboard.press("/");
   assert.equal(await inSearch(), false, "kept across a reload");
   const again = await menu();
-  assert.equal(await again.getAttribute("aria-checked"), "false");
+  assert.equal(await again.isChecked(), false);
   await again.click();
   await page.waitForFunction(() => document.documentElement.getAttribute("data-shortcuts") === "on");
+  await closeHelp();
   await blur();
   await page.keyboard.press("/");
   assert.equal(await inSearch(), true, "on again: / works");
@@ -263,7 +333,7 @@ await t("a page of the old console in the new frame has the new title, the bread
       return { n: h1s.length, text: h1s[0] && h1s[0].textContent.trim(), font: h1s[0] && font(h1s[0]), want,
         eyebrows: [...document.querySelectorAll(".ol-host .cn-eyebrow")].filter(vis).length,
         mixed: [...document.querySelectorAll(".ol-host *")].filter((e) => [...e.classList].some((c) => c.startsWith("ol-"))).length,
-        crumbs: document.querySelector(".ol-top__crumbs").innerText.replace(/\s+/g, " ").trim(), tabs: document.querySelectorAll(".ol-pagehead [role=tab]").length };
+        crumbs: document.querySelector(".ol-pagehead .ol-breadcrumb").innerText.replace(/\s+/g, " ").trim(), tabs: document.querySelectorAll(".ol-pagehead [role=tab]").length };
     });
     assert.equal(r.n, 1, at + ": one title on the page");
     assert.equal(r.text, title, at);

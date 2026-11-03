@@ -1,5 +1,5 @@
 /* ==========================================================================
-   The shell — rail, top bar, module tabs, command palette.
+   The shell — top bar, rail, module tabs, command palette.
 
    Tokens only (check-ui.mjs lints this file like ui.css). It is loaded after the
    old console's stylesheets and wins by being more specific, never by
@@ -42,26 +42,17 @@ body.ol-shell.is-console .en-rail, body.ol-shell.is-console .en-index { top: cal
 /* On a window too narrow for an open rail the rail covers the page rather than squeezing it. */
 @media (max-width: 1023px) {
   body.ol-shell:not(.ol-rail-min).is-console .lx-wrap { padding-left: calc(var(--rail-w-collapsed) + var(--page-pad)); }
-  body.ol-shell:not(.ol-rail-min) .ol-top { left: var(--rail-w-collapsed); }
   body.ol-shell .ol-rail:not(.is-min) { box-shadow: var(--e-2); z-index: calc(var(--z-topbar) + 1); }
 }
 
 /* -------------------------------------------------------------------- Rail */
 .ol-rail {
-  position: fixed; inset: 0 auto 0 0; width: var(--rail-w); z-index: var(--z-rail);
+  position: fixed; inset: var(--topbar-h) auto 0 0; width: var(--rail-w); z-index: var(--z-rail);
   display: flex; flex-direction: column;
   background: var(--c-bg); color: var(--c-text); border-inline-end: 1px solid var(--c-line);
   transition: width var(--dur-drawer) var(--ease-ui);
 }
 .ol-rail.is-min { width: var(--rail-w-collapsed); }
-
-.ol-rail__head { display: flex; align-items: center; gap: var(--s-2); flex: none; height: var(--topbar-h); padding: 0 var(--s-3); border-block-end: 1px solid var(--c-line); }
-.ol-rail__mark { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--r-md); background: var(--c-text); color: var(--c-bg); }
-.ol-rail__school { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.ol-rail__school b { font: var(--t-body-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ol-rail__school span { font: var(--t-caption); color: var(--c-text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ol-rail.is-min .ol-rail__head { justify-content: center; padding: 0; }
-.ol-rail.is-min .ol-rail__mark, .ol-rail.is-min .ol-rail__school { display: none; }
 
 .ol-rail__nav { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: var(--s-2); scrollbar-width: thin; }
 .ol-rail__list, .ol-rail__tabs { list-style: none; margin: 0; padding: 0; }
@@ -89,15 +80,32 @@ body.ol-shell.is-console .en-rail, body.ol-shell.is-console .en-index { top: cal
 
 /* --------------------------------------------------------------------- Top bar */
 .ol-top {
-  position: fixed; top: 0; left: var(--ol-rail); right: 0; z-index: var(--z-topbar); height: var(--topbar-h);
-  display: grid; grid-template-columns: minmax(200px, 1fr) minmax(160px, 480px) minmax(max-content, 1fr); align-items: center; gap: var(--s-4);
-  padding: 0 var(--page-pad);
+  position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-topbar); height: var(--topbar-h);
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 400px) minmax(max-content, 1fr); align-items: center; gap: var(--s-4);
+  padding: 0 var(--page-pad) 0 var(--s-3);
   background: var(--c-bg); border-block-end: 1px solid var(--c-line);
-  transition: left var(--dur-drawer) var(--ease-ui);
 }
-.ol-top__crumbs { min-width: 0; overflow: hidden; white-space: nowrap; }
-.ol-top__crumbs .ol-crumb { flex: none; white-space: nowrap; }
-.ol-top__crumbs .ol-crumb:last-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ol-top__left { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+/* The school's name gives way first: the view switch, the search and the person's own controls never shrink for it. */
+.ol-top__school { display: flex; align-items: center; flex: 0 1 auto; gap: var(--s-2); min-width: 0; }
+.ol-top__school b { min-width: 0; font: var(--t-body-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ol-top__mark { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: var(--r-md); background: var(--c-text); color: var(--c-bg); }
+.ol-top__views { flex: none; }
+
+/* The view switch and the language toggle: a few buttons in one tray, the one you are in raised. */
+.ol-views, .ol-lang { display: inline-flex; flex: none; gap: 2px; padding: 2px; border-radius: var(--r-md); background: var(--c-bg-subtle); }
+.ol-views__item, .ol-lang__item {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 28px; padding: 0 var(--s-3);
+  border: 0; border-radius: var(--r-sm); background: transparent; color: var(--c-text-2); font: var(--t-small); font-weight: var(--w-medium);
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+}
+.ol-views__item:hover, .ol-lang__item:hover { color: var(--c-text); }
+.ol-views__item.is-on, .ol-lang__item.is-on { background: var(--c-surface); color: var(--c-text); box-shadow: inset 0 0 0 1px var(--c-line-strong); }
+.ol-views-menu {
+  display: none; align-items: center; gap: var(--s-1); height: var(--ctl-h); padding: 0 var(--s-2);
+  border: 1px solid var(--c-line-input); border-radius: var(--r-md); background: var(--c-bg); color: var(--c-text); font: var(--t-small); font-weight: var(--w-medium); cursor: pointer;
+}
+.ol-views-menu:hover { border-color: var(--c-line-strong); }
 .ol-top__search { min-width: 0; }
 .ol-top__tools { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-1); min-width: 0; }
 
@@ -121,12 +129,10 @@ body.ol-shell.is-console .en-rail, body.ol-shell.is-console .en-index { top: cal
   background: var(--c-danger); color: var(--c-on-accent); font: var(--t-caption); line-height: 16px; text-align: center;
 }
 
-/* The breadcrumb in the bar never wraps: the last crumb is the page, so the ones before it give way. */
-.ol-top .ol-crumbs { flex-wrap: nowrap; }
-
 /* ------------------------------------------------------------------ Page head */
 .ol-pagehead { display: flex; flex-direction: column; gap: 0; margin: 0 0 var(--s-2); max-width: var(--max-list); }
 .ol-pagehead:empty { display: none; }
+.ol-pagehead .ol-breadcrumb { margin: 0 0 var(--s-2); }
 
 /* -------------------------------------------------------------------- Palette */
 .ol-palette-back { position: fixed; inset: 0; z-index: calc(var(--z-palette) - 1); background: var(--c-scrim); opacity: 0; transition: opacity var(--dur-modal) var(--ease-ui); }
@@ -173,8 +179,13 @@ body .ol-palette .ol-palette__input:focus, body .ol-palette .ol-palette__input:f
 .ol-menu__tick { display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; color: var(--c-accent); }
 .ol-menu__item.is-checked { font-weight: var(--w-strong); }
 
+@media (max-width: 1279px) {
+  .ol-views { display: none; }
+  .ol-views-menu { display: inline-flex; }
+}
 @media (max-width: 1023px) {
   .ol-top { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .ol-top__school b { display: none; }
   .ol-search__text, .ol-search__kbd { display: none; }
   .ol-search { width: var(--ctl-h); padding: 0; justify-content: center; }
 }
@@ -206,3 +217,17 @@ body.ol-shell .ol-host .cn-eyebrow { display: none; }
 .ol-leaving { position: fixed; inset: 0 0 auto 0; z-index: var(--z-toast); height: 3px; background: var(--c-accent); transform: scaleX(0); transform-origin: 0 50%; pointer-events: none; animation: ol-leaving 1.8s var(--ease-ui) forwards; }
 @keyframes ol-leaving { to { transform: scaleX(.8); } }
 @media (prefers-reduced-motion: reduce) { .ol-leaving { animation: none; transform: scaleX(.8); } }
+
+/* Help and shortcuts. */
+.ol-help { display: flex; flex-direction: column; gap: var(--s-4); }
+
+/* Over an old console that has no frame (the teacher's, or the school's with the frame off): the bar runs across the top and that console's own
+   rail starts under it. The old rail's search and account card are the bar's now. */
+body.ol-bar.is-console .cn-rail { top: var(--topbar-h); }
+body.ol-bar.is-console .lx-wrap { padding-top: calc(var(--topbar-h) + var(--s-6)); }
+body.ol-bar.is-console .cn-back { top: calc(var(--topbar-h) + var(--s-4)); }
+body.ol-bar .t-rail .tr-find, body.ol-bar .t-rail .tr-me { display: none; }
+body.ol-bar.is-console .cn-tr.head, body.ol-bar.is-console .hp-t th, body.ol-bar.is-console .isp-tabs, body.ol-bar.is-console .exm-head { top: var(--topbar-h); }
+
+/* The account menu's "Where I'm signed in" opens the account page at this heading; it must not land under the bar. */
+#acctDevices { scroll-margin-top: calc(var(--topbar-h) + var(--s-4)); }

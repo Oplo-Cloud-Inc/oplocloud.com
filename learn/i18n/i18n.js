@@ -156,8 +156,8 @@
     },
     setCountry: function (c) { country = c === "US" ? "US" : "IN"; listeners.forEach(function (fn) { fn(cur); }); },
     onChange: function (fn) { listeners.push(fn); },
-    /* The languages a person can choose, with their own names. */
-    languages: [{ code: "en-IN", name: "English (India)" }, { code: "hi-IN", name: "हिन्दी" }]
+    /* The languages a person can choose, each in its own name (`short` is the one a two-button toggle shows). */
+    languages: [{ code: "en-IN", name: "English (India)", short: "English" }, { code: "hi-IN", name: "हिन्दी", short: "हिन्दी" }]
   };
   OL.t = OL.i18n.t;
 })();
