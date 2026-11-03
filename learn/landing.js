@@ -5,11 +5,10 @@
 
      media slots   draws the picture or film each slot names, or its label
                    when it names none yet
-     sign in       any "Sign in" opens auth.oplocloud.com in a tab of its own
-                   (app.js, through connect.js); the panel is for arrivals —
-                   when another page sent somebody here to sign in (?next=)
-                   there has been no click to open a tab with, so the panel
-                   offers one
+     sign in       any "Sign in" takes this tab to auth.oplocloud.com and back
+                   (app.js, through shell/session.js); the panel is for
+                   arrivals — when another page sent somebody here to sign in
+                   (?next=) it offers the one button
      the site bar  the phone menu, as oplocloud.com's own bar does it — but
                    holding the page, which scrolls inside #gate, not the body
      the footer    link columns that fold into rows on a phone, as
@@ -140,9 +139,9 @@
   });
 
   /* ---------------------------------------------------------------- Sign in
-     A click on any "Sign in" goes straight to the Oplo Account tab (app.js's
-     OEDU_SIGNIN). The panel is only the fallback: before app.js has loaded,
-     and on arrival, when there has been no click for a tab to be opened by. */
+     A click on any "Sign in" goes straight to the Oplo Account page, in this
+     tab (app.js's OEDU_SIGNIN). The panel is only the fallback: before app.js
+     has loaded, and on arrival, when nobody has clicked anything yet. */
   function signIn(from) {
     if (typeof window.OEDU_SIGNIN === "function") {
       setNav(false);
@@ -213,10 +212,7 @@
   });
 
   // Sent here to sign in — from the family view, or a link that asked for it.
-  // Not while a sign-in is finishing across a refresh: that visitor is on the
-  // way in, and app.js takes them home as soon as the server says who they are.
-  if ((/[?&]next=/.test(location.search) || location.hash === "#signin") &&
-      !(window.OploSignIn && window.OploSignIn.pending)) openSignin();
+  if (/[?&]next=/.test(location.search) || location.hash === "#signin") openSignin();
 
   /* ------------------------------------------------------------------ Hero */
   var frame = root.querySelector(".ld-hero-frame");

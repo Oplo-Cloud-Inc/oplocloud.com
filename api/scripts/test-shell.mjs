@@ -275,13 +275,17 @@ await t("a page of the old console in the new frame has the new title, the bread
   }
 });
 
-await t("sign out goes to the welcome page at once, with no confirm box and nothing left of the frame", async (page) => {
+await t("sign out says \"You're signed out\" at once, with no confirm box, nothing left of the frame and not the welcome page", async (page) => {
   page.on("dialog", () => assert.fail("a browser dialog opened"));
   await page.getByRole("button", { name: /Account menu for/ }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await page.waitForFunction(() => !document.body.classList.contains("ol-shell"), null, { timeout: 5000 });
   assert.equal(await page.locator(".ol-top").count(), 0);
-  assert.equal(await page.locator("#gate").isVisible(), true);
+  await page.locator("#olSignedOut").waitFor({ state: "visible", timeout: 5000 });
+  assert.equal(await page.locator("#olSignedOut h1").innerText(), "You're signed out");
+  assert.equal(await page.locator("#gate").isVisible(), false, "the welcome page is not what a person who signed out is shown");
+  assert.equal(await page.getByRole("button", { name: "Sign in again" }).count(), 1);
+  assert.match(page.url(), /#signed-out$/, "the address keeps the screen through a refresh");
 });
 
 for (const theme of ["light", "dark"]) {

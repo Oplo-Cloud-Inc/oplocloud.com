@@ -49,6 +49,7 @@ window.OPLO_API = (function () {
 
   var base = defaultBase();
   var reachable = null;        // null = not yet asked, true/false once known
+  var early = null;            // the answer to an early /me, until the first me() takes it
 
   /* An error a screen can act on. `code` is the server's, so a client can
      branch on `invalid_credentials` without matching on English. */
@@ -167,7 +168,19 @@ window.OPLO_API = (function () {
         .then(function (r) { return r.account; });
     },
     logout: function () { return post("/auth/logout"); },
-    me: function () { return get("/me").then(function (r) { return r.account; }); },
+    me: function () {
+      var first = early;     // the question asked ahead of time, if it was (see early), answers the first ask only
+      early = null;
+      return (first || get("/me")).then(function (r) { return r.account; });
+    },
+    /* The one question the app opens with, asked now instead of when the last of the other megabytes of script has been
+       read: a page calls this the moment this file has loaded, and by the time app.js asks who is signed in the answer
+       is usually already here. Only the first me() is answered from it; every later one goes to the server. */
+    early: function () {
+      if (early) return;
+      early = get("/me");
+      early.catch(function () { /* me() reports it, to whoever asks */ });
+    },
     /* Where this account is signed in, and signing out of everywhere but
        here. The server returns raw user-agents; naming them is the page's job. */
     sessions: function () { return get("/auth/sessions").then(function (r) { return r.sessions; }); },

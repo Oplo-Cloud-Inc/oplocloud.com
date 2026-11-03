@@ -19978,11 +19978,11 @@
      offline at their own pace, and an app that decides for itself who is
      signed in cannot enforce anything against a user with a console open.
 
-     So it is gone. Sign-in happens at auth.oplocloud.com, in a tab of its own
-     (auth/public/connect.js): the password is typed there, the server checks
-     it, and the server sets an HttpOnly session cookie this file cannot read.
-     The tab closes, this page refreshes, and the only question this app ever
-     asks about identity is `who am I?` — and the answer comes from the server.
+     So it is gone. Sign-in happens at auth.oplocloud.com, in this same tab
+     (shell/session.js): the password is typed there, the server checks it, and
+     the server sets an HttpOnly session cookie this file cannot read. The page
+     it sends the person back to asks the only question this app ever asks about
+     identity — `who am I?` — and the answer comes from the server.
 
      One Oplo Account, not an OEdu account. The same session will carry
      a person into OMaps or OShopping, which is why none of this lives under
@@ -20256,7 +20256,10 @@
     };
   }
 
-  function signOut() {
+  /* `why` is what the signed-out screen says: "manual" (the person chose to), "idle" (left alone too long) or "ended"
+     (the server ended the session). */
+  function signOut(why) {
+    if (typeof why !== "string") why = "manual";   // a click handler passes its event
     if (window.OPLO_EXAM) window.OPLO_EXAM.close(true);   // saved first, then closed
     if (R) R.flush();                 // never leave the last few answers unwritten
     Sync.flushNow();
@@ -20283,58 +20286,55 @@
     });
     $("#rankChip").hidden = true;
     $("#streak").textContent = "0";
-    // Signed out, the page is the sign-in page again, at the address everybody
-    // signs in at — not at the /admin/ or /student/ the last person left behind.
-    history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root);
+    // Signed out, the page is at the address everybody signs in at — not at the
+    // /admin/ or /student/ the last person left behind — and the hash keeps the
+    // signed-out screen through a refresh, so it does not turn into the welcome page.
+    history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root + "#signed-out");
     setTitle(null);
     setLook(null);
-    // Back to the welcome page from its top, with the sign-in panel closed —
-    // it was left open by the sign-in that started this session.
+    // The welcome page is put back from its top with the sign-in panel closed —
+    // it was left open by the sign-in that started this session — for a visit
+    // that comes later. What the person sees now is the signed-out screen.
     var gate = $("#gate"), panel = $("#ldSignin");
     if (panel) panel.hidden = true;
     gate.classList.remove("ld-locked", "ld-wait");
-    gate.hidden = false;
     gate.scrollTop = 0;
     $("#gErr").textContent = "";
+    if (window.OL && OL.session) { gate.hidden = true; OL.session.showSignedOut(why); }
+    else gate.hidden = false;
     noFoot(); progress(null);
   }
 
   (function gate() {
     var err = $("#gErr"), go = $("#gateGo");
-    var Account = window.OploSignIn;
 
     /* Every "Sign in" on the welcome page, and the panel's button, come here.
-       The password is never typed on this page: connect.js opens
-       auth.oplocloud.com in a tab of its own, and when that tab says it is
-       done this page refreshes and the question below is asked again. If the
-       tab closes without saying — the message lost, or the person gave up —
-       the server is asked which. */
+       The password is never typed on this page: the Oplo Account page
+       (auth.oplocloud.com) opens in THIS tab and sends the person straight back
+       to the address they were on (shell/session.js). The question below is
+       asked of the server when this page loads again, as it always has been. */
     function signIn() {
       err.textContent = "";
-      if (!Account) {
-        err.innerHTML = "Cannot reach the Oplo Account service at " +
-          "<code>auth.oplocloud.com</code>. Check your connection and reload.";
-        return;
-      }
-      Account.open({
-        verify: function () {
-          return API.me().then(function () { return true; }, function () { return false; });
-        }
-      });
+      OL.session.signIn();
     }
     window.OEDU_SIGNIN = signIn;
     if (go) go.addEventListener("click", signIn);
 
     /* A session already open in this browser signs straight in — which is also
-       how a sign-in in the Oplo Account tab arrives, after the refresh. The
-       cookie is HttpOnly, so the only way to find out is to ask the server. */
+       how a sign-in at the Oplo Account page arrives, when it sends the person
+       back. The cookie is HttpOnly, so the only way to find out is to ask the
+       server. */
     API.me().then(function (account) {
       boot(account);
-      if (Account) Account.done();
     }).catch(function (e) {
-      if (Account) Account.done();
-      // Nobody is signed in, so the welcome page can be shown; until now it
+      // Nobody is signed in. Somebody who has just signed out is told so, on a
+      // screen of its own; anybody else gets the welcome page, which until now
       // stayed blank so a signed-in visitor never saw it on the way home.
+      if (location.hash === "#signed-out" && window.OL && OL.session) {
+        $("#gate").hidden = true;
+        OL.session.showSignedOut("manual");
+        return;
+      }
       $("#gate").classList.remove("ld-wait");
       var panel = $("#ldSignin");
       if (e && e.code === "offline") {

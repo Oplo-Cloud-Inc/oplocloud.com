@@ -69,7 +69,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css?v=6b88fcab">
 <link rel="stylesheet" href="oplo-chrome.css?v=f49eed32">
-<link rel="stylesheet" href="landing.css?v=4ecdb339">
+<link rel="stylesheet" href="landing.css?v=95435196">
 <link rel="stylesheet" href="exam.css?v=3869276c">
 <link rel="stylesheet" href="gradebook.css?v=b544c19b">
 <link rel="stylesheet" href="checks.css?v=a381359b">
@@ -93,7 +93,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link rel="stylesheet" href="tokens.css?v=4cf24ecc">
 <link rel="stylesheet" href="base.css?v=66b79815">
 <link rel="stylesheet" href="ui/ui.css?v=8221a687">
-<link rel="stylesheet" href="shell/shell.css?v=5e4485cb">
+<link rel="stylesheet" href="shell/shell.css?v=3ecb09ee">
 <link rel="stylesheet" href="students/students.css?v=84ec05eb">
 </head>
 <body>
@@ -482,7 +482,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
       <button class="lx-btn lg ld-go" type="button" id="gateGo">Continue with OploCloud Account</button>
       <p class="err" id="gErr" role="alert"></p>
       <p class="fine">
-        Signing in opens auth.oplocloud.com in a tab of its own, and closes it again once you are in.
+        Signing in takes you to auth.oplocloud.com in this tab and brings you straight back once you are in.
         That is the only place your password is typed: it is checked on the OploCloud platform and never
         stored in this browser. Your session is a cookie this page cannot read.
       </p>
@@ -653,8 +653,8 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <div class="lx-xp" id="xpPop" aria-hidden="true"></div>
 <div class="lx-badge" id="badgePop" role="status" aria-live="polite"></div>
 
-<script src="https://auth.oplocloud.com/connect.js"></script>
-<script src="api.js?v=f2f65603"></script>
+<script src="api.js?v=c168ce64"></script>
+<script>window.OPLO_API.early();</script>
 <script src="offline.js?v=230191fd"></script>
 <script src="locale.js?v=42eb5a09"></script>
 <script src="data.js?v=492617f4"></script>
@@ -688,7 +688,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="oplo-menu.js?v=f08f027c"></script>
 <script src="oplo-search.js?v=b2f48c6b"></script>
 <script src="kern.js?v=2e709371"></script>
-<script src="landing.js?v=e0092d74"></script>
+<script src="landing.js?v=4beb6e4e"></script>
 <script src="challenge.js?v=fef29607"></script>
 <script src="challenges-media9.js?v=1a1aa6ab"></script>
 <script src="lab/core.js?v=916f61f1"></script>
@@ -732,7 +732,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="ui/icons.js?v=ee7ac611"></script>
 <script src="i18n/i18n.js?v=473f36c9"></script>
 <script src="i18n/format.js?v=3818726b"></script>
-<script src="i18n/en-IN.js?v=69b11176"></script>
+<script src="i18n/en-IN.js?v=976560e3"></script>
 <script src="i18n/en-US.js?v=10c6cc8a"></script>
 <script src="ui/button.js?v=94f7ab27"></script>
 <script src="ui/input.js?v=451a3c34"></script>
@@ -758,6 +758,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="ui/index.js?v=695ab3be"></script>
 <script src="shell/routes.js?v=8a698968"></script>
 <script src="shell/url.js?v=5206567b"></script>
+<script src="shell/session.js?v=06dc316f"></script>
 <script src="shell/palette.js?v=d602d809"></script>
 <script src="shell/shell.js?v=605da39c"></script>
 <script src="shell/pages.js?v=9ab4a180"></script>
@@ -772,6 +773,6 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="students/form.js?v=494ce08c"></script>
 <script src="students/index.js?v=55b7883c"></script>
 <script src="settings/modules.js?v=ef83b28b"></script>
-<script src="app.js?v=57a23e5b"></script>
+<script src="app.js?v=6b065b53"></script>
 </body>
 </html>

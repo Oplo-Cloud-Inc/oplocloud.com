@@ -154,6 +154,16 @@
       k: { search: "Open search", move: "Move between results", open: "Open the selected result", group: "Jump to the next group", close: "Close", slash: "Go to the search box on a list (turn it off in your account menu)" }
     },
 
+    /* Signing in and out (shell/session.js). */
+    session: {
+      signed_out_title: "You're signed out",
+      signed_out_manual: "You have been signed out of OEdu on this device.",
+      signed_out_idle: "You were signed out because OEdu sat idle for a while.",
+      signed_out_ended: "Your session has ended. Sign in again to carry on.",
+      sign_in_again: "Sign in again", about_oedu: "About OEdu",
+      going: "Taking you to sign in…"
+    },
+
     /* Search — records first, then pages and actions. */
     search: {
       label: "Search", placeholder: "Search students, staff, classes, pages and actions", placeholder_short: "Search students, staff, classes",
