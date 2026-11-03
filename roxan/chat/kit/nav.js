@@ -26,17 +26,18 @@ function rove(list, items, vertical, pick) {
 
 /* ------------------------------------------------------------ Tabs: a line under the one you are on */
 
-// Tabs({ tabs: [{ id, label, count, icon, panel }], value, onchange, label }). A panel is a node or () => node, built the first time it shows.
-export function Tabs({ tabs, value, onchange, label, class: c } = {}) {
+// Tabs({ tabs: [{ id, label, count, icon, panel }], value, onchange, label, vertical }). A panel is a node or () => node, built the first time it shows.
+// vertical: the tabs are a column on the left, the arrow keys are up and down, and the row you are on is filled instead of underlined.
+export function Tabs({ tabs, value, onchange, label, vertical, class: c } = {}) {
   const id = uid("tb");
   let cur = value ?? tabs[0]?.id;
   const bar = h("span", { class: "k-bar", "aria-hidden": "true" });
   const btns = tabs.map(t => h("button", { type: "button", class: "k-tab", role: "tab", id: `${id}-${t.id}`, "aria-controls": `${id}-p-${t.id}`, "data-id": t.id },
     t.icon && icon(t.icon), h("span", { text: t.label }), t.count != null ? Badge({ class: "k-count" }, t.count) : null));
-  const list = h("div", { class: "k-tablist", role: "tablist", "aria-label": label || null }, btns, bar);
+  const list = h("div", { class: "k-tablist", role: "tablist", "aria-label": label || null, "aria-orientation": vertical ? "vertical" : null }, btns, bar);
   const panels = tabs.map(t => h("div", { class: "k-tabpanel", role: "tabpanel", id: `${id}-p-${t.id}`, "aria-labelledby": `${id}-${t.id}`, tabindex: 0, hidden: true }));
   const built = new Set();
-  const el = h("div", { class: cx("k-tabs", c) }, list, ...panels);
+  const el = h("div", { class: cx("k-tabs", vertical && "k-v", c) }, list, ...panels);
   const sync = (focus) => {
     btns.forEach((b, i) => {
       const on = b.dataset.id === String(cur);
@@ -45,15 +46,14 @@ export function Tabs({ tabs, value, onchange, label, class: c } = {}) {
       panels[i].hidden = !on;
       if (on) {
         if (!built.has(tabs[i].id) && tabs[i].panel) { built.add(tabs[i].id); const p = typeof tabs[i].panel === "function" ? tabs[i].panel() : tabs[i].panel; panels[i].append(p); }
-        bar.style.width = px(b.offsetWidth - 20);
-        bar.style.transform = `translateX(${px(b.offsetLeft + 10)})`;
+        if (!vertical) { bar.style.width = px(b.offsetWidth - 20); bar.style.transform = `translateX(${px(b.offsetLeft + 10)})`; }
         if (focus) b.focus();
       }
     });
   };
   const set = (v, focus) => { if (String(v) === String(cur)) return; cur = v; sync(focus); changed(el); onchange?.(cur); };
   btns.forEach(b => b.addEventListener("click", () => set(b.dataset.id)));
-  rove(list, () => btns, false, b => set(b.dataset.id));
+  rove(list, () => btns, Boolean(vertical), b => set(b.dataset.id));
   valued(el, () => cur, v => { cur = v; sync(); });
   el.setCount = (tid, n) => { const b = btns[tabs.findIndex(t => t.id === tid)]; let k = b?.querySelector(".k-count"); if (b && !k) b.append(k = Badge({ class: "k-count" })); if (k) k.textContent = n; sync(); };
   el.panel = tid => panels[tabs.findIndex(t => t.id === tid)];

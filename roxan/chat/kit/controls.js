@@ -52,11 +52,13 @@ export const SkeletonText = (lines = 3) => h("div", { class: "k-skel-text", "ari
 
 /* ------------------------------------------------------------ Progress and meter */
 
-// How far a task is: Progress({ value: 3, max: 5 }); with no value it sweeps. el.set(v) moves it. quiet: the label is only spoken, not drawn.
-export function Progress({ value, max = 100, label, valueLabel, size, quiet, class: c } = {}) {
+// How far a task is: Progress({ value: 3, max: 5 }); with no value it sweeps. el.set(v) moves it. size: "sm" (4px), the default (6px) or
+// "lg" (10px). quiet: the label is only spoken, not drawn. description: a line of help under the bar.
+export function Progress({ value, max = 100, label, valueLabel, description, size, quiet, class: c } = {}) {
   const fill = h("span", { class: "k-fill" });
   const el = h("div", { class: cx("k-progress", size && `k-${size}`, c), role: "progressbar", "aria-valuemin": 0, "aria-valuemax": max, "aria-label": label || null },
-    !quiet && (label || valueLabel) ? h("div", { class: "k-prog-head" }, h("span", { text: label || "" }), h("span", { class: "k-num" })) : null, h("span", { class: "k-track" }, fill));
+    !quiet && (label || valueLabel) ? h("div", { class: "k-prog-head" }, h("span", { text: label || "" }), h("span", { class: "k-num" })) : null, h("span", { class: "k-track" }, fill),
+    description ? h("span", { class: "k-hint", text: description }) : null);
   const num = el.querySelector(".k-num");
   el.set = (v, text) => {
     const pct = v == null ? null : Math.max(0, Math.min(100, (v / max) * 100));
@@ -66,6 +68,25 @@ export function Progress({ value, max = 100, label, valueLabel, size, quiet, cla
     if (num) num.textContent = text ?? valueLabel ?? (pct == null ? "" : `${Math.round(pct)}%`);
   };
   el.set(value, valueLabel);
+  return el;
+}
+
+// The same as a ring, for a tight spot such as a list row or a table cell: ProgressCircle({ value: 3, max: 5, label: "Steps done" }).
+// size: "sm" (16px), the default (24px) or "lg" (32px). With no value it turns. el.set(v) moves it. Give it a label: it has no words of its own.
+const RING = { sm: [16, 2], md: [24, 2.5], lg: [32, 3] };                            // box, line
+export function ProgressCircle({ value, max = 100, label, size = "md", class: c } = {}) {
+  const [box, line] = RING[size] || RING.md, mid = box / 2, r = (box - line) / 2;
+  const arc = s("circle", { class: "k-pc-arc", cx: mid, cy: mid, r, "stroke-width": line, pathLength: 100 });
+  const el = h("span", { class: cx("k-pc", c), role: "progressbar", "aria-valuemin": 0, "aria-valuemax": max, "aria-label": label || null },
+    s("svg", { class: "k-pc-svg", viewBox: `0 0 ${box} ${box}`, width: box, height: box, "aria-hidden": "true" }, s("circle", { class: "k-pc-track", cx: mid, cy: mid, r, "stroke-width": line }), arc));
+  el.set = v => {
+    const pct = v == null ? null : Math.max(0, Math.min(100, (v / max) * 100));
+    el.toggleAttribute("data-indeterminate", pct == null);
+    el.toggleAttribute("data-empty", pct === 0);                                      // a round cap on nothing would still draw a dot
+    if (pct == null) el.removeAttribute("aria-valuenow"); else el.setAttribute("aria-valuenow", v);
+    arc.style.strokeDashoffset = pct == null ? "" : String(100 - pct);
+  };
+  el.set(value);
   return el;
 }
 

@@ -86,11 +86,11 @@ a.row-main:hover { opacity: .72; }
 .fld { display: grid; gap: 6px; }
 .fld > .label { font-size: 13px; color: var(--muted); }
 /* :where keeps the field's base rule from outranking the specific ones below it. A field is filled, not outlined: a hairline under it, a white ring when you are in it. */
-:is(.shell, .pform) :where(input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not(.k-native):not(.k-in)), :is(.shell, .pform) textarea.field { width: 100%; height: 36px; padding: 0 12px; border: 0; border-radius: var(--k-r-2lg); background: var(--k-field); box-shadow: inset 0 0 0 1px var(--line); font: 400 14px/20px var(--fb); color: var(--text); color-scheme: dark; transition: box-shadow var(--t); }
-:is(.shell, .pform) textarea.field { height: auto; padding: 8px 12px; line-height: 20px; resize: vertical; }
-:is(.shell, .pform) :where(input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not(.k-native):not(.k-in)):hover, :is(.shell, .pform) textarea.field:hover { box-shadow: inset 0 0 0 1px var(--line-2); }
-:is(.shell, .pform) :where(input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not(.k-native):not(.k-in)):focus-visible, :is(.shell, .pform) textarea.field:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #fff; }
-.shell input::placeholder, .shell textarea::placeholder, .pform input::placeholder, .pform textarea::placeholder { color: var(--dim); }
+:is(.shell, .pform, .k-settings) :where(input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not(.k-native):not(.k-in)), :is(.shell, .pform, .k-settings) textarea.field { width: 100%; height: 36px; padding: 0 12px; border: 0; border-radius: var(--k-r-2lg); background: var(--k-field); box-shadow: inset 0 0 0 1px var(--line); font: 400 14px/20px var(--fb); color: var(--text); color-scheme: dark; transition: box-shadow var(--t); }
+:is(.shell, .pform, .k-settings) textarea.field { height: auto; padding: 8px 12px; line-height: 20px; resize: vertical; }
+:is(.shell, .pform, .k-settings) :where(input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not(.k-native):not(.k-in)):hover, :is(.shell, .pform, .k-settings) textarea.field:hover { box-shadow: inset 0 0 0 1px var(--line-2); }
+:is(.shell, .pform, .k-settings) :where(input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not(.k-native):not(.k-in)):focus-visible, :is(.shell, .pform, .k-settings) textarea.field:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #fff; }
+.shell input::placeholder, .shell textarea::placeholder, .pform input::placeholder, .pform textarea::placeholder, .k-settings input::placeholder { color: var(--dim); }
 .err { font-size: 13.5px; color: var(--text); }
 .err:not(:empty) { margin-top: 10px; }
 .btns { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }

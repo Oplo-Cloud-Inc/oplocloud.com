@@ -145,7 +145,7 @@ export async function mount(root, { app, params }) {
     const body = el.querySelector(".body");
     if (!m.text && m.streaming) {
       if (el._think) el._think.label(wait());                        // the same line, so its seconds keep counting
-      else fill(body, el._think = AgentThinking({ label: wait() }));
+      else fill(body, el._think = AgentThinking({ label: wait(), variant: "infinity" }));
     } else { el._think = null; fill(body, render(m.text)); }
     el.querySelector(".gl").firstChild?.classList.toggle("think", Boolean(m.streaming));
     el._text = m.text;

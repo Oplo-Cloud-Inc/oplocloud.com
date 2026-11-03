@@ -4,7 +4,7 @@
 import { h, emit, clock, when, ago } from "./dom.js";
 import * as api from "./api.js";
 import { apply, S } from "./state.js";
-import { Button, Checkbox, Select, Progress, confirm } from "./kit/index.js";
+import { Button, Checkbox, Select, Progress, ProgressCircle, confirm } from "./kit/index.js";
 
 // Redraw once however many changes arrive in a row.
 export function soon(fn) {
@@ -44,6 +44,7 @@ export function sure(label, onconfirm, { what } = {}) {
 export const tag = (text, cls = "") => h("span", { class: `tag ${cls}`.trim(), text });
 export const soonTag = () => h("span", { class: "tag next", text: "Next", title: "Not built yet" });
 export const progress = (done, total, label) => Progress({ value: done, max: Math.max(1, total), label, quiet: true });
+export const ring = (done, total, label) => ProgressCircle({ value: done, max: Math.max(1, total), label });
 export const stamp = ms => (new Date(ms).toDateString() === new Date().toDateString() ? clock(ms) : when(ms));
 export const empty = (title, text, ...kids) => h("div", { class: "none-box" }, h("p", { class: "none-title", text: title }), text ? h("p", { class: "fine", text }) : null, ...kids);
 

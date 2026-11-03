@@ -2,7 +2,7 @@
 import { h, $ } from "../dom.js";
 import * as K from "./index.js";
 
-const { Button, IconButton, ButtonGroup, Badge, Kbd, Avatar, StatusDot, Divider, Spinner, Skeleton, SkeletonText, Progress, Meter, Field, Input, SearchField, NumberField,
+const { Button, IconButton, ButtonGroup, Badge, Kbd, Avatar, StatusDot, Divider, Spinner, Skeleton, SkeletonText, Progress, ProgressCircle, Meter, Field, Input, SearchField, NumberField,
   Switch, SwitchCard, Checkbox, CheckboxCard, RadioGroup, Chip, TagGroup, Select, Combobox, DatePicker, Calendar, FileUpload, Tabs, SegmentedControl, Breadcrumb, Accordion,
   TreeView, Table, StatCard, Menu, ContextMenu, Popover, Modal, Drawer, confirm, openPalette, Notice, Announcement, AgentThinking, AgentLog, ComposerLoader, NotificationCenter, Tooltip, initTips } = K;
 
@@ -65,8 +65,15 @@ sec("Feedback",
   h("div", { class: "g-s10 g-w520" }, ...["info", "ok", "warn", "error"].map(t => Notice({ tone: t, title: `${t[0].toUpperCase()}${t.slice(1)} notice`, text: "A line of what happened.", href: "#/", onclose: () => log("dismiss", t) }))),
   cap("Announcement"),
   Announcement({ text: "You are offline. Roxan will catch up when you are back.", action: { label: "Retry", onclick: () => log("retry") }, onclose: () => {} }),
+  cap("Progress: three bar sizes, a line of help, and the ring (16, 24 and 32px; with no value it turns)"),
+  grid(h("div", { class: "g-s18" }, Progress({ size: "sm", label: "Small", value: 30 }), Progress({ label: "Medium, the default", value: 55 }), Progress({ size: "lg", label: "Large", value: 80 }),
+      Progress({ label: "Onboarding", value: 3, max: 5, valueLabel: "3 of 5 steps", description: "Two more and it is done." })),
+    row(...["sm", "md", "lg"].map(z => ProgressCircle({ size: z, value: 64, label: `Ring ${z}` })), ProgressCircle({ size: "lg", label: "Syncing" }), ProgressCircle({ value: 0, label: "Nothing yet" }), ProgressCircle({ size: "lg", value: 100, label: "Done" }))),
+  cap("Thinking: the four marks (wave, spin, stars, infinity), then a tone, and the label with and without its light"),
+  row(...["wave", "spin", "stars", "infinity"].map(v => AgentThinking({ variant: v, label: v[0].toUpperCase() + v.slice(1) })),
+    AgentThinking({ variant: "spin", tone: "primary", label: "Searching your notes" }), AgentThinking({ variant: "wave", shimmer: false, timer: false, label: "Plain label, no seconds" })),
   cap("Thinking and log"),
-  grid(AgentThinking({ label: "Reading your notes" }), AgentLog({ steps: [{ text: "Looked up your calendar", state: "ok" }, { text: "Tried to open the shared file", sub: "It is not shared with this account.", state: "no" }, { text: "Waiting for you to approve the email", state: "wait" }, { text: "Drafting the reply", state: "run" }] })));
+  grid(AgentThinking({ label: "Reading your notes", variant: "infinity" }), AgentLog({ steps: [{ text: "Looked up your calendar", state: "ok" }, { text: "Tried to open the shared file", sub: "It is not shared with this account.", state: "no" }, { text: "Waiting for you to approve the email", state: "wait" }, { text: "Drafting the reply", state: "run" }] })));
 
 /* ---------------------------------------------------------------- Overlays */
 const menuItems = () => [{ heading: "Chat" }, { label: "Rename", icon: "edit", kbd: "R", onselect: () => log("rename") }, { label: "Move to project", icon: "projects", onselect: () => log("move") }, { label: "Copy link", icon: "link", checked: false }, { divider: true }, { label: "Delete", icon: "trash", danger: true, onselect: () => log("delete") }];
@@ -89,7 +96,12 @@ const rows = [{ name: "Morning summary", when: "Every day, 08:00", state: "On" }
 const tree = TreeView({ label: "Projects", open: new Set(["p1"]), current: "c2", render: n => h("span", { class: "t", text: n.label }), nodes: [{ id: "p1", label: "Moving house", children: [{ id: "c1", label: "Boxes and labels" }, { id: "c2", label: "Utilities" }] }, { id: "p2", label: "Taxes", children: [{ id: "c3", label: "Receipts" }] }, { id: "c4", label: "A chat with no project" }] });
 const loaderInner = h("div", { class: "composer" }, h("div", { class: "composer-row" }, h("textarea", { rows: 1, placeholder: "Ask Roxan" }), Button({ size: "sm" }, "Send")));
 const loader = ComposerLoader(loaderInner);
+const tunedInner = h("div", { class: "composer" }, h("div", { class: "composer-row" }, h("textarea", { rows: 1, placeholder: "Ask Roxan" }), Button({ size: "sm" }, "Send")));
+const tuned = ComposerLoader(tunedInner, { speed: 1.6, arc: 90, reverse: true, intensity: 0.7, line: 2, radius: 12 });
 sec("Navigation and data",
+  cap("Tabs, vertical (how Settings opens over a page)"),
+  Tabs({ label: "Sections, down the side", vertical: true, tabs: [{ id: "a", label: "General", icon: "settings", panel: () => h("p", { class: "fine", text: "The first section, built when it first shows." }) }, { id: "b", label: "Notifications", icon: "bell", panel: () => h("p", { class: "fine", text: "The second. Up and down move between sections." }) }, { id: "c", label: "Your data", icon: "download", panel: () => h("p", { class: "fine", text: "The third." }) }] }),
+  cap("Tabs"),
   Tabs({ label: "Sections", tabs: [{ id: "a", label: "Overview", panel: () => h("p", { class: "fine", text: "The first tab, built when it first shows." }) }, { id: "b", label: "Activity", count: 4, panel: () => h("p", { class: "fine", text: "The second." }) }, { id: "c", label: "Settings", icon: "settings", panel: () => h("p", { class: "fine", text: "The third." }) }] }),
   row(SegmentedControl({ label: "View", options: [{ value: "list", label: "List" }, { value: "web", label: "Web" }], value: "list" }), SegmentedControl({ label: "Range", size: "sm", options: [{ value: "d", label: "Day" }, { value: "w", label: "Week" }, { value: "m", label: "Month" }], value: "w" })),
   Breadcrumb([{ label: "Projects", href: "#/projects" }, { label: "Moving house", href: "#/projects" }, { label: "Utilities" }]),
@@ -97,6 +109,8 @@ sec("Navigation and data",
   Table({ label: "Routines", columns: [{ key: "name", label: "Name", sort: true }, { key: "when", label: "When" }, { key: "state", label: "State", sort: true, render: r => Badge({ tone: r.state === "On" ? "solid" : "dashed" }, r.state) }], rows, onrow: r => log("row", r.name) }),
   h("div", { class: "grid-2" }, StatCard({ icon: "goals", label: "Open goals", value: 4, note: "1 due this week", href: "#/goals" }), StatCard({ icon: "needs", label: "Needs you", value: 2 }), StatCard({ icon: "schedule", label: "Routines on", value: 3 })),
   cap("Composer loader (a thin line runs round the edge while a reply is on the way)"),
-  loader, row(Button({ variant: "secondary", size: "sm", onclick: () => { loader.active = !loader.active; } }, "Toggle")));
+  loader, row(Button({ variant: "secondary", size: "sm", onclick: () => { loader.active = !loader.active; } }, "Toggle")),
+  cap("Tuned: speed 1.6s, arc 90°, reversed, intensity 0.7, line 2px, radius 12px (one white line; Roxan has no colour or glow here)"),
+  tuned, row(Button({ variant: "secondary", size: "sm", onclick: () => { tuned.active = !tuned.active; } }, "Toggle")));
 
 document.documentElement.dataset.kit = "ready";

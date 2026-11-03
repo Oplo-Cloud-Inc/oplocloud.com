@@ -18,7 +18,8 @@ const hub = (label, rows) => section(label, null, rows.map(([path, name, hint]) 
   h("div", { class: "row-main" }, h("span", { class: "row-title", text: name }), h("span", { class: "row-sub", text: hint })),
   h("span", { class: "go sm" }, h("i", { "aria-hidden": "true" })))));
 
-export async function mount(root, { app }) {
+// As a page, or in a dialog over any page (dialog: true; page: the section to start on). The dialog has its sections down the left, with an icon each.
+export async function mount(root, { app, dialog, page }) {
   // Every choice applies at once. If Roxan's side turns one down, the control goes back to what is kept.
   const save = patch => busy(null, async () => { try { await saveSettings(patch); } catch (e) { paint(); throw e; } });
 
@@ -101,15 +102,16 @@ export async function mount(root, { app }) {
   word.addEventListener("input", () => { wipe.disabled = word.value.trim().toUpperCase() !== "DELETE"; });
 
   /* ------------------------------------------------ the page: one tab for each kind of thing */
-  const tabs = Tabs({ label: "Settings", tabs: [
-    { id: "pages", label: "Know and control", panel: h("div", null,
+  const ic = name => (dialog ? name : undefined);
+  const tabs = Tabs({ label: "Settings", value: page, vertical: dialog, tabs: [
+    { id: "pages", label: "Know and control", icon: ic("access"), panel: h("div", null,
       hub("Know", [["/memory", "Memory", "What Roxan has learned about you, as a web or a list."], ["/specialties", "Specialties", "Steps for a task you want done the same way every time."], ["/handoff", "Handoff", "Tasks that need a web browser, written up for you."], ["/vault", "Vault", "Logins, cards and notes, sealed on this device."]]),
       hub("Control", [["/access", "Access", "What Roxan may do on its own, and what it asks first."], ["/activity", "Activity", "What Roxan did and why, and what it held back."]])) },
-    { id: "you", label: "You", panel: h("div", null,
+    { id: "you", label: "You", icon: ic("user"), panel: h("div", null,
       section("Name", null, nameForm, nameErr),
       section("Mark", null, marks),
       section("Tone", null, tones)) },
-    { id: "speaking", label: "Speaking first", panel: h("div", null,
+    { id: "speaking", label: "Speaking first", icon: ic("chat"), panel: h("div", null,
       section("How often", null,
         h("p", { text: "Roxan may message you on its own when work finishes or a page changes. It holds back what is not new or not worth your attention, and the Activity page says why." }), levels),
       section("Quiet hours", null, h("div", { class: "inline" }, quietBox, from, h("span", { class: "fine", text: "to" }), to),
@@ -117,9 +119,9 @@ export async function mount(root, { app }) {
       section("Time zone", null, zone, h("p", { class: "fine", text: "Routines and quiet hours follow it. A new account takes this device's the first time." })),
       section("Learning", null, learn, learnNote),
       section("Pause", null, pause, pauseNote)) },
-    { id: "device", label: "This device", panel: h("div", null,
+    { id: "device", label: "This device", icon: ic("bell"), panel: h("div", null,
       section("Alerts on this device", null, alertSw, alerts, h("p", { class: "fine" }, soonTag(), " Alerts that reach you when the tab is closed are not built yet."))) },
-    { id: "data", label: "Your data", panel: h("div", null,
+    { id: "data", label: "Your data", icon: ic("download"), panel: h("div", null,
       section("What Roxan keeps", null,
         h("p", { text: "Roxan keeps your chats, notes, goals and routines in your account on its servers, so it can work while this tab is closed. Each message you send, with the notes it is shown, goes to the AI model that answers it. The Security page says exactly what is sent, and to whom." }),
         counts, device,
@@ -129,7 +131,7 @@ export async function mount(root, { app }) {
           h("div", { class: "inline" }, word, wipe)) }] })))) },
   ] });
 
-  fill(root, h("section", { class: "page" }, h("h1", { class: "page-title", text: "Yours to shape and to take away." }), tabs));
+  fill(root, dialog ? tabs : h("section", { class: "page" }, h("h1", { class: "page-title", text: "Yours to shape and to take away." }), tabs));
 
   function paint() {
     const s = S.settings;

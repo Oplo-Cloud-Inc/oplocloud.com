@@ -2,7 +2,7 @@
    Each page is a module with mount(root, { app, params }) that returns a
    cleanup function. What Roxan knows lives in state.js; pages read it there. */
 import * as db from "./db.js";
-import { h, fill, $, on, emit, ago } from "./dom.js";
+import { h, fill, $, on, emit, ago, brief } from "./dom.js";
 import * as api from "./api.js";
 import * as oplo from "./oplo.js";
 import * as local from "./local.js";
@@ -10,10 +10,11 @@ import { S, MAIN, start, stop, watch, chats, waiting, name as who } from "./stat
 import { icon } from "./icons.js";
 import { mark } from "./mark.js";
 import { soon, saveSettings } from "./ui.js";
-import { Button, LinkButton, Input, Avatar, Kbd, Menu, TreeView, Announcement, Notice, NotificationCenter, StatusDot, openPalette, initTips, leave, mod } from "./kit/index.js";
+import { Button, LinkButton, IconButton, Input, Avatar, Kbd, Menu, Modal, TreeView, Announcement, Notice, NotificationCenter, StatusDot, openPalette, initTips, leave, mod } from "./kit/index.js";
 
 export const app = {
   persistent: false,
+  rail: false,                                         // whether the rail is folded to icons; kept on this device
   prefill: null,                                       // text a page leaves for the composer to open with
   notify: false,                                       // whether this device may pop up a notice while the tab is in the background
   go(path) { location.hash = "#" + path; },
@@ -60,6 +61,8 @@ function shell() {
     const n = h("span", { class: "count", "aria-hidden": "true" });
     counts[key] = n;
     const link = h("a", { href: "#" + path, data: { nav: key } }, icon(key), h("span", { class: "t", text: label }), n);
+    // Settings opens over the page you are on; the page at /settings is still there for a new tab or a link
+    if (key === "settings") link.addEventListener("click", e => { if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); openSettings(); });
     if (key === "chat") return h("li", null, link, chatList = h("div", { class: "chat-list" }));
     if (key === "projects") return h("li", null, link, projList = h("div", { class: "chat-list" }));
     return h("li", null, link);
@@ -73,16 +76,18 @@ function shell() {
   bell = NotificationCenter({ title: "Notifications", empty: "Nothing needs you.", side: "right", align: "start", footer: Button({ variant: "ghost", size: "sm", trailing: "right", onclick: () => app.go("/activity") }, "All activity") });
   const search = h("button", { class: "rail-search", type: "button", "aria-label": "Search and commands", onclick: openCommands }, icon("search"), h("span", { class: "t", text: "Search" }), Kbd(mod(), "K"));
   const account = h("button", { class: "rail-acct", type: "button" }, Avatar({ size: "sm", glyph: icon("user") }), h("span", { class: "t", text: "Your account" }), icon("updown", "sm"));
+  const fold = IconButton({ class: "rail-fold", "aria-controls": "rail" }, "panel");
+  fold.addEventListener("click", () => setRail(!app.rail));
   Menu(account, () => [
-    { label: "Settings", icon: "settings", onselect: () => app.go("/settings") },
+    { label: "Settings", icon: "settings", onselect: () => openSettings() },
     { label: "Activity", icon: "activity", onselect: () => app.go("/activity") },
     { label: "Help", icon: "info", href: "/help/" },
     { label: "roxan.oplocloud.com", icon: "globe", href: "/" },
     { divider: true },
     { label: "Sign out", icon: "logout", onselect: signOut },
   ], { side: "top", align: "start", width: 232, label: "Account" });
-  const rail = h("aside", { class: "rail" },
-    h("div", { class: "rail-top" }, h("a", { class: "rail-brand", href: "#/", "aria-label": "Today" }, brandMark, brandName), bell),
+  const rail = h("aside", { class: "rail", id: "rail" },
+    h("div", { class: "rail-top" }, h("a", { class: "rail-brand", href: "#/", "aria-label": "Today" }, brandMark, brandName), bell, fold),
     search,
     status,
     h("nav", { "aria-label": "Roxan" }, sections),
@@ -90,6 +95,40 @@ function shell() {
   banner = h("div", { class: "banner-slot", role: "status" });
   main = h("main", { id: "main", tabindex: "-1" }, banner);
   fill(root, rail, main);
+  paintRail();
+}
+
+// Folded, the rail is a column of icons: the words go, so each link says its own through a tooltip. The choice is kept on this device.
+function paintRail(slide) {
+  const min = app.rail, fold = $(".rail-fold"), word = min ? "Expand the sidebar" : "Collapse the sidebar";
+  $("#shell").toggleAttribute("data-slide", Boolean(slide));
+  $("#shell").toggleAttribute("data-min", min);
+  fold.setAttribute("aria-expanded", String(!min));
+  fold.setAttribute("aria-label", word);
+  fold.setAttribute("data-tip", word);
+  document.querySelectorAll(".rail nav a[data-nav]").forEach(a => {
+    if (min) { a.setAttribute("data-tip", a.querySelector(".t").textContent); a.setAttribute("data-tip-side", "right"); }
+    else { a.removeAttribute("data-tip"); a.removeAttribute("data-tip-side"); }
+  });
+}
+function setRail(min) {
+  app.rail = min;
+  paintRail(true);
+  local.setMeta("rail", min);
+}
+
+// Settings as a dialog over the page you are on: the Settings page's own view with its sections down the left. page: which one to start on.
+let settingsDlg = null;
+async function openSettings(page) {
+  if (settingsDlg) return;
+  settingsDlg = true;                                                           // the view is fetched first; a second click meanwhile must not open a second dialog
+  try {
+    const view = await import("./views/settings.js");
+    const body = h("div", { class: "set-pane" }), stopWatching = await view.mount(body, { app, dialog: true, page });
+    settingsDlg = Modal({ title: "Settings", body, size: "lg", class: "k-settings", onclose: () => { stopWatching?.(); settingsDlg = null; },
+      footer: h("a", { class: "go", href: "#/settings" }, "Open as a page ", h("i", { "aria-hidden": "true" })) });
+    settingsDlg.el.addEventListener("click", e => { if (e.target.closest('a[href^="#/"]')) settingsDlg.close(); });      // a link to a page leaves the dialog
+  } catch (e) { settingsDlg = null; toast({ text: e.message, tone: "error" }); }
 }
 
 function paintBrand() {
@@ -120,13 +159,19 @@ function paintCounts() {
 function paintChats() {
   const list = chats();
   // a title that is cut off says the rest on hover; one that fits has nothing to add
-  const row = n => h("span", { class: "t", text: n.label, "data-tip": n.label.length > 21 ? n.label : null, "data-tip-side": "right" });
+  const row = n => {
+    const t = h("span", { class: "t", text: n.label, "data-tip": n.label.length > 21 ? n.label : null, "data-tip-side": "right" });
+    if (!n.at) return t;
+    const both = document.createDocumentFragment();                              // a chat's age sits after its name
+    both.append(t, h("span", { class: "k-age", data: { at: n.at }, text: brief(n.at) }));
+    return both;
+  };
   fill(chatList,
-    list.length ? TreeView({ label: "Recent chats", class: "k-bare", nodes: list.slice(0, SHOWN).map(t => ({ id: "c:" + t.id, label: t.title || "New chat", href: "#/c/" + t.id })), render: row }) : null,
+    list.length ? TreeView({ label: "Recent chats", class: "k-bare", nodes: list.slice(0, SHOWN).map(t => ({ id: "c:" + t.id, label: t.title || "New chat", href: "#/c/" + t.id, at: t.updated })), render: row }) : null,
     h("button", { class: "tree-new", type: "button", onclick: newChat }, icon("plus", "sm"), h("span", { class: "t", text: "New chat" })),
     list.length > SHOWN ? h("a", { class: "tree-more", href: "#/projects", text: `All ${list.length} chats` }) : null);
   const projects = S.projects.filter(p => p.state === "open").slice(0, SHOWN);
-  fill(projList, projects.length ? TreeView({ label: "Projects", open: treeOpen, render: row, nodes: projects.map(p => ({ id: "p:" + p.id, label: p.title, href: "#/p/" + p.id, children: list.filter(t => t.parent === p.id).map(t => ({ id: "c:" + t.id, label: t.title || "New chat", href: "#/c/" + t.id })) })) }) : null);
+  fill(projList, projects.length ? TreeView({ label: "Projects", open: treeOpen, render: row, nodes: projects.map(p => ({ id: "p:" + p.id, label: p.title, href: "#/p/" + p.id, children: list.filter(t => t.parent === p.id).map(t => ({ id: "c:" + t.id, label: t.title || "New chat", href: "#/c/" + t.id, at: t.updated })) })) }) : null);
   markCurrent();
 }
 
@@ -319,6 +364,7 @@ async function enter() {
     watch(["threads", "projects"], soon(paintChats));
     watch(["seen", "approvals", "questions"], soon(paintBell));
     watch("live", paintBanner);
+    setInterval(() => document.querySelectorAll(".rail .k-age").forEach(el => { el.textContent = brief(+el.dataset.at); }), 60_000);   // "now" must not stay "now"
     watch(["seen", "goals", "routines", "panels", "approvals", "questions", "projects"], soon(paintCounts));
   }
   // Routines run in the person's time zone, and a new account starts in UTC: take this device's, once.
@@ -333,6 +379,7 @@ async function enter() {
 async function boot() {
   app.persistent = await db.open();
   app.notify = Boolean(await local.getMeta("notify"));
+  app.rail = Boolean(await local.getMeta("rail"));
   const hl = await api.health();
   if (!hl.ok) return gate("offline", hl.offline ? "" : "Roxan is busy. Try again in a minute.");
   if (hl.gateway !== "open") return gate("closed");

@@ -106,7 +106,17 @@ body[data-page="chat"], #layers {
 .k-prog-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font: 500 14px/20px var(--fb); }
 .k-num { font-variant-numeric: tabular-nums; font-weight: 400; color: var(--dim); }
 .k-progress > .k-track { position: relative; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.k-progress.k-sm > .k-track { height: 4px; }
 .k-progress.k-lg > .k-track { height: 10px; }
+/* the ring: a track and an arc drawn by stroke-dashoffset (the arc is 100 long however big the ring is), starting at the top */
+.k-pc { display: inline-flex; flex: none; }
+.k-pc-svg { transform: rotate(-90deg); }
+.k-pc-track, .k-pc-arc { fill: none; }
+.k-pc-track { stroke: rgba(255, 255, 255, .12); }
+.k-pc-arc { stroke: #fff; stroke-linecap: round; stroke-dasharray: 100 100; stroke-dashoffset: 100; transition: stroke-dashoffset .5s var(--k-ease); }
+.k-pc[data-empty] .k-pc-arc { opacity: 0; }
+.k-pc[data-indeterminate] .k-pc-svg { transform: none; animation: k-turn 1s linear infinite; }
+.k-pc[data-indeterminate] .k-pc-arc { stroke-dasharray: 28 72; stroke-dashoffset: 0; }
 .k-fill { position: absolute; inset: 0; border-radius: inherit; background: #fff; transform: translateX(-100%); transition: transform .5s var(--k-ease); }
 .k-progress[data-indeterminate] .k-fill { width: 38%; transform: none; animation: k-sweep 1.3s var(--io) infinite; }
 @keyframes k-sweep { from { translate: -100% 0; } to { translate: 265% 0; } }
@@ -268,6 +278,25 @@ body[data-page="chat"], #layers {
 .k-tab[aria-selected="true"] { color: #fff; font-weight: 500; }
 .k-tab .k-count { height: 18px; padding: 0 5px; font-size: 11.5px; }
 .k-bar { position: absolute; left: 0; bottom: 0; height: 2px; border-radius: 2px 2px 0 0; background: #fff; transition: transform .3s var(--k-ease), width .3s var(--k-ease); }
+/* vertical: the tabs are a column on the left and the one you are on is filled */
+.k-tabs.k-v { grid-template-columns: 184px minmax(0, 1fr); gap: 28px; align-items: start; }
+.k-v > .k-tablist { position: sticky; top: 0; flex-direction: column; gap: 2px; padding-right: 14px; border-bottom: 0; border-right: 1px solid var(--k-sep); overflow: visible; }
+.k-v .k-tab { width: 100%; padding: 8px 10px; border-radius: var(--k-r-2lg); }
+.k-v .k-tab:hover { background: var(--k-hover); }
+.k-v .k-tab[aria-selected="true"] { background: var(--k-sel); }
+.k-v .k-tab .ic { flex: none; color: var(--dim); }
+.k-v .k-tab[aria-selected="true"] .ic { color: #fff; }
+.k-v .k-bar { display: none; }
+/* Settings, as a dialog over the page you are on: wide, with its sections down the left */
+.k-modal.k-settings { width: min(900px, 100%); height: min(640px, 92vh); }
+.k-settings .k-m-body { padding-top: 8px; }
+.k-settings .k-m-foot { justify-content: space-between; align-items: center; }
+.k-settings .set-pane { display: flex; flex-direction: column; min-height: 100%; }
+.k-settings .set-pane > .k-tabs { flex: 1; }
+/* the line between the sections and the page runs the whole height, not just as far as the last tab */
+.k-settings .k-v > .k-tablist { grid-area: 1 / 1; border-right: 0; }
+.k-settings .k-v > .k-tabpanel { grid-area: 1 / 2; }
+.k-settings .k-v::before { content: ""; grid-area: 1 / 1; justify-self: end; align-self: stretch; width: 1px; background: var(--k-sep); pointer-events: none; }
 .k-tabpanel { outline: none; }
 .k-tabpanel:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: 4px; }
 
@@ -358,11 +387,28 @@ a.k-stat:hover { border-color: var(--k-edge-2); background: var(--raise); }
 
 /* ------------------------------------------------------------ Agent: thinking, log, composer loader, bell */
 .k-think { display: inline-flex; align-items: center; gap: 10px; font: 400 14px/20px var(--fb); color: var(--muted); }
-.k-think-dots { display: inline-flex; gap: 4px; }
-.k-think-dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: breathe 1.2s var(--io) infinite; }
-.k-think-dots i:nth-child(2) { animation-delay: .2s; } .k-think-dots i:nth-child(3) { animation-delay: .4s; }
+.k-think[data-tone="subtle"] { color: var(--dim); }
+.k-think[data-tone="primary"] { color: #fff; }
+.k-think-m { flex: none; }
 .k-think-s { font-variant-numeric: tabular-nums; color: var(--dim); }
 .k-think-s:empty { display: none; }
+/* wave and spin: nine dots, each fading the same way and started a little later the further along the path it is (the delays are set in code) */
+.k-grid { display: grid; grid-template-columns: repeat(3, 4px); gap: 2px; }
+.k-grid i { width: 4px; height: 4px; border-radius: 1px; background: currentColor; animation: k-grid .64s linear infinite; }
+@keyframes k-grid { 0% { opacity: 1; } 5% { opacity: .79; } 10% { opacity: .6; } 15% { opacity: .43; } 20% { opacity: .29; } 25% { opacity: .18; } 30%, 80% { opacity: .12; } 100% { opacity: 1; } }
+/* stars: five sparkles that come in, settle and go, one after another (size, place and delay are set in code) */
+.k-stars { position: relative; display: block; width: 21px; height: 21px; }
+.k-star { position: absolute; fill: currentColor; transform: scale(0); animation: k-twinkle 1.4s ease-in-out infinite; }
+@keyframes k-twinkle { 0%, 100% { transform: scale(0); opacity: 0; } 40% { transform: scale(1); opacity: 1; } 60% { transform: scale(.8); opacity: .9; } }
+/* infinity: a short line goes round a figure eight drawn faintly behind it */
+.k-eight { width: 32px; height: 16px; margin: 0 -4px; }
+.k-eight path { fill: none; stroke: currentColor; stroke-width: 2.75; }
+.k-eight-t { opacity: .15; }
+.k-eight-c { stroke-linecap: round; stroke-dasharray: 11 89; animation: k-comet 1.2s linear infinite; }
+@keyframes k-comet { to { stroke-dashoffset: -100; } }
+/* the label: a light passes along the letters, then they rest */
+.k-think-w > span { white-space: pre; animation: k-glint 2.6s ease-in-out infinite backwards; }
+@keyframes k-glint { 0%, 55%, 100% { opacity: .5; } 25% { opacity: 1; } }
 
 .k-log { position: relative; display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: 400 13.5px/20px var(--fb); color: var(--muted); }
 .k-log-i { position: relative; display: flex; gap: 10px; }
@@ -377,8 +423,9 @@ a.k-stat:hover { border-color: var(--k-edge-2); background: var(--raise); }
 
 .k-loader { position: relative; }
 .k-ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; opacity: 0; transition: opacity .45s; }
-.k-loader[data-active="true"] .k-ring { opacity: 1; }
-.k-ring-r { fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 16 84; animation: k-orbit 2.4s linear infinite; }
+.k-loader[data-active="true"] .k-ring { opacity: var(--k-orbit-alpha, 1); }
+/* the line and how it travels come from ComposerLoader's options, set as --k-orbit-* on the wrapper */
+.k-ring-r { fill: none; stroke: #fff; stroke-width: var(--k-orbit-line, 1.5); stroke-linecap: round; stroke-dasharray: var(--k-orbit-dash, 16) calc(100 - var(--k-orbit-dash, 16)); animation: k-orbit var(--k-orbit-speed, 2.4s) linear infinite var(--k-orbit-dir, normal); }
 @keyframes k-orbit { to { stroke-dashoffset: -100; } }
 
 .k-btn.k-bell { position: relative; overflow: visible; }
@@ -410,6 +457,27 @@ a.k-stat:hover { border-color: var(--k-edge-2); background: var(--raise); }
 .rail .chat-list .k-bare .k-tr-row { padding-left: 10px; }
 .rail .chat-list .k-tr-row .t { flex: 1; }
 .rail .tree-new { gap: 8px; }
+/* a chat's age: a few characters at the end of its row */
+.k-age { flex: none; font: 500 11.5px/1 var(--fb); font-variant-numeric: tabular-nums; color: var(--dim); }
+.rail .chat-list .k-tr-row:hover .k-age, .rail .chat-list .k-tr-row[aria-current="page"] .k-age { color: var(--muted); }
+/* the chats under a project hang off a line from the project, each with a curve into its row */
+.rail .chat-list .k-tr-kids .k-tr-item { position: relative; }
+.rail .chat-list .k-tr-kids .k-tr-item::before { content: ""; position: absolute; left: 16px; top: 0; width: 16px; height: 14px; border-bottom: 1px solid var(--k-edge-2); border-left: 1px solid var(--k-edge-2); border-bottom-left-radius: 7px; pointer-events: none; }
+.rail .chat-list .k-tr-kids .k-tr-item:not(:last-child)::after { content: ""; position: absolute; left: 16px; top: 14px; bottom: -1px; border-left: 1px solid var(--k-edge-2); pointer-events: none; }
+
+/* the rail folds to a column of icons (the button is in the top row; the choice is kept on this device) */
+@media (min-width: 861px) {
+  .shell[data-slide] { transition: grid-template-columns .28s var(--k-ease); }           /* only when you press the button, never on load */
+  .shell[data-min] { grid-template-columns: 64px minmax(0, 1fr); }
+  [data-min] .rail-top { flex-direction: column; gap: 6px; }
+  [data-min] .rail-top .rail-brand { flex: none; padding: 6px 0 2px; }
+  [data-min] .rail-name, [data-min] .rail .t, [data-min] .rail .count, [data-min] .rail-label, [data-min] .rail .chat-list, [data-min] .rail-search .k-kbd, [data-min] .rail-acct .ic-sm { display: none; }
+  [data-min] .rail-search, [data-min] .rail nav a, [data-min] .rail-acct { justify-content: center; padding: 0; }
+  [data-min] .rail-acct { height: 40px; }
+  [data-min] .rail-status { padding: 0; font-size: 0; text-align: center; }
+  [data-min] .rail-status .k-dot { margin: 0; }
+}
+@media (max-width: 860px) { .rail-fold { display: none; } }                                   /* the narrow layout has no column to fold */
 
 .banner-slot { flex: none; }
 
@@ -487,7 +555,9 @@ body[data-page="chat"] .md pre .copy:focus-visible { outline: 2px solid #fff; ou
 
 @media (prefers-reduced-motion: reduce) {
   .k-float, .k-tip, .k-scrim, .k-modal, .k-drawer, .k-palette { animation-duration: .001ms !important; }
-  .k-skel, .k-spin, .k-ring-r, .k-think-dots i, .k-bar-t, .k-fill { animation: none !important; }
+  .k-skel, .k-spin, .k-ring-r, .k-grid i, .k-star, .k-eight-c, .k-think-w > span, .k-pc-svg, .k-bar-t, .k-fill { animation: none !important; }
+  .k-fill, .k-pc-arc, .shell { transition: none !important; }
+  .k-star { transform: none; opacity: .7; }                                  /* the sparkles rest in view instead of staying at nothing */
 }
 
 /* ------------------------------------------------------------ The older class names the pages still use, drawn as the kit's parts */

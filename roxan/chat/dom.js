@@ -58,6 +58,17 @@ export function ago(ms) {
   return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(new Date(ms));
 }
 
+// A short age for a tight spot, like a chip in the rail: now, 5m, 3h, 2d, 6w, 2y.
+export function brief(ms) {
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return "now";
+  if (s < 3600) return Math.round(s / 60) + "m";
+  if (s < 86400) return Math.round(s / 3600) + "h";
+  if (s < 86400 * 7) return Math.round(s / 86400) + "d";
+  if (s < 86400 * 365) return Math.round(s / (86400 * 7)) + "w";
+  return Math.round(s / (86400 * 365)) + "y";
+}
+
 export const bytes = n => (n < 1024 ? n + " B" : n < 1048576 ? Math.round(n / 1024) + " KB" : n < 1073741824 ? (n / 1048576).toFixed(1) + " MB" : (n / 1073741824).toFixed(1) + " GB");
 
 // datetime-local wants "YYYY-MM-DDTHH:MM" in local time.

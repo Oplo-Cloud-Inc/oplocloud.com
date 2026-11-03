@@ -9,7 +9,7 @@ import { S, MAIN, watch, waiting, name as who } from "../state.js";
 import { mark, MARKS } from "../mark.js";
 import { describe } from "../when.js";
 import { cardish } from "../sensitive.js";
-import { soon, busy, needCard, progress, stepsLine, tag, logRow, toast, when, make, edit, take, saveSettings, markSeen, TONES } from "../ui.js";
+import { soon, busy, needCard, ring, stepsLine, tag, logRow, toast, when, make, edit, take, saveSettings, markSeen, TONES } from "../ui.js";
 import { Button, Input, Field, RadioGroup, StatusDot } from "../kit/index.js";
 
 const AWAY = new Set(["run", "notify", "held", "error", "approval", "question"]);
@@ -93,7 +93,7 @@ export async function mount(root, { app }) {
       const parts = [];
       if (now.length) parts.push(section("Needs you", more("#/needs", now.length > 3 ? `All ${now.length}` : "Open"), now.slice(0, 3).map(needCard)));
       if (goals.length || next.length) parts.push(section("In progress", more("#/goals", "Goals"),
-        goals.slice(0, 4).map(g => h("a", { class: "row", href: "#/goals/" + g.id }, h("div", { class: "row-main" }, h("span", { class: "row-title", text: g.title }), h("span", { class: "row-sub", text: stepsLine(g) })), g.steps?.length ? progress(g.steps.filter(s => s.done).length, g.steps.length, `${g.title}: ${stepsLine(g)}`) : null)),
+        goals.slice(0, 4).map(g => h("a", { class: "row", href: "#/goals/" + g.id }, h("div", { class: "row-main" }, h("span", { class: "row-title", text: g.title }), h("span", { class: "row-sub", text: stepsLine(g) })), g.steps?.length ? ring(g.steps.filter(s => s.done).length, g.steps.length, `${g.title}: ${stepsLine(g)}`) : null)),
         next.slice(0, 3).map(r => h("a", { class: "row", href: "#/routines" }, h("div", { class: "row-main" }, h("span", { class: "row-title", text: r.title }), h("span", { class: "row-sub", text: `${describe(r.schedule, S.settings.tz)}. Next: ${when(r.due)}` })), tag(r.mode === "remind" ? "Reminder" : r.mode === "watch" ? "Watching" : "Routine")))));
       if (away.length) parts.push(section("While you were away", Button({ variant: "secondary", size: "sm", icon: "check", onclick: e => busy(e.currentTarget, markSeen) }, "Mark as seen"), away.map(logRow)));
       if (ideas.length) parts.push(section("Ideas", null, ideas.slice(0, 4).map(i => h("div", { class: "row" }, h("div", { class: "row-main" }, h("span", { class: "row-title", text: i.title }), i.body ? h("span", { class: "row-sub about", text: i.body }) : null),

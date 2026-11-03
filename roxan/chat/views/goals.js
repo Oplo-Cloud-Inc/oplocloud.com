@@ -5,7 +5,7 @@ import { h, fill, section } from "../dom.js";
 import { S, watch, find } from "../state.js";
 import { describe } from "../when.js";
 import { cardish } from "../sensitive.js";
-import { soon, busy, sure, tag, progress, stepsLine, empty, make, edit, drop, ago } from "../ui.js";
+import { soon, busy, sure, tag, progress, ring, stepsLine, empty, make, edit, drop, ago } from "../ui.js";
 import { Button, IconButton, Drawer, Field, Tabs, Breadcrumb, Checkbox, Accordion } from "../kit/index.js";
 
 const STATE = { active: "Active", paused: "Paused", done: "Done", dropped: "Dropped" };
@@ -13,7 +13,7 @@ const lines = text => text.split("\n").map(s => s.trim()).filter(Boolean);
 
 const goalRow = g => h("a", { class: "row", href: "#/goals/" + g.id },
   h("div", { class: "row-main" }, h("span", { class: "row-title", text: g.title }), h("span", { class: "row-sub", text: stepsLine(g) })),
-  g.steps?.length ? progress(g.steps.filter(s => s.done).length, g.steps.length, `${g.title}: ${stepsLine(g)}`) : null, tag(STATE[g.state] || g.state));
+  g.steps?.length ? ring(g.steps.filter(s => s.done).length, g.steps.length, `${g.title}: ${stepsLine(g)}`) : null, tag(STATE[g.state] || g.state));
 
 export const mount = (root, ctx) => (ctx.params[0] ? detail(root, ctx) : index(root, ctx));
 
