@@ -27,7 +27,8 @@
     return e;
   }
   function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
-  function hue(o) { return (o && o.hue) || "#8d9bff"; }
+  // One accent for every course: colour is kept for meaning (the system's green), not for subjects.
+  function hue() { return "#0a6b58"; }
   function btn(cls, text, fn) {
     var b = h("button", cls, text);
     b.type = "button";

@@ -110,23 +110,23 @@
         tone: "peach", fig:
           '<svg viewBox="0 0 280 140" aria-hidden="true"><path d="M30 96h220" stroke="#0b0b0c" stroke-opacity=".28" stroke-width="2" stroke-linecap="round"/>' +
           '<g stroke="#0b0b0c" stroke-opacity=".28" stroke-width="2" stroke-linecap="round"><path d="M50 90v12M90 90v12M130 90v12M170 90v12M210 90v12"/></g>' +
-          '<path d="M50 78C70 36 110 36 130 78" fill="none" stroke="#5468ff" stroke-width="3.2" stroke-linecap="round"/>' +
-          '<path d="M130 78C150 36 190 36 210 78" fill="none" stroke="#5468ff" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="2 8"/>' +
+          '<path d="M50 78C70 36 110 36 130 78" fill="none" stroke="#0a6b58" stroke-width="3.2" stroke-linecap="round"/>' +
+          '<path d="M130 78C150 36 190 36 210 78" fill="none" stroke="#0a6b58" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="2 8"/>' +
           '<circle cx="50" cy="96" r="7" fill="#0b0b0c"/><circle cx="130" cy="96" r="7" fill="#fff" stroke="#0b0b0c" stroke-width="3"/>' +
           '<text x="90" y="44" text-anchor="middle" font-size="15" font-weight="600" fill="#0b0b0c" font-family="Inter,system-ui,sans-serif">+4</text></svg>' },
       { k: "02", t: "Do one together", d: "Then you take the steps, and a hint asks a question instead of handing you the answer.",
         tone: "sage", fig:
           '<svg viewBox="0 0 280 140" aria-hidden="true"><rect x="38" y="30" width="204" height="40" rx="12" fill="#fff"/>' +
           '<text x="58" y="56" font-size="17" font-weight="600" fill="#0b0b0c" font-family="Inter,system-ui,sans-serif">3x + 5 = 20</text>' +
-          '<rect x="38" y="82" width="204" height="40" rx="12" fill="#fff" stroke="#5468ff" stroke-width="2.4"/>' +
+          '<rect x="38" y="82" width="204" height="40" rx="12" fill="#fff" stroke="#0a6b58" stroke-width="2.4"/>' +
           '<text x="58" y="108" font-size="17" font-weight="600" fill="#0b0b0c" font-family="Inter,system-ui,sans-serif">3x =</text>' +
-          '<rect x="106" y="92" width="52" height="22" rx="7" fill="#e9edfd"/><rect x="198" y="93" width="30" height="20" rx="10" fill="#0b0b0c"/>' +
+          '<rect x="106" y="92" width="52" height="22" rx="7" fill="#dcebe3"/><rect x="198" y="93" width="30" height="20" rx="10" fill="#0b0b0c"/>' +
           '<path d="M207 103h12m-5-5 5 5-5 5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
       { k: "03", t: "Do one alone", d: "Last you try it unaided, with nothing to lean on but what you just saw.",
         tone: "mist", fig:
           '<svg viewBox="0 0 280 140" aria-hidden="true"><rect x="58" y="34" width="164" height="72" rx="20" fill="#fff"/>' +
           '<text x="140" y="79" text-anchor="middle" font-size="26" font-weight="600" fill="#0b0b0c" font-family="Inter,system-ui,sans-serif">x = 5</text>' +
-          '<circle cx="210" cy="36" r="17" fill="#35c97b"/><path d="m202 36.5 5.4 5.4L218 31" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' }
+          '<circle cx="210" cy="36" r="17" fill="#2f9e83"/><path d="m202 36.5 5.4 5.4L218 31" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' }
     ];
     return steps.map(function (s) {
       return '<article class="kf-move kf-rise"><div class="kf-move-fig ' + s.tone + '">' + s.fig + "</div>" +
@@ -209,8 +209,8 @@
           '<div class="kf-mini-top"><span class="kf-segs"><i class="on"></i><i class="on"></i><i></i><i></i></span></div>' +
           '<p class="kf-mini-ask">Drag the corner. What do the three angles add up to?</p>' +
           '<div class="kf-mini-stage"><svg viewBox="0 0 260 176" id="kfTri">' +
-            '<path id="kfTriShape" d="" fill="rgba(84,104,255,.12)" stroke="#5468ff" stroke-width="3" stroke-linejoin="round"/>' +
-            '<circle id="kfTriC" r="9" fill="#5468ff" stroke="#fff" stroke-width="3"/>' +
+            '<path id="kfTriShape" d="" fill="rgba(10,107,88,.12)" stroke="#0a6b58" stroke-width="3" stroke-linejoin="round"/>' +
+            '<circle id="kfTriC" r="9" fill="#0a6b58" stroke="#fff" stroke-width="3"/>' +
             '<text id="kfTriA" font-size="13" font-weight="600" fill="#0b0b0c" font-family="Inter,system-ui,sans-serif"></text>' +
             '<text id="kfTriB" font-size="13" font-weight="600" fill="#0b0b0c" font-family="Inter,system-ui,sans-serif" text-anchor="end"></text>' +
             '<text id="kfTriCl" font-size="13" font-weight="600" fill="#0b0b0c" font-family="Inter,system-ui,sans-serif"></text>' +

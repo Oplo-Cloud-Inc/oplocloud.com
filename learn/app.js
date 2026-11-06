@@ -212,6 +212,7 @@
       var r = G.rank(g.xp);
       var s1 = $("#streak");
       if (s1) s1.textContent = String(g.streak);
+      if (KERN && window.KERN_UI) window.KERN_UI.paintBar(g, S.me);   // the days and the experience in the bar (kern-ui.js)
       var chip = $("#rankChip");
       if (chip) {
         chip.hidden = false;
@@ -589,6 +590,8 @@
     if (sameName(a, "School") || sameName(a, "Classes")) { openClasses(); return true; }
     if (sameName(a, "Self-learning")) { openOwn(); return true; }
     if (sameName(a, "Progress")) { openProgress(); return true; }
+    if (KERN && sameName(a, "Practice")) { openKPractice(); return true; }
+    if (KERN && sameName(a, "Tutor")) { openKTutor(); return true; }
     if (sameName(a, "Grades")) { openGrades(false, seg.slice(1)); return true; }
     if (sameName(a, "Account")) { openAccount(); return true; }
     if (sameName(a, "Notebook")) { openNotebook(); return true; }
@@ -662,9 +665,11 @@
      course. Until the server says so, they are not in the bar. */
   function setEnrolledTabs() {
     if (KERN) {
-      ["#navClasses", "#navGrades", "#navExams"].forEach(function (id) { var t = $(id); if (t) t.hidden = true; });
-      var mine = $("#navOwn");
-      if (mine) { mine.hidden = false; mine.textContent = "My courses"; }
+      // Home, Courses, Practice, Progress, Tutor. Your own courses are on Home, so there is no tab for them.
+      ["#navClasses", "#navGrades", "#navExams", "#navOwn"].forEach(function (id) { var t = $(id); if (t) t.hidden = true; });
+      ["#navPractice", "#navTutor"].forEach(function (id) { var t = $(id); if (t) t.hidden = false; });
+      var courses = document.querySelector('#topNav [data-view="explore"]');
+      if (courses) courses.textContent = "Courses";
       return;
     }
     var has = !!(S.me && (S.me.assigned || []).length);
@@ -681,7 +686,8 @@
     [].forEach.call(document.querySelectorAll(".lx-view"), function (v) {
       v.classList.toggle("on", v.id === "v-" + view);
     });
-    $("#subbar").hidden = !(view === "explore" || view === "subject");
+    // Kern's Courses page has its own subject filters; only the phone's pages use this strip.
+    $("#subbar").hidden = (KERN && !phoneOn()) || !(view === "explore" || view === "subject");
     if (view !== "admin") leaveConsole();
     $("#wrap").classList.toggle("wide", view === "match" || view === "map");
     // The gradebook grows with the window, centred (gradebook.css).
@@ -692,6 +698,7 @@
       b.setAttribute("aria-current", String(b.dataset.view === view));
     });
     window.scrollTo(0, 0);
+    if (KERN && window.KERN_UI) window.KERN_UI.onShow(view);   // the tutor's place, the bar's "you are here" (kern-ui.js)
     if (typeof Tutor !== "undefined" && Tutor && Tutor.where) Tutor.where();
   }
 
@@ -718,8 +725,23 @@
     show("explore");
   }
 
+  /* Kern's Practice and Tutor are pages of their own (kern-ui.js). */
+  function openKPractice() {
+    root("kpractice", "Practice", openKPractice, "Practice");
+    if (window.KERN_UI) window.KERN_UI.practice(phoneCtx());
+    noFoot(); progress(null);
+    show("kpractice");
+  }
+  function openKTutor() {
+    root("ktutor", "Tutor", openKTutor, "Tutor");
+    if (window.KERN_UI) window.KERN_UI.tutor(phoneCtx());
+    noFoot(); progress(null);
+    show("ktutor");
+  }
+
   function openProgress() {
     root("progress", "Progress", openProgress, "Progress");
+    if (KERN && window.KERN_UI && !phoneOn()) { window.KERN_UI.progress(phoneCtx()); return; }
     if (window.OPLO_PROGRESS) {
       if (R) window.OPLO_PROGRESS.setRecord(R);
       window.OPLO_PROGRESS.draw();
@@ -1201,10 +1223,13 @@
       S: S, R: R, G: G, ST: ST, SC: SC, el: el, esc: esc, svg: svg, $: $, toast: toast, show: show, noFoot: noFoot, progress: progress,
       own: ownCourses, next: nextStep, pct: coursePct, mastery: mastery, units: unitsOf, courses: allCourses,
       openCourse: openCourse, openUnit: openUnit, openSubject: openSubject, explore: explore, openMistakes: openMistakes, openLab: openLab,
-      subjectOf: subjectOf, mark: markSubjectNav, trail: trail
+      subjectOf: subjectOf, mark: markSubjectNav, trail: trail,
+      // Kern's own pages (kern-ui.js) go a few places the phone's do not.
+      home: home, openPractice: openKPractice, openTutor: openKTutor, openProgress: openProgress, openAccount: openAccount
     };
   }
   if (window.KERN_PHONE) window.KERN_PHONE.ctx = phoneCtx;
+  if (KERN && window.KERN_UI) window.KERN_UI.ctx = phoneCtx;
   function kernTile(c, i) {
     var b = el("button", "kh-tile");
     b.type = "button";
@@ -1220,6 +1245,7 @@
   }
   function drawKernHome() {
     if (phoneOn()) { window.KERN_PHONE.home(phoneCtx()); return; }
+    if (window.KERN_UI) { window.KERN_UI.home(phoneCtx()); return; }
     var v = $("#v-my");
     v.innerHTML = "";
     var g = R.d.game, mine = ownCourses(), col = el("div", "kh");
@@ -1761,6 +1787,7 @@
      in a row on a quiet panel, joined by a line, each with how far you are. */
   function drawKernExplore() {
     if (phoneOn()) { window.KERN_PHONE.explore(phoneCtx()); return; }
+    if (window.KERN_UI) { window.KERN_UI.courses(phoneCtx()); return; }
     var v = $("#v-explore"), col = el("div", "kh");
     v.innerHTML = "";
     v.appendChild(col);
@@ -1830,6 +1857,8 @@
     if (!silent) enter("subject:" + s.n, s.n, function () { openSubject(s, true); }, false, slug(s.n));
     S.subject = s;
     if (phoneOn()) { window.KERN_PHONE.subject(phoneCtx(), s); markSubjectNav(s.n); show("subject"); return; }
+    // On Kern a subject is the Courses page with that subject picked.
+    if (KERN && window.KERN_UI) { window.KERN_UI.courses(phoneCtx(), s.n); show("explore"); return; }
     var v = $("#v-subject");
     v.innerHTML = "";
     v.appendChild(window.OPLO_LAB.crumbs(trail().concat({ t: s.n })));
@@ -1992,6 +2021,7 @@
      dimmed and says so. */
   function drawKernCourse(c) {
     if (phoneOn()) { window.KERN_PHONE.course(phoneCtx(), c); markSubjectNav(c.subject); noFoot(); progress(null); show("course"); return; }
+    if (window.KERN_UI) { window.KERN_UI.course(phoneCtx(), c); return; }
     var v = $("#v-course"), units = unitsOf(c), A = window.KERN_ART;
     v.innerHTML = "";
     var col = el("div", "kcp");
@@ -18942,7 +18972,8 @@
 
   function setLook(mode) {
     var html = document.documentElement;
-    var want = mode === "student" ? "obsidian" : null;
+    // Kern is not the dark student side: it has its own cream look (kern.css).
+    var want = mode === "student" && !KERN ? "obsidian" : null;
     if (html.getAttribute("data-look") !== want) {
       if (want) html.setAttribute("data-look", want);
       else html.removeAttribute("data-look");
@@ -18952,7 +18983,7 @@
        staff, the family view and the signed-out welcome page, which is the
        one value on this page that is not the student's business. */
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", want ? studentChrome() : "#ffffff");
+    if (meta) meta.setAttribute("content", want ? studentChrome() : KERN ? "#f5f1e8" : "#ffffff");
   }
 
   /* Re-asserted from the signed-in role rather than from the address, at every
@@ -19457,6 +19488,8 @@
     return { open: open, close: close, where: where, ask: fromLearn,
              note: function (text) { if (!$("#tt").hidden) say("sys", text); } };
   })();
+  // Kern's Tutor page puts this panel in the page itself (kern-ui.js).
+  if (KERN && window.KERN_UI && Tutor.open) { window.KERN_UI.tutorOpen = Tutor.open; window.KERN_UI.tutorClose = Tutor.close; }
 
   /* A tab can be closed between two debounced writes. `pagehide` is the one
      event that fires reliably on every path out — closing, navigating,
@@ -19486,6 +19519,8 @@
       else if (b.dataset.view === "classes") openClasses();
       else if (b.dataset.view === "own") openOwn();
       else if (b.dataset.view === "progress") openProgress();
+      else if (b.dataset.view === "kpractice") openKPractice();
+      else if (b.dataset.view === "ktutor") openKTutor();
       else if (b.dataset.view === "admin") openAdmin();
       else if (b.dataset.view === "grades") openGrades();
       else if (b.dataset.view === "exams") openExams();

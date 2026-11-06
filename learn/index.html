@@ -49,7 +49,14 @@
    localStorage "oplo.kern" for testing. */
 window.OPLO_KERN = /^kern\./.test(location.hostname) ||
   (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && (function () { try { return localStorage.getItem("oplo.kern") === "1"; } catch (e) { return false; } })());
-if (window.OPLO_KERN) document.documentElement.classList.add("kern");
+if (window.OPLO_KERN) {
+  /* Kern has its own look (kern.css: a cream page, serif headings, one green).
+     The student side of OEdu is dark (obsidian.css) and the first script above
+     guessed that from the address; Kern is not that, so the guess is taken back
+     before anything is painted. app.js setLook() keeps it off from then on. */
+  document.documentElement.classList.add("kern");
+  document.documentElement.removeAttribute("data-look");
+}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OEdu</title>
@@ -61,6 +68,7 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
      a #252525 page. The script below and app.js setLook() write the
      student's own bar instead, and put #ffffff back for everyone else. -->
 <meta name="theme-color" content="#ffffff">
+<script>if (window.OPLO_KERN) document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f5f1e8");</script>
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='12 12 76 76'%3E%3Cpath fill='%231d1d1f' fill-rule='evenodd' d='M12,40 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0 M32,60 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,9 +83,9 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <link rel="stylesheet" href="challenge.css?v=b6d03110">
 <link rel="stylesheet" href="lab/lab.css?v=48c67464">
 <link rel="stylesheet" href="obsidian.css?v=98c418da">
-<link rel="stylesheet" href="kern.css?v=247f98cf">
-<link rel="stylesheet" href="kern-front.css?v=4edd0493">
-<link rel="stylesheet" href="kern-phone.css?v=33ac266f">
+<link rel="stylesheet" href="kern.css?v=6350e332">
+<link rel="stylesheet" href="kern-front.css?v=08dff918">
+<link rel="stylesheet" href="kern-phone.css?v=11403e7c">
 <link rel="stylesheet" href="console.css?v=69ce44a2">
 </head>
 <body>
@@ -519,7 +527,9 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
       <button type="button" data-view="exams" id="navExams" hidden>Exams</button>
       <button type="button" data-view="own" id="navOwn" hidden>Self-learning</button>
       <button type="button" data-view="explore">Explore</button>
+      <button type="button" data-view="kpractice" id="navPractice" hidden>Practice</button>
       <button type="button" data-view="progress">Progress</button>
+      <button type="button" data-view="ktutor" id="navTutor" hidden>Tutor</button>
     </nav>
 
     <div class="lx-prog" id="barProg" hidden><i></i></div>
@@ -530,6 +540,10 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
     <span class="lx-streak" title="Days in a row">
       <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1.5s3.4 3 3.4 6.1A3.4 3.4 0 0 1 8 11a3.4 3.4 0 0 1-3.4-3.4C4.6 4.5 8 1.5 8 1.5z"/><path d="M8 14.5c2.6 0 4.6-1.6 4.6-3.9 0 0-1.3 1.4-2.8 1.4-1.9 0-1.6-2.4-1.6-2.4S6 11 6 12.6c0 .8.3 1.4.7 1.8-1.4-.5-2.3-1.6-2.3-3.1 0 0-1 1-1 2.1 0 .4.1.7.2 1z"/></svg>
       <span id="streak">0</span>
+    </span>
+    <span class="lx-xpchip" id="xpChip" title="Experience" hidden>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>
+      <span>0 XP</span>
     </span>
     <span class="lx-presence" id="presence" hidden></span>
     <button class="lx-user" type="button" id="user">
@@ -571,6 +585,8 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
   <section class="lx-view" id="v-lab"></section>
   <section class="lx-view" id="v-classes"></section>
   <section class="lx-view" id="v-own"></section>
+  <section class="lx-view" id="v-kpractice"></section>
+  <section class="lx-view" id="v-ktutor"></section>
 <section class="lx-view" id="v-notes"></section>
   <section class="lx-view" id="v-admin"></section>
 </main>
@@ -680,15 +696,17 @@ if (window.OPLO_KERN) document.documentElement.classList.add("kern");
 <script src="oplo-menu.js?v=f08f027c"></script>
 <script src="oplo-search.js?v=b2f48c6b"></script>
 <script src="kern.js?v=4f3dcae2"></script>
-<script src="kern-phone.js?v=5b32a217"></script>
-<script src="kern-front.js?v=cafb983e"></script>
+<script src="kern-outline.js?v=f849d1b8"></script>
+<script src="kern-ui.js?v=4242a6e6"></script>
+<script src="kern-phone.js?v=2fcd7619"></script>
+<script src="kern-front.js?v=dae4e50d"></script>
 <script src="landing.js?v=e0092d74"></script>
-<script src="challenge.js?v=cbaa59d6"></script>
+<script src="challenge.js?v=3ab78516"></script>
 <script src="challenges-media9.js?v=1a1aa6ab"></script>
-<script src="lab/core.js?v=1b7ef2a0"></script>
+<script src="lab/core.js?v=f08072ca"></script>
 <script src="exam.js?v=65b52660"></script>
 <script src="gradebook.js?v=014a81eb"></script>
 <script src="teach.js?v=f52e3ca3"></script>
-<script src="app.js?v=6f73b67e"></script>
+<script src="app.js?v=3a6a9670"></script>
 </body>
 </html>

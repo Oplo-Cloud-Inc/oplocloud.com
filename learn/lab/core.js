@@ -35,7 +35,7 @@ window.OPLO_LAB = (function () {
   /* Files loaded on demand, with the stamp that busts their cache. Kept up to
      date by tools/lab_stamps.py. */
   var FILES = {
-    "lab/widgets.js": "f833ee90",
+    "lab/widgets.js": "57c4859b",
     "lab/bizkit.js": "1ab592b8",
     "lab/histkit.js": "3bf034b8",
     "lab/philkit.js": "3a494f5b",
@@ -55,7 +55,7 @@ window.OPLO_LAB = (function () {
     "lab/k1kit.js": "7c887e7e",
     "lab/k1kinds.js": "57bbd833",
     "lab/k1scenes.js": "969ff5c6",
-    "lab/k1.css": "e2c47803",
+    "lab/k1.css": "befc8315",
     "path/alg-a.js": "9f7a464c",
     "path/alg-b.js": "f4eaa1b9",
     "path/alg-c.js": "e720f05a",
@@ -1234,6 +1234,8 @@ window.OPLO_LAB = (function () {
 
   function renderUnit(host, ctx) {
     useAccount(ctx.me);
+    // Kern on a wide screen draws a unit as a page of its own (kern-ui.js); the phone keeps the path below.
+    if (window.OPLO_KERN && window.KERN_UI && window.KERN_UI.unit && !(window.KERN_PHONE && window.KERN_PHONE.on())) { window.KERN_UI.unit(host, ctx); return; }
     host.innerHTML = "";
     var wrap = el("div", "lb-unit");
     // The course's id on its pages, so a course can set its own type (Geometry sets its maths in SF).
@@ -1470,10 +1472,25 @@ window.OPLO_LAB = (function () {
     else if (it.kind === "skill") ctx.go.practice(it.id);
   }
 
+  /* Kern's slim header over a lesson, a practice set, a quiz or a test: a way out, where
+     this is, a segment for each step, the experience, and the tutor (kern-ui.js).
+     Not on a phone, which keeps the player's own step bar. */
+  function lessonBar(opts) {
+    if (!window.OPLO_KERN || !window.KERN_UI || !window.KERN_UI.lessonBar || (window.KERN_PHONE && window.KERN_PHONE.on())) return null;
+    return window.KERN_UI.lessonBar(opts);
+  }
+
   function frame(host, ctx, u, here) {
     host.innerHTML = "";
     var shell = el("div", "lb-shell" + (sideHidden() ? " side-off" : ""));
     if (ctx.course) shell.setAttribute("data-course", ctx.course);
+    var bar = lessonBar({
+      trail: (ctx.courseTitle || "Course") + " · Unit " + u.n,
+      exit: function () { ctx.go.unit(); },
+      // A lesson's segments are its steps, and any step reached can be gone back to.
+      go: here.kind === "lesson" ? function (st) { if (!CH.go(st.i)) runLesson(host, ctx, here.k, st.i); } : null
+    });
+    if (bar) shell.appendChild(bar.el);
     function toggle() {
       if (window.matchMedia && window.matchMedia(NARROW).matches) { shell.classList.toggle("peek"); return; }
       var off = !shell.classList.contains("side-off");
@@ -1676,6 +1693,7 @@ window.OPLO_LAB = (function () {
     side.addEventListener("keydown", function (e) { if (e.key === "Escape" && shell.classList.contains("peek")) { shell.classList.remove("peek"); show.focus(); } });
 
     var main = el("div", "lb-work");
+    main.paintBar = function (info, ix) { if (bar) bar.set(info, ix); };
     // The player reports each step as it is shown or answered (see
     // runLesson); the lesson's step list redraws to match.
     main.paintSteps = function (info, ix) {
@@ -1770,7 +1788,7 @@ window.OPLO_LAB = (function () {
       after.push({ label: "Unit " + u.n + ": " + u.title, go: function () { ctx.go.unit(); } });
       var here = { kind: "lesson", k: k }, work = frame(host, ctx, u, here);
       CH.play(work, {
-        path: path, me: ctx.me, after: after, stepNav: true, at: at, onStep: work.paintSteps,
+        path: path, me: ctx.me, after: after, stepNav: true, at: at, onStep: work.paintSteps, onBar: work.paintBar,
         close: function () { ctx.go.unit(); },
         onFinish: function () {
           REC.lessons[lessonKey(u.lessons[k - 1])] = { done: true, at: Date.now() };
@@ -1812,7 +1830,7 @@ window.OPLO_LAB = (function () {
       var here = { kind: "skill", id: sk.id }, work = frame(host, ctx, u, here);
       CH.play(work, {
         path: { eyebrow: "Practice · Unit " + u.n, title: stripMath(sk.title), steps: steps },
-        me: ctx.me, record: false, fresh: true,
+        me: ctx.me, record: false, fresh: true, onBar: work.paintBar,
         shownNote: "Read the working, then try the next one.",
         summary: function (card, order) {
           var right = order.filter(function (r) { return r.first; }).length;
@@ -1862,11 +1880,14 @@ window.OPLO_LAB = (function () {
           host.innerHTML = "";
           work = el("div", "lb-challenge");
           if (ctx.course) work.setAttribute("data-course", ctx.course);
+          // Kern's header sits beside the work, not in it: the player empties the work when it starts.
+          var cbar = lessonBar({ trail: (ctx.courseTitle || "Course") + " · Course challenge", exit: function () { ctx.go.course(); } });
+          if (cbar) { host.appendChild(cbar.el); work.paintBar = cbar.set; }
           host.appendChild(work);
         } else work = frame(host, ctx, us[0], here);
         CH.play(work, {
           path: { eyebrow: scope === "course" ? ctx.courseTitle : "Unit " + us[0].n + " · " + us[0].title, title: title, steps: steps },
-          me: ctx.me, record: false, fresh: true,
+          me: ctx.me, record: false, fresh: true, onBar: work.paintBar,
           shownNote: "Read the working — this one will count against the skill.",
           summary: function (card, order) {
             var right = 0, changes = [];
@@ -1919,7 +1940,7 @@ window.OPLO_LAB = (function () {
       var here = { kind: "quiz", k: k }, work = frame(host, ctx, u, here);
       CH.play(work, {
         path: { eyebrow: q.title + " · Unit " + u.n, title: q.name || u.title, steps: steps },
-        me: ctx.me, record: false, fresh: true,
+        me: ctx.me, record: false, fresh: true, onBar: work.paintBar,
         shownNote: "Read the working — the quiz counts this one as missed.",
         summary: function (card, order) {
           var right = 0, per = {};
@@ -2027,6 +2048,9 @@ window.OPLO_LAB = (function () {
       return t ? t.best || 0 : null;
     },
     level: level, levels: LEVELS, useAccount: useAccount, setLevel: function (id, lv) { if (REC) setLevel(id, lv); },
+    // Kern's pages read the whole record (lessons done, skills, tests) and ask to be redrawn when it arrives from the account.
+    record: function (me) { useAccount(me || ME); return REC; },
+    live: LIVE,
     fmtStep: fmtStep, hub: hub, addHub: addHub,
     _lessonPath: lessonPath, _genStep: genStep,
     // widgets

@@ -2382,7 +2382,7 @@
         t = S("text", { x: X(v), y: (hasX ? Y(0) : Y(yr[0])) + 14, "text-anchor": "middle", class: "lw-num" }, svg);
         t.textContent = String(v).replace("-", "−");
       }
-      var stepY = o.stepY || step;
+      var stepY = spec.stepY || step;
       for (v = Math.ceil(yr[0] / stepY) * stepY; v <= yr[1]; v += stepY) {
         if (v === 0 && hasX) continue;
         t = S("text", { x: (hasY ? X(0) : X(xr[0])) - 5, y: Y(v) + 4, "text-anchor": "end", class: "lw-num" }, svg);

@@ -930,6 +930,9 @@ window.OPLO_CHALLENGE = (function () {
       paintNav(info);
       if (P.opts.onStep) P.opts.onStep(info, P.ix);
     }
+    // Kern's lesson header draws a segment per step for every kind of run, a
+    // practice set and a test too, which have no step navigation of their own.
+    if (P.opts.onBar) P.opts.onBar(stepInfo(), P.ix);
   }
 
   /* A step's interactive piece may hold on to things (timers, listeners on
@@ -1019,8 +1022,11 @@ window.OPLO_CHALLENGE = (function () {
     var sheet = el("div", "ch-sheet");
     sheet.setAttribute("role", "status");
     // The verdict sits in the bar at the bottom, beside the button that acts
-    // on it, rather than as a panel in the middle of the work.
-    foot.appendChild(sheet);
+    // on it, rather than as a panel in the middle of the work. Kern on a wide
+    // screen keeps that bar for the actions alone and sets the verdict as a
+    // panel under the work (kern.css), where the answer it is about is.
+    if (window.OPLO_KERN && !(window.KERN_PHONE && window.KERN_PHONE.on())) card.appendChild(sheet);
+    else foot.appendChild(sheet);
 
     var hintBtn = button("ch-btn ghost ch-hint", icon(I.bulb) + "<span>Hint</span>");
     var showBtn = button("ch-btn ghost ch-show", icon(I.eye) + "<span>Show me</span>");
@@ -1170,6 +1176,13 @@ window.OPLO_CHALLENGE = (function () {
       card.classList.toggle("is-ok", /(^| )ok( |$)/.test(kind));
       card.classList.toggle("is-no", /(^| )no( |$)/.test(kind));
       P.live.textContent = sheet.textContent;
+      // On a wide Kern screen the verdict sits at the foot of the card; a tall card must not hide it behind the bar.
+      if (window.OPLO_KERN && !(window.KERN_PHONE && window.KERN_PHONE.on())) {
+        requestAnimationFrame(function () {
+          var over = sheet.getBoundingClientRect().bottom - (window.innerHeight - 96 - 20);
+          if (over > 0) window.scrollBy({ top: over, behavior: reduced() ? "auto" : "smooth" });
+        });
+      }
     }
     function clearSheet() {
       if (st.done) return;
