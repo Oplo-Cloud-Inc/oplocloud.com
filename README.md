@@ -132,8 +132,10 @@ everywhere else the words and the space are the design.
 - **Colour is spent once** — on the older section pages, a single soft `.bloom`
   behind any dark band. The rest of those pages are black, white, and grey.
 - **The front page** — the v3 desktop homepage, hand-authored in `index.html`,
-  `assets/css/home-v3.css` and `assets/js/home-v3.js`. It is a 1440px layout
-  (nav, announcement, three bands, a 2×2 tile grid, a carousel and a footer)
+  `assets/css/home-v3.css` and `assets/js/home-v3.js`. At 1440px and up it is the
+  desktop layout (nav, announcement, three bands, a 2×2 tile grid, a carousel
+  and a footer). At 734px and below it is the phone layout, with a full-screen
+  menu. Between those widths it shrinks instead of scrolling sideways.
   and it does not use `oplo-home.css`. `home()` in `tools/build.py` reads
   `index.html` back so a full site rebuild does not replace it. Placeholder
   copy stays placeholder until there is a real fact to put there.

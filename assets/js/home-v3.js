@@ -16,6 +16,12 @@ function prefersReduced() {
   return reducedMotion.matches;
 }
 
+const mobileQuery = window.matchMedia("(max-width: 734px)");
+
+function isMobile() {
+  return mobileQuery.matches;
+}
+
 document.addEventListener("click", (event) => {
   const host = event.target.closest("md-filled-button, md-outlined-button, md-text-button");
   if (!host || !host.hasAttribute("href")) return;
@@ -85,8 +91,8 @@ function initNav() {
   }
 
   triggers.forEach((trigger, index) => {
-    trigger.addEventListener("mouseenter", () => open(trigger.dataset.flyout));
-    trigger.addEventListener("focus", () => open(trigger.dataset.flyout));
+    trigger.addEventListener("mouseenter", () => { if (!isMobile()) open(trigger.dataset.flyout); });
+    trigger.addEventListener("focus", () => { if (!isMobile()) open(trigger.dataset.flyout); });
     trigger.addEventListener("keydown", (event) => {
       if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
       event.preventDefault();
@@ -107,11 +113,99 @@ function initNav() {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !openId) return;
+    if (event.key !== "Escape" || !openId || document.body.classList.contains("menu-open")) return;
     const current = document.querySelector(`[data-flyout="${openId}"]`);
     close();
     current?.focus();
   });
+}
+
+function initMenu() {
+  const toggle = document.getElementById("menuToggle");
+  const menu = document.getElementById("mobile-menu");
+  const locked = [document.querySelector(".skip"), document.querySelector("main"), document.querySelector(".foot")];
+  let open = false;
+
+  function focusable() {
+    return [...document.querySelectorAll("#nav a, #nav button, #nav md-icon-button, #mobile-menu a, #mobile-menu button")]
+      .filter((el) => el.getClientRects().length > 0);
+  }
+
+  function setOpen(next) {
+    if (next === open) return;
+    open = next;
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    toggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
+    document.body.classList.toggle("menu-open", open);
+    locked.forEach((el) => { if (el) el.inert = open; });
+    if (open) {
+      menu.hidden = false;
+      menu.getBoundingClientRect();
+      menu.classList.add("open");
+      const first = menu.querySelector("a, button");
+      first?.focus();
+    } else {
+      menu.classList.remove("open");
+      const finish = () => {
+        if (menu.classList.contains("open")) return;
+        menu.hidden = true;
+      };
+      if (prefersReduced()) finish();
+      else window.setTimeout(finish, 200);
+      toggle.focus();
+    }
+  }
+
+  toggle.addEventListener("click", () => setOpen(!open));
+
+  document.addEventListener("keydown", (event) => {
+    if (!open) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const items = focusable();
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || !menu.contains(active) && !document.getElementById("nav").contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  mobileQuery.addEventListener("change", () => { if (!isMobile()) setOpen(false); });
+}
+
+function initFooter() {
+  const groups = [...document.querySelectorAll(".foot-group")];
+  function apply() {
+    const mobile = isMobile();
+    groups.forEach((group) => {
+      const summary = group.querySelector("summary");
+      if (!mobile) {
+        group.open = true;
+        summary.tabIndex = -1;
+      } else {
+        summary.tabIndex = 0;
+        if (group.dataset.mode !== "mobile") group.open = false;
+      }
+      group.dataset.mode = mobile ? "mobile" : "desktop";
+    });
+  }
+  groups.forEach((group) => {
+    group.querySelector("summary").addEventListener("click", (event) => {
+      if (!isMobile()) event.preventDefault();
+    });
+  });
+  apply();
+  mobileQuery.addEventListener("change", apply);
 }
 
 function initCarousel() {
@@ -144,6 +238,15 @@ function initCarousel() {
   }
 
   function place(animate) {
+    if (isMobile()) {
+      track.style.transition = "none";
+      track.style.transform = "none";
+      real.forEach((slideEl) => {
+        slideEl.inert = false;
+        slideEl.removeAttribute("aria-hidden");
+      });
+      return;
+    }
     const slide = track.children[1];
     const slideW = slide.getBoundingClientRect().width;
     const vp = viewport.getBoundingClientRect().width;
@@ -188,9 +291,25 @@ function initCarousel() {
     timer = 0;
   }
 
+  function mark(index) {
+    dots.forEach((dot, i) => {
+      const on = i === index;
+      dot.setAttribute("aria-selected", on ? "true" : "false");
+      dot.tabIndex = on ? 0 : -1;
+    });
+  }
+
+  function scrollToSlide(index) {
+    const behavior = prefersReduced() ? "auto" : "smooth";
+    const pad = parseFloat(getComputedStyle(viewport).scrollPaddingLeft) || 0;
+    const delta = real[index].getBoundingClientRect().left - viewport.getBoundingClientRect().left - pad;
+    viewport.scrollBy({ left: delta, behavior });
+    mark(index);
+  }
+
   function schedule() {
     stop();
-    if (paused || prefersReduced()) return;
+    if (paused || prefersReduced() || isMobile()) return;
     timer = window.setTimeout(() => {
       next();
       schedule();
@@ -208,10 +327,26 @@ function initCarousel() {
 
   dots.forEach((dot, i) => {
     dot.addEventListener("click", () => {
+      if (isMobile()) {
+        scrollToSlide(i);
+        return;
+      }
       go(i + 1, true);
       schedule();
     });
   });
+
+  viewport.addEventListener("scroll", () => {
+    if (!isMobile()) return;
+    const origin = viewport.getBoundingClientRect().left;
+    let best = 0;
+    let bestDist = Infinity;
+    real.forEach((slideEl, i) => {
+      const dist = Math.abs(slideEl.getBoundingClientRect().left - origin);
+      if (dist < bestDist) { best = i; bestDist = dist; }
+    });
+    mark(best);
+  }, { passive: true });
 
   root.querySelector(".carousel-controls").addEventListener("keydown", (event) => {
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
@@ -220,13 +355,13 @@ function initCarousel() {
     event.preventDefault();
     const step = event.key === "ArrowRight" ? 1 : -1;
     const i = (current + step + count) % count;
-    go(i + 1, true);
+    if (isMobile()) scrollToSlide(i);
+    else { go(i + 1, true); schedule(); }
     dots[i].focus();
-    schedule();
   });
 
   root.addEventListener("keydown", (event) => {
-    if (event.target.closest(".carousel-controls")) return;
+    if (event.target.closest(".carousel-controls") || isMobile()) return;
     if (event.key === "ArrowRight") { event.preventDefault(); next(); schedule(); }
     if (event.key === "ArrowLeft") { event.preventDefault(); prev(); schedule(); }
   });
@@ -234,6 +369,11 @@ function initCarousel() {
   pause.addEventListener("click", () => setPaused(!paused));
 
   window.addEventListener("resize", () => place(false));
+  mobileQuery.addEventListener("change", () => {
+    place(false);
+    if (isMobile()) stop();
+    else schedule();
+  });
   reducedMotion.addEventListener("change", () => {
     if (prefersReduced()) setPaused(true);
     place(false);
@@ -280,6 +420,8 @@ async function loadMaterial() {
 }
 
 initNav();
+initMenu();
+initFooter();
 initCarousel();
 initReveal();
 

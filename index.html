@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/home-v3.css?v=5003e079">
+<link rel="stylesheet" href="assets/css/home-v3.css?v=85315a08">
 </head>
 <body>
 <a class="skip" href="#top">Skip to content</a>
@@ -43,6 +43,9 @@
       <md-icon-button tabindex="0" aria-label="Bag">
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.4 6.2h9.2l-.7 7a1 1 0 0 1-1 .8H5.1a1 1 0 0 1-1-.8l-.7-7z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M6 6.2V4.8a2 2 0 0 1 4 0v1.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       </md-icon-button>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span class="menu-icon" aria-hidden="true"></span>
+      </button>
     </div>
   </div>
 </nav>
@@ -99,6 +102,20 @@
 </div>
 </div>
 <div class="scrim" id="scrim" hidden></div>
+<div class="mobile-menu" id="mobile-menu" hidden>
+  <nav class="mobile-menu-in" aria-label="Sections">
+    <a href="plus/">Cloud</a>
+    <a href="hardware/">Devices</a>
+    <a href="software/">Software</a>
+    <a href="intelligence/">AI</a>
+    <a href="support/">Support</a>
+    <a href="solutions/#institutions">Business</a>
+    <a href="support/">Help</a>
+    <div class="mobile-menu-rule"></div>
+    <button type="button" class="mobile-util">Search</button>
+    <button type="button" class="mobile-util">Bag</button>
+  </nav>
+</div>
 
 <main id="top">
   <div class="announce">
@@ -269,36 +286,48 @@
     <p class="foot-note">Placeholder for footnotes and legal notes.</p>
     <div class="foot-rule"></div>
     <div class="foot-cols">
-      <div>
-        <h2>Products</h2>
+      <details class="foot-group" open>
+        <summary>
+          <h2>Products</h2>
+          <svg class="chev" viewBox="0 0 12 8" width="12" height="8" aria-hidden="true" focusable="false"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
         <ul>
           <li><a href="plus/">Cloud</a></li>
           <li><a href="hardware/">Devices</a></li>
           <li><a href="software/">Software</a></li>
           <li><a href="intelligence/">AI</a></li>
         </ul>
-      </div>
-      <div>
-        <h2>Support</h2>
+      </details>
+      <details class="foot-group" open>
+        <summary>
+          <h2>Support</h2>
+          <svg class="chev" viewBox="0 0 12 8" width="12" height="8" aria-hidden="true" focusable="false"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
         <ul>
           <li><a href="support/">Help center</a></li>
           <li><a href="contact/">Contact</a></li>
         </ul>
-      </div>
-      <div>
-        <h2>Account</h2>
+      </details>
+      <details class="foot-group" open>
+        <summary>
+          <h2>Account</h2>
+          <svg class="chev" viewBox="0 0 12 8" width="12" height="8" aria-hidden="true" focusable="false"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
         <ul>
           <li><a href="sign-in/">Sign in</a></li>
         </ul>
-      </div>
-      <div>
-        <h2>Company</h2>
+      </details>
+      <details class="foot-group" open>
+        <summary>
+          <h2>Company</h2>
+          <svg class="chev" viewBox="0 0 12 8" width="12" height="8" aria-hidden="true" focusable="false"><path d="M1 1.5 6 6.5 11 1.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
         <ul>
           <li><a href="company/">About</a></li>
           <li><a href="privacy/">Privacy</a></li>
           <li><a href="legal/terms/">Terms</a></li>
         </ul>
-      </div>
+      </details>
     </div>
     <div class="foot-bar">
       <span>© 2026 OploCloud</span>
@@ -306,6 +335,6 @@
     </div>
   </div>
 </footer>
-<script type="module" src="assets/js/home-v3.js?v=3ea61ec8"></script>
+<script type="module" src="assets/js/home-v3.js?v=214c7f65"></script>
 </body>
 </html>
