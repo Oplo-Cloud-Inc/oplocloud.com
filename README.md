@@ -129,26 +129,17 @@ everywhere else the words and the space are the design.
 - **Hierarchy** — a `.band` is a tall full-bleed statement; a `.card` is half
   as tall and comes in pairs. That size difference *is* the hierarchy, and
   flattening it into one repeating tile is what made the first attempt fail.
-- **Colour is spent once** — the Earth photograph on the front page, and a single
-  soft `.bloom` behind any dark band. The rest of the site is black, white, and grey.
-- **The front page** — quiet on purpose, and it has no script of its own. `home()`
-  in `tools/build.py` builds it and `assets/css/oplo-home.css` (loaded by
-  `index.html` and nothing else) styles it: an opening picture two thirds of the
-  window tall with two pills at its foot, a sentence saying what Oplo is, and a
-  plain white list with an entry for each door in the bar — words, a hairline
-  and a link, no boxes and no pictures. Nothing on it moves except the site's own
-  fade-in as a section scrolls into view. An earlier version had a cursor-lit
-  wordmark, parallax, tilting tiles and animated pictures; it was taken out on
-  purpose, so do not add motion back without being asked.
-- **Hero artwork** — the opening picture is `OploWebsite.svg`, a design export
-  (Earth at night, with "Hello" over it) whose six megabytes are embedded
-  images. `python3 tools/hero.py path/to/OploWebsite.svg` flattens it, exactly as
-  the SVG composes it, into `assets/img/hero-earth-1440.webp` and
-  `hero-earth-2880.webp`; the SVG itself is not kept in the repository. On a
-  phone the picture is shown whole rather than cropped, because the word would
-  be cut in half. `hero-nature.svg` (dunes at dusk) is the previous artwork and
-  is no longer used. Every URL carries a `?v=` stamp from `tools/build.py`, like
-  the CSS. To rebuild only this page without touching the copies of the bar in
-  `learn/` and `dev/`:
-  `python3 -c "import sys; sys.path.insert(0,'tools'); import build; p,c=build.PAGES[0]; open(p,'w').write(c)"`.
+- **Colour is spent once** — on the older section pages, a single soft `.bloom`
+  behind any dark band. The rest of those pages are black, white, and grey.
+- **The front page** — the v3 desktop homepage, hand-authored in `index.html`,
+  `assets/css/home-v3.css` and `assets/js/home-v3.js`. It is a 1440px layout
+  (nav, announcement, three bands, a 2×2 tile grid, a carousel and a footer)
+  and it does not use `oplo-home.css`. `home()` in `tools/build.py` reads
+  `index.html` back so a full site rebuild does not replace it. Placeholder
+  copy stays placeholder until there is a real fact to put there.
+- **Hero artwork** — `assets/img/hero-earth-1440.webp` and `hero-earth-2880.webp`
+  are the previous opening picture. The v3 homepage does not use them.
+  `python3 tools/hero.py path/to/OploWebsite.svg` still flattens a design export
+  into those files. Homepage CSS and JS URLs carry a `?v=` stamp, the first
+  eight characters of the MD5 of the file. Update the stamp when the file changes.
 
