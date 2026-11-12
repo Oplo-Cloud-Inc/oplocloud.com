@@ -41,6 +41,16 @@
 /* Blank until the server has said nobody is signed in, so a signed-in visitor
    is sent to their own address without a glimpse of this page first. */
 .ld.ld-wait > * { visibility: hidden; }
+/* ...and while the server is asked, a quiet mark where there would be nothing: the page is never a blank screen. */
+.ld.ld-wait::before {
+  content: ""; position: fixed; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px;
+  background: currentColor; opacity: .85;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='12 12 76 76'%3E%3Cpath fill-rule='evenodd' d='M12,40a28,28 0 1,0 56,0a28,28 0 1,0 -56,0M32,60a28,28 0 1,0 56,0a28,28 0 1,0 -56,0'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='12 12 76 76'%3E%3Cpath fill-rule='evenodd' d='M12,40a28,28 0 1,0 56,0a28,28 0 1,0 -56,0M32,60a28,28 0 1,0 56,0a28,28 0 1,0 -56,0'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: ld-breathe 1.6s ease-in-out infinite;
+}
+@keyframes ld-breathe { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .ld.ld-wait::before { animation: none; } }
 .ld.ld-locked { overflow: hidden; }
 .ld *, .ld *::before, .ld *::after { box-sizing: border-box; }
 .ld h1, .ld h2, .ld h3, .ld h4, .ld p { margin: 0; }

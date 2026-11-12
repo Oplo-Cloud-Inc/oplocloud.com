@@ -66,6 +66,7 @@ export const ACTIONS = [
   "period.read", "period.write", "grade.post", "grade.approve",
   "attendance.read", "attendance.write",
   "india.read", "india.write",
+  "directory.read", "directory.write", "directory.export", "audit.read",
   "register.read", "register.write", "register.lock",
   "exam.read", "exam.setup", "exam.enter", "exam.check", "exam.approve", "exam.publish",
   "efm.read", "efm.write", "efm.admin"
@@ -422,6 +423,17 @@ export async function can(ctx, action, resource = {}) {
       if (hasAny(actor, ["dean", "principal", "registrar"], orgId)) return true;
       return !!resource.classTeacherId && resource.classTeacherId === actor.id;
 
+    /* The student directory: the office reads all of it; a class teacher reads the
+       sections they are class teacher of (the route says whether they are one). */
+    case "directory.read":
+      return hasAny(actor, ["dean", "principal", "registrar"], orgId) || !!resource.classTeacher;
+    case "directory.write":
+      return learnAdmin || hasRole(actor, "learn", "registrar", orgId);
+    case "directory.export":
+      return learnAdmin || hasAny(actor, ["principal", "registrar"], orgId);
+    case "audit.read":
+      return learnAdmin || hasRole(actor, "learn", "principal", orgId);
+
     case "india.read":
       return learnAdmin || hasRole(actor, "learn", "registrar", orgId) || hasRole(actor, "learn", "principal", orgId);
     case "india.write":
@@ -525,6 +537,10 @@ const REASONS = {
   "register.read": "A class register is read by the class teacher of that section and by the school's office.",
   "register.write": "A class register is taken by the class teacher of that section, and corrected by the office.",
   "register.lock": "Locking attendance for a board's list is for the principal, registrar or an administrator.",
+  "directory.read": "Only office staff, class teachers and school leaders can see the Directory. Ask your school admin.",
+  "directory.write": "Adding and changing students is for the registrar and the school's administrators.",
+  "audit.read": "The audit log is read by the school's administrators and principal.",
+  "directory.export": "Exporting the student list is for the principal, the registrar and the school's administrators.",
   "india.read": "Classes, identity numbers and consent records are read by the school's administrators, principal and registrar.",
   "india.write": "Classes, identity numbers and consent records are kept by the school's administrators and registrar.",
   "facility.request": "Requests and room bookings are for the school's staff.",

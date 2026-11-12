@@ -583,6 +583,22 @@
     if (!me) return;
     $("#me").innerHTML = "<span class='av' style='--hue:" + esc(me.hue || "#0f766e") + "'>" + esc(me.initials || "") + "</span>";
     $("#me").setAttribute("aria-label", "Your account: " + (me.name || me.email));
+    paintViews();
+  }
+
+  /* An administrator, or a teacher who is also somebody's guardian, can open more than one of OEdu's views. One link to each, the one
+     this is marked, so there is always a way back. A family with nothing else to open is not shown it. */
+  function paintViews() {
+    var nav = $("#views"), modes = S.me ? H.allowed(S.me.roles || []) : [], NAMES = { admin: "Admin", teacher: "Teacher", student: "Student", parent: "Family" };
+    nav.innerHTML = "";
+    nav.hidden = modes.length < 2;
+    if (nav.hidden) return;
+    modes.forEach(function (m) {
+      var a = h("a", "", esc(NAMES[m]));
+      a.href = H.pathFor(ROOT, m);
+      if (m === "parent") a.setAttribute("aria-current", "page");
+      nav.appendChild(a);
+    });
   }
 
   function paintWho() {

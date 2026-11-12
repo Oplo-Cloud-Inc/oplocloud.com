@@ -293,6 +293,15 @@ export class D1Repository {
     return this.getOrganization(orgId);
   }
 
+  /* A school's module switches (migration 0071) as the JSON the caller built, with the audit rows of the change in the same batch (E2). */
+  async setOrgSwitches(orgId, json, audit = []) {
+    await this.db.batch([
+      this.db.prepare(`UPDATE organizations SET modules = ?, updated_at = ? WHERE id = ?`).bind(json, now(), orgId),
+      ...audit.map((a) => this.auditStatement(a))
+    ]);
+    return this.getOrganization(orgId);
+  }
+
   async addMember(orgId, accountId, role = "member") {
     await this.db.prepare(
       `INSERT OR REPLACE INTO organization_memberships
@@ -332,6 +341,57 @@ export class D1Repository {
         ORDER BY g.is_primary DESC, p.name`
     ).bind(studentId).all();
     return results || [];
+  }
+
+  /* Every guardian link of a school (guardian × student) with the guardian's own details and the student's section: the Guardians list
+     is drawn from this. `guardianId` narrows it to one guardian (the quick look). */
+  async listGuardianLinks(orgId, guardianId) {
+    const { results } = await this.db.prepare(
+      `SELECT l.guardian_id, l.student_id, l.relationship, l.label, l.is_primary,
+              g.email AS g_email, g.status AS g_status, gp.name AS g_name, gc.cell_phone, gc.alt_phone,
+              sp.name AS s_name, si.class_id, si.admission_no, si.language, si.whatsapp, c.grade, c.section
+         FROM learn_guardians l
+         JOIN accounts g ON g.id = l.guardian_id
+         LEFT JOIN profiles gp ON gp.account_id = g.id
+         LEFT JOIN account_contacts gc ON gc.account_id = g.id
+         JOIN accounts s ON s.id = l.student_id
+         LEFT JOIN profiles sp ON sp.account_id = s.id
+         LEFT JOIN learn_student_india si ON si.account_id = s.id AND si.org_id = l.org_id
+         LEFT JOIN learn_classes c ON c.id = si.class_id
+        WHERE l.org_id = ? AND (? IS NULL OR l.guardian_id = ?) AND (si.left_on IS NULL OR si.account_id IS NULL)`
+    ).bind(orgId, guardianId || null, guardianId || null).all();
+    return results || [];
+  }
+
+  /* The enrolled students nobody is linked to. */
+  async listStudentsWithoutGuardian(orgId) {
+    const { results } = await this.db.prepare(
+      `SELECT si.account_id, si.class_id, si.admission_no, si.admitted_on, a.email, p.name, c.grade, c.section
+         FROM learn_student_india si
+         JOIN accounts a ON a.id = si.account_id
+         LEFT JOIN profiles p ON p.account_id = si.account_id
+         LEFT JOIN learn_classes c ON c.id = si.class_id
+        WHERE si.org_id = ? AND si.left_on IS NULL
+          AND NOT EXISTS (SELECT 1 FROM learn_guardians l WHERE l.student_id = si.account_id)`
+    ).bind(orgId).all();
+    return results || [];
+  }
+
+  /* A guardian linked to students, in one batch: their account if they have none (invited, no password), the guardian role and
+     membership, a link to each student, the mobile when there is none yet, and the audit rows (E1, E2). `fresh` is the new
+     account's row (people-statement shape) or null for one that exists; `students` carry their emails, which the link is made by. */
+  async linkGuardianToStudents(orgId, { fresh, guardianId, lower, students, rel, label, cell, audit }, actorId) {
+    const t = now();
+    const stmts = this.peopleStatements(orgId, {
+      fresh: fresh ? [fresh] : [], roles: [{ lower, role: "guardian" }], members: [{ lower, mrole: "member" }],
+      links: students.map((s) => ({ student: s.lower, guardian: lower, rel, label, primary: 0 })), clear: []
+    }, actorId, t);
+    if (cell) stmts.push(this.db.prepare(
+      `INSERT INTO account_contacts (account_id, cell_phone, updated_by, updated_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT (account_id) DO UPDATE SET cell_phone = COALESCE(account_contacts.cell_phone, excluded.cell_phone), updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+    ).bind(guardianId, cell, actorId || null, t));
+    for (const a of audit || []) stmts.push(this.auditStatement(a));
+    await this.db.batch(stmts);
   }
 
   async listWards(guardianId) {
@@ -3571,17 +3631,19 @@ export class D1Repository {
     ).bind(orgId, year, grade, section).first();
   }
 
-  async upsertIndiaClass(orgId, year, c) {
+  /* A section, made or changed. `c.id` is the id a new section takes (an existing one keeps its own); `audit` is the rows
+     that describe the change, in the same batch as the change itself (E2). */
+  async upsertIndiaClass(orgId, year, c, audit = []) {
     const t = now();
-    await this.db.prepare(
+    await this.db.batch([this.db.prepare(
       `INSERT INTO learn_classes
          (id, org_id, school_year, grade, section, programme, stream, class_teacher_id, room, capacity, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (org_id, school_year, grade, section) DO UPDATE SET
          programme = excluded.programme, stream = excluded.stream, class_teacher_id = excluded.class_teacher_id,
          room = excluded.room, capacity = excluded.capacity, updated_at = excluded.updated_at`
-    ).bind(id("cls"), orgId, year, c.grade, c.section, c.programme ?? null, c.stream ?? null,
-           c.classTeacherId ?? null, c.room ?? null, c.capacity ?? null, t, t).run();
+    ).bind(c.id || id("cls"), orgId, year, c.grade, c.section, c.programme ?? null, c.stream ?? null,
+           c.classTeacherId ?? null, c.room ?? null, c.capacity ?? null, t, t), ...audit.map((a) => this.auditStatement(a))]);
     return this.findIndiaClass(orgId, year, c.grade, c.section);
   }
 
@@ -3623,63 +3685,91 @@ export class D1Repository {
     return out;
   }
 
-  /* Students and their contact card, one batch. `row` carries every column of
-     learn_student_india; `contact` the date of birth and address, where null
-     leaves what is there alone. A batch is one transaction, so a duplicate
-     number in one row stops the lot and the caller says which. */
+  /* The statements that write one student: their row, the section they leave and the one they join, their contact card, and
+     the audit rows of the change when the caller brings them (`audit`), so the two are one batch (E2). */
+  studentStatements(orgId, it, actorId, t, today) {
+    const r = it.row, stmts = [];
+    stmts.push(this.db.prepare(INDIA_UPSERT).bind(it.accountId, orgId, ...INDIA_COLS.map((c) => r[c] ?? null), actorId || null, t, t));
+    // Where the child sits is kept year by year: the section they leave is closed, the one they are in is open.
+    stmts.push(this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL AND class_id IS NOT ?`)
+      .bind(today, it.accountId, r.class_id ?? null));
+    if (r.class_id) stmts.push(this.db.prepare(SEAT).bind(r.class_id, it.accountId, r.roll_no ?? null, today));
+    if (it.contact && (it.contact.dateOfBirth || it.contact.mailingAddress)) {
+      stmts.push(this.db.prepare(
+        `INSERT INTO account_contacts (account_id, mailing_address, date_of_birth, updated_by, updated_at) VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (account_id) DO UPDATE SET
+           mailing_address = COALESCE(excluded.mailing_address, account_contacts.mailing_address),
+           date_of_birth = COALESCE(excluded.date_of_birth, account_contacts.date_of_birth),
+           updated_by = excluded.updated_by, updated_at = excluded.updated_at`
+      ).bind(it.accountId, it.contact.mailingAddress ?? null, it.contact.dateOfBirth ?? null, actorId || null, t));
+    }
+    for (const a of it.audit || []) stmts.push(this.auditStatement(a));
+    return stmts;
+  }
+
+  /* Students and their contact card. `row` carries every column of learn_student_india; `contact` the date of
+     birth and address, where null leaves what is there alone; `audit` the rows that describe the change. A batch
+     is one transaction, so a duplicate number in one row stops the lot and the caller says which. One student's
+     statements are never split between two batches: half a student is worse than none. */
   async putIndiaStudents(orgId, items, actorId, day) {
     const t = now(), today = day || new Date(t).toISOString().slice(0, 10);
-    const stmts = [];
+    let batch = [];
     for (const it of items) {
-      const r = it.row;
-      stmts.push(this.db.prepare(INDIA_UPSERT).bind(it.accountId, orgId, ...INDIA_COLS.map((c) => r[c] ?? null), actorId || null, t, t));
-      // Where the child sits is kept year by year: the section they leave is closed, the one they are in is open.
-      stmts.push(this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL AND class_id IS NOT ?`)
-        .bind(today, it.accountId, r.class_id ?? null));
-      if (r.class_id) stmts.push(this.db.prepare(SEAT).bind(r.class_id, it.accountId, r.roll_no ?? null, today));
-      if (it.contact && (it.contact.dateOfBirth || it.contact.mailingAddress)) {
-        stmts.push(this.db.prepare(
-          `INSERT INTO account_contacts (account_id, mailing_address, date_of_birth, updated_by, updated_at) VALUES (?, ?, ?, ?, ?)
-           ON CONFLICT (account_id) DO UPDATE SET
-             mailing_address = COALESCE(excluded.mailing_address, account_contacts.mailing_address),
-             date_of_birth = COALESCE(excluded.date_of_birth, account_contacts.date_of_birth),
-             updated_by = excluded.updated_by, updated_at = excluded.updated_at`
-        ).bind(it.accountId, it.contact.mailingAddress ?? null, it.contact.dateOfBirth ?? null, actorId || null, t));
-      }
+      const s = this.studentStatements(orgId, it, actorId, t, today);
+      if (batch.length && batch.length + s.length > 80) { await this.db.batch(batch); batch = []; }
+      batch.push(...s);
     }
-    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+    if (batch.length) await this.db.batch(batch);
+  }
+
+  /* A new student in one batch: the account, its student role and membership, and the student's row, seat and audit.
+     Nothing is kept unless all of it is, so a refusal never leaves an invited account behind (E1). */
+  async createIndiaStudent(orgId, { people, item }, actorId, day) {
+    const t = now(), today = day || new Date(t).toISOString().slice(0, 10);
+    await this.db.batch([...this.peopleStatements(orgId, people, actorId, t), ...this.studentStatements(orgId, item, actorId, t, today)]);
+  }
+
+  /* A write that changes one child at a time, in batches of at most 80 statements: `groups` is one list of statements per
+     child, so a child's change and audit row (E2) are never split between two batches. */
+  async batchGroups(groups) {
+    let batch = [];
+    for (const g of groups) {
+      if (batch.length && batch.length + g.length > 80) { await this.db.batch(batch); batch = []; }
+      batch.push(...g);
+    }
+    if (batch.length) await this.db.batch(batch);
   }
 
   /* Seat children in a section: [{ accountId, classId, rollNo }]. A child the office
-     has no row for yet gets one. The section they leave is closed on `day`. */
-  async seatStudents(orgId, moves, actorId, day) {
-    const t = now(), stmts = [];
-    for (const m of moves) {
-      stmts.push(this.db.prepare(
+     has no row for yet gets one. The section they leave is closed on `day`.
+     audit[i] is the row that describes moves[i], written with it. */
+  async seatStudents(orgId, moves, actorId, day, audit = []) {
+    const t = now();
+    await this.batchGroups(moves.map((m, i) => [
+      this.db.prepare(
         `INSERT INTO learn_student_india (account_id, org_id, class_id, roll_no, consent_status, updated_by, created_at, updated_at)
          VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)
          ON CONFLICT (account_id) DO UPDATE SET class_id = excluded.class_id, roll_no = excluded.roll_no,
            left_on = NULL, left_reason = NULL, updated_by = excluded.updated_by, updated_at = excluded.updated_at`
-      ).bind(m.accountId, orgId, m.classId, m.rollNo ?? null, actorId || null, t, t));
-      stmts.push(this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL AND class_id IS NOT ?`).bind(day, m.accountId, m.classId));
-      stmts.push(this.db.prepare(SEAT).bind(m.classId, m.accountId, m.rollNo ?? null, day));
-    }
-    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+      ).bind(m.accountId, orgId, m.classId, m.rollNo ?? null, actorId || null, t, t),
+      this.db.prepare(`UPDATE learn_class_students SET left_on = ? WHERE account_id = ? AND left_on IS NULL AND class_id IS NOT ?`).bind(day, m.accountId, m.classId),
+      this.db.prepare(SEAT).bind(m.classId, m.accountId, m.rollNo ?? null, day),
+      ...(audit[i] ? [this.auditStatement(audit[i])] : [])
+    ]));
   }
 
   /* Number a section's children: [{ id, rollNo }]. Every number is cleared first, so
-     a child may take another's old number in the same pass. */
-  async numberRolls(classId, rolls) {
+     a child may take another's old number in the same pass. audit[i] describes rolls[i]. */
+  async numberRolls(classId, rolls, audit = []) {
     await this.db.batch([
       this.db.prepare(`UPDATE learn_student_india SET roll_no = NULL WHERE class_id = ?`).bind(classId),
       this.db.prepare(`UPDATE learn_class_students SET roll_no = NULL WHERE class_id = ? AND left_on IS NULL`).bind(classId)
     ]);
-    const stmts = [];
-    for (const r of rolls) {
-      stmts.push(this.db.prepare(`UPDATE learn_student_india SET roll_no = ? WHERE account_id = ? AND class_id = ?`).bind(r.rollNo, r.id, classId));
-      stmts.push(this.db.prepare(`UPDATE learn_class_students SET roll_no = ? WHERE account_id = ? AND class_id = ? AND left_on IS NULL`).bind(r.rollNo, r.id, classId));
-    }
-    for (let i = 0; i < stmts.length; i += 80) await this.db.batch(stmts.slice(i, i + 80));
+    await this.batchGroups(rolls.map((r, i) => [
+      this.db.prepare(`UPDATE learn_student_india SET roll_no = ? WHERE account_id = ? AND class_id = ?`).bind(r.rollNo, r.id, classId),
+      this.db.prepare(`UPDATE learn_class_students SET roll_no = ? WHERE account_id = ? AND class_id = ? AND left_on IS NULL`).bind(r.rollNo, r.id, classId),
+      ...(audit[i] ? [this.auditStatement(audit[i])] : [])
+    ]));
   }
 
   /* A child leaves the school: out of their section, and the day and reason kept. */
@@ -4180,8 +4270,14 @@ export class D1Repository {
        members  [{ lower, mrole }]           membership in this school
        links    [{ student, guardian, rel, label, primary }]   lower-cased emails
        clear    [student email]              whose primary guardian is being reset first */
-  async importPeople(orgId, { fresh, roles, members, links, clear }, actorId) {
-    const t = now(), stmts = [];
+  async importPeople(orgId, spec, actorId) {
+    const stmts = this.peopleStatements(orgId, spec, actorId, now());
+    if (stmts.length) await this.db.batch(stmts);
+  }
+
+  /* The statements importPeople runs, for a caller that puts them in a batch of its own (createIndiaStudent). */
+  peopleStatements(orgId, { fresh, roles, members, links, clear }, actorId, t) {
+    const stmts = [];
     const on = "FROM json_each(?) j JOIN accounts a ON a.email_lower = json_extract(j.value, '$.lower')";
     if (fresh.length) {
       stmts.push(this.db.prepare(
@@ -4220,7 +4316,7 @@ export class D1Repository {
          ON CONFLICT (guardian_id, student_id) DO UPDATE SET relationship = excluded.relationship, label = excluded.label,
            is_primary = excluded.is_primary, updated_at = excluded.updated_at`).bind(orgId, actorId || null, t, t, JSON.stringify(links)));
     }
-    if (stmts.length) await this.db.batch(stmts);
+    return stmts;
   }
 
   async countOrgStudents(orgId) {
@@ -4232,6 +4328,121 @@ export class D1Repository {
 
   async isOrgMember(orgId, accountId) {
     return !!(await this.db.prepare(`SELECT 1 AS ok FROM organization_memberships WHERE org_id = ? AND account_id = ?`).bind(orgId, accountId).first());
+  }
+
+  /* ------------------------------------------------------------- Search
+     learn_search_docs is kept by triggers (migration 0060); this only reads it. `match` is an FTS5
+     expression the service built from letters and digits, never raw input. `onlyOf` narrows students
+     to the sections one teacher is class teacher of. */
+  async searchDocs(orgId, kinds, match, limit, onlyOf) {
+    const scope = onlyOf
+      ? ` AND (d.kind <> 'student' OR d.ref IN (SELECT account_id FROM learn_student_india WHERE class_id IN (SELECT id FROM learn_classes WHERE class_teacher_id = ?)))`
+      : "";
+    const stmts = kinds.map((kind) => this.db.prepare(
+      `SELECT d.kind, d.ref, d.title, d.meta, bm25(learn_search, 8.0, 1.0) AS rank
+         FROM learn_search JOIN learn_search_docs d ON d.id = learn_search.rowid
+        WHERE learn_search MATCH ? AND d.org_id = ? AND d.kind = ?${scope}
+        ORDER BY rank, d.title LIMIT ?`
+    ).bind(...[match, orgId, kind].concat(onlyOf ? [onlyOf] : [], [limit])));
+    const out = await this.db.batch(stmts);
+    return out.flatMap((r) => r.results || []);
+  }
+
+  /* The class a code like "X-C" names, in the newest year the school has it. */
+  async classByCode(orgId, grade, section) {
+    return this.db.prepare(
+      `SELECT c.id, c.grade, c.section, c.school_year, p.name AS teacher
+         FROM learn_classes c LEFT JOIN profiles p ON p.account_id = c.class_teacher_id
+        WHERE c.org_id = ? AND UPPER(c.grade) = ? AND UPPER(c.section) = ?
+        ORDER BY c.school_year DESC LIMIT 1`
+    ).bind(orgId, grade, section).first();
+  }
+
+  async classSeatCounts(classIds) {
+    if (!classIds.length) return {};
+    const rows = (await this.db.prepare(
+      `SELECT class_id, COUNT(*) AS n FROM learn_student_india WHERE class_id IN (${classIds.map(() => "?").join(",")}) GROUP BY class_id`
+    ).bind(...classIds).all()).results || [];
+    return Object.fromEntries(rows.map((r) => [r.class_id, r.n]));
+  }
+
+  async studentsSeatedIn(classId, limit) {
+    return (await this.db.prepare(
+      `SELECT d.kind, d.ref, d.title, d.meta FROM learn_search_docs d
+        WHERE d.kind = 'student' AND d.ref IN (SELECT account_id FROM learn_student_india WHERE class_id = ?)
+        ORDER BY d.title LIMIT ?`
+    ).bind(classId, limit).all()).results || [];
+  }
+
+  /* The sections a person is class teacher of, in any year: the Directory shows them those children and no others. */
+  async sectionsOfTeacher(orgId, accountId) {
+    return (await this.db.prepare(`SELECT id FROM learn_classes WHERE org_id = ? AND class_teacher_id = ?`).bind(orgId, accountId).all()).results || [];
+  }
+
+  /* ===================================================================== Audit
+     Append only. Rows come from services/audit.js; Admin › Audit log reads them back.
+     A write that has audit rows puts auditStatement() in its own batch, so the change
+     and the record of it stand or fall together (E2); addAudit is for events that change nothing. */
+  auditStatement(r) {
+    return this.db.prepare(
+      `INSERT INTO learn_audit (id, org_id, at, actor_id, actor_name, module, action, verb, record_kind, record_id, record_label, field, before, after, detail_json, request)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id("aud"), r.orgId, r.at, r.actorId || null, r.actorName || null, r.module, r.action, r.verb, r.recordKind || null, r.recordId || null,
+           r.recordLabel || null, r.field || null, r.before ?? null, r.after ?? null, JSON.stringify(r.detail || {}), r.request || null);
+  }
+
+  async addAudit(rows) {
+    for (let i = 0; i < rows.length; i += 50) await this.db.batch(rows.slice(i, i + 50).map((r) => this.auditStatement(r)));
+  }
+
+  /* The log, newest first, for the filters Admin › Audit log offers. Returns the page and the count. */
+  async listAudit(orgId, f) {
+    const where = ["org_id = ?"], bind = [orgId];
+    const eq = (col, v) => { if (v) { where.push(`${col} = ?`); bind.push(v); } };
+    eq("record_id", f.record); eq("module", f.module); eq("action", f.action); eq("actor_id", f.actor); eq("verb", f.verb);
+    if (f.from != null) { where.push("at >= ?"); bind.push(f.from); }
+    if (f.to != null) { where.push("at < ?"); bind.push(f.to); }
+    if (f.q) { where.push("(record_label LIKE ? OR actor_name LIKE ? OR field LIKE ? OR before LIKE ? OR after LIKE ?)"); const like = "%" + String(f.q).replace(/[%_]/g, "") + "%"; bind.push(like, like, like, like, like); }
+    const w = where.join(" AND ");
+    const [page, total] = await this.db.batch([
+      this.db.prepare(`SELECT * FROM learn_audit WHERE ${w} ORDER BY at DESC, id DESC LIMIT ? OFFSET ?`).bind(...bind, f.limit, f.offset),
+      this.db.prepare(`SELECT COUNT(*) AS n FROM learn_audit WHERE ${w}`).bind(...bind)
+    ]);
+    return { rows: page.results || [], total: (total.results && total.results[0] ? total.results[0].n : 0) };
+  }
+
+  /* Several students' house: items are [{ accountId, audit }], and each student's audit row goes in the same batch as the
+     change it describes (E2); a batch holds 25 students. Setting a value is idempotent, so a call that stopped part-way is
+     finished by sending it again. Returns how many were written; if a batch fails the error says how many had been (err.applied). */
+  async setHouses(orgId, items, house, actorId) {
+    const t = now();
+    let applied = 0;
+    try {
+      for (let i = 0; i < items.length; i += 25) {
+        const part = items.slice(i, i + 25), stmts = [];
+        for (const it of part) {
+          stmts.push(this.db.prepare(`UPDATE learn_student_india SET house = ?, updated_by = ?, updated_at = ? WHERE org_id = ? AND account_id = ?`).bind(house, actorId || null, t, orgId, it.accountId));
+          if (it.audit) stmts.push(this.auditStatement(it.audit));
+        }
+        await this.db.batch(stmts);
+        applied += part.length;
+      }
+    } catch (e) { e.applied = applied; throw e; }
+    return applied;
+  }
+
+  /* Which unique thing about a new student is already taken, if any: admission number, roll in the section, APAAR ID, PEN
+     (the unique indexes of learn_student_india). Asked before anything is written, so a refusal changes nothing. */
+  async studentClashes(orgId, v) {
+    const checks = [];
+    if (v.admissionNo) checks.push(["admissionNo", `SELECT 1 FROM learn_student_india WHERE org_id = ? AND admission_no = ? LIMIT 1`, [orgId, v.admissionNo]]);
+    if (v.classId && v.rollNo) checks.push(["rollNo", `SELECT 1 FROM learn_student_india WHERE class_id = ? AND roll_no = ? LIMIT 1`, [v.classId, v.rollNo]]);
+    if (v.apaar && /^\d/.test(v.apaar)) checks.push(["apaar", `SELECT 1 FROM learn_student_india WHERE org_id = ? AND apaar = ? LIMIT 1`, [orgId, v.apaar]]);
+    if (v.pen) checks.push(["pen", `SELECT 1 FROM learn_student_india WHERE org_id = ? AND pen = ? LIMIT 1`, [orgId, v.pen]]);
+    if (!checks.length) return null;
+    const out = await this.db.batch(checks.map(([, sql, args]) => this.db.prepare(sql).bind(...args)));
+    const hit = out.findIndex((r) => r.results && r.results.length);
+    return hit < 0 ? null : checks[hit][0];
   }
 }
 

@@ -336,6 +336,7 @@
         API.gamification.standing().catch(function () { return null; }),
         Progress ? Progress.pull().catch(function () { return []; }) : Promise.resolve([])
       ]).then(function (out) {
+        if (!R) return false;   // signed out while the answer was on its way
         var standing = out[0], moved = out[1] || [], changed = moved.length > 0;
 
         if (standing) {
@@ -503,8 +504,10 @@
     return p.mode ? p.root + p.mode + "/" : p.root;
   }
   function appRest() { return (here().rest || "").replace(/^\/+/, ""); }
+  /* A path may carry its filters ("students/directory?class=X-C"): the "?…" is kept as it is, the segments are encoded. */
   function addressOf(path) {
-    return appBase() + String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+    var s = String(path), q = s.indexOf("?");
+    return appBase() + (q > -1 ? s.slice(0, q) : s).split("/").filter(Boolean).map(encodeURIComponent).join("/") + (q > -1 ? s.slice(q) : "");
   }
   function coursePath(c) { return slug(c.subject || "Other") + "/" + slug(c.t || c.title || c.id); }
   function courseById(id) {
@@ -6806,7 +6809,9 @@
      and one button to sign out of all the others. The label is read from the
      browser's own user-agent; the whole string is kept in the tooltip. */
   function accountDevices(v) {
-    v.appendChild(el("h2", "lx-h2", "Where you’re signed in"));
+    var title = el("h2", "lx-h2", "Where you’re signed in");
+    title.id = "acctDevices";            // the top bar's account menu opens the page at this heading
+    v.appendChild(title);
     var box = el("div", "cx-set");
     box.appendChild(el("div", "cx-setrow", '<span class="t"><span>Reading it from the server…</span></span>'));
     v.appendChild(box);
@@ -6975,6 +6980,9 @@
     syncLine.id = "acSync";
     v.appendChild(syncLine);
     paintSync();
+    /* ---- Where you are signed in --------------------------------------- */
+    // A teacher or administrator who is also learning has this list too: the top bar's account menu opens the page at it.
+    if (S.me.role === "admin" || S.me.role === "teacher") accountDevices(v);
     }
 
     /* ---- Password ----------------------------------------------------- */
@@ -8837,7 +8845,7 @@
     { k: "attendance", name: "Attendance", icon: "check", hue: "emerald", not: ["IN"] },
     { name: "Attendance", icon: "check", hue: "emerald", only: "IN", kids: [
       { k: "in-register", name: "Class registers" }, { k: "in-watch", name: "75% watch" }, { k: "in-condone", name: "Condonation" },
-      { k: "attendance", name: "By subject" }] },
+      { k: "attendance", name: "By subject" }, { k: "in-changes", name: "Change log" }] },
     { name: "Student Support", icon: "heart", hue: "rose", kids: [
       { k: "support", name: "Watchlist", as: { IN: "Needs attention" } }, { k: "in-ews", name: "Early warning", only: "IN" }, { k: "in-cases", name: "Mentoring cases", only: "IN" }, { k: "behavior", name: "Behavior", as: { IN: "Discipline" } }, { k: "referrals", name: "Referrals" }, { k: "detention", name: "Detention", not: ["IN"] },
       { k: "senplans", name: "Support Plans", as: { IN: "Learning support" } }, { k: "accommodations", name: "Accommodations", as: { IN: "Exam accommodations" } }] },
@@ -8932,7 +8940,9 @@
     { k: "roster", name: "Gradebook", group: "Academics", icon: "table", hidden: true },
     { k: "missing", name: "Missing work", group: "Students", icon: "tray", hidden: true },
     { k: "courses", name: "Courses", group: "Curriculum", icon: "books", hidden: true },
-    { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true });
+    { k: "people", name: "Directory", group: "Staff", icon: "person", hidden: true },
+    // Admin › Settings › Modules (O8) has no page in the old console: it exists only in the frame.
+    { k: "modules", name: "Modules", group: "Settings", icon: "gear", hidden: true, frame: true });
 
   /* Somebody who holds an office role and is not an administrator gets the
      school console with the places that role works in, and nothing else.
@@ -8961,7 +8971,7 @@
     if (S.me && consoleMode() === "student") return STUDENT_SECTIONS.filter(forRegion);
     if (!S.me || (S.me.role !== "admin" && S.me.role !== "teacher")) return [];
     if (consoleMode() !== "admin") return TEACHER_SECTIONS.filter(forRegion).map(named);
-    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion).map(named);
+    var only = officeKeys(), mine = ADMIN_SECTIONS.filter(forRegion).filter(function (t) { return !t.frame || shellOn(); }).map(named);
     return only ? mine.filter(function (t) { return only.indexOf(t.k) > -1; }) : mine;
   }
 
@@ -9410,6 +9420,46 @@
       .map(function (m) { return { mode: m, name: names[m], href: H.pathFor(at.root, m) }; });
   }
 
+  /* The views this person may open, for the top bar's switch: every one their roles allow (Admin, Teacher, Family), so there is
+     always a way back from the one they are in. Each is a real address, so a middle click or a bookmark works. */
+  function staffViews() {
+    var H = window.OPLO_HOME;
+    if (!H || !S.me) return [];
+    var at = H.parse(location.pathname);
+    return H.allowed(S.me.roles || []).map(function (m) { return { mode: m, href: H.pathFor(at.root, m) }; });
+  }
+  function openStaffView(mode) {
+    var to = staffViews().filter(function (v) { return v.mode === mode; })[0];
+    if (!to) return;
+    if (window.OL && OL.session) OL.session.leaving(OL.i18n.t("session.opening"));
+    location.assign(to.href);
+  }
+  /* "Where I'm signed in": the account page, opened at its list of sessions. */
+  function openSessions() {
+    openAccount();
+    var title = document.getElementById("acctDevices");
+    if (!title) return;
+    title.tabIndex = -1;
+    title.scrollIntoView({ block: "start" });
+    title.focus({ preventScroll: true });
+  }
+  /* The top bar over a console that has no frame of its own (the teacher's). It brings its own people and places to the bar and leaves
+     the console's rail and pages as they were. The frame's off-switch (O8) is the bar's too: a school, or a browser, that has the new
+     frame off gets the old console exactly as it was. */
+  function barOn() { return !!(window.OL && OL.shell && OL.shell.openBar) && !phoneOn() && frameOn(); }
+  function barCtx() {
+    return {
+      schoolName: schoolName(), me: { id: S.me.id, name: S.me.name },
+      views: staffViews, view: consoleMode, openView: openStaffView,
+      openInbox: function () { openAdmin(false, consoleMode() === "admin" ? "inbox" : "messages"); },
+      openAccount: function () { openAccount(); }, openSessions: openSessions,
+      openSearch: function () { if ($("#finder").hidden) openFinder(); else closeFinder(); },   // the console's own finder keeps working
+      unread: function () { return API.inbox.unread(); },
+      appearance: currentAppearance, setAppearance: applyAppearance,
+      signOut: signOut
+    };
+  }
+
   function profileMenu(anchor) {
     var box = el("div", "tr-profile");
     var head = el("div", "tr-phero");
@@ -9743,10 +9793,13 @@
   function adminPath(k) {
     var t = allowedTabs().filter(function (x) { return x.k === k; })[0];
     if (!t) return "";
+    if (shellOn()) { var np = shellFor().path(k); if (np) return np; }
     return t.hidden ? k : t.group ? slug(t.group) + "/" + slug(t.name) : slug(t.name);
   }
   /* "Schedule/Bell-Schedules" → "sc-bell"; null when the address names no place this person may open. */
   function adminAt(rest) {
+    // The new scheme first (/admin/academics/timings); the old names still open, and the address is rewritten to the new one.
+    if (shellOn()) { var nk = shellFor().keyFor(String(rest || "") + location.search); if (nk) return nk; }
     var seg = String(rest || "").split("/").filter(Boolean).map(function (x) { try { return decodeURIComponent(x); } catch (e) { return x; } });
     var hit = allowedTabs().filter(function (t) {
       if (seg.length === 1) return sameName(t.k, seg[0]) || (!t.group && !t.hidden && sameName(slug(t.name), seg[0]));
@@ -9754,6 +9807,70 @@
     })[0];
     return hit ? hit.k : null;
   }
+  /* ------------------------------------------------------------ The new frame
+     The school's console is drawn inside the rebuilt frame (shell/): a rail of
+     seven sections and Admin tools, a top bar with search, the section's pages. The pages
+     themselves are the ones above until each is rebuilt, so the frame is told
+     what this person may open and how to open it, and knows nothing else. A
+     teacher's console and the phone keep what they have until their turn. */
+  function shellOn() { return !!(window.OL && OL.shell && OL.shell.open) && consoleMode() === "admin" && !phoneOn() && frameOn(); }
+  /* The new frame can be turned off without a deploy (O8): for one browser with ?frame=off, remembered until ?frame=on (or
+     ?frame=default) says otherwise; or for a whole school with its "frame" switch (PUT /school/modules, on the profile). The browser
+     wins, so a school that has the frame off can still be looked at. Read once, from the address the page was opened with. */
+  var frameChoice = (function () {
+    var m = /[?&]frame=(on|off|default)\b/.exec(location.search), v = m ? m[1] : null;
+    try {
+      if (v === "default") localStorage.removeItem("oplo.frame"); else if (v) localStorage.setItem("oplo.frame", v);
+      if (!v) v = localStorage.getItem("oplo.frame");
+    } catch (e) { /* private mode: the address alone */ }
+    return v === "on" || v === "off" ? v : null;
+  })();
+  function frameOn() { return frameChoice ? frameChoice === "on" : !(window.OL && OL.routes) || OL.routes.frame(); }
+  function shellMounted() { return !!(window.OL && OL.shell && OL.shell.mounted && OL.shell.mounted()); }
+  function shellFor() { OL.shell.bind(shellCtx(S.tab)); return OL.shell; }
+  function shellCtx(at) {
+    return {
+      container: $("#v-admin"), current: at, base: appBase(), rest: appRest,
+      // "@soon": the menu may show an administrator the pages that are promised and not built; a clerk with one job is not shown a list of promises
+      allowed: function (k) { return k === "@soon" ? !officeOnly() : allowedTabs().some(function (t) { return t.k === k; }); },
+      schoolName: schoolName(), sectionName: function () { return sectionNamed(S.tab).name; },
+      me: { id: S.me.id, name: S.me.name },
+      views: staffViews, view: consoleMode, openView: openStaffView, inboxPath: "people/inbox",
+      open: function (k) { openAdmin(false, k); },
+      openAccount: function () { openAccount(); }, openSessions: openSessions,
+      openRecord: openFound,
+      search: function (q) { return API.search.query(q); },
+      unread: function () { return API.inbox.unread(); },
+      years: shellYears,
+      appearance: currentAppearance, setAppearance: applyAppearance, setTitle: setTitle,
+      signOut: signOut
+    };
+  }
+  /* The last three academic years, newest first, from the month the school's year starts. */
+  function shellYears() {
+    return API.school.profile().then(function (r) {
+      var p = (r && r.profile) || {}, t = new Date(), m = Number(p.yearStartMonth) || (regionOf() === "IN" ? 4 : 8), y = t.getFullYear() - (t.getMonth() + 1 < m ? 1 : 0);
+      return [0, 1, 2].map(function (i) { return OL.fmt.yearLabel((y - i) + "-" + (m < 10 ? "0" : "") + m + "-01"); });
+    });
+  }
+  /* A search result opened. Students open their profile, with the frame's tabs behind it; the rest open the page that lists them. */
+  function openFound(it) {
+    if (it.kind === "student") {
+      // An Indian school's profile is a sheet over the directory, so the directory is drawn first; the other is a page of its own.
+      if (regionOf() === "IN" && OL.pages && OL.pages.find("students", { region: "IN" })) { OL.shell.go("students/directory/" + it.id); return; }
+      var india = regionOf() === "IN" && window.OPLO_INDIA_STUDENTS;
+      if (india) openAdmin(false, "students");
+      else { S.tab = "students"; OL.shell.open(shellCtx("students")); }
+      OL.shell.setRecord({ label: it.title });
+      setTitle(it.title);
+      if (india) indiaStudents().profile(it.id);
+      else openStudent360({ id: it.id, name: it.title, email: "" });
+      return;
+    }
+    var to = { staff: "people/teachers", class: "students/classes/sections", subject: "timetable/subjects", circular: "people/circulars" }[it.kind];
+    if (to) OL.shell.go(to);
+  }
+
   /* The tab's title says where you are, so a bookmark, a history entry and a
      screen reader's page change all say it too. */
   function setTitle(name) {
@@ -9766,6 +9883,13 @@
      page, which a phone shows in a layer when it has none of its own. */
   function adminPageFor(tab, admin) {
     if (!admin) return TEACH_TABS[tab] || consoleHome;
+    // A screen that has been rebuilt (shell/pages.js) is drawn in place of the old page; the rest stay as they were.
+    if (shellOn() && OL.pages && OL.pages.find) {
+      var pick = tab === "students" ? S.studentPick : null;
+      var rebuilt = OL.pages.find(tab, { region: regionOf(), route: OL.shell.route(), me: S.me, base: appBase(), pick: pick, legacy: { enr: enr },
+        go: function (path) { return OL.shell.go(path); }, setRecord: function (r) { OL.shell.setRecord(r); }, title: OL.shell.title() });
+      if (rebuilt) { if (pick) S.studentPick = null; return rebuilt; }
+    }
     return ({ today: consoleHome, assessments: tabSchoolAssessments, roster: tabRoster, students: tabStudents, work: tabWork,
        sets: tabSets, reports: tabReports, courses: tabCourses, curriculum: tabCourses, activity: tabActivity,
        people: tabPeople, permissions: tabPeople, system: tabSystem, staff: tabStaff, gradebook: tabSchoolGradebook, missing: tabMissing,
@@ -9779,7 +9903,7 @@
        inventory: tabFxAssets,
        "fx-orders": tabFxOrders, "fx-spaces": tabFxSpaces, "fx-assets": tabFxAssets, "fx-upkeep": tabFxUpkeep,
        "fx-bookings": tabFxBookings, "fx-vendors": tabFxVendors, "fx-documents": tabFxDocuments, "fx-reports": tabFxReports,
-       "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch, "in-ews": tabInEarly,
+       "in-classes": tabInClasses, "in-compliance": tabInCompliance, "in-register": tabInRegister, "in-watch": tabInWatch, "in-changes": tabInChanges, "in-ews": tabInEarly,
        "in-exams": tabInExams, "in-scales": tabInScales, "in-comp": tabInComp, "in-analysis": tabInAnalysis,
        sftp: tabSftp, api: tabApi }[tab]) || platTab(tab) || consoleHome;
   }
@@ -9793,7 +9917,9 @@
     // The entry keeps this place. It used to read S.tab when Back was pressed,
     // which by then was the place Back was leaving, so Back reopened it.
     var at = S.tab;
-    if (!silent || replace) enter("admin:" + at, "Console", function () { openAdmin(true, at); }, !!replace, adminPath(at));
+    // A record open in the frame is a place of its own, so going from the list to a record (the same old page) is a step Back can undo.
+    var rec = shellOn() && OL.shell.pending() && OL.shell.pending().record;
+    if (!silent || replace) enter("admin:" + at + (rec ? ":" + rec + ":" + (OL.shell.pending().recordTab || "") : ""), "Console", function () { openAdmin(true, at); }, !!replace, adminPath(at));
     setTitle(sectionNamed(at).name);
 
     document.body.classList.add("is-console");
@@ -9804,21 +9930,35 @@
     // The premium look is the desktop console's; a phone has its own pages (phone.js) and keeps them.
     document.body.classList.toggle("a-console", admin && !phoneOn());
     if (phoneOn()) {
+      if (shellMounted()) OL.shell.unmount();   // a phone has its own pages, not the desktop frame
       phone().staff(S.tab, { admin: admin, draw: adminPageFor(S.tab, admin) });
       noFoot(); progress(null);
       show("admin");
       return;
     }
     if (PHX && document.body.classList.contains("is-phone")) PHX.leave();
-    drawRail();
+    var framed = shellOn();
+    if (!framed) {
+      // The old rail comes back when the new frame is not what this console is drawn in, and the top bar runs across it.
+      if (shellMounted() && !OL.shell.barOnly()) OL.shell.unmount();
+      drawRail();
+      if (barOn()) OL.shell.openBar(barCtx());
+      else if (shellMounted()) OL.shell.unmount();
+    }
     trApply();
     trPopClose();
     closeRail();
 
-    var v = $("#v-admin");
-    v.innerHTML = "";
-    var body = el("div", "admin-body");
-    v.appendChild(body);
+    var v = $("#v-admin"), body;
+    if (framed) {
+      body = OL.shell.open(shellCtx(at));
+      // H1 and the tab's title are the menu's own word for the page (Volume 01 §9.4).
+      if (OL.shell.title()) setTitle(OL.shell.title());
+    } else {
+      v.innerHTML = "";
+      body = el("div", "admin-body");
+      v.appendChild(body);
+    }
     adminPageFor(S.tab, admin)(body);
     noFoot(); progress(null);
     show("admin");
@@ -17836,6 +17976,7 @@
   function tabInPapers(v) { exams().papers(v); }
   function tabInRegister(v) { register().classes(v); }
   function tabInWatch(v) { register().watch(v); }
+  function tabInChanges(v) { register().changeLog(v); }
   function tabInEarly(v) { register().early(v); }
   function tabInMyClass(v) { register().myClass(v); }
   function tabInClasses(v) { india().classes(v); }
@@ -19887,11 +20028,11 @@
      offline at their own pace, and an app that decides for itself who is
      signed in cannot enforce anything against a user with a console open.
 
-     So it is gone. Sign-in happens at auth.oplocloud.com, in a tab of its own
-     (auth/public/connect.js): the password is typed there, the server checks
-     it, and the server sets an HttpOnly session cookie this file cannot read.
-     The tab closes, this page refreshes, and the only question this app ever
-     asks about identity is `who am I?` — and the answer comes from the server.
+     So it is gone. Sign-in happens at auth.oplocloud.com, in this same tab
+     (shell/session.js): the password is typed there, the server checks it, and
+     the server sets an HttpOnly session cookie this file cannot read. The page
+     it sends the person back to asks the only question this app ever asks about
+     identity — `who am I?` — and the answer comes from the server.
 
      One Oplo Account, not an OEdu account. The same session will carry
      a person into OMaps or OShopping, which is why none of this lives under
@@ -20105,6 +20246,7 @@
        and again when the server says what this person is actually taking. */
     Promise.all([
       API.courses.mine().then(function (courses) {
+        if (!S.me) return false;   // signed out while the answer was on its way
         S.me.assigned = courses.filter(function (c) {
           return !c.myRole || c.myRole === "student";
         });
@@ -20145,7 +20287,9 @@
              : learn.some(function (r) { return r.role === "teacher"; }) ? "teacher"
              : "student";
     var name = a.name || a.email || "Someone";
-    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(a.organizations && a.organizations[0] && a.organizations[0].profile);
+    var school = a.organizations && a.organizations[0] && a.organizations[0].profile;
+    if (window.OPLO_LOCALE) window.OPLO_LOCALE.use(school);
+    if (window.OL && OL.routes) OL.routes.setSchool(school);
     return {
       id: a.id, email: a.email, name: name,
       first: a.firstName || name.split(/\s+/)[0],
@@ -20162,7 +20306,10 @@
     };
   }
 
-  function signOut() {
+  /* `why` is what the signed-out screen says: "manual" (the person chose to), "idle" (left alone too long) or "ended"
+     (the server ended the session). */
+  function signOut(why) {
+    if (typeof why !== "string") why = "manual";   // a click handler passes its event
     if (window.OPLO_EXAM) window.OPLO_EXAM.close(true);   // saved first, then closed
     if (R) R.flush();                 // never leave the last few answers unwritten
     Sync.flushNow();
@@ -20177,6 +20324,7 @@
     // memory for whoever opens the tab next.
     S.me = null; S.m = {}; S.sets = {}; S.mistakes = [];
     if (PHX && document.body.classList.contains("is-phone")) PHX.leave();   // the phone shell must not sit over the welcome page
+    if (shellMounted()) OL.shell.unmount();   // nor the desktop frame
     S.here = null; S.hist = [];
     S.tab = null;
     TRAIL = []; POS = -1;            // the next person's history starts from nothing
@@ -20188,58 +20336,65 @@
     });
     $("#rankChip").hidden = true;
     $("#streak").textContent = "0";
-    // Signed out, the page is the sign-in page again, at the address everybody
-    // signs in at — not at the /admin/ or /student/ the last person left behind.
-    history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root);
+    // Signed out, the page is at the address everybody signs in at — not at the
+    // /admin/ or /student/ the last person left behind — and the hash keeps the
+    // signed-out screen through a refresh, so it does not turn into the welcome page.
+    history.replaceState(null, "", window.OPLO_HOME.parse(location.pathname).root + "#signed-out");
     setTitle(null);
     setLook(null);
-    // Back to the welcome page from its top, with the sign-in panel closed —
-    // it was left open by the sign-in that started this session.
+    // The welcome page is put back from its top with the sign-in panel closed —
+    // it was left open by the sign-in that started this session — for a visit
+    // that comes later. What the person sees now is the signed-out screen.
     var gate = $("#gate"), panel = $("#ldSignin");
     if (panel) panel.hidden = true;
     gate.classList.remove("ld-locked", "ld-wait");
-    gate.hidden = false;
     gate.scrollTop = 0;
     $("#gErr").textContent = "";
+    if (window.OL && OL.session) { gate.hidden = true; OL.session.showSignedOut(why); }
+    else gate.hidden = false;
     noFoot(); progress(null);
   }
 
+  /* A session the server no longer knows (signed out from another device, or run out) is said once, in words, with the way back in,
+     instead of as "Sign in to continue" under whichever screen made the next call. The calls signOut itself makes while it saves
+     cannot start it again. */
+  var ending = false;
+  API.onSessionEnded(function () {
+    if (ending || !S.me) return;
+    ending = true;
+    try { signOut("ended"); } finally { ending = false; }
+  });
+
   (function gate() {
     var err = $("#gErr"), go = $("#gateGo");
-    var Account = window.OploSignIn;
 
     /* Every "Sign in" on the welcome page, and the panel's button, come here.
-       The password is never typed on this page: connect.js opens
-       auth.oplocloud.com in a tab of its own, and when that tab says it is
-       done this page refreshes and the question below is asked again. If the
-       tab closes without saying — the message lost, or the person gave up —
-       the server is asked which. */
+       The password is never typed on this page: the Oplo Account page
+       (auth.oplocloud.com) opens in THIS tab and sends the person straight back
+       to the address they were on (shell/session.js). The question below is
+       asked of the server when this page loads again, as it always has been. */
     function signIn() {
       err.textContent = "";
-      if (!Account) {
-        err.innerHTML = "Cannot reach the Oplo Account service at " +
-          "<code>auth.oplocloud.com</code>. Check your connection and reload.";
-        return;
-      }
-      Account.open({
-        verify: function () {
-          return API.me().then(function () { return true; }, function () { return false; });
-        }
-      });
+      OL.session.signIn();
     }
     window.OEDU_SIGNIN = signIn;
     if (go) go.addEventListener("click", signIn);
 
     /* A session already open in this browser signs straight in — which is also
-       how a sign-in in the Oplo Account tab arrives, after the refresh. The
-       cookie is HttpOnly, so the only way to find out is to ask the server. */
+       how a sign-in at the Oplo Account page arrives, when it sends the person
+       back. The cookie is HttpOnly, so the only way to find out is to ask the
+       server. */
     API.me().then(function (account) {
       boot(account);
-      if (Account) Account.done();
     }).catch(function (e) {
-      if (Account) Account.done();
-      // Nobody is signed in, so the welcome page can be shown; until now it
+      // Nobody is signed in. Somebody who has just signed out is told so, on a
+      // screen of its own; anybody else gets the welcome page, which until now
       // stayed blank so a signed-in visitor never saw it on the way home.
+      if (location.hash === "#signed-out" && window.OL && OL.session) {
+        $("#gate").hidden = true;
+        OL.session.showSignedOut("manual");
+        return;
+      }
       $("#gate").classList.remove("ld-wait");
       var panel = $("#ldSignin");
       if (e && e.code === "offline") {
