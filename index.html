@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>document.documentElement.classList.add("js");setTimeout(function(){if(!window.__ocHome)document.documentElement.classList.remove("js");},4000);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OploCloud</title>
 <meta name="description" content="Products and services from OploCloud.">
@@ -13,264 +12,401 @@
 <meta property="og:title" content="OploCloud">
 <meta property="og:description" content="Products and services from OploCloud.">
 <meta property="og:url" content="https://oplocloud.com/">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='5.25' fill='none' stroke='%231d1d1f' stroke-width='1.4'/%3E%3Ccircle cx='8' cy='8' r='1.7' fill='%231d1d1f'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='84.13 107.80 206.73 194.91'%3E%3Cg transform='translate(73.919875, 252.710833)'%3E%3Cpath fill='%23000' d='M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/home-v3.css?v=5003e079">
+<link rel="preconnect" href="https://esm.run" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/home-v3.css?v=5052fb59">
+<script>
+  /* Arms the scroll reveal. If home-v3.js has not run within 4s, disarm it so
+     nothing is left invisible. */
+  (function (r) {
+    r.classList.add("js");
+    setTimeout(function () { if (!window.__hv3) r.classList.remove("js"); }, 4000);
+  })(document.documentElement);
+</script>
+<script src="assets/js/home-v3.js?v=4106d63d" defer></script>
+<!-- Material Web (Material 3): the pill buttons. Pinned to an exact version, no
+     build step. The library's whole entry file, not the two button files: through
+     this CDN each of those carries its own copy of the shared parts, and the
+     second one then fails to register. It is async and comes after the page
+     script, so the page never waits on it. -->
+<script type="module" async>import "https://esm.run/@material/web@2.3.0/all.js";</script>
 </head>
 <body>
-<a class="skip" href="#top">Skip to content</a>
-<div class="mast" id="mast">
-<nav class="nav" id="nav" aria-label="OploCloud">
-  <div class="nav-in">
-    <a class="brand" href="index.html" aria-label="OploCloud home">
-      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.35"/><circle cx="8" cy="8" r="1.7" fill="currentColor"/></svg>
-    </a>
-    <ul class="nav-links">
-      <li><a href="plus/" data-flyout="cloud" aria-expanded="false" aria-controls="fly-cloud" aria-haspopup="true">Cloud</a></li>
-      <li><a href="hardware/" data-flyout="devices" aria-expanded="false" aria-controls="fly-devices" aria-haspopup="true">Devices</a></li>
-      <li><a href="software/" data-flyout="software" aria-expanded="false" aria-controls="fly-software" aria-haspopup="true">Software</a></li>
-      <li><a href="intelligence/" data-flyout="ai" aria-expanded="false" aria-controls="fly-ai" aria-haspopup="true">AI</a></li>
-      <li><a href="support/" data-flyout="support" aria-expanded="false" aria-controls="fly-support" aria-haspopup="true">Support</a></li>
-      <li><a href="solutions/#institutions" data-flyout="business" aria-expanded="false" aria-controls="fly-business" aria-haspopup="true">Business</a></li>
-      <li><a href="support/" data-flyout="help" aria-expanded="false" aria-controls="fly-help" aria-haspopup="true">Help</a></li>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- Icons, drawn once. The mark is the original artwork (assets/img/oplo-mark.svg). -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-mark" viewBox="84.13 107.80 206.73 194.91"><g transform="translate(73.919875, 252.710833)"><path fill="currentColor" d="M 77.929688 -144.414062 C 39.890625 -144.414062 10.710938 -112.648438 10.710938 -76.824219 C 10.710938 -43.953125 34.71875 -14.40625 71.652344 -10.339844 C 69.066406 -19.207031 68.699219 -23.269531 68.699219 -30.285156 C 68.699219 -66.851562 98.246094 -98.246094 135.179688 -98.246094 C 137.027344 -98.246094 139.613281 -98.246094 142.199219 -97.875 C 131.855469 -127.421875 106.371094 -144.414062 77.929688 -144.414062 Z M 130.378906 -138.132812 C 149.214844 -120.777344 158.449219 -101.199219 158.449219 -77.5625 C 158.449219 -32.503906 121.515625 3.324219 78.671875 3.324219 C 61.3125 3.324219 45.058594 -2.214844 29.917969 -12.558594 L 88.273438 33.609375 C 98.246094 41.367188 119.296875 49.492188 135.917969 49.492188 C 180.980469 49.492188 216.4375 12.925781 216.4375 -31.023438 C 216.4375 -56.140625 205.355469 -78.671875 185.78125 -94.183594 Z M 130.378906 -138.132812"/></g></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5.5" fill="none" stroke="currentColor"/><path d="m10.4 10.4 4.1 4.1" fill="none" stroke="currentColor" stroke-linecap="round"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 16 16"><rect x=".5" y=".5" width="15" height="15" rx="1.5" fill="none" stroke="currentColor"/><path d="M5.5 4.5v.5a2.5 2.5 0 0 0 5 0v-.5" fill="none" stroke="currentColor" stroke-linecap="round"/></symbol>
+</svg>
+
+<!-- 1. Nav. One list, so the logo, the seven links and the icons share one
+     even spread across 980px, the way the design draws it. Below 735px the
+     links give way to the menu button. -->
+<header class="nav" id="nav">
+  <nav class="nav__in" aria-label="Primary">
+    <ul class="nav__list">
+      <li class="nav__item nav__item--brand">
+        <a class="nav__brand" href="index.html" aria-label="OploCloud home"><svg class="mark" aria-hidden="true" focusable="false"><use href="#i-mark"/></svg></a>
+      </li>
+      <li class="nav__item nav__item--link">
+        <a class="nav__link" href="plus/" aria-expanded="false" aria-controls="fly-cloud">Cloud</a>
+        <div class="flyout" id="fly-cloud">
+          <div class="flyout__in"><div class="flyout__cols">
+            <div class="flyout__col flyout__col--lead">
+              <p class="flyout__h" id="fly-cloud-a">Explore Cloud</p>
+              <ul aria-labelledby="fly-cloud-a"><li><a href="plus/">[Link]</a></li><li><a href="plus/">[Link]</a></li><li><a href="plus/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-cloud-b">[Group]</p>
+              <ul aria-labelledby="fly-cloud-b"><li><a href="plus/">[Link]</a></li><li><a href="plus/">[Link]</a></li><li><a href="plus/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-cloud-c">[Group]</p>
+              <ul aria-labelledby="fly-cloud-c"><li><a href="plus/">[Link]</a></li><li><a href="plus/">[Link]</a></li><li><a href="plus/">[Link]</a></li></ul>
+            </div>
+          </div></div>
+        </div>
+      </li>
+      <li class="nav__item nav__item--link">
+        <a class="nav__link" href="hardware/" aria-expanded="false" aria-controls="fly-devices">Devices</a>
+        <div class="flyout" id="fly-devices">
+          <div class="flyout__in"><div class="flyout__cols">
+            <div class="flyout__col flyout__col--lead">
+              <p class="flyout__h" id="fly-devices-a">Explore Devices</p>
+              <ul aria-labelledby="fly-devices-a"><li><a href="hardware/">[Link]</a></li><li><a href="hardware/">[Link]</a></li><li><a href="hardware/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-devices-b">[Group]</p>
+              <ul aria-labelledby="fly-devices-b"><li><a href="hardware/">[Link]</a></li><li><a href="hardware/">[Link]</a></li><li><a href="hardware/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-devices-c">[Group]</p>
+              <ul aria-labelledby="fly-devices-c"><li><a href="hardware/">[Link]</a></li><li><a href="hardware/">[Link]</a></li><li><a href="hardware/">[Link]</a></li></ul>
+            </div>
+          </div></div>
+        </div>
+      </li>
+      <li class="nav__item nav__item--link">
+        <a class="nav__link" href="software/" aria-expanded="false" aria-controls="fly-software">Software</a>
+        <div class="flyout" id="fly-software">
+          <div class="flyout__in"><div class="flyout__cols">
+            <div class="flyout__col flyout__col--lead">
+              <p class="flyout__h" id="fly-software-a">Explore Software</p>
+              <ul aria-labelledby="fly-software-a"><li><a href="software/">[Link]</a></li><li><a href="software/">[Link]</a></li><li><a href="software/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-software-b">[Group]</p>
+              <ul aria-labelledby="fly-software-b"><li><a href="software/">[Link]</a></li><li><a href="software/">[Link]</a></li><li><a href="software/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-software-c">[Group]</p>
+              <ul aria-labelledby="fly-software-c"><li><a href="software/">[Link]</a></li><li><a href="software/">[Link]</a></li><li><a href="software/">[Link]</a></li></ul>
+            </div>
+          </div></div>
+        </div>
+      </li>
+      <li class="nav__item nav__item--link">
+        <a class="nav__link" href="intelligence/" aria-expanded="false" aria-controls="fly-ai">AI</a>
+        <div class="flyout" id="fly-ai">
+          <div class="flyout__in"><div class="flyout__cols">
+            <div class="flyout__col flyout__col--lead">
+              <p class="flyout__h" id="fly-ai-a">Explore AI</p>
+              <ul aria-labelledby="fly-ai-a"><li><a href="intelligence/">[Link]</a></li><li><a href="intelligence/">[Link]</a></li><li><a href="intelligence/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-ai-b">[Group]</p>
+              <ul aria-labelledby="fly-ai-b"><li><a href="intelligence/">[Link]</a></li><li><a href="intelligence/">[Link]</a></li><li><a href="intelligence/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-ai-c">[Group]</p>
+              <ul aria-labelledby="fly-ai-c"><li><a href="intelligence/">[Link]</a></li><li><a href="intelligence/">[Link]</a></li><li><a href="intelligence/">[Link]</a></li></ul>
+            </div>
+          </div></div>
+        </div>
+      </li>
+      <li class="nav__item nav__item--link">
+        <a class="nav__link" href="support/" aria-expanded="false" aria-controls="fly-support">Support</a>
+        <div class="flyout" id="fly-support">
+          <div class="flyout__in"><div class="flyout__cols">
+            <div class="flyout__col flyout__col--lead">
+              <p class="flyout__h" id="fly-support-a">Explore Support</p>
+              <ul aria-labelledby="fly-support-a"><li><a href="support/">[Link]</a></li><li><a href="support/">[Link]</a></li><li><a href="support/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-support-b">[Group]</p>
+              <ul aria-labelledby="fly-support-b"><li><a href="support/">[Link]</a></li><li><a href="support/">[Link]</a></li><li><a href="support/">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-support-c">[Group]</p>
+              <ul aria-labelledby="fly-support-c"><li><a href="support/">[Link]</a></li><li><a href="support/">[Link]</a></li><li><a href="support/">[Link]</a></li></ul>
+            </div>
+          </div></div>
+        </div>
+      </li>
+      <li class="nav__item nav__item--link">
+        <a class="nav__link" href="solutions/#institutions" aria-expanded="false" aria-controls="fly-business">Business</a>
+        <div class="flyout" id="fly-business">
+          <div class="flyout__in"><div class="flyout__cols">
+            <div class="flyout__col flyout__col--lead">
+              <p class="flyout__h" id="fly-business-a">Explore Business</p>
+              <ul aria-labelledby="fly-business-a"><li><a href="solutions/#institutions">[Link]</a></li><li><a href="solutions/#institutions">[Link]</a></li><li><a href="solutions/#institutions">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-business-b">[Group]</p>
+              <ul aria-labelledby="fly-business-b"><li><a href="solutions/#institutions">[Link]</a></li><li><a href="solutions/#institutions">[Link]</a></li><li><a href="solutions/#institutions">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-business-c">[Group]</p>
+              <ul aria-labelledby="fly-business-c"><li><a href="solutions/#institutions">[Link]</a></li><li><a href="solutions/#institutions">[Link]</a></li><li><a href="solutions/#institutions">[Link]</a></li></ul>
+            </div>
+          </div></div>
+        </div>
+      </li>
+      <li class="nav__item nav__item--link">
+        <a class="nav__link" href="support/#help" aria-expanded="false" aria-controls="fly-help">Help</a>
+        <div class="flyout" id="fly-help">
+          <div class="flyout__in"><div class="flyout__cols">
+            <div class="flyout__col flyout__col--lead">
+              <p class="flyout__h" id="fly-help-a">Explore Help</p>
+              <ul aria-labelledby="fly-help-a"><li><a href="support/#help">[Link]</a></li><li><a href="support/#help">[Link]</a></li><li><a href="support/#help">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-help-b">[Group]</p>
+              <ul aria-labelledby="fly-help-b"><li><a href="support/#help">[Link]</a></li><li><a href="support/#help">[Link]</a></li><li><a href="support/#help">[Link]</a></li></ul>
+            </div>
+            <div class="flyout__col">
+              <p class="flyout__h" id="fly-help-c">[Group]</p>
+              <ul aria-labelledby="fly-help-c"><li><a href="support/#help">[Link]</a></li><li><a href="support/#help">[Link]</a></li><li><a href="support/#help">[Link]</a></li></ul>
+            </div>
+          </div></div>
+        </div>
+      </li>
+      <li class="nav__item nav__item--icon nav__item--search">
+        <button class="icon-btn" type="button" aria-label="Search"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></button>
+      </li>
+      <li class="nav__item nav__item--icon">
+        <button class="icon-btn" type="button" aria-label="Shopping bag"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-bag"/></svg></button>
+      </li>
+      <li class="nav__item nav__item--icon nav__item--menu">
+        <button class="icon-btn icon-btn--ink" id="menu-open" type="button" aria-label="Menu" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu" commandfor="menu" command="show-modal">
+          <svg class="ico ico--menu" viewBox="0 0 17 7" aria-hidden="true" focusable="false"><path d="M0 .5h17M0 6.5h17" fill="none" stroke="currentColor"/></svg>
+        </button>
+      </li>
     </ul>
-    <div class="nav-tools">
-      <md-icon-button tabindex="0" aria-label="Search">
-        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="7" cy="7" r="4.25" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.2 10.2 13.3 13.3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      </md-icon-button>
-      <md-icon-button tabindex="0" aria-label="Bag">
-        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.4 6.2h9.2l-.7 7a1 1 0 0 1-1 .8H5.1a1 1 0 0 1-1-.8l-.7-7z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M6 6.2V4.8a2 2 0 0 1 4 0v1.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-      </md-icon-button>
-    </div>
-  </div>
-</nav>
-<div class="flyout" id="flyout" hidden>
-  <div class="flyout-panel" id="fly-cloud" data-panel="cloud" role="region" aria-label="Cloud" hidden>
-    <div class="flyout-in">
-      <div class="fly-col lead"><h2>Explore Cloud</h2><a href="plus/">[Link]</a><a href="plus/">[Link]</a><a href="plus/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="plus/">[Link]</a><a href="plus/">[Link]</a><a href="plus/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="plus/">[Link]</a><a href="plus/">[Link]</a><a href="plus/">[Link]</a></div>
-    </div>
-  </div>
-  <div class="flyout-panel" id="fly-devices" data-panel="devices" role="region" aria-label="Devices" hidden>
-    <div class="flyout-in">
-      <div class="fly-col lead"><h2>Explore Devices</h2><a href="hardware/">[Link]</a><a href="hardware/">[Link]</a><a href="hardware/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="hardware/">[Link]</a><a href="hardware/">[Link]</a><a href="hardware/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="hardware/">[Link]</a><a href="hardware/">[Link]</a><a href="hardware/">[Link]</a></div>
-    </div>
-  </div>
-  <div class="flyout-panel" id="fly-software" data-panel="software" role="region" aria-label="Software" hidden>
-    <div class="flyout-in">
-      <div class="fly-col lead"><h2>Explore Software</h2><a href="software/">[Link]</a><a href="software/">[Link]</a><a href="software/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="software/">[Link]</a><a href="software/">[Link]</a><a href="software/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="software/">[Link]</a><a href="software/">[Link]</a><a href="software/">[Link]</a></div>
-    </div>
-  </div>
-  <div class="flyout-panel" id="fly-ai" data-panel="ai" role="region" aria-label="AI" hidden>
-    <div class="flyout-in">
-      <div class="fly-col lead"><h2>Explore AI</h2><a href="intelligence/">[Link]</a><a href="intelligence/">[Link]</a><a href="intelligence/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="intelligence/">[Link]</a><a href="intelligence/">[Link]</a><a href="intelligence/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="intelligence/">[Link]</a><a href="intelligence/">[Link]</a><a href="intelligence/">[Link]</a></div>
-    </div>
-  </div>
-  <div class="flyout-panel" id="fly-support" data-panel="support" role="region" aria-label="Support" hidden>
-    <div class="flyout-in">
-      <div class="fly-col lead"><h2>Explore Support</h2><a href="support/">[Link]</a><a href="support/">[Link]</a><a href="support/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="support/">[Link]</a><a href="support/">[Link]</a><a href="support/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="support/">[Link]</a><a href="support/">[Link]</a><a href="support/">[Link]</a></div>
-    </div>
-  </div>
-  <div class="flyout-panel" id="fly-business" data-panel="business" role="region" aria-label="Business" hidden>
-    <div class="flyout-in">
-      <div class="fly-col lead"><h2>Explore Business</h2><a href="solutions/#institutions">[Link]</a><a href="solutions/#institutions">[Link]</a><a href="solutions/#institutions">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="solutions/#institutions">[Link]</a><a href="solutions/#institutions">[Link]</a><a href="solutions/#institutions">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="solutions/#institutions">[Link]</a><a href="solutions/#institutions">[Link]</a><a href="solutions/#institutions">[Link]</a></div>
-    </div>
-  </div>
-  <div class="flyout-panel" id="fly-help" data-panel="help" role="region" aria-label="Help" hidden>
-    <div class="flyout-in">
-      <div class="fly-col lead"><h2>Explore Help</h2><a href="support/">[Link]</a><a href="support/">[Link]</a><a href="support/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="support/">[Link]</a><a href="support/">[Link]</a><a href="support/">[Link]</a></div>
-      <div class="fly-col side"><h2>[Group]</h2><a href="support/">[Link]</a><a href="support/">[Link]</a><a href="support/">[Link]</a></div>
-    </div>
-  </div>
-</div>
-</div>
-<div class="scrim" id="scrim" hidden></div>
+  </nav>
+</header>
+<div class="scrim" id="scrim" aria-hidden="true"></div>
 
-<main id="top">
-  <div class="announce">
-    <p>[Announcement placeholder: one short line] <md-text-button tabindex="0" href="newsroom/">Learn more ›</md-text-button></p>
+<!-- Mobile menu: a full-screen sheet over the page (below 735px). -->
+<dialog class="menu" id="menu" aria-label="Menu">
+  <div class="menu__bar">
+    <a class="nav__brand" href="index.html" aria-label="OploCloud home"><svg class="mark" aria-hidden="true" focusable="false"><use href="#i-mark"/></svg></a>
+    <div class="menu__end">
+      <button class="icon-btn" type="button" aria-label="Search"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></button>
+      <button class="icon-btn" type="button" aria-label="Shopping bag"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-bag"/></svg></button>
+      <button class="icon-btn icon-btn--ink" id="menu-close" type="button" aria-label="Close menu" commandfor="menu" command="close" autofocus>
+        <svg class="ico ico--close" viewBox="0 0 13 13" aria-hidden="true" focusable="false"><path d="m.5.5 12 12m0-12-12 12" fill="none" stroke="currentColor"/></svg>
+      </button>
+    </div>
   </div>
+  <nav class="menu__body" aria-label="Primary">
+    <ul class="menu__list">
+      <li><a class="menu__link" href="plus/">Cloud</a></li>
+      <li><a class="menu__link" href="hardware/">Devices</a></li>
+      <li><a class="menu__link" href="software/">Software</a></li>
+      <li><a class="menu__link" href="intelligence/">AI</a></li>
+      <li><a class="menu__link" href="support/">Support</a></li>
+      <li><a class="menu__link" href="solutions/#institutions">Business</a></li>
+      <li><a class="menu__link" href="support/#help">Help</a></li>
+    </ul>
+    <hr class="menu__rule">
+    <ul class="menu__more">
+      <li><button class="menu__more-btn" type="button">Search</button></li>
+      <li><button class="menu__more-btn" type="button">Bag</button></li>
+    </ul>
+  </nav>
+</dialog>
 
-  <section class="band band-white" id="overview" aria-labelledby="h-overview">
-    <div class="wrap reveal">
-      <div class="band-copy">
-        <p class="eyebrow">OploCloud</p>
-        <h1 class="display" id="h-overview">Hardware, software and cloud.</h1>
-        <p class="sub">Products and services from OploCloud.</p>
-        <div class="actions">
-          <md-filled-button tabindex="0" href="products/">Learn more</md-filled-button>
-          <md-outlined-button tabindex="0" href="products/">Explore ›</md-outlined-button>
-        </div>
+<!-- 2. Announcement bar -->
+<aside class="announce" aria-label="Announcement">
+  <p>[Announcement placeholder: one short line]</p>
+  <a class="announce__link" href="newsroom/">Learn more <span aria-hidden="true">›</span></a>
+</aside>
+
+<main id="main">
+
+  <!-- 3. Band 1 · white -->
+  <section class="band band--light" aria-labelledby="h-intro">
+    <div class="wrap band__in">
+      <p class="eyebrow reveal">OploCloud</p>
+      <h1 class="display reveal" id="h-intro" style="--d:60ms">Hardware, software and cloud.</h1>
+      <p class="sub reveal" style="--d:120ms">Products and services from OploCloud.</p>
+      <div class="actions reveal" style="--d:180ms">
+        <md-filled-button href="company/" aria-label="Learn more about OploCloud">Learn more</md-filled-button>
+        <md-outlined-button href="products/" aria-label="Explore products">Explore <span aria-hidden="true">›</span></md-outlined-button>
       </div>
-      <div class="ph band-media">Product image 2:1</div>
+      <div class="ph ph--hero reveal" style="--d:240ms" role="img" aria-label="Product image placeholder"><span class="ph__label">Product image 16:8</span></div>
     </div>
   </section>
 
-  <section class="band band-dark on-dark" id="devices" aria-labelledby="h-devices">
-    <div class="wrap reveal">
-      <div class="band-copy">
-        <p class="eyebrow">Devices</p>
-        <h2 class="display" id="h-devices">Built to be used every day.</h2>
-        <div class="actions">
-          <md-filled-button tabindex="0" href="hardware/">Learn more</md-filled-button>
-          <md-outlined-button tabindex="0" href="hardware/#devices">Buy ›</md-outlined-button>
-        </div>
+  <!-- 4. Band 2 · dark -->
+  <section class="band band--dark band--specs on-dark" aria-labelledby="h-devices">
+    <div class="wrap band__in">
+      <p class="eyebrow reveal">Devices</p>
+      <h2 class="display reveal" id="h-devices" style="--d:60ms">Built to be used every day.</h2>
+      <div class="actions reveal" style="--d:120ms">
+        <md-filled-button href="hardware/" aria-label="Learn more about Devices">Learn more</md-filled-button>
+        <md-outlined-button href="hardware/#devices" aria-label="Buy Devices">Buy <span aria-hidden="true">›</span></md-outlined-button>
       </div>
-      <div class="ph ph-dark band-media-16">Product image 16:9</div>
-      <div class="specs">
-        <p><strong>[Spec]</strong><span>Spec label</span></p>
-        <p><strong>[Spec]</strong><span>Spec label</span></p>
-        <p><strong>[Spec]</strong><span>Spec label</span></p>
-      </div>
+      <div class="ph ph--dark ph--wide reveal" style="--d:180ms" role="img" aria-label="Product image placeholder"><span class="ph__label">Product image 16:10</span></div>
+      <ul class="specs reveal" style="--d:240ms">
+        <li class="spec"><p class="spec__value">[Spec]</p><p class="spec__label">Spec label</p></li>
+        <li class="spec"><p class="spec__value">[Spec]</p><p class="spec__label">Spec label</p></li>
+        <li class="spec"><p class="spec__value">[Spec]</p><p class="spec__label">Spec label</p></li>
+      </ul>
     </div>
   </section>
 
-  <section class="band band-soft" id="cloud" aria-labelledby="h-cloud">
-    <div class="wrap reveal">
-      <div class="band-copy">
-        <p class="eyebrow">Cloud</p>
-        <h2 class="display" id="h-cloud">Storage, compute and backups.</h2>
-        <div class="actions">
-          <md-filled-button tabindex="0" href="plus/">Learn more</md-filled-button>
-          <md-outlined-button tabindex="0" href="plus/">Explore ›</md-outlined-button>
-        </div>
+  <!-- 5. Band 3 · #F5F5F7 -->
+  <section class="band band--alt" aria-labelledby="h-cloud">
+    <div class="wrap band__in">
+      <p class="eyebrow reveal">Cloud</p>
+      <h2 class="display reveal" id="h-cloud" style="--d:60ms">Storage, compute and backups.</h2>
+      <div class="actions reveal" style="--d:120ms">
+        <md-filled-button href="plus/" aria-label="Learn more about Cloud">Learn more</md-filled-button>
+        <md-outlined-button href="plus/#plans" aria-label="Explore Cloud">Explore <span aria-hidden="true">›</span></md-outlined-button>
       </div>
-      <div class="ph band-media">Product image 2:1</div>
+      <div class="ph ph--hero reveal" style="--d:180ms" role="img" aria-label="Product image placeholder"><span class="ph__label">Product image 16:8</span></div>
     </div>
   </section>
 
-  <section class="tiles-sec" aria-label="Product tiles">
+  <!-- 6. Tile grid · 2x2 on white. Each tile is a fixed height; its picture
+       runs off the bottom edge. -->
+  <div class="band band--light band--tiles">
     <div class="wrap">
       <div class="tiles">
-        <article class="tile reveal" id="software">
-          <p class="eyebrow">Software</p>
-          <h2>Mail, docs and calendar.</h2>
-          <div class="actions">
-            <md-filled-button tabindex="0" href="software/">Learn more</md-filled-button>
-            <md-outlined-button tabindex="0" href="software/">Explore ›</md-outlined-button>
+
+        <article class="tile reveal" aria-labelledby="t-software">
+          <div class="tile__text">
+            <p class="tile__eyebrow">Software</p>
+            <h2 class="tile__head" id="t-software">Mail, docs and calendar.</h2>
+            <div class="actions">
+              <md-filled-button href="software/" aria-label="Learn more about Software">Learn more</md-filled-button>
+              <md-outlined-button href="software/#apps" aria-label="Explore Software">Explore <span aria-hidden="true">›</span></md-outlined-button>
+            </div>
           </div>
-          <div class="tile-media"><div class="tile-media-in ph tile-ph">Product image</div></div>
+          <div class="ph tile__media" role="img" aria-label="Product image placeholder"></div>
         </article>
-        <article class="tile reveal" id="ai">
-          <p class="eyebrow">AI</p>
-          <h2>AI, built into the tools you use.</h2>
-          <p class="sub">A short, factual description goes here.</p>
-          <div class="actions">
-            <md-filled-button tabindex="0" href="intelligence/">Learn more</md-filled-button>
-            <md-outlined-button tabindex="0" href="intelligence/">Explore ›</md-outlined-button>
+
+        <article class="tile reveal" style="--d:80ms" aria-labelledby="t-ai">
+          <div class="tile__text">
+            <p class="tile__eyebrow">AI</p>
+            <h2 class="tile__head" id="t-ai">AI, built into the tools you use.</h2>
+            <p class="sub">A short, factual description goes here.</p>
+            <div class="actions">
+              <md-filled-button href="intelligence/" aria-label="Learn more about AI">Learn more</md-filled-button>
+              <md-outlined-button href="intelligence/#on-device" aria-label="Explore AI">Explore <span aria-hidden="true">›</span></md-outlined-button>
+            </div>
           </div>
-          <div class="tile-media">
-            <div class="tile-media-in mock" aria-hidden="true">
-              <div class="mock-dots"><span></span><span></span><span></span></div>
-              <div class="mock-body">
-                <div class="mock-side"><i></i><i></i><i></i></div>
-                <div class="mock-main">
-                  <div class="mock-row"><i></i><i></i></div>
-                  <i class="mock-wide"></i>
-                </div>
-              </div>
+          <div class="ph tile__media mock" role="img" aria-label="Interface mock-up placeholder">
+            <div class="mock__dots"><i></i><i></i><i></i></div>
+            <div class="mock__body">
+              <div class="mock__side"><i></i><i></i><i></i></div>
+              <div class="mock__card"></div>
+              <div class="mock__card"></div>
+              <div class="mock__card mock__card--wide"></div>
             </div>
           </div>
         </article>
-        <article class="tile reveal" id="devices-tile">
-          <p class="eyebrow">Devices</p>
-          <h2>Hardware made by OploCloud.</h2>
-          <div class="actions">
-            <md-filled-button tabindex="0" href="hardware/">Learn more</md-filled-button>
-            <md-outlined-button tabindex="0" href="hardware/#devices">Buy ›</md-outlined-button>
+
+        <article class="tile reveal" aria-labelledby="t-devices">
+          <div class="tile__text">
+            <p class="tile__eyebrow">Devices</p>
+            <h2 class="tile__head" id="t-devices">Hardware made by OploCloud.</h2>
+            <div class="actions">
+              <md-filled-button href="hardware/" aria-label="Learn more about Devices">Learn more</md-filled-button>
+              <md-outlined-button href="hardware/#devices" aria-label="Buy Devices">Buy <span aria-hidden="true">›</span></md-outlined-button>
+            </div>
           </div>
-          <div class="tile-media"><div class="tile-media-in ph tile-ph">Product image</div></div>
+          <div class="ph tile__media" role="img" aria-label="Product image placeholder"></div>
         </article>
-        <article class="tile reveal" id="lineup">
-          <p class="eyebrow">Lineup</p>
-          <h2>See the lineup.</h2>
-          <p class="sub">Devices, software and cloud services from OploCloud.</p>
-          <div class="actions">
-            <md-filled-button tabindex="0" href="products/">Learn more</md-filled-button>
-            <md-outlined-button tabindex="0" href="products/">Explore ›</md-outlined-button>
+
+        <article class="tile reveal" style="--d:80ms" aria-labelledby="t-lineup">
+          <div class="tile__text">
+            <p class="tile__eyebrow">Lineup</p>
+            <h2 class="tile__head" id="t-lineup">See the lineup.</h2>
+            <p class="sub">Devices, software and cloud services from OploCloud.</p>
+            <div class="actions">
+              <md-filled-button href="products/" aria-label="Learn more about the lineup">Learn more</md-filled-button>
+              <md-outlined-button href="products/#kern" aria-label="Explore the lineup">Explore <span aria-hidden="true">›</span></md-outlined-button>
+            </div>
           </div>
-          <div class="tile-media"><div class="tile-media-in ph tile-ph">Product image</div></div>
+          <div class="ph tile__media" role="img" aria-label="Product image placeholder"></div>
         </article>
+
       </div>
+    </div>
+  </div>
+
+  <!-- 7. Carousel · dark -->
+  <section class="carousel on-dark" data-carousel aria-roledescription="carousel" aria-labelledby="h-featured">
+    <h2 class="sr" id="h-featured">Featured media</h2>
+    <p class="sr" id="carousel-status" role="status"></p>
+    <div class="carousel__viewport reveal">
+      <div class="carousel__track" id="carousel-track">
+        <div class="slide" role="group" aria-roledescription="slide" aria-label="1 of 5">
+          <div class="ph ph--dark" role="img" aria-label="Featured media placeholder, slide 1"><span class="ph__label ph__label--top">Featured media 16:9</span></div>
+          <div class="slide__cap"><h3 class="slide__title">[Title placeholder]</h3><md-outlined-button aria-label="Watch, slide 1">Watch <span aria-hidden="true">›</span></md-outlined-button></div>
+        </div>
+        <div class="slide" role="group" aria-roledescription="slide" aria-label="2 of 5">
+          <div class="ph ph--dark" role="img" aria-label="Featured media placeholder, slide 2"><span class="ph__label ph__label--top">Featured media 16:9</span></div>
+          <div class="slide__cap"><h3 class="slide__title">[Title placeholder]</h3><md-outlined-button aria-label="Watch, slide 2">Watch <span aria-hidden="true">›</span></md-outlined-button></div>
+        </div>
+        <div class="slide" role="group" aria-roledescription="slide" aria-label="3 of 5">
+          <div class="ph ph--dark" role="img" aria-label="Featured media placeholder, slide 3"><span class="ph__label ph__label--top">Featured media 16:9</span></div>
+          <div class="slide__cap"><h3 class="slide__title">[Title placeholder]</h3><md-outlined-button aria-label="Watch, slide 3">Watch <span aria-hidden="true">›</span></md-outlined-button></div>
+        </div>
+        <div class="slide" role="group" aria-roledescription="slide" aria-label="4 of 5">
+          <div class="ph ph--dark" role="img" aria-label="Featured media placeholder, slide 4"><span class="ph__label ph__label--top">Featured media 16:9</span></div>
+          <div class="slide__cap"><h3 class="slide__title">[Title placeholder]</h3><md-outlined-button aria-label="Watch, slide 4">Watch <span aria-hidden="true">›</span></md-outlined-button></div>
+        </div>
+        <div class="slide" role="group" aria-roledescription="slide" aria-label="5 of 5">
+          <div class="ph ph--dark" role="img" aria-label="Featured media placeholder, slide 5"><span class="ph__label ph__label--top">Featured media 16:9</span></div>
+          <div class="slide__cap"><h3 class="slide__title">[Title placeholder]</h3><md-outlined-button aria-label="Watch, slide 5">Watch <span aria-hidden="true">›</span></md-outlined-button></div>
+        </div>
+      </div>
+    </div>
+    <div class="carousel__controls reveal">
+      <div class="carousel__dots" role="group" aria-label="Choose a slide">
+        <button class="dot" type="button" aria-label="Go to slide 1" aria-controls="carousel-track" aria-current="true"></button>
+        <button class="dot" type="button" aria-label="Go to slide 2" aria-controls="carousel-track"></button>
+        <button class="dot" type="button" aria-label="Go to slide 3" aria-controls="carousel-track"></button>
+        <button class="dot" type="button" aria-label="Go to slide 4" aria-controls="carousel-track"></button>
+        <button class="dot" type="button" aria-label="Go to slide 5" aria-controls="carousel-track"></button>
+      </div>
+      <button class="carousel__toggle" type="button" aria-label="Pause slideshow" aria-controls="carousel-track">
+        <svg class="ico-pause" viewBox="0 0 8 10" aria-hidden="true" focusable="false"><rect width="2" height="10" rx=".5" fill="currentColor"/><rect x="6" width="2" height="10" rx=".5" fill="currentColor"/></svg>
+        <svg class="ico-play" viewBox="0 0 8 10" aria-hidden="true" focusable="false"><path d="M1 .9v8.2a.6.6 0 0 0 .92.5l6.1-4.1a.6.6 0 0 0 0-1L1.92.4A.6.6 0 0 0 1 .9Z" fill="currentColor"/></svg>
+      </button>
     </div>
   </section>
 
-  <section class="carousel on-dark reveal" id="featured" aria-roledescription="carousel" aria-labelledby="featured-title">
-    <h2 class="sr" id="featured-title">Featured</h2>
-    <div class="carousel-viewport">
-      <div class="carousel-track">
-        <article class="slide" id="slide-1" aria-roledescription="slide" aria-label="Slide 1 of 5">
-          <div class="slide-media"><p class="ph-tag">Featured media 16:9<br>Slide 1</p></div>
-          <div class="slide-cap">
-            <h3>[Title placeholder]</h3>
-            <md-outlined-button tabindex="0">Watch ›</md-outlined-button>
-          </div>
-        </article>
-        <article class="slide" id="slide-2" aria-roledescription="slide" aria-label="Slide 2 of 5">
-          <div class="slide-media"><p class="ph-tag">Featured media 16:9<br>Slide 2</p></div>
-          <div class="slide-cap">
-            <h3>[Title placeholder]</h3>
-            <md-outlined-button tabindex="0">Watch ›</md-outlined-button>
-          </div>
-        </article>
-        <article class="slide" id="slide-3" aria-roledescription="slide" aria-label="Slide 3 of 5">
-          <div class="slide-media"><p class="ph-tag">Featured media 16:9<br>Slide 3</p></div>
-          <div class="slide-cap">
-            <h3>[Title placeholder]</h3>
-            <md-outlined-button tabindex="0">Watch ›</md-outlined-button>
-          </div>
-        </article>
-        <article class="slide" id="slide-4" aria-roledescription="slide" aria-label="Slide 4 of 5">
-          <div class="slide-media"><p class="ph-tag">Featured media 16:9<br>Slide 4</p></div>
-          <div class="slide-cap">
-            <h3>[Title placeholder]</h3>
-            <md-outlined-button tabindex="0">Watch ›</md-outlined-button>
-          </div>
-        </article>
-        <article class="slide" id="slide-5" aria-roledescription="slide" aria-label="Slide 5 of 5">
-          <div class="slide-media"><p class="ph-tag">Featured media 16:9<br>Slide 5</p></div>
-          <div class="slide-cap">
-            <h3>[Title placeholder]</h3>
-            <md-outlined-button tabindex="0">Watch ›</md-outlined-button>
-          </div>
-        </article>
-      </div>
-    </div>
-    <div class="carousel-controls" role="tablist" aria-label="Featured slides">
-      <button class="dot" type="button" role="tab" aria-selected="true" aria-label="Slide 1"></button>
-      <button class="dot" type="button" role="tab" aria-selected="false" tabindex="-1" aria-label="Slide 2"></button>
-      <button class="dot" type="button" role="tab" aria-selected="false" tabindex="-1" aria-label="Slide 3"></button>
-      <button class="dot" type="button" role="tab" aria-selected="false" tabindex="-1" aria-label="Slide 4"></button>
-      <button class="dot" type="button" role="tab" aria-selected="false" tabindex="-1" aria-label="Slide 5"></button>
-      <md-icon-button class="carousel-pause" tabindex="0" aria-label="Pause" aria-pressed="false">
-        <svg class="icon-pause" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><rect x="2.1" y="1.6" width="2.3" height="8.8" rx=".5" fill="currentColor"/><rect x="7.6" y="1.6" width="2.3" height="8.8" rx=".5" fill="currentColor"/></svg>
-        <svg class="icon-play" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M3.1 1.7 10.2 6 3.1 10.3Z" fill="currentColor"/></svg>
-      </md-icon-button>
-    </div>
-  </section>
 </main>
 
-<footer class="foot" aria-label="OploCloud footer">
-  <div class="wrap reveal">
-    <p class="foot-note">Placeholder for footnotes and legal notes.</p>
-    <div class="foot-rule"></div>
-    <div class="foot-cols">
-      <div>
-        <h2>Products</h2>
+<!-- 8. Footer -->
+<footer class="foot">
+  <div class="wrap">
+    <p class="foot__note">Placeholder for footnotes and legal notes.</p>
+    <hr class="foot__rule">
+    <div class="foot__cols">
+      <div class="foot__col">
+        <h2 class="foot__h">Products</h2>
         <ul>
           <li><a href="plus/">Cloud</a></li>
           <li><a href="hardware/">Devices</a></li>
@@ -278,34 +414,34 @@
           <li><a href="intelligence/">AI</a></li>
         </ul>
       </div>
-      <div>
-        <h2>Support</h2>
+      <div class="foot__col">
+        <h2 class="foot__h">Support</h2>
         <ul>
           <li><a href="support/">Help center</a></li>
           <li><a href="contact/">Contact</a></li>
         </ul>
       </div>
-      <div>
-        <h2>Account</h2>
+      <div class="foot__col">
+        <h2 class="foot__h">Account</h2>
         <ul>
           <li><a href="sign-in/">Sign in</a></li>
         </ul>
       </div>
-      <div>
-        <h2>Company</h2>
+      <div class="foot__col">
+        <h2 class="foot__h">Company</h2>
         <ul>
           <li><a href="company/">About</a></li>
-          <li><a href="privacy/">Privacy</a></li>
+          <li><a href="legal/privacy-policy/">Privacy</a></li>
           <li><a href="legal/terms/">Terms</a></li>
         </ul>
       </div>
     </div>
-    <div class="foot-bar">
-      <span>© 2026 OploCloud</span>
-      <span class="foot-legal"><a href="legal/terms/">Terms</a> <span aria-hidden="true">·</span> <a href="legal/privacy-policy/">Privacy</a></span>
+    <div class="foot__bar">
+      <p>© 2026 OploCloud</p>
+      <p><a href="legal/terms/">Terms</a> <span aria-hidden="true">·</span> <a href="legal/privacy-policy/">Privacy</a></p>
     </div>
   </div>
 </footer>
-<script type="module" src="assets/js/home-v3.js?v=3ea61ec8"></script>
+
 </body>
 </html>

@@ -1,823 +1,823 @@
-/* OploCloud homepage v3. Desktop layout at a 1440px design width. */
+/* ==========================================================================
+   OploCloud — homepage v3
 
+   Built to the "OploCloud Home v3" design: Desktop 1440, Mobile 390 and the
+   Mobile Menu Overlay. Desktop is the base; below 735px the mobile layout and
+   the menu sheet take over.
+
+   Loaded by index.html and nothing else. It is standalone on purpose: it does
+   not load oplo-design.css, so none of the old front page's rules apply here.
+
+   The pill buttons are Material Web (Material 3, @material/web), themed below
+   with the design's tokens. The nav's icon buttons are plain buttons, so their
+   16px glyphs and hit areas can be placed exactly where the design puts them.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ Tokens */
 :root {
-  --oc-text: #1d1d1f;
-  --oc-muted: #6e6e73;
-  --oc-bg: #ffffff;
-  --oc-soft: #f5f5f7;
-  --oc-dark: #0a0a0b;
-  --oc-accent: #3d5afe;
-  --oc-accent-hover: #2f4ae0;
-  --oc-ph: #e8e8ed;
-  --oc-ph-dark: #1c1c1e;
-  --oc-ph-ink: #3a3a3c;
-  --oc-ease: cubic-bezier(.25, .1, .25, 1);
-  --oc-nav-h: 44px;
   color-scheme: light;
-  --md-sys-color-primary: #3d5afe;
-  --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-on-surface: #1d1d1f;
-  --md-sys-color-surface: #ffffff;
-  --md-sys-color-surface-container: #f5f5f7;
-  --md-ref-typeface-brand: "Inter Tight", Inter, sans-serif;
-  --md-ref-typeface-plain: Inter, sans-serif;
-  --md-sys-shape-corner-full: 999px;
+
+  /* Colour. Accent is for interactive elements only. */
+  --text: #1D1D1F;
+  --text-soft: rgba(29, 29, 31, .8);   /* nav links and nav icons */
+  --muted: #6E6E73;
+  --bg: #FFFFFF;
+  --bg-alt: #F5F5F7;
+  --dark: #0A0A0B;
+  --accent: #3D5AFE;
+  --accent-hover: #2F4AE0;
+  --muted-dark: #A1A1A6;
+  --on-dark: #FFFFFF;
+  --line-dark: #F5F5F7;          /* headlines, outlines and controls on the dark bands */
+  --line: #D2D2D7;               /* rules */
+  --nav-bg: rgba(250, 250, 252, .8);
+  --flyout-bg: #FAFAFC;
+  --ph-light: #E8E8ED;           /* placeholder boxes */
+  --ph-dark: #1C1C1E;
+  --ph-ink: #D2D2D7;             /* the gray marks inside the AI mock-up */
+  --ph-label: #5E5E63;           /* 5.3:1 on #E8E8ED */
+
+  /* Type. One family: headlines are Inter Semibold with -2.2% tracking. The
+     design draws three things Bold: the dark band's headline, its spec values
+     and the footer headings. */
+  --f-body: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --f-head: var(--f-body);
+  --f-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --track-head: -.022em;
+
+  /* Grid: 12 columns, 120px margins, 24px gutters at 1440. The margin scales
+     down in a narrower window; above 1440 the page stops growing and centres.
+     The nav is narrower: 980px, like the design's bar. */
+  --page-max: 1440px;
+  --margin: min(120px, calc(100vw / 12));
+  --gutter: 24px;
+  --nav-h: 44px;
+  --nav-max: 980px;
+  --nav-pad: 22px;
+  --radius: 24px;
+  --ease: cubic-bezier(.25, .1, .25, 1);
+}
+
+/* ------------------------------------------------ Material 3 theme tokens
+   --md-sys-* and --md-ref-* are the design's; the --md-<component>-* ones are
+   how those tokens reach the components (pill shape, size, no M3 elevation).
+   Hover is "darker / tinted": the filled pill goes to --accent-hover, the
+   outlined pill takes a tint (set on the host below). */
+:root {
+  --md-ref-typeface-brand: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --md-ref-typeface-plain: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --md-sys-color-primary: #3D5AFE;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-secondary: #3D5AFE;
+  --md-sys-color-on-surface: #1D1D1F;
+  --md-sys-color-on-surface-variant: #6E6E73;
+  --md-sys-color-surface: #FFFFFF;
+  --md-sys-color-surface-container: #F5F5F7;
+  --md-sys-color-outline: #6E6E73;
+  --md-sys-color-shadow: #000000;
+
+  /* Button label: Inter Medium 15px (label-large is what every M3 button reads) */
+  --md-sys-typescale-label-large-font: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --md-sys-typescale-label-large-size: 15px;
+  --md-sys-typescale-label-large-weight: 500;
+  --md-sys-typescale-label-large-line-height: 20px;
+  --md-sys-typescale-label-large-tracking: 0;
+
+  /* Focus ring: visible, accent on light (switched to near-white on dark) */
+  --md-focus-ring-color: #3D5AFE;
+  --md-focus-ring-width: 2px;
+  --md-focus-ring-outward-offset: 2px;
+
+  /* Pill shape, 40px tall, 20px either side of the label. The outline sits
+     inside the outlined pill's padding, hence 21. */
   --md-filled-button-container-shape: 999px;
   --md-outlined-button-container-shape: 999px;
-  --md-text-button-container-shape: 999px;
-  --md-filled-button-container-color: #3d5afe;
-  --md-filled-button-label-text-color: #ffffff;
-  --md-filled-button-hover-label-text-color: #ffffff;
-  --md-filled-button-focus-label-text-color: #ffffff;
-  --md-filled-button-pressed-label-text-color: #ffffff;
+  --md-filled-button-container-height: 40px;
+  --md-outlined-button-container-height: 40px;
+  --md-filled-button-leading-space: 20px;
+  --md-filled-button-trailing-space: 20px;
+  --md-outlined-button-leading-space: 21px;
+  --md-outlined-button-trailing-space: 21px;
+
+  /* Filled button: accent, white label, darker on hover, flat */
+  --md-filled-button-container-color: #3D5AFE;
+  --md-filled-button-label-text-color: #FFFFFF;
+  --md-filled-button-hover-label-text-color: #FFFFFF;
+  --md-filled-button-focus-label-text-color: #FFFFFF;
+  --md-filled-button-pressed-label-text-color: #FFFFFF;
   --md-filled-button-hover-state-layer-opacity: 0;
-  --md-filled-button-pressed-state-layer-color: #000000;
-  --md-filled-button-pressed-state-layer-opacity: .12;
-  --md-filled-button-container-height: 36px;
-  --md-outlined-button-container-height: 36px;
-  --md-text-button-container-height: 36px;
-  --md-filled-button-label-text-font: Inter, sans-serif;
-  --md-outlined-button-label-text-font: Inter, sans-serif;
-  --md-text-button-label-text-font: Inter, sans-serif;
-  --md-filled-button-label-text-size: 14px;
-  --md-outlined-button-label-text-size: 14px;
-  --md-text-button-label-text-size: 14px;
-  --md-filled-button-label-text-weight: 500;
-  --md-outlined-button-label-text-weight: 500;
-  --md-text-button-label-text-weight: 500;
-  --md-filled-button-leading-space: 16px;
-  --md-filled-button-trailing-space: 16px;
-  --md-outlined-button-leading-space: 16px;
-  --md-outlined-button-trailing-space: 16px;
-  --md-outlined-button-outline-color: #3d5afe;
-  --md-outlined-button-outline-width: 1px;
-  --md-outlined-button-label-text-color: #3d5afe;
-  --md-outlined-button-hover-label-text-color: #3d5afe;
-  --md-outlined-button-focus-label-text-color: #3d5afe;
-  --md-outlined-button-pressed-label-text-color: #3d5afe;
-  --md-outlined-button-hover-state-layer-color: #3d5afe;
-  --md-outlined-button-hover-state-layer-opacity: .08;
-  --md-outlined-button-pressed-state-layer-color: #3d5afe;
+  --md-filled-button-pressed-state-layer-color: #FFFFFF;
+  --md-filled-button-pressed-state-layer-opacity: .16;
+  --md-filled-button-container-elevation: 0;
+  --md-filled-button-hover-container-elevation: 0;
+  --md-filled-button-focus-container-elevation: 0;
+  --md-filled-button-pressed-container-elevation: 0;
+
+  /* Outlined button: accent outline and label; tint on hover. The label goes
+     to the darker accent on hover and press: the tint pulls #3D5AFE on
+     #F5F5F7 down to 4.25:1, and #2F4AE0 on the same tint is 5.4:1. */
+  --md-outlined-button-outline-color: #3D5AFE;
+  --md-outlined-button-pressed-outline-color: #3D5AFE;
+  --md-outlined-button-label-text-color: #3D5AFE;
+  --md-outlined-button-hover-label-text-color: #2F4AE0;
+  --md-outlined-button-focus-label-text-color: #3D5AFE;
+  --md-outlined-button-pressed-label-text-color: #2F4AE0;
+  --md-outlined-button-hover-state-layer-opacity: 0;
+  --md-outlined-button-pressed-state-layer-color: #3D5AFE;
   --md-outlined-button-pressed-state-layer-opacity: .12;
-  --md-text-button-label-text-color: #3d5afe;
-  --md-text-button-hover-label-text-color: #2f4ae0;
-  --md-text-button-focus-label-text-color: #2f4ae0;
-  --md-text-button-pressed-label-text-color: #2f4ae0;
-  --md-icon-button-icon-color: #1d1d1f;
-  --md-icon-button-hover-icon-color: #3d5afe;
-  --md-icon-button-focus-icon-color: #3d5afe;
-  --md-icon-button-pressed-icon-color: #3d5afe;
 }
 
-md-filled-button:hover {
-  --md-filled-button-container-color: #2f4ae0;
+/* The filled pill's colour is a registered property so the hover animates. */
+@property --md-filled-button-container-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #3D5AFE;
 }
 
-*,
-*::before,
-*::after { box-sizing: border-box; }
+/* Dark bands: the same components, re-pointed at the light line colour. The
+   filled pill stays accent. */
+.on-dark {
+  color: var(--on-dark);
+  --md-focus-ring-color: #F5F5F7;
+  --md-outlined-button-outline-color: #F5F5F7;
+  --md-outlined-button-pressed-outline-color: #F5F5F7;
+  --md-outlined-button-label-text-color: #F5F5F7;
+  --md-outlined-button-hover-label-text-color: #F5F5F7;
+  --md-outlined-button-focus-label-text-color: #F5F5F7;
+  --md-outlined-button-pressed-label-text-color: #F5F5F7;
+  --md-outlined-button-pressed-state-layer-color: #F5F5F7;
+}
 
-html { scroll-behavior: smooth; }
-
+/* ----------------------------------------------------------------- Base */
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: var(--nav-h);
+}
+html.menu-open { overflow: hidden; }       /* the page stays put under the menu sheet */
 body {
   margin: 0;
-  min-width: 1440px;
-  padding-top: var(--oc-nav-h);
-  background: var(--oc-bg);
-  color: var(--oc-text);
-  font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-  font-size: 17px;
-  line-height: 1.5;
+  padding-top: var(--nav-h);
+  background: var(--bg);
+  color: var(--text);
+  font: 400 16px/1.5 var(--f-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-
-img, svg { display: block; }
-
-a { color: inherit; }
-
-:focus { outline: none; }
-
-:focus-visible {
-  outline: 2px solid var(--oc-accent);
-  outline-offset: 3px;
-}
+h1, h2, h3, p, ul, figure { margin: 0; padding: 0; }
+ul { list-style: none; }
+a { color: inherit; text-decoration: none; }
+svg { display: block; }
+button { font: inherit; color: inherit; }
 
 .sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
 }
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* Visible focus for the plain elements; the M3 components draw their own ring. */
+:where(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.on-dark :where(a, button):focus-visible { outline-color: var(--line-dark); }
 
 .skip {
-  position: absolute;
-  left: 16px;
-  top: -48px;
-  z-index: 80;
-  background: #fff;
-  color: var(--oc-text);
-  padding: 8px 12px;
-  border-radius: 8px;
+  position: fixed; left: 16px; top: -64px; z-index: 200;
+  padding: 10px 16px; border-radius: 999px;
+  background: var(--text); color: #fff; font: 500 14px/1.2 var(--f-body);
+  transition: top 180ms var(--ease);
 }
-
 .skip:focus { top: 8px; }
 
+/* The 12-column page frame. Bands are full-bleed; their content sits in .wrap. */
 .wrap {
-  width: 1440px;
-  margin: 0 auto;
-  padding: 0 120px;
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding-inline: var(--margin);
 }
 
-/* Buttons: the component paints itself once defined. Until then, and with
-   JavaScript off, the host still has to look like the pill. */
-md-filled-button,
-md-outlined-button,
-md-text-button,
-md-icon-button {
-  cursor: pointer;
-  vertical-align: middle;
-  transition: transform 160ms var(--oc-ease);
-}
-
-md-filled-button:active,
-md-outlined-button:active,
-md-text-button:active,
-md-icon-button:active { transform: scale(.97); }
-
-md-filled-button:not(:defined),
-md-outlined-button:not(:defined),
-md-text-button:not(:defined) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  padding: 0 16px;
+/* ------------------------------------------------ Material Web components
+   Before the library arrives (or if it never does) the buttons show as plain
+   pills of the same size, so nothing jumps when they upgrade. */
+md-filled-button, md-outlined-button {
   border-radius: 999px;
-  font-family: Inter, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1;
-  text-decoration: none;
-  white-space: nowrap;
+  transition: transform 180ms var(--ease), background-color 180ms var(--ease),
+              --md-filled-button-container-color 180ms var(--ease);
 }
+md-filled-button:hover { --md-filled-button-container-color: #2F4AE0; }
+md-outlined-button:hover { background-color: rgba(61, 90, 254, .08); }
+.on-dark md-outlined-button:hover { background-color: rgba(245, 245, 247, .12); }
+md-filled-button:active, md-outlined-button:active { transform: scale(.97); }
 
+/* inline-block, not flex: in a flex box the space before "›" would collapse
+   and the pill would come out narrower than the upgraded one. */
+md-filled-button:not(:defined), md-outlined-button:not(:defined) {
+  display: inline-block; vertical-align: middle;
+  height: var(--md-filled-button-container-height); padding: 0 20px; border-radius: 999px;
+  font: 500 15px var(--f-body); line-height: var(--md-filled-button-container-height);
+  text-align: center; white-space: nowrap; cursor: pointer;
+}
 md-filled-button:not(:defined) {
-  background: var(--oc-accent);
-  color: #fff;
-  border: 0;
+  background: #3D5AFE; color: #fff;
+  border: 1px solid transparent;               /* forced colours repaint it as an edge; otherwise invisible */
+  padding-inline: 19px;                        /* the border takes the other pixel: same width as the upgraded pill */
+  line-height: calc(var(--md-filled-button-container-height) - 2px);
+  transition: background-color 180ms var(--ease);
 }
-
-md-filled-button:not(:defined):hover { background: var(--oc-accent-hover); }
-
+md-filled-button:not(:defined):hover { background: #2F4AE0; }
 md-outlined-button:not(:defined) {
-  background: transparent;
-  color: var(--oc-accent);
-  border: 1px solid var(--oc-accent);
+  height: var(--md-outlined-button-container-height);
+  line-height: calc(var(--md-outlined-button-container-height) - 2px);
+  border: 1px solid #3D5AFE; color: #3D5AFE;
 }
-
-md-outlined-button:not(:defined):hover { background: rgba(61, 90, 254, .08); }
-
-md-text-button:not(:defined) {
-  height: auto;
-  padding: 0 4px;
-  background: none;
-  border: 0;
-  color: var(--oc-accent);
+md-outlined-button:not(:defined):hover { color: #2F4AE0; }   /* before the .on-dark rule, which wins on a dark band */
+.on-dark md-outlined-button:not(:defined) { border-color: #F5F5F7; color: #F5F5F7; }
+md-filled-button:not(:defined):focus-visible, md-outlined-button:not(:defined):focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
 }
+.on-dark md-outlined-button:not(:defined):focus-visible { outline-color: var(--line-dark); }
 
-md-text-button:not(:defined):hover { color: var(--oc-accent-hover); }
-
-md-icon-button:not(:defined) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--oc-text);
+/* ------------------------------------------------------------ Icon buttons
+   A 32px round target around a 16px glyph. In the nav the negative margin
+   hands the layout only the glyph's width, so the even spread is measured
+   glyph to glyph, as drawn. */
+.icon-btn {
+  appearance: none; -webkit-appearance: none;
+  display: grid; place-items: center;
+  width: 32px; height: 32px; margin-inline: -8px;
+  padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: var(--text-soft);
+  cursor: pointer;
+  transition: background-color 180ms var(--ease), color 180ms var(--ease), transform 180ms var(--ease);
 }
+.icon-btn:hover { background-color: rgba(61, 90, 254, .08); color: var(--accent); }
+.icon-btn:active { transform: scale(.94); }
+.icon-btn:focus-visible { border-radius: 50%; }
+.icon-btn--ink { color: var(--text); }
+.ico { width: 16px; height: 16px; }
+.ico--menu { width: 17px; height: 7px; }
+.ico--close { width: 13px; height: 13px; }
 
-.on-dark {
-  --md-outlined-button-outline-color: #f5f5f7;
-  --md-outlined-button-label-text-color: #f5f5f7;
-  --md-outlined-button-hover-label-text-color: #f5f5f7;
-  --md-outlined-button-focus-label-text-color: #f5f5f7;
-  --md-outlined-button-pressed-label-text-color: #f5f5f7;
-  --md-outlined-button-pressed-outline-color: #f5f5f7;
-  --md-outlined-button-hover-state-layer-color: #f5f5f7;
-  --md-outlined-button-hover-state-layer-opacity: .12;
-  --md-outlined-button-pressed-state-layer-color: #f5f5f7;
-  --md-outlined-button-pressed-state-layer-opacity: .16;
-}
-
-.on-dark md-outlined-button:not(:defined) {
-  color: #f5f5f7;
-  border-color: #f5f5f7;
-}
-
-.on-dark md-outlined-button:not(:defined):hover { background: rgba(245, 245, 247, .12); }
-
-/* Nav */
+/* ------------------------------------------------------------------ Nav
+   44px, fixed, glass. Logo, seven links, search and bag spread evenly over
+   980px. The links open full-width flyouts under the bar. */
 .nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  height: var(--oc-nav-h);
-  background: rgba(250, 250, 252, .8);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  position: fixed; inset: 0 0 auto 0; z-index: 100;
+  height: var(--nav-h);
+  background: var(--nav-bg);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background-color 240ms var(--ease);
 }
-
-.nav-in {
+.nav__in {
   height: 100%;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 0 22px;
+  max-width: calc(var(--nav-max) + 2 * var(--nav-pad));
+  margin-inline: auto;
+  padding-inline: var(--nav-pad);
 }
-
-.brand {
-  justify-self: start;
-  display: flex;
-  color: var(--oc-text);
+.nav__list {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 100%;
 }
+.nav__item { display: flex; align-items: center; height: 100%; }  /* not positioned: the flyout is placed against .nav */
+.nav__item--menu { display: none; }
 
-.brand svg { width: 16px; height: 16px; }
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 26px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.nav__brand {
+  display: flex; align-items: center;
+  height: var(--nav-h);
+  padding-inline: 8px; margin-inline: -8px;   /* a wider target, the same footprint */
+  color: var(--text);
 }
-
-.nav-links a {
-  color: var(--oc-text);
-  text-decoration: none;
-  font-size: 12px;
-  line-height: 1;
-  padding: 14px 0;
+.mark { width: 19.09px; height: 18px; }
+.nav__link {
+  display: flex; align-items: center;
+  height: var(--nav-h);
+  padding-inline: 8px; margin-inline: -8px;
+  font: 400 12px/1 var(--f-body);
+  color: var(--text-soft);
+  transition: color 180ms var(--ease);
 }
+.nav__link:hover, .nav__item.is-open > .nav__link { color: var(--accent); }
+.nav__link:focus-visible { outline-offset: -6px; }
 
-.nav-links a:hover,
-.nav-links a[aria-expanded="true"] { color: var(--oc-accent); }
-
-.nav-tools {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.nav md-icon-button {
-  --md-icon-button-state-layer-width: 28px;
-  --md-icon-button-state-layer-height: 28px;
-  --md-icon-button-icon-size: 16px;
-}
-
-.nav md-icon-button svg { width: 16px; height: 16px; }
-
-/* Flyout */
+/* The flyout: solid, full width, its columns on the bar's 980px line. */
 .flyout {
-  position: fixed;
-  top: var(--oc-nav-h);
-  left: 0;
-  right: 0;
-  z-index: 40;
-  background: #fafafc;
-  opacity: 0;
+  position: absolute; left: 0; right: 0; top: 100%;
+  padding: 40px var(--nav-pad) 56px;
+  background: var(--flyout-bg);
+  opacity: 0; visibility: hidden; pointer-events: none;
   transform: translateY(-8px);
-  transition: opacity 240ms var(--oc-ease), transform 240ms var(--oc-ease);
+  transition: opacity 240ms var(--ease), transform 240ms var(--ease), visibility 0s linear 240ms;
 }
-
-.flyout.open {
-  opacity: 1;
+.nav__item.is-open > .flyout {
+  opacity: 1; visibility: visible; pointer-events: auto;
   transform: none;
+  transition-delay: 0s;
 }
-
-.flyout-in {
+.flyout__in { max-width: var(--nav-max); margin-inline: auto; }
+.flyout__cols {
   display: grid;
-  grid-template-columns: max-content max-content max-content;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: 80px;
-  justify-content: start;
-  padding: 40px 120px 56px;
+}
+.flyout__h {
+  font: 400 12px/1.5 var(--f-body);
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.flyout__col li + li { margin-top: 12px; }
+.flyout__col a {
+  font: 400 12px/1.5 var(--f-body);
+  color: var(--text);
+  transition: color 180ms var(--ease);
+}
+.flyout__col a:hover { color: var(--accent); }
+.flyout__col--lead li + li { margin-top: 8px; }
+.flyout__col--lead a {
+  display: inline-block;
+  font: 600 24px/1.08 var(--f-head);
+  letter-spacing: var(--track-head);
+  padding-block: 4px;
 }
 
-.fly-col h2 {
-  margin: 0 0 12px;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.3;
-  color: var(--oc-muted);
-}
-
-.fly-col a {
-  display: block;
-  text-decoration: none;
-  color: var(--oc-text);
-}
-
-.fly-col a:hover { color: var(--oc-accent); }
-
-.fly-col.lead a {
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -.02em;
-  line-height: 1.25;
-  padding: 3px 0;
-}
-
-.fly-col.side a {
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.35;
-  padding: 5px 0;
-}
-
+/* The rest of the page dims behind an open flyout. The dim starts under the
+   bar, and the bar turns solid, the flyout's colour, so the two read as one
+   sheet and the accent link keeps its contrast even over a dark band. */
 .scrim {
-  position: fixed;
-  top: var(--oc-nav-h);
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-  background: rgba(0, 0, 0, .32);
-  opacity: 0;
-  transition: opacity 240ms var(--oc-ease);
+  position: fixed; inset: var(--nav-h) 0 0 0; z-index: 90;
+  background: rgba(0, 0, 0, .22);
+  opacity: 0; visibility: hidden;
+  transition: opacity 240ms var(--ease), visibility 0s linear 240ms;
 }
+html.fly-open .scrim { opacity: 1; visibility: visible; transition-delay: 0s; }
+html.fly-open .nav { background: var(--flyout-bg); }
 
-.scrim.open { opacity: 1; }
+/* ------------------------------------------------------------ Menu sheet
+   Below 735px the menu button opens this: a white sheet over everything, with
+   its own bar (search, bag, close where search, bag and menu were), the seven
+   links large, then a rule and the secondary links. A <dialog>, so focus stays
+   inside, Escape closes and focus goes back to the menu button. */
+.menu {
+  position: fixed; inset: 0; z-index: 150;     /* above the bar; the top layer ignores it, a browser without <dialog> needs it */
+  width: 100%; height: 100%; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0;
+  background: #FFFFFF; color: var(--text);
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.menu:not([open]) { display: none; }        /* browsers without <dialog> have no such rule of their own */
+.menu::backdrop { background: transparent; }
+.menu[open] { animation: menu-in 240ms var(--ease); }
+@keyframes menu-in { from { opacity: 0; } to { opacity: 1; } }
+.menu__bar {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center;
+  height: 48px; padding-inline: 20px;
+  background: #FFFFFF;
+}
+.menu__bar .nav__brand { height: 48px; }
+.menu__end { display: flex; margin-inline: auto -4px; }
+.menu__end .icon-btn { width: 44px; height: 44px; margin-inline: 0; }   /* 44px apart, centred on the bar's icons */
+.menu__body { padding: 24px 20px 48px; }
+.menu__link {
+  display: block;
+  padding-block: 8px;
+  font: 600 28px/1.08 var(--f-head);
+  letter-spacing: var(--track-head);
+  color: var(--text);
+  transition: color 180ms var(--ease);
+}
+.menu__link:hover { color: var(--accent); }
+.menu__rule { height: 1px; margin: 6px 0 19px; border: 0; background: var(--line); }
+.menu__more-btn {
+  appearance: none; -webkit-appearance: none;
+  display: block; width: 100%; text-align: left;
+  padding: 5px 0; border: 0; background: none;
+  font: 400 17px/25px var(--f-body);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 180ms var(--ease);
+}
+.menu__more-btn:hover { color: var(--accent); }
 
-/* Announcement */
+/* --------------------------------------------------------- Announcement */
 .announce {
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--oc-soft);
-  color: var(--oc-text);
-  font-size: 14px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 8px;
+  min-height: 48px;
+  padding: 6px var(--margin);
+  background: var(--bg-alt);
+  font: 400 14px/1.5 var(--f-body);
+  color: var(--text);
+  text-align: center;
 }
+.announce__link { color: var(--accent); transition: color 180ms var(--ease); }
+.announce__link:hover { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 2px; }
 
-.announce p {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin: 0;
+/* ---------------------------------------------------------------- Bands
+   Padding 120px top and bottom. Inside a band: the eyebrow sits on the
+   headline; headline → sub 16, sub → buttons 16 (32 when there is no sub),
+   buttons → picture 64. The dark band and the last band differ a little,
+   as drawn: see "Where the design departs", below. */
+.band { padding-block: 120px; }
+.band--light { background: var(--bg); }
+.band--alt { background: var(--bg-alt); }
+.band--dark { background: var(--dark); }
+.band--specs { padding-bottom: 72px; }        /* ends on a row of small type, not a picture */
+
+.band__in {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
 }
-
-.announce md-text-button {
-  --md-text-button-container-height: 32px;
-  --md-text-button-leading-space: 6px;
-  --md-text-button-trailing-space: 6px;
-  --md-text-button-label-text-size: 14px;
-}
-
-/* Bands */
-.band { padding: 120px 0; }
-
-.band-white { background: var(--oc-bg); color: var(--oc-text); }
-
-.band-dark {
-  background: var(--oc-dark);
-  color: #fff;
-}
-
-.band-soft { background: var(--oc-soft); color: var(--oc-text); }
-
-.band-copy { text-align: center; }
-
 .eyebrow {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--oc-muted);
+  font: 400 14px/18px var(--f-body);
+  color: var(--muted);
 }
-
-.band-dark .eyebrow { color: #a1a1a6; }
+.on-dark .eyebrow { color: var(--muted-dark); }
 
 .display {
-  margin: 0;
-  font-family: "Inter Tight", Inter, sans-serif;
-  font-weight: 600;
-  font-size: 56px;
-  line-height: 1.08;
-  letter-spacing: -.022em;
+  font: 600 56px/1.1 var(--f-head);
+  letter-spacing: var(--track-head);
+  text-wrap: balance;
 }
-
+.on-dark .display { color: var(--line-dark); font-weight: 700; }
 .sub {
-  margin: 16px auto 0;
-  max-width: 640px;
-  font-size: 19px;
-  line-height: 1.5;
+  margin-top: 16px;
+  font: 400 21px/1.5 var(--f-body);
+  color: var(--muted);
 }
-
 .actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 14px;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 16px;
   margin-top: 32px;
 }
+.band__in > .sub + .actions { margin-top: 16px; }
+.band__in > .ph { margin-top: 64px; }
 
+/* ----------------------------------------------------------- Placeholders
+   Flat rounded boxes with a small mono label in a corner. No images anywhere. */
 .ph {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--oc-ph);
-  color: var(--oc-ph-ink);
-  border-radius: 18px;
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  line-height: 1.4;
-  text-align: center;
-}
-
-.ph-dark {
-  background: var(--oc-ph-dark);
-  color: #a1a1a6;
-}
-
-.band-media {
+  position: relative;
   width: 100%;
-  height: 600px;
-  margin-top: 64px;
+  border-radius: var(--radius);
+  background: var(--ph-light);
+  overflow: hidden;
 }
-
-.band-media-16 {
-  width: 960px;
-  height: 540px;
-  margin: 64px auto 0;
-  border-radius: 24px;
+.ph--dark { background: var(--ph-dark); }
+.ph__label {
+  position: absolute; left: 16px; bottom: 12px;
+  font: 400 11px/16px var(--f-mono);
+  letter-spacing: .02em;
+  color: var(--ph-label);
+  white-space: nowrap;
 }
+.ph--dark .ph__label { color: var(--muted-dark); }
+.ph__label--top { left: auto; bottom: auto; top: 15px; right: 20px; }
+.ph--hero { max-width: 1200px; aspect-ratio: 2 / 1; }        /* 1200 × 600 */
+.ph--wide { max-width: 924px; aspect-ratio: 924 / 495; }     /* 924 × 495, as drawn */
 
+/* Band 2: a centred row of three stacks under the picture */
 .specs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 56px;
-  text-align: center;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 28px;
+  margin-top: 32px;
+}
+.spec {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.spec__value { font: 700 28px/1.1 var(--f-head); }
+.spec__label {
+  font: 400 14px/1.5 var(--f-body);
+  color: var(--muted-dark);
 }
 
-.specs strong {
-  display: block;
-  font-family: "Inter Tight", Inter, sans-serif;
-  font-weight: 600;
-  font-size: 28px;
-  line-height: 1.1;
-  letter-spacing: -.022em;
-  color: #fff;
+/* Where the design departs from the rhythm above, band by band (desktop only;
+   the phone layout has its own). The dark band's buttons are 44px tall and sit
+   a little lower; the last band has more air around its headline and picture.
+   These are the mockup's own numbers: the page runs 1440 × 6044 like it does. */
+@media (min-width: 735px) {
+  .band--specs .display { margin-top: 3px; }
+  .band--specs .actions {
+    margin-top: 34px;
+    --md-filled-button-container-height: 44px;
+    --md-outlined-button-container-height: 44px;
+  }
+  .band--specs .specs { margin-top: 33px; }
+  .band--alt .display { margin-top: 8.5px; }
+  .band--alt .actions { margin-top: 30px; }
+  .band--alt .actions + .ph { margin-top: 82px; }
 }
 
-.specs span {
-  display: block;
-  margin-top: 6px;
-  font-size: 14px;
-  line-height: 1.3;
-  color: #a1a1a6;
-}
-
-/* Tiles */
-.tiles-sec { background: #fff; padding: 120px 0; }
-
+/* ---------------------------------------------------------------- Tiles
+   588 × 660 at 1440. Text from the top; the picture follows 64px under the
+   buttons and runs off the tile's bottom edge. */
 .tiles {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gutter);
 }
-
 .tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 640px;
-  padding: 72px 32px 32px;
-  background: var(--oc-soft);
-  border-radius: 24px;
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  height: 660px;
+  padding: 72px 41px 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--bg-alt);
   text-align: center;
-  transition: transform 300ms var(--oc-ease), box-shadow 300ms var(--oc-ease);
+  isolation: isolate;                        /* keeps the scaled picture inside the rounded corners */
+  transition: transform 300ms var(--ease), box-shadow 300ms var(--ease);
 }
-
 .tile:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
 }
-
-.tile .eyebrow { color: var(--oc-muted); }
-
-.tile h2 {
-  margin: 0;
-  max-width: 14em;
-  font-family: "Inter Tight", Inter, sans-serif;
-  font-weight: 600;
-  font-size: 40px;
-  line-height: 1.08;
-  letter-spacing: -.022em;
+.tile__text {
+  flex: none;
+  display: flex; flex-direction: column; align-items: center;
 }
-
-.tile .sub {
-  margin-top: 16px;
-  font-size: 17px;
-  color: var(--oc-muted);
-  max-width: 28em;
+.tile__eyebrow {
+  font: 600 17px/22px var(--f-body);
+  color: var(--text);
 }
-
-.tile-media {
-  width: 100%;
-  margin-top: auto;
-  padding-top: 64px;
-}
-
-.tile-media-in {
-  border-radius: 16px;
-  transition: transform 300ms var(--oc-ease);
-}
-
-.tile:hover .tile-media-in { transform: scale(1.02); }
-
-.tile-ph { height: 260px; border-radius: 16px; }
-
-.mock {
-  height: 280px;
-  padding: 16px 18px 18px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .06);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.mock-dots { display: flex; gap: 6px; }
-
-.mock-dots span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #d2d2d7;
-}
-
-.mock-body {
-  flex: 1;
-  display: flex;
-  gap: 16px;
-  min-height: 0;
-}
-
-.mock-side {
-  width: 78px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 8px;
-}
-
-.mock-side i {
-  display: block;
-  height: 8px;
-  border-radius: 4px;
-  background: #e4e4e9;
-}
-
-.mock-side i:nth-child(1) { width: 72%; }
-.mock-side i:nth-child(2) { width: 92%; }
-.mock-side i:nth-child(3) { width: 54%; }
-
-.mock-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.mock-row { display: flex; gap: 12px; height: 46%; }
-
-.mock-row i,
-.mock-wide {
-  display: block;
-  background: #e8e8ed;
-  border-radius: 12px;
-}
-
-.mock-row i { flex: 1; }
-
-.mock-wide { flex: 1; }
-
-/* Carousel */
-.carousel {
-  background: var(--oc-dark);
-  color: #fff;
-  padding: 120px 0 108px;
-}
-
-.carousel-viewport { overflow: hidden; }
-
-.carousel-track {
-  display: flex;
-  gap: 24px;
-  transform: translateX(15vw);
-  will-change: transform;
-}
-
-.slide { flex: 0 0 70vw; }
-
-.slide-media {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  border-radius: 24px;
-  background: var(--oc-ph-dark);
-}
-
-.ph-tag {
-  position: absolute;
-  top: 18px;
-  right: 22px;
-  margin: 0;
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #a1a1a6;
-  text-align: right;
-}
-
-.slide-cap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 22px;
-  min-height: 40px;
-}
-
-.slide-cap h3 {
-  margin: 0;
-  font-family: Inter, sans-serif;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: 0;
-}
-
-.carousel-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 28px;
-}
-
-.dot {
-  position: relative;
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: #fff;
-  opacity: .4;
-  cursor: pointer;
-  transition: width 200ms var(--oc-ease), opacity 200ms var(--oc-ease);
-}
-
-.dot::before {
-  content: "";
-  position: absolute;
-  inset: -8px;
-}
-
-.dot[aria-selected="true"] {
-  width: 24px;
-  opacity: 1;
-}
-
-.carousel-pause {
-  margin-left: 6px;
-  box-sizing: border-box;
-  border: 1px solid rgba(245, 245, 247, .85);
-  border-radius: 50%;
-  --md-icon-button-state-layer-width: 28px;
-  --md-icon-button-state-layer-height: 28px;
-  --md-icon-button-icon-size: 12px;
-  --md-icon-button-icon-color: #f5f5f7;
-  --md-icon-button-hover-icon-color: #ffffff;
-  --md-icon-button-focus-icon-color: #ffffff;
-  --md-icon-button-pressed-icon-color: #ffffff;
-  --md-icon-button-hover-state-layer-color: #ffffff;
-  --md-icon-button-hover-state-layer-opacity: .14;
-  color: #f5f5f7;
-}
-
-.carousel-pause:not(:defined) {
-  width: 28px;
-  height: 28px;
-  color: #f5f5f7;
-  border: 1px solid rgba(245, 245, 247, .85);
-}
-
-.carousel-pause .icon-play { display: none; }
-
-.carousel-pause.is-paused .icon-pause { display: none; }
-
-.carousel-pause.is-paused .icon-play { display: block; }
-
-/* Footer */
-.foot {
-  background: var(--oc-soft);
-  color: var(--oc-muted);
-  font-size: 12px;
-  line-height: 1.45;
-  padding: 28px 0 22px;
-}
-
-.foot-note { margin: 0 0 18px; }
-
-.foot-rule {
-  height: 1px;
-  margin: 0 0 22px;
-  background: #d2d2d7;
-  border: 0;
-}
-
-.foot-cols {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-}
-
-.foot h2 {
-  margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--oc-text);
-}
-
-.foot ul { list-style: none; margin: 0; padding: 0; }
-
-.foot li { margin: 0 0 8px; }
-
-.foot a { color: var(--oc-muted); text-decoration: none; }
-
-.foot a:hover { color: var(--oc-accent); }
-
-.foot-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.tile__head {
   margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid #d2d2d7;
+  max-width: 330px;                          /* breaks the lines where the design does */
+  font: 600 36px/1.1 var(--f-head);
+  letter-spacing: var(--track-head);
+}
+.tile .sub { font-size: 17px; }
+.tile .actions { column-gap: 12px; }        /* 12 inside a tile, 16 in a band, as drawn */
+.tile__media {
+  flex: none;
+  width: 100%;
+  aspect-ratio: 506 / 380;
+  min-height: 380px;                         /* the tile is a fixed 660px, so a narrower picture is kept tall enough to run off its bottom edge */
+  margin-top: 64px;
+  border-radius: 20px 20px 0 0;
+  transition: transform 300ms var(--ease);
+}
+.tile:hover .tile__media { transform: scale(1.02); }
+
+/* The AI tile's interface mock-up: a white window, three dots, a sidebar with
+   three lines, two cards and a wide card. */
+.mock { background: #FFFFFF; }
+.mock__dots {
+  position: absolute; left: 18px; top: 16.5px;
+  display: flex; gap: 8px;
+}
+.mock__dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--ph-ink); }
+.mock__body {
+  position: absolute; left: 12px; right: 12px; top: 56px;
+  display: grid;
+  grid-template-columns: 30% 1fr 1fr;
+  grid-template-rows: 98fr 126fr;
+  gap: 12px;
+  aspect-ratio: 482 / 236;
+}
+.mock__side {
+  grid-row: 1 / 3;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--ph-light);
+}
+.mock__side i { height: 8px; border-radius: 4px; background: var(--ph-ink); }
+.mock__side i:nth-child(1) { width: 75%; }      /* of the content box: 87 / 64 / 76px at 1440 */
+.mock__side i:nth-child(2) { width: 55%; }
+.mock__side i:nth-child(3) { width: 65%; }
+.mock__card { border-radius: 12px; background: var(--ph-light); }
+.mock__card--wide { grid-column: 2 / 4; }
+
+/* ------------------------------------------------------------- Carousel
+   Without script it is a native scroll-snap row. With it (html.js) the track
+   is moved by transform and loops through clones. */
+.carousel {
+  --slide-w: min(70vw, 1008px);
+  --slide-gap: 24px;
+  padding: 120px 0 92px;
+  background: var(--dark);
+}
+.carousel__viewport {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-bottom: 6px; margin-bottom: -6px;  /* room inside the clip for a focus ring on the last row */
+}
+.carousel__viewport::-webkit-scrollbar { display: none; }
+html.js .carousel__viewport {
+  overflow: hidden;
+  overflow: clip;
+  scroll-snap-type: none;
+  touch-action: pan-y pinch-zoom;            /* a horizontal swipe is read by script; the page still scrolls up and down, and zooms */
+}
+.carousel__track {
+  display: flex; gap: var(--slide-gap);
+  padding-inline: calc((100% - var(--slide-w)) / 2);   /* centres the active slide; neighbours peek */
+  will-change: transform;
+  transition: transform 900ms var(--ease);
+}
+.slide {
+  flex: 0 0 var(--slide-w);
+  display: flex; flex-direction: column; align-items: flex-start;
+  scroll-snap-align: center;
+}
+.slide .ph { aspect-ratio: 16 / 9; }
+.slide__cap {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  margin-top: 24px;
+  text-align: left;
+}
+.slide__title {
+  font: 500 17px/1.5 var(--f-body);
+  color: var(--line-dark);
+}
+.slide__cap md-outlined-button {
+  --md-outlined-button-container-height: 36px;
+  --md-outlined-button-label-text-size: 14px;
+  --md-outlined-button-leading-space: 17px;
+  --md-outlined-button-trailing-space: 17px;
+}
+.slide__cap md-outlined-button:not(:defined) { padding: 0 16px; font-size: 14px; }
+.carousel__controls {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-top: 32px;
+}
+html:not(.js) .carousel__controls { display: none; }   /* inert without script */
+.carousel__dots { display: flex; align-items: center; margin-inline-start: -8px; }
+.dot {
+  appearance: none; -webkit-appearance: none;
+  display: grid; place-items: center;
+  padding: 10px 8px;                         /* 8px dots 24px apart, each in a 24 × 28 target: the smallest pitch that holds for a mouse too (WCAG 2.5.8); the design draws 16 */
+  border: 0; border-radius: 999px; background: none; cursor: pointer;
+}
+.dot::before {
+  content: '';
+  display: block; width: 8px; height: 8px; border-radius: 999px;
+  background: #F5F5F7; opacity: .4;
+  transition: width 400ms var(--ease), opacity 400ms var(--ease);
+}
+.dot[aria-current="true"]::before { width: 24px; opacity: 1; }
+.dot:hover::before { opacity: .7; }
+.dot[aria-current="true"]:hover::before { opacity: 1; }
+
+.carousel__toggle {
+  appearance: none; -webkit-appearance: none;
+  display: grid; place-items: center;
+  width: 28px; height: 28px; padding: 0;
+  border: 1px solid var(--line-dark); border-radius: 50%;
+  background: transparent; color: var(--line-dark);
+  cursor: pointer;
+  transition: background-color 180ms var(--ease);
+}
+.carousel__toggle:hover { background-color: rgba(245, 245, 247, .16); }
+.carousel__toggle:focus-visible { border-radius: 50%; }
+@media (pointer: coarse) {
+  .carousel__toggle { position: relative; }
+  .carousel__toggle::after { content: ''; position: absolute; inset: -8px; }   /* a 44px target around the 28px ring */
+}
+.carousel__toggle svg { width: 8px; height: 10px; }
+.carousel__toggle .ico-play { display: none; }
+.carousel__toggle.is-paused .ico-play { display: block; }
+.carousel__toggle.is-paused .ico-pause { display: none; }
+
+/* ---------------------------------------------------------------- Footer */
+.foot {
+  background: var(--bg-alt);
+  color: var(--muted);
+  font: 400 12px/16px var(--f-body);
+  padding: 24px 0;
+}
+.foot a { transition: color 180ms var(--ease); }
+.foot a:hover { color: var(--accent); }
+.foot__rule { height: 1px; margin: 20px 0 19px; border: 0; background: var(--line); }
+.foot__cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: var(--gutter); }
+.foot__h { font: 700 13px/17px var(--f-body); color: var(--text); margin-bottom: 8px; }
+.foot__col li { font-size: 13px; line-height: 17px; }
+.foot__col li + li { margin-top: 8px; }
+.foot__bar { display: flex; justify-content: space-between; gap: 8px 24px; margin-top: 63px; }
+
+/* ----------------------------------------------------------- Scroll reveal
+   Fade up 24px over 600ms, only once script has armed it (html.js), so a page
+   that cannot run script is never left blank. */
+html.js .reveal {
+  opacity: 0;
+  translate: 0 24px;
+  transition: opacity 600ms var(--ease) var(--d, 0ms), translate 600ms var(--ease) var(--d, 0ms);
+}
+html.js .reveal.is-in { opacity: 1; translate: 0 0; }
+html.js .tile.reveal {
+  transition: opacity 600ms var(--ease) var(--d, 0ms), translate 600ms var(--ease) var(--d, 0ms),
+              transform 300ms var(--ease), box-shadow 300ms var(--ease);
 }
 
-.foot-legal { display: flex; gap: 8px; }
-
-.foot-legal span[aria-hidden="true"] { color: var(--oc-muted); }
-
-/* Reveal. Hidden only after the page script claims the document, and never
-   when the visitor has asked for less motion. */
-@media (prefers-reduced-motion: no-preference) {
-  html.js .reveal {
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 600ms var(--oc-ease), transform 600ms var(--oc-ease);
-  }
-
-  html.js .reveal.in {
-    opacity: 1;
-    transform: none;
-  }
+/* ------------------------------------------------- Between tablet and 1440
+   The tiles get narrower than their 41px insets allow for two pills. */
+@media (max-width: 1068px) {
+  .tile { padding-inline: 24px; }
+  .tile__head { font-size: clamp(28px, 3.4vw, 36px); }
 }
 
+/* ================================================================ Mobile
+   The 390 design: 20px margins, a 48px bar with search, bag and menu, the
+   hero type at 40/17, 48px pills and square pictures. Below the first screen
+   the same rules carry on down the page. */
+@media (max-width: 734px) {
+  :root {
+    --nav-h: 48px;
+    --margin: 20px;
+    --md-filled-button-container-height: 48px;
+    --md-outlined-button-container-height: 48px;
+  }
+
+  /* Bar: logo on the margin; search, bag and menu 44px apart on the right */
+  .nav__in { padding-inline: 20px; }
+  .nav__list { justify-content: flex-start; margin-inline-end: -4px; }
+  .nav__item--link { display: none; }
+  .nav__item--menu { display: flex; }
+  .nav__item--search { margin-inline-start: auto; }
+  .nav__item--icon { width: 44px; justify-content: center; }
+  .nav__item--icon .icon-btn { width: 44px; height: 44px; margin-inline: 0; }   /* the slot is 44 wide: a 44px target on the same centre */
+  .flyout, .scrim { display: none; }
+
+  .announce { min-height: 44px; padding-block: 4px; font-size: 12px; column-gap: 6px; }
+
+  .band { padding-block: 88px; }
+  .band--specs { padding-bottom: 64px; }
+  .eyebrow { font-weight: 600; }
+  .display {
+    margin-top: 6px;
+    font-size: 40px; line-height: 1.08;
+    text-wrap: wrap;                         /* the design's breaks: "Hardware, / software and / cloud." */
+  }
+  .sub { margin-top: 20px; font-size: 17px; }
+  .actions, .band__in > .sub + .actions { margin-top: 40px; }
+  .band__in > .ph { margin-top: 48px; }
+  .ph--hero, .ph--wide { max-width: none; aspect-ratio: 1 / 1; }
+  .specs { gap: 16px 24px; }
+
+  .band--tiles { padding-block: 88px; }
+  .tiles { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .tile { height: auto; padding: 48px 20px 0; }
+  .tile__eyebrow { font-size: 14px; line-height: 18px; }
+  .tile__head { margin-top: 6px; max-width: 290px; font-size: 28px; }
+  .tile .sub { margin-top: 12px; }
+  .tile .actions { margin-top: 24px; }
+  .tile__media { min-height: 0; margin-top: 40px; margin-bottom: -24px; }   /* still runs off the bottom edge */
+
+  .carousel { --slide-w: calc(100vw - 64px); --slide-gap: 12px; padding: 88px 0 72px; }
+  .slide__cap { margin-top: 20px; }
+  .slide__cap md-outlined-button { --md-outlined-button-container-height: 44px; }
+  .carousel__controls { margin-top: 28px; }
+
+  .foot__cols { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 28px; }
+  .foot__bar { flex-direction: column; margin-top: 40px; }
+}
+
+/* The smallest phones: keep a tile's two pills on one line. */
+@media (max-width: 359px) {
+  .tile { padding-inline: 16px; }
+}
+
+/* The menu sheet belongs to the mobile bar only. */
+@media (min-width: 735px) {
+  .menu { display: none; }
+}
+
+/* ------------------------------------------------------- Reduced motion
+   No reveal, no auto-advance (script), no travel. State changes still show. */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+  html.js .reveal,
+  html.js .reveal.is-in,
+  html.js .tile.reveal { opacity: 1; translate: none; transition: none; }
+  .flyout { transform: none; transition: opacity 120ms linear, visibility 0s linear 120ms; }
+  .nav__item.is-open > .flyout { transition-delay: 0s; }
+  .scrim { transition: opacity 120ms linear, visibility 0s linear 120ms; }
+  .menu[open] { animation: none; }
+  .tile, .tile__media { transition: box-shadow 120ms linear; }
+  .tile:hover, .tile:hover .tile__media { transform: none; }
+  .carousel__track { transition: none; }
+  md-filled-button:active, md-outlined-button:active, .icon-btn:active { transform: none; }
+}
 
-  .flyout,
-  .scrim,
-  .tile,
-  .tile-media-in,
-  .carousel-track,
-  .dot,
-  md-filled-button,
-  md-outlined-button,
-  md-text-button,
-  md-icon-button {
-    transition: none !important;
-  }
+/* ---------------------------------------------------- Forced colours
+   Shapes drawn with a background alone vanish when the system recolours the
+   page, so the slide dots, the rules and the flat boxes get a system colour. */
+@media (forced-colors: active) {
+  .dot::before { background: CanvasText; opacity: .5; }
+  .dot[aria-current="true"]::before { opacity: 1; }
+  .ph, .tile { border: 1px solid CanvasText; }
+  .foot__rule, .menu__rule { background: CanvasText; }
+}
 
-  .tile:hover { transform: none; }
-  .tile:hover .tile-media-in { transform: none; }
+/* ------------------------------------------------------------------ Print
+   Everything prints: no hidden reveals, dark bands keep their fill, and the
+   fixed bar does not repeat on every sheet. */
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html.js .reveal, html.js .reveal.is-in, html.js .tile.reveal { opacity: 1; translate: none; transition: none; }
+  .nav, .scrim, .menu, .carousel__controls { display: none; }
+  body { padding-top: 0; }
 }
