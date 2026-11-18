@@ -1126,7 +1126,40 @@ md-icon-button:not(:defined) {
 
   .slide-cap { flex-wrap: wrap; }
 
-  .dot::before { inset: -18px; }
+  /* 44px tap targets that do not overlap: the visual mark stays 8×8 (or the
+     active pill), centered inside a larger transparent hit area. */
+  .carousel-controls { gap: 0; }
+
+  .dot {
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    opacity: 1;
+  }
+
+  .dot::before { display: none; }
+
+  .dot::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #fff;
+    opacity: .4;
+    transform: translate(-50%, -50%);
+  }
+
+  .dot[aria-selected="true"] {
+    width: 44px;
+  }
+
+  .dot[aria-selected="true"]::after {
+    width: 24px;
+    opacity: 1;
+  }
 
   .carousel-pause {
     --md-icon-button-state-layer-width: 44px;

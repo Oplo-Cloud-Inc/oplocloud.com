@@ -47,8 +47,12 @@ function initNav() {
   const panels = [...flyout.querySelectorAll("[data-panel]")];
   let openId = null;
   let closeTimer = 0;
+  // Escape closes then returns focus to the trigger. Without this flag the
+  // focus listener would open the flyout again on that same keystroke.
+  let suppressOpen = false;
 
   function open(id) {
+    if (suppressOpen) return;
     clearTimeout(closeTimer);
     openId = id;
     panels.forEach((panel) => {
@@ -107,6 +111,7 @@ function initNav() {
   scrim.addEventListener("click", () => close());
 
   mast.addEventListener("focusout", (event) => {
+    if (suppressOpen) return;
     const next = event.relatedTarget;
     if (next && mast.contains(next)) return;
     close();
@@ -115,8 +120,10 @@ function initNav() {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !openId || document.body.classList.contains("menu-open")) return;
     const current = document.querySelector(`[data-flyout="${openId}"]`);
+    suppressOpen = true;
     close();
-    current?.focus();
+    current?.focus({ preventScroll: true });
+    window.setTimeout(() => { suppressOpen = false; }, 0);
   });
 }
 
