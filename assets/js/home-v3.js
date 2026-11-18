@@ -123,20 +123,32 @@
       menuOpen.setAttribute('aria-expanded', String(open));
       root.classList.toggle('menu-open', open);
     };
+    // Put focus on Close without the accent ring. Autofocus (and some WebViews)
+    // treated the open as keyboard focus and drew a blue circle on the X.
+    const focusCloseQuietly = () => {
+      if (!menuClose) return;
+      menuClose.classList.add('no-ring');
+      menuClose.focus({ preventScroll: true });
+    };
     const openMenu = () => {
-      if (menu.hasAttribute('open') || wide.matches) return;
+      if (wide.matches) return;
       if (current) setOpen(null);
-      if (modal) menu.showModal(); else menu.setAttribute('open', '');
+      // The invoker command may already have opened the dialog; still settle
+      // focus so the X does not keep a visible ring.
+      if (!(menu.open || menu.hasAttribute('open'))) {
+        if (modal) menu.showModal(); else menu.setAttribute('open', '');
+      }
       settle(true);
-      if (!modal && menuClose) menuClose.focus();
+      focusCloseQuietly();
     };
     const closeMenu = () => {
-      if (!menu.hasAttribute('open')) return;
+      if (!(menu.open || menu.hasAttribute('open'))) return;
       if (modal) menu.close();
       else { menu.removeAttribute('open'); onClosed(); }
     };
     const onClosed = () => {
       settle(false);
+      if (menuClose) menuClose.classList.remove('no-ring');
       // The dialog returns focus itself; this covers the cases where it cannot.
       const lost = !document.activeElement || document.activeElement === document.body;
       if (lost && !wide.matches) menuOpen.focus();
@@ -144,7 +156,13 @@
 
     menu.addEventListener('close', onClosed);
     menuOpen.addEventListener('click', openMenu);
-    if (menuClose) menuClose.addEventListener('click', closeMenu);
+    if (menuClose) {
+      menuClose.addEventListener('click', closeMenu);
+      menuClose.addEventListener('blur', () => menuClose.classList.remove('no-ring'));
+      menuClose.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') menuClose.classList.remove('no-ring');
+      });
+    }
     menu.addEventListener('click', (e) => { if (e.target.closest('a[href]')) closeMenu(); });
     if (!modal) menu.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
     wide.addEventListener('change', (e) => { if (e.matches) closeMenu(); });
