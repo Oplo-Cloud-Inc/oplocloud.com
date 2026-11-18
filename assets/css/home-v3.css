@@ -259,6 +259,10 @@ md-filled-button:not(:defined):focus-visible, md-outlined-button:not(:defined):f
 .icon-btn:hover { background-color: rgba(61, 90, 254, .08); color: var(--accent); }
 .icon-btn:active { transform: scale(.94); }
 .icon-btn:focus-visible { border-radius: 50%; }
+/* Opening the menu sheet focuses Close so Escape and the next Tab work. That
+   focus must not draw the blue ring — only a later keyboard move should. */
+.icon-btn.no-ring:focus,
+.icon-btn.no-ring:focus-visible { outline: none; }
 .icon-btn--ink { color: var(--text); }
 .ico { width: 16px; height: 16px; }
 .ico--menu { width: 17px; height: 7px; }
